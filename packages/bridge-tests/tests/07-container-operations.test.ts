@@ -541,11 +541,11 @@ test.describe('Multiple Container Operations @bridge', () => {
   nginx1:
     image: nginx:alpine
     container_name: ${container1}
-    network_mode: "\${REPOSITORY_NETWORK_MODE:-bridge}"
+    network_mode: "\${REDIACC_NETWORK_MODE:-bridge}"
   nginx2:
     image: nginx:alpine
     container_name: ${container2}
-    network_mode: "\${REPOSITORY_NETWORK_MODE:-bridge}"
+    network_mode: "\${REDIACC_NETWORK_MODE:-bridge}"
 `;
     await runner.writeFileToRepository(
       repositoryName,

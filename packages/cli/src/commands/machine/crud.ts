@@ -1,13 +1,9 @@
-import { Command } from 'commander';
 import type { UpdateMachineAssignedBridgeParams } from '@rediacc/shared/types';
+import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
 import { typedApi } from '../../services/api.js';
-import {
-  addAssignCommand,
-  addStatusCommand,
-  createResourceCommands,
-} from '../../utils/commandFactory.js';
+import { addAssignCommand, createResourceCommands } from '../../utils/commandFactory.js';
 
 export function registerCrudCommands(parentCommand: Command): Command {
   // Create standard CRUD commands using factory
@@ -57,17 +53,6 @@ export function registerCrudCommands(parentCommand: Command): Command {
         return provider.machines.updateVault(payload);
       },
       vaultFieldName: 'vaultContent',
-    },
-  });
-
-  // Add status command
-  addStatusCommand(machine, {
-    resourceName: 'machine',
-    nameField: 'machineName',
-    parentOption: 'team',
-    fetch: async (params) => {
-      const provider = await getStateProvider();
-      return provider.machines.list({ teamName: params.teamName as string });
     },
   });
 

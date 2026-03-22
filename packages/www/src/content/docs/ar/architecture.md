@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: ar
-sourceHash: "50f5168f0effbc44"
+sourceHash: "9331a5f415a76278"
 ---
 
 # البنية التحتية
@@ -58,7 +58,7 @@ Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), a
 - وحدة تحكم ويب للإدارة المرئية
 - يُعدّ باستخدام `rdc auth login`
 
-> **ملاحظة:** أوامر محوّل السحابة تجريبية. فعّلها باستخدام `rdc --experimental <command>` أو بتعيين `REDIACC_EXPERIMENTAL=1`.
+> **ملاحظة:** أوامر محوّل السحابة تجريبية. فعّلها بتعيين `REDIACC_EXPERIMENTAL=1`.
 
 ### حالة موارد S3 (اختياري)
 
@@ -73,7 +73,7 @@ Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), a
 
 ## مستخدم rediacc
 
-عند تشغيل `rdc config setup-machine`، يُنشئ renet مستخدم نظام باسم `rediacc` على الخادم البعيد:
+عند تشغيل `rdc config machine setup`، يُنشئ renet مستخدم نظام باسم `rediacc` على الخادم البعيد:
 
 - **UID**: 7111
 - **Shell**: `/sbin/nologin` (لا يمكن تسجيل الدخول عبر SSH)
@@ -83,7 +83,7 @@ Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), a
 
 1. يحتاج مستخدم SSH الخاص بك إلى صلاحيات `sudo`
 2. جميع بيانات المستودع مملوكة لـ `rediacc`، وليس لمستخدم SSH الخاص بك
-3. دوال Rediaccfile (`prep()` و `up()` و `down()`) تعمل بصفة `rediacc`
+3. دوال Rediaccfile (`up()` و `down()`) تعمل بصفة `rediacc`
 
 يضمن هذا الفصل أن بيانات المستودع لها ملكية متسقة بغض النظر عن مستخدم SSH الذي يديرها.
 

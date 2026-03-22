@@ -2,26 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   ALL_MODES,
   COMMAND_REGISTRY,
-  formatModeTag,
   getCommandDef,
   SELF_HOSTED_MODES,
 } from '../command-registry.js';
 
 describe('config/command-registry', () => {
-  describe('formatModeTag', () => {
-    it('returns empty string for all-modes', () => {
-      expect(formatModeTag(ALL_MODES)).toBe('');
-    });
-
-    it('returns [cloud] for cloud-only', () => {
-      expect(formatModeTag(['cloud'])).toBe('[cloud]');
-    });
-
-    it('returns [local] for self-hosted modes', () => {
-      expect(formatModeTag(SELF_HOSTED_MODES)).toBe('[local]');
-    });
-  });
-
   describe('getCommandDef', () => {
     it('finds existing commands', () => {
       expect(getCommandDef('auth')).toBeDefined();
@@ -47,9 +32,10 @@ describe('config/command-registry', () => {
       'ceph',
       'repository',
       'queue',
+      'protocol',
     ];
 
-    const localOnly = ['repo', 'snapshot'];
+    const localOnly = ['repo', 'ops'];
 
     const allModes = [
       'machine',
@@ -57,13 +43,13 @@ describe('config/command-registry', () => {
       'run',
       'sync',
       'term',
-      'backup',
       'config',
       'doctor',
       'update',
-      'protocol',
       'vscode',
       'store',
+      'agent',
+      'mcp',
     ];
 
     for (const name of cloudOnly) {
@@ -94,27 +80,37 @@ describe('config/command-registry', () => {
   describe('subcommand overrides', () => {
     it('machine assign-bridge is cloud-only', () => {
       const def = getCommandDef('machine');
-      expect(def?.subcommands?.['assign-bridge']?.modes).toEqual(['cloud']);
+      expect(def?.subcommands['assign-bridge']?.modes).toEqual(['cloud']);
     });
 
     it('machine test-connection is cloud-only', () => {
       const def = getCommandDef('machine');
-      expect(def?.subcommands?.['test-connection']?.modes).toEqual(['cloud']);
+      expect(def?.subcommands['test-connection']?.modes).toEqual(['cloud']);
+    });
+
+    it('machine vault is cloud-only', () => {
+      const def = getCommandDef('machine');
+      expect(def?.subcommands?.vault.modes).toEqual(['cloud']);
+    });
+
+    it('machine vault-status is cloud-only', () => {
+      const def = getCommandDef('machine');
+      expect(def?.subcommands['vault-status']?.modes).toEqual(['cloud']);
+    });
+
+    it('machine query is local-only', () => {
+      const def = getCommandDef('machine');
+      expect(def?.subcommands?.query.modes).toEqual(SELF_HOSTED_MODES);
+    });
+
+    it('storage vault is cloud-only', () => {
+      const def = getCommandDef('storage');
+      expect(def?.subcommands?.vault.modes).toEqual(['cloud']);
     });
 
     it('storage browse is local', () => {
       const def = getCommandDef('storage');
       expect(def?.subcommands?.browse.modes).toEqual(SELF_HOSTED_MODES);
-    });
-
-    it('backup sync is local', () => {
-      const def = getCommandDef('backup');
-      expect(def?.subcommands?.sync.modes).toEqual(SELF_HOSTED_MODES);
-    });
-
-    it('backup schedule is local', () => {
-      const def = getCommandDef('backup');
-      expect(def?.subcommands?.schedule.modes).toEqual(SELF_HOSTED_MODES);
     });
   });
 

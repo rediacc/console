@@ -1,0 +1,25 @@
+{
+  "cast": "/assets/tutorials/monitoring-tutorial.cast",
+  "language": "ru",
+  "version": 1,
+  "events": [
+    {
+      "id": "monitoring-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.508759,
+      "text": "Запустите полную диагностику среды, чтобы выявить проблемы с базовыми показателями."
+    },
+    {
+      "id": "monitoring-tutorial-02",
+      "markerIndex": 1,
+      "at": 9.844365,
+      "text": "Проверьте индикаторы состояния удаленной машины."
+    },
+    {
+      "id": "monitoring-tutorial-03",
+      "markerIndex": 2,
+      "at": 18.393678,
+      "text": "Перечислите активные контейнеры на целевой машине."
+    }
+  ]
+}

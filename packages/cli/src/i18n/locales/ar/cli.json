@@ -1,8 +1,24 @@
 {
   "cli": {
-    "description": "واجهة سطر الأوامر الخاصة بـ Rediacc - واجهة سطر الأوامر لعمليات Rediacc"
+    "description": "إدارة الأجهزة والمستودعات والنشر عبر SSH"
   },
   "commands": {
+    "agent": {
+      "capabilities": {
+        "description": "عرض جميع الأوامر المتاحة مع المعاملات والخيارات"
+      },
+      "description": "أدوات مساعدة لوكلاء البرمجة بالذكاء الاصطناعي",
+      "descriptionShort": "أدوات مساعدة لوكلاء البرمجة بالذكاء الاصطناعي",
+      "exec": {
+        "description": "تنفيذ أمر بمدخلات JSON من stdin"
+      },
+      "generateReference": {
+        "description": "إنشاء مرجع الأوامر بتنسيق Markdown لمهارات Claude"
+      },
+      "schema": {
+        "description": "عرض المخطط التفصيلي لأمر معين"
+      }
+    },
     "audit": {
       "description": "أوامر سجل التدقيق",
       "history": {
@@ -102,67 +118,12 @@
       }
     },
     "backup": {
-      "description": "النسخ الاحتياطي واستعادة المستودعات",
-      "list": {
-        "description": "سرد النسخ الاحتياطية المتاحة على التخزين أو الجهاز",
-        "listing": "جارٍ سرد النسخ الاحتياطية...",
-        "optionFromMachine": "اسم الجهاز المصدر",
-        "optionFromStorage": "اسم التخزين المصدر",
-        "sourceRequired": "حدد --from <storage> أو --from-machine <machine>"
-      },
-      "pull": {
-        "description": "سحب نسخة احتياطية للمستودع من التخزين أو جهاز",
-        "optionForce": "فرض الكتابة فوق المستودع الموجود",
-        "optionFromMachine": "اسم الجهاز المصدر",
-        "optionFromStorage": "اسم التخزين المصدر",
-        "pulling": "جارٍ سحب نسخة احتياطية لـ \"{{repo}}\"...",
-        "sourceRequired": "حدد --from <storage> أو --from-machine <machine>"
-      },
-      "push": {
-        "description": "دفع نسخة احتياطية للمستودع إلى التخزين أو جهاز",
-        "destIgnoredForStorage": "تم تجاهل --dest {{provided}}: النسخ الاحتياطية للتخزين تستخدم GUID المستودع ({{dest}})",
-        "destRequired": "حدد --to <storage> أو --to-machine <machine>",
-        "optionCheckpoint": "إنشاء نقطة فحص للحاوية (نسخ احتياطي ساخن)",
-        "optionDest": "اسم ملف الوجهة",
-        "optionForce": "فرض الكتابة فوق النسخة الاحتياطية الموجودة",
-        "optionTag": "علامة النشر للإصدارات",
-        "optionToMachine": "اسم الجهاز الوجهة",
-        "optionToStorage": "اسم التخزين الوجهة",
-        "pushing": "جارٍ دفع نسخة احتياطية لـ \"{{repo}}\" إلى {{dest}}..."
-      },
+      "description": "دفع واسترجاع ومزامنة النسخ الاحتياطية للمستودعات عبر التخزين والأجهزة",
       "schedule": {
-        "description": "إدارة تكوين النسخ الاحتياطي المجدول",
-        "push": {
-          "description": "دفع جدولة النسخ الاحتياطي إلى الجهاز البعيد (مؤقت systemd)",
-          "success": "تم دفع جدولة النسخ الاحتياطي إلى {{machine}}"
-        },
-        "set": {
-          "description": "تكوين إعدادات جدولة النسخ الاحتياطي",
-          "noOptions": "حدد خياراً واحداً على الأقل: --destination، --cron، --enable، أو --disable",
-          "optionCron": "تعبير cron لجدولة النسخ الاحتياطي (مثلاً \"0 2 * * *\")",
-          "optionDestination": "اسم وجهة التخزين الافتراضي",
-          "optionDisable": "تعطيل النسخ الاحتياطي المجدول",
-          "optionEnable": "تفعيل النسخ الاحتياطي المجدول",
-          "saved": "تم حفظ تكوين جدولة النسخ الاحتياطي"
-        },
-        "show": {
-          "description": "عرض تكوين جدولة النسخ الاحتياطي الحالي",
-          "destination": "الوجهة: {{destination}}",
-          "enabled": "مفعّل: {{enabled}}",
-          "notConfigured": "لم يتم تكوين جدولة النسخ الاحتياطي",
-          "schedule": "الجدول: {{schedule}}"
-        }
+        "description": "نشر جداول النسخ الاحتياطي على الأجهزة البعيدة"
       },
       "sync": {
-        "description": "دفع/سحب جميع المستودعات بالجملة من/إلى التخزين السحابي",
-        "directionConflict": "لا يمكن تحديد --to و --from معاً",
-        "directionRequired": "حدد --to <storage> (دفع) أو --from <storage> (سحب)",
-        "optionFrom": "اسم التخزين المصدر (وضع السحب)",
-        "optionOverride": "الكتابة فوق المستودعات غير المُركّبة الموجودة عند السحب",
-        "optionRepo": "تصفية لمستودع محدد (قابل للتكرار)",
-        "optionTo": "اسم التخزين الوجهة (وضع الدفع)",
-        "pullSuccess": "اكتمل سحب المزامنة",
-        "pushSuccess": "اكتمل دفع المزامنة"
+        "description": "مزامنة ثنائية الاتجاه للنسخ الاحتياطية عبر الأجهزة"
       }
     },
     "bridge": {
@@ -323,48 +284,111 @@
       }
     },
     "config": {
-      "addMachine": {
-        "description": "إضافة آلة إلى الإعدادات الحالية",
-        "success": "تمت إضافة الآلة \"{{name}}\" ({{user}}@{{ip}})"
+      "backupStrategy": {
+        "description": "إدارة استراتيجية النسخ الاحتياطي متعددة الوجهات",
+        "set": {
+          "description": "تكوين إعدادات جدولة النسخ الاحتياطي",
+          "noOptions": "حدد خياراً واحداً على الأقل: --destination، --cron، --enable، أو --disable",
+          "optionCron": "تعبير cron لجدولة النسخ الاحتياطي (مثلاً \"0 2 * * *\")",
+          "optionDestination": "اسم وجهة التخزين الافتراضي",
+          "optionDisable": "تعطيل النسخ الاحتياطي المجدول",
+          "optionEnable": "تفعيل النسخ الاحتياطي المجدول",
+          "saved": "تم حفظ تكوين جدولة النسخ الاحتياطي"
+        },
+        "show": {
+          "description": "عرض تكوين جدولة النسخ الاحتياطي الحالي",
+          "destinations": "الوجهات:",
+          "enabled": "مفعّل: {{enabled}}",
+          "noDestinations": "لم يتم تكوين وجهات النسخ الاحتياطي",
+          "notConfigured": "لم يتم تكوين جدولة النسخ الاحتياطي",
+          "schedule": "الجدول: {{schedule}}"
+        }
       },
-      "addRepository": {
-        "description": "إضافة تعيين GUID للمستودع إلى الإعدادات الحالية",
-        "networkIdAssigned": "معرف الشبكة: {{networkId}}",
-        "optionCredential": "بيانات اعتماد المستودع (عبارة مرور التشفير)",
-        "optionGuid": "GUID المستودع (UUID من أسماء ملفات النسخ الاحتياطي)",
-        "optionNetworkId": "معرف الشبكة لعزل Docker (2816، 2880، ...). يُعيَّن تلقائياً إذا لم يُحدَّد",
-        "optionTag": "علامة المستودع",
-        "success": "تمت إضافة المستودع \"{{name}}\" ({{guid}}، علامة: {{tag}})"
+      "certCache": {
+        "clear": {
+          "cleared": "تم مسح ذاكرة تخزين الشهادات المؤقتة",
+          "description": "إزالة ذاكرة تخزين الشهادات المؤقتة",
+          "noCache": "لا توجد ذاكرة تخزين مؤقت للشهادات لمسحها"
+        },
+        "description": "إدارة شهادات TLS المخزنة مؤقتاً",
+        "noBaseDomain": "الجهاز لا يحتوي على baseDomain مُعدّ",
+        "noCacheForDomain": "لم يتم العثور على ذاكرة تخزين مؤقت للشهادات لـ {{domain}}",
+        "pull": {
+          "cached": "تم تخزين {{count}} شهادة(شهادات) مؤقتاً ({{size}})",
+          "description": "تنزيل وتخزين شهادات TLS مؤقتاً من جهاز",
+          "downloading": "جارٍ تنزيل الشهادات من {{machine}}...",
+          "merged": "تم الاحتفاظ بـ {{count}} شهادة(شهادات) من الذاكرة المؤقتة المحلية بفترة صلاحية أطول",
+          "noAcmeJson": "لم يتم العثور على acme.json في {{machine}}",
+          "optionNoPrune": "تخطي تنظيف شهادات معرّف الشبكة القديمة",
+          "pruned": "تم تنظيف {{count}} شهادة(شهادات) قديمة"
+        },
+        "push": {
+          "description": "رفع شهادات TLS المخزنة مؤقتاً إلى جهاز",
+          "merged": "تم دمج {{count}} شهادة(شهادات) بفترة صلاحية أطول في {{machine}}",
+          "noCache": "لم يتم العثور على ذاكرة تخزين مؤقت للشهادات. شغّل 'rdc config cert-cache pull <machine>' أولاً",
+          "uploaded": "تم رفع {{count}} شهادة(شهادات) إلى {{machine}}",
+          "uploading": "جارٍ رفع الشهادات المخزنة مؤقتاً إلى {{machine}}...",
+          "upToDate": "الشهادات على {{machine}} محدّثة"
+        },
+        "status": {
+          "certCount": "{{count}} شهادة(شهادات)، {{size}} مضغوطة",
+          "description": "عرض مخزون الشهادات المخزنة مؤقتاً",
+          "header": "ذاكرة تخزين الشهادات المؤقتة لـ {{baseDomain}}",
+          "noCache": "لا توجد شهادات مخزنة مؤقتاً",
+          "updatedAt": "آخر تحديث: {{date}} (من {{machine}})"
+        }
       },
       "clear": {
         "allCleared": "تم مسح جميع القيم الافتراضية",
         "description": "مسح القيم الافتراضية (الكل أو مفتاح معين)",
         "keyCleared": "تم مسح \"{{key}}\""
       },
-      "recover": {
-        "description": "استعادة الإعدادات من ملف النسخة الاحتياطية (.bak)",
-        "noBackup": "لم يتم العثور على نسخة احتياطية للإعدادات \"{{name}}\"",
-        "confirm": "استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية؟",
-        "success": "تمت استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية (الإصدار {{version}})",
-        "failed": "فشلت استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية"
-      },
       "delete": {
         "description": "حذف ملف إعدادات",
         "success": "تم حذف الإعدادات \"{{name}}\""
       },
-      "description": "إدارة ملفات إعدادات CLI",
-      "importStorage": {
-        "description": "استيراد وحدات تخزين من ملف إعدادات rclone",
-        "imported": "تم استيراد التخزين \"{{name}}\" ({{type}})",
-        "noConfigs": "لم يتم العثور على إعدادات تخزين صحيحة في الملف",
-        "notFound": "التخزين \"{{name}}\" غير موجود في ملف الإعدادات",
-        "optionName": "استيراد هذا القسم المسمى فقط",
-        "summary": "تم استيراد {{count}} وحدة تخزين",
-        "unsupported": "تخطي \"{{name}}\": نوع المزود غير مدعوم \"{{type}}\""
+      "description": "إدارة ملفات الإعدادات والأجهزة واتصالات SSH",
+      "descriptionShort": "إدارة ملفات الإعدادات والأجهزة واتصالات SSH",
+      "infra": {
+        "description": "إدارة تكوين البنية التحتية (الوكيل، DNS، الشهادات)",
+        "push": {
+          "certCacheUploaded": "تم رفع الشهادات المخزنة مؤقتاً إلى الجهاز البعيد",
+          "description": "دفع إعدادات البنية التحتية إلى الجهاز (وكيل Traefik، الموجّه، Cloudflare DNS). شغّل 'config infra set <machine>' أولاً",
+          "descriptionShort": "دفع تكوين البنية التحتية إلى الجهاز",
+          "dnsCreated": "DNS: تم إنشاء {{type}} {{name}} → {{content}}",
+          "dnsError": "تحذير DNS: {{message}} (قد تحتاج السجلات إلى إعداد يدوي)",
+          "dnsResolvingZone": "جارٍ تحديد منطقة Cloudflare لـ {{domain}}...",
+          "dnsSkipLocal": "تخطي DNS: النطاق .local لا يستخدم Cloudflare",
+          "dnsSkipNoToken": "تخطي DNS: لا يوجد رمز Cloudflare API. عيّنه بـ: rdc config infra set <machine> --cf-dns-token <token>",
+          "dnsUnchanged": "DNS: {{type}} {{name}} صحيح بالفعل",
+          "dnsUpdated": "DNS: تم تحديث {{type}} {{name}} → {{content}}",
+          "installingProxy": "جارٍ تثبيت وتشغيل الوكيل...",
+          "proxyInstallWarning": "فشل تثبيت الوكيل (الرمز {{code}}). شغّل يدويًا: sudo renet proxy install",
+          "success": "تم دفع إعدادات البنية التحتية إلى \"{{name}}\""
+        },
+        "set": {
+          "description": "تعيين إعدادات البنية التحتية لجهاز (خاصة بالجهاز: عناوين IP، النطاق، المنافذ؛ مشتركة: بريد الشهادة، رمز Cloudflare DNS)",
+          "descriptionShort": "تعيين تكوين البنية التحتية لجهاز",
+          "invalidIPv4": "عنوان IPv4 غير صالح: {{ip}}",
+          "invalidIPv6": "عنوان IPv6 غير صالح: {{ip}}",
+          "noOptions": "لم تُحدَّد خيارات. استخدم --public-ipv4 أو --base-domain أو غيرها.",
+          "optionBaseDomain": "النطاق الأساسي للتطبيقات (لكل جهاز)",
+          "optionCertEmail": "البريد الإلكتروني لإشعارات شهادات TLS (مشترك بين الأجهزة)",
+          "optionCfDnsToken": "رمز Cloudflare DNS API لتحدي ACME DNS-01 (مشترك بين الأجهزة)",
+          "optionPublicIPv4": "عنوان IPv4 العام (لكل جهاز)",
+          "optionPublicIPv6": "عنوان IPv6 العام (لكل جهاز)",
+          "optionTcpPorts": "منافذ TCP للتوجيه (مفصولة بفواصل، مثال: 25,143,465)",
+          "optionUdpPorts": "منافذ UDP للتوجيه (مفصولة بفواصل، مثال: 53)",
+          "success": "تم تحديث إعدادات البنية التحتية لـ \"{{name}}\""
+        },
+        "show": {
+          "description": "عرض تكوين البنية التحتية لجهاز",
+          "noInfra": "لا توجد إعدادات بنية تحتية لـ \"{{name}}\""
+        }
       },
       "init": {
         "alreadyExists": "الإعدادات \"{{name}}\" موجودة بالفعل",
-        "description": "تهيئة ملف إعدادات جديد",
+        "description": "إنشاء ملف إعدادات مسمى جديد",
         "optionMasterPassword": "تشفير الموارد بكلمة مرور رئيسية",
         "optionS3AccessKeyId": "معرف مفتاح الوصول S3",
         "optionS3Bucket": "اسم حاوية S3",
@@ -383,55 +407,120 @@
         "description": "عرض جميع ملفات الإعدادات",
         "noConfigs": "لم يتم العثور على ملفات إعدادات. أنشئ واحداً باستخدام: rdc config init"
       },
-      "machines": {
-        "description": "عرض الآلات في الإعدادات الحالية",
-        "noMachines": "لا توجد آلات مكونة. أضف واحدة باستخدام: rdc config add-machine <name> --ip <ip> --user <user>"
+      "machine": {
+        "add": {
+          "description": "إضافة جهاز إلى الإعدادات الحالية",
+          "descriptionShort": "إضافة جهاز إلى التكوين الحالي",
+          "success": "تمت إضافة الجهاز \"{{name}}\" ({{user}}@{{ip}})"
+        },
+        "description": "إدارة الأجهزة في التكوين الحالي",
+        "list": {
+          "description": "عرض قائمة الأجهزة في التكوين الحالي",
+          "noMachines": "لا توجد أجهزة في الإعدادات الحالية"
+        },
+        "remove": {
+          "description": "إزالة جهاز من التكوين الحالي",
+          "success": "تمت إزالة الجهاز \"{{name}}\""
+        },
+        "scanKeys": {
+          "completed": "تم فحص {{count}}/{{total}} جهاز",
+          "description": "فحص مفاتيح SSH للأجهزة في التكوين الحالي",
+          "keysScanned": "تم فحص مفاتيح المضيف لـ \"{{name}}\"",
+          "noKeys": "تعذر فحص مفاتيح المضيف لـ \"{{name}}\""
+        },
+        "setCeph": {
+          "description": "تعيين تكوين Ceph RBD لجهاز",
+          "optionCluster": "اسم مجموعة Ceph",
+          "optionImage": "اسم صورة RBD (مثال: datastore-prod1)",
+          "optionPool": "اسم مجمّع Ceph (مثال: rbd)",
+          "success": "تم تعيين إعدادات Ceph لـ \"{{name}}\": pool={{pool}}، image={{image}}"
+        },
+        "setup": {
+          "completed": "تم إعداد الجهاز \"{{machine}}\" بنجاح",
+          "datastoreOption": "مسار مخزن البيانات على الجهاز البعيد",
+          "datastoreSizeOption": "حجم مخزن البيانات (مثال: 95%، 100G)",
+          "description": "تهيئة جهاز بعيد للمستودعات (تثبيت renet، إعداد Docker، مخزن بيانات BTRFS). قابل للتكرار. مطلوب بعد config machine add وقبل repo create",
+          "descriptionShort": "تجهيز جهاز بعيد للمستودعات",
+          "failed": "فشل إعداد الجهاز \"{{machine}}\": {{error}}",
+          "starting": "جارٍ إعداد الجهاز \"{{machine}}\"..."
+        }
       },
-      "pushInfra": {
-        "description": "دفع إعدادات البنية التحتية إلى الجهاز البعيد",
-        "installingProxy": "جاري تثبيت وتشغيل البروكسي...",
-        "proxyInstallWarning": "فشل تثبيت البروكسي (الرمز {{code}}). قم بالتشغيل يدوياً: sudo renet proxy install",
-        "success": "تم دفع إعدادات البنية التحتية إلى \"{{name}}\""
+      "provider": {
+        "add": {
+          "description": "إضافة مزود سحابي",
+          "optionImage": "صورة نظام التشغيل الافتراضية",
+          "optionImageAttr": "مخصص: اسم سمة صورة نظام التشغيل",
+          "optionInstanceType": "نوع/حجم النسخة الافتراضي",
+          "optionIpv4Output": "مخصص: سمة الإخراج لعنوان IPv4",
+          "optionIpv6Output": "مخصص: سمة الإخراج لعنوان IPv6",
+          "optionLabelAttr": "مخصص: اسم سمة تسمية الجهاز الافتراضي",
+          "optionProvider": "مصدر مزوّد معروف (مثال: linode/linode، hetznercloud/hcloud)",
+          "optionRegion": "المنطقة الافتراضية للأجهزة الجديدة",
+          "optionRegionAttr": "مخصص: اسم سمة المنطقة",
+          "optionResource": "مخصص: نوع مورد OpenTofu للأجهزة الافتراضية",
+          "optionSizeAttr": "مخصص: اسم سمة نوع المثيل",
+          "optionSource": "مصدر مزوّد OpenTofu مخصص (مثال: vultr/vultr)",
+          "optionSshKeyAttr": "مخصص: اسم سمة مفاتيح SSH",
+          "optionSshKeyFormat": "مخصص: تنسيق مفتاح SSH (inline_list أو resource_id)",
+          "optionSshKeyResource": "مخصص: نوع مورد OpenTofu لمفاتيح SSH",
+          "optionSshUser": "اسم مستخدم SSH للأجهزة الافتراضية الجديدة (الافتراضي: root)",
+          "optionToken": "رمز API للمزود السحابي",
+          "success": "تمت إضافة مزوّد السحابة \"{{name}}\" ({{provider}})"
+        },
+        "description": "إدارة المزودين السحابيين لتوفير الأجهزة تلقائياً",
+        "list": {
+          "description": "عرض قائمة المزودين السحابيين المُعدّين",
+          "noProviders": "لا توجد مزوّدات سحابة مُعدَّة. أضف بـ: rdc config provider add"
+        },
+        "remove": {
+          "description": "إزالة تكوين مزود سحابي",
+          "success": "تمت إزالة مزوّد السحابة \"{{name}}\""
+        }
       },
-      "removeMachine": {
-        "description": "إزالة آلة من الإعدادات الحالية",
-        "success": "تمت إزالة الآلة \"{{name}}\""
+      "recover": {
+        "confirm": "استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية؟",
+        "description": "استعادة الإعدادات من ملف النسخة الاحتياطية (.bak)",
+        "failed": "فشلت استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية",
+        "noBackup": "لم يتم العثور على نسخة احتياطية للإعدادات \"{{name}}\"",
+        "success": "تمت استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية (الإصدار {{version}})"
       },
-      "removeRepository": {
-        "description": "إزالة تعيين مستودع من الإعدادات الحالية",
-        "success": "تمت إزالة المستودع \"{{name}}\""
-      },
-      "removeStorage": {
-        "description": "إزالة وحدة تخزين من الإعدادات الحالية",
-        "success": "تمت إزالة التخزين \"{{name}}\""
-      },
-      "repositories": {
-        "description": "عرض تعيينات GUID للمستودعات في الإعدادات الحالية",
-        "noRepositories": "لا توجد مستودعات مكونة. أضف واحداً باستخدام: rdc config add-repository <name> --guid <guid>"
-      },
-      "scanKeys": {
-        "completed": "تم فحص {{count}}/{{total}} آلة",
-        "description": "فحص مفاتيح مضيف SSH للآلات في الإعدادات الحالية",
-        "keysScanned": "تم فحص مفاتيح المضيف لـ \"{{name}}\"",
-        "noKeys": "تعذّر فحص مفاتيح المضيف لـ \"{{name}}\""
+      "repository": {
+        "add": {
+          "description": "إضافة ربط GUID للمستودع إلى التكوين الحالي",
+          "networkIdAssigned": "معرّف الشبكة: {{networkId}}",
+          "optionCredential": "بيانات اعتماد المستودع (عبارة مرور التشفير)",
+          "optionGuid": "GUID للمستودع (UUID من أسماء ملفات النسخ الاحتياطي)",
+          "optionNetworkId": "معرّف الشبكة لعزل Docker (2816، 2880، ...). يُعيَّن تلقائيًا إن لم يُحدَّد",
+          "optionTag": "وسم المستودع",
+          "success": "تمت إضافة المستودع \"{{name}}\" ({{guid}}، الوسم: {{tag}})"
+        },
+        "description": "إدارة ربط المستودعات في التكوين الحالي",
+        "list": {
+          "description": "عرض قائمة ربط GUID للمستودعات في التكوين الحالي",
+          "noRepositories": "لا توجد مستودعات مُعدَّة. أضف واحدًا بـ: rdc config repository add <name> --guid <guid>"
+        },
+        "listArchived": {
+          "description": "عرض بيانات اعتماد المستودعات المؤرشفة",
+          "noArchived": "لا توجد مستودعات مؤرشفة"
+        },
+        "purgeArchived": {
+          "description": "حذف جميع بيانات الاعتماد المؤرشفة نهائياً",
+          "noArchived": "لا توجد مستودعات مؤرشفة للحذف",
+          "success": "تم حذف {{count}} من بيانات الاعتماد المؤرشفة"
+        },
+        "remove": {
+          "description": "إزالة ربط مستودع من التكوين الحالي",
+          "success": "تمت إزالة المستودع \"{{name}}\""
+        },
+        "restoreArchived": {
+          "description": "استعادة بيانات اعتماد مستودع مؤرشف",
+          "optionName": "الاستعادة باسم مختلف",
+          "success": "تمت استعادة \"{{name}}\" ({{guid}})"
+        }
       },
       "set": {
         "description": "تعيين قيمة افتراضية (فريق، منطقة، جسر، آلة)",
         "success": "تم تعيين \"{{key}}\" إلى \"{{value}}\""
-      },
-      "setInfra": {
-        "description": "تعيين إعدادات البنية التحتية لآلة",
-        "invalidIPv4": "عنوان IPv4 غير صحيح: {{ip}}",
-        "invalidIPv6": "عنوان IPv6 غير صحيح: {{ip}}",
-        "noOptions": "لم يتم تحديد خيارات. استخدم --public-ipv4 أو --base-domain وغيرها.",
-        "optionBaseDomain": "النطاق الأساسي للتطبيقات",
-        "optionCertEmail": "البريد الإلكتروني لإشعارات شهادات TLS",
-        "optionCfDnsToken": "رمز واجهة برمجة تطبيقات DNS لـ Cloudflare لتحدي ACME DNS-01",
-        "optionPublicIPv4": "عنوان IPv4 العام",
-        "optionPublicIPv6": "عنوان IPv6 العام",
-        "optionTcpPorts": "منافذ TCP لإعادة التوجيه (مفصولة بفواصل، مثلاً 25,143,465)",
-        "optionUdpPorts": "منافذ UDP لإعادة التوجيه (مفصولة بفواصل، مثلاً 53)",
-        "success": "تم تحديث إعدادات البنية التحتية لـ \"{{name}}\""
       },
       "setRenet": {
         "description": "تعيين مسار الملف الثنائي renet للوضع المحلي",
@@ -441,25 +530,72 @@
         "description": "تحديث إعدادات SSH للإعدادات الحالية",
         "success": "تم تحديث إعدادات SSH"
       },
-      "setupMachine": {
-        "completed": "اكتمل إعداد الجهاز '{{machine}}' بنجاح",
-        "datastoreOption": "مسار التخزين على الجهاز البعيد",
-        "datastoreSizeOption": "حجم التخزين (مثلاً 95%، 100G)",
-        "description": "تشغيل الإعداد على جهاز بعيد (يثبت btrfs وDocker وغيرها)",
-        "failed": "فشل إعداد الجهاز '{{machine}}': {{error}}",
-        "starting": "جاري إعداد الجهاز '{{machine}}'..."
-      },
       "show": {
         "description": "عرض تفاصيل الإعدادات الحالية",
         "noConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام: rdc config init"
       },
-      "showInfra": {
-        "description": "عرض إعدادات البنية التحتية لآلة",
-        "noInfra": "لم يتم تعيين إعدادات بنية تحتية لـ \"{{name}}\""
+      "storage": {
+        "description": "إدارة واجهات التخزين في التكوين الحالي",
+        "import": {
+          "description": "استيراد التخزين من ملف تكوين rclone",
+          "imported": "تم استيراد التخزين \"{{name}}\" ({{type}})",
+          "noConfigs": "لم يتم العثور على تكوينات تخزين صالحة في الملف",
+          "notFound": "التخزين \"{{name}}\" غير موجود في ملف الإعدادات",
+          "optionName": "استيراد هذا القسم المسمى فقط",
+          "summary": "تم استيراد {{count}} تخزين(ات)",
+          "unsupported": "تخطي \"{{name}}\": نوع مزوّد غير مدعوم \"{{type}}\""
+        },
+        "list": {
+          "description": "عرض قائمة التخزين في التكوين الحالي",
+          "noStorages": "لا توجد وحدات تخزين مُعدَّة. استورد بـ: rdc config storage import <file>"
+        },
+        "remove": {
+          "description": "إزالة تخزين من التكوين الحالي",
+          "success": "تمت إزالة التخزين \"{{name}}\""
+        }
+      }
+    },
+    "datastore": {
+      "description": "إدارة دورة حياة مخزن بيانات Ceph RBD (تهيئة، تفريع، إلغاء تفريع، حالة)",
+      "descriptionShort": "إدارة دورة حياة مخزن بيانات Ceph RBD (تهيئة، تفريع، إلغاء تفريع، حالة)",
+      "fork": {
+        "completed": "تم تفريع مخزن البيانات بنجاح (لقطة: {{snapshot}})",
+        "cowSizeOption": "حجم ملف COW الداعم (افتراضي: تلقائي، ينمو حسب الطلب)",
+        "description": "إنشاء نسخة COW محلية من مخزن بيانات Ceph عبر لقطة RBD + نسخ (أقل من ثانيتين). احفظ أسماء اللقطة/النسخة من المخرجات لإلغاء التفريع. تفريع واحد فقط لكل اسم هدف؛ قم بإلغاء التفريع قبل إعادة التفريع",
+        "descriptionShort": "إنشاء نسخة CoW محلية من مخزن بيانات Ceph",
+        "failed": "فشل تفريع مخزن البيانات",
+        "starting": "جارٍ تفريع مخزن البيانات على \"{{source}}\" (نسخة مسماة لـ \"{{target}}\")...",
+        "toOption": "لاحقة النسخة (تنشئ نسخة باسم <image>-fork-<name>). يبقى التفريع على الجهاز المصدر"
       },
-      "storages": {
-        "description": "عرض وحدات التخزين في الإعدادات الحالية",
-        "noStorages": "لا توجد وحدات تخزين مكونة. استورد باستخدام: rdc config import-storage <file>"
+      "init": {
+        "backendOption": "نوع الخلفية: local (افتراضي) أو ceph",
+        "clusterOption": "اسم مجموعة Ceph (افتراضي: ceph)",
+        "completed": "تمت تهيئة مخزن البيانات",
+        "description": "تهيئة مخزن البيانات على جهاز (محلي أو Ceph RBD)",
+        "failed": "فشل تهيئة مخزن البيانات",
+        "forceOption": "فرض التهيئة حتى لو كان مخزن البيانات موجوداً بالفعل (تحذير: يعيد تهيئة التخزين)",
+        "imageOption": "اسم صورة Ceph RBD (افتراضي: من إعدادات الجهاز عبر set-ceph)",
+        "imageRequired": "--image مطلوب لخلفية ceph (أو قم بتعيينه عبر: rdc config set-ceph -m <machine> --image <name>)",
+        "poolOption": "اسم مجمع Ceph (افتراضي: من إعدادات الجهاز، أو rbd)",
+        "sizeOption": "حجم مخزن البيانات (مثال: 5G, 50G, 100G)",
+        "starting": "جارٍ تهيئة مخزن البيانات على \"{{machine}}\"..."
+      },
+      "machineOption": "اسم الجهاز (حيث يستضاف مخزن بيانات Ceph)",
+      "status": {
+        "description": "عرض خلفية مخزن البيانات والحجم والاستخدام وحالة التحميل ووضع cow_mode (إذا كان متفرعاً)",
+        "starting": "جارٍ فحص حالة مخزن البيانات على \"{{machine}}\"..."
+      },
+      "unfork": {
+        "completed": "تم تنظيف التفريع بنجاح",
+        "description": "تنظيف تفريع: فك تحميل COW، إزالة النسخة، إزالة اللقطة",
+        "destOption": "صورة النسخة المراد إزالتها (قيمة \"Clone:\" من مخرجات fork، مثال: ds-prod-fork-<machine>)",
+        "failed": "فشل تنظيف التفريع",
+        "forceOption": "متابعة التنظيف حتى لو فشلت خطوات فردية (مثل فك التحميل، إزالة اللقطة)",
+        "mountPointOption": "نقطة تحميل التفريع لفكها (افتراضي: /mnt/rediacc)",
+        "poolOption": "اسم مجمع Ceph (افتراضي: من إعدادات الجهاز)",
+        "snapshotOption": "اللقطة المراد إزالتها (قيمة \"Snapshot:\" من مخرجات fork، مثال: fork-<timestamp>)",
+        "sourceOption": "صورة RBD الأصلية التي تم تفريعها (من config set-ceph --image، مثال: ds-prod)",
+        "starting": "جارٍ تنظيف مخزن البيانات المتفرع على \"{{machine}}\"..."
       }
     },
     "doctor": {
@@ -472,7 +608,7 @@
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
         "machines": "الأجهزة",
-        "nodeVersion": "Node.js",
+        "nodeVersion": "إصدار Node.js",
         "opsPrereqs": "متطلبات OPS",
         "renetBinary": "الملف الثنائي",
         "renetCriu": "CRIU مضمّن",
@@ -482,6 +618,7 @@
         "sshKey": "مفتاح SSH"
       },
       "description": "تشخيص بيئة CLI وتكامل renet",
+      "descriptionShort": "تشخيص بيئة CLI وتكامل renet",
       "devMode": "لا (وضع التطوير)",
       "hasErrors": "{{count}} خطأ (أخطاء)",
       "hasWarnings": "{{count}} تحذير(ات)",
@@ -495,7 +632,7 @@
         "authentication": "المصادقة",
         "configuration": "الإعدادات",
         "environment": "البيئة",
-        "renet": "رينت",
+        "renet": "شبكة Renet",
         "virtualization": "المحاكاة الافتراضية"
       },
       "status": {
@@ -506,9 +643,17 @@
       "title": "أداة تشخيص Rediacc CLI"
     },
     "machine": {
+      "backup": {
+        "description": "إدارة النسخ الاحتياطي للجهاز",
+        "schedule": {
+          "description": "دفع جدول النسخ الاحتياطي إلى جهاز بعيد (مؤقت systemd)",
+          "success": "تم نشر جدول النسخ الاحتياطي إلى {{machine}}"
+        }
+      },
       "containers": {
         "allHealthy": "جميع الحاويات سليمة",
-        "description": "قائمة حاويات Docker على آلة",
+        "description": "عرض الحاويات العاملة على جهاز",
+        "descriptionShort": "عرض قائمة الحاويات على جهاز",
         "fetched": "تم جلب الحاويات",
         "fetching": "جاري جلب الحاويات...",
         "healthCheck": "وضع فحص الصحة - الخروج برمز 2 إذا وُجدت حاويات غير سليمة",
@@ -526,7 +671,19 @@
         "description": "حذف آلة",
         "success": "تم حذف الآلة \"{{name}}\""
       },
-      "description": "إدارة الآلات",
+      "deprovision": {
+        "completed": "تم تدمير الجهاز {{name}} وإزالته من الإعدادات",
+        "confirm": "سيؤدي هذا إلى تدمير الجهاز \"{{name}}\" وجميع بياناته بشكل دائم. هل تريد المتابعة؟",
+        "description": "تدمير جهاز مُوفَّر سحابياً وإزالته من الإعدادات",
+        "destroyFailed": "فشل تدمير البنية التحتية لـ {{name}}: {{error}}. متابعة إزالة الإعدادات (--force).",
+        "destroying": "جاري تدمير {{name}}...",
+        "dnsCleanedUp": "تمت إزالة {{count}} سجل(ات) DNS",
+        "dnsDeleted": "تم حذف سجل DNS: {{type}} {{name}}",
+        "noState": "لم يتم العثور على حالة OpenTofu لـ \"{{name}}\". استخدم 'config remove-machine' للأجهزة المضافة يدوياً.",
+        "optionForce": "تخطي مطالبة التأكيد"
+      },
+      "description": "إدارة الأجهزة البعيدة (الحالة، الحاويات، الخدمات، الصحة)",
+      "descriptionShort": "إدارة الأجهزة البعيدة (الحالة، الحاويات، الخدمات، الصحة)",
       "health": {
         "containersSection": "\nالحاويات:",
         "containersSummary": "  {{running}}/{{total}} قيد التشغيل ({{healthy}} سليم، {{unhealthy}} غير سليم)",
@@ -558,8 +715,66 @@
         "description": "قائمة الآلات",
         "fetching": "جاري جلب الآلات..."
       },
+      "provision": {
+        "completed": "تم توفير الجهاز {{name}} وهو جاهز ({{ip}})",
+        "configuringInfra": "جاري تكوين البنية التحتية (الوكيل + DNS) لـ {{name}}...",
+        "description": "توفير جهاز جديد على مزود سحابي باستخدام OpenTofu",
+        "failed": "فشل توفير الجهاز: {{error}}",
+        "infraInherited": "تم اكتشاف النطاق الأساسي تلقائياً من الجهاز الشقيق \"{{source}}\"",
+        "noInfraHint": "لم يتم تكوين النطاق الأساسي. شغّل 'rdc config infra set <machine> --base-domain <domain>' ثم 'rdc config infra push <machine>' لتفعيل DNS والوكيل.",
+        "optionBaseDomain": "النطاق الأساسي للبنية التحتية (مثال: example.com). يتضمن --infra",
+        "optionImage": "تجاوز صورة نظام التشغيل الافتراضية",
+        "optionInfra": "تكوين البنية التحتية أيضاً (infra set + infra push)",
+        "optionNoInfra": "تخطي تكوين البنية التحتية (الوكيل + DNS)",
+        "optionProvider": "اسم المزود السحابي (من config provider add)",
+        "optionRegion": "تجاوز المنطقة الافتراضية",
+        "optionSshUser": "اسم مستخدم SSH للجهاز الافتراضي الجديد (الافتراضي: root)",
+        "optionType": "تجاوز نوع المثيل الافتراضي",
+        "providerRequired": "المزود السحابي \"{{name}}\" غير موجود. أضفه باستخدام: rdc config provider add",
+        "provisioning": "جاري توفير {{name}} على {{provider}} ({{region}})...",
+        "settingUp": "جاري تشغيل إعداد الجهاز...",
+        "sshReady": "تم إنشاء اتصال SSH",
+        "tofuNotInstalled": "OpenTofu (tofu) غير مثبت. قم بالتثبيت من: https://opentofu.org/docs/intro/install/",
+        "waitingSSH": "في انتظار اتصال SSH..."
+      },
+      "prune": {
+        "checkingActivity": "جارٍ التحقق من نشاط اللقطة...",
+        "completed": "اكتمل التنظيف",
+        "datastoreCompleted": "اكتمل تنظيف مخزن البيانات",
+        "datastoreFailed": "فشل تنظيف مخزن البيانات",
+        "datastoreOnlyOption": "تنظيف موارد مخزن البيانات المعزولة فقط",
+        "description": "إزالة موارد مخزن البيانات المعزولة واللقطات القديمة من جهاز",
+        "descriptionShort": "تنظيف الموارد المعزولة واللقطات القديمة",
+        "dryRunOption": "عرض ما سيتم إزالته دون إجراء تغييرات",
+        "noReposFound": "لم يتم العثور على مستودعات على الجهاز",
+        "noStaleSnapshots": "لم يتم العثور على لقطات قديمة",
+        "orphanedReposCompleted": "تم تنظيف {{count}} مستودعات معزولة",
+        "orphanedReposOption": "تنظيف صور المستودعات غير الموجودة في أي تكوين أيضًا",
+        "orphanedReposStarting": "جارٍ البحث عن المستودعات المعزولة على {{machine}}...",
+        "snapshotDeleted": "تم حذف {{name}}",
+        "snapshotDeleting": "جارٍ حذف {{name}}...",
+        "snapshotInUse": "تخطي {{name}} (قيد الاستخدام النشط)",
+        "snapshotsCompleted": "تنظيف اللقطات: {{deleted}} محذوفة، {{skipped}} تم تخطيها",
+        "snapshotsOnlyOption": "تنظيف اللقطات القديمة فقط",
+        "snapshotStale": "قديمة: {{name}} ({{size}})",
+        "startingDatastore": "جارٍ البحث عن موارد مخزن البيانات المعزولة على {{machine}}...",
+        "startingSnapshots": "جارٍ البحث عن اللقطات القديمة على {{machine}}..."
+      },
+      "query": {
+        "connection": "اتصال",
+        "description": "عرض حالة الجهاز الكاملة (النظام، المستودعات، الحاويات، الخدمات)",
+        "descriptionShort": "عرض حالة الجهاز الكاملة",
+        "fetched": "تم جلب الحالة",
+        "fetching": "جارٍ جلب الحالة من {{machine}}...",
+        "infrastructure": "البنية التحتية",
+        "noData": "لا تتوفر بيانات حالة"
+      },
+      "rename": {
+        "description": "إعادة تسمية جهاز"
+      },
       "repos": {
         "description": "قائمة المستودعات المنتشرة على آلة",
+        "descriptionShort": "عرض قائمة المستودعات المنشورة على جهاز",
         "fetched": "تم جلب الآلة",
         "fetching": "جاري جلب الآلة...",
         "noRepos": "لا توجد مستودعات منتشرة على هذه الآلة"
@@ -567,17 +782,12 @@
       "services": {
         "allStable": "جميع الخدمات مستقرة",
         "description": "قائمة خدمات systemd على آلة",
+        "descriptionShort": "عرض خدمات systemd المُدارة بواسطة rediacc على جهاز",
         "fetched": "تم جلب الخدمات",
         "fetching": "جاري جلب الخدمات...",
         "noServices": "لا توجد خدمات rediacc على هذه الآلة",
         "stabilityCheck": "وضع فحص الاستقرار - الخروج برمز 2 إذا وُجدت خدمات فاشلة/تعيد التشغيل",
         "unstableFound": "تم العثور على {{count}} خدمة غير مستقرة"
-      },
-      "status": {
-        "description": "عرض حالة الجهاز الكاملة (النظام، المستودعات، الحاويات، الخدمات)",
-        "fetched": "تم جلب الحالة",
-        "fetching": "جارٍ جلب الحالة من {{machine}}...",
-        "noData": "لا تتوفر بيانات حالة"
       },
       "testConnection": {
         "authMethod": "  طريقة المصادقة: {{method}}",
@@ -607,6 +817,12 @@
         "success": "تم تحديث الآلة \"{{name}}\"",
         "updating": "جاري تحديث الآلة..."
       },
+      "vault": {
+        "description": "إدارة خزنة الجهاز (محول السحابة فقط)"
+      },
+      "vault-status": {
+        "description": "عرض حالة الخزنة المحللة لجهاز (محول السحابة فقط)"
+      },
       "vaultStatus": {
         "deployedRepos": "\nالمستودعات المنتشرة:",
         "description": "عرض حالة الخزينة المحللة لآلة",
@@ -615,7 +831,7 @@
         "fetching": "جاري جلب الآلة...",
         "header": "\nحالة الخزينة لـ {{name}}:",
         "mounted": "  مثبتة: {{count}}",
-        "repoDocker": "    Docker: {{status}}",
+        "repoDocker": "    حالة Docker: {{status}}",
         "repoMounted": "    مثبتة: {{mounted}}",
         "status": "  الحالة: {{status}}",
         "systemDatastore": "  مخزن البيانات: {{used}} / {{total}} ({{percent}})",
@@ -627,6 +843,22 @@
         "totalRepos": "  إجمالي المستودعات: {{count}}"
       }
     },
+    "mcp": {
+      "description": "خادم MCP للوكلاء الذكية",
+      "descriptionShort": "خادم MCP للوكلاء الذكية",
+      "serve": {
+        "allowGrandOption": "السماح بالعمليات المدمرة على المستودعات الرئيسية (غير fork). الافتراضي: وضع fork فقط",
+        "configOption": "اسم الإعدادات المستخدمة لجميع الأوامر",
+        "description": "تشغيل خادم MCP (نقل stdio)",
+        "timeoutOption": "مهلة الأمر الافتراضية بالميلي ثانية"
+      },
+      "tools": {
+        "repo_fork": {
+          "parentDescription": "اسم المستودع الأصلي (أو اسم:وسم) للتفرع منه",
+          "tagDescription": "وسم للتفرع (ينشئ اسم:وسم، مثل \"staging\")"
+        }
+      }
+    },
     "ops": {
       "check": {
         "allPassed": "جميع المتطلبات الأساسية مستوفاة",
@@ -636,6 +868,7 @@
         "title": "فحص متطلبات OPS"
       },
       "description": "عمليات VM التجريبية (إنشاء، إدارة، حذف)",
+      "descriptionShort": "عمليات VM التجريبية (إنشاء، إدارة، حذف)",
       "down": {
         "completed": "تم تدمير مجموعة VM بنجاح",
         "description": "تدمير مجموعة VM",
@@ -770,7 +1003,7 @@
       "build": {
         "description": "إنشاء عنوان URL {{scheme}}:// من المكونات"
       },
-      "description": "إدارة تسجيل معالج البروتوكول {{scheme}}:// والتعامل مع عناوين URL",
+      "description": "تسجيل ومعالجة عناوين URL لبروتوكول {{scheme}}://",
       "open": {
         "action": "الإجراء:",
         "cliCommand": "\nأمر سطر الأوامر المكافئ:",
@@ -869,27 +1102,21 @@
         "description": "إدارة التشغيل التلقائي للمستودعات عند الإقلاع",
         "disable": {
           "completed": "تم تعطيل التشغيل التلقائي",
+          "completedAll": "تم تعطيل التشغيل التلقائي لجميع المستودعات",
           "description": "تعطيل التشغيل التلقائي لمستودع",
           "failed": "فشل تعطيل التشغيل التلقائي",
-          "starting": "جارٍ تعطيل التشغيل التلقائي لـ \"{{repository}}\" على \"{{machine}}\"..."
-        },
-        "disableAll": {
-          "completed": "تم تعطيل التشغيل التلقائي لجميع المستودعات",
-          "description": "تعطيل التشغيل التلقائي لجميع المستودعات",
-          "failed": "فشل تعطيل التشغيل التلقائي لجميع المستودعات",
-          "starting": "جارٍ تعطيل التشغيل التلقائي لجميع المستودعات على \"{{machine}}\"..."
+          "failedAll": "فشل تعطيل التشغيل التلقائي لجميع المستودعات",
+          "starting": "جارٍ تعطيل التشغيل التلقائي لـ \"{{repository}}\" على \"{{machine}}\"...",
+          "startingAll": "جارٍ تعطيل التشغيل التلقائي لجميع المستودعات على \"{{machine}}\"..."
         },
         "enable": {
           "completed": "تم تمكين التشغيل التلقائي",
+          "completedAll": "تم تمكين التشغيل التلقائي لجميع المستودعات",
           "description": "تمكين التشغيل التلقائي لمستودع",
           "failed": "فشل تمكين التشغيل التلقائي",
-          "starting": "جارٍ تمكين التشغيل التلقائي لـ \"{{repository}}\" على \"{{machine}}\"..."
-        },
-        "enableAll": {
-          "completed": "تم تمكين التشغيل التلقائي لجميع المستودعات",
-          "description": "تمكين التشغيل التلقائي لجميع المستودعات",
-          "failed": "فشل تمكين التشغيل التلقائي لجميع المستودعات",
-          "starting": "جارٍ تمكين التشغيل التلقائي لجميع المستودعات على \"{{machine}}\"..."
+          "failedAll": "فشل تمكين التشغيل التلقائي لجميع المستودعات",
+          "starting": "جارٍ تمكين التشغيل التلقائي لـ \"{{repository}}\" على \"{{machine}}\"...",
+          "startingAll": "جارٍ تفعيل التشغيل التلقائي لجميع المستودعات على \"{{machine}}\"..."
         },
         "list": {
           "completed": "تم استرداد قائمة التشغيل التلقائي",
@@ -898,27 +1125,53 @@
           "starting": "جارٍ سرد مستودعات التشغيل التلقائي على \"{{machine}}\"..."
         }
       },
+      "backup": {
+        "description": "إدارة النسخ الاحتياطي للمستودعات",
+        "list": {
+          "description": "عرض قائمة النسخ الاحتياطية المتاحة على جهاز بعيد (جهاز أو تخزين)",
+          "listing": "جارٍ سرد النسخ الاحتياطية...",
+          "optionFrom": "اسم الجهاز أو التخزين المصدر (يتم الكشف تلقائياً من الإعدادات)",
+          "sourceRequired": "حدد --from <remote> (اسم جهاز أو تخزين من الإعدادات)"
+        }
+      },
+      "batchConfirm": "{{action}} جميع المستودعات {{count}} على \"{{machine}}\"؟ [y/N]",
+      "batchFailed": "فشل {{action}} للمستودع \"{{repo}}\": {{error}}",
+      "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
+      "batchResult": "اكتمل {{action}}: {{succeeded}}/{{total}} نجح",
+      "batchStarting": "{{action}}: «{{repo}}»...",
       "create": {
         "alreadyExists": "المستودع \"{{name}}\" موجود بالفعل في السياق",
         "completed": "تم إنشاء المستودع",
         "description": "إنشاء مستودع مشفر جديد",
         "failed": "فشل إنشاء المستودع",
+        "noDockerOption": "تخطي تشغيل Docker daemon بعد الإنشاء",
         "registered": "تم تسجيل \"{{repository}}\" ({{guid}}، شبكة {{networkId}})",
         "rollback": "تم التراجع عن تكوين \"{{repository}}\"",
         "sizeOption": "حجم المستودع (مثلاً 10G، 100G، 1T)",
         "starting": "جارٍ إنشاء المستودع \"{{repository}}\" ({{size}}) على \"{{machine}}\"..."
       },
       "delete": {
+        "archived": "تم أرشفة بيانات اعتماد \"{{repository}}\"",
+        "archiveHint": "لأرشفة بيانات الاعتماد للاسترداد: أعد التشغيل باستخدام --archive-config",
+        "archiveOption": "نقل إدخال الإعدادات إلى deletedRepositories للاستعادة لاحقاً",
         "completed": "تم حذف المستودع",
-        "description": "حذف مستودع",
+        "configRetained": "تم الاحتفاظ بإعداد \"{{repository}}\" (قد يكون المستودع موجودًا على أجهزة أخرى). للإزالة: rdc config repository remove {{repository}}",
+        "description": "حذف مستودع (يدمّر الحاويات والأقراص والصورة المشفّرة). يتم الاحتفاظ بإدخال الإعدادات. استخدم --archive-config لنقل بيانات الاعتماد إلى deletedRepositories للاستعادة عبر 'config restore-archived'",
+        "descriptionShort": "حذف مستودع من جهاز",
         "failed": "فشل حذف المستودع",
-        "removed": "تمت إزالة \"{{repository}}\" من التكوين",
+        "restoreHint": "للاستعادة: rdc config restore-archived {{guid}}",
         "starting": "جارٍ حذف \"{{repository}}\" على \"{{machine}}\"..."
       },
-      "description": "إدارة دورة حياة المستودعات (الوضع المحلي)",
+      "description": "نشر وإدارة المستودعات المشفرة على الأجهزة",
+      "descriptionShort": "نشر وإدارة المستودعات المشفرة على الأجهزة",
       "down": {
+        "allCompleted": "تم إيقاف جميع المستودعات",
+        "allFailed": "فشلت عملية إيقاف الكل",
+        "allStarting": "جارٍ إيقاف جميع المستودعات على \"{{machine}}\"...",
+        "checkpointOption": "إنشاء نقطة تفتيش CRIU قبل الإيقاف (حفظ حالة ذاكرة العمليات للاستعادة لاحقًا عبر 'repo up')",
         "completed": "تم إيقاف الخدمات",
         "description": "إيقاف خدمات المستودع",
+        "descriptionShort": "إيقاف حاويات Docker للمستودع",
         "failed": "فشل إيقاف الخدمات",
         "grandOption": "اسم المستودع الرئيسي (يُحلّ تلقائيًا إلى GUID)",
         "starting": "جارٍ إيقاف الخدمات لـ \"{{repository}}\" على \"{{machine}}\"...",
@@ -927,19 +1180,24 @@
       "expand": {
         "completed": "اكتمل التوسيع",
         "description": "توسيع مستودع مُركّب أثناء التشغيل (بدون توقف)",
+        "descriptionShort": "توسيع مستودع مركّب أثناء التشغيل (بدون توقف، توسيع فقط)",
         "failed": "فشل التوسيع",
         "sizeOption": "حجم المستودع الجديد (مثلاً 10G، 100G، 1T)",
         "starting": "جارٍ توسيع \"{{repository}}\" إلى {{size}} على \"{{machine}}\"..."
       },
       "fork": {
         "alreadyExists": "المستودع \"{{name}}\" موجود بالفعل في السياق",
-        "completed": "تم إنشاء النسخة",
+        "checkpointOption": "إنشاء نقطة تفتيش CRIU على المصدر قبل التفريع (التقاط حالة ذاكرة العمليات للاستعادة عند fork)",
+        "completed": "تم إنشاء النسخة. للنشر محلياً: repo up {{repository}} -m {{machine}} --mount. لترحيل النسخة إلى جهاز آخر: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "إنشاء نسخة CoW (نسخ عند الكتابة) من مستودع",
+        "descriptionShort": "إنشاء نسخة CoW من مستودع (GUID جديد، networkId، نطاق IP)",
         "failed": "فشل إنشاء النسخة",
         "registered": "تم تسجيل النسخة \"{{repository}}\" ({{guid}}، شبكة {{networkId}})",
         "rollback": "تم التراجع عن تكوين \"{{repository}}\"",
         "starting": "جارٍ إنشاء نسخة من \"{{parent}}\" باسم \"{{repository}}\" على \"{{machine}}\"...",
-        "tagOption": "اسم النسخة"
+        "tagOption": "وسم النسخة (ينشئ اسم:وسم)",
+        "tagRequired": "الوسم مطلوب للنسخة. الاستخدام: rdc repo fork <parent> <tag> -m <machine>",
+        "upOption": "تركيب وبدء الخدمات بعد التفريع (fork + mount + up في أمر واحد)"
       },
       "list": {
         "completed": "اكتمل العرض",
@@ -952,23 +1210,73 @@
         "checkpointOption": "الاستعادة من نقطة تفتيش بعد التثبيت",
         "completed": "اكتمل التثبيت",
         "description": "تثبيت مستودع (فتح حاوية LUKS)",
+        "descriptionShort": "تركيب مستودع (فك التشفير وفتح حاوية LUKS)",
         "failed": "فشل التثبيت",
+        "noDockerOption": "تخطي تشغيل Docker daemon بعد التثبيت",
         "starting": "جارٍ تثبيت \"{{repository}}\" على \"{{machine}}\"..."
       },
       "noCredential": "تحذير: المستودع \"{{name}}\" لا يحتوي على بيانات اعتماد. قد تفشل العمليات على المستودعات المشفّرة.",
       "ownership": {
         "completed": "تم تحديث الملكية",
         "description": "تغيير ملكية مجلد المستودع",
+        "descriptionShort": "تغيير UID مالك دليل المستودع",
         "failed": "فشل تحديث الملكية",
         "starting": "جارٍ تعيين ملكية \"{{repository}}\" على \"{{machine}}\"...",
         "uidOption": "معرّف المالك UID (افتراضي: 7111)"
       },
+      "pull": {
+        "deployed": "تم نشر المستودع \"{{repo}}\" على {{machine}}",
+        "deployFailed": "فشل نشر \"{{repo}}\" بعد السحب",
+        "deploying": "جارٍ نشر \"{{repo}}\" على {{machine}}...",
+        "description": "سحب مستودع من جهاز بعيد (جهاز أو تخزين). احذف الاسم لسحب جميع المستودعات. يتم الكشف عن نوع المصدر تلقائياً من الإعدادات. استخدم --up للنشر بعد السحب",
+        "descriptionShort": "سحب مستودع من جهاز بعيد (جهاز أو تخزين)",
+        "optionForce": "فرض الكتابة فوق المستودع الموجود",
+        "optionFrom": "اسم الجهاز أو التخزين المصدر (يتم الكشف تلقائياً من الإعدادات)",
+        "optionUp": "بعد السحب، قم بتركيب ونشر المستودع على هذا الجهاز",
+        "pulling": "جارٍ سحب نسخة احتياطية لـ \"{{repo}}\"...",
+        "sourceRequired": "حدد --from <remote> (اسم جهاز أو تخزين من الإعدادات)"
+      },
+      "push": {
+        "deployed": "تم نشر المستودع \"{{repo}}\" على {{machine}}",
+        "deployFailed": "فشل نشر \"{{repo}}\" بعد الدفع",
+        "deploying": "جارٍ نشر \"{{repo}}\" على {{machine}}...",
+        "description": "دفع مستودع إلى جهاز بعيد (جهاز أو تخزين). احذف الاسم لدفع جميع المستودعات. يتم الكشف عن نوع الهدف تلقائياً من الإعدادات. للنقل بين الأجهزة، يتم نسخ صورة المستودع المشفرة بنفس GUID — هذا نسخ احتياطي/ترحيل، وليس fork. لإنشاء fork مستقل، استخدم 'repo fork' أولاً، ثم ادفع. استخدم --up للنشر بعد الدفع",
+        "descriptionShort": "دفع مستودع إلى جهاز بعيد (جهاز أو تخزين)",
+        "destRequired": "حدد --to <remote> (اسم جهاز أو تخزين من الإعدادات)",
+        "optionCheckpoint": "إنشاء نقطة فحص CRIU قبل النسخ الاحتياطي (التقاط حالة ذاكرة العمليات للترحيل المباشر)",
+        "optionForce": "فرض الكتابة فوق النسخة الاحتياطية الموجودة",
+        "optionProvision": "تزويد الجهاز الهدف تلقائياً عبر مزود السحابة إذا لم يكن موجوداً",
+        "optionTag": "علامة النشر للإصدارات",
+        "optionTo": "اسم الجهاز أو التخزين الوجهة (يتم الكشف تلقائياً من الإعدادات)",
+        "optionUp": "بعد الدفع، قم بتركيب ونشر المستودع على الجهاز الهدف",
+        "pushing": "جارٍ دفع نسخة احتياطية لـ \"{{repo}}\" إلى {{dest}}..."
+      },
       "resize": {
         "completed": "اكتمل تغيير الحجم",
         "description": "تغيير حجم مستودع دون اتصال (يدعم التوسيع والتقليص)",
+        "descriptionShort": "تغيير حجم مستودع غير مركّب (توسيع أو تقليص)",
         "failed": "فشل تغيير الحجم",
         "sizeOption": "حجم المستودع الجديد (مثلاً 10G، 100G، 1T)",
         "starting": "جارٍ تغيير حجم \"{{repository}}\" إلى {{size}} على \"{{machine}}\"..."
+      },
+      "snapshot": {
+        "create": {
+          "creating": "جارٍ إنشاء لقطة لـ \"{{repo}}\" على {{machine}}...",
+          "description": "إنشاء لقطة BTRFS لمستودع",
+          "descriptionShort": "إنشاء لقطة BTRFS لمستودع",
+          "optionSnapshotName": "اسم اللقطة صريح (يُولّد تلقائياً إذا ترك فارغاً)",
+          "success": "تم إنشاء اللقطة: {{name}} ({{path}})"
+        },
+        "delete": {
+          "description": "حذف لقطة من جهاز بعيد",
+          "success": "تم حذف اللقطة: {{name}}"
+        },
+        "description": "إدارة لقطات BTRFS على الأجهزة البعيدة",
+        "list": {
+          "description": "سرد اللقطات على جهاز بعيد",
+          "header": "{{count}} لقطة في {{path}}:",
+          "noSnapshots": "لم يتم العثور على لقطات."
+        }
       },
       "status": {
         "completed": "تم جلب الحالة",
@@ -976,9 +1284,51 @@
         "failed": "فشل التحقق من الحالة",
         "starting": "جارٍ جلب حالة \"{{repository}}\" على \"{{machine}}\"..."
       },
+      "sync": {
+        "description": "مزامنة المستودعات والملفات (دفع/سحب جماعي، نقل ملفات)",
+        "download": {
+          "description": "تنزيل الملفات من مستودع",
+          "descriptionShort": "تنزيل ملفات من مستودع عبر rsync"
+        },
+        "pull": {
+          "description": "سحب المستودعات من التخزين السحابي (احذف الاسم لسحب الكل)",
+          "optionFrom": "اسم التخزين المصدر",
+          "optionOverride": "الكتابة فوق المستودعات غير المركّبة الموجودة عند السحب",
+          "optionRepo": "تصفية لمستودع محدد (قابل للتكرار)",
+          "success": "اكتمل سحب المزامنة"
+        },
+        "push": {
+          "description": "دفع المستودعات إلى التخزين السحابي (احذف الاسم لدفع الكل)",
+          "optionRepo": "تصفية لمستودع محدد (قابل للتكرار)",
+          "optionTo": "اسم التخزين الوجهة",
+          "success": "اكتمل دفع المزامنة"
+        },
+        "status": {
+          "description": "التحقق من حالة المزامنة ومقارنة الملفات المحلية/البعيدة",
+          "descriptionShort": "مقارنة الملفات المحلية والبعيدة (تشغيل تجريبي)"
+        },
+        "upload": {
+          "description": "رفع الملفات إلى مستودع",
+          "descriptionShort": "رفع ملفات إلى مستودع عبر rsync"
+        }
+      },
+      "takeover": {
+        "backupInfo": "تم حفظ بيانات الإنتاج القديمة كـ: {{backup}}",
+        "completed": "اكتمل الاستحواذ. المستودع الأصلي يحتوي الآن على بيانات النسخة المتفرعة.",
+        "description": "استبدال بيانات المستودع الأصلي ببيانات النسخة المتفرعة. يحتفظ الأصلي بهويته (GUID، networkId، النطاقات، التشغيل التلقائي، سلسلة النسخ الاحتياطي) لكنه يحصل على البيانات المحدّثة من النسخة المتفرعة. يتم حفظ البيانات القديمة للإنتاج كنسخة احتياطية متفرعة. للاستخدام: اختبر الترقية على النسخة المتفرعة → تحقق → استحوذ على بيانات الإنتاج.",
+        "descriptionShort": "استبدال بيانات الإنتاج ببيانات النسخة المتفرعة",
+        "failed": "فشل الاستحواذ",
+        "forceOption": "تخطي تحذيرات التعديل",
+        "grandNotFound": "لم يتم العثور على المستودع الأصلي للنسخة المتفرعة \"{{name}}\"",
+        "notAFork": "\"{{name}}\" ليس مستودعاً متفرعاً (parentGuid مفقود)",
+        "revertHint": "للتراجع: rdc repo takeover {{backup}} -m {{machine}}",
+        "rollback": "تم التراجع عن تكوين \"{{name}}\"",
+        "starting": "جارٍ الاستحواذ على \"{{grand}}\" بالبيانات من \"{{fork}}\" على \"{{machine}}\"..."
+      },
       "template": {
         "completed": "تم تطبيق القالب",
         "description": "تطبيق قالب على مستودع",
+        "descriptionShort": "تطبيق قالب على مستودع (docker-compose.yml + Rediaccfile)",
         "failed": "فشل تطبيق القالب",
         "fileNotFound": "ملف القالب غير موجود: {{path}}",
         "fileOption": "مسار ملف قالب JSON",
@@ -989,22 +1339,26 @@
         "checkpointOption": "إنشاء نقطة تفتيش قبل إلغاء التثبيت",
         "completed": "اكتمل إلغاء التثبيت",
         "description": "إلغاء تثبيت مستودع",
+        "descriptionShort": "إلغاء تركيب مستودع (إغلاق حاوية LUKS)",
         "failed": "فشل إلغاء التثبيت",
         "starting": "جارٍ إلغاء تثبيت \"{{repository}}\" على \"{{machine}}\"..."
       },
       "up": {
+        "checkpointOption": "استعادة نقطة CRIU عند البدء (استئناف العمليات من حالة الذاكرة المحفوظة)",
         "completed": "تم بدء الخدمات",
-        "description": "بدء خدمات المستودع (تنسيق Rediaccfile)",
+        "description": "نشر أو تحديث مستودع (تحميل، بدء الخدمات)",
+        "descriptionShort": "نشر أو تحديث مستودع على جهاز",
         "failed": "فشل بدء الخدمات",
         "grandOption": "اسم المستودع الرئيسي (يُحلّ تلقائيًا إلى GUID)",
         "mountOption": "تثبيت المستودع أولاً",
-        "prepOnlyOption": "تشغيل خطوة التحضير فقط",
-        "starting": "جارٍ بدء الخدمات لـ \"{{repository}}\" على \"{{machine}}\"..."
+        "skipCheckpointOption": "تخطي استعادة نقطة تفتيش CRIU حتى لو كانت بيانات checkpoint موجودة (فرض بدء جديد)",
+        "starting": "جارٍ بدء الخدمات لـ \"{{repository}}\" على \"{{machine}}\"...",
+        "tlsOption": "طلب شهادة TLS مخصصة لهذا المستودع (النسخ المتفرعة تستخدم شهادة الجهاز المشتركة افتراضيًا)"
       },
       "upAll": {
         "completed": "تم بدء جميع المستودعات",
         "concurrencyOption": "الحد الأقصى للمستودعات المتزامنة (افتراضي: 3)",
-        "description": "بدء جميع خدمات المستودعات على الجهاز",
+        "description": "نشر جميع المستودعات على جهاز",
         "dryRunOption": "عرض ما سيتم تنفيذه بدون تنفيذ فعلي",
         "failed": "فشلت عملية بدء الكل",
         "includeForksOption": "تشغيل/بدء المستودعات المتشعبة أيضًا",
@@ -1015,24 +1369,26 @@
       "validate": {
         "completed": "اكتمل التحقق",
         "description": "التحقق من سلامة المستودع",
+        "descriptionShort": "التحقق من سلامة المستودع",
         "failed": "فشل التحقق",
         "starting": "جارٍ التحقق من \"{{repository}}\" على \"{{machine}}\"..."
-      }
+      },
+      "yesOption": "تخطي التأكيد للعمليات الجماعية"
     },
     "repository": {
       "create": {
-        "creating": "جاري إنشاء المستودع \"{{name}}:{{tag}}\"...",
+        "creating": "جاري إنشاء المستودع \"{{name}}\"...",
         "description": "إنشاء مستودع جديد",
-        "success": "تم إنشاء المستودع \"{{name}}:{{tag}}\""
+        "success": "تم إنشاء المستودع \"{{name}}\""
       },
       "delete": {
         "checkingRelationships": "جاري التحقق من العلاقات...",
-        "confirm": "حذف المستودع \"{{name}}:{{tag}}\"؟ لا يمكن التراجع عن ذلك.",
-        "deleting": "جاري حذف المستودع \"{{name}}:{{tag}}\"...",
+        "confirm": "حذف المستودع \"{{name}}\"؟ لا يمكن التراجع عن ذلك.",
+        "deleting": "جاري حذف المستودع \"{{name}}\"...",
         "description": "حذف مستودع",
         "grandRepoWarning": "هذا مستودع رئيسي (بيانات اعتماد). حذفه غير قابل للعكس.",
         "relationshipsChecked": "تم التحقق من العلاقات",
-        "success": "تم حذف المستودع \"{{name}}:{{tag}}\""
+        "success": "تم حذف المستودع \"{{name}}\""
       },
       "description": "أوامر إدارة المستودع",
       "list": {
@@ -1044,11 +1400,11 @@
         "checkingRelationships": "جاري التحقق من العلاقات...",
         "confirmPromote": "\nهل تريد المتابعة بالترقية؟",
         "description": "ترقية فرع إلى حالة رئيسية",
-        "promoting": "جاري ترقية المستودع \"{{name}}:{{tag}}\"...",
+        "promoting": "جاري ترقية المستودع \"{{name}}\"...",
         "relationshipsChecked": "تم التحقق من العلاقات",
         "separateInfo": "\nسيؤدي هذا إلى فصل \"{{name}}\" عن المستودع الرئيسي \"{{grandName}}\"",
         "siblingsInfo": "\n{{count}} نسخة أخت ستبقى مرتبطة بالمستودع الأصلي:",
-        "success": "تمت ترقية المستودع \"{{name}}:{{tag}}\" إلى حالة رئيسية"
+        "success": "تمت ترقية المستودع \"{{name}}\" إلى حالة رئيسية"
       },
       "rename": {
         "description": "إعادة تسمية مستودع",
@@ -1078,10 +1434,11 @@
         "description": "إعادة محاولة مهمة فاشلة (اختصار لـ: queue retry)"
       },
       "run": {
-        "completedLocal": "[محلي] تم الإكمال في {{duration}}ms",
+        "completedLocal": "تم الإكمال في {{duration}}ms",
         "description": "تنفيذ دالة (اختصار لـ: queue create)",
-        "executingLocal": "[محلي] جاري تنفيذ '{{function}}' على {{machine}}...",
-        "failedLocal": "[محلي] فشل: {{error}}",
+        "descriptionShort": "تشغيل دالة جسر خام على جهاز (للتصحيح فقط)",
+        "executingLocal": "جاري تنفيذ '{{function}}' على {{machine}}...",
+        "failedLocal": "فشل: {{error}}",
         "watching": "جاري الانتظار للإكمال..."
       },
       "trace": {
@@ -1089,22 +1446,7 @@
       }
     },
     "snapshot": {
-      "create": {
-        "creating": "جارٍ إنشاء لقطة لـ \"{{repo}}\" على {{machine}}...",
-        "description": "إنشاء لقطة BTRFS لمستودع",
-        "optionSnapshotName": "اسم اللقطة صريح (يُولّد تلقائياً إذا ترك فارغاً)",
-        "success": "تم إنشاء اللقطة: {{name}} ({{path}})"
-      },
-      "delete": {
-        "description": "حذف لقطة من جهاز بعيد",
-        "success": "تم حذف اللقطة: {{name}}"
-      },
-      "description": "إدارة لقطات BTRFS على الأجهزة البعيدة",
-      "list": {
-        "description": "سرد اللقطات على جهاز بعيد",
-        "header": "{{count}} لقطة في {{path}}:",
-        "noSnapshots": "لم يتم العثور على لقطات."
-      }
+      "description": "إدارة لقطات BTRFS على الأجهزة البعيدة"
     },
     "storage": {
       "browse": {
@@ -1114,10 +1456,26 @@
         "noFiles": "لم يتم العثور على ملفات",
         "pathOption": "مسار الدليل الفرعي للعرض"
       },
-      "description": "إدارة التخزين",
+      "create": {
+        "description": "إنشاء مزود تخزين جديد"
+      },
+      "delete": {
+        "description": "حذف مزود تخزين"
+      },
+      "description": "إدارة مزودي التخزين وتصفح الملفات البعيدة",
+      "descriptionShort": "إدارة مزودي التخزين وتصفح الملفات البعيدة",
       "list": {
         "description": "قائمة موفري التخزين",
         "fetching": "جاري جلب موفري التخزين..."
+      },
+      "prune": {
+        "completed": "تم تنظيف {{count}} نسخة احتياطية معزولة",
+        "description": "حذف النسخ الاحتياطية المعزولة من التخزين غير الموجودة في أي تكوين. آمن مع التكوينات المتعددة مع حماية فترة السماح.",
+        "descriptionShort": "حذف النسخ الاحتياطية المعزولة من التخزين",
+        "found": "تم العثور على {{count}} نسخة احتياطية في التخزين",
+        "listFailed": "فشل عرض النسخ الاحتياطية في التخزين",
+        "listing": "جارٍ عرض النسخ الاحتياطية في \"{{storage}}\"...",
+        "noBackups": "لم يتم العثور على نسخ احتياطية في التخزين"
       },
       "pull": {
         "completed": "اكتمل السحب في {{duration}} مللي ثانية",
@@ -1127,6 +1485,12 @@
         "noCredential": "تحذير: المستودع \"{{name}}\" لا يحتوي على بيانات اعتماد. قد يفشل السحب إذا كانت النسخة الاحتياطية مشفّرة.",
         "repositoryOption": "اسم المستودع المراد سحبه",
         "starting": "جارٍ سحب \"{{repository}}\" من \"{{storage}}\" إلى \"{{machine}}\"..."
+      },
+      "rename": {
+        "description": "إعادة تسمية مزود تخزين"
+      },
+      "vault": {
+        "description": "إدارة خزنة التخزين (محول السحابة فقط)"
       }
     },
     "store": {
@@ -1164,6 +1528,7 @@
         "vaultTokenRequired": "رمز Vault مطلوب (مرر --vault-token أو عيّن متغير البيئة VAULT_TOKEN)"
       },
       "description": "إدارة متاجر مزامنة الإعدادات (S3، ملف محلي، Bitwarden، Git، Vault)",
+      "descriptionShort": "إدارة متاجر مزامنة الإعدادات (S3، ملف محلي، Bitwarden، Git، Vault)",
       "list": {
         "description": "عرض المتاجر المكونة",
         "noStores": "لا توجد متاجر مكونة. أضف واحداً باستخدام: rdc store add <name> --type <type>"
@@ -1198,12 +1563,116 @@
         "pushed": "تم الدفع إلى المتجر \"{{store}}\""
       }
     },
+    "subscription": {
+      "activation": {
+        "description": "إدارة تفعيل الجهاز",
+        "status": {
+          "activations": "  التفعيلات: {{active}}/{{max}}",
+          "active": "  التفعيل: نشط (آخر ظهور {{lastSeenAt}})",
+          "description": "عرض حالة تفعيل جهاز واحد",
+          "header": "\nتفعيل الجهاز ({{machineName}})",
+          "inactive": "  التفعيل: الجهاز غير نشط حاليًا في حالة الحساب",
+          "machineId": "  معرّف الجهاز: {{machineId}}",
+          "unavailable": "  التفعيل: تعذّر الاستعلام عن حالة الحساب"
+        }
+      },
+      "description": "إدارة تراخيص الجهاز والاشتراك",
+      "descriptionShort": "إدارة تراخيص الجهاز والاشتراك",
+      "login": {
+        "browserFailed": "تعذر فتح المتصفح تلقائياً. يرجى زيارة الرابط أعلاه.",
+        "description": "المصادقة باستخدام رمز API من بوابة الويب",
+        "expired": "انتهت مهلة التفويض. يرجى المحاولة مرة أخرى.",
+        "initFailed": "فشل بدء تسجيل الدخول. هل الخادم يعمل؟",
+        "machines": "الأجهزة: {{active}}/{{max}}",
+        "openBrowser": "قم بزيارة هذا الرابط للتفويض:",
+        "plan": "الخطة: {{plan}}",
+        "polling": "في انتظار الموافقة (اضغط Ctrl+C للإلغاء)...",
+        "success": "تم تسجيل الدخول بنجاح",
+        "tokenInvalid": "يجب أن يبدأ الرمز بـ rdt_",
+        "tokenPrompt": "أدخل رمز API الخاص بك (من بوابة الويب):",
+        "validated": "تم التحقق من الرمز",
+        "validating": "جارٍ التحقق من الرمز...",
+        "waitingApproval": "في انتظار التفويض من المتصفح..."
+      },
+      "logout": {
+        "description": "مسح رمز الاشتراك المحفوظ",
+        "success": "تم إزالة رمز الاشتراك"
+      },
+      "refresh": {
+        "activation": {
+          "description": "تحديث تفعيل الجهاز على جهاز بعيد"
+        },
+        "description": "تحديث ترخيص الجهاز",
+        "failed": "فشل إصدار ترخيص الجهاز",
+        "refreshed": "تم تحديث الترخيص",
+        "refreshing": "جارٍ تحديث الترخيص...",
+        "repo": {
+          "description": "تحديث ترخيص المستودع لمستودع محدد",
+          "failed": "فشل تحديث ترخيص المستودع",
+          "notFound": "المستودع غير موجود: {{repoName}}",
+          "refreshed": "تم تحديث ترخيص المستودع",
+          "refreshing": "جارٍ تجديد ترخيص المستودع...",
+          "repoArgument": "اسم المستودع",
+          "success": "تم تجديد ترخيص المستودع لـ \"{{repoName}}\""
+        },
+        "repos": {
+          "description": "تحديث تراخيص المستودعات دفعة واحدة على جهاز بعيد",
+          "refreshed": "تم تحديث تراخيص المستودعات",
+          "refreshing": "جارٍ تجديد تراخيص المستودعات...",
+          "success": "اكتمل تحديث تراخيص المستودعات دفعة واحدة"
+        },
+        "success": "تم تحديث وتثبيت الترخيص"
+      },
+      "repo": {
+        "description": "إدارة تراخيص المستودعات",
+        "status": {
+          "description": "عرض تراخيص المستودعات المثبتة على جهاز",
+          "empty": "  لا توجد تراخيص مستودعات مثبتة",
+          "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+          "freshness": {
+            "hardExpired": "انتهت الصلاحية نهائيًا",
+            "refreshRecommended": "يُوصى بالتجديد",
+            "unknown": "غير معروف",
+            "valid": "صالح"
+          },
+          "hardExpirySuffix": " (انتهاء صلاحية نهائي: {{effectiveHardExpiry}})",
+          "header": "\nتراخيص المستودعات: ({{machineName}})"
+        }
+      },
+      "status": {
+        "description": "عرض حالة الاشتراك والترخيص",
+        "expired": "  انتهت صلاحية الترخيص — شغّل `rdc subscription refresh`",
+        "expires": "  الانتهاء:  {{expiresAt}}",
+        "issuanceLimitReached": "تم بلوغ الحد الشهري لإصدار تراخيص المستودعات للشهر التقويمي الحالي وفق UTC.",
+        "issuanceUsageHigh80": "تجاوزت إصدارات تراخيص المستودعات الشهرية 80٪ من الحد الحالي وفق UTC.",
+        "issuanceUsageHigh95": "تجاوزت إصدارات تراخيص المستودعات الشهرية 95٪ من الحد الحالي وفق UTC.",
+        "issued": "  الإصدار:   {{issuedAt}}",
+        "localLicense": "الترخيص المحلي:",
+        "machine": "  الجهاز:   {{machineId}}",
+        "noLicense": "لا يوجد ترخيص محلي مثبت.",
+        "parseFailed": "  تعذر تحليل ملف الترخيص",
+        "plan": "  الخطة:    {{plan}}",
+        "remote": "\nالاشتراك البعيد:",
+        "remoteMachine": "    - {{id}}... (آخر ظهور: {{lastSeen}})",
+        "remoteMachineActivations": "  تفعيلات الأجهزة: {{active}}/{{max}}",
+        "remoteMachines": "  الأجهزة: {{active}}/{{max}}",
+        "remotePlan": "  الخطة:    {{plan}}",
+        "remoteRepoLicenseIssuances": "  طلبات الترخيص العائم: {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  تراخيص المستودعات: {{totalTrackedRepos}} متتبعة، {{validCount}} صالحة، {{refreshRecommendedCount}} تحتاج تحديثًا، {{hardExpiredCount}} منتهية بالكامل",
+        "remoteStatus": "  الحالة:   {{status}}",
+        "sequence": "  التسلسل:  {{sequenceNumber}}",
+        "serverMismatch": "رمز المطور يتبع {{actualServerUrl}}، لكن شجرة العمل هذه تستخدم {{expectedServerUrl}}. شغّل `rdc subscription login` مرة أخرى.",
+        "statusLabel": "  الحالة:   {{status}}",
+        "valid": "  صالح (ينتهي خلال {{mins}} دقيقة)"
+      }
+    },
     "sync": {
       "cancelled": "تم إلغاء المزامنة.",
-      "description": "مزامنة الملفات مع المستودعات باستخدام rsync",
+      "description": "نقل الملفات بين المستودعات المحلية والبعيدة عبر rsync",
       "download": {
         "completed": "تم إكمال التنزيل: تم نقل {{count}} ملف",
         "description": "تنزيل الملفات من مستودع",
+        "descriptionShort": "تنزيل ملفات من مستودع عبر rsync",
         "failed": "فشل التنزيل",
         "progress": "جاري التنزيل: {{percentage}}% - {{file}} ({{speed}})",
         "starting": "جاري بدء التنزيل..."
@@ -1215,12 +1684,14 @@
       "noChanges": "لا توجد تغييرات للمزامنة.",
       "previewingChanges": "\nجاري معاينة التغييرات...\n",
       "status": {
-        "description": "التحقق من حالة المزامنة ومقارنة الملفات المحلية/البعيدة"
+        "description": "التحقق من حالة المزامنة ومقارنة الملفات المحلية/البعيدة",
+        "descriptionShort": "مقارنة الملفات المحلية والبعيدة (تشغيل تجريبي)"
       },
       "totalSize": "الحجم الإجمالي: {{size}}",
       "upload": {
         "completed": "تم إكمال التحميل: تم نقل {{count}} ملف",
         "description": "تحميل الملفات إلى مستودع",
+        "descriptionShort": "رفع ملفات إلى مستودع عبر rsync",
         "failed": "فشل التحميل",
         "progress": "جاري التحميل: {{percentage}}% - {{file}} ({{speed}})",
         "starting": "جاري بدء التحميل..."
@@ -1263,6 +1734,7 @@
       "connecting": "جاري الاتصال بـ {{machine}}...",
       "connectingTo": "جاري الاتصال بـ {{title}}...",
       "description": "وصول طرفية SSH إلى الآلات والمستودعات",
+      "descriptionShort": "وصول طرفية SSH إلى الآلات والمستودعات",
       "fetchingDetails": "جاري جلب تفاصيل الاتصال...",
       "launchingTerminal": "جاري تشغيل طرفية {{type}}...",
       "launchSuccess": "تم تشغيل الطرفية بنجاح.",
@@ -1275,6 +1747,7 @@
       "checking": "جارٍ البحث عن تحديثات...",
       "checkOnly": "التحقق من التحديثات فقط دون التنزيل",
       "description": "التحقق من تحديثات CLI وتطبيقها",
+      "descriptionShort": "التحقق من تحديثات CLI وتطبيقها",
       "downloading": "جارٍ تنزيل v{{version}}...",
       "failed": "فشل التحديث: {{error}}",
       "force": "فرض التحديث حتى لو كان محدثاً",
@@ -1380,7 +1853,7 @@
         "title": "فحص إعداد VS Code\n",
         "variant": "  النوع: Insiders",
         "version": "  الإصدار: {{version}}",
-        "vscodeFound": "  VS Code: {{path}}",
+        "vscodeFound": "  مسار VS Code: {{path}}",
         "vscodeNotFound": "  VS Code: غير مثبت",
         "yes": "نعم"
       },
@@ -1399,12 +1872,14 @@
         "fetchingDetails": "جاري جلب تفاصيل الاتصال...",
         "opening": "جاري فتح VS Code: {{connection}} → {{path}}",
         "persistingKey": "جاري حفظ مفتاح SSH...",
+        "provisioningRenet": "جارٍ تزويد renet إلى الخادم البعيد...",
         "settingsWarning": "تحذير: لم يتمكن من إعدادات VS Code: {{error}}",
         "settingUpEnv": "جاري إعداد البيئة البعيدة...",
         "success": "تم تشغيل VS Code بنجاح.",
         "testingConnectivity": "جاري اختبار الاتصال بـ {{host}}:{{port}}..."
       },
-      "description": "تكامل VS Code Remote SSH",
+      "description": "فتح VS Code Remote SSH للاتصال بجهاز أو مستودع",
+      "descriptionShort": "فتح VS Code Remote SSH للاتصال بجهاز أو مستودع",
       "list": {
         "configFile": "\nملف الإعدادات: {{path}}",
         "description": "قائمة اتصالات VS Code SSH المكونة",
@@ -1412,51 +1887,6 @@
         "keyPersisted": " (تم حفظ المفتاح)",
         "noConnections": "لا توجد اتصالات VS Code SSH مكونة.",
         "total": "\nالإجمالي: {{count}} اتصال(اتصالات)"
-      }
-    },
-    "subscription": {
-      "description": "إدارة تراخيص الجهاز والاشتراك",
-      "login": {
-        "description": "المصادقة باستخدام رمز API من بوابة الويب",
-        "tokenPrompt": "أدخل رمز API الخاص بك (من بوابة الويب):",
-        "tokenInvalid": "يجب أن يبدأ الرمز بـ rdt_",
-        "validating": "جارٍ التحقق من الرمز...",
-        "validated": "تم التحقق من الرمز",
-        "success": "تم تسجيل الدخول بنجاح",
-        "plan": "الخطة: {{plan}}",
-        "machines": "الأجهزة: {{active}}/{{max}}"
-      },
-      "activate": {
-        "description": "تفعيل هذا الجهاز وإصدار ترخيص",
-        "activating": "جارٍ تفعيل الجهاز...",
-        "activated": "تم تفعيل الجهاز",
-        "installed": "تم تثبيت الترخيص",
-        "licenseFile": "ملف الترخيص: {{path}}"
-      },
-      "status": {
-        "description": "عرض حالة الاشتراك والترخيص",
-        "localLicense": "الترخيص المحلي:",
-        "plan": "  الخطة:    {{plan}}",
-        "statusLabel": "  الحالة:   {{status}}",
-        "machine": "  الجهاز:   {{machineId}}",
-        "issued": "  الإصدار:   {{issuedAt}}",
-        "expires": "  الانتهاء:  {{expiresAt}}",
-        "sequence": "  التسلسل:  {{sequenceNumber}}",
-        "expired": "  انتهت صلاحية الترخيص — شغّل `rdc subscription refresh`",
-        "valid": "  صالح (ينتهي خلال {{mins}} دقيقة)",
-        "parseFailed": "  تعذر تحليل ملف الترخيص",
-        "noLicense": "لا يوجد ترخيص محلي مثبت.",
-        "remote": "\nالاشتراك البعيد:",
-        "remotePlan": "  الخطة:    {{plan}}",
-        "remoteStatus": "  الحالة:   {{status}}",
-        "remoteMachines": "  الأجهزة: {{active}}/{{max}}",
-        "remoteMachine": "    - {{id}}... (آخر ظهور: {{lastSeen}})"
-      },
-      "refresh": {
-        "description": "تحديث ترخيص الجهاز",
-        "refreshing": "جارٍ تحديث الترخيص...",
-        "refreshed": "تم تحديث الترخيص",
-        "success": "تم تحديث وتثبيت الترخيص"
       }
     }
   },
@@ -1527,14 +1957,17 @@
     },
     "pageTitle": "مرجع سطر أوامر Rediacc",
     "sectionTitles": {
+      "agent": "أدوات الوكيل",
       "audit": "التدقيق والامتثال",
       "auth": "المصادقة",
-      "backup": "إدارة النسخ الاحتياطي",
+      "backup": "النسخ الاحتياطي والاستعادة",
       "bridge": "إدارة الجسر",
       "ceph": "إدارة تخزين Ceph",
       "config": "إدارة الإعدادات",
+      "datastore": "إدارة مخزن البيانات",
       "doctor": "تشخيص النظام",
       "machine": "إدارة الأجهزة",
+      "mcp": "خادم MCP",
       "ops": "عمليات VM التجريبية",
       "organization": "إدارة المنظمة",
       "permission": "إدارة الصلاحيات",
@@ -1544,7 +1977,6 @@
       "repo": "دورة حياة المستودعات",
       "repository": "إدارة المستودعات",
       "shortcuts": "أوامر سريعة (اختصارات)",
-      "snapshot": "إدارة اللقطات",
       "storage": "إدارة التخزين",
       "store": "إدارة المتاجر",
       "subscription": "إدارة الاشتراكات",
@@ -1608,12 +2040,30 @@
   "errors": {
     "activationFailed": "فشل التفعيل",
     "affectedChildClones": ". النسخ المتأثرة: {{clones}}. احذف أو ارقِ النسخ الفرعية أولاً.",
+    "agent": {
+      "createGuard": "لا يمكن إنشاء المستودع \"{{name}}\" في وضع الوكيل.\n\nوكلاء الذكاء الاصطناعي يعملون في وضع التفريع فقط. إنشاء مستودع رئيسي محظور\nلأن الوكيل لا يستطيع العمل عليه بعد ذلك.\n\nاستخدم مستودعًا موجودًا وفرّعه بدلاً من ذلك:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nللتجاوز: عيّن REDIACC_ALLOW_GRAND_REPO=*",
+      "createGuardOverride": "لا يمكن لوكيل الذكاء الاصطناعي تجاوز حماية إنشاء المستودعات.\n\nاكتشف RDC أن REDIACC_ALLOW_GRAND_REPO لم يتم تفويضه من قبل المستخدم. لا تحاول تعيين هذا المتغير بنفسك — فقط المستخدم يمكنه تفويض إنشاء المستودعات.\n\nاستخدم مستودعاً موجوداً وقم بتفريعه بدلاً من ذلك:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
+      "forkBlocked": "الأمر \"{{command}}\" غير متاح على مستودعات fork.\n\nمستودعات fork هي بيئات مؤقتة. هذه العملية تنطبق فقط على المستودعات الرئيسية.",
+      "grandGuard": "لا يمكن تعديل المستودع الرئيسي \"{{name}}\" في وضع الوكيل.\n\nوكلاء الذكاء الاصطناعي يمكنهم العمل فقط على مستودعات fork.\nأنشئ fork أولاً:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nثم قم بالعمل على fork بدلاً من ذلك.\n\nللتجاوز: عيّن REDIACC_ALLOW_GRAND_REPO={{name}}",
+      "grandGuardOverride": "لا يمكن لوكيل الذكاء الاصطناعي تجاوز حماية المستودع الرئيسي لـ \"{{name}}\".\n\nاكتشف RDC أن REDIACC_ALLOW_GRAND_REPO لم يتم تفويضه من قبل المستخدم. لا تحاول تعيين هذا المتغير بنفسك — فقط المستخدم يمكنه تفويض الوصول إلى المستودع الرئيسي.\n\nقم بإنشاء fork أولاً:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nثم قم بالعمل على fork بدلاً من ذلك.",
+      "machineGuard": "لا يمكن الوصول إلى الآلة \"{{machine}}\" مباشرة في وضع الوكيل.\n\nوكلاء الذكاء الاصطناعي يمكنهم الاتصال فقط بسياقات المستودعات.\nاستخدم:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nللتجاوز: عيّن REDIACC_ALLOW_GRAND_REPO=*",
+      "machineGuardOverride": "لا يمكن لوكيل الذكاء الاصطناعي تجاوز حماية الوصول إلى الجهاز \"{{machine}}\".\n\nاكتشف RDC أن REDIACC_ALLOW_GRAND_REPO لم يتم تفويضه من قبل المستخدم. لا تحاول تعيين هذا المتغير بنفسك — فقط المستخدم يمكنه تفويض الوصول المباشر إلى الجهاز.\n\nاتصل بسياق مستودع بدلاً من ذلك:\n  rdc term {{machine}} <repository> -c \"<command>\"",
+      "mcpGrandGuard": "لا يمكن تعديل المستودع الرئيسي \"{{name}}\" في وضع fork فقط.\n\nاستخدم repo_fork لإنشاء fork أولاً، ثم قم بالعمل على fork.\nللسماح بالوصول إلى المستودع الرئيسي، أعد تشغيل خادم MCP مع --allow-grand",
+      "mcpGrandGuardOverride": "لا يمكن لوكيل الذكاء الاصطناعي تجاوز حماية المستودع الرئيسي لـ \"{{name}}\".\n\nاكتشف RDC أن REDIACC_ALLOW_GRAND_REPO لم يتم تفويضه من قبل المستخدم. لا تحاول تعيين هذا المتغير.\n\nاستخدم repo_fork لإنشاء fork أولاً، ثم قم بالعمل على fork.",
+      "mcpMachineGuard": "لا يمكن الوصول إلى الآلة مباشرة في وضع fork فقط.\n\nحدد مستودعاً للاتصال بسياق المستودع.\nللسماح بالوصول المباشر إلى الآلة، أعد تشغيل خادم MCP مع --allow-grand",
+      "mcpMachineGuardOverride": "لا يمكن لوكيل الذكاء الاصطناعي تجاوز حماية الوصول إلى الجهاز.\n\nاكتشف RDC أن REDIACC_ALLOW_GRAND_REPO لم يتم تفويضه من قبل المستخدم. لا تحاول تعيين هذا المتغير.\n\nحدد مستودعاً للاتصال بسياق المستودع."
+    },
     "authFailed": "فشلت المصادقة",
     "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc auth login",
     "bridgeRequired": "اسم الجسر مطلوب. استخدم --bridge أو اضبط السياق.",
     "cannotDeleteGrandRepo": "لا يمكن حذف المستودع الرئيسي: {{reason}}",
     "cannotPromote": "لا يمكن الترقية: {{reason}}",
     "clusterNotFound": "مجموعة Ceph \"{{name}}\" غير موجودة",
+    "config": {
+      "invalidEmail": "عنوان بريد إلكتروني غير صالح: \"{{value}}\".",
+      "machineNotFound": "الآلة \"{{name}}\" غير موجودة في التكوين. المتاحة: {{available}}.",
+      "storageNotFound": "التخزين \"{{name}}\" غير موجود في التكوين. المتاحة: {{available}}."
+    },
     "contextNotFound": "لم يتم العثور على السياق \"{{name}}\"",
     "failedCreateQueueItem": "فشل إنشاء عنصر الطابور",
     "invalidAction": "إجراء غير صحيح \"{{action}}\". استخدم \"{{valid}}\".",
@@ -1650,15 +2100,29 @@
     },
     "regionRequired": "اسم المنطقة مطلوب. استخدم --region أو اضبط السياق.",
     "registrationFailed": "فشل التسجيل",
-    "repositoryNotFound": "لم يتم العثور على المستودع \"{{name}}:{{tag}}\"",
+    "remoteNotFound": "\"{{name}}\" ليس جهازاً أو تخزيناً معروفاً. الأجهزة: {{machines}}. التخزينات: {{storages}}",
+    "repositoryNotFound": "لم يتم العثور على المستودع \"{{name}}\"",
     "repositoryRequired": "اسم المستودع مطلوب. استخدم --repository <name>.",
     "resourceNotFound": "{{resource}} غير موجود",
-    "sshKeyNotFound": "لم يتم العثور على مفتاح SSH: {{path}}",
-    "sync": {
-      "localPathNotFound": "المسار المحلي غير موجود: {{path}}",
+    "ssh": {
       "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
       "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون"
+    },
+    "sshKeyNotFound": "لم يتم العثور على مفتاح SSH: {{path}}",
+    "subscription": {
+      "activationFailed": "فشل تفعيل الجهاز. تأكد من أن اشتراكك نشط وأن فتحة الجهاز متاحة.",
+      "notLoggedIn": "لم يتم تسجيل الدخول. شغّل `rdc subscription login` أولاً.",
+      "tokenRequired": "رمز الاشتراك مطلوب. قم بتعيين متغير البيئة REDIACC_SUBSCRIPTION_TOKEN، أو شغّل `rdc subscription login` في طرفيتك.",
+      "tokenWarning": "لم يتم العثور على رمز اشتراك. ستفشل الأوامر التي تتطلب ترخيصًا (repo create، repo fork). قم بتعيين متغير البيئة REDIACC_SUBSCRIPTION_TOKEN أو شغّل `rdc subscription login` في طرفيتك."
+    },
+    "sync": {
+      "absolutePathBlocked": "يجب أن يكون مسار --remote نسبياً وليس مطلقاً. استخدم مساراً نسبياً بالنسبة لجذر المستودع.",
+      "localPathNotFound": "المسار المحلي غير موجود: {{path}}",
+      "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
+      "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
+      "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
+      "pathTraversalBlocked": "يجب ألا يحتوي مسار --remote على اجتياز المسار \"..\". استخدم مساراً داخل المستودع."
     },
     "teamRequired": "اسم الفريق مطلوب. استخدم --team أو اضبط السياق.",
     "term": {
@@ -1667,6 +2131,7 @@
       "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
       "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
+      "repoContextRequired": "الأمر يتطلب سياق مستودع.\n\nتم اكتشاف \"{{detected}}\" الذي يحتاج إلى DOCKER_HOST ومتغيرات بيئة المستودع.\nهذه متاحة فقط عند تحديد مستودع.\n\nبدلاً من:\n  rdc term {{machine}} -c \"{{command}}\"\n\nاستخدم:\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
       "sshCode1": "خطأ عام - تحقق من صيغة الأمر أو أذونات البعيد",
       "sshCode126": "تم رفض الإذن - لا يمكن تنفيذ الأمر على البعيد",
       "sshCode127": "الأمر غير موجود على الآلة البعيدة",
@@ -1688,16 +2153,71 @@
       "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
       "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
-      "notFound": "لم يتم العثور على VS Code.\n\nالرجاء التثبيت من: https://code.visualstudio.com/\nأو قم بتعيين متغير البيئة REDIACC_VSCODE_PATH."
+      "notFound": "لم يتم العثور على VS Code.\n\nالرجاء التثبيت من: https://code.visualstudio.com/\nأو قم بتعيين متغير البيئة REDIACC_VSCODE_PATH.",
+      "repoNotDeployed": "المستودع \"{{repository}}\" غير منشور على {{machine}}.\n\nانشره أولاً:\n  rdc repo up {{repository}} -m <اسم-الجهاز>"
+    }
+  },
+  "help": {
+    "agentMode": "\n  وضع الوكيل\n    • النسخ فقط: أنشئ نسخة متفرعة قبل إجراء أي تغييرات على أي مستودع\n    • المستودعات الرئيسية (غير المتفرعة) للقراءة فقط للوكلاء\n    • سير العمل: repo fork <parent> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
+    "cli": {
+      "machineQuery": "عرض حالة الجهاز",
+      "repoUp": "نشر خدمات المستودع",
+      "syncUpload": "رفع الملفات إلى المستودع",
+      "termRepo": "SSH إلى المستودع"
     },
-    "subscription": {
-      "notLoggedIn": "لم يتم تسجيل الدخول. شغّل `rdc subscription login` أولاً.",
-      "noMachineId": "تعذر تحديد معرف الجهاز. تأكد من تثبيت renet أو وجود /etc/machine-id.",
-      "writeFailed": "فشلت كتابة ملف الترخيص. شغّل بصلاحيات sudo أو تأكد من قابلية الكتابة على {{path}}."
+    "config": {
+      "addMachine": "إضافة جهاز إلى التكوين",
+      "init": "إنشاء تكوين مسمى مع مفتاح SSH",
+      "setMachine": "تعيين الجهاز الافتراضي",
+      "setupMachine": "تشغيل الإعداد على جهاز بعيد"
+    },
+    "examples": "أمثلة:",
+    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REDIACC_WORKING_DIR}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REDIACC_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
+    "machine": {
+      "containers": "عرض الحاويات قيد التشغيل",
+      "health": "فحص صحة الجهاز لـ CI/CD",
+      "keyConcepts": "\nالمفاهيم الأساسية:\n\n  فلاتر الاستعلام\n    • rdc machine query <name> يعرض جميع الأقسام افتراضيًا\n    • استخدم --system أو --repositories أو --containers أو --services أو --network أو --block-devices للتصفية\n    • مخرجات JSON تُثري الحاويات بـ: repository (الاسم المُحلل) و domain و autoRoute\n\n  المراقبة والصحة\n    • machine health يخرج بـ: 0=سليم، 1=تحذير، 2=خطأ — استخدمه لبوابات CI/CD\n    • containers --health-check يخرج بـ 2 إذا كانت أي حاوية غير سليمة\n    • services --stability-check يخرج بـ 2 إذا كانت أي خدمة فاشلة أو تُعيد التشغيل أو لديها أكثر من 3 إعادات تشغيل\n\n  هيكل مخزن البيانات (/mnt/rediacc/)\n    • repositories/ — صور LUKS مشفرة (واحدة لكل GUID مستودع)\n    • mounts/ — نقاط تثبيت مفكوكة التشفير (متاحة عند تثبيت المستودع)\n    • immovable/ — بيانات Docker daemon لكل مستودع\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
+      "query": "عرض حالة الجهاز الكاملة"
+    },
+    "repo": {
+      "create": "إنشاء مستودع مشفر",
+      "down": "إيقاف الخدمات",
+      "fork": "نسخ CoW للاختبار",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
+      "listBackups": "عرض النسخ الاحتياطية على التخزين",
+      "pull": "سحب نسخة احتياطية من التخزين",
+      "push": "دفع نسخة احتياطية إلى التخزين",
+      "sync": {
+        "pullAll": "سحب جميع المستودعات من التخزين بالجملة",
+        "pushAll": "دفع جميع المستودعات إلى التخزين بالجملة"
+      },
+      "takeover": "استبدال بيانات الإنتاج ببيانات النسخة المتفرعة",
+      "up": "نشر مع التحميل التلقائي"
+    },
+    "store": {
+      "add": "إضافة واجهة تخزين S3",
+      "pull": "سحب التكوين من متجر",
+      "push": "دفع التكوين إلى جميع المتاجر"
+    },
+    "sync": {
+      "download": "تنزيل ملفات المستودع محلياً",
+      "status": "عرض حالة المزامنة",
+      "upload": "رفع الملفات المحلية إلى المستودع"
+    },
+    "term": {
+      "command": "تنفيذ أمر بدون shell تفاعلي",
+      "machine": "SSH إلى الجهاز",
+      "repo": "SSH إلى المستودع (DOCKER_HOST تلقائي)"
+    },
+    "useHelpAll": "استخدم --help-all لعرض الأوصاف الموسعة",
+    "vscode": {
+      "machine": "فتح الجهاز في VS Code",
+      "repo": "فتح المستودع في VS Code"
     }
   },
   "options": {
     "activationCode": "رمز التفعيل من البريد الإلكتروني",
+    "apiToken": "رمز API (rdt_...)",
     "apiUrl": "عنوان URL للـ API",
     "bridge": "اسم الجسر",
     "cleanupAll": "إزالة جميع إعدادات SSH الخاصة بـ rediacc",
@@ -1711,19 +2231,20 @@
     "containerAction": "إجراء الحاوية: terminal أو logs أو stats أو exec",
     "datastore": "مسار التخزين على الآلة",
     "debug": "تفعيل مخرجات التصحيح (الوضع المحلي)",
-    "dryRun": "عرض ما سيتم نقله دون المزامنة الفعلية",
+    "dryRun": "عرض ما سيتم تنفيذه دون إجراء تغييرات",
     "email": "عنوان البريد الإلكتروني",
     "endpoint": "عنوان URL لنقطة نهاية API",
     "excludePatterns": "الأنماط التي يتم استبعادها من المزامنة",
-    "experimental": "تمكين أوامر السحابة التجريبية",
     "expires": "انتهاء الصلاحية بالساعات (1-720)",
     "external": "فرض تشغيل في نافذة طرفية خارجية",
     "extraMachine": "جهاز إضافي لعمليات الأجهزة المتعددة (الاسم:عنوان_IP:المستخدم)",
+    "fields": "قائمة حقول مفصولة بفواصل لتضمينها في المخرجات",
     "filterStatus": "التصفية حسب الحالة",
     "folder": "مسار المجلد البعيد للفتح",
     "follow": "متابعة إخراج السجلات",
     "force": "تخطي نوافذ التأكيد",
     "functionName": "اسم الدالة للتنفيذ",
+    "graceDays": "فترة السماح بالأيام للمستودعات المؤرشفة حديثًا (الافتراضي: 7)",
     "image": "اسم صورة RBD",
     "importMode": "وضع الاستيراد (دمج أو استبدال)",
     "insiders": "استخدام إعدادات VS Code Insiders",
@@ -1768,6 +2289,13 @@
     "protocolSystem": "تسجيل على مستوى النظام (يتطلب امتيازات المسؤول)",
     "protocolSystemUnregister": "إلغاء تسجيل التسجيل على مستوى النظام (يتطلب امتيازات المسؤول)",
     "protocolToken": "رمز المصادقة",
+    "queryBlockDevices": "تضمين أجهزة التخزين فقط",
+    "queryContainers": "تضمين الحاويات فقط",
+    "queryNetwork": "تضمين واجهات الشبكة فقط",
+    "queryRepositories": "تضمين المستودعات فقط",
+    "queryServices": "تضمين الخدمات فقط",
+    "querySystem": "تضمين معلومات النظام فقط",
+    "quiet": "إخفاء المخرجات المعلوماتية",
     "rawVault": "خزينة JSON أولية (للنصوص البرمجية/CI)",
     "region": "اسم المنطقة",
     "remotePath": "مسار المجلد الفرعي البعيد ضمن المستودع",
@@ -1775,11 +2303,13 @@
     "repository": "اسم المستودع (يتصل ببيئة المستودع)",
     "repositoryShorthand": "اسم المستودع (اختصار --repository)",
     "repositoryTag": "علامة المستودع",
+    "resetHome": "إعادة تعيين طبقة المنزل لكل مستودع للبدء من جديد",
     "saveAs": "حفظ بيانات الاعتماد في سياق باسم",
     "saveKnownHosts": "حفظ known_hosts في خزينة الآلة بعد الاختبار الناجح",
     "searchInField": "البحث في {{field}}",
     "searchQueue": "البحث في معرف المهمة والفريق والآلة والجسر",
     "searchRepos": "تصفية المستودعات حسب الاسم",
+    "serverUrl": "عنوان خادم الحساب",
     "sessionName": "اسم الجلسة",
     "skipEnvSetup": "تخطي إعداد البيئة البعيدة",
     "skipRouterRestart": "تخطي إعادة تشغيل خادم التوجيه بعد تحديث الملف التنفيذي",
@@ -1808,9 +2338,7 @@
     "verifyChecksum": "التحقق من الملفات باستخدام المجاميع الاختبارية بعد المزامنة",
     "watch": "الانتظار للتغييرات",
     "watchUpdates": "الانتظار للتحديثات",
-    "yes": "تخطي نافذة التأكيد",
-    "apiToken": "رمز API (rdt_...)",
-    "serverUrl": "عنوان خادم الحساب"
+    "yes": "تخطي نافذة التأكيد"
   },
   "prompts": {
     "apiUrl": "عنوان URL للـ API:",
@@ -1832,6 +2360,13 @@
     "syncConfirm": "\nهل تريد المتابعة بالمزامنة؟ [y/N/d(etails)] ",
     "syncConfirmHelp": "يرجى إدخال y (نعم) أو n (لا) أو d (التفاصيل)"
   },
+  "services": {
+    "prune": {
+      "noOrphaned": "لم يتم العثور على إدخالات معزولة",
+      "refusingPrune": "رفض التنظيف — قد تحتوي هذه التكوينات على معرفات محمية. استخدم --force للتجاوز.",
+      "unreadableConfigs": "تعذرت قراءة {{count}} ملف(ات) تكوين: {{names}} (مشفرة أو تالفة)"
+    }
+  },
   "spinners": {
     "connecting": "جاري الاتصال...",
     "creating": "جاري إنشاء {{resource}}...",
@@ -1852,5 +2387,24 @@
   },
   "table": {
     "noData": "لا توجد بيانات للعرض"
+  },
+  "timing": {
+    "completed": "اكتمل في {{operation}} (الإجمالي: {{total}})",
+    "step": {
+      "activating": "جاري تفعيل الترخيص...",
+      "configLoaded": "تم تحميل الإعدادات ({{duration}})",
+      "connected": "تم الاتصال ({{duration}})",
+      "connecting": "جاري الاتصال...",
+      "licenseActivated": "تم تفعيل الترخيص ({{duration}})",
+      "loading": "جاري تحميل الإعدادات...",
+      "machineVerified": "تم التحقق من الجهاز ({{duration}})",
+      "provisioning": "جاري توفير renet...",
+      "renetProvisioned": "تم توفير renet ({{duration}})",
+      "verifying": "جاري التحقق من الجهاز..."
+    }
+  },
+  "warnings": {
+    "licenseSignatureRefreshed": "تم تحديث {{count}} ترخيص(تراخيص) مستودع بتوقيعات غير صالحة بعد تحديث renet",
+    "licenseSignatureRefreshFailed": "{{count}} ترخيص(تراخيص) مستودع بتوقيعات غير صالحة بعد تحديث renet. قم بتشغيل: rdc subscription refresh -m <machine>"
   }
 }

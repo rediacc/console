@@ -1,8 +1,8 @@
-import React from 'react';
 import { CloudServerOutlined } from '@ant-design/icons';
-import { Badge } from 'antd';
-import { useGetCloneMachines } from '@/api/api-hooks.generated';
 import type { GetCephRbdClones_ResultSet1 } from '@rediacc/shared/types';
+import { Badge } from 'antd';
+import React from 'react';
+import { useGetCloneMachines } from '@/api/api-hooks.generated';
 
 interface MachineCountBadgeProps {
   clone: GetCephRbdClones_ResultSet1;

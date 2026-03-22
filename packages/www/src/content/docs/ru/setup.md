@@ -4,7 +4,7 @@ description: "Создание конфигурации, добавление м
 category: "Guides"
 order: 3
 language: ru
-sourceHash: "0c725f9eb65e6c0f"
+sourceHash: "ebf1c9967814ec86"
 ---
 
 # Настройка машины
@@ -33,7 +33,7 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 Зарегистрируйте ваш удаленный сервер как машину в конфигурации:
 
 ```bash
-rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
+rdc config machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Опция | Обязательно | По умолчанию | Описание |
@@ -46,13 +46,13 @@ rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
 После добавления машины rdc автоматически выполняет `ssh-keyscan` для получения ключей хоста сервера. Вы также можете выполнить это вручную:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Для просмотра всех зарегистрированных машин:
 
 ```bash
-rdc config machines
+rdc config machine list
 ```
 
 ## Шаг 3: Настройка машины
@@ -60,7 +60,7 @@ rdc config machines
 Подготовьте удаленный сервер, установив все необходимые зависимости:
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 Эта команда:
@@ -82,7 +82,7 @@ rdc config setup-machine server-1
 Если SSH-ключи хоста сервера изменились (например, после переустановки), обновите сохраненные ключи:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Эта команда обновляет поле `knownHosts` в вашей конфигурации для данной машины.
@@ -112,27 +112,29 @@ rdc doctor
 ### Установка инфраструктуры
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-| Опция | Описание |
-|-------|----------|
-| `--public-ipv4 <ip>` | Публичный IPv4-адрес для внешнего доступа |
-| `--public-ipv6 <ip>` | Публичный IPv6-адрес для внешнего доступа |
-| `--base-domain <domain>` | Базовый домен для приложений (например, `example.com`) |
-| `--cert-email <email>` | Email для TLS-сертификатов Let's Encrypt |
-| `--cf-dns-token <token>` | API-токен Cloudflare DNS для ACME DNS-01 проверок |
-| `--tcp-ports <ports>` | Дополнительные TCP-порты для проброса через запятую (например, `25,143,465,587,993`) |
-| `--udp-ports <ports>` | Дополнительные UDP-порты для проброса через запятую (например, `53`) |
+| Опция | Область | Описание |
+|-------|---------|----------|
+| `--public-ipv4 <ip>` | Machine | Public IPv4 address — proxy entrypoints are only created for configured address families |
+| `--public-ipv6 <ip>` | Machine | Public IPv6 address — proxy entrypoints are only created for configured address families |
+| `--base-domain <domain>` | Machine | Базовый домен для приложений (например, `example.com`) |
+| `--cert-email <email>` | Config | Email для TLS-сертификатов Let's Encrypt (общий для всех машин) |
+| `--cf-dns-token <token>` | Config | API-токен Cloudflare DNS для ACME DNS-01 проверок (общий для всех машин) |
+| `--tcp-ports <ports>` | Machine | Дополнительные TCP-порты для проброса через запятую (например, `25,143,465,587,993`) |
+| `--udp-ports <ports>` | Machine | Дополнительные UDP-порты для проброса через запятую (например, `53`) |
+
+Опции области Machine хранятся для каждой машины. Опции области Config (`--cert-email`, `--cf-dns-token`) являются общими для всех машин в конфигурации — задайте их один раз, и они применяются повсюду.
 
 ### Просмотр инфраструктуры
 
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
 ### Применение на сервере
@@ -140,10 +142,88 @@ rdc config show-infra server-1
 Сгенерируйте и разверните конфигурацию обратного прокси Traefik на сервере:
 
 ```bash
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
-Эта команда применяет конфигурацию прокси на основе ваших настроек инфраструктуры. Traefik обрабатывает TLS-терминацию, маршрутизацию и проброс портов.
+Эта команда:
+1. Разворачивает бинарный файл renet на удалённой машине
+2. Настраивает обратный прокси Traefik, маршрутизатор и службы systemd
+3. Создаёт DNS-записи Cloudflare для поддомена машины (`server-1.example.com` и `*.server-1.example.com`), если задан `--cf-dns-token`
+
+Шаг DNS выполняется автоматически и идемпотентно — создаёт недостающие записи, обновляет записи с изменёнными IP-адресами и пропускает записи, которые уже корректны. Если токен Cloudflare не настроен, DNS пропускается с предупреждением. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+
+## Облачное провизионирование
+
+Вместо ручного создания виртуальных машин вы можете настроить облачного провайдера и позволить `rdc` автоматически провизионировать машины с помощью [OpenTofu](https://opentofu.org/).
+
+### Предварительные требования
+
+Установите OpenTofu: [opentofu.org/docs/intro/install](https://opentofu.org/docs/intro/install/)
+
+Убедитесь, что ваша конфигурация SSH включает публичный ключ:
+
+```bash
+rdc config set ssh.privateKeyPath ~/.ssh/id_ed25519
+```
+
+### Добавление облачного провайдера
+
+```bash
+rdc config provider add my-linode \
+  --provider linode/linode \
+  --token $LINODE_API_TOKEN \
+  --region us-east \
+  --type g6-standard-2
+```
+
+| Опция | Обязательно | Описание |
+|-------|-------------|----------|
+| `--provider <source>` | Да* | Известный источник провайдера (например, `linode/linode`, `hetznercloud/hcloud`) |
+| `--source <source>` | Да* | Пользовательский источник провайдера OpenTofu (для неизвестных провайдеров) |
+| `--token <token>` | Да | API-токен облачного провайдера |
+| `--region <region>` | Нет | Регион по умолчанию для новых машин |
+| `--type <type>` | Нет | Тип/размер экземпляра по умолчанию |
+| `--image <image>` | Нет | Образ ОС по умолчанию |
+| `--ssh-user <user>` | Нет | Имя пользователя SSH (по умолчанию: `root`) |
+
+\* Требуется либо `--provider`, либо `--source`. Используйте `--provider` для известных провайдеров (встроенные значения по умолчанию). Используйте `--source` с дополнительными флагами `--resource`, `--ipv4-output`, `--ssh-key-attr` для пользовательских провайдеров.
+
+### Провизионирование машины
+
+```bash
+rdc machine provision prod-2 --provider my-linode
+```
+
+Эта единственная команда:
+1. Создаёт VM у облачного провайдера через OpenTofu
+2. Ожидает SSH-подключения
+3. Регистрирует машину в вашей конфигурации
+4. Устанавливает renet и все зависимости
+5. Configures Traefik proxy and Cloudflare DNS (auto-detects base domain from sibling machines, or pass `--base-domain` explicitly)
+
+| Опция | Описание |
+|-------|----------|
+| `--provider <name>` | Имя облачного провайдера (из `add-provider`) |
+| `--region <region>` | Переопределяет регион провайдера по умолчанию |
+| `--type <type>` | Переопределяет тип экземпляра по умолчанию |
+| `--image <image>` | Переопределяет образ ОС по умолчанию |
+| `--base-domain <domain>` | Base domain for infrastructure. Auto-detected from sibling machines if not specified |
+| `--no-infra` | Skip infrastructure configuration (proxy + DNS) entirely |
+| `--debug` | Показывает подробный вывод провизионирования |
+
+### Депровизионирование машины
+
+```bash
+rdc machine deprovision prod-2
+```
+
+Уничтожает VM через OpenTofu и удаляет её из вашей конфигурации. Требует подтверждения, если не используется `--force`. Работает только для машин, созданных с помощью `machine provision`.
+
+### Список провайдеров
+
+```bash
+rdc config provider list
+```
 
 ## Установка значений по умолчанию
 

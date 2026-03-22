@@ -1,36 +1,34 @@
 ---
 title: "監視と診断"
-description: "マシンの状態確認、コンテナの検査、サービスの確認、診断の実行を一緒に見ていきましょう。"
+description: "マシンの健全性確認、コンテナの検査、systemdサービスの確認、ホストキーのスキャン、環境診断の実行。"
 category: "Tutorials"
 order: 4
 language: ja
-sourceHash: "e121e29d9a6359bc"
+sourceHash: "af9f17a05dfb13b9"
 ---
 
-# チュートリアル: 監視と診断
+# Rediaccでインフラストラクチャを監視・診断する方法
 
-This tutorial demonstrates the monitoring and diagnostic commands available in `rdc`: health checks, container inspection, service status, vault overview, and environment diagnostics.
+インフラストラクチャを健全に保つには、マシンの状態、コンテナのステータス、サービスの健全性を可視化する必要があります。このチュートリアルでは、環境診断の実行、マシンの健全性チェック、コンテナとサービスの検査、Vaultステータスの確認、接続性の検証を行います。完了すると、インフラストラクチャ全体の問題を特定し調査する方法がわかります。
 
 ## 前提条件
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine with at least one running repository (see [Tutorial: Repository Lifecycle](/ja/docs/tutorial-repos))
+- `rdc` CLIがインストールされ、設定が初期化されていること
+- 少なくとも1つのリポジトリが実行中のプロビジョニング済みマシン（[チュートリアル: リポジトリのライフサイクル](/ja/docs/tutorial-repos)を参照）
 
 ## インタラクティブ録画
 
-![Tutorial: Monitoring & Diagnostics](/assets/tutorials/monitoring-tutorial.cast)
-
-## 内容の説明
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
+![チュートリアル: 監視と診断](/assets/tutorials/monitoring-tutorial.cast)
 
 ### ステップ1: 診断を実行
+
+まず、ローカル環境に設定の問題がないか確認します。
 
 ```bash
 rdc doctor
 ```
 
-Checks your local environment: Node.js, CLI version, renet binary, configuration, and virtualization support. Each check reports **OK**, **Warning**, or **Error**.
+Node.js、CLIバージョン、renetバイナリ、設定、仮想化サポートを確認します。各チェックは**OK**、**Warning**、または**Error**を報告します。
 
 ### ステップ2: マシンヘルスチェック
 
@@ -38,7 +36,7 @@ Checks your local environment: Node.js, CLI version, renet binary, configuration
 rdc machine health server-1
 ```
 
-システム稼働時間、ディスク使用量、データストア使用量、コンテナ数、ストレージSMARTステータス、特定された問題を含む包括的なヘルスレポートを取得します。
+リモートマシンから包括的なヘルスレポートを取得します: システム稼働時間、ディスク使用量、データストア使用量、コンテナ数、ストレージSMARTステータス、特定された問題。
 
 ### ステップ3: 実行中のコンテナを表示
 
@@ -46,15 +44,17 @@ rdc machine health server-1
 rdc machine containers server-1
 ```
 
-Lists all running containers across all repositories on the machine, showing name, status, state, health, CPU usage, memory usage, and which repository owns each container.
+マシン上のすべてのリポジトリにわたるすべての実行中のコンテナを一覧表示し、名前、ステータス、状態、健全性、CPU使用量、メモリ使用量、各コンテナを所有するリポジトリを表示します。
 
 ### ステップ4: systemdサービスを確認
+
+各リポジトリのDocker daemonとネットワークを支える基盤サービスを確認するには:
 
 ```bash
 rdc machine services server-1
 ```
 
-Lists Rediacc-related systemd services (Docker daemons, loopback aliases) with their state, sub-state, restart count, and memory usage.
+Rediacc関連のsystemdサービス（Docker daemon、loopbackエイリアス）を、その状態、サブ状態、再起動回数、メモリ使用量とともに一覧表示します。
 
 ### ステップ5: Vaultステータスの概要
 
@@ -62,27 +62,44 @@ Lists Rediacc-related systemd services (Docker daemons, loopback aliases) with t
 rdc machine vault-status server-1
 ```
 
-Provides a high-level overview of the machine: hostname, uptime, memory, disk, datastore, and total repository counts.
+マシンの概要を提供します: ホスト名、稼働時間、メモリ、ディスク、データストア、リポジトリの合計数。
 
 ### ステップ6: ホストキーをスキャン
 
+マシンが再構築されたりIPが変更された場合、保存されたSSHホストキーを更新します。
+
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
-Refreshes the SSH host key stored in your config for the machine. Useful after a machine rebuild or IP change.
+サーバーの現在のホストキーを取得し、設定を更新します。これにより「host key verification failed」エラーを防止します。
 
-### ステップ7: 接続を確認
+### ステップ7: 接続性を確認
+
+マシンが到達可能で応答していることを確認する簡易SSH接続チェック。
 
 ```bash
 rdc term server-1 -c "hostname"
 rdc term server-1 -c "uptime"
 ```
 
-Quick SSH connectivity check by running inline commands on the remote machine.
+ホスト名は正しいサーバーに接続していることを確認します。稼働時間はシステムが正常に動作していることを確認します。
+
+## トラブルシューティング
+
+**ヘルスチェックがタイムアウトするか「SSH connection failed」が表示される**
+マシンがオンラインで到達可能であることを確認してください: `ping <ip>`。SSHキーが正しく設定されていることを`rdc term <machine> -c "echo ok"`で確認してください。
+
+**サービス一覧に「Service not found」が表示される**
+Rediaccサービスは少なくとも1つのリポジトリがデプロイされた後にのみ表示されます。リポジトリが存在しない場合、サービスリストは空です。
+
+**コンテナ一覧に古いまたは停止したコンテナが表示される**
+以前のデプロイからのコンテナは、`repo down`がクリーンに実行されなかった場合に残ることがあります。`rdc repo down <repo> -m <machine>`で停止するか、`rdc term <machine> <repo> -c "docker ps -a"`で直接検査してください。
 
 ## 次のステップ
 
-- [Monitoring](/ja/docs/monitoring) — full reference for all monitoring commands
-- [Troubleshooting](/ja/docs/troubleshooting) — common issues and solutions
-- [Tutorial: Tools](/ja/docs/tutorial-tools) — terminal, file sync, and VS Code integration
+診断を実行し、マシンの健全性を確認し、コンテナとサービスを検査し、接続性を検証しました。デプロイメントを操作するには:
+
+- [監視](/ja/docs/monitoring) — すべての監視コマンドの完全なリファレンス
+- [トラブルシューティング](/ja/docs/troubleshooting) — 一般的な問題と解決策
+- [チュートリアル: ツール](/ja/docs/tutorial-tools) — ターミナル、ファイル同期、VS Code統合

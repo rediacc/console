@@ -1,13 +1,13 @@
 export {
-  RenetResolver,
-  getRenetResolver,
   createRenetResolver,
+  getRenetResolver,
   type RenetResolution,
+  RenetResolver,
 } from './RenetResolver';
 
 export {
+  getMonorepoRoot,
   getRenetBinaryPath,
   getRenetRoot,
-  getMonorepoRoot,
   setMonorepoRoot,
 } from './renetPath';

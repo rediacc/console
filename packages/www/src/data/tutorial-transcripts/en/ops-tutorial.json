@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/ops-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "events": [
+    {
+      "id": "ops-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.508295,
+      "text": "Testing infrastructure locally prevents production misconfigurations. We verify that your workstation has KVM support, libvirt, QEMU, and cloud-init tools installed for virtual machine provisioning."
+    },
+    {
+      "id": "ops-tutorial-02",
+      "markerIndex": 1,
+      "at": 8.986537,
+      "text": "All prerequisites pass. We provision a minimal two-VM cluster on a virtual network -- a bridge node and a worker node -- with SSH access ready."
+    },
+    {
+      "id": "ops-tutorial-03",
+      "markerIndex": 2,
+      "at": 17.752282,
+      "text": "Cluster provisioning complete. We check that both VMs are running, with their assigned IP addresses, CPU allocation, and memory visible in the status table."
+    },
+    {
+      "id": "ops-tutorial-04",
+      "markerIndex": 3,
+      "at": 25.263372,
+      "text": "Both VMs are online. We verify SSH access to the bridge node by running a remote command. You'll see its hostname returned, confirming the tunnel works."
+    },
+    {
+      "id": "ops-tutorial-05",
+      "markerIndex": 4,
+      "at": 31.160484,
+      "text": "SSH confirmed. This time we pull full system details -- kernel version, architecture, and OS release -- to verify the VM environment matches expectations."
+    },
+    {
+      "id": "ops-tutorial-06",
+      "markerIndex": 5,
+      "at": 39.121485,
+      "text": "When testing is complete, we tear down the cluster. This destroys both VMs and frees all CPU, memory, and disk resources. You can reprovision at any time."
+    }
+  ]
+}

@@ -3,7 +3,8 @@ services:
     image: influxdb:2.7
     container_name: ${CONTAINER_NAME}
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
+    labels:
+      - "rediacc.service_port=8086"
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_INIT_USERNAME}
@@ -12,13 +13,12 @@ services:
       DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_INIT_BUCKET}
       DOCKER_INFLUXDB_INIT_RETENTION: ${INFLUXDB_INIT_RETENTION}
       DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_INIT_ADMIN_TOKEN}
-    ports:
-      - "8086"
+      INFLUXD_HTTP_BIND_ADDRESS: ${SERVICE_IP:-0.0.0.0}:8086
     volumes:
       - ./data:/var/lib/influxdb2
       - ./config:/etc/influxdb2
     healthcheck:
-      test: ["CMD", "influx", "ping"]
+      test: ["CMD-SHELL", "influx ping --host http://$${SERVICE_IP:-localhost}:8086"]
       interval: 10s
       timeout: 5s
       retries: 5

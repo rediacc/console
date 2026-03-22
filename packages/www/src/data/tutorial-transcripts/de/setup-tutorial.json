@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/setup-tutorial.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "setup-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.50986,
+      "text": "Initialisieren Sie ein dediziertes Konfigurationsprofil für diese Umgebung."
+    },
+    {
+      "id": "setup-tutorial-02",
+      "markerIndex": 1,
+      "at": 10.605861,
+      "text": "Überprüfen Sie die verfügbaren Konfigurationen und bestätigen Sie, dass das neue Profil vorhanden ist."
+    },
+    {
+      "id": "setup-tutorial-03",
+      "markerIndex": 2,
+      "at": 17.961132,
+      "text": "Registrieren Sie einen Maschineneintrag mit Netzwerk- und Benutzerdetails."
+    },
+    {
+      "id": "setup-tutorial-04",
+      "markerIndex": 3,
+      "at": 31.651331,
+      "text": "Überprüfen Sie die konfigurierte Maschinenliste, um die Registrierung zu überprüfen."
+    },
+    {
+      "id": "setup-tutorial-05",
+      "markerIndex": 4,
+      "at": 40.16275,
+      "text": "Legen Sie den Standardcomputer fest, um wiederholte Targeting-Flags zu reduzieren."
+    },
+    {
+      "id": "setup-tutorial-06",
+      "markerIndex": 5,
+      "at": 48.29967,
+      "text": "Führen Sie eine grundlegende Remote-Hostprüfung durch, um die Konnektivität zu überprüfen."
+    }
+  ]
+}

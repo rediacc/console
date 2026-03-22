@@ -1,37 +1,35 @@
 ---
 title: "Локальное развёртывание ВМ"
-description: "Смотрите и повторяйте: развёртывание локального кластера ВМ, выполнение команд по SSH и удаление кластера."
+description: "Развернуть локальный кластер ВМ, выполнить команды по SSH и удалить его с помощью CLI."
 category: "Tutorials"
 order: 1
 language: ru
-sourceHash: "990c6fd433c7c847"
+sourceHash: "2fdc49f796b03e18"
 ---
 
-# Руководство: Локальное развёртывание ВМ
+# Как развернуть локальные ВМ с помощью Rediacc
 
-This tutorial walks through the complete `rdc ops` workflow: checking system requirements, provisioning a minimal VM cluster, running commands on VMs over SSH, and tearing everything down.
+Тестирование инфраструктуры локально перед развёртыванием в продакшн экономит время и предотвращает ошибки конфигурации. В этом руководстве вы развернёте минимальный кластер ВМ на вашей рабочей станции, проверите подключение, выполните команды по SSH и удалите всё. По завершении у вас будет воспроизводимая локальная среда разработки.
 
 ## Предварительные требования
 
-- A Linux or macOS workstation with hardware virtualization enabled
-- The `rdc` CLI installed and a config initialized with the local adapter
-- KVM/libvirt (Linux) or QEMU (macOS) installed — see [Experimental VMs](/ru/docs/experimental-vms) for setup instructions
+- Рабочая станция Linux или macOS с включённой аппаратной виртуализацией
+- Установленная CLI `rdc` и инициализированная конфигурация с локальным адаптером
+- Установленный KVM/libvirt (Linux) или QEMU (macOS) — см. [Экспериментальные ВМ](/ru/docs/experimental-vms) для инструкций по настройке
 
 ## Интерактивная запись
 
 ![Tutorial: rdc ops provisioning](/assets/tutorials/ops-tutorial.cast)
 
-## Что вы увидите
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
 ### Шаг 1: Проверка системных требований
+
+Перед развёртыванием убедитесь, что ваша рабочая станция поддерживает виртуализацию и необходимые пакеты установлены.
 
 ```bash
 rdc ops check
 ```
 
-Проверяет поддержку аппаратной виртуализации, необходимые пакеты (libvirt, QEMU) и сетевую конфигурацию. Проверка должна пройти успешно перед развёртыванием ВМ.
+Rediacc проверяет аппаратную виртуализацию (VT-x/AMD-V), необходимые пакеты (libvirt, QEMU) и сетевую конфигурацию. Все проверки должны пройти успешно, прежде чем вы сможете создавать ВМ.
 
 ### Шаг 2: Развёртывание минимального кластера ВМ
 
@@ -39,7 +37,9 @@ rdc ops check
 rdc ops up --basic --skip-orchestration
 ```
 
-Creates a two-VM cluster: a **bridge** VM (1 CPU, 1024 MB RAM, 8 GB disk) and a **worker** VM (2 CPU, 4096 MB RAM, 16 GB disk). The `--skip-orchestration` flag skips Rediacc platform provisioning, giving you bare VMs with SSH access only.
+Создаёт кластер из двух ВМ: **мостовую** ВМ (1 CPU, 1024 МБ RAM, 8 ГБ диск) и **рабочую** ВМ (2 CPU, 4096 МБ RAM, 16 ГБ диск). Флаг `--skip-orchestration` пропускает развёртывание платформы Rediacc, предоставляя вам голые ВМ только с SSH-доступом.
+
+> **Примечание:** При первом развёртывании загружаются базовые образы, что занимает больше времени. Последующие запуски используют кэшированные образы.
 
 ### Шаг 3: Проверка состояния кластера
 
@@ -47,7 +47,7 @@ Creates a two-VM cluster: a **bridge** VM (1 CPU, 1024 MB RAM, 8 GB disk) and a 
 rdc ops status
 ```
 
-Shows the state of each VM in the cluster — IP addresses, resource allocation, and running status.
+Отображает состояние каждой ВМ в кластере — IP-адреса, распределение ресурсов и статус выполнения. Обе ВМ должны отображаться как работающие.
 
 ### Шаг 4: Выполнение команд на ВМ
 
@@ -56,18 +56,33 @@ rdc ops ssh 1 hostname
 rdc ops ssh 1 uname -a
 ```
 
-Выполняет команды на мостовой ВМ (ID `1`) по SSH. Вы можете передать любую команду после ID ВМ. Для интерактивной оболочки опустите команду: `rdc ops ssh 1`.
+Выполняет команды на мостовой ВМ (ID `1`) по SSH. Передайте любую команду после ID ВМ. Для интерактивной оболочки опустите команду: `rdc ops ssh 1`.
 
 ### Шаг 5: Удаление кластера
+
+Когда закончите, уничтожьте все ВМ и освободите ресурсы.
 
 ```bash
 rdc ops down
 ```
 
-Destroys all VMs and cleans up resources. The cluster can be reprovisioned at any time with `rdc ops up`.
+Удаляет все ВМ и очищает сеть. Кластер можно развернуть заново в любое время с помощью `rdc ops up`.
+
+## Устранение неполадок
+
+**"KVM not available" или "hardware virtualization not supported"**
+Убедитесь, что виртуализация включена в настройках BIOS/UEFI. В Linux проверьте с помощью `lscpu | grep Virtualization`. В WSL2 вложенная виртуализация требует определённых флагов ядра.
+
+**"libvirt daemon not running"**
+Запустите службу libvirt: `sudo systemctl start libvirtd`. На macOS убедитесь, что QEMU установлен через Homebrew: `brew install qemu`.
+
+**"Insufficient memory for VM allocation"**
+Базовый кластер требует не менее 6 ГБ свободной оперативной памяти (1 ГБ мост + 4 ГБ рабочая + накладные расходы). Закройте другие ресурсоёмкие приложения или уменьшите характеристики ВМ.
 
 ## Следующие шаги
 
-- [Experimental VMs](/ru/docs/experimental-vms) — full reference for `rdc ops` commands, VM configuration, and platform support
-- [Machine Setup](/ru/docs/setup) — add remote machines to your config and provision them
-- [Quick Start](/ru/docs/quick-start) — deploy a containerized service end-to-end
+Вы развернули локальный кластер ВМ, выполнили команды по SSH и удалили его. Для развёртывания реальной инфраструктуры:
+
+- [Экспериментальные ВМ](/ru/docs/experimental-vms) — полный справочник по командам `rdc ops`, конфигурации ВМ и поддержке платформ
+- [Руководство: Настройка машин](/ru/docs/tutorial-setup) — регистрация удалённых машин и настройка инфраструктуры
+- [Быстрый старт](/ru/docs/quick-start) — развёртывание контейнеризированного сервиса от начала до конца

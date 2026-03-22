@@ -929,7 +929,6 @@ export type FunctionsKeys =
   | 'categories.repository.name'
   | 'checkboxOptions.mountRepoFirst'
   | 'checkboxOptions.overrideExistingFile'
-  | 'checkboxOptions.preparationOnly'
   | 'checkboxOptions.unmountAfterStopping'
   | 'configure'
   | 'currentPriority'

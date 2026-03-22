@@ -2,16 +2,13 @@ services:
   rethinkdb:
     image: rethinkdb:latest
     container_name: ${CONTAINER_NAME}
-    network_mode: "${NETWORK_MODE:-bridge}"
-    command: rethinkdb --bind all --cache-size ${RETHINKDB_CACHE_SIZE}
-    ports:
-      - "8080"    # Web admin interface
-      - "28015"   # Client driver port
-      - "29015"   # Intracluster connections
+    command: ["sh", "-c", "exec rethinkdb --bind $${SERVICE_IP:-all} --cache-size ${RETHINKDB_CACHE_SIZE}"]
+    labels:
+      - "rediacc.service_port=8080"
     volumes:
       - ./data:/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://$${SERVICE_IP:-localhost}:8080/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

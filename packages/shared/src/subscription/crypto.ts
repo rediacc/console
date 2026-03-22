@@ -5,12 +5,12 @@
  * Uses Web Crypto API for browser compatibility.
  */
 
-import { decodeSubscriptionPayload, validateSubscription } from './validation';
 import type {
+  SignedSubscriptionBlob,
   SubscriptionData,
   SubscriptionValidationResult,
-  SignedSubscriptionBlob,
 } from './types';
+import { decodeSubscriptionPayload, validateSubscription } from './validation';
 
 /**
  * Known public keys for signature verification.

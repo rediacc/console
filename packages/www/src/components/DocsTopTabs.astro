@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import type { Language } from '../i18n/types';
+import { createTranslator } from '../i18n/utils';
 import { getBaseSlug } from '../utils/slug';
 
 interface Props {
@@ -14,6 +15,20 @@ const {
   currentCategory,
   variant = 'article',
 } = Astro.props as Props;
+
+const { t } = createTranslator(currentLang);
+
+const CATEGORY_KEYS: Record<string, string> = {
+  'Tutorials': 'documentation.categories.tutorials',
+  'Guides': 'documentation.categories.guides',
+  'Concepts': 'documentation.categories.concepts',
+  'Reference': 'documentation.categories.reference',
+  'Use Cases': 'documentation.categories.useCases',
+};
+function categoryLabel(cat: string): string {
+  const k = CATEGORY_KEYS[cat];
+  return k ? t(k) : cat;
+}
 
 const allDocs = await getCollection('docs');
 const docs = allDocs
@@ -49,7 +64,7 @@ const categories = Object.keys(docsByCategory).sort((a, b) => {
 });
 ---
 
-<nav class="docs-top-tabs" aria-label="Docs sections">
+<nav class="docs-top-tabs" aria-label={t('common.aria.docsSections')}>
   <ul class="docs-top-tabs-list">
     {categories.map((category) => {
       const firstDoc = docsByCategory[category][0];
@@ -65,7 +80,7 @@ const categories = Object.keys(docsByCategory).sort((a, b) => {
             class={`docs-top-tab-link ${isActive ? 'active' : ''}`}
             data-docs-tab={category.toLowerCase().replace(/\s+/g, '-')}
           >
-            {category}
+            {categoryLabel(category)}
           </a>
         </li>
       );

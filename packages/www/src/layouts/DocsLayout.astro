@@ -3,6 +3,8 @@ import BaseLayout from './BaseLayout.astro';
 import DocsSidebar from '../components/DocsSidebar.astro';
 import DocsTopTabs from '../components/DocsTopTabs.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
+import LlmsInlineScript from '../components/LlmsInlineScript.astro';
+import StructuredData from '../components/StructuredData.astro';
 import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
 import { generateTOCFromHtml } from '../utils/sidebar-behavior';
@@ -34,6 +36,11 @@ const {
   tocTrackingSelector = '.article-content h2, .article-content h3, .article-content h4',
   showTOC = true
 } = Astro.props as Props;
+
+// Extract slug for markdown alternate link
+const slugMatch = url.match(/\/docs\/([^/]+)\/?$/);
+const docSlug = slugMatch ? slugMatch[1] : '';
+const mdUrl = docSlug ? `/${currentLang}/docs/${docSlug}.md` : '';
 
 // Generate breadcrumbs
 const { t } = createTranslator(currentLang);
@@ -83,6 +90,7 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
   description={frontmatter.description}
   lang={currentLang}
 >
+  {mdUrl && <link slot="head" rel="alternate" type="text/markdown" href={mdUrl} />}
   <div class="docs-shell">
     <div class="docs-shell-top">
       <div class="docs-header-row">
@@ -104,6 +112,18 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       <main class="docs-content">
         <article class={`docs-article ${variant === 'index' ? 'docs-article-index' : ''}`}>
           {variant === 'article' && <Breadcrumb items={breadcrumbItems} />}
+          {variant === 'article' && (
+            <StructuredData
+              type="techarticle"
+              data={{
+                title: frontmatter.title,
+                description: frontmatter.description,
+                category: frontmatter.category,
+                url: `${url}`,
+                language: currentLang,
+              }}
+            />
+          )}
 
           {variant === 'article' && showFallbackNotice && (
             <div class="fallback-notice" role="alert">
@@ -119,6 +139,21 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
             <header class="article-header">
               <div class="article-header-main">
                 <h1 class="article-title">{frontmatter.title}</h1>
+                {mdUrl && (
+                  <button
+                    type="button"
+                    class="docs-copy-page-md"
+                    data-md-href={mdUrl}
+                    aria-label={t('documentation.copyFullPageAriaLabel')}
+                    title={t('documentation.copyAsMarkdown')}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <rect x="9" y="9" width="13" height="13" rx="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                    <span class="copy-md-label">{t('documentation.copyAsMarkdown')}</span>
+                  </button>
+                )}
               </div>
 
               {frontmatter.description && (
@@ -135,7 +170,7 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
 
       {showTOC && toc.length > 0 && (
         <aside class="sidebar-base sidebar-toc toc-sidebar" data-track={shouldTrackTOC ? 'true' : 'false'} data-selector={tocTrackingSelector}>
-          <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label="Table of contents">
+          <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label={t('common.aria.tableOfContents')}>
             <h3 class="sidebar-title toc-title">{t('pages.docs.tableOfContents')}</h3>
             <ul class={`sidebar-list toc-list${useGrouped ? ' toc-collapsible' : ''}`}>
               {useGrouped ? (
@@ -166,6 +201,412 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       )}
     </div>
   </div>
+
+  <div id="docs-i18n" hidden
+    data-copied={t('documentation.copied')}
+    data-share-section={t('documentation.shareSection')}
+    data-copy-section={t('documentation.copySection')}
+    data-copy-section-link={t('documentation.copySectionLink')}
+    data-copy-section-link-desc={t('documentation.copySectionLinkDesc')}
+    data-copy-md={t('documentation.copyAsMarkdownSection')}
+    data-copy-md-desc={t('documentation.copyAsMarkdownSectionDesc')}
+    data-view-md={t('documentation.viewAsMarkdown')}
+    data-view-md-desc={t('documentation.viewAsMarkdownDesc')}
+  ></div>
+
+  <script is:inline>
+    // Apply embed mode for iframe preview pages via runtime query param detection.
+    (function() {
+      function applyCliRefEmbedMode() {
+        const docsShell = document.querySelector('.docs-shell');
+        if (!docsShell) return;
+
+        const search = window.location.search;
+        const isEmbed = new URLSearchParams(search).get('embed') === 'cli-ref';
+        docsShell.classList.toggle('docs-shell-embed', isEmbed);
+      }
+
+      document.addEventListener('astro:page-load', applyCliRefEmbedMode);
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyCliRefEmbedMode);
+      } else {
+        applyCliRefEmbedMode();
+      }
+    })();
+  </script>
+
+  <script is:inline>
+    // Copy full page as markdown button
+    (function() {
+      function initCopyMd() {
+        document.querySelectorAll('.docs-copy-page-md').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var href = btn.getAttribute('data-md-href');
+            if (!href) return;
+            fetch(href)
+              .then(function(r) { return r.text(); })
+              .then(function(text) {
+                return navigator.clipboard.writeText(text);
+              })
+              .then(function() {
+                var label = btn.querySelector('.copy-md-label');
+                var orig = label ? label.textContent : '';
+                var i18nEl = document.getElementById('docs-i18n');
+                var copiedText = i18nEl && i18nEl.dataset.copied || 'Copied!';
+                btn.classList.add('copied');
+                if (label) label.textContent = copiedText;
+                setTimeout(function() {
+                  btn.classList.remove('copied');
+                  if (label) label.textContent = orig;
+                }, 2000);
+              })
+              .catch(function() {});
+          });
+        });
+      }
+      document.addEventListener('astro:page-load', initCopyMd);
+      if (document.readyState !== 'loading') initCopyMd();
+      else document.addEventListener('DOMContentLoaded', initCopyMd);
+    })();
+  </script>
+
+  <script is:inline>
+    // Add advanced share controls for docs headings.
+    (function() {
+      const MENU_ITEM_SELECTOR = '.heading-share-menu-item';
+
+      function closeAllShareMenus(exceptId) {
+        document.querySelectorAll('.heading-share').forEach((root) => {
+          if (!(root instanceof HTMLElement)) return;
+          const id = root.dataset.shareId;
+          if (exceptId && id === exceptId) return;
+
+          const trigger = root.querySelector('.heading-share-trigger');
+          const menu = root.querySelector('.heading-share-menu');
+          if (trigger instanceof HTMLButtonElement) {
+            trigger.setAttribute('aria-expanded', 'false');
+          }
+          if (menu instanceof HTMLElement) {
+            menu.hidden = true;
+          }
+        });
+      }
+
+      function copyToClipboard(text) {
+        return navigator.clipboard.writeText(text);
+      }
+
+      function buildMarkdownHref() {
+        const match = window.location.pathname.match(/^\/([^/]+)\/docs\/([^/]+)\/?$/);
+        if (!match) return null;
+        const [, lang, slug] = match;
+        return `/${lang}/docs/${slug}.md`;
+      }
+
+      function inlineMarkdownFromNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) return node.textContent || '';
+        if (!(node instanceof HTMLElement)) return '';
+
+        if (node.tagName === 'CODE') return `\`${node.textContent || ''}\``;
+        if (node.tagName === 'A') {
+          const text = (node.textContent || '').trim();
+          const href = node.getAttribute('href') || '#';
+          return `[${text}](${href})`;
+        }
+        if (node.tagName === 'STRONG' || node.tagName === 'B') return `**${[...node.childNodes].map(inlineMarkdownFromNode).join('')}**`;
+        if (node.tagName === 'EM' || node.tagName === 'I') return `*${[...node.childNodes].map(inlineMarkdownFromNode).join('')}*`;
+
+        return [...node.childNodes].map(inlineMarkdownFromNode).join('');
+      }
+
+      function blockMarkdownFromNode(node, depth = 0) {
+        if (!(node instanceof HTMLElement)) return '';
+
+        const tag = node.tagName;
+        if (tag === 'P') return `${[...node.childNodes].map(inlineMarkdownFromNode).join('').trim()}\n\n`;
+        if (tag === 'PRE') {
+          const codeEl = node.querySelector('code');
+          const raw = codeEl?.textContent || node.textContent || '';
+          const className = codeEl?.getAttribute('class') || '';
+          const langMatch = className.match(/language-([a-zA-Z0-9_-]+)/);
+          const lang = langMatch ? langMatch[1] : '';
+          return `\`\`\`${lang}\n${raw.trimEnd()}\n\`\`\`\n\n`;
+        }
+        if (tag === 'UL' || tag === 'OL') {
+          const items = [...node.children].filter((c) => c.tagName === 'LI');
+          const lines = items.map((li, idx) => {
+            const prefix = tag === 'OL' ? `${idx + 1}. ` : '- ';
+            const text = [...li.childNodes]
+              .map((child) => {
+                if (child instanceof HTMLElement && (child.tagName === 'UL' || child.tagName === 'OL')) {
+                  return `\n${blockMarkdownFromNode(child, depth + 1)}`.trimEnd();
+                }
+                return inlineMarkdownFromNode(child);
+              })
+              .join('')
+              .trim();
+            return `${'  '.repeat(depth)}${prefix}${text}`;
+          });
+          return `${lines.join('\n')}\n\n`;
+        }
+        if (tag === 'TABLE') {
+          const rows = [...node.querySelectorAll('tr')];
+          if (rows.length === 0) return '';
+          const toCells = (tr) => [...tr.querySelectorAll('th,td')].map((c) => c.textContent?.trim() || '');
+          const header = toCells(rows[0]);
+          const divider = header.map(() => '---');
+          const body = rows.slice(1).map(toCells);
+          const lines = [
+            `| ${header.join(' | ')} |`,
+            `| ${divider.join(' | ')} |`,
+            ...body.map((r) => `| ${r.join(' | ')} |`)
+          ];
+          return `${lines.join('\n')}\n\n`;
+        }
+        if (/^H[4-6]$/.test(tag)) {
+          const level = Number.parseInt(tag[1], 10);
+          return `${'#'.repeat(level)} ${node.textContent?.trim() || ''}\n\n`;
+        }
+        if (tag === 'BLOCKQUOTE') {
+          const text = node.textContent?.trim() || '';
+          return `${text.split('\n').map((line) => `> ${line}`).join('\n')}\n\n`;
+        }
+        if (tag === 'HR') return '---\n\n';
+
+        return [...node.children].map((child) => blockMarkdownFromNode(child, depth)).join('');
+      }
+
+      function getSectionMarkdown(heading) {
+        if (!(heading instanceof HTMLElement)) return '';
+        const headingLevel = Number.parseInt(heading.tagName[1], 10);
+        const headingClone = heading.cloneNode(true);
+        if (headingClone instanceof HTMLElement) {
+          headingClone.querySelector('.heading-share')?.remove();
+        }
+        const title = headingClone.textContent?.replace(/\s+/g, ' ').trim() || heading.id;
+        const parts = [`${'#'.repeat(headingLevel)} ${title}`, ''];
+
+        let cursor = heading.nextElementSibling;
+        while (cursor) {
+          if (
+            cursor instanceof HTMLElement &&
+            /^H[2-6]$/.test(cursor.tagName) &&
+            Number.parseInt(cursor.tagName[1], 10) <= headingLevel
+          ) {
+            break;
+          }
+          parts.push(blockMarkdownFromNode(cursor).trimEnd());
+          cursor = cursor.nextElementSibling;
+        }
+
+        return parts.filter(Boolean).join('\n\n').trim();
+      }
+
+      function getSectionUrl(id) {
+        const url = new URL(window.location.href);
+        url.hash = '';
+        url.hash = id;
+        return url.toString();
+      }
+
+      function getDocsI18n() {
+        const el = document.getElementById('docs-i18n');
+        return {
+          copied: el?.dataset.copied || 'Copied!',
+          shareSection: el?.dataset.shareSection || 'Share section',
+          copySection: el?.dataset.copySection || 'Copy section',
+          copySectionLink: el?.dataset.copySectionLink || 'Copy section link',
+          copySectionLinkDesc: el?.dataset.copySectionLinkDesc || 'Copy direct URL to clipboard',
+          copyMd: el?.dataset.copyMd || 'Copy as markdown',
+          copyMdDesc: el?.dataset.copyMdDesc || 'Copy section Markdown content',
+          viewMd: el?.dataset.viewMd || 'View Page as Markdown',
+          viewMdDesc: el?.dataset.viewMdDesc || 'Open the Markdown file in a new tab',
+        };
+      }
+
+      function indicateCopied(button) {
+        if (!(button instanceof HTMLElement)) return;
+        const i18n = getDocsI18n();
+        button.classList.add('copied');
+        const label = button.querySelector('.heading-share-menu-text');
+        const previous = button.dataset.defaultLabel || label?.textContent || '';
+        if (label) label.textContent = i18n.copied;
+        window.setTimeout(() => {
+          button.classList.remove('copied');
+          if (label && previous) label.textContent = previous;
+        }, 1200);
+      }
+
+      function initHeadingShareLinks() {
+        const article = document.querySelector('.article-content');
+        if (!article) return;
+
+        article.querySelectorAll('.heading-share').forEach((node) => node.remove());
+
+        const headings = article.querySelectorAll('h2[id], h3[id]');
+        const markdownHref = buildMarkdownHref();
+        headings.forEach((heading) => {
+          const id = heading.getAttribute('id');
+          if (!id) return;
+
+          const shareId = `share-${id}`;
+          const menuId = `${shareId}-menu`;
+          const root = document.createElement('span');
+          root.className = 'heading-share';
+          root.dataset.shareId = shareId;
+
+          const trigger = document.createElement('button');
+          trigger.type = 'button';
+          trigger.className = 'heading-share-trigger';
+          const i18n = getDocsI18n();
+          trigger.setAttribute('aria-label', i18n.shareSection);
+          trigger.setAttribute('aria-haspopup', 'menu');
+          trigger.setAttribute('aria-expanded', 'false');
+          trigger.setAttribute('aria-controls', menuId);
+          trigger.innerHTML = '<span class="heading-share-trigger-main"><span class="heading-share-trigger-label">' + i18n.copySection + '</span></span><span class="heading-share-trigger-caret-wrap"><span class="heading-share-trigger-caret" aria-hidden="true">v</span></span>';
+
+          const menu = document.createElement('div');
+          menu.className = 'heading-share-menu';
+          menu.id = menuId;
+          menu.setAttribute('role', 'menu');
+          menu.hidden = true;
+
+          const sectionBtn = document.createElement('button');
+          sectionBtn.type = 'button';
+          sectionBtn.className = 'heading-share-menu-item';
+          sectionBtn.setAttribute('role', 'menuitem');
+          sectionBtn.dataset.defaultLabel = i18n.copySectionLink;
+          sectionBtn.innerHTML = '<span class="heading-share-menu-text">' + i18n.copySectionLink + '</span><span class="heading-share-menu-sub">' + i18n.copySectionLinkDesc + '</span>';
+          sectionBtn.addEventListener('click', async (event) => {
+            event.preventDefault();
+            const href = getSectionUrl(id);
+            try {
+              await copyToClipboard(href);
+              indicateCopied(sectionBtn);
+            } catch {
+              window.location.hash = id;
+            }
+            closeAllShareMenus();
+          });
+
+          const markdownCopyBtn = document.createElement('button');
+          markdownCopyBtn.type = 'button';
+          markdownCopyBtn.className = 'heading-share-menu-item';
+          markdownCopyBtn.setAttribute('role', 'menuitem');
+          markdownCopyBtn.dataset.defaultLabel = i18n.copyMd;
+          markdownCopyBtn.innerHTML = '<span class="heading-share-menu-text">' + i18n.copyMd + '</span><span class="heading-share-menu-sub">' + i18n.copyMdDesc + '</span>';
+          markdownCopyBtn.addEventListener('click', async (event) => {
+            event.preventDefault();
+            const sectionContent = getSectionMarkdown(heading);
+            try {
+              if (!sectionContent) throw new Error('section-not-found');
+              await copyToClipboard(sectionContent);
+              indicateCopied(markdownCopyBtn);
+            } catch {
+              const href = getSectionUrl(id);
+              await copyToClipboard(href).catch(() => {
+                window.location.hash = id;
+              });
+            }
+            closeAllShareMenus();
+          });
+
+          const markdownLink = document.createElement('a');
+          markdownLink.className = 'heading-share-menu-item heading-share-menu-link';
+          markdownLink.setAttribute('role', 'menuitem');
+          markdownLink.target = '_blank';
+          markdownLink.rel = 'noopener noreferrer';
+          markdownLink.innerHTML = '<span class="heading-share-menu-text">' + i18n.viewMd + '</span><span class="heading-share-menu-sub">' + i18n.viewMdDesc + '</span>';
+          if (markdownHref) {
+            markdownLink.href = markdownHref;
+          } else {
+            markdownLink.href = '#';
+            markdownLink.setAttribute('aria-disabled', 'true');
+          }
+
+          trigger.addEventListener('click', (event) => {
+            event.preventDefault();
+            const isOpen = !menu.hidden;
+            closeAllShareMenus(shareId);
+            menu.hidden = isOpen;
+            trigger.setAttribute('aria-expanded', String(!isOpen));
+            if (!isOpen) {
+              const first = menu.querySelector(MENU_ITEM_SELECTOR);
+              if (first instanceof HTMLElement) first.focus();
+            }
+          });
+
+          root.addEventListener('keydown', (event) => {
+            if (menu.hidden) return;
+            const items = [...menu.querySelectorAll(MENU_ITEM_SELECTOR)];
+            if (items.length === 0) return;
+            const active = document.activeElement;
+            const index = items.indexOf(active);
+
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              closeAllShareMenus();
+              trigger.focus();
+              return;
+            }
+
+            if (event.key === 'ArrowDown') {
+              event.preventDefault();
+              const next = index < 0 ? 0 : (index + 1) % items.length;
+              items[next].focus();
+              return;
+            }
+
+            if (event.key === 'ArrowUp') {
+              event.preventDefault();
+              const prev = index < 0 ? items.length - 1 : (index - 1 + items.length) % items.length;
+              items[prev].focus();
+            }
+          });
+
+          menu.append(sectionBtn, markdownCopyBtn, markdownLink);
+          root.append(trigger, menu);
+          heading.appendChild(root);
+        });
+
+        if (!window.rediaccHeadingShareGlobalEvents) {
+          window.rediaccHeadingShareGlobalEvents = true;
+          document.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+            if (target.closest('.heading-share')) return;
+            closeAllShareMenus();
+          });
+
+          document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape') return;
+            closeAllShareMenus();
+          });
+        }
+      }
+
+      function init() {
+        try {
+          initHeadingShareLinks();
+        } catch {
+          // Keep docs usable even if share UI fails.
+          closeAllShareMenus();
+        }
+      }
+
+      if (!window.rediaccHeadingShareLinksInitialized) {
+        window.rediaccHeadingShareLinksInitialized = true;
+        document.addEventListener('astro:page-load', init);
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', init);
+        } else {
+          init();
+        }
+      } else {
+        init();
+      }
+    })();
+  </script>
 
   <script is:inline>
     // Initialize active state tracking for TOC as user scrolls
@@ -250,11 +691,43 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       margin: 0 auto;
       padding: calc(var(--nav-height) + var(--space-4)) var(--space-4) var(--space-8) var(--space-4);
       font-family: 'Inter', var(--font-family);
+      --sidebar-top-offset: calc(3rem + var(--space-4) + var(--space-4));
+    }
+
+    .docs-shell.docs-shell-embed {
+      max-width: none;
+      margin: 0;
+      padding: var(--space-3) var(--space-3) var(--space-5);
+    }
+
+    .docs-shell.docs-shell-embed .docs-shell-top,
+    .docs-shell.docs-shell-embed :global(.docs-sidebar),
+    .docs-shell.docs-shell-embed .toc-sidebar,
+    .docs-shell.docs-shell-embed :global(.breadcrumb) {
+      display: none !important;
+    }
+
+    .docs-shell.docs-shell-embed .docs-layout {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .docs-shell.docs-shell-embed .docs-article {
+      max-width: none;
+    }
+
+    .docs-shell.docs-shell-embed .article-header {
+      margin-top: 0;
+      margin-bottom: var(--space-4);
     }
 
     .docs-shell-top {
       display: block;
       margin-bottom: var(--space-4);
+      position: sticky;
+      top: var(--nav-height);
+      z-index: 10;
+      background: var(--color-bg-alt);
     }
 
     .docs-header-row {
@@ -350,6 +823,32 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       line-height: var(--leading-tight);
       margin: var(--space-4) 0;
       color: var(--color-text);
+    }
+
+    .docs-copy-page-md {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      margin-top: var(--space-4);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      color: var(--color-text-muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .docs-copy-page-md:hover {
+      color: var(--color-text);
+      border-color: var(--color-text-muted);
+    }
+
+    .docs-copy-page-md.copied {
+      color: var(--color-success, #22c55e);
+      border-color: var(--color-success, #22c55e);
     }
 
     .article-description {
@@ -455,56 +954,157 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       line-height: var(--leading-normal);
     }
 
-    /* Terminal tutorial player */
-    .article-content :global(.terminal-tutorial) {
-      margin: var(--space-6) 0;
-    }
-    .article-content :global(.terminal-tutorial-header) {
+    /* Terminal player styles are centralized in public/styles/main.css to keep
+       docs and homepage behavior identical. */
+
+    .article-content :global(.cli-ref-links) {
+      margin-top: calc(var(--space-2) * -1);
+      margin-bottom: var(--space-5);
       font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-semibold);
       color: var(--color-text-secondary);
-      margin-bottom: var(--space-3);
     }
-    .article-content :global(.terminal-tutorial-layout) {
+
+    .article-content :global(.cli-ref-links-label) {
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text);
+      margin-right: var(--space-2);
+    }
+
+    .article-content :global(.cli-ref-links a) {
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .article-content :global(h2[id], h3[id]) {
+      position: relative;
+      padding-right: 4.75rem;
+    }
+
+    .article-content :global(.heading-share) {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 3;
+    }
+
+    .article-content :global(.heading-share-trigger) {
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
       border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      background: #1a1a2e;
+      border-radius: var(--radius-sm);
+      background: var(--color-bg-alt);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xs);
+      line-height: 1;
+      padding: 0;
+      cursor: pointer;
+      opacity: 1;
+      transition: background var(--transition-duration-fast) ease;
+      overflow: hidden;
     }
-    .article-content :global(.terminal-tutorial-player) {
+
+    .article-content :global(h2[id]:hover .heading-share-trigger),
+    .article-content :global(h3[id]:hover .heading-share-trigger),
+    .article-content :global(.heading-share-trigger:focus-visible),
+    .article-content :global(.heading-share-trigger[aria-expanded='true']) {
+      opacity: 1;
+      background: var(--color-hover);
+      color: var(--color-text);
+    }
+
+    .article-content :global(.heading-share-trigger-main) {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.45rem 0.62rem;
+    }
+
+    .article-content :global(.heading-share-trigger-caret-wrap) {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.8rem;
+      height: 100%;
+      border-left: 1px solid var(--color-border);
+      padding: 0.45rem 0.42rem;
+      background: var(--color-bg);
+    }
+
+    .article-content :global(.heading-share-trigger-label) {
+      font-size: var(--font-size-sm);
+      color: var(--color-text);
+      white-space: nowrap;
+    }
+
+    .article-content :global(.heading-share-trigger-caret) {
+      font-size: 0.62rem;
+      line-height: 1;
+      color: var(--color-text);
+    }
+
+    .article-content :global(.heading-share-menu) {
+      position: absolute;
+      top: calc(100% + 0.35rem);
+      right: 0;
+      width: min(18rem, 80vw);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-bg-alt);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      padding: 0.25rem;
       display: flex;
       flex-direction: column;
+      gap: 0.2rem;
+      z-index: 12;
     }
-    .article-content :global(.terminal-tutorial-player-inner) {
-      flex: 1;
-      min-height: 400px;
-      /* No overflow hidden here — asciinema's .ap-terminal already clips
-         terminal text, and we need control-bar tooltips to overflow. */
+
+    .article-content :global(.heading-share-menu[hidden]) {
+      display: none;
     }
-    /* Override asciinema-player's overflow:hidden on .ap-player so that
-       control-bar tooltips (marker labels, "Fullscreen (f)") are visible.
-       Terminal text stays clipped via .ap-terminal's own overflow:hidden. */
-    .article-content :global(.terminal-tutorial-player-inner .ap-player) {
-      overflow: visible !important;
-    }
-    /* Reset player size after exiting fullscreen */
-    .article-content :global(.terminal-tutorial-player-inner .ap-wrapper) {
-      max-width: 100%;
-    }
-    .article-content :global(.terminal-tutorial-controls) {
-      padding: var(--space-2) var(--space-3);
-      background: rgba(0, 0, 0, 0.3);
-    }
-    .article-content :global(.terminal-tutorial-play-btn) {
-      padding: var(--space-1) var(--space-3);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: var(--radius-sm);
+
+    .article-content :global(.heading-share-menu-item) {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      border: 0;
+      border-radius: var(--radius-xs);
       background: transparent;
-      color: #fff;
+      color: var(--color-text);
+      text-align: left;
+      text-decoration: none;
+      padding: 0.5rem 0.55rem;
       cursor: pointer;
-      font-size: var(--font-size-sm);
     }
-    .article-content :global(.terminal-tutorial-play-btn:hover) {
-      background: rgba(255, 255, 255, 0.1);
+
+    .article-content :global(.heading-share-menu-item:hover),
+    .article-content :global(.heading-share-menu-item:focus-visible) {
+      background: var(--color-hover);
+      outline: none;
+    }
+
+    .article-content :global(.heading-share-menu-text) {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      line-height: 1.2;
+      margin-bottom: 0.15rem;
+    }
+
+    .article-content :global(.heading-share-menu-sub) {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      line-height: 1.3;
+    }
+
+    .article-content :global(.heading-share-menu-item.copied .heading-share-menu-text) {
+      color: var(--color-success, #2f7a35);
+    }
+
+    .article-content :global(.heading-share-menu-link[aria-disabled='true']) {
+      opacity: 0.6;
+      pointer-events: none;
     }
 
     /* Responsive Design - TOC sidebar is hidden on tablets/phones (handled in sidebar-shared.css) */
@@ -540,4 +1140,5 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
     }
   </style>
 
+  <LlmsInlineScript page="docs" />
 </BaseLayout>

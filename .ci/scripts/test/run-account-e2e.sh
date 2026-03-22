@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run Account Portal E2E tests with Playwright
 #
-# Starts infrastructure (RustFS + backend API), installs Playwright browsers,
+# Starts infrastructure (backend API with SQLite), installs Playwright browsers,
 # runs E2E tests, and cleans up. Portable across CI platforms.
 #
 # Usage: run-account-e2e.sh [options]
@@ -34,6 +34,7 @@ GREP="${ARG_GREP:-}"
 SKIP_SETUP="${ARG_SKIP_SETUP:-false}"
 WORKERS="${ARG_WORKERS:-1}"
 ACCOUNT_API_PORT="${ACCOUNT_API_PORT:-3001}"
+E2E_PORT="${E2E_PORT:-5173}"
 
 REPO_ROOT="$(get_repo_root)"
 ACCOUNT_DIR="$REPO_ROOT/private/account"
@@ -66,9 +67,9 @@ cleanup() {
         kill "$BACKEND_PID" 2>/dev/null || true
         wait "$BACKEND_PID" 2>/dev/null || true
     fi
-    if [[ "$SKIP_SETUP" != "true" ]]; then
-        log_info "Stopping RustFS..."
-        cd "$ACCOUNT_DIR" && npm run test:teardown 2>/dev/null || true
+    if [[ "$SKIP_SETUP" != "true" ]] && [[ -f "$ACCOUNT_DIR/e2e-account.db" ]]; then
+        log_info "Removing E2E database..."
+        rm -f "$ACCOUNT_DIR/e2e-account.db" "$ACCOUNT_DIR/e2e-account.db-wal" "$ACCOUNT_DIR/e2e-account.db-shm" 2>/dev/null || true
     fi
     log_info "Cleanup complete"
 }
@@ -93,28 +94,6 @@ fi
 
 # Phase 2: Start infrastructure (unless --skip-setup)
 if [[ "$SKIP_SETUP" != "true" ]]; then
-    log_step "Starting RustFS (S3-compatible storage)..."
-    cd "$ACCOUNT_DIR"
-    if ! timeout 120 npm run test:setup; then
-        log_error "RustFS failed to start within 120 seconds"
-        exit 1
-    fi
-    cd "$REPO_ROOT"
-
-    log_step "Creating S3 bucket 'e2e-account'..."
-    cd "$ACCOUNT_DIR"
-    node --input-type=module -e "
-import { S3Client, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
-const s3 = new S3Client({
-  endpoint: 'http://localhost:9100', region: 'us-east-1', forcePathStyle: true,
-  credentials: { accessKeyId: 'testadmin', secretAccessKey: 'testadmin' }
-});
-try { await s3.send(new HeadBucketCommand({ Bucket: 'e2e-account' })); }
-catch { await s3.send(new CreateBucketCommand({ Bucket: 'e2e-account' })); }
-console.log('Bucket e2e-account ready');
-"
-    cd "$REPO_ROOT"
-
     # Phase 2.5: Start stripe listen for real Stripe e2e tests (optional)
     STRIPE_LISTEN_WEBHOOK_SECRET=""
     if [[ -n "${STRIPE_SANDBOX_SECRET_KEY:-}" ]] && command -v stripe &>/dev/null; then
@@ -150,22 +129,44 @@ console.log('Bucket e2e-account ready');
         fi
     fi
 
+    # Generate X25519 keys if not provided (CI uses throwaway keys)
+    if [[ -z "${X25519_PRIVATE_KEY:-}" ]]; then
+        X25519_KEYS=$(node -e "
+            const crypto = require('crypto');
+            const { privateKey, publicKey } = crypto.generateKeyPairSync('x25519');
+            console.log(JSON.stringify({
+                private: privateKey.export({type:'pkcs8',format:'der'}).toString('base64'),
+                public: publicKey.export({type:'spki',format:'der'}).toString('base64')
+            }));
+        ")
+        X25519_PRIVATE_KEY=$(echo "$X25519_KEYS" | jq -r '.private')
+        X25519_PUBLIC_KEY=$(echo "$X25519_KEYS" | jq -r '.public')
+    fi
+
     log_step "Starting backend API on port $ACCOUNT_API_PORT..."
     cd "$ACCOUNT_DIR"
-    ED25519_PRIVATE_KEY="${ED25519_PRIVATE_KEY:?ED25519_PRIVATE_KEY must be set}" \
-        ED25519_PUBLIC_KEY="${ED25519_PUBLIC_KEY:?ED25519_PUBLIC_KEY must be set}" \
-        API_KEY="${API_KEY:?API_KEY must be set}" \
-        JWT_SECRET="${JWT_SECRET:?JWT_SECRET must be set}" \
-        ADMIN_EMAIL="${ADMIN_EMAIL:?ADMIN_EMAIL must be set}" \
-        S3_ENDPOINT="http://localhost:9100" \
-        S3_BUCKET="e2e-account" \
-        S3_ACCESS_KEY_ID="testadmin" \
-        S3_SECRET_ACCESS_KEY="testadmin" \
-        STRIPE_WEBHOOK_SECRET="${STRIPE_LISTEN_WEBHOOK_SECRET:-}" \
-        STRIPE_SANDBOX_WEBHOOK_SECRET="${STRIPE_SANDBOX_WEBHOOK_SECRET:-}" \
-        STRIPE_SANDBOX_SECRET_KEY="${STRIPE_SANDBOX_SECRET_KEY:-}" \
-        PORT="$ACCOUNT_API_PORT" \
-        npx tsx src/entry/node.ts &
+    ACCOUNT_ENV=(
+        "ED25519_PRIVATE_KEY=${ED25519_PRIVATE_KEY:?ED25519_PRIVATE_KEY must be set}"
+        "ED25519_PUBLIC_KEY=${ED25519_PUBLIC_KEY:?ED25519_PUBLIC_KEY must be set}"
+        "X25519_PRIVATE_KEY=${X25519_PRIVATE_KEY}"
+        "X25519_PUBLIC_KEY=${X25519_PUBLIC_KEY}"
+        "API_KEY=${API_KEY:?API_KEY must be set}"
+        "JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}"
+        "ADMIN_EMAIL=${ADMIN_EMAIL:?ADMIN_EMAIL must be set}"
+        "DATABASE_PATH=e2e-account.db"
+        "PUBLIC_SITE_URL=http://localhost:$E2E_PORT"
+        "PORT=$ACCOUNT_API_PORT"
+    )
+    if [[ -n "${STRIPE_LISTEN_WEBHOOK_SECRET:-}" ]]; then
+        ACCOUNT_ENV+=("STRIPE_WEBHOOK_SECRET=$STRIPE_LISTEN_WEBHOOK_SECRET")
+    fi
+    if [[ -n "${STRIPE_SANDBOX_WEBHOOK_SECRET:-}" ]]; then
+        ACCOUNT_ENV+=("STRIPE_SANDBOX_WEBHOOK_SECRET=$STRIPE_SANDBOX_WEBHOOK_SECRET")
+    fi
+    if [[ -n "${STRIPE_SANDBOX_SECRET_KEY:-}" ]]; then
+        ACCOUNT_ENV+=("STRIPE_SANDBOX_SECRET_KEY=$STRIPE_SANDBOX_SECRET_KEY")
+    fi
+    env "${ACCOUNT_ENV[@]}" npx tsx src/entry/node.ts &
     BACKEND_PID=$!
     cd "$REPO_ROOT"
 

@@ -97,8 +97,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       });
 
       const output = result.stdout + result.stderr;
-      const hasDebugOutput =
-        output.includes('[local]') || output.includes('Executing') || output.includes('debug');
+      const hasDebugOutput = output.includes('Executing') || output.includes('debug');
 
       if (result.success) {
         expect(hasDebugOutput).toBe(true);
@@ -121,6 +120,13 @@ test.describe('E2E Local Execution @cli @e2e', () => {
 
       const result = await runLocalFunction('unknown_function_xyz_123', 'vm1', { contextName });
 
+      // Unknown functions should fail with a non-zero exit code from renet.
+      // Log diagnostics if this unexpectedly succeeds (for debugging flaky runs).
+      if (result.success) {
+        console.warn(`[DIAG] unknown function returned exit ${result.exitCode}`);
+        console.warn(`[DIAG] stdout: ${result.stdout.slice(0, 500)}`);
+        console.warn(`[DIAG] stderr: ${result.stderr.slice(0, 500)}`);
+      }
       expect(result.success).toBe(false);
     });
 
@@ -137,7 +143,8 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       const timeoutRunner = CliTestRunner.withContext(timeoutContext);
       await timeoutRunner.run([
         'config',
-        'add-machine',
+        'machine',
+        'add',
         'timeout-vm',
         '--ip',
         '10.255.255.1',
@@ -220,7 +227,8 @@ test.describe('E2E Context Switching @cli @e2e', () => {
     const localRunner = CliTestRunner.withContext(localContext);
     await localRunner.run([
       'config',
-      'add-machine',
+      'machine',
+      'add',
       'e2e-vm',
       '--ip',
       config.vm1Ip,
@@ -261,8 +269,7 @@ test.describe('E2E Context Switching @cli @e2e', () => {
     });
 
     const output = result.stdout + result.stderr;
-    const isLocalAttempt =
-      output.includes('[local]') || output.includes('renet') || output.includes('Executing');
+    const isLocalAttempt = output.includes('renet') || output.includes('Executing');
 
     expect(isLocalAttempt).toBe(true);
   });
@@ -292,7 +299,8 @@ test.describe('E2E Renet Availability @cli @e2e', () => {
     const contextRunner = CliTestRunner.withContext(renetContextName);
     await contextRunner.run([
       'config',
-      'add-machine',
+      'machine',
+      'add',
       'check-vm',
       '--ip',
       config.vm1Ip,

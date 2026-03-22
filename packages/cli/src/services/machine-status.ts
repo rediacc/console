@@ -5,16 +5,18 @@
  * Returns the parsed ListResult for display by the command layer.
  */
 
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { ListResult } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { isListResult } from '@rediacc/shared/queue-vault/data/list-types.generated';
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { configService } from './config-resources.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
 
 interface FetchStatusOptions {
   debug?: boolean;
+  /** When provided, only gather these renet sections (system,repositories,containers,services,network,block). */
+  sections?: string[];
 }
 
 /**
@@ -44,13 +46,21 @@ export async function fetchMachineStatus(
   if (options.debug) {
     outputService.info(`Provisioning renet to ${machine.ip}...`);
   }
-  await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
-    debug: options.debug,
-  });
-
+  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
+    { renetPath: localConfig.renetPath },
+    machine,
+    sshPrivateKey,
+    {
+      debug: options.debug,
+    }
+  );
   // Build command
   const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
-  const cmd = `sudo renet list all --datastore ${datastore} --json`;
+  const sectionsFlag =
+    options.sections && options.sections.length > 0
+      ? ` --sections ${options.sections.join(',')}`
+      : '';
+  const cmd = `sudo ${remoteRenetPath} list all --datastore ${datastore} --json${sectionsFlag}`;
 
   if (options.debug) {
     outputService.info(`[status] Running: ${cmd}`);

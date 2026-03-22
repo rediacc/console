@@ -56,7 +56,7 @@ source "$SCRIPT_DIR/ci-env.sh"
 export ACCOUNT_SERVER_API_KEY="$_PROD_ACCOUNT_SERVER_API_KEY"
 export ED25519_PUBLIC_KEY="$_PROD_ED25519_PUBLIC_KEY"
 # Elite uses the production account server (not a local one)
-export ACCOUNT_SERVER_URL="${ACCOUNT_SERVER_URL:-https://account.rediacc.com}"
+export ACCOUNT_SERVER_URL="${ACCOUNT_SERVER_URL:-https://www.rediacc.com/account/}"
 
 # CI-specific overrides
 export CI_MODE="true"

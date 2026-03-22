@@ -1,6 +1,9 @@
 ---
 import Navigation from '../components/Navigation';
+import ContactModal from '../components/ContactModal';
 import Footer from '../components/Footer';
+import NewsletterReturnPopup from '../components/NewsletterReturnPopup';
+import CliReferenceModal from '../components/docs/CliReferenceModal.astro';
 import StructuredData from '../components/StructuredData.astro';
 import { createTranslator } from '../i18n/utils';
 import { getLanguageFromPath, getPathWithoutLanguage, SUPPORTED_LANGUAGES, getLocale } from '../i18n/language-utils';
@@ -15,7 +18,7 @@ export interface Props {
   ogDescription?: string;
   ogImage?: string;
   ogType?: string;
-  structuredDataType?: 'organization' | 'website' | 'service' | 'breadcrumb';
+  structuredDataType?: 'organization' | 'website' | 'service' | 'breadcrumb' | 'techarticle' | 'offer';
   structuredData?: any;
   robots?: string;
   canonical?: string;
@@ -67,7 +70,8 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <meta name="keywords" content={finalKeywords}>
     <meta name="author" content={t('layout.meta.author')}>
     <meta name="robots" content={robots}>
-    <meta name="theme-color" content="#556b2f">
+    <meta name="theme-color" content="#556b2f" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0f0f10" media="(prefers-color-scheme: dark)">
 
     <!-- Security Headers -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -121,6 +125,10 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
 
     <title>{title}</title>
 
+    <!-- Preload critical fonts (only the two most-used weights to avoid competing preloads) -->
+    <link rel="preload" href="/fonts/inter/Inter-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/inter/Inter-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
+
     <!-- Preload critical resources -->
     <link rel="preload" href="/styles/main.css" as="style">
     <link rel="preload" href="/styles/responsive.css" as="style">
@@ -136,6 +144,20 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <!-- View Transitions for smooth navigation -->
     <meta name="astro-view-transitions-enabled" content="true" />
     <meta name="astro-view-transitions-fallback" content="animate" />
+
+    <!-- Theme detection script (runs before paint to prevent flash of wrong theme) -->
+    <script is:inline>
+      (function(){
+        var t = localStorage.getItem('theme');
+        if (t === 'dark' || t === 'light') {
+          document.documentElement.dataset.theme = t;
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.dataset.theme = 'dark';
+        } else {
+          document.documentElement.dataset.theme = 'light';
+        }
+      })();
+    </script>
 
     <!-- Language Cookie Redirect Script (runs early to prevent flash) -->
     <script is:inline define:vars={{ currentLang, pathWithoutLang, SUPPORTED_LANGUAGES }}>
@@ -157,9 +179,10 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
         if (cookieLang && cookieLang !== currentLang && SUPPORTED_LANGUAGES.includes(cookieLang)) {
           // Build new URL with cookie language
           const newPath = cookieLang === 'en' ? pathWithoutLang : `/${cookieLang}${pathWithoutLang}`;
+          const newUrl = `${newPath}${window.location.search}${window.location.hash}`;
 
           // Redirect to the preferred language
-          window.location.href = newPath;
+          window.location.replace(newUrl);
         }
       })();
     </script>
@@ -169,9 +192,41 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
 
     <!-- Privacy-friendly analytics by Plausible -->
     <script is:inline async src="https://plausible.rediacc.com/js/pa-QD2nMPajNQtoHBoHdMBpP.js"></script>
-    <script is:inline type="module">
+    <script is:inline>
       window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-      plausible.init()
+      plausible.init({ outboundLinks: true, fileDownloads: true, formSubmissions: true })
+    </script>
+
+    <!-- Core Web Vitals: LCP + CLS -->
+    <script is:inline>
+      (function(){
+        var p=window.plausible;if(!p)return;
+        function rate(m,v){
+          if(m==='LCP')return v<=2500?'good':v<=4000?'needs-improvement':'poor';
+          return v<=0.1?'good':v<=0.25?'needs-improvement':'poor';
+        }
+        try{
+          new PerformanceObserver(function(l){
+            var e=l.getEntries();if(!e.length)return;
+            var lcp=e[e.length-1];
+            var v=Math.round(lcp.startTime);
+            p('web_vitals',{props:{metric:'LCP',value:String(v),rating:rate('LCP',v)},interactive:false});
+          }).observe({type:'largest-contentful-paint',buffered:true});
+        }catch(_){}
+        try{
+          var cls=0;
+          new PerformanceObserver(function(l){
+            var e=l.getEntries();
+            for(var i=0;i<e.length;i++){if(!e[i].hadRecentInput)cls+=e[i].value;}
+          }).observe({type:'layout-shift',buffered:true});
+          document.addEventListener('visibilitychange',function(){
+            if(document.visibilityState==='hidden'){
+              var v=Math.round(cls*1000)/1000;
+              p('web_vitals',{props:{metric:'CLS',value:String(v),rating:rate('CLS',v)},interactive:false});
+            }
+          });
+        }catch(_){}
+      })();
     </script>
 
     <!-- Critical CSS loaded first -->
@@ -179,6 +234,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <link rel="stylesheet" href="/styles/responsive.css">
     <!-- Non-critical CSS loaded with lower priority -->
     <link rel="stylesheet" href="/styles/search-modal.css" media="print" onload="this.media='all'; this.onload=null;">
+    <link rel="stylesheet" href="/styles/contact-modal.css" media="print" onload="this.media='all'; this.onload=null;">
 
     <!-- Skip Navigation Styles -->
     <style>
@@ -223,7 +279,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
         --color-text: #1A1A1A;
         --color-text-secondary: #5E5E63;
         --color-border: #D2D2D7;
-        --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Helvetica Neue', Arial, sans-serif;
+        --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Helvetica Neue', Arial, sans-serif;
         --font-size-base: 1rem;
         --font-size-4xl: 3rem;
         --space-4: 1rem;
@@ -232,6 +288,15 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
         --space-24: 6rem;
         --max-width: 1200px;
         --nav-height: 3.5rem;
+      }
+
+      /* Critical dark theme overrides */
+      :root[data-theme="dark"] {
+        --color-bg: #0f0f10;
+        --color-bg-alt: #1a1a1b;
+        --color-text: #e4e4e7;
+        --color-text-secondary: #a1a1aa;
+        --color-border: #2e2e32;
       }
 
       /* Critical Base Styles */
@@ -310,7 +375,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
         line-height: 1;
         font-weight: 700 !important;
         letter-spacing: 0.01em;
-        color: #000;
+        color: var(--color-text);
         text-transform: lowercase;
         font-family: var(--font-family);
       }
@@ -320,30 +385,24 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
         padding-top: 0;
       }
 
-      /* Critical Hero Styles */
-      .hero {
-        padding: var(--space-24) 0 var(--space-20);
-        background-color: var(--color-bg-alt);
+      :global(html.cli-ref-embed .skip-nav),
+      :global(html.cli-ref-embed #navigation),
+      :global(html.cli-ref-embed .nav),
+      :global(html.cli-ref-embed #footer),
+      :global(html.cli-ref-embed footer),
+      :global(html.cli-ref-embed .contact-modal-backdrop),
+      :global(html.cli-ref-embed .newsletter-return-popup-overlay) {
+        display: none !important;
       }
 
-      .hero-container {
-        max-width: var(--container-md);
-        margin: 0 auto;
-        padding: 0 var(--space-4);
-        text-align: center;
+      :global(html.cli-ref-embed) {
+        scroll-behavior: auto;
       }
 
-      .hero-title {
-        font-size: var(--font-size-4xl);
-        font-weight: var(--font-weight-semibold);
-        line-height: 1.1;
-        color: var(--color-text);
-        margin-bottom: var(--space-6);
+      :global(html.cli-ref-embed main) {
+        padding-top: 0 !important;
       }
 
-      .hero-highlight {
-        color: var(--color-text);
-      }
     </style>
 </head>
 <body>
@@ -358,9 +417,53 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <main id="main-content">
         <slot />
     </main>
+    <CliReferenceModal lang={currentLang} />
+    <ContactModal client:load />
+    <NewsletterReturnPopup client:load />
     <Footer client:visible />
     <script src="/scripts/main.js" is:inline></script>
+    <script src="/scripts/contact-interceptor.js" is:inline></script>
     <script src="/scripts/image-modal.js" is:inline></script>
     <script src="/scripts/search-hotkey.js" is:inline></script>
+    <script src="/scripts/scroll-reveal.js" is:inline></script>
+    <script src="/scripts/tracker.js" is:inline></script>
+    <script is:inline>
+      (function() {
+        function hideEmbedChrome() {
+          try {
+            if (new URLSearchParams(window.location.search).get('embed') !== 'cli-ref') return;
+          } catch {
+            return;
+          }
+
+          document.documentElement.classList.add('cli-ref-embed');
+
+          const selectors = [
+            '.skip-nav',
+            '#navigation',
+            '.nav',
+            '#footer',
+            'footer',
+            '.contact-modal-backdrop',
+            '.newsletter-return-popup-overlay'
+          ];
+
+          selectors.forEach((selector) => {
+            document.querySelectorAll(selector).forEach((node) => {
+              if (node instanceof HTMLElement) {
+                node.style.display = 'none';
+              }
+            });
+          });
+        }
+
+        document.addEventListener('astro:page-load', hideEmbedChrome);
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', hideEmbedChrome);
+        } else {
+          hideEmbedChrome();
+        }
+      })();
+    </script>
 </body>
 </html>

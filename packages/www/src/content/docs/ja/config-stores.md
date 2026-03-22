@@ -4,7 +4,7 @@ description: "CLI設定ファイルを管理し、Git、Bitwarden、S3、HashiCo
 category: "Guides"
 order: 8
 language: ja
-sourceHash: "ed28acf48284b9dc"
+sourceHash: "e89c6fe36a5744f0"
 ---
 
 # 設定とストア
@@ -23,7 +23,7 @@ rdc config show
 rdc config init production
 
 # Use a specific config for a command
-rdc --config production machine info prod-1
+rdc --config production machine status prod-1
 
 # Or set via environment variable
 export REDIACC_CONFIG=production

@@ -5,59 +5,34 @@
  * All components (account-server, middleware, renet, CLI) should use these values.
  */
 
-import type {
-  BillingPeriod,
-  FeatureFlags,
-  PlanCode,
-  PlanMetadata,
-  PlanPricing,
-  ResourceLimits,
-} from './types';
+import type { BillingPeriod, FeatureFlags, PlanCode, PlanMetadata, PlanPricing } from './types';
 
 /**
  * Resource limits by plan.
  * This is the canonical source of truth for all plan limits.
  */
-export const PLAN_RESOURCES: Record<PlanCode, ResourceLimits> = {
+export const PLAN_LIMITS: Record<
+  PlanCode,
+  {
+    maxRepositorySizeGb: number;
+    maxRepoLicenseIssuancesPerMonth: number;
+  }
+> = {
   COMMUNITY: {
-    bridges: 0,
-    maxReservedJobs: 1,
-    jobTimeoutHours: 2,
     maxRepositorySizeGb: 10,
-    maxJobsPerMonth: 500,
-    maxPendingPerUser: 5,
-    maxTasksPerMachine: 1,
-    cephPoolsPerTeam: 0,
+    maxRepoLicenseIssuancesPerMonth: 500,
   },
   PROFESSIONAL: {
-    bridges: 1,
-    maxReservedJobs: 2,
-    jobTimeoutHours: 24,
     maxRepositorySizeGb: 100,
-    maxJobsPerMonth: 5000,
-    maxPendingPerUser: 10,
-    maxTasksPerMachine: 2,
-    cephPoolsPerTeam: 0,
+    maxRepoLicenseIssuancesPerMonth: 5000,
   },
   BUSINESS: {
-    bridges: 2,
-    maxReservedJobs: 3,
-    jobTimeoutHours: 72,
     maxRepositorySizeGb: 500,
-    maxJobsPerMonth: 20000,
-    maxPendingPerUser: 20,
-    maxTasksPerMachine: 3,
-    cephPoolsPerTeam: 1,
+    maxRepoLicenseIssuancesPerMonth: 20000,
   },
   ENTERPRISE: {
-    bridges: 10,
-    maxReservedJobs: 5,
-    jobTimeoutHours: 96,
-    maxRepositorySizeGb: 1024,
-    maxJobsPerMonth: 100000,
-    maxPendingPerUser: 50,
-    maxTasksPerMachine: 5,
-    cephPoolsPerTeam: -1, // Unlimited
+    maxRepositorySizeGb: 2048,
+    maxRepoLicenseIssuancesPerMonth: 100000,
   },
 } as const;
 
@@ -160,23 +135,20 @@ export function getMaxMachines(planCode: string): number {
  * Resource limit keys that should increase with higher plans.
  * Used for validation tests.
  */
-export const PROGRESSIVE_LIMIT_KEYS: readonly (keyof ResourceLimits)[] = [
-  'maxReservedJobs',
-  'jobTimeoutHours',
+export const PROGRESSIVE_LIMIT_KEYS: readonly (keyof (typeof PLAN_LIMITS)[PlanCode])[] = [
   'maxRepositorySizeGb',
-  'maxJobsPerMonth',
-  'maxPendingPerUser',
+  'maxRepoLicenseIssuancesPerMonth',
 ] as const;
 
 /**
  * Get resources for a plan code.
  * Returns COMMUNITY resources if plan code is invalid.
  */
-export function getPlanResources(planCode: string): ResourceLimits {
-  if (planCode in PLAN_RESOURCES) {
-    return PLAN_RESOURCES[planCode as PlanCode];
+export function getPlanLimits(planCode: string): (typeof PLAN_LIMITS)[PlanCode] {
+  if (planCode in PLAN_LIMITS) {
+    return PLAN_LIMITS[planCode as PlanCode];
   }
-  return PLAN_RESOURCES.COMMUNITY;
+  return PLAN_LIMITS.COMMUNITY;
 }
 
 /**
@@ -202,9 +174,12 @@ export function hasFeature(planCode: string, feature: keyof FeatureFlags): boole
  * Get resource limit for a plan.
  * Returns 0 if limit not found.
  */
-export function getResourceLimit(planCode: string, resource: keyof ResourceLimits): number {
-  const resources = getPlanResources(planCode);
-  return resources[resource];
+export function getPlanLimit(
+  planCode: string,
+  limit: keyof (typeof PLAN_LIMITS)[PlanCode]
+): number {
+  const limits = getPlanLimits(planCode);
+  return limits[limit];
 }
 
 /**

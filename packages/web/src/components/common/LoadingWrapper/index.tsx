@@ -1,6 +1,6 @@
-import React from 'react';
-import { Empty, Flex, Spin } from 'antd';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { Empty, Flex, Spin } from 'antd';
+import React from 'react';
 
 const CenteredContainer: React.FC<
   React.HTMLAttributes<HTMLDivElement> & { $minHeight?: number }

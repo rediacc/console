@@ -1,11 +1,11 @@
-import React from 'react';
+import type { ParsedError } from '@rediacc/shared/error-parser';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { Flex, Tag, Tooltip, Typography } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatTimestampAsIs, parseFailureReason, STALE_TASK_CONSTANTS } from '@/platform';
 import { ExclamationCircleOutlined } from '@/utils/optimizedIcons';
 import { renderPriority } from '@/utils/queueRenderers';
-import type { ParsedError } from '@rediacc/shared/error-parser';
-import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 
 interface PriorityWithTooltipProps {
   priorityLabel: string | undefined;

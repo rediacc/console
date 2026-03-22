@@ -105,6 +105,14 @@ readonly PORT_SQL=1433
 readonly PORT_CONSOLE_DEV=3000
 
 # =============================================================================
+# ACCOUNT DEV CONFIGURATION
+# =============================================================================
+readonly ACCOUNT_DEV_PORT_PREFERRED=4800
+readonly ACCOUNT_DEV_PORT_RANGE_END=5799
+readonly ACCOUNT_STATE_FILE="$CONSOLE_ROOT_DIR/.account-state"
+readonly ACCOUNT_LOG_DIR="$CONSOLE_ROOT_DIR/.account-logs"
+
+# =============================================================================
 # BUILD CONFIGURATION
 # =============================================================================
 readonly BUILD_TYPE_DEBUG="DEBUG"

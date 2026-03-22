@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/repos-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "7e1a44e43e6676f91db76959058980f2709fb5f0bbc68ddfe101d28b2368abaf",
+  "steps": [
+    {
+      "id": "repos-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508464,
+      "replayEndSec": 6.646665,
+      "narrationText": "Each repository is a LUKS-encrypted BTRFS volume with its own Docker daemon and loopback subnet -- fully isolated. We create a two-gigabyte repository now.",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-tutorial-01.eb447f36.mp3",
+      "audioDurationSec": 11.72898
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "baef8e1b9b5a1dba8b8f730f4b0cfeba495b2536aaad65c26c43863c473edae6",
+  "steps": [
+    {
+      "id": "tools-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.511459,
+      "replayEndSec": 5.270978,
+      "narrationText": "リモート シェル コマンドを開いて、ターゲット マシンの ID を確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/tools-tutorial/tools-tutorial-01.0b70a0c0.mp3",
+      "audioDurationSec": 4.519184
+    }
+  ]
+}

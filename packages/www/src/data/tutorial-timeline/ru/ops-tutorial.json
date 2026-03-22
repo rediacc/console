@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/ops-tutorial.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "e62112c845c772ffb3ecb5f04b4c545b8d87693eaad30b1a79a4161870be658a",
+  "steps": [
+    {
+      "id": "ops-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508295,
+      "replayEndSec": 8.986537,
+      "narrationText": "Перед инициализацией проверьте локальные требования к виртуализации.",
+      "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-tutorial-01.75c5f4c6.mp3",
+      "audioDurationSec": 4.362449
+    },
+    {
+      "id": "ops-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.986537,
+      "replayEndSec": 17.752282,
+      "narrationText": "Запустите минимальный кластер виртуальных машин для экспериментов.",
+      "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-tutorial-02.47daed6e.mp3",
+      "audioDurationSec": 4.04898
+    },
+    {
+      "id": "ops-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 17.752282,
+      "replayEndSec": 25.263372,
+      "narrationText": "Проверьте состояние кластера и доступность машины.",
+      "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-tutorial-03.8bb7d56d.mp3",
+      "audioDurationSec": 3.160816
+    },
+    {
+      "id": "ops-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 25.263372,
+      "replayEndSec": 31.160484,
+      "narrationText": "Запустите быструю проверку имени хоста на выбранной виртуальной машине.",
+      "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-tutorial-04.6d5a9f25.mp3",
+      "audioDurationSec": 5.564082
+    },
+    {
+      "id": "ops-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 31.160484,
+      "replayEndSec": 39.121485,
+      "narrationText": "Проверьте детали системы изнутри среды виртуальной машины.",
+      "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-tutorial-05.839238bf.mp3",
+      "audioDurationSec": 3.395918
+    },
+    {
+      "id": "ops-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 39.121485,
+      "replayEndSec": 46.501637,
+      "narrationText": "Завершите работу и очистите временный кластер виртуальных машин.",
+      "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-tutorial-06.2b5707df.mp3",
+      "audioDurationSec": 3.787755
+    }
+  ]
+}

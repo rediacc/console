@@ -2,20 +2,24 @@
  * Backup Schedule Service
  *
  * Pushes backup schedule configuration to remote machines via SSH.
- * Generates systemd service + timer units that run `renet backup sync`
- * on a schedule defined in the context's backup config.
+ * Generates per-destination systemd service + timer units that run `renet backup sync`
+ * on a schedule defined in the config's backup strategy.
  */
 
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { buildRcloneArgs } from '@rediacc/shared/queue-vault';
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import type { BackupStrategyDestination } from '../types/index.js';
 import { configService } from './config-resources.js';
+import { refreshRepoLicensesBatch } from './license.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
 
 interface PushScheduleOptions {
   debug?: boolean;
 }
+
+const SYSTEMD_BACKUP_UNIT_GLOB = 'rediacc-backup*';
 
 /**
  * Convert a 5-field cron expression to systemd OnCalendar format.
@@ -70,9 +74,11 @@ function cronToOnCalendar(cron: string): string {
  * Generate systemd service unit content for renet backup sync.
  */
 function generateServiceUnit(
+  destinationName: string,
   rcloneRemote: string,
   rcloneParams: string[],
-  datastore: string
+  datastore: string,
+  remoteRenetPath: string
 ): string {
   // Parse backend from remote string ":backend:path"
   const backendMatch = /^:([^:]+):(.*)/.exec(rcloneRemote);
@@ -88,7 +94,7 @@ function generateServiceUnit(
 
   // Build ExecStart command
   const execParts = [
-    '/usr/bin/renet backup sync push',
+    `${remoteRenetPath} backup sync push`,
     `--datastore ${datastore}`,
     `--rclone-backend ${backend}`,
   ];
@@ -108,7 +114,7 @@ function generateServiceUnit(
   }
 
   return `[Unit]
-Description=Rediacc Scheduled Backup
+Description=Rediacc Scheduled Backup (${destinationName})
 After=network-online.target
 
 [Service]
@@ -123,9 +129,9 @@ WantedBy=multi-user.target
 /**
  * Generate systemd timer unit content.
  */
-function generateTimerUnit(onCalendar: string): string {
+function generateTimerUnit(destinationName: string, onCalendar: string): string {
   return `[Unit]
-Description=Rediacc Backup Timer
+Description=Rediacc Backup Timer (${destinationName})
 
 [Timer]
 OnCalendar=${onCalendar}
@@ -136,35 +142,173 @@ WantedBy=timers.target
 `;
 }
 
+/** Deploy a single destination's systemd units to a remote machine via SFTP. */
+async function deployDestinationUnits(
+  sftp: SFTPClient,
+  dest: BackupStrategyDestination,
+  globalSchedule: string | undefined,
+  datastore: string,
+  remoteRenetPath: string,
+  options: PushScheduleOptions
+): Promise<void> {
+  const storageCfg = await configService.getStorage(dest.storage);
+  const { remote, params: rcloneParams } = buildRcloneArgs(storageCfg.vaultContent);
+  const effectiveSchedule = dest.schedule ?? globalSchedule;
+
+  if (!effectiveSchedule) {
+    outputService.warn(
+      `Skipping destination "${dest.storage}": no schedule (set per-destination or global cron)`
+    );
+    return;
+  }
+
+  const onCalendar = cronToOnCalendar(effectiveSchedule);
+  const unitName = `rediacc-backup-${dest.storage}`;
+
+  if (options.debug) {
+    outputService.info(`Destination: ${dest.storage}`);
+    outputService.info(`Schedule: ${effectiveSchedule} → OnCalendar=${onCalendar}`);
+    outputService.info(`Rclone remote: ${remote}`);
+  }
+
+  const serviceContent = generateServiceUnit(
+    dest.storage,
+    remote,
+    rcloneParams,
+    datastore,
+    remoteRenetPath
+  );
+  const timerContent = generateTimerUnit(dest.storage, onCalendar);
+
+  if (options.debug) {
+    process.stderr.write(`--- ${unitName}.service ---\n${serviceContent}\n`);
+    process.stderr.write(`--- ${unitName}.timer ---\n${timerContent}\n`);
+  }
+
+  // Write service unit
+  const serviceCmd = `sudo tee /etc/systemd/system/${unitName}.service > /dev/null`;
+  let exitCode = await sftp.execStreaming(serviceCmd, {
+    stdin: serviceContent,
+    onStdout: (data) => {
+      if (options.debug) process.stdout.write(data);
+    },
+    onStderr: (data) => {
+      process.stderr.write(data);
+    },
+  });
+  if (exitCode !== 0) {
+    throw new Error(`Failed to write service unit for "${dest.storage}" (exit ${exitCode})`);
+  }
+
+  // Write timer unit
+  const timerCmd = `sudo tee /etc/systemd/system/${unitName}.timer > /dev/null`;
+  exitCode = await sftp.execStreaming(timerCmd, {
+    stdin: timerContent,
+    onStdout: (data) => {
+      if (options.debug) process.stdout.write(data);
+    },
+    onStderr: (data) => {
+      process.stderr.write(data);
+    },
+  });
+  if (exitCode !== 0) {
+    throw new Error(`Failed to write timer unit for "${dest.storage}" (exit ${exitCode})`);
+  }
+
+  // Enable timer
+  const enableCmd = `sudo systemctl enable --now ${unitName}.timer`;
+  exitCode = await sftp.execStreaming(enableCmd, {
+    onStdout: (data) => {
+      if (options.debug) process.stdout.write(data);
+    },
+    onStderr: (data) => {
+      process.stderr.write(data);
+    },
+  });
+  if (exitCode !== 0) {
+    throw new Error(`Failed to enable timer for "${dest.storage}" (exit ${exitCode})`);
+  }
+
+  outputService.info(`Deployed ${unitName}.timer (${onCalendar})`);
+}
+
+async function runRemoteCommand(
+  sftp: SFTPClient,
+  command: string,
+  options: PushScheduleOptions,
+  errorMessage: string
+): Promise<void> {
+  const exitCode = await sftp.execStreaming(command, {
+    onStdout: (data) => {
+      if (options.debug) process.stdout.write(data);
+    },
+    onStderr: (data) => {
+      process.stderr.write(data);
+    },
+  });
+
+  if (exitCode !== 0) {
+    throw new Error(`${errorMessage} (exit ${exitCode})`);
+  }
+}
+
+async function cleanupExistingBackupUnits(
+  sftp: SFTPClient,
+  options: PushScheduleOptions
+): Promise<void> {
+  const cleanupCmd = [
+    'sudo rm -f',
+    `/etc/systemd/system/${SYSTEMD_BACKUP_UNIT_GLOB}.service`,
+    `/etc/systemd/system/${SYSTEMD_BACKUP_UNIT_GLOB}.timer`,
+    `/etc/systemd/system/timers.target.wants/${SYSTEMD_BACKUP_UNIT_GLOB}.timer`,
+  ].join(' ');
+
+  await runRemoteCommand(sftp, cleanupCmd, options, 'Failed to remove existing backup units');
+  await runRemoteCommand(
+    sftp,
+    'sudo systemctl daemon-reload',
+    options,
+    'Failed to reload systemd daemon after cleanup'
+  );
+  await runRemoteCommand(
+    sftp,
+    'sudo systemctl reset-failed',
+    options,
+    'Failed to reset systemd failed state after cleanup'
+  );
+}
+
 /**
- * Push backup schedule to a remote machine as systemd service + timer.
+ * Push backup schedule to a remote machine as per-destination systemd service + timer units.
  *
  * Flow:
- * 1. Load backup config + storage vaultContent from context
- * 2. Convert storage credentials to rclone args
+ * 1. Load backup strategy from config
+ * 2. Filter to enabled destinations
  * 3. Provision renet binary to remote
- * 4. SSH: write systemd service + timer units
- * 5. SSH: daemon-reload + enable + start timer
+ * 4. Delete all existing Rediacc backup units/symlinks on the machine
+ * 5. For each destination: deploy service + timer units
+ * 6. Daemon-reload after all units are written
  */
 export async function pushBackupSchedule(
   machineName: string,
   options: PushScheduleOptions = {}
 ): Promise<void> {
-  // Load backup config
-  const backupConfig = await configService.getBackupConfig();
-  if (!backupConfig?.defaultDestination) {
+  const strategy = await configService.getBackupStrategy();
+  if (!strategy || strategy.destinations.length === 0) {
     throw new Error(
-      'No backup configuration found. Set it with: rdc backup schedule set --destination <storage>'
-    );
-  }
-  if (!backupConfig.schedule) {
-    throw new Error(
-      'No backup schedule set. Set it with: rdc backup schedule set --cron "0 2 * * *"'
+      'No backup destinations configured. Add one with: rdc config backup-strategy set --destination <storage> --cron "0 2 * * *"'
     );
   }
 
-  // Load storage config
-  const storage = await configService.getStorage(backupConfig.defaultDestination);
+  // Filter to enabled destinations
+  const enabledDests = strategy.destinations.filter(
+    (d) => d.enabled !== false && strategy.enabled !== false
+  );
+  if (enabledDests.length === 0) {
+    throw new Error(
+      'All backup destinations are disabled. Enable one with: rdc config backup-strategy set --destination <storage> --enable'
+    );
+  }
 
   // Load machine config
   const localConfig = await configService.getLocalConfig();
@@ -178,31 +322,27 @@ export async function pushBackupSchedule(
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-  // Convert vault to rclone args
-  const { remote, params: rcloneParams } = buildRcloneArgs(storage.vaultContent);
-
-  // Convert cron to OnCalendar
-  const onCalendar = cronToOnCalendar(backupConfig.schedule);
-
-  if (options.debug) {
-    outputService.info(`Storage: ${backupConfig.defaultDestination}`);
-    outputService.info(`Schedule: ${backupConfig.schedule} → OnCalendar=${onCalendar}`);
-    outputService.info(`Rclone remote: ${remote}`);
-  }
-
   // Provision renet binary to remote
   outputService.info(`Provisioning renet to ${machine.ip}...`);
-  await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
-    debug: options.debug,
-  });
+  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
+    { renetPath: localConfig.renetPath },
+    machine,
+    sshPrivateKey,
+    {
+      debug: options.debug,
+    }
+  );
 
-  // Generate systemd units
-  const serviceContent = generateServiceUnit(remote, rcloneParams, datastore);
-  const timerContent = generateTimerUnit(onCalendar);
-
-  if (options.debug) {
-    process.stderr.write(`--- rediacc-backup.service ---\n${serviceContent}\n`);
-    process.stderr.write(`--- rediacc-backup.timer ---\n${timerContent}\n`);
+  const repoRefresh = await refreshRepoLicensesBatch(machine, sshPrivateKey, remoteRenetPath);
+  if (repoRefresh.scanned > 0 && repoRefresh.valid === 0) {
+    throw new Error(
+      'Backup deployment aborted: no valid repo licenses are available on target machine'
+    );
+  }
+  if (repoRefresh.scanned > 0) {
+    outputService.info(
+      `Repo licenses refreshed: scanned ${repoRefresh.scanned}, issued ${repoRefresh.issued}, refreshed ${repoRefresh.refreshed}, unchanged ${repoRefresh.unchanged}, failed ${repoRefresh.failed}`
+    );
   }
 
   // Connect via SSH
@@ -215,50 +355,26 @@ export async function pushBackupSchedule(
   await sftp.connect();
 
   try {
-    // Write service unit
-    const serviceCmd = `sudo tee /etc/systemd/system/rediacc-backup.service > /dev/null`;
-    let exitCode = await sftp.execStreaming(serviceCmd, {
-      stdin: serviceContent,
-      onStdout: (data) => {
-        if (options.debug) process.stdout.write(data);
-      },
-      onStderr: (data) => {
-        process.stderr.write(data);
-      },
-    });
-    if (exitCode !== 0) {
-      throw new Error(`Failed to write service unit (exit ${exitCode})`);
+    await cleanupExistingBackupUnits(sftp, options);
+
+    // Deploy units for each enabled destination
+    for (const dest of enabledDests) {
+      await deployDestinationUnits(
+        sftp,
+        dest,
+        strategy.schedule,
+        datastore,
+        remoteRenetPath,
+        options
+      );
     }
 
-    // Write timer unit
-    const timerCmd = `sudo tee /etc/systemd/system/rediacc-backup.timer > /dev/null`;
-    exitCode = await sftp.execStreaming(timerCmd, {
-      stdin: timerContent,
-      onStdout: (data) => {
-        if (options.debug) process.stdout.write(data);
-      },
-      onStderr: (data) => {
-        process.stderr.write(data);
-      },
-    });
-    if (exitCode !== 0) {
-      throw new Error(`Failed to write timer unit (exit ${exitCode})`);
-    }
-
-    // Reload systemd and enable timer
-    const enableCmd =
-      'sudo systemctl daemon-reload && sudo systemctl enable --now rediacc-backup.timer';
-    exitCode = await sftp.execStreaming(enableCmd, {
-      onStdout: (data) => {
-        if (options.debug) process.stdout.write(data);
-      },
-      onStderr: (data) => {
-        process.stderr.write(data);
-      },
-    });
-    if (exitCode !== 0) {
-      throw new Error(`Failed to enable timer (exit ${exitCode})`);
-    }
+    await runRemoteCommand(
+      sftp,
+      'sudo systemctl daemon-reload',
+      options,
+      'Failed to reload systemd daemon after deploy'
+    );
   } finally {
     sftp.close();
   }

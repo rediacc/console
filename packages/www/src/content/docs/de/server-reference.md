@@ -4,7 +4,8 @@ description: "Verzeichnisstruktur, renet-Befehle, systemd-Dienste und Arbeitsabl
 category: "Concepts"
 order: 3
 language: de
-sourceHash: "fdfadf580c39b1fe"
+sourceHash: "07b8aba408085eab"
+sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
 # Server Reference
@@ -24,19 +25,18 @@ For the high-level architecture, see [Architecture](/de/docs/architecture). For 
 ├── mounts/                            # Mount points for decrypted repos
 │   └── {uuid}/
 │       ├── .rediacc.json              # Service → IP slot mapping
+│       ├── .rediacc/docker/           # Docker daemon data (images, containers)
 │       └── {service-name}/            # Service directory
 │           ├── docker-compose.yml     # Compose definition
 │           ├── Rediaccfile            # Lifecycle hooks (bash)
 │           └── data/                  # Persistent data
-├── interim/                           # Docker overlay2 data (per-repo)
-│   └── {uuid}/docker/data/
 ├── immovable/                         # Read-only shared content
 ├── .credentials/                      # Encrypted secrets
 └── .backup-*/                         # BTRFS snapshots
 
 /opt/rediacc/proxy/                    # Traefik reverse proxy
 ├── docker-compose.yml
-├── config.env                         # BASE_DOMAIN, CERTBOT_EMAIL, CF_DNS_API_TOKEN
+├── config.env                         # CERTBOT_EMAIL, CF_DNS_API_TOKEN
 ├── letsencrypt/                       # ACME certificates
 └── traefik/dynamic/                   # Dynamic route files
 
@@ -82,10 +82,10 @@ renet repository delete --name {uuid} --network-id {id}
 Run compose commands against a specific repository's Docker daemon:
 
 ```bash
-sudo renet compose --network-id {id} -- up -d
-sudo renet compose --network-id {id} -- down
-sudo renet compose --network-id {id} -- logs -f
-sudo renet compose --network-id {id} -- config
+sudo renet compose -- up -d
+sudo renet compose -- down
+sudo renet compose -- logs -f
+sudo renet compose -- config
 ```
 
 Run docker commands directly:
@@ -103,6 +103,18 @@ DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
 ```
 
 > Always run compose from the directory that contains `docker-compose.yml`, or Docker will not find the file.
+
+### Dateisystem-Sandbox
+
+```bash
+# Landlock-Unterstuetzung pruefen
+renet sandbox-exec --detect
+
+# Einen Befehl in einer Landlock-Sandbox ausfuehren (intern von renet verwendet)
+renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
+```
+
+`sandbox-exec` wendet Landlock-LSM-Dateisystembeschraenkungen auf einen Befehl an. Der sandboxed Prozess kann nur explizit erlaubte Pfade erreichen, waehrend jeder andere Dateisystemzugriff vom Kernel blockiert wird. Das wird intern von renet verwendet, um Rediaccfile-Ausfuehrung, Compose-Operationen und SSH-Befehle auf den Einhaengepfad ihres Repositories zu begrenzen.
 
 ### Proxy & Routing
 
@@ -159,7 +171,7 @@ renet backup pull --name {uuid} --network-id {id} --source machine \
 renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc
 ```
 
-> Most users should use `rdc backup push/pull` instead. The `rdc` commands handle credentials and machine resolution automatically.
+> Most users should use `rdc repo push/pull` instead. The `rdc` commands handle credentials and machine resolution automatically.
 
 ### Checkpointing (CRIU)
 
@@ -230,7 +242,7 @@ done
 ### Recreate a Service After Config Changes
 
 ```bash
-sudo renet compose --network-id {id} -- up -d
+sudo renet compose -- up -d
 ```
 
 Run this from the directory with `docker-compose.yml`. Changed containers are automatically recreated.

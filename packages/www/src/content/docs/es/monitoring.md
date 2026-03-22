@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: es
-sourceHash: 5a0f43834cb143a2
+sourceHash: ed667247d300508a
 ---
 
 # Monitoreo
@@ -51,6 +51,8 @@ Opciones:
 - `--health-check` — Realizar verificaciones de estado activas en los contenedores
 - `--output json` — Salida JSON legible por máquinas
 
+La salida JSON incluye todos los detalles del contenedor (`labels`, `port_mappings`, `image`, `id`) además de `repository` (nombre resuelto), `repository_guid` (GUID original), `domain` y `autoRoute`.
+
 ## Listar Servicios
 
 Vea los servicios systemd relacionados con Rediacc en una máquina:
@@ -71,6 +73,8 @@ rdc machine services server-1
 Opciones:
 - `--stability-check` — Marcar servicios inestables (fallidos, >3 reinicios, reinicio automático)
 - `--output json` — Salida JSON legible por máquinas
+
+La salida JSON incluye todos los detalles del servicio con `repository` (nombre resuelto) y `repository_guid` (GUID original).
 
 ## Listar Repositorios
 
@@ -93,6 +97,8 @@ rdc machine repos server-1
 Opciones:
 - `--search <text>` — Filtrar por nombre o ruta de montaje
 - `--output json` — Salida JSON legible por máquinas
+
+La salida JSON incluye `name` (resuelto) y `guid` (GUID original), y anida para cada repositorio los arreglos `containers` (con `domain`, `autoRoute`, `repository`/`repository_guid`) y `services`.
 
 ## Estado del Vault
 

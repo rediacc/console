@@ -4,7 +4,7 @@ description: rdc を使う場面と renet を使う場面。
 category: Concepts
 order: 1
 language: ja
-sourceHash: "d3e2a6750f95b6c1"
+sourceHash: "69cb9c27f7c3afaf"
 ---
 
 # rdc vs renet
@@ -36,7 +36,7 @@ Rediaccには2つのバイナリがあります。それぞれの使い分けを
 
 ```bash
 # 新しいサーバーをセットアップ
-rdc config setup-machine server-1
+rdc config machine setup server-1
 
 # リポジトリを作成して起動
 rdc repo create my-app -m server-1 --size 10G

@@ -1,0 +1,13 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "ar",
+  "version": 1,
+  "events": [
+    {
+      "id": "tools-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.511459,
+      "text": ".ﻑﺪﻬﺘﺴﻤﻟﺍ ﺯﺎﻬﺠﻟﺍ ﺔﻳﻮﻫ ﻦﻣ ﻖﻘﺤﺘﻠﻟ ﺪﻌﺑ ﻦﻋ Shell ﺮﻣﺃ ﺢﺘﻓﺍ"
+    }
+  ]
+}

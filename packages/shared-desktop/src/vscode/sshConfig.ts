@@ -6,34 +6,17 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
-import {
-  buildMachineEnvironment,
-  buildRemoteCommand,
-  buildRepositoryEnvironment,
-} from './envCompose.js';
-import { getPlatform } from '../utils/platform.js';
+import { getSSHHome } from '../utils/platform.js';
+import { buildMachineEnvironment, buildRepositoryEnvironment } from './envCompose.js';
 import type { SSHConfigEntry } from './types.js';
-
-/**
- * Normalizes a path for SSH config usage
- * Converts Windows backslashes to forward slashes
- */
-function normalizePathForSSH(path: string): string {
-  const platform = getPlatform();
-  if (platform === 'windows') {
-    return path.replaceAll('\\', '/');
-  }
-  return path;
-}
 
 /**
  * Default SSH config file path for rediacc connections
  */
 export function getSSHConfigPath(): string {
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? '';
+  const home = getSSHHome();
   const sshPath = join(home, '.ssh', 'config_rediacc');
-  // Normalize for Windows - SSH expects forward slashes
-  return normalizePathForSSH(sshPath);
+  return sshPath;
 }
 
 /**
@@ -87,7 +70,8 @@ function formatConfigEntry(entry: SSHConfigEntry): string {
   // SetEnv directives for environment variables
   // Quote values containing spaces (matching Python CLI behavior)
   if (entry.setEnv) {
-    for (const [key, value] of Object.entries(entry.setEnv)) {
+    for (const [key, rawValue] of Object.entries(entry.setEnv)) {
+      const value = String(rawValue);
       // Quote the value if it contains spaces
       const quotedValue = value.includes(' ') ? `"${value}"` : value;
       lines.push(`  SetEnv ${key}=${quotedValue}`);
@@ -255,6 +239,10 @@ export interface BuildSSHConfigOptions {
   serverAliveInterval?: number;
   /** Max missed keepalives before disconnect (default: 3) */
   serverAliveCountMax?: number;
+  /** Repo working directory for sandbox isolation (e.g., /mnt/rediacc/mounts/<guid>) */
+  workingDirectory?: string;
+  /** Path to renet binary on remote machine */
+  renetPath?: string;
 }
 
 /**
@@ -308,8 +296,9 @@ export function buildVSCodeSSHConfigEntry(options: BuildSSHConfigOptions): SSHCo
     });
   }
 
-  // Build RemoteCommand for user switching
-  const { remoteCommand, requestTTY } = buildRemoteCommand(sshUser, universalUser);
+  // Sandbox is enforced server-side via ForceCommand in authorized_keys.
+  // No client-side RemoteCommand needed for sandbox — the gateway reads
+  // REDIACC_REPOSITORY from SetEnv to determine which repo to sandbox.
 
   const entry: SSHConfigEntry = {
     host: connectionHost,
@@ -322,12 +311,6 @@ export function buildVSCodeSSHConfigEntry(options: BuildSSHConfigOptions): SSHCo
     serverAliveInterval,
     serverAliveCountMax,
   };
-
-  // Add RemoteCommand if user switching is needed
-  if (remoteCommand) {
-    entry.remoteCommand = remoteCommand;
-    entry.requestTTY = requestTTY as 'yes' | 'no' | 'force';
-  }
 
   return entry;
 }

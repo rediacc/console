@@ -1,0 +1,24 @@
+---
+import { createTranslator } from '../i18n/utils';
+import type { Language } from '../i18n/types';
+
+interface Props {
+  lang?: Language;
+}
+
+const { lang = 'en' } = Astro.props;
+const { t, to } = createTranslator(lang);
+const items = to('integrations.items') as string[];
+---
+
+<section class="integrations-strip">
+  <div class="container">
+    <h3 class="integrations-strip-title reveal">{t('integrations.title')}</h3>
+    <p class="integrations-strip-subtitle reveal">{t('integrations.migrationMessage')}</p>
+    <div class="integrations-strip-row reveal">
+      {items.map((item) => (
+        <span class="integrations-strip-badge">{item}</span>
+      ))}
+    </div>
+  </div>
+</section>

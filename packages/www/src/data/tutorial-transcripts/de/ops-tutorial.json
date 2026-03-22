@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/ops-tutorial.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "ops-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.508295,
+      "text": "Überprüfen Sie vor der Bereitstellung die lokalen Virtualisierungsanforderungen."
+    },
+    {
+      "id": "ops-tutorial-02",
+      "markerIndex": 1,
+      "at": 8.986537,
+      "text": "Starten Sie zum Experimentieren einen minimalen VM-Cluster."
+    },
+    {
+      "id": "ops-tutorial-03",
+      "markerIndex": 2,
+      "at": 17.752282,
+      "text": "Überprüfen Sie den Clusterstatus und die Maschinenverfügbarkeit."
+    },
+    {
+      "id": "ops-tutorial-04",
+      "markerIndex": 3,
+      "at": 25.263372,
+      "text": "Führen Sie eine schnelle Überprüfung des Hostnamens auf einer ausgewählten VM durch."
+    },
+    {
+      "id": "ops-tutorial-05",
+      "markerIndex": 4,
+      "at": 31.160484,
+      "text": "Überprüfen Sie Systemdetails innerhalb der VM-Umgebung."
+    },
+    {
+      "id": "ops-tutorial-06",
+      "markerIndex": 5,
+      "at": 39.121485,
+      "text": "Fahren Sie den temporären VM-Cluster herunter und bereinigen Sie ihn."
+    }
+  ]
+}

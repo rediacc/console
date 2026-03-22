@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: cf186b18b0c50eba
+sourceHash: "bd53047cef737088"
 ---
 
 # النسخ الاحتياطي والاستعادة
@@ -22,7 +22,7 @@ sourceHash: cf186b18b0c50eba
 إذا كان لديك بالفعل جهاز rclone بعيد مُكوَّن:
 
 ```bash
-rdc config import-storage rclone.conf
+rdc config storage import rclone.conf
 ```
 
 يستورد هذا تكوينات التخزين من ملف إعدادات rclone إلى التكوين الحالي. الأنواع المدعومة: S3 وB2 وGoogle Drive وOneDrive وMega وDropbox وBox وAzure Blob وSwift.
@@ -30,7 +30,7 @@ rdc config import-storage rclone.conf
 ### عرض وحدات التخزين
 
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
 ## إرسال نسخة احتياطية
@@ -38,7 +38,7 @@ rdc config storages
 إرسال نسخة احتياطية من مستودع إلى تخزين خارجي:
 
 ```bash
-rdc backup push my-app -m server-1 --to my-storage
+rdc repo push my-app -m server-1 --to my-storage
 ```
 
 | الخيار | الوصف |
@@ -46,7 +46,7 @@ rdc backup push my-app -m server-1 --to my-storage
 | `--to <storage>` | موقع التخزين الهدف |
 | `--to-machine <machine>` | الجهاز الهدف للنسخ الاحتياطي من جهاز إلى جهاز |
 | `--dest <filename>` | اسم ملف الوجهة المخصص |
-| `--checkpoint` | إنشاء نقطة تحقق قبل الإرسال |
+| `--checkpoint` | إنشاء نقطة تحقق CRIU قبل الإرسال (للحاويات التي تحمل تسمية `rediacc.checkpoint=true`). الهدف يستعيد تلقائياً عند `repo up` |
 | `--force` | استبدال نسخة احتياطية موجودة |
 | `--tag <tag>` | وسم النسخة الاحتياطية |
 | `-w, --watch` | مراقبة تقدم العملية |
@@ -58,7 +58,7 @@ rdc backup push my-app -m server-1 --to my-storage
 سحب نسخة احتياطية لمستودع من تخزين خارجي:
 
 ```bash
-rdc backup pull my-app -m server-1 --from my-storage
+rdc repo pull my-app -m server-1 --from my-storage
 ```
 
 | الخيار | الوصف |
@@ -75,7 +75,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 عرض النسخ الاحتياطية المتاحة في موقع تخزين:
 
 ```bash
-rdc backup list --from my-storage -m server-1
+rdc repo backup list --from my-storage -m server-1
 ```
 
 ## المزامنة المجمّعة
@@ -85,13 +85,13 @@ rdc backup list --from my-storage -m server-1
 ### إرسال الكل إلى التخزين
 
 ```bash
-rdc backup sync --to my-storage -m server-1
+rdc repo push --to my-storage -m server-1
 ```
 
 ### سحب الكل من التخزين
 
 ```bash
-rdc backup sync --from my-storage -m server-1
+rdc repo pull --from my-storage -m server-1
 ```
 
 | الخيار | الوصف |
@@ -110,12 +110,19 @@ rdc backup sync --from my-storage -m server-1
 ### تعيين الجدول
 
 ```bash
-rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-storage --cron "0 2 * * *" --enable
+```
+
+يمكنك تكوين وجهات متعددة بجداول مختلفة:
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 | الخيار | الوصف |
 |--------|-------|
-| `--destination <storage>` | وجهة النسخ الاحتياطي الافتراضية |
+| `--destination <storage>` | وجهة النسخ الاحتياطي (يمكن تعيينها لكل وجهة) |
 | `--cron <expression>` | تعبير cron (مثال: `"0 2 * * *"` للتشغيل يومياً الساعة 2 صباحاً) |
 | `--enable` | تفعيل الجدول |
 | `--disable` | تعطيل الجدول |
@@ -125,13 +132,13 @@ rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
 نشر تكوين الجدول على جهاز كمؤقت systemd:
 
 ```bash
-rdc backup schedule push server-1
+rdc machine deploy-backup server-1
 ```
 
 ### عرض الجدول
 
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
 ## تصفح التخزين
@@ -139,7 +146,7 @@ rdc backup schedule show
 تصفح محتويات موقع تخزين:
 
 ```bash
-rdc storage browse my-storage -m server-1
+rdc storage browse my-storage
 ```
 
 ## أفضل الممارسات

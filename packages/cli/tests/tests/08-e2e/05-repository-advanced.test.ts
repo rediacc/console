@@ -32,6 +32,7 @@ test.describe
     const repo2MountPath = `${E2E.REPO_MOUNTS_BASE}/${E2E.TEST_REPO_2}`;
 
     test.beforeAll(async () => {
+      test.setTimeout(E2E.SETUP_TIMEOUT);
       test.skip(!config.enabled, 'E2E VMs not configured');
       ssh1 = new SSHValidator(config.vm1Ip, config.sshUser, config.sshKeyPath);
       cleanup = await setupE2EEnvironment(ctxName);
@@ -41,9 +42,12 @@ test.describe
     });
 
     test.afterAll(async () => {
-      // Best-effort cleanup both repos
-      await safeDeleteRepo(E2E.MACHINE_VM1, E2E.TEST_REPO_2, ctxName);
-      await safeDeleteRepo(E2E.MACHINE_VM1, E2E.TEST_REPO, ctxName);
+      test.setTimeout(E2E.TEST_TIMEOUT);
+      // Best-effort cleanup both repos (parallel to stay within hook timeout)
+      await Promise.allSettled([
+        safeDeleteRepo(E2E.MACHINE_VM1, E2E.TEST_REPO_2, ctxName),
+        safeDeleteRepo(E2E.MACHINE_VM1, E2E.TEST_REPO, ctxName),
+      ]);
       await cleanup?.();
     });
 

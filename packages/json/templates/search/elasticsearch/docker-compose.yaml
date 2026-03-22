@@ -3,24 +3,21 @@ services:
     image: elasticsearch:8.11.0
     container_name: ${CONTAINER_NAME}
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=${ES_SECURITY_ENABLED}
       - "ES_JAVA_OPTS=-Xms${ES_HEAP_SIZE} -Xmx${ES_HEAP_SIZE}"
       - cluster.name=${ES_CLUSTER_NAME}
+      - network.host=${SERVICE_IP:-0.0.0.0}
       - bootstrap.memory_lock=true
     ulimits:
       memlock:
         soft: -1
         hard: -1
-    ports:
-      - "9200"
-      - "9300"
     volumes:
       - ./data:/usr/share/elasticsearch/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health | grep -E 'green|yellow' || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://$${SERVICE_IP:-localhost}:9200/_cluster/health | grep -E 'green|yellow' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -30,18 +27,17 @@ services:
     image: kibana:8.11.0
     container_name: ${CONTAINER_NAME}-kibana
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
+    labels:
+      - "rediacc.service_port=5601"
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_HOSTS=http://${ELASTICSEARCH_IP}:9200
       - SERVER_NAME=${KIBANA_SERVER_NAME}
-      - SERVER_HOST=0.0.0.0
-    ports:
-      - "5601"
+      - SERVER_HOST=${SERVICE_IP:-0.0.0.0}
     depends_on:
       elasticsearch:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:5601/api/status | grep -q available || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://$${SERVICE_IP:-localhost}:5601/api/status | grep -q available || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/ops-tutorial.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "ops-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.508295,
+      "text": "在配置之前验证本地虚拟化要求。"
+    },
+    {
+      "id": "ops-tutorial-02",
+      "markerIndex": 1,
+      "at": 8.986537,
+      "text": "启动一个最小的虚拟机集群进行实验。"
+    },
+    {
+      "id": "ops-tutorial-03",
+      "markerIndex": 2,
+      "at": 17.752282,
+      "text": "检查集群状态和机器可用性。"
+    },
+    {
+      "id": "ops-tutorial-04",
+      "markerIndex": 3,
+      "at": 25.263372,
+      "text": "对选定的虚拟机运行快速主机名检查。"
+    },
+    {
+      "id": "ops-tutorial-05",
+      "markerIndex": 4,
+      "at": 31.160484,
+      "text": "从 VM 环境内部检查系统详细信息。"
+    },
+    {
+      "id": "ops-tutorial-06",
+      "markerIndex": 5,
+      "at": 39.121485,
+      "text": "关闭并清理临时虚拟机集群。"
+    }
+  ]
+}

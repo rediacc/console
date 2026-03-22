@@ -5,8 +5,8 @@ import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { opsExecutorService } from '../../services/ops-executor.js';
 import { outputService } from '../../services/output.js';
-import { handleError } from '../../utils/errors.js';
 import type { OutputFormat } from '../../types/index.js';
+import { handleError } from '../../utils/errors.js';
 
 type CheckStatus = 'ok' | 'warn' | 'fail';
 

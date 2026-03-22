@@ -1,5 +1,5 @@
-import React from 'react';
 import { Alert, Card, Col, Space, Tooltip } from 'antd';
+import React from 'react';
 import { WarningOutlined } from '@/utils/optimizedIcons';
 import type { VaultFormValues } from '../types';
 

@@ -4,7 +4,7 @@ description: "Solutions aux problèmes courants avec SSH, la configuration, les 
 category: "Guides"
 order: 10
 language: fr
-sourceHash: 4c3163007e6a3326
+sourceHash: "b392ab73d90c62e1"
 ---
 
 # Dépannage
@@ -14,7 +14,7 @@ Problèmes courants et leurs solutions. En cas de doute, commencez par `rdc doct
 ## Échec de la connexion SSH
 
 - Vérifiez que vous pouvez vous connecter manuellement : `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Exécutez `rdc config scan-keys server-1` pour actualiser les clés de l'hôte
+- Exécutez `rdc config machine scan-keys server-1` pour actualiser les clés de l'hôte
 - Vérifiez que le port SSH correspond : `--port 22`
 - Testez avec une commande simple : `rdc term server-1 -c "hostname"`
 
@@ -23,7 +23,7 @@ Problèmes courants et leurs solutions. En cas de doute, commencez par `rdc doct
 Si un serveur a été réinstallé ou ses clés SSH ont changé, vous verrez "host key verification failed" :
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Cette commande récupère de nouvelles clés d'hôte et met à jour votre configuration.
@@ -32,7 +32,7 @@ Cette commande récupère de nouvelles clés d'hôte et met à jour votre config
 
 - Assurez-vous que l'utilisateur SSH dispose d'un accès sudo sans mot de passe, ou configurez `NOPASSWD` pour les commandes requises
 - Vérifiez l'espace disque disponible sur le serveur
-- Exécutez avec `--debug` pour une sortie détaillée : `rdc config setup-machine server-1 --debug`
+- Exécutez avec `--debug` pour une sortie détaillée : `rdc config machine setup server-1 --debug`
 
 ## Échec de la création du dépôt
 
@@ -43,8 +43,8 @@ Cette commande récupère de nouvelles clés d'hôte et met à jour votre config
 ## Les services ne démarrent pas
 
 - Vérifiez la syntaxe du Rediaccfile : ce doit être du Bash valide
-- Assurez-vous que les fichiers `docker compose` utilisent `network_mode: host`
-- Vérifiez que les images Docker sont accessibles (envisagez `docker compose pull` dans `prep()`)
+- Assurez-vous que votre Rediaccfile utilise `renet compose --` (et non `docker compose`)
+- Vérifiez que les images Docker sont accessibles (envisagez `renet compose -- pull` dans `up()`)
 - Consultez les journaux des conteneurs via le socket Docker du dépôt :
 
 ```bash

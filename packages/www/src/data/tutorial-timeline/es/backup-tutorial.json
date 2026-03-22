@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "es",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "f305e086a221ec313cc97bac14e1afdd346ec4507428434c1b6ffaeaa4cba4c4",
+  "steps": [
+    {
+      "id": "backup-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.510362,
+      "replayEndSec": 5.406939,
+      "narrationText": "Inspeccione los destinos de copia de seguridad actualmente configurados.",
+      "audioSrc": "/assets/tutorials/audio/es/backup-tutorial/backup-tutorial-01.f49cf8df.mp3",
+      "audioDurationSec": 4.91102
+    }
+  ]
+}

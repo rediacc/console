@@ -13,9 +13,9 @@
  */
 
 import path from 'node:path';
-import { visit, SKIP } from 'unist-util-visit';
-import type { Root, Paragraph, Image, Text } from 'mdast';
+import type { Image, Paragraph, Root, Text } from 'mdast';
 import type { Node, Parent } from 'unist';
+import { SKIP, visit } from 'unist-util-visit';
 
 const VIDEO_EXTENSIONS = ['.webm', '.mp4'] as const;
 

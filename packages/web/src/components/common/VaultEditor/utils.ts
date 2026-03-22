@@ -1,4 +1,5 @@
 import { validateSSHPrivateKey } from '@rediacc/shared/queue-vault';
+import type { Rule } from 'antd/es/form';
 import type {
   ExtraFieldsResult,
   FieldDefinition,
@@ -7,7 +8,6 @@ import type {
   VaultDefinitionsConfig,
   VaultFormValues,
 } from './types';
-import type { Rule } from 'antd/es/form';
 
 /**
  * Base64 utility functions for fields with format: "base64"

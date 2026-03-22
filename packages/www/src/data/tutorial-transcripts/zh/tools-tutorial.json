@@ -1,0 +1,13 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tools-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.511459,
+      "text": "打开远程 shell 命令来验证目标计算机身份。"
+    }
+  ]
+}

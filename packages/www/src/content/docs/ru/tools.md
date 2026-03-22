@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: ru
-sourceHash: 80ca3cd3e1a55d4b
+sourceHash: "b9aa7cdcf088b645"
 ---
 
 # Инструменты
@@ -20,19 +20,19 @@ Rediacc включает инструменты для повышения про
 ### Загрузка файлов на сервер
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
 ```
 
 ### Скачивание файлов с сервера
 
 ```bash
-rdc sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
 ```
 
 ### Проверка статуса синхронизации
 
 ```bash
-rdc sync status -m server-1 -r my-app
+rdc repo sync status -m server-1 -r my-app
 ```
 
 ### Параметры

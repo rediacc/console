@@ -4,7 +4,7 @@ description: "Yapılandırma oluşturma, makine ekleme, sunucuları hazırlama v
 category: "Guides"
 order: 3
 language: tr
-sourceHash: "0c725f9eb65e6c0f"
+sourceHash: "ebf1c9967814ec86"
 ---
 
 # Makine Kurulumu
@@ -33,7 +33,7 @@ Bu komut `my-infra` adında bir yapılandırma oluşturur ve `~/.config/rediacc/
 Uzak sunucunuzu yapılandırmaya makine olarak kaydedin:
 
 ```bash
-rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
+rdc config machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Seçenek | Gerekli | Varsayılan | Açıklama |
@@ -46,13 +46,13 @@ rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
 Makine eklendikten sonra rdc, sunucunun host anahtarlarını almak için otomatik olarak `ssh-keyscan` çalıştırır. Bunu manuel olarak da çalıştırabilirsiniz:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Kayıtlı tüm makineleri görüntülemek için:
 
 ```bash
-rdc config machines
+rdc config machine list
 ```
 
 ## Adım 3: Makineyi Hazırlama
@@ -60,7 +60,7 @@ rdc config machines
 Uzak sunucuyu gerekli tüm bağımlılıklarla hazırlayın:
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 Bu komut:
@@ -82,7 +82,7 @@ Bu komut:
 Bir sunucunun SSH host anahtarı değiştiyse (ör. yeniden kurulum sonrası), saklanan anahtarları yenileyin:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Bu komut, yapılandırmanızdaki ilgili makinenin `knownHosts` alanını günceller.
@@ -112,27 +112,29 @@ Trafiği herkese açık olarak sunması gereken makineler için altyapı ayarlar
 ### Altyapıyı Ayarlama
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-| Seçenek | Açıklama |
-|---------|----------|
-| `--public-ipv4 <ip>` | Dış erişim için genel IPv4 adresi |
-| `--public-ipv6 <ip>` | Dış erişim için genel IPv6 adresi |
-| `--base-domain <domain>` | Uygulamalar için temel alan adı (ör. `example.com`) |
-| `--cert-email <email>` | Let's Encrypt TLS sertifikaları için e-posta |
-| `--cf-dns-token <token>` | ACME DNS-01 doğrulamaları için Cloudflare DNS API anahtarı |
-| `--tcp-ports <ports>` | Virgülle ayrılmış ek TCP portları (ör. `25,143,465,587,993`) |
-| `--udp-ports <ports>` | Virgülle ayrılmış ek UDP portları (ör. `53`) |
+| Seçenek | Kapsam | Açıklama |
+|---------|--------|----------|
+| `--public-ipv4 <ip>` | Machine | Public IPv4 address — proxy entrypoints are only created for configured address families |
+| `--public-ipv6 <ip>` | Machine | Public IPv6 address — proxy entrypoints are only created for configured address families |
+| `--base-domain <domain>` | Machine | Uygulamalar için temel alan adı (ör. `example.com`) |
+| `--cert-email <email>` | Config | Let's Encrypt TLS sertifikaları için e-posta (makineler arasında paylaşılır) |
+| `--cf-dns-token <token>` | Config | ACME DNS-01 doğrulamaları için Cloudflare DNS API anahtarı (makineler arasında paylaşılır) |
+| `--tcp-ports <ports>` | Machine | Virgülle ayrılmış ek TCP portları (ör. `25,143,465,587,993`) |
+| `--udp-ports <ports>` | Machine | Virgülle ayrılmış ek UDP portları (ör. `53`) |
+
+Machine kapsamlı seçenekler makine başına saklanır. Config kapsamlı seçenekler (`--cert-email`, `--cf-dns-token`) yapılandırmadaki tüm makineler arasında paylaşılır — bir kez ayarlayın ve her yerde geçerli olsun.
 
 ### Altyapıyı Görüntüleme
 
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
 ### Sunucuya Gönderme
@@ -140,10 +142,88 @@ rdc config show-infra server-1
 Traefik ters proxy yapılandırmasını oluşturun ve sunucuya dağıtın:
 
 ```bash
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
-Bu komut, altyapı ayarlarınıza dayalı proxy yapılandırmasını gönderir. Traefik, TLS sonlandırmasını, yönlendirmeyi ve port yönlendirmeyi yönetir.
+Bu komut:
+1. renet ikili dosyasını uzak makineye dağıtır
+2. Traefik ters proxy, yönlendirici ve systemd hizmetlerini yapılandırır
+3. `--cf-dns-token` ayarlanmışsa makine alt alan adı için Cloudflare DNS kayıtları oluşturur (`server-1.example.com` ve `*.server-1.example.com`)
+
+DNS adımı otomatik ve etkisizdir (idempotent) — eksik kayıtları oluşturur, IP'leri değişen kayıtları günceller ve zaten doğru olan kayıtları atlar. Cloudflare anahtarı yapılandırılmamışsa DNS bir uyarıyla atlanır. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+
+## Bulut Hazırlama
+
+VM'leri manuel olarak oluşturmak yerine, bir bulut sağlayıcı yapılandırabilir ve `rdc`'nin [OpenTofu](https://opentofu.org/) kullanarak makineleri otomatik olarak hazırlamasını sağlayabilirsiniz.
+
+### Ön Koşullar
+
+OpenTofu'yu kurun: [opentofu.org/docs/intro/install](https://opentofu.org/docs/intro/install/)
+
+SSH yapılandırmanızın bir genel anahtar içerdiğinden emin olun:
+
+```bash
+rdc config set ssh.privateKeyPath ~/.ssh/id_ed25519
+```
+
+### Bulut Sağlayıcı Ekleme
+
+```bash
+rdc config provider add my-linode \
+  --provider linode/linode \
+  --token $LINODE_API_TOKEN \
+  --region us-east \
+  --type g6-standard-2
+```
+
+| Seçenek | Gerekli | Açıklama |
+|---------|---------|----------|
+| `--provider <source>` | Evet* | Bilinen sağlayıcı kaynağı (ör. `linode/linode`, `hetznercloud/hcloud`) |
+| `--source <source>` | Evet* | Özel OpenTofu sağlayıcı kaynağı (bilinmeyen sağlayıcılar için) |
+| `--token <token>` | Evet | Bulut sağlayıcının API anahtarı |
+| `--region <region>` | Hayır | Yeni makineler için varsayılan bölge |
+| `--type <type>` | Hayır | Varsayılan örnek türü/boyutu |
+| `--image <image>` | Hayır | Varsayılan işletim sistemi imajı |
+| `--ssh-user <user>` | Hayır | SSH kullanıcı adı (varsayılan: `root`) |
+
+\* `--provider` veya `--source` gereklidir. Bilinen sağlayıcılar için `--provider` kullanın (yerleşik varsayılanlar). Özel sağlayıcılar için `--source` ile ek `--resource`, `--ipv4-output`, `--ssh-key-attr` bayraklarını kullanın.
+
+### Makine Hazırlama
+
+```bash
+rdc machine provision prod-2 --provider my-linode
+```
+
+Bu tek komut:
+1. OpenTofu aracılığıyla bulut sağlayıcıda bir VM oluşturur
+2. SSH bağlantısını bekler
+3. Makineyi yapılandırmanıza kaydeder
+4. renet ve tüm bağımlılıkları kurar
+5. Configures Traefik proxy and Cloudflare DNS (auto-detects base domain from sibling machines, or pass `--base-domain` explicitly)
+
+| Seçenek | Açıklama |
+|---------|----------|
+| `--provider <name>` | Bulut sağlayıcı adı (`add-provider`'dan) |
+| `--region <region>` | Sağlayıcının varsayılan bölgesini geçersiz kılar |
+| `--type <type>` | Varsayılan örnek türünü geçersiz kılar |
+| `--image <image>` | Varsayılan işletim sistemi imajını geçersiz kılar |
+| `--base-domain <domain>` | Base domain for infrastructure. Auto-detected from sibling machines if not specified |
+| `--no-infra` | Skip infrastructure configuration (proxy + DNS) entirely |
+| `--debug` | Ayrıntılı hazırlama çıktısını gösterir |
+
+### Makine Kaldırma
+
+```bash
+rdc machine deprovision prod-2
+```
+
+VM'yi OpenTofu aracılığıyla yok eder ve yapılandırmanızdan kaldırır. `--force` kullanılmadıkça onay gerektirir. Yalnızca `machine provision` ile oluşturulan makineler için çalışır.
+
+### Sağlayıcıları Listeleme
+
+```bash
+rdc config provider list
+```
 
 ## Varsayılanları Ayarlama
 

@@ -4,7 +4,7 @@ description: "تثبيت سطر أوامر Rediacc على Linux أو macOS أو 
 category: "Guides"
 order: 1
 language: ar
-sourceHash: "2cb00a8aeec6988c"
+sourceHash: "7710f243d1cde01e"
 ---
 
 # التثبيت
@@ -16,7 +16,7 @@ sourceHash: "2cb00a8aeec6988c"
 شغّل سكريبت التثبيت:
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 يقوم هذا بتنزيل ملف `rdc` التنفيذي إلى `$HOME/.local/bin/`. تأكد من أن هذا المجلد موجود في متغير PATH:

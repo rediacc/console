@@ -18,12 +18,46 @@ if (process.argv.includes('--warmup')) {
   process.exit(runWarmup());
 }
 
-// Background update worker mode (detached process entry point)
-if (process.argv.includes('--background-update')) {
+// MCP server mode — must run before normal CLI to avoid stdout pollution.
+// The MCP protocol uses stdout for JSON-RPC, so no other CLI initialization
+// (telemetry, i18n, update checks) can write to stdout.
+if (process.argv.includes('mcp') && process.argv.includes('serve')) {
+  const configIdx = process.argv.indexOf('--config');
+  const configName = configIdx >= 0 ? process.argv[configIdx + 1] : undefined;
+  const timeoutIdx = process.argv.indexOf('--timeout');
+  const defaultTimeoutMs =
+    timeoutIdx >= 0 ? Number.parseInt(process.argv[timeoutIdx + 1], 10) : 120_000;
+  const allowGrand = process.argv.includes('--allow-grand');
+
+  // Import cli to get the fully-configured Commander program for MCP tool derivation
+  Promise.all([import('./commands/mcp/server.js'), import('./cli.js')])
+    .then(([{ startMcpServer }, { cli: program }]) =>
+      startMcpServer({ configName, defaultTimeoutMs, allowGrand, program })
+    )
+    .catch((err: unknown) => {
+      process.stderr.write(
+        `MCP server error: ${err instanceof Error ? err.message : String(err)}\n`
+      );
+      process.exit(1);
+    });
+} else if (process.argv.includes('--background-update')) {
+  // Background update worker mode (detached process entry point)
+
   runBackgroundUpdateWorker()
     .then(() => process.exit(0))
     .catch(() => process.exit(1));
 } else {
+  // Catch unhandled errors that escape the main try-catch
+  process.on('uncaughtException', (error) => {
+    telemetryService.trackError(error, { source: 'uncaughtException' });
+    void telemetryService.shutdown().finally(() => process.exit(1));
+  });
+  process.on('unhandledRejection', (reason) => {
+    telemetryService.trackError(reason instanceof Error ? reason : new Error(String(reason)), {
+      source: 'unhandledRejection',
+    });
+  });
+
   // Normal CLI flow: apply pending update + spawn background check
   const applyPromise = applyPendingUpdate().catch(() => {});
   const spawnPromise = maybeSpawnBackgroundUpdate().catch(() => {});
@@ -38,10 +72,14 @@ if (process.argv.includes('--background-update')) {
 
       await cli.parseAsync(process.argv);
 
-      // Wait for telemetry shutdown (with timeout to avoid delaying exit)
+      // Stop profiling and wait for telemetry shutdown (with timeout to avoid delaying exit)
+      await telemetryService.stopProfiling();
       await Promise.race([
         telemetryService.shutdown(),
-        new Promise((resolve) => setTimeout(resolve, 500)),
+        new Promise((resolve) => {
+          const t = setTimeout(resolve, 500);
+          if (typeof t === 'object' && 'unref' in t) t.unref();
+        }),
       ]);
     } catch (error) {
       handleError(error);

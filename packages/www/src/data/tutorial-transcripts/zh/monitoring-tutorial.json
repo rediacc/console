@@ -1,0 +1,25 @@
+{
+  "cast": "/assets/tutorials/monitoring-tutorial.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "monitoring-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.508759,
+      "text": "运行完整的环境诊断以发现基线问题。"
+    },
+    {
+      "id": "monitoring-tutorial-02",
+      "markerIndex": 1,
+      "at": 9.844365,
+      "text": "检查远程机器健康状况指标。"
+    },
+    {
+      "id": "monitoring-tutorial-03",
+      "markerIndex": 2,
+      "at": 18.393678,
+      "text": "列出目标机器上的活动容器。"
+    }
+  ]
+}

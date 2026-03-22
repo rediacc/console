@@ -12,35 +12,23 @@ import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
  * Full repository environment matching Python's 18+ variables
  */
 export interface RepositoryEnvironment {
-  // Core identifiers
+  // Canonical names
   REDIACC_TEAM: string;
   REDIACC_MACHINE: string;
   REDIACC_REPOSITORY: string;
-
-  // Docker-related
+  REDIACC_WORKING_DIR: string;
+  REDIACC_NETWORK_ID: string;
+  REDIACC_NETWORK_MODE: string;
+  REDIACC_TAG: string;
+  REDIACC_DATASTORE: string;
+  REDIACC_DATASTORE_USER: string;
+  REDIACC_IMMOVABLE: string;
   DOCKER_DATA: string;
-  DOCKER_EXEC: string;
-  DOCKER_FOLDER: string;
   DOCKER_HOST: string;
   DOCKER_SOCKET: string;
   DOCKER_PLUGIN_DIR: string;
-
-  // Network and datastore
-  REDIACC_DATASTORE: string;
-  REDIACC_DATASTORE_USER: string;
-  REDIACC_NETWORK_ID: string;
-  REDIACC_IMMOVABLE: string;
-
-  // Repository-specific
-  REPOSITORY_NETWORK_ID: string;
-  REPOSITORY_NETWORK_MODE: string;
-  REPOSITORY_PATH: string;
-  REPOSITORY_TAG: string;
-
-  // System
   SYSTEM_API_URL: string;
   UNIVERSAL_USER_ID: string;
-  UNIVERSAL_USER_NAME: string;
 
   // Desktop context indicator
   REDIACC_DESKTOP: string;
@@ -134,36 +122,23 @@ export function buildRepositoryEnvironment(
 
   // Build the full environment
   const env: Partial<RepositoryEnvironment> = {
-    // Core identifiers
+    // Canonical names
     REDIACC_TEAM: teamName,
     REDIACC_MACHINE: machineName,
     REDIACC_REPOSITORY: repositoryName,
-
-    // Docker-related
+    REDIACC_WORKING_DIR: repositoryPath,
+    REDIACC_NETWORK_ID: networkId,
+    REDIACC_NETWORK_MODE: networkMode,
+    REDIACC_TAG: tag,
+    REDIACC_DATASTORE: datastore,
+    REDIACC_DATASTORE_USER: universalUser,
+    REDIACC_IMMOVABLE: immovable,
     DOCKER_DATA: `${datastore}${repositoryPath}`,
-    DOCKER_EXEC: `${datastore}${repositoryPath}/.docker-exec`,
-    DOCKER_FOLDER: `${datastore}${repositoryPath}`,
     DOCKER_HOST: dockerHost,
     DOCKER_SOCKET: dockerSocket,
     DOCKER_PLUGIN_DIR: dockerPluginDir,
-
-    // Network and datastore
-    REDIACC_DATASTORE: datastore,
-    REDIACC_DATASTORE_USER: universalUser,
-    REDIACC_NETWORK_ID: networkId,
-    REDIACC_IMMOVABLE: immovable,
-
-    // Repository-specific
-    REPOSITORY_NETWORK_ID: networkId,
-    REPOSITORY_NETWORK_MODE: networkMode,
-    REPOSITORY_PATH: repositoryPath,
-    REPOSITORY_TAG: tag,
-
-    // System
     UNIVERSAL_USER_ID: universalUserId,
-    UNIVERSAL_USER_NAME: universalUser,
-
-    // Desktop context indicator - allows scripts to detect desktop vs CLI context
+    // Desktop context indicator
     REDIACC_DESKTOP: '1',
   };
 
@@ -196,7 +171,6 @@ export function buildMachineEnvironment(
     REDIACC_MACHINE: machineName,
     REDIACC_DATASTORE: datastore,
     REDIACC_DATASTORE_USER: universalUser,
-    UNIVERSAL_USER_NAME: universalUser,
   };
 }
 

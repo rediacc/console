@@ -4,7 +4,7 @@ description: Wann Sie rdc verwenden und wann renet — eine Übersicht.
 category: Concepts
 order: 1
 language: de
-sourceHash: "d3e2a6750f95b6c1"
+sourceHash: "69cb9c27f7c3afaf"
 ---
 
 # rdc vs renet
@@ -36,7 +36,7 @@ Alle gängigen Aufgaben laufen über `rdc` auf Ihrer Workstation:
 
 ```bash
 # Einen neuen Server einrichten
-rdc config setup-machine server-1
+rdc config machine setup server-1
 
 # Ein Repository erstellen und starten
 rdc repo create my-app -m server-1 --size 10G

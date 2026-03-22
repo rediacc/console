@@ -1,0 +1,65 @@
+# Pyroscope Production Configuration 2025
+# https://grafana.com/docs/pyroscope/latest/configure-server/
+
+# Target configuration - run all components in single-binary mode
+target: "all"
+
+# Server Configuration
+server:
+  http_listen_address: ${PYROSCOPE_IP}
+  http_listen_port: 4040
+  grpc_listen_address: ${PYROSCOPE_IP}
+  grpc_listen_port: 9095
+  log_level: "info"
+  log_format: "logfmt"
+
+# Storage Configuration - Local filesystem for single-node deployment
+storage:
+  backend: "filesystem"
+  filesystem:
+    dir: "/var/lib/pyroscope"
+  prefix: "pyroscope/"
+
+# Pyroscope Database Configuration
+pyroscopedb:
+  data_path: "/var/lib/pyroscope"
+  max_block_duration: 1h
+  min_free_disk_gb: 10
+
+# Querier Configuration - Performance optimized
+querier:
+  query_store_after: 4h
+
+# Distributor Configuration for ingestion
+distributor:
+  ring:
+    kvstore:
+      store: "memberlist"
+
+# Analytics and Telemetry - DISABLED for privacy
+analytics:
+  reporting_enabled: false
+
+# Memberlist Configuration for clustering
+memberlist:
+  node_name: ""
+  bind_addr:
+    - ${PYROSCOPE_IP}
+  bind_port: 7946
+  rejoin_interval: 60s
+
+# Multitenancy - Disabled for single-tenant deployment
+multitenancy_enabled: false
+
+# Limits Configuration - Production safety
+limits:
+  # Maximum ingestion rate per tenant (16MB/s)
+  ingestion_rate_mb: 16
+  # Maximum burst size (32MB)
+  ingestion_burst_size_mb: 32
+  # Maximum number of label names per series
+  max_label_names_per_series: 30
+  # Maximum length of a label name
+  max_label_name_length: 1024
+  # Maximum length of a label value
+  max_label_value_length: 4096

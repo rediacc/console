@@ -4,7 +4,7 @@ description: Системные требования и поддерживаем
 category: Guides
 order: 0
 language: ru
-sourceHash: 40a59ab9c9625911
+sourceHash: "dd2ac2df883a3d1b"
 ---
 
 # Требования
@@ -53,7 +53,7 @@ CLI `rdc` работает на вашей рабочей станции и ор
 
 ### Устанавливается автоматически
 
-Команда `rdc config setup-machine` устанавливает на удаленном сервере следующее:
+Команда `rdc config machine setup` устанавливает на удаленном сервере следующее:
 
 - **Docker** и **containerd** (среда выполнения контейнеров)
 - **cryptsetup** (шифрование дисков LUKS)

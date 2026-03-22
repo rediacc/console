@@ -6,14 +6,13 @@
  * streaming process output.
  */
 
-import { spawn } from 'node:child_process';
-import { execSync } from 'node:child_process';
+import { execSync, spawn } from 'node:child_process';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { configService } from './config-resources.js';
 import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 
-/** Default timeout for ops commands (10 minutes) */
-const OPS_COMMAND_TIMEOUT = 600_000;
+/** Default timeout for ops commands (15 minutes — Ceph provisioning needs ~10 min) */
+const OPS_COMMAND_TIMEOUT = 900_000;
 
 /** Supported VM backends */
 export type OpsBackend = 'kvm' | 'qemu' | 'hyperv';
@@ -79,8 +78,7 @@ class OpsExecutorService {
       return execSync(whichCmd, { encoding: 'utf-8' }).trim().split('\n')[0];
     } catch {
       throw new Error(
-        'renet binary not found. Set a renet path with "rdc config set-renet <path>" ' +
-          'or ensure renet is in your PATH.'
+        'renet binary not found. Ensure renet is in your PATH or set renetPath in the config file.'
       );
     }
   }

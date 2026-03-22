@@ -4,7 +4,7 @@ description: "Mevcut projeleri şifrelenmiş Rediacc depolarına taşıyın."
 category: "Guides"
 order: 11
 language: tr
-sourceHash: "5064d721c8cf32ff"
+sourceHash: fdecebe5bf7d4a86
 ---
 
 # Geçiş Rehberi
@@ -29,14 +29,14 @@ rdc repo create my-project -m server-1 --size 20G
 
 ## Adım 2: Dosyalarınızı Yükleme
 
-Proje dosyalarınızı depoya aktarmak için `rdc sync upload` kullanın.
+Proje dosyalarınızı depoya aktarmak için `rdc repo sync upload` kullanın.
 
 ```bash
 # Ne aktarılacağını önizleyin (değişiklik yapılmaz)
-rdc sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
 
 # Dosyaları yükleyin
-rdc sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload -m server-1 -r my-project --local ./my-project
 ```
 
 Yüklemeden önce depo bağlı olmalıdır. Henüz bağlı değilse:
@@ -48,7 +48,7 @@ rdc repo mount my-project -m server-1
 Uzak dizinin yerel dizininizle tam olarak eşleşmesini istediğiniz sonraki senkronizasyonlar için:
 
 ```bash
-rdc sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 ```
 
 > `--mirror` bayrağı, yerel olarak bulunmayan uzak dosyaları siler. Doğrulamak için önce `--dry-run` kullanın.
@@ -83,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Docker birim algılamasını atlayıp konteyner veri dizinleri dahil her şeyi değiştirmek için:
 
 ```bash
-rdc repo ownership my-project -m server-1 --force
+rdc repo ownership my-project -m server-1
 ```
 
 > **Uyarı:** Bu, çalışan konteynerleri bozabilir. Gerekirse önce `rdc repo down` ile durdurun.
@@ -98,21 +98,17 @@ rdc repo ownership my-project -m server-1 --uid 1000
 
 ## Adım 4: Rediaccfile Kurulumu
 
-Proje kök dizininizde bir `Rediaccfile` oluşturun. Bu Bash betiği, servislerinizin nasıl hazırlanacağını, başlatılacağını ve durdurulacağını tanımlar.
+Proje kök dizininizde bir `Rediaccfile` oluşturun. Bu Bash betiği, servislerinizin nasıl başlatılacağını ve durdurulacağını tanımlar.
 
 ```bash
 #!/bin/bash
 
-prep() {
-    docker compose pull
-}
-
 up() {
-    docker compose up -d
+    renet compose -- up -d
 }
 
 down() {
-    docker compose down
+    renet compose -- down
 }
 ```
 
@@ -120,11 +116,12 @@ down() {
 
 | Fonksiyon | Amaç | Hata Davranışı |
 |-----------|------|----------------|
-| `prep()` | İmajları çekme, migrasyon çalıştırma, bağımlılıkları yükleme | Hızlı başarısızlık: herhangi bir hata her şeyi durdurur |
 | `up()` | Servisleri başlatma | Kök başarısızlığı kritiktir; alt dizin başarısızlıkları günlüğe kaydedilir ve devam eder |
 | `down()` | Servisleri durdurma | En iyi çaba: her zaman hepsini dener |
 
-> **Önemli:** Rediaccfile'ınızda `docker` komutunu doğrudan kullanın — asla `sudo docker` kullanmayın. `sudo` komutu ortam değişkenlerini sıfırlar, bu da `DOCKER_HOST`'un kaybolmasına ve konteynerlerin deponun izole daemon'u yerine sistem Docker daemon'unda oluşturulmasına neden olur. Rediaccfile fonksiyonları zaten yeterli ayrıcalıklarla çalışır. Ayrıntılar için [Servisler](/tr/docs/services#environment-variables) bölümüne bakın.
+> **Önemli:** Rediaccfile'ınızda `docker compose` yerine her zaman `renet compose --` kullanın. `renet compose` sarmalayıcısı host ağını, CRIU checkpoint/restore yeteneklerini, IP tahsisini ve renet-proxy tarafından gereken servis keşfini zorunlu kılar. `docker compose`'u doğrudan kullanmak bunların hepsini atlar ve doğrulama sırasında reddedilir.
+>
+> Asla `sudo docker` da kullanmayın — `sudo`, `DOCKER_HOST` dahil ortam değişkenlerini sıfırlar, bu da konteynerlerin deponun izole daemon'u yerine sistem Docker daemon'unda oluşturulmasına neden olur. Rediaccfile fonksiyonları zaten yeterli ayrıcalıklarla çalışır.
 
 Rediaccfile'lar, çoklu servis düzenleri ve yürütme sırası hakkında tam ayrıntılar için [Servisler](/tr/docs/services) bölümüne bakın.
 
@@ -167,8 +164,6 @@ services:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -177,14 +172,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   app:
     image: my-app:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -193,10 +184,11 @@ services:
 
 Temel değişiklikler:
 
-1. **Her servise `network_mode: host` ekleyin**
-2. **`ports:` eşlemelerini kaldırın** (host ağında gerekli değil)
-3. **Servisleri `${SERVICE_IP}` ortam değişkenlerine bağlayın** (Rediacc tarafından otomatik enjekte edilir)
-4. **Diğer servislere Docker DNS adları yerine IP'leriyle başvurun** (örn. `postgres` yerine `${POSTGRES_IP}`)
+1. **`ports:` eşlemelerini kaldırın** — `renet compose` host ağını kullanır ve port eşlemelerini otomatik olarak kaldırır
+2. **`network_mode: host` kaldırın** — `renet compose` bunu sizin için ekler
+3. **`restart: always` veya `restart: unless-stopped` kaldırın** — bunlar CRIU checkpoint/restore ile çakışır (Docker, checkpoint restore çalışmadan önce konteynerleri otomatik başlatır). Yeniden başlatma davranışına ihtiyacınız varsa `restart: on-failure` kullanın veya tamamen atlayın — Rediaccfile `up()`/`down()` konteyner yaşam döngüsünü yönetir
+4. **Servisleri `${SERVICE_IP}` ortam değişkenlerine bağlayın** (Rediacc tarafından otomatik enjekte edilir)
+5. **Diğer servislere Docker DNS adları yerine IP'leriyle başvurun** (örn. `postgres` yerine `${POSTGRES_IP}`)
 
 `{SERVICE}_IP` değişkenleri compose dosyanızdaki servis adlarından otomatik olarak oluşturulur. Adlandırma kuralı: büyük harf, tireler alt çizgiyle değiştirilir, `_IP` son eki. Örneğin, `listmonk-app` `LISTMONK_APP_IP` olur.
 
@@ -214,7 +206,6 @@ Bu işlem:
 1. Şifrelenmiş depoyu bağlar
 2. İzole Docker daemon'unu başlatır
 3. Servis IP atamalarıyla `.rediacc.json` dosyasını otomatik oluşturur
-4. Tüm Rediaccfile'lardan `prep()` fonksiyonunu çalıştırır
 5. Tüm Rediaccfile'lardan `up()` fonksiyonunu çalıştırır
 
 Konteynerlerinizin çalıştığını doğrulayın:
@@ -263,7 +254,7 @@ my-api/
 └── redis-data/             # Redis kalıcılığı (çalışırken UID 999)
 ```
 
-1. Projenizi yükleyin (`node_modules` hariç tutmayı ve `prep()` içinde çekmeyi düşünün)
+1. Projenizi yükleyin (`node_modules` hariç tutmayı ve `up()` içinde çekmeyi düşünün)
 2. Konteynerler başladıktan sonra sahiplik düzeltmesini çalıştırın
 
 ### Özel Docker Projesi
@@ -304,7 +295,7 @@ Her depo benzersiz geri döngü IP'leri alır. Port çakışmaları görüyorsan
 
 ### Sahiplik Düzeltmesi Konteynerleri Bozuyor
 
-`rdc repo ownership --force` çalıştırdıysanız ve bir konteyner çalışmayı durdurduysa, konteynerin veri dosyaları değiştirilmiştir. Konteyneri durdurun, veri dizinini silin ve yeniden başlatın — konteyner onu yeniden oluşturacaktır:
+`rdc repo ownership` çalıştırdıysanız ve bir konteyner çalışmayı durdurduysa, konteynerin veri dosyaları değiştirilmiştir. Konteyneri durdurun, veri dizinini silin ve yeniden başlatın — konteyner onu yeniden oluşturacaktır:
 
 ```bash
 rdc repo down my-project -m server-1

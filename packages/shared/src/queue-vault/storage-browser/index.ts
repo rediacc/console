@@ -1,4 +1,3 @@
-export type { RcloneEntry, RemoteFile } from './types.js';
 export {
   cleanJsonOutput,
   detectGuidFiles,
@@ -11,3 +10,4 @@ export {
   resolveGuidFileNames,
 } from './parsers.js';
 export { buildRcloneArgs, type RcloneArgs } from './rclone-args.js';
+export type { RcloneEntry, RemoteFile } from './types.js';

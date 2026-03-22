@@ -1,5 +1,7 @@
 ---
 import StructuredData from './StructuredData.astro';
+import { getLanguageFromPath } from '../i18n/language-utils';
+import { createTranslator } from '../i18n/utils';
 
 export interface BreadcrumbItem {
   name: string;
@@ -13,6 +15,8 @@ export interface Props {
 }
 
 const { items, showStructuredData = true, class: className = '' } = Astro.props;
+const lang = getLanguageFromPath(Astro.url.pathname);
+const { t } = createTranslator(lang);
 
 // Generate structured data for breadcrumbs
 const breadcrumbStructuredData = {
@@ -31,7 +35,7 @@ const lastIndex = items.length - 1;
   <StructuredData type="breadcrumb" data={breadcrumbStructuredData} />
 )}
 
-<nav class={`breadcrumb ${className}`.trim()} aria-label="Breadcrumb navigation">
+<nav class={`breadcrumb ${className}`.trim()} aria-label={t('common.aria.breadcrumbNavigation')}>
   <ol class="breadcrumb-list" itemscope itemtype="https://schema.org/BreadcrumbList">
     {items.map((item, index) => (
       <li
@@ -68,7 +72,7 @@ const lastIndex = items.length - 1;
 
 <style>
 .breadcrumb {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--breadcrumb-margin-bottom, var(--space-4));
   font-size: var(--font-size-sm);
 }
 
@@ -89,18 +93,18 @@ const lastIndex = items.length - 1;
 }
 
 .breadcrumb-link {
-  color: var(--color-text-secondary);
+  color: var(--breadcrumb-link-color, var(--color-text-secondary));
   text-decoration: none;
   transition: color var(--transition-duration-base) ease;
 }
 
 .breadcrumb-link:hover {
-  color: var(--color-brand-primary);
+  color: var(--breadcrumb-link-hover-color, var(--color-brand-primary));
   text-decoration: underline;
 }
 
 .breadcrumb-link:focus-visible {
-  color: var(--color-brand-primary);
+  color: var(--breadcrumb-link-hover-color, var(--color-brand-primary));
   text-decoration: underline;
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
@@ -109,12 +113,12 @@ const lastIndex = items.length - 1;
 
 .breadcrumb-text,
 .breadcrumb-current .breadcrumb-text {
-  color: var(--color-text);
+  color: var(--breadcrumb-current-color, var(--color-text));
   font-weight: var(--font-weight-medium);
 }
 
 .breadcrumb-separator {
-  color: var(--color-text-secondary);
+  color: var(--breadcrumb-separator-color, var(--color-text-secondary));
   font-weight: normal;
   user-select: none;
 }

@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "zh",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "b803214adf181e7945b615eebd26055ef4250a666b32c678d1040fd637fbe8bb",
+  "steps": [
+    {
+      "id": "backup-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.510362,
+      "replayEndSec": 5.406939,
+      "narrationText": "检查当前配置的备份目标。",
+      "audioSrc": "/assets/tutorials/audio/zh/backup-tutorial/backup-tutorial-01.ff460770.mp3",
+      "audioDurationSec": 2.586122
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "member": "founder",
+  "videoKey": "persona-devops",
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 5.0,
+      "text": "You're cloning a database by hand. It takes two engineers and half a day."
+    },
+    {
+      "start": 5.0,
+      "end": 10.0,
+      "text": "With Rediacc, you clone your entire production stack in sixty seconds."
+    },
+    { "start": 10.0, "end": 14.0, "text": "Same data. Same configs. Zero extra storage." }
+  ]
+}

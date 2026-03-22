@@ -1,78 +1,82 @@
 ---
 title: "Настройка машины"
-description: "Смотрите и повторяйте: создание конфигурации, добавление машины, тестирование подключения, диагностика и настройка инфраструктуры."
+description: "Создайте профиль конфигурации, зарегистрируйте удалённую машину, проверьте подключение по SSH и настройте параметры инфраструктуры."
 category: "Tutorials"
 order: 2
 language: ru
-sourceHash: "743a5b6abe79a1af"
+sourceHash: "04756cddd86e097c"
 ---
 
-# Руководство: Настройка машины
+# Как настроить машину с Rediacc
 
-This tutorial walks through the complete setup workflow: creating a config, registering a remote machine, verifying SSH connectivity, running diagnostics, and configuring infrastructure settings.
+Каждое развёртывание Rediacc начинается с профиля конфигурации и зарегистрированной машины. В этом руководстве вы создадите конфигурацию, зарегистрируете удалённый сервер, проверите подключение по SSH, запустите диагностику окружения и настроите сеть инфраструктуры. По завершении ваша машина будет готова к развёртыванию репозиториев.
 
 ## Предварительные требования
 
-- The `rdc` CLI installed
-- A remote server (or local VM) reachable via SSH
-- An SSH private key that can authenticate to the server
+- Установленный CLI `rdc`
+- Удалённый сервер (или локальная ВМ), доступный по SSH
+- Приватный SSH-ключ для аутентификации на сервере
 
 ## Интерактивная запись
 
-![Tutorial: Machine setup and configuration](/assets/tutorials/setup-tutorial.cast)
-
-## Что вы увидите
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
+![Руководство: Настройка и конфигурация машины](/assets/tutorials/setup-tutorial.cast)
 
 ### Шаг 1: Создание новой конфигурации
+
+Профиль конфигурации хранит определения машин, учётные данные SSH и настройки инфраструктуры. Создайте один для этого окружения.
 
 ```bash
 rdc config init tutorial-demo --ssh-key ~/.ssh/id_ed25519
 ```
 
-Creates a named config file at `~/.config/rediacc/tutorial-demo.json`. Each config stores machine definitions, SSH credentials, and infrastructure settings.
+Это создаёт именованный файл конфигурации в `~/.config/rediacc/tutorial-demo.json`.
 
 ### Шаг 2: Просмотр конфигураций
+
+Убедитесь, что новый профиль отображается в списке конфигураций.
 
 ```bash
 rdc config list
 ```
 
-Lists all available configs with their adapter type (local or cloud) and machine count.
+Показывает все доступные конфигурации с типом адаптера (локальный или облачный) и количеством машин.
 
 ### Шаг 3: Добавление машины
 
-```bash
-rdc config add-machine bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
-```
+Зарегистрируйте машину с её IP-адресом и пользователем SSH. CLI автоматически получает и сохраняет ключи хоста сервера через `ssh-keyscan`.
 
-Registers a machine in the config. The CLI automatically runs `ssh-keyscan` to fetch and store the server's host keys.
+```bash
+rdc config machine add bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
+```
 
 ### Шаг 4: Просмотр машин
 
+Убедитесь, что машина зарегистрирована правильно.
+
 ```bash
-rdc config machines --config tutorial-demo
+rdc config machine list --config tutorial-demo
 ```
 
-Shows all machines in the current config with their connection details.
+Показывает все машины в текущей конфигурации с деталями подключения.
 
 ### Шаг 5: Установка машины по умолчанию
+
+Установка машины по умолчанию избавляет от необходимости повторять `-m bridge-vm` в каждой команде.
 
 ```bash
 rdc config set machine bridge-vm --config tutorial-demo
 ```
 
-Устанавливает машину по умолчанию, чтобы можно было опускать `-m bridge-vm` в последующих командах.
-
 ### Шаг 6: Проверка подключения
+
+Перед развёртыванием чего-либо убедитесь, что машина доступна по SSH.
 
 ```bash
 rdc term bridge-vm -c "hostname"
 rdc term bridge-vm -c "uptime"
 ```
 
-Runs commands on the machine over SSH to verify connectivity is working.
+Обе команды выполняются на удалённой машине и возвращают результат немедленно. Если какая-либо из них не выполняется, проверьте правильность SSH-ключа и доступность сервера.
 
 ### Шаг 7: Выполнение диагностики
 
@@ -80,27 +84,42 @@ Runs commands on the machine over SSH to verify connectivity is working.
 rdc doctor
 ```
 
-Checks your environment: CLI version, Docker, renet binary, config status, SSH key, and virtualization prerequisites.
+Проверяет ваше локальное окружение: версию CLI, Docker, бинарный файл renet, состояние конфигурации, SSH-ключ и предварительные требования виртуализации. Каждая проверка сообщает **OK**, **Warning** или **Error**.
 
 ### Шаг 8: Настройка инфраструктуры
 
+Для публичных сервисов машине нужна сетевая конфигурация — внешний IP, базовый домен и email сертификата для TLS.
+
 ```bash
-rdc config set-infra bridge-vm \
+rdc config infra set bridge-vm \
   --public-ipv4 192.168.111.1 \
   --base-domain test.local \
   --cert-email admin@test.local
 ```
 
-Sets the infrastructure configuration for public-facing services. After setting infra, view the configuration:
+Проверьте конфигурацию:
 
 ```bash
-rdc config show-infra bridge-vm
+rdc config infra show bridge-vm
 ```
 
-Deploy the generated Traefik proxy config to the server with `rdc config push-infra bridge-vm`.
+Разверните сгенерированную конфигурацию прокси Traefik на сервере с помощью `rdc config infra push bridge-vm`.
+
+## Устранение неполадок
+
+**"SSH key not found" или "Permission denied (publickey)"**
+Убедитесь, что путь к ключу, переданный в `config init`, существует и совпадает с `authorized_keys` сервера. Проверьте разрешения: файл приватного ключа должен иметь права `600` (`chmod 600 ~/.ssh/id_ed25519`).
+
+**"Connection refused" при SSH-командах**
+Убедитесь, что сервер работает и IP-адрес правильный. Проверьте, что порт 22 открыт: `nc -zv <ip> 22`. При использовании нестандартного порта передайте `--port` при добавлении машины.
+
+**"Host key verification failed"**
+Сохранённый ключ хоста не совпадает с текущим ключом сервера. Это происходит после пересборки сервера или переназначения IP. Запустите `rdc config machine scan-keys <machine>` для обновления ключа.
 
 ## Следующие шаги
 
-- [Machine Setup](/ru/docs/setup) — full reference for all config and setup commands
-- [Quick Start](/ru/docs/quick-start) — deploy a containerized application end-to-end
-- [Tutorial: Repository Lifecycle](/ru/docs/tutorial-repos) — create, deploy, and manage repositories
+Вы создали профиль конфигурации, зарегистрировали машину, проверили подключение и настроили сеть инфраструктуры. Для развёртывания приложений:
+
+- [Настройка машины](/ru/docs/setup) — полный справочник по всем командам конфигурации и настройки
+- [Руководство: Жизненный цикл репозитория](/ru/docs/tutorial-repos) — создание, развёртывание и управление репозиториями
+- [Быстрый старт](/ru/docs/quick-start) — развёртывание контейнеризированного приложения от начала до конца

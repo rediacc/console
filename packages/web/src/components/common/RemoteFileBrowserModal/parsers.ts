@@ -5,23 +5,23 @@
  * that is only relevant to the web app's RemoteFileBrowserModal.
  */
 
+import type { RemoteFile as BaseRemoteFile } from '@rediacc/shared/queue-vault/storage-browser';
 import {
-  cleanJsonOutput,
   FileListParserFactory as BaseFileListParserFactory,
   parseJsonFileList as baseParseJsonFileList,
   parseRcloneFileList as baseParseRcloneFileList,
+  cleanJsonOutput,
   type RcloneEntry,
 } from '@rediacc/shared/queue-vault/storage-browser';
-import type { RemoteFile as BaseRemoteFile } from '@rediacc/shared/queue-vault/storage-browser';
 import { isValidGuid } from '@rediacc/shared/validation';
 import type { RemoteFile } from './types';
 
+export {
+  parseFallbackFormats,
+  parsePlainTextFileList,
+} from '@rediacc/shared/queue-vault/storage-browser';
 // Re-export shared utilities used directly by the component
 export { cleanJsonOutput };
-export {
-  parsePlainTextFileList,
-  parseFallbackFormats,
-} from '@rediacc/shared/queue-vault/storage-browser';
 
 type RepositoryMapper = (guid: string) => {
   displayName: string;

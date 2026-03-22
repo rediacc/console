@@ -1,5 +1,5 @@
-import { Table } from 'antd';
 import type { TableProps } from 'antd';
+import { Table } from 'antd';
 
 interface ModalTableProps<T> extends Omit<TableProps<T>, 'pagination'> {
   /** Maximum height for the scrollable area. Defaults to 300. */

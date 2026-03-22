@@ -12,8 +12,8 @@ const { t } = createTranslator(lang);
 
 <BaseLayout
   lang={lang}
-  title="Subscription Confirmed"
-  description="Your subscription has been confirmed"
+  title={t('pages.checkout.success.title')}
+  description={t('pages.checkout.success.description')}
   ogType="website"
 >
   <section class="checkout-success">
@@ -24,11 +24,11 @@ const { t } = createTranslator(lang);
           <path d="M8 12l2.5 2.5L16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
-      <h1>Subscription Confirmed</h1>
-      <p>Your subscription is now active. You'll receive an email with your license key and setup instructions shortly.</p>
+      <h1>{t('pages.checkout.success.heading')}</h1>
+      <p>{t('pages.checkout.success.message')}</p>
       <div class="success-actions">
-        <a href={`/${lang}/install`} class="btn btn-primary">Get Started with Installation</a>
-        <a href={`/${lang}`} class="btn btn-secondary">Back to Home</a>
+        <a href={`/${lang}/install`} class="btn btn-primary">{t('pages.checkout.success.getStarted')}</a>
+        <a href={`/${lang}`} class="btn btn-secondary">{t('pages.checkout.success.backToHome')}</a>
       </div>
     </div>
   </section>
@@ -89,4 +89,9 @@ const { t } = createTranslator(lang);
       border: 1px solid var(--color-border, #e5e7eb);
     }
   </style>
+
+  <script is:inline>
+    var p = new URLSearchParams(location.search);
+    if (window.plausible) window.plausible('purchase', { props: { plan: p.get('plan') || 'unknown' } });
+  </script>
 </BaseLayout>

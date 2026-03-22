@@ -115,6 +115,23 @@ if [[ -z "${ED25519_PRIVATE_KEY:-}" ]]; then
 fi
 export ED25519_PRIVATE_KEY ED25519_PUBLIC_KEY
 
+# Generate X25519 key pair for e2e encryption if not provided
+# Production keys come from GitHub secrets (cd-v2.yml only).
+# CI/test workflows generate throwaway keys here.
+if [[ -z "${X25519_PRIVATE_KEY:-}" ]]; then
+    X25519_KEYS=$(node -e "
+        const crypto = require('crypto');
+        const { privateKey, publicKey } = crypto.generateKeyPairSync('x25519');
+        console.log(JSON.stringify({
+            private: privateKey.export({type:'pkcs8',format:'der'}).toString('base64'),
+            public: publicKey.export({type:'spki',format:'der'}).toString('base64')
+        }));
+    ")
+    X25519_PRIVATE_KEY=$(echo "$X25519_KEYS" | jq -r '.private')
+    X25519_PUBLIC_KEY=$(echo "$X25519_KEYS" | jq -r '.public')
+fi
+export X25519_PRIVATE_KEY X25519_PUBLIC_KEY
+
 # Account server API key (generate if not provided)
 export ACCOUNT_SERVER_API_KEY="${ACCOUNT_SERVER_API_KEY:-$(openssl rand -base64 48 | tr -d '/+=' | cut -c1-64)}"
 export ACCOUNT_SERVER_URL="${ACCOUNT_SERVER_URL:-http://account-server:3000}"
@@ -125,17 +142,18 @@ export JWT_SECRET="${JWT_SECRET:-$(openssl rand -base64 48 | tr -d '/+=' | cut -
 # Stripe webhook secret for account-server integration tests
 export STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET:-whsec_test_$(openssl rand -hex 32)}"
 
-# RustFS credentials for S3-compatible storage
-export RUSTFS_ACCESS_KEY="${RUSTFS_ACCESS_KEY:-rustfsadmin}"
-export RUSTFS_SECRET_KEY="${RUSTFS_SECRET_KEY:-rustfsadmin}"
-
-# Mask sensitive values in GitHub Actions logs
+# Mask ALL generated secrets (GitHub only auto-masks ${{ secrets.* }} values)
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
     echo "::add-mask::$ED25519_PRIVATE_KEY"
+    echo "::add-mask::$ED25519_PUBLIC_KEY"
+    echo "::add-mask::$X25519_PRIVATE_KEY"
+    echo "::add-mask::$X25519_PUBLIC_KEY"
     echo "::add-mask::$ACCOUNT_SERVER_API_KEY"
-    echo "::add-mask::$STRIPE_WEBHOOK_SECRET"
     echo "::add-mask::$JWT_SECRET"
-    echo "::add-mask::$RUSTFS_SECRET_KEY"
+    echo "::add-mask::$STRIPE_WEBHOOK_SECRET"
+    echo "::add-mask::$MSSQL_SA_PASSWORD"
+    echo "::add-mask::$MSSQL_RA_PASSWORD"
+    echo "::add-mask::$CONNECTION_STRING"
 fi
 
 # =============================================================================
@@ -198,8 +216,8 @@ ACCOUNT_SERVER_URL=${ACCOUNT_SERVER_URL}
 ACCOUNT_SERVER_API_KEY=${ACCOUNT_SERVER_API_KEY}
 ED25519_PRIVATE_KEY=${ED25519_PRIVATE_KEY}
 ED25519_PUBLIC_KEY=${ED25519_PUBLIC_KEY}
-RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY}
-RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY}
+X25519_PRIVATE_KEY=${X25519_PRIVATE_KEY}
+X25519_PUBLIC_KEY=${X25519_PUBLIC_KEY}
 STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
 JWT_SECRET=${JWT_SECRET}
 ENVBLOCK

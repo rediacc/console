@@ -1,5 +1,7 @@
-import React, { useEffect } from 'react';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { Alert, Empty, Flex, Space, Tag } from 'antd';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGetTeamMachines } from '@/api/api-hooks.generated';
 import {
@@ -22,8 +24,6 @@ import {
   WarningOutlined,
 } from '@/utils/optimizedIcons';
 import { abbreviatePath } from '@/utils/pathUtils';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { useRepositoryVaultData } from './hooks/useRepositoryVaultData';
 import { ServicesSection } from './sections/ServicesSection';
 import { StorageSection } from './sections/StorageSection';
@@ -250,7 +250,9 @@ const ExternalVolumeWarning: React.FC<WarningProps> = ({ repository, panelData, 
           </ul>
           <DetailPanelFieldValue>
             <strong>{t('common:important')}:</strong>{' '}
-            {t('resources:repositories.dockerVolumes.orphanWarning', { path: '$REPOSITORY_PATH' })}
+            {t('resources:repositories.dockerVolumes.orphanWarning', {
+              path: '$REDIACC_WORKING_DIR',
+            })}
           </DetailPanelFieldValue>
         </Flex>
       }

@@ -1,0 +1,223 @@
+---
+import { createTranslator } from '../i18n/utils';
+import type { Language } from '../i18n/types';
+import FounderGuarantee from './FounderGuarantee.astro';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props;
+const { t, ta } = createTranslator(lang);
+const ns = 'pages.pricing.trustSection';
+const rows = ta(ns + '.rows') as Array<{ title: string; description: string }>;
+---
+
+<section class="pricing-trust-section section-light">
+  <div class="pricing-trust-container">
+    <div class="pricing-trust-header">
+      <h2>{t(`${ns}.heading`)}</h2>
+      <p>{t(`${ns}.subtitle`)}</p>
+    </div>
+
+    <!-- Row 1: Your repos run forever (text left, SVG right) -->
+    <div class="trust-row">
+      <div class="trust-row-text">
+        <h3>{rows[0].title}</h3>
+        <p>{rows[0].description}</p>
+      </div>
+      <div class="trust-row-visual">
+        <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Server rack -->
+          <rect x="80" y="40" width="180" height="200" rx="8" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+          <!-- Server units -->
+          <rect x="100" y="60" width="140" height="32" rx="4" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+          <rect x="100" y="104" width="140" height="32" rx="4" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+          <rect x="100" y="148" width="140" height="32" rx="4" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+          <!-- Status lights (green = running) -->
+          <circle cx="120" cy="76" r="4" fill="#7fa03f"/>
+          <circle cx="120" cy="120" r="4" fill="#7fa03f"/>
+          <circle cx="120" cy="164" r="4" fill="#7fa03f"/>
+          <!-- Repo labels -->
+          <text x="138" y="80" font-size="11" fill="currentColor" opacity="0.7" font-family="monospace">mail</text>
+          <text x="138" y="124" font-size="11" fill="currentColor" opacity="0.7" font-family="monospace">gitlab</text>
+          <text x="138" y="168" font-size="11" fill="currentColor" opacity="0.7" font-family="monospace">nextcloud</text>
+          <!-- Checkmarks -->
+          <path d="M210 72 L216 78 L226 68" stroke="#7fa03f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M210 116 L216 122 L226 112" stroke="#7fa03f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M210 160 L216 166 L226 156" stroke="#7fa03f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Expired license badge (faded) -->
+          <rect x="280" y="50" width="90" height="28" rx="4" stroke="currentColor" stroke-width="1" opacity="0.2" stroke-dasharray="4 2"/>
+          <text x="295" y="68" font-size="9" fill="currentColor" opacity="0.2" font-family="sans-serif">EXPIRED</text>
+          <!-- Arrow from expired to servers with X -->
+          <line x1="280" y1="64" x2="265" y2="64" stroke="currentColor" stroke-width="1" opacity="0.15"/>
+          <text x="260" y="56" font-size="14" fill="currentColor" opacity="0.25">✕</text>
+          <!-- "Still running" label -->
+          <text x="95" y="210" font-size="10" fill="#7fa03f" opacity="0.8" font-family="sans-serif">start · stop · delete · backup — always work</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Row 2: Back up anytime (SVG left, text right) -->
+    <div class="trust-row trust-row-reverse">
+      <div class="trust-row-text">
+        <h3>{rows[1].title}</h3>
+        <p>{rows[1].description}</p>
+      </div>
+      <div class="trust-row-visual">
+        <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Terminal window -->
+          <rect x="40" y="30" width="320" height="220" rx="8" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+          <!-- Title bar -->
+          <rect x="40" y="30" width="320" height="28" rx="8" fill="currentColor" opacity="0.05"/>
+          <circle cx="60" cy="44" r="4" fill="currentColor" opacity="0.2"/>
+          <circle cx="74" cy="44" r="4" fill="currentColor" opacity="0.2"/>
+          <circle cx="88" cy="44" r="4" fill="currentColor" opacity="0.2"/>
+          <!-- Terminal lines (TierNone — no license at all) -->
+          <text x="60" y="78" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc term prod-1</text>
+          <text x="310" y="78" font-size="11" fill="#7fa03f" font-family="monospace">✓</text>
+          <text x="60" y="100" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc vscode prod-1 mail</text>
+          <text x="310" y="100" font-size="11" fill="#7fa03f" font-family="monospace">✓</text>
+          <text x="60" y="122" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc sync download mail</text>
+          <text x="310" y="122" font-size="11" fill="#7fa03f" font-family="monospace">✓</text>
+          <text x="60" y="144" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc machine health prod-1</text>
+          <text x="310" y="144" font-size="11" fill="#7fa03f" font-family="monospace">✓</text>
+          <text x="60" y="166" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc backup list prod-1</text>
+          <text x="310" y="166" font-size="11" fill="#7fa03f" font-family="monospace">✓</text>
+          <text x="60" y="188" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc doctor</text>
+          <text x="310" y="188" font-size="11" fill="#7fa03f" font-family="monospace">✓</text>
+          <text x="60" y="210" font-size="10" fill="currentColor" opacity="0.3" font-family="monospace">  ... and 25+ more commands</text>
+          <!-- Note -->
+          <text x="60" y="236" font-size="9" fill="#7fa03f" opacity="0.7" font-family="sans-serif">{t(`${ns}.svg.noLicenseRequired`)}</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Row 3: Only new repos need a license (text left, SVG right) -->
+    <div class="trust-row">
+      <div class="trust-row-text">
+        <h3>{rows[2].title}</h3>
+        <p>{rows[2].description}</p>
+      </div>
+      <div class="trust-row-visual">
+        <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Existing repos (free, no lock) -->
+          <text x="40" y="30" font-size="10" fill="currentColor" opacity="0.5" font-family="sans-serif" text-transform="uppercase" letter-spacing="1">EXISTING REPOS</text>
+          <rect x="40" y="42" width="140" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+          <circle cx="60" cy="60" r="4" fill="#7fa03f"/>
+          <text x="72" y="64" font-size="11" fill="currentColor" opacity="0.6" font-family="monospace">mail</text>
+          <rect x="40" y="90" width="140" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+          <circle cx="60" cy="108" r="4" fill="#7fa03f"/>
+          <text x="72" y="112" font-size="11" fill="currentColor" opacity="0.6" font-family="monospace">gitlab</text>
+          <rect x="40" y="138" width="140" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+          <circle cx="60" cy="156" r="4" fill="#7fa03f"/>
+          <text x="72" y="160" font-size="11" fill="currentColor" opacity="0.6" font-family="monospace">nextcloud</text>
+          <!-- "No license needed" label -->
+          <text x="40" y="200" font-size="9" fill="#7fa03f" opacity="0.7" font-family="sans-serif">{t(`${ns}.svg.noLicenseNeeded`)}</text>
+          <!-- Divider -->
+          <line x1="210" y1="20" x2="210" y2="260" stroke="currentColor" stroke-width="1" opacity="0.1"/>
+          <!-- New repo (needs license) -->
+          <text x="240" y="30" font-size="10" fill="currentColor" opacity="0.5" font-family="sans-serif" text-transform="uppercase" letter-spacing="1">NEW REPO</text>
+          <rect x="240" y="42" width="140" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4" stroke-dasharray="4 2"/>
+          <text x="272" y="64" font-size="11" fill="currentColor" opacity="0.4" font-family="monospace">+ create</text>
+          <!-- License key icon -->
+          <rect x="270" y="100" width="80" height="32" rx="6" stroke="#7fa03f" stroke-width="1.5" fill="none"/>
+          <text x="285" y="120" font-size="10" fill="#7fa03f" font-family="sans-serif">License</text>
+          <!-- Arrow from license to new repo -->
+          <path d="M310 100 L310 82" stroke="#7fa03f" stroke-width="1" marker-end="url(#arrowGreen)"/>
+          <defs>
+            <marker id="arrowGreen" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+              <path d="M0 0 L6 3 L0 6 Z" fill="#7fa03f"/>
+            </marker>
+          </defs>
+          <!-- "Required only here" label -->
+          <text x="256" y="155" font-size="9" fill="currentColor" opacity="0.4" font-family="sans-serif">{t(`${ns}.svg.requiredOnlyHere`)}</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Row 4: 60-day grace period (SVG left, text right) -->
+    <div class="trust-row trust-row-reverse">
+      <div class="trust-row-text">
+        <h3>{rows[3].title}</h3>
+        <p>{rows[3].description}</p>
+      </div>
+      <div class="trust-row-visual">
+        <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Timeline bar -->
+          <line x1="40" y1="140" x2="370" y2="140" stroke="currentColor" stroke-width="2" opacity="0.2"/>
+          <!-- Active period -->
+          <rect x="40" y="128" width="120" height="24" rx="4" fill="#7fa03f" opacity="0.15"/>
+          <line x1="40" y1="140" x2="160" y2="140" stroke="#7fa03f" stroke-width="3"/>
+          <text x="60" y="118" font-size="10" fill="#7fa03f" font-family="sans-serif">Active</text>
+          <!-- Subscription end marker -->
+          <circle cx="160" cy="140" r="6" fill="currentColor" opacity="0.4"/>
+          <text x="140" y="178" font-size="9" fill="currentColor" opacity="0.5" font-family="sans-serif">Expires</text>
+          <!-- 60-day grace period -->
+          <rect x="160" y="128" width="140" height="24" rx="4" fill="#7fa03f" opacity="0.08"/>
+          <line x1="160" y1="140" x2="300" y2="140" stroke="#7fa03f" stroke-width="3" stroke-dasharray="6 3"/>
+          <text x="190" y="118" font-size="10" fill="#7fa03f" opacity="0.7" font-family="sans-serif">60-day grace</text>
+          <!-- Grace end marker -->
+          <circle cx="300" cy="140" r="6" fill="currentColor" opacity="0.25"/>
+          <!-- After grace -->
+          <line x1="300" y1="140" x2="370" y2="140" stroke="currentColor" stroke-width="2" opacity="0.1"/>
+          <text x="304" y="118" font-size="9" fill="currentColor" opacity="0.3" font-family="sans-serif">resize &amp; expand stop</text>
+          <!-- Icons along timeline -->
+          <!-- During active: all ops -->
+          <text x="60" y="96" font-size="9" fill="currentColor" opacity="0.4" font-family="sans-serif">{t(`${ns}.svg.allOperations`)}</text>
+          <!-- During grace: resize + expand still work -->
+          <text x="175" y="96" font-size="9" fill="currentColor" opacity="0.4" font-family="sans-serif">Resize &amp; expand</text>
+          <text x="175" y="84" font-size="9" fill="currentColor" opacity="0.4" font-family="sans-serif">still work</text>
+          <!-- Checkmarks under active -->
+          <path d="M100 200 L106 206 L116 196" stroke="#7fa03f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="122" y="204" font-size="9" fill="currentColor" opacity="0.4" font-family="sans-serif">create, backup, sync</text>
+          <!-- Checkmarks under grace -->
+          <path d="M100 220 L106 226 L116 216" stroke="#7fa03f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="122" y="224" font-size="9" fill="currentColor" opacity="0.4" font-family="sans-serif">resize, expand, backup</text>
+          <!-- After grace note -->
+          <path d="M100 240 L106 246 L116 236" stroke="#7fa03f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="122" y="244" font-size="9" fill="currentColor" opacity="0.4" font-family="sans-serif">run, stop, delete, backup</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Row 5: Floating licenses auto-release (text left, SVG right) -->
+    <div class="trust-row">
+      <div class="trust-row-text">
+        <h3>{rows[4].title}</h3>
+        <p>{rows[4].description}</p>
+      </div>
+      <div class="trust-row-visual">
+        <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Machine slots -->
+          <text x="40" y="30" font-size="10" fill="currentColor" opacity="0.5" font-family="sans-serif" letter-spacing="1">FLOATING LICENSE SLOTS</text>
+          <!-- Slot 1 - active -->
+          <rect x="40" y="45" width="320" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+          <circle cx="60" cy="63" r="4" fill="#7fa03f"/>
+          <text x="72" y="67" font-size="11" fill="currentColor" opacity="0.6" font-family="monospace">prod-1</text>
+          <text x="240" y="67" font-size="9" fill="#7fa03f" opacity="0.7" font-family="sans-serif">active</text>
+          <!-- Slot 2 - active -->
+          <rect x="40" y="93" width="320" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+          <circle cx="60" cy="111" r="4" fill="#7fa03f"/>
+          <text x="72" y="115" font-size="11" fill="currentColor" opacity="0.6" font-family="monospace">staging-1</text>
+          <text x="240" y="115" font-size="9" fill="#7fa03f" opacity="0.7" font-family="sans-serif">active</text>
+          <!-- Slot 3 - released -->
+          <rect x="40" y="141" width="320" height="36" rx="6" stroke="currentColor" stroke-width="1" opacity="0.2" stroke-dasharray="4 2"/>
+          <circle cx="60" cy="159" r="4" fill="currentColor" opacity="0.2"/>
+          <text x="72" y="163" font-size="11" fill="currentColor" opacity="0.3" font-family="monospace">dev-1</text>
+          <text x="200" y="163" font-size="9" fill="currentColor" opacity="0.3" font-family="sans-serif">auto-released after 1h</text>
+          <!-- Clock icon and label -->
+          <circle cx="80" cy="210" r="14" stroke="#7fa03f" stroke-width="1.5" fill="none"/>
+          <line x1="80" y1="202" x2="80" y2="210" stroke="#7fa03f" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="80" y1="210" x2="87" y2="213" stroke="#7fa03f" stroke-width="1.5" stroke-linecap="round"/>
+          <text x="104" y="214" font-size="10" fill="currentColor" opacity="0.5" font-family="sans-serif">{t(`${ns}.svg.slotsAutoRelease`)}</text>
+          <!-- Unlimited machines note -->
+          <text x="40" y="252" font-size="9" fill="#7fa03f" opacity="0.7" font-family="sans-serif">{t(`${ns}.svg.slotsCreateFork`)}</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Founder Guarantee -->
+    <FounderGuarantee lang={lang} />
+  </div>
+</section>

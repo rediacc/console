@@ -1,5 +1,5 @@
-import React from 'react';
 import { Button, Card, Divider, Flex, Typography } from 'antd';
+import React from 'react';
 
 const { Title, Text } = Typography;
 const PANEL_WIDTH = 520;

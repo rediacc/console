@@ -1,36 +1,34 @@
 ---
 title: "المراقبة والتشخيص"
-description: "شاهد وتابع أثناء فحص صحة الجهاز وفحص الحاويات ومراجعة الخدمات وتشغيل التشخيصات."
+description: "فحص صحة الجهاز، وفحص الحاويات، ومراجعة خدمات systemd، ومسح مفاتيح المضيف، وتشغيل تشخيصات البيئة."
 category: "Tutorials"
 order: 4
 language: ar
-sourceHash: "e121e29d9a6359bc"
+sourceHash: "af9f17a05dfb13b9"
 ---
 
-# درس تعليمي: المراقبة والتشخيص
+# كيفية مراقبة وتشخيص البنية التحتية باستخدام Rediacc
 
-This tutorial demonstrates the monitoring and diagnostic commands available in `rdc`: health checks, container inspection, service status, vault overview, and environment diagnostics.
+يتطلب الحفاظ على صحة البنية التحتية رؤية واضحة لحالة الجهاز وحالة الحاويات وصحة الخدمات. في هذا الدرس، ستقوم بتشغيل تشخيصات البيئة، وفحص صحة الجهاز، وفحص الحاويات والخدمات، ومراجعة حالة الخزنة، والتحقق من الاتصال. عند الانتهاء، ستعرف كيفية تحديد المشكلات والتحقيق فيها عبر بنيتك التحتية.
 
 ## المتطلبات الأساسية
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine with at least one running repository (see [Tutorial: Repository Lifecycle](/ar/docs/tutorial-repos))
+- تثبيت `rdc` CLI مع تهيئة الإعدادات
+- جهاز مُعد مع مستودع واحد على الأقل قيد التشغيل (انظر [درس: دورة حياة المستودع](/ar/docs/tutorial-repos))
 
 ## التسجيل التفاعلي
 
-![Tutorial: Monitoring & Diagnostics](/assets/tutorials/monitoring-tutorial.cast)
-
-## ما ستراه في هذا الدرس
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
+![درس: المراقبة والتشخيص](/assets/tutorials/monitoring-tutorial.cast)
 
 ### الخطوة 1: تشغيل التشخيصات
+
+ابدأ بفحص بيئتك المحلية بحثاً عن أي مشكلات في الإعدادات.
 
 ```bash
 rdc doctor
 ```
 
-Checks your local environment: Node.js, CLI version, renet binary, configuration, and virtualization support. Each check reports **OK**, **Warning**, or **Error**.
+يفحص Node.js وإصدار CLI وملف renet الثنائي والإعدادات ودعم المحاكاة الافتراضية. كل فحص يعرض **OK** أو **Warning** أو **Error**.
 
 ### الخطوة 2: فحص صحة الجهاز
 
@@ -38,7 +36,7 @@ Checks your local environment: Node.js, CLI version, renet binary, configuration
 rdc machine health server-1
 ```
 
-يجلب تقريراً شاملاً عن الصحة يتضمن وقت تشغيل النظام واستخدام القرص واستخدام مخزن البيانات وعدد الحاويات وحالة SMART للتخزين وأي مشكلات محددة.
+يجلب تقريراً شاملاً عن الصحة من الجهاز البعيد: وقت تشغيل النظام، واستخدام القرص، واستخدام مخزن البيانات، وعدد الحاويات، وحالة SMART للتخزين، وأي مشكلات محددة.
 
 ### الخطوة 3: عرض الحاويات العاملة
 
@@ -46,15 +44,17 @@ rdc machine health server-1
 rdc machine containers server-1
 ```
 
-Lists all running containers across all repositories on the machine, showing name, status, state, health, CPU usage, memory usage, and which repository owns each container.
+يسرد جميع الحاويات العاملة عبر جميع المستودعات على الجهاز، مع عرض الاسم والحالة والوضع والصحة واستخدام CPU واستخدام الذاكرة والمستودع المالك لكل حاوية.
 
 ### الخطوة 4: فحص خدمات systemd
+
+لرؤية الخدمات الأساسية التي تشغل Docker daemon والشبكات لكل مستودع:
 
 ```bash
 rdc machine services server-1
 ```
 
-Lists Rediacc-related systemd services (Docker daemons, loopback aliases) with their state, sub-state, restart count, and memory usage.
+يسرد خدمات systemd المتعلقة بـ Rediacc (Docker daemons، أسماء loopback المستعارة) مع حالتها وحالتها الفرعية وعدد مرات إعادة التشغيل واستخدام الذاكرة.
 
 ### الخطوة 5: نظرة عامة على حالة الخزنة
 
@@ -62,27 +62,44 @@ Lists Rediacc-related systemd services (Docker daemons, loopback aliases) with t
 rdc machine vault-status server-1
 ```
 
-Provides a high-level overview of the machine: hostname, uptime, memory, disk, datastore, and total repository counts.
+يوفر نظرة عامة عالية المستوى على الجهاز: اسم المضيف، ووقت التشغيل، والذاكرة، والقرص، ومخزن البيانات، وإجمالي عدد المستودعات.
 
-### الخطوة 6: فحص مفاتيح المضيف
+### الخطوة 6: مسح مفاتيح المضيف
+
+إذا أُعيد بناء الجهاز أو تغير عنوان IP الخاص به، قم بتحديث مفتاح SSH المخزن.
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
-Refreshes the SSH host key stored in your config for the machine. Useful after a machine rebuild or IP change.
+يجلب مفاتيح المضيف الحالية للخادم ويحدث إعداداتك. هذا يمنع أخطاء "فشل التحقق من مفتاح المضيف".
 
 ### الخطوة 7: التحقق من الاتصال
+
+فحص سريع لاتصال SSH للتأكد من أن الجهاز يمكن الوصول إليه ويستجيب.
 
 ```bash
 rdc term server-1 -c "hostname"
 rdc term server-1 -c "uptime"
 ```
 
-Quick SSH connectivity check by running inline commands on the remote machine.
+يؤكد اسم المضيف أنك متصل بالخادم الصحيح. يؤكد وقت التشغيل أن النظام يعمل بشكل طبيعي.
+
+## استكشاف الأخطاء وإصلاحها
+
+**انتهاء مهلة فحص الصحة أو ظهور "SSH connection failed"**
+تحقق من أن الجهاز متصل ويمكن الوصول إليه: `ping <ip>`. تحقق من أن مفتاح SSH الخاص بك مُعد بشكل صحيح باستخدام `rdc term <machine> -c "echo ok"`.
+
+**"Service not found" في قائمة الخدمات**
+تظهر خدمات Rediacc فقط بعد نشر مستودع واحد على الأقل. إذا لم تكن هناك مستودعات، فإن قائمة الخدمات تكون فارغة.
+
+**قائمة الحاويات تعرض حاويات قديمة أو متوقفة**
+قد تبقى حاويات من عمليات نشر سابقة إذا لم يتم تشغيل `repo down` بشكل نظيف. أوقفها باستخدام `rdc repo down <repo> -m <machine>` أو افحصها مباشرة عبر `rdc term <machine> <repo> -c "docker ps -a"`.
 
 ## الخطوات التالية
 
-- [Monitoring](/ar/docs/monitoring) — full reference for all monitoring commands
-- [Troubleshooting](/ar/docs/troubleshooting) — common issues and solutions
-- [Tutorial: Tools](/ar/docs/tutorial-tools) — terminal, file sync, and VS Code integration
+لقد قمت بتشغيل التشخيصات، وفحص صحة الجهاز، وفحص الحاويات والخدمات، والتحقق من الاتصال. للعمل مع عمليات النشر الخاصة بك:
+
+- [المراقبة](/ar/docs/monitoring) — مرجع كامل لجميع أوامر المراقبة
+- [استكشاف الأخطاء](/ar/docs/troubleshooting) — المشكلات الشائعة والحلول
+- [درس: الأدوات](/ar/docs/tutorial-tools) — الطرفية، ومزامنة الملفات، وتكامل VS Code

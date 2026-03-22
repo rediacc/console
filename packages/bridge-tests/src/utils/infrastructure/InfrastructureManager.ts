@@ -269,10 +269,15 @@ export class InfrastructureManager {
         throw new Error(`SCP failed: ${copyResult.stderr}`);
       }
 
-      // Move to final location and set permissions using SSHExecutor
+      // Move to final location, set permissions, and create symlinks:
+      // - /usr/lib/rediacc/renet/current -> versioned dir (for bridge commands)
+      // - /usr/bin/renet -> versioned binary (for PATH lookup)
+      const installDir = VM_RENET_INSTALL_PATH.substring(0, VM_RENET_INSTALL_PATH.lastIndexOf('/'));
+      const installRoot = installDir.substring(0, installDir.lastIndexOf('/'));
+      const currentDir = `${installRoot}/current`;
       const moveResult = await this.sshExecutor.execute(
         ip,
-        `sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH}`,
+        `sudo mkdir -p ${installDir} ${currentDir} && sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH} && sudo ln -sf ${VM_RENET_INSTALL_PATH} ${currentDir}/renet && sudo ln -sf ${VM_RENET_INSTALL_PATH} /usr/bin/renet`,
         { execTimeout: 10000 }
       );
 

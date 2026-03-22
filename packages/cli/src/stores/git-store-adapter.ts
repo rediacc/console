@@ -4,9 +4,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { IStoreAdapter, PullResult, PushResult } from './types.js';
 import type { RdcConfig } from '../types/index.js';
 import type { StoreEntry } from '../types/store.js';
+import type { IStoreAdapter, PullResult, PushResult } from './types.js';
 
 const execFileAsync = promisify(execFile);
 

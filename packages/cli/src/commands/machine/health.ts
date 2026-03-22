@@ -1,13 +1,13 @@
-import { Command } from 'commander';
 import { getMachineHealth, type MachineHealthResult } from '@rediacc/shared/services/machine';
+import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
 import { authService } from '../../services/auth.js';
 import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
+import type { OutputFormat } from '../../types/index.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
-import type { OutputFormat } from '../../types/index.js';
 
 const exitCodeStatusHandlers: Record<number, () => void> = {
   0: () => outputService.success(t('commands.machine.health.statusHealthy')),

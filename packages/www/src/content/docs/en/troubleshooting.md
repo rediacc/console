@@ -13,7 +13,7 @@ Common issues and their solutions. When in doubt, start with `rdc doctor` to run
 ## SSH Connection Fails
 
 - Verify you can connect manually: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Run `rdc config scan-keys server-1` to refresh host keys
+- Run `rdc config machine scan-keys server-1` to refresh host keys
 - Check that the SSH port matches: `--port 22`
 - Test with a simple command: `rdc term server-1 -c "hostname"`
 
@@ -22,7 +22,7 @@ Common issues and their solutions. When in doubt, start with `rdc doctor` to run
 If a server was reinstalled or its SSH keys changed, you'll see "host key verification failed":
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 This fetches fresh host keys and updates your config.
@@ -31,7 +31,7 @@ This fetches fresh host keys and updates your config.
 
 - Ensure the SSH user has sudo access without a password, or configure `NOPASSWD` for the required commands
 - Check available disk space on the server
-- Run with `--debug` for verbose output: `rdc config setup-machine server-1 --debug`
+- Run with `--debug` for verbose output: `rdc config machine setup server-1 --debug`
 
 ## Repository Create Fails
 
@@ -42,8 +42,8 @@ This fetches fresh host keys and updates your config.
 ## Services Fail to Start
 
 - Check the Rediaccfile syntax: it must be valid Bash
-- Ensure `docker compose` files use `network_mode: host`
-- Verify Docker images are accessible (consider `docker compose pull` in `prep()`)
+- Ensure your Rediaccfile uses `renet compose --` (not `docker compose`)
+- Verify Docker images are accessible (consider `renet compose -- pull` in `up()`)
 - Check container logs using the repository's Docker socket:
 
 ```bash

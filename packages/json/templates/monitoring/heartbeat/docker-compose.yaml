@@ -1,0 +1,38 @@
+services:
+  db:
+    container_name: heartbeat_db
+    image: postgres:16-alpine
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_PASSWORD=${PGPASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER:-heartbeat}
+      - POSTGRES_DB=${POSTGRES_DB:-heartbeat}
+      - PGDATA=/pgdata
+    command: ["sh", "-c", "exec docker-entrypoint.sh postgres -c listen_addresses=$${SERVICE_IP:-0.0.0.0}"]
+    volumes:
+      - ./data:/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-heartbeat} -h $${SERVICE_IP:-localhost}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  heartbeat:
+    container_name: heartbeat_app
+    image: node:20-alpine
+    working_dir: /app
+    command: ["sh", "-c", "npm install --production && node heartbeat.mjs"]
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=${DB_IP}
+      - DB_PORT=5432
+    volumes:
+      - ./app:/app
+    labels:
+      - "rediacc.checkpoint=true"
+    depends_on:
+      db:
+        condition: service_healthy

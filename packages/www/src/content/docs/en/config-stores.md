@@ -4,6 +4,7 @@ description: "Manage CLI configuration files and sync them to external backends 
 category: "Guides"
 order: 8
 language: en
+sourceHash: "e89c6fe36a5744f0"
 ---
 
 # Config & Stores
@@ -22,7 +23,7 @@ rdc config show
 rdc config init production
 
 # Use a specific config for a command
-rdc --config production machine info prod-1
+rdc --config production machine status prod-1
 
 # Or set via environment variable
 export REDIACC_CONFIG=production

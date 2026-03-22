@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "067a377ce96ff6b3b063038d30fd9f58bab13cf8cc14422e84525092bf6283c2",
+  "steps": [
+    {
+      "id": "tools-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.511459,
+      "replayEndSec": 5.270978,
+      "narrationText": "Day-to-day operations rely on reliable SSH connectivity. We start by verifying the tunnel to the remote machine -- a hostname check confirms the connection target.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-tutorial-01.3186f6b7.mp3",
+      "audioDurationSec": 11.075918
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import { ApiClientError } from '@rediacc/shared/api';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { CliApiError } from '../services/api.js';
 import { AuthError } from '../services/auth.js';
 import { outputService } from '../services/output.js';
@@ -21,19 +22,52 @@ export function getOutputFormat(): OutputFormat {
   return currentOutputFormat;
 }
 
-/** Output error in JSON format */
-function outputJsonError(cliError: CliError): void {
-  const errorResponse = {
-    success: false,
-    error: {
-      code: cliError.code,
-      message: cliError.message,
-      ...(cliError.details?.length && { details: cliError.details }),
-    },
-    exitCode: cliError.exitCode,
+/** Determine if an error is retryable based on exit code */
+function isRetryable(error: CliError): boolean {
+  if (error.retryable !== undefined) return error.retryable;
+  const retryableCodes: number[] = [
+    EXIT_CODES.NETWORK_ERROR,
+    EXIT_CODES.RATE_LIMITED,
+    EXIT_CODES.API_ERROR,
+  ];
+  return retryableCodes.includes(error.exitCode);
+}
+
+/** Get actionable guidance for an error */
+function getGuidance(error: CliError): string | undefined {
+  if (error.guidance) return error.guidance;
+  const map: Record<number, string> = {
+    [EXIT_CODES.AUTH_REQUIRED]: 'Run "rdc auth login" to authenticate',
+    [EXIT_CODES.PERMISSION_DENIED]: 'Check team permissions or contact admin',
+    [EXIT_CODES.NOT_FOUND]:
+      'Verify the resource name with "rdc machine query" or "rdc config repositories"',
+    [EXIT_CODES.NETWORK_ERROR]: 'Check network connectivity and retry',
+    [EXIT_CODES.RATE_LIMITED]: 'Wait and retry after a brief delay',
+    [EXIT_CODES.PAYMENT_REQUIRED]: 'Upgrade subscription or check usage limits',
+    [EXIT_CODES.INVALID_ARGUMENTS]: 'Check command usage with --help',
   };
-  // eslint-disable-next-line no-console -- JSON errors must go to stdout for piping
-  console.log(JSON.stringify(errorResponse, null, 2));
+  return map[error.exitCode];
+}
+
+/** Output error in JSON envelope format */
+function outputJsonError(cliError: CliError): void {
+  const envelope = {
+    success: false,
+    command: outputService.getCommandName() ?? DEFAULTS.TELEMETRY.UNKNOWN,
+    data: null,
+    errors: [
+      {
+        code: cliError.code,
+        message: cliError.message,
+        ...(cliError.details?.length && { details: cliError.details }),
+        retryable: isRetryable(cliError),
+        guidance: getGuidance(cliError),
+      },
+    ],
+    warnings: outputService.getWarnings(),
+    metrics: { duration_ms: outputService.getDurationMs() },
+  };
+  process.stdout.write(`${JSON.stringify(envelope, null, 2)}\n`);
 }
 
 /** Output error in text format */

@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "de",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "818df075f9ad49f7cb0138a60a9c908e767551182f9393abe414555983181f80",
+  "steps": [
+    {
+      "id": "backup-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.510362,
+      "replayEndSec": 5.406939,
+      "narrationText": "Überprüfen Sie die aktuell konfigurierten Sicherungsziele.",
+      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-tutorial-01.6eb7658f.mp3",
+      "audioDurationSec": 3.709388
+    }
+  ]
+}

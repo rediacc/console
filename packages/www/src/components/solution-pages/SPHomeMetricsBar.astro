@@ -1,0 +1,12 @@
+---
+import MetricsBar from '../MetricsBar.astro';
+import type { Language } from '../../i18n/types';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props as Props;
+---
+
+<MetricsBar lang={lang} />

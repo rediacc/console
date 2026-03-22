@@ -6,7 +6,7 @@ description: >-
 category: Use Cases
 order: 10
 language: ar
-sourceHash: 6128ad0f1099ba85
+sourceHash: c13b017afc2c8371
 ---
 
 > ** البيئات سريعة الزوال. تكافؤ الإنتاج. صفر تذاكر DevOps.**
@@ -217,7 +217,7 @@ sourceHash: 6128ad0f1099ba85
 
 * [**استرداد السفر عبر الزمن**](/en/docs/time-travel-recovery) - استعادة البنية التحتية في الوقت المناسب 
 * [**ترقيات خالية من المخاطر**](/en/docs/risk-free-upgrades) - اختبار عمليات ترحيل نظام التشغيل دون مخاطر 
-* [**التعافي من الكوارث**](/en/solutions/disaster-recovery) - نسخ احتياطية تم التحقق منها وتعمل بالفعل
+* [**التعافي من الكوارث**](/en/solutions/backup-verification) - نسخ احتياطية تم التحقق منها وتعمل بالفعل
 
 ---
 

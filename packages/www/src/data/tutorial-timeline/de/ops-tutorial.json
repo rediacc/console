@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/ops-tutorial.cast",
+  "language": "de",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "ab58b4689bad31f5815636d9d46506d29de4827183cf4d68fd8e7f8ab1bfbfbd",
+  "steps": [
+    {
+      "id": "ops-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508295,
+      "replayEndSec": 8.986537,
+      "narrationText": "Überprüfen Sie vor der Bereitstellung die lokalen Virtualisierungsanforderungen.",
+      "audioSrc": "/assets/tutorials/audio/de/ops-tutorial/ops-tutorial-01.453fbb11.mp3",
+      "audioDurationSec": 4.597551
+    },
+    {
+      "id": "ops-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.986537,
+      "replayEndSec": 17.752282,
+      "narrationText": "Starten Sie zum Experimentieren einen minimalen VM-Cluster.",
+      "audioSrc": "/assets/tutorials/audio/de/ops-tutorial/ops-tutorial-02.e2903f1d.mp3",
+      "audioDurationSec": 4.519184
+    },
+    {
+      "id": "ops-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 17.752282,
+      "replayEndSec": 25.263372,
+      "narrationText": "Überprüfen Sie den Clusterstatus und die Maschinenverfügbarkeit.",
+      "audioSrc": "/assets/tutorials/audio/de/ops-tutorial/ops-tutorial-03.67aa91c5.mp3",
+      "audioDurationSec": 3.474286
+    },
+    {
+      "id": "ops-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 25.263372,
+      "replayEndSec": 31.160484,
+      "narrationText": "Führen Sie eine schnelle Überprüfung des Hostnamens auf einer ausgewählten VM durch.",
+      "audioSrc": "/assets/tutorials/audio/de/ops-tutorial/ops-tutorial-04.f74269e6.mp3",
+      "audioDurationSec": 4.675918
+    },
+    {
+      "id": "ops-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 31.160484,
+      "replayEndSec": 39.121485,
+      "narrationText": "Überprüfen Sie Systemdetails innerhalb der VM-Umgebung.",
+      "audioSrc": "/assets/tutorials/audio/de/ops-tutorial/ops-tutorial-05.f5ffb0f5.mp3",
+      "audioDurationSec": 3.970612
+    },
+    {
+      "id": "ops-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 39.121485,
+      "replayEndSec": 46.501637,
+      "narrationText": "Fahren Sie den temporären VM-Cluster herunter und bereinigen Sie ihn.",
+      "audioSrc": "/assets/tutorials/audio/de/ops-tutorial/ops-tutorial-06.71c4606b.mp3",
+      "audioDurationSec": 5.067755
+    }
+  ]
+}

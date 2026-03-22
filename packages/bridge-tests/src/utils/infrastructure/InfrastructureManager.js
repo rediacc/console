@@ -1,0 +1,416 @@
+import { exec } from 'node:child_process';
+import * as crypto from 'node:crypto';
+import * as fs from 'node:fs';
+import { promisify } from 'node:util';
+import { LIMITS_DEFAULTS } from '@rediacc/shared/config/defaults';
+import { VM_RENET_INSTALL_PATH } from '../../constants';
+import { getOpsManager } from '../bridge/OpsManager';
+import { getRenetResolver } from '../RenetResolver';
+import { getSSHExecutor } from '../ssh';
+const execAsync = promisify(exec);
+/**
+ * Calculate MD5 hash of a file.
+ */
+function getFileMD5(filePath) {
+    const content = fs.readFileSync(filePath);
+    return crypto.createHash('md5').update(content).digest('hex');
+}
+/**
+ * InfrastructureManager for bridge tests.
+ *
+ * Always runs in full VM mode:
+ * - Automatically starts VMs using renet ops commands if not running
+ * - Verifies renet is installed on all VMs
+ * - No middleware or Docker containers required - renet runs in local/test mode
+ *
+ * DELEGATES TO SSHExecutor:
+ * All SSH operations are delegated to the centralized SSHExecutor to ensure
+ * consistent behavior and avoid code duplication.
+ */
+export class InfrastructureManager {
+    constructor() {
+        this.opsManager = getOpsManager();
+        this.resolver = getRenetResolver();
+        this.sshExecutor = getSSHExecutor();
+        const workerIps = this.opsManager.getWorkerVMIps();
+        this.config = {
+            bridgeVM: this.opsManager.getBridgeVMIp(),
+            workerVM: workerIps.length > 0 ? workerIps[0] : undefined,
+            defaultTimeout: Number.parseInt(process.env.BRIDGE_TIMEOUT ?? LIMITS_DEFAULTS.CONNECTION_TIMEOUT, 10),
+        };
+    }
+    /**
+     * Get the path to renet binary (from resolver).
+     */
+    getRenetPath() {
+        return this.resolver.getPath();
+    }
+    /**
+     * Check if renet binary is available locally.
+     * Uses RenetResolver which handles all resolution and auto-build logic.
+     */
+    async isRenetAvailable() {
+        try {
+            const result = await this.resolver.ensureBinary();
+            return { available: true, path: result.path };
+        }
+        catch {
+            return { available: false, path: '' };
+        }
+    }
+    /**
+     * Check if bridge VM is reachable via SSH.
+     * Delegates to SSHExecutor for consistent behavior.
+     */
+    async isBridgeVMReachable() {
+        const ready = await this.sshExecutor.isSSHReady(this.config.bridgeVM, {
+            connectTimeout: 5,
+            batchMode: true,
+        });
+        if (!ready) {
+            console.warn('[InfrastructureManager] Bridge VM check failed');
+        }
+        return ready;
+    }
+    /**
+     * Check if worker VM is reachable via SSH.
+     * Delegates to SSHExecutor for consistent behavior.
+     * Returns true if no worker VMs are configured (Ceph-only mode).
+     */
+    async isWorkerVMReachable() {
+        // In Ceph-only mode, there are no workers - return true
+        if (this.config.workerVM === undefined) {
+            return true;
+        }
+        const ready = await this.sshExecutor.isSSHReady(this.config.workerVM, {
+            connectTimeout: 5,
+            batchMode: true,
+        });
+        if (!ready) {
+            console.warn('[InfrastructureManager] Worker VM check failed');
+        }
+        return ready;
+    }
+    /**
+     * Get current infrastructure status.
+     */
+    async getStatus() {
+        const [renet, bridgeVM, workerVM] = await Promise.all([
+            this.isRenetAvailable(),
+            this.isBridgeVMReachable(),
+            this.isWorkerVMReachable(),
+        ]);
+        return { renet, bridgeVM, workerVM };
+    }
+    /**
+     * Ensure infrastructure is ready for tests.
+     * - Verifies renet binary is available
+     * - Starts VMs if not running
+     * - Deploys renet to VMs if outdated
+     */
+    async ensureInfrastructure() {
+        // eslint-disable-next-line no-console
+        console.log('Checking infrastructure status...');
+        const status = await this.getStatus();
+        // eslint-disable-next-line no-console
+        console.log('');
+        // eslint-disable-next-line no-console
+        console.log('Initial Status:');
+        // eslint-disable-next-line no-console
+        console.log('  Renet:', status.renet.available ? `OK (${status.renet.path})` : 'NOT FOUND');
+        // eslint-disable-next-line no-console
+        console.log('  Bridge VM:', status.bridgeVM ? 'OK' : 'DOWN');
+        // eslint-disable-next-line no-console
+        console.log('  Worker VM:', status.workerVM ? 'OK' : 'DOWN');
+        if (!status.renet.available) {
+            // RenetResolver already tried all resolution strategies including auto-build
+            throw new Error('Renet binary not available.\n' + 'Check error messages above for details.');
+        }
+        // Always ensure VMs are running
+        await this.ensureVMsRunning(status);
+        // Ensure renet is installed on all VMs
+        await this.ensureRenetOnVMs();
+    }
+    /**
+     * Check if workers are configured (not Ceph-only mode).
+     */
+    hasWorkerVMs() {
+        return this.config.workerVM !== undefined;
+    }
+    /**
+     * Check if worker VMs are ready, accounting for Ceph-only mode.
+     */
+    isWorkerVMStatusReady(workerStatus) {
+        return this.hasWorkerVMs() ? workerStatus : true;
+    }
+    /**
+     * Log worker VM status with Ceph-only mode support.
+     */
+    logWorkerStatus(workerStatus) {
+        if (this.hasWorkerVMs()) {
+            console.warn('  Worker VM:', workerStatus ? 'OK' : 'DOWN');
+        }
+        else {
+            console.warn('  Worker VM: N/A (Ceph-only mode)');
+        }
+    }
+    /**
+     * Ensure VMs are running and ready.
+     */
+    async ensureVMsRunning(status) {
+        const vmsReady = status.bridgeVM && this.isWorkerVMStatusReady(status.workerVM);
+        if (vmsReady) {
+            return;
+        }
+        console.warn('');
+        console.warn('VMs not ready - starting via ops scripts...');
+        const result = await this.opsManager.ensureVMsRunning();
+        if (!result.success) {
+            throw new Error(`Failed to start VMs: ${result.message}\n` + 'Check ops logs for details.');
+        }
+        console.warn(result.message);
+        // Verify VMs are now ready
+        const newStatus = await this.getStatus();
+        console.warn('');
+        console.warn('Updated Status:');
+        console.warn('  Bridge VM:', newStatus.bridgeVM ? 'OK' : 'DOWN');
+        this.logWorkerStatus(newStatus.workerVM);
+        const workerReady = this.isWorkerVMStatusReady(newStatus.workerVM);
+        if (!newStatus.bridgeVM || !workerReady) {
+            const missing = [];
+            if (!newStatus.bridgeVM)
+                missing.push('bridge VM');
+            if (this.hasWorkerVMs() && !newStatus.workerVM)
+                missing.push('worker VM');
+            throw new Error(`VMs started but still not reachable: ${missing.join(', ')}\n` +
+                'Check network connectivity and SSH configuration.');
+        }
+    }
+    /**
+     * Get MD5 hash of renet binary on a remote VM.
+     */
+    async getRemoteRenetMD5(ip) {
+        const result = await this.opsManager.executeOnVM(ip, `md5sum ${VM_RENET_INSTALL_PATH} 2>/dev/null | cut -d" " -f1`);
+        if (result.code === 0 && result.stdout.trim().length === 32) {
+            return result.stdout.trim();
+        }
+        return null;
+    }
+    /**
+     * Deploy renet binary to a VM if it's different from the local version.
+     * Verifies the deployment by checking MD5 after copy.
+     */
+    async deployRenetToVM(ip, localPath, localMD5) {
+        const remoteMD5 = await this.getRemoteRenetMD5(ip);
+        if (remoteMD5 === localMD5) {
+            return false; // Already up to date
+        }
+        try {
+            // Copy to temp location using SSHExecutor
+            const copyResult = await this.sshExecutor.copyTo(ip, localPath, '/tmp/renet', {
+                execTimeout: 60000, // Increased timeout for larger binaries
+            });
+            if (!copyResult.success) {
+                throw new Error(`SCP failed: ${copyResult.stderr}`);
+            }
+            // Move to final location, set permissions, and create symlinks:
+            // - /usr/lib/rediacc/renet/current -> versioned dir (for bridge commands)
+            // - /usr/bin/renet -> versioned binary (for PATH lookup)
+            const installDir = VM_RENET_INSTALL_PATH.substring(0, VM_RENET_INSTALL_PATH.lastIndexOf('/'));
+            const installRoot = installDir.substring(0, installDir.lastIndexOf('/'));
+            const currentDir = `${installRoot}/current`;
+            const moveResult = await this.sshExecutor.execute(ip, `sudo mkdir -p ${installDir} ${currentDir} && sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH} && sudo ln -sf ${VM_RENET_INSTALL_PATH} ${currentDir}/renet && sudo ln -sf ${VM_RENET_INSTALL_PATH} /usr/bin/renet`, { execTimeout: 10000 });
+            if (!moveResult.success) {
+                throw new Error(`Move/chmod failed: ${moveResult.stderr}`);
+            }
+            // Verify the deployment by checking MD5
+            const newRemoteMD5 = await this.getRemoteRenetMD5(ip);
+            if (newRemoteMD5 !== localMD5) {
+                throw new Error(`MD5 mismatch after deploy: local=${localMD5}, remote=${newRemoteMD5}`);
+            }
+            return true;
+        }
+        catch (error) {
+            const err = error;
+            throw new Error(`Failed to deploy renet to ${ip}: ${err.message ?? 'Unknown error'}`);
+        }
+    }
+    /**
+     * Verify renet is installed and up-to-date on all VMs (bridge, workers, ceph).
+     * Deploys the local version if VMs have outdated binary.
+     */
+    async ensureRenetOnVMs() {
+        // eslint-disable-next-line no-console
+        console.log('');
+        // eslint-disable-next-line no-console
+        console.log('Verifying renet on all VMs...');
+        const localPath = this.getRenetPath();
+        let localMD5;
+        try {
+            localMD5 = getFileMD5(localPath);
+        }
+        catch {
+            throw new Error(`Cannot read local renet binary at ${localPath}`);
+        }
+        // Deploy to all VMs: bridge + workers + ceph
+        const allIPs = this.opsManager.getAllVMIps();
+        for (const ip of allIPs) {
+            const hasRenet = await this.opsManager.isRenetInstalledOnVM(ip);
+            if (hasRenet) {
+                // Check if update is needed
+                const wasUpdated = await this.deployRenetToVM(ip, localPath, localMD5);
+                const version = await this.opsManager.getRenetVersionOnVM(ip);
+                if (wasUpdated) {
+                    // eslint-disable-next-line no-console
+                    console.log(`  ✓ ${ip}: renet updated (${version ?? 'unknown version'})`);
+                }
+                else {
+                    // eslint-disable-next-line no-console
+                    console.log(`  ✓ ${ip}: renet installed (${version ?? 'unknown version'})`);
+                }
+            }
+            else {
+                // Install renet for the first time
+                // eslint-disable-next-line no-console
+                console.log(`  ${ip}: Installing renet...`);
+                await this.deployRenetToVM(ip, localPath, localMD5);
+                const version = await this.opsManager.getRenetVersionOnVM(ip);
+                // eslint-disable-next-line no-console
+                console.log(`  ✓ ${ip}: renet installed (${version ?? 'unknown version'})`);
+            }
+        }
+    }
+    /**
+     * Get the OpsManager instance for direct VM operations.
+     */
+    getOpsManager() {
+        return this.opsManager;
+    }
+    /**
+     * Deploy CRIU to all worker VMs.
+     *
+     * Strategy:
+     * 1. Try to extract CRIU from bridge container (pre-built, fast)
+     * 2. Fall back to building from source if container not available
+     *
+     * CRIU is required for container checkpointing tests.
+     */
+    async deployCRIUToAllVMs() {
+        // eslint-disable-next-line no-console
+        console.log('Checking CRIU deployment...');
+        const bridgeIP = this.opsManager.getBridgeVMIp();
+        const workerIPs = this.opsManager.getWorkerVMIps();
+        const user = process.env.USER;
+        if (!user) {
+            throw new Error('USER environment variable is not set');
+        }
+        // Check if any worker needs CRIU
+        const anyNeedsCriu = await this.checkIfCriuNeeded(workerIPs);
+        if (!anyNeedsCriu) {
+            // eslint-disable-next-line no-console
+            console.log('  CRIU already installed on all workers');
+            return;
+        }
+        // Try to extract CRIU from bridge container
+        const criuSourcePath = await this.extractCriuFromContainer(bridgeIP);
+        // Deploy CRIU to each worker VM
+        await this.deployCriuToWorkers(workerIPs, criuSourcePath, bridgeIP, user);
+        // Cleanup temp file on bridge
+        if (criuSourcePath) {
+            await this.opsManager.executeOnVM(bridgeIP, 'rm -f /tmp/criu');
+        }
+    }
+    /**
+     * Check if any worker VM needs CRIU installation.
+     */
+    async checkIfCriuNeeded(workerIPs) {
+        for (const ip of workerIPs) {
+            const result = await this.opsManager.executeOnVM(ip, 'which criu 2>/dev/null');
+            if (result.code !== 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+    /**
+     * Try to extract CRIU from bridge container.
+     */
+    async extractCriuFromContainer(bridgeIP) {
+        const containerCheck = await this.opsManager.executeOnVM(bridgeIP, "docker ps --filter 'name=bridge' --format '{{.Names}}' | head -1");
+        if (containerCheck.code !== 0 || !containerCheck.stdout.trim()) {
+            return null;
+        }
+        const containerName = containerCheck.stdout.trim();
+        // eslint-disable-next-line no-console
+        console.log(`  Found bridge container: ${containerName}`);
+        const extractResult = await this.opsManager.executeOnVM(bridgeIP, `docker cp ${containerName}:/opt/criu/criu-linux-amd64 /tmp/criu 2>/dev/null && chmod +x /tmp/criu && echo "extracted"`);
+        if (extractResult.code === 0 && extractResult.stdout.includes('extracted')) {
+            // eslint-disable-next-line no-console
+            console.log('  ✓ Extracted CRIU from bridge container');
+            return '/tmp/criu';
+        }
+        return null;
+    }
+    /**
+     * Deploy CRIU to worker VMs.
+     */
+    async deployCriuToWorkers(workerIPs, criuSourcePath, bridgeIP, user) {
+        for (const ip of workerIPs) {
+            const criuCheck = await this.opsManager.executeOnVM(ip, 'which criu 2>/dev/null');
+            if (criuCheck.code === 0 && criuCheck.stdout.trim()) {
+                // eslint-disable-next-line no-console
+                console.log(`  ✓ ${ip}: CRIU already installed`);
+                continue;
+            }
+            if (criuSourcePath) {
+                const copied = await this.copyCriuFromBridge(ip, criuSourcePath, bridgeIP, user);
+                if (copied) {
+                    continue;
+                }
+            }
+            await this.buildCriuFromSource(ip);
+        }
+    }
+    /**
+     * Copy CRIU from bridge VM to worker VM.
+     * Uses SSHExecutor for consistent SSH options in nested commands.
+     */
+    async copyCriuFromBridge(ip, criuSourcePath, bridgeIP, user) {
+        console.warn(`  ${ip}: Copying CRIU from bridge...`);
+        // Get SSH options for the nested commands (from bridge to worker)
+        // These are used inside the command executed on bridgeIP
+        const nestedOpts = this.sshExecutor.getSSHOptions({ connectTimeout: 10, batchMode: true });
+        const scpOpts = this.sshExecutor.getSCPOptions({ quiet: true });
+        const copyResult = await this.opsManager.executeOnVM(bridgeIP, `scp ${scpOpts} ${criuSourcePath} ${user}@${ip}:/tmp/criu && ssh ${nestedOpts} ${user}@${ip} "sudo mv /tmp/criu /usr/local/bin/criu && sudo chmod +x /usr/local/bin/criu"`);
+        if (copyResult.code === 0) {
+            console.warn(`  ✓ ${ip}: CRIU installed from container`);
+            return true;
+        }
+        console.warn(`  Warning: Copy failed for ${ip}, will try building from source`);
+        return false;
+    }
+    /**
+     * Build CRIU from source on a worker VM.
+     */
+    async buildCriuFromSource(ip) {
+        // eslint-disable-next-line no-console
+        console.log(`  ${ip}: Building CRIU from source (this may take a few minutes)...`);
+        const vmId = ip.split('.').pop();
+        await execAsync(`${this.getRenetPath()} ops worker install-criu ${vmId}`, {
+            timeout: 600000,
+        }).catch((error) => ({
+            stdout: '',
+            stderr: error instanceof Error ? error.message : String(error),
+        }));
+        const verifyResult = await this.opsManager.executeOnVM(ip, 'criu --version');
+        if (verifyResult.code === 0) {
+            // eslint-disable-next-line no-console
+            console.log(`  ✓ ${ip}: CRIU built and installed`);
+        }
+        else {
+            // eslint-disable-next-line no-console
+            console.log(`  Warning: CRIU installation failed on ${ip} (non-fatal for most tests)`);
+        }
+    }
+}
+//# sourceMappingURL=InfrastructureManager.js.map

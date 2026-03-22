@@ -1,5 +1,11 @@
-import { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { Command } from 'commander';
+import { t } from '../i18n/index.js';
+import { getStateProvider } from '../providers/index.js';
+import { localExecutorService } from '../services/local-executor.js';
+import { outputService } from '../services/output.js';
+import { handleError, ValidationError } from '../utils/errors.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import {
   type CreateActionOptions,
   coerceCliParams,
@@ -8,12 +14,6 @@ import {
   traceAction,
   validateFunctionParams,
 } from './queue.js';
-import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
-import { configService } from '../services/config-resources.js';
-import { localExecutorService } from '../services/local-executor.js';
-import { outputService } from '../services/output.js';
-import { handleError, ValidationError } from '../utils/errors.js';
 
 interface RunLocalOptions {
   machine?: string;
@@ -24,11 +24,11 @@ interface RunLocalOptions {
 }
 
 /** Resolve machine name and parse+validate function params (shared by local and S3 modes). */
-async function resolveRunParams(
+function resolveRunParams(
   functionName: string,
   options: RunLocalOptions
-): Promise<{ machineName: string; params: Record<string, unknown> }> {
-  const machineName = options.machine ?? (await configService.getMachine());
+): { machineName: string; params: Record<string, unknown> } {
+  const machineName = options.machine;
   if (!machineName) {
     throw new ValidationError(t('errors.machineRequiredLocal'));
   }
@@ -38,10 +38,12 @@ async function resolveRunParams(
   return { machineName, params };
 }
 
-function handleExecutionResult(result: {
+export function handleExecutionResult(result: {
   success: boolean;
   durationMs?: number;
   error?: string;
+  errorCode?: string;
+  errorGuidance?: string;
   exitCode?: number;
 }): void {
   if (result.success) {
@@ -49,13 +51,15 @@ function handleExecutionResult(result: {
       t('commands.shortcuts.run.completedLocal', { duration: result.durationMs })
     );
   } else {
-    outputService.error(t('commands.shortcuts.run.failedLocal', { error: result.error }));
-    process.exitCode = result.exitCode;
+    renderLocalExecutionFailure(
+      result,
+      t('commands.shortcuts.run.failedLocal', { error: result.error })
+    );
   }
 }
 
 async function runLocalMode(functionName: string, options: RunLocalOptions): Promise<void> {
-  const { machineName, params } = await resolveRunParams(functionName, options);
+  const { machineName, params } = resolveRunParams(functionName, options);
   outputService.info(
     t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
   );
@@ -126,10 +130,11 @@ export function registerShortcuts(program: Command): void {
   // run - shortcut for queue create with optional watch
   // In local mode, executes directly via renet subprocess
   program
-    .command('run <function>')
+    .command('run <function>', { hidden: true })
+    .summary(t('commands.shortcuts.run.descriptionShort'))
     .description(t('commands.shortcuts.run.description'))
     .option('-t, --team <name>', t('options.team'))
-    .option('-m, --machine <name>', t('options.machine'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('-b, --bridge <name>', t('options.bridge'))
     .option('-p, --priority <1-5>', t('options.priority'), '3')
     .option(

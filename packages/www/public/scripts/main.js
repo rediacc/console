@@ -2,6 +2,7 @@
 
 // NOTE: Keep this in sync with src/config/constants.ts
 const CONTACT_EMAIL = 'contact@rediacc.com';
+const FALLBACK_NAV_HEIGHT = 80;
 
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize components
@@ -17,19 +18,37 @@ function initSmoothScrolling() {
 
   navLinks.forEach((link) => {
     link.addEventListener('click', function (e) {
-      e.preventDefault();
+      // Let docs/blog anchor links use native browser behavior.
+      if (this.classList.contains('toc-link') || this.closest('.article-content, .docs-sidebar')) {
+        return;
+      }
 
-      const targetId = this.getAttribute('href');
-      const targetElement = document.querySelector(targetId);
+      const targetHash = this.getAttribute('href');
+      if (!targetHash || targetHash.length <= 1) return;
+      const targetId = decodeURIComponent(targetHash.slice(1));
+      const targetElement = document.getElementById(targetId);
 
       if (targetElement) {
-        const headerHeight = document.querySelector('.nav').offsetHeight;
-        const targetPosition = targetElement.offsetTop - headerHeight - 20;
+        e.preventDefault();
+        const navEl = document.getElementById('navigation') ?? document.querySelector('.nav');
+        const parsedNavHeight = Number.parseInt(
+          getComputedStyle(document.documentElement).getPropertyValue('--nav-height'),
+          10
+        );
+        const cssNavHeight = Number.isNaN(parsedNavHeight) ? undefined : parsedNavHeight;
+        let headerHeight = navEl?.getBoundingClientRect().height ?? cssNavHeight;
+        headerHeight ??= FALLBACK_NAV_HEIGHT;
+        const targetPosition =
+          targetElement.getBoundingClientRect().top + window.scrollY - headerHeight - 20;
 
         window.scrollTo({
           top: targetPosition,
           behavior: 'smooth',
         });
+
+        if (window.location.hash !== targetHash) {
+          history.pushState(null, '', targetHash);
+        }
       }
     });
   });

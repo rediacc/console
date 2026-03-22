@@ -1,0 +1,35 @@
+---
+import { createTranslator } from '../i18n/utils';
+import type { Language } from '../i18n/types';
+import { TEAM_MEMBERS } from '../config/team-videos';
+
+type QuoteKey = 'guarantee' | 'quote' | 'contact';
+type PhotoVariant = 'headshot' | 'headshot-sm' | 'headshot-xs' | 'casual';
+
+interface Props {
+  lang: Language;
+  member?: string;
+  /** Which translation key to display. Default: 'guarantee' */
+  quoteKey?: QuoteKey;
+  /** Which photo variant to use. Default: 'headshot' */
+  photo?: PhotoVariant;
+}
+
+const { lang, member = 'founder', quoteKey = 'guarantee', photo = 'headshot' } = Astro.props;
+const { t } = createTranslator(lang);
+const data = TEAM_MEMBERS[member];
+const photoSrc = data?.photos[photo] ?? data?.photos.headshot;
+---
+
+{data && (
+  <a href={`/${lang}/team`} class="cf-guarantee-strip cf-guarantee-link">
+    <img
+      src={photoSrc}
+      alt={data.name}
+      class="cf-guarantee-photo"
+      loading="lazy"
+      decoding="async"
+    />
+    <p class="cf-guarantee-text">{t(`team.${member}.${quoteKey}`)}</p>
+  </a>
+)}

@@ -73,6 +73,22 @@ rediacc_prompt() {
 }
 export -f rediacc_prompt 2>/dev/null || true
 
+# Set custom prompt showing repo name instead of GUID path
+if [ -n "\${REDIACC_REPOSITORY:-}" ]; then
+  __rediacc_ps1_dir() {
+    local cwd="$PWD"
+    # Try REDIACC_WORKING_DIR (mount path) first, then DOCKER_DATA (named path)
+    local work_dir="\${REDIACC_WORKING_DIR:-\${DOCKER_DATA:-}}"
+    if [ -n "$work_dir" ] && [ "\${cwd#"$work_dir"}" != "$cwd" ]; then
+      local rel="\${cwd#"$work_dir"}"
+      printf '%s' "\${REDIACC_REPOSITORY}\${rel}"
+    else
+      printf '%s' "$cwd"
+    fi
+  }
+  PS1='\\u@\\h:$(__rediacc_ps1_dir)\\$ '
+fi
+
 # Quick container restart
 restart_container() {
   local container="\${1:-}"
@@ -95,6 +111,28 @@ container_stats() {
   fi
 }
 export -f container_stats 2>/dev/null || true
+
+# Block 'docker compose' — must use 'renet compose' for network isolation
+docker() {
+  case "$1" in
+    compose)
+      echo "Error: Use 'renet compose' instead of 'docker compose'"
+      echo "  Example: renet compose -- up -d"
+      echo "  Why: renet compose injects network isolation, service IPs, and CRIU capabilities"
+      return 1
+      ;;
+  esac
+  command docker "$@"
+}
+export -f docker 2>/dev/null || true
+
+# Block legacy 'docker-compose' command
+docker-compose() {
+  echo "Error: Use 'renet compose' instead of 'docker-compose'"
+  echo "  Example: renet compose -- up -d"
+  return 1
+}
+export -f docker-compose 2>/dev/null || true
 `;
 
 /**

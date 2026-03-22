@@ -1,4 +1,6 @@
 import { existsSync, mkdirSync } from 'node:fs';
+import { RepositoryConnection } from '../repository/connection.js';
+import type { SyncMode, SyncResult } from '../types/index.js';
 import { ensureTrailingSlash, joinRemotePath } from './pathConverter.js';
 import {
   executeRsync,
@@ -6,8 +8,6 @@ import {
   type RsyncChanges,
   type RsyncExecutorOptions,
 } from './rsync.js';
-import { RepositoryConnection } from '../repository/connection.js';
-import type { SyncMode, SyncResult } from '../types/index.js';
 
 /**
  * Sync operation options
@@ -75,6 +75,7 @@ export async function uploadToRepository(
       mirror,
       verify,
       universalUser: connection.connection?.universalUser,
+      isUpload: true,
       onStdout: onOutput,
       onStderr: onOutput,
     };
@@ -204,6 +205,7 @@ export async function getSyncPreview(options: SyncOperationOptions): Promise<Rsy
       mirror,
       verify,
       universalUser: connection.connection?.universalUser,
+      isUpload: mode === 'upload',
     };
 
     return await getRsyncPreview(rsyncOptions);

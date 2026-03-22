@@ -1,17 +1,17 @@
-import { Command } from 'commander';
 import { parseGetCephRbdImages } from '@rediacc/shared/api';
 import type {
   CreateCephRbdImageParams,
   DeleteCephRbdImageParams,
   GetCephRbdImagesParams,
 } from '@rediacc/shared/types';
+import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { typedApi } from '../../services/api.js';
 import { authService } from '../../services/auth.js';
 import { outputService } from '../../services/output.js';
+import type { OutputFormat } from '../../types/index.js';
 import { handleError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
-import type { OutputFormat } from '../../types/index.js';
 
 export function registerImageCommands(ceph: Command, program: Command): void {
   const image = ceph.command('image').description(t('commands.ceph.image.description'));

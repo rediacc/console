@@ -1,0 +1,49 @@
+---
+import type { Language } from '../../i18n/types';
+import { SOLUTION_PAGES } from '../../config/solution-pages';
+import { createTranslator } from '../../i18n/utils';
+
+interface Props {
+  solutions: string[];
+  content: {
+    title: string;
+  };
+  lang: Language;
+}
+
+const { solutions, content, lang } = Astro.props;
+const { to } = createTranslator(lang);
+
+const cards = solutions
+  .filter((slug) => SOLUTION_PAGES[slug])
+  .map((slug) => {
+    const cfg = SOLUTION_PAGES[slug];
+    const solContent = to(`pages.solutionPages.${cfg.contentKey}` as any) as any;
+    return {
+      slug,
+      category: cfg.category,
+      title: solContent?.hero?.title ?? slug,
+      description: solContent?.hero?.subtitle ?? '',
+    };
+  });
+---
+
+<section class="sp-explore sp-related-solutions">
+  <div class="sp-explore-inner">
+    <h2>{content.title}</h2>
+    <div class="sp-explore-grid">
+      {cards.map((sol) => (
+        <a
+          href={`/${lang}/solutions/${sol.slug}`}
+          class="sp-explore-card"
+          data-category={sol.category}
+        >
+          <span class="sp-explore-card-category">{sol.category.replace('-', ' ')}</span>
+          <h3>{sol.title}</h3>
+          <p>{sol.description}</p>
+          <span class="sp-explore-card-arrow">&rarr;</span>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>

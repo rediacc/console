@@ -2,17 +2,15 @@ services:
   db:
     image: mariadb:10.3
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
     env_file:
       - .env
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    ports:
-      - "3306"
+    command: ["sh", "-c", "exec docker-entrypoint.sh mysqld --bind-address=$${SERVICE_IP:-0.0.0.0}"]
     volumes:
       - ./data/mariadb:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "$${SERVICE_IP:-localhost}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -21,20 +19,20 @@ services:
   phpmyadmin:
     image: phpmyadmin
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
+    labels:
+      - "rediacc.service_port=80"
+    command: ["sh", "-c", "sed -i \"s/Listen 80$/Listen $${SERVICE_IP:-0.0.0.0}:80/\" /etc/apache2/ports.conf && exec apache2-foreground"]
     env_file:
       - .env
-    ports:
-      - "80"
     environment:
       PMA_ARBITRARY: ${PMA_ARBITRARY}
-      PMA_HOST: ${PMA_HOST}
+      PMA_HOST: ${DB_IP}
       PMA_PORT: ${PMA_PORT}
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      test: ["CMD", "curl", "-f", "http://$${SERVICE_IP:-localhost}:80"]
       interval: 10s
       timeout: 5s
       retries: 3

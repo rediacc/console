@@ -29,6 +29,10 @@ export interface UserContext {
   organization?: string;
   sessionId: string;
   teamName?: string;
+  subscriptionId?: string;
+  subscriptionPlanCode?: string;
+  subscriptionStatus?: string;
+  subscriptionSource?: string;
 }
 
 /**

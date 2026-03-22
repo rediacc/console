@@ -13,6 +13,7 @@ set -euo pipefail
 
 # Configuration (can be overridden via environment variables)
 RELEASES_URL="${REDIACC_RELEASES_URL:-https://releases.rediacc.com}"
+SERVER_URL="${REDIACC_SERVER_URL:-}"
 INSTALL_DIR="${HOME}/.local/bin"
 VERSIONS_DIR="${HOME}/.local/share/rediacc/versions"
 MAX_VERSIONS=5
@@ -232,6 +233,41 @@ main() {
         echo "  echo 'export PATH=\"\$HOME/.local/bin:\$PATH\"' >> ~/.bashrc && source ~/.bashrc"
         ;;
     esac
+  fi
+
+  # Configure server connection for non-production installs
+  if [[ -n "$SERVER_URL" ]]; then
+    local config_dir
+    case "$(uname -s)" in
+      Darwin) config_dir="$HOME/Library/Application Support/rediacc" ;;
+      *)      config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/rediacc" ;;
+    esac
+    mkdir -p "$config_dir"
+
+    # Discover E2E public key from server
+    local e2e_key=""
+    local server_info
+    if server_info=$(curl -fsSL -A "Rediacc-Installer/1.0" "${SERVER_URL}/account/api/v1/.well-known/server-info" 2>/dev/null); then
+      if command -v jq &>/dev/null; then
+        e2e_key=$(echo "$server_info" | jq -r '.e2e.keys[0].publicKeySpki // empty')
+      else
+        e2e_key=$(echo "$server_info" | grep -o '"publicKeySpki":"[^"]*"' | head -1 | sed 's/"publicKeySpki":"//;s/"//')
+      fi
+    fi
+
+    # Write server.json
+    local server_json="{\"accountServer\":\"$SERVER_URL\""
+    if [[ -n "$e2e_key" ]]; then
+      server_json="$server_json,\"e2ePublicKey\":\"$e2e_key\""
+    fi
+    server_json="$server_json}"
+    echo "$server_json" > "$config_dir/server.json"
+    chmod 600 "$config_dir/server.json"
+
+    local server_host
+    server_host=$(echo "$SERVER_URL" | sed 's|https\?://||;s|/.*||')
+    echo ""
+    success "Configured for: $server_host"
   fi
 
   echo ""

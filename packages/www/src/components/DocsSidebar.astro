@@ -55,6 +55,18 @@ const currentSlug = getBaseSlug(currentUrl);
 // Get translator
 const { t } = createTranslator(currentLang);
 
+const CATEGORY_KEYS: Record<string, string> = {
+  'Tutorials': 'documentation.categories.tutorials',
+  'Guides': 'documentation.categories.guides',
+  'Concepts': 'documentation.categories.concepts',
+  'Reference': 'documentation.categories.reference',
+  'Use Cases': 'documentation.categories.useCases',
+};
+function categoryLabel(cat: string): string {
+  const k = CATEGORY_KEYS[cat];
+  return k ? t(k) : cat;
+}
+
 // Pre-calculate category states to avoid JSX parsing issues
 const categoryStates = visibleCategories.map(category => {
   const itemCount = docsByCategory[category].length;
@@ -78,7 +90,7 @@ const categoryStates = visibleCategories.map(category => {
 ---
 
 <aside class="sidebar-base docs-sidebar">
-  <nav class="sidebar-nav docs-nav" role="navigation" aria-label="Documentation navigation">
+  <nav class="sidebar-nav docs-nav" role="navigation" aria-label={t('common.aria.documentationNavigation')}>
     <h2 class="sidebar-title">{t('pages.docs.title')}</h2>
 
     <div class="sidebar-search-container">
@@ -86,7 +98,7 @@ const categoryStates = visibleCategories.map(category => {
         type="text"
         class="sidebar-search-input"
         placeholder={t('pages.docs.searchPlaceholder')}
-        aria-label="Search documentation"
+        aria-label={t('documentation.searchDocs')}
       />
     </div>
 
@@ -107,7 +119,7 @@ const categoryStates = visibleCategories.map(category => {
               aria-controls={categoryId}
               data-collapsible={itemCount > 0 ? 'true' : 'false'}
             >
-              {category}
+              {categoryLabel(category)}
               <span class="category-chevron" aria-hidden="true">▶</span>
             </button>
             <ul class="sidebar-list collapsible-list doc-list" id={categoryId}>
