@@ -787,20 +787,9 @@ jobs:
           VERSION=$(jq -r '.version' packages/cli/package.json)
           echo "CLI_VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Check R2 credentials
-        id: r2-check
-        run: |
-          if [ -n "$R2_ACCESS_KEY_ID" ]; then
-            echo "available=true" >> $GITHUB_OUTPUT
-          else
-            echo "available=false" >> $GITHUB_OUTPUT
-            echo "::notice::R2 credentials not available, skipping install tests"
-          fi
-        env:
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-
       - name: Upload CLI to R2 staging
-        if: steps.r2-check.outputs.available == 'true'
+        id: r2-upload
+        continue-on-error: true
         run: |
           RELEASES_BASE_URL="https://releases.rediacc.com/staging/pr-${PR_NUMBER}" \
             bash .ci/scripts/build/generate-cli-manifest.sh \
@@ -813,14 +802,14 @@ jobs:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
 
       - name: Test Binary Install
-        if: steps.r2-check.outputs.available == 'true'
+        if: steps.r2-upload.outcome == 'success'
         run: |
           RELEASES_BASE_URL="https://releases.rediacc.com/staging/pr-${PR_NUMBER}" \
             .ci/scripts/test/test-install-methods.sh \
             --method binary --version "$CLI_VERSION" --platform linux --arch x64
 
       - name: Test Quick Install
-        if: steps.r2-check.outputs.available == 'true'
+        if: steps.r2-upload.outcome == 'success'
         run: |
           SITE_URL="https://pr-${PR_NUMBER}.rediacc.workers.dev" \
           RELEASES_BASE_URL="https://releases.rediacc.com/staging/pr-${PR_NUMBER}" \
