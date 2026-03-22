@@ -446,8 +446,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: >-
           .ci/scripts/docs/inject-e2e-videos.sh
-          --run-id "${{ needs.init.outputs.ci_run_id }}"
-          --artifact-name "e2e-videos-${{ needs.init.outputs.ci_sha }}"
+          --search-latest
           --output dist/pages/assets/videos/user-guide/
 
       - name: Rebuild package metadata from Release packages
