@@ -21,6 +21,11 @@ on:
         required: false
         type: boolean
         default: false
+      force_release:
+        description: 'Create NEW release (bump version). Default: retry existing version.'
+        required: false
+        type: boolean
+        default: false
 
 # Required for release publishing, Docker, and Cloudflare Pages deployment
 permissions:
@@ -50,10 +55,11 @@ jobs:
     outputs:
       ci_run_id: ${{ steps.resolve.outputs.ci_run_id }}
       ci_sha: ${{ steps.resolve.outputs.ci_sha }}
-      next_version: ${{ steps.init.outputs.next_version }}
-      bump_type: ${{ steps.init.outputs.bump_type }}
+      next_version: ${{ steps.version.outputs.next_version || steps.init.outputs.next_version }}
+      bump_type: ${{ steps.version.outputs.bump_type || steps.init.outputs.bump_type }}
       staging_tag: ${{ steps.staging.outputs.staging_tag }}
       skip_release: ${{ steps.skip-check.outputs.skip_release }}
+      retry_mode: ${{ steps.skip-check.outputs.retry_mode }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -95,16 +101,30 @@ jobs:
 
       # Check if the merged PR has the 'release' label (opt-in to CD pipeline)
       # Without the label, CD is skipped — prevents accidental releases from chore PRs.
-      # Manual workflow_dispatch always proceeds (operator explicitly triggered CD).
+      #
+      # Manual workflow_dispatch has two modes:
+      #   - retry (default): re-deploy current version without bumping
+      #   - force_release: create new version bump (opt-in)
       - name: Check for release label
         id: skip-check
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [[ "${{ github.event_name }}" != "workflow_run" ]]; then
-            echo "skip_release=false" >> $GITHUB_OUTPUT
+            # Manual trigger: retry mode by default, force_release for new version
+            if [[ "${{ inputs.force_release }}" == "true" ]]; then
+              echo "skip_release=false" >> $GITHUB_OUTPUT
+              echo "retry_mode=false" >> $GITHUB_OUTPUT
+              echo "::notice::Force release mode — will bump version and create new release"
+            else
+              echo "skip_release=false" >> $GITHUB_OUTPUT
+              echo "retry_mode=true" >> $GITHUB_OUTPUT
+              echo "::notice::Retry mode — will re-deploy current version without bumping"
+            fi
             exit 0
           fi
+
+          echo "retry_mode=false" >> $GITHUB_OUTPUT
 
           CI_SHA="${{ steps.resolve.outputs.ci_sha }}"
           COMMIT_MSG=$(git log -1 --format="%B" "$CI_SHA" 2>/dev/null || true)
@@ -124,9 +144,19 @@ jobs:
             echo "skip_release=true" >> $GITHUB_OUTPUT
           fi
 
-      # Recalculate version independently (reads current version from git)
+      # Retry mode: use current version from package.json without bumping
+      - name: Resolve version (retry mode)
+        if: steps.skip-check.outputs.retry_mode == 'true'
+        id: version
+        run: |
+          VERSION=$(jq -r '.version' package.json)
+          echo "next_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "bump_type=none" >> $GITHUB_OUTPUT
+          echo "::notice::Retry mode: using existing version $VERSION"
+
+      # Normal mode: recalculate version from git state
       - name: Initialize CI
-        if: steps.skip-check.outputs.skip_release != 'true'
+        if: steps.skip-check.outputs.skip_release != 'true' && steps.skip-check.outputs.retry_mode != 'true'
         id: init
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
@@ -147,22 +177,27 @@ jobs:
             echo "staging_tag=staging-${{ steps.resolve.outputs.ci_sha }}" >> $GITHUB_OUTPUT
           fi
 
-      # Version guard: fail early if this version was already published
+      # Version guard: fail early if this version was already published (skip in retry mode)
       - name: Check for existing release
-        if: steps.skip-check.outputs.skip_release != 'true'
+        if: steps.skip-check.outputs.skip_release != 'true' && steps.skip-check.outputs.retry_mode != 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           VERSION="${{ steps.init.outputs.next_version }}"
+          git fetch --tags --quiet
+          if git tag -l "v${VERSION}" | grep -q .; then
+            echo "::error::Git tag v${VERSION} already exists. Aborting to prevent duplicate publish."
+            exit 1
+          fi
           if gh release view "v${VERSION}" --repo "${{ github.repository }}" &>/dev/null; then
             echo "::error::Release v${VERSION} already exists. Aborting to prevent duplicate publish."
             exit 1
           fi
           echo "Version v${VERSION} is available for publishing."
 
-      # Submodule guard: fail early if any submodule has diverged from origin/main
+      # Submodule guard: fail early if any submodule has diverged (skip in retry mode)
       - name: Check submodule branches
-        if: steps.skip-check.outputs.skip_release != 'true'
+        if: steps.skip-check.outputs.skip_release != 'true' && steps.skip-check.outputs.retry_mode != 'true'
         run: .ci/scripts/release/merge-submodule-branches.sh --dry-run
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
@@ -263,6 +298,7 @@ jobs:
         working-directory: private/account
 
       - name: Sync Stripe products/prices
+        if: needs.init.outputs.retry_mode != 'true'
         run: npx tsx scripts/stripe-sync.ts
         working-directory: private/account
         env:
@@ -273,6 +309,7 @@ jobs:
       # Must run BEFORE bump-submodules.sh which resets submodules to origin/main
       # -----------------------------------------------------------------------
       - name: Merge submodule branches
+        if: needs.init.outputs.retry_mode != 'true'
         run: .ci/scripts/release/merge-submodule-branches.sh
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
@@ -306,15 +343,18 @@ jobs:
           fi
 
       - name: Version bump
+        if: needs.init.outputs.retry_mode != 'true'
         run: .ci/scripts/version/bump.sh --version ${{ needs.init.outputs.next_version }}
 
       - name: Bump submodule versions
+        if: needs.init.outputs.retry_mode != 'true'
         run: |
           .ci/scripts/version/bump-submodules.sh --version ${{ needs.init.outputs.next_version }} --stage-only
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
 
       - name: Update Homebrew formula
+        if: needs.init.outputs.retry_mode != 'true'
         run: |
           .ci/scripts/release/update-homebrew-tap.sh \
             --version ${{ needs.init.outputs.next_version }} \
@@ -324,6 +364,7 @@ jobs:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
 
       - name: Version commit
+        if: needs.init.outputs.retry_mode != 'true'
         id: commit
         run: |
           .ci/scripts/version/commit.sh --version ${{ needs.init.outputs.next_version }} --bump-type ${{ needs.init.outputs.bump_type }} --push --include-submodules
@@ -335,6 +376,7 @@ jobs:
       # Step 3: Create GitHub Release (upload packages + binaries)
       # -----------------------------------------------------------------------
       - name: Create Release
+        if: needs.init.outputs.retry_mode != 'true'
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b  # v2
         with:
           tag_name: v${{ needs.init.outputs.next_version }}
