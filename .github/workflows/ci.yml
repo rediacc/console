@@ -506,6 +506,7 @@ jobs:
     needs: [initialize, quality, review-gate, build-renet]
     if: >-
       always() &&
+      needs.initialize.outputs.full_suite == 'true' &&
       needs.initialize.result == 'success' &&
       (needs.quality.result == 'success' || needs.quality.result == 'skipped') &&
       (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
