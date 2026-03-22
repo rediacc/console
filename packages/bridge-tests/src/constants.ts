@@ -5,6 +5,7 @@
  * These should match the system configuration in .env and organization vault.
  */
 
+import { version as pkgVersion } from '../../../package.json';
 import { TEST_ENV } from './config/testEnv';
 
 /**
@@ -66,9 +67,9 @@ export const TEST_TEAM = TEST_ENV.testTeam;
  * Installation path for renet on VMs (NOT the local build path).
  * NOTE: Mirrored from renet/pkg/common/constants.go (RenetInstallRoot)
  *
- * Tests pin to the current CLI version's install slot.
+ * Reads version from root package.json to stay in sync with releases.
  */
-export const VM_RENET_INSTALL_PATH = '/usr/lib/rediacc/renet/0.6.0/renet';
+export const VM_RENET_INSTALL_PATH = `/usr/lib/rediacc/renet/${pkgVersion}/renet`;
 
 /**
  * Ceph health wait settings for bridge tests.
