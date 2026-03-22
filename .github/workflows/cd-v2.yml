@@ -433,6 +433,13 @@ jobs:
           rm -rf workers/www/dist
           cp -r dist/pages workers/www/dist
 
+      - name: Build account portal
+        run: npm install && npx vite build --outDir ../../../workers/www/dist/account
+        working-directory: private/account/web
+        env:
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+          VITE_CI_MODE: 'false'
+
       - name: Install www worker dependencies
         run: npm install
         working-directory: workers/www
