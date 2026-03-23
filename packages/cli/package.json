@@ -3,6 +3,7 @@
   "version": "0.6.15",
   "type": "module",
   "scripts": {
+    "prebuild": "tsx scripts/embed-templates.ts",
     "build": "tsc",
     "build:bundle": "node bundle.mjs",
     "build:sea": "node --experimental-sea-config sea-config.json",

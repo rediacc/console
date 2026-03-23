@@ -1326,6 +1326,11 @@
         "starting": "\"{{machine}}\" 上で \"{{fork}}\" のデータを使って \"{{grand}}\" を引き継いでいます..."
       },
       "template": {
+        "apply": {
+          "description": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. The template writes Rediaccfile, docker-compose.yml, and any additional files to the repository mount",
+          "descriptionShort": "リポジトリにテンプレートを適用",
+          "notFound": "テンプレート \"{{name}}\" が見つかりません。利用可能: {{available}}"
+        },
         "completed": "テンプレートを適用しました",
         "description": "リポジトリにテンプレートを適用する",
         "descriptionShort": "リポジトリにテンプレートを適用する（docker-compose.yml + Rediaccfile）",
@@ -1333,7 +1338,29 @@
         "fileNotFound": "テンプレートファイルが見つかりません: {{path}}",
         "fileOption": "テンプレートJSONファイルのパス",
         "grandOption": "グランドリポジトリ名（自動的にGUIDに解決）",
+        "list": {
+          "description": "CLIに組み込まれたすべてのデプロイテンプレートを一覧表示",
+          "descriptionShort": "利用可能なテンプレートを一覧表示",
+          "empty": "利用可能なテンプレートがありません"
+        },
         "starting": "\"{{machine}}\" で \"{{repository}}\" にテンプレートを適用中..."
+      },
+      "tunnel": {
+        "active": "トンネル接続中: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
+        "closed": "トンネルを閉じました",
+        "containerNotFound": "コンテナ \"{{name}}\" がリポジトリ \"{{repository}}\" に見つかりません",
+        "containerOption": "コンテナ名（実行中のコンテナが1つの場合は自動検出）",
+        "description": "リモートマシン上のコンテナポートへのSSHポートフォワードトンネルを作成。コンテナとポートが一意の場合は自動検出。Ctrl+Cを押すまでトンネルは開いたままになります",
+        "descriptionShort": "コンテナポートへのSSHトンネル",
+        "fetching": "\"{{machine}}\" からコンテナ情報を取得中...",
+        "hint": "Ctrl+Cでトンネルを閉じます",
+        "localOption": "ローカルポート（デフォルトはリモートポートと同じ）",
+        "multipleContainers": "複数の実行中コンテナが見つかりました。--container (-c) で指定してください:\n{{list}}",
+        "multiplePorts": "\"{{container}}\" に複数のポートが公開されています。--port を指定してください:\n{{list}}",
+        "noContainers": "リポジトリ \"{{repository}}\" に実行中のコンテナが見つかりません",
+        "noPorts": "コンテナ \"{{container}}\" に公開ポートが見つかりません。--port を指定してください",
+        "noServiceIP": "コンテナ \"{{container}}\" にサービスIPが割り当てられていません",
+        "portOption": "転送するリモートコンテナポート"
       },
       "unmount": {
         "checkpointOption": "アンマウント前にチェックポイントを作成する",
@@ -1506,6 +1533,7 @@
         "optionGitBranch": "Git ブランチ名",
         "optionGitPath": "Git リポジトリ内のパス",
         "optionGitUrl": "Git リポジトリ URL",
+        "optionHeadless": "デバイスコードフローを使用（ローカルブラウザなし）",
         "optionLocalPath": "ローカルディレクトリパス",
         "optionS3AccessKeyId": "S3 アクセスキー ID",
         "optionS3Bucket": "S3 バケット名",
@@ -1513,6 +1541,7 @@
         "optionS3Prefix": "S3 キープレフィックス",
         "optionS3Region": "S3 リージョン",
         "optionS3SecretAccessKey": "S3 シークレットアクセスキー",
+        "optionServerUrl": "Rediacc アカウントサーバー URL",
         "optionType": "ストアタイプ (s3、local-file、bitwarden、git、vault)",
         "optionVaultAddr": "Vault サーバーアドレス (例: http://127.0.0.1:8200)",
         "optionVaultMount": "Vault KV v2 マウントパス (デフォルト: secret)",
@@ -2041,17 +2070,22 @@
     "activationFailed": "有効化に失敗しました",
     "affectedChildClones": "。影響を受ける子クローン: {{clones}}。子クローンを最初に削除するか昇格させてください。",
     "agent": {
-      "createGuard": "エージェントモードではリポジトリ \"{{name}}\" を作成できません。\n\nAI エージェントはフォーク専用で動作します。グランドリポジトリの作成はブロックされています。\nエージェントは作成後に操作できないためです。\n\n既存のリポジトリをフォークしてください:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\n上書きするには: REDIACC_ALLOW_GRAND_REPO=* を設定してください",
-      "createGuardOverride": "リポジトリ作成保護はAIエージェントによってオーバーライドできません。\n\nRDCはREDIACC_ALLOW_GRAND_REPOがユーザーによって承認されていないことを検出しました。この変数を自分で設定しようとしないでください — リポジトリの作成を承認できるのはユーザーのみです。\n\n既存のリポジトリを使用してforkを作成してください:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "forkBlocked": "コマンド \"{{command}}\" は fork リポジトリでは使用できません。\n\nfork リポジトリは一時的な環境です。この操作は grand リポジトリにのみ適用されます。",
-      "grandGuard": "エージェントモードでは grand リポジトリ \"{{name}}\" を変更できません。\n\nAI エージェントは fork リポジトリでのみ操作できます。\nまず fork を作成してください:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nその後、fork で操作してください。\n\nオーバーライドするには: REDIACC_ALLOW_GRAND_REPO={{name}} を設定",
-      "grandGuardOverride": "\"{{name}}\"のグランドリポジトリ保護はAIエージェントによってオーバーライドできません。\n\nRDCはREDIACC_ALLOW_GRAND_REPOがユーザーによって承認されていないことを検出しました。この変数を自分で設定しようとしないでください — グランドリポジトリへのアクセスを承認できるのはユーザーのみです。\n\nまずforkを作成してください:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nその後、forkで操作してください。",
-      "machineGuard": "エージェントモードではマシン \"{{machine}}\" に直接アクセスできません。\n\nAI エージェントはリポジトリコンテキストにのみ接続できます。\n次を使用してください:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nオーバーライドするには: REDIACC_ALLOW_GRAND_REPO=* を設定",
-      "machineGuardOverride": "\"{{machine}}\"のマシンアクセス保護はAIエージェントによってオーバーライドできません。\n\nRDCはREDIACC_ALLOW_GRAND_REPOがユーザーによって承認されていないことを検出しました。この変数を自分で設定しようとしないでください — 直接マシンアクセスを承認できるのはユーザーのみです。\n\n代わりにリポジトリコンテキストに接続してください:\n  rdc term {{machine}} <repository> -c \"<command>\"",
-      "mcpGrandGuard": "fork 専用モードでは grand リポジトリ \"{{name}}\" を変更できません。\n\nrepo_fork を使用してまず fork を作成し、その後 fork で操作してください。\ngrand リポジトリへのアクセスを許可するには、--allow-grand を付けて MCP サーバーを再起動してください",
-      "mcpGrandGuardOverride": "\"{{name}}\"のグランドリポジトリ保護はAIエージェントによってオーバーライドできません。\n\nRDCはREDIACC_ALLOW_GRAND_REPOがユーザーによって承認されていないことを検出しました。この変数を設定しようとしないでください。\n\nrepo_forkを使用してまずforkを作成し、その後forkで操作してください。",
-      "mcpMachineGuard": "fork 専用モードではマシンに直接アクセスできません。\n\nリポジトリを指定してリポジトリコンテキストに接続してください。\n直接マシンアクセスを許可するには、--allow-grand を付けて MCP サーバーを再起動してください",
-      "mcpMachineGuardOverride": "マシンアクセス保護はAIエージェントによってオーバーライドできません。\n\nRDCはREDIACC_ALLOW_GRAND_REPOがユーザーによって承認されていないことを検出しました。この変数を設定しようとしないでください。\n\nリポジトリコンテキストに接続するにはリポジトリを指定してください。"
+      "createGuard": "エージェントモードでは新しいgrandリポジトリ \"{{name}}\" を作成できません。\n\nエージェントはfork専用モードで動作します。grandリポジトリは本番環境であり、作成後にエージェントがアクセスすることはできません。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nユーザーへ: リポジトリの作成を許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
+      "createGuardOverride": "新しいgrandリポジトリ \"{{name}}\" を作成できません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "新しいgrandリポジトリ \"{{name}}\" を作成できません。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
+      "forkBlocked": "コマンド \"{{command}}\" はforkリポジトリでは使用できません。\n\nforkリポジトリは一時的なサンドボックス環境です。この操作はgrand（本番）リポジトリにのみ適用されます。ユーザーにこのコマンドを直接実行するよう依頼してください。",
+      "grandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\ngrandリポジトリには本番データが含まれています。代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです。\n\nワークフロー:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する（例: rdc repo up {{name}}:<tag-name> -m <machine> --mount）\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nユーザーへ: 直接アクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
+      "grandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" はgrand（本番）リポジトリです。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nワークフロー:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
+      "machineGuard": "エージェントモードでは \"{{machine}}\" への直接マシンアクセスは許可されていません。\n\nエージェントはサンドボックスアクセスのためにリポジトリコンテキストを通じて接続する必要があります。まずリポジトリのforkを作成し、fork に接続してください。\n\nワークフロー:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nユーザーへ: 直接マシンアクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
+      "machineGuardOverride": "\"{{machine}}\" への直接マシンアクセスは許可されていません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\nまずリポジトリのforkを作成し、forkに接続してください:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "直接マシンアクセスのオーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nワークフロー:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
+      "mcpGrandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。\n直接アクセスが必要な場合は、ユーザーに --allow-grand を付けてMCPサーバーを再起動するよう依頼してください。",
+      "mcpGrandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。",
+      "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" はgrand（本番）リポジトリです。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。",
+      "mcpMachineGuard": "fork専用モードでは直接マシンアクセスは許可されていません。\n\nエージェントはリポジトリコンテキストを通じて接続する必要があります。repo_fork を使用してforkを作成し、接続してください。\n直接アクセスが必要な場合は、ユーザーに --allow-grand を付けてMCPサーバーを再起動するよう依頼してください。",
+      "mcpMachineGuardOverride": "直接マシンアクセスは許可されていません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。\n\nrepo_fork を使用してforkを作成し、接続してください。",
+      "mcpMachineGuardOverrideNonLinux": "直接マシンアクセスのオーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nrepo_fork を使用してforkを作成し、接続してください。"
     },
     "authFailed": "認証に失敗しました",
     "authRequired": "認証が必要です。実行してください: rdc auth login",
@@ -2192,6 +2226,7 @@
         "pushAll": "すべてのリポジトリをストレージに一括プッシュ"
       },
       "takeover": "本番データをフォークのデータで置き換える",
+      "tunnel": "コンテナポートへのSSHトンネル",
       "up": "自動マウントでデプロイ"
     },
     "store": {
@@ -2384,6 +2419,19 @@
     "pending": "保留中",
     "processing": "処理中",
     "success": "成功"
+  },
+  "stores": {
+    "rediaccSetup": {
+      "browserFallback": "(ブラウザが開かなかった場合は、上記のURLをコピーして手動で開いてください)",
+      "browserWillOpen": "パスキー登録のためにブラウザウィンドウが開きます。",
+      "headlessInstructions": "ブラウザのあるデバイスでURLを開く必要があります。",
+      "openUrl": "この URL をスマートフォンまたはノートパソコンで開いてください:",
+      "setupComplete": "設定ストレージのセットアップが完了しました！",
+      "startingHeadlessSetup": "ヘッドレス設定ストレージのセットアップを開始しています...",
+      "startingSetup": "設定ストレージのセットアップを開始しています...",
+      "waitingForCompletion": "セットアップの完了を待機中...",
+      "waitingForPasskey": "ブラウザでのパスキー登録を待機中..."
+    }
   },
   "table": {
     "noData": "表示するデータがありません"

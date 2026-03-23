@@ -654,6 +654,8 @@
         "optionVaultMount": "Vault KV v2 mount path (default: secret)",
         "optionVaultPrefix": "Path prefix within Vault KV engine (default: rdc/configs)",
         "optionVaultNamespace": "Vault namespace (enterprise only)",
+        "optionServerUrl": "Rediacc account server URL",
+        "optionHeadless": "Use device code flow (no local browser)",
         "vaultAddrRequired": "--vault-addr is required for Vault stores",
         "promptVaultToken": "Vault token (or set VAULT_TOKEN env):",
         "vaultTokenRequired": "Vault token is required (pass --vault-token or set VAULT_TOKEN env)",
@@ -1413,13 +1415,23 @@
         "failed": "Ownership update failed"
       },
       "template": {
-        "description": "Apply a template to a repository (writes docker-compose.yml and Rediaccfile). Rediaccfile must use 'renet compose' (not 'docker compose'). Restart policies are safe (auto-managed by renet watchdog). Renet auto-injects network_mode:host, CRIU capabilities, and rediacc labels. Dangerous settings (privileged, pid:host) blocked unless --unsafe",
-        "descriptionShort": "Apply a template to a repository (docker-compose.yml + Rediaccfile)",
-        "fileOption": "Path to template JSON file ({\"version\":\"1\",\"compose\":\"<yaml>\",\"rediaccfile\":\"<bash>\"}). Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose' — 'docker compose' is rejected. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. OPENCLAW_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REDIACC_NETWORK_ID env vars. Use SERVICE_IP in your app code to bind to the correct loopback IP. Containers MUST bind to SERVICE_IP:<port> (not 0.0.0.0) since network_mode:host is injected and ports: are ignored. STORAGE: Both ${REDIACC_WORKING_DIR}/... bind mounts and Docker named volumes are safe — Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe — renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). The compose service name becomes the auto-route URL prefix (e.g. service 'openclaw' in repo 'myapp' → openclaw.myapp.{machineName}.{baseDomain}). HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53",
+        "description": "Manage and apply deployment templates (writes docker-compose.yml, Rediaccfile, and additional files). Rediaccfile must use 'renet compose' (not 'docker compose'). Restart policies are safe (auto-managed by renet watchdog). Renet auto-injects network_mode:host, CRIU capabilities, and rediacc labels. Dangerous settings (privileged, pid:host) blocked unless --unsafe. Use 'list' to see available built-in templates, 'apply' to deploy one to a repository",
+        "descriptionShort": "Manage and apply deployment templates",
+        "list": {
+          "description": "List all embedded deployment templates shipped with the CLI",
+          "descriptionShort": "List available templates",
+          "empty": "No templates available"
+        },
+        "apply": {
+          "description": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose' — 'docker compose' is rejected. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. APP_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REDIACC_NETWORK_ID env vars. Use SERVICE_IP in your app code to bind to the correct loopback IP. Containers MUST bind to SERVICE_IP:<port> (not 0.0.0.0) since network_mode:host is injected and ports: are ignored. STORAGE: Both ${REDIACC_WORKING_DIR}/... bind mounts and Docker named volumes are safe — Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe — renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). Multi-project: place each sub-project in its own subdirectory with its own Rediaccfile — renet auto-discovers and runs them in order. HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53",
+          "descriptionShort": "Apply a template to a repository",
+          "notFound": "Template \"{{name}}\" not found. Available: {{available}}"
+        },
+        "fileOption": "Path to custom template JSON file ({\"version\":\"2\",\"files\":{\"Rediaccfile\":\"...\",\"docker-compose.yml\":\"...\"}}) — overrides the built-in template name",
         "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "fileNotFound": "Template file not found: {{path}}",
         "starting": "Applying template to \"{{repository}}\" on \"{{machine}}\"...",
-        "completed": "Template applied",
+        "completed": "Template applied. Deploy with: rdc repo up {{repository}} -m {{machine}}",
         "failed": "Template application failed"
       },
       "push": {
@@ -1504,6 +1516,23 @@
           "description": "Delete a snapshot from a remote machine",
           "success": "Snapshot deleted: {{name}}"
         }
+      },
+      "tunnel": {
+        "description": "Create an SSH port-forward tunnel to a container's port on a remote machine. Auto-detects container and port when unambiguous. The tunnel stays open until you press Ctrl+C",
+        "descriptionShort": "SSH tunnel to a container port",
+        "portOption": "Remote container port to forward",
+        "localOption": "Local port (defaults to same as remote port)",
+        "containerOption": "Container name (auto-detected if only one running)",
+        "fetching": "Fetching container info from \"{{machine}}\"...",
+        "active": "Tunnel active: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
+        "hint": "Press Ctrl+C to close the tunnel",
+        "closed": "Tunnel closed",
+        "noContainers": "No running containers found for repository \"{{repository}}\"",
+        "multipleContainers": "Multiple running containers found. Specify one with --container (-c):\n{{list}}",
+        "containerNotFound": "Container \"{{name}}\" not found in repository \"{{repository}}\"",
+        "noPorts": "No exposed ports found on container \"{{container}}\". Specify --port",
+        "multiplePorts": "Multiple ports exposed on \"{{container}}\". Specify --port:\n{{list}}",
+        "noServiceIP": "Container \"{{container}}\" has no service IP assigned"
       }
     },
     "backup": {
@@ -1938,7 +1967,8 @@
       "sync": {
         "pushAll": "Bulk push all repos to storage",
         "pullAll": "Bulk pull all repos from storage"
-      }
+      },
+      "tunnel": "SSH tunnel to container port"
     },
     "term": {
       "machine": "SSH into machine",
@@ -2069,17 +2099,22 @@
     "vaultDataRequired": "Vault data required. Use --vault <json> or pipe JSON via stdin.",
     "vaultVersionRequired": "Vault version required. Use --vault-version <n>.",
     "agent": {
-      "grandGuard": "Cannot modify grand repository \"{{name}}\" in agent mode.\n\nAI agents can only operate on fork repositories.\nFork it first:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nThen operate on the fork instead.\n\nTo override: set REDIACC_ALLOW_GRAND_REPO={{name}}",
-      "grandGuardOverride": "Grand repository protection for \"{{name}}\" cannot be overridden by an AI agent.\n\nRDC detected that REDIACC_ALLOW_GRAND_REPO was not authorized by the user. Do not attempt to set this variable yourself — only the user can authorize grand repository access.\n\nFork it first:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nThen operate on the fork instead.",
-      "mcpGrandGuard": "Cannot modify grand repository \"{{name}}\" in fork-only mode.\n\nUse repo_fork to create a fork first, then operate on the fork.\nTo allow grand repository access, restart MCP server with --allow-grand",
-      "mcpGrandGuardOverride": "Grand repository protection for \"{{name}}\" cannot be overridden by an AI agent.\n\nRDC detected that REDIACC_ALLOW_GRAND_REPO was not authorized by the user. Do not attempt to set this variable.\n\nUse repo_fork to create a fork first, then operate on the fork.",
-      "machineGuard": "Cannot access machine \"{{machine}}\" directly in agent mode.\n\nAI agents can only connect to repository contexts.\nUse:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nTo override: set REDIACC_ALLOW_GRAND_REPO=*",
-      "machineGuardOverride": "Machine access protection for \"{{machine}}\" cannot be overridden by an AI agent.\n\nRDC detected that REDIACC_ALLOW_GRAND_REPO was not authorized by the user. Do not attempt to set this variable yourself — only the user can authorize direct machine access.\n\nConnect to a repository context instead:\n  rdc term {{machine}} <repository> -c \"<command>\"",
-      "mcpMachineGuard": "Cannot access machine directly in fork-only mode.\n\nSpecify a repository to connect to a repository context.\nTo allow direct machine access, restart MCP server with --allow-grand",
-      "mcpMachineGuardOverride": "Machine access protection cannot be overridden by an AI agent.\n\nRDC detected that REDIACC_ALLOW_GRAND_REPO was not authorized by the user. Do not attempt to set this variable.\n\nSpecify a repository to connect to a repository context.",
-      "forkBlocked": "Command \"{{command}}\" is not available on fork repositories.\n\nFork repos are interim environments. This operation only applies to grand repositories.",
-      "createGuard": "Cannot create repository \"{{name}}\" in agent mode.\n\nAI agents operate in fork-only mode. Creating a grand repo is blocked\nbecause the agent cannot operate on it afterwards.\n\nUse an existing repo and fork it instead:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nTo override: set REDIACC_ALLOW_GRAND_REPO=*",
-      "createGuardOverride": "Repository creation protection cannot be overridden by an AI agent.\n\nRDC detected that REDIACC_ALLOW_GRAND_REPO was not authorized by the user. Do not attempt to set this variable yourself — only the user can authorize repository creation.\n\nUse an existing repo and fork it instead:\n  rdc repo fork <parent> -m <machine> --tag {{name}}"
+      "grandGuard": "\"{{name}}\" is a grand (production) repository. Agents cannot modify grand repositories directly.\n\nGrand repositories contain production data. Use a fork instead — forks are safe, isolated sandbox copies.\n\nWorkflow:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Operate on the fork (e.g., rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. When done, the user can promote the fork with rdc repo takeover\n\nUser: to allow direct access, set REDIACC_ALLOW_GRAND_REPO={{name}} (or * for all repos) in your terminal before starting the agent session.",
+      "grandGuardOverride": "\"{{name}}\" is a grand (production) repository. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.\n\nUse a fork instead — forks are safe, isolated sandbox copies:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Operate on the fork\n  3. When done, the user can promote the fork with rdc repo takeover",
+      "mcpGrandGuard": "\"{{name}}\" is a grand (production) repository. Agents cannot modify grand repositories directly.\n\nUse repo_fork to create a safe, isolated sandbox copy, then operate on the fork.\nIf you need direct access, ask the user to restart the MCP server with --allow-grand.",
+      "mcpGrandGuardOverride": "\"{{name}}\" is a grand (production) repository. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork to create a safe, isolated sandbox copy, then operate on the fork.",
+      "machineGuard": "Direct machine access to \"{{machine}}\" is not allowed in agent mode.\n\nAgents must connect through a repository context for sandboxed access. Fork a repository first, then connect to the fork.\n\nWorkflow:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nUser: to allow direct machine access, set REDIACC_ALLOW_GRAND_REPO=* (or a specific repo name) in your terminal before starting the agent session.",
+      "machineGuardOverride": "Direct machine access to \"{{machine}}\" is not allowed. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.\n\nFork a repository first, then connect to the fork:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
+      "mcpMachineGuard": "Direct machine access is not allowed in fork-only mode.\n\nAgents must connect through a repository context. Use repo_fork to create a fork, then connect to it.\nIf you need direct access, ask the user to restart the MCP server with --allow-grand.",
+      "mcpMachineGuardOverride": "Direct machine access is not allowed. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork to create a fork, then connect to it.",
+      "forkBlocked": "Command \"{{command}}\" is not available on fork repositories.\n\nFork repos are interim sandbox environments. This operation only applies to grand (production) repositories. Ask the user to run this command directly.",
+      "createGuard": "Cannot create a new grand repository \"{{name}}\" in agent mode.\n\nAgents operate in fork-only mode. Grand repositories are production environments that agents cannot access after creation.\n\nInstead, fork an existing repository:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nUser: to allow repository creation, set REDIACC_ALLOW_GRAND_REPO=* (or a specific repo name) in your terminal before starting the agent session.",
+      "createGuardOverride": "Cannot create a new grand repository \"{{name}}\". Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.\n\nInstead, fork an existing repository:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" is a grand (production) repository. The REDIACC_ALLOW_GRAND_REPO override is not supported on {{platform}}.\n\nThis override only works on Linux. On Windows and macOS, agents must use the fork-first workflow.\n\nWorkflow:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Operate on the fork\n  3. When done, the user can promote the fork with rdc repo takeover\n\nTo use the override, run your agent on Linux (directly, WSL, Docker, or a VM).",
+      "machineGuardOverrideNonLinux": "Direct machine access override is not supported on {{platform}}.\n\nThis override only works on Linux. On Windows and macOS, agents must use the fork-first workflow.\n\nWorkflow:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nTo use the override, run your agent on Linux (directly, WSL, Docker, or a VM).",
+      "createGuardOverrideNonLinux": "Cannot create a new grand repository \"{{name}}\". The REDIACC_ALLOW_GRAND_REPO override is not supported on {{platform}}.\n\nThis override only works on Linux. On Windows and macOS, agents must use the fork-first workflow.\n\nInstead, fork an existing repository:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nTo use the override, run your agent on Linux (directly, WSL, Docker, or a VM).",
+      "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" is a grand (production) repository. The REDIACC_ALLOW_GRAND_REPO override is not supported on {{platform}}.\n\nThis override only works on Linux. On Windows and macOS, agents must use the fork-first workflow.\n\nUse repo_fork to create a safe, isolated sandbox copy, then operate on the fork.",
+      "mcpMachineGuardOverrideNonLinux": "Direct machine access override is not supported on {{platform}}.\n\nThis override only works on Linux. On Windows and macOS, agents must use the fork-first workflow.\n\nUse repo_fork to create a fork, then connect to it."
     },
     "config": {
       "storageNotFound": "Storage \"{{name}}\" not found in config. Available: {{available}}.",
@@ -2405,6 +2440,19 @@
       "unreadableConfigs": "Cannot read {{count}} config(s): {{names}} (encrypted or corrupted)",
       "refusingPrune": "Refusing to prune — these configs may reference protected GUIDs. Use --force to override.",
       "noOrphaned": "No orphaned entries found"
+    }
+  },
+  "stores": {
+    "rediaccSetup": {
+      "startingSetup": "Starting config storage setup...",
+      "browserWillOpen": "A browser window will open for passkey registration.",
+      "waitingForPasskey": "Waiting for passkey registration in browser...",
+      "browserFallback": "(If browser did not open, copy the URL above and open it manually)",
+      "setupComplete": "Config storage setup complete!",
+      "startingHeadlessSetup": "Starting headless config storage setup...",
+      "headlessInstructions": "You will need to open a URL on a device with a browser.",
+      "openUrl": "Open this URL on your phone or laptop:",
+      "waitingForCompletion": "Waiting for setup to complete..."
     }
   }
 }

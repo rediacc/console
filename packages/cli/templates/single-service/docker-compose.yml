@@ -1,0 +1,50 @@
+services:
+  app:
+    image: nginx:alpine
+    container_name: app
+    env_file:
+      - secrets.env
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./config:/etc/nginx/conf.d:ro
+      - ./data:/usr/share/nginx/html:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://${APP_IP}:80/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      # ── REQUIRED: service identity (always set this) ──
+      - "rediacc.service_name=app"
+
+      # ── ROUTING: pick ONE of the three options below ──
+
+      # OPTION 1: Auto-route (simplest, fork-friendly)
+      # Renet auto-generates a URL from the service name and repo name:
+      #   https://{serviceName}.{repoName}.{machineName}.{baseDomain}
+      # Example: rdc repo create myrepo -m server-1
+      #   → https://app.myrepo.server-1.example.com
+      # Set rediacc.service_port if your app listens on a port other than 80:
+      - "rediacc.service_port=80"
+
+      # OPTION 2: Custom subdomain (still simple, NOT fork-friendly)
+      # Assigns a short subdomain directly under your baseDomain:
+      #   https://{rediacc.domain}.{baseDomain}
+      # Example: rediacc.domain=dashboard → https://dashboard.example.com
+      # Uncomment the line below and set rediacc.service_port above:
+      #- "rediacc.domain=myapp"
+
+      # OPTION 3: Explicit Traefik labels (full control, NOT fork-friendly)
+      # Use when you need: custom domain, middleware (upload buffering, auth),
+      # TLS passthrough, path-based routing, or multi-domain rules.
+      # Remove rediacc.domain (option 2) if using this.
+      # Example: custom domain with Let's Encrypt TLS:
+      #- "traefik.enable=true"
+      #- "traefik.http.routers.myapp.rule=Host(`myapp.example.com`)"
+      #- "traefik.http.routers.myapp.entrypoints=websecure,websecure-v6"
+      #- "traefik.http.routers.myapp.tls.certresolver=letsencrypt"
+      #- "traefik.http.services.myapp.loadbalancer.server.url=http://${APP_IP}:80"
+      # Upload buffering (optional, for large file uploads):
+      #- "traefik.http.routers.myapp.middlewares=myapp-buffering"
+      #- "traefik.http.middlewares.myapp-buffering.buffering.maxRequestBodyBytes=67108864"

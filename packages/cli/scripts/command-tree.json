@@ -2092,47 +2092,68 @@
         {
           "name": "template",
           "descriptionKey": "commands.repo.template.description",
-          "options": [
+          "options": [],
+          "arguments": [],
+          "subcommands": [
             {
-              "flags": "-m, --machine <name>",
-              "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
-              "defaultValue": null
+              "name": "list",
+              "descriptionKey": "commands.repo.template.list.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
             },
             {
-              "flags": "--file <path>",
-              "descriptionKey": "commands.repo.template.fileOption",
-              "mandatory": true,
-              "defaultValue": null
-            },
-            {
-              "flags": "--grand <name>",
-              "descriptionKey": "commands.repo.up.grandOption",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--debug",
-              "descriptionKey": "options.debug",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--skip-router-restart",
-              "descriptionKey": "options.skipRouterRestart",
-              "mandatory": false,
-              "defaultValue": null
+              "name": "apply",
+              "descriptionKey": "commands.repo.template.apply.description",
+              "options": [
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "commands.repo.machineOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "-r, --repository <name>",
+                  "descriptionKey": "options.repository",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--file <path>",
+                  "descriptionKey": "commands.repo.template.fileOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--grand <name>",
+                  "descriptionKey": "commands.repo.up.grandOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--skip-router-restart",
+                  "descriptionKey": "options.skipRouterRestart",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "template",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
             }
-          ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
-          "subcommands": []
+          ]
         },
         {
           "name": "push",
@@ -2416,7 +2437,7 @@
                   "defaultValue": null
                 },
                 {
-                  "flags": "-l, --local <path>",
+                  "flags": "--local <path>",
                   "descriptionKey": "options.localPath",
                   "mandatory": false,
                   "defaultValue": null
@@ -2484,7 +2505,7 @@
                   "defaultValue": null
                 },
                 {
-                  "flags": "-l, --local <path>",
+                  "flags": "--local <path>",
                   "descriptionKey": "options.localPath",
                   "mandatory": false,
                   "defaultValue": null
@@ -2552,7 +2573,7 @@
                   "defaultValue": null
                 },
                 {
-                  "flags": "-l, --local <path>",
+                  "flags": "--local <path>",
                   "descriptionKey": "options.localPath",
                   "mandatory": false,
                   "defaultValue": null
@@ -2568,6 +2589,45 @@
               "subcommands": []
             }
           ]
+        },
+        {
+          "name": "tunnel",
+          "descriptionKey": "commands.repo.tunnel.description",
+          "options": [
+            {
+              "flags": "-c, --container <name>",
+              "descriptionKey": "commands.repo.tunnel.containerOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--port <port>",
+              "descriptionKey": "commands.repo.tunnel.portOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--local <port>",
+              "descriptionKey": "commands.repo.tunnel.localOption",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "machine",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "repository",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
         }
       ]
     },
@@ -5380,6 +5440,18 @@
             {
               "flags": "--vault-namespace <ns>",
               "descriptionKey": "commands.store.add.optionVaultNamespace",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--server-url <url>",
+              "descriptionKey": "commands.store.add.optionServerUrl",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--headless",
+              "descriptionKey": "commands.store.add.optionHeadless",
               "mandatory": false,
               "defaultValue": null
             }

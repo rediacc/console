@@ -1326,6 +1326,11 @@
         "starting": "\"{{grand}}\" wird mit Daten aus \"{{fork}}\" auf \"{{machine}}\" übernommen..."
       },
       "template": {
+        "apply": {
+          "description": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. The template writes Rediaccfile, docker-compose.yml, and any additional files to the repository mount",
+          "descriptionShort": "Eine Vorlage auf ein Repository anwenden",
+          "notFound": "Vorlage \"{{name}}\" nicht gefunden. Verfügbar: {{available}}"
+        },
         "completed": "Vorlage angewendet",
         "description": "Vorlage auf ein Repository anwenden",
         "descriptionShort": "Eine Vorlage auf ein Repository anwenden (docker-compose.yml + Rediaccfile)",
@@ -1333,7 +1338,29 @@
         "fileNotFound": "Vorlagendatei nicht gefunden: {{path}}",
         "fileOption": "Pfad zur JSON-Vorlagendatei",
         "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
+        "list": {
+          "description": "Alle eingebetteten Bereitstellungsvorlagen der CLI auflisten",
+          "descriptionShort": "Verfügbare Vorlagen auflisten",
+          "empty": "Keine Vorlagen verfügbar"
+        },
         "starting": "Vorlage wird auf \"{{repository}}\" auf \"{{machine}}\" angewendet..."
+      },
+      "tunnel": {
+        "active": "Tunnel aktiv: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
+        "closed": "Tunnel geschlossen",
+        "containerNotFound": "Container \"{{name}}\" nicht gefunden in Repository \"{{repository}}\"",
+        "containerOption": "Containername (automatisch erkannt, wenn nur einer läuft)",
+        "description": "Einen SSH-Port-Forward-Tunnel zum Port eines Containers auf einem Remote-Rechner erstellen. Container und Port werden automatisch erkannt, wenn eindeutig. Der Tunnel bleibt offen, bis Sie Strg+C drücken",
+        "descriptionShort": "SSH-Tunnel zu einem Container-Port",
+        "fetching": "Container-Informationen von \"{{machine}}\" werden abgerufen...",
+        "hint": "Drücken Sie Strg+C, um den Tunnel zu schließen",
+        "localOption": "Lokaler Port (Standard: gleich wie Remote-Port)",
+        "multipleContainers": "Mehrere laufende Container gefunden. Wählen Sie einen mit --container (-c):\n{{list}}",
+        "multiplePorts": "Mehrere Ports auf \"{{container}}\" exponiert. Verwenden Sie --port:\n{{list}}",
+        "noContainers": "Keine laufenden Container für Repository \"{{repository}}\" gefunden",
+        "noPorts": "Keine exponierten Ports auf Container \"{{container}}\" gefunden. Verwenden Sie --port",
+        "noServiceIP": "Container \"{{container}}\" hat keine zugewiesene Service-IP",
+        "portOption": "Remote-Container-Port zum Weiterleiten"
       },
       "unmount": {
         "checkpointOption": "Checkpoint vor dem Unmounten erstellen",
@@ -1506,6 +1533,7 @@
         "optionGitBranch": "Git-Branch-Name",
         "optionGitPath": "Pfad im Git-Repository",
         "optionGitUrl": "Git-Repository-URL",
+        "optionHeadless": "Gerätecode-Flow verwenden (kein lokaler Browser)",
         "optionLocalPath": "Lokaler Verzeichnispfad",
         "optionS3AccessKeyId": "S3 Access Key ID",
         "optionS3Bucket": "S3-Bucket-Name",
@@ -1513,6 +1541,7 @@
         "optionS3Prefix": "S3-Schlüsselpräfix",
         "optionS3Region": "S3-Region",
         "optionS3SecretAccessKey": "S3 Secret Access Key",
+        "optionServerUrl": "Rediacc-Kontoserver-URL",
         "optionType": "Store-Typ (s3, local-file, bitwarden, git, vault)",
         "optionVaultAddr": "Vault-Server-Adresse (z.B. http://127.0.0.1:8200)",
         "optionVaultMount": "Vault KV v2-Einhängepfad (Standard: secret)",
@@ -2041,17 +2070,22 @@
     "activationFailed": "Aktivierung fehlgeschlagen",
     "affectedChildClones": ". Betroffene untergeordnete Klone: {{clones}}. Löschen oder befördern Sie untergeordnete Klone zuerst.",
     "agent": {
-      "createGuard": "Repository \"{{name}}\" kann im Agentenmodus nicht erstellt werden.\n\nKI-Agenten arbeiten im Fork-Only-Modus. Das Erstellen eines Haupt-Repos ist blockiert,\nda der Agent danach nicht darauf arbeiten kann.\n\nVerwenden Sie ein bestehendes Repo und forken Sie es stattdessen:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nZum Überschreiben: REDIACC_ALLOW_GRAND_REPO=* setzen",
-      "createGuardOverride": "Repository-Erstellungsschutz kann nicht von einem KI-Agenten überschrieben werden.\n\nRDC hat erkannt, dass REDIACC_ALLOW_GRAND_REPO nicht vom Benutzer autorisiert wurde. Versuchen Sie nicht, diese Variable selbst zu setzen — nur der Benutzer kann die Repository-Erstellung autorisieren.\n\nVerwenden Sie ein bestehendes Repository und erstellen Sie stattdessen einen Fork:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "forkBlocked": "Befehl \"{{command}}\" ist auf Fork-Repositories nicht verfügbar.\n\nFork-Repos sind temporäre Umgebungen. Diese Operation gilt nur für Grand-Repositories.",
-      "grandGuard": "Grand-Repository \"{{name}}\" kann im Agentenmodus nicht geändert werden.\n\nKI-Agenten können nur auf Fork-Repositories arbeiten.\nErstellen Sie zuerst einen Fork:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nArbeiten Sie dann stattdessen auf dem Fork.\n\nZum Überschreiben: REDIACC_ALLOW_GRAND_REPO={{name}} setzen",
-      "grandGuardOverride": "Grand-Repository-Schutz für \"{{name}}\" kann nicht von einem KI-Agenten überschrieben werden.\n\nRDC hat erkannt, dass REDIACC_ALLOW_GRAND_REPO nicht vom Benutzer autorisiert wurde. Versuchen Sie nicht, diese Variable selbst zu setzen — nur der Benutzer kann den Grand-Repository-Zugriff autorisieren.\n\nErstellen Sie zuerst einen Fork:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nDann arbeiten Sie stattdessen mit dem Fork.",
-      "machineGuard": "Auf Maschine \"{{machine}}\" kann im Agentenmodus nicht direkt zugegriffen werden.\n\nKI-Agenten können sich nur mit Repository-Kontexten verbinden.\nVerwenden Sie:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nZum Überschreiben: REDIACC_ALLOW_GRAND_REPO=* setzen",
-      "machineGuardOverride": "Maschinenzugriffsschutz für \"{{machine}}\" kann nicht von einem KI-Agenten überschrieben werden.\n\nRDC hat erkannt, dass REDIACC_ALLOW_GRAND_REPO nicht vom Benutzer autorisiert wurde. Versuchen Sie nicht, diese Variable selbst zu setzen — nur der Benutzer kann den direkten Maschinenzugriff autorisieren.\n\nVerbinden Sie sich stattdessen mit einem Repository-Kontext:\n  rdc term {{machine}} <repository> -c \"<command>\"",
-      "mcpGrandGuard": "Grand-Repository \"{{name}}\" kann im Nur-Fork-Modus nicht geändert werden.\n\nVerwenden Sie repo_fork, um zuerst einen Fork zu erstellen, und arbeiten Sie dann auf dem Fork.\nUm den Zugriff auf Grand-Repositories zu erlauben, starten Sie den MCP-Server mit --allow-grand neu",
-      "mcpGrandGuardOverride": "Grand-Repository-Schutz für \"{{name}}\" kann nicht von einem KI-Agenten überschrieben werden.\n\nRDC hat erkannt, dass REDIACC_ALLOW_GRAND_REPO nicht vom Benutzer autorisiert wurde. Versuchen Sie nicht, diese Variable zu setzen.\n\nVerwenden Sie repo_fork, um zuerst einen Fork zu erstellen, und arbeiten Sie dann mit dem Fork.",
-      "mcpMachineGuard": "Auf die Maschine kann im Nur-Fork-Modus nicht direkt zugegriffen werden.\n\nGeben Sie ein Repository an, um eine Verbindung zu einem Repository-Kontext herzustellen.\nUm direkten Maschinenzugriff zu erlauben, starten Sie den MCP-Server mit --allow-grand neu",
-      "mcpMachineGuardOverride": "Maschinenzugriffsschutz kann nicht von einem KI-Agenten überschrieben werden.\n\nRDC hat erkannt, dass REDIACC_ALLOW_GRAND_REPO nicht vom Benutzer autorisiert wurde. Versuchen Sie nicht, diese Variable zu setzen.\n\nGeben Sie ein Repository an, um sich mit einem Repository-Kontext zu verbinden."
+      "createGuard": "Es kann kein neues Grand-Repository \"{{name}}\" im Agenten-Modus erstellt werden.\n\nAgenten arbeiten im Fork-Only-Modus. Grand-Repositories sind Produktionsumgebungen, auf die Agenten nach der Erstellung nicht zugreifen können.\n\nErstellen Sie stattdessen einen Fork eines bestehenden Repositories:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nBenutzer: Um die Repository-Erstellung zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO=* (oder einen bestimmten Repository-Namen) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten.",
+      "createGuardOverride": "Es kann kein neues Grand-Repository \"{{name}}\" erstellt werden. Vom Agenten initiierte Überschreibungen werden nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen — nur der Benutzer kann dies vor dem Start des Agenten autorisieren.\n\nErstellen Sie stattdessen einen Fork eines bestehenden Repositories:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "Es kann kein neues Grand-Repository \"{{name}}\" erstellt werden. Die REDIACC_ALLOW_GRAND_REPO-Überschreibung wird auf {{platform}} nicht unterstützt.\n\nDiese Überschreibung funktioniert nur unter Linux. Unter Windows und macOS müssen Agenten den Fork-First-Arbeitsablauf verwenden.\n\nErstellen Sie stattdessen einen Fork eines bestehenden Repositories:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nUm die Überschreibung zu verwenden, führen Sie Ihren Agenten unter Linux aus (direkt, WSL, Docker oder eine VM).",
+      "forkBlocked": "Der Befehl \"{{command}}\" ist für Fork-Repositories nicht verfügbar.\n\nFork-Repos sind temporäre Sandbox-Umgebungen. Diese Operation gilt nur für Grand-Repositories (Produktion). Bitten Sie den Benutzer, diesen Befehl direkt auszuführen.",
+      "grandGuard": "\"{{name}}\" ist ein Grand-Repository (Produktion). Agenten können Grand-Repositories nicht direkt ändern.\n\nGrand-Repositories enthalten Produktionsdaten. Verwenden Sie stattdessen einen Fork — Forks sind sichere, isolierte Sandbox-Kopien.\n\nArbeitsablauf:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork (z.B. rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo takeover übernehmen\n\nBenutzer: Um direkten Zugriff zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO={{name}} (oder * für alle Repos) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten.",
+      "grandGuardOverride": "\"{{name}}\" ist ein Grand-Repository (Produktion). Vom Agenten initiierte Überschreibungen werden nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen — nur der Benutzer kann dies vor dem Start des Agenten autorisieren.\n\nVerwenden Sie stattdessen einen Fork — Forks sind sichere, isolierte Sandbox-Kopien:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo takeover übernehmen",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" ist ein Grand-Repository (Produktion). Die REDIACC_ALLOW_GRAND_REPO-Überschreibung wird auf {{platform}} nicht unterstützt.\n\nDiese Überschreibung funktioniert nur unter Linux. Unter Windows und macOS müssen Agenten den Fork-First-Arbeitsablauf verwenden.\n\nArbeitsablauf:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo takeover übernehmen\n\nUm die Überschreibung zu verwenden, führen Sie Ihren Agenten unter Linux aus (direkt, WSL, Docker oder eine VM).",
+      "machineGuard": "Direkter Maschinenzugriff auf \"{{machine}}\" ist im Agenten-Modus nicht erlaubt.\n\nAgenten müssen sich über einen Repository-Kontext für sandboxed Zugriff verbinden. Erstellen Sie zuerst einen Fork eines Repositories und verbinden Sie sich dann mit dem Fork.\n\nArbeitsablauf:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nBenutzer: Um direkten Maschinenzugriff zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO=* (oder einen bestimmten Repository-Namen) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten.",
+      "machineGuardOverride": "Direkter Maschinenzugriff auf \"{{machine}}\" ist nicht erlaubt. Vom Agenten initiierte Überschreibungen werden nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen — nur der Benutzer kann dies vor dem Start des Agenten autorisieren.\n\nErstellen Sie zuerst einen Fork eines Repositories und verbinden Sie sich dann mit dem Fork:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "Die Überschreibung für direkten Maschinenzugriff wird auf {{platform}} nicht unterstützt.\n\nDiese Überschreibung funktioniert nur unter Linux. Unter Windows und macOS müssen Agenten den Fork-First-Arbeitsablauf verwenden.\n\nArbeitsablauf:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nUm die Überschreibung zu verwenden, führen Sie Ihren Agenten unter Linux aus (direkt, WSL, Docker oder eine VM).",
+      "mcpGrandGuard": "\"{{name}}\" ist ein Grand-Repository (Produktion). Agenten können Grand-Repositories nicht direkt ändern.\n\nVerwenden Sie repo_fork, um eine sichere, isolierte Sandbox-Kopie zu erstellen, und arbeiten Sie dann mit dem Fork.\nWenn Sie direkten Zugriff benötigen, bitten Sie den Benutzer, den MCP-Server mit --allow-grand neu zu starten.",
+      "mcpGrandGuardOverride": "\"{{name}}\" ist ein Grand-Repository (Produktion). Vom Agenten initiierte Überschreibungen werden nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen.\n\nVerwenden Sie repo_fork, um eine sichere, isolierte Sandbox-Kopie zu erstellen, und arbeiten Sie dann mit dem Fork.",
+      "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" ist ein Grand-Repository (Produktion). Die REDIACC_ALLOW_GRAND_REPO-Überschreibung wird auf {{platform}} nicht unterstützt.\n\nDiese Überschreibung funktioniert nur unter Linux. Unter Windows und macOS müssen Agenten den Fork-First-Arbeitsablauf verwenden.\n\nVerwenden Sie repo_fork, um eine sichere, isolierte Sandbox-Kopie zu erstellen, und arbeiten Sie dann mit dem Fork.",
+      "mcpMachineGuard": "Direkter Maschinenzugriff ist im Fork-Only-Modus nicht erlaubt.\n\nAgenten müssen sich über einen Repository-Kontext verbinden. Verwenden Sie repo_fork, um einen Fork zu erstellen, und verbinden Sie sich dann damit.\nWenn Sie direkten Zugriff benötigen, bitten Sie den Benutzer, den MCP-Server mit --allow-grand neu zu starten.",
+      "mcpMachineGuardOverride": "Direkter Maschinenzugriff ist nicht erlaubt. Vom Agenten initiierte Überschreibungen werden nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen.\n\nVerwenden Sie repo_fork, um einen Fork zu erstellen, und verbinden Sie sich dann damit.",
+      "mcpMachineGuardOverrideNonLinux": "Die Überschreibung für direkten Maschinenzugriff wird auf {{platform}} nicht unterstützt.\n\nDiese Überschreibung funktioniert nur unter Linux. Unter Windows und macOS müssen Agenten den Fork-First-Arbeitsablauf verwenden.\n\nVerwenden Sie repo_fork, um einen Fork zu erstellen, und verbinden Sie sich dann damit."
     },
     "authFailed": "Authentifizierung fehlgeschlagen",
     "authRequired": "Authentifizierung erforderlich. Ausführen: rdc auth login",
@@ -2192,6 +2226,7 @@
         "pushAll": "Alle Repos massenhaft zum Speicher übertragen"
       },
       "takeover": "Produktionsdaten durch Fork-Daten ersetzen",
+      "tunnel": "SSH-Tunnel zu Container-Port",
       "up": "Bereitstellen mit Auto-Mount"
     },
     "store": {
@@ -2384,6 +2419,19 @@
     "pending": "Ausstehend",
     "processing": "Wird verarbeitet",
     "success": "Erfolg"
+  },
+  "stores": {
+    "rediaccSetup": {
+      "browserFallback": "(Falls der Browser sich nicht geöffnet hat, kopieren Sie die obige URL und öffnen Sie sie manuell)",
+      "browserWillOpen": "Ein Browserfenster wird zur Passkey-Registrierung geöffnet.",
+      "headlessInstructions": "Sie müssen eine URL auf einem Gerät mit Browser öffnen.",
+      "openUrl": "Öffnen Sie diese URL auf Ihrem Telefon oder Laptop:",
+      "setupComplete": "Einrichtung des Konfigurationsspeichers abgeschlossen!",
+      "startingHeadlessSetup": "Headless-Einrichtung des Konfigurationsspeichers wird gestartet...",
+      "startingSetup": "Einrichtung des Konfigurationsspeichers wird gestartet...",
+      "waitingForCompletion": "Warte auf Abschluss der Einrichtung...",
+      "waitingForPasskey": "Warte auf Passkey-Registrierung im Browser..."
+    }
   },
   "table": {
     "noData": "Keine Daten zum Anzeigen"

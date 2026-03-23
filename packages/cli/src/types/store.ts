@@ -3,7 +3,7 @@
 // ============================================================================
 
 /** Supported store backend types */
-export type StoreType = 's3' | 'local-file' | 'bitwarden' | 'git' | 'vault';
+export type StoreType = 's3' | 'local-file' | 'bitwarden' | 'git' | 'vault' | 'rediacc';
 
 /**
  * A store entry representing a remote location where config files can be synced.
@@ -58,4 +58,16 @@ export interface StoreEntry {
   vaultPrefix?: string;
   /** Vault namespace (enterprise only, optional) */
   vaultNamespace?: string;
+
+  // Rediacc config storage fields
+  /** Rediacc account server URL */
+  rediacApiUrl?: string;
+  /** Config store ID on the server */
+  rediacStoreId?: string;
+  /** Native secure storage key reference (for passkey_secret lookup) */
+  rediacStorageKeyId?: string;
+  /** Rotating config token (updated after each API call) */
+  rediacConfigToken?: string;
+  /** Wrapped CEK (encrypted with passkey_secret + server_secret) */
+  rediacWrappedCek?: string;
 }

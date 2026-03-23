@@ -40,6 +40,7 @@ export const CMD = {
   REPO_RESIZE: 'repo resize',
   REPO_EXPAND: 'repo expand',
   REPO_TAKEOVER: 'repo takeover',
+  REPO_TUNNEL: 'repo tunnel',
   TERM_REPO: 'term repo',
   VSCODE_REPO: 'vscode repo',
 } as const;
@@ -95,7 +96,11 @@ function checkGrandOverride(repoName: string): OverrideResult {
 function enforceGrandGuard(repoName: string): void {
   const override = checkGrandOverride(repoName);
   if (override === 'agent-injected') {
-    throw new ValidationError(t('errors.agent.grandGuardOverride', { name: repoName }));
+    const errorKey =
+      process.platform === 'linux'
+        ? 'errors.agent.grandGuardOverride'
+        : 'errors.agent.grandGuardOverrideNonLinux';
+    throw new ValidationError(t(errorKey, { name: repoName, platform: process.platform }));
   }
   if (override !== 'allowed') {
     throw new ValidationError(t('errors.agent.grandGuard', { name: repoName }));

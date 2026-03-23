@@ -1326,6 +1326,11 @@
         "starting": "Tomando el control de \"{{grand}}\" con datos de \"{{fork}}\" en \"{{machine}}\"..."
       },
       "template": {
+        "apply": {
+          "description": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. The template writes Rediaccfile, docker-compose.yml, and any additional files to the repository mount",
+          "descriptionShort": "Aplicar una plantilla a un repositorio",
+          "notFound": "Plantilla \"{{name}}\" no encontrada. Disponibles: {{available}}"
+        },
         "completed": "Plantilla aplicada",
         "description": "Aplicar una plantilla a un repositorio",
         "descriptionShort": "Aplicar una plantilla a un repositorio (docker-compose.yml + Rediaccfile)",
@@ -1333,7 +1338,29 @@
         "fileNotFound": "Archivo de plantilla no encontrado: {{path}}",
         "fileOption": "Ruta al archivo de plantilla JSON",
         "grandOption": "Nombre del repositorio principal (se resuelve automáticamente a GUID)",
+        "list": {
+          "description": "Listar todas las plantillas de despliegue integradas en la CLI",
+          "descriptionShort": "Listar plantillas disponibles",
+          "empty": "No hay plantillas disponibles"
+        },
         "starting": "Aplicando plantilla a \"{{repository}}\" en \"{{machine}}\"..."
+      },
+      "tunnel": {
+        "active": "Túnel activo: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
+        "closed": "Túnel cerrado",
+        "containerNotFound": "Contenedor \"{{name}}\" no encontrado en el repositorio \"{{repository}}\"",
+        "containerOption": "Nombre del contenedor (detectado automáticamente si solo hay uno en ejecución)",
+        "description": "Crear un túnel SSH de reenvío de puertos al puerto de un contenedor en una máquina remota. Detecta automáticamente el contenedor y el puerto cuando no hay ambigüedad. El túnel permanece abierto hasta que presione Ctrl+C",
+        "descriptionShort": "Túnel SSH a un puerto de contenedor",
+        "fetching": "Obteniendo información de contenedores de \"{{machine}}\"...",
+        "hint": "Presione Ctrl+C para cerrar el túnel",
+        "localOption": "Puerto local (por defecto igual al puerto remoto)",
+        "multipleContainers": "Se encontraron múltiples contenedores en ejecución. Especifique uno con --container (-c):\n{{list}}",
+        "multiplePorts": "Múltiples puertos expuestos en \"{{container}}\". Especifique --port:\n{{list}}",
+        "noContainers": "No se encontraron contenedores en ejecución para el repositorio \"{{repository}}\"",
+        "noPorts": "No se encontraron puertos expuestos en el contenedor \"{{container}}\". Especifique --port",
+        "noServiceIP": "El contenedor \"{{container}}\" no tiene IP de servicio asignada",
+        "portOption": "Puerto del contenedor remoto a reenviar"
       },
       "unmount": {
         "checkpointOption": "Crear checkpoint antes de desmontar",
@@ -1506,6 +1533,7 @@
         "optionGitBranch": "Nombre de rama Git",
         "optionGitPath": "Ruta dentro del repositorio Git",
         "optionGitUrl": "URL del repositorio Git",
+        "optionHeadless": "Usar flujo de código de dispositivo (sin navegador local)",
         "optionLocalPath": "Ruta de directorio local",
         "optionS3AccessKeyId": "ID de clave de acceso S3",
         "optionS3Bucket": "Nombre del bucket S3",
@@ -1513,6 +1541,7 @@
         "optionS3Prefix": "Prefijo de clave S3",
         "optionS3Region": "Región S3",
         "optionS3SecretAccessKey": "Clave de acceso secreta S3",
+        "optionServerUrl": "URL del servidor de cuenta Rediacc",
         "optionType": "Tipo de store (s3, local-file, bitwarden, git, vault)",
         "optionVaultAddr": "Dirección del servidor Vault (ej. http://127.0.0.1:8200)",
         "optionVaultMount": "Ruta de montaje KV v2 de Vault (predeterminado: secret)",
@@ -2041,17 +2070,22 @@
     "activationFailed": "Error en la activación",
     "affectedChildClones": ". Clones secundarios afectados: {{clones}}. Primero elimine o promueva clones secundarios.",
     "agent": {
-      "createGuard": "No se puede crear el repositorio \"{{name}}\" en modo agente.\n\nLos agentes de IA operan en modo solo-fork. La creación de un repositorio principal está bloqueada\nporque el agente no puede operar en él después.\n\nUsa un repositorio existente y haz fork en su lugar:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nPara anular: establece REDIACC_ALLOW_GRAND_REPO=*",
-      "createGuardOverride": "La protección de creación de repositorio no puede ser anulada por un agente de IA.\n\nRDC detectó que REDIACC_ALLOW_GRAND_REPO no fue autorizado por el usuario. No intente establecer esta variable usted mismo — solo el usuario puede autorizar la creación de repositorios.\n\nUse un repositorio existente y cree un fork en su lugar:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "forkBlocked": "El comando \"{{command}}\" no está disponible en repositorios fork.\n\nLos repos fork son entornos provisionales. Esta operación solo aplica a repositorios grand.",
-      "grandGuard": "No se puede modificar el repositorio grand \"{{name}}\" en modo agente.\n\nLos agentes de IA solo pueden operar en repositorios fork.\nPrimero cree un fork:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nLuego opere en el fork.\n\nPara anular: establezca REDIACC_ALLOW_GRAND_REPO={{name}}",
-      "grandGuardOverride": "La protección del repositorio principal para \"{{name}}\" no puede ser anulada por un agente de IA.\n\nRDC detectó que REDIACC_ALLOW_GRAND_REPO no fue autorizado por el usuario. No intente establecer esta variable usted mismo — solo el usuario puede autorizar el acceso al repositorio principal.\n\nCree un fork primero:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nLuego opere sobre el fork.",
-      "machineGuard": "No se puede acceder a la máquina \"{{machine}}\" directamente en modo agente.\n\nLos agentes de IA solo pueden conectarse a contextos de repositorio.\nUse:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nPara anular: establezca REDIACC_ALLOW_GRAND_REPO=*",
-      "machineGuardOverride": "La protección de acceso a la máquina \"{{machine}}\" no puede ser anulada por un agente de IA.\n\nRDC detectó que REDIACC_ALLOW_GRAND_REPO no fue autorizado por el usuario. No intente establecer esta variable usted mismo — solo el usuario puede autorizar el acceso directo a la máquina.\n\nConéctese a un contexto de repositorio en su lugar:\n  rdc term {{machine}} <repository> -c \"<command>\"",
-      "mcpGrandGuard": "No se puede modificar el repositorio grand \"{{name}}\" en modo solo fork.\n\nUse repo_fork para crear un fork primero, luego opere en el fork.\nPara permitir acceso a repositorios grand, reinicie el servidor MCP con --allow-grand",
-      "mcpGrandGuardOverride": "La protección del repositorio principal para \"{{name}}\" no puede ser anulada por un agente de IA.\n\nRDC detectó que REDIACC_ALLOW_GRAND_REPO no fue autorizado por el usuario. No intente establecer esta variable.\n\nUse repo_fork para crear un fork primero, luego opere sobre el fork.",
-      "mcpMachineGuard": "No se puede acceder a la máquina directamente en modo solo fork.\n\nEspecifique un repositorio para conectarse a un contexto de repositorio.\nPara permitir acceso directo a la máquina, reinicie el servidor MCP con --allow-grand",
-      "mcpMachineGuardOverride": "La protección de acceso a la máquina no puede ser anulada por un agente de IA.\n\nRDC detectó que REDIACC_ALLOW_GRAND_REPO no fue autorizado por el usuario. No intente establecer esta variable.\n\nEspecifique un repositorio para conectarse a un contexto de repositorio."
+      "createGuard": "No se puede crear un nuevo repositorio grand \"{{name}}\" en modo agente.\n\nLos agentes operan en modo solo-fork. Los repositorios grand son entornos de producción a los que los agentes no pueden acceder después de la creación.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nUsuario: para permitir la creación de repositorios, establezca REDIACC_ALLOW_GRAND_REPO=* (o un nombre de repositorio específico) en su terminal antes de iniciar la sesión del agente.",
+      "createGuardOverride": "No se puede crear un nuevo repositorio grand \"{{name}}\". No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "No se puede crear un nuevo repositorio grand \"{{name}}\". La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
+      "forkBlocked": "El comando \"{{command}}\" no está disponible en repositorios fork.\n\nLos repos fork son entornos sandbox temporales. Esta operación solo se aplica a repositorios grand (producción). Pida al usuario que ejecute este comando directamente.",
+      "grandGuard": "\"{{name}}\" es un repositorio grand (producción). Los agentes no pueden modificar repositorios grand directamente.\n\nLos repositorios grand contienen datos de producción. Use un fork en su lugar — los forks son copias sandbox seguras y aisladas.\n\nFlujo de trabajo:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork (ej: rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover\n\nUsuario: para permitir acceso directo, establezca REDIACC_ALLOW_GRAND_REPO={{name}} (o * para todos los repos) en su terminal antes de iniciar la sesión del agente.",
+      "grandGuardOverride": "\"{{name}}\" es un repositorio grand (producción). No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nUse un fork en su lugar — los forks son copias sandbox seguras y aisladas:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" es un repositorio grand (producción). La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nFlujo de trabajo:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
+      "machineGuard": "El acceso directo a la máquina \"{{machine}}\" no está permitido en modo agente.\n\nLos agentes deben conectarse a través de un contexto de repositorio para acceso sandbox. Cree un fork del repositorio primero, luego conéctese al fork.\n\nFlujo de trabajo:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nUsuario: para permitir acceso directo a la máquina, establezca REDIACC_ALLOW_GRAND_REPO=* (o un nombre de repositorio específico) en su terminal antes de iniciar la sesión del agente.",
+      "machineGuardOverride": "El acceso directo a la máquina \"{{machine}}\" no está permitido. No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nCree un fork del repositorio primero, luego conéctese al fork:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "La anulación de acceso directo a la máquina no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nFlujo de trabajo:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
+      "mcpGrandGuard": "\"{{name}}\" es un repositorio grand (producción). Los agentes no pueden modificar repositorios grand directamente.\n\nUse repo_fork para crear una copia sandbox segura y aislada, luego opere en el fork.\nSi necesita acceso directo, pida al usuario que reinicie el servidor MCP con --allow-grand.",
+      "mcpGrandGuardOverride": "\"{{name}}\" es un repositorio grand (producción). No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork para crear una copia sandbox segura y aislada, luego opere en el fork.",
+      "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" es un repositorio grand (producción). La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nUse repo_fork para crear una copia sandbox segura y aislada, luego opere en el fork.",
+      "mcpMachineGuard": "El acceso directo a la máquina no está permitido en modo solo-fork.\n\nLos agentes deben conectarse a través de un contexto de repositorio. Use repo_fork para crear un fork, luego conéctese a él.\nSi necesita acceso directo, pida al usuario que reinicie el servidor MCP con --allow-grand.",
+      "mcpMachineGuardOverride": "El acceso directo a la máquina no está permitido. No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork para crear un fork, luego conéctese a él.",
+      "mcpMachineGuardOverrideNonLinux": "La anulación de acceso directo a la máquina no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nUse repo_fork para crear un fork, luego conéctese a él."
     },
     "authFailed": "Falló la autenticación",
     "authRequired": "Se requiere autenticación. Ejecute: rdc auth login",
@@ -2192,6 +2226,7 @@
         "pushAll": "Push masivo de todos los repos al almacenamiento"
       },
       "takeover": "Reemplazar datos de producción con datos del fork",
+      "tunnel": "Túnel SSH a puerto de contenedor",
       "up": "Desplegar con montaje automático"
     },
     "store": {
@@ -2384,6 +2419,19 @@
     "pending": "Pendiente",
     "processing": "Procesando",
     "success": "Éxito"
+  },
+  "stores": {
+    "rediaccSetup": {
+      "browserFallback": "(Si el navegador no se abrió, copie la URL anterior y ábrala manualmente)",
+      "browserWillOpen": "Se abrirá una ventana del navegador para el registro de la clave de acceso.",
+      "headlessInstructions": "Necesitará abrir una URL en un dispositivo con navegador.",
+      "openUrl": "Abra esta URL en su teléfono o portátil:",
+      "setupComplete": "¡Configuración del almacenamiento completada!",
+      "startingHeadlessSetup": "Iniciando la configuración del almacenamiento sin interfaz gráfica...",
+      "startingSetup": "Iniciando la configuración del almacenamiento...",
+      "waitingForCompletion": "Esperando a que se complete la configuración...",
+      "waitingForPasskey": "Esperando el registro de la clave de acceso en el navegador..."
+    }
   },
   "table": {
     "noData": "No hay datos para mostrar"

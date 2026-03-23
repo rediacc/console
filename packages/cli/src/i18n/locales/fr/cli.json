@@ -1326,6 +1326,11 @@
         "starting": "Prise de contrôle de \"{{grand}}\" avec les données de \"{{fork}}\" sur \"{{machine}}\"..."
       },
       "template": {
+        "apply": {
+          "description": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. The template writes Rediaccfile, docker-compose.yml, and any additional files to the repository mount",
+          "descriptionShort": "Appliquer un modèle à un dépôt",
+          "notFound": "Modèle \"{{name}}\" introuvable. Disponibles : {{available}}"
+        },
         "completed": "Modèle appliqué",
         "description": "Appliquer un modèle à un dépôt",
         "descriptionShort": "Appliquer un modèle à un dépôt (docker-compose.yml + Rediaccfile)",
@@ -1333,7 +1338,29 @@
         "fileNotFound": "Fichier de modèle introuvable : {{path}}",
         "fileOption": "Chemin vers le fichier de modèle JSON",
         "grandOption": "Nom du dépôt grand (résolu automatiquement en GUID)",
+        "list": {
+          "description": "Lister tous les modèles de déploiement intégrés à la CLI",
+          "descriptionShort": "Lister les modèles disponibles",
+          "empty": "Aucun modèle disponible"
+        },
         "starting": "Application du modèle à \"{{repository}}\" sur \"{{machine}}\"..."
+      },
+      "tunnel": {
+        "active": "Tunnel actif : localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
+        "closed": "Tunnel fermé",
+        "containerNotFound": "Conteneur \"{{name}}\" introuvable dans le dépôt \"{{repository}}\"",
+        "containerOption": "Nom du conteneur (détecté automatiquement s'il n'y en a qu'un en cours d'exécution)",
+        "description": "Créer un tunnel SSH de redirection de port vers le port d'un conteneur sur une machine distante. Détecte automatiquement le conteneur et le port lorsqu'il n'y a pas d'ambiguïté. Le tunnel reste ouvert jusqu'à ce que vous appuyiez sur Ctrl+C",
+        "descriptionShort": "Tunnel SSH vers un port de conteneur",
+        "fetching": "Récupération des informations de conteneurs depuis \"{{machine}}\"...",
+        "hint": "Appuyez sur Ctrl+C pour fermer le tunnel",
+        "localOption": "Port local (par défaut identique au port distant)",
+        "multipleContainers": "Plusieurs conteneurs en cours d'exécution trouvés. Spécifiez-en un avec --container (-c) :\n{{list}}",
+        "multiplePorts": "Plusieurs ports exposés sur \"{{container}}\". Spécifiez --port :\n{{list}}",
+        "noContainers": "Aucun conteneur en cours d'exécution trouvé pour le dépôt \"{{repository}}\"",
+        "noPorts": "Aucun port exposé trouvé sur le conteneur \"{{container}}\". Spécifiez --port",
+        "noServiceIP": "Le conteneur \"{{container}}\" n'a pas d'IP de service assignée",
+        "portOption": "Port du conteneur distant à rediriger"
       },
       "unmount": {
         "checkpointOption": "Créer un point de contrôle avant le démontage",
@@ -1506,6 +1533,7 @@
         "optionGitBranch": "Nom de branche Git",
         "optionGitPath": "Chemin dans le dépôt Git",
         "optionGitUrl": "URL du dépôt Git",
+        "optionHeadless": "Utiliser le flux de code d'appareil (sans navigateur local)",
         "optionLocalPath": "Chemin du répertoire local",
         "optionS3AccessKeyId": "ID de clé d'accès S3",
         "optionS3Bucket": "Nom du bucket S3",
@@ -1513,6 +1541,7 @@
         "optionS3Prefix": "Préfixe de clé S3",
         "optionS3Region": "Région S3",
         "optionS3SecretAccessKey": "Clé d'accès secrète S3",
+        "optionServerUrl": "URL du serveur de compte Rediacc",
         "optionType": "Type de store (s3, local-file, bitwarden, git, vault)",
         "optionVaultAddr": "Adresse du serveur Vault (ex. http://127.0.0.1:8200)",
         "optionVaultMount": "Chemin de montage KV v2 de Vault (par défaut : secret)",
@@ -2041,17 +2070,22 @@
     "activationFailed": "Échec de l'activation",
     "affectedChildClones": ". Clones enfants affectés : {{clones}}. Supprimez ou promouvez d'abord les clones enfants.",
     "agent": {
-      "createGuard": "Impossible de créer le dépôt \"{{name}}\" en mode agent.\n\nLes agents IA fonctionnent en mode fork uniquement. La création d'un dépôt principal est bloquée\ncar l'agent ne peut pas y travailler ensuite.\n\nUtilisez un dépôt existant et faites-en un fork à la place :\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nPour contourner : définissez REDIACC_ALLOW_GRAND_REPO=*",
-      "createGuardOverride": "La protection de création de dépôt ne peut pas être contournée par un agent IA.\n\nRDC a détecté que REDIACC_ALLOW_GRAND_REPO n'a pas été autorisé par l'utilisateur. N'essayez pas de définir cette variable vous-même — seul l'utilisateur peut autoriser la création de dépôts.\n\nUtilisez un dépôt existant et créez un fork à la place :\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "forkBlocked": "La commande \"{{command}}\" n'est pas disponible sur les dépôts fork.\n\nLes dépôts fork sont des environnements provisoires. Cette opération ne s'applique qu'aux dépôts grand.",
-      "grandGuard": "Impossible de modifier le dépôt grand \"{{name}}\" en mode agent.\n\nLes agents IA ne peuvent opérer que sur les dépôts fork.\nCréez d'abord un fork :\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nEnsuite opérez sur le fork.\n\nPour outrepasser : définissez REDIACC_ALLOW_GRAND_REPO={{name}}",
-      "grandGuardOverride": "La protection du dépôt principal pour \"{{name}}\" ne peut pas être contournée par un agent IA.\n\nRDC a détecté que REDIACC_ALLOW_GRAND_REPO n'a pas été autorisé par l'utilisateur. N'essayez pas de définir cette variable vous-même — seul l'utilisateur peut autoriser l'accès au dépôt principal.\n\nCréez d'abord un fork :\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nPuis opérez sur le fork.",
-      "machineGuard": "Impossible d'accéder directement à la machine \"{{machine}}\" en mode agent.\n\nLes agents IA ne peuvent se connecter qu'aux contextes de dépôt.\nUtilisez :\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nPour outrepasser : définissez REDIACC_ALLOW_GRAND_REPO=*",
-      "machineGuardOverride": "La protection d'accès machine pour \"{{machine}}\" ne peut pas être contournée par un agent IA.\n\nRDC a détecté que REDIACC_ALLOW_GRAND_REPO n'a pas été autorisé par l'utilisateur. N'essayez pas de définir cette variable vous-même — seul l'utilisateur peut autoriser l'accès direct à la machine.\n\nConnectez-vous plutôt à un contexte de dépôt :\n  rdc term {{machine}} <repository> -c \"<command>\"",
-      "mcpGrandGuard": "Impossible de modifier le dépôt grand \"{{name}}\" en mode fork uniquement.\n\nUtilisez repo_fork pour créer d'abord un fork, puis opérez sur le fork.\nPour autoriser l'accès aux dépôts grand, redémarrez le serveur MCP avec --allow-grand",
-      "mcpGrandGuardOverride": "La protection du dépôt principal pour \"{{name}}\" ne peut pas être contournée par un agent IA.\n\nRDC a détecté que REDIACC_ALLOW_GRAND_REPO n'a pas été autorisé par l'utilisateur. N'essayez pas de définir cette variable.\n\nUtilisez repo_fork pour créer d'abord un fork, puis opérez sur le fork.",
-      "mcpMachineGuard": "Impossible d'accéder directement à la machine en mode fork uniquement.\n\nSpécifiez un dépôt pour vous connecter à un contexte de dépôt.\nPour autoriser l'accès direct à la machine, redémarrez le serveur MCP avec --allow-grand",
-      "mcpMachineGuardOverride": "La protection d'accès machine ne peut pas être contournée par un agent IA.\n\nRDC a détecté que REDIACC_ALLOW_GRAND_REPO n'a pas été autorisé par l'utilisateur. N'essayez pas de définir cette variable.\n\nSpécifiez un dépôt pour vous connecter à un contexte de dépôt."
+      "createGuard": "Impossible de créer un nouveau dépôt grand \"{{name}}\" en mode agent.\n\nLes agents fonctionnent en mode fork uniquement. Les dépôts grand sont des environnements de production auxquels les agents ne peuvent pas accéder après la création.\n\nCréez plutôt un fork d'un dépôt existant :\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nUtilisateur : pour autoriser la création de dépôts, définissez REDIACC_ALLOW_GRAND_REPO=* (ou un nom de dépôt spécifique) dans votre terminal avant de démarrer la session de l'agent.",
+      "createGuardOverride": "Impossible de créer un nouveau dépôt grand \"{{name}}\". Les contournements initiés par l'agent ne sont pas acceptés.\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO — seul l'utilisateur peut l'autoriser avant le démarrage de l'agent.\n\nCréez plutôt un fork d'un dépôt existant :\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "Impossible de créer un nouveau dépôt grand \"{{name}}\". Le contournement REDIACC_ALLOW_GRAND_REPO n'est pas pris en charge sur {{platform}}.\n\nCe contournement ne fonctionne que sous Linux. Sous Windows et macOS, les agents doivent utiliser le flux de travail fork-first.\n\nCréez plutôt un fork d'un dépôt existant :\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nPour utiliser le contournement, exécutez votre agent sous Linux (directement, WSL, Docker ou une VM).",
+      "forkBlocked": "La commande \"{{command}}\" n'est pas disponible sur les dépôts fork.\n\nLes dépôts fork sont des environnements sandbox temporaires. Cette opération s'applique uniquement aux dépôts grand (production). Demandez à l'utilisateur d'exécuter cette commande directement.",
+      "grandGuard": "\"{{name}}\" est un dépôt grand (production). Les agents ne peuvent pas modifier directement les dépôts grand.\n\nLes dépôts grand contiennent des données de production. Utilisez un fork à la place — les forks sont des copies sandbox sûres et isolées.\n\nFlux de travail :\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Travaillez sur le fork (ex : rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. Une fois terminé, l'utilisateur peut promouvoir le fork avec rdc repo takeover\n\nUtilisateur : pour autoriser l'accès direct, définissez REDIACC_ALLOW_GRAND_REPO={{name}} (ou * pour tous les dépôts) dans votre terminal avant de démarrer la session de l'agent.",
+      "grandGuardOverride": "\"{{name}}\" est un dépôt grand (production). Les contournements initiés par l'agent ne sont pas acceptés.\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO — seul l'utilisateur peut l'autoriser avant le démarrage de l'agent.\n\nUtilisez un fork à la place — les forks sont des copies sandbox sûres et isolées :\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Travaillez sur le fork\n  3. Une fois terminé, l'utilisateur peut promouvoir le fork avec rdc repo takeover",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" est un dépôt grand (production). Le contournement REDIACC_ALLOW_GRAND_REPO n'est pas pris en charge sur {{platform}}.\n\nCe contournement ne fonctionne que sous Linux. Sous Windows et macOS, les agents doivent utiliser le flux de travail fork-first.\n\nFlux de travail :\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Travaillez sur le fork\n  3. Une fois terminé, l'utilisateur peut promouvoir le fork avec rdc repo takeover\n\nPour utiliser le contournement, exécutez votre agent sous Linux (directement, WSL, Docker ou une VM).",
+      "machineGuard": "L'accès direct à la machine \"{{machine}}\" n'est pas autorisé en mode agent.\n\nLes agents doivent se connecter via un contexte de dépôt pour un accès sandboxé. Créez d'abord un fork d'un dépôt, puis connectez-vous au fork.\n\nFlux de travail :\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nUtilisateur : pour autoriser l'accès direct à la machine, définissez REDIACC_ALLOW_GRAND_REPO=* (ou un nom de dépôt spécifique) dans votre terminal avant de démarrer la session de l'agent.",
+      "machineGuardOverride": "L'accès direct à la machine \"{{machine}}\" n'est pas autorisé. Les contournements initiés par l'agent ne sont pas acceptés.\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO — seul l'utilisateur peut l'autoriser avant le démarrage de l'agent.\n\nCréez d'abord un fork d'un dépôt, puis connectez-vous au fork :\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "Le contournement d'accès direct à la machine n'est pas pris en charge sur {{platform}}.\n\nCe contournement ne fonctionne que sous Linux. Sous Windows et macOS, les agents doivent utiliser le flux de travail fork-first.\n\nFlux de travail :\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nPour utiliser le contournement, exécutez votre agent sous Linux (directement, WSL, Docker ou une VM).",
+      "mcpGrandGuard": "\"{{name}}\" est un dépôt grand (production). Les agents ne peuvent pas modifier directement les dépôts grand.\n\nUtilisez repo_fork pour créer une copie sandbox sûre et isolée, puis travaillez sur le fork.\nSi vous avez besoin d'un accès direct, demandez à l'utilisateur de redémarrer le serveur MCP avec --allow-grand.",
+      "mcpGrandGuardOverride": "\"{{name}}\" est un dépôt grand (production). Les contournements initiés par l'agent ne sont pas acceptés.\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO.\n\nUtilisez repo_fork pour créer une copie sandbox sûre et isolée, puis travaillez sur le fork.",
+      "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" est un dépôt grand (production). Le contournement REDIACC_ALLOW_GRAND_REPO n'est pas pris en charge sur {{platform}}.\n\nCe contournement ne fonctionne que sous Linux. Sous Windows et macOS, les agents doivent utiliser le flux de travail fork-first.\n\nUtilisez repo_fork pour créer une copie sandbox sûre et isolée, puis travaillez sur le fork.",
+      "mcpMachineGuard": "L'accès direct à la machine n'est pas autorisé en mode fork uniquement.\n\nLes agents doivent se connecter via un contexte de dépôt. Utilisez repo_fork pour créer un fork, puis connectez-vous.\nSi vous avez besoin d'un accès direct, demandez à l'utilisateur de redémarrer le serveur MCP avec --allow-grand.",
+      "mcpMachineGuardOverride": "L'accès direct à la machine n'est pas autorisé. Les contournements initiés par l'agent ne sont pas acceptés.\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO.\n\nUtilisez repo_fork pour créer un fork, puis connectez-vous.",
+      "mcpMachineGuardOverrideNonLinux": "Le contournement d'accès direct à la machine n'est pas pris en charge sur {{platform}}.\n\nCe contournement ne fonctionne que sous Linux. Sous Windows et macOS, les agents doivent utiliser le flux de travail fork-first.\n\nUtilisez repo_fork pour créer un fork, puis connectez-vous."
     },
     "authFailed": "L'authentification a échoué",
     "authRequired": "L'authentification est requise. Exécutez : rdc auth login",
@@ -2192,6 +2226,7 @@
         "pushAll": "Push en masse de tous les dépôts vers le stockage"
       },
       "takeover": "Remplacer les données de production par les données du fork",
+      "tunnel": "Tunnel SSH vers un port de conteneur",
       "up": "Déployer avec montage automatique"
     },
     "store": {
@@ -2384,6 +2419,19 @@
     "pending": "En attente",
     "processing": "Traitement en cours",
     "success": "Succès"
+  },
+  "stores": {
+    "rediaccSetup": {
+      "browserFallback": "(Si le navigateur ne s'est pas ouvert, copiez l'URL ci-dessus et ouvrez-la manuellement)",
+      "browserWillOpen": "Une fenêtre de navigateur s'ouvrira pour l'enregistrement de la clé d'accès.",
+      "headlessInstructions": "Vous devrez ouvrir une URL sur un appareil disposant d'un navigateur.",
+      "openUrl": "Ouvrez cette URL sur votre téléphone ou ordinateur portable :",
+      "setupComplete": "Configuration du stockage terminée !",
+      "startingHeadlessSetup": "Démarrage de la configuration du stockage sans interface graphique...",
+      "startingSetup": "Démarrage de la configuration du stockage...",
+      "waitingForCompletion": "En attente de la fin de la configuration...",
+      "waitingForPasskey": "En attente de l'enregistrement de la clé d'accès dans le navigateur..."
+    }
   },
   "table": {
     "noData": "Aucune donnée à afficher"

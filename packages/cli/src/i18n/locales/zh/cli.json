@@ -1326,6 +1326,11 @@
         "starting": "正在用 \"{{fork}}\" 的数据接管 \"{{machine}}\" 上的 \"{{grand}}\"..."
       },
       "template": {
+        "apply": {
+          "description": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. The template writes Rediaccfile, docker-compose.yml, and any additional files to the repository mount",
+          "descriptionShort": "将模板应用到仓库",
+          "notFound": "模板 \"{{name}}\" 未找到。可用: {{available}}"
+        },
         "completed": "模板已应用",
         "description": "将模板应用到仓库",
         "descriptionShort": "将模板应用到仓库（docker-compose.yml + Rediaccfile）",
@@ -1333,7 +1338,29 @@
         "fileNotFound": "未找到模板文件: {{path}}",
         "fileOption": "模板 JSON 文件路径",
         "grandOption": "Grand 仓库名称（自动解析为 GUID）",
+        "list": {
+          "description": "列出 CLI 内置的所有部署模板",
+          "descriptionShort": "列出可用模板",
+          "empty": "没有可用的模板"
+        },
         "starting": "正在 \"{{machine}}\" 上将模板应用到 \"{{repository}}\"..."
+      },
+      "tunnel": {
+        "active": "隧道已激活: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
+        "closed": "隧道已关闭",
+        "containerNotFound": "在仓库 \"{{repository}}\" 中未找到容器 \"{{name}}\"",
+        "containerOption": "容器名称（仅一个运行时自动检测）",
+        "description": "创建到远程机器上容器端口的 SSH 端口转发隧道。当无歧义时自动检测容器和端口。隧道保持打开直到按下 Ctrl+C",
+        "descriptionShort": "到容器端口的 SSH 隧道",
+        "fetching": "正在从 \"{{machine}}\" 获取容器信息...",
+        "hint": "按 Ctrl+C 关闭隧道",
+        "localOption": "本地端口（默认与远程端口相同）",
+        "multipleContainers": "发现多个运行中的容器。请使用 --container (-c) 指定:\n{{list}}",
+        "multiplePorts": "\"{{container}}\" 暴露了多个端口。请指定 --port:\n{{list}}",
+        "noContainers": "未找到仓库 \"{{repository}}\" 的运行中容器",
+        "noPorts": "容器 \"{{container}}\" 没有暴露的端口。请指定 --port",
+        "noServiceIP": "容器 \"{{container}}\" 没有分配服务 IP",
+        "portOption": "要转发的远程容器端口"
       },
       "unmount": {
         "checkpointOption": "卸载前创建检查点",
@@ -1506,6 +1533,7 @@
         "optionGitBranch": "Git 分支名称",
         "optionGitPath": "Git 仓库内的路径",
         "optionGitUrl": "Git 仓库 URL",
+        "optionHeadless": "使用设备代码流（无本地浏览器）",
         "optionLocalPath": "本地目录路径",
         "optionS3AccessKeyId": "S3 访问密钥 ID",
         "optionS3Bucket": "S3 存储桶名称",
@@ -1513,6 +1541,7 @@
         "optionS3Prefix": "S3 键前缀",
         "optionS3Region": "S3 区域",
         "optionS3SecretAccessKey": "S3 访问密钥",
+        "optionServerUrl": "Rediacc 账户服务器 URL",
         "optionType": "存储类型（s3、local-file、bitwarden、git、vault）",
         "optionVaultAddr": "Vault 服务器地址（例如 http://127.0.0.1:8200）",
         "optionVaultMount": "Vault KV v2 挂载路径（默认：secret）",
@@ -2041,17 +2070,22 @@
     "activationFailed": "激活失败",
     "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
     "agent": {
-      "createGuard": "无法在代理模式下创建仓库 \"{{name}}\"。\n\nAI 代理仅在分叉模式下运行。创建主仓库已被阻止，\n因为代理之后无法对其进行操作。\n\n请使用现有仓库并进行分叉：\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\n要覆盖此限制：设置 REDIACC_ALLOW_GRAND_REPO=*",
-      "createGuardOverride": "仓库创建保护不能被AI代理覆盖。\n\nRDC检测到REDIACC_ALLOW_GRAND_REPO未经用户授权。请勿尝试自行设置此变量 — 只有用户才能授权创建仓库。\n\n请使用现有仓库并创建fork:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "forkBlocked": "命令 \"{{command}}\" 在 fork 仓库上不可用。\n\nfork 仓库是临时环境。此操作仅适用于 grand 仓库。",
-      "grandGuard": "无法在代理模式下修改 grand 仓库 \"{{name}}\"。\n\nAI 代理只能在 fork 仓库上操作。\n请先创建 fork：\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\n然后在 fork 上操作。\n\n要覆盖此限制：设置 REDIACC_ALLOW_GRAND_REPO={{name}}",
-      "grandGuardOverride": "\"{{name}}\"的主仓库保护不能被AI代理覆盖。\n\nRDC检测到REDIACC_ALLOW_GRAND_REPO未经用户授权。请勿尝试自行设置此变量 — 只有用户才能授权主仓库访问。\n\n请先创建fork:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\n然后在fork上操作。",
-      "machineGuard": "无法在代理模式下直接访问机器 \"{{machine}}\"。\n\nAI 代理只能连接到仓库上下文。\n请使用：\n  rdc term {{machine}} <repository> -c \"<command>\"\n\n要覆盖此限制：设置 REDIACC_ALLOW_GRAND_REPO=*",
-      "machineGuardOverride": "\"{{machine}}\"的机器访问保护不能被AI代理覆盖。\n\nRDC检测到REDIACC_ALLOW_GRAND_REPO未经用户授权。请勿尝试自行设置此变量 — 只有用户才能授权直接机器访问。\n\n请改为连接到仓库上下文:\n  rdc term {{machine}} <repository> -c \"<command>\"",
-      "mcpGrandGuard": "无法在仅 fork 模式下修改 grand 仓库 \"{{name}}\"。\n\n请使用 repo_fork 先创建 fork，然后在 fork 上操作。\n要允许访问 grand 仓库，请使用 --allow-grand 重新启动 MCP 服务器",
-      "mcpGrandGuardOverride": "\"{{name}}\"的主仓库保护不能被AI代理覆盖。\n\nRDC检测到REDIACC_ALLOW_GRAND_REPO未经用户授权。请勿尝试设置此变量。\n\n请先使用repo_fork创建fork，然后在fork上操作。",
-      "mcpMachineGuard": "无法在仅 fork 模式下直接访问机器。\n\n请指定一个仓库以连接到仓库上下文。\n要允许直接访问机器，请使用 --allow-grand 重新启动 MCP 服务器",
-      "mcpMachineGuardOverride": "机器访问保护不能被AI代理覆盖。\n\nRDC检测到REDIACC_ALLOW_GRAND_REPO未经用户授权。请勿尝试设置此变量。\n\n请指定一个仓库以连接到仓库上下文。"
+      "createGuard": "在代理模式下无法创建新的 grand 仓库 \"{{name}}\"。\n\n代理在仅 fork 模式下运行。Grand 仓库是生产环境，代理在创建后无法访问。\n\n请改为 fork 现有仓库：\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\n用户提示：要允许创建仓库，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
+      "createGuardOverride": "无法创建新的 grand 仓库 \"{{name}}\"。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改为 fork 现有仓库：\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "无法创建新的 grand 仓库 \"{{name}}\"。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n请改为 fork 现有仓库：\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
+      "forkBlocked": "命令 \"{{command}}\" 在 fork 仓库上不可用。\n\nFork 仓库是临时沙箱环境。此操作仅适用于 grand（生产）仓库。请要求用户直接运行此命令。",
+      "grandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\nGrand 仓库包含生产数据。请改用 fork — fork 是安全、隔离的沙箱副本。\n\n工作流程：\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作（例如：rdc repo up {{name}}:<tag-name> -m <machine> --mount）\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork\n\n用户提示：要允许直接访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。",
+      "grandGuardOverride": "\"{{name}}\" 是一个 grand（生产）仓库。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改用 fork — fork 是安全、隔离的沙箱副本：\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" 是一个 grand（生产）仓库。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n工作流程：\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
+      "machineGuard": "在代理模式下不允许直接访问机器 \"{{machine}}\"。\n\n代理必须通过仓库上下文连接以获得沙箱访问。请先 fork 一个仓库，然后连接到 fork。\n\n工作流程：\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\n用户提示：要允许直接机器访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
+      "machineGuardOverride": "不允许直接访问机器 \"{{machine}}\"。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请先 fork 一个仓库，然后连接到 fork：\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "直接机器访问覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n工作流程：\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
+      "mcpGrandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。\n如需直接访问，请要求用户使用 --allow-grand 重新启动 MCP 服务器。",
+      "mcpGrandGuardOverride": "\"{{name}}\" 是一个 grand（生产）仓库。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。",
+      "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" 是一个 grand（生产）仓库。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。",
+      "mcpMachineGuard": "在仅 fork 模式下不允许直接机器访问。\n\n代理必须通过仓库上下文连接。使用 repo_fork 创建 fork，然后连接。\n如需直接访问，请要求用户使用 --allow-grand 重新启动 MCP 服务器。",
+      "mcpMachineGuardOverride": "不允许直接机器访问。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。\n\n使用 repo_fork 创建 fork，然后连接。",
+      "mcpMachineGuardOverrideNonLinux": "直接机器访问覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n使用 repo_fork 创建 fork，然后连接。"
     },
     "authFailed": "身份验证失败",
     "authRequired": "需要身份验证。运行：rdc auth login",
@@ -2192,6 +2226,7 @@
         "pushAll": "批量推送所有仓库到存储"
       },
       "takeover": "用分支数据替换生产数据",
+      "tunnel": "到容器端口的 SSH 隧道",
       "up": "自动挂载部署"
     },
     "store": {
@@ -2384,6 +2419,19 @@
     "pending": "待处理",
     "processing": "处理中",
     "success": "成功"
+  },
+  "stores": {
+    "rediaccSetup": {
+      "browserFallback": "(如果浏览器未打开，请复制上方的URL并手动打开)",
+      "browserWillOpen": "将打开浏览器窗口进行通行密钥注册。",
+      "headlessInstructions": "您需要在有浏览器的设备上打开一个 URL。",
+      "openUrl": "在您的手机或笔记本电脑上打开此 URL：",
+      "setupComplete": "配置存储设置完成！",
+      "startingHeadlessSetup": "正在启动无界面配置存储设置...",
+      "startingSetup": "正在启动配置存储设置...",
+      "waitingForCompletion": "正在等待设置完成...",
+      "waitingForPasskey": "正在等待浏览器中的通行密钥注册..."
+    }
   },
   "table": {
     "noData": "没有要显示的数据"

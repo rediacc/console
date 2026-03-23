@@ -20,7 +20,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -106,7 +106,7 @@ async function main() {
   const errors = [];
 
   // Import the generate function and sourceHash helper
-  const { generate } = await import(GENERATOR_PATH);
+  const { generate } = await import(pathToFileURL(GENERATOR_PATH).href);
   const { computeSourceHash } = await import('./validate-translation-freshness.js');
   const matter = (await import('gray-matter')).default;
   const cliJsonEn = JSON.parse(fs.readFileSync(getCliJsonPath('en'), 'utf-8'));

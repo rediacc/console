@@ -329,38 +329,88 @@ export function registerExtendedRepoCommands(repo: Command): void {
       }
     );
 
-  // repo template <name>
-  repo
-    .command('template <name>')
+  // repo template (parent command with list + apply subcommands)
+  const template = repo
+    .command('template')
     .summary(t('commands.repo.template.descriptionShort'))
-    .description(t('commands.repo.template.description'))
+    .description(t('commands.repo.template.description'));
+
+  // repo template list
+  template
+    .command('list')
+    .summary(t('commands.repo.template.list.descriptionShort'))
+    .description(t('commands.repo.template.list.description'))
+    .action(async () => {
+      try {
+        const { TEMPLATES } = await import('../templates/embedded.generated.js');
+        const entries = Object.values(TEMPLATES);
+        if (entries.length === 0) {
+          outputService.info(t('commands.repo.template.list.empty'));
+          return;
+        }
+        for (const tmpl of entries) {
+          outputService.info(`  ${tmpl.name.padEnd(20)} ${tmpl.description}`);
+        }
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // repo template apply <template-or-repo> -m <machine> -r <repo>
+  template
+    .command('apply <template>')
+    .summary(t('commands.repo.template.apply.descriptionShort'))
+    .description(t('commands.repo.template.apply.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .requiredOption('--file <path>', t('commands.repo.template.fileOption'))
+    .requiredOption('-r, --repository <name>', t('options.repository'))
+    .option('--file <path>', t('commands.repo.template.fileOption'))
     .option('--grand <name>', t('commands.repo.template.grandOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
       async (
-        name: string,
+        templateName: string,
         options: {
           machine: string;
-          file: string;
+          repository: string;
+          file?: string;
           grand?: string;
           debug?: boolean;
           skipRouterRestart?: boolean;
         }
       ) => {
         try {
-          await assertCommandPolicy(CMD.REPO_TEMPLATE, name);
-          // Read and base64-encode template file
-          let fileContent: string;
-          try {
-            fileContent = readFileSync(options.file, 'utf-8');
-          } catch {
-            throw new Error(t('commands.repo.template.fileNotFound', { path: options.file }));
+          await assertCommandPolicy(CMD.REPO_TEMPLATE, options.repository);
+
+          let tmplBase64: string;
+
+          if (options.file) {
+            // File mode (backward compat): read local JSON file
+            let fileContent: string;
+            try {
+              fileContent = readFileSync(options.file, 'utf-8');
+            } catch {
+              throw new Error(t('commands.repo.template.fileNotFound', { path: options.file }));
+            }
+            tmplBase64 = Buffer.from(fileContent).toString('base64');
+          } else {
+            // Embedded mode: look up template by name
+            const { TEMPLATES } = await import('../templates/embedded.generated.js');
+            const embedded = TEMPLATES[templateName];
+            if (!embedded) {
+              const available = Object.keys(TEMPLATES).join(', ');
+              throw new Error(
+                t('commands.repo.template.apply.notFound', {
+                  name: templateName,
+                  available,
+                })
+              );
+            }
+            const templateJSON = { version: '2', files: embedded.files };
+            tmplBase64 = Buffer.from(JSON.stringify(templateJSON)).toString('base64');
           }
-          const tmpl = Buffer.from(fileContent).toString('base64');
-          const params: Record<string, unknown> = { tmpl };
+
+          const params: Record<string, unknown> = { tmpl: tmplBase64 };
 
           // Resolve grand repo friendly name -> GUID
           if (options.grand) {
@@ -370,13 +420,13 @@ export function registerExtendedRepoCommands(repo: Command): void {
 
           await executeRepoFunction(
             'repository_template_apply',
-            name,
+            options.repository,
             options.machine,
             params,
             options,
             {
               starting: t('commands.repo.template.starting', {
-                repository: name,
+                repository: options.repository,
                 machine: options.machine,
               }),
               completed: t('commands.repo.template.completed'),

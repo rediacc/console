@@ -131,6 +131,29 @@ export async function fetchSubscriptionLicenseReport(): Promise<SubscriptionLice
 }
 
 async function readLocalMachineId(): Promise<string> {
+  if (process.platform === 'win32') {
+    // Windows: use MachineGuid from the registry, hashed to match Linux format
+    const { execSync } = await import('node:child_process');
+    const { createHash } = await import('node:crypto');
+    const output = execSync('reg query "HKLM\\SOFTWARE\\Microsoft\\Cryptography" /v MachineGuid', {
+      encoding: 'utf-8',
+    });
+    const match = /MachineGuid\s+REG_SZ\s+(.+)/.exec(output);
+    if (!match) throw new Error('Failed to read Windows MachineGuid from registry');
+    return createHash('sha256').update(match[1].trim()).digest('hex');
+  }
+  if (process.platform === 'darwin') {
+    // macOS: use IOPlatformUUID from I/O Kit, hashed to match Linux format
+    const { execSync } = await import('node:child_process');
+    const { createHash } = await import('node:crypto');
+    const output = execSync('ioreg -rd1 -c IOPlatformExpertDevice | grep IOPlatformUUID', {
+      encoding: 'utf-8',
+    });
+    const match = /"IOPlatformUUID"\s*=\s*"([^"]+)"/.exec(output);
+    if (!match) throw new Error('Failed to read macOS IOPlatformUUID');
+    return createHash('sha256').update(match[1].trim()).digest('hex');
+  }
+  // Linux
   const { readFile } = await import('node:fs/promises');
   return (await readFile(CLIENT_MACHINE_ID_PATH, 'utf-8')).trim();
 }

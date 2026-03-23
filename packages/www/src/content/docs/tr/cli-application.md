@@ -6,7 +6,7 @@ order: 2
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "4bda0e2c4c0cf0c1"
+sourceHash: "d2315b2a16420584"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -689,6 +689,8 @@ rdc store add <name> [options]
 | `--vault-mount <path>` | {{t:cli.commands.store.add.optionVaultMount}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--vault-prefix <path>` | {{t:cli.commands.store.add.optionVaultPrefix}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--vault-namespace <ns>` | {{t:cli.commands.store.add.optionVaultNamespace}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--server-url <url>` | {{t:cli.commands.store.add.optionServerUrl}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--headless` | {{t:cli.commands.store.add.optionHeadless}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-store-list"></a>
@@ -1402,14 +1404,29 @@ rdc repo ownership <name> [options]
 
 {{t:cli.commands.repo.template.description}}
 
+<a id="cli-local-repo-template-list"></a>
+#### list
+
+{{t:cli.commands.repo.template.list.description}}
+
 ```bash
-rdc repo template <name> [options]
+rdc repo template list
+```
+
+<a id="cli-local-repo-template-apply"></a>
+#### apply
+
+{{t:cli.commands.repo.template.apply.description}}
+
+```bash
+rdc repo template apply <template> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--file <path>` | {{t:cli.commands.repo.template.fileOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--file <path>` | {{t:cli.commands.repo.template.fileOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--grand <name>` | {{t:cli.commands.repo.up.grandOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1527,7 +1544,7 @@ rdc repo sync upload [options]
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-l, --local <path>` | {{t:cli.options.localPath}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--local <path>` | {{t:cli.options.localPath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--remote <path>` | {{t:cli.options.remotePath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--mirror` | {{t:cli.options.mirrorUpload}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--verify` | {{t:cli.options.verifyChecksum}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1550,7 +1567,7 @@ rdc repo sync download [options]
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-l, --local <path>` | {{t:cli.options.localPath}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--local <path>` | {{t:cli.options.localPath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--remote <path>` | {{t:cli.options.remotePath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--mirror` | {{t:cli.options.mirrorDownload}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--verify` | {{t:cli.options.verifyChecksum}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1573,7 +1590,7 @@ rdc repo sync status [options]
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-l, --local <path>` | {{t:cli.options.localPath}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--local <path>` | {{t:cli.options.localPath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--remote <path>` | {{t:cli.options.remotePath}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -1608,6 +1625,22 @@ rdc repo snapshot list
 ```bash
 rdc repo snapshot delete
 ```
+
+<a id="cli-local-repo-tunnel"></a>
+### 7.23 tunnel
+
+{{t:cli.commands.repo.tunnel.description}}
+
+```bash
+rdc repo tunnel [machine] [repository] [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-c, --container <name>` | {{t:cli.commands.repo.tunnel.containerOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--port <port>` | {{t:cli.commands.repo.tunnel.portOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--local <port>` | {{t:cli.commands.repo.tunnel.localOption}} | {{t:cli.docs.optionLabels.no}} | - |
+
 
 ---
 

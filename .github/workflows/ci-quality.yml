@@ -513,6 +513,40 @@ jobs:
           VAULT_ADDR: http://localhost:8200
           VAULT_TOKEN: test-root-token
 
+  quality-shared-tests:
+    name: Shared Package Tests
+    runs-on: ubuntu-latest
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - name: Build shared package
+        run: npm run build --workspace=@rediacc/shared
+      - name: Run shared package tests
+        run: npm run test --workspace=@rediacc/shared
+
+  quality-cli-unit-tests:
+    name: CLI Unit Tests
+    runs-on: ubuntu-latest
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - name: Build shared packages
+        run: |
+          npm run build --workspace=@rediacc/shared
+          npm run build --workspace=@rediacc/shared-desktop
+      - name: Run CLI unit tests
+        run: npm run test:unit --workspace=@rediacc/cli
+
   quality-sql:
     name: SQL Coordinator
     runs-on: ubuntu-latest

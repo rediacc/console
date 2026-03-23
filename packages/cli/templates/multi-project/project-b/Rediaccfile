@@ -1,0 +1,19 @@
+#!/bin/bash
+
+up() {
+  mkdir -p data
+
+  if [[ ! -f secrets.env ]]; then
+    cat > secrets.env <<ENVEOF
+ADMIN_PASSWORD=$(openssl rand -hex 16)
+ENVEOF
+    echo "Generated secrets.env for project-b"
+  fi
+
+  set -a; source secrets.env; set +a
+  renet compose -- up -d
+}
+
+down() {
+  renet compose -- down
+}

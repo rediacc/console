@@ -33,11 +33,13 @@ Every command also supports `--help`:
 | `repo` | Repository lifecycle, backup, sync, snapshots | [repositories.md](repositories.md) |
 | `repo push/pull` | Backup, restore, machine-to-machine transfer | [backup.md](backup.md) |
 | `repo sync` | File transfer to/from repos | [sync.md](sync.md) |
+| `repo tunnel` | SSH port-forward tunnel to container ports | — |
 | `repo snapshot` | BTRFS point-in-time snapshots | [backup.md](backup.md) |
 | `machine` | Remote machine inspection | [machines.md](machines.md) |
 | `datastore` | Ceph RBD datastore, instant fork/unfork | [datastore.md](datastore.md) |
 | `term` | SSH terminal access + container actions | [terminal.md](terminal.md) |
 | containers | High-level container commands | [execution.md](execution.md) |
+| `store` | Config sync to external backends | [config-storage.md](config-storage.md) |
 
 ## Key patterns
 
@@ -137,6 +139,21 @@ rdc datastore unfork -m <machine> --source <image> --snapshot fork-<timestamp> -
 ```
 
 Requires a Ceph cluster (provisioned by `rdc ops up`). See [datastore.md](datastore.md) for full details.
+
+## Quick-start: SSH tunnel to a container port
+
+```bash
+# Tunnel a container's port to localhost (e.g. database access from local tools)
+rdc repo tunnel <machine> <repo> -c <container> --port 5432
+
+# Auto-detect container and port (when repo has a single running container)
+rdc repo tunnel <machine> <repo>
+
+# Map to a different local port
+rdc repo tunnel -m <machine> -r <repo> -c <container> --port 5432 --local 15432
+```
+
+Keeps the tunnel open until Ctrl+C. Requires the container to have a `rediacc.service_ip` label (assigned automatically by renet).
 
 ## Prerequisites for ops VMs (READ FIRST)
 

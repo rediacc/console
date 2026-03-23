@@ -35,6 +35,11 @@ export async function createStoreAdapter(entry: StoreEntry): Promise<IStoreAdapt
       adapter = new VaultStoreAdapter(entry);
       break;
     }
+    case 'rediacc': {
+      const { RediacStoreAdapter } = await import('./rediacc-store-adapter.js');
+      adapter = new RediacStoreAdapter(entry);
+      break;
+    }
     default:
       throw new Error(`Unknown store type: ${entry.type}`);
   }

@@ -21,6 +21,37 @@ LOCAL_ROOT_DIR="$(cd "$LOCAL_CI_DIR/.." && pwd)"
 source "$LOCAL_CI_DIR/scripts/lib/common.sh"
 
 # =============================================================================
+# PORTABLE TOOL WRAPPERS
+# =============================================================================
+
+# Portable sha256sum (macOS uses shasum -a 256)
+# Resolves once to a concrete command for use with xargs (which can't call shell functions)
+if command -v sha256sum &>/dev/null; then
+    _SHA256SUM_CMD="sha256sum"
+elif command -v shasum &>/dev/null; then
+    _SHA256SUM_CMD="shasum -a 256"
+else
+    _SHA256SUM_CMD=""
+fi
+
+_sha256sum() {
+    if [[ -z "$_SHA256SUM_CMD" ]]; then
+        log_error "No sha256 tool found (need sha256sum or shasum)"
+        exit 1
+    fi
+    $_SHA256SUM_CMD "$@"
+}
+
+# Portable sed in-place (macOS sed requires -i '' for no backup)
+_sed_i() {
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        sed -i '' "$@"
+    else
+        sed -i "$@"
+    fi
+}
+
+# =============================================================================
 # CONSOLE-SPECIFIC HELPERS
 # =============================================================================
 
@@ -32,8 +63,8 @@ compute_hash_for_paths() {
         cd "$root_dir" || exit
         find "$@" -type f -print0 2>/dev/null |
             LC_ALL=C sort -z |
-            xargs -0 sha256sum 2>/dev/null |
-            sha256sum |
+            xargs -0 $_SHA256SUM_CMD 2>/dev/null |
+            $_SHA256SUM_CMD |
             awk '{print $1}'
     )
 }
@@ -49,8 +80,8 @@ compute_hash_for_package_dirs() {
             \( -name '*.tsbuildinfo' -o -name '.DS_Store' \) -prune -o \
             -type f -print0 2>/dev/null |
             LC_ALL=C sort -z |
-            xargs -0 sha256sum 2>/dev/null |
-            sha256sum |
+            xargs -0 $_SHA256SUM_CMD 2>/dev/null |
+            $_SHA256SUM_CMD |
             awk '{print $1}'
     )
 }
@@ -98,12 +129,12 @@ ensure_deps() {
 
     current_hash="$(
         {
-            sha256sum "$LOCAL_ROOT_DIR/package.json"
-            sha256sum "$LOCAL_ROOT_DIR/package-lock.json"
+            _sha256sum "$LOCAL_ROOT_DIR/package.json"
+            _sha256sum "$LOCAL_ROOT_DIR/package-lock.json"
             if [[ -f "$LOCAL_ROOT_DIR/.npmrc" ]]; then
-                sha256sum "$LOCAL_ROOT_DIR/.npmrc"
+                _sha256sum "$LOCAL_ROOT_DIR/.npmrc"
             fi
-        } | sha256sum | awk '{print $1}'
+        } | _sha256sum | awk '{print $1}'
     )"
 
     saved_hash="$(read_stamp_hash "$stamp_file")"
@@ -163,7 +194,7 @@ ensure_cli_built() {
         {
             compute_hash_for_package_dirs "$LOCAL_ROOT_DIR" packages/cli
             cat "$packages_stamp" 2>/dev/null
-        } | sha256sum | awk '{print $1}'
+        } | _sha256sum | awk '{print $1}'
     )"
 
     saved_hash="$(read_stamp_hash "$stamp_file")"
@@ -211,7 +242,7 @@ open_browser() {
             fi
             ;;
         windows)
-            start "$url" 2>/dev/null || true
+            cmd /c start "" "$url" 2>/dev/null || true
             ;;
     esac
 }
@@ -272,6 +303,11 @@ ensure_renet_built() {
     local renet_dir="$LOCAL_ROOT_DIR/private/renet"
     local renet_bin="$renet_dir/bin/renet"
 
+    # On Windows (Git Bash / MSYS2), Go produces .exe binaries
+    case "$(uname -s)" in
+        MINGW*|MSYS*|CYGWIN*) renet_bin="$renet_dir/bin/renet.exe" ;;
+    esac
+
     if [[ -f "$renet_bin" ]]; then
         local newer_files
         newer_files=$(find "$renet_dir" \
@@ -294,6 +330,35 @@ ensure_renet_built() {
         log_error "Renet build failed: binary not found at $renet_bin"
         exit 1
     fi
+
+    # On non-Linux, also cross-compile Linux binaries for remote provisioning.
+    # The CLI uploads these to remote machines via SFTP.
+    if [[ "$(uname -s)" != "Linux" ]]; then
+        local linux_bin="$renet_dir/bin/renet-linux-amd64"
+        if [[ ! -f "$linux_bin" ]] || [[ "$renet_bin" -nt "$linux_bin" ]]; then
+            # Read license public key (same logic as build.sh dev)
+            local _xc_license_key="${LICENSE_ED25519_PUBLIC_KEY:-}"
+            if [[ -z "$_xc_license_key" ]] && [[ -f "$renet_dir/../account/.env" ]]; then
+                _xc_license_key=$(sed -n 's/^ED25519_PUBLIC_KEY=//p' "$renet_dir/../account/.env" | tr -d '\r')
+            fi
+            local _xc_key_ldflags=""
+            if [[ -n "$_xc_license_key" ]]; then
+                _xc_key_ldflags="-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=$_xc_license_key"
+            fi
+            local _xc_version
+            _xc_version="$(cd "$LOCAL_ROOT_DIR" && git describe --tags --always 2>/dev/null || echo dev)-dev"
+
+            log_step "Cross-compiling renet for linux/amd64 (remote provisioning)..."
+            (cd "$renet_dir" && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+                -ldflags="-s -w -X main.version=$_xc_version $_xc_key_ldflags" \
+                -o bin/renet-linux-amd64 ./cmd/renet)
+            log_step "Cross-compiling renet for linux/arm64 (remote provisioning)..."
+            (cd "$renet_dir" && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
+                -ldflags="-s -w -X main.version=$_xc_version $_xc_key_ldflags" \
+                -o bin/renet-linux-arm64 ./cmd/renet)
+        fi
+    fi
+
     log_info "Renet built successfully"
 }
 

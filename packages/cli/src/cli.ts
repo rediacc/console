@@ -240,11 +240,15 @@ ${t('help.examples')}
 // Provide a clear error for unsupported subcommands
 cli.on('command:*', (operands) => {
   const [first, second] = operands;
-  const commandList = cli.commands.map((c) => c.name()).filter((n) => n && n !== 'help');
+  const commandList = cli.commands
+    .filter((c) => !(c as Command & { _hidden?: boolean })._hidden)
+    .map((c) => c.name())
+    .filter((n) => n && n !== 'help');
   const parent = first ? cli.commands.find((c) => c.name() === first) : undefined;
 
   if (parent && second) {
     const subcommands = parent.commands
+      .filter((c) => !(c as Command & { _hidden?: boolean })._hidden)
       .map((c) => c.name())
       .filter((n) => n && n !== 'help')
       .join(', ');

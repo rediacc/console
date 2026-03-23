@@ -26,6 +26,9 @@ export {
   prepareRsyncPaths,
   removeTrailingSlash,
 } from './pathConverter.js';
+// SFTP fallback (for systems without rsync)
+export { sftpDownloadDirectory, sftpUploadDirectory } from './sftp-fallback.js';
+export type { SftpTransferOptions, SftpTransferResult } from './sftp-fallback.js';
 // Rsync execution
 export {
   buildRsyncArgs,

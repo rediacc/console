@@ -13,6 +13,7 @@ const VALID_STORE_TYPES = [
   'bitwarden',
   'git',
   'vault',
+  'rediacc',
 ] as const satisfies readonly StoreType[];
 
 async function validateS3Options(options: Record<string, unknown>): Promise<void> {
@@ -71,8 +72,20 @@ async function validateStoreOptions(
     }
     return;
   }
-  // vault (the only remaining valid type)
-  return validateVaultOptions(options);
+  if (storeType === 'vault') {
+    return validateVaultOptions(options);
+  }
+  // storeType === 'rediacc' — all other types handled above with early returns
+  const { setupRediacStore } = await import('../stores/rediacc-setup.js');
+  const result = await setupRediacStore({
+    serverUrl: (options.serverUrl as string | undefined) ?? DEFAULTS.PROTOCOL.SITE_URL,
+    headless: !!(options.headless ?? options.skipBrowser),
+  });
+  options.rediacApiUrl = result.apiUrl;
+  options.rediacStoreId = result.storeId;
+  options.rediacStorageKeyId = result.storageKeyId;
+  options.rediacConfigToken = result.token;
+  options.rediacWrappedCek = result.wrappedCek;
 }
 
 /**
@@ -166,6 +179,9 @@ ${t('help.examples')}
     .option('--vault-mount <path>', t('commands.store.add.optionVaultMount'))
     .option('--vault-prefix <path>', t('commands.store.add.optionVaultPrefix'))
     .option('--vault-namespace <ns>', t('commands.store.add.optionVaultNamespace'))
+    // Rediacc options
+    .option('--server-url <url>', t('commands.store.add.optionServerUrl'))
+    .option('--headless', t('commands.store.add.optionHeadless'))
     .action(async (name, options) => {
       try {
         const storeType = options.type as StoreType;
@@ -206,6 +222,11 @@ ${t('help.examples')}
           vaultMount: options.vaultMount,
           vaultPrefix: options.vaultPrefix,
           vaultNamespace: options.vaultNamespace,
+          rediacApiUrl: options.rediacApiUrl,
+          rediacStoreId: options.rediacStoreId,
+          rediacStorageKeyId: options.rediacStorageKeyId,
+          rediacConfigToken: options.rediacConfigToken,
+          rediacWrappedCek: options.rediacWrappedCek,
         });
 
         // Verify connection

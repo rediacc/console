@@ -276,6 +276,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'repo ownership': { grandGuard: true },
   'repo sync upload': { grandGuard: true },
   'repo sync download': { grandGuard: true },
+  'repo tunnel': {
+    grandGuard: true,
+    mcpExcludeReason: 'Interactive SSH tunnel — blocks until Ctrl+C',
+  },
   'repo autostart enable': { grandGuard: true, forkBlocked: true },
   'repo autostart disable': { grandGuard: true, forkBlocked: true },
   'repo takeover': { grandGuard: true },
@@ -300,7 +304,43 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   doctor: { mcpExcludeReason: 'Diagnoses local CLI installation — not a remote operation' },
   update: { mcpExcludeReason: 'CLI self-update — not a remote operation' },
-  store: { mcpExcludeReason: 'Config file sync backends — local credential management' },
+  'store add': {
+    mcpExcludeReason: 'Interactive setup requires browser for passkey/credential input',
+  },
+  'store remove': { mcpExcludeReason: 'Destructive credential operation — use CLI directly' },
+  'store push': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'write' as const,
+      descriptionOverride:
+        'Push current CLI config to a sync store (S3, Git, Bitwarden, Vault, or Rediacc)',
+    },
+  },
+  'store pull': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read' as const,
+      descriptionOverride: 'Pull CLI config from a sync store',
+    },
+  },
+  'store sync': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'write' as const,
+      descriptionOverride: 'Sync CLI config with a store (pull then push)',
+    },
+  },
+  'store list': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read' as const,
+      descriptionOverride: 'List configured sync stores',
+    },
+  },
   subscription: { mcpExcludeReason: 'License management — local concern' },
   mcp: { mcpExcludeReason: 'The MCP server itself — cannot recurse' },
 
