@@ -19,7 +19,7 @@ test.describe('Storage Management', () => {
         await dashboardPage.waitForNetworkIdle();
     });
 
-    test('02-09-02-01-credential-trace- should trace a credential configuration', async ({
+    test('02-09-03-credential-delete.test - should delete a credential', async ({
         page,
         testReporter,
     }) => {
@@ -57,7 +57,6 @@ test.describe('Storage Management', () => {
         await page.locator('.ant-select-item-option').first().click();
 
         await page.getByTestId('resource-modal-field-repositoryName-input').fill(repositoryName);
-
         await page.getByTestId('resource-modal-field-repositoryGuid-input').fill(guid);
 
         await page
@@ -69,7 +68,10 @@ test.describe('Storage Management', () => {
         testReporter.completeStep('Fill credential form', 'passed');
         testReporter.startStep('Verify credential creation');
 
-        await expect(page.getByText(repositoryName)).toBeVisible({ timeout: 15000 });
+        const repositoryItem = page.getByTestId(`resource-list-item-${guid}`);
+
+        // ✅ Önce gerçekten oluştuğunu doğrula (pro-level check)
+        await expect(repositoryItem).toBeVisible({ timeout: 15000 });
 
         const turkishOption = page
             .locator('.ant-select-item-option-content')
@@ -79,12 +81,24 @@ test.describe('Storage Management', () => {
             await turkishOption.click();
         }
 
+        testReporter.completeStep('Verify credential creation', 'passed');
+        testReporter.startStep('Verify credential deletion');
 
         const deleteButton = page.getByTestId(`resources-repository-delete-${guid}`);
         await expect(deleteButton).toBeVisible({ timeout: 15000 });
         await deleteButton.click();
 
-        testReporter.completeStep('Verify credential creation, edit and trace', 'passed');
+        const confirmDeleteButton = page
+            .locator('.ant-modal-confirm')
+            .getByRole('button', { name: /Delete/i });
+
+        await expect(confirmDeleteButton).toBeVisible({ timeout: 10000 });
+        await confirmDeleteButton.click();
+
+        // Confirm that it has been deleted in the most reliable way.
+        await expect(repositoryItem).toHaveCount(0, { timeout: 15000 });
+
+        testReporter.completeStep('Verify credential deletion', 'passed');
 
         await testReporter.finalizeTest();
     });

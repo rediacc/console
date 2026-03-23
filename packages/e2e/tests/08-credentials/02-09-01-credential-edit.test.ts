@@ -2,7 +2,7 @@ import { test, expect } from '@/base/BaseTest';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 
-test.describe('Storage Management', () => {
+test.describe('Credential Management', () => {
     let dashboardPage: DashboardPage;
     let loginPage: LoginPage;
 
@@ -15,7 +15,7 @@ test.describe('Storage Management', () => {
         await dashboardPage.waitForNetworkIdle();
     });
     const random4 = Math.floor(1000 + Math.random() * 9000); // 4 haneli random sayı
-    test('02-09-01-01-credential-edit- should create a new storage configuration', async ({
+    test('02-09-01-credential-edit.test - should edit an existing credential', async ({
         page,
         testReporter,
     }) => {
@@ -70,7 +70,7 @@ test.describe('Storage Management', () => {
         testReporter.startStep('Verify credential creation and change language');
 
         // 12-14- Verify "CREDENTIALS SQL SERVER YEDEK" exists on the page
-        await expect(page.getByText('CREDENTIALS SQL SERVER YEDEK')).toBeVisible({ timeout: 15000 });
+        await expect(page.getByText('CREDENTIALS SQL SERVER YEDEK' + random4)).toBeVisible({ timeout: 15000 });
 
         // Language selection in dialog: "Türkçe"
         // Assuming a dialog or language selector is open
