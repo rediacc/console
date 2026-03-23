@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useTranslation } from '../../i18n/react';
-import TurnstileWidget from '../TurnstileWidget';
+import { Turnstile } from '@marsidev/react-turnstile';
 import {
   ADVANCED_SLIDERS,
   type CompanySize,
@@ -281,11 +281,12 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
                     </button>
                   </form>
                   {captchaEnabled && (
-                    <TurnstileWidget
+                    <Turnstile
                       siteKey={turnstileSiteKey}
-                      action="newsletter_lead_magnet"
-                      onVerify={setTurnstileToken}
+                      options={{ action: 'newsletter_lead_magnet' }}
+                      onSuccess={setTurnstileToken}
                       onExpire={() => setTurnstileToken(null)}
+                      onError={() => setTurnstileToken(null)}
                     />
                   )}
                   {gateError && <p className="newsletter-error">{gateError}</p>}

@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
-import TurnstileWidget from './TurnstileWidget';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 const INTEREST_TO_SUBJECT: Record<string, string> = {
   'disaster-recovery': 'disasterRecovery',
@@ -194,11 +194,12 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
       )}
 
       {captchaEnabled && (
-        <TurnstileWidget
+        <Turnstile
           siteKey={turnstileSiteKey}
-          action="contact_submit"
-          onVerify={setTurnstileToken}
+          options={{ action: 'contact_submit' }}
+          onSuccess={setTurnstileToken}
           onExpire={() => setTurnstileToken(null)}
+          onError={() => setTurnstileToken(null)}
         />
       )}
 

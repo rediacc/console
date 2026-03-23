@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
-import TurnstileWidget from './TurnstileWidget';
+import { Turnstile } from '@marsidev/react-turnstile';
 import '../styles/newsletter.css';
 
 type Variant = 'inline' | 'footer' | 'sticky-bar' | 'page' | 'modal';
@@ -153,11 +153,12 @@ const NewsletterSignup: React.FC<Props> = ({
           </p>
         )}
         {captchaEnabled && (
-          <TurnstileWidget
+          <Turnstile
             siteKey={turnstileSiteKey}
-            action="newsletter_subscribe"
-            onVerify={setTurnstileToken}
+            options={{ action: 'newsletter_subscribe' }}
+            onSuccess={setTurnstileToken}
             onExpire={() => setTurnstileToken(null)}
+            onError={() => setTurnstileToken(null)}
           />
         )}
       </form>
