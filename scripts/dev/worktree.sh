@@ -202,8 +202,8 @@ remove_worktree() {
 
     # Remove worktree
     git -C "$ROOT_DIR" worktree remove --force "$wt_path" 2>/dev/null || {
-        log_warn "Could not remove worktree normally, trying force removal"
-        rm -rf "$wt_path"
+        log_warn "Could not remove worktree normally, trying sudo removal"
+        sudo rm -rf "$wt_path"
         git -C "$ROOT_DIR" worktree prune
     }
     log_info "Removed worktree: $wt_path"
