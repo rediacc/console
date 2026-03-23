@@ -144,9 +144,13 @@ export async function sftpUploadDirectory(
       try {
         const data = await fsPromises.readFile(file.absolutePath);
         const b64 = data.toString('base64');
-        await sftp.execStreaming(`base64 -d > "${remoteFilePath}"`, {
+        const exitCode = await sftp.execStreaming(`base64 -d > "${remoteFilePath}"`, {
           stdin: b64,
         });
+        if (exitCode !== 0) {
+          errors.push(`${file.relativePath}: remote write failed (exit code ${exitCode})`);
+          continue;
+        }
         filesTransferred++;
         bytesTransferred += data.length;
         options?.onProgress?.(file.relativePath, bytesTransferred, totalBytes);

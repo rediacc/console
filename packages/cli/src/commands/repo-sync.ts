@@ -290,6 +290,7 @@ async function prepareSyncConnection(
     port: details.port,
     username: details.user,
     privateKey: details.privateKey,
+    knownHosts: details.known_hosts,
   };
 
   return { details, remotePath, sftpRemotePath, sftpConfig };

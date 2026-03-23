@@ -21,6 +21,20 @@ import { getSecureStorage } from '../utils/secure-storage.js';
 import { storeRegistry } from './registry.js';
 import type { IStoreAdapter, PullResult, PushResult } from './types.js';
 
+/**
+ * Resolve a config name to its UUID by reading the local config file.
+ * Returns null if the file doesn't exist or can't be parsed.
+ */
+async function resolveConfigUuid(configName: string): Promise<string | null> {
+  try {
+    const { configFileStorage } = await import('../adapters/config-file-storage.js');
+    const config = await configFileStorage.load(configName);
+    return config.id;
+  } catch {
+    return null;
+  }
+}
+
 interface ConfigSessionResponse {
   newServerToken: string;
   server_secret: string;
@@ -122,11 +136,17 @@ export class RediacStoreAdapter implements IStoreAdapter {
 
   async pull(configName: string): Promise<PullResult> {
     try {
-      // List configs to find by name
+      // Resolve configName (human name like "rediacc") to its UUID,
+      // since push() stores configs keyed by UUID (rdcConfig.id).
+      const configUuid = await resolveConfigUuid(configName);
+
+      // List configs to find by UUID
       const listResponse = await this.fetchJson<ConfigListResponse>('/configs', 'GET');
       await this.updateToken(listResponse.newServerToken);
 
-      const entry = listResponse.configs.find((c) => c.configId === configName);
+      const entry = listResponse.configs.find(
+        (c) => c.configId === configUuid || c.configId === configName
+      );
       if (!entry) {
         return { success: false, error: `Config "${configName}" not found in store` };
       }

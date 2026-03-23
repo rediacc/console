@@ -47,13 +47,11 @@ class KeyctlStorage implements SecureStorage {
     // Remove existing key if present
     await this.delete(key);
     execSync(`keyctl add user "${key}" "${value}" @u`, { encoding: 'utf-8' });
-    // Set 24h timeout
-    try {
-      const keyId = execSync(`keyctl search @u user "${key}"`, { encoding: 'utf-8' }).trim();
-      execSync(`keyctl timeout ${keyId} 86400`);
-    } catch {
-      // Timeout is best-effort
-    }
+    // No timeout — passkey_secret must persist across reboots/days.
+    // The user keyring (@u) lives for the session by default; keys
+    // without an explicit timeout persist until the session ends or
+    // the key is explicitly revoked, which matches what deriveCek()
+    // expects (a missing key is fatal and asks the user to re-setup).
   }
 
   delete(key: string): Promise<void> {

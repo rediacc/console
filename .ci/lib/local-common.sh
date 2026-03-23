@@ -348,14 +348,12 @@ ensure_renet_built() {
             local _xc_version
             _xc_version="$(cd "$LOCAL_ROOT_DIR" && git describe --tags --always 2>/dev/null || echo dev)-dev"
 
-            log_step "Cross-compiling renet for linux/amd64 (remote provisioning)..."
-            (cd "$renet_dir" && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-                -ldflags="-s -w -X main.version=$_xc_version $_xc_key_ldflags" \
-                -o bin/renet-linux-amd64 ./cmd/renet)
-            log_step "Cross-compiling renet for linux/arm64 (remote provisioning)..."
-            (cd "$renet_dir" && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
-                -ldflags="-s -w -X main.version=$_xc_version $_xc_key_ldflags" \
-                -o bin/renet-linux-arm64 ./cmd/renet)
+            for arch in amd64 arm64; do
+                log_step "Cross-compiling renet for linux/${arch} (remote provisioning)..."
+                (cd "$renet_dir" && CGO_ENABLED=0 GOOS=linux GOARCH=${arch} go build \
+                    -ldflags="-s -w -X main.version=$_xc_version $_xc_key_ldflags" \
+                    -o "bin/renet-linux-${arch}" ./cmd/renet)
+            done
         fi
     fi
 
