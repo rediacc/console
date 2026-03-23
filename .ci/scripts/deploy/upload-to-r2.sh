@@ -247,16 +247,18 @@ if [[ -d "$CLI_DIR" ]]; then
         ((UPLOADED++)) || true
     fi
 
-    # Write latest.json for version discovery
-    r2_put "{\"version\":\"${VERSION}\"}" "$(r2_path "cli/latest.json")"
-    ((UPLOADED++)) || true
-
     # Copy binaries to cli/latest/ for stable download URLs
     for binary in "$CLI_DIR"/rdc-*; do
         [[ -f "$binary" ]] || continue
         local_name="$(basename "$binary")"
         r2_cp "$binary" "$(r2_path "cli/latest/${local_name}")"
     done
+
+    # Write latest.json LAST — all binaries and manifest must be in place first
+    # to avoid race conditions where latest.json points to a version whose
+    # files haven't finished uploading yet.
+    r2_put "{\"version\":\"${VERSION}\"}" "$(r2_path "cli/latest.json")"
+    ((UPLOADED++)) || true
 
     log_info "CLI: uploaded to $(r2_path "cli/v${VERSION}/") + $(r2_path "cli/latest/")"
 
