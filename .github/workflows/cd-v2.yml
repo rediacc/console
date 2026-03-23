@@ -682,7 +682,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: housekeeping
-          repositories: console,renet,middleware
+          repositories: console,renet,middleware,elite
 
       - name: Cleanup old releases, tags, and packages
         run: .ci/scripts/housekeeping/cleanup-versions.sh
