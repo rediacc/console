@@ -305,7 +305,7 @@ ensure_renet_built() {
 
     # On Windows (Git Bash / MSYS2), Go produces .exe binaries
     case "$(uname -s)" in
-        MINGW*|MSYS*|CYGWIN*) renet_bin="$renet_dir/bin/renet.exe" ;;
+        MINGW* | MSYS* | CYGWIN*) renet_bin="$renet_dir/bin/renet.exe" ;;
     esac
 
     if [[ -f "$renet_bin" ]]; then

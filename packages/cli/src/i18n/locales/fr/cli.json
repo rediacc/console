@@ -1331,7 +1331,7 @@
           "descriptionShort": "Appliquer un modèle à un dépôt",
           "notFound": "Modèle \"{{name}}\" introuvable. Disponibles : {{available}}"
         },
-        "completed": "Modèle appliqué",
+        "completed": "Modèle appliqué. Déployer avec : rdc repo up {{repository}} -m {{machine}}",
         "description": "Appliquer un modèle à un dépôt",
         "descriptionShort": "Appliquer un modèle à un dépôt (docker-compose.yml + Rediaccfile)",
         "failed": "Échec de l'application du modèle",

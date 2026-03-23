@@ -1331,7 +1331,7 @@
           "descriptionShort": "تطبيق قالب على مستودع",
           "notFound": "القالب \"{{name}}\" غير موجود. المتاح: {{available}}"
         },
-        "completed": "تم تطبيق القالب",
+        "completed": "تم تطبيق القالب. للنشر: rdc repo up {{repository}} -m {{machine}}",
         "description": "تطبيق قالب على مستودع",
         "descriptionShort": "تطبيق قالب على مستودع (docker-compose.yml + Rediaccfile)",
         "failed": "فشل تطبيق القالب",

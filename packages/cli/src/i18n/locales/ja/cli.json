@@ -1331,7 +1331,7 @@
           "descriptionShort": "リポジトリにテンプレートを適用",
           "notFound": "テンプレート \"{{name}}\" が見つかりません。利用可能: {{available}}"
         },
-        "completed": "テンプレートを適用しました",
+        "completed": "テンプレートを適用しました。デプロイ: rdc repo up {{repository}} -m {{machine}}",
         "description": "リポジトリにテンプレートを適用する",
         "descriptionShort": "リポジトリにテンプレートを適用する（docker-compose.yml + Rediaccfile）",
         "failed": "テンプレートの適用に失敗しました",

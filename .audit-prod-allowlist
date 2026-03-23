@@ -11,3 +11,9 @@
 1114952
 # fast-xml-parser numeric entity expansion bypass (incomplete fix for CVE-2026-26278, <=5.5.5)
 1115134
+# flatted prototype pollution via parse() (devDep via @vitest/ui, not runtime-exposed)
+1114934
+# h3 SSE event injection via unsanitized carriage return (transitive dep, no fix available)
+1115114
+# h3 double decoding path traversal bypass in serveStatic (transitive dep, no fix available)
+1115117

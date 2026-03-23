@@ -1331,7 +1331,7 @@
           "descriptionShort": "Применить шаблон к репозиторию",
           "notFound": "Шаблон \"{{name}}\" не найден. Доступные: {{available}}"
         },
-        "completed": "Шаблон применён",
+        "completed": "Шаблон применён. Развернуть: rdc repo up {{repository}} -m {{machine}}",
         "description": "Применить шаблон к репозиторию",
         "descriptionShort": "Применить шаблон к репозиторию (docker-compose.yml + Rediaccfile)",
         "failed": "Ошибка применения шаблона",

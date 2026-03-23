@@ -4,6 +4,8 @@ description: "Sincronice de forma segura la configuración CLI entre dispositivo
 category: "Guides"
 order: 9
 language: es
+sourceHash: "459f12eb33547c13"
+sourceCommit: "12bf0959ad816cdab93fb6410a22e4694d1a7635"
 ---
 
 # Config Storage

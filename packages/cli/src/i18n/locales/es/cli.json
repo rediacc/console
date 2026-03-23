@@ -1331,7 +1331,7 @@
           "descriptionShort": "Aplicar una plantilla a un repositorio",
           "notFound": "Plantilla \"{{name}}\" no encontrada. Disponibles: {{available}}"
         },
-        "completed": "Plantilla aplicada",
+        "completed": "Plantilla aplicada. Desplegar con: rdc repo up {{repository}} -m {{machine}}",
         "description": "Aplicar una plantilla a un repositorio",
         "descriptionShort": "Aplicar una plantilla a un repositorio (docker-compose.yml + Rediaccfile)",
         "failed": "Error al aplicar la plantilla",

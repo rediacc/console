@@ -396,7 +396,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
           } else {
             // Embedded mode: look up template by name
             const { TEMPLATES } = await import('../templates/embedded.generated.js');
-            const embedded = TEMPLATES[templateName];
+            const embedded = TEMPLATES[templateName] as (typeof TEMPLATES)[string] | undefined;
             if (!embedded) {
               const available = Object.keys(TEMPLATES).join(', ');
               throw new Error(

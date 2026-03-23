@@ -1,6 +1,6 @@
 {
   "name": "rediacc-console",
-  "version": "0.6.0",
+  "version": "0.6.15",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -113,11 +113,11 @@
     "eslint-plugin-unicorn": "^63.0.0",
     "globals": "^17.3.0",
     "jsdom": "^29.0.0",
-    "knip": "^6.0.1",
-    "syncpack": "^14.2.0",
+    "knip": "^6.0.3",
+    "syncpack": "^14.2.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.57.1"
+    "typescript-eslint": "^8.57.2"
   },
   "engines": {
     "node": ">=22.12.0"

@@ -36,16 +36,14 @@ interface TunnelTarget {
 }
 
 /**
- * Resolve which container and port to tunnel to.
- * Auto-detects container (if only one running) and port (if only one exposed).
+ * Filter running containers belonging to the target repository.
  */
-function resolveContainerTarget(
+function filterRepoContainers(
   listResult: ListResult,
   repoName: string,
   guidMap: Record<string, string>,
-  repoGuidOverride: string | undefined,
-  options: { container?: string; port?: string; local?: string }
-): TunnelTarget {
+  repoGuidOverride: string | undefined
+): ContainerInfo[] {
   const allContainers = getContainers(listResult);
   const resolve = createGuidResolver(guidMap);
 
@@ -58,10 +56,9 @@ function resolveContainerTarget(
   }
   const repoGuid = repoGuidOverride ?? nameToGuid.get(repoName);
 
-  // Filter to running containers in the target repository.
   // The container's "repository" field may be a GUID, a resolved name, or
   // a name with duplicated tag (e.g. "repo:tag:tag" from renet fork labeling).
-  const repoContainers = allContainers.filter((c) => {
+  return allContainers.filter((c) => {
     const repo = c.repository;
     const resolvedName = resolve(repo);
     return (
@@ -72,57 +69,81 @@ function resolveContainerTarget(
       c.state === 'running'
     );
   });
+}
 
-  if (repoContainers.length === 0) {
-    throw new Error(t('commands.repo.tunnel.noContainers', { repository: repoName }));
-  }
-
-  // Select container
-  let container: ContainerInfo;
-  if (options.container) {
-    const found = repoContainers.find((c) => c.name === options.container);
+/**
+ * Select a single container from the list by name, or auto-select if only one.
+ */
+function selectContainer(
+  repoContainers: ContainerInfo[],
+  repoName: string,
+  containerName?: string
+): ContainerInfo {
+  if (containerName) {
+    const found = repoContainers.find((c) => c.name === containerName);
     if (!found) {
       throw new Error(
         t('commands.repo.tunnel.containerNotFound', {
-          name: options.container,
+          name: containerName,
           repository: repoName,
         })
       );
     }
-    container = found;
-  } else if (repoContainers.length === 1) {
-    container = repoContainers[0];
-  } else {
-    const list = repoContainers.map((c) => `  - ${c.name}`).join('\n');
-    throw new Error(t('commands.repo.tunnel.multipleContainers', { list }));
+    return found;
+  }
+  if (repoContainers.length === 1) {
+    return repoContainers[0];
+  }
+  const list = repoContainers.map((c) => `  - ${c.name}`).join('\n');
+  throw new Error(t('commands.repo.tunnel.multipleContainers', { list }));
+}
+
+/**
+ * Resolve the remote port from labels, exposed ports, or explicit option.
+ */
+function resolvePort(container: ContainerInfo, portOption?: string): number {
+  if (portOption) {
+    return Number.parseInt(portOption, 10);
+  }
+  const servicePort = container.labels?.['rediacc.service_port'];
+  if (servicePort) {
+    return Number.parseInt(servicePort, 10);
+  }
+  const exposedPorts = container.exposed_ports ?? [];
+  if (exposedPorts.length === 1) {
+    return Number.parseInt(exposedPorts[0].port, 10);
+  }
+  if (exposedPorts.length === 0) {
+    throw new Error(t('commands.repo.tunnel.noPorts', { container: container.name }));
+  }
+  const list = exposedPorts.map((p) => `  - ${p.port}/${p.protocol}`).join('\n');
+  throw new Error(t('commands.repo.tunnel.multiplePorts', { container: container.name, list }));
+}
+
+/**
+ * Resolve which container and port to tunnel to.
+ * Auto-detects container (if only one running) and port (if only one exposed).
+ */
+function resolveContainerTarget(
+  listResult: ListResult,
+  repoName: string,
+  guidMap: Record<string, string>,
+  repoGuidOverride: string | undefined,
+  options: { container?: string; port?: string; local?: string }
+): TunnelTarget {
+  const repoContainers = filterRepoContainers(listResult, repoName, guidMap, repoGuidOverride);
+  if (repoContainers.length === 0) {
+    throw new Error(t('commands.repo.tunnel.noContainers', { repository: repoName }));
   }
 
-  // Extract service IP from rediacc labels
+  const container = selectContainer(repoContainers, repoName, options.container);
+
   const remoteIP = container.labels?.['rediacc.service_ip'];
   if (!remoteIP) {
     throw new Error(t('commands.repo.tunnel.noServiceIP', { container: container.name }));
   }
 
-  // Resolve port
-  let remotePort: number;
-  if (options.port) {
-    remotePort = Number.parseInt(options.port, 10);
-  } else {
-    const servicePort = container.labels?.['rediacc.service_port'];
-    const exposedPorts = container.exposed_ports ?? [];
-
-    if (servicePort) {
-      remotePort = Number.parseInt(servicePort, 10);
-    } else if (exposedPorts.length === 1) {
-      remotePort = Number.parseInt(exposedPorts[0].port, 10);
-    } else if (exposedPorts.length === 0) {
-      throw new Error(t('commands.repo.tunnel.noPorts', { container: container.name }));
-    } else {
-      const list = exposedPorts.map((p) => `  - ${p.port}/${p.protocol}`).join('\n');
-      throw new Error(t('commands.repo.tunnel.multiplePorts', { container: container.name, list }));
-    }
-  }
-
+  const remotePort = resolvePort(container, options.port);
   const localPort = options.local ? Number.parseInt(options.local, 10) : remotePort;
 
   return { containerName: container.name, remoteIP, remotePort, localPort };
@@ -278,7 +299,7 @@ export function registerRepoTunnelCommand(repoCommand: Command): void {
   tunnel.addHelpText(
     'after',
     `
-Examples:
+${t('help.examples')}
   $ rdc repo tunnel hostinger sonarqube -c sonarqube-database --port 5432
   $ rdc repo tunnel hostinger sonarqube                    # auto-detect container & port
   $ rdc repo tunnel -m hostinger -r sonarqube --port 5432 --local 15432

@@ -1331,7 +1331,7 @@
           "descriptionShort": "Bir depoya şablon uygula",
           "notFound": "\"{{name}}\" şablonu bulunamadı. Mevcut: {{available}}"
         },
-        "completed": "Şablon uygulandı",
+        "completed": "Şablon uygulandı. Dağıtmak için: rdc repo up {{repository}} -m {{machine}}",
         "description": "Depoya şablon uygula",
         "descriptionShort": "Depoya şablon uygula (docker-compose.yml + Rediaccfile)",
         "failed": "Şablon uygulama başarısız",

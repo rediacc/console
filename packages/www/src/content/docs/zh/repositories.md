@@ -4,7 +4,8 @@ description: 在远程机器上创建、管理和操作 LUKS 加密仓库。
 category: Guides
 order: 4
 language: zh
-sourceHash: "5faf701157696057"
+sourceHash: "f9d64d1323b2952d"
+sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
 # 仓库
@@ -118,7 +119,7 @@ rdc repo ownership my-app -m server-1
 应用模板以使用文件初始化仓库：
 
 ```bash
-rdc repo template my-app -m server-1 --file ./my-template.tar.gz
+rdc repo template apply my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## 删除

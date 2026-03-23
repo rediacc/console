@@ -1331,7 +1331,7 @@
           "descriptionShort": "将模板应用到仓库",
           "notFound": "模板 \"{{name}}\" 未找到。可用: {{available}}"
         },
-        "completed": "模板已应用",
+        "completed": "模板已应用。部署命令: rdc repo up {{repository}} -m {{machine}}",
         "description": "将模板应用到仓库",
         "descriptionShort": "将模板应用到仓库（docker-compose.yml + Rediaccfile）",
         "failed": "模板应用失败",

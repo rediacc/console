@@ -1331,7 +1331,7 @@
           "descriptionShort": "Eine Vorlage auf ein Repository anwenden",
           "notFound": "Vorlage \"{{name}}\" nicht gefunden. Verfügbar: {{available}}"
         },
-        "completed": "Vorlage angewendet",
+        "completed": "Vorlage angewendet. Bereitstellen mit: rdc repo up {{repository}} -m {{machine}}",
         "description": "Vorlage auf ein Repository anwenden",
         "descriptionShort": "Eine Vorlage auf ein Repository anwenden (docker-compose.yml + Rediaccfile)",
         "failed": "Vorlagen-Anwendung fehlgeschlagen",

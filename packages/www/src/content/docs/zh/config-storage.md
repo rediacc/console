@@ -4,6 +4,8 @@ description: "使用零知识加密在设备和团队之间安全同步CLI配置
 category: "Guides"
 order: 9
 language: zh
+sourceHash: "459f12eb33547c13"
+sourceCommit: "12bf0959ad816cdab93fb6410a22e4694d1a7635"
 ---
 
 # Config Storage
