@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
-import TurnstileWidget from './TurnstileWidget';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 declare global {
   interface Window {
@@ -313,11 +313,12 @@ const ContactModal: React.FC = () => {
             )}
 
             {captchaEnabled && (
-              <TurnstileWidget
+              <Turnstile
                 siteKey={turnstileSiteKey}
-                action="contact_submit"
-                onVerify={setTurnstileToken}
+                options={{ action: 'contact_submit' }}
+                onSuccess={setTurnstileToken}
                 onExpire={() => setTurnstileToken(null)}
+                onError={() => setTurnstileToken(null)}
               />
             )}
 
