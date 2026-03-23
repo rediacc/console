@@ -34,6 +34,10 @@ GHCR_PACKAGES=("api" "bridge" "web" "plugin-terminal" "plugin-browser" "cli")
 # Repos to clean deployments from
 DEPLOYMENT_REPOS=("console")
 
+# Repos to clean stale branches from (all repos in the org)
+BRANCH_REPOS=("console" "renet" "middleware" "account" "elite" "generative" "growth" "homebrew-tap" "sql")
+BRANCH_MAX_AGE_DAYS=30
+
 # Release repo
 RELEASE_REPO="rediacc/console"
 
@@ -651,6 +655,90 @@ cleanup_d1_databases() {
 }
 
 # =============================================================================
+# PHASE 8: STALE BRANCHES
+# Delete branches with no open PR and no commits in the last N days.
+# Runs across all org repos to prevent accumulation from merged PRs,
+# bot-created branches, and abandoned feature branches.
+# =============================================================================
+
+cleanup_stale_branches() {
+    log_step "Phase 8: Cleaning up stale branches (>${BRANCH_MAX_AGE_DAYS} days, no open PR)"
+
+    local now_epoch
+    now_epoch="$(date +%s)"
+    local max_age_seconds=$((BRANCH_MAX_AGE_DAYS * 86400))
+
+    for repo_name in "${BRANCH_REPOS[@]}"; do
+        local full_repo="$GITHUB_ORG/$repo_name"
+
+        log_step "  Processing branches for $full_repo"
+
+        # List all branches
+        local branches
+        branches="$(gh api "repos/$full_repo/branches?per_page=100" --jq '.[].name' 2>/dev/null || echo "")"
+
+        if [[ -z "$branches" ]]; then
+            log_debug "  No branches found (or API error)"
+            continue
+        fi
+
+        local deleted=0
+        local kept=0
+
+        while IFS= read -r branch; do
+            [[ -z "$branch" ]] && continue
+            [[ "$branch" == "main" ]] && continue
+
+            # Check for open PR targeting this branch as head
+            local open_prs
+            open_prs="$(gh api "repos/$full_repo/pulls?head=$GITHUB_ORG:$branch&state=open&per_page=1" --jq 'length' 2>/dev/null || echo "0")"
+
+            if [[ "$open_prs" -gt 0 ]]; then
+                log_debug "    Keeping $branch (has open PR)"
+                kept=$((kept + 1))
+                continue
+            fi
+
+            # Check last commit date
+            local last_commit_date
+            last_commit_date="$(gh api "repos/$full_repo/branches/$branch" --jq '.commit.commit.committer.date' 2>/dev/null || echo "")"
+
+            if [[ -z "$last_commit_date" ]]; then
+                log_debug "    Keeping $branch (cannot determine age)"
+                kept=$((kept + 1))
+                continue
+            fi
+
+            local commit_epoch
+            commit_epoch="$(date -d "$last_commit_date" +%s 2>/dev/null || echo "0")"
+            local age_seconds=$((now_epoch - commit_epoch))
+
+            if [[ $age_seconds -lt $max_age_seconds ]]; then
+                log_debug "    Keeping $branch ($((age_seconds / 86400)) days old)"
+                kept=$((kept + 1))
+                continue
+            fi
+
+            local age_days=$((age_seconds / 86400))
+
+            if [[ "$DRY_RUN" == "true" ]]; then
+                log_warn "    [DRY-RUN] Would delete $branch (${age_days} days old, no open PR)"
+                deleted=$((deleted + 1))
+            else
+                if gh api -X DELETE "repos/$full_repo/git/refs/heads/$branch" 2>/dev/null; then
+                    log_info "    Deleted $branch (${age_days} days old)"
+                    deleted=$((deleted + 1))
+                else
+                    log_warn "    Failed to delete $branch"
+                fi
+            fi
+        done <<<"$branches"
+
+        log_info "  Branches ($repo_name): deleted $deleted, kept $kept"
+    done
+}
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
@@ -674,6 +762,8 @@ echo ""
 cleanup_environments
 echo ""
 cleanup_d1_databases
+echo ""
+cleanup_stale_branches
 
 echo ""
 log_info "Housekeeping complete"
