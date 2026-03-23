@@ -602,6 +602,8 @@ jobs:
 
   # ============================================================================
   # VALIDATE INSTALL METHODS - Test all documented installation methods
+  # Skipped in retry mode: retry reuses existing R2 binaries without bumping
+  # version, so the version in package.json won't match what's on R2.
   # ============================================================================
   validate-install-methods:
     name: Validate Install Methods
@@ -609,6 +611,7 @@ jobs:
     if: >-
       success() &&
       needs.init.outputs.skip_release != 'true' &&
+      needs.init.outputs.retry_mode != 'true' &&
       !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
     uses: ./.github/workflows/ct-install-methods.yml
     with:
