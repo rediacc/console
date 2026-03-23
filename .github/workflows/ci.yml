@@ -185,7 +185,6 @@ jobs:
       ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
       ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
       ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-      ACCOUNT_ADMIN_EMAIL: ${{ secrets.ACCOUNT_ADMIN_EMAIL }}
       STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
       STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
 
@@ -719,7 +718,7 @@ jobs:
           SECRET_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
           SECRET_STRIPE_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
           SECRET_STRIPE_WEBHOOK: ${{ steps.stripe-webhook.outputs.stripe_webhook_secret }}
-          SECRET_ADMIN_EMAIL: ${{ secrets.ACCOUNT_ADMIN_EMAIL }}
+          SECRET_ADMIN_EMAIL: ${{ vars.ACCOUNT_ADMIN_EMAIL }}
           SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
           SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
           SECRET_SES_REGION: ${{ vars.AWS_SES_REGION }}
