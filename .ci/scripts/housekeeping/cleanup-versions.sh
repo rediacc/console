@@ -264,7 +264,9 @@ cleanup_packages() {
         # The API returns newest first by default. We fetch 100 per page which is
         # enough to apply retention (keep N) and clean up a batch per run.
         local versions
-        versions="$(gh api "orgs/$GITHUB_ORG/packages/container/$encoded_package/versions?per_page=100" \
+        # Use repo-level API (not org-level) because GitHub App tokens
+        # don't support org-level package operations.
+        versions="$(gh api "repos/$RELEASE_REPO/packages/container/$encoded_package/versions?per_page=100" \
             --jq '[.[] | {id: .id, tags: .metadata.container.tags, created: .created_at}] | sort_by(.created) | reverse' \
             2>/dev/null || echo "[]")"
 
@@ -296,7 +298,7 @@ cleanup_packages() {
                     log_warn "  [DRY-RUN] Would delete version: $version_id (tags: $tags, created: $created_at)"
                 else
                     local api_output
-                    api_output="$(gh api -X DELETE "orgs/$GITHUB_ORG/packages/container/$encoded_package/versions/$version_id" 2>&1)"
+                    api_output="$(gh api -X DELETE "repos/$RELEASE_REPO/packages/container/$encoded_package/versions/$version_id" 2>&1)"
                     local api_exit=$?
 
                     if [[ $api_exit -eq 0 ]]; then
