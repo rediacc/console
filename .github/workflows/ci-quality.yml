@@ -21,8 +21,7 @@ on:
         required: false
       ACCOUNT_JWT_SECRET:
         required: false
-      ACCOUNT_ADMIN_EMAIL:
-        required: false
+      # ACCOUNT_ADMIN_EMAIL moved to org variable (vars.ACCOUNT_ADMIN_EMAIL)
       STRIPE_SANDBOX_SECRET_KEY:
         required: false
       STRIPE_SANDBOX_WEBHOOK_SECRET:
@@ -467,7 +466,7 @@ jobs:
           ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
           API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-          ADMIN_EMAIL: ${{ secrets.ACCOUNT_ADMIN_EMAIL }}
+          ADMIN_EMAIL: ${{ vars.ACCOUNT_ADMIN_EMAIL }}
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
           STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
       - name: Upload E2E report
