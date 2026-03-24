@@ -28,7 +28,7 @@ Each layer protects against a different threat:
 ### Key Hierarchy
 
 ```
-Passkey (Bitwarden / iCloud / Windows Hello)
+Passkey (YubiKey / iCloud Keychain / 1Password)
   │
   ├─ PRF("rediacc-secret-v1") → passkey_secret (never transmitted to server)
   ├─ PRF("rediacc-x25519-v1") → X25519 identity key pair (for member key distribution)

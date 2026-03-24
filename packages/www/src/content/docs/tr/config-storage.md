@@ -14,7 +14,7 @@ Rediacc yapılandırma depolama sağlayıcısı, sıfır bilgi şifrelemesi ile 
 
 ## Ön Koşullar
 
-- **PRF destekli passkey sağlayıcısı**: Bitwarden, iCloud Keychain veya Windows Hello
+- **PRF destekli passkey sağlayıcısı**: bir FIDO2 güvenlik anahtarı (ör. YubiKey), iCloud Keychain, Google Password Manager, 1Password veya Dashlane
 - **2FA etkinleştirilmiş** organizasyon sahipleri/yöneticiler için (store kurulumu ve üye yönetimi için gerekli)
 - **Hesap aboneliği** config storage etkinleştirilmiş olarak
 
@@ -43,7 +43,7 @@ rdc store add my-config --type rediacc
 ```
 
 1. Rediacc hesap portalına bir tarayıcı penceresi açılır
-2. Bir passkey kaydedin (Bitwarden/iCloud/Windows Hello açılan penceresi)
+2. Bir passkey kaydedin (YubiKey/iCloud Keychain/1Password açılan penceresi)
 3. Passkey'in PRF uzantısı şifreleme anahtarlarınızı türetir
 4. Anahtarlar işletim sisteminizin yerel güvenli depolamasında saklanır (Keychain/keyctl/DPAPI)
 5. Tamam -- hatırlanacak şifre yok
@@ -126,9 +126,11 @@ Tam güvenlik mimarisi için [Security Guide](/docs/SECURITY-CONFIG-STORAGE.md) 
 ### "Passkey must support PRF extension"
 
 Passkey sağlayıcınız PRF uzantısını desteklemiyor. Şunları kullanın:
-- Bitwarden (masaüstü uygulaması veya tarayıcı uzantısı)
+- Bir FIDO2 güvenlik anahtarı (ör. YubiKey)
 - iCloud Keychain (macOS/iOS'ta Safari)
-- Windows Hello
+- Google Password Manager (Android/ChromeOS'ta Chrome)
+- 1Password
+- Dashlane
 
 ### "Two-factor authentication required"
 

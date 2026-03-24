@@ -14,7 +14,7 @@ sourceCommit: "12bf0959ad816cdab93fb6410a22e4694d1a7635"
 
 ## المتطلبات الأساسية
 
-- **مزود Passkey مع دعم PRF**: Bitwarden أو iCloud Keychain أو Windows Hello
+- **مزود Passkey مع دعم PRF**: مفتاح أمان FIDO2 (مثل YubiKey) أو iCloud Keychain أو Google Password Manager أو 1Password أو Dashlane
 - **تفعيل المصادقة الثنائية** لمالكي/مسؤولي المؤسسة (مطلوب لإعداد المتجر وإدارة الأعضاء)
 - **اشتراك حساب** مع تفعيل config storage
 
@@ -43,7 +43,7 @@ rdc store add my-config --type rediacc
 ```
 
 1. تفتح نافذة متصفح إلى بوابة حساب Rediacc
-2. سجّل passkey (نافذة منبثقة من Bitwarden/iCloud/Windows Hello)
+2. سجّل passkey (نافذة منبثقة من YubiKey/iCloud Keychain/1Password)
 3. يشتق امتداد PRF الخاص بـ passkey مفاتيح التشفير الخاصة بك
 4. يتم تخزين المفاتيح في التخزين الآمن الأصلي لنظام التشغيل (Keychain/keyctl/DPAPI)
 5. تم -- لا توجد كلمة مرور للتذكر
@@ -126,9 +126,11 @@ rdc store list
 ### "Passkey must support PRF extension"
 
 مزود passkey الخاص بك لا يدعم امتداد PRF. استخدم:
-- Bitwarden (تطبيق سطح المكتب أو إضافة المتصفح)
+- مفتاح أمان FIDO2 (مثل YubiKey)
 - iCloud Keychain (Safari على macOS/iOS)
-- Windows Hello
+- Google Password Manager (Chrome على Android/ChromeOS)
+- 1Password
+- Dashlane
 
 ### "Two-factor authentication required"
 

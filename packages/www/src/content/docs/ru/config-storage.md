@@ -14,7 +14,7 @@ sourceCommit: "12bf0959ad816cdab93fb6410a22e4694d1a7635"
 
 ## Предварительные требования
 
-- **Провайдер passkey с поддержкой PRF**: Bitwarden, iCloud Keychain или Windows Hello
+- **Провайдер passkey с поддержкой PRF**: аппаратный ключ безопасности FIDO2 (например, YubiKey), iCloud Keychain, Google Password Manager, 1Password или Dashlane
 - **Включённая 2FA** для владельцев/администраторов организации (требуется для настройки хранилища и управления участниками)
 - **Подписка аккаунта** с включённым config storage
 
@@ -43,7 +43,7 @@ rdc store add my-config --type rediacc
 ```
 
 1. Открывается окно браузера с порталом аккаунта Rediacc
-2. Зарегистрируйте passkey (всплывающее окно Bitwarden/iCloud/Windows Hello)
+2. Зарегистрируйте passkey (всплывающее окно YubiKey/iCloud Keychain/1Password)
 3. PRF-расширение passkey выводит ваши ключи шифрования
 4. Ключи сохраняются в нативном защищённом хранилище вашей ОС (Keychain/keyctl/DPAPI)
 5. Готово -- пароль запоминать не нужно
@@ -126,9 +126,11 @@ rdc store list
 ### "Passkey must support PRF extension"
 
 Ваш провайдер passkey не поддерживает расширение PRF. Используйте:
-- Bitwarden (десктопное приложение или расширение браузера)
+- Аппаратный ключ безопасности FIDO2 (например, YubiKey)
 - iCloud Keychain (Safari на macOS/iOS)
-- Windows Hello
+- Google Password Manager (Chrome на Android/ChromeOS)
+- 1Password
+- Dashlane
 
 ### "Two-factor authentication required"
 

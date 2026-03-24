@@ -12,7 +12,7 @@ The Rediacc config storage provider syncs your CLI configuration across devices 
 
 ## Prerequisites
 
-- **Passkey provider with PRF support**: Bitwarden, iCloud Keychain, or Windows Hello
+- **Passkey provider with PRF support**: a FIDO2 security key (e.g. YubiKey), iCloud Keychain, Google Password Manager, 1Password, or Dashlane
 - **2FA enabled** for org owners/admins (required for store setup and member management)
 - **Account subscription** with config storage enabled
 
@@ -41,7 +41,7 @@ rdc store add my-config --type rediacc
 ```
 
 1. A browser window opens to the Rediacc account portal
-2. Register a passkey (Bitwarden/iCloud/Windows Hello popup)
+2. Register a passkey (YubiKey/iCloud Keychain/1Password popup)
 3. The passkey's PRF extension derives your encryption keys
 4. Keys are stored in your OS-native secure storage (Keychain/keyctl/DPAPI)
 5. Done — no password to remember
@@ -124,9 +124,11 @@ For the full security architecture, see [Security Guide](/docs/SECURITY-CONFIG-S
 ### "Passkey must support PRF extension"
 
 Your passkey provider doesn't support the PRF extension. Use:
-- Bitwarden (desktop app or browser extension)
+- A FIDO2 security key (e.g. YubiKey)
 - iCloud Keychain (Safari on macOS/iOS)
-- Windows Hello
+- Google Password Manager (Chrome on Android/ChromeOS)
+- 1Password
+- Dashlane
 
 ### "Two-factor authentication required"
 

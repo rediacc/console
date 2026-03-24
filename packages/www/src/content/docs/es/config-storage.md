@@ -14,7 +14,7 @@ El proveedor de almacenamiento de configuración Rediacc sincroniza su configura
 
 ## Requisitos previos
 
-- **Proveedor de passkey con soporte PRF**: Bitwarden, iCloud Keychain o Windows Hello
+- **Proveedor de passkey con soporte PRF**: una llave de seguridad FIDO2 (ej. YubiKey), iCloud Keychain, Google Password Manager, 1Password o Dashlane
 - **2FA habilitado** para propietarios/administradores de organización (requerido para la configuración del store y gestión de miembros)
 - **Suscripción de cuenta** con config storage habilitado
 
@@ -43,7 +43,7 @@ rdc store add my-config --type rediacc
 ```
 
 1. Se abre una ventana del navegador en el portal de cuenta Rediacc
-2. Registre un passkey (ventana emergente de Bitwarden/iCloud/Windows Hello)
+2. Registre un passkey (ventana emergente de YubiKey/iCloud Keychain/1Password)
 3. La extensión PRF del passkey deriva sus claves de cifrado
 4. Las claves se almacenan en el almacenamiento seguro nativo de su SO (Keychain/keyctl/DPAPI)
 5. Listo -- no hay contraseña que recordar
@@ -126,9 +126,11 @@ Para la arquitectura de seguridad completa, consulte el [Security Guide](/docs/S
 ### "Passkey must support PRF extension"
 
 Su proveedor de passkey no soporta la extensión PRF. Use:
-- Bitwarden (aplicación de escritorio o extensión de navegador)
+- Una llave de seguridad FIDO2 (ej. YubiKey)
 - iCloud Keychain (Safari en macOS/iOS)
-- Windows Hello
+- Google Password Manager (Chrome en Android/ChromeOS)
+- 1Password
+- Dashlane
 
 ### "Two-factor authentication required"
 
