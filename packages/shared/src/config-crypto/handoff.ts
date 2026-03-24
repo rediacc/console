@@ -21,6 +21,17 @@ function buf(data: Uint8Array): ArrayBuffer {
 
 const HANDOFF_HKDF_INFO = 'rediacc-cek-handoff-v1';
 
+async function requireX25519(): Promise<void> {
+  try {
+    await crypto.subtle.generateKey({ name: 'X25519' }, false, ['deriveBits']);
+  } catch {
+    throw new Error(
+      'Your browser does not support X25519 encryption. ' +
+        'Please update to Chrome 133+, Edge 133+, Firefox 130+, or Safari 17+.'
+    );
+  }
+}
+
 /**
  * Encrypt a CEK for a recipient using their X25519 public key.
  * Admin's browser calls this to distribute CEK to a new member.
@@ -33,6 +44,7 @@ export async function cekHandoffEncrypt(
   cekRaw: Uint8Array,
   recipientPublicKey: CryptoKey
 ): Promise<CekHandoffBlob> {
+  await requireX25519();
   // Generate ephemeral X25519 key pair
   const ephKeyPair = (await crypto.subtle.generateKey({ name: 'X25519' }, true, [
     'deriveBits',
@@ -89,6 +101,7 @@ export async function cekHandoffDecrypt(
   blob: CekHandoffBlob,
   recipientPrivateKey: CryptoKey
 ): Promise<Uint8Array> {
+  await requireX25519();
   // Import ephemeral public key
   const ephPublicKey = await crypto.subtle.importKey(
     'spki',
