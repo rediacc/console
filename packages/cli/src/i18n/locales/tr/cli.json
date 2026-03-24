@@ -390,18 +390,7 @@
         "alreadyExists": "\"{{name}}\" yapılandırması zaten mevcut",
         "description": "Yeni bir adlandırılmış yapılandırma dosyası oluşturun",
         "optionMasterPassword": "Kaynakları bir ana şifreyle şifreleyin",
-        "optionS3AccessKeyId": "S3 erişim anahtarı kimliği",
-        "optionS3Bucket": "S3 paket adı",
-        "optionS3Endpoint": "S3 uç nokta URL'si",
-        "optionS3Prefix": "S3 paketindeki anahtar ön eki",
-        "optionS3Region": "S3 bölgesi",
-        "optionS3SecretAccessKey": "S3 gizli erişim anahtarı",
-        "promptS3SecretAccessKey": "S3 gizli erişim anahtarı:",
-        "s3Required": "S3 kaynak durumu için --s3-endpoint, --s3-bucket ve --s3-access-key-id gereklidir",
-        "s3SecretRequired": "S3 gizli erişim anahtarı gereklidir",
-        "s3Verified": "S3 erişimi doğrulandı",
-        "success": "\"{{name}}\" yapılandırması başlatıldı",
-        "verifyingS3": "S3 erişimi doğrulanıyor..."
+        "success": "\"{{name}}\" yapılandırması başlatıldı"
       },
       "list": {
         "description": "Tüm yapılandırma dosyalarını listeleyin",
@@ -519,7 +508,7 @@
         }
       },
       "set": {
-        "description": "Varsayılan bir değer belirleyin (takım, bölge, köprü, makine)",
+        "description": "Varsayılan bir değer belirleyin (takım, bölge, köprü)",
         "success": "\"{{key}}\" değeri \"{{value}}\" olarak ayarlandı"
       },
       "setRenet": {
@@ -533,6 +522,27 @@
       "show": {
         "description": "Geçerli yapılandırma ayrıntılarını gösterin",
         "noConfig": "Etkin yapılandırma yok. Oluşturun: rdc config init"
+      },
+      "ssh": {
+        "description": "SSH anahtar yapılandırmasını yönet",
+        "remove": {
+          "description": "Geçerli yapılandırmadan SSH anahtarını kaldır",
+          "noKey": "SSH anahtarı yapılandırılmamış",
+          "success": "SSH anahtarı kaldırıldı"
+        },
+        "set": {
+          "description": "Geçerli yapılandırma için SSH anahtarını ayarla",
+          "embedWarning": "Anahtar içeriği yapılandırma dosyasında saklanacak",
+          "invalidKey": "Dosya geçerli bir SSH özel anahtarı içermiyor",
+          "keyNotFound": "SSH anahtar dosyası bulunamadı: {{path}}",
+          "optionEmbed": "Yol saklamak yerine anahtar içeriğini yapılandırmaya göm",
+          "optionKey": "SSH özel anahtar dosyasının yolu",
+          "success": "SSH anahtarı yapılandırıldı"
+        },
+        "show": {
+          "description": "Geçerli SSH anahtar yapılandırmasını göster",
+          "noKey": "SSH anahtarı yapılandırılmamış"
+        }
       },
       "storage": {
         "description": "Mevcut yapılandırmadaki depolama arka uçlarını yönet",
@@ -1520,78 +1530,6 @@
         "description": "Depolama kasası yönetimi (yalnızca bulut adaptörü)"
       }
     },
-    "store": {
-      "add": {
-        "addedButUnverified": "\"{{name}}\" deposu eklendi ancak bağlantı doğrulanamadı",
-        "alreadyExists": "\"{{name}}\" deposu zaten mevcut",
-        "description": "Yeni bir eşitleme deposu ekleyin",
-        "gitUrlRequired": "Git depoları için --git-url gereklidir",
-        "invalidType": "Geçersiz depo türü: \"{{type}}\". Geçerli türler: {{valid}}",
-        "localPathRequired": "Yerel dosya depoları için --local-path gereklidir",
-        "optionBwFolderId": "Yapılandırma öğelerini düzenlemek için Bitwarden klasör kimliği (isteğe bağlı)",
-        "optionEncryptionKey": "Bu depo için şifreleme anahtarı",
-        "optionGitBranch": "Git dal adı",
-        "optionGitPath": "Git deposu içindeki yol",
-        "optionGitUrl": "Git deposu URL'si",
-        "optionHeadless": "Cihaz kodu akışını kullan (yerel tarayıcı olmadan)",
-        "optionLocalPath": "Yerel dizin yolu",
-        "optionS3AccessKeyId": "S3 erişim anahtarı kimliği",
-        "optionS3Bucket": "S3 paket adı",
-        "optionS3Endpoint": "S3 uç nokta URL'si",
-        "optionS3Prefix": "S3 anahtar ön eki",
-        "optionS3Region": "S3 bölgesi",
-        "optionS3SecretAccessKey": "S3 gizli erişim anahtarı",
-        "optionServerUrl": "Rediacc hesap sunucusu URL'si",
-        "optionType": "Depo türü (s3, local-file, bitwarden, git, vault)",
-        "optionVaultAddr": "Vault sunucu adresi (ör. http://127.0.0.1:8200)",
-        "optionVaultMount": "Vault KV v2 bağlama yolu (varsayılan: secret)",
-        "optionVaultNamespace": "Vault ad alanı (yalnızca kurumsal)",
-        "optionVaultPrefix": "Vault KV motoru içindeki yol ön eki (varsayılan: rdc/configs)",
-        "optionVaultToken": "Vault kimlik doğrulama token'ı",
-        "promptS3SecretAccessKey": "S3 gizli erişim anahtarı:",
-        "promptVaultToken": "Vault token'ı (veya VAULT_TOKEN ortam değişkenini ayarlayın):",
-        "s3Required": "S3 depoları için --s3-endpoint, --s3-bucket ve --s3-access-key-id gereklidir",
-        "s3SecretRequired": "S3 gizli erişim anahtarı gereklidir",
-        "success": "\"{{name}}\" deposu eklendi ({{type}})",
-        "vaultAddrRequired": "Vault depoları için --vault-addr gereklidir",
-        "vaultTokenRequired": "Vault token'ı gereklidir (--vault-token ile iletin veya VAULT_TOKEN ortam değişkenini ayarlayın)"
-      },
-      "description": "Yapılandırma eşitleme depolarını yönetin (S3, yerel dosya, Bitwarden, Git, Vault)",
-      "descriptionShort": "Yapılandırma eşitleme depolarını yönetin (S3, yerel dosya, Bitwarden, Git, Vault)",
-      "list": {
-        "description": "Yapılandırılmış depoları listeleyin",
-        "noStores": "Yapılandırılmış depo yok. Eklemek için: rdc store add <name> --type <type>"
-      },
-      "pull": {
-        "description": "Bir depodan yapılandırma çekin",
-        "failed": "\"{{store}}\" deposundan çekme başarısız: {{error}}",
-        "notFound": "\"{{name}}\" deposu bulunamadı",
-        "optionConfig": "Çekilecek yapılandırma adı",
-        "optionStore": "Belirli bir depodan çekin",
-        "success": "\"{{config}}\" yapılandırması \"{{store}}\" deposundan çekildi"
-      },
-      "push": {
-        "description": "Geçerli yapılandırmayı depolara gönderin",
-        "failed": "\"{{store}}\" deposuna gönderme başarısız: {{error}}",
-        "noStores": "Yapılandırılmış depo yok",
-        "optionAll": "Tüm depolara gönderin",
-        "optionStore": "Belirli bir depoya gönderin",
-        "success": "\"{{config}}\" yapılandırması \"{{store}}\" deposuna gönderildi"
-      },
-      "remove": {
-        "description": "Bir eşitleme deposunu kaldırın",
-        "success": "\"{{name}}\" deposu kaldırıldı"
-      },
-      "sync": {
-        "description": "Yapılandırmayı depolarla eşitleyin (çek sonra gönder)",
-        "failed": "\"{{store}}\" deposu için eşitleme başarısız: {{error}}",
-        "noStores": "Yapılandırılmış depo yok",
-        "optionAll": "Tüm depolarla eşitleyin",
-        "optionStore": "Belirli bir depoyla eşitleyin",
-        "pulled": "\"{{store}}\" deposundan daha yeni sürüm çekildi",
-        "pushed": "\"{{store}}\" deposuna gönderildi"
-      }
-    },
     "subscription": {
       "activation": {
         "description": "Makine etkinleştirme yönetimi",
@@ -2007,7 +1945,6 @@
       "repository": "Depo Yönetimi",
       "shortcuts": "Hızlı Komutlar (Kısayollar)",
       "storage": "Depolama Yönetimi",
-      "store": "Depo Yönetimi",
       "subscription": "Abonelik Yönetimi",
       "sync": "Dosya Senkronizasyonu",
       "team": "Takım Yönetimi",
@@ -2024,12 +1961,12 @@
         "tip": "Kimlik doğrulama jetonunuz bağlamınızda yerel olarak saklanır. Birden fazla ortam için kimlik bilgilerini adlandırılmış bir bağlam altında saklamak üzere `--save-as` kullanın."
       },
       "config": {
-        "afterDescription": "Yapılandırma dosyaları bağlantı ayrıntılarını (API URL'si, kimlik bilgileri, varsayılan takım/bölge/makine) saklar; böylece ortamlar arasında hızlıca geçiş yapabilirsiniz.",
+        "afterDescription": "Yapılandırma dosyaları bağlantı ayrıntılarını (API URL'si, kimlik bilgileri, varsayılan takım/bölge/köprü) saklar; böylece ortamlar arasında hızlıca geçiş yapabilirsiniz.",
         "init": {
           "afterDescription": "Yerel modda makineleri doğrudan ekleyebilirsiniz:"
         },
         "set": {
-          "tip": "Varsayılanları ayarlamak, her komutta `--team`, `--region` veya `--machine` belirtmenizi gereksiz kılar."
+          "tip": "Varsayılanları ayarlamak, her komutta `--team`, `--region` veya `--bridge` belirtmenizi gereksiz kılar."
         }
       },
       "machine": {
@@ -2114,8 +2051,8 @@
     "invalidPriorityMax": "Geçersiz priority-max değeri. 1 ile 5 arasında olmalıdır.",
     "invalidPriorityMin": "Geçersiz priority-min değeri. 1 ile 5 arasında olmalıdır.",
     "machineNotFound": "\"{{name}}\" makinesi bulunamadı",
-    "machineRequired": "Makine adı gerekli. --machine kullanın veya bağlamı ayarlayın.",
-    "machineRequiredLocal": "Makine adı gerekli. --machine kullanın veya varsayılanı ayarlayın: rdc config set machine <name>",
+    "machineRequired": "Makine adı gerekli. --machine <name> kullanın",
+    "machineRequiredLocal": "Makine adı gerekli. --machine <name> kullanın",
     "networkError": "Ağ hatası: {{message}}",
     "noActiveConfig": "Etkin yapılandırma yok. Şununla oluşturun: rdc config init <name>",
     "notAuthenticated": "Kimlik doğrulaması yapılmamış. Çalıştırın: rdc auth login",
@@ -2228,11 +2165,6 @@
       "takeover": "Üretim verilerini çatal verileriyle değiştir",
       "tunnel": "Konteyner portuna SSH tüneli",
       "up": "Otomatik bağlama ile dağıt"
-    },
-    "store": {
-      "add": "S3 depo arka ucu ekle",
-      "pull": "Depodan Config al",
-      "push": "Config'i tüm depolara gönder"
     },
     "sync": {
       "download": "Depo dosyalarını yerele indir",
@@ -2419,19 +2351,6 @@
     "pending": "Beklemede",
     "processing": "İşleniyor",
     "success": "Başarılı"
-  },
-  "stores": {
-    "rediaccSetup": {
-      "browserFallback": "(Tarayıcı açılmadıysa, yukarıdaki URL'yi kopyalayıp manuel olarak açın)",
-      "browserWillOpen": "Parola anahtarı kaydı için bir tarayıcı penceresi açılacak.",
-      "headlessInstructions": "Tarayıcısı olan bir cihazda bir URL açmanız gerekecek.",
-      "openUrl": "Bu URL'yi telefonunuzda veya dizüstü bilgisayarınızda açın:",
-      "setupComplete": "Yapılandırma deposu kurulumu tamamlandı!",
-      "startingHeadlessSetup": "Arayüzsüz yapılandırma depolama kurulumu başlatılıyor...",
-      "startingSetup": "Yapılandırma depolama kurulumu başlatılıyor...",
-      "waitingForCompletion": "Kurulumun tamamlanması bekleniyor...",
-      "waitingForPasskey": "Tarayıcıda parola anahtarı kaydı bekleniyor..."
-    }
   },
   "table": {
     "noData": "Gösterilecek veri yok"

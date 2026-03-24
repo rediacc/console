@@ -390,18 +390,7 @@
         "alreadyExists": "La configuration \"{{name}}\" existe déjà",
         "description": "Créer un nouveau fichier de configuration nommé",
         "optionMasterPassword": "Chiffrer les ressources avec un mot de passe principal",
-        "optionS3AccessKeyId": "ID de clé d'accès S3",
-        "optionS3Bucket": "Nom du bucket S3",
-        "optionS3Endpoint": "URL du point de terminaison S3",
-        "optionS3Prefix": "Préfixe de clé dans le bucket S3",
-        "optionS3Region": "Région S3",
-        "optionS3SecretAccessKey": "Clé d'accès secrète S3",
-        "promptS3SecretAccessKey": "Clé d'accès secrète S3 :",
-        "s3Required": "--s3-endpoint, --s3-bucket et --s3-access-key-id sont requis pour l'état des ressources S3",
-        "s3SecretRequired": "La clé d'accès secrète S3 est requise",
-        "s3Verified": "Accès S3 vérifié",
-        "success": "Configuration \"{{name}}\" initialisée",
-        "verifyingS3": "Vérification de l'accès S3..."
+        "success": "Configuration \"{{name}}\" initialisée"
       },
       "list": {
         "description": "Lister tous les fichiers de configuration",
@@ -519,7 +508,7 @@
         }
       },
       "set": {
-        "description": "Définir une valeur par défaut (équipe, région, pont, machine)",
+        "description": "Définir une valeur par défaut (équipe, région, pont)",
         "success": "\"{{key}}\" défini à \"{{value}}\""
       },
       "setRenet": {
@@ -533,6 +522,27 @@
       "show": {
         "description": "Afficher les détails de la configuration actuelle",
         "noConfig": "Aucune configuration active. Créez-en une avec : rdc config init"
+      },
+      "ssh": {
+        "description": "Gérer la configuration de la clé SSH",
+        "remove": {
+          "description": "Supprimer la clé SSH de la configuration actuelle",
+          "noKey": "Aucune clé SSH configurée",
+          "success": "Clé SSH supprimée"
+        },
+        "set": {
+          "description": "Définir la clé SSH pour la configuration actuelle",
+          "embedWarning": "Le contenu de la clé sera stocké dans le fichier de configuration",
+          "invalidKey": "Le fichier ne contient pas de clé SSH privée valide",
+          "keyNotFound": "Fichier de clé SSH introuvable : {{path}}",
+          "optionEmbed": "Intégrer le contenu de la clé dans la configuration au lieu de stocker le chemin",
+          "optionKey": "Chemin vers le fichier de clé SSH privée",
+          "success": "Clé SSH configurée"
+        },
+        "show": {
+          "description": "Afficher la configuration actuelle de la clé SSH",
+          "noKey": "Aucune clé SSH configurée"
+        }
       },
       "storage": {
         "description": "Gérer les backends de stockage dans la configuration actuelle",
@@ -1520,78 +1530,6 @@
         "description": "Gestion du coffre-fort de stockage (adaptateur cloud uniquement)"
       }
     },
-    "store": {
-      "add": {
-        "addedButUnverified": "Store \"{{name}}\" ajouté mais la connexion n'a pas pu être vérifiée",
-        "alreadyExists": "Le store \"{{name}}\" existe déjà",
-        "description": "Ajouter un nouveau store de synchronisation",
-        "gitUrlRequired": "--git-url est requis pour les stores Git",
-        "invalidType": "Type de store invalide : \"{{type}}\". Types valides : {{valid}}",
-        "localPathRequired": "--local-path est requis pour les stores de fichiers locaux",
-        "optionBwFolderId": "ID de dossier Bitwarden pour organiser les éléments de configuration (optionnel)",
-        "optionEncryptionKey": "Clé de chiffrement pour ce store",
-        "optionGitBranch": "Nom de branche Git",
-        "optionGitPath": "Chemin dans le dépôt Git",
-        "optionGitUrl": "URL du dépôt Git",
-        "optionHeadless": "Utiliser le flux de code d'appareil (sans navigateur local)",
-        "optionLocalPath": "Chemin du répertoire local",
-        "optionS3AccessKeyId": "ID de clé d'accès S3",
-        "optionS3Bucket": "Nom du bucket S3",
-        "optionS3Endpoint": "URL du point de terminaison S3",
-        "optionS3Prefix": "Préfixe de clé S3",
-        "optionS3Region": "Région S3",
-        "optionS3SecretAccessKey": "Clé d'accès secrète S3",
-        "optionServerUrl": "URL du serveur de compte Rediacc",
-        "optionType": "Type de store (s3, local-file, bitwarden, git, vault)",
-        "optionVaultAddr": "Adresse du serveur Vault (ex. http://127.0.0.1:8200)",
-        "optionVaultMount": "Chemin de montage KV v2 de Vault (par défaut : secret)",
-        "optionVaultNamespace": "Espace de noms Vault (entreprise uniquement)",
-        "optionVaultPrefix": "Préfixe de chemin dans le moteur KV de Vault (par défaut : rdc/configs)",
-        "optionVaultToken": "Jeton d'authentification Vault",
-        "promptS3SecretAccessKey": "Clé d'accès secrète S3 :",
-        "promptVaultToken": "Jeton Vault (ou définissez la variable VAULT_TOKEN) :",
-        "s3Required": "--s3-endpoint, --s3-bucket et --s3-access-key-id sont requis pour les stores S3",
-        "s3SecretRequired": "La clé d'accès secrète S3 est requise",
-        "success": "Store \"{{name}}\" ajouté ({{type}})",
-        "vaultAddrRequired": "--vault-addr est requis pour les stores Vault",
-        "vaultTokenRequired": "Le jeton Vault est requis (passez --vault-token ou définissez la variable VAULT_TOKEN)"
-      },
-      "description": "Gérer les stores de synchronisation de configuration (S3, fichier local, Bitwarden, Git, Vault)",
-      "descriptionShort": "Gérer les stores de synchronisation de configuration (S3, fichier local, Bitwarden, Git, Vault)",
-      "list": {
-        "description": "Lister les stores configurés",
-        "noStores": "Aucun store configuré. Ajoutez-en un avec : rdc store add <name> --type <type>"
-      },
-      "pull": {
-        "description": "Récupérer la configuration depuis un store",
-        "failed": "Échec de la récupération depuis le store \"{{store}}\" : {{error}}",
-        "notFound": "Store \"{{name}}\" non trouvé",
-        "optionConfig": "Nom de la configuration à récupérer",
-        "optionStore": "Récupérer depuis un store spécifique",
-        "success": "Configuration \"{{config}}\" récupérée depuis le store \"{{store}}\""
-      },
-      "push": {
-        "description": "Pousser la configuration actuelle vers les stores",
-        "failed": "Échec de l'envoi vers le store \"{{store}}\" : {{error}}",
-        "noStores": "Aucun store configuré",
-        "optionAll": "Pousser vers tous les stores",
-        "optionStore": "Pousser vers un store spécifique",
-        "success": "Configuration \"{{config}}\" poussée vers le store \"{{store}}\""
-      },
-      "remove": {
-        "description": "Supprimer un store de synchronisation",
-        "success": "Store \"{{name}}\" supprimé"
-      },
-      "sync": {
-        "description": "Synchroniser la configuration avec les stores (récupération puis envoi)",
-        "failed": "Échec de la synchronisation pour le store \"{{store}}\" : {{error}}",
-        "noStores": "Aucun store configuré",
-        "optionAll": "Synchroniser avec tous les stores",
-        "optionStore": "Synchroniser avec un store spécifique",
-        "pulled": "Version plus récente récupérée depuis le store \"{{store}}\"",
-        "pushed": "Poussé vers le store \"{{store}}\""
-      }
-    },
     "subscription": {
       "activation": {
         "description": "Gestion de l'activation des machines",
@@ -2007,7 +1945,6 @@
       "repository": "Gestion des Dépôts",
       "shortcuts": "Commandes Rapides (Raccourcis)",
       "storage": "Gestion du Stockage",
-      "store": "Gestion des Stores",
       "subscription": "Gestion des Abonnements",
       "sync": "Synchronisation de fichiers",
       "team": "Gestion des Équipes",
@@ -2024,12 +1961,12 @@
         "tip": "Votre jeton d'authentification est stocké localement dans votre contexte. Utilisez `--save-as` pour stocker les identifiants sous un contexte nommé pour plusieurs environnements."
       },
       "config": {
-        "afterDescription": "Les fichiers de configuration stockent les informations de connexion (URL API, identifiants, équipe/région/machine par défaut) pour basculer rapidement entre les environnements.",
+        "afterDescription": "Les fichiers de configuration stockent les informations de connexion (URL API, identifiants, équipe/région/pont par défaut) pour basculer rapidement entre les environnements.",
         "init": {
           "afterDescription": "En mode local, vous pouvez ajouter des machines directement :"
         },
         "set": {
-          "tip": "Définir des valeurs par défaut évite de passer `--team`, `--region` ou `--machine` à chaque commande."
+          "tip": "Définir des valeurs par défaut évite de passer `--team`, `--region` ou `--bridge` à chaque commande."
         }
       },
       "machine": {
@@ -2114,8 +2051,8 @@
     "invalidPriorityMax": "Valeur priority-max invalide. Doit être entre 1 et 5.",
     "invalidPriorityMin": "Valeur priority-min invalide. Doit être entre 1 et 5.",
     "machineNotFound": "Machine \"{{name}}\" non trouvée",
-    "machineRequired": "Le nom de la machine est requis. Utilisez --machine ou définissez un contexte.",
-    "machineRequiredLocal": "Le nom de la machine est requis. Utilisez --machine ou définissez une valeur par défaut avec : rdc config set machine <name>",
+    "machineRequired": "Le nom de la machine est requis. Utilisez --machine <name>",
+    "machineRequiredLocal": "Le nom de la machine est requis. Utilisez --machine <name>",
     "networkError": "Erreur réseau : {{message}}",
     "noActiveConfig": "Aucune configuration active. Créez-en une avec : rdc config init <name>",
     "notAuthenticated": "Non authentifié. Exécutez : rdc auth login",
@@ -2228,11 +2165,6 @@
       "takeover": "Remplacer les données de production par les données du fork",
       "tunnel": "Tunnel SSH vers un port de conteneur",
       "up": "Déployer avec montage automatique"
-    },
-    "store": {
-      "add": "Ajouter un backend de stockage S3",
-      "pull": "Récupérer le config depuis un store",
-      "push": "Pousser le config vers tous les stores"
     },
     "sync": {
       "download": "Télécharger les fichiers du dépôt",
@@ -2419,19 +2351,6 @@
     "pending": "En attente",
     "processing": "Traitement en cours",
     "success": "Succès"
-  },
-  "stores": {
-    "rediaccSetup": {
-      "browserFallback": "(Si le navigateur ne s'est pas ouvert, copiez l'URL ci-dessus et ouvrez-la manuellement)",
-      "browserWillOpen": "Une fenêtre de navigateur s'ouvrira pour l'enregistrement de la clé d'accès.",
-      "headlessInstructions": "Vous devrez ouvrir une URL sur un appareil disposant d'un navigateur.",
-      "openUrl": "Ouvrez cette URL sur votre téléphone ou ordinateur portable :",
-      "setupComplete": "Configuration du stockage terminée !",
-      "startingHeadlessSetup": "Démarrage de la configuration du stockage sans interface graphique...",
-      "startingSetup": "Démarrage de la configuration du stockage...",
-      "waitingForCompletion": "En attente de la fin de la configuration...",
-      "waitingForPasskey": "En attente de l'enregistrement de la clé d'accès dans le navigateur..."
-    }
   },
   "table": {
     "noData": "Aucune donnée à afficher"

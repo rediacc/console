@@ -266,6 +266,21 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
 
+  'config ssh show': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read' as const,
+      descriptionOverride: 'Show current SSH key configuration for the active config',
+    },
+  },
+  'config ssh set': {
+    mcpExcludeReason: 'Writes key material to config — use CLI directly',
+  },
+  'config ssh remove': {
+    mcpExcludeReason: 'Destructive credential operation — use CLI directly',
+  },
+
   // ══════════════════════════════════════════════════════════════════════
   // Policy-only entries (no MCP tools — enforced by assertCommandPolicy)
   // ══════════════════════════════════════════════════════════════════════
@@ -343,43 +358,6 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   doctor: { mcpExcludeReason: 'Diagnoses local CLI installation — not a remote operation' },
   update: { mcpExcludeReason: 'CLI self-update — not a remote operation' },
-  'store add': {
-    mcpExcludeReason: 'Interactive setup requires browser for passkey/credential input',
-  },
-  'store remove': { mcpExcludeReason: 'Destructive credential operation — use CLI directly' },
-  'store push': {
-    mcp: {
-      destructive: false,
-      idempotent: true,
-      timeout: 'write' as const,
-      descriptionOverride:
-        'Push current CLI config to a sync store (S3, Git, Bitwarden, Vault, or Rediacc)',
-    },
-  },
-  'store pull': {
-    mcp: {
-      destructive: false,
-      idempotent: true,
-      timeout: 'read' as const,
-      descriptionOverride: 'Pull CLI config from a sync store',
-    },
-  },
-  'store sync': {
-    mcp: {
-      destructive: false,
-      idempotent: true,
-      timeout: 'write' as const,
-      descriptionOverride: 'Sync CLI config with a store (pull then push)',
-    },
-  },
-  'store list': {
-    mcp: {
-      destructive: false,
-      idempotent: true,
-      timeout: 'read' as const,
-      descriptionOverride: 'List configured sync stores',
-    },
-  },
   subscription: { mcpExcludeReason: 'License management — local concern' },
   mcp: { mcpExcludeReason: 'The MCP server itself — cannot recurse' },
 

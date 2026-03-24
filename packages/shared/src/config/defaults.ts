@@ -328,26 +328,6 @@ export const CONTEXT_DEFAULTS = {
 } as const;
 
 /**
- * Store adapter defaults
- */
-export const STORE_DEFAULTS = {
-  /** Default S3 region */
-  S3_REGION: 'auto',
-
-  /** Default git branch for git store */
-  GIT_BRANCH: 'main',
-
-  /** Default path within git repo for config files */
-  GIT_PATH: 'configs',
-
-  /** Default Vault KV v2 mount path */
-  VAULT_MOUNT: 'secret',
-
-  /** Default Vault config prefix */
-  VAULT_PREFIX: 'rdc/configs',
-} as const;
-
-/**
  * Telemetry and analytics defaults
  */
 export const ANALYTICS_DEFAULTS = {
@@ -462,7 +442,6 @@ export const DEFAULTS = {
   SUBSCRIPTION: SUBSCRIPTION_DEFAULTS,
   VSCODE: VSCODE_DEFAULTS,
   CONTEXT: CONTEXT_DEFAULTS,
-  STORE: STORE_DEFAULTS,
   ANALYTICS: ANALYTICS_DEFAULTS,
   PROCESS: PROCESS_DEFAULTS,
   CLI_TEST: CLI_TEST_DEFAULTS,

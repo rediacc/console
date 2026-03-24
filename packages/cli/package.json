@@ -23,10 +23,8 @@
     "test:report": "playwright show-report tests/reports/cli",
     "test:resources": "playwright test --config tests/playwright.config.ts --project=resources",
     "test:run": "playwright test --config tests/playwright.config.ts",
-    "test:s3": "playwright test --config tests/playwright.config.ts --project=s3",
     "test:security": "playwright test --config tests/playwright.config.ts --project=security",
     "test:unit": "vitest run",
-    "test:unit:s3": "vitest run --config vitest.s3.config.ts",
     "test:unit:vault": "vitest run --config vitest.vault.config.ts",
     "test:unit:watch": "vitest",
     "test:vscode": "playwright test --config tests/playwright.config.ts --project=vscode",
@@ -60,7 +58,6 @@
   },
   "description": "Rediacc CLI - Command line interface for Rediacc operations",
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.982.0",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.211.0",
     "@opentelemetry/resources": "^2.5.1",

@@ -15,6 +15,7 @@ import { handleError, ValidationError } from '../utils/errors.js';
 import { registerRepositoryCommands, registerStorageCommands } from './config-data.js';
 import { registerInfraCommands } from './config-infra.js';
 import { registerMachineCommands, registerProviderCommands } from './config-setup.js';
+import { registerSSHCommands } from './config-ssh.js';
 
 /** Resolve enabled state from --enable/--disable flags. */
 function resolveEnabledFlag(enable?: boolean, disable?: boolean): boolean | undefined {
@@ -53,7 +54,7 @@ async function applyBackupStrategyOptions(options: {
   }
 }
 
-/** Build display data for a self-hosted config (local or S3 mode). */
+/** Build display data for a self-hosted config. */
 async function buildSelfHostedDisplay(
   config: RdcConfig,
   name: string
@@ -77,15 +78,6 @@ async function buildSelfHostedDisplay(
     id: config.id,
     version: config.version,
     adapter: 'local',
-    ...(config.s3
-      ? {
-          s3State: 'yes',
-          endpoint: config.s3.endpoint,
-          bucket: config.s3.bucket,
-          s3Region: config.s3.region,
-          prefix: config.s3.prefix ?? '-',
-        }
-      : {}),
     encrypted: config.encrypted ? 'yes' : 'no',
     sshKey: config.ssh?.privateKeyPath ?? '-',
     renetPath: config.renetPath ?? DEFAULTS.CONTEXT.RENET_PATH,
@@ -115,104 +107,6 @@ async function handleApiUrlSetup(options: { apiUrl?: string }): Promise<Partial<
   return { apiUrl: apiClient.normalizeApiUrl(options.apiUrl) };
 }
 
-/** Upload SSH key to S3 state if --ssh-key was provided. */
-async function uploadSshKeyToS3(
-  testClient: InstanceType<typeof import('../services/s3-client.js').S3ClientService>,
-  sshKeyOption: string,
-  masterPassword: string | null
-): Promise<void> {
-  const fs = await import('node:fs/promises');
-  const sshKeyPath = sshKeyOption.startsWith('~')
-    ? (await import('node:path')).join((await import('node:os')).homedir(), sshKeyOption.slice(1))
-    : sshKeyOption;
-  const { S3StateService } = await import('../services/s3-state.js');
-  const stateService = await S3StateService.load(testClient, masterPassword);
-  const sshPrivateKey = await fs.readFile(sshKeyPath, 'utf-8');
-  let sshPublicKey = '';
-  try {
-    sshPublicKey = await fs.readFile(`${sshKeyPath}.pub`, 'utf-8');
-  } catch {
-    /* optional */
-  }
-  await stateService.setSSH({
-    privateKey: sshPrivateKey.trim(),
-    publicKey: sshPublicKey.trim() || undefined,
-  });
-}
-
-/** Resolve the S3 secret access key, prompting if needed. */
-async function resolveS3SecretKey(existing?: string): Promise<string> {
-  if (existing) return existing;
-  const { askPassword } = await import('../utils/prompt.js');
-  const key = await askPassword(t('commands.config.init.promptS3SecretAccessKey'));
-  if (!key) throw new ValidationError(t('commands.config.init.s3SecretRequired'));
-  return key;
-}
-
-/** Validate S3 options, verify access, upload SSH key to S3. Returns config updates. */
-async function handleS3Setup(options: {
-  s3Endpoint?: string;
-  s3Bucket?: string;
-  s3AccessKeyId?: string;
-  s3SecretAccessKey?: string;
-  s3Region?: string;
-  s3Prefix?: string;
-  masterPassword?: string;
-  sshKey?: string;
-}): Promise<Partial<RdcConfig>> {
-  if (!options.s3Endpoint && !options.s3Bucket && !options.s3AccessKeyId) return {};
-
-  if (!options.s3Endpoint || !options.s3Bucket || !options.s3AccessKeyId) {
-    throw new ValidationError(t('commands.config.init.s3Required'));
-  }
-
-  const endpoint = options.s3Endpoint;
-  const bucket = options.s3Bucket;
-  const accessKeyId = options.s3AccessKeyId;
-  const region = options.s3Region ?? DEFAULTS.STORE.S3_REGION;
-  const prefix = options.s3Prefix;
-
-  const secretAccessKey = await resolveS3SecretKey(options.s3SecretAccessKey);
-
-  let storedSecretAccessKey: string;
-  if (options.masterPassword) {
-    const { nodeCryptoProvider } = await import('../adapters/crypto.js');
-    storedSecretAccessKey = await nodeCryptoProvider.encrypt(
-      secretAccessKey,
-      options.masterPassword
-    );
-  } else {
-    storedSecretAccessKey = secretAccessKey;
-  }
-
-  outputService.info(t('commands.config.init.verifyingS3'));
-  const { S3ClientService } = await import('../services/s3-client.js');
-  const testClient = new S3ClientService({
-    endpoint,
-    bucket,
-    region,
-    accessKeyId,
-    secretAccessKey,
-    prefix,
-  });
-  await testClient.verifyAccess();
-  outputService.success(t('commands.config.init.s3Verified'));
-
-  await testClient.putJson('_meta.json', {
-    schemaVersion: 2,
-    createdAt: new Date().toISOString(),
-    createdBy: 'rdc',
-  });
-
-  if (options.sshKey) {
-    await uploadSshKeyToS3(testClient, options.sshKey, options.masterPassword ?? null);
-  }
-
-  return {
-    s3: { endpoint, bucket, region, accessKeyId, secretAccessKey: storedSecretAccessKey, prefix },
-  };
-}
-
 export function registerConfigCommands(program: Command): void {
   const config = program
     .command('config')
@@ -236,12 +130,6 @@ ${t('help.examples')}
     .option('--ssh-key <path>', t('options.sshKey'))
     .option('--renet-path <path>', t('options.renetPath'))
     .option('--master-password <password>', t('commands.config.init.optionMasterPassword'))
-    .option('--s3-endpoint <url>', t('commands.config.init.optionS3Endpoint'))
-    .option('--s3-bucket <name>', t('commands.config.init.optionS3Bucket'))
-    .option('--s3-access-key-id <key>', t('commands.config.init.optionS3AccessKeyId'))
-    .option('--s3-secret-access-key <key>', t('commands.config.init.optionS3SecretAccessKey'))
-    .option('--s3-region <region>', t('commands.config.init.optionS3Region'), 'auto')
-    .option('--s3-prefix <prefix>', t('commands.config.init.optionS3Prefix'))
     .option('-u, --api-url <url>', t('options.apiUrl'))
     .action(async (name, options) => {
       try {
@@ -258,13 +146,7 @@ ${t('help.examples')}
         // Default config already exists — if no flags, just confirm
         if (exists && !name) {
           const hasFlags =
-            options.sshKey ??
-            options.renetPath ??
-            options.masterPassword ??
-            options.apiUrl ??
-            options.s3Endpoint ??
-            options.s3Bucket ??
-            options.s3AccessKeyId;
+            options.sshKey ?? options.renetPath ?? options.masterPassword ?? options.apiUrl;
           if (!hasFlags) {
             outputService.success(t('commands.config.init.success', { name: configName }));
             return;
@@ -287,8 +169,6 @@ ${t('help.examples')}
 
         Object.assign(updates, await handleMasterPasswordSetup(options));
         Object.assign(updates, await handleApiUrlSetup(options));
-        Object.assign(updates, await handleS3Setup(options));
-
         await configFileStorage.save({ ...newConfig, ...updates }, configName);
         outputService.success(t('commands.config.init.success', { name: configName }));
       } catch (error) {
@@ -543,4 +423,5 @@ ${t('help.examples')}
   registerRepositoryCommands(config, program);
   registerStorageCommands(config, program);
   registerInfraCommands(config, program);
+  registerSSHCommands(config, program);
 }

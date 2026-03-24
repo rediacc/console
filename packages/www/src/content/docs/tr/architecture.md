@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: tr
-sourceHash: "9331a5f415a76278"
+sourceHash: "70943eacf16dbd21"
 ---
 
 # Mimari
@@ -34,11 +34,9 @@ Yerel olarak yazdığınız her komut, uzak makinede renet'i çalıştıran bir 
 
 Operatör odaklı bir genel kural için [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasına bakın. Ayrıca test için yerel VM kümesi çalıştırmak amacıyla `rdc ops` kullanabilirsiniz — bkz. [Deneysel VM'ler](/tr/docs/experimental-vms).
 
-## Config & Stores
+## Yapılandırma
 
-Tüm CLI durumu `~/.config/rediacc/` altındaki düz JSON yapılandırma dosyalarında saklanır. Store'lar bu yapılandırmaları yedekleme, paylaşım veya çoklu cihaz erişimi için harici arka uçlara senkronize etmenizi sağlar. Store kimlik bilgileri ayrıca `~/.config/rediacc/.credentials.json` dosyasında tutulur.
-
-![Config & Stores](/img/arch-operating-modes.svg)
+Tüm CLI durumu `~/.config/rediacc/` altındaki düz JSON yapılandırma dosyalarında saklanır.
 
 ### Yerel Adaptör (Varsayılan)
 
@@ -60,16 +58,7 @@ Bir yapılandırma `apiUrl` ve `token` alanları içerdiğinde otomatik olarak e
 
 > **Not:** Bulut adaptörü komutları deneyseldir. `REDIACC_EXPERIMENTAL=1` ayarlayarak etkinleştirin.
 
-### S3 Kaynak Durumu (İsteğe Bağlı)
-
-Bir yapılandırma S3 ayarları (uç nokta, kova, erişim anahtarı) içerdiğinde, kaynak durumu S3 uyumlu bir kovada saklanır. Bu, yerel adaptörle birlikte çalışarak iş istasyonları arasında taşınabilirlikle kendi sunucusunda barındırmayı birleştirir.
-
-- Kaynak durumu S3/R2 kovasında `state.json` olarak saklanır
-- AES-256-GCM şifreleme ile ana parola
-- Taşınabilir: kova kimlik bilgilerine sahip herhangi bir iş istasyonu altyapıyı yönetebilir
-- `rdc config init <ad> --s3-endpoint <url> --s3-bucket <kova> --s3-access-key-id <anahtar>` ile yapılandırılır
-
-Tüm adaptörler aynı CLI komutlarını kullanır. Adaptör yalnızca durumun nerede saklandığını ve kimlik doğrulamanın nasıl çalıştığını etkiler.
+Her iki adaptör de aynı CLI komutlarını kullanır. Adaptör yalnızca durumun nerede saklandığını ve kimlik doğrulamanın nasıl çalıştığını etkiler.
 
 ## rediacc Kullanıcısı
 

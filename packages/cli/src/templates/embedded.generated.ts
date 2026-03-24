@@ -402,13 +402,6 @@ cleanup() {
   renet compose -- exec app sh -c 'find /var/log -name "*.log" -exec truncate -s 0 {} \\; 2>/dev/null' || true
 }
 `,
-      'secrets.env': `# Add your secrets here. This file is sourced by the Rediaccfile
-# and passed as env_file to docker-compose.
-#
-# Example:
-# API_KEY=your-api-key-here
-# ADMIN_PASSWORD=change-me
-`,
     },
   },
 };

@@ -390,18 +390,7 @@
         "alreadyExists": "الإعدادات \"{{name}}\" موجودة بالفعل",
         "description": "إنشاء ملف إعدادات مسمى جديد",
         "optionMasterPassword": "تشفير الموارد بكلمة مرور رئيسية",
-        "optionS3AccessKeyId": "معرف مفتاح الوصول S3",
-        "optionS3Bucket": "اسم حاوية S3",
-        "optionS3Endpoint": "عنوان URL لنقطة نهاية S3",
-        "optionS3Prefix": "بادئة المفتاح في حاوية S3",
-        "optionS3Region": "منطقة S3",
-        "optionS3SecretAccessKey": "مفتاح الوصول السري لـ S3",
-        "promptS3SecretAccessKey": "مفتاح الوصول السري لـ S3:",
-        "s3Required": "--s3-endpoint و --s3-bucket و --s3-access-key-id مطلوبة لحالة موارد S3",
-        "s3SecretRequired": "مفتاح الوصول السري لـ S3 مطلوب",
-        "s3Verified": "تم التحقق من وصول S3",
-        "success": "تمت تهيئة الإعدادات \"{{name}}\"",
-        "verifyingS3": "جاري التحقق من وصول S3..."
+        "success": "تمت تهيئة الإعدادات \"{{name}}\""
       },
       "list": {
         "description": "عرض جميع ملفات الإعدادات",
@@ -519,7 +508,7 @@
         }
       },
       "set": {
-        "description": "تعيين قيمة افتراضية (فريق، منطقة، جسر، آلة)",
+        "description": "تعيين قيمة افتراضية (فريق، منطقة، جسر)",
         "success": "تم تعيين \"{{key}}\" إلى \"{{value}}\""
       },
       "setRenet": {
@@ -533,6 +522,27 @@
       "show": {
         "description": "عرض تفاصيل الإعدادات الحالية",
         "noConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام: rdc config init"
+      },
+      "ssh": {
+        "description": "إدارة إعدادات مفتاح SSH",
+        "remove": {
+          "description": "إزالة مفتاح SSH من الإعدادات الحالية",
+          "noKey": "لم يتم تكوين مفتاح SSH",
+          "success": "تمت إزالة مفتاح SSH"
+        },
+        "set": {
+          "description": "تعيين مفتاح SSH للإعدادات الحالية",
+          "embedWarning": "سيتم تخزين محتوى المفتاح في ملف الإعدادات",
+          "invalidKey": "الملف لا يحتوي على مفتاح SSH خاص صالح",
+          "keyNotFound": "ملف مفتاح SSH غير موجود: {{path}}",
+          "optionEmbed": "تضمين محتوى المفتاح في الإعدادات بدلاً من تخزين المسار",
+          "optionKey": "مسار ملف مفتاح SSH الخاص",
+          "success": "تم تكوين مفتاح SSH"
+        },
+        "show": {
+          "description": "عرض إعدادات مفتاح SSH الحالية",
+          "noKey": "لم يتم تكوين مفتاح SSH"
+        }
       },
       "storage": {
         "description": "إدارة واجهات التخزين في التكوين الحالي",
@@ -1520,78 +1530,6 @@
         "description": "إدارة خزنة التخزين (محول السحابة فقط)"
       }
     },
-    "store": {
-      "add": {
-        "addedButUnverified": "تمت إضافة المتجر \"{{name}}\" لكن تعذّر التحقق من الاتصال",
-        "alreadyExists": "المتجر \"{{name}}\" موجود بالفعل",
-        "description": "إضافة متجر مزامنة جديد",
-        "gitUrlRequired": "--git-url مطلوب لمتاجر Git",
-        "invalidType": "نوع متجر غير صحيح: \"{{type}}\". الأنواع الصحيحة: {{valid}}",
-        "localPathRequired": "--local-path مطلوب لمتاجر الملف المحلي",
-        "optionBwFolderId": "معرف مجلد Bitwarden لتنظيم عناصر الإعدادات (اختياري)",
-        "optionEncryptionKey": "مفتاح التشفير لهذا المتجر",
-        "optionGitBranch": "اسم فرع Git",
-        "optionGitPath": "المسار داخل مستودع Git",
-        "optionGitUrl": "عنوان URL لمستودع Git",
-        "optionHeadless": "استخدام تدفق رمز الجهاز (بدون متصفح محلي)",
-        "optionLocalPath": "مسار المجلد المحلي",
-        "optionS3AccessKeyId": "معرف مفتاح الوصول S3",
-        "optionS3Bucket": "اسم حاوية S3",
-        "optionS3Endpoint": "عنوان URL لنقطة نهاية S3",
-        "optionS3Prefix": "بادئة مفتاح S3",
-        "optionS3Region": "منطقة S3",
-        "optionS3SecretAccessKey": "مفتاح الوصول السري لـ S3",
-        "optionServerUrl": "عنوان URL لخادم حساب Rediacc",
-        "optionType": "نوع المتجر (s3، local-file، bitwarden، git، vault)",
-        "optionVaultAddr": "عنوان خادم Vault (مثلاً http://127.0.0.1:8200)",
-        "optionVaultMount": "مسار تثبيت Vault KV v2 (افتراضي: secret)",
-        "optionVaultNamespace": "مساحة اسم Vault (للمؤسسات فقط)",
-        "optionVaultPrefix": "بادئة المسار داخل محرك Vault KV (افتراضي: rdc/configs)",
-        "optionVaultToken": "رمز مصادقة Vault",
-        "promptS3SecretAccessKey": "مفتاح الوصول السري لـ S3:",
-        "promptVaultToken": "رمز Vault (أو عيّن متغير البيئة VAULT_TOKEN):",
-        "s3Required": "--s3-endpoint و --s3-bucket و --s3-access-key-id مطلوبة لمتاجر S3",
-        "s3SecretRequired": "مفتاح الوصول السري لـ S3 مطلوب",
-        "success": "تمت إضافة المتجر \"{{name}}\" ({{type}})",
-        "vaultAddrRequired": "--vault-addr مطلوب لمتاجر Vault",
-        "vaultTokenRequired": "رمز Vault مطلوب (مرر --vault-token أو عيّن متغير البيئة VAULT_TOKEN)"
-      },
-      "description": "إدارة متاجر مزامنة الإعدادات (S3، ملف محلي، Bitwarden، Git، Vault)",
-      "descriptionShort": "إدارة متاجر مزامنة الإعدادات (S3، ملف محلي، Bitwarden، Git، Vault)",
-      "list": {
-        "description": "عرض المتاجر المكونة",
-        "noStores": "لا توجد متاجر مكونة. أضف واحداً باستخدام: rdc store add <name> --type <type>"
-      },
-      "pull": {
-        "description": "سحب الإعدادات من متجر",
-        "failed": "فشل السحب من المتجر \"{{store}}\": {{error}}",
-        "notFound": "المتجر \"{{name}}\" غير موجود",
-        "optionConfig": "اسم الإعدادات المراد السحب إليها",
-        "optionStore": "السحب من متجر محدد",
-        "success": "تم سحب الإعدادات \"{{config}}\" من المتجر \"{{store}}\""
-      },
-      "push": {
-        "description": "دفع الإعدادات الحالية إلى المتاجر",
-        "failed": "فشل الدفع إلى المتجر \"{{store}}\": {{error}}",
-        "noStores": "لا توجد متاجر مكونة",
-        "optionAll": "الدفع إلى جميع المتاجر",
-        "optionStore": "الدفع إلى متجر محدد",
-        "success": "تم دفع الإعدادات \"{{config}}\" إلى المتجر \"{{store}}\""
-      },
-      "remove": {
-        "description": "إزالة متجر مزامنة",
-        "success": "تمت إزالة المتجر \"{{name}}\""
-      },
-      "sync": {
-        "description": "مزامنة الإعدادات مع المتاجر (سحب ثم دفع)",
-        "failed": "فشلت المزامنة للمتجر \"{{store}}\": {{error}}",
-        "noStores": "لا توجد متاجر مكونة",
-        "optionAll": "المزامنة مع جميع المتاجر",
-        "optionStore": "المزامنة مع متجر محدد",
-        "pulled": "تم سحب إصدار أحدث من المتجر \"{{store}}\"",
-        "pushed": "تم الدفع إلى المتجر \"{{store}}\""
-      }
-    },
     "subscription": {
       "activation": {
         "description": "إدارة تفعيل الجهاز",
@@ -2007,7 +1945,6 @@
       "repository": "إدارة المستودعات",
       "shortcuts": "أوامر سريعة (اختصارات)",
       "storage": "إدارة التخزين",
-      "store": "إدارة المتاجر",
       "subscription": "إدارة الاشتراكات",
       "sync": "مزامنة الملفات",
       "team": "إدارة الفرق",
@@ -2024,12 +1961,12 @@
         "tip": "يتم تخزين رمز المصادقة الخاص بك محلياً في سياقك. استخدم `--save-as` لتخزين بيانات الاعتماد تحت سياق مسمى لبيئات متعددة."
       },
       "config": {
-        "afterDescription": "تخزن ملفات الإعدادات تفاصيل الاتصال (عنوان URL للـ API، بيانات الاعتماد، الفريق/المنطقة/الآلة الافتراضية) حتى تتمكن من التبديل بين البيئات بسرعة.",
+        "afterDescription": "تخزن ملفات الإعدادات تفاصيل الاتصال (عنوان URL للـ API، بيانات الاعتماد، الفريق/المنطقة/الجسر الافتراضي) حتى تتمكن من التبديل بين البيئات بسرعة.",
         "init": {
           "afterDescription": "في الوضع المحلي يمكنك إضافة الآلات مباشرة:"
         },
         "set": {
-          "tip": "يعني تعيين القيم الافتراضية أنك لن تحتاج إلى تمرير `--team` أو `--region` أو `--machine` مع كل أمر."
+          "tip": "يعني تعيين القيم الافتراضية أنك لن تحتاج إلى تمرير `--team` أو `--region` أو `--bridge` مع كل أمر."
         }
       },
       "machine": {
@@ -2114,8 +2051,8 @@
     "invalidPriorityMax": "قيمة priority-max غير صحيحة. يجب أن تكون بين 1 و 5.",
     "invalidPriorityMin": "قيمة priority-min غير صحيحة. يجب أن تكون بين 1 و 5.",
     "machineNotFound": "لم يتم العثور على الآلة \"{{name}}\"",
-    "machineRequired": "اسم الآلة مطلوب. استخدم --machine أو اضبط السياق.",
-    "machineRequiredLocal": "اسم الآلة مطلوب. استخدم --machine أو اضبط الافتراضي باستخدام: rdc config set machine <name>",
+    "machineRequired": "اسم الآلة مطلوب. استخدم --machine <name>",
+    "machineRequiredLocal": "اسم الآلة مطلوب. استخدم --machine <name>",
     "networkError": "خطأ الشبكة: {{message}}",
     "noActiveConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام: rdc config init <name>",
     "notAuthenticated": "لم تتم المصادقة. قم بتشغيل: rdc auth login",
@@ -2228,11 +2165,6 @@
       "takeover": "استبدال بيانات الإنتاج ببيانات النسخة المتفرعة",
       "tunnel": "نفق SSH إلى منفذ حاوية",
       "up": "نشر مع التحميل التلقائي"
-    },
-    "store": {
-      "add": "إضافة واجهة تخزين S3",
-      "pull": "سحب التكوين من متجر",
-      "push": "دفع التكوين إلى جميع المتاجر"
     },
     "sync": {
       "download": "تنزيل ملفات المستودع محلياً",
@@ -2419,19 +2351,6 @@
     "pending": "في الانتظار",
     "processing": "جاري المعالجة",
     "success": "نجح"
-  },
-  "stores": {
-    "rediaccSetup": {
-      "browserFallback": "(إذا لم يفتح المتصفح، انسخ الرابط أعلاه وافتحه يدويًا)",
-      "browserWillOpen": "ستُفتح نافذة متصفح لتسجيل مفتاح المرور.",
-      "headlessInstructions": "ستحتاج إلى فتح رابط على جهاز يحتوي على متصفح.",
-      "openUrl": "افتح هذا الرابط على هاتفك أو حاسوبك المحمول:",
-      "setupComplete": "اكتمل إعداد تخزين التكوين!",
-      "startingHeadlessSetup": "جارٍ بدء إعداد تخزين التكوين بدون واجهة رسومية...",
-      "startingSetup": "جارٍ بدء إعداد تخزين التكوين...",
-      "waitingForCompletion": "في انتظار اكتمال الإعداد...",
-      "waitingForPasskey": "في انتظار تسجيل مفتاح المرور في المتصفح..."
-    }
   },
   "table": {
     "noData": "لا توجد بيانات للعرض"

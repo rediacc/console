@@ -390,18 +390,7 @@
         "alreadyExists": "設定 \"{{name}}\" は既に存在します",
         "description": "新しい名前付き設定ファイルを作成する",
         "optionMasterPassword": "マスターパスワードでリソースを暗号化する",
-        "optionS3AccessKeyId": "S3 アクセスキー ID",
-        "optionS3Bucket": "S3 バケット名",
-        "optionS3Endpoint": "S3 エンドポイント URL",
-        "optionS3Prefix": "S3 バケット内のキープレフィックス",
-        "optionS3Region": "S3 リージョン",
-        "optionS3SecretAccessKey": "S3 シークレットアクセスキー",
-        "promptS3SecretAccessKey": "S3 シークレットアクセスキー:",
-        "s3Required": "S3 リソース状態には --s3-endpoint、--s3-bucket、--s3-access-key-id が必要です",
-        "s3SecretRequired": "S3 シークレットアクセスキーは必須です",
-        "s3Verified": "S3 アクセスが確認されました",
-        "success": "設定 \"{{name}}\" が初期化されました",
-        "verifyingS3": "S3 アクセスを確認中..."
+        "success": "設定 \"{{name}}\" が初期化されました"
       },
       "list": {
         "description": "すべての設定ファイルをリスト表示する",
@@ -519,7 +508,7 @@
         }
       },
       "set": {
-        "description": "デフォルト値を設定する (team、region、bridge、machine)",
+        "description": "デフォルト値を設定する (team、region、bridge)",
         "success": "\"{{key}}\" を \"{{value}}\" に設定しました"
       },
       "setRenet": {
@@ -533,6 +522,27 @@
       "show": {
         "description": "現在の設定の詳細を表示する",
         "noConfig": "アクティブな設定がありません。次のコマンドで作成してください: rdc config init"
+      },
+      "ssh": {
+        "description": "SSH キーの設定を管理する",
+        "remove": {
+          "description": "現在の設定から SSH キーを削除する",
+          "noKey": "SSH キーが設定されていません",
+          "success": "SSH キーを削除しました"
+        },
+        "set": {
+          "description": "現在の設定に SSH キーを設定する",
+          "embedWarning": "キーの内容が設定ファイルに保存されます",
+          "invalidKey": "ファイルに有効な SSH 秘密キーが含まれていません",
+          "keyNotFound": "SSH キーファイルが見つかりません: {{path}}",
+          "optionEmbed": "パスを保存する代わりにキーの内容を設定に埋め込む",
+          "optionKey": "SSH 秘密キーファイルのパス",
+          "success": "SSH キーを設定しました"
+        },
+        "show": {
+          "description": "現在の SSH キー設定を表示する",
+          "noKey": "SSH キーが設定されていません"
+        }
       },
       "storage": {
         "description": "現在の設定のストレージバックエンドを管理する",
@@ -1520,78 +1530,6 @@
         "description": "ストレージ Vault 管理 (クラウドアダプターのみ)"
       }
     },
-    "store": {
-      "add": {
-        "addedButUnverified": "ストア \"{{name}}\" を追加しましたが、接続を確認できませんでした",
-        "alreadyExists": "ストア \"{{name}}\" は既に存在します",
-        "description": "新しい同期ストアを追加する",
-        "gitUrlRequired": "Git ストアには --git-url が必要です",
-        "invalidType": "無効なストアタイプ: \"{{type}}\"。有効なタイプ: {{valid}}",
-        "localPathRequired": "ローカルファイルストアには --local-path が必要です",
-        "optionBwFolderId": "設定項目を整理する Bitwarden フォルダー ID（オプション）",
-        "optionEncryptionKey": "このストアの暗号化キー",
-        "optionGitBranch": "Git ブランチ名",
-        "optionGitPath": "Git リポジトリ内のパス",
-        "optionGitUrl": "Git リポジトリ URL",
-        "optionHeadless": "デバイスコードフローを使用（ローカルブラウザなし）",
-        "optionLocalPath": "ローカルディレクトリパス",
-        "optionS3AccessKeyId": "S3 アクセスキー ID",
-        "optionS3Bucket": "S3 バケット名",
-        "optionS3Endpoint": "S3 エンドポイント URL",
-        "optionS3Prefix": "S3 キープレフィックス",
-        "optionS3Region": "S3 リージョン",
-        "optionS3SecretAccessKey": "S3 シークレットアクセスキー",
-        "optionServerUrl": "Rediacc アカウントサーバー URL",
-        "optionType": "ストアタイプ (s3、local-file、bitwarden、git、vault)",
-        "optionVaultAddr": "Vault サーバーアドレス (例: http://127.0.0.1:8200)",
-        "optionVaultMount": "Vault KV v2 マウントパス (デフォルト: secret)",
-        "optionVaultNamespace": "Vault ネームスペース (エンタープライズのみ)",
-        "optionVaultPrefix": "Vault KV エンジン内のパスプレフィックス (デフォルト: rdc/configs)",
-        "optionVaultToken": "Vault 認証トークン",
-        "promptS3SecretAccessKey": "S3 シークレットアクセスキー:",
-        "promptVaultToken": "Vault トークン (または VAULT_TOKEN 環境変数を設定):",
-        "s3Required": "S3 ストアには --s3-endpoint、--s3-bucket、--s3-access-key-id が必要です",
-        "s3SecretRequired": "S3 シークレットアクセスキーは必須です",
-        "success": "ストア \"{{name}}\" が追加されました ({{type}})",
-        "vaultAddrRequired": "Vault ストアには --vault-addr が必要です",
-        "vaultTokenRequired": "Vault トークンが必要です (--vault-token を渡すか、VAULT_TOKEN 環境変数を設定してください)"
-      },
-      "description": "設定同期ストアを管理する (S3、ローカルファイル、Bitwarden、Git、Vault)",
-      "descriptionShort": "設定同期ストアを管理する (S3、ローカルファイル、Bitwarden、Git、Vault)",
-      "list": {
-        "description": "設定済みのストアをリスト表示する",
-        "noStores": "ストアが設定されていません。次のコマンドで追加してください: rdc store add <name> --type <type>"
-      },
-      "pull": {
-        "description": "ストアから設定をプルする",
-        "failed": "ストア \"{{store}}\" からのプルに失敗しました: {{error}}",
-        "notFound": "ストア \"{{name}}\" が見つかりません",
-        "optionConfig": "プル先の設定名",
-        "optionStore": "特定のストアからプルする",
-        "success": "設定 \"{{config}}\" をストア \"{{store}}\" からプルしました"
-      },
-      "push": {
-        "description": "現在の設定をストアにプッシュする",
-        "failed": "ストア \"{{store}}\" へのプッシュに失敗しました: {{error}}",
-        "noStores": "ストアが設定されていません",
-        "optionAll": "すべてのストアにプッシュする",
-        "optionStore": "特定のストアにプッシュする",
-        "success": "設定 \"{{config}}\" をストア \"{{store}}\" にプッシュしました"
-      },
-      "remove": {
-        "description": "同期ストアを削除する",
-        "success": "ストア \"{{name}}\" が削除されました"
-      },
-      "sync": {
-        "description": "ストアと設定を同期する（プルしてからプッシュ）",
-        "failed": "ストア \"{{store}}\" の同期に失敗しました: {{error}}",
-        "noStores": "ストアが設定されていません",
-        "optionAll": "すべてのストアと同期する",
-        "optionStore": "特定のストアと同期する",
-        "pulled": "ストア \"{{store}}\" から新しいバージョンをプルしました",
-        "pushed": "ストア \"{{store}}\" にプッシュしました"
-      }
-    },
     "subscription": {
       "activation": {
         "description": "マシンアクティベーション管理",
@@ -2007,7 +1945,6 @@
       "repository": "リポジトリ管理",
       "shortcuts": "クイックコマンド（ショートカット）",
       "storage": "ストレージ管理",
-      "store": "ストア管理",
       "subscription": "サブスクリプション管理",
       "sync": "ファイル同期",
       "team": "チーム管理",
@@ -2024,12 +1961,12 @@
         "tip": "認証トークンはコンテキストにローカルに保存されます。`--save-as`を使用して、複数の環境用に名前付きコンテキストに資格情報を保存できます。"
       },
       "config": {
-        "afterDescription": "設定ファイルには接続の詳細（API URL、認証情報、デフォルトのチーム/リージョン/マシン）が保存されており、環境間を素早く切り替えることができます。",
+        "afterDescription": "設定ファイルには接続の詳細（API URL、認証情報、デフォルトのチーム/リージョン/ブリッジ）が保存されており、環境間を素早く切り替えることができます。",
         "init": {
           "afterDescription": "ローカルモードでは、マシンを直接追加できます:"
         },
         "set": {
-          "tip": "デフォルトを設定しておくと、コマンドごとに `--team`、`--region`、`--machine` を指定する必要がなくなります。"
+          "tip": "デフォルトを設定しておくと、コマンドごとに `--team`、`--region`、`--bridge` を指定する必要がなくなります。"
         }
       },
       "machine": {
@@ -2114,8 +2051,8 @@
     "invalidPriorityMax": "無効な priority-max 値です。1 から 5 の間である必要があります。",
     "invalidPriorityMin": "無効な priority-min 値です。1 から 5 の間である必要があります。",
     "machineNotFound": "マシン \"{{name}}\" が見つかりません",
-    "machineRequired": "マシン名が必要です。--machine を使用するか、コンテキストを設定してください。",
-    "machineRequiredLocal": "マシン名が必要です。--machine を使用するか、次のコマンドでデフォルトを設定してください: rdc config set machine <name>",
+    "machineRequired": "マシン名が必要です。--machine <name> を使用してください",
+    "machineRequiredLocal": "マシン名が必要です。--machine <name> を使用してください",
     "networkError": "ネットワークエラー: {{message}}",
     "noActiveConfig": "アクティブな設定がありません。`rdc config init <name>` で作成してください。",
     "notAuthenticated": "認証されていません。実行してください: rdc auth login",
@@ -2228,11 +2165,6 @@
       "takeover": "本番データをフォークのデータで置き換える",
       "tunnel": "コンテナポートへのSSHトンネル",
       "up": "自動マウントでデプロイ"
-    },
-    "store": {
-      "add": "S3ストアバックエンドを追加",
-      "pull": "ストアからConfigをプル",
-      "push": "全ストアにConfigをプッシュ"
     },
     "sync": {
       "download": "リポジトリファイルをローカルにダウンロード",
@@ -2419,19 +2351,6 @@
     "pending": "保留中",
     "processing": "処理中",
     "success": "成功"
-  },
-  "stores": {
-    "rediaccSetup": {
-      "browserFallback": "(ブラウザが開かなかった場合は、上記のURLをコピーして手動で開いてください)",
-      "browserWillOpen": "パスキー登録のためにブラウザウィンドウが開きます。",
-      "headlessInstructions": "ブラウザのあるデバイスでURLを開く必要があります。",
-      "openUrl": "この URL をスマートフォンまたはノートパソコンで開いてください:",
-      "setupComplete": "設定ストレージのセットアップが完了しました！",
-      "startingHeadlessSetup": "ヘッドレス設定ストレージのセットアップを開始しています...",
-      "startingSetup": "設定ストレージのセットアップを開始しています...",
-      "waitingForCompletion": "セットアップの完了を待機中...",
-      "waitingForPasskey": "ブラウザでのパスキー登録を待機中..."
-    }
   },
   "table": {
     "noData": "表示するデータがありません"

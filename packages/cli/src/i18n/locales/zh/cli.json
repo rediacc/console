@@ -390,18 +390,7 @@
         "alreadyExists": "配置 \"{{name}}\" 已存在",
         "description": "创建新的命名配置文件",
         "optionMasterPassword": "使用主密码加密资源",
-        "optionS3AccessKeyId": "S3 访问密钥 ID",
-        "optionS3Bucket": "S3 存储桶名称",
-        "optionS3Endpoint": "S3 端点 URL",
-        "optionS3Prefix": "S3 存储桶中的键前缀",
-        "optionS3Region": "S3 区域",
-        "optionS3SecretAccessKey": "S3 访问密钥",
-        "promptS3SecretAccessKey": "S3 访问密钥：",
-        "s3Required": "S3 资源状态需要 --s3-endpoint、--s3-bucket 和 --s3-access-key-id",
-        "s3SecretRequired": "S3 访问密钥为必填项",
-        "s3Verified": "S3 访问已验证",
-        "success": "配置 \"{{name}}\" 已初始化",
-        "verifyingS3": "正在验证 S3 访问..."
+        "success": "配置 \"{{name}}\" 已初始化"
       },
       "list": {
         "description": "列出所有配置文件",
@@ -519,7 +508,7 @@
         }
       },
       "set": {
-        "description": "设置默认值（team、region、bridge、machine）",
+        "description": "设置默认值（team、region、bridge）",
         "success": "已将 \"{{key}}\" 设置为 \"{{value}}\""
       },
       "setRenet": {
@@ -533,6 +522,27 @@
       "show": {
         "description": "显示当前配置详情",
         "noConfig": "没有活跃的配置。请使用以下命令创建：rdc config init"
+      },
+      "ssh": {
+        "description": "管理 SSH 密钥配置",
+        "remove": {
+          "description": "从当前配置中移除 SSH 密钥",
+          "noKey": "未配置 SSH 密钥",
+          "success": "SSH 密钥已移除"
+        },
+        "set": {
+          "description": "为当前配置设置 SSH 密钥",
+          "embedWarning": "密钥内容将存储在配置文件中",
+          "invalidKey": "文件不包含有效的 SSH 私钥",
+          "keyNotFound": "未找到 SSH 密钥文件：{{path}}",
+          "optionEmbed": "将密钥内容嵌入配置中而非存储路径",
+          "optionKey": "SSH 私钥文件路径",
+          "success": "SSH 密钥已配置"
+        },
+        "show": {
+          "description": "显示当前 SSH 密钥配置",
+          "noKey": "未配置 SSH 密钥"
+        }
       },
       "storage": {
         "description": "管理当前配置中的存储后端",
@@ -1520,78 +1530,6 @@
         "description": "存储保险库管理 (仅限云适配器)"
       }
     },
-    "store": {
-      "add": {
-        "addedButUnverified": "同步存储 \"{{name}}\" 已添加，但连接无法验证",
-        "alreadyExists": "同步存储 \"{{name}}\" 已存在",
-        "description": "添加新的同步存储",
-        "gitUrlRequired": "Git 存储需要 --git-url",
-        "invalidType": "无效的存储类型：\"{{type}}\"。有效类型：{{valid}}",
-        "localPathRequired": "本地文件存储需要 --local-path",
-        "optionBwFolderId": "用于整理配置项的 Bitwarden 文件夹 ID（可选）",
-        "optionEncryptionKey": "此存储的加密密钥",
-        "optionGitBranch": "Git 分支名称",
-        "optionGitPath": "Git 仓库内的路径",
-        "optionGitUrl": "Git 仓库 URL",
-        "optionHeadless": "使用设备代码流（无本地浏览器）",
-        "optionLocalPath": "本地目录路径",
-        "optionS3AccessKeyId": "S3 访问密钥 ID",
-        "optionS3Bucket": "S3 存储桶名称",
-        "optionS3Endpoint": "S3 端点 URL",
-        "optionS3Prefix": "S3 键前缀",
-        "optionS3Region": "S3 区域",
-        "optionS3SecretAccessKey": "S3 访问密钥",
-        "optionServerUrl": "Rediacc 账户服务器 URL",
-        "optionType": "存储类型（s3、local-file、bitwarden、git、vault）",
-        "optionVaultAddr": "Vault 服务器地址（例如 http://127.0.0.1:8200）",
-        "optionVaultMount": "Vault KV v2 挂载路径（默认：secret）",
-        "optionVaultNamespace": "Vault 命名空间（仅企业版）",
-        "optionVaultPrefix": "Vault KV 引擎内的路径前缀（默认：rdc/configs）",
-        "optionVaultToken": "Vault 身份验证令牌",
-        "promptS3SecretAccessKey": "S3 访问密钥：",
-        "promptVaultToken": "Vault 令牌（或设置 VAULT_TOKEN 环境变量）：",
-        "s3Required": "S3 存储需要 --s3-endpoint、--s3-bucket 和 --s3-access-key-id",
-        "s3SecretRequired": "S3 访问密钥为必填项",
-        "success": "同步存储 \"{{name}}\" 已添加（{{type}}）",
-        "vaultAddrRequired": "Vault 存储需要 --vault-addr",
-        "vaultTokenRequired": "Vault 令牌为必填项（传入 --vault-token 或设置 VAULT_TOKEN 环境变量）"
-      },
-      "description": "管理配置同步存储（S3、本地文件、Bitwarden、Git、Vault）",
-      "descriptionShort": "管理配置同步存储（S3、本地文件、Bitwarden、Git、Vault）",
-      "list": {
-        "description": "列出已配置的同步存储",
-        "noStores": "未配置任何同步存储。请使用以下命令添加：rdc store add <name> --type <type>"
-      },
-      "pull": {
-        "description": "从同步存储拉取配置",
-        "failed": "从同步存储 \"{{store}}\" 拉取失败：{{error}}",
-        "notFound": "同步存储 \"{{name}}\" 未找到",
-        "optionConfig": "要拉取到的配置名称",
-        "optionStore": "从特定存储拉取",
-        "success": "已从同步存储 \"{{store}}\" 拉取配置 \"{{config}}\""
-      },
-      "push": {
-        "description": "将当前配置推送到同步存储",
-        "failed": "推送到同步存储 \"{{store}}\" 失败：{{error}}",
-        "noStores": "未配置任何同步存储",
-        "optionAll": "推送到所有存储",
-        "optionStore": "推送到特定存储",
-        "success": "已将配置 \"{{config}}\" 推送到同步存储 \"{{store}}\""
-      },
-      "remove": {
-        "description": "移除同步存储",
-        "success": "同步存储 \"{{name}}\" 已移除"
-      },
-      "sync": {
-        "description": "与同步存储同步配置（先拉取后推送）",
-        "failed": "与同步存储 \"{{store}}\" 同步失败：{{error}}",
-        "noStores": "未配置任何同步存储",
-        "optionAll": "与所有存储同步",
-        "optionStore": "与特定存储同步",
-        "pulled": "已从同步存储 \"{{store}}\" 拉取更新版本",
-        "pushed": "已推送到同步存储 \"{{store}}\""
-      }
-    },
     "subscription": {
       "activation": {
         "description": "机器激活管理",
@@ -2007,7 +1945,6 @@
       "repository": "仓库管理",
       "shortcuts": "快捷命令（快捷方式）",
       "storage": "存储管理",
-      "store": "同步存储管理",
       "subscription": "订阅管理",
       "sync": "文件同步",
       "team": "团队管理",
@@ -2024,12 +1961,12 @@
         "tip": "您的身份验证令牌存储在本地上下文中。使用 `--save-as` 将凭据存储在命名上下文下，以便用于多个环境。"
       },
       "config": {
-        "afterDescription": "配置文件存储连接详情（API URL、凭证、默认 team/region/machine），让您可以快速切换环境。",
+        "afterDescription": "配置文件存储连接详情（API URL、凭证、默认 team/region/bridge），让您可以快速切换环境。",
         "init": {
           "afterDescription": "在本地模式下，您可以直接添加机器："
         },
         "set": {
-          "tip": "设置默认值意味着您无需在每条命令中传入 `--team`、`--region` 或 `--machine`。"
+          "tip": "设置默认值意味着您无需在每条命令中传入 `--team`、`--region` 或 `--bridge`。"
         }
       },
       "machine": {
@@ -2114,8 +2051,8 @@
     "invalidPriorityMax": "无效的优先级-最大值。必须在 1 到 5 之间。",
     "invalidPriorityMin": "无效的优先级-最小值。必须在 1 到 5 之间。",
     "machineNotFound": "机器 \"{{name}}\" 未找到",
-    "machineRequired": "需要机器名称。使用 --machine 或设置上下文。",
-    "machineRequiredLocal": "需要机器名称。使用 --machine 或使用以下命令设置默认值：rdc config set machine <name>",
+    "machineRequired": "需要机器名称。使用 --machine <name>",
+    "machineRequiredLocal": "需要机器名称。使用 --machine <name>",
     "networkError": "网络错误：{{message}}",
     "noActiveConfig": "没有活跃的配置。请使用以下命令创建：rdc config init <name>",
     "notAuthenticated": "未认证。运行：rdc auth login",
@@ -2228,11 +2165,6 @@
       "takeover": "用分支数据替换生产数据",
       "tunnel": "到容器端口的 SSH 隧道",
       "up": "自动挂载部署"
-    },
-    "store": {
-      "add": "添加 S3 存储后端",
-      "pull": "从存储拉取配置",
-      "push": "推送配置到所有存储"
     },
     "sync": {
       "download": "下载仓库文件到本地",
@@ -2419,19 +2351,6 @@
     "pending": "待处理",
     "processing": "处理中",
     "success": "成功"
-  },
-  "stores": {
-    "rediaccSetup": {
-      "browserFallback": "(如果浏览器未打开，请复制上方的URL并手动打开)",
-      "browserWillOpen": "将打开浏览器窗口进行通行密钥注册。",
-      "headlessInstructions": "您需要在有浏览器的设备上打开一个 URL。",
-      "openUrl": "在您的手机或笔记本电脑上打开此 URL：",
-      "setupComplete": "配置存储设置完成！",
-      "startingHeadlessSetup": "正在启动无界面配置存储设置...",
-      "startingSetup": "正在启动配置存储设置...",
-      "waitingForCompletion": "正在等待设置完成...",
-      "waitingForPasskey": "正在等待浏览器中的通行密钥注册..."
-    }
   },
   "table": {
     "noData": "没有要显示的数据"

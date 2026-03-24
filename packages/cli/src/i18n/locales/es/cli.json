@@ -390,18 +390,7 @@
         "alreadyExists": "La configuración \"{{name}}\" ya existe",
         "description": "Crear un nuevo archivo de configuración con nombre",
         "optionMasterPassword": "Cifrar recursos con una contraseña maestra",
-        "optionS3AccessKeyId": "ID de clave de acceso S3",
-        "optionS3Bucket": "Nombre del bucket S3",
-        "optionS3Endpoint": "URL del endpoint S3",
-        "optionS3Prefix": "Prefijo de clave en el bucket S3",
-        "optionS3Region": "Región S3",
-        "optionS3SecretAccessKey": "Clave de acceso secreta S3",
-        "promptS3SecretAccessKey": "Clave de acceso secreta S3:",
-        "s3Required": "--s3-endpoint, --s3-bucket y --s3-access-key-id son requeridos para el estado de recursos S3",
-        "s3SecretRequired": "La clave de acceso secreta S3 es requerida",
-        "s3Verified": "Acceso S3 verificado",
-        "success": "Configuración \"{{name}}\" inicializada",
-        "verifyingS3": "Verificando acceso S3..."
+        "success": "Configuración \"{{name}}\" inicializada"
       },
       "list": {
         "description": "Listar todos los archivos de configuración",
@@ -519,7 +508,7 @@
         }
       },
       "set": {
-        "description": "Establecer un valor predeterminado (equipo, región, puente, máquina)",
+        "description": "Establecer un valor predeterminado (equipo, región, puente)",
         "success": "\"{{key}}\" establecido en \"{{value}}\""
       },
       "setRenet": {
@@ -533,6 +522,27 @@
       "show": {
         "description": "Mostrar detalles de la configuración actual",
         "noConfig": "No hay configuración activa. Cree una con: rdc config init"
+      },
+      "ssh": {
+        "description": "Gestionar la configuración de clave SSH",
+        "remove": {
+          "description": "Eliminar clave SSH de la configuración actual",
+          "noKey": "No hay clave SSH configurada",
+          "success": "Clave SSH eliminada"
+        },
+        "set": {
+          "description": "Establecer clave SSH para la configuración actual",
+          "embedWarning": "El contenido de la clave se almacenará en el archivo de configuración",
+          "invalidKey": "El archivo no contiene una clave SSH privada válida",
+          "keyNotFound": "Archivo de clave SSH no encontrado: {{path}}",
+          "optionEmbed": "Incrustar el contenido de la clave en la configuración en lugar de almacenar la ruta",
+          "optionKey": "Ruta al archivo de clave SSH privada",
+          "success": "Clave SSH configurada"
+        },
+        "show": {
+          "description": "Mostrar la configuración actual de clave SSH",
+          "noKey": "No hay clave SSH configurada"
+        }
       },
       "storage": {
         "description": "Gestionar backends de almacenamiento en la configuración actual",
@@ -1520,78 +1530,6 @@
         "description": "Gestión del almacén de almacenamiento (solo adaptador cloud)"
       }
     },
-    "store": {
-      "add": {
-        "addedButUnverified": "Store \"{{name}}\" agregado pero no se pudo verificar la conexión",
-        "alreadyExists": "El store \"{{name}}\" ya existe",
-        "description": "Agregar un nuevo store de sincronización",
-        "gitUrlRequired": "--git-url es requerido para stores Git",
-        "invalidType": "Tipo de store inválido: \"{{type}}\". Tipos válidos: {{valid}}",
-        "localPathRequired": "--local-path es requerido para stores de archivo local",
-        "optionBwFolderId": "ID de carpeta de Bitwarden para organizar elementos de configuración (opcional)",
-        "optionEncryptionKey": "Clave de cifrado para este store",
-        "optionGitBranch": "Nombre de rama Git",
-        "optionGitPath": "Ruta dentro del repositorio Git",
-        "optionGitUrl": "URL del repositorio Git",
-        "optionHeadless": "Usar flujo de código de dispositivo (sin navegador local)",
-        "optionLocalPath": "Ruta de directorio local",
-        "optionS3AccessKeyId": "ID de clave de acceso S3",
-        "optionS3Bucket": "Nombre del bucket S3",
-        "optionS3Endpoint": "URL del endpoint S3",
-        "optionS3Prefix": "Prefijo de clave S3",
-        "optionS3Region": "Región S3",
-        "optionS3SecretAccessKey": "Clave de acceso secreta S3",
-        "optionServerUrl": "URL del servidor de cuenta Rediacc",
-        "optionType": "Tipo de store (s3, local-file, bitwarden, git, vault)",
-        "optionVaultAddr": "Dirección del servidor Vault (ej. http://127.0.0.1:8200)",
-        "optionVaultMount": "Ruta de montaje KV v2 de Vault (predeterminado: secret)",
-        "optionVaultNamespace": "Namespace de Vault (solo enterprise)",
-        "optionVaultPrefix": "Prefijo de ruta dentro del motor KV de Vault (predeterminado: rdc/configs)",
-        "optionVaultToken": "Token de autenticación de Vault",
-        "promptS3SecretAccessKey": "Clave de acceso secreta S3:",
-        "promptVaultToken": "Token de Vault (o establezca la variable VAULT_TOKEN):",
-        "s3Required": "--s3-endpoint, --s3-bucket y --s3-access-key-id son requeridos para stores S3",
-        "s3SecretRequired": "La clave de acceso secreta S3 es requerida",
-        "success": "Store \"{{name}}\" agregado ({{type}})",
-        "vaultAddrRequired": "--vault-addr es requerido para stores Vault",
-        "vaultTokenRequired": "El token de Vault es requerido (pase --vault-token o establezca la variable VAULT_TOKEN)"
-      },
-      "description": "Gestionar stores de sincronización de configuración (S3, archivo local, Bitwarden, Git, Vault)",
-      "descriptionShort": "Gestionar stores de sincronización de configuración (S3, archivo local, Bitwarden, Git, Vault)",
-      "list": {
-        "description": "Listar stores configurados",
-        "noStores": "No hay stores configurados. Agregue uno con: rdc store add <name> --type <type>"
-      },
-      "pull": {
-        "description": "Obtener configuración desde un store",
-        "failed": "Error al obtener desde el store \"{{store}}\": {{error}}",
-        "notFound": "Store \"{{name}}\" no encontrado",
-        "optionConfig": "Nombre de configuración destino",
-        "optionStore": "Obtener desde un store específico",
-        "success": "Configuración \"{{config}}\" obtenida desde el store \"{{store}}\""
-      },
-      "push": {
-        "description": "Enviar configuración actual a los stores",
-        "failed": "Error al enviar al store \"{{store}}\": {{error}}",
-        "noStores": "No hay stores configurados",
-        "optionAll": "Enviar a todos los stores",
-        "optionStore": "Enviar a un store específico",
-        "success": "Configuración \"{{config}}\" enviada al store \"{{store}}\""
-      },
-      "remove": {
-        "description": "Eliminar un store de sincronización",
-        "success": "Store \"{{name}}\" eliminado"
-      },
-      "sync": {
-        "description": "Sincronizar configuración con stores (obtener y luego enviar)",
-        "failed": "Falló la sincronización para el store \"{{store}}\": {{error}}",
-        "noStores": "No hay stores configurados",
-        "optionAll": "Sincronizar con todos los stores",
-        "optionStore": "Sincronizar con un store específico",
-        "pulled": "Versión más reciente obtenida del store \"{{store}}\"",
-        "pushed": "Enviado al store \"{{store}}\""
-      }
-    },
     "subscription": {
       "activation": {
         "description": "Gestión de activación de máquinas",
@@ -2007,7 +1945,6 @@
       "repository": "Gestión de Repositorios",
       "shortcuts": "Comandos Rápidos (Atajos)",
       "storage": "Gestión de Almacenamiento",
-      "store": "Gestión de Stores",
       "subscription": "Gestión de Suscripciones",
       "sync": "Sincronización de archivos",
       "team": "Gestión de Equipos",
@@ -2024,12 +1961,12 @@
         "tip": "Su token de autenticación se almacena localmente en su contexto. Use `--save-as` para almacenar credenciales bajo un contexto con nombre para múltiples entornos."
       },
       "config": {
-        "afterDescription": "Los archivos de configuración almacenan detalles de conexión (URL de API, credenciales, equipo/región/máquina predeterminados) para que pueda cambiar entre entornos rápidamente.",
+        "afterDescription": "Los archivos de configuración almacenan detalles de conexión (URL de API, credenciales, equipo/región/puente predeterminados) para que pueda cambiar entre entornos rápidamente.",
         "init": {
           "afterDescription": "En modo local puede agregar máquinas directamente:"
         },
         "set": {
-          "tip": "Establecer valores predeterminados significa que no necesita pasar `--team`, `--region` o `--machine` con cada comando."
+          "tip": "Establecer valores predeterminados significa que no necesita pasar `--team`, `--region` o `--bridge` con cada comando."
         }
       },
       "machine": {
@@ -2114,8 +2051,8 @@
     "invalidPriorityMax": "Valor inválido de prioridad-max. Debe estar entre 1 y 5.",
     "invalidPriorityMin": "Valor inválido de prioridad-min. Debe estar entre 1 y 5.",
     "machineNotFound": "Máquina \"{{name}}\" no encontrada",
-    "machineRequired": "Nombre de máquina requerido. Use --machine o establezca contexto.",
-    "machineRequiredLocal": "Nombre de máquina requerido. Use --machine o establezca por defecto con: rdc config set machine <name>",
+    "machineRequired": "Nombre de máquina requerido. Use --machine <name>",
+    "machineRequiredLocal": "Nombre de máquina requerido. Use --machine <name>",
     "networkError": "Error de red: {{message}}",
     "noActiveConfig": "Sin configuración activa. Cree una con: rdc config init <name>",
     "notAuthenticated": "No autenticado. Ejecute: rdc auth login",
@@ -2228,11 +2165,6 @@
       "takeover": "Reemplazar datos de producción con datos del fork",
       "tunnel": "Túnel SSH a puerto de contenedor",
       "up": "Desplegar con montaje automático"
-    },
-    "store": {
-      "add": "Agregar backend de almacenamiento S3",
-      "pull": "Obtener config de un almacén",
-      "push": "Enviar config a todos los almacenes"
     },
     "sync": {
       "download": "Descargar archivos del repositorio",
@@ -2419,19 +2351,6 @@
     "pending": "Pendiente",
     "processing": "Procesando",
     "success": "Éxito"
-  },
-  "stores": {
-    "rediaccSetup": {
-      "browserFallback": "(Si el navegador no se abrió, copie la URL anterior y ábrala manualmente)",
-      "browserWillOpen": "Se abrirá una ventana del navegador para el registro de la clave de acceso.",
-      "headlessInstructions": "Necesitará abrir una URL en un dispositivo con navegador.",
-      "openUrl": "Abra esta URL en su teléfono o portátil:",
-      "setupComplete": "¡Configuración del almacenamiento completada!",
-      "startingHeadlessSetup": "Iniciando la configuración del almacenamiento sin interfaz gráfica...",
-      "startingSetup": "Iniciando la configuración del almacenamiento...",
-      "waitingForCompletion": "Esperando a que se complete la configuración...",
-      "waitingForPasskey": "Esperando el registro de la clave de acceso en el navegador..."
-    }
   },
   "table": {
     "noData": "No hay datos para mostrar"
