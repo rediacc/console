@@ -15,6 +15,7 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 - **Rediaccfile**: Bash script with lifecycle functions (`up()`, `down()`, `info()`) sourced by renet during deployment.
 - **Config**: CLI configuration file for connecting to machines. Each config is a flat JSON file (~/.config/rediacc/rediacc.json by default) with a unique ID and version number. Adapter auto-detected: local (default) or cloud (experimental, when apiUrl+token present). Multiple named configs supported (e.g., production.json, staging.json).
 - **State Provider**: Abstraction layer (`CloudStateProvider`, `LocalStateProvider`) that routes API calls based on adapter detection.
+- **Config Storage**: Optional zero-knowledge encrypted config sync. Setup via web portal (`/account/config-setup`), requires passkey with PRF extension. One store per org, configs scoped per team. Member management via portal. CLI push/pull commands planned but not yet implemented.
 
 ### Packages
 

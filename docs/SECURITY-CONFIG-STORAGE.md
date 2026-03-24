@@ -1,5 +1,8 @@
 # Config Storage Security Architecture
 
+> **Note**: Config storage setup and member management are web-portal-only operations.
+> CLI push/pull commands are planned but not yet implemented.
+
 ## Executive Summary
 
 The Rediacc config storage provider implements zero-knowledge encrypted config synchronization. CLI configurations — containing SSH keys, machine IPs, repository credentials, and network topology — are encrypted client-side before transmission. The server stores only opaque encrypted blobs it cannot decrypt, even during request processing.

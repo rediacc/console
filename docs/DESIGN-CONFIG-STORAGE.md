@@ -850,20 +850,25 @@ packages/cli/src/stores/rediacc-store-adapter.ts
 
 Implements the same `StoreAdapter` interface as S3, Bitwarden, Git, etc. Registered as type `"rediacc"` in the store registry.
 
-### CLI Commands
+## Access Interfaces
 
-```bash
-# Setup (once per org, opens browser for passkey)
-rdc store add --type rediacc
+### Web Portal (Setup + Management)
+- `/account/config-setup` — Initial store setup (passkey + PRF ceremony)
+- `/account/config-storage` — Dashboard (status, activity, passkey info)
+- `/account/config-storage/members` — Member management (add via CLI, remove via portal)
+- `/account/admin/config-storage` — Admin overview
 
-# Push/pull (uses rotating token, no password prompt)
-rdc store push --store my-rediacc-store
-rdc store pull --store my-rediacc-store
-rdc store sync --store my-rediacc-store
+### CLI (Daily Operations — Future)
+Push/pull commands will be added under `rdc config storage`:
+- `rdc config storage push` — encrypt and upload config
+- `rdc config storage pull` — download and decrypt config
+- `rdc config storage status` — show store info
 
-# Team management
-rdc store members --store my-rediacc-store
-```
+These require passkey_secret in OS keyring (set during web portal setup).
+
+### API (SDK/Token Auth)
+Config CRUD operations use rotating X-Config-Token header.
+Portal operations use session cookies (+ 2FA/elevated for mutations).
 
 ### Token File
 
