@@ -47,7 +47,17 @@ export function flattenAndHash(
   for (const [key, value] of Object.entries(obj)) {
     const fullPath = prefix ? `${prefix}.${key}` : key;
 
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i++) {
+        const itemPath = `${fullPath}.${i}`;
+        const item = value[i];
+        if (typeof item === 'string') {
+          hashes[itemPath] = crc32(item);
+        } else if (item !== null && typeof item === 'object') {
+          Object.assign(hashes, flattenAndHash(item as Record<string, unknown>, itemPath));
+        }
+      }
+    } else if (value !== null && typeof value === 'object') {
       Object.assign(hashes, flattenAndHash(value as Record<string, unknown>, fullPath));
     } else if (typeof value === 'string') {
       hashes[fullPath] = crc32(value);
