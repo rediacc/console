@@ -28,11 +28,11 @@ rdc doctor     # Verify: Node, SSH key, renet, Docker — all green
 
 ```bash
 rdc config machine add my-server --ip 192.168.1.100 --user muhammed
-rdc config machine setup my-server        # Provisions renet + creates BTRFS datastore
+rdc config machine setup my-server        # Provisions renet + creates datastore
 ```
 
-> **What happens:** SSH key scanned, renet binary uploaded, datastore initialized at
-> `/mnt/rediacc` with LUKS encryption ready.
+> **What happens:** SSH key scanned, renet binary uploaded, encrypted datastore
+> initialized on the server — ready for repos.
 
 ### 5. Config File
 
@@ -42,7 +42,6 @@ cat ~/.config/rediacc/rediacc.json         # Raw JSON: machines, repos, storages
 ```
 
 > **One file = one environment.** Copy it to another laptop and you're ready.
-> Encrypt it with `--master-password` for security.
 
 ---
 
@@ -70,8 +69,7 @@ rdc vscode my-server my-app              # Opens VS Code SSH — lands inside th
 
 - **Universal user** (`rediacc`): Same UID across every machine. Move a repo to
   another server — file ownership just works. No `chown` headaches.
-- **Per-repo Docker daemon**: Each repo gets its own daemon at
-  `/var/run/rediacc/docker-{networkId}.sock` with a `/26` loopback IP range (61 usable IPs).
+- **Per-repo Docker daemon**: Each repo gets its own isolated Docker daemon.
   `docker ps` only shows THIS repo's containers.
 - **Landlock + OverlayFS sandbox**: The VS Code shell is filesystem-restricted.
   You can't read other repos. Writes to `$HOME` are per-repo overlays.
@@ -89,7 +87,7 @@ rdc repo up my-app -m my-server                               # Start from CLI (
 | | `rdc repo up` | `renet dev up` |
 |---|---|---|
 | **Where you run it** | Your laptop (CLI) | Inside VS Code sandbox |
-| **What it does** | SSH → mount LUKS → run Rediaccfile `up()` | Directly calls Rediaccfile `up()` |
+| **What it does** | SSH → mount → run Rediaccfile `up()` | Directly calls Rediaccfile `up()` |
 | **Use case** | CI/CD, automation, remote ops | Developer inner loop |
 | **Isolation** | Orchestrates from outside | Already inside the sandbox |
 
@@ -133,7 +131,7 @@ rdc repo list -m my-server                                  # Shows: my-app (gra
 rdc repo delete my-app:experiment -m my-server              # Delete fork, grand untouched
 ```
 
-> **Instant, zero-copy clone** — BTRFS reflinks. Microseconds, no data copied.
+> **Instant, zero-copy clone** — CoW (copy-on-write). Microseconds, no data copied.
 > Blocks are shared until one side writes.
 
 **Use cases:**
@@ -144,7 +142,7 @@ rdc repo delete my-app:experiment -m my-server              # Delete fork, grand
 ### 2. Push to Another Machine
 
 ```bash
-# Push repo backup to another machine
+# Push repo to another machine
 rdc repo push my-app -m my-server --to backup-server
 
 # Push and auto-deploy on target
@@ -153,11 +151,9 @@ rdc repo push my-app -m my-server --to backup-server --up
 # Push with CRIU checkpoint (live migration — preserves memory state)
 rdc repo push my-app -m my-server --to new-server --checkpoint --up
 
-# Push to a new machine that doesn't exist yet (auto-provision via cloud provider)
+# Push to a new machine (auto-provision via cloud provider)
 rdc repo push my-app -m my-server --to new-server --provision hetzner --up
 ```
-
-> **Demo:** Push a running app to a brand-new server in one command.
 
 ### 3. Push to Cloud Storage (OneDrive, Google Drive, S3)
 
@@ -178,20 +174,23 @@ rdc repo backup list --from my-s3-backup -m my-server
 > `--to` auto-detects whether the target is a machine or a storage backend.
 > Works with any rclone-supported provider: S3, R2, B2, OneDrive, Google Drive, SFTP, etc.
 
-### 4. Pull from Remote to Local Machine
+### 4. Pull from Remote
 
 ```bash
-# Pull repo from another machine
-rdc repo pull my-app -m my-server --from backup-server
+# Pull repo from a cloud machine to your local server
+rdc repo pull my-app -m my-local-server --from cloud-server
 
 # Pull from cloud storage
-rdc repo pull my-app -m my-server --from my-s3-backup
+rdc repo pull my-app -m my-local-server --from my-s3-backup
 
 # Pull and start immediately
-rdc repo pull my-app -m my-server --from my-s3-backup --up
+rdc repo pull my-app -m my-local-server --from my-s3-backup --up
 ```
 
-> **Full cycle:** Create on dev machine → push to cloud → pull on production → `--up`.
+> **Why pull?** Your local machine is behind NAT — the cloud can't push to you.
+> But you can reach the cloud. Pull brings the repo home.
+>
+> **Full cycle:** Create on dev → push to cloud → pull on production → `--up`.
 > One repo, any machine, any cloud.
 
 ---
@@ -203,12 +202,12 @@ rdc repo pull my-app -m my-server --from my-s3-backup --up
 ```bash
 rdc config infra set my-server           # Configure: base domain, public IPs, port ranges
 rdc config infra show my-server          # Review configuration
-rdc config infra push my-server          # Push Traefik proxy config to remote
+rdc config infra push my-server          # Push proxy config to remote
 ```
 
 > **How routing works:**
 > - Traefik auto-discovers containers via `rediacc.service_name` and `rediacc.service_port` labels
-> - Routes: `{service}-{networkId}.{baseDomain}` → container loopback IP:port
+> - Routes: `{service}-{networkId}.{baseDomain}` → container IP:port
 > - SSL: Let's Encrypt via Cloudflare DNS-01 challenge (auto-renewal, wildcard certs)
 
 ### 2. Proxy Template
@@ -226,25 +225,3 @@ rdc repo up infra -m my-server                           # Start Traefik
 # TCP/UDP forwarding for databases:
 #   rediacc.tcp_ports=3306,5432 → auto-allocated external ports
 ```
-
----
-
-## Quick Reference Card
-
-| Task | Command |
-|------|---------|
-| Install | `curl -fsSL https://www.rediacc.com/install.sh \| bash` |
-| Add machine | `rdc config machine add <name> --ip <ip> --user <user>` |
-| Setup machine | `rdc config machine setup <name>` |
-| Create repo | `rdc repo create <name> -m <machine> --size <size>` |
-| Start repo | `rdc repo up <name> -m <machine>` |
-| VS Code | `rdc vscode <machine> <repo>` |
-| Terminal | `rdc term <machine> <repo>` |
-| Tunnel | `rdc repo tunnel -m <machine> -r <repo>` |
-| Sync upload | `rdc repo sync upload -m <machine> -r <repo> -l <path>` |
-| Fork | `rdc repo fork <repo> -m <machine> --tag <tag>` |
-| Push to machine | `rdc repo push <repo> -m <machine> --to <target>` |
-| Push to cloud | `rdc repo push <repo> -m <machine> --to <storage>` |
-| Pull | `rdc repo pull <repo> -m <machine> --from <source>` |
-| Apply template | `rdc repo template apply <tmpl> -m <machine> -r <repo>` |
-| Proxy setup | `rdc config infra push <machine>` |
