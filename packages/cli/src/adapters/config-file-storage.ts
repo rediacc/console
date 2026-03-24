@@ -9,7 +9,7 @@ const CONFIG_DIR = getConfigDir();
 const DEFAULT_CONFIG_NAME = 'rediacc';
 
 /** Files in config dir that are not config files */
-const EXCLUDED_FILES = new Set(['.credentials.json', 'update-state.json']);
+const EXCLUDED_FILES = new Set(['update-state.json']);
 
 /**
  * Storage adapter for per-file CLI configuration with file locking.
