@@ -55,8 +55,8 @@ source "$SCRIPT_DIR/ci-env.sh"
 # Restore production account credentials (overwritten by ci-env.sh key generation)
 export ACCOUNT_SERVER_API_KEY="$_PROD_ACCOUNT_SERVER_API_KEY"
 export ED25519_PUBLIC_KEY="$_PROD_ED25519_PUBLIC_KEY"
-# Elite uses the production account server (not a local one)
-export ACCOUNT_SERVER_URL="${ACCOUNT_SERVER_URL:-https://www.rediacc.com/account/}"
+# CI uses SQL default subscription — no external account server dependency
+unset ACCOUNT_SERVER_URL
 
 # CI-specific overrides
 export CI_MODE="true"
