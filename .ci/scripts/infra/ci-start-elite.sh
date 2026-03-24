@@ -7,7 +7,6 @@
 #   .ci/scripts/infra/ci-start-elite.sh
 #
 # Required environment variables (from GitHub secrets):
-#   ACCOUNT_SERVER_API_KEY     - Production account server API key
 #   ED25519_PUBLIC_KEY         - Production Ed25519 public key
 #
 # Outputs (for GitHub Actions):
@@ -23,22 +22,16 @@ ELITE_DIR="$CONSOLE_ROOT/private/elite"
 echo "Starting Rediacc Elite CI services..."
 
 # =============================================================================
-# VALIDATE ACCOUNT SERVER CREDENTIALS (before ci-env.sh may overwrite them)
+# VALIDATE REQUIRED CREDENTIALS (before ci-env.sh may overwrite them)
 # =============================================================================
-if [[ -z "${ACCOUNT_SERVER_API_KEY:-}" ]]; then
-    echo "ERROR: ACCOUNT_SERVER_API_KEY is not set"
-    echo "This must be configured as a GitHub secret"
-    exit 1
-fi
 if [[ -z "${ED25519_PUBLIC_KEY:-}" ]]; then
     echo "ERROR: ED25519_PUBLIC_KEY is not set"
     echo "This must be configured as a GitHub secret"
     exit 1
 fi
 
-# Save production credentials — ci-env.sh would overwrite ED25519_PUBLIC_KEY
+# Save production ED25519 key — ci-env.sh would overwrite it
 # because it regenerates the key pair when ED25519_PRIVATE_KEY is unset
-_PROD_ACCOUNT_SERVER_API_KEY="$ACCOUNT_SERVER_API_KEY"
 _PROD_ED25519_PUBLIC_KEY="$ED25519_PUBLIC_KEY"
 
 # =============================================================================
@@ -52,11 +45,12 @@ source "$SCRIPT_DIR/ci-env.sh"
 # =============================================================================
 # OVERRIDE FOR ELITE + CI
 # =============================================================================
-# Restore production account credentials (overwritten by ci-env.sh key generation)
-export ACCOUNT_SERVER_API_KEY="$_PROD_ACCOUNT_SERVER_API_KEY"
+# Restore production ED25519 key (overwritten by ci-env.sh key generation)
 export ED25519_PUBLIC_KEY="$_PROD_ED25519_PUBLIC_KEY"
 # CI uses SQL default subscription — no external account server dependency
-unset ACCOUNT_SERVER_URL
+# Both URL and API key must be empty so the middleware skips account server init
+export ACCOUNT_SERVER_URL=""
+export ACCOUNT_SERVER_API_KEY=""
 
 # CI-specific overrides
 export CI_MODE="true"

@@ -582,7 +582,6 @@ jobs:
         env:
           TAG: ${{ env.TAG }}
           CI_MODE: 'true'
-          ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
         run: .ci/scripts/infra/ci-start-elite.sh
 
