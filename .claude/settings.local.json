@@ -17,5 +17,8 @@
     ],
     "deny": [],
     "ask": []
+  },
+  "remote": {
+    "defaultEnvironmentId": "env_011CUoGSJ2FhwsbrT2LjkVQD"
   }
 }
