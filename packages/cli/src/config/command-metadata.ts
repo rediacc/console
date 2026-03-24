@@ -266,19 +266,14 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
 
-  'config ssh show': {
-    mcp: {
-      destructive: false,
-      idempotent: true,
-      timeout: 'read' as const,
-      descriptionOverride: 'Show current SSH key configuration for the active config',
-    },
+  'config set': {
+    mcpExcludeReason: 'Config value mutation — use CLI directly',
   },
-  'config ssh set': {
-    mcpExcludeReason: 'Writes key material to config — use CLI directly',
+  'config clear': {
+    mcpExcludeReason: 'Config value deletion — use CLI directly',
   },
-  'config ssh remove': {
-    mcpExcludeReason: 'Destructive credential operation — use CLI directly',
+  'config ssh': {
+    mcpExcludeReason: 'SSH key management — writes key material to config, use CLI directly',
   },
 
   // ══════════════════════════════════════════════════════════════════════
