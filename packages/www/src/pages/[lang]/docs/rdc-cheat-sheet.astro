@@ -42,12 +42,6 @@ const frontmatter = {
   tocItems={tocItems}
   tocTrackingSelector=".marp-output section h2"
 >
-  {/*
-    Inject theme CSS directly from raw source.  Marp's theme processor wraps
-    all theme rules under `div.marpit > section .marp-output ...` (inverse of
-    our DOM), so marpCss cannot be used.  The raw theme CSS uses `.marp-output
-    section { ... }` selectors that match our layout correctly.
-  */}
   <style set:html={themeCss} />
 
   <div class="print-page-header" aria-hidden="true">RDC CLI Cheat Sheet</div>

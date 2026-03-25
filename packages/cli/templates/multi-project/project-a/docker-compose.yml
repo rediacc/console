@@ -1,0 +1,40 @@
+services:
+  project-a-app:
+    image: node:20-alpine
+    container_name: project-a-app
+    working_dir: /app
+    command: sh -c "npm install --production 2>/dev/null; node server.mjs"
+    depends_on:
+      project-a-db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${PROJECT_A_DB_IP}:5432/${POSTGRES_DB}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./app:/app
+    labels:
+      - "rediacc.service_name=project-a-app"
+      # Custom subdomain: https://{rediacc.domain}.{baseDomain}
+      # Example: rediacc.domain=project-a → https://project-a.example.com
+      - "rediacc.domain=project-a"
+      - "rediacc.service_port=3000"
+
+  project-a-db:
+    image: postgres:16-alpine
+    container_name: project-a-db
+    command: -c listen_addresses=${PROJECT_A_DB_IP}
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./db/data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h ${PROJECT_A_DB_IP}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - "rediacc.service_name=project-a-db"

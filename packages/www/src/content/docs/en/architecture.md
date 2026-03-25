@@ -33,11 +33,9 @@ Every command you type locally translates to an SSH call that executes renet on 
 
 For an operator-focused rule of thumb, see [rdc vs renet](/en/docs/rdc-vs-renet). You can also use `rdc ops` to run a local VM cluster for testing — see [Experimental VMs](/en/docs/experimental-vms).
 
-## Config & Stores
+## Config
 
-All CLI state is stored in flat JSON config files under `~/.config/rediacc/`. Stores let you sync these configs to external backends for backup, sharing, or multi-device access. Store credentials are kept separately in `~/.config/rediacc/.credentials.json`.
-
-![Config & Stores](/img/arch-operating-modes.svg)
+All CLI state is stored in flat JSON config files under `~/.config/rediacc/`.
 
 ### Local Adapter (Default)
 
@@ -59,16 +57,7 @@ Activated automatically when a config contains `apiUrl` and `token` fields. Uses
 
 > **Note:** Cloud adapter commands are experimental. Enable them by setting `REDIACC_EXPERIMENTAL=1`.
 
-### S3 Resource State (Optional)
-
-When a config includes S3 settings (endpoint, bucket, access key), resource state is stored in an S3-compatible bucket. This works alongside the local adapter, combining self-hosted operation with portability across workstations.
-
-- Resource state stored in an S3/R2 bucket as `state.json`
-- AES-256-GCM encryption with a master password
-- Portable: any workstation with the bucket credentials can manage the infrastructure
-- Configured via `rdc config init <name> --s3-endpoint <url> --s3-bucket <bucket> --s3-access-key-id <key>`
-
-All adapters use the same CLI commands. The adapter only affects where state is stored and how authentication works.
+Both adapters use the same CLI commands. The adapter only affects where state is stored and how authentication works.
 
 ## The rediacc User
 

@@ -113,12 +113,11 @@
     "eslint-plugin-unicorn": "^63.0.0",
     "globals": "^17.3.0",
     "jsdom": "^29.0.0",
-    "knip": "^6.0.3",
-    "rcedit": "^5.0.2",
+    "knip": "^6.0.4",
     "syncpack": "^14.2.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.57.1"
+    "typescript-eslint": "^8.57.2"
   },
   "engines": {
     "node": ">=22.12.0"
@@ -129,11 +128,10 @@
     "inflight": "npm:@isaacs/inflight@^1.0.1",
     "@npmcli/move-file": "npm:@npmcli/fs@^3.1.0",
     "rollup": "^4.59.0",
-    "fast-xml-parser": "5.5.7",
+    "fast-xml-parser": "5.5.6",
     "lodash": ">=4.17.22",
     "svgo": "^4.0.1",
     "devalue": "^5.6.4",
-    "dayjs": "^1.11.20",
-    "flatted": ">=3.4.2"
+    "dayjs": "^1.11.20"
   }
 }

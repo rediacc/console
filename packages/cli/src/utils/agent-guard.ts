@@ -56,7 +56,11 @@ export function assertAgentMachineAccess(machineName: string): void {
   if (!isAgentEnvironment()) return;
   if (process.env.REDIACC_ALLOW_GRAND_REPO === '*') {
     if (isOverrideAllowed()) return;
-    throw new ValidationError(t('errors.agent.machineGuardOverride', { machine: machineName }));
+    const errorKey =
+      process.platform === 'linux'
+        ? 'errors.agent.machineGuardOverride'
+        : 'errors.agent.machineGuardOverrideNonLinux';
+    throw new ValidationError(t(errorKey, { machine: machineName, platform: process.platform }));
   }
   throw new ValidationError(t('errors.agent.machineGuard', { machine: machineName }));
 }
@@ -71,7 +75,11 @@ export function assertAgentRepoCreate(repoName: string): void {
   if (!isAgentEnvironment()) return;
   if (process.env.REDIACC_ALLOW_GRAND_REPO === '*') {
     if (isOverrideAllowed()) return;
-    throw new ValidationError(t('errors.agent.createGuardOverride', { name: repoName }));
+    const errorKey =
+      process.platform === 'linux'
+        ? 'errors.agent.createGuardOverride'
+        : 'errors.agent.createGuardOverrideNonLinux';
+    throw new ValidationError(t(errorKey, { name: repoName, platform: process.platform }));
   }
   throw new ValidationError(t('errors.agent.createGuard', { name: repoName }));
 }

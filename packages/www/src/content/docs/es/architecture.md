@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: es
-sourceHash: "9331a5f415a76278"
+sourceHash: "70943eacf16dbd21"
 ---
 
 # Arquitectura
@@ -34,11 +34,9 @@ Cada comando que escribe localmente se traduce en una llamada SSH que ejecuta re
 
 Para una regla práctica orientada al operador, consulte [rdc vs renet](/es/docs/rdc-vs-renet). También puede usar `rdc ops` para ejecutar un clúster de VMs local para pruebas — consulte [VMs Experimentales](/es/docs/experimental-vms).
 
-## Config & Stores
+## Config
 
-Todo el estado de la CLI se almacena en archivos de configuración JSON planos en `~/.config/rediacc/`. Los stores le permiten sincronizar estas configuraciones con backends externos para respaldo, uso compartido o acceso desde múltiples dispositivos. Las credenciales del store se guardan por separado en `~/.config/rediacc/.credentials.json`.
-
-![Config & Stores](/img/arch-operating-modes.svg)
+Todo el estado de la CLI se almacena en archivos de configuración JSON planos en `~/.config/rediacc/`.
 
 ### Adaptador Local (Predeterminado)
 
@@ -60,16 +58,7 @@ Se activa automáticamente cuando una configuración contiene los campos `apiUrl
 
 > **Nota:** Los comandos del adaptador cloud son experimentales. Habilítelos configurando `REDIACC_EXPERIMENTAL=1`.
 
-### Estado de Recursos S3 (Opcional)
-
-Cuando una configuración incluye ajustes de S3 (endpoint, bucket, clave de acceso), el estado de los recursos se almacena en un bucket compatible con S3. Esto funciona junto con el adaptador local, combinando la operación auto-hospedada con portabilidad entre estaciones de trabajo.
-
-- Estado de recursos almacenado en un bucket S3/R2 como `state.json`
-- Cifrado AES-256-GCM con una contraseña maestra
-- Portable: cualquier estación de trabajo con las credenciales del bucket puede gestionar la infraestructura
-- Se configura mediante `rdc config init <name> --s3-endpoint <url> --s3-bucket <bucket> --s3-access-key-id <key>`
-
-Todos los adaptadores usan los mismos comandos de CLI. El adaptador solo afecta dónde se almacena el estado y cómo funciona la autenticación.
+Ambos adaptadores usan los mismos comandos de CLI. El adaptador solo afecta dónde se almacena el estado y cómo funciona la autenticación.
 
 ## El Usuario rediacc
 

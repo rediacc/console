@@ -114,6 +114,14 @@
       "types": "./dist/encryption/*.d.ts",
       "default": "./dist/encryption/*.js"
     },
+    "./config-crypto": {
+      "types": "./dist/config-crypto/index.d.ts",
+      "default": "./dist/config-crypto/index.js"
+    },
+    "./config-crypto/*": {
+      "types": "./dist/config-crypto/*.d.ts",
+      "default": "./dist/config-crypto/*.js"
+    },
     "./e2e": {
       "types": "./dist/e2e/index.d.ts",
       "default": "./dist/e2e/index.js"

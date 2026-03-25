@@ -134,6 +134,9 @@ const ALLOWED_IDENTICAL = new Set([
   'Memory',
   'Status',
   // International words (same or very similar across languages)
+  'Online',
+  'Failover',
+  'Rollback',
   'Installation',
   'Description',
   'Error',
@@ -327,10 +330,66 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /^Rediacc\s+\(/, // Rediacc product labels with technical details
   /^Rediacc\s+\w+$/, // Rediacc product sub-labels (e.g., "Rediacc Retention", "Rediacc Verification")
   /\.patchInfo$/, // Patch info display strings (technical, kept in English)
+  // ── Array-based keys (newly visible after flatten fix) ──
+  // Terminal simulation metadata (structural, not content)
+  /\.terminal\.lines\.\d+\.type$/, // "command", "spacer", "check", "status"
+  /\.terminal\.lines\.\d+\.prompt$/, // "$"
+  /\.terminal\.lines\.\d+\.flag$/, // command flags
+  // Explore section identifiers
+  /\.explore\.solutions\.\d+\.slug$/, // URL slugs
+  /\.explore\.solutions\.\d+\.category$/, // category identifiers
+  /\.explore\.solutions\.\d+\.dataCategory$/, // data category identifiers
+  // Comparison table symbols
+  /\.comparison\.features\.\d+\.values\.\d+$/, // "check", "cross", "rediacc", "dash"
+  // Clone visual service names and ports (technical)
+  /\.cloneVisual\.\w+\.services\.\d+\.name$/, // "nginx", "api-server", "postgres"
+  /\.cloneVisual\.\w+\.services\.\d+\.port$/, // ":8080", ":5432"
+  // Citation sources (kept in English)
+  /\.statCallouts\.\d+\.source$/, // "Atlassian 2024"
+  /\.references\.items?\.\d+\.text$/, // Academic citations and references
+  // Testimonial person names
+  /testimonials\.items\.\d+\.name$/, // "Marcus R.", "Sarah K."
+  // Integration brand names
+  /^integrations\.items\.\d+$/, // "PostgreSQL", "MySQL", "Docker"
+  // Pipeline visual technical content (git commands, status codes)
+  /\.pipelineVisual\.cards\.\d+\.items\.\d+$/, // "branch: feature/auth-v2", "commit: a3f7b2c"
+  /\.pipelineVisual\.cards\.\d+\.footer$/, // "webhook → rdc", "285 passed"
+  /\.pipelineVisual\.cards\.\d+\.title$/, // "Git Push", "CVE-2026-1234"
+  /\.pipelineVisual\.cards\.\d+\.status$/, // "Trigger", "Passed", "Critical"
+  // Cost visual environment names (example names)
+  /\.costVisual\.\w+\.items\.\d+\.name$/, // "dev-alice", "dev-bob"
+  /\.costVisual\.\w+\.items\.\d+\.detail$/, // "idle 16h/day"
+  // Logo wall categories
+  /^logoWall\.categories\.\d+$/, // "CI/CD", "Containers"
+  // Stat/metric numeric values (currencies, percentages, measurements)
+  /\.statCallouts\.\d+\.number$/, // "$6.9M/yr", "60-80%"
+  /\.stats\.\d+\.number$/, // "<5min", "99.99%"
+  /^metrics\.items\.\d+\.number$/, // "< 60s", "0 bytes"
+  // Terminal technical output (log entries, timestamps, git refs, commands)
+  /\.terminal\.lines\.\d+\.value$/, // "feature/auth-v2", "apt upgrade -y"
+  /\.terminal\.lines\.\d+\.result$/, // "12/12 passed", "47/47"
+  /\.terminal\.lines\.\d+\.pairs\.\d+\.value$/, // "$0.003/hr", "142ms"
+  // Pricing comparison numeric values
+  /\.comparison\.categories\.\w+\.rows\.\d+\.enterprise$/, // "100,000+"
+  // Terminal log entries with timestamps (audit trail output)
+  /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/, // "2026-02-27 02:00:14    system    backup.create..."
+  /^── .+ ──$/, // "── Scan #147 (2026-02-27 02:00 UTC) ──"
+  /^\{"[a-z]/, // JSON API output: {"success": true, ...}
+  // Terminal table headers and data rows (monospaced/aligned output)
+  /^[A-Z]{3,}\s{2,}[A-Z]{2,}/, // "POLICY      KEEP    BACKUPS..." table headers
+  /^[a-z][a-z0-9]+\s{2,}\d+[ymd]\s{2,}/, // "hipaa       7y      2,555..." table data
+  /^(Cipher|Time|Transfer|Period):\s/, // Terminal summary lines
+  /Critical:\s*\d+\s*\|\s*High/, // Severity summary lines
+  /^→\s+\w+\s+restarted/, // Service restart notifications
+  // Timeline step labels (often identical across languages — short technical/UI labels)
+  /\.timeline\.(oldSteps|newSteps)\.\d+\.day$/, // "Min 0", "Day 1", "Apr-Nov"
+  /\.timeline\.(oldSteps|newSteps)\.\d+$/, // "Backup", "Online", "Spin up"
 ];
 
-type TranslationValue = string | TranslationObject;
-type TranslationObject = Record<string, TranslationValue>;
+interface TranslationObject {
+  [key: string]: string | TranslationObject | TranslationValue[];
+}
+type TranslationValue = string | TranslationObject | TranslationValue[];
 
 interface LanguageStats {
   total: number;
@@ -351,7 +410,17 @@ function flatten(obj: TranslationObject, prefix = ''): Record<string, Translatio
   const result: Record<string, TranslationValue> = {};
   for (const [key, value] of Object.entries(obj)) {
     const fullKey = prefix ? `${prefix}.${key}` : key;
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i++) {
+        const itemKey = `${fullKey}.${i}`;
+        const item = value[i];
+        if (typeof item === 'string') {
+          result[itemKey] = item;
+        } else if (typeof item === 'object' && item !== null) {
+          Object.assign(result, flatten(item as TranslationObject, itemKey));
+        }
+      }
+    } else if (typeof value === 'object' && value !== null) {
       Object.assign(result, flatten(value as TranslationObject, fullKey));
     } else {
       result[fullKey] = value;

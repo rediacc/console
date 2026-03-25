@@ -273,6 +273,8 @@ class RenetProvisionerService {
 
   /**
    * Get the binary data from either embedded assets or a local file.
+   * On non-Linux platforms, resolves the cross-compiled Linux binary
+   * (e.g. renet-linux-amd64) instead of the local platform binary.
    */
   private async getBinary(arch: RenetArch, localBinaryPath?: string): Promise<Buffer> {
     if (isSEA()) {
@@ -280,6 +282,20 @@ class RenetProvisionerService {
     }
 
     if (localBinaryPath) {
+      // On non-Linux hosts, the localBinaryPath points to the host platform binary
+      // (e.g. renet.exe on Windows). Look for the cross-compiled Linux binary instead.
+      if (process.platform !== 'linux') {
+        const dir = path.dirname(localBinaryPath);
+        const linuxBinaryPath = path.join(dir, `renet-linux-${arch}`);
+        try {
+          return await fs.readFile(linuxBinaryPath);
+        } catch {
+          throw new Error(
+            `Cross-compiled Linux binary not found at ${linuxBinaryPath}. ` +
+              'Rebuild renet with ./rdc.sh or ./build.sh dev to generate Linux binaries.'
+          );
+        }
+      }
       return fs.readFile(localBinaryPath);
     }
 

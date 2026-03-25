@@ -135,6 +135,10 @@ rdc term <machine> <repo> \
 # View container resource stats
 rdc term <machine> <repo> \
   --container <name> --container-action stats
+
+# SSH tunnel to a container port (e.g. database)
+rdc repo tunnel <machine> <repo> -c <container> --port 5432
+rdc repo tunnel <machine> <repo>                 # auto-detect
 ```
 
 ---

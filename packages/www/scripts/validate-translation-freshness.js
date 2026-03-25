@@ -4,7 +4,7 @@ import { execSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import matter from 'gray-matter';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -642,7 +642,7 @@ function parseArgs(argv) {
   return args;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const args = parseArgs(process.argv.slice(2));
   const result = validateTranslationFreshness({
     strictAll: args.strictAll,

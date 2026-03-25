@@ -128,7 +128,17 @@ export function flattenJson(
   for (const [key, value] of Object.entries(obj)) {
     const fullPath = prefix ? `${prefix}.${key}` : key;
 
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i++) {
+        const itemPath = `${fullPath}.${i}`;
+        const item = value[i];
+        if (typeof item === 'string') {
+          result[itemPath] = item;
+        } else if (item !== null && typeof item === 'object') {
+          Object.assign(result, flattenJson(item as Record<string, unknown>, itemPath));
+        }
+      }
+    } else if (value !== null && typeof value === 'object') {
       Object.assign(result, flattenJson(value as Record<string, unknown>, fullPath));
     } else if (typeof value === 'string') {
       result[fullPath] = value;

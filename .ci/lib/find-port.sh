@@ -43,8 +43,8 @@ is_port_in_use() {
     elif command -v lsof &>/dev/null; then
         lsof -iTCP:"$port" -sTCP:LISTEN &>/dev/null
     elif command -v netstat &>/dev/null; then
-        # Windows Git Bash / fallback
-        netstat -an 2>/dev/null | grep -qE "(LISTEN|LISTENING).*:$port\b"
+        # Windows Git Bash / fallback — Windows format: "TCP  0.0.0.0:port  ...  LISTENING"
+        netstat -an 2>/dev/null | grep -qE ":$port\b.*(LISTEN|LISTENING)"
     else
         # Cannot determine, assume port is free
         return 1

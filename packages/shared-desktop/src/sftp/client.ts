@@ -28,6 +28,8 @@ export interface SFTPClientConfig {
   timeout?: number;
   /** Keep-alive interval in ms (default: 10000) */
   keepaliveInterval?: number;
+  /** Known hosts entries for host-key verification (OpenSSH format) */
+  knownHosts?: string;
 }
 
 /**
@@ -85,6 +87,15 @@ export class SFTPClient {
         readyTimeout: this.config.timeout ?? DEFAULTS.SSH.READY_TIMEOUT,
         keepaliveInterval: this.config.keepaliveInterval ?? DEFAULTS.SSH.KEEPALIVE_INTERVAL,
       };
+
+      // Add host-key verification when known_hosts entries are provided
+      if (this.config.knownHosts) {
+        const trustedKeys = parseKnownHosts(this.config.knownHosts);
+        connectConfig.hostVerifier = (key: Buffer) => {
+          const keyBase64 = key.toString('base64');
+          return trustedKeys.some((tk) => tk === keyBase64);
+        };
+      }
 
       this.ssh.on('ready', () => {
         this.ssh.sftp((err, sftp) => {
@@ -567,6 +578,24 @@ export class SFTPClient {
   private formatPermissions(mode: number): string {
     return (mode & 0o777).toString(8);
   }
+}
+
+/**
+ * Parse OpenSSH known_hosts format into an array of base64-encoded public keys.
+ * Each line is: hostname[,hostname] algo base64key [comment]
+ */
+function parseKnownHosts(knownHosts: string): string[] {
+  const keys: string[] = [];
+  for (const line of knownHosts.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    // Format: hostname algo base64-key [comment]
+    const parts = trimmed.split(/\s+/);
+    if (parts.length >= 3) {
+      keys.push(parts[2]);
+    }
+  }
+  return keys;
 }
 
 /**

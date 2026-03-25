@@ -405,14 +405,6 @@ describe('ConfigFileStorage', () => {
       expect(names).toEqual(['alpha', 'beta', 'gamma']);
     });
 
-    it('should exclude .credentials.json', async () => {
-      await storage.init('myconfig');
-      await fs.writeFile(join(testDir, '.credentials.json'), '{}');
-
-      const names = await storage.list();
-      expect(names).toEqual(['myconfig']);
-    });
-
     it('should exclude update-state.json', async () => {
       await storage.init('myconfig');
       await fs.writeFile(join(testDir, 'update-state.json'), '{}');

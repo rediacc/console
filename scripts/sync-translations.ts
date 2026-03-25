@@ -36,14 +36,22 @@ const LOCALE_CONFIGS: LocaleConfig[] = [
   },
 ];
 
-type TranslationValue = string | TranslationObject;
-type TranslationObject = Record<string, TranslationValue>;
+interface TranslationObject {
+  [key: string]: string | TranslationObject | TranslationValue[];
+}
+type TranslationValue = string | TranslationObject | TranslationValue[];
 
 /**
  * Recursively sort object keys alphabetically
  */
 function sortKeys(obj: TranslationValue): TranslationValue {
-  if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
+  if (Array.isArray(obj)) {
+    return obj.map((item) =>
+      typeof item === 'object' && item !== null ? sortKeys(item as TranslationValue) : item
+    );
+  }
+
+  if (typeof obj !== 'object' || obj === null) {
     return obj;
   }
 
@@ -71,11 +79,39 @@ function mergeTranslations(target: TranslationObject, source: TranslationObject)
       // Key missing in target - add from source
       result[key] = value;
     } else {
-      const sourceIsObject = typeof value === 'object' && value !== null && !Array.isArray(value);
+      const sourceIsArray = Array.isArray(value);
+      const targetIsArray = Array.isArray(result[key]);
+      const sourceIsObject = typeof value === 'object' && value !== null && !sourceIsArray;
       const targetIsObject =
-        typeof result[key] === 'object' && result[key] !== null && !Array.isArray(result[key]);
+        typeof result[key] === 'object' && result[key] !== null && !targetIsArray;
 
-      if (sourceIsObject && targetIsObject) {
+      if (sourceIsArray && targetIsArray) {
+        // Both are arrays - merge element-by-element
+        const sourceArr = value as TranslationValue[];
+        const targetArr = result[key] as TranslationValue[];
+        const merged: TranslationValue[] = [];
+        for (let i = 0; i < sourceArr.length; i++) {
+          if (i >= targetArr.length) {
+            // Target is shorter - add from source
+            merged.push(sourceArr[i]);
+          } else {
+            const srcItem = sourceArr[i];
+            const tgtItem = targetArr[i];
+            const srcIsObj = typeof srcItem === 'object' && srcItem !== null && !Array.isArray(srcItem);
+            const tgtIsObj = typeof tgtItem === 'object' && tgtItem !== null && !Array.isArray(tgtItem);
+            if (srcIsObj && tgtIsObj) {
+              merged.push(mergeTranslations(tgtItem as TranslationObject, srcItem as TranslationObject));
+            } else {
+              // Keep target value (existing translation)
+              merged.push(tgtItem);
+            }
+          }
+        }
+        result[key] = merged;
+      } else if (sourceIsArray && !targetIsArray) {
+        // Source is array but target is not - use source structure
+        result[key] = value;
+      } else if (sourceIsObject && targetIsObject) {
         // Both are objects - merge recursively
         result[key] = mergeTranslations(
           result[key] as TranslationObject,
@@ -104,18 +140,37 @@ function removeExtraKeys(target: TranslationObject, source: TranslationObject): 
       continue;
     }
 
-    if (
-      typeof value === 'object' &&
-      value !== null &&
-      !Array.isArray(value) &&
-      typeof source[key] === 'object' &&
-      source[key] !== null &&
-      !Array.isArray(source[key])
-    ) {
+    const sourceVal = source[key];
+    const targetIsArray = Array.isArray(value);
+    const sourceIsArray = Array.isArray(sourceVal);
+    const targetIsObject = typeof value === 'object' && value !== null && !targetIsArray;
+    const sourceIsObject = typeof sourceVal === 'object' && sourceVal !== null && !sourceIsArray;
+
+    if (targetIsArray && sourceIsArray) {
+      // Both are arrays - recurse into object elements, truncate to source length
+      const srcArr = sourceVal as TranslationValue[];
+      const tgtArr = value as TranslationValue[];
+      const cleaned: TranslationValue[] = [];
+      for (let i = 0; i < srcArr.length; i++) {
+        if (i >= tgtArr.length) {
+          break;
+        }
+        const srcItem = srcArr[i];
+        const tgtItem = tgtArr[i];
+        const srcIsObj = typeof srcItem === 'object' && srcItem !== null && !Array.isArray(srcItem);
+        const tgtIsObj = typeof tgtItem === 'object' && tgtItem !== null && !Array.isArray(tgtItem);
+        if (srcIsObj && tgtIsObj) {
+          cleaned.push(removeExtraKeys(tgtItem as TranslationObject, srcItem as TranslationObject));
+        } else {
+          cleaned.push(tgtItem);
+        }
+      }
+      result[key] = cleaned;
+    } else if (targetIsObject && sourceIsObject) {
       // Both are objects - recurse
       result[key] = removeExtraKeys(
         value as TranslationObject,
-        source[key] as TranslationObject
+        sourceVal as TranslationObject
       );
     } else {
       // Keep the value
@@ -133,7 +188,15 @@ function countKeys(obj: TranslationObject): number {
   let count = 0;
 
   for (const [, value] of Object.entries(obj)) {
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (typeof item === 'object' && item !== null) {
+          count += countKeys(item as TranslationObject);
+        } else {
+          count += 1;
+        }
+      }
+    } else if (typeof value === 'object' && value !== null) {
       count += countKeys(value as TranslationObject);
     } else {
       count += 1;

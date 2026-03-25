@@ -328,9 +328,12 @@ export async function launchVSCode(
       });
     } else {
       // Launch native VS Code (Windows/macOS/Linux)
+      // On Windows, VS Code CLI is a .cmd batch wrapper — spawn needs shell: true
+      const isWindows = process.platform === 'win32';
       proc = spawn(vscodeInfo.path, args, {
         detached: !options?.waitForClose,
         stdio: 'ignore',
+        shell: isWindows,
       });
     }
 

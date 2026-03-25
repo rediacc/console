@@ -4,7 +4,8 @@ description: リモートマシン上のLUKS暗号化リポジトリの作成、
 category: Guides
 order: 4
 language: ja
-sourceHash: "5faf701157696057"
+sourceHash: "f9d64d1323b2952d"
+sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
 # リポジトリ
@@ -118,7 +119,7 @@ rdc repo ownership my-app -m server-1
 テンプレートを適用してリポジトリをファイルで初期化します：
 
 ```bash
-rdc repo template my-app -m server-1 --file ./my-template.tar.gz
+rdc repo template apply my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## 削除

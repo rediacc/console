@@ -1,0 +1,27 @@
+#!/bin/bash
+
+up() {
+  mkdir -p data app
+
+  # Auto-generate credentials on first run
+  if [[ ! -f .env ]]; then
+    local pg_pass
+    pg_pass=$(openssl rand -hex 16)
+    cat > .env <<ENVEOF
+POSTGRES_USER=app
+POSTGRES_DB=app
+POSTGRES_PASSWORD=${pg_pass}
+ENVEOF
+    echo "Generated .env with database credentials"
+  fi
+
+  renet compose -- up -d
+}
+
+down() {
+  renet compose -- down
+}
+
+info() {
+  renet compose -- ps
+}

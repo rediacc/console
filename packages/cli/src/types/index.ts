@@ -8,7 +8,6 @@ import type { PlatformKey } from '../utils/platform.js';
 
 /**
  * Machine configuration. Defines SSH connection details for a machine.
- * Used by both local and S3 modes (stored in config.json or state.json).
  */
 export interface MachineConfig {
   /** Machine IP address or hostname */
@@ -156,7 +155,6 @@ export interface CloudProviderConfig {
 
 /**
  * Storage configuration. Stores rclone-imported storage vault data.
- * Used by both local and S3 modes.
  */
 export interface StorageConfig {
   /** Storage provider type (s3, b2, drive, etc.) */
@@ -167,7 +165,6 @@ export interface StorageConfig {
 
 /**
  * Repository configuration. Maps a human-readable name to its GUID.
- * Used by both local and S3 modes.
  */
 export interface RepositoryConfig {
   /** Repository GUID (the UUID used as filename in storage backups) */
@@ -201,32 +198,12 @@ export interface ArchivedRepository extends RepositoryConfig {
 
 /**
  * SSH configuration. Points to local SSH key files.
- * Used by both local and S3 modes (always stored in config.json).
  */
 export interface SSHConfig {
   /** Path to SSH private key file (e.g., ~/.ssh/id_rsa) */
   privateKeyPath: string;
   /** Path to SSH public key file (optional) */
   publicKeyPath?: string;
-}
-
-/**
- * S3/R2 configuration for S3 mode.
- * Stores connection details for an S3-compatible bucket.
- */
-export interface S3Config {
-  /** S3 endpoint URL (e.g., https://<accountId>.r2.cloudflarestorage.com) */
-  endpoint: string;
-  /** Bucket name */
-  bucket: string;
-  /** AWS region ('auto' for R2) */
-  region: string;
-  /** Access key ID */
-  accessKeyId: string;
-  /** Secret access key (encrypted via masterPassword if set, plaintext otherwise) */
-  secretAccessKey: string;
-  /** Optional key prefix/namespace within the bucket */
-  prefix?: string;
 }
 
 /**
@@ -286,7 +263,6 @@ export interface AcmeCertCache {
  * Adapter detection is automatic:
  * - Has apiUrl + token → Cloud adapter (experimental)
  * - Otherwise → Local adapter (default)
- * - Has s3 config → S3 resource state (with local adapter)
  */
 export interface RdcConfig {
   /** UUID v4 — unique identifier for this config file. Never changes. Unencrypted, always visible. */
@@ -347,13 +323,6 @@ export interface RdcConfig {
   cloudProviders?: Record<string, CloudProviderConfig>;
   /** Cached ACME certificate data, keyed by baseDomain (shared across machines) */
   acmeCertCache?: Record<string, AcmeCertCache>;
-
-  // ============================================================================
-  // S3 Resource State (used when config.s3 is populated)
-  // ============================================================================
-
-  /** S3/R2 bucket configuration for remote resource state */
-  s3?: S3Config;
 
   // ============================================================================
   // Defaults & Global Settings
@@ -475,32 +444,12 @@ export interface IStorageProvider {
 
 export type { ICryptoProvider } from '@rediacc/shared/encryption';
 
-// ============================================================================
-// S3 State Types (single state.json in bucket)
-// ============================================================================
-
-/** SSH key content stored in state.json for S3 mode portability. */
+/** SSH key content for embedded key portability. */
 export interface SSHContent {
   /** Actual SSH private key (PEM content) */
   privateKey: string;
   /** Actual SSH public key content */
   publicKey?: string;
-}
-
-/**
- * Root shape of the S3 state document stored at `state.json` in the bucket.
- * Uses the same unified types as config.json (MachineConfig, StorageConfig, RepositoryConfig).
- * When `encrypted` is true, each section value is an AES-256-GCM ciphertext string.
- * When false, sections are plain objects.
- */
-export interface S3StateData {
-  version: 1;
-  encrypted: boolean;
-  machines: Record<string, MachineConfig> | string;
-  storages: Record<string, StorageConfig> | string;
-  repositories: Record<string, RepositoryConfig> | string;
-  deletedRepositories?: ArchivedRepository[] | string;
-  ssh?: SSHContent | string;
 }
 
 // ============================================================================

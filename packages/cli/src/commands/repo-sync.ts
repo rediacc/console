@@ -13,6 +13,8 @@ import {
   getRsyncPreview,
   type RsyncChanges,
   type RsyncExecutorOptions,
+  sftpDownloadDirectory,
+  sftpUploadDirectory,
 } from '@rediacc/shared-desktop/sync';
 import type { SyncProgress } from '@rediacc/shared-desktop/types';
 import chalk from 'chalk';
@@ -229,7 +231,16 @@ async function executeSyncWithProgress(
   displaySyncResult(result, spinner, mode);
 }
 
-async function syncUpload(options: SyncUploadOptions): Promise<void> {
+interface ValidatedSyncOptions {
+  team: string | undefined;
+  machine: string;
+  repository: string;
+}
+
+async function validateSyncOptions(
+  options: SyncUploadOptions | SyncDownloadOptions,
+  command: typeof CMD.REPO_SYNC_UPLOAD | typeof CMD.REPO_SYNC_DOWNLOAD
+): Promise<ValidatedSyncOptions> {
   const opts = await configService.applyDefaults(options);
 
   const provider = await getStateProvider();
@@ -243,39 +254,127 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
     throw new Error(t('errors.repositoryRequired'));
   }
 
-  await assertCommandPolicy(CMD.REPO_SYNC_UPLOAD, opts.repository);
+  await assertCommandPolicy(command, opts.repository);
   if (options.remote) validateRemotePath(options.remote);
 
-  const localPath = resolveUploadLocalPath(options.local);
+  return { team: opts.team, machine: opts.machine, repository: opts.repository };
+}
 
-  await ensureRenetProvisioned(opts.machine);
+interface SyncConnectionContext {
+  details: Awaited<ReturnType<typeof getSSHConnectionDetails>>;
+  remotePath: string;
+  sftpRemotePath: string;
+  sftpConfig: { host: string; port: number; username: string; privateKey: string };
+}
 
-  if (opts.repository) {
-    await deployRepoKeyIfNeeded(opts.repository, opts.machine);
-  }
+async function prepareSyncConnection(
+  validated: ValidatedSyncOptions,
+  remoteSubPath: string | undefined
+): Promise<SyncConnectionContext> {
+  await ensureRenetProvisioned(validated.machine);
+  await deployRepoKeyIfNeeded(validated.repository, validated.machine);
 
   const details = await withSpinner(t('commands.sync.fetchingDetails'), () =>
-    getSSHConnectionDetails(opts.team!, opts.machine!, opts.repository)
+    getSSHConnectionDetails(validated.team!, validated.machine, validated.repository)
   );
 
   const baseRemotePath =
-    details.workingDirectory ?? `${details.datastore}/mounts/${opts.repository}`;
-  const remotePath = options.remote ? `${baseRemotePath}/${options.remote}` : baseRemotePath;
+    details.workingDirectory ?? `${details.datastore}/mounts/${validated.repository}`;
+  const remotePath = remoteSubPath ? `${baseRemotePath}/${remoteSubPath}/` : `${baseRemotePath}/`;
 
+  // SFTP in sandbox mode uses relative paths from the repo mount root
+  const sftpRemotePath = remoteSubPath ? `${remoteSubPath}/` : '.';
+
+  const sftpConfig = {
+    host: details.host,
+    port: details.port,
+    username: details.user,
+    privateKey: details.privateKey,
+    knownHosts: details.known_hosts,
+  };
+
+  return { details, remotePath, sftpRemotePath, sftpConfig };
+}
+
+function isRsyncNotFoundError(err: unknown): boolean {
+  return err instanceof Error && err.message.includes('rsync not found');
+}
+
+function displaySftpDryRunResult(result: {
+  filesTransferred: number;
+  bytesTransferred: number;
+}): void {
+  process.stdout.write(
+    `\nSFTP fallback (rsync not available):\n  Files to transfer: ${result.filesTransferred}\n  Total size: ${formatBytes(result.bytesTransferred)}\n`
+  );
+}
+
+async function withTempSshFiles<T>(
+  details: { privateKey: string; known_hosts: string },
+  fn: (keyFilePath: string, knownHostsPath: string) => Promise<T>
+): Promise<T> {
   const keyFilePath = await createTempSSHKeyFile(details.privateKey);
   const knownHostsPath = await createTempKnownHostsFile(details.known_hosts);
-
   try {
-    const sshOptions = `-o StrictHostKeyChecking=yes -o UserKnownHostsFile="${knownHostsPath}" -p ${details.port} -i "${keyFilePath}"`;
+    return await fn(keyFilePath, knownHostsPath);
+  } finally {
+    await removeTempSSHKeyFile(keyFilePath);
+    await removeTempKnownHostsFile(knownHostsPath);
+  }
+}
 
+function buildSshOptions(knownHostsPath: string, port: number, keyFilePath: string): string {
+  return `-o StrictHostKeyChecking=yes -o UserKnownHostsFile="${knownHostsPath}" -p ${port} -i "${keyFilePath}"`;
+}
+
+async function handleDryRunWithSftpFallback(
+  rsyncOptions: RsyncExecutorOptions,
+  sftpTransfer: () => Promise<{ filesTransferred: number; bytesTransferred: number }>
+): Promise<void> {
+  try {
+    await handleDryRun(rsyncOptions);
+  } catch (err: unknown) {
+    if (!isRsyncNotFoundError(err)) throw err;
+    const result = await sftpTransfer();
+    displaySftpDryRunResult(result);
+  }
+}
+
+async function executeSyncWithSftpFallback(
+  rsyncOptions: RsyncExecutorOptions,
+  mode: 'upload' | 'download',
+  sftpTransfer: (spinner: ReturnType<typeof ora>) => Promise<{
+    success: boolean;
+    filesTransferred: number;
+    bytesTransferred: number;
+    duration: number;
+    errors: string[];
+  }>
+): Promise<void> {
+  try {
+    await executeSyncWithProgress(rsyncOptions, mode);
+  } catch (err: unknown) {
+    if (!isRsyncNotFoundError(err)) throw err;
+    const spinner = ora('rsync not available, using SFTP transfer (no delta sync)...').start();
+    const result = await sftpTransfer(spinner);
+    displaySyncResult(result, spinner, mode);
+  }
+}
+
+async function syncUpload(options: SyncUploadOptions): Promise<void> {
+  const validated = await validateSyncOptions(options, CMD.REPO_SYNC_UPLOAD);
+  const localPath = resolveUploadLocalPath(options.local);
+  const ctx = await prepareSyncConnection(validated, options.remote);
+
+  await withTempSshFiles(ctx.details, async (keyFilePath, knownHostsPath) => {
     const rsyncOptions: RsyncExecutorOptions = {
-      sshOptions,
+      sshOptions: buildSshOptions(knownHostsPath, ctx.details.port, keyFilePath),
       source: localPath,
-      destination: `${details.user}@${details.host}:${remotePath}`,
+      destination: `${ctx.details.user}@${ctx.details.host}:${ctx.remotePath}`,
       mirror: options.mirror,
       verify: options.verify,
       exclude: options.exclude,
-      universalUser: details.universalUser,
+      universalUser: ctx.details.universalUser,
       isUpload: true,
     };
 
@@ -283,79 +382,60 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
     if (!shouldContinue) return;
 
     if (options.dryRun) {
-      await handleDryRun(rsyncOptions);
+      await handleDryRunWithSftpFallback(rsyncOptions, () =>
+        sftpUploadDirectory(localPath, ctx.sftpRemotePath, ctx.sftpConfig, {
+          exclude: options.exclude,
+          dryRun: true,
+        })
+      );
       return;
     }
 
-    await executeSyncWithProgress(rsyncOptions, 'upload');
-  } finally {
-    await removeTempSSHKeyFile(keyFilePath);
-    await removeTempKnownHostsFile(knownHostsPath);
-  }
+    await executeSyncWithSftpFallback(rsyncOptions, 'upload', (spinner) =>
+      sftpUploadDirectory(localPath, ctx.sftpRemotePath, ctx.sftpConfig, {
+        exclude: options.exclude,
+        onProgress: (file) => {
+          spinner.text = `Uploading: ${file}`;
+        },
+      })
+    );
+  });
 }
 
 async function syncDownload(options: SyncDownloadOptions): Promise<void> {
-  const opts = await configService.applyDefaults(options);
-
-  const provider = await getStateProvider();
-  if (provider.isCloud && !opts.team) {
-    throw new Error(t('errors.teamRequired'));
-  }
-  if (!opts.machine) {
-    throw new Error(t('errors.machineRequired'));
-  }
-  if (!opts.repository) {
-    throw new Error(t('errors.repositoryRequired'));
-  }
-
-  await assertCommandPolicy(CMD.REPO_SYNC_DOWNLOAD, opts.repository);
-  if (options.remote) validateRemotePath(options.remote);
-
+  const validated = await validateSyncOptions(options, CMD.REPO_SYNC_DOWNLOAD);
   const localPath = resolve(options.local ?? process.cwd());
+  const ctx = await prepareSyncConnection(validated, options.remote);
 
-  await ensureRenetProvisioned(opts.machine);
-
-  if (opts.repository) {
-    await deployRepoKeyIfNeeded(opts.repository, opts.machine);
-  }
-
-  const details = await withSpinner(t('commands.sync.fetchingDetails'), () =>
-    getSSHConnectionDetails(opts.team!, opts.machine!, opts.repository)
-  );
-
-  const baseRemotePath =
-    details.workingDirectory ?? `${details.datastore}/mounts/${opts.repository}`;
-  const remotePath = options.remote ? `${baseRemotePath}/${options.remote}/` : `${baseRemotePath}/`;
-
-  const keyFilePath = await createTempSSHKeyFile(details.privateKey);
-  const knownHostsPath = await createTempKnownHostsFile(details.known_hosts);
-
-  try {
-    const sshOptions = `-o StrictHostKeyChecking=yes -o UserKnownHostsFile="${knownHostsPath}" -p ${details.port} -i "${keyFilePath}"`;
-
+  await withTempSshFiles(ctx.details, async (keyFilePath, knownHostsPath) => {
     const rsyncOptions: RsyncExecutorOptions = {
-      sshOptions,
-      source: `${details.user}@${details.host}:${remotePath}`,
+      sshOptions: buildSshOptions(knownHostsPath, ctx.details.port, keyFilePath),
+      source: `${ctx.details.user}@${ctx.details.host}:${ctx.remotePath}`,
       destination: localPath,
       mirror: options.mirror,
       verify: options.verify,
       exclude: options.exclude,
-      universalUser: details.universalUser,
+      universalUser: ctx.details.universalUser,
     };
 
     const shouldContinue = await handleConfirmMode(rsyncOptions, options);
     if (!shouldContinue) return;
 
     if (options.dryRun) {
-      await handleDryRun(rsyncOptions);
+      await handleDryRunWithSftpFallback(rsyncOptions, () =>
+        sftpDownloadDirectory(ctx.sftpRemotePath, localPath, ctx.sftpConfig, { dryRun: true })
+      );
       return;
     }
 
-    await executeSyncWithProgress(rsyncOptions, 'download');
-  } finally {
-    await removeTempSSHKeyFile(keyFilePath);
-    await removeTempKnownHostsFile(knownHostsPath);
-  }
+    await executeSyncWithSftpFallback(rsyncOptions, 'download', (spinner) =>
+      sftpDownloadDirectory(ctx.sftpRemotePath, localPath, ctx.sftpConfig, {
+        onProgress: (file) => {
+          spinner.text = `Downloading: ${file}`;
+        },
+      })
+    );
+  });
 }
 
 /**
@@ -384,7 +464,7 @@ ${t('help.examples')}
     .option('-t, --team <name>', t('options.team'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('-r, --repository <name>', t('options.repository'))
-    .option('-l, --local <path>', t('options.localPath'))
+    .option('--local <path>', t('options.localPath'))
     .option('--remote <path>', t('options.remotePath'))
     .option('--mirror', t('options.mirrorUpload'))
     .option('--verify', t('options.verifyChecksum'))
@@ -411,7 +491,7 @@ ${t('help.examples')}
     .option('-t, --team <name>', t('options.team'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('-r, --repository <name>', t('options.repository'))
-    .option('-l, --local <path>', t('options.localPath'))
+    .option('--local <path>', t('options.localPath'))
     .option('--remote <path>', t('options.remotePath'))
     .option('--mirror', t('options.mirrorDownload'))
     .option('--verify', t('options.verifyChecksum'))
@@ -438,7 +518,7 @@ ${t('help.examples')}
     .option('-t, --team <name>', t('options.team'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('-r, --repository <name>', t('options.repository'))
-    .option('-l, --local <path>', t('options.localPath'))
+    .option('--local <path>', t('options.localPath'))
     .option('--remote <path>', t('options.remotePath'))
     .action(async (options: SyncDownloadOptions) => {
       try {

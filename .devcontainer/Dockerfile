@@ -76,7 +76,7 @@ RUN mkdir -p "$NVM_DIR" \
     && nvm alias default ${NODE_VERSION} \
     && nvm use default \
     && ln -sf "$(nvm which default | xargs dirname | xargs dirname)" "$NVM_DIR/current" \
-    && npm install -g npm@latest \
+    && npm install -g npm@10 \
     && npm cache clean --force
 
 # Make node/npm available for subsequent RUN commands

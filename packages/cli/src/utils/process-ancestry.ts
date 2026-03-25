@@ -145,10 +145,10 @@ export function isAgentByAncestry(): boolean {
  * 3. If yes → user set it before the agent, legitimate
  * 4. If no → injected at or below agent boundary, illegitimate
  *
- * On non-Linux: returns true (fail open — can't verify, trust process.env).
+ * On non-Linux: returns false (fail closed — can't verify, don't trust).
  */
 export function isOverrideLegitimate(): boolean {
-  if (process.platform !== 'linux') return true;
+  if (process.platform !== 'linux') return false;
 
   const ancestors = walkAncestors();
   if (ancestors.length === 0) return true; // Can't read /proc, fail open

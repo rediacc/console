@@ -5,6 +5,7 @@
 
 import { execSync } from 'node:child_process';
 import * as fs from 'node:fs/promises';
+import * as fsSync from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
@@ -62,12 +63,40 @@ export async function readOptionalSSHKey(keyPath: string | undefined): Promise<s
 }
 
 /**
+ * Resolve a renet binary path, falling back to PATH lookup if the configured
+ * path doesn't exist (e.g. stale config from another OS or worktree).
+ */
+function resolveRenetPath(configuredPath: string): string {
+  // Absolute path — verify it exists before using it
+  if (path.isAbsolute(configuredPath)) {
+    try {
+      fsSync.accessSync(configuredPath);
+      return configuredPath;
+    } catch {
+      // Fall through to PATH lookup
+    }
+  }
+
+  // Bare name or missing absolute — resolve via PATH (handles .exe on Windows)
+  const cmd = process.platform === 'win32' ? 'where' : 'which';
+  const name = path.isAbsolute(configuredPath) ? 'renet' : configuredPath;
+  try {
+    return execSync(`${cmd} ${name}`, { encoding: 'utf-8' }).trim().split(/\r?\n/)[0];
+  } catch {
+    throw new Error(
+      `Renet binary not found at "${configuredPath}" and not in PATH. ` +
+        'Run ./rdc.sh to ensure renet is built, or update config with: rdc config init --renet-path <path>'
+    );
+  }
+}
+
+/**
  * Get the local path to the renet binary for spawning.
  * In dev mode, uses the configured renetPath. In SEA mode, extracts the
  * embedded binary to a local temp file.
  */
 export async function getLocalRenetPath(config: { renetPath: string }): Promise<string> {
-  if (!isSEA()) return config.renetPath;
+  if (!isSEA()) return resolveRenetPath(config.renetPath);
   return extractRenetToLocal();
 }
 
@@ -88,9 +117,7 @@ export async function provisionRenetToRemote(
 ): Promise<RenetProvisionResult> {
   let localBinaryPath: string | undefined;
   if (!isSEA()) {
-    localBinaryPath = config.renetPath.startsWith('/')
-      ? config.renetPath
-      : execSync(`which ${config.renetPath}`, { encoding: 'utf-8' }).trim();
+    localBinaryPath = resolveRenetPath(config.renetPath);
   }
 
   // Service restarts are opt-in for versioned remote installs.

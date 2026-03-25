@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: fr
-sourceHash: "9331a5f415a76278"
+sourceHash: "70943eacf16dbd21"
 ---
 
 # Architecture
@@ -34,11 +34,9 @@ Chaque commande que vous tapez localement se traduit par un appel SSH qui exécu
 
 Pour un guide pratique orienté opérateur, consultez [rdc vs renet](/fr/docs/rdc-vs-renet). Vous pouvez aussi utiliser `rdc ops` pour lancer un cluster de VM locales — voir [VM expérimentales](/fr/docs/experimental-vms).
 
-## Config & Stores
+## Config
 
-Tout l'état du CLI est stocké dans des fichiers de configuration JSON plats sous `~/.config/rediacc/`. Les stores permettent de synchroniser ces configurations vers des backends externes pour la sauvegarde, le partage ou l'accès multi-appareils. Les identifiants des stores sont conservés séparément dans `~/.config/rediacc/.credentials.json`.
-
-![Config & Stores](/img/arch-operating-modes.svg)
+Tout l'état du CLI est stocké dans des fichiers de configuration JSON plats sous `~/.config/rediacc/`.
 
 ### Adaptateur local (par défaut)
 
@@ -60,16 +58,7 @@ Activé automatiquement lorsqu'une configuration contient les champs `apiUrl` et
 
 > **Note :** Les commandes de l'adaptateur cloud sont expérimentales. Activez-les en définissant `REDIACC_EXPERIMENTAL=1`.
 
-### État de ressource S3 (optionnel)
-
-Lorsqu'une configuration inclut des paramètres S3 (endpoint, bucket, clé d'accès), l'état des ressources est stocké dans un bucket compatible S3. Cela fonctionne conjointement avec l'adaptateur local, combinant l'exploitation auto-hébergée avec la portabilité entre postes de travail.
-
-- État des ressources stocké dans un bucket S3/R2 sous forme de `state.json`
-- Chiffrement AES-256-GCM avec un mot de passe maître
-- Portable : tout poste de travail disposant des identifiants du bucket peut gérer l'infrastructure
-- Configuré via `rdc config init <name> --s3-endpoint <url> --s3-bucket <bucket> --s3-access-key-id <key>`
-
-Tous les adaptateurs utilisent les mêmes commandes CLI. L'adaptateur n'affecte que l'emplacement de stockage de l'état et le fonctionnement de l'authentification.
+Les deux adaptateurs utilisent les mêmes commandes CLI. L'adaptateur n'affecte que l'emplacement de stockage de l'état et le fonctionnement de l'authentification.
 
 ## L'utilisateur rediacc
 

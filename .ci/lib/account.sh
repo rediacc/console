@@ -155,6 +155,11 @@ ADMIN_EMAIL=admin@example.com
 
 # Server port (used by standalone node entry, not the dev gateway)
 PORT=3000
+
+# WebAuthn passkey (for config storage setup)
+WEBAUTHN_RP_ID=localhost
+WEBAUTHN_RP_NAME=Rediacc
+WEBAUTHN_ORIGIN=http://localhost:4800
 EOF
 
     log_info "Generated private/account/.env with fresh keys"
@@ -210,6 +215,10 @@ account_ensure_env_keys() {
         account_env_add_if_missing "OTEL_AUTH_TOKEN" "$OTLP_AUTH_TOKEN" \
             "OTel auth token (for account server OTLP basic auth)" && added=1
     fi
+    # WebAuthn passkey (for config storage setup)
+    account_env_add_if_missing "WEBAUTHN_RP_ID" "localhost" "WebAuthn Relying Party ID" && added=1
+    account_env_add_if_missing "WEBAUTHN_RP_NAME" "Rediacc" "WebAuthn display name" && added=1
+    account_env_add_if_missing "WEBAUTHN_ORIGIN" "http://localhost:${GATEWAY_PORT:-4800}" "WebAuthn origin URL" && added=1
     # Note: ADMIN_EMAIL, STRIPE_SANDBOX_SECRET_KEY, AWS_SES_* are user-set values
     # — only created in fresh generation, never added/overridden on ensure/reset
 
@@ -342,6 +351,29 @@ account_dev() {
     # Create log directory
     mkdir -p "$ACCOUNT_LOG_DIR"
 
+    # Start config blob storage (RustFS) if Docker is available
+    if command -v docker &>/dev/null && docker info &>/dev/null 2>&1; then
+        log_step "Starting config blob storage (RustFS)..."
+        local rustfs_port
+        rustfs_port=$(find_available_port 9100 9199)
+        export CONFIG_RUSTFS_PORT=$rustfs_port
+
+        (cd "$ACCOUNT_DIR" && CONFIG_RUSTFS_PORT=$rustfs_port \
+            docker compose up -d config-rustfs config-rustfs-init) \
+            >"$ACCOUNT_LOG_DIR/rustfs.log" 2>&1 || true
+        account_wait_port "$rustfs_port" "RustFS" 30 || log_warn "RustFS failed to start (config storage disabled)"
+
+        if is_port_in_use "$rustfs_port"; then
+            export CONFIG_R2_ENDPOINT="http://127.0.0.1:${rustfs_port}"
+            export CONFIG_R2_BUCKET="rediacc-configs"
+            export CONFIG_R2_ACCESS_KEY_ID="${CONFIG_R2_ACCESS_KEY_ID:-configadmin}"
+            export CONFIG_R2_SECRET_ACCESS_KEY="${CONFIG_R2_SECRET_ACCESS_KEY:-configadmin}"
+            log_info "Config blob storage: http://127.0.0.1:${rustfs_port}/rediacc-configs"
+        fi
+    else
+        log_info "Docker not available — config blob storage disabled"
+    fi
+
     # Start Astro dev server (marketing site)
     log_step "Starting Astro dev server on :${ASTRO_PORT}..."
     (cd "$CONSOLE_ROOT_DIR/packages/www" && npx astro dev --port "$ASTRO_PORT" --host 127.0.0.1) \
@@ -367,6 +399,10 @@ account_dev() {
         GATEWAY_PORT=$GATEWAY_PORT \
             VITE_PORT=$VITE_PORT \
             ASTRO_PORT=$ASTRO_PORT \
+            CONFIG_R2_ENDPOINT="${CONFIG_R2_ENDPOINT:-}" \
+            CONFIG_R2_BUCKET="${CONFIG_R2_BUCKET:-}" \
+            CONFIG_R2_ACCESS_KEY_ID="${CONFIG_R2_ACCESS_KEY_ID:-}" \
+            CONFIG_R2_SECRET_ACCESS_KEY="${CONFIG_R2_SECRET_ACCESS_KEY:-}" \
             npx tsx src/entry/dev-gateway.ts)
 }
 
@@ -375,11 +411,13 @@ account_stop() {
     (cd "$ACCOUNT_DIR" && docker compose down --remove-orphans) 2>/dev/null || true
 
     # Force remove if still around
-    local container="account-server"
-    if docker ps -a --format "{{.Names}}" 2>/dev/null | grep -q "^${container}$"; then
-        docker stop "$container" 2>/dev/null || true
-        docker rm "$container" 2>/dev/null || true
-    fi
+    local containers=(account-server account-config-rustfs account-config-rustfs-init)
+    for container in "${containers[@]}"; do
+        if docker ps -a --format "{{.Names}}" 2>/dev/null | grep -q "^${container}$"; then
+            docker stop "$container" 2>/dev/null || true
+            docker rm "$container" 2>/dev/null || true
+        fi
+    done
 
     rm -f "$ACCOUNT_STATE_FILE"
     log_info "Account containers stopped"
@@ -474,12 +512,12 @@ account_reset() {
         log_info "Regenerating crypto keys (preserving user values)..."
         account_generate_crypto_keys
 
-        sed -i "s|^ED25519_PRIVATE_KEY=.*|ED25519_PRIVATE_KEY=${ED25519_PRIV}|" "$env_file"
-        sed -i "s|^ED25519_PUBLIC_KEY=.*|ED25519_PUBLIC_KEY=${ED25519_PUB}|" "$env_file"
-        sed -i "s|^X25519_PRIVATE_KEY=.*|X25519_PRIVATE_KEY=${X25519_PRIV}|" "$env_file"
-        sed -i "s|^X25519_PUBLIC_KEY=.*|X25519_PUBLIC_KEY=${X25519_PUB}|" "$env_file"
-        sed -i "s|^JWT_SECRET=.*|JWT_SECRET=${JWT_SEC}|" "$env_file"
-        sed -i "s|^API_KEY=.*|API_KEY=${API_K}|" "$env_file"
+        _sed_i "s|^ED25519_PRIVATE_KEY=.*|ED25519_PRIVATE_KEY=${ED25519_PRIV}|" "$env_file"
+        _sed_i "s|^ED25519_PUBLIC_KEY=.*|ED25519_PUBLIC_KEY=${ED25519_PUB}|" "$env_file"
+        _sed_i "s|^X25519_PRIVATE_KEY=.*|X25519_PRIVATE_KEY=${X25519_PRIV}|" "$env_file"
+        _sed_i "s|^X25519_PUBLIC_KEY=.*|X25519_PUBLIC_KEY=${X25519_PUB}|" "$env_file"
+        _sed_i "s|^JWT_SECRET=.*|JWT_SECRET=${JWT_SEC}|" "$env_file"
+        _sed_i "s|^API_KEY=.*|API_KEY=${API_K}|" "$env_file"
 
         # Ensure any newly added keys exist
         account_ensure_env_keys

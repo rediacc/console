@@ -79,28 +79,56 @@ function isForkRepo(repoInfo: { repositoryGuid: string; grandGuid?: string }): b
   return !!(repoInfo.grandGuid && repoInfo.grandGuid !== repoInfo.repositoryGuid);
 }
 
+/** Check if an env override is present but not legitimate, returning an error if so. */
+function checkOverrideLegitimacy(
+  guardErrorKey: string,
+  guardErrorKeyNonLinux: string,
+  templateVars: Record<string, string>
+): ToolResult | null {
+  if (isOverrideLegitimate()) return null;
+
+  const errorKey = process.platform === 'linux' ? guardErrorKey : guardErrorKeyNonLinux;
+  return guardError(t(errorKey, { ...templateVars, platform: process.platform }));
+}
+
+/** Guard a grand (non-fork) repo — block unless a legitimate override is present. */
+function guardGrandRepo(repoName: string): ToolResult | null {
+  const envOverride = process.env.REDIACC_ALLOW_GRAND_REPO;
+  const hasOverride = envOverride === '*' || envOverride === repoName;
+  if (!hasOverride) {
+    return guardError(t('errors.agent.mcpGrandGuard', { name: repoName }));
+  }
+  return checkOverrideLegitimacy(
+    'errors.agent.mcpGrandGuardOverride',
+    'errors.agent.mcpGrandGuardOverrideNonLinux',
+    { name: repoName }
+  );
+}
+
 /** Guard a named repo — block grand repos or fork-blocked commands. */
 async function guardNamedRepo(
   tool: ToolDef,
   repoName: string,
   options: McpServerOptions
 ): Promise<ToolResult | null> {
-  const envOverride = process.env.REDIACC_ALLOW_GRAND_REPO;
   const repoInfo = await getRepoInfo(repoName, options.configName);
   if (!repoInfo) return null;
 
-  if (!isForkRepo(repoInfo)) {
-    if (envOverride === '*' || envOverride === repoName) {
-      if (!isOverrideLegitimate()) {
-        return guardError(t('errors.agent.mcpGrandGuardOverride', { name: repoName }));
-      }
-      // Legitimate override — allow through
-    } else {
-      return guardError(t('errors.agent.mcpGrandGuard', { name: repoName }));
-    }
-  }
   if (isForkRepo(repoInfo)) return checkForkBlocked(tool);
-  return null;
+
+  return guardGrandRepo(repoName);
+}
+
+/** Guard term_exec without a named repo — block unless wildcard override is legitimate. */
+function guardTermExecMachine(): ToolResult | null {
+  if (process.env.REDIACC_ALLOW_GRAND_REPO !== '*') {
+    return guardError(t('errors.agent.mcpMachineGuard'));
+  }
+  return checkOverrideLegitimacy(
+    'errors.agent.mcpMachineGuardOverride',
+    'errors.agent.mcpMachineGuardOverrideNonLinux',
+    {}
+  );
 }
 
 /**
@@ -117,16 +145,7 @@ async function applyGrandRepoGuard(
   const repoName = args[tool.repoArgField] as string | undefined;
   if (repoName) return guardNamedRepo(tool, repoName, options);
 
-  if (tool.name === 'term_exec') {
-    if (process.env.REDIACC_ALLOW_GRAND_REPO === '*') {
-      if (!isOverrideLegitimate()) {
-        return guardError(t('errors.agent.mcpMachineGuardOverride'));
-      }
-      // Legitimate override — allow through
-    } else {
-      return guardError(t('errors.agent.mcpMachineGuard'));
-    }
-  }
+  if (tool.name === 'term_exec') return guardTermExecMachine();
 
   return null;
 }

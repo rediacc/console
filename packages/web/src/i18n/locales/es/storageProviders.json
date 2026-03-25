@@ -150,7 +150,7 @@
       "name": "nubeflare r2",
       "tips": [
         "Sin tarifas de salida",
-        "S3-compatible API",
+        "API compatible con S3",
         "Replicación automática",
         "Integrado con Cloudflare CDN"
       ]
@@ -1039,7 +1039,7 @@
       "name": "QingStor (Almacenamiento en la nube de China)",
       "tips": [
         "Popular en el mercado chino",
-        "S3-compatible API",
+        "API compatible con S3",
         "Múltiples zonas de disponibilidad",
         "Buen desempeño en Asia"
       ]

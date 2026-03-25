@@ -1,0 +1,26 @@
+#!/bin/bash
+
+up() {
+  # Load secrets into environment for compose variable substitution
+  if [[ -f secrets.env ]]; then
+    set -a
+    source secrets.env
+    set +a
+  fi
+
+  renet compose -- up -d
+}
+
+down() {
+  renet compose -- down
+}
+
+info() {
+  renet compose -- ps
+}
+
+cleanup() {
+  # Restart the service and purge logs
+  renet compose -- restart
+  renet compose -- exec app sh -c 'find /var/log -name "*.log" -exec truncate -s 0 {} \; 2>/dev/null' || true
+}
