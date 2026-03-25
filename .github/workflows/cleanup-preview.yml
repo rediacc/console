@@ -50,6 +50,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
+      - name: Initialize account submodule
+        run: git submodule update --init --depth 1 private/account
+
+      - name: Install account dependencies
+        run: npm install --prefix private/account
+
       - name: Cleanup Stripe sandbox
         run: npx tsx scripts/cleanup-sandbox.ts --pr-number ${{ github.event.pull_request.number }}
         working-directory: private/account
