@@ -17,3 +17,7 @@
 1115114
 # h3 double decoding path traversal bypass in serveStatic (transitive dep, no fix available)
 1115117
+# flatted prototype pollution via parse() (devDep via @vitest/ui, supersedes 1114934)
+1115357
+# fast-xml-parser entity expansion limits bypassed when set to zero (transitive dep, no fix)
+1115359
