@@ -1,6 +1,6 @@
 {
   "name": "@rediacc/cli",
-  "version": "0.6.15",
+  "version": "0.6.16",
   "type": "module",
   "scripts": {
     "prebuild": "tsx scripts/embed-templates.ts",
@@ -25,7 +25,6 @@
     "test:run": "playwright test --config tests/playwright.config.ts",
     "test:security": "playwright test --config tests/playwright.config.ts --project=security",
     "test:unit": "vitest run",
-
     "test:unit:watch": "vitest",
     "test:vscode": "playwright test --config tests/playwright.config.ts --project=vscode",
     "typecheck": "tsc --noEmit"
