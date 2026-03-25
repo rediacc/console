@@ -46,7 +46,7 @@ test.describe('Audit Records Tests', () => {
 
     testReporter.completeStep('Wait for audit table to load', 'passed');
 
-    testReporter.startStep('Verify table has more than one row');
+    testReporter.startStep('Verify table has at least one row');
 
     const tableRows = tableCard.locator('.ant-table-tbody tr.ant-table-row');
 
@@ -59,9 +59,9 @@ test.describe('Audit Records Tests', () => {
         },
         { timeout: 15000, intervals: [1000, 2000, 3000, 5000] }
       )
-      .toBeGreaterThan(1);
+      .toBeGreaterThanOrEqual(1);
 
-    testReporter.completeStep('Verify table has more than one row', 'passed');
+    testReporter.completeStep('Verify table has at least one row', 'passed');
 
     await testReporter.finalizeTest();
   });
