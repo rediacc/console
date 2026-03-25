@@ -1,31 +1,12 @@
-/**
- * CLI Telemetry Service
- *
- * Provides OpenTelemetry-based telemetry for CLI commands.
- * Sends traces → Tempo, metrics → Prometheus, logs → Loki via Alloy OTLP receiver.
- *
- * Opt-out: Set REDIACC_TELEMETRY_DISABLED=1 to disable telemetry.
- */
+// CLI Telemetry Service (OTel → Tempo/Prometheus/Loki via Alloy). Opt-out: REDIACC_TELEMETRY_DISABLED=1
 
-/** Injected at compile time by esbuild (see bundle.mjs). Empty string in dev/unbundled. */
+/** Injected at compile time by esbuild (see bundle.mjs). */
 declare const __OTLP_AUTH_TOKEN__: string;
 
-import {
-  metrics as metricsApi,
-  type Span,
-  SpanStatusCode,
-  type Tracer,
-  trace,
-} from '@opentelemetry/api';
-import { type Logger, logs, SeverityNumber } from '@opentelemetry/api-logs';
-import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { resourceFromAttributes } from '@opentelemetry/resources';
-import { SimpleLogRecordProcessor } from '@opentelemetry/sdk-logs';
-import { AggregationTemporality, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
-import { NodeSDK } from '@opentelemetry/sdk-node';
-import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
+import { metrics as metricsApi, type Span, SpanStatusCode, type Tracer } from '@opentelemetry/api';
+import { type Logger, SeverityNumber } from '@opentelemetry/api-logs';
+import { type PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
+import { type NodeSDK } from '@opentelemetry/sdk-node';
 import type { TelemetryConfig, TelemetryHandler, UserContext } from '@rediacc/shared/api';
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
@@ -34,8 +15,10 @@ import {
   errorToAttributes,
   extractApiEndpoint,
   generateSessionId,
-  TELEMETRY_ATTRIBUTES,
 } from '@rediacc/shared/telemetry';
+
+import { buildUserAttributes, flattenAttributes } from './telemetry-attrs.js';
+import { setupOtelSdk } from './telemetry-setup.js';
 
 import {
   startProfiling as startProfilingImpl,
@@ -45,26 +28,15 @@ import {
 // Package version (will be replaced by bundler or read from package.json)
 const CLI_VERSION = '0.3.6';
 
-/**
- * Configuration for CLI telemetry.
- */
 interface CliTelemetryConfig extends Partial<TelemetryConfig> {
   /** CLI-specific: telemetry enabled (default: true, opt-out) */
   telemetryEnabled?: boolean;
 }
 
-/**
- * Options for command tracking.
- */
 interface CommandTrackingOptions {
   args?: string[];
   options?: Record<string, unknown>;
 }
-
-/**
- * CLI Telemetry Service implementation.
- * Sends traces, metrics, and logs to the observability stack via OTLP.
- */
 class CliTelemetryService implements TelemetryHandler {
   private sdk: NodeSDK | null = null;
   private tracer: Tracer | null = null;
@@ -95,9 +67,6 @@ class CliTelemetryService implements TelemetryHandler {
     this.sessionId = generateSessionId();
   }
 
-  /**
-   * Check if telemetry is disabled via environment variable or config.
-   */
   private shouldDisable(config?: CliTelemetryConfig): boolean {
     // Disable in CI environments to avoid delays in automated pipelines
     if (process.env.CI) {
@@ -117,9 +86,6 @@ class CliTelemetryService implements TelemetryHandler {
     return false;
   }
 
-  /**
-   * Get the telemetry auth token (Base64-encoded username:password).
-   */
   private getAuthToken(): string | null {
     // Production: embedded at compile time by esbuild define (non-overridable)
     const embedded = typeof __OTLP_AUTH_TOKEN__ !== 'undefined' && __OTLP_AUTH_TOKEN__;
@@ -131,10 +97,6 @@ class CliTelemetryService implements TelemetryHandler {
     return null;
   }
 
-  /**
-   * Auto-detect environment from runtime context.
-   * tsx/ts-node = development (./rdc.sh), compiled binary = production.
-   */
   private detectEnvironment(): string {
     // Running via tsx or ts-node means dev mode (./rdc.sh)
     const execArgs = process.execArgv.join(' ');
@@ -148,9 +110,6 @@ class CliTelemetryService implements TelemetryHandler {
     return DEFAULTS.TELEMETRY.ENVIRONMENT;
   }
 
-  /**
-   * Get the telemetry endpoint based on environment.
-   */
   private getEndpoint(): string {
     // Allow endpoint override only in development
     if (this.detectEnvironment() === 'development' && process.env.REDIACC_TELEMETRY_ENDPOINT) {
@@ -160,9 +119,6 @@ class CliTelemetryService implements TelemetryHandler {
     return 'https://otlp.rediacc.io';
   }
 
-  /**
-   * Common OTLP exporter headers.
-   */
   private getExporterHeaders(): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -174,9 +130,6 @@ class CliTelemetryService implements TelemetryHandler {
     return headers;
   }
 
-  /**
-   * Initialize the telemetry service with traces, metrics, and logs.
-   */
   initialize(config?: CliTelemetryConfig): void {
     if (this.isInitialized) {
       return;
@@ -189,99 +142,31 @@ class CliTelemetryService implements TelemetryHandler {
     }
 
     try {
-      const endpoint = config?.endpoint ?? this.getEndpoint();
-      const serviceName = config?.serviceName ?? DEFAULTS.TELEMETRY.SERVICE_NAME;
-      const serviceVersion = config?.serviceVersion ?? CLI_VERSION;
-      const environment =
-        config?.environment ?? process.env.REDIACC_ENVIRONMENT ?? this.detectEnvironment();
-      const headers = this.getExporterHeaders();
-
-      const resource = resourceFromAttributes({
-        [ATTR_SERVICE_NAME]: serviceName,
-        [ATTR_SERVICE_VERSION]: serviceVersion,
-        'deployment.environment': environment,
-        'service.platform': 'cli',
-        'os.type': process.platform,
-        'runtime.name': 'nodejs',
-        'runtime.version': process.version,
-        'session.id': this.sessionId,
+      const result = setupOtelSdk({
+        endpoint: config?.endpoint ?? this.getEndpoint(),
+        serviceName: config?.serviceName ?? DEFAULTS.TELEMETRY.SERVICE_NAME,
+        serviceVersion: config?.serviceVersion ?? CLI_VERSION,
+        environment:
+          config?.environment ?? process.env.REDIACC_ENVIRONMENT ?? this.detectEnvironment(),
+        headers: this.getExporterHeaders(),
+        sessionId: this.sessionId,
       });
 
-      // Trace exporter → Tempo (via Alloy)
-      const traceExporter = new OTLPTraceExporter({
-        url: `${endpoint}/v1/traces`,
-        headers,
-        timeoutMillis: 5000,
-      });
-
-      // Metric exporter → Prometheus (via Alloy)
-      // Use CUMULATIVE temporality for Prometheus compatibility
-      const metricExporter = new OTLPMetricExporter({
-        url: `${endpoint}/v1/metrics`,
-        headers,
-        timeoutMillis: 5000,
-        temporalityPreference: AggregationTemporality.CUMULATIVE,
-      });
-
-      this.metricReader = new PeriodicExportingMetricReader({
-        exporter: metricExporter,
-        exportIntervalMillis: 60000, // Long interval; we flush explicitly on shutdown
-      });
-
-      // Log exporter → Loki (via Alloy)
-      const logExporter = new OTLPLogExporter({
-        url: `${endpoint}/v1/logs`,
-        headers,
-        timeoutMillis: 5000,
-      });
-
-      this.sdk = new NodeSDK({
-        resource,
-        traceExporter,
-        metricReader: this.metricReader,
-        logRecordProcessors: [new SimpleLogRecordProcessor(logExporter)],
-      });
-
-      this.sdk.start();
-      this.tracer = trace.getTracer(serviceName, serviceVersion);
-      this.logger = logs.getLogger(serviceName, serviceVersion);
-      this.initMetricInstruments(serviceName, serviceVersion);
+      this.sdk = result.sdk;
+      this.tracer = result.tracer;
+      this.logger = result.logger;
+      this.metricReader = result.metricReader;
+      this.commandCounter = result.commandCounter;
+      this.commandDuration = result.commandDuration;
+      this.errorCounter = result.errorCounter;
+      this.apiCallDuration = result.apiCallDuration;
       this.isInitialized = true;
     } catch {
-      // Fail silently - telemetry should never break the CLI
       this.isEnabled = false;
       this.isInitialized = true;
     }
   }
 
-  /**
-   * Create metric instruments for CLI observability.
-   */
-  private initMetricInstruments(serviceName: string, serviceVersion: string): void {
-    const meter = metricsApi.getMeter(serviceName, serviceVersion);
-
-    this.commandCounter = meter.createCounter('cli.command.count', {
-      description: 'Number of CLI commands executed',
-    });
-
-    this.commandDuration = meter.createHistogram('cli.command.duration', {
-      description: 'CLI command execution duration in ms',
-      unit: 'ms',
-    });
-
-    this.errorCounter = meter.createCounter('cli.error.count', {
-      description: 'Number of CLI errors',
-    });
-
-    this.apiCallDuration = meter.createHistogram('cli.api.duration', {
-      description: 'API call duration in ms',
-      unit: 'ms',
-    });
-  }
-
-  /**
-   * Start CPU and heap profiling. Enabled when telemetry is on.
-   */
   startProfiling(commandName: string): void {
     if (!this.isEnabled || this.profilingStarted) {
       return;
@@ -290,9 +175,6 @@ class CliTelemetryService implements TelemetryHandler {
     this.profilingStarted = true;
   }
 
-  /**
-   * Stop profiling and flush data.
-   */
   async stopProfiling(): Promise<void> {
     if (!this.profilingStarted) {
       return;
@@ -300,9 +182,6 @@ class CliTelemetryService implements TelemetryHandler {
     await stopProfilingImpl();
   }
 
-  /**
-   * Set user context for telemetry attribution.
-   */
   setUserContext(context: Partial<UserContext>): void {
     this.userContext = {
       ...this.userContext,
@@ -311,9 +190,6 @@ class CliTelemetryService implements TelemetryHandler {
     };
   }
 
-  /**
-   * Track a generic event.
-   */
   trackEvent(eventName: string, attributes?: Record<string, unknown>): void {
     if (!this.isEnabled || !this.tracer) {
       return;
@@ -338,9 +214,6 @@ class CliTelemetryService implements TelemetryHandler {
     }
   }
 
-  /**
-   * Start tracking a command execution.
-   */
   startCommand(commandName: string, options?: CommandTrackingOptions): void {
     if (!this.isEnabled || !this.tracer) {
       return;
@@ -373,9 +246,6 @@ class CliTelemetryService implements TelemetryHandler {
     }
   }
 
-  /**
-   * Build log attributes for command completion.
-   */
   private buildCommandLogAttrs(
     commandName: string,
     result: { success: boolean; exitCode?: number; error?: string; duration?: number }
@@ -394,9 +264,6 @@ class CliTelemetryService implements TelemetryHandler {
     return attrs;
   }
 
-  /**
-   * End tracking a command execution.
-   */
   endCommand(
     commandName: string,
     result: { success: boolean; exitCode?: number; error?: string; duration?: number }
@@ -446,9 +313,6 @@ class CliTelemetryService implements TelemetryHandler {
     }
   }
 
-  /**
-   * Track an API call (required by TelemetryHandler interface).
-   */
   trackApiCall(
     method: string,
     url: string,
@@ -494,9 +358,6 @@ class CliTelemetryService implements TelemetryHandler {
     }
   }
 
-  /**
-   * Track an error.
-   */
   trackError(error: unknown, context?: Record<string, unknown>): void {
     if (!this.isEnabled || !this.tracer) {
       return;
@@ -536,9 +397,6 @@ class CliTelemetryService implements TelemetryHandler {
     }
   }
 
-  /**
-   * Track a performance metric.
-   */
   trackMetric(name: string, value: number, unit?: string): void {
     if (!this.isEnabled || !this.tracer) {
       return;
@@ -562,9 +420,6 @@ class CliTelemetryService implements TelemetryHandler {
     }
   }
 
-  /**
-   * Emit a structured log record to Loki (via Alloy).
-   */
   private emitLog(
     severity: SeverityNumber,
     message: string,
@@ -597,9 +452,6 @@ class CliTelemetryService implements TelemetryHandler {
     return 'ERROR';
   }
 
-  /**
-   * Shutdown telemetry and flush pending data.
-   */
   async shutdown(): Promise<void> {
     if (!this.isEnabled || !this.sdk) {
       return;
@@ -644,76 +496,15 @@ class CliTelemetryService implements TelemetryHandler {
     return this.pendingShutdown;
   }
 
-  /**
-   * Get user attributes for telemetry.
-   */
   private getUserAttributes(): Record<string, string> {
-    const attrs: Record<string, string> = {};
-
-    if (this.userContext.email) {
-      // Only include email domain for privacy
-      const domain = this.userContext.email.split('@')[1];
-      if (domain) {
-        attrs['user.email_domain'] = domain;
-      }
-    }
-
-    if (this.userContext.organization) {
-      attrs['user.organization'] = this.userContext.organization;
-    }
-
-    if (this.userContext.teamName) {
-      attrs['user.team'] = this.userContext.teamName;
-      attrs['team.name'] = this.userContext.teamName;
-    }
-
-    if (this.userContext.subscriptionId) {
-      attrs[TELEMETRY_ATTRIBUTES.subscriptionId] = this.userContext.subscriptionId;
-    }
-
-    if (this.userContext.subscriptionPlanCode) {
-      attrs[TELEMETRY_ATTRIBUTES.subscriptionPlanCode] = this.userContext.subscriptionPlanCode;
-    }
-
-    if (this.userContext.subscriptionStatus) {
-      attrs[TELEMETRY_ATTRIBUTES.subscriptionStatus] = this.userContext.subscriptionStatus;
-    }
-
-    if (this.userContext.subscriptionSource) {
-      attrs[TELEMETRY_ATTRIBUTES.subscriptionSource] = this.userContext.subscriptionSource;
-    }
-
-    return attrs;
+    return buildUserAttributes(this.userContext);
   }
 
-  /**
-   * Flatten nested objects to dot-notation keys.
-   */
   private flattenAttributes(
     obj: Record<string, unknown>,
     prefix = ''
   ): Record<string, string | number | boolean> {
-    const result: Record<string, string | number | boolean> = {};
-
-    for (const [key, value] of Object.entries(obj)) {
-      const fullKey = prefix ? `${prefix}.${key}` : key;
-
-      if (value === null || value === undefined) {
-        continue;
-      } else if (typeof value === 'object' && !Array.isArray(value)) {
-        Object.assign(result, this.flattenAttributes(value as Record<string, unknown>, fullKey));
-      } else if (
-        typeof value === 'string' ||
-        typeof value === 'number' ||
-        typeof value === 'boolean'
-      ) {
-        result[fullKey] = value;
-      } else {
-        result[fullKey] = String(value);
-      }
-    }
-
-    return result;
+    return flattenAttributes(obj, prefix);
   }
 }
 

@@ -473,6 +473,38 @@
         "noBackup": "未找到配置 \"{{name}}\" 的备份",
         "success": "配置 \"{{name}}\" 已从备份恢复（版本 {{version}}）"
       },
+      "remote": {
+        "description": "管理远程配置存储连接",
+        "disable": {
+          "description": "断开远程存储连接并将配置保存到本地",
+          "notEnabled": "Remote config is not enabled.",
+          "success": "Remote config disabled. Config \"{{name}}\" saved locally."
+        },
+        "enable": {
+          "alreadyEnabled": "Config \"{{name}}\" is already linked to remote storage. Disable first with: rdc config remote disable",
+          "description": "将此配置链接到远程加密存储",
+          "expired": "Device code expired. Try again.",
+          "openBrowser": "Open this URL to complete setup:",
+          "optionApiUrl": "账户服务器URL",
+          "optionHeadless": "使用设备代码流程（用于无界面服务器）",
+          "polling": "Polling for browser approval...",
+          "received": "已接收移交数据",
+          "success": "Remote config enabled. Config \"{{name}}\" is now synced to {{apiUrl}}.",
+          "waiting": "Waiting for browser approval..."
+        },
+        "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
+        "refresh": {
+          "description": "强制从远程存储重新获取配置",
+          "notEnabled": "Remote config is not enabled.",
+          "pulled": "配置已拉取",
+          "pulling": "Pulling config from remote...",
+          "success": "Config refreshed from remote (version {{version}})."
+        },
+        "status": {
+          "description": "Show remote connection status"
+        },
+        "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable"
+      },
       "repository": {
         "add": {
           "description": "将仓库 GUID 映射添加到当前配置",
@@ -625,7 +657,11 @@
         "renetRsync": "内置rsync",
         "renetVersion": "版本",
         "seaMode": "SEA模式",
-        "sshKey": "SSH密钥"
+        "sshKey": "SSH密钥",
+        "subscriptionMachineSlots": "机器槽位",
+        "subscriptionRepoLicenses": "仓库许可证",
+        "subscriptionStatus": "Status",
+        "subscriptionToken": "访问令牌"
       },
       "description": "诊断CLI环境和renet集成",
       "descriptionShort": "诊断CLI环境和renet集成",
@@ -635,6 +671,7 @@
       "notAuthenticated": "未认证",
       "notConfigured": "未配置",
       "notInstalled": "未安装",
+      "notLoggedIn": "未登录",
       "opsNotSupported": "不支持 {{platform}}",
       "opsSkipped": "renet 不可用（已跳过）",
       "seaActive": "是（单一可执行应用程序）",
@@ -643,13 +680,16 @@
         "configuration": "配置",
         "environment": "环境",
         "renet": "Renet网络",
+        "subscription": "订阅",
         "virtualization": "虚拟化"
       },
+      "serverMismatch": "server mismatch",
       "status": {
         "fail": "失败",
         "ok": "OK",
         "warn": "警告"
       },
+      "subscriptionUnreachable": "无法连接订阅服务器",
       "title": "Rediacc CLI 诊断工具"
     },
     "machine": {

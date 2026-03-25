@@ -914,6 +914,41 @@ export default tseslint.config(
     },
   },
 
+  // Account route layer isolation: prevent routes from accessing DB layer
+  {
+    files: ['private/account/src/routes/**/*.ts'],
+    ignores: ['private/account/src/routes/test.ts'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['../db/*', '../db', 'drizzle-orm', 'drizzle-orm/*'],
+          message: 'Routes cannot import from the database layer. Use services and DTO schemas.',
+        }],
+      }],
+      'no-restricted-syntax': ['error',
+        {
+          selector: "CallExpression[callee.property.name='transaction']",
+          message: 'db.transaction() is not supported on D1.',
+        },
+        {
+          selector: "ImportExpression[source.value=/\\.\\.\\/(db|db\\/)/]",
+          message: 'Dynamic imports from the database layer are not allowed in routes.',
+        },
+        {
+          selector: "ImportExpression[source.value=/drizzle/]",
+          message: 'Dynamic imports from drizzle-orm are not allowed in routes.',
+        },
+      ],
+    },
+  },
+
+  // Account service scope enforcement is handled by:
+  // 1. scope-registry.ts (table classification)
+  // 2. scope-audit.test.ts (CI test verifying all tables are registered + have scope columns)
+  // 3. withOrg/withUser/withStore helpers in scoped-query.ts (runtime enforcement)
+  // ESLint scope warnings removed to avoid --max-warnings 0 conflicts.
+  // D1 transaction restriction is in the general account block above (line 909).
+
   // =============================================================
   // WWW PACKAGE OVERRIDES (Astro marketing site)
   // =============================================================

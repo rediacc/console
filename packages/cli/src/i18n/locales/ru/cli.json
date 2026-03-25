@@ -473,6 +473,38 @@
         "noBackup": "Резервная копия для конфигурации \"{{name}}\" не найдена",
         "success": "Конфигурация \"{{name}}\" восстановлена из резервной копии (версия {{version}})"
       },
+      "remote": {
+        "description": "Управление подключением к удалённому хранилищу конфигурации",
+        "disable": {
+          "description": "Отключиться от удалённого хранилища и сохранить конфигурацию локально",
+          "notEnabled": "Remote config is not enabled.",
+          "success": "Remote config disabled. Config \"{{name}}\" saved locally."
+        },
+        "enable": {
+          "alreadyEnabled": "Config \"{{name}}\" is already linked to remote storage. Disable first with: rdc config remote disable",
+          "description": "Привязать эту конфигурацию к удалённому зашифрованному хранилищу",
+          "expired": "Device code expired. Try again.",
+          "openBrowser": "Open this URL to complete setup:",
+          "optionApiUrl": "URL сервера аккаунта",
+          "optionHeadless": "Использовать поток кода устройства (для серверов без интерфейса)",
+          "polling": "Polling for browser approval...",
+          "received": "Передача получена",
+          "success": "Remote config enabled. Config \"{{name}}\" is now synced to {{apiUrl}}.",
+          "waiting": "Waiting for browser approval..."
+        },
+        "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
+        "refresh": {
+          "description": "Принудительно загрузить конфигурацию из удалённого хранилища",
+          "notEnabled": "Remote config is not enabled.",
+          "pulled": "Конфигурация загружена",
+          "pulling": "Pulling config from remote...",
+          "success": "Config refreshed from remote (version {{version}})."
+        },
+        "status": {
+          "description": "Show remote connection status"
+        },
+        "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable"
+      },
       "repository": {
         "add": {
           "description": "Добавить привязку GUID репозитория в текущую конфигурацию",
@@ -625,7 +657,11 @@
         "renetRsync": "Встроенный rsync",
         "renetVersion": "Версия",
         "seaMode": "Режим SEA",
-        "sshKey": "SSH-ключ"
+        "sshKey": "SSH-ключ",
+        "subscriptionMachineSlots": "Слоты машин",
+        "subscriptionRepoLicenses": "Лицензии репозиториев",
+        "subscriptionStatus": "Status",
+        "subscriptionToken": "Токен"
       },
       "description": "Диагностика среды CLI и интеграции renet",
       "descriptionShort": "Диагностика среды CLI и интеграции renet",
@@ -635,6 +671,7 @@
       "notAuthenticated": "не аутентифицирован",
       "notConfigured": "не настроен",
       "notInstalled": "не установлен",
+      "notLoggedIn": "не выполнен вход",
       "opsNotSupported": "не поддерживается на {{platform}}",
       "opsSkipped": "renet недоступен (пропущено)",
       "seaActive": "да (Single Executable Application)",
@@ -643,13 +680,16 @@
         "configuration": "Конфигурация",
         "environment": "Среда",
         "renet": "Сеть Renet",
+        "subscription": "Подписка",
         "virtualization": "Виртуализация"
       },
+      "serverMismatch": "server mismatch",
       "status": {
         "fail": "ОШИБКА",
         "ok": "OK",
         "warn": "ПРЕДУПРЕЖДЕНИЕ"
       },
+      "subscriptionUnreachable": "не удалось связаться с сервером подписки",
       "title": "Диагностика Rediacc CLI"
     },
     "machine": {

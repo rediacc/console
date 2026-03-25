@@ -473,6 +473,38 @@
         "noBackup": "Aucune sauvegarde trouvée pour la configuration \"{{name}}\"",
         "success": "Configuration \"{{name}}\" restaurée depuis la sauvegarde (version {{version}})"
       },
+      "remote": {
+        "description": "Gérer la connexion au stockage distant de configuration",
+        "disable": {
+          "description": "Déconnecter du stockage distant et sauvegarder la configuration localement",
+          "notEnabled": "Remote config is not enabled.",
+          "success": "Remote config disabled. Config \"{{name}}\" saved locally."
+        },
+        "enable": {
+          "alreadyEnabled": "Config \"{{name}}\" is already linked to remote storage. Disable first with: rdc config remote disable",
+          "description": "Lier cette configuration au stockage distant chiffré",
+          "expired": "Device code expired. Try again.",
+          "openBrowser": "Open this URL to complete setup:",
+          "optionApiUrl": "URL du serveur de compte",
+          "optionHeadless": "Utiliser le flux de code d'appareil (pour les serveurs sans interface)",
+          "polling": "Polling for browser approval...",
+          "received": "Transfert reçu",
+          "success": "Remote config enabled. Config \"{{name}}\" is now synced to {{apiUrl}}.",
+          "waiting": "Waiting for browser approval..."
+        },
+        "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
+        "refresh": {
+          "description": "Forcer la récupération de la configuration depuis le stockage distant",
+          "notEnabled": "Remote config is not enabled.",
+          "pulled": "Configuration récupérée",
+          "pulling": "Pulling config from remote...",
+          "success": "Config refreshed from remote (version {{version}})."
+        },
+        "status": {
+          "description": "Show remote connection status"
+        },
+        "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable"
+      },
       "repository": {
         "add": {
           "description": "Ajouter un mappage GUID de dépôt à la configuration actuelle",
@@ -625,7 +657,11 @@
         "renetRsync": "rsync intégré",
         "renetVersion": "Version de Renet",
         "seaMode": "Mode SEA",
-        "sshKey": "Clé SSH"
+        "sshKey": "Clé SSH",
+        "subscriptionMachineSlots": "Emplacements de machines",
+        "subscriptionRepoLicenses": "Licences de dépôts",
+        "subscriptionStatus": "Status",
+        "subscriptionToken": "Jeton d'accès"
       },
       "description": "Diagnostiquer l'environnement CLI et l'intégration renet",
       "descriptionShort": "Diagnostiquer l'environnement CLI et l'intégration renet",
@@ -635,6 +671,7 @@
       "notAuthenticated": "non authentifié",
       "notConfigured": "non configuré",
       "notInstalled": "non installé",
+      "notLoggedIn": "non connecté",
       "opsNotSupported": "non pris en charge sur {{platform}}",
       "opsSkipped": "renet non disponible (ignoré)",
       "seaActive": "oui (Single Executable Application)",
@@ -643,13 +680,16 @@
         "configuration": "Paramétrage",
         "environment": "Environnement",
         "renet": "Réseau Renet",
+        "subscription": "Abonnement",
         "virtualization": "Virtualisation"
       },
+      "serverMismatch": "server mismatch",
       "status": {
         "fail": "ÉCHEC",
         "ok": "OK",
         "warn": "AVERTISSEMENT"
       },
+      "subscriptionUnreachable": "impossible de joindre le serveur d'abonnement",
       "title": "Diagnostic Rediacc CLI"
     },
     "machine": {

@@ -133,6 +133,7 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
       set: { modes: ['cloud'] },
       clear: { modes: ['cloud'] },
       ssh: { modes: ALL_MODES },
+      remote: { modes: SELF_HOSTED_MODES },
     },
   },
   { name: 'doctor', modes: ALL_MODES, domain: 'TOOLS' },

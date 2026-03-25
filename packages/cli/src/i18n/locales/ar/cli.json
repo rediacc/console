@@ -473,6 +473,38 @@
         "noBackup": "لم يتم العثور على نسخة احتياطية للإعدادات \"{{name}}\"",
         "success": "تمت استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية (الإصدار {{version}})"
       },
+      "remote": {
+        "description": "إدارة اتصال تخزين الإعدادات عن بُعد",
+        "disable": {
+          "description": "قطع الاتصال بالتخزين عن بُعد وحفظ الإعدادات محلياً",
+          "notEnabled": "Remote config is not enabled.",
+          "success": "Remote config disabled. Config \"{{name}}\" saved locally."
+        },
+        "enable": {
+          "alreadyEnabled": "Config \"{{name}}\" is already linked to remote storage. Disable first with: rdc config remote disable",
+          "description": "ربط هذه الإعدادات بالتخزين المشفر عن بُعد",
+          "expired": "Device code expired. Try again.",
+          "openBrowser": "Open this URL to complete setup:",
+          "optionApiUrl": "عنوان URL لخادم الحساب",
+          "optionHeadless": "استخدام تدفق رمز الجهاز (للخوادم بدون واجهة)",
+          "polling": "Polling for browser approval...",
+          "received": "تم استلام التسليم",
+          "success": "Remote config enabled. Config \"{{name}}\" is now synced to {{apiUrl}}.",
+          "waiting": "Waiting for browser approval..."
+        },
+        "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
+        "refresh": {
+          "description": "إعادة جلب الإعدادات من التخزين عن بُعد",
+          "notEnabled": "Remote config is not enabled.",
+          "pulled": "تم سحب الإعدادات",
+          "pulling": "Pulling config from remote...",
+          "success": "Config refreshed from remote (version {{version}})."
+        },
+        "status": {
+          "description": "Show remote connection status"
+        },
+        "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable"
+      },
       "repository": {
         "add": {
           "description": "إضافة ربط GUID للمستودع إلى التكوين الحالي",
@@ -625,7 +657,11 @@
         "renetRsync": "rsync مضمّن",
         "renetVersion": "الإصدار",
         "seaMode": "وضع SEA",
-        "sshKey": "مفتاح SSH"
+        "sshKey": "مفتاح SSH",
+        "subscriptionMachineSlots": "فتحات الأجهزة",
+        "subscriptionRepoLicenses": "تراخيص المستودعات",
+        "subscriptionStatus": "Status",
+        "subscriptionToken": "الرمز المميز"
       },
       "description": "تشخيص بيئة CLI وتكامل renet",
       "descriptionShort": "تشخيص بيئة CLI وتكامل renet",
@@ -635,6 +671,7 @@
       "notAuthenticated": "غير مصادق",
       "notConfigured": "غير مهيّأ",
       "notInstalled": "غير مثبّت",
+      "notLoggedIn": "لم يتم تسجيل الدخول",
       "opsNotSupported": "غير مدعوم على {{platform}}",
       "opsSkipped": "renet غير متاح (تم التخطي)",
       "seaActive": "نعم (تطبيق ملف تنفيذي واحد)",
@@ -643,13 +680,16 @@
         "configuration": "الإعدادات",
         "environment": "البيئة",
         "renet": "شبكة Renet",
+        "subscription": "الاشتراك",
         "virtualization": "المحاكاة الافتراضية"
       },
+      "serverMismatch": "server mismatch",
       "status": {
         "fail": "فشل",
         "ok": "OK",
         "warn": "تحذير"
       },
+      "subscriptionUnreachable": "تعذر الوصول إلى خادم الاشتراك",
       "title": "أداة تشخيص Rediacc CLI"
     },
     "machine": {

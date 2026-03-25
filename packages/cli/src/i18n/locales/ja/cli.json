@@ -473,6 +473,38 @@
         "noBackup": "設定 \"{{name}}\" のバックアップが見つかりません",
         "success": "設定 \"{{name}}\" をバックアップから復元しました（バージョン {{version}}）"
       },
+      "remote": {
+        "description": "リモート設定ストレージ接続を管理",
+        "disable": {
+          "description": "リモートストレージから切断し、設定をローカルに保存",
+          "notEnabled": "Remote config is not enabled.",
+          "success": "Remote config disabled. Config \"{{name}}\" saved locally."
+        },
+        "enable": {
+          "alreadyEnabled": "Config \"{{name}}\" is already linked to remote storage. Disable first with: rdc config remote disable",
+          "description": "この設定をリモート暗号化ストレージにリンク",
+          "expired": "Device code expired. Try again.",
+          "openBrowser": "Open this URL to complete setup:",
+          "optionApiUrl": "アカウントサーバーURL",
+          "optionHeadless": "デバイスコードフローを使用（ヘッドレスサーバー用）",
+          "polling": "Polling for browser approval...",
+          "received": "ハンドオフを受信",
+          "success": "Remote config enabled. Config \"{{name}}\" is now synced to {{apiUrl}}.",
+          "waiting": "Waiting for browser approval..."
+        },
+        "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
+        "refresh": {
+          "description": "リモートストレージから設定を強制再取得",
+          "notEnabled": "Remote config is not enabled.",
+          "pulled": "設定を取得済み",
+          "pulling": "Pulling config from remote...",
+          "success": "Config refreshed from remote (version {{version}})."
+        },
+        "status": {
+          "description": "Show remote connection status"
+        },
+        "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable"
+      },
       "repository": {
         "add": {
           "description": "現在の設定にリポジトリ GUID マッピングを追加する",
@@ -625,7 +657,11 @@
         "renetRsync": "組み込みrsync",
         "renetVersion": "バージョン",
         "seaMode": "SEAモード",
-        "sshKey": "SSHキー"
+        "sshKey": "SSHキー",
+        "subscriptionMachineSlots": "マシンスロット",
+        "subscriptionRepoLicenses": "リポジトリライセンス",
+        "subscriptionStatus": "Status",
+        "subscriptionToken": "トークン"
       },
       "description": "CLI環境とrenet統合を診断",
       "descriptionShort": "CLI環境とrenet統合を診断",
@@ -635,6 +671,7 @@
       "notAuthenticated": "未認証",
       "notConfigured": "未設定",
       "notInstalled": "未インストール",
+      "notLoggedIn": "未ログイン",
       "opsNotSupported": "{{platform}}ではサポートされていません",
       "opsSkipped": "renetが利用できません（スキップ）",
       "seaActive": "はい（単一実行可能アプリケーション）",
@@ -643,13 +680,16 @@
         "configuration": "設定",
         "environment": "環境",
         "renet": "Renetネットワーク",
+        "subscription": "サブスクリプション",
         "virtualization": "仮想化"
       },
+      "serverMismatch": "server mismatch",
       "status": {
         "fail": "失敗",
         "ok": "OK",
         "warn": "警告"
       },
+      "subscriptionUnreachable": "サブスクリプションサーバーに接続できません",
       "title": "Rediacc CLI 診断ツール"
     },
     "machine": {

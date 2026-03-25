@@ -1,86 +1,284 @@
 ---
 title: Inicio rápido
-description: Ejecute un servicio en contenedores en su servidor en 5 minutos.
+description: Ejecute un servicio en contenedores en su servidor en minutos.
 category: Guides
 order: -1
 language: es
-sourceHash: "a67f1e8442eb492e"
+sourceHash: "73dc08190016a305"
 ---
 
 # Inicio rápido
 
-Despliegue un entorno de contenedores cifrado y aislado en su propio servidor en 5 minutos. No se requieren cuentas en la nube ni dependencias de SaaS.
+Despliegue un entorno de contenedores cifrado y aislado en su propio servidor. Sin cuentas en la nube ni dependencias de SaaS. Todo se ejecuta en hardware que usted controla.
 
-## Requisitos previos
+---
 
-- Una estación de trabajo con Linux o macOS
-- Un servidor remoto (Ubuntu 24.04+, Debian 12+ o Fedora 43+) con acceso SSH y privilegios sudo
-- Un par de claves SSH (por ejemplo, `~/.ssh/id_ed25519`)
+## Introducción
 
-## 1. Instalar la CLI
+### Conceptos clave
+
+Un repo es un único archivo cifrado en disco. Muévalo, haga una copia de seguridad, bifúrquelo. Es solo un archivo. Cuando se monta, se convierte en una carpeta con un daemon Docker dedicado y los datos de su aplicación dentro.
+
+Piense en un repo como una unidad USB. Es algo en su mano, y cuando lo conecta se vuelve visible y accesible para el sistema. Sus aplicaciones y datos son completamente portátiles. Conecte y ejecute en cualquier máquina en cualquier proveedor de nube.
+
+**Dos herramientas, dos roles:**
+
+- **rdc** = CLI en su portátil (TypeScript, instalado globalmente)
+- **renet** = orquestador en el servidor (binario Go, gestiona daemons/redes/aislamiento)
+- RDC aprovisiona renet automáticamente durante `config machine setup`. No requiere configuración manual en el servidor.
+
+> [Arquitectura](/en/docs/architecture) explica el modelo de seguridad. [rdc vs renet](/en/docs/rdc-vs-renet) explica qué herramienta usar en cada caso.
+
+### 1. Instalar la CLI
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
+rdc doctor     # Verificar: Node, clave SSH, renet, Docker
 ```
 
-## 2. Crear una Configuración
+> Windows, Alpine, Arch: consulte [Instalación](/en/docs/installation). Requisitos completos del sistema: [Requisitos](/en/docs/requirements).
+
+### 2. Configuración de clave SSH
+
+rdc se conecta a través de SSH. El servidor debe confiar en su clave pública antes de que rdc pueda acceder a él.
 
 ```bash
-rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
+# Generar una clave (omita si ya tiene una)
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
+
+# Copiar la clave pública al servidor (pedirá contraseña)
+ssh-copy-id -i ~/.ssh/id_ed25519 user@your-server-ip
+
+# Indicar a rdc qué clave usar
+rdc config ssh set --key ~/.ssh/id_ed25519
 ```
 
-## 3. Agregar su servidor
+Ahora todos los comandos de rdc se autentican con esta clave. Sin contraseñas.
+
+### 3. Agregar su servidor
 
 ```bash
-rdc config machine add server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config machine add my-server --ip 192.168.1.100 --user muhammed
+rdc config machine setup my-server        # Aprovisiona renet + crea almacén de datos
 ```
 
-## 4. Aprovisionar el servidor
+**Qué sucede:** Se escanea la clave del host SSH, se sube el binario de renet y se inicializa el almacén de datos cifrado en el servidor. Listo para repos.
+
+> Dimensionamiento del almacén, Ceph RBD, proveedores de nube: [Configuración de máquina](/en/docs/setup). Fallos de SSH: [Solución de problemas](/en/docs/troubleshooting).
+
+### 4. Archivo de configuración
 
 ```bash
-rdc config machine setup server-1
+rdc config show                            # Resumen legible
+cat ~/.config/rediacc/rediacc.json         # JSON sin procesar: máquinas, repos, almacenamientos, clave SSH
 ```
 
-Esto instala Docker, cryptsetup y el binario renet en su servidor.
+**Un archivo = un entorno.** Cópielo a otro portátil y estará listo.
 
-## 5. Crear un repositorio cifrado
+---
+
+## Trabajar con un repo
+
+### 1. Crear un repo
 
 ```bash
-rdc repo create my-app -m server-1 --size 5G
+rdc repo create my-app -m my-server --size 2G       # Crear repo cifrado de 2 GB
 ```
 
-## 6. Desplegar servicios
+Crea el volumen cifrado, lo monta e inicia su daemon Docker. El repo se registra en su configuración y está listo para usar.
 
-Monte el repositorio, cree su `docker-compose.yml` y `Rediaccfile` dentro de él, luego inicie:
+> Redimensionar, eliminar, validación: [Repositorios](/en/docs/repositories).
+
+### 2. Aplicar una plantilla
 
 ```bash
-rdc repo up my-app -m server-1 --mount
+rdc repo template list                                        # Mostrar plantillas integradas
+rdc repo template apply app-postgres -m my-server -r my-app   # Despliega docker-compose.yml + Rediaccfile
 ```
 
-## 7. Verificar
+Las plantillas proporcionan un `docker-compose.yml`, `Rediaccfile` y archivos de soporte. Sin una plantilla (o su propio archivo compose), no hay nada que iniciar.
+
+### 3. Iniciar el repo
 
 ```bash
-rdc machine containers server-1
+rdc repo up my-app -m my-server                      # Ejecutar Rediaccfile up()
+rdc repo list -m my-server                           # Ver todos los repos en la máquina
+rdc repo status my-app -m my-server                  # Estado de montaje, Docker, tamaño, cifrado
 ```
 
-Debería ver sus contenedores en ejecución.
+`repo up` auto-monta si es necesario. No se requieren flags adicionales.
 
-## ¿Qué es Rediacc?
+### 4. VS Code
 
-Rediacc despliega servicios en contenedores en servidores remotos que usted controla. Todo se cifra en reposo usando LUKS, cada repositorio obtiene su propio daemon Docker aislado, y toda la orquestación ocurre a través de SSH desde su estación de trabajo.
+```bash
+rdc vscode my-server my-app              # Abre VS Code SSH, aterriza dentro del sandbox del repo
+```
 
-Sin cuentas en la nube. Sin dependencias de SaaS. Sus datos permanecen en sus servidores.
+Está editando archivos *dentro* del volumen cifrado. `docker ps` solo muestra los contenedores de este repo. Guarde, compose up, itere.
+
+### 5. `rdc repo up` vs `renet dev up`
+
+| | `rdc repo up` | `renet dev up` |
+|---|---|---|
+| **Dónde se ejecuta** | Su portátil (CLI) | Dentro del sandbox de VS Code |
+| **Qué hace** | SSH → auto-montaje → ejecuta Rediaccfile `up()` | Ejecuta Rediaccfile `up()` directamente |
+| **Caso de uso** | CI/CD, automatización, operaciones remotas | Ciclo interno del desarrollador |
+| **Aislamiento** | Orquesta desde afuera | Ya está dentro del sandbox |
+
+**Flujo de demostración:** `rdc repo template apply` → `rdc vscode my-server my-app` → editar `docker-compose.yml` → `renet dev up` → ver la app ejecutándose → iterar.
+
+> Estructura del Rediaccfile: [Servicios](/en/docs/services). Cuándo usar cada herramienta: [rdc vs renet](/en/docs/rdc-vs-renet).
+
+### 6. Modelo de aislamiento
+
+- **Usuario universal** (`rediacc`): Mismo UID en cada máquina. Mueva un repo a otro servidor y la propiedad de archivos simplemente funciona. Sin dolores de cabeza con `chown`.
+- **Daemon Docker por repo**: Cada repo obtiene su propio daemon Docker aislado. `docker ps` solo muestra los contenedores de ESTE repo.
+- **Sandbox con Landlock + OverlayFS**: La shell de VS Code tiene restricción de sistema de archivos. No puede leer otros repos. Las escrituras en `$HOME` son overlays por repo.
+
+> Cómo funciona el aislamiento: [Arquitectura](/en/docs/architecture). Ciclo de vida del Rediaccfile: [Servicios](/en/docs/services).
+
+### 7. Terminal, sincronización y túnel
+
+**Terminal:**
+```bash
+rdc term my-server my-app                            # SSH al sandbox del repo
+rdc term my-server my-app -c "curl localhost:3000"   # Ejecutar comando y salir
+rdc term my-server                                   # SSH a la máquina (sin sandbox)
+```
+
+**Sincronización de archivos (rsync sobre SSH):**
+```bash
+rdc repo sync upload -m my-server -r my-app --local ./src       # Subir archivos locales al repo
+rdc repo sync download -m my-server -r my-app --local ./backup  # Descargar archivos del repo a local
+rdc repo sync download -m my-server -r my-app --local ./backup --dry-run  # Previsualizar primero
+```
+
+**Túnel (reenvío de puertos SSH al contenedor):**
+```bash
+rdc repo tunnel my-server my-app                     # Auto-detectar contenedor y puerto
+rdc repo tunnel my-server my-app --port 5432         # Túnel a Postgres
+rdc repo tunnel my-server my-app --port 5432 --local 15432  # Puerto local personalizado
+```
+
+Ejecute tunnel → abra `localhost:3000` en el navegador → app en vivo desde el servidor remoto.
+
+> Detalles de sincronización, terminal, VS Code: [Herramientas](/en/docs/tools).
+
+---
+
+## Fork y copia de seguridad
+
+### 1. Grand y fork de repos
+
+```bash
+rdc repo fork my-app -m my-server --tag experiment --up     # Clon CoW instantáneo + iniciar
+rdc repo list -m my-server                                  # Muestra: my-app (grand) + my-app:experiment (fork)
+rdc repo delete my-app:experiment -m my-server              # Eliminar fork, grand intacto
+```
+
+**Clon instantáneo, sin copia de datos.** CoW (copy-on-write). Microsegundos, sin datos copiados. Los bloques se comparten hasta que un lado escribe.
+
+**Casos de uso:**
+- **AI / ML:** Fork del dataset de producción, ejecutar experimento, descartar o promover
+- **DevOps:** Fork → probar migración → eliminar si falla, promover si funciona
+- **Copia de seguridad:** Fork = snapshot instantáneo, envíelo fuera del sitio
+
+> Ciclo de vida del fork, forks entre máquinas: [Repositorios](/en/docs/repositories).
+
+### 2. Push a otra máquina
+
+```bash
+# Enviar repo a otra máquina
+rdc repo push my-app -m my-server --to backup-server
+
+# Enviar y auto-desplegar en el destino
+rdc repo push my-app -m my-server --to backup-server --up
+
+# Enviar con checkpoint CRIU (migración en vivo, preserva estado de memoria)
+rdc repo push my-app -m my-server --to new-server --checkpoint --up
+
+# Enviar a una nueva máquina (auto-aprovisionamiento via proveedor de nube)
+rdc repo push my-app -m my-server --to new-server --provision linode --up
+```
+
+### 3. Push a almacenamiento en la nube (OneDrive, Google Drive, S3)
+
+```bash
+# Importar su configuración de rclone como backend de almacenamiento
+rdc config storage import ~/rclone.conf
+
+# Listar almacenamientos disponibles
+rdc storage list
+
+# Enviar repo a almacenamiento en la nube
+rdc repo push my-app -m my-server --to my-s3-backup
+
+# Listar copias de seguridad en almacenamiento
+rdc repo backup list --from my-s3-backup -m my-server
+```
+
+`--to` auto-detecta si el destino es una máquina o un backend de almacenamiento. Funciona con cualquier proveedor soportado por rclone: S3, R2, B2, OneDrive, Google Drive, SFTP, etc.
+
+### 4. Pull desde remoto
+
+```bash
+# Traer repo desde una máquina en la nube a su servidor local
+rdc repo pull my-app -m my-local-server --from cloud-server
+
+# Traer desde almacenamiento en la nube
+rdc repo pull my-app -m my-local-server --from my-s3-backup
+
+# Traer e iniciar inmediatamente
+rdc repo pull my-app -m my-local-server --from my-s3-backup --up
+```
+
+**¿Por qué pull?** Su máquina local está detrás de NAT. La nube no puede enviar hacia usted. Pero usted puede alcanzar la nube. Pull trae el repo a casa.
+
+**Ciclo completo:** Crear en dev → push a la nube → pull en producción → `--up`. Un repo, cualquier máquina, cualquier nube.
+
+> Programación, copias de seguridad automáticas, restauración: [Copia de seguridad y restauración](/en/docs/backup-restore).
+
+---
+
+## Proxy y SSL
+
+### 1. Configuración de infraestructura
+
+```bash
+rdc config infra set my-server           # Configurar: dominio base, IPs públicas, rangos de puertos
+rdc config infra show my-server          # Revisar configuración
+rdc config infra push my-server          # Enviar configuración de proxy al remoto
+```
+
+**Cómo funciona el enrutamiento:**
+- Traefik auto-descubre contenedores via las etiquetas `rediacc.service_name` y `rediacc.service_port`
+- Rutas: `{service}-{networkId}.{baseDomain}` → IP del contenedor:puerto
+- SSL: Let's Encrypt via desafío DNS-01 de Cloudflare (renovación automática, certificados wildcard)
+
+### 2. Plantilla de proxy
+
+```bash
+rdc repo template apply proxy -m my-server -r infra     # Desplegar proxy en un repo
+rdc repo up infra -m my-server                           # Iniciar Traefik
+```
+
+Traefik ahora enruta el tráfico externo a todos los repos en esta máquina. Cada contenedor obtiene un endpoint HTTPS automáticamente.
+
+```bash
+# Navegar a https://my-app.example.com → enrutado al contenedor
+# Reenvío TCP/UDP para bases de datos:
+#   rediacc.tcp_ports=3306,5432 → puertos externos auto-asignados
+```
+
+> Reglas de enrutamiento, DNS, configuración TLS: [Redes](/en/docs/networking).
+
+---
 
 ## Próximos pasos
 
-- **[Arquitectura](/es/docs/architecture)** — Comprenda cómo funciona Rediacc: detección de adaptadores, modelo de seguridad, aislamiento Docker
-- **[rdc vs renet](/es/docs/rdc-vs-renet)** — Comprenda qué CLI usar para operaciones diarias vs trabajo remoto de bajo nivel
-- **[Configuración del servidor](/es/docs/setup)** — Guía detallada de configuración: configs, máquinas, configuración de infraestructura
-- **[Repositorios](/es/docs/repositories)** — Crear, gestionar, redimensionar, bifurcar y validar repositorios
-- **[Servicios](/es/docs/services)** — Rediaccfiles, redes de servicios, despliegue, inicio automático
-- **[Copia de seguridad y restauración](/es/docs/backup-restore)** — Respaldar en almacenamiento externo y programar copias de seguridad automáticas
-- **[Monitoreo](/es/docs/monitoring)** — Salud del servidor, contenedores, servicios, diagnósticos
-- **[Herramientas](/es/docs/tools)** — Sincronización de archivos, terminal SSH, integración con VS Code
-- **[Guía de migración](/es/docs/migration)** — Incorporar proyectos existentes a repositorios Rediacc
-- **[Solución de problemas](/es/docs/troubleshooting)** — Soluciones para problemas comunes
-- **[Referencia de la CLI](/es/docs/cli-application)** — Referencia completa de comandos
+- **[Guía de migración](/en/docs/migration)** - Incorporar proyectos existentes a repositorios Rediacc
+- **[Monitoreo](/en/docs/monitoring)** - Salud de la máquina, contenedores, servicios, diagnósticos
+- **[Referencia de la CLI](/en/docs/cli-application)** - Referencia completa de comandos
+- **[Hoja de referencia](/en/docs/rdc-cheat-sheet)** - Búsqueda rápida de comandos
+- **[Solución de problemas](/en/docs/troubleshooting)** - Soluciones para problemas comunes
+- **[Reglas de Rediacc](/en/docs/rules-of-rediacc)** - Mejores prácticas del Rediaccfile y lista de verificación de despliegue

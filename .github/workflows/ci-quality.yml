@@ -380,6 +380,18 @@ jobs:
         working-directory: private/account
         run: npm ci
 
+      - name: Check account route layer isolation
+        run: npm run check:ci-account-layer-isolation
+
+      - name: Check config token auth requires org membership
+        run: npm run check:ci-account-config-auth
+
+      - name: Check no admin user role (must be root)
+        run: npm run check:ci-account-no-admin-role
+
+      - name: Check scope registry audit
+        run: npm run check:ci-account-scope-audit
+
       - name: Run account integration tests
         run: .ci/scripts/private/run-account.sh test
 
