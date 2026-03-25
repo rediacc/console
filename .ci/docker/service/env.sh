@@ -44,7 +44,7 @@ export RUSTFS_ACCESS_KEY="${RUSTFS_ACCESS_KEY:-rustfsadmin}"
 export RUSTFS_SECRET_KEY="${RUSTFS_SECRET_KEY:-rustfsadmin}"
 
 # Account admin (first user to register with this email gets admin role)
-export ROOT_EMAIL="${ROOT_EMAIL:-admin@rediacc.io}"
+export ROOT_EMAIL="${ROOT_EMAIL:-${ADMIN_EMAIL:-admin@rediacc.io}}"
 
 # Service configuration
 export SERVICE_HTTP_PORT="${SERVICE_HTTP_PORT:-8080}"

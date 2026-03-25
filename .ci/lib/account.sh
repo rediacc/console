@@ -468,7 +468,7 @@ account_test_e2e() {
     # Wire backend secrets → E2E env vars
     export E2E_PORT="$gateway_port"
     export E2E_BASE_URL="http://localhost:${gateway_port}/account/"
-    export ROOT_EMAIL="${ROOT_EMAIL:-}"
+    export ROOT_EMAIL="${ROOT_EMAIL:-${ADMIN_EMAIL:-}}"
 
     # Webhook simulation secret (matches backend's STRIPE_WEBHOOK_SECRET)
     if [[ -n "${STRIPE_WEBHOOK_SECRET:-}" ]]; then
