@@ -5328,6 +5328,55 @@
               "subcommands": []
             }
           ]
+        },
+        {
+          "name": "remote",
+          "descriptionKey": "commands.config.remote.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "enable",
+              "descriptionKey": "commands.config.remote.enable.description",
+              "options": [
+                {
+                  "flags": "--headless",
+                  "descriptionKey": "commands.config.remote.enable.optionHeadless",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--api-url <url>",
+                  "descriptionKey": "options.serverUrl",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "disable",
+              "descriptionKey": "commands.config.remote.disable.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "status",
+              "descriptionKey": "commands.config.remote.status.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "refresh",
+              "descriptionKey": "commands.config.remote.refresh.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
         }
       ]
     },
