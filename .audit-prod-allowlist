@@ -21,3 +21,5 @@
 1115357
 # fast-xml-parser entity expansion limits bypassed when set to zero (transitive dep, no fix)
 1115359
+# yaml stack overflow via deeply nested collections (transitive dep, no fix available)
+1115369
