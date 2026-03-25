@@ -124,6 +124,8 @@ jobs:
       - run: .ci/scripts/setup/install-deps.sh
       - run: npm run check:lint
       - run: npm run lint:unused
+      - name: Check account route layer isolation
+        run: npm run check:ci-account-layer-isolation
 
   quality-format:
     name: Format
@@ -379,9 +381,6 @@ jobs:
       - name: Install account dependencies
         working-directory: private/account
         run: npm ci
-
-      - name: Check account route layer isolation
-        run: npm run check:ci-account-layer-isolation
 
       - name: Check config token auth requires org membership
         run: npm run check:ci-account-config-auth
