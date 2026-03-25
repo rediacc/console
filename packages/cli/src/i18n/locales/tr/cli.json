@@ -477,33 +477,33 @@
         "description": "Uzak yapılandırma depolama bağlantısını yönet",
         "disable": {
           "description": "Uzak depolamadan bağlantıyı kes ve yapılandırmayı yerel olarak kaydet",
-          "notEnabled": "Remote config is not enabled.",
-          "success": "Remote config disabled. Config \"{{name}}\" saved locally."
+          "notEnabled": "Uzak yapılandırma etkin değil.",
+          "success": "Uzak yapılandırma devre dışı bırakıldı. Yapılandırma \"{{name}}\" yerel olarak kaydedildi."
         },
         "enable": {
-          "alreadyEnabled": "Config \"{{name}}\" is already linked to remote storage. Disable first with: rdc config remote disable",
+          "alreadyEnabled": "Yapılandırma \"{{name}}\" zaten uzak depolamaya bağlı. Önce bağlantıyı kesin: rdc config remote disable",
           "description": "Bu yapılandırmayı uzak şifreli depolamaya bağla",
-          "expired": "Device code expired. Try again.",
-          "openBrowser": "Open this URL to complete setup:",
+          "expired": "Cihaz kodu süresi doldu. Tekrar deneyin.",
+          "openBrowser": "Kurulumu tamamlamak için bu URL'yi açın:",
           "optionApiUrl": "Hesap sunucusu URL'si",
           "optionHeadless": "Cihaz kodu akışını kullan (arayüzsüz sunucular için)",
-          "polling": "Polling for browser approval...",
+          "polling": "Tarayıcı onayı bekleniyor...",
           "received": "Aktarım alındı",
-          "success": "Remote config enabled. Config \"{{name}}\" is now synced to {{apiUrl}}.",
-          "waiting": "Waiting for browser approval..."
+          "success": "Uzak yapılandırma etkinleştirildi. Yapılandırma \"{{name}}\" artık {{apiUrl}} ile senkronize ediliyor.",
+          "waiting": "Tarayıcı onayı bekleniyor..."
         },
-        "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
+        "passkeySecretMissing": "Geçiş anahtarı sırrı işletim sistemi anahtar deposunda bulunamadı. Yeniden kimlik doğrulayın: rdc config remote enable",
         "refresh": {
           "description": "Yapılandırmayı uzak depolamadan zorla yeniden al",
-          "notEnabled": "Remote config is not enabled.",
+          "notEnabled": "Uzak yapılandırma etkin değil.",
           "pulled": "Yapılandırma alındı",
-          "pulling": "Pulling config from remote...",
-          "success": "Config refreshed from remote (version {{version}})."
+          "pulling": "Yapılandırma uzak sunucudan alınıyor...",
+          "success": "Yapılandırma uzak sunucudan güncellendi (sürüm {{version}})."
         },
         "status": {
-          "description": "Show remote connection status"
+          "description": "Uzak bağlantı durumunu göster"
         },
-        "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable"
+        "tokenExpired": "Uzak yapılandırma jetonu süresi doldu. Yeniden kimlik doğrulayın: rdc config remote enable"
       },
       "repository": {
         "add": {
@@ -683,7 +683,7 @@
         "subscription": "Abonelik",
         "virtualization": "Sanallaştırma"
       },
-      "serverMismatch": "server mismatch",
+      "serverMismatch": "sunucu uyumsuzluğu",
       "status": {
         "fail": "HATA",
         "ok": "OK",

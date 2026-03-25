@@ -477,33 +477,33 @@
         "description": "管理远程配置存储连接",
         "disable": {
           "description": "断开远程存储连接并将配置保存到本地",
-          "notEnabled": "Remote config is not enabled.",
-          "success": "Remote config disabled. Config \"{{name}}\" saved locally."
+          "notEnabled": "远程配置未启用。",
+          "success": "远程配置已禁用。配置 \"{{name}}\" 已保存到本地。"
         },
         "enable": {
-          "alreadyEnabled": "Config \"{{name}}\" is already linked to remote storage. Disable first with: rdc config remote disable",
+          "alreadyEnabled": "配置 \"{{name}}\" 已链接到远程存储。请先断开连接: rdc config remote disable",
           "description": "将此配置链接到远程加密存储",
-          "expired": "Device code expired. Try again.",
-          "openBrowser": "Open this URL to complete setup:",
+          "expired": "设备代码已过期。请重试。",
+          "openBrowser": "打开此URL以完成设置:",
           "optionApiUrl": "账户服务器URL",
           "optionHeadless": "使用设备代码流程（用于无界面服务器）",
-          "polling": "Polling for browser approval...",
+          "polling": "正在查询浏览器审批状态...",
           "received": "已接收移交数据",
-          "success": "Remote config enabled. Config \"{{name}}\" is now synced to {{apiUrl}}.",
-          "waiting": "Waiting for browser approval..."
+          "success": "远程配置已启用。配置 \"{{name}}\" 现已与 {{apiUrl}} 同步。",
+          "waiting": "等待浏览器审批..."
         },
-        "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
+        "passkeySecretMissing": "在系统密钥链中未找到通行密钥。请重新认证: rdc config remote enable",
         "refresh": {
           "description": "强制从远程存储重新获取配置",
-          "notEnabled": "Remote config is not enabled.",
+          "notEnabled": "远程配置未启用。",
           "pulled": "配置已拉取",
-          "pulling": "Pulling config from remote...",
-          "success": "Config refreshed from remote (version {{version}})."
+          "pulling": "正在从远程服务器拉取配置...",
+          "success": "已从远程服务器刷新配置（版本 {{version}}）。"
         },
         "status": {
-          "description": "Show remote connection status"
+          "description": "显示远程连接状态"
         },
-        "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable"
+        "tokenExpired": "远程配置令牌已过期。请重新认证: rdc config remote enable"
       },
       "repository": {
         "add": {
@@ -683,7 +683,7 @@
         "subscription": "订阅",
         "virtualization": "虚拟化"
       },
-      "serverMismatch": "server mismatch",
+      "serverMismatch": "服务器不匹配",
       "status": {
         "fail": "失败",
         "ok": "OK",

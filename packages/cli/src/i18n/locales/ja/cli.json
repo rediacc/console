@@ -477,33 +477,33 @@
         "description": "リモート設定ストレージ接続を管理",
         "disable": {
           "description": "リモートストレージから切断し、設定をローカルに保存",
-          "notEnabled": "Remote config is not enabled.",
-          "success": "Remote config disabled. Config \"{{name}}\" saved locally."
+          "notEnabled": "リモート設定は有効になっていません。",
+          "success": "リモート設定を無効化しました。設定 \"{{name}}\" をローカルに保存しました。"
         },
         "enable": {
-          "alreadyEnabled": "Config \"{{name}}\" is already linked to remote storage. Disable first with: rdc config remote disable",
+          "alreadyEnabled": "設定 \"{{name}}\" は既にリモートストレージにリンクされています。先に無効化してください: rdc config remote disable",
           "description": "この設定をリモート暗号化ストレージにリンク",
-          "expired": "Device code expired. Try again.",
-          "openBrowser": "Open this URL to complete setup:",
+          "expired": "デバイスコードの有効期限が切れました。もう一度お試しください。",
+          "openBrowser": "このURLを開いてセットアップを完了してください:",
           "optionApiUrl": "アカウントサーバーURL",
           "optionHeadless": "デバイスコードフローを使用（ヘッドレスサーバー用）",
-          "polling": "Polling for browser approval...",
+          "polling": "ブラウザの承認を確認中...",
           "received": "ハンドオフを受信",
-          "success": "Remote config enabled. Config \"{{name}}\" is now synced to {{apiUrl}}.",
-          "waiting": "Waiting for browser approval..."
+          "success": "リモート設定を有効化しました。設定 \"{{name}}\" は {{apiUrl}} と同期されています。",
+          "waiting": "ブラウザの承認を待機中..."
         },
-        "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
+        "passkeySecretMissing": "OSキーリングにパスキーシークレットが見つかりません。再認証してください: rdc config remote enable",
         "refresh": {
           "description": "リモートストレージから設定を強制再取得",
-          "notEnabled": "Remote config is not enabled.",
+          "notEnabled": "リモート設定は有効になっていません。",
           "pulled": "設定を取得済み",
-          "pulling": "Pulling config from remote...",
-          "success": "Config refreshed from remote (version {{version}})."
+          "pulling": "リモートから設定を取得中...",
+          "success": "リモートから設定を更新しました (バージョン {{version}})。"
         },
         "status": {
-          "description": "Show remote connection status"
+          "description": "リモート接続状態を表示"
         },
-        "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable"
+        "tokenExpired": "リモート設定トークンの有効期限が切れました。再認証してください: rdc config remote enable"
       },
       "repository": {
         "add": {
@@ -683,7 +683,7 @@
         "subscription": "サブスクリプション",
         "virtualization": "仮想化"
       },
-      "serverMismatch": "server mismatch",
+      "serverMismatch": "サーバー不一致",
       "status": {
         "fail": "失敗",
         "ok": "OK",

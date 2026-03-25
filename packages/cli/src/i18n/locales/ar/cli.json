@@ -477,33 +477,33 @@
         "description": "إدارة اتصال تخزين الإعدادات عن بُعد",
         "disable": {
           "description": "قطع الاتصال بالتخزين عن بُعد وحفظ الإعدادات محلياً",
-          "notEnabled": "Remote config is not enabled.",
-          "success": "Remote config disabled. Config \"{{name}}\" saved locally."
+          "notEnabled": "الإعدادات عن بُعد غير مفعّلة.",
+          "success": "تم تعطيل الإعدادات عن بُعد. تم حفظ الإعدادات \"{{name}}\" محلياً."
         },
         "enable": {
-          "alreadyEnabled": "Config \"{{name}}\" is already linked to remote storage. Disable first with: rdc config remote disable",
+          "alreadyEnabled": "الإعدادات \"{{name}}\" مرتبطة بالفعل بالتخزين عن بُعد. قم بإلغاء الربط أولاً باستخدام: rdc config remote disable",
           "description": "ربط هذه الإعدادات بالتخزين المشفر عن بُعد",
-          "expired": "Device code expired. Try again.",
-          "openBrowser": "Open this URL to complete setup:",
+          "expired": "انتهت صلاحية رمز الجهاز. حاول مرة أخرى.",
+          "openBrowser": "افتح هذا الرابط لإكمال الإعداد:",
           "optionApiUrl": "عنوان URL لخادم الحساب",
           "optionHeadless": "استخدام تدفق رمز الجهاز (للخوادم بدون واجهة)",
-          "polling": "Polling for browser approval...",
+          "polling": "جارٍ الاستعلام عن موافقة المتصفح...",
           "received": "تم استلام التسليم",
-          "success": "Remote config enabled. Config \"{{name}}\" is now synced to {{apiUrl}}.",
-          "waiting": "Waiting for browser approval..."
+          "success": "تم تفعيل الإعدادات عن بُعد. الإعدادات \"{{name}}\" متزامنة الآن مع {{apiUrl}}.",
+          "waiting": "في انتظار موافقة المتصفح..."
         },
-        "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
+        "passkeySecretMissing": "لم يتم العثور على مفتاح المرور في حلقة مفاتيح النظام. أعد المصادقة باستخدام: rdc config remote enable",
         "refresh": {
           "description": "إعادة جلب الإعدادات من التخزين عن بُعد",
-          "notEnabled": "Remote config is not enabled.",
+          "notEnabled": "الإعدادات عن بُعد غير مفعّلة.",
           "pulled": "تم سحب الإعدادات",
-          "pulling": "Pulling config from remote...",
-          "success": "Config refreshed from remote (version {{version}})."
+          "pulling": "جارٍ سحب الإعدادات من الخادم البعيد...",
+          "success": "تم تحديث الإعدادات من الخادم البعيد (الإصدار {{version}})."
         },
         "status": {
-          "description": "Show remote connection status"
+          "description": "عرض حالة الاتصال عن بُعد"
         },
-        "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable"
+        "tokenExpired": "انتهت صلاحية رمز الإعدادات عن بُعد. أعد المصادقة باستخدام: rdc config remote enable"
       },
       "repository": {
         "add": {
@@ -683,7 +683,7 @@
         "subscription": "الاشتراك",
         "virtualization": "المحاكاة الافتراضية"
       },
-      "serverMismatch": "server mismatch",
+      "serverMismatch": "عدم تطابق الخادم",
       "status": {
         "fail": "فشل",
         "ok": "OK",

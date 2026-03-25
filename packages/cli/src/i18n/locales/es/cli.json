@@ -477,33 +477,33 @@
         "description": "Gestionar conexión de almacenamiento remoto de configuración",
         "disable": {
           "description": "Desconectar del almacenamiento remoto y guardar configuración localmente",
-          "notEnabled": "Remote config is not enabled.",
-          "success": "Remote config disabled. Config \"{{name}}\" saved locally."
+          "notEnabled": "La configuración remota no está habilitada.",
+          "success": "Configuración remota deshabilitada. Configuración \"{{name}}\" guardada localmente."
         },
         "enable": {
-          "alreadyEnabled": "Config \"{{name}}\" is already linked to remote storage. Disable first with: rdc config remote disable",
+          "alreadyEnabled": "La configuración \"{{name}}\" ya está vinculada al almacenamiento remoto. Desvincula primero con: rdc config remote disable",
           "description": "Vincular esta configuración al almacenamiento cifrado remoto",
-          "expired": "Device code expired. Try again.",
-          "openBrowser": "Open this URL to complete setup:",
+          "expired": "Código de dispositivo expirado. Inténtalo de nuevo.",
+          "openBrowser": "Abre esta URL para completar la configuración:",
           "optionApiUrl": "URL del servidor de cuenta",
           "optionHeadless": "Usar flujo de código de dispositivo (para servidores sin interfaz)",
-          "polling": "Polling for browser approval...",
+          "polling": "Consultando aprobación del navegador...",
           "received": "Transferencia recibida",
-          "success": "Remote config enabled. Config \"{{name}}\" is now synced to {{apiUrl}}.",
-          "waiting": "Waiting for browser approval..."
+          "success": "Configuración remota habilitada. La configuración \"{{name}}\" ahora está sincronizada con {{apiUrl}}.",
+          "waiting": "Esperando aprobación del navegador..."
         },
-        "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
+        "passkeySecretMissing": "Secreto de passkey no encontrado en el llavero del sistema. Vuelve a autenticarte con: rdc config remote enable",
         "refresh": {
           "description": "Forzar recarga de configuración desde almacenamiento remoto",
-          "notEnabled": "Remote config is not enabled.",
+          "notEnabled": "La configuración remota no está habilitada.",
           "pulled": "Configuración descargada",
-          "pulling": "Pulling config from remote...",
-          "success": "Config refreshed from remote (version {{version}})."
+          "pulling": "Descargando configuración del servidor remoto...",
+          "success": "Configuración actualizada desde el servidor remoto (versión {{version}})."
         },
         "status": {
-          "description": "Show remote connection status"
+          "description": "Mostrar estado de conexión remota"
         },
-        "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable"
+        "tokenExpired": "Token de configuración remota expirado. Vuelve a autenticarte con: rdc config remote enable"
       },
       "repository": {
         "add": {
@@ -683,7 +683,7 @@
         "subscription": "Suscripción",
         "virtualization": "Virtualización"
       },
-      "serverMismatch": "server mismatch",
+      "serverMismatch": "discrepancia de servidor",
       "status": {
         "fail": "ERROR",
         "ok": "OK",

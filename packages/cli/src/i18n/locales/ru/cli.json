@@ -477,33 +477,33 @@
         "description": "Управление подключением к удалённому хранилищу конфигурации",
         "disable": {
           "description": "Отключиться от удалённого хранилища и сохранить конфигурацию локально",
-          "notEnabled": "Remote config is not enabled.",
-          "success": "Remote config disabled. Config \"{{name}}\" saved locally."
+          "notEnabled": "Удалённая конфигурация не включена.",
+          "success": "Удалённая конфигурация отключена. Конфигурация \"{{name}}\" сохранена локально."
         },
         "enable": {
-          "alreadyEnabled": "Config \"{{name}}\" is already linked to remote storage. Disable first with: rdc config remote disable",
+          "alreadyEnabled": "Конфигурация \"{{name}}\" уже привязана к удалённому хранилищу. Сначала отключите: rdc config remote disable",
           "description": "Привязать эту конфигурацию к удалённому зашифрованному хранилищу",
-          "expired": "Device code expired. Try again.",
-          "openBrowser": "Open this URL to complete setup:",
+          "expired": "Код устройства истёк. Попробуйте снова.",
+          "openBrowser": "Откройте этот URL для завершения настройки:",
           "optionApiUrl": "URL сервера аккаунта",
           "optionHeadless": "Использовать поток кода устройства (для серверов без интерфейса)",
-          "polling": "Polling for browser approval...",
+          "polling": "Ожидание подтверждения в браузере...",
           "received": "Передача получена",
-          "success": "Remote config enabled. Config \"{{name}}\" is now synced to {{apiUrl}}.",
-          "waiting": "Waiting for browser approval..."
+          "success": "Удалённая конфигурация включена. Конфигурация \"{{name}}\" теперь синхронизируется с {{apiUrl}}.",
+          "waiting": "Ожидание подтверждения в браузере..."
         },
-        "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
+        "passkeySecretMissing": "Секрет ключа доступа не найден в связке ключей ОС. Повторите аутентификацию: rdc config remote enable",
         "refresh": {
           "description": "Принудительно загрузить конфигурацию из удалённого хранилища",
-          "notEnabled": "Remote config is not enabled.",
+          "notEnabled": "Удалённая конфигурация не включена.",
           "pulled": "Конфигурация загружена",
-          "pulling": "Pulling config from remote...",
-          "success": "Config refreshed from remote (version {{version}})."
+          "pulling": "Загрузка конфигурации с удалённого сервера...",
+          "success": "Конфигурация обновлена с удалённого сервера (версия {{version}})."
         },
         "status": {
-          "description": "Show remote connection status"
+          "description": "Показать состояние удалённого подключения"
         },
-        "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable"
+        "tokenExpired": "Токен удалённой конфигурации истёк. Повторите аутентификацию: rdc config remote enable"
       },
       "repository": {
         "add": {
@@ -683,7 +683,7 @@
         "subscription": "Подписка",
         "virtualization": "Виртуализация"
       },
-      "serverMismatch": "server mismatch",
+      "serverMismatch": "несоответствие сервера",
       "status": {
         "fail": "ОШИБКА",
         "ok": "OK",

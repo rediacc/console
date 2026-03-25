@@ -477,33 +477,33 @@
         "description": "Remote-Konfigurationsspeicher-Verbindung verwalten",
         "disable": {
           "description": "Verbindung zum Remote-Speicher trennen und Konfiguration lokal speichern",
-          "notEnabled": "Remote config is not enabled.",
-          "success": "Remote config disabled. Config \"{{name}}\" saved locally."
+          "notEnabled": "Remote-Konfiguration ist nicht aktiviert.",
+          "success": "Remote-Konfiguration deaktiviert. Konfiguration \"{{name}}\" lokal gespeichert."
         },
         "enable": {
-          "alreadyEnabled": "Config \"{{name}}\" is already linked to remote storage. Disable first with: rdc config remote disable",
+          "alreadyEnabled": "Konfiguration \"{{name}}\" ist bereits mit dem Remote-Speicher verknüpft. Zuerst trennen mit: rdc config remote disable",
           "description": "Diese Konfiguration mit verschlüsseltem Remote-Speicher verknüpfen",
-          "expired": "Device code expired. Try again.",
-          "openBrowser": "Open this URL to complete setup:",
+          "expired": "Gerätecode abgelaufen. Versuchen Sie es erneut.",
+          "openBrowser": "Öffnen Sie diese URL, um die Einrichtung abzuschließen:",
           "optionApiUrl": "Account-Server-URL",
           "optionHeadless": "Gerätecode-Authentifizierung verwenden (für Server ohne GUI)",
-          "polling": "Polling for browser approval...",
+          "polling": "Warte auf Browser-Genehmigung...",
           "received": "Übergabe empfangen",
-          "success": "Remote config enabled. Config \"{{name}}\" is now synced to {{apiUrl}}.",
-          "waiting": "Waiting for browser approval..."
+          "success": "Remote-Konfiguration aktiviert. Konfiguration \"{{name}}\" wird jetzt mit {{apiUrl}} synchronisiert.",
+          "waiting": "Warte auf Browser-Genehmigung..."
         },
-        "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
+        "passkeySecretMissing": "Passkey-Geheimnis nicht im OS-Schlüsselbund gefunden. Erneut authentifizieren mit: rdc config remote enable",
         "refresh": {
           "description": "Konfiguration erneut vom Remote-Speicher abrufen",
-          "notEnabled": "Remote config is not enabled.",
+          "notEnabled": "Remote-Konfiguration ist nicht aktiviert.",
           "pulled": "Konfiguration abgerufen",
-          "pulling": "Pulling config from remote...",
-          "success": "Config refreshed from remote (version {{version}})."
+          "pulling": "Konfiguration wird vom Remote-Speicher abgerufen...",
+          "success": "Konfiguration vom Remote-Speicher aktualisiert (Version {{version}})."
         },
         "status": {
-          "description": "Show remote connection status"
+          "description": "Remote-Verbindungsstatus anzeigen"
         },
-        "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable"
+        "tokenExpired": "Remote-Konfigurations-Token abgelaufen. Erneut authentifizieren mit: rdc config remote enable"
       },
       "repository": {
         "add": {
@@ -683,7 +683,7 @@
         "subscription": "Abonnement",
         "virtualization": "Virtualisierung"
       },
-      "serverMismatch": "server mismatch",
+      "serverMismatch": "Server-Abweichung",
       "status": {
         "fail": "FEHLER",
         "ok": "OK",
