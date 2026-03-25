@@ -120,16 +120,33 @@ export class ConfigServiceBase {
   }
 
   /**
+   * Fields stored only in the local pointer file, never in the remote blob.
+   * These must be preserved from localConfig when composing the merged state.
+   */
+  private static readonly LOCAL_ONLY_FIELDS = [
+    'language',
+    'remote',
+    'team',
+    'region',
+    'bridge',
+  ] as const;
+
+  /**
    * Load config from the remote server, caching for the session.
-   * Preserves local-only fields (language, remote pointer).
+   * Preserves all local-only settings (language, remote pointer, defaults).
    */
   private async loadRemote(localConfig: RdcConfig, configName: string): Promise<RdcConfig> {
     const adapter = await this.getRemoteAdapter(localConfig, configName);
     const { config, version, sdkEpoch } = await adapter.pull();
 
-    // Preserve local-only settings on the pulled config
-    config.language = localConfig.language ?? config.language;
-    config.remote = localConfig.remote;
+    // Preserve local-only settings on the pulled config.
+    // Local values take precedence; fall back to whatever the remote has.
+    for (const field of ConfigServiceBase.LOCAL_ONLY_FIELDS) {
+      const localValue = localConfig[field];
+      if (localValue !== undefined) {
+        (config as unknown as Record<string, unknown>)[field] = localValue;
+      }
+    }
 
     this._remoteConfig = config;
     this._remoteVersion = version;

@@ -203,13 +203,9 @@ async function storeHandoffCredentials(
 
 async function finalizeEnable(remote: RemoteConfig, configName: string): Promise<void> {
   const { configFileStorage } = await import('../adapters/config-file-storage.js');
-  const config = await configFileStorage.load(configName);
 
-  const pointer = stripSensitiveFields(config);
-  pointer.remote = remote;
-  await configFileStorage.save(pointer, configName);
-
-  // Validate by pulling
+  // Validate by pulling BEFORE modifying local config.
+  // If pull fails, the local config remains untouched.
   const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
   const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
   const { getSecureStorage } = await import('../utils/secure-storage.js');
@@ -220,6 +216,12 @@ async function finalizeEnable(remote: RemoteConfig, configName: string): Promise
     getSecureStorage()
   );
   await adapter.pull();
+
+  // Pull succeeded -- now safe to write the stripped pointer file
+  const config = await configFileStorage.load(configName);
+  const pointer = stripSensitiveFields(config);
+  pointer.remote = remote;
+  await configFileStorage.save(pointer, configName);
 }
 
 async function enableBrowser(apiUrl: string, configName: string): Promise<void> {
@@ -300,6 +302,7 @@ async function enableHeadless(apiUrl: string, configName: string): Promise<void>
 
   const initResult = await accountServerFetch<{
     deviceCode: string;
+    userCode: string;
     verificationUrl: string;
     interval: number;
     expiresIn: number;
@@ -309,9 +312,9 @@ async function enableHeadless(apiUrl: string, configName: string): Promise<void>
     serverUrl: apiUrl,
   });
 
-  const { deviceCode, verificationUrl, interval, expiresIn } = initResult;
+  const { deviceCode, userCode, interval, expiresIn } = initResult;
 
-  const remoteUrl = `${apiUrl}/account/config-remote?code=${encodeURIComponent(verificationUrl)}&key=${encodeURIComponent(pubBase64)}`;
+  const remoteUrl = `${apiUrl}/account/config-remote?code=${encodeURIComponent(userCode)}&key=${encodeURIComponent(pubBase64)}`;
 
   outputService.info(t('commands.config.remote.enable.openBrowser'));
   outputService.info(`  ${remoteUrl}`);
