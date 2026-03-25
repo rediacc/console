@@ -20,7 +20,6 @@ import { registerRepoCommands } from './commands/repo.js';
 import { registerRepositoryCommands } from './commands/repository.js';
 import { registerShortcuts } from './commands/shortcuts.js';
 import { registerStorageCommands } from './commands/storage.js';
-import { registerStoreCommands } from './commands/store.js';
 import { registerSubscriptionCommands } from './commands/subscription.js';
 import { registerTeamCommands } from './commands/team.js';
 import { registerTermCommands } from './commands/term.js';
@@ -198,7 +197,6 @@ registerCephCommands(cli);
 registerOrganizationCommands(cli);
 registerUserCommands(cli);
 registerConfigCommands(cli);
-registerStoreCommands(cli);
 registerDoctorCommand(cli);
 registerPermissionCommands(cli);
 registerAuditCommands(cli);
@@ -240,11 +238,15 @@ ${t('help.examples')}
 // Provide a clear error for unsupported subcommands
 cli.on('command:*', (operands) => {
   const [first, second] = operands;
-  const commandList = cli.commands.map((c) => c.name()).filter((n) => n && n !== 'help');
+  const commandList = cli.commands
+    .filter((c) => !(c as Command & { _hidden?: boolean })._hidden)
+    .map((c) => c.name())
+    .filter((n) => n && n !== 'help');
   const parent = first ? cli.commands.find((c) => c.name() === first) : undefined;
 
   if (parent && second) {
     const subcommands = parent.commands
+      .filter((c) => !(c as Command & { _hidden?: boolean })._hidden)
       .map((c) => c.name())
       .filter((n) => n && n !== 'help')
       .join(', ');

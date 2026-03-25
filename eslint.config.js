@@ -152,6 +152,8 @@ export default tseslint.config(
       'packages/www/.astro/**',
       // Ignore CI scripts (shell scripts linted by shellcheck, JS scripts are github-script glue)
       '.ci/**',
+      // Ignore CLI template files (embedded into the CLI binary, not source code)
+      'packages/cli/templates/**',
     ]
   },
   

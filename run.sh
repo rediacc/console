@@ -14,9 +14,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source configuration and utilities
 source "$ROOT_DIR/.ci/config/constants.sh"
+source "$ROOT_DIR/.ci/lib/local-common.sh"
 source "$ROOT_DIR/.ci/lib/elite-backend.sh"
 source "$ROOT_DIR/.ci/lib/service.sh"
-source "$ROOT_DIR/.ci/scripts/lib/common.sh"
 
 # Backward compatibility: Load parent .env if exists
 if [[ -f "$ROOT_DIR/../.env" ]]; then
@@ -24,33 +24,6 @@ if [[ -f "$ROOT_DIR/../.env" ]]; then
     source "$ROOT_DIR/../.env"
     set -u
 fi
-
-# =============================================================================
-# NODE VERSION CHECK
-# =============================================================================
-
-check_node_version() {
-    if ! command -v node &>/dev/null; then
-        log_error "Node.js is not installed"
-        log_info "Install Node.js ${NODE_VERSION_REQUIRED} from: https://nodejs.org/"
-        exit 1
-    fi
-
-    local current_version
-    current_version=$(node -v | cut -d'v' -f2)
-    local current_major
-    current_major=$(echo "$current_version" | cut -d'.' -f1)
-
-    if [[ "$current_major" != "$NODE_VERSION_REQUIRED" ]]; then
-        log_error "Node.js version mismatch"
-        log_error "Required: v${NODE_VERSION_REQUIRED}.x"
-        log_error "Current:  v${current_version}"
-        log_info "Install Node.js ${NODE_VERSION_REQUIRED} from: https://nodejs.org/"
-        exit 1
-    fi
-
-    log_debug "Node.js version: v${current_version}"
-}
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -71,17 +44,6 @@ check_docker() {
     fi
 }
 
-# Check if Go is installed (required for renet build)
-check_go_installed() {
-    if ! command -v go &>/dev/null; then
-        log_error "Go is not installed (required for building renet)"
-        log_info "Install Go from: https://go.dev/dl/"
-        exit 1
-    fi
-
-    log_debug "Go version: $(go version)"
-}
-
 # Load environment file
 load_env() {
     local env_file="$1"
@@ -97,81 +59,6 @@ load_env() {
     set +a
 
     log_debug "Loaded environment from: $env_file"
-}
-
-# Prompt user to continue (y/N)
-prompt_continue() {
-    local message="${1:-Continue}"
-    local response
-
-    read -p "$message? (y/N): " response
-    [[ "$response" =~ ^[yY]$ ]]
-}
-
-# Ensure npm dependencies are installed
-# Uses a sentinel file to avoid running npm install on every invocation.
-# The sentinel is only outdated when package-lock.json actually changes.
-ensure_deps() {
-    local sentinel="$ROOT_DIR/node_modules/.deps-installed"
-    if [[ ! -d "$ROOT_DIR/node_modules" ]] ||
-        [[ ! -f "$sentinel" ]] ||
-        [[ "$ROOT_DIR/package-lock.json" -nt "$sentinel" ]]; then
-        log_step "Installing dependencies..."
-        npm install --prefer-offline --no-audit --no-fund 2>&1 | tail -1
-        touch "$sentinel"
-    fi
-}
-
-# Ensure shared packages are built (required before tests)
-ensure_packages_built() {
-    local shared_dist="$ROOT_DIR/packages/shared/dist"
-    local shared_src="$ROOT_DIR/packages/shared/src"
-
-    # Check if shared package needs rebuilding
-    if [[ ! -d "$shared_dist" ]] ||
-        [[ -n "$(find "$shared_src" -newer "$shared_dist" -type f 2>/dev/null | head -1)" ]]; then
-        log_step "Building shared packages..."
-        "$ROOT_DIR/.ci/scripts/setup/build-packages.sh"
-    else
-        log_debug "Shared packages are up-to-date"
-    fi
-}
-
-# Ensure renet binary is built and up-to-date
-# Builds from Go source with embedded assets (CRIU, rsync)
-# Only rebuilds when Go sources are newer than the binary
-ensure_renet_built() {
-    local renet_dir="$ROOT_DIR/private/renet"
-    local renet_bin="$renet_dir/bin/renet"
-
-    # Check if binary exists and sources haven't changed
-    if [[ -f "$renet_bin" ]]; then
-        local newer_files
-        newer_files=$(find "$renet_dir" \
-            \( -name "*.go" -o -name "go.mod" -o -name "go.sum" \) \
-            -newer "$renet_bin" -type f 2>/dev/null | head -1)
-
-        if [[ -z "$newer_files" ]]; then
-            log_debug "Renet binary is up-to-date"
-            return 0
-        fi
-
-        log_step "Renet sources changed, rebuilding..."
-    else
-        log_step "Building renet (first time, requires Docker for asset extraction)..."
-    fi
-
-    check_go_installed
-
-    # Build renet using the build script (handles embed_assets automatically)
-    (cd "$renet_dir" && ./build.sh dev)
-
-    if [[ ! -f "$renet_bin" ]]; then
-        log_error "Renet build failed: binary not found at $renet_bin"
-        exit 1
-    fi
-
-    log_info "Renet built successfully"
 }
 
 # Ensure private/generative submodule is initialized

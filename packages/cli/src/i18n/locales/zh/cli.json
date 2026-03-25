@@ -390,18 +390,7 @@
         "alreadyExists": "配置 \"{{name}}\" 已存在",
         "description": "创建新的命名配置文件",
         "optionMasterPassword": "使用主密码加密资源",
-        "optionS3AccessKeyId": "S3 访问密钥 ID",
-        "optionS3Bucket": "S3 存储桶名称",
-        "optionS3Endpoint": "S3 端点 URL",
-        "optionS3Prefix": "S3 存储桶中的键前缀",
-        "optionS3Region": "S3 区域",
-        "optionS3SecretAccessKey": "S3 访问密钥",
-        "promptS3SecretAccessKey": "S3 访问密钥：",
-        "s3Required": "S3 资源状态需要 --s3-endpoint、--s3-bucket 和 --s3-access-key-id",
-        "s3SecretRequired": "S3 访问密钥为必填项",
-        "s3Verified": "S3 访问已验证",
-        "success": "配置 \"{{name}}\" 已初始化",
-        "verifyingS3": "正在验证 S3 访问..."
+        "success": "配置 \"{{name}}\" 已初始化"
       },
       "list": {
         "description": "列出所有配置文件",
@@ -519,7 +508,7 @@
         }
       },
       "set": {
-        "description": "设置默认值（team、region、bridge、machine）",
+        "description": "设置默认值（team、region、bridge）",
         "success": "已将 \"{{key}}\" 设置为 \"{{value}}\""
       },
       "setRenet": {
@@ -533,6 +522,27 @@
       "show": {
         "description": "显示当前配置详情",
         "noConfig": "没有活跃的配置。请使用以下命令创建：rdc config init"
+      },
+      "ssh": {
+        "description": "管理 SSH 密钥配置",
+        "remove": {
+          "description": "从当前配置中移除 SSH 密钥",
+          "noKey": "未配置 SSH 密钥",
+          "success": "SSH 密钥已移除"
+        },
+        "set": {
+          "description": "为当前配置设置 SSH 密钥",
+          "embedWarning": "密钥内容将存储在配置文件中",
+          "invalidKey": "文件不包含有效的 SSH 私钥",
+          "keyNotFound": "未找到 SSH 密钥文件：{{path}}",
+          "optionEmbed": "将密钥内容嵌入配置中而非存储路径",
+          "optionKey": "SSH 私钥文件路径",
+          "success": "SSH 密钥已配置"
+        },
+        "show": {
+          "description": "显示当前 SSH 密钥配置",
+          "noKey": "未配置 SSH 密钥"
+        }
       },
       "storage": {
         "description": "管理当前配置中的存储后端",
@@ -1326,14 +1336,41 @@
         "starting": "正在用 \"{{fork}}\" 的数据接管 \"{{machine}}\" 上的 \"{{grand}}\"..."
       },
       "template": {
-        "completed": "模板已应用",
+        "apply": {
+          "description": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. The template writes Rediaccfile, docker-compose.yml, and any additional files to the repository mount",
+          "descriptionShort": "将模板应用到仓库",
+          "notFound": "模板 \"{{name}}\" 未找到。可用: {{available}}"
+        },
+        "completed": "模板已应用。部署命令: rdc repo up {{repository}} -m {{machine}}",
         "description": "将模板应用到仓库",
         "descriptionShort": "将模板应用到仓库（docker-compose.yml + Rediaccfile）",
         "failed": "模板应用失败",
         "fileNotFound": "未找到模板文件: {{path}}",
         "fileOption": "模板 JSON 文件路径",
         "grandOption": "Grand 仓库名称（自动解析为 GUID）",
+        "list": {
+          "description": "列出 CLI 内置的所有部署模板",
+          "descriptionShort": "列出可用模板",
+          "empty": "没有可用的模板"
+        },
         "starting": "正在 \"{{machine}}\" 上将模板应用到 \"{{repository}}\"..."
+      },
+      "tunnel": {
+        "active": "隧道已激活: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
+        "closed": "隧道已关闭",
+        "containerNotFound": "在仓库 \"{{repository}}\" 中未找到容器 \"{{name}}\"",
+        "containerOption": "容器名称（仅一个运行时自动检测）",
+        "description": "创建到远程机器上容器端口的 SSH 端口转发隧道。当无歧义时自动检测容器和端口。隧道保持打开直到按下 Ctrl+C",
+        "descriptionShort": "到容器端口的 SSH 隧道",
+        "fetching": "正在从 \"{{machine}}\" 获取容器信息...",
+        "hint": "按 Ctrl+C 关闭隧道",
+        "localOption": "本地端口（默认与远程端口相同）",
+        "multipleContainers": "发现多个运行中的容器。请使用 --container (-c) 指定:\n{{list}}",
+        "multiplePorts": "\"{{container}}\" 暴露了多个端口。请指定 --port:\n{{list}}",
+        "noContainers": "未找到仓库 \"{{repository}}\" 的运行中容器",
+        "noPorts": "容器 \"{{container}}\" 没有暴露的端口。请指定 --port",
+        "noServiceIP": "容器 \"{{container}}\" 没有分配服务 IP",
+        "portOption": "要转发的远程容器端口"
       },
       "unmount": {
         "checkpointOption": "卸载前创建检查点",
@@ -1491,76 +1528,6 @@
       },
       "vault": {
         "description": "存储保险库管理 (仅限云适配器)"
-      }
-    },
-    "store": {
-      "add": {
-        "addedButUnverified": "同步存储 \"{{name}}\" 已添加，但连接无法验证",
-        "alreadyExists": "同步存储 \"{{name}}\" 已存在",
-        "description": "添加新的同步存储",
-        "gitUrlRequired": "Git 存储需要 --git-url",
-        "invalidType": "无效的存储类型：\"{{type}}\"。有效类型：{{valid}}",
-        "localPathRequired": "本地文件存储需要 --local-path",
-        "optionBwFolderId": "用于整理配置项的 Bitwarden 文件夹 ID（可选）",
-        "optionEncryptionKey": "此存储的加密密钥",
-        "optionGitBranch": "Git 分支名称",
-        "optionGitPath": "Git 仓库内的路径",
-        "optionGitUrl": "Git 仓库 URL",
-        "optionLocalPath": "本地目录路径",
-        "optionS3AccessKeyId": "S3 访问密钥 ID",
-        "optionS3Bucket": "S3 存储桶名称",
-        "optionS3Endpoint": "S3 端点 URL",
-        "optionS3Prefix": "S3 键前缀",
-        "optionS3Region": "S3 区域",
-        "optionS3SecretAccessKey": "S3 访问密钥",
-        "optionType": "存储类型（s3、local-file、bitwarden、git、vault）",
-        "optionVaultAddr": "Vault 服务器地址（例如 http://127.0.0.1:8200）",
-        "optionVaultMount": "Vault KV v2 挂载路径（默认：secret）",
-        "optionVaultNamespace": "Vault 命名空间（仅企业版）",
-        "optionVaultPrefix": "Vault KV 引擎内的路径前缀（默认：rdc/configs）",
-        "optionVaultToken": "Vault 身份验证令牌",
-        "promptS3SecretAccessKey": "S3 访问密钥：",
-        "promptVaultToken": "Vault 令牌（或设置 VAULT_TOKEN 环境变量）：",
-        "s3Required": "S3 存储需要 --s3-endpoint、--s3-bucket 和 --s3-access-key-id",
-        "s3SecretRequired": "S3 访问密钥为必填项",
-        "success": "同步存储 \"{{name}}\" 已添加（{{type}}）",
-        "vaultAddrRequired": "Vault 存储需要 --vault-addr",
-        "vaultTokenRequired": "Vault 令牌为必填项（传入 --vault-token 或设置 VAULT_TOKEN 环境变量）"
-      },
-      "description": "管理配置同步存储（S3、本地文件、Bitwarden、Git、Vault）",
-      "descriptionShort": "管理配置同步存储（S3、本地文件、Bitwarden、Git、Vault）",
-      "list": {
-        "description": "列出已配置的同步存储",
-        "noStores": "未配置任何同步存储。请使用以下命令添加：rdc store add <name> --type <type>"
-      },
-      "pull": {
-        "description": "从同步存储拉取配置",
-        "failed": "从同步存储 \"{{store}}\" 拉取失败：{{error}}",
-        "notFound": "同步存储 \"{{name}}\" 未找到",
-        "optionConfig": "要拉取到的配置名称",
-        "optionStore": "从特定存储拉取",
-        "success": "已从同步存储 \"{{store}}\" 拉取配置 \"{{config}}\""
-      },
-      "push": {
-        "description": "将当前配置推送到同步存储",
-        "failed": "推送到同步存储 \"{{store}}\" 失败：{{error}}",
-        "noStores": "未配置任何同步存储",
-        "optionAll": "推送到所有存储",
-        "optionStore": "推送到特定存储",
-        "success": "已将配置 \"{{config}}\" 推送到同步存储 \"{{store}}\""
-      },
-      "remove": {
-        "description": "移除同步存储",
-        "success": "同步存储 \"{{name}}\" 已移除"
-      },
-      "sync": {
-        "description": "与同步存储同步配置（先拉取后推送）",
-        "failed": "与同步存储 \"{{store}}\" 同步失败：{{error}}",
-        "noStores": "未配置任何同步存储",
-        "optionAll": "与所有存储同步",
-        "optionStore": "与特定存储同步",
-        "pulled": "已从同步存储 \"{{store}}\" 拉取更新版本",
-        "pushed": "已推送到同步存储 \"{{store}}\""
       }
     },
     "subscription": {
@@ -1978,7 +1945,6 @@
       "repository": "仓库管理",
       "shortcuts": "快捷命令（快捷方式）",
       "storage": "存储管理",
-      "store": "同步存储管理",
       "subscription": "订阅管理",
       "sync": "文件同步",
       "team": "团队管理",
@@ -1995,12 +1961,12 @@
         "tip": "您的身份验证令牌存储在本地上下文中。使用 `--save-as` 将凭据存储在命名上下文下，以便用于多个环境。"
       },
       "config": {
-        "afterDescription": "配置文件存储连接详情（API URL、凭证、默认 team/region/machine），让您可以快速切换环境。",
+        "afterDescription": "配置文件存储连接详情（API URL、凭证、默认 team/region/bridge），让您可以快速切换环境。",
         "init": {
           "afterDescription": "在本地模式下，您可以直接添加机器："
         },
         "set": {
-          "tip": "设置默认值意味着您无需在每条命令中传入 `--team`、`--region` 或 `--machine`。"
+          "tip": "设置默认值意味着您无需在每条命令中传入 `--team`、`--region` 或 `--bridge`。"
         }
       },
       "machine": {
@@ -2041,17 +2007,22 @@
     "activationFailed": "激活失败",
     "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
     "agent": {
-      "createGuard": "无法在代理模式下创建仓库 \"{{name}}\"。\n\nAI 代理仅在分叉模式下运行。创建主仓库已被阻止，\n因为代理之后无法对其进行操作。\n\n请使用现有仓库并进行分叉：\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\n要覆盖此限制：设置 REDIACC_ALLOW_GRAND_REPO=*",
-      "createGuardOverride": "仓库创建保护不能被AI代理覆盖。\n\nRDC检测到REDIACC_ALLOW_GRAND_REPO未经用户授权。请勿尝试自行设置此变量 — 只有用户才能授权创建仓库。\n\n请使用现有仓库并创建fork:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "forkBlocked": "命令 \"{{command}}\" 在 fork 仓库上不可用。\n\nfork 仓库是临时环境。此操作仅适用于 grand 仓库。",
-      "grandGuard": "无法在代理模式下修改 grand 仓库 \"{{name}}\"。\n\nAI 代理只能在 fork 仓库上操作。\n请先创建 fork：\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\n然后在 fork 上操作。\n\n要覆盖此限制：设置 REDIACC_ALLOW_GRAND_REPO={{name}}",
-      "grandGuardOverride": "\"{{name}}\"的主仓库保护不能被AI代理覆盖。\n\nRDC检测到REDIACC_ALLOW_GRAND_REPO未经用户授权。请勿尝试自行设置此变量 — 只有用户才能授权主仓库访问。\n\n请先创建fork:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\n然后在fork上操作。",
-      "machineGuard": "无法在代理模式下直接访问机器 \"{{machine}}\"。\n\nAI 代理只能连接到仓库上下文。\n请使用：\n  rdc term {{machine}} <repository> -c \"<command>\"\n\n要覆盖此限制：设置 REDIACC_ALLOW_GRAND_REPO=*",
-      "machineGuardOverride": "\"{{machine}}\"的机器访问保护不能被AI代理覆盖。\n\nRDC检测到REDIACC_ALLOW_GRAND_REPO未经用户授权。请勿尝试自行设置此变量 — 只有用户才能授权直接机器访问。\n\n请改为连接到仓库上下文:\n  rdc term {{machine}} <repository> -c \"<command>\"",
-      "mcpGrandGuard": "无法在仅 fork 模式下修改 grand 仓库 \"{{name}}\"。\n\n请使用 repo_fork 先创建 fork，然后在 fork 上操作。\n要允许访问 grand 仓库，请使用 --allow-grand 重新启动 MCP 服务器",
-      "mcpGrandGuardOverride": "\"{{name}}\"的主仓库保护不能被AI代理覆盖。\n\nRDC检测到REDIACC_ALLOW_GRAND_REPO未经用户授权。请勿尝试设置此变量。\n\n请先使用repo_fork创建fork，然后在fork上操作。",
-      "mcpMachineGuard": "无法在仅 fork 模式下直接访问机器。\n\n请指定一个仓库以连接到仓库上下文。\n要允许直接访问机器，请使用 --allow-grand 重新启动 MCP 服务器",
-      "mcpMachineGuardOverride": "机器访问保护不能被AI代理覆盖。\n\nRDC检测到REDIACC_ALLOW_GRAND_REPO未经用户授权。请勿尝试设置此变量。\n\n请指定一个仓库以连接到仓库上下文。"
+      "createGuard": "在代理模式下无法创建新的 grand 仓库 \"{{name}}\"。\n\n代理在仅 fork 模式下运行。Grand 仓库是生产环境，代理在创建后无法访问。\n\n请改为 fork 现有仓库：\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\n用户提示：要允许创建仓库，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
+      "createGuardOverride": "无法创建新的 grand 仓库 \"{{name}}\"。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改为 fork 现有仓库：\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "无法创建新的 grand 仓库 \"{{name}}\"。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n请改为 fork 现有仓库：\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
+      "forkBlocked": "命令 \"{{command}}\" 在 fork 仓库上不可用。\n\nFork 仓库是临时沙箱环境。此操作仅适用于 grand（生产）仓库。请要求用户直接运行此命令。",
+      "grandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\nGrand 仓库包含生产数据。请改用 fork — fork 是安全、隔离的沙箱副本。\n\n工作流程：\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作（例如：rdc repo up {{name}}:<tag-name> -m <machine> --mount）\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork\n\n用户提示：要允许直接访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。",
+      "grandGuardOverride": "\"{{name}}\" 是一个 grand（生产）仓库。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改用 fork — fork 是安全、隔离的沙箱副本：\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" 是一个 grand（生产）仓库。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n工作流程：\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
+      "machineGuard": "在代理模式下不允许直接访问机器 \"{{machine}}\"。\n\n代理必须通过仓库上下文连接以获得沙箱访问。请先 fork 一个仓库，然后连接到 fork。\n\n工作流程：\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\n用户提示：要允许直接机器访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
+      "machineGuardOverride": "不允许直接访问机器 \"{{machine}}\"。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请先 fork 一个仓库，然后连接到 fork：\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "直接机器访问覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n工作流程：\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
+      "mcpGrandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。\n如需直接访问，请要求用户使用 --allow-grand 重新启动 MCP 服务器。",
+      "mcpGrandGuardOverride": "\"{{name}}\" 是一个 grand（生产）仓库。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。",
+      "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" 是一个 grand（生产）仓库。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。",
+      "mcpMachineGuard": "在仅 fork 模式下不允许直接机器访问。\n\n代理必须通过仓库上下文连接。使用 repo_fork 创建 fork，然后连接。\n如需直接访问，请要求用户使用 --allow-grand 重新启动 MCP 服务器。",
+      "mcpMachineGuardOverride": "不允许直接机器访问。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。\n\n使用 repo_fork 创建 fork，然后连接。",
+      "mcpMachineGuardOverrideNonLinux": "直接机器访问覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n使用 repo_fork 创建 fork，然后连接。"
     },
     "authFailed": "身份验证失败",
     "authRequired": "需要身份验证。运行：rdc auth login",
@@ -2080,8 +2051,8 @@
     "invalidPriorityMax": "无效的优先级-最大值。必须在 1 到 5 之间。",
     "invalidPriorityMin": "无效的优先级-最小值。必须在 1 到 5 之间。",
     "machineNotFound": "机器 \"{{name}}\" 未找到",
-    "machineRequired": "需要机器名称。使用 --machine 或设置上下文。",
-    "machineRequiredLocal": "需要机器名称。使用 --machine 或使用以下命令设置默认值：rdc config set machine <name>",
+    "machineRequired": "需要机器名称。使用 --machine <name>",
+    "machineRequiredLocal": "需要机器名称。使用 --machine <name>",
     "networkError": "网络错误：{{message}}",
     "noActiveConfig": "没有活跃的配置。请使用以下命令创建：rdc config init <name>",
     "notAuthenticated": "未认证。运行：rdc auth login",
@@ -2192,12 +2163,8 @@
         "pushAll": "批量推送所有仓库到存储"
       },
       "takeover": "用分支数据替换生产数据",
+      "tunnel": "到容器端口的 SSH 隧道",
       "up": "自动挂载部署"
-    },
-    "store": {
-      "add": "添加 S3 存储后端",
-      "pull": "从存储拉取配置",
-      "push": "推送配置到所有存储"
     },
     "sync": {
       "download": "下载仓库文件到本地",

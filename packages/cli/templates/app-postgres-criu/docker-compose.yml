@@ -1,0 +1,40 @@
+services:
+  app:
+    image: node:20-alpine
+    container_name: app
+    working_dir: /app
+    command: sh -c "npm install --production 2>/dev/null; node server.mjs"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_IP}:5432/${POSTGRES_DB}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./app:/app
+    labels:
+      - "rediacc.service_name=app"
+      # Auto-route URL: https://{serviceName}.{repoName}.{machineName}.{baseDomain}
+      # Example: rdc repo create myrepo -m server-1 → https://app.myrepo.server-1.example.com
+      - "rediacc.service_port=3000"
+      # CRIU: enables checkpoint/restore for live migration.
+      # The app must handle SERVICE_IP changes after restore (see server.mjs).
+      - "rediacc.checkpoint=true"
+
+  db:
+    image: postgres:16-alpine
+    container_name: db
+    command: -c listen_addresses=${DB_IP}
+    env_file: .env
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} -h ${DB_IP}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - "rediacc.service_name=db"

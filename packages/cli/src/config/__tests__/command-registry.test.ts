@@ -47,7 +47,7 @@ describe('config/command-registry', () => {
       'doctor',
       'update',
       'vscode',
-      'store',
+
       'agent',
       'mcp',
     ];

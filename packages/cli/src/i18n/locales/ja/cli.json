@@ -390,18 +390,7 @@
         "alreadyExists": "設定 \"{{name}}\" は既に存在します",
         "description": "新しい名前付き設定ファイルを作成する",
         "optionMasterPassword": "マスターパスワードでリソースを暗号化する",
-        "optionS3AccessKeyId": "S3 アクセスキー ID",
-        "optionS3Bucket": "S3 バケット名",
-        "optionS3Endpoint": "S3 エンドポイント URL",
-        "optionS3Prefix": "S3 バケット内のキープレフィックス",
-        "optionS3Region": "S3 リージョン",
-        "optionS3SecretAccessKey": "S3 シークレットアクセスキー",
-        "promptS3SecretAccessKey": "S3 シークレットアクセスキー:",
-        "s3Required": "S3 リソース状態には --s3-endpoint、--s3-bucket、--s3-access-key-id が必要です",
-        "s3SecretRequired": "S3 シークレットアクセスキーは必須です",
-        "s3Verified": "S3 アクセスが確認されました",
-        "success": "設定 \"{{name}}\" が初期化されました",
-        "verifyingS3": "S3 アクセスを確認中..."
+        "success": "設定 \"{{name}}\" が初期化されました"
       },
       "list": {
         "description": "すべての設定ファイルをリスト表示する",
@@ -519,7 +508,7 @@
         }
       },
       "set": {
-        "description": "デフォルト値を設定する (team、region、bridge、machine)",
+        "description": "デフォルト値を設定する (team、region、bridge)",
         "success": "\"{{key}}\" を \"{{value}}\" に設定しました"
       },
       "setRenet": {
@@ -533,6 +522,27 @@
       "show": {
         "description": "現在の設定の詳細を表示する",
         "noConfig": "アクティブな設定がありません。次のコマンドで作成してください: rdc config init"
+      },
+      "ssh": {
+        "description": "SSH キーの設定を管理する",
+        "remove": {
+          "description": "現在の設定から SSH キーを削除する",
+          "noKey": "SSH キーが設定されていません",
+          "success": "SSH キーを削除しました"
+        },
+        "set": {
+          "description": "現在の設定に SSH キーを設定する",
+          "embedWarning": "キーの内容が設定ファイルに保存されます",
+          "invalidKey": "ファイルに有効な SSH 秘密キーが含まれていません",
+          "keyNotFound": "SSH キーファイルが見つかりません: {{path}}",
+          "optionEmbed": "パスを保存する代わりにキーの内容を設定に埋め込む",
+          "optionKey": "SSH 秘密キーファイルのパス",
+          "success": "SSH キーを設定しました"
+        },
+        "show": {
+          "description": "現在の SSH キー設定を表示する",
+          "noKey": "SSH キーが設定されていません"
+        }
       },
       "storage": {
         "description": "現在の設定のストレージバックエンドを管理する",
@@ -1326,14 +1336,41 @@
         "starting": "\"{{machine}}\" 上で \"{{fork}}\" のデータを使って \"{{grand}}\" を引き継いでいます..."
       },
       "template": {
-        "completed": "テンプレートを適用しました",
+        "apply": {
+          "description": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. The template writes Rediaccfile, docker-compose.yml, and any additional files to the repository mount",
+          "descriptionShort": "リポジトリにテンプレートを適用",
+          "notFound": "テンプレート \"{{name}}\" が見つかりません。利用可能: {{available}}"
+        },
+        "completed": "テンプレートを適用しました。デプロイ: rdc repo up {{repository}} -m {{machine}}",
         "description": "リポジトリにテンプレートを適用する",
         "descriptionShort": "リポジトリにテンプレートを適用する（docker-compose.yml + Rediaccfile）",
         "failed": "テンプレートの適用に失敗しました",
         "fileNotFound": "テンプレートファイルが見つかりません: {{path}}",
         "fileOption": "テンプレートJSONファイルのパス",
         "grandOption": "グランドリポジトリ名（自動的にGUIDに解決）",
+        "list": {
+          "description": "CLIに組み込まれたすべてのデプロイテンプレートを一覧表示",
+          "descriptionShort": "利用可能なテンプレートを一覧表示",
+          "empty": "利用可能なテンプレートがありません"
+        },
         "starting": "\"{{machine}}\" で \"{{repository}}\" にテンプレートを適用中..."
+      },
+      "tunnel": {
+        "active": "トンネル接続中: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
+        "closed": "トンネルを閉じました",
+        "containerNotFound": "コンテナ \"{{name}}\" がリポジトリ \"{{repository}}\" に見つかりません",
+        "containerOption": "コンテナ名（実行中のコンテナが1つの場合は自動検出）",
+        "description": "リモートマシン上のコンテナポートへのSSHポートフォワードトンネルを作成。コンテナとポートが一意の場合は自動検出。Ctrl+Cを押すまでトンネルは開いたままになります",
+        "descriptionShort": "コンテナポートへのSSHトンネル",
+        "fetching": "\"{{machine}}\" からコンテナ情報を取得中...",
+        "hint": "Ctrl+Cでトンネルを閉じます",
+        "localOption": "ローカルポート（デフォルトはリモートポートと同じ）",
+        "multipleContainers": "複数の実行中コンテナが見つかりました。--container (-c) で指定してください:\n{{list}}",
+        "multiplePorts": "\"{{container}}\" に複数のポートが公開されています。--port を指定してください:\n{{list}}",
+        "noContainers": "リポジトリ \"{{repository}}\" に実行中のコンテナが見つかりません",
+        "noPorts": "コンテナ \"{{container}}\" に公開ポートが見つかりません。--port を指定してください",
+        "noServiceIP": "コンテナ \"{{container}}\" にサービスIPが割り当てられていません",
+        "portOption": "転送するリモートコンテナポート"
       },
       "unmount": {
         "checkpointOption": "アンマウント前にチェックポイントを作成する",
@@ -1491,76 +1528,6 @@
       },
       "vault": {
         "description": "ストレージ Vault 管理 (クラウドアダプターのみ)"
-      }
-    },
-    "store": {
-      "add": {
-        "addedButUnverified": "ストア \"{{name}}\" を追加しましたが、接続を確認できませんでした",
-        "alreadyExists": "ストア \"{{name}}\" は既に存在します",
-        "description": "新しい同期ストアを追加する",
-        "gitUrlRequired": "Git ストアには --git-url が必要です",
-        "invalidType": "無効なストアタイプ: \"{{type}}\"。有効なタイプ: {{valid}}",
-        "localPathRequired": "ローカルファイルストアには --local-path が必要です",
-        "optionBwFolderId": "設定項目を整理する Bitwarden フォルダー ID（オプション）",
-        "optionEncryptionKey": "このストアの暗号化キー",
-        "optionGitBranch": "Git ブランチ名",
-        "optionGitPath": "Git リポジトリ内のパス",
-        "optionGitUrl": "Git リポジトリ URL",
-        "optionLocalPath": "ローカルディレクトリパス",
-        "optionS3AccessKeyId": "S3 アクセスキー ID",
-        "optionS3Bucket": "S3 バケット名",
-        "optionS3Endpoint": "S3 エンドポイント URL",
-        "optionS3Prefix": "S3 キープレフィックス",
-        "optionS3Region": "S3 リージョン",
-        "optionS3SecretAccessKey": "S3 シークレットアクセスキー",
-        "optionType": "ストアタイプ (s3、local-file、bitwarden、git、vault)",
-        "optionVaultAddr": "Vault サーバーアドレス (例: http://127.0.0.1:8200)",
-        "optionVaultMount": "Vault KV v2 マウントパス (デフォルト: secret)",
-        "optionVaultNamespace": "Vault ネームスペース (エンタープライズのみ)",
-        "optionVaultPrefix": "Vault KV エンジン内のパスプレフィックス (デフォルト: rdc/configs)",
-        "optionVaultToken": "Vault 認証トークン",
-        "promptS3SecretAccessKey": "S3 シークレットアクセスキー:",
-        "promptVaultToken": "Vault トークン (または VAULT_TOKEN 環境変数を設定):",
-        "s3Required": "S3 ストアには --s3-endpoint、--s3-bucket、--s3-access-key-id が必要です",
-        "s3SecretRequired": "S3 シークレットアクセスキーは必須です",
-        "success": "ストア \"{{name}}\" が追加されました ({{type}})",
-        "vaultAddrRequired": "Vault ストアには --vault-addr が必要です",
-        "vaultTokenRequired": "Vault トークンが必要です (--vault-token を渡すか、VAULT_TOKEN 環境変数を設定してください)"
-      },
-      "description": "設定同期ストアを管理する (S3、ローカルファイル、Bitwarden、Git、Vault)",
-      "descriptionShort": "設定同期ストアを管理する (S3、ローカルファイル、Bitwarden、Git、Vault)",
-      "list": {
-        "description": "設定済みのストアをリスト表示する",
-        "noStores": "ストアが設定されていません。次のコマンドで追加してください: rdc store add <name> --type <type>"
-      },
-      "pull": {
-        "description": "ストアから設定をプルする",
-        "failed": "ストア \"{{store}}\" からのプルに失敗しました: {{error}}",
-        "notFound": "ストア \"{{name}}\" が見つかりません",
-        "optionConfig": "プル先の設定名",
-        "optionStore": "特定のストアからプルする",
-        "success": "設定 \"{{config}}\" をストア \"{{store}}\" からプルしました"
-      },
-      "push": {
-        "description": "現在の設定をストアにプッシュする",
-        "failed": "ストア \"{{store}}\" へのプッシュに失敗しました: {{error}}",
-        "noStores": "ストアが設定されていません",
-        "optionAll": "すべてのストアにプッシュする",
-        "optionStore": "特定のストアにプッシュする",
-        "success": "設定 \"{{config}}\" をストア \"{{store}}\" にプッシュしました"
-      },
-      "remove": {
-        "description": "同期ストアを削除する",
-        "success": "ストア \"{{name}}\" が削除されました"
-      },
-      "sync": {
-        "description": "ストアと設定を同期する（プルしてからプッシュ）",
-        "failed": "ストア \"{{store}}\" の同期に失敗しました: {{error}}",
-        "noStores": "ストアが設定されていません",
-        "optionAll": "すべてのストアと同期する",
-        "optionStore": "特定のストアと同期する",
-        "pulled": "ストア \"{{store}}\" から新しいバージョンをプルしました",
-        "pushed": "ストア \"{{store}}\" にプッシュしました"
       }
     },
     "subscription": {
@@ -1978,7 +1945,6 @@
       "repository": "リポジトリ管理",
       "shortcuts": "クイックコマンド（ショートカット）",
       "storage": "ストレージ管理",
-      "store": "ストア管理",
       "subscription": "サブスクリプション管理",
       "sync": "ファイル同期",
       "team": "チーム管理",
@@ -1995,12 +1961,12 @@
         "tip": "認証トークンはコンテキストにローカルに保存されます。`--save-as`を使用して、複数の環境用に名前付きコンテキストに資格情報を保存できます。"
       },
       "config": {
-        "afterDescription": "設定ファイルには接続の詳細（API URL、認証情報、デフォルトのチーム/リージョン/マシン）が保存されており、環境間を素早く切り替えることができます。",
+        "afterDescription": "設定ファイルには接続の詳細（API URL、認証情報、デフォルトのチーム/リージョン/ブリッジ）が保存されており、環境間を素早く切り替えることができます。",
         "init": {
           "afterDescription": "ローカルモードでは、マシンを直接追加できます:"
         },
         "set": {
-          "tip": "デフォルトを設定しておくと、コマンドごとに `--team`、`--region`、`--machine` を指定する必要がなくなります。"
+          "tip": "デフォルトを設定しておくと、コマンドごとに `--team`、`--region`、`--bridge` を指定する必要がなくなります。"
         }
       },
       "machine": {
@@ -2041,17 +2007,22 @@
     "activationFailed": "有効化に失敗しました",
     "affectedChildClones": "。影響を受ける子クローン: {{clones}}。子クローンを最初に削除するか昇格させてください。",
     "agent": {
-      "createGuard": "エージェントモードではリポジトリ \"{{name}}\" を作成できません。\n\nAI エージェントはフォーク専用で動作します。グランドリポジトリの作成はブロックされています。\nエージェントは作成後に操作できないためです。\n\n既存のリポジトリをフォークしてください:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\n上書きするには: REDIACC_ALLOW_GRAND_REPO=* を設定してください",
-      "createGuardOverride": "リポジトリ作成保護はAIエージェントによってオーバーライドできません。\n\nRDCはREDIACC_ALLOW_GRAND_REPOがユーザーによって承認されていないことを検出しました。この変数を自分で設定しようとしないでください — リポジトリの作成を承認できるのはユーザーのみです。\n\n既存のリポジトリを使用してforkを作成してください:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "forkBlocked": "コマンド \"{{command}}\" は fork リポジトリでは使用できません。\n\nfork リポジトリは一時的な環境です。この操作は grand リポジトリにのみ適用されます。",
-      "grandGuard": "エージェントモードでは grand リポジトリ \"{{name}}\" を変更できません。\n\nAI エージェントは fork リポジトリでのみ操作できます。\nまず fork を作成してください:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nその後、fork で操作してください。\n\nオーバーライドするには: REDIACC_ALLOW_GRAND_REPO={{name}} を設定",
-      "grandGuardOverride": "\"{{name}}\"のグランドリポジトリ保護はAIエージェントによってオーバーライドできません。\n\nRDCはREDIACC_ALLOW_GRAND_REPOがユーザーによって承認されていないことを検出しました。この変数を自分で設定しようとしないでください — グランドリポジトリへのアクセスを承認できるのはユーザーのみです。\n\nまずforkを作成してください:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nその後、forkで操作してください。",
-      "machineGuard": "エージェントモードではマシン \"{{machine}}\" に直接アクセスできません。\n\nAI エージェントはリポジトリコンテキストにのみ接続できます。\n次を使用してください:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nオーバーライドするには: REDIACC_ALLOW_GRAND_REPO=* を設定",
-      "machineGuardOverride": "\"{{machine}}\"のマシンアクセス保護はAIエージェントによってオーバーライドできません。\n\nRDCはREDIACC_ALLOW_GRAND_REPOがユーザーによって承認されていないことを検出しました。この変数を自分で設定しようとしないでください — 直接マシンアクセスを承認できるのはユーザーのみです。\n\n代わりにリポジトリコンテキストに接続してください:\n  rdc term {{machine}} <repository> -c \"<command>\"",
-      "mcpGrandGuard": "fork 専用モードでは grand リポジトリ \"{{name}}\" を変更できません。\n\nrepo_fork を使用してまず fork を作成し、その後 fork で操作してください。\ngrand リポジトリへのアクセスを許可するには、--allow-grand を付けて MCP サーバーを再起動してください",
-      "mcpGrandGuardOverride": "\"{{name}}\"のグランドリポジトリ保護はAIエージェントによってオーバーライドできません。\n\nRDCはREDIACC_ALLOW_GRAND_REPOがユーザーによって承認されていないことを検出しました。この変数を設定しようとしないでください。\n\nrepo_forkを使用してまずforkを作成し、その後forkで操作してください。",
-      "mcpMachineGuard": "fork 専用モードではマシンに直接アクセスできません。\n\nリポジトリを指定してリポジトリコンテキストに接続してください。\n直接マシンアクセスを許可するには、--allow-grand を付けて MCP サーバーを再起動してください",
-      "mcpMachineGuardOverride": "マシンアクセス保護はAIエージェントによってオーバーライドできません。\n\nRDCはREDIACC_ALLOW_GRAND_REPOがユーザーによって承認されていないことを検出しました。この変数を設定しようとしないでください。\n\nリポジトリコンテキストに接続するにはリポジトリを指定してください。"
+      "createGuard": "エージェントモードでは新しいgrandリポジトリ \"{{name}}\" を作成できません。\n\nエージェントはfork専用モードで動作します。grandリポジトリは本番環境であり、作成後にエージェントがアクセスすることはできません。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nユーザーへ: リポジトリの作成を許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
+      "createGuardOverride": "新しいgrandリポジトリ \"{{name}}\" を作成できません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "新しいgrandリポジトリ \"{{name}}\" を作成できません。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
+      "forkBlocked": "コマンド \"{{command}}\" はforkリポジトリでは使用できません。\n\nforkリポジトリは一時的なサンドボックス環境です。この操作はgrand（本番）リポジトリにのみ適用されます。ユーザーにこのコマンドを直接実行するよう依頼してください。",
+      "grandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\ngrandリポジトリには本番データが含まれています。代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです。\n\nワークフロー:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する（例: rdc repo up {{name}}:<tag-name> -m <machine> --mount）\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nユーザーへ: 直接アクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
+      "grandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" はgrand（本番）リポジトリです。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nワークフロー:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
+      "machineGuard": "エージェントモードでは \"{{machine}}\" への直接マシンアクセスは許可されていません。\n\nエージェントはサンドボックスアクセスのためにリポジトリコンテキストを通じて接続する必要があります。まずリポジトリのforkを作成し、fork に接続してください。\n\nワークフロー:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nユーザーへ: 直接マシンアクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
+      "machineGuardOverride": "\"{{machine}}\" への直接マシンアクセスは許可されていません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\nまずリポジトリのforkを作成し、forkに接続してください:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "直接マシンアクセスのオーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nワークフロー:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
+      "mcpGrandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。\n直接アクセスが必要な場合は、ユーザーに --allow-grand を付けてMCPサーバーを再起動するよう依頼してください。",
+      "mcpGrandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。",
+      "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" はgrand（本番）リポジトリです。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。",
+      "mcpMachineGuard": "fork専用モードでは直接マシンアクセスは許可されていません。\n\nエージェントはリポジトリコンテキストを通じて接続する必要があります。repo_fork を使用してforkを作成し、接続してください。\n直接アクセスが必要な場合は、ユーザーに --allow-grand を付けてMCPサーバーを再起動するよう依頼してください。",
+      "mcpMachineGuardOverride": "直接マシンアクセスは許可されていません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。\n\nrepo_fork を使用してforkを作成し、接続してください。",
+      "mcpMachineGuardOverrideNonLinux": "直接マシンアクセスのオーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nrepo_fork を使用してforkを作成し、接続してください。"
     },
     "authFailed": "認証に失敗しました",
     "authRequired": "認証が必要です。実行してください: rdc auth login",
@@ -2080,8 +2051,8 @@
     "invalidPriorityMax": "無効な priority-max 値です。1 から 5 の間である必要があります。",
     "invalidPriorityMin": "無効な priority-min 値です。1 から 5 の間である必要があります。",
     "machineNotFound": "マシン \"{{name}}\" が見つかりません",
-    "machineRequired": "マシン名が必要です。--machine を使用するか、コンテキストを設定してください。",
-    "machineRequiredLocal": "マシン名が必要です。--machine を使用するか、次のコマンドでデフォルトを設定してください: rdc config set machine <name>",
+    "machineRequired": "マシン名が必要です。--machine <name> を使用してください",
+    "machineRequiredLocal": "マシン名が必要です。--machine <name> を使用してください",
     "networkError": "ネットワークエラー: {{message}}",
     "noActiveConfig": "アクティブな設定がありません。`rdc config init <name>` で作成してください。",
     "notAuthenticated": "認証されていません。実行してください: rdc auth login",
@@ -2192,12 +2163,8 @@
         "pushAll": "すべてのリポジトリをストレージに一括プッシュ"
       },
       "takeover": "本番データをフォークのデータで置き換える",
+      "tunnel": "コンテナポートへのSSHトンネル",
       "up": "自動マウントでデプロイ"
-    },
-    "store": {
-      "add": "S3ストアバックエンドを追加",
-      "pull": "ストアからConfigをプル",
-      "push": "全ストアにConfigをプッシュ"
     },
     "sync": {
       "download": "リポジトリファイルをローカルにダウンロード",

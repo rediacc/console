@@ -8,7 +8,6 @@ const LOCAL_GROUPS = [
   'agent',
   'config',
   'datastore',
-  'store',
   'machine',
   'mcp',
   'repo',

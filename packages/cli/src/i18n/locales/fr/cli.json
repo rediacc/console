@@ -390,18 +390,7 @@
         "alreadyExists": "La configuration \"{{name}}\" existe déjà",
         "description": "Créer un nouveau fichier de configuration nommé",
         "optionMasterPassword": "Chiffrer les ressources avec un mot de passe principal",
-        "optionS3AccessKeyId": "ID de clé d'accès S3",
-        "optionS3Bucket": "Nom du bucket S3",
-        "optionS3Endpoint": "URL du point de terminaison S3",
-        "optionS3Prefix": "Préfixe de clé dans le bucket S3",
-        "optionS3Region": "Région S3",
-        "optionS3SecretAccessKey": "Clé d'accès secrète S3",
-        "promptS3SecretAccessKey": "Clé d'accès secrète S3 :",
-        "s3Required": "--s3-endpoint, --s3-bucket et --s3-access-key-id sont requis pour l'état des ressources S3",
-        "s3SecretRequired": "La clé d'accès secrète S3 est requise",
-        "s3Verified": "Accès S3 vérifié",
-        "success": "Configuration \"{{name}}\" initialisée",
-        "verifyingS3": "Vérification de l'accès S3..."
+        "success": "Configuration \"{{name}}\" initialisée"
       },
       "list": {
         "description": "Lister tous les fichiers de configuration",
@@ -519,7 +508,7 @@
         }
       },
       "set": {
-        "description": "Définir une valeur par défaut (équipe, région, pont, machine)",
+        "description": "Définir une valeur par défaut (équipe, région, pont)",
         "success": "\"{{key}}\" défini à \"{{value}}\""
       },
       "setRenet": {
@@ -533,6 +522,27 @@
       "show": {
         "description": "Afficher les détails de la configuration actuelle",
         "noConfig": "Aucune configuration active. Créez-en une avec : rdc config init"
+      },
+      "ssh": {
+        "description": "Gérer la configuration de la clé SSH",
+        "remove": {
+          "description": "Supprimer la clé SSH de la configuration actuelle",
+          "noKey": "Aucune clé SSH configurée",
+          "success": "Clé SSH supprimée"
+        },
+        "set": {
+          "description": "Définir la clé SSH pour la configuration actuelle",
+          "embedWarning": "Le contenu de la clé sera stocké dans le fichier de configuration",
+          "invalidKey": "Le fichier ne contient pas de clé SSH privée valide",
+          "keyNotFound": "Fichier de clé SSH introuvable : {{path}}",
+          "optionEmbed": "Intégrer le contenu de la clé dans la configuration au lieu de stocker le chemin",
+          "optionKey": "Chemin vers le fichier de clé SSH privée",
+          "success": "Clé SSH configurée"
+        },
+        "show": {
+          "description": "Afficher la configuration actuelle de la clé SSH",
+          "noKey": "Aucune clé SSH configurée"
+        }
       },
       "storage": {
         "description": "Gérer les backends de stockage dans la configuration actuelle",
@@ -1326,14 +1336,41 @@
         "starting": "Prise de contrôle de \"{{grand}}\" avec les données de \"{{fork}}\" sur \"{{machine}}\"..."
       },
       "template": {
-        "completed": "Modèle appliqué",
+        "apply": {
+          "description": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. The template writes Rediaccfile, docker-compose.yml, and any additional files to the repository mount",
+          "descriptionShort": "Appliquer un modèle à un dépôt",
+          "notFound": "Modèle \"{{name}}\" introuvable. Disponibles : {{available}}"
+        },
+        "completed": "Modèle appliqué. Déployer avec : rdc repo up {{repository}} -m {{machine}}",
         "description": "Appliquer un modèle à un dépôt",
         "descriptionShort": "Appliquer un modèle à un dépôt (docker-compose.yml + Rediaccfile)",
         "failed": "Échec de l'application du modèle",
         "fileNotFound": "Fichier de modèle introuvable : {{path}}",
         "fileOption": "Chemin vers le fichier de modèle JSON",
         "grandOption": "Nom du dépôt grand (résolu automatiquement en GUID)",
+        "list": {
+          "description": "Lister tous les modèles de déploiement intégrés à la CLI",
+          "descriptionShort": "Lister les modèles disponibles",
+          "empty": "Aucun modèle disponible"
+        },
         "starting": "Application du modèle à \"{{repository}}\" sur \"{{machine}}\"..."
+      },
+      "tunnel": {
+        "active": "Tunnel actif : localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
+        "closed": "Tunnel fermé",
+        "containerNotFound": "Conteneur \"{{name}}\" introuvable dans le dépôt \"{{repository}}\"",
+        "containerOption": "Nom du conteneur (détecté automatiquement s'il n'y en a qu'un en cours d'exécution)",
+        "description": "Créer un tunnel SSH de redirection de port vers le port d'un conteneur sur une machine distante. Détecte automatiquement le conteneur et le port lorsqu'il n'y a pas d'ambiguïté. Le tunnel reste ouvert jusqu'à ce que vous appuyiez sur Ctrl+C",
+        "descriptionShort": "Tunnel SSH vers un port de conteneur",
+        "fetching": "Récupération des informations de conteneurs depuis \"{{machine}}\"...",
+        "hint": "Appuyez sur Ctrl+C pour fermer le tunnel",
+        "localOption": "Port local (par défaut identique au port distant)",
+        "multipleContainers": "Plusieurs conteneurs en cours d'exécution trouvés. Spécifiez-en un avec --container (-c) :\n{{list}}",
+        "multiplePorts": "Plusieurs ports exposés sur \"{{container}}\". Spécifiez --port :\n{{list}}",
+        "noContainers": "Aucun conteneur en cours d'exécution trouvé pour le dépôt \"{{repository}}\"",
+        "noPorts": "Aucun port exposé trouvé sur le conteneur \"{{container}}\". Spécifiez --port",
+        "noServiceIP": "Le conteneur \"{{container}}\" n'a pas d'IP de service assignée",
+        "portOption": "Port du conteneur distant à rediriger"
       },
       "unmount": {
         "checkpointOption": "Créer un point de contrôle avant le démontage",
@@ -1491,76 +1528,6 @@
       },
       "vault": {
         "description": "Gestion du coffre-fort de stockage (adaptateur cloud uniquement)"
-      }
-    },
-    "store": {
-      "add": {
-        "addedButUnverified": "Store \"{{name}}\" ajouté mais la connexion n'a pas pu être vérifiée",
-        "alreadyExists": "Le store \"{{name}}\" existe déjà",
-        "description": "Ajouter un nouveau store de synchronisation",
-        "gitUrlRequired": "--git-url est requis pour les stores Git",
-        "invalidType": "Type de store invalide : \"{{type}}\". Types valides : {{valid}}",
-        "localPathRequired": "--local-path est requis pour les stores de fichiers locaux",
-        "optionBwFolderId": "ID de dossier Bitwarden pour organiser les éléments de configuration (optionnel)",
-        "optionEncryptionKey": "Clé de chiffrement pour ce store",
-        "optionGitBranch": "Nom de branche Git",
-        "optionGitPath": "Chemin dans le dépôt Git",
-        "optionGitUrl": "URL du dépôt Git",
-        "optionLocalPath": "Chemin du répertoire local",
-        "optionS3AccessKeyId": "ID de clé d'accès S3",
-        "optionS3Bucket": "Nom du bucket S3",
-        "optionS3Endpoint": "URL du point de terminaison S3",
-        "optionS3Prefix": "Préfixe de clé S3",
-        "optionS3Region": "Région S3",
-        "optionS3SecretAccessKey": "Clé d'accès secrète S3",
-        "optionType": "Type de store (s3, local-file, bitwarden, git, vault)",
-        "optionVaultAddr": "Adresse du serveur Vault (ex. http://127.0.0.1:8200)",
-        "optionVaultMount": "Chemin de montage KV v2 de Vault (par défaut : secret)",
-        "optionVaultNamespace": "Espace de noms Vault (entreprise uniquement)",
-        "optionVaultPrefix": "Préfixe de chemin dans le moteur KV de Vault (par défaut : rdc/configs)",
-        "optionVaultToken": "Jeton d'authentification Vault",
-        "promptS3SecretAccessKey": "Clé d'accès secrète S3 :",
-        "promptVaultToken": "Jeton Vault (ou définissez la variable VAULT_TOKEN) :",
-        "s3Required": "--s3-endpoint, --s3-bucket et --s3-access-key-id sont requis pour les stores S3",
-        "s3SecretRequired": "La clé d'accès secrète S3 est requise",
-        "success": "Store \"{{name}}\" ajouté ({{type}})",
-        "vaultAddrRequired": "--vault-addr est requis pour les stores Vault",
-        "vaultTokenRequired": "Le jeton Vault est requis (passez --vault-token ou définissez la variable VAULT_TOKEN)"
-      },
-      "description": "Gérer les stores de synchronisation de configuration (S3, fichier local, Bitwarden, Git, Vault)",
-      "descriptionShort": "Gérer les stores de synchronisation de configuration (S3, fichier local, Bitwarden, Git, Vault)",
-      "list": {
-        "description": "Lister les stores configurés",
-        "noStores": "Aucun store configuré. Ajoutez-en un avec : rdc store add <name> --type <type>"
-      },
-      "pull": {
-        "description": "Récupérer la configuration depuis un store",
-        "failed": "Échec de la récupération depuis le store \"{{store}}\" : {{error}}",
-        "notFound": "Store \"{{name}}\" non trouvé",
-        "optionConfig": "Nom de la configuration à récupérer",
-        "optionStore": "Récupérer depuis un store spécifique",
-        "success": "Configuration \"{{config}}\" récupérée depuis le store \"{{store}}\""
-      },
-      "push": {
-        "description": "Pousser la configuration actuelle vers les stores",
-        "failed": "Échec de l'envoi vers le store \"{{store}}\" : {{error}}",
-        "noStores": "Aucun store configuré",
-        "optionAll": "Pousser vers tous les stores",
-        "optionStore": "Pousser vers un store spécifique",
-        "success": "Configuration \"{{config}}\" poussée vers le store \"{{store}}\""
-      },
-      "remove": {
-        "description": "Supprimer un store de synchronisation",
-        "success": "Store \"{{name}}\" supprimé"
-      },
-      "sync": {
-        "description": "Synchroniser la configuration avec les stores (récupération puis envoi)",
-        "failed": "Échec de la synchronisation pour le store \"{{store}}\" : {{error}}",
-        "noStores": "Aucun store configuré",
-        "optionAll": "Synchroniser avec tous les stores",
-        "optionStore": "Synchroniser avec un store spécifique",
-        "pulled": "Version plus récente récupérée depuis le store \"{{store}}\"",
-        "pushed": "Poussé vers le store \"{{store}}\""
       }
     },
     "subscription": {
@@ -1978,7 +1945,6 @@
       "repository": "Gestion des Dépôts",
       "shortcuts": "Commandes Rapides (Raccourcis)",
       "storage": "Gestion du Stockage",
-      "store": "Gestion des Stores",
       "subscription": "Gestion des Abonnements",
       "sync": "Synchronisation de fichiers",
       "team": "Gestion des Équipes",
@@ -1995,12 +1961,12 @@
         "tip": "Votre jeton d'authentification est stocké localement dans votre contexte. Utilisez `--save-as` pour stocker les identifiants sous un contexte nommé pour plusieurs environnements."
       },
       "config": {
-        "afterDescription": "Les fichiers de configuration stockent les informations de connexion (URL API, identifiants, équipe/région/machine par défaut) pour basculer rapidement entre les environnements.",
+        "afterDescription": "Les fichiers de configuration stockent les informations de connexion (URL API, identifiants, équipe/région/pont par défaut) pour basculer rapidement entre les environnements.",
         "init": {
           "afterDescription": "En mode local, vous pouvez ajouter des machines directement :"
         },
         "set": {
-          "tip": "Définir des valeurs par défaut évite de passer `--team`, `--region` ou `--machine` à chaque commande."
+          "tip": "Définir des valeurs par défaut évite de passer `--team`, `--region` ou `--bridge` à chaque commande."
         }
       },
       "machine": {
@@ -2041,17 +2007,22 @@
     "activationFailed": "Échec de l'activation",
     "affectedChildClones": ". Clones enfants affectés : {{clones}}. Supprimez ou promouvez d'abord les clones enfants.",
     "agent": {
-      "createGuard": "Impossible de créer le dépôt \"{{name}}\" en mode agent.\n\nLes agents IA fonctionnent en mode fork uniquement. La création d'un dépôt principal est bloquée\ncar l'agent ne peut pas y travailler ensuite.\n\nUtilisez un dépôt existant et faites-en un fork à la place :\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nPour contourner : définissez REDIACC_ALLOW_GRAND_REPO=*",
-      "createGuardOverride": "La protection de création de dépôt ne peut pas être contournée par un agent IA.\n\nRDC a détecté que REDIACC_ALLOW_GRAND_REPO n'a pas été autorisé par l'utilisateur. N'essayez pas de définir cette variable vous-même — seul l'utilisateur peut autoriser la création de dépôts.\n\nUtilisez un dépôt existant et créez un fork à la place :\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "forkBlocked": "La commande \"{{command}}\" n'est pas disponible sur les dépôts fork.\n\nLes dépôts fork sont des environnements provisoires. Cette opération ne s'applique qu'aux dépôts grand.",
-      "grandGuard": "Impossible de modifier le dépôt grand \"{{name}}\" en mode agent.\n\nLes agents IA ne peuvent opérer que sur les dépôts fork.\nCréez d'abord un fork :\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nEnsuite opérez sur le fork.\n\nPour outrepasser : définissez REDIACC_ALLOW_GRAND_REPO={{name}}",
-      "grandGuardOverride": "La protection du dépôt principal pour \"{{name}}\" ne peut pas être contournée par un agent IA.\n\nRDC a détecté que REDIACC_ALLOW_GRAND_REPO n'a pas été autorisé par l'utilisateur. N'essayez pas de définir cette variable vous-même — seul l'utilisateur peut autoriser l'accès au dépôt principal.\n\nCréez d'abord un fork :\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nPuis opérez sur le fork.",
-      "machineGuard": "Impossible d'accéder directement à la machine \"{{machine}}\" en mode agent.\n\nLes agents IA ne peuvent se connecter qu'aux contextes de dépôt.\nUtilisez :\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nPour outrepasser : définissez REDIACC_ALLOW_GRAND_REPO=*",
-      "machineGuardOverride": "La protection d'accès machine pour \"{{machine}}\" ne peut pas être contournée par un agent IA.\n\nRDC a détecté que REDIACC_ALLOW_GRAND_REPO n'a pas été autorisé par l'utilisateur. N'essayez pas de définir cette variable vous-même — seul l'utilisateur peut autoriser l'accès direct à la machine.\n\nConnectez-vous plutôt à un contexte de dépôt :\n  rdc term {{machine}} <repository> -c \"<command>\"",
-      "mcpGrandGuard": "Impossible de modifier le dépôt grand \"{{name}}\" en mode fork uniquement.\n\nUtilisez repo_fork pour créer d'abord un fork, puis opérez sur le fork.\nPour autoriser l'accès aux dépôts grand, redémarrez le serveur MCP avec --allow-grand",
-      "mcpGrandGuardOverride": "La protection du dépôt principal pour \"{{name}}\" ne peut pas être contournée par un agent IA.\n\nRDC a détecté que REDIACC_ALLOW_GRAND_REPO n'a pas été autorisé par l'utilisateur. N'essayez pas de définir cette variable.\n\nUtilisez repo_fork pour créer d'abord un fork, puis opérez sur le fork.",
-      "mcpMachineGuard": "Impossible d'accéder directement à la machine en mode fork uniquement.\n\nSpécifiez un dépôt pour vous connecter à un contexte de dépôt.\nPour autoriser l'accès direct à la machine, redémarrez le serveur MCP avec --allow-grand",
-      "mcpMachineGuardOverride": "La protection d'accès machine ne peut pas être contournée par un agent IA.\n\nRDC a détecté que REDIACC_ALLOW_GRAND_REPO n'a pas été autorisé par l'utilisateur. N'essayez pas de définir cette variable.\n\nSpécifiez un dépôt pour vous connecter à un contexte de dépôt."
+      "createGuard": "Impossible de créer un nouveau dépôt grand \"{{name}}\" en mode agent.\n\nLes agents fonctionnent en mode fork uniquement. Les dépôts grand sont des environnements de production auxquels les agents ne peuvent pas accéder après la création.\n\nCréez plutôt un fork d'un dépôt existant :\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nUtilisateur : pour autoriser la création de dépôts, définissez REDIACC_ALLOW_GRAND_REPO=* (ou un nom de dépôt spécifique) dans votre terminal avant de démarrer la session de l'agent.",
+      "createGuardOverride": "Impossible de créer un nouveau dépôt grand \"{{name}}\". Les contournements initiés par l'agent ne sont pas acceptés.\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO — seul l'utilisateur peut l'autoriser avant le démarrage de l'agent.\n\nCréez plutôt un fork d'un dépôt existant :\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "Impossible de créer un nouveau dépôt grand \"{{name}}\". Le contournement REDIACC_ALLOW_GRAND_REPO n'est pas pris en charge sur {{platform}}.\n\nCe contournement ne fonctionne que sous Linux. Sous Windows et macOS, les agents doivent utiliser le flux de travail fork-first.\n\nCréez plutôt un fork d'un dépôt existant :\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nPour utiliser le contournement, exécutez votre agent sous Linux (directement, WSL, Docker ou une VM).",
+      "forkBlocked": "La commande \"{{command}}\" n'est pas disponible sur les dépôts fork.\n\nLes dépôts fork sont des environnements sandbox temporaires. Cette opération s'applique uniquement aux dépôts grand (production). Demandez à l'utilisateur d'exécuter cette commande directement.",
+      "grandGuard": "\"{{name}}\" est un dépôt grand (production). Les agents ne peuvent pas modifier directement les dépôts grand.\n\nLes dépôts grand contiennent des données de production. Utilisez un fork à la place — les forks sont des copies sandbox sûres et isolées.\n\nFlux de travail :\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Travaillez sur le fork (ex : rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. Une fois terminé, l'utilisateur peut promouvoir le fork avec rdc repo takeover\n\nUtilisateur : pour autoriser l'accès direct, définissez REDIACC_ALLOW_GRAND_REPO={{name}} (ou * pour tous les dépôts) dans votre terminal avant de démarrer la session de l'agent.",
+      "grandGuardOverride": "\"{{name}}\" est un dépôt grand (production). Les contournements initiés par l'agent ne sont pas acceptés.\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO — seul l'utilisateur peut l'autoriser avant le démarrage de l'agent.\n\nUtilisez un fork à la place — les forks sont des copies sandbox sûres et isolées :\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Travaillez sur le fork\n  3. Une fois terminé, l'utilisateur peut promouvoir le fork avec rdc repo takeover",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" est un dépôt grand (production). Le contournement REDIACC_ALLOW_GRAND_REPO n'est pas pris en charge sur {{platform}}.\n\nCe contournement ne fonctionne que sous Linux. Sous Windows et macOS, les agents doivent utiliser le flux de travail fork-first.\n\nFlux de travail :\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Travaillez sur le fork\n  3. Une fois terminé, l'utilisateur peut promouvoir le fork avec rdc repo takeover\n\nPour utiliser le contournement, exécutez votre agent sous Linux (directement, WSL, Docker ou une VM).",
+      "machineGuard": "L'accès direct à la machine \"{{machine}}\" n'est pas autorisé en mode agent.\n\nLes agents doivent se connecter via un contexte de dépôt pour un accès sandboxé. Créez d'abord un fork d'un dépôt, puis connectez-vous au fork.\n\nFlux de travail :\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nUtilisateur : pour autoriser l'accès direct à la machine, définissez REDIACC_ALLOW_GRAND_REPO=* (ou un nom de dépôt spécifique) dans votre terminal avant de démarrer la session de l'agent.",
+      "machineGuardOverride": "L'accès direct à la machine \"{{machine}}\" n'est pas autorisé. Les contournements initiés par l'agent ne sont pas acceptés.\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO — seul l'utilisateur peut l'autoriser avant le démarrage de l'agent.\n\nCréez d'abord un fork d'un dépôt, puis connectez-vous au fork :\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "Le contournement d'accès direct à la machine n'est pas pris en charge sur {{platform}}.\n\nCe contournement ne fonctionne que sous Linux. Sous Windows et macOS, les agents doivent utiliser le flux de travail fork-first.\n\nFlux de travail :\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nPour utiliser le contournement, exécutez votre agent sous Linux (directement, WSL, Docker ou une VM).",
+      "mcpGrandGuard": "\"{{name}}\" est un dépôt grand (production). Les agents ne peuvent pas modifier directement les dépôts grand.\n\nUtilisez repo_fork pour créer une copie sandbox sûre et isolée, puis travaillez sur le fork.\nSi vous avez besoin d'un accès direct, demandez à l'utilisateur de redémarrer le serveur MCP avec --allow-grand.",
+      "mcpGrandGuardOverride": "\"{{name}}\" est un dépôt grand (production). Les contournements initiés par l'agent ne sont pas acceptés.\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO.\n\nUtilisez repo_fork pour créer une copie sandbox sûre et isolée, puis travaillez sur le fork.",
+      "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" est un dépôt grand (production). Le contournement REDIACC_ALLOW_GRAND_REPO n'est pas pris en charge sur {{platform}}.\n\nCe contournement ne fonctionne que sous Linux. Sous Windows et macOS, les agents doivent utiliser le flux de travail fork-first.\n\nUtilisez repo_fork pour créer une copie sandbox sûre et isolée, puis travaillez sur le fork.",
+      "mcpMachineGuard": "L'accès direct à la machine n'est pas autorisé en mode fork uniquement.\n\nLes agents doivent se connecter via un contexte de dépôt. Utilisez repo_fork pour créer un fork, puis connectez-vous.\nSi vous avez besoin d'un accès direct, demandez à l'utilisateur de redémarrer le serveur MCP avec --allow-grand.",
+      "mcpMachineGuardOverride": "L'accès direct à la machine n'est pas autorisé. Les contournements initiés par l'agent ne sont pas acceptés.\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO.\n\nUtilisez repo_fork pour créer un fork, puis connectez-vous.",
+      "mcpMachineGuardOverrideNonLinux": "Le contournement d'accès direct à la machine n'est pas pris en charge sur {{platform}}.\n\nCe contournement ne fonctionne que sous Linux. Sous Windows et macOS, les agents doivent utiliser le flux de travail fork-first.\n\nUtilisez repo_fork pour créer un fork, puis connectez-vous."
     },
     "authFailed": "L'authentification a échoué",
     "authRequired": "L'authentification est requise. Exécutez : rdc auth login",
@@ -2080,8 +2051,8 @@
     "invalidPriorityMax": "Valeur priority-max invalide. Doit être entre 1 et 5.",
     "invalidPriorityMin": "Valeur priority-min invalide. Doit être entre 1 et 5.",
     "machineNotFound": "Machine \"{{name}}\" non trouvée",
-    "machineRequired": "Le nom de la machine est requis. Utilisez --machine ou définissez un contexte.",
-    "machineRequiredLocal": "Le nom de la machine est requis. Utilisez --machine ou définissez une valeur par défaut avec : rdc config set machine <name>",
+    "machineRequired": "Le nom de la machine est requis. Utilisez --machine <name>",
+    "machineRequiredLocal": "Le nom de la machine est requis. Utilisez --machine <name>",
     "networkError": "Erreur réseau : {{message}}",
     "noActiveConfig": "Aucune configuration active. Créez-en une avec : rdc config init <name>",
     "notAuthenticated": "Non authentifié. Exécutez : rdc auth login",
@@ -2192,12 +2163,8 @@
         "pushAll": "Push en masse de tous les dépôts vers le stockage"
       },
       "takeover": "Remplacer les données de production par les données du fork",
+      "tunnel": "Tunnel SSH vers un port de conteneur",
       "up": "Déployer avec montage automatique"
-    },
-    "store": {
-      "add": "Ajouter un backend de stockage S3",
-      "pull": "Récupérer le config depuis un store",
-      "push": "Pousser le config vers tous les stores"
     },
     "sync": {
       "download": "Télécharger les fichiers du dépôt",

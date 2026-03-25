@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: de
-sourceHash: "9331a5f415a76278"
+sourceHash: "70943eacf16dbd21"
 ---
 
 # Architektur
@@ -34,11 +34,9 @@ Jeder Befehl, den Sie lokal eingeben, wird in einen SSH-Aufruf übersetzt, der r
 
 Für eine operatorfokussierte Faustregel, siehe [rdc vs renet](/de/docs/rdc-vs-renet). Sie können auch `rdc ops` verwenden, um einen lokalen VM-Cluster zum Testen zu starten — siehe [Experimentelle VMs](/de/docs/experimental-vms).
 
-## Konfiguration & Stores
+## Konfiguration
 
-Der gesamte CLI-Zustand wird in flachen JSON-Konfigurationsdateien unter `~/.config/rediacc/` gespeichert. Stores ermöglichen die Synchronisierung dieser Konfigurationen mit externen Backends für Backup, Weitergabe oder Multi-Gerät-Zugriff. Store-Zugangsdaten werden separat in `~/.config/rediacc/.credentials.json` aufbewahrt.
-
-![Konfiguration & Stores](/img/arch-operating-modes.svg)
+Der gesamte CLI-Zustand wird in flachen JSON-Konfigurationsdateien unter `~/.config/rediacc/` gespeichert.
 
 ### Lokaler Adapter (Standard)
 
@@ -60,16 +58,7 @@ Wird automatisch aktiviert, wenn eine Konfiguration `apiUrl`- und `token`-Felder
 
 > **Hinweis:** Cloud-Adapter-Befehle sind experimentell. Aktivieren Sie sie durch Setzen von `REDIACC_EXPERIMENTAL=1`.
 
-### S3-Ressourcenzustand (Optional)
-
-Wenn eine Konfiguration S3-Einstellungen enthält (Endpoint, Bucket, Zugriffsschlüssel), wird der Ressourcenzustand in einem S3-kompatiblen Bucket gespeichert. Dies funktioniert zusammen mit dem lokalen Adapter und kombiniert den Selbsthosting-Betrieb mit Portabilität über Workstations hinweg.
-
-- Ressourcenzustand in einem S3/R2-Bucket als `state.json` gespeichert
-- AES-256-GCM-Verschlüsselung mit einem Master-Passwort
-- Portabel: Jede Workstation mit den Bucket-Zugangsdaten kann die Infrastruktur verwalten
-- Konfiguriert über `rdc config init <name> --s3-endpoint <url> --s3-bucket <bucket> --s3-access-key-id <key>`
-
-Alle Adapter verwenden die gleichen CLI-Befehle. Der Adapter beeinflusst nur, wo der Zustand gespeichert wird und wie die Authentifizierung funktioniert.
+Beide Adapter verwenden die gleichen CLI-Befehle. Der Adapter beeinflusst nur, wo der Zustand gespeichert wird und wie die Authentifizierung funktioniert.
 
 ## Der rediacc-Benutzer
 

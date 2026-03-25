@@ -1,6 +1,6 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { configFileStorage } from '../adapters/config-file-storage.js';
-import type { RdcConfig, S3Config } from '../types/index.js';
+import type { RdcConfig } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
 import {
   detectSystemLanguage,
@@ -15,9 +15,7 @@ const DEFAULT_API_URL = 'https://www.rediacc.com/api';
 /**
  * Service for managing CLI config files.
  * Each config is a separate file (e.g., rediacc.json, production.json).
- * In self-hosted modes (local/S3), resource CRUD delegates to ResourceState:
- *   - S3 mode: S3StateService (state.json in bucket)
- *   - Local mode: LocalResourceState (config file, with optional encryption)
+ * In self-hosted mode, resource CRUD delegates to LocalResourceState.
  */
 export class ConfigServiceBase {
   private runtimeConfigOverride: string | null = null;
@@ -34,7 +32,6 @@ export class ConfigServiceBase {
 
   /**
    * Get the ResourceState for the current config, initializing lazily.
-   * Returns S3StateService when config.s3 is populated, LocalResourceState otherwise.
    */
   async getResourceState(): Promise<ResourceState> {
     if (this._resourceState) return this._resourceState;
@@ -50,30 +47,8 @@ export class ConfigServiceBase {
 
     const configName = this.getEffectiveConfigName();
 
-    if (config.s3) {
-      let decryptedSecret: string;
-      if (masterPassword) {
-        const { nodeCryptoProvider } = await import('../adapters/crypto.js');
-        decryptedSecret = await nodeCryptoProvider.decrypt(
-          config.s3.secretAccessKey,
-          masterPassword
-        );
-      } else {
-        decryptedSecret = config.s3.secretAccessKey;
-      }
-
-      const { S3ClientService } = await import('./s3-client.js');
-      const s3Client = new S3ClientService({
-        ...config.s3,
-        secretAccessKey: decryptedSecret,
-      });
-
-      const { S3StateService } = await import('./s3-state.js');
-      this._resourceState = await S3StateService.load(s3Client, masterPassword);
-    } else {
-      const { LocalResourceState } = await import('./resource-state.js');
-      this._resourceState = await LocalResourceState.load(config, configName, masterPassword);
-    }
+    const { LocalResourceState } = await import('./resource-state.js');
+    this._resourceState = await LocalResourceState.load(config, configName, masterPassword);
 
     return this._resourceState;
   }
@@ -210,12 +185,12 @@ export class ConfigServiceBase {
     return config?.bridge;
   }
 
-  async set(key: 'team' | 'region' | 'bridge' | 'datastoreSize', value: string): Promise<void> {
+  async set(key: 'team' | 'region' | 'bridge', value: string): Promise<void> {
     const name = this.getEffectiveConfigName();
     await this.update(name, { [key]: value });
   }
 
-  async remove(key: 'team' | 'region' | 'bridge' | 'datastoreSize'): Promise<void> {
+  async remove(key: 'team' | 'region' | 'bridge'): Promise<void> {
     const name = this.getEffectiveConfigName();
     await this.update(name, { [key]: undefined });
   }
@@ -327,18 +302,5 @@ export class ConfigServiceBase {
 
   async isSelfHosted(): Promise<boolean> {
     return !(await this.isCloud());
-  }
-
-  async hasS3ResourceState(): Promise<boolean> {
-    const config = await this.getCurrent();
-    return config?.s3 != null;
-  }
-
-  async getS3Config(): Promise<S3Config> {
-    const config = await this.getCurrent();
-    const name = this.getEffectiveConfigName();
-    if (!config) throw new Error('No active config');
-    if (!config.s3) throw new Error(`Config "${name}" has no S3 configuration`);
-    return config.s3;
   }
 }

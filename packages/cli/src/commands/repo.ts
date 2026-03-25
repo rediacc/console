@@ -37,6 +37,7 @@ async function cleanupDeletedRepoSSH(machineName: string, repoName: string): Pro
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 import { registerRepoSyncCommands } from './repo-sync.js';
+import { registerRepoTunnelCommand } from './repo-tunnel.js';
 import { registerRepoVolumeCommands } from './repo-volume.js';
 
 function generateCredential(): string {
@@ -565,4 +566,5 @@ export function registerRepoCommands(program: Command): void {
   registerExtendedRepoCommands(repo);
   registerRepoBackupCommands(repo);
   registerRepoSyncCommands(repo);
+  registerRepoTunnelCommand(repo);
 }

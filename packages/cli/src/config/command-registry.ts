@@ -85,7 +85,27 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
 
   // ── Repositories ────────────────────────────────────────────────────
   { name: 'repository', modes: ['cloud'], domain: 'REPOSITORIES', experimental: true },
-  { name: 'repo', modes: SELF_HOSTED_MODES, domain: 'REPOSITORIES' },
+  {
+    name: 'repo',
+    modes: SELF_HOSTED_MODES,
+    domain: 'REPOSITORIES',
+    subcommands: {
+      create: { modes: SELF_HOSTED_MODES },
+      delete: { modes: SELF_HOSTED_MODES },
+      up: { modes: SELF_HOSTED_MODES },
+      down: { modes: SELF_HOSTED_MODES },
+      status: { modes: SELF_HOSTED_MODES },
+      list: { modes: SELF_HOSTED_MODES },
+      fork: { modes: SELF_HOSTED_MODES },
+      resize: { modes: SELF_HOSTED_MODES },
+      expand: { modes: SELF_HOSTED_MODES },
+      validate: { modes: SELF_HOSTED_MODES },
+      autostart: { modes: SELF_HOSTED_MODES },
+      ownership: { modes: SELF_HOSTED_MODES },
+      template: { modes: SELF_HOSTED_MODES },
+      tunnel: { modes: SELF_HOSTED_MODES },
+    },
+  },
 
   // ── Execution ───────────────────────────────────────────────────────
   { name: 'run', modes: ALL_MODES, domain: 'EXECUTION' },
@@ -109,8 +129,12 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
     name: 'config',
     modes: ALL_MODES,
     domain: 'TOOLS',
+    subcommands: {
+      set: { modes: ['cloud'] },
+      clear: { modes: ['cloud'] },
+      ssh: { modes: ALL_MODES },
+    },
   },
-  { name: 'store', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'doctor', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'update', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'protocol', modes: ['cloud'], domain: 'TOOLS', experimental: true },

@@ -390,18 +390,7 @@
         "alreadyExists": "\"{{name}}\" yapılandırması zaten mevcut",
         "description": "Yeni bir adlandırılmış yapılandırma dosyası oluşturun",
         "optionMasterPassword": "Kaynakları bir ana şifreyle şifreleyin",
-        "optionS3AccessKeyId": "S3 erişim anahtarı kimliği",
-        "optionS3Bucket": "S3 paket adı",
-        "optionS3Endpoint": "S3 uç nokta URL'si",
-        "optionS3Prefix": "S3 paketindeki anahtar ön eki",
-        "optionS3Region": "S3 bölgesi",
-        "optionS3SecretAccessKey": "S3 gizli erişim anahtarı",
-        "promptS3SecretAccessKey": "S3 gizli erişim anahtarı:",
-        "s3Required": "S3 kaynak durumu için --s3-endpoint, --s3-bucket ve --s3-access-key-id gereklidir",
-        "s3SecretRequired": "S3 gizli erişim anahtarı gereklidir",
-        "s3Verified": "S3 erişimi doğrulandı",
-        "success": "\"{{name}}\" yapılandırması başlatıldı",
-        "verifyingS3": "S3 erişimi doğrulanıyor..."
+        "success": "\"{{name}}\" yapılandırması başlatıldı"
       },
       "list": {
         "description": "Tüm yapılandırma dosyalarını listeleyin",
@@ -519,7 +508,7 @@
         }
       },
       "set": {
-        "description": "Varsayılan bir değer belirleyin (takım, bölge, köprü, makine)",
+        "description": "Varsayılan bir değer belirleyin (takım, bölge, köprü)",
         "success": "\"{{key}}\" değeri \"{{value}}\" olarak ayarlandı"
       },
       "setRenet": {
@@ -533,6 +522,27 @@
       "show": {
         "description": "Geçerli yapılandırma ayrıntılarını gösterin",
         "noConfig": "Etkin yapılandırma yok. Oluşturun: rdc config init"
+      },
+      "ssh": {
+        "description": "SSH anahtar yapılandırmasını yönet",
+        "remove": {
+          "description": "Geçerli yapılandırmadan SSH anahtarını kaldır",
+          "noKey": "SSH anahtarı yapılandırılmamış",
+          "success": "SSH anahtarı kaldırıldı"
+        },
+        "set": {
+          "description": "Geçerli yapılandırma için SSH anahtarını ayarla",
+          "embedWarning": "Anahtar içeriği yapılandırma dosyasında saklanacak",
+          "invalidKey": "Dosya geçerli bir SSH özel anahtarı içermiyor",
+          "keyNotFound": "SSH anahtar dosyası bulunamadı: {{path}}",
+          "optionEmbed": "Yol saklamak yerine anahtar içeriğini yapılandırmaya göm",
+          "optionKey": "SSH özel anahtar dosyasının yolu",
+          "success": "SSH anahtarı yapılandırıldı"
+        },
+        "show": {
+          "description": "Geçerli SSH anahtar yapılandırmasını göster",
+          "noKey": "SSH anahtarı yapılandırılmamış"
+        }
       },
       "storage": {
         "description": "Mevcut yapılandırmadaki depolama arka uçlarını yönet",
@@ -1326,14 +1336,41 @@
         "starting": "\"{{machine}}\" üzerinde \"{{fork}}\" verisiyle \"{{grand}}\" devralınıyor..."
       },
       "template": {
-        "completed": "Şablon uygulandı",
+        "apply": {
+          "description": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. The template writes Rediaccfile, docker-compose.yml, and any additional files to the repository mount",
+          "descriptionShort": "Bir depoya şablon uygula",
+          "notFound": "\"{{name}}\" şablonu bulunamadı. Mevcut: {{available}}"
+        },
+        "completed": "Şablon uygulandı. Dağıtmak için: rdc repo up {{repository}} -m {{machine}}",
         "description": "Depoya şablon uygula",
         "descriptionShort": "Depoya şablon uygula (docker-compose.yml + Rediaccfile)",
         "failed": "Şablon uygulama başarısız",
         "fileNotFound": "Şablon dosyası bulunamadı: {{path}}",
         "fileOption": "Şablon JSON dosya yolu",
         "grandOption": "Grand depo adı (otomatik olarak GUID'ye çözülür)",
+        "list": {
+          "description": "CLI ile gelen tüm yerleşik dağıtım şablonlarını listele",
+          "descriptionShort": "Mevcut şablonları listele",
+          "empty": "Mevcut şablon yok"
+        },
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" deposuna şablon uygulanıyor..."
+      },
+      "tunnel": {
+        "active": "Tünel aktif: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
+        "closed": "Tünel kapatıldı",
+        "containerNotFound": "\"{{name}}\" konteyneri \"{{repository}}\" deposunda bulunamadı",
+        "containerOption": "Konteyner adı (yalnızca biri çalışıyorsa otomatik algılanır)",
+        "description": "Uzak makinedeki bir konteynerin portuna SSH port yönlendirme tüneli oluştur. Belirsizlik yoksa konteyner ve port otomatik algılanır. Tünel Ctrl+C'ye basana kadar açık kalır",
+        "descriptionShort": "Konteyner portuna SSH tüneli",
+        "fetching": "\"{{machine}}\" üzerinden konteyner bilgileri alınıyor...",
+        "hint": "Tüneli kapatmak için Ctrl+C'ye basın",
+        "localOption": "Yerel port (varsayılan: uzak port ile aynı)",
+        "multipleContainers": "Birden fazla çalışan konteyner bulundu. --container (-c) ile birini belirtin:\n{{list}}",
+        "multiplePorts": "\"{{container}}\" üzerinde birden fazla port açık. --port belirtin:\n{{list}}",
+        "noContainers": "\"{{repository}}\" deposu için çalışan konteyner bulunamadı",
+        "noPorts": "\"{{container}}\" konteynerinde açık port bulunamadı. --port belirtin",
+        "noServiceIP": "\"{{container}}\" konteynerinin atanmış servis IP'si yok",
+        "portOption": "Yönlendirilecek uzak konteyner portu"
       },
       "unmount": {
         "checkpointOption": "Ayırmadan önce kontrol noktası oluştur",
@@ -1491,76 +1528,6 @@
       },
       "vault": {
         "description": "Depolama kasası yönetimi (yalnızca bulut adaptörü)"
-      }
-    },
-    "store": {
-      "add": {
-        "addedButUnverified": "\"{{name}}\" deposu eklendi ancak bağlantı doğrulanamadı",
-        "alreadyExists": "\"{{name}}\" deposu zaten mevcut",
-        "description": "Yeni bir eşitleme deposu ekleyin",
-        "gitUrlRequired": "Git depoları için --git-url gereklidir",
-        "invalidType": "Geçersiz depo türü: \"{{type}}\". Geçerli türler: {{valid}}",
-        "localPathRequired": "Yerel dosya depoları için --local-path gereklidir",
-        "optionBwFolderId": "Yapılandırma öğelerini düzenlemek için Bitwarden klasör kimliği (isteğe bağlı)",
-        "optionEncryptionKey": "Bu depo için şifreleme anahtarı",
-        "optionGitBranch": "Git dal adı",
-        "optionGitPath": "Git deposu içindeki yol",
-        "optionGitUrl": "Git deposu URL'si",
-        "optionLocalPath": "Yerel dizin yolu",
-        "optionS3AccessKeyId": "S3 erişim anahtarı kimliği",
-        "optionS3Bucket": "S3 paket adı",
-        "optionS3Endpoint": "S3 uç nokta URL'si",
-        "optionS3Prefix": "S3 anahtar ön eki",
-        "optionS3Region": "S3 bölgesi",
-        "optionS3SecretAccessKey": "S3 gizli erişim anahtarı",
-        "optionType": "Depo türü (s3, local-file, bitwarden, git, vault)",
-        "optionVaultAddr": "Vault sunucu adresi (ör. http://127.0.0.1:8200)",
-        "optionVaultMount": "Vault KV v2 bağlama yolu (varsayılan: secret)",
-        "optionVaultNamespace": "Vault ad alanı (yalnızca kurumsal)",
-        "optionVaultPrefix": "Vault KV motoru içindeki yol ön eki (varsayılan: rdc/configs)",
-        "optionVaultToken": "Vault kimlik doğrulama token'ı",
-        "promptS3SecretAccessKey": "S3 gizli erişim anahtarı:",
-        "promptVaultToken": "Vault token'ı (veya VAULT_TOKEN ortam değişkenini ayarlayın):",
-        "s3Required": "S3 depoları için --s3-endpoint, --s3-bucket ve --s3-access-key-id gereklidir",
-        "s3SecretRequired": "S3 gizli erişim anahtarı gereklidir",
-        "success": "\"{{name}}\" deposu eklendi ({{type}})",
-        "vaultAddrRequired": "Vault depoları için --vault-addr gereklidir",
-        "vaultTokenRequired": "Vault token'ı gereklidir (--vault-token ile iletin veya VAULT_TOKEN ortam değişkenini ayarlayın)"
-      },
-      "description": "Yapılandırma eşitleme depolarını yönetin (S3, yerel dosya, Bitwarden, Git, Vault)",
-      "descriptionShort": "Yapılandırma eşitleme depolarını yönetin (S3, yerel dosya, Bitwarden, Git, Vault)",
-      "list": {
-        "description": "Yapılandırılmış depoları listeleyin",
-        "noStores": "Yapılandırılmış depo yok. Eklemek için: rdc store add <name> --type <type>"
-      },
-      "pull": {
-        "description": "Bir depodan yapılandırma çekin",
-        "failed": "\"{{store}}\" deposundan çekme başarısız: {{error}}",
-        "notFound": "\"{{name}}\" deposu bulunamadı",
-        "optionConfig": "Çekilecek yapılandırma adı",
-        "optionStore": "Belirli bir depodan çekin",
-        "success": "\"{{config}}\" yapılandırması \"{{store}}\" deposundan çekildi"
-      },
-      "push": {
-        "description": "Geçerli yapılandırmayı depolara gönderin",
-        "failed": "\"{{store}}\" deposuna gönderme başarısız: {{error}}",
-        "noStores": "Yapılandırılmış depo yok",
-        "optionAll": "Tüm depolara gönderin",
-        "optionStore": "Belirli bir depoya gönderin",
-        "success": "\"{{config}}\" yapılandırması \"{{store}}\" deposuna gönderildi"
-      },
-      "remove": {
-        "description": "Bir eşitleme deposunu kaldırın",
-        "success": "\"{{name}}\" deposu kaldırıldı"
-      },
-      "sync": {
-        "description": "Yapılandırmayı depolarla eşitleyin (çek sonra gönder)",
-        "failed": "\"{{store}}\" deposu için eşitleme başarısız: {{error}}",
-        "noStores": "Yapılandırılmış depo yok",
-        "optionAll": "Tüm depolarla eşitleyin",
-        "optionStore": "Belirli bir depoyla eşitleyin",
-        "pulled": "\"{{store}}\" deposundan daha yeni sürüm çekildi",
-        "pushed": "\"{{store}}\" deposuna gönderildi"
       }
     },
     "subscription": {
@@ -1978,7 +1945,6 @@
       "repository": "Depo Yönetimi",
       "shortcuts": "Hızlı Komutlar (Kısayollar)",
       "storage": "Depolama Yönetimi",
-      "store": "Depo Yönetimi",
       "subscription": "Abonelik Yönetimi",
       "sync": "Dosya Senkronizasyonu",
       "team": "Takım Yönetimi",
@@ -1995,12 +1961,12 @@
         "tip": "Kimlik doğrulama jetonunuz bağlamınızda yerel olarak saklanır. Birden fazla ortam için kimlik bilgilerini adlandırılmış bir bağlam altında saklamak üzere `--save-as` kullanın."
       },
       "config": {
-        "afterDescription": "Yapılandırma dosyaları bağlantı ayrıntılarını (API URL'si, kimlik bilgileri, varsayılan takım/bölge/makine) saklar; böylece ortamlar arasında hızlıca geçiş yapabilirsiniz.",
+        "afterDescription": "Yapılandırma dosyaları bağlantı ayrıntılarını (API URL'si, kimlik bilgileri, varsayılan takım/bölge/köprü) saklar; böylece ortamlar arasında hızlıca geçiş yapabilirsiniz.",
         "init": {
           "afterDescription": "Yerel modda makineleri doğrudan ekleyebilirsiniz:"
         },
         "set": {
-          "tip": "Varsayılanları ayarlamak, her komutta `--team`, `--region` veya `--machine` belirtmenizi gereksiz kılar."
+          "tip": "Varsayılanları ayarlamak, her komutta `--team`, `--region` veya `--bridge` belirtmenizi gereksiz kılar."
         }
       },
       "machine": {
@@ -2041,17 +2007,22 @@
     "activationFailed": "Etkinleştirme başarısız",
     "affectedChildClones": ". Etkilenen alt klonlar: {{clones}}. Önce alt klonları silin veya yükseltin.",
     "agent": {
-      "createGuard": "Agent modunda \"{{name}}\" deposu oluşturulamaz.\n\nAI agentları yalnızca çatallama modunda çalışır. Ana depo oluşturma engellenmiştir\nçünkü agent sonrasında üzerinde işlem yapamaz.\n\nMevcut bir depoyu çatallayın:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nGeçersiz kılmak için: REDIACC_ALLOW_GRAND_REPO=* ayarlayın",
-      "createGuardOverride": "Depo oluşturma koruması bir yapay zeka ajanı tarafından geçersiz kılınamaz.\n\nRDC, REDIACC_ALLOW_GRAND_REPO değişkeninin kullanıcı tarafından yetkilendirilmediğini tespit etti. Bu değişkeni kendiniz ayarlamaya çalışmayın — yalnızca kullanıcı depo oluşturmayı yetkilendirebilir.\n\nMevcut bir depoyu kullanın ve bunun yerine fork oluşturun:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "forkBlocked": "\"{{command}}\" komutu fork depolarında kullanılamaz.\n\nFork depoları geçici ortamlardır. Bu işlem yalnızca grand depolar için geçerlidir.",
-      "grandGuard": "Agent modunda grand depo \"{{name}}\" değiştirilemez.\n\nYapay zeka agentları yalnızca fork depolarında çalışabilir.\nÖnce fork oluşturun:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nArdından fork üzerinde çalışın.\n\nGeçersiz kılmak için: REDIACC_ALLOW_GRAND_REPO={{name}} ayarlayın",
-      "grandGuardOverride": "\"{{name}}\" için grand depo koruması bir yapay zeka ajanı tarafından geçersiz kılınamaz.\n\nRDC, REDIACC_ALLOW_GRAND_REPO değişkeninin kullanıcı tarafından yetkilendirilmediğini tespit etti. Bu değişkeni kendiniz ayarlamaya çalışmayın — yalnızca kullanıcı grand depo erişimini yetkilendirebilir.\n\nÖnce fork oluşturun:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nSonra fork üzerinde çalışın.",
-      "machineGuard": "Agent modunda makine \"{{machine}}\" üzerine doğrudan erişilemez.\n\nYapay zeka agentları yalnızca depo bağlamlarına bağlanabilir.\nŞunu kullanın:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nGeçersiz kılmak için: REDIACC_ALLOW_GRAND_REPO=* ayarlayın",
-      "machineGuardOverride": "\"{{machine}}\" için makine erişim koruması bir yapay zeka ajanı tarafından geçersiz kılınamaz.\n\nRDC, REDIACC_ALLOW_GRAND_REPO değişkeninin kullanıcı tarafından yetkilendirilmediğini tespit etti. Bu değişkeni kendiniz ayarlamaya çalışmayın — yalnızca kullanıcı doğrudan makine erişimini yetkilendirebilir.\n\nBunun yerine bir depo bağlamına bağlanın:\n  rdc term {{machine}} <repository> -c \"<command>\"",
-      "mcpGrandGuard": "Yalnızca fork modunda grand depo \"{{name}}\" değiştirilemez.\n\nÖnce bir fork oluşturmak için repo_fork kullanın, ardından fork üzerinde çalışın.\nGrand depo erişimine izin vermek için MCP sunucusunu --allow-grand ile yeniden başlatın",
-      "mcpGrandGuardOverride": "\"{{name}}\" için grand depo koruması bir yapay zeka ajanı tarafından geçersiz kılınamaz.\n\nRDC, REDIACC_ALLOW_GRAND_REPO değişkeninin kullanıcı tarafından yetkilendirilmediğini tespit etti. Bu değişkeni ayarlamaya çalışmayın.\n\nÖnce fork oluşturmak için repo_fork kullanın, sonra fork üzerinde çalışın.",
-      "mcpMachineGuard": "Yalnızca fork modunda makineye doğrudan erişilemez.\n\nBir depo bağlamına bağlanmak için bir depo belirtin.\nDoğrudan makine erişimine izin vermek için MCP sunucusunu --allow-grand ile yeniden başlatın",
-      "mcpMachineGuardOverride": "Makine erişim koruması bir yapay zeka ajanı tarafından geçersiz kılınamaz.\n\nRDC, REDIACC_ALLOW_GRAND_REPO değişkeninin kullanıcı tarafından yetkilendirilmediğini tespit etti. Bu değişkeni ayarlamaya çalışmayın.\n\nBir depo bağlamına bağlanmak için bir depo belirtin."
+      "createGuard": "Ajan modunda yeni bir grand depo \"{{name}}\" oluşturulamaz.\n\nAjanlar yalnızca fork modunda çalışır. Grand depolar, oluşturulduktan sonra ajanların erişemeyeceği üretim ortamlarıdır.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nKullanıcı: depo oluşturmaya izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO=* (veya belirli bir depo adı) ayarlayın.",
+      "createGuardOverride": "Yeni bir grand depo \"{{name}}\" oluşturulamaz. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "Yeni bir grand depo \"{{name}}\" oluşturulamaz. REDIACC_ALLOW_GRAND_REPO geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nGeçersiz kılmayı kullanmak için ajanınızı Linux üzerinde çalıştırın (doğrudan, WSL, Docker veya VM).",
+      "forkBlocked": "\"{{command}}\" komutu fork depolarında kullanılamaz.\n\nFork depoları geçici sandbox ortamlarıdır. Bu işlem yalnızca grand (üretim) depoları için geçerlidir. Kullanıcıdan bu komutu doğrudan çalıştırmasını isteyin.",
+      "grandGuard": "\"{{name}}\" bir grand (üretim) deposudur. Ajanlar grand depoları doğrudan değiştiremez.\n\nGrand depolar üretim verilerini içerir. Bunun yerine fork kullanın — fork'lar güvenli, izole sandbox kopyalarıdır.\n\nİş akışı:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın (örn: rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. Tamamlandığında, kullanıcı rdc repo takeover ile fork'u yüseltebilir\n\nKullanıcı: doğrudan erişime izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (veya tüm depolar için *) ayarlayın.",
+      "grandGuardOverride": "\"{{name}}\" bir grand (üretim) deposudur. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nBunun yerine fork kullanın — fork'lar güvenli, izole sandbox kopyalarıdır:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın\n  3. Tamamlandığında, kullanıcı rdc repo takeover ile fork'u yüseltebilir",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" bir grand (üretim) deposudur. REDIACC_ALLOW_GRAND_REPO geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nİş akışı:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın\n  3. Tamamlandığında, kullanıcı rdc repo takeover ile fork'u yüseltebilir\n\nGeçersiz kılmayı kullanmak için ajanınızı Linux üzerinde çalıştırın (doğrudan, WSL, Docker veya VM).",
+      "machineGuard": "Ajan modunda \"{{machine}}\" makinesine doğrudan erişim izni verilmez.\n\nAjanlar sandbox erişimi için bir depo bağlamı üzerinden bağlanmalıdır. Önce bir deponun fork'unu oluşturun, ardından fork'a bağlanın.\n\nİş akışı:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nKullanıcı: doğrudan makine erişimine izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO=* (veya belirli bir depo adı) ayarlayın.",
+      "machineGuardOverride": "\"{{machine}}\" makinesine doğrudan erişim izni verilmez. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nÖnce bir deponun fork'unu oluşturun, ardından fork'a bağlanın:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "Doğrudan makine erişimi geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nİş akışı:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nGeçersiz kılmayı kullanmak için ajanınızı Linux üzerinde çalıştırın (doğrudan, WSL, Docker veya VM).",
+      "mcpGrandGuard": "\"{{name}}\" bir grand (üretim) deposudur. Ajanlar grand depoları doğrudan değiştiremez.\n\nGüvenli, izole bir sandbox kopya oluşturmak için repo_fork kullanın, ardından fork üzerinde çalışın.\nDoğrudan erişime ihtiyacınız varsa, kullanıcıdan MCP sunucusunu --allow-grand ile yeniden başlatmasını isteyin.",
+      "mcpGrandGuardOverride": "\"{{name}}\" bir grand (üretim) deposudur. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın.\n\nGüvenli, izole bir sandbox kopya oluşturmak için repo_fork kullanın, ardından fork üzerinde çalışın.",
+      "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" bir grand (üretim) deposudur. REDIACC_ALLOW_GRAND_REPO geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nGüvenli, izole bir sandbox kopya oluşturmak için repo_fork kullanın, ardından fork üzerinde çalışın.",
+      "mcpMachineGuard": "Yalnızca fork modunda doğrudan makine erişimine izin verilmez.\n\nAjanlar bir depo bağlamı üzerinden bağlanmalıdır. Fork oluşturmak için repo_fork kullanın, ardından bağlanın.\nDoğrudan erişime ihtiyacınız varsa, kullanıcıdan MCP sunucusunu --allow-grand ile yeniden başlatmasını isteyin.",
+      "mcpMachineGuardOverride": "Doğrudan makine erişimine izin verilmez. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın.\n\nFork oluşturmak için repo_fork kullanın, ardından bağlanın.",
+      "mcpMachineGuardOverrideNonLinux": "Doğrudan makine erişimi geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nFork oluşturmak için repo_fork kullanın, ardından bağlanın."
     },
     "authFailed": "Kimlik doğrulama başarısız",
     "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc auth login",
@@ -2080,8 +2051,8 @@
     "invalidPriorityMax": "Geçersiz priority-max değeri. 1 ile 5 arasında olmalıdır.",
     "invalidPriorityMin": "Geçersiz priority-min değeri. 1 ile 5 arasında olmalıdır.",
     "machineNotFound": "\"{{name}}\" makinesi bulunamadı",
-    "machineRequired": "Makine adı gerekli. --machine kullanın veya bağlamı ayarlayın.",
-    "machineRequiredLocal": "Makine adı gerekli. --machine kullanın veya varsayılanı ayarlayın: rdc config set machine <name>",
+    "machineRequired": "Makine adı gerekli. --machine <name> kullanın",
+    "machineRequiredLocal": "Makine adı gerekli. --machine <name> kullanın",
     "networkError": "Ağ hatası: {{message}}",
     "noActiveConfig": "Etkin yapılandırma yok. Şununla oluşturun: rdc config init <name>",
     "notAuthenticated": "Kimlik doğrulaması yapılmamış. Çalıştırın: rdc auth login",
@@ -2192,12 +2163,8 @@
         "pushAll": "Tüm depoları toplu olarak depoya gönder"
       },
       "takeover": "Üretim verilerini çatal verileriyle değiştir",
+      "tunnel": "Konteyner portuna SSH tüneli",
       "up": "Otomatik bağlama ile dağıt"
-    },
-    "store": {
-      "add": "S3 depo arka ucu ekle",
-      "pull": "Depodan Config al",
-      "push": "Config'i tüm depolara gönder"
     },
     "sync": {
       "download": "Depo dosyalarını yerele indir",

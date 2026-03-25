@@ -266,21 +266,74 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
 
+  'config set': {
+    mcpExcludeReason: 'Config value mutation — use CLI directly',
+  },
+  'config clear': {
+    mcpExcludeReason: 'Config value deletion — use CLI directly',
+  },
+  'config ssh': {
+    mcpExcludeReason: 'SSH key management — writes key material to config, use CLI directly',
+  },
+
   // ══════════════════════════════════════════════════════════════════════
   // Policy-only entries (no MCP tools — enforced by assertCommandPolicy)
   // ══════════════════════════════════════════════════════════════════════
 
   'repo mount': { grandGuard: true },
   'repo unmount': { grandGuard: true },
-  'repo template': { grandGuard: true },
-  'repo ownership': { grandGuard: true },
+  'repo template': {
+    grandGuard: true,
+    mcpExcludeReason: 'Template application requires file upload — use CLI directly',
+  },
+  'repo ownership': {
+    grandGuard: true,
+    mcpExcludeReason: 'Ownership transfer — destructive operation, use CLI directly',
+  },
   'repo sync upload': { grandGuard: true },
   'repo sync download': { grandGuard: true },
+  'repo tunnel': {
+    grandGuard: true,
+    mcpExcludeReason: 'Interactive SSH tunnel — blocks until Ctrl+C',
+  },
   'repo autostart enable': { grandGuard: true, forkBlocked: true },
   'repo autostart disable': { grandGuard: true, forkBlocked: true },
   'repo takeover': { grandGuard: true },
-  'repo resize': { grandGuard: true, forkBlocked: true },
-  'repo expand': { grandGuard: true, forkBlocked: true },
+  'repo status': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read' as const,
+      repoArg: 'repo',
+      requiredArgs: ['repo'],
+      excludeOptions: ['debug', 'skip-router-restart'],
+    },
+  },
+  'repo list': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read' as const,
+      excludeOptions: ['debug', 'skip-router-restart'],
+    },
+  },
+  'repo validate': {
+    grandGuard: true,
+    mcpExcludeReason: 'Validation runs on remote machine — use repo status for MCP',
+  },
+  'repo autostart': {
+    mcpExcludeReason: 'Autostart management — use CLI directly',
+  },
+  'repo resize': {
+    grandGuard: true,
+    forkBlocked: true,
+    mcpExcludeReason: 'Disk resize — destructive infrastructure operation, use CLI directly',
+  },
+  'repo expand': {
+    grandGuard: true,
+    forkBlocked: true,
+    mcpExcludeReason: 'Storage expansion — destructive infrastructure operation, use CLI directly',
+  },
   'term repo': { grandGuard: true },
   'vscode repo': { grandGuard: true },
 
@@ -300,7 +353,6 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   doctor: { mcpExcludeReason: 'Diagnoses local CLI installation — not a remote operation' },
   update: { mcpExcludeReason: 'CLI self-update — not a remote operation' },
-  store: { mcpExcludeReason: 'Config file sync backends — local credential management' },
   subscription: { mcpExcludeReason: 'License management — local concern' },
   mcp: { mcpExcludeReason: 'The MCP server itself — cannot recurse' },
 

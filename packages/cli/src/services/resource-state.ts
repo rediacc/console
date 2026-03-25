@@ -2,9 +2,6 @@
  * ResourceState interface and LocalResourceState implementation.
  *
  * ResourceState abstracts access to machines, storages, repositories, and SSH keys.
- * S3StateService and LocalResourceState both implement it, eliminating mode branching
- * in config-resources.ts.
- *
  * LocalResourceState wraps config file reads/writes with optional AES-256-GCM encryption.
  * When encrypted, all resource data is stored as a single blob in RdcConfig.encryptedResources.
  */
@@ -21,7 +18,7 @@ import type {
 } from '../types/index.js';
 
 // =============================================================================
-// Shared Encryption Helpers (used by both S3StateService and LocalResourceState)
+// Encryption Helpers
 // =============================================================================
 
 export async function encryptSection(data: unknown, password: string): Promise<string> {

@@ -419,7 +419,7 @@ backend_reset() {
     backend_stop
 
     # Remove any leftover volumes
-    docker volume ls -q | grep -E "^(rediacc|ci)" | xargs -r docker volume rm 2>/dev/null || true
+    docker volume ls -q | grep -E "^(rediacc|ci)" | xargs docker volume rm 2>/dev/null || true
 
     log_info "Backend reset complete"
     log_info "Start fresh with: ./run.sh backend start"

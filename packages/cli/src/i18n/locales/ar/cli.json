@@ -390,18 +390,7 @@
         "alreadyExists": "الإعدادات \"{{name}}\" موجودة بالفعل",
         "description": "إنشاء ملف إعدادات مسمى جديد",
         "optionMasterPassword": "تشفير الموارد بكلمة مرور رئيسية",
-        "optionS3AccessKeyId": "معرف مفتاح الوصول S3",
-        "optionS3Bucket": "اسم حاوية S3",
-        "optionS3Endpoint": "عنوان URL لنقطة نهاية S3",
-        "optionS3Prefix": "بادئة المفتاح في حاوية S3",
-        "optionS3Region": "منطقة S3",
-        "optionS3SecretAccessKey": "مفتاح الوصول السري لـ S3",
-        "promptS3SecretAccessKey": "مفتاح الوصول السري لـ S3:",
-        "s3Required": "--s3-endpoint و --s3-bucket و --s3-access-key-id مطلوبة لحالة موارد S3",
-        "s3SecretRequired": "مفتاح الوصول السري لـ S3 مطلوب",
-        "s3Verified": "تم التحقق من وصول S3",
-        "success": "تمت تهيئة الإعدادات \"{{name}}\"",
-        "verifyingS3": "جاري التحقق من وصول S3..."
+        "success": "تمت تهيئة الإعدادات \"{{name}}\""
       },
       "list": {
         "description": "عرض جميع ملفات الإعدادات",
@@ -519,7 +508,7 @@
         }
       },
       "set": {
-        "description": "تعيين قيمة افتراضية (فريق، منطقة، جسر، آلة)",
+        "description": "تعيين قيمة افتراضية (فريق، منطقة، جسر)",
         "success": "تم تعيين \"{{key}}\" إلى \"{{value}}\""
       },
       "setRenet": {
@@ -533,6 +522,27 @@
       "show": {
         "description": "عرض تفاصيل الإعدادات الحالية",
         "noConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام: rdc config init"
+      },
+      "ssh": {
+        "description": "إدارة إعدادات مفتاح SSH",
+        "remove": {
+          "description": "إزالة مفتاح SSH من الإعدادات الحالية",
+          "noKey": "لم يتم تكوين مفتاح SSH",
+          "success": "تمت إزالة مفتاح SSH"
+        },
+        "set": {
+          "description": "تعيين مفتاح SSH للإعدادات الحالية",
+          "embedWarning": "سيتم تخزين محتوى المفتاح في ملف الإعدادات",
+          "invalidKey": "الملف لا يحتوي على مفتاح SSH خاص صالح",
+          "keyNotFound": "ملف مفتاح SSH غير موجود: {{path}}",
+          "optionEmbed": "تضمين محتوى المفتاح في الإعدادات بدلاً من تخزين المسار",
+          "optionKey": "مسار ملف مفتاح SSH الخاص",
+          "success": "تم تكوين مفتاح SSH"
+        },
+        "show": {
+          "description": "عرض إعدادات مفتاح SSH الحالية",
+          "noKey": "لم يتم تكوين مفتاح SSH"
+        }
       },
       "storage": {
         "description": "إدارة واجهات التخزين في التكوين الحالي",
@@ -1326,14 +1336,41 @@
         "starting": "جارٍ الاستحواذ على \"{{grand}}\" بالبيانات من \"{{fork}}\" على \"{{machine}}\"..."
       },
       "template": {
-        "completed": "تم تطبيق القالب",
+        "apply": {
+          "description": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. The template writes Rediaccfile, docker-compose.yml, and any additional files to the repository mount",
+          "descriptionShort": "تطبيق قالب على مستودع",
+          "notFound": "القالب \"{{name}}\" غير موجود. المتاح: {{available}}"
+        },
+        "completed": "تم تطبيق القالب. للنشر: rdc repo up {{repository}} -m {{machine}}",
         "description": "تطبيق قالب على مستودع",
         "descriptionShort": "تطبيق قالب على مستودع (docker-compose.yml + Rediaccfile)",
         "failed": "فشل تطبيق القالب",
         "fileNotFound": "ملف القالب غير موجود: {{path}}",
         "fileOption": "مسار ملف قالب JSON",
         "grandOption": "اسم المستودع الأصلي (يُحلّ تلقائياً إلى GUID)",
+        "list": {
+          "description": "عرض جميع قوالب النشر المضمنة في واجهة سطر الأوامر",
+          "descriptionShort": "عرض القوالب المتاحة",
+          "empty": "لا توجد قوالب متاحة"
+        },
         "starting": "جارٍ تطبيق القالب على \"{{repository}}\" على \"{{machine}}\"..."
+      },
+      "tunnel": {
+        "active": "النفق نشط: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
+        "closed": "تم إغلاق النفق",
+        "containerNotFound": "الحاوية \"{{name}}\" غير موجودة في المستودع \"{{repository}}\"",
+        "containerOption": "اسم الحاوية (يُكتشف تلقائيًا إذا كانت واحدة فقط قيد التشغيل)",
+        "description": "إنشاء نفق SSH لتوجيه المنافذ إلى منفذ حاوية على جهاز بعيد. يكتشف تلقائيًا الحاوية والمنفذ عندما لا يكون هناك غموض. يبقى النفق مفتوحًا حتى تضغط Ctrl+C",
+        "descriptionShort": "نفق SSH إلى منفذ حاوية",
+        "fetching": "جارٍ جلب معلومات الحاويات من \"{{machine}}\"...",
+        "hint": "اضغط Ctrl+C لإغلاق النفق",
+        "localOption": "المنفذ المحلي (الافتراضي نفس المنفذ البعيد)",
+        "multipleContainers": "تم العثور على عدة حاويات قيد التشغيل. حدد واحدة باستخدام --container (-c):\n{{list}}",
+        "multiplePorts": "عدة منافذ مكشوفة على \"{{container}}\". حدد --port:\n{{list}}",
+        "noContainers": "لم يتم العثور على حاويات قيد التشغيل للمستودع \"{{repository}}\"",
+        "noPorts": "لم يتم العثور على منافذ مكشوفة على الحاوية \"{{container}}\". حدد --port",
+        "noServiceIP": "الحاوية \"{{container}}\" ليس لها عنوان IP خدمة معين",
+        "portOption": "منفذ الحاوية البعيد للتوجيه"
       },
       "unmount": {
         "checkpointOption": "إنشاء نقطة تفتيش قبل إلغاء التثبيت",
@@ -1491,76 +1528,6 @@
       },
       "vault": {
         "description": "إدارة خزنة التخزين (محول السحابة فقط)"
-      }
-    },
-    "store": {
-      "add": {
-        "addedButUnverified": "تمت إضافة المتجر \"{{name}}\" لكن تعذّر التحقق من الاتصال",
-        "alreadyExists": "المتجر \"{{name}}\" موجود بالفعل",
-        "description": "إضافة متجر مزامنة جديد",
-        "gitUrlRequired": "--git-url مطلوب لمتاجر Git",
-        "invalidType": "نوع متجر غير صحيح: \"{{type}}\". الأنواع الصحيحة: {{valid}}",
-        "localPathRequired": "--local-path مطلوب لمتاجر الملف المحلي",
-        "optionBwFolderId": "معرف مجلد Bitwarden لتنظيم عناصر الإعدادات (اختياري)",
-        "optionEncryptionKey": "مفتاح التشفير لهذا المتجر",
-        "optionGitBranch": "اسم فرع Git",
-        "optionGitPath": "المسار داخل مستودع Git",
-        "optionGitUrl": "عنوان URL لمستودع Git",
-        "optionLocalPath": "مسار المجلد المحلي",
-        "optionS3AccessKeyId": "معرف مفتاح الوصول S3",
-        "optionS3Bucket": "اسم حاوية S3",
-        "optionS3Endpoint": "عنوان URL لنقطة نهاية S3",
-        "optionS3Prefix": "بادئة مفتاح S3",
-        "optionS3Region": "منطقة S3",
-        "optionS3SecretAccessKey": "مفتاح الوصول السري لـ S3",
-        "optionType": "نوع المتجر (s3، local-file، bitwarden، git، vault)",
-        "optionVaultAddr": "عنوان خادم Vault (مثلاً http://127.0.0.1:8200)",
-        "optionVaultMount": "مسار تثبيت Vault KV v2 (افتراضي: secret)",
-        "optionVaultNamespace": "مساحة اسم Vault (للمؤسسات فقط)",
-        "optionVaultPrefix": "بادئة المسار داخل محرك Vault KV (افتراضي: rdc/configs)",
-        "optionVaultToken": "رمز مصادقة Vault",
-        "promptS3SecretAccessKey": "مفتاح الوصول السري لـ S3:",
-        "promptVaultToken": "رمز Vault (أو عيّن متغير البيئة VAULT_TOKEN):",
-        "s3Required": "--s3-endpoint و --s3-bucket و --s3-access-key-id مطلوبة لمتاجر S3",
-        "s3SecretRequired": "مفتاح الوصول السري لـ S3 مطلوب",
-        "success": "تمت إضافة المتجر \"{{name}}\" ({{type}})",
-        "vaultAddrRequired": "--vault-addr مطلوب لمتاجر Vault",
-        "vaultTokenRequired": "رمز Vault مطلوب (مرر --vault-token أو عيّن متغير البيئة VAULT_TOKEN)"
-      },
-      "description": "إدارة متاجر مزامنة الإعدادات (S3، ملف محلي، Bitwarden، Git، Vault)",
-      "descriptionShort": "إدارة متاجر مزامنة الإعدادات (S3، ملف محلي، Bitwarden، Git، Vault)",
-      "list": {
-        "description": "عرض المتاجر المكونة",
-        "noStores": "لا توجد متاجر مكونة. أضف واحداً باستخدام: rdc store add <name> --type <type>"
-      },
-      "pull": {
-        "description": "سحب الإعدادات من متجر",
-        "failed": "فشل السحب من المتجر \"{{store}}\": {{error}}",
-        "notFound": "المتجر \"{{name}}\" غير موجود",
-        "optionConfig": "اسم الإعدادات المراد السحب إليها",
-        "optionStore": "السحب من متجر محدد",
-        "success": "تم سحب الإعدادات \"{{config}}\" من المتجر \"{{store}}\""
-      },
-      "push": {
-        "description": "دفع الإعدادات الحالية إلى المتاجر",
-        "failed": "فشل الدفع إلى المتجر \"{{store}}\": {{error}}",
-        "noStores": "لا توجد متاجر مكونة",
-        "optionAll": "الدفع إلى جميع المتاجر",
-        "optionStore": "الدفع إلى متجر محدد",
-        "success": "تم دفع الإعدادات \"{{config}}\" إلى المتجر \"{{store}}\""
-      },
-      "remove": {
-        "description": "إزالة متجر مزامنة",
-        "success": "تمت إزالة المتجر \"{{name}}\""
-      },
-      "sync": {
-        "description": "مزامنة الإعدادات مع المتاجر (سحب ثم دفع)",
-        "failed": "فشلت المزامنة للمتجر \"{{store}}\": {{error}}",
-        "noStores": "لا توجد متاجر مكونة",
-        "optionAll": "المزامنة مع جميع المتاجر",
-        "optionStore": "المزامنة مع متجر محدد",
-        "pulled": "تم سحب إصدار أحدث من المتجر \"{{store}}\"",
-        "pushed": "تم الدفع إلى المتجر \"{{store}}\""
       }
     },
     "subscription": {
@@ -1978,7 +1945,6 @@
       "repository": "إدارة المستودعات",
       "shortcuts": "أوامر سريعة (اختصارات)",
       "storage": "إدارة التخزين",
-      "store": "إدارة المتاجر",
       "subscription": "إدارة الاشتراكات",
       "sync": "مزامنة الملفات",
       "team": "إدارة الفرق",
@@ -1995,12 +1961,12 @@
         "tip": "يتم تخزين رمز المصادقة الخاص بك محلياً في سياقك. استخدم `--save-as` لتخزين بيانات الاعتماد تحت سياق مسمى لبيئات متعددة."
       },
       "config": {
-        "afterDescription": "تخزن ملفات الإعدادات تفاصيل الاتصال (عنوان URL للـ API، بيانات الاعتماد، الفريق/المنطقة/الآلة الافتراضية) حتى تتمكن من التبديل بين البيئات بسرعة.",
+        "afterDescription": "تخزن ملفات الإعدادات تفاصيل الاتصال (عنوان URL للـ API، بيانات الاعتماد، الفريق/المنطقة/الجسر الافتراضي) حتى تتمكن من التبديل بين البيئات بسرعة.",
         "init": {
           "afterDescription": "في الوضع المحلي يمكنك إضافة الآلات مباشرة:"
         },
         "set": {
-          "tip": "يعني تعيين القيم الافتراضية أنك لن تحتاج إلى تمرير `--team` أو `--region` أو `--machine` مع كل أمر."
+          "tip": "يعني تعيين القيم الافتراضية أنك لن تحتاج إلى تمرير `--team` أو `--region` أو `--bridge` مع كل أمر."
         }
       },
       "machine": {
@@ -2041,17 +2007,22 @@
     "activationFailed": "فشل التفعيل",
     "affectedChildClones": ". النسخ المتأثرة: {{clones}}. احذف أو ارقِ النسخ الفرعية أولاً.",
     "agent": {
-      "createGuard": "لا يمكن إنشاء المستودع \"{{name}}\" في وضع الوكيل.\n\nوكلاء الذكاء الاصطناعي يعملون في وضع التفريع فقط. إنشاء مستودع رئيسي محظور\nلأن الوكيل لا يستطيع العمل عليه بعد ذلك.\n\nاستخدم مستودعًا موجودًا وفرّعه بدلاً من ذلك:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nللتجاوز: عيّن REDIACC_ALLOW_GRAND_REPO=*",
-      "createGuardOverride": "لا يمكن لوكيل الذكاء الاصطناعي تجاوز حماية إنشاء المستودعات.\n\nاكتشف RDC أن REDIACC_ALLOW_GRAND_REPO لم يتم تفويضه من قبل المستخدم. لا تحاول تعيين هذا المتغير بنفسك — فقط المستخدم يمكنه تفويض إنشاء المستودعات.\n\nاستخدم مستودعاً موجوداً وقم بتفريعه بدلاً من ذلك:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "forkBlocked": "الأمر \"{{command}}\" غير متاح على مستودعات fork.\n\nمستودعات fork هي بيئات مؤقتة. هذه العملية تنطبق فقط على المستودعات الرئيسية.",
-      "grandGuard": "لا يمكن تعديل المستودع الرئيسي \"{{name}}\" في وضع الوكيل.\n\nوكلاء الذكاء الاصطناعي يمكنهم العمل فقط على مستودعات fork.\nأنشئ fork أولاً:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nثم قم بالعمل على fork بدلاً من ذلك.\n\nللتجاوز: عيّن REDIACC_ALLOW_GRAND_REPO={{name}}",
-      "grandGuardOverride": "لا يمكن لوكيل الذكاء الاصطناعي تجاوز حماية المستودع الرئيسي لـ \"{{name}}\".\n\nاكتشف RDC أن REDIACC_ALLOW_GRAND_REPO لم يتم تفويضه من قبل المستخدم. لا تحاول تعيين هذا المتغير بنفسك — فقط المستخدم يمكنه تفويض الوصول إلى المستودع الرئيسي.\n\nقم بإنشاء fork أولاً:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nثم قم بالعمل على fork بدلاً من ذلك.",
-      "machineGuard": "لا يمكن الوصول إلى الآلة \"{{machine}}\" مباشرة في وضع الوكيل.\n\nوكلاء الذكاء الاصطناعي يمكنهم الاتصال فقط بسياقات المستودعات.\nاستخدم:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nللتجاوز: عيّن REDIACC_ALLOW_GRAND_REPO=*",
-      "machineGuardOverride": "لا يمكن لوكيل الذكاء الاصطناعي تجاوز حماية الوصول إلى الجهاز \"{{machine}}\".\n\nاكتشف RDC أن REDIACC_ALLOW_GRAND_REPO لم يتم تفويضه من قبل المستخدم. لا تحاول تعيين هذا المتغير بنفسك — فقط المستخدم يمكنه تفويض الوصول المباشر إلى الجهاز.\n\nاتصل بسياق مستودع بدلاً من ذلك:\n  rdc term {{machine}} <repository> -c \"<command>\"",
-      "mcpGrandGuard": "لا يمكن تعديل المستودع الرئيسي \"{{name}}\" في وضع fork فقط.\n\nاستخدم repo_fork لإنشاء fork أولاً، ثم قم بالعمل على fork.\nللسماح بالوصول إلى المستودع الرئيسي، أعد تشغيل خادم MCP مع --allow-grand",
-      "mcpGrandGuardOverride": "لا يمكن لوكيل الذكاء الاصطناعي تجاوز حماية المستودع الرئيسي لـ \"{{name}}\".\n\nاكتشف RDC أن REDIACC_ALLOW_GRAND_REPO لم يتم تفويضه من قبل المستخدم. لا تحاول تعيين هذا المتغير.\n\nاستخدم repo_fork لإنشاء fork أولاً، ثم قم بالعمل على fork.",
-      "mcpMachineGuard": "لا يمكن الوصول إلى الآلة مباشرة في وضع fork فقط.\n\nحدد مستودعاً للاتصال بسياق المستودع.\nللسماح بالوصول المباشر إلى الآلة، أعد تشغيل خادم MCP مع --allow-grand",
-      "mcpMachineGuardOverride": "لا يمكن لوكيل الذكاء الاصطناعي تجاوز حماية الوصول إلى الجهاز.\n\nاكتشف RDC أن REDIACC_ALLOW_GRAND_REPO لم يتم تفويضه من قبل المستخدم. لا تحاول تعيين هذا المتغير.\n\nحدد مستودعاً للاتصال بسياق المستودع."
+      "createGuard": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\" في وضع الوكيل.\n\nالوكلاء يعملون في وضع fork فقط. المستودعات الرئيسية هي بيئات إنتاجية لا يمكن للوكلاء الوصول إليها بعد الإنشاء.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nللمستخدم: للسماح بإنشاء المستودع، عيّن REDIACC_ALLOW_GRAND_REPO=* (أو اسم مستودع محدد) في الطرفية قبل بدء جلسة الوكيل.",
+      "createGuardOverride": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\". لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\". تجاوز REDIACC_ALLOW_GRAND_REPO غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nلاستخدام التجاوز، شغّل الوكيل على Linux (مباشرةً، أو WSL، أو Docker، أو VM).",
+      "forkBlocked": "الأمر \"{{command}}\" غير متاح في مستودعات fork.\n\nمستودعات fork هي بيئات معزولة مؤقتة. هذه العملية تنطبق فقط على المستودعات الرئيسية (الإنتاجية). اطلب من المستخدم تشغيل هذا الأمر مباشرةً.",
+      "grandGuard": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يمكن للوكلاء تعديل المستودعات الرئيسية مباشرةً.\n\nتحتوي المستودعات الرئيسية على بيانات الإنتاج. استخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة.\n\nسير العمل:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork (مثال: rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover\n\nللمستخدم: للسماح بالوصول المباشر، عيّن REDIACC_ALLOW_GRAND_REPO={{name}} (أو * لجميع المستودعات) في الطرفية قبل بدء جلسة الوكيل.",
+      "grandGuardOverride": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nاستخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). تجاوز REDIACC_ALLOW_GRAND_REPO غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nسير العمل:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover\n\nلاستخدام التجاوز، شغّل الوكيل على Linux (مباشرةً، أو WSL، أو Docker، أو VM).",
+      "machineGuard": "الوصول المباشر إلى الآلة \"{{machine}}\" غير مسموح في وضع الوكيل.\n\nيجب على الوكلاء الاتصال من خلال سياق مستودع للوصول المعزول. أنشئ fork للمستودع أولاً، ثم اتصل بالـ fork.\n\nسير العمل:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nللمستخدم: للسماح بالوصول المباشر للآلة، عيّن REDIACC_ALLOW_GRAND_REPO=* (أو اسم مستودع محدد) في الطرفية قبل بدء جلسة الوكيل.",
+      "machineGuardOverride": "الوصول المباشر إلى الآلة \"{{machine}}\" غير مسموح. لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nأنشئ fork للمستودع أولاً، ثم اتصل بالـ fork:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "تجاوز الوصول المباشر إلى الآلة غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nسير العمل:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nلاستخدام التجاوز، شغّل الوكيل على Linux (مباشرةً، أو WSL، أو Docker، أو VM).",
+      "mcpGrandGuard": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يمكن للوكلاء تعديل المستودعات الرئيسية مباشرةً.\n\nاستخدم repo_fork لإنشاء نسخة معزولة وآمنة، ثم اعمل على الـ fork.\nإذا كنت بحاجة إلى وصول مباشر، اطلب من المستخدم إعادة تشغيل خادم MCP مع --allow-grand.",
+      "mcpGrandGuardOverride": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO.\n\nاستخدم repo_fork لإنشاء نسخة معزولة وآمنة، ثم اعمل على الـ fork.",
+      "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). تجاوز REDIACC_ALLOW_GRAND_REPO غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nاستخدم repo_fork لإنشاء نسخة معزولة وآمنة، ثم اعمل على الـ fork.",
+      "mcpMachineGuard": "الوصول المباشر إلى الآلة غير مسموح في وضع fork فقط.\n\nيجب على الوكلاء الاتصال من خلال سياق مستودع. استخدم repo_fork لإنشاء fork، ثم اتصل به.\nإذا كنت بحاجة إلى وصول مباشر، اطلب من المستخدم إعادة تشغيل خادم MCP مع --allow-grand.",
+      "mcpMachineGuardOverride": "الوصول المباشر إلى الآلة غير مسموح. لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO.\n\nاستخدم repo_fork لإنشاء fork، ثم اتصل به.",
+      "mcpMachineGuardOverrideNonLinux": "تجاوز الوصول المباشر إلى الآلة غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nاستخدم repo_fork لإنشاء fork، ثم اتصل به."
     },
     "authFailed": "فشلت المصادقة",
     "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc auth login",
@@ -2080,8 +2051,8 @@
     "invalidPriorityMax": "قيمة priority-max غير صحيحة. يجب أن تكون بين 1 و 5.",
     "invalidPriorityMin": "قيمة priority-min غير صحيحة. يجب أن تكون بين 1 و 5.",
     "machineNotFound": "لم يتم العثور على الآلة \"{{name}}\"",
-    "machineRequired": "اسم الآلة مطلوب. استخدم --machine أو اضبط السياق.",
-    "machineRequiredLocal": "اسم الآلة مطلوب. استخدم --machine أو اضبط الافتراضي باستخدام: rdc config set machine <name>",
+    "machineRequired": "اسم الآلة مطلوب. استخدم --machine <name>",
+    "machineRequiredLocal": "اسم الآلة مطلوب. استخدم --machine <name>",
     "networkError": "خطأ الشبكة: {{message}}",
     "noActiveConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام: rdc config init <name>",
     "notAuthenticated": "لم تتم المصادقة. قم بتشغيل: rdc auth login",
@@ -2192,12 +2163,8 @@
         "pushAll": "دفع جميع المستودعات إلى التخزين بالجملة"
       },
       "takeover": "استبدال بيانات الإنتاج ببيانات النسخة المتفرعة",
+      "tunnel": "نفق SSH إلى منفذ حاوية",
       "up": "نشر مع التحميل التلقائي"
-    },
-    "store": {
-      "add": "إضافة واجهة تخزين S3",
-      "pull": "سحب التكوين من متجر",
-      "push": "دفع التكوين إلى جميع المتاجر"
     },
     "sync": {
       "download": "تنزيل ملفات المستودع محلياً",

@@ -390,18 +390,7 @@
         "alreadyExists": "La configuración \"{{name}}\" ya existe",
         "description": "Crear un nuevo archivo de configuración con nombre",
         "optionMasterPassword": "Cifrar recursos con una contraseña maestra",
-        "optionS3AccessKeyId": "ID de clave de acceso S3",
-        "optionS3Bucket": "Nombre del bucket S3",
-        "optionS3Endpoint": "URL del endpoint S3",
-        "optionS3Prefix": "Prefijo de clave en el bucket S3",
-        "optionS3Region": "Región S3",
-        "optionS3SecretAccessKey": "Clave de acceso secreta S3",
-        "promptS3SecretAccessKey": "Clave de acceso secreta S3:",
-        "s3Required": "--s3-endpoint, --s3-bucket y --s3-access-key-id son requeridos para el estado de recursos S3",
-        "s3SecretRequired": "La clave de acceso secreta S3 es requerida",
-        "s3Verified": "Acceso S3 verificado",
-        "success": "Configuración \"{{name}}\" inicializada",
-        "verifyingS3": "Verificando acceso S3..."
+        "success": "Configuración \"{{name}}\" inicializada"
       },
       "list": {
         "description": "Listar todos los archivos de configuración",
@@ -519,7 +508,7 @@
         }
       },
       "set": {
-        "description": "Establecer un valor predeterminado (equipo, región, puente, máquina)",
+        "description": "Establecer un valor predeterminado (equipo, región, puente)",
         "success": "\"{{key}}\" establecido en \"{{value}}\""
       },
       "setRenet": {
@@ -533,6 +522,27 @@
       "show": {
         "description": "Mostrar detalles de la configuración actual",
         "noConfig": "No hay configuración activa. Cree una con: rdc config init"
+      },
+      "ssh": {
+        "description": "Gestionar la configuración de clave SSH",
+        "remove": {
+          "description": "Eliminar clave SSH de la configuración actual",
+          "noKey": "No hay clave SSH configurada",
+          "success": "Clave SSH eliminada"
+        },
+        "set": {
+          "description": "Establecer clave SSH para la configuración actual",
+          "embedWarning": "El contenido de la clave se almacenará en el archivo de configuración",
+          "invalidKey": "El archivo no contiene una clave SSH privada válida",
+          "keyNotFound": "Archivo de clave SSH no encontrado: {{path}}",
+          "optionEmbed": "Incrustar el contenido de la clave en la configuración en lugar de almacenar la ruta",
+          "optionKey": "Ruta al archivo de clave SSH privada",
+          "success": "Clave SSH configurada"
+        },
+        "show": {
+          "description": "Mostrar la configuración actual de clave SSH",
+          "noKey": "No hay clave SSH configurada"
+        }
       },
       "storage": {
         "description": "Gestionar backends de almacenamiento en la configuración actual",
@@ -1326,14 +1336,41 @@
         "starting": "Tomando el control de \"{{grand}}\" con datos de \"{{fork}}\" en \"{{machine}}\"..."
       },
       "template": {
-        "completed": "Plantilla aplicada",
+        "apply": {
+          "description": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. The template writes Rediaccfile, docker-compose.yml, and any additional files to the repository mount",
+          "descriptionShort": "Aplicar una plantilla a un repositorio",
+          "notFound": "Plantilla \"{{name}}\" no encontrada. Disponibles: {{available}}"
+        },
+        "completed": "Plantilla aplicada. Desplegar con: rdc repo up {{repository}} -m {{machine}}",
         "description": "Aplicar una plantilla a un repositorio",
         "descriptionShort": "Aplicar una plantilla a un repositorio (docker-compose.yml + Rediaccfile)",
         "failed": "Error al aplicar la plantilla",
         "fileNotFound": "Archivo de plantilla no encontrado: {{path}}",
         "fileOption": "Ruta al archivo de plantilla JSON",
         "grandOption": "Nombre del repositorio principal (se resuelve automáticamente a GUID)",
+        "list": {
+          "description": "Listar todas las plantillas de despliegue integradas en la CLI",
+          "descriptionShort": "Listar plantillas disponibles",
+          "empty": "No hay plantillas disponibles"
+        },
         "starting": "Aplicando plantilla a \"{{repository}}\" en \"{{machine}}\"..."
+      },
+      "tunnel": {
+        "active": "Túnel activo: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
+        "closed": "Túnel cerrado",
+        "containerNotFound": "Contenedor \"{{name}}\" no encontrado en el repositorio \"{{repository}}\"",
+        "containerOption": "Nombre del contenedor (detectado automáticamente si solo hay uno en ejecución)",
+        "description": "Crear un túnel SSH de reenvío de puertos al puerto de un contenedor en una máquina remota. Detecta automáticamente el contenedor y el puerto cuando no hay ambigüedad. El túnel permanece abierto hasta que presione Ctrl+C",
+        "descriptionShort": "Túnel SSH a un puerto de contenedor",
+        "fetching": "Obteniendo información de contenedores de \"{{machine}}\"...",
+        "hint": "Presione Ctrl+C para cerrar el túnel",
+        "localOption": "Puerto local (por defecto igual al puerto remoto)",
+        "multipleContainers": "Se encontraron múltiples contenedores en ejecución. Especifique uno con --container (-c):\n{{list}}",
+        "multiplePorts": "Múltiples puertos expuestos en \"{{container}}\". Especifique --port:\n{{list}}",
+        "noContainers": "No se encontraron contenedores en ejecución para el repositorio \"{{repository}}\"",
+        "noPorts": "No se encontraron puertos expuestos en el contenedor \"{{container}}\". Especifique --port",
+        "noServiceIP": "El contenedor \"{{container}}\" no tiene IP de servicio asignada",
+        "portOption": "Puerto del contenedor remoto a reenviar"
       },
       "unmount": {
         "checkpointOption": "Crear checkpoint antes de desmontar",
@@ -1491,76 +1528,6 @@
       },
       "vault": {
         "description": "Gestión del almacén de almacenamiento (solo adaptador cloud)"
-      }
-    },
-    "store": {
-      "add": {
-        "addedButUnverified": "Store \"{{name}}\" agregado pero no se pudo verificar la conexión",
-        "alreadyExists": "El store \"{{name}}\" ya existe",
-        "description": "Agregar un nuevo store de sincronización",
-        "gitUrlRequired": "--git-url es requerido para stores Git",
-        "invalidType": "Tipo de store inválido: \"{{type}}\". Tipos válidos: {{valid}}",
-        "localPathRequired": "--local-path es requerido para stores de archivo local",
-        "optionBwFolderId": "ID de carpeta de Bitwarden para organizar elementos de configuración (opcional)",
-        "optionEncryptionKey": "Clave de cifrado para este store",
-        "optionGitBranch": "Nombre de rama Git",
-        "optionGitPath": "Ruta dentro del repositorio Git",
-        "optionGitUrl": "URL del repositorio Git",
-        "optionLocalPath": "Ruta de directorio local",
-        "optionS3AccessKeyId": "ID de clave de acceso S3",
-        "optionS3Bucket": "Nombre del bucket S3",
-        "optionS3Endpoint": "URL del endpoint S3",
-        "optionS3Prefix": "Prefijo de clave S3",
-        "optionS3Region": "Región S3",
-        "optionS3SecretAccessKey": "Clave de acceso secreta S3",
-        "optionType": "Tipo de store (s3, local-file, bitwarden, git, vault)",
-        "optionVaultAddr": "Dirección del servidor Vault (ej. http://127.0.0.1:8200)",
-        "optionVaultMount": "Ruta de montaje KV v2 de Vault (predeterminado: secret)",
-        "optionVaultNamespace": "Namespace de Vault (solo enterprise)",
-        "optionVaultPrefix": "Prefijo de ruta dentro del motor KV de Vault (predeterminado: rdc/configs)",
-        "optionVaultToken": "Token de autenticación de Vault",
-        "promptS3SecretAccessKey": "Clave de acceso secreta S3:",
-        "promptVaultToken": "Token de Vault (o establezca la variable VAULT_TOKEN):",
-        "s3Required": "--s3-endpoint, --s3-bucket y --s3-access-key-id son requeridos para stores S3",
-        "s3SecretRequired": "La clave de acceso secreta S3 es requerida",
-        "success": "Store \"{{name}}\" agregado ({{type}})",
-        "vaultAddrRequired": "--vault-addr es requerido para stores Vault",
-        "vaultTokenRequired": "El token de Vault es requerido (pase --vault-token o establezca la variable VAULT_TOKEN)"
-      },
-      "description": "Gestionar stores de sincronización de configuración (S3, archivo local, Bitwarden, Git, Vault)",
-      "descriptionShort": "Gestionar stores de sincronización de configuración (S3, archivo local, Bitwarden, Git, Vault)",
-      "list": {
-        "description": "Listar stores configurados",
-        "noStores": "No hay stores configurados. Agregue uno con: rdc store add <name> --type <type>"
-      },
-      "pull": {
-        "description": "Obtener configuración desde un store",
-        "failed": "Error al obtener desde el store \"{{store}}\": {{error}}",
-        "notFound": "Store \"{{name}}\" no encontrado",
-        "optionConfig": "Nombre de configuración destino",
-        "optionStore": "Obtener desde un store específico",
-        "success": "Configuración \"{{config}}\" obtenida desde el store \"{{store}}\""
-      },
-      "push": {
-        "description": "Enviar configuración actual a los stores",
-        "failed": "Error al enviar al store \"{{store}}\": {{error}}",
-        "noStores": "No hay stores configurados",
-        "optionAll": "Enviar a todos los stores",
-        "optionStore": "Enviar a un store específico",
-        "success": "Configuración \"{{config}}\" enviada al store \"{{store}}\""
-      },
-      "remove": {
-        "description": "Eliminar un store de sincronización",
-        "success": "Store \"{{name}}\" eliminado"
-      },
-      "sync": {
-        "description": "Sincronizar configuración con stores (obtener y luego enviar)",
-        "failed": "Falló la sincronización para el store \"{{store}}\": {{error}}",
-        "noStores": "No hay stores configurados",
-        "optionAll": "Sincronizar con todos los stores",
-        "optionStore": "Sincronizar con un store específico",
-        "pulled": "Versión más reciente obtenida del store \"{{store}}\"",
-        "pushed": "Enviado al store \"{{store}}\""
       }
     },
     "subscription": {
@@ -1978,7 +1945,6 @@
       "repository": "Gestión de Repositorios",
       "shortcuts": "Comandos Rápidos (Atajos)",
       "storage": "Gestión de Almacenamiento",
-      "store": "Gestión de Stores",
       "subscription": "Gestión de Suscripciones",
       "sync": "Sincronización de archivos",
       "team": "Gestión de Equipos",
@@ -1995,12 +1961,12 @@
         "tip": "Su token de autenticación se almacena localmente en su contexto. Use `--save-as` para almacenar credenciales bajo un contexto con nombre para múltiples entornos."
       },
       "config": {
-        "afterDescription": "Los archivos de configuración almacenan detalles de conexión (URL de API, credenciales, equipo/región/máquina predeterminados) para que pueda cambiar entre entornos rápidamente.",
+        "afterDescription": "Los archivos de configuración almacenan detalles de conexión (URL de API, credenciales, equipo/región/puente predeterminados) para que pueda cambiar entre entornos rápidamente.",
         "init": {
           "afterDescription": "En modo local puede agregar máquinas directamente:"
         },
         "set": {
-          "tip": "Establecer valores predeterminados significa que no necesita pasar `--team`, `--region` o `--machine` con cada comando."
+          "tip": "Establecer valores predeterminados significa que no necesita pasar `--team`, `--region` o `--bridge` con cada comando."
         }
       },
       "machine": {
@@ -2041,17 +2007,22 @@
     "activationFailed": "Error en la activación",
     "affectedChildClones": ". Clones secundarios afectados: {{clones}}. Primero elimine o promueva clones secundarios.",
     "agent": {
-      "createGuard": "No se puede crear el repositorio \"{{name}}\" en modo agente.\n\nLos agentes de IA operan en modo solo-fork. La creación de un repositorio principal está bloqueada\nporque el agente no puede operar en él después.\n\nUsa un repositorio existente y haz fork en su lugar:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nPara anular: establece REDIACC_ALLOW_GRAND_REPO=*",
-      "createGuardOverride": "La protección de creación de repositorio no puede ser anulada por un agente de IA.\n\nRDC detectó que REDIACC_ALLOW_GRAND_REPO no fue autorizado por el usuario. No intente establecer esta variable usted mismo — solo el usuario puede autorizar la creación de repositorios.\n\nUse un repositorio existente y cree un fork en su lugar:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "forkBlocked": "El comando \"{{command}}\" no está disponible en repositorios fork.\n\nLos repos fork son entornos provisionales. Esta operación solo aplica a repositorios grand.",
-      "grandGuard": "No se puede modificar el repositorio grand \"{{name}}\" en modo agente.\n\nLos agentes de IA solo pueden operar en repositorios fork.\nPrimero cree un fork:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nLuego opere en el fork.\n\nPara anular: establezca REDIACC_ALLOW_GRAND_REPO={{name}}",
-      "grandGuardOverride": "La protección del repositorio principal para \"{{name}}\" no puede ser anulada por un agente de IA.\n\nRDC detectó que REDIACC_ALLOW_GRAND_REPO no fue autorizado por el usuario. No intente establecer esta variable usted mismo — solo el usuario puede autorizar el acceso al repositorio principal.\n\nCree un fork primero:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nLuego opere sobre el fork.",
-      "machineGuard": "No se puede acceder a la máquina \"{{machine}}\" directamente en modo agente.\n\nLos agentes de IA solo pueden conectarse a contextos de repositorio.\nUse:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nPara anular: establezca REDIACC_ALLOW_GRAND_REPO=*",
-      "machineGuardOverride": "La protección de acceso a la máquina \"{{machine}}\" no puede ser anulada por un agente de IA.\n\nRDC detectó que REDIACC_ALLOW_GRAND_REPO no fue autorizado por el usuario. No intente establecer esta variable usted mismo — solo el usuario puede autorizar el acceso directo a la máquina.\n\nConéctese a un contexto de repositorio en su lugar:\n  rdc term {{machine}} <repository> -c \"<command>\"",
-      "mcpGrandGuard": "No se puede modificar el repositorio grand \"{{name}}\" en modo solo fork.\n\nUse repo_fork para crear un fork primero, luego opere en el fork.\nPara permitir acceso a repositorios grand, reinicie el servidor MCP con --allow-grand",
-      "mcpGrandGuardOverride": "La protección del repositorio principal para \"{{name}}\" no puede ser anulada por un agente de IA.\n\nRDC detectó que REDIACC_ALLOW_GRAND_REPO no fue autorizado por el usuario. No intente establecer esta variable.\n\nUse repo_fork para crear un fork primero, luego opere sobre el fork.",
-      "mcpMachineGuard": "No se puede acceder a la máquina directamente en modo solo fork.\n\nEspecifique un repositorio para conectarse a un contexto de repositorio.\nPara permitir acceso directo a la máquina, reinicie el servidor MCP con --allow-grand",
-      "mcpMachineGuardOverride": "La protección de acceso a la máquina no puede ser anulada por un agente de IA.\n\nRDC detectó que REDIACC_ALLOW_GRAND_REPO no fue autorizado por el usuario. No intente establecer esta variable.\n\nEspecifique un repositorio para conectarse a un contexto de repositorio."
+      "createGuard": "No se puede crear un nuevo repositorio grand \"{{name}}\" en modo agente.\n\nLos agentes operan en modo solo-fork. Los repositorios grand son entornos de producción a los que los agentes no pueden acceder después de la creación.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nUsuario: para permitir la creación de repositorios, establezca REDIACC_ALLOW_GRAND_REPO=* (o un nombre de repositorio específico) en su terminal antes de iniciar la sesión del agente.",
+      "createGuardOverride": "No se puede crear un nuevo repositorio grand \"{{name}}\". No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "No se puede crear un nuevo repositorio grand \"{{name}}\". La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
+      "forkBlocked": "El comando \"{{command}}\" no está disponible en repositorios fork.\n\nLos repos fork son entornos sandbox temporales. Esta operación solo se aplica a repositorios grand (producción). Pida al usuario que ejecute este comando directamente.",
+      "grandGuard": "\"{{name}}\" es un repositorio grand (producción). Los agentes no pueden modificar repositorios grand directamente.\n\nLos repositorios grand contienen datos de producción. Use un fork en su lugar — los forks son copias sandbox seguras y aisladas.\n\nFlujo de trabajo:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork (ej: rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover\n\nUsuario: para permitir acceso directo, establezca REDIACC_ALLOW_GRAND_REPO={{name}} (o * para todos los repos) en su terminal antes de iniciar la sesión del agente.",
+      "grandGuardOverride": "\"{{name}}\" es un repositorio grand (producción). No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nUse un fork en su lugar — los forks son copias sandbox seguras y aisladas:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" es un repositorio grand (producción). La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nFlujo de trabajo:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
+      "machineGuard": "El acceso directo a la máquina \"{{machine}}\" no está permitido en modo agente.\n\nLos agentes deben conectarse a través de un contexto de repositorio para acceso sandbox. Cree un fork del repositorio primero, luego conéctese al fork.\n\nFlujo de trabajo:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nUsuario: para permitir acceso directo a la máquina, establezca REDIACC_ALLOW_GRAND_REPO=* (o un nombre de repositorio específico) en su terminal antes de iniciar la sesión del agente.",
+      "machineGuardOverride": "El acceso directo a la máquina \"{{machine}}\" no está permitido. No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nCree un fork del repositorio primero, luego conéctese al fork:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "La anulación de acceso directo a la máquina no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nFlujo de trabajo:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
+      "mcpGrandGuard": "\"{{name}}\" es un repositorio grand (producción). Los agentes no pueden modificar repositorios grand directamente.\n\nUse repo_fork para crear una copia sandbox segura y aislada, luego opere en el fork.\nSi necesita acceso directo, pida al usuario que reinicie el servidor MCP con --allow-grand.",
+      "mcpGrandGuardOverride": "\"{{name}}\" es un repositorio grand (producción). No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork para crear una copia sandbox segura y aislada, luego opere en el fork.",
+      "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" es un repositorio grand (producción). La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nUse repo_fork para crear una copia sandbox segura y aislada, luego opere en el fork.",
+      "mcpMachineGuard": "El acceso directo a la máquina no está permitido en modo solo-fork.\n\nLos agentes deben conectarse a través de un contexto de repositorio. Use repo_fork para crear un fork, luego conéctese a él.\nSi necesita acceso directo, pida al usuario que reinicie el servidor MCP con --allow-grand.",
+      "mcpMachineGuardOverride": "El acceso directo a la máquina no está permitido. No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork para crear un fork, luego conéctese a él.",
+      "mcpMachineGuardOverrideNonLinux": "La anulación de acceso directo a la máquina no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nUse repo_fork para crear un fork, luego conéctese a él."
     },
     "authFailed": "Falló la autenticación",
     "authRequired": "Se requiere autenticación. Ejecute: rdc auth login",
@@ -2080,8 +2051,8 @@
     "invalidPriorityMax": "Valor inválido de prioridad-max. Debe estar entre 1 y 5.",
     "invalidPriorityMin": "Valor inválido de prioridad-min. Debe estar entre 1 y 5.",
     "machineNotFound": "Máquina \"{{name}}\" no encontrada",
-    "machineRequired": "Nombre de máquina requerido. Use --machine o establezca contexto.",
-    "machineRequiredLocal": "Nombre de máquina requerido. Use --machine o establezca por defecto con: rdc config set machine <name>",
+    "machineRequired": "Nombre de máquina requerido. Use --machine <name>",
+    "machineRequiredLocal": "Nombre de máquina requerido. Use --machine <name>",
     "networkError": "Error de red: {{message}}",
     "noActiveConfig": "Sin configuración activa. Cree una con: rdc config init <name>",
     "notAuthenticated": "No autenticado. Ejecute: rdc auth login",
@@ -2192,12 +2163,8 @@
         "pushAll": "Push masivo de todos los repos al almacenamiento"
       },
       "takeover": "Reemplazar datos de producción con datos del fork",
+      "tunnel": "Túnel SSH a puerto de contenedor",
       "up": "Desplegar con montaje automático"
-    },
-    "store": {
-      "add": "Agregar backend de almacenamiento S3",
-      "pull": "Obtener config de un almacén",
-      "push": "Enviar config a todos los almacenes"
     },
     "sync": {
       "download": "Descargar archivos del repositorio",
