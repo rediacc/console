@@ -80,7 +80,7 @@ service_start() {
     log_info "    RustFS Console: http://localhost:$SERVICE_RUSTFS_CONSOLE_PORT"
     log_info ""
     log_info "  Account portal (register to create admin):"
-    log_info "    Admin email: ${ADMIN_EMAIL}"
+    log_info "    Admin email: ${ROOT_EMAIL}"
     log_info ""
     log_info "  Credentials:"
     log_info "    RustFS:  ${RUSTFS_ACCESS_KEY} / ${RUSTFS_SECRET_KEY}"

@@ -147,8 +147,8 @@ JWT_SECRET=${JWT_SEC}
 # Fixed webhook secret for E2E webhook simulation tests
 STRIPE_WEBHOOK_SECRET=whsec_e2e_test_webhook_secret_for_simulation_only
 
-# Admin email (receives alerts for disputes, refunds, etc.)
-ADMIN_EMAIL=admin@example.com
+# Root email (receives alerts for disputes, refunds, etc.)
+ROOT_EMAIL=admin@example.com
 
 # Telemetry auth token (for OTLP basic auth — set via OTLP_AUTH_TOKEN env var or manually)
 # REDIACC_TELEMETRY_AUTH_TOKEN=
@@ -219,7 +219,7 @@ account_ensure_env_keys() {
     account_env_add_if_missing "WEBAUTHN_RP_ID" "localhost" "WebAuthn Relying Party ID" && added=1
     account_env_add_if_missing "WEBAUTHN_RP_NAME" "Rediacc" "WebAuthn display name" && added=1
     account_env_add_if_missing "WEBAUTHN_ORIGIN" "http://localhost:${GATEWAY_PORT:-4800}" "WebAuthn origin URL" && added=1
-    # Note: ADMIN_EMAIL, STRIPE_SANDBOX_SECRET_KEY, AWS_SES_* are user-set values
+    # Note: ROOT_EMAIL, STRIPE_SANDBOX_SECRET_KEY, AWS_SES_* are user-set values
     # — only created in fresh generation, never added/overridden on ensure/reset
 
     if [[ $added -gt 0 ]]; then
@@ -468,7 +468,7 @@ account_test_e2e() {
     # Wire backend secrets → E2E env vars
     export E2E_PORT="$gateway_port"
     export E2E_BASE_URL="http://localhost:${gateway_port}/account/"
-    export ADMIN_EMAIL="${ADMIN_EMAIL:-}"
+    export ROOT_EMAIL="${ROOT_EMAIL:-}"
 
     # Webhook simulation secret (matches backend's STRIPE_WEBHOOK_SECRET)
     if [[ -n "${STRIPE_WEBHOOK_SECRET:-}" ]]; then
