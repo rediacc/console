@@ -7,7 +7,7 @@ import { waitForTeamRow } from '@/test-helpers/team-helpers';
 import { createUserViaUI } from '@/test-helpers/user-helpers';
 import type { Page } from '@playwright/test';
 
-test.describe('User Team Assignment Tests', () => {
+test.describe('User Team Assignment Tests - Add Created User', () => {
   test.describe.configure({ timeout: 60000 });
   let dashboardPage: DashboardPage;
   let loginPage: LoginPage;

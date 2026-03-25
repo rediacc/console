@@ -3,7 +3,7 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { loadGlobalState } from '@/setup/global-state';
 
-test.describe('Login Tests', () => {
+test.describe('Login Tests - Valid Credentials', () => {
   let loginPage: LoginPage;
   let dashboardPage: DashboardPage;
 
