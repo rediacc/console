@@ -23,3 +23,11 @@
 1115359
 # yaml stack overflow via deeply nested collections (transitive dep, no fix available)
 1115369
+# picomatch ReDoS via extglob quantifiers (transitive dep, no fix available)
+1115382
+1115384
+# smol-toml DoS via thousands of consecutive commented lines (transitive dep, no fix)
+1115393
+# picomatch method injection in POSIX character classes (transitive dep, no fix available)
+1115394
+1115396
