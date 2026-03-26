@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1697,
+    "keyCount": 1700,
     "sourceCommit": "71d30977decf677dd701bf7ac487b097b4b163e7"
   },
   "hashes": {
@@ -1198,6 +1198,8 @@
     "commands.update.applyFailed": "fb929ef7",
     "commands.update.autoApplied": "30f8ef64",
     "commands.update.available": "f0e7b879",
+    "commands.update.channelDescription": "a513597e",
+    "commands.update.channelSet": "a9d15dd0",
     "commands.update.checking": "e38e1c0f",
     "commands.update.checkOnly": "96b361de",
     "commands.update.description": "3ace750a",
@@ -1205,6 +1207,7 @@
     "commands.update.downloading": "c3e27f09",
     "commands.update.failed": "0cc79202",
     "commands.update.force": "7866c29a",
+    "commands.update.invalidChannel": "a7879d5a",
     "commands.update.notSEA": "74929a65",
     "commands.update.progress": "e8dbdb34",
     "commands.update.releaseNotes": "ebefa464",

@@ -34,4 +34,8 @@ database_name = "edge-account-db"
 database_id = "edaa5c46-44c7-430d-9740-20a55d89ea51"
 migrations_dir = "../../private/account/drizzle"
 
+[[r2_buckets]]
+binding = "CONFIG_BUCKET"
+bucket_name = "edge-rediacc-configs"
+
 # Secrets set via deploy-edge.sh (same crypto keys as production, sandbox Stripe)

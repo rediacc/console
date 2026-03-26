@@ -228,11 +228,30 @@ export function registerUpdateCommand(program: Command): void {
     .option('--check-only', t('commands.update.checkOnly'))
     .option('--rollback', t('commands.update.rollback'))
     .option('--status', t('commands.update.statusDescription'))
+    .option('--channel <channel>', t('commands.update.channelDescription'))
     .action(async (options) => {
       try {
         if (!isSEA()) {
           outputService.error(t('commands.update.notSEA'));
           process.exit(1);
+        }
+
+        // Handle channel switch
+        if (options.channel) {
+          const channel = options.channel as string;
+          if (channel !== 'stable' && channel !== 'edge') {
+            outputService.error(t('commands.update.invalidChannel', { channel }));
+            process.exit(1);
+          }
+          const { loadServerConfig, saveServerConfig, getServerConfigFile } = await import(
+            '../services/subscription-auth.js'
+          );
+          const config = loadServerConfig() ?? { accountServer: 'https://www.rediacc.com' };
+          saveServerConfig({ ...config, updateChannel: channel });
+          outputService.success(t('commands.update.channelSet', { channel }));
+          if (!options.force && !options.checkOnly) {
+            return; // Channel switch only, no update
+          }
         }
 
         if (options.rollback) {

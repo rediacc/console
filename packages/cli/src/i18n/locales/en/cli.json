@@ -1773,7 +1773,10 @@
       "rollbackSuccess": "Rolled back successfully. Restart rdc to use the previous version.",
       "rollbackNoBackup": "No previous version found. Rollback is only available after an update.",
       "rollbackFailed": "Rollback failed: {{error}}",
-      "statusDescription": "Show auto-update status and diagnostics"
+      "statusDescription": "Show auto-update status and diagnostics",
+      "channelDescription": "Set release channel (stable or edge)",
+      "channelSet": "Release channel set to {{channel}}",
+      "invalidChannel": "Invalid channel: {{channel}}. Use stable or edge."
     },
     "term": {
       "descriptionShort": "SSH terminal access to machines and repositories",
