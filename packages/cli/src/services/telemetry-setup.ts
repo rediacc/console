@@ -25,6 +25,7 @@ export function setupOtelSdk(opts: {
   serviceName: string;
   serviceVersion: string;
   environment: string;
+  updateChannel?: string;
   headers: Record<string, string>;
   sessionId: string;
 }): SdkSetupResult {
@@ -40,6 +41,7 @@ export function setupOtelSdk(opts: {
     [ATTR_SERVICE_NAME]: opts.serviceName,
     [ATTR_SERVICE_VERSION]: opts.serviceVersion,
     'deployment.environment': opts.environment,
+    'update.channel': opts.updateChannel ?? 'stable',
     'service.platform': 'cli',
     'os.type': process.platform,
     'runtime.name': 'nodejs',

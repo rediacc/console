@@ -119,6 +119,24 @@ class CliTelemetryService implements TelemetryHandler {
     return 'https://otlp.rediacc.io';
   }
 
+  private resolveUpdateChannel(): string {
+    // Read channel from env or server.json (avoids circular import with updater.ts)
+    const envChannel = process.env.RDC_UPDATE_CHANNEL;
+    if (envChannel === 'edge' || envChannel === 'stable') return envChannel;
+    try {
+      const { loadServerConfig } = require('./subscription-auth.js') as {
+        loadServerConfig: () => { updateChannel?: string } | null;
+      };
+      const config = loadServerConfig();
+      if (config?.updateChannel === 'edge' || config?.updateChannel === 'stable') {
+        return config.updateChannel;
+      }
+    } catch {
+      // server.json may not exist
+    }
+    return 'stable';
+  }
+
   private getExporterHeaders(): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -148,6 +166,7 @@ class CliTelemetryService implements TelemetryHandler {
         serviceVersion: config?.serviceVersion ?? CLI_VERSION,
         environment:
           config?.environment ?? process.env.REDIACC_ENVIRONMENT ?? this.detectEnvironment(),
+        updateChannel: this.resolveUpdateChannel(),
         headers: this.getExporterHeaders(),
         sessionId: this.sessionId,
       });
