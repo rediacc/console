@@ -1,96 +1,96 @@
 ---
-title: Hesap Guvenligi ve API
-description: Kimlik dogrulama, API tokenleri, oturum yonetimi ve izin modeli.
+title: Hesap Güvenliği ve API
+description: Kimlik doğrulama, API tokenleri, oturum yönetimi ve izin modeli.
 category: Guides
 order: 13
 language: tr
 ---
 
-### Kimlik Dogrulama
+### Kimlik Doğrulama
 
-Rediacc birden fazla kimlik dogrulama yontemini destekler:
+Rediacc birden fazla kimlik doğrulama yöntemini destekler:
 
 ![Auth Flow](/img/account-auth-flow.svg)
 
-- **Parola**: Geleneksel e-posta + parola ile giris
-- **Magic Link**: E-posta baglantisi ile parolasiz giris (15 dakika gecerlilik)
-- **Iki Faktorlu Kimlik Dogrulama (2FA)**: Yedek kodlarla TOTP tabanli
+- **Parola**: Geleneksel e-posta + parola ile giriş
+- **Magic Link**: E-posta bağlantısı ile parolasız giriş (15 dakika geçerlilik)
+- **İki Faktörlü Kimlik Doğrulama (2FA)**: Yedek kodlarla TOTP tabanlı
 
-2FA etkinlestirildiginde, giris icin hem parolaniz (veya Magic Link) hem de 6 haneli bir TOTP kodu gerekir.
+2FA etkinleştirildiğinde, giriş için hem parolanız (veya Magic Link) hem de 6 haneli bir TOTP kodu gerekir.
 
 ### API Tokenleri
 
-API tokenleri makineler arasi islemleri dogrular (CLI lisans aktivasyonu, durum kontrolleri).
+API tokenleri makineler arası işlemleri doğrular (CLI lisans aktivasyonu, durum kontrolleri).
 
 ![API Token Lifecycle](/img/account-api-token-lifecycle.svg)
 
 **Kapsamlar:**
 - `license:read` -- Abonelik ve lisans durumunu sorgulama
-- `license:activate` -- Makineleri etkinlestirme ve depo lisanslari verme
-- `subscription:read` -- Abonelik detaylarini okuma
+- `license:activate` -- Makineleri etkinleştirme ve depo lisansları verme
+- `subscription:read` -- Abonelik detaylarını okuma
 
-**Guvenlik ozellikleri:**
-- IP baglama: ilk istek tokeni o IP adresine kilitler
-- Ekip kapsamlandirma: tokenler belirli bir ekiple sinirlandirabilir
-- Otomatik iptal: olusturucu organizasyondan kaldirildiginda tokenler iptal edilir
+**Güvenlik özellikleri:**
+- IP bağlama: ilk istek tokeni o IP adresine kilitler
+- Ekip kapsamlandırma: tokenler belirli bir ekiple sınırlandırılabilir
+- Otomatik iptal: oluşturucu organizasyondan kaldırıldığında tokenler iptal edilir
 
-Token olusturma:
+Token oluşturma:
 ```bash
-# Via the portal: API Tokens > Create
-# Token value is shown once -- save it securely
+# Portal üzerinden: API Tokens > Create
+# Token değeri yalnızca bir kez gösterilir -- güvenli şekilde saklayın
 ```
 
-### Cihaz Kodu Akisi
+### Cihaz Kodu Akışı
 
-CLI, cihaz kodu akisini kullanarak ekransiz makinelerde kimlik dogrulamasi yapabilir:
+CLI, cihaz kodu akışını kullanarak ekransız makinelerde kimlik doğrulaması yapabilir:
 
 ![Device Code Flow](/img/account-device-code-flow.svg)
 
 ```bash
 rdc config remote enable --headless
-# Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
-# After approval, CLI receives credentials automatically
+# Gösterir: XXXX-XXXX-XX kodunu https://www.rediacc.com/account/authorize adresine girin
+# Onaydan sonra CLI otomatik olarak kimlik bilgilerini alır
 ```
 
 ### Config Storage
 
-Sifrelenmis, sunucu ile senkronize yapilandirma icin tam kilavuza [Config Storage](/en/docs/config-storage) bakiniz. Config Storage sunlari kullanir:
-- Sifir bilgi sifreleme (sunucu duz metni asla gormez)
-- Passkey tabanli anahtar turetme (WebAuthn + PRF)
-- Istek basina rotasyonlu dondurmeli tokenler
+Şifrelenmiş, sunucu ile senkronize yapılandırma için tam kılavuza [Config Storage](/tr/docs/config-storage) bakınız. Config Storage şunları kullanır:
+- Sıfır bilgi şifreleme (sunucu düz metni asla görmez)
+- Passkey tabanlı anahtar türetme (WebAuthn + PRF)
+- İstek başına rotasyonlu döndürmeli tokenler
 
-### Oturum Guvenligi
+### Oturum Güvenliği
 
-| Token Turu | Gecerlilik Suresi | Depolama | Yenileme |
+| Token Türü | Geçerlilik Süresi | Depolama | Yenileme |
 |-----------|-------------------|----------|----------|
 | Access Token (JWT) | 15 dakika | HttpOnly cookie | Refresh token ile otomatik |
-| Refresh Token | 7 gun | HttpOnly cookie | Her kullanimda dondurulur |
-| Elevated Session | 10 dakika | Sunucu tarafi | Yeniden kimlik dogrulama ile tetiklenir |
+| Refresh Token | 7 gün | HttpOnly cookie | Her kullanımda döndürülür |
+| Yükseltilmiş Oturum | 10 dakika | Sunucu tarafı | Yeniden kimlik doğrulama ile tetiklenir |
 
-Yukseltilmis oturumlar hassas islemler icin gereklidir: parola degisiklikleri, e-posta degisiklikleri, 2FA kurulumu, sahiplik aktarimlari ve yikici yonetici eylemleri.
+Yükseltilmiş oturumlar hassas işlemler için gereklidir: parola değişiklikleri, e-posta değişiklikleri, 2FA kurulumu, sahiplik aktarımları ve yıkıcı yönetici eylemleri.
 
-### Izin Modeli
+### İzin Modeli
 
-Rediacc uc bagimsiz izin katmani kullanir:
+Rediacc üç bağımsız izin katmanı kullanır:
 
 ![Permission Flow](/img/account-permission-flow.svg)
 
-**Katman 1: Sistem Rolu** -- Sistem yonetimi uc noktlarina erisimi belirler.
+**Katman 1: Sistem Rolü** -- Sistem yönetimi uç noktalarına erişimi belirler.
 
-**Katman 2: Organizasyon Rolu** -- Bir kullanicinin organizasyonu icinde neler yapabilecegini kontrol eder (owner, admin, member).
+**Katman 2: Organizasyon Rolü** -- Bir kullanıcının organizasyonu içinde neler yapabileceğini kontrol eder (owner, admin, member).
 
-**Katman 3: Ekip Rolu** -- Belirli ekip kaynaklarina erisimi sinirlar (team_admin, member). Organizasyon sahipleri ve yoneticileri ekip rolu kontrollerini atlar.
+**Katman 3: Ekip Rolü** -- Belirli ekip kaynaklarına erişimi sınırlar (team_admin, member). Organizasyon sahipleri ve yöneticileri ekip rolü kontrollerini atlar.
 
-Her API istegi tum gecerli katmanlardan sirasiyla gecer. Ekip kapsamli bir uc noktaya yapilan istek, oturum dogrulamasi, organizasyon uyeligi ve ekip erisimini karsilamalidir.
+Her API isteği tüm geçerli katmanlardan sırasıyla geçer. Ekip kapsamlı bir uç noktaya yapılan istek, oturum doğrulaması, organizasyon üyeliği ve ekip erişimini karşılamalıdır.
 
-### Guncelleme Kanallari
+### Güncelleme Kanalları
 
-CLI iki yayin kanalini destekler:
-- **stable** (varsayilan): Kapsamli test edilmis, uretim icin onerilir
-- **edge**: En son ozellikler, her surumde guncellenir
+CLI iki yayın kanalını destekler:
+- **stable** (varsayılan): Kapsamlı test edilmiş, üretim için önerilir
+- **edge**: En son özellikler, her sürümde güncellenir
 
 ```bash
-rdc update --channel edge      # Switch to edge
-rdc update --channel stable    # Switch back to stable
-rdc update --status            # Show current channel
+rdc update --channel edge      # Edge'e geç
+rdc update --channel stable    # Stable'a geri dön
+rdc update --status            # Geçerli kanalı göster
 ```

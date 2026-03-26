@@ -1,6 +1,6 @@
 ---
-title: Securite du compte et API
-description: Authentification, tokens API, gestion des sessions et modele de permissions.
+title: Sécurité du compte et API
+description: Authentification, tokens API, gestion des sessions et modèle de permissions.
 category: Guides
 order: 13
 language: fr
@@ -8,89 +8,89 @@ language: fr
 
 ### Authentification
 
-Rediacc prend en charge plusieurs methodes d'authentification :
+Rediacc prend en charge plusieurs méthodes d'authentification :
 
 ![Auth Flow](/img/account-auth-flow.svg)
 
 - **Mot de passe** : Connexion traditionnelle avec e-mail et mot de passe
-- **Magic Link** : Connexion sans mot de passe via un lien envoye par e-mail (expire apres 15 minutes)
-- **Authentification a deux facteurs (2FA)** : Basee sur TOTP avec codes de secours
+- **Magic Link** : Connexion sans mot de passe via un lien envoyé par e-mail (expire après 15 minutes)
+- **Authentification à deux facteurs (2FA)** : Basée sur TOTP avec codes de secours
 
-Lorsque la 2FA est activee, la connexion necessite a la fois votre mot de passe (ou magic link) et un code TOTP a 6 chiffres.
+Lorsque la 2FA est activée, la connexion nécessite à la fois votre mot de passe (ou magic link) et un code TOTP à 6 chiffres.
 
 ### Tokens API
 
-Les tokens API authentifient les operations de machine a machine (activation de licence CLI, verifications d'etat).
+Les tokens API authentifient les opérations de machine à machine (activation de licence CLI, vérifications d'état).
 
 ![API Token Lifecycle](/img/account-api-token-lifecycle.svg)
 
-**Portees :**
-- `license:read` -- Consulter l'etat de l'abonnement et de la licence
-- `license:activate` -- Activer des machines et emettre des licences de depot
-- `subscription:read` -- Lire les details de l'abonnement
+**Portées :**
+- `license:read` -- Consulter l'état de l'abonnement et de la licence
+- `license:activate` -- Activer des machines et émettre des licences de dépôt
+- `subscription:read` -- Lire les détails de l'abonnement
 
-**Fonctionnalites de securite :**
-- Liaison IP : la premiere requete verrouille le token a cette adresse IP
-- Portee par equipe : les tokens peuvent etre restreints a une equipe specifique
-- Revocation automatique : les tokens sont revoques lorsque le createur est supprime de l'organisation
+**Fonctionnalités de sécurité :**
+- Liaison IP : la première requête verrouille le token à cette adresse IP
+- Portée par équipe : les tokens peuvent être restreints à une équipe spécifique
+- Révocation automatique : les tokens sont révoqués lorsque le créateur est supprimé de l'organisation
 
-Creer un token :
+Créer un token :
 ```bash
-# Via the portal: API Tokens > Create
-# Token value is shown once -- save it securely
+# Via le portail : API Tokens > Create
+# La valeur du token est affichée une seule fois -- conservez-la en sécurité
 ```
 
 ### Flux de code d'appareil
 
-La CLI peut s'authentifier sur les machines sans ecran en utilisant le flux de code d'appareil :
+La CLI peut s'authentifier sur les machines sans écran en utilisant le flux de code d'appareil :
 
 ![Device Code Flow](/img/account-device-code-flow.svg)
 
 ```bash
 rdc config remote enable --headless
-# Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
-# After approval, CLI receives credentials automatically
+# Affiche : Entrez le code XXXX-XXXX-XX sur https://www.rediacc.com/account/authorize
+# Après approbation, la CLI reçoit automatiquement les identifiants
 ```
 
 ### Config Storage
 
-Pour une configuration chiffree et synchronisee avec le serveur, consultez [Config Storage](/en/docs/config-storage) pour le guide complet. Config storage utilise :
-- Chiffrement zero-knowledge (le serveur ne voit jamais le texte en clair)
-- Derivation de cles basee sur passkey (WebAuthn + PRF)
-- Tokens rotatifs avec rotation par requete
+Pour une configuration chiffrée et synchronisée avec le serveur, consultez [Config Storage](/fr/docs/config-storage) pour le guide complet. Config storage utilise :
+- Chiffrement zéro-knowledge (le serveur ne voit jamais le texte en clair)
+- Dérivation de clés basée sur passkey (WebAuthn + PRF)
+- Tokens rotatifs avec rotation par requête
 
-### Securite des sessions
+### Sécurité des sessions
 
-| Type de token | Duree de vie | Stockage | Rafraichissement |
+| Type de token | Durée de vie | Stockage | Rafraîchissement |
 |---------------|-------------|----------|------------------|
 | Access Token (JWT) | 15 minutes | Cookie HttpOnly | Automatique via refresh token |
-| Refresh Token | 7 jours | Cookie HttpOnly | Rotation a chaque utilisation |
-| Elevated Session | 10 minutes | Cote serveur | Declenche par reauthentification |
+| Refresh Token | 7 jours | Cookie HttpOnly | Rotation à chaque utilisation |
+| Session élevée | 10 minutes | Côté serveur | Déclenché par réauthentification |
 
-Les sessions elevees sont requises pour les operations sensibles : changements de mot de passe, changements d'e-mail, configuration 2FA, transferts de propriete et actions administratives destructives.
+Les sessions élevées sont requises pour les opérations sensibles : changements de mot de passe, changements d'e-mail, configuration 2FA, transferts de propriété et actions administratives destructives.
 
-### Modele de permissions
+### Modèle de permissions
 
-Rediacc utilise trois couches de permissions independantes :
+Rediacc utilise trois couches de permissions indépendantes :
 
 ![Permission Flow](/img/account-permission-flow.svg)
 
-**Couche 1 : Role systeme** -- Determine l'acces aux endpoints d'administration systeme.
+**Couche 1 : Rôle système** -- Détermine l'accès aux endpoints d'administration système.
 
-**Couche 2 : Role d'organisation** -- Controle ce qu'un utilisateur peut faire au sein de son organisation (owner, admin, member).
+**Couche 2 : Rôle d'organisation** -- Contrôle ce qu'un utilisateur peut faire au sein de son organisation (owner, admin, member).
 
-**Couche 3 : Role d'equipe** -- Limite l'acces aux ressources specifiques de l'equipe (team_admin, member). Les proprietaires et administrateurs de l'organisation contournent les verifications de role d'equipe.
+**Couche 3 : Rôle d'équipe** -- Limite l'accès aux ressources spécifiques de l'équipe (team_admin, member). Les propriétaires et administrateurs de l'organisation contournent les vérifications de rôle d'équipe.
 
-Chaque requete API passe par toutes les couches applicables en sequence. Une requete vers un endpoint de portee equipe doit satisfaire l'authentification de session, l'appartenance a l'organisation et l'acces a l'equipe.
+Chaque requête API passe par toutes les couches applicables en séquence. Une requête vers un endpoint de portée équipe doit satisfaire l'authentification de session, l'appartenance à l'organisation et l'accès à l'équipe.
 
-### Canaux de mise a jour
+### Canaux de mise à jour
 
 La CLI prend en charge deux canaux de publication :
-- **stable** (par defaut) : Teste en profondeur, recommande pour la production
-- **edge** : Dernieres fonctionnalites, mis a jour a chaque publication
+- **stable** (par défaut) : Testé en profondeur, recommandé pour la production
+- **edge** : Dernières fonctionnalités, mis à jour à chaque publication
 
 ```bash
-rdc update --channel edge      # Switch to edge
-rdc update --channel stable    # Switch back to stable
-rdc update --status            # Show current channel
+rdc update --channel edge      # Passer à edge
+rdc update --channel stable    # Revenir à stable
+rdc update --status            # Afficher le canal actuel
 ```

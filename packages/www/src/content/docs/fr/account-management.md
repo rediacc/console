@@ -1,6 +1,6 @@
 ---
 title: Gestion des comptes
-description: Organisations, equipes, membres et abonnements dans Rediacc.
+description: Organisations, équipes, membres et abonnements dans Rediacc.
 category: Guides
 order: 12
 language: fr
@@ -8,65 +8,65 @@ language: fr
 
 ### Organisations
 
-Lors de votre inscription, Rediacc cree automatiquement une organisation pour vous. Votre organisation est le conteneur principal de toutes les ressources -- machines, depots, abonnements et membres d'equipe.
+Lors de votre inscription, Rediacc crée automatiquement une organisation pour vous. Votre organisation est le conteneur principal de toutes les ressources -- machines, dépôts, abonnements et membres d'équipe.
 
 ![Registration Flow](/img/account-registration-flow.svg)
 
 Chaque organisation dispose de :
-- Un nom unique (par defaut votre adresse e-mail)
+- Un nom unique (par défaut votre adresse e-mail)
 - Un plan d'abonnement (commence avec COMMUNITY)
-- Une equipe par defaut (tous les membres y sont ajoutes automatiquement)
+- Une équipe par défaut (tous les membres y sont ajoutés automatiquement)
 
-### Membres et Roles
+### Membres et Rôles
 
-Les organisations prennent en charge trois roles :
+Les organisations prennent en charge trois rôles :
 
 ![Role Hierarchy](/img/account-role-hierarchy.svg)
 
-| Role | Capacites |
+| Rôle | Capacités |
 |------|-----------|
-| **Owner** | Controle total : facturation, transfert de propriete, gestion de tous les membres et equipes |
-| **Admin** | Inviter et supprimer des membres, creer et gerer des equipes, revoquer les tokens API |
-| **Member** | Consulter les donnees de l'organisation, creer des tokens API, acceder aux equipes assignees |
+| **Owner** | Contrôle total : facturation, transfert de propriété, gestion de tous les membres et équipes |
+| **Admin** | Inviter et supprimer des membres, créer et gérer des équipes, révoquer les tokens API |
+| **Member** | Consulter les données de l'organisation, créer des tokens API, accéder aux équipes assignées |
 
 Inviter des membres :
 ```bash
-# From the portal: Organization > Members > Invite
-# Or via API
+# Via le portail : Organisation > Membres > Inviter
+# Ou via l'API
 ```
 
-Lorsqu'un membre est supprime, ses tokens API et ses tokens de config storage sont automatiquement revoques.
+Lorsqu'un membre est supprimé, ses tokens API et ses tokens de config storage sont automatiquement révoqués.
 
-### Equipes
+### Équipes
 
-Les equipes permettent de limiter les ressources au sein d'une organisation. Chaque organisation commence avec une equipe par defaut.
+Les équipes permettent de limiter les ressources au sein d'une organisation. Chaque organisation commence avec une équipe par défaut.
 
 ![Team Structure](/img/account-team-structure.svg)
 
-Roles d'equipe :
-- **Team Admin** : Peut ajouter/supprimer des membres au sein de l'equipe
-- **Member** : Peut acceder aux ressources de l'equipe
+Rôles d'équipe :
+- **Team Admin** : Peut ajouter/supprimer des membres au sein de l'équipe
+- **Member** : Peut accéder aux ressources de l'équipe
 
-Les proprietaires et administrateurs de l'organisation ont automatiquement acces a toutes les equipes sans adhesion explicite.
+Les propriétaires et administrateurs de l'organisation ont automatiquement accès à toutes les équipes sans adhésion explicite.
 
 ### Abonnements et Plans
 
 Rediacc propose quatre plans :
 
-| Plan | Machines | Licences repo/mois | Fonctionnalites |
+| Plan | Machines | Licences repo/mois | Fonctionnalités |
 |------|----------|---------------------|-----------------|
 | COMMUNITY | 2 | 500 | Basique |
-| PROFESSIONAL | 10 | 2 000 | Groupes de permissions, priorite de file d'attente |
-| BUSINESS | 25 | 5 000 | Ceph, analyses avancees, journal d'audit |
-| ENTERPRISE | Illimite | Illimite | Marque personnalisee, compte dedie |
+| PROFESSIONAL | 10 | 2 000 | Groupes de permissions, priorité de file d'attente |
+| BUSINESS | 25 | 5 000 | Ceph, analyses avancées, journal d'audit |
+| ENTERPRISE | Illimité | Illimité | Marque personnalisée, compte dédié |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 
-Tous les plans commencent avec une periode de grace de 3 jours. Les activations de machines sont suivies par equipe et se liberent automatiquement apres inactivite.
+Tous les plans commencent avec une période de grâce de 3 jours. Les activations de machines sont suivies par équipe et se libèrent automatiquement après inactivité.
 
 ### Facturation
 
-Seul le **proprietaire** de l'organisation peut gerer la facturation :
-- Creer une session de paiement Stripe pour les mises a niveau de plan
-- Acceder au portail de facturation Stripe pour modifier le mode de paiement
-- Demander des remboursements en libre-service (dans les 14 jours, avec un delai de 30 jours)
+Seul le **propriétaire** de l'organisation peut gérer la facturation :
+- Créer une session de paiement Stripe pour les mises à niveau de plan
+- Accéder au portail de facturation Stripe pour modifier le mode de paiement
+- Demander des remboursements en libre-service (dans les 14 jours, avec un délai de 30 jours)

@@ -31,8 +31,8 @@ Organisationen unterstützen drei Rollen:
 
 Mitglieder einladen:
 ```bash
-# From the portal: Organization > Members > Invite
-# Or via API
+# Über das Portal: Organisation > Mitglieder > Einladen
+# Oder über die API
 ```
 
 Wenn ein Mitglied entfernt wird, werden seine API-Token und Config-Storage-Token automatisch widerrufen.

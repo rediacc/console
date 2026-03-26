@@ -36,8 +36,8 @@ API-Token authentifizieren Maschine-zu-Maschine-Operationen (CLI-Lizenzaktivieru
 
 Token erstellen:
 ```bash
-# Via the portal: API Tokens > Create
-# Token value is shown once -- save it securely
+# Über das Portal: API Tokens > Create
+# Der Token-Wert wird nur einmal angezeigt -- sicher aufbewahren
 ```
 
 ### Device-Code-Ablauf
@@ -48,13 +48,13 @@ Die CLI kann sich auf Headless-Maschinen über den Device-Code-Ablauf authentifi
 
 ```bash
 rdc config remote enable --headless
-# Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
-# After approval, CLI receives credentials automatically
+# Zeigt an: Code XXXX-XXXX-XX eingeben unter https://www.rediacc.com/account/authorize
+# Nach Genehmigung erhält die CLI automatisch Zugangsdaten
 ```
 
 ### Config Storage
 
-Für verschlüsselte, serversynchronisierte Konfiguration siehe [Config Storage](/en/docs/config-storage) für die vollständige Anleitung. Config Storage verwendet:
+Für verschlüsselte, serversynchronisierte Konfiguration siehe [Config Storage](/de/docs/config-storage) für die vollständige Anleitung. Config Storage verwendet:
 - Zero-Knowledge-Verschlüsselung (Server sieht nie Klartext)
 - Passkey-basierte Schlüsselableitung (WebAuthn + PRF)
 - Rotierende Token mit Rotation pro Anfrage
@@ -65,9 +65,9 @@ Für verschlüsselte, serversynchronisierte Konfiguration siehe [Config Storage]
 |-----------|-------------|-------------|----------------|
 | Access Token (JWT) | 15 Minuten | HttpOnly-Cookie | Automatisch via Refresh Token |
 | Refresh Token | 7 Tage | HttpOnly-Cookie | Bei jeder Nutzung rotiert |
-| Elevated Session | 10 Minuten | Serverseitig | Ausgelöst durch erneute Authentifizierung |
+| Erhöhte Sitzung | 10 Minuten | Serverseitig | Ausgelöst durch erneute Authentifizierung |
 
-Elevated Sessions sind erforderlich für sensible Operationen: Passwortänderungen, E-Mail-Änderungen, 2FA-Einrichtung, Eigentumsübertragungen und destruktive Admin-Aktionen.
+Erhöhte Sitzungen sind erforderlich für sensible Operationen: Passwortänderungen, E-Mail-Änderungen, 2FA-Einrichtung, Eigentumsübertragungen und destruktive Admin-Aktionen.
 
 ### Berechtigungsmodell
 
@@ -90,7 +90,7 @@ Die CLI unterstützt zwei Release-Kanäle:
 - **edge**: Neueste Funktionen, bei jedem Release aktualisiert
 
 ```bash
-rdc update --channel edge      # Switch to edge
-rdc update --channel stable    # Switch back to stable
-rdc update --status            # Show current channel
+rdc update --channel edge      # Zu edge wechseln
+rdc update --channel stable    # Zurück zu stable
+rdc update --status            # Aktuellen Kanal anzeigen
 ```
