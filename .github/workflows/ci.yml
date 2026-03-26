@@ -701,7 +701,7 @@ jobs:
 
       # Deploy single combined pr-N Worker (static assets + embedded account server)
       - name: Deploy preview worker
-        run: .ci/scripts/deploy/deploy-www.sh --name "pr-${PR_NUMBER}"
+        run: .ci/scripts/deploy/deploy-www.sh --name "pr-${PR_NUMBER}" --clone-prod-d1
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
