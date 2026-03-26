@@ -339,7 +339,7 @@ account_dev() {
             done
         fi
 
-        sleep 2  # Let OS reclaim ports
+        sleep 2 # Let OS reclaim ports
         rm -f "$ACCOUNT_STATE_FILE"
         log_info "Previous instance stopped"
     fi
