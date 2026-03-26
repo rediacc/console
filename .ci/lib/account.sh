@@ -313,6 +313,37 @@ account_stripe_auto() {
 account_dev() {
     check_node_version
 
+    # Auto-kill previous instance from this worktree
+    if [[ -f "$ACCOUNT_STATE_FILE" ]]; then
+        local old_gateway old_pids
+        old_gateway=$(grep "^gateway_port=" "$ACCOUNT_STATE_FILE" 2>/dev/null | cut -d= -f2)
+        old_pids=$(grep "^pids=" "$ACCOUNT_STATE_FILE" 2>/dev/null | cut -d= -f2)
+        log_step "Stopping previous account instance (gateway:${old_gateway:-?})..."
+
+        # Kill tracked child PIDs (vite, astro)
+        if [[ -n "$old_pids" ]]; then
+            for pid in ${old_pids//,/ }; do
+                kill "$pid" 2>/dev/null || true
+            done
+        fi
+
+        # Kill anything on the gateway port and its 2 siblings (gateway, vite, astro)
+        if [[ -n "$old_gateway" ]]; then
+            for offset in 0 1 2; do
+                local port=$((old_gateway + offset))
+                local port_pids
+                port_pids=$(lsof -ti:"$port" 2>/dev/null)
+                if [[ -n "$port_pids" ]]; then
+                    echo "$port_pids" | xargs kill -9 2>/dev/null || true
+                fi
+            done
+        fi
+
+        sleep 2  # Let OS reclaim ports
+        rm -f "$ACCOUNT_STATE_FILE"
+        log_info "Previous instance stopped"
+    fi
+
     log_step "Starting account development environment"
 
     # Allocate dynamic ports
@@ -394,6 +425,14 @@ account_dev() {
     # Auto-setup Stripe if key is configured
     account_stripe_auto
 
+    # Save state for auto-kill on next ./run.sh account dev
+    {
+        echo "gateway_port=$GATEWAY_PORT"
+        echo "pids=${ACCOUNT_PIDS[*]// /,}"
+        echo "worktree=$CONSOLE_ROOT_DIR"
+        echo "started=$(date +%s)"
+    } >"$ACCOUNT_STATE_FILE"
+
     # Start gateway (foreground — keeps terminal alive)
     log_step "Starting dev gateway on :${GATEWAY_PORT}..."
     (cd "$ACCOUNT_DIR" &&
@@ -408,10 +447,32 @@ account_dev() {
 }
 
 account_stop() {
-    log_step "Stopping account containers"
+    log_step "Stopping account services"
+
+    # Kill dev processes tracked in state file
+    if [[ -f "$ACCOUNT_STATE_FILE" ]]; then
+        local old_gateway old_pids
+        old_gateway=$(grep "^gateway_port=" "$ACCOUNT_STATE_FILE" 2>/dev/null | cut -d= -f2)
+        old_pids=$(grep "^pids=" "$ACCOUNT_STATE_FILE" 2>/dev/null | cut -d= -f2)
+        if [[ -n "$old_pids" ]]; then
+            for pid in ${old_pids//,/ }; do
+                kill "$pid" 2>/dev/null || true
+            done
+            sleep 1
+            for pid in ${old_pids//,/ }; do
+                kill -9 "$pid" 2>/dev/null || true
+            done
+        fi
+        if [[ -n "$old_gateway" ]]; then
+            local port_pid
+            port_pid=$(lsof -ti:"$old_gateway" 2>/dev/null | head -1)
+            [[ -n "$port_pid" ]] && kill -9 "$port_pid" 2>/dev/null || true
+        fi
+    fi
+
+    # Stop Docker containers
     (cd "$ACCOUNT_DIR" && docker compose down --remove-orphans) 2>/dev/null || true
 
-    # Force remove if still around
     local containers=(account-server account-config-rustfs account-config-rustfs-init)
     for container in "${containers[@]}"; do
         if docker ps -a --format "{{.Names}}" 2>/dev/null | grep -q "^${container}$"; then
@@ -421,7 +482,7 @@ account_stop() {
     done
 
     rm -f "$ACCOUNT_STATE_FILE"
-    log_info "Account containers stopped"
+    log_info "Account services stopped"
 }
 
 account_test() {
