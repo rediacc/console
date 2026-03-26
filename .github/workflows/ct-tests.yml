@@ -1250,7 +1250,7 @@ jobs:
           ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
           API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-          ADMIN_EMAIL: ${{ vars.ACCOUNT_ADMIN_EMAIL }}
+          ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
           STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
       - name: Upload E2E report

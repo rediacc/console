@@ -148,7 +148,8 @@ JWT_SECRET=${JWT_SEC}
 STRIPE_WEBHOOK_SECRET=whsec_e2e_test_webhook_secret_for_simulation_only
 
 # Root email (receives alerts for disputes, refunds, etc.)
-ROOT_EMAIL=admin@example.com
+# Set via GitHub variable ROOT_EMAIL or environment
+ROOT_EMAIL="${ROOT_EMAIL:-}"
 
 # Telemetry auth token (for OTLP basic auth — set via OTLP_AUTH_TOKEN env var or manually)
 # REDIACC_TELEMETRY_AUTH_TOKEN=
@@ -468,7 +469,7 @@ account_test_e2e() {
     # Wire backend secrets → E2E env vars
     export E2E_PORT="$gateway_port"
     export E2E_BASE_URL="http://localhost:${gateway_port}/account/"
-    export ROOT_EMAIL="${ROOT_EMAIL:-${ADMIN_EMAIL:-}}"
+    export ROOT_EMAIL="${ROOT_EMAIL:-}"
 
     # Webhook simulation secret (matches backend's STRIPE_WEBHOOK_SECRET)
     if [[ -n "${STRIPE_WEBHOOK_SECRET:-}" ]]; then

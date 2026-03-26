@@ -510,7 +510,7 @@ jobs:
           SECRET_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
           SECRET_STRIPE_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           SECRET_STRIPE_WEBHOOK: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-          SECRET_ADMIN_EMAIL: ${{ vars.ACCOUNT_ADMIN_EMAIL }}
+          SECRET_ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
           SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
           SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
           SECRET_SES_REGION: ${{ vars.AWS_SES_REGION }}
@@ -538,7 +538,7 @@ jobs:
             --arg jwt "$SECRET_JWT_SECRET" \
             --arg stripe "$SECRET_STRIPE_KEY" \
             --arg stripe_wh "$SECRET_STRIPE_WEBHOOK" \
-            --arg admin "$SECRET_ADMIN_EMAIL" \
+            --arg admin "$SECRET_ROOT_EMAIL" \
             --arg ses_key "$SECRET_SES_ACCESS_KEY_ID" \
             --arg ses_secret "$SECRET_SES_SECRET_ACCESS_KEY" \
             --arg ses_region "$SECRET_SES_REGION" \
@@ -562,7 +562,7 @@ jobs:
               JWT_SECRET: $jwt,
               STRIPE_SECRET_KEY: $stripe,
               STRIPE_WEBHOOK_SECRET: $stripe_wh,
-              ADMIN_EMAIL: $admin,
+              ROOT_EMAIL: $admin,
               AWS_SES_ACCESS_KEY_ID: $ses_key,
               AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
               AWS_SES_REGION: $ses_region,

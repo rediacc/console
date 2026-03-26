@@ -872,7 +872,7 @@ pr_publish() {
             --arg jwt "$(_env JWT_SECRET)" \
             --arg stripe "$(_env STRIPE_SANDBOX_SECRET_KEY)" \
             --arg stripe_wh "$(_env STRIPE_WEBHOOK_SECRET)" \
-            --arg admin "$(_env ADMIN_EMAIL)" \
+            --arg admin "$(_env ROOT_EMAIL)" \
             --arg ses_key "$(_env AWS_SES_ACCESS_KEY_ID)" \
             --arg ses_secret "$(_env AWS_SES_SECRET_ACCESS_KEY)" \
             --arg ses_region "$(_env AWS_SES_REGION)" \
@@ -887,7 +887,7 @@ pr_publish() {
               JWT_SECRET: $jwt,
               STRIPE_SECRET_KEY: $stripe,
               STRIPE_WEBHOOK_SECRET: $stripe_wh,
-              ADMIN_EMAIL: $admin,
+              ROOT_EMAIL: $admin,
               AWS_SES_ACCESS_KEY_ID: $ses_key,
               AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
               AWS_SES_REGION: $ses_region,
