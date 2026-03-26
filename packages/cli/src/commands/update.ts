@@ -14,6 +14,24 @@ import { getOldBinaryPath, isSEA } from '../utils/platform.js';
 import { VERSION } from '../version.js';
 
 /**
+ * Handle --channel switch. Returns true if the action is complete (no further update needed).
+ */
+async function handleChannelSwitch(
+  channel: string,
+  options: { force?: boolean; checkOnly?: boolean }
+): Promise<boolean> {
+  if (channel !== 'stable' && channel !== 'edge') {
+    outputService.error(t('commands.update.invalidChannel', { channel }));
+    process.exit(1);
+  }
+  const { loadServerConfig, saveServerConfig } = await import('../services/subscription-auth.js');
+  const config = loadServerConfig() ?? { accountServer: 'https://www.rediacc.com' };
+  saveServerConfig({ ...config, updateChannel: channel });
+  outputService.success(t('commands.update.channelSet', { channel }));
+  return !options.force && !options.checkOnly;
+}
+
+/**
  * Handle the --check-only flow.
  */
 async function handleCheckOnly(): Promise<void> {
@@ -236,22 +254,9 @@ export function registerUpdateCommand(program: Command): void {
           process.exit(1);
         }
 
-        // Handle channel switch
         if (options.channel) {
-          const channel = options.channel as string;
-          if (channel !== 'stable' && channel !== 'edge') {
-            outputService.error(t('commands.update.invalidChannel', { channel }));
-            process.exit(1);
-          }
-          const { loadServerConfig, saveServerConfig, getServerConfigFile } = await import(
-            '../services/subscription-auth.js'
-          );
-          const config = loadServerConfig() ?? { accountServer: 'https://www.rediacc.com' };
-          saveServerConfig({ ...config, updateChannel: channel });
-          outputService.success(t('commands.update.channelSet', { channel }));
-          if (!options.force && !options.checkOnly) {
-            return; // Channel switch only, no update
-          }
+          const done = await handleChannelSwitch(options.channel, options);
+          if (done) return;
         }
 
         if (options.rollback) {
