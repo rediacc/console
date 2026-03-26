@@ -145,6 +145,18 @@ cd packages/www && npm run build
 cd packages/www && npm run dev
 ```
 
+## Release Channels
+
+The CLI supports two release channels:
+- **stable** (default): Promoted from edge after 7-day soak. Downloaded from `cli/stable/`.
+- **edge**: Published on every merge to main. Downloaded from `cli/edge/`.
+
+R2 structure: `rediacc-releases/cli/{edge,stable}/{manifest.json,latest.json,rdc-*}`
+
+Environments:
+- `edge.rediacc.com` -- auto-deployed on merge to main, D1 cloned from production daily
+- `www.rediacc.com` -- production, promoted from edge after 7-day soak
+
 ## Quality Gates (`npm run ci`)
 
 `npm run ci` runs 23 checks that mirror CI. Run locally before pushing to catch issues early. The checks cover: version consistency, dependency freshness, ESLint, biome formatting, i18n completeness, TypeScript types, unit tests, security audit, shell linting, Go lint (renet), E2E coverage, and more.

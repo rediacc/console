@@ -241,26 +241,26 @@ if [[ -d "$CLI_DIR" ]]; then
         ((UPLOADED++)) || true
     done
 
-    # Upload manifest.json if present
+    # Upload manifest to edge channel
     if [[ -f "$CLI_DIR/manifest.json" ]]; then
-        r2_cp "$CLI_DIR/manifest.json" "$(r2_path "cli/manifest.json")"
+        r2_cp "$CLI_DIR/manifest.json" "$(r2_path "cli/edge/manifest.json")"
         ((UPLOADED++)) || true
     fi
 
-    # Copy binaries to cli/latest/ for stable download URLs
+    # Copy binaries to cli/edge/ for edge channel downloads
     for binary in "$CLI_DIR"/rdc-*; do
         [[ -f "$binary" ]] || continue
         local_name="$(basename "$binary")"
-        r2_cp "$binary" "$(r2_path "cli/latest/${local_name}")"
+        r2_cp "$binary" "$(r2_path "cli/edge/${local_name}")"
     done
 
-    # Write latest.json LAST — all binaries and manifest must be in place first
-    # to avoid race conditions where latest.json points to a version whose
-    # files haven't finished uploading yet.
-    r2_put "{\"version\":\"${VERSION}\"}" "$(r2_path "cli/latest.json")"
+    # Write edge latest.json LAST -- all binaries and manifest must be in place
+    # first to avoid race conditions where latest.json points to a version
+    # whose files haven't finished uploading yet.
+    r2_put "{\"version\":\"${VERSION}\"}" "$(r2_path "cli/edge/latest.json")"
     ((UPLOADED++)) || true
 
-    log_info "CLI: uploaded to $(r2_path "cli/v${VERSION}/") + $(r2_path "cli/latest/")"
+    log_info "CLI: uploaded to $(r2_path "cli/v${VERSION}/") + $(r2_path "cli/edge/")"
 
     # Track CLI versions for retention cleanup (production only)
     if [[ -z "$STAGING" ]]; then

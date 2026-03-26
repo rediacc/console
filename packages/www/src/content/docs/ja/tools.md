@@ -183,3 +183,11 @@ rdc update status
 ```
 
 現在のバージョン、アップデートチャンネル、および自動アップデートの設定を表示します。
+
+#### リリースチャンネル
+
+```bash
+rdc update --channel edge      # 最新機能、頻繁に更新
+rdc update --channel stable    # 本番環境向けリリース（デフォルト）
+rdc update --status            # 現在のチャンネルとバージョン情報を表示
+```

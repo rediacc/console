@@ -182,4 +182,12 @@ rdc update rollback
 rdc update status
 ```
 
-Mevcut sürümü, güncelleme kanalını ve otomatik güncelleme yapılandırmasını gösterir.
+Mevcut surumu, guncelleme kanalini ve otomatik guncelleme yapilandirmasini gosterir.
+
+#### Yayin Kanallari
+
+```bash
+rdc update --channel edge      # En son ozellikler, sik guncellenir
+rdc update --channel stable    # Uretim icin hazir surumler (varsayilan)
+rdc update --status            # Mevcut kanal ve surum bilgisini goster
+```

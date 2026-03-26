@@ -6002,6 +6002,12 @@
           "descriptionKey": "commands.update.statusDescription",
           "mandatory": false,
           "defaultValue": null
+        },
+        {
+          "flags": "--channel <channel>",
+          "descriptionKey": "commands.update.channelDescription",
+          "mandatory": false,
+          "defaultValue": null
         }
       ],
       "arguments": [],

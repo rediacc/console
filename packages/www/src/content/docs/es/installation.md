@@ -90,6 +90,23 @@ Para revertir a la versión anterior después de una actualización:
 rdc update rollback
 ```
 
+### Canales de Actualizacion
+
+La CLI admite dos canales de lanzamiento:
+- **stable** (predeterminado): Versiones probadas exhaustivamente, recomendado para produccion
+- **edge**: Ultimas funciones y correcciones de errores, actualizado en cada lanzamiento
+
+```bash
+rdc update --channel edge      # Cambiar al canal edge
+rdc update --channel stable    # Volver al canal stable
+rdc update --status            # Mostrar canal actual y version
+```
+
+Para instalar directamente desde el canal edge:
+```bash
+REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
+```
+
 ### Remote Binary Updates
 
 When you run commands against a remote machine, the CLI automatically provisions the matching `renet` binary. If the binary is updated, the route server (`rediacc-router`) is restarted automatically so it picks up the new version.

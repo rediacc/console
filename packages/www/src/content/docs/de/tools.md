@@ -183,3 +183,11 @@ rdc update status
 ```
 
 Zeigt die aktuelle Version, den Update-Kanal und die Auto-Update-Konfiguration an.
+
+#### Release-Kanale
+
+```bash
+rdc update --channel edge      # Neueste Funktionen, haufig aktualisiert
+rdc update --channel stable    # Produktionsreife Versionen (Standard)
+rdc update --status            # Aktuellen Kanal und Versionsinformationen anzeigen
+```

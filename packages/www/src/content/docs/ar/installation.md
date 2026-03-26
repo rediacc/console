@@ -90,6 +90,23 @@ rdc update --check-only
 rdc update rollback
 ```
 
+### قنوات التحديث
+
+يدعم سطر الاوامر قناتي اصدار:
+- **stable** (افتراضي): اصدارات مختبرة بدقة، موصى بها لبيئة الانتاج
+- **edge**: احدث الميزات وإصلاحات الاخطاء، يتم التحديث مع كل اصدار
+
+```bash
+rdc update --channel edge      # التبديل إلى قناة edge
+rdc update --channel stable    # العودة إلى قناة stable
+rdc update --status            # عرض القناة الحالية والاصدار
+```
+
+للتثبيت مباشرة من قناة edge:
+```bash
+REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
+```
+
 ### Remote Binary Updates
 
 When you run commands against a remote machine, the CLI automatically provisions the matching `renet` binary. If the binary is updated, the route server (`rediacc-router`) is restarted automatically so it picks up the new version.

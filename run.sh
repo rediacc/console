@@ -818,13 +818,13 @@ pr_publish() {
         local fname
         fname="$(basename "$f")"
         npx wrangler r2 object put "${r2_bucket}/${staging_prefix}/cli/v${cli_version}/${fname}" --file "$f" --content-type application/octet-stream --remote
-        npx wrangler r2 object put "${r2_bucket}/${staging_prefix}/cli/latest/${fname}" --file "$f" --content-type application/octet-stream --remote
+        npx wrangler r2 object put "${r2_bucket}/${staging_prefix}/cli/edge/${fname}" --file "$f" --content-type application/octet-stream --remote
     done
     if [[ -f "dist/cli/manifest.json" ]]; then
-        npx wrangler r2 object put "${r2_bucket}/${staging_prefix}/cli/manifest.json" --file dist/cli/manifest.json --content-type application/json --remote
+        npx wrangler r2 object put "${r2_bucket}/${staging_prefix}/cli/edge/manifest.json" --file dist/cli/manifest.json --content-type application/json --remote
     fi
     echo "{\"version\":\"${cli_version}\"}" >/tmp/latest.json
-    npx wrangler r2 object put "${r2_bucket}/${staging_prefix}/cli/latest.json" --file /tmp/latest.json --content-type application/json --remote
+    npx wrangler r2 object put "${r2_bucket}/${staging_prefix}/cli/edge/latest.json" --file /tmp/latest.json --content-type application/json --remote
     rm -f /tmp/latest.json
     log_info "CLI binary uploaded to R2 staging"
 

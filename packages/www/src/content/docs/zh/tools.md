@@ -183,3 +183,11 @@ rdc update status
 ```
 
 显示当前版本、更新通道和自动更新配置。
+
+#### 发布通道
+
+```bash
+rdc update --channel edge      # 最新功能，频繁更新
+rdc update --channel stable    # 生产就绪版本（默认）
+rdc update --status            # 显示当前通道和版本信息
+```

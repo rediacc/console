@@ -6,7 +6,7 @@ order: 2
 language: ru
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ru/cli.json
-sourceHash: "ea40157736e29f4d"
+sourceHash: "900b47c823865edb"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2099,6 +2099,7 @@ rdc update [options]
 | `--check-only` | {{t:cli.commands.update.checkOnly}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--rollback` | {{t:cli.commands.update.rollback}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--status` | {{t:cli.commands.update.statusDescription}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--channel <channel>` | {{t:cli.commands.update.channelDescription}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---
