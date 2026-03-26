@@ -4,7 +4,7 @@ description: "Installieren Sie die Rediacc-CLI für Linux, macOS oder Windows."
 category: "Guides"
 order: 1
 language: de
-sourceHash: "7710f243d1cde01e"
+sourceHash: "f4d35bb8c2447783"
 ---
 
 # Installation

@@ -4,6 +4,8 @@ description: Kimlik doğrulama, API tokenleri, oturum yönetimi ve izin modeli.
 category: Guides
 order: 13
 language: tr
+sourceHash: "10dfa967f7ffca7d"
+sourceCommit: "dabe1a33844b3b7ec8a2c4ab44dc2de6683283c9"
 ---
 
 ### Kimlik Doğrulama

@@ -4,7 +4,7 @@ description: 文件同步、终端访问、VS Code 集成、更新和诊断。
 category: Guides
 order: 9
 language: zh
-sourceHash: "b9aa7cdcf088b645"
+sourceHash: "f304688fdc1a41c1"
 ---
 
 # 工具

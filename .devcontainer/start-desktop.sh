@@ -215,6 +215,10 @@ stop_all() {
 			rm -f "$PIDFILE_DIR/$svc.pid"
 		fi
 	done
+	# Also kill D-Bus and gnome-keyring (not tracked in PID files).
+	# These break CRIU checkpoint and must be stopped before dump.
+	pkill -f "dbus-daemon.*session" 2>/dev/null || true
+	pkill -f "gnome-keyring" 2>/dev/null || true
 	log_info "All desktop services stopped"
 }
 

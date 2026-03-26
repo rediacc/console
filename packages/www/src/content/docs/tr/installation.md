@@ -4,7 +4,7 @@ description: "Rediacc CLI'ı Linux, macOS veya Windows üzerine kurun."
 category: "Guides"
 order: 1
 language: tr
-sourceHash: "7710f243d1cde01e"
+sourceHash: "f4d35bb8c2447783"
 ---
 
 # Kurulum

@@ -4,7 +4,7 @@ description: "Установка CLI Rediacc на Linux, macOS или Windows."
 category: "Guides"
 order: 1
 language: ru
-sourceHash: "7710f243d1cde01e"
+sourceHash: "f4d35bb8c2447783"
 ---
 
 # Установка

@@ -23,3 +23,6 @@
 
 # yauzl — electron → extract-zip → yauzl, no upstream fix
 1114530   # off-by-one error (GHSA-gmq8-994r-jv83)
+
+# brace-expansion — transitive via eslint/electron chains, fix requires eslint v10 major upgrade
+1115432   # zero-step sequence process hang and memory exhaustion (GHSA-f886-m6hf-6m8v)

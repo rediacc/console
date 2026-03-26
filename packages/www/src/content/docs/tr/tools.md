@@ -4,7 +4,7 @@ description: "Dosya senkronizasyonu, terminal erişimi, VS Code entegrasyonu ve 
 category: Guides
 order: 9
 language: tr
-sourceHash: "b9aa7cdcf088b645"
+sourceHash: "f304688fdc1a41c1"
 ---
 
 # Araçlar
