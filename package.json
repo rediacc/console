@@ -117,7 +117,7 @@
     "eslint-plugin-unicorn": "^63.0.0",
     "globals": "^17.4.0",
     "jsdom": "^29.0.0",
-    "knip": "^6.0.5",
+    "knip": "^6.0.6",
     "syncpack": "^14.2.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
