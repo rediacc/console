@@ -8,6 +8,7 @@ import { SimpleLogRecordProcessor } from '@opentelemetry/sdk-logs';
 import { AggregationTemporality, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
+import { UPDATE_DEFAULTS } from '@rediacc/shared/config/defaults';
 
 export interface SdkSetupResult {
   sdk: NodeSDK;
@@ -41,7 +42,7 @@ export function setupOtelSdk(opts: {
     [ATTR_SERVICE_NAME]: opts.serviceName,
     [ATTR_SERVICE_VERSION]: opts.serviceVersion,
     'deployment.environment': opts.environment,
-    'update.channel': opts.updateChannel ?? 'stable',
+    'update.channel': opts.updateChannel ?? UPDATE_DEFAULTS.CHANNEL,
     'service.platform': 'cli',
     'os.type': process.platform,
     'runtime.name': 'nodejs',

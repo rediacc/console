@@ -8,7 +8,7 @@ import { type Logger, SeverityNumber } from '@opentelemetry/api-logs';
 import { type PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { type NodeSDK } from '@opentelemetry/sdk-node';
 import type { TelemetryConfig, TelemetryHandler, UserContext } from '@rediacc/shared/api';
-import { DEFAULTS } from '@rediacc/shared/config';
+import { DEFAULTS, UPDATE_DEFAULTS } from '@rediacc/shared/config';
 import {
   anonymizeArgs,
   anonymizeObject,
@@ -120,21 +120,12 @@ class CliTelemetryService implements TelemetryHandler {
   }
 
   private resolveUpdateChannel(): string {
-    // Read channel from env or server.json (avoids circular import with updater.ts)
+    // Read channel from env (avoids circular/dynamic imports).
+    // server.json channel is resolved later by the updater; for telemetry
+    // resource attributes, env var is sufficient since it's set at startup.
     const envChannel = process.env.RDC_UPDATE_CHANNEL;
     if (envChannel === 'edge' || envChannel === 'stable') return envChannel;
-    try {
-      const { loadServerConfig } = require('./subscription-auth.js') as {
-        loadServerConfig: () => { updateChannel?: string } | null;
-      };
-      const config = loadServerConfig();
-      if (config?.updateChannel === 'edge' || config?.updateChannel === 'stable') {
-        return config.updateChannel;
-      }
-    } catch {
-      // server.json may not exist
-    }
-    return 'stable';
+    return UPDATE_DEFAULTS.CHANNEL;
   }
 
   private getExporterHeaders(): Record<string, string> {
