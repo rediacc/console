@@ -1,6 +1,6 @@
 ---
-title: Kontoverwaltung
-description: Organisationen, Teams, Mitglieder und Abonnements in Rediacc.
+title: Kontoverwaltung & Organisationsübersicht
+description: Organisationen, Teams, Mitglieder, Rollen und Abonnementübersicht in Rediacc.
 category: Guides
 order: 12
 language: de

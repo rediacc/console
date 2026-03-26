@@ -1,6 +1,6 @@
 ---
-title: Kontosicherheit & API
-description: Authentifizierung, API-Token, Sitzungsverwaltung und das Berechtigungsmodell.
+title: Kontosicherheit & API-Schlüssel
+description: Authentifizierung, API-Token-Verwaltung, Sitzungsüberwachung und das Zugriffs- und Berechtigungsmodell für Ihre Organisation.
 category: Guides
 order: 13
 language: de
