@@ -721,6 +721,11 @@ export class BridgeTestRunner {
       );
     }
 
+    // 1b. Close any stale LUKS devices (prevents "storage already open" errors on retry)
+    await this.executeViaBridge(
+      `sudo dmsetup ls --target crypt 2>/dev/null | awk '{print $1}' | xargs -r -I{} sudo cryptsetup close {} 2>/dev/null || true`
+    );
+
     // 2. Kill any processes using the datastore (prevents busy mount)
     await this.executeViaBridge(
       `sudo lsof +D ${datastorePath} 2>/dev/null | awk 'NR>1 {print $2}' | xargs -r sudo kill 2>/dev/null || true`
