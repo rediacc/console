@@ -360,6 +360,30 @@ jobs:
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
+  build-docker-fast:
+    name: Build (Docker Fast)
+    needs: [initialize, quality, review-gate, build-renet]
+    permissions:
+      contents: read
+      packages: write   # GHCR push
+    if: always() && needs.initialize.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    uses: ./.github/workflows/ci-build-docker.yml
+    with:
+      next_version: ${{ needs.initialize.outputs.next_version }}
+      api_tag: ${{ needs.initialize.outputs.api_tag }}
+      api_exists: ${{ needs.initialize.outputs.api_exists }}
+      bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
+      bridge_exists: ${{ needs.initialize.outputs.bridge_exists }}
+      plugins_tag: ${{ needs.initialize.outputs.plugins_tag }}
+      plugins_exists: ${{ needs.initialize.outputs.plugins_exists }}
+      web_tag: ${{ needs.initialize.outputs.web_tag }}
+      web_exists: ${{ needs.initialize.outputs.web_exists }}
+      cli_tag: ${{ needs.initialize.outputs.cli_tag }}
+      cli_exists: ${{ needs.initialize.outputs.cli_exists }}
+      test_images_only: true
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+
   build-desktop:
     name: Build (Desktop)
     needs: [initialize, quality, review-gate]
@@ -383,6 +407,7 @@ jobs:
     uses: ./.github/workflows/ci-build-cli.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
+      skip_win_arm64: ${{ github.event_name != 'push' }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
@@ -447,13 +472,13 @@ jobs:
   # ============================================================================
   tests:
     name: Tests + Infra
-    needs: [initialize, build-docker]
-    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
+    needs: [initialize, build-docker-fast]
+    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.build-docker-fast.result == 'success'
     uses: ./.github/workflows/ct-tests.yml
     with:
-      api_tag: ${{ needs.initialize.outputs.api_tag }}
-      bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
-      web_tag: ${{ needs.initialize.outputs.web_tag }}
+      api_tag: ${{ needs.initialize.outputs.api_tag }}-amd64
+      bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}-amd64
+      web_tag: ${{ needs.initialize.outputs.web_tag }}-amd64
       e2e_browsers: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.browsers == 'all-browsers' && 'chromium firefox webkit msedge' || 'chromium' }}
       provision_vms: true
     secrets:
@@ -474,21 +499,21 @@ jobs:
   # ============================================================================
   standalone-run-test:
     name: Standalone Run
-    needs: [initialize, build-docker]
+    needs: [initialize, build-docker-fast]
     if: >-
       always() &&
       needs.initialize.outputs.is_fork != 'true' &&
       needs.initialize.outputs.full_suite == 'true' &&
       needs.initialize.result == 'success' &&
-      needs.build-docker.result == 'success'
+      needs.build-docker-fast.result == 'success'
     uses: ./.github/workflows/standalone-run.yml
     with:
       run-name: 'CI Validation'
       duration: '5'
       version: ${{ needs.initialize.outputs.bridge_tag }}
-      api-tag: ${{ needs.initialize.outputs.api_tag }}
-      web-tag: ${{ needs.initialize.outputs.web_tag }}
-      bridge-tag: ${{ needs.initialize.outputs.bridge_tag }}
+      api-tag: ${{ needs.initialize.outputs.api_tag }}-amd64
+      web-tag: ${{ needs.initialize.outputs.web_tag }}-amd64
+      bridge-tag: ${{ needs.initialize.outputs.bridge_tag }}-amd64
       ci-mode: true
       vm-os-list: '["none", "ubuntu-24.04", "debian-12"]'
     secrets:
@@ -525,13 +550,13 @@ jobs:
   # ============================================================================
   elite-run-test:
     name: Elite Run
-    needs: [initialize, build-docker]
+    needs: [initialize, build-docker-fast]
     if: >-
       always() &&
       needs.initialize.outputs.is_fork != 'true' &&
       needs.initialize.outputs.full_suite == 'true' &&
       needs.initialize.result == 'success' &&
-      needs.build-docker.result == 'success'
+      needs.build-docker-fast.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -559,15 +584,15 @@ jobs:
             ${{ needs.initialize.outputs.image_tag && format('--version "{0}"', needs.initialize.outputs.image_tag) || '' }} \
             --env-file
 
-          # Override individual tags from initialize job
+          # Override individual tags from initialize job (use -amd64 suffix for fast builds)
           if [[ -n "${{ needs.initialize.outputs.api_tag }}" ]]; then
-            echo "API_TAG=${{ needs.initialize.outputs.api_tag }}" >> $GITHUB_ENV
+            echo "API_TAG=${{ needs.initialize.outputs.api_tag }}-amd64" >> $GITHUB_ENV
           fi
           if [[ -n "${{ needs.initialize.outputs.web_tag }}" ]]; then
-            echo "WEB_TAG=${{ needs.initialize.outputs.web_tag }}" >> $GITHUB_ENV
+            echo "WEB_TAG=${{ needs.initialize.outputs.web_tag }}-amd64" >> $GITHUB_ENV
           fi
           if [[ -n "${{ needs.initialize.outputs.bridge_tag }}" ]]; then
-            echo "BRIDGE_TAG=${{ needs.initialize.outputs.bridge_tag }}" >> $GITHUB_ENV
+            echo "BRIDGE_TAG=${{ needs.initialize.outputs.bridge_tag }}-amd64" >> $GITHUB_ENV
           fi
 
       - name: Pre-pull Docker Images
@@ -840,7 +865,7 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-desktop, build-cli, package-tests, deploy-dryrun, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview, test-preview-install]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, deploy-dryrun, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview, test-preview-install]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -916,6 +941,7 @@ jobs:
              [[ "$REVIEW_GATE_OK" != "true" ]] || \
              [[ "$STRIPE_SANDBOX_OK" != "true" ]] || \
              [[ "${{ needs.build-docker.result }}" != "success" ]] || \
+             [[ "${{ needs.build-docker-fast.result }}" != "success" ]] || \
              [[ "${{ needs.build-desktop.result }}" != "success" ]] || \
              [[ "${{ needs.build-cli.result }}" != "success" ]] || \
              [[ "$PACKAGE_TESTS_OK" != "true" ]] || \
@@ -932,6 +958,7 @@ jobs:
             echo "  review-gate: ${{ needs.review-gate.result }}"
             echo "  stripe-sandbox: ${{ needs.stripe-sandbox.result }}"
             echo "  build-docker: ${{ needs.build-docker.result }}"
+            echo "  build-docker-fast: ${{ needs.build-docker-fast.result }}"
             echo "  build-desktop: ${{ needs.build-desktop.result }}"
             echo "  build-cli: ${{ needs.build-cli.result }}"
             echo "  package-tests: ${{ needs.package-tests.result }}"

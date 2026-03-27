@@ -6,6 +6,10 @@ on:
       next_version:
         type: string
         required: false
+      skip_win_arm64:
+        type: boolean
+        required: false
+        default: false
     secrets:
       APP_PRIVATE_KEY:
         required: false
@@ -19,6 +23,9 @@ permissions:
 jobs:
   build-cli-executables:
     name: CLI (${{ matrix.platform }}-${{ matrix.arch }})
+    if: >-
+      !inputs.skip_win_arm64 ||
+      !(matrix.platform == 'win' && matrix.arch == 'arm64')
     runs-on: ${{ matrix.os }}
     timeout-minutes: ${{ matrix.timeout }}
     strategy:

@@ -36,6 +36,10 @@ on:
       cli_exists:
         type: string
         required: false
+      test_images_only:
+        type: boolean
+        required: false
+        default: false
     secrets:
       APP_PRIVATE_KEY:
         required: false
@@ -138,6 +142,7 @@ jobs:
   build-json:
     name: JSON
     runs-on: ubuntu-slim
+    if: "!inputs.test_images_only"
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - name: Apply version bump
@@ -159,6 +164,7 @@ jobs:
     name: Plugins & Docker
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    if: "!inputs.test_images_only"
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - name: Apply version bump
@@ -258,6 +264,7 @@ jobs:
             .
 
       - name: Build & push Web image (arm64)
+        if: "!inputs.test_images_only"
         run: |
           docker buildx build \
             --file Dockerfile.native \
@@ -269,6 +276,7 @@ jobs:
             .
 
       - name: Create multi-arch manifest
+        if: "!inputs.test_images_only"
         run: |
           .ci/scripts/docker/create-manifest.sh \
             --image web \
@@ -288,7 +296,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [build-cli]
-    if: inputs.cli_exists != 'true'
+    if: "!inputs.test_images_only && inputs.cli_exists != 'true'"
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -332,7 +340,7 @@ jobs:
   build-cli-docker-skip:
     name: CLI Docker (cached)
     runs-on: ubuntu-latest
-    if: inputs.cli_exists == 'true'
+    if: "!inputs.test_images_only && inputs.cli_exists == 'true'"
     steps:
       - run: echo "::notice::Skipping Docker build - cli:${{ inputs.cli_tag }} already exists in registry"
 
@@ -465,6 +473,7 @@ jobs:
     name: Middleware (arm64)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 25
+    if: "!inputs.test_images_only"
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - uses: ./.github/actions/app-token
@@ -547,7 +556,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [build-middleware-amd64, build-middleware-arm64]
-    if: inputs.api_exists != 'true'
+    if: >-
+      always() && inputs.api_exists != 'true' &&
+      needs.build-middleware-amd64.result == 'success' &&
+      (inputs.test_images_only || needs.build-middleware-arm64.result == 'success')
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - uses: ./.github/actions/app-token
@@ -567,6 +579,7 @@ jobs:
           path: publish/amd64/
 
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+        if: "!inputs.test_images_only"
         with:
           name: middleware-publish-arm64-${{ github.sha }}
           path: publish/arm64/
@@ -591,6 +604,7 @@ jobs:
             .
 
       - name: Build & push API image (arm64)
+        if: "!inputs.test_images_only"
         run: |
           docker buildx build \
             --file private/middleware/Dockerfile.native \
@@ -602,6 +616,7 @@ jobs:
             .
 
       - name: Create multi-arch manifest
+        if: "!inputs.test_images_only"
         run: |
           .ci/scripts/docker/create-manifest.sh \
             --image api \
@@ -610,7 +625,7 @@ jobs:
   build-middleware-docker-skip:
     name: API Docker (cached)
     runs-on: ubuntu-latest
-    if: inputs.api_exists == 'true'
+    if: "!inputs.test_images_only && inputs.api_exists == 'true'"
     steps:
       - run: echo "::notice::Skipping Docker build - api:${{ inputs.api_tag }} already exists in registry"
 
@@ -680,6 +695,7 @@ jobs:
             .
 
       - name: Build & push arm64 bridge image
+        if: "!inputs.test_images_only"
         run: |
           docker buildx build \
             --file private/renet/Dockerfile.native \
@@ -690,6 +706,7 @@ jobs:
             .
 
       - name: Create multi-arch manifest
+        if: "!inputs.test_images_only"
         run: |
           .ci/scripts/docker/create-manifest.sh \
             --image bridge \
@@ -710,6 +727,7 @@ jobs:
     name: Devcontainer (amd64)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: "!inputs.test_images_only"
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -742,6 +760,7 @@ jobs:
     name: Devcontainer (arm64)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 45
+    if: "!inputs.test_images_only"
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -774,7 +793,7 @@ jobs:
     name: Devcontainer Manifest
     runs-on: ubuntu-latest
     needs: [build-devcontainer-amd64, build-devcontainer-arm64]
-    if: github.event_name == 'push'
+    if: "!inputs.test_images_only && github.event_name == 'push'"
     steps:
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v4
 
