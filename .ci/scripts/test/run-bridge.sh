@@ -125,6 +125,12 @@ if [[ ${#TEST_FILES[@]} -gt 0 ]]; then
     CMD+=("${TEST_FILES[@]}")
 fi
 
+# Fail fast: stop after 3 failures to avoid wasting 60+ minutes on cascading timeouts
+# (e.g., when repository_create fails on Fedora, all downstream tests would also timeout)
+if is_ci; then
+    CMD+=("--max-failures=3")
+fi
+
 # Add optional flags
 if [[ "$HEADED" == "true" ]]; then
     CMD+=("--headed")
