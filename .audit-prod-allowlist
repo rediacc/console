@@ -31,3 +31,8 @@
 # picomatch method injection in POSIX character classes (transitive dep, no fix available)
 1115394
 1115396
+# picomatch method injection + ReDoS (superseded advisories, same root cause, no fix)
+1115490
+1115492
+1115493
+1115495
