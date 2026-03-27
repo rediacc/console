@@ -75,7 +75,7 @@ jobs:
 
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
-          name: cli-bundle-${{ github.sha }}
+          name: cli-bundle${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: bundle/
           retention-days: 3
 
@@ -90,7 +90,7 @@ jobs:
 
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
-          name: cli-npm-${{ github.sha }}
+          name: cli-npm${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: /tmp/cli-npm/
           retention-days: 3
 
@@ -114,7 +114,7 @@ jobs:
           VITE_BASE_PATH: /console/
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
-          name: build-web-${{ github.sha }}
+          name: build-web${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: packages/web/dist/
           retention-days: 3
 
@@ -135,7 +135,7 @@ jobs:
       - run: .ci/scripts/build/build-www.sh
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
-          name: build-www-${{ github.sha }}
+          name: build-www${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: packages/www/dist/
           retention-days: 3
 
@@ -156,7 +156,7 @@ jobs:
       - run: .ci/scripts/build/build-json.sh
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
-          name: build-json-${{ github.sha }}
+          name: build-json${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: packages/json/dist/
           retention-days: 3
 
@@ -219,17 +219,17 @@ jobs:
 
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
-          name: build-web-${{ github.sha }}
+          name: build-web${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: web-assets/
 
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
-          name: build-www-${{ github.sha }}
+          name: build-www${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: www-assets/
 
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
-          name: cli-npm-${{ github.sha }}
+          name: cli-npm${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: cli-npm/
 
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -302,7 +302,7 @@ jobs:
 
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
-          name: cli-bundle-${{ github.sha }}
+          name: cli-bundle${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: bundle/
 
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v4
@@ -412,7 +412,7 @@ jobs:
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
-          name: build-middleware-coverage-amd64-${{ github.sha }}
+          name: build-middleware-coverage-amd64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: private/middleware/coverage/
           retention-days: 3
           if-no-files-found: ignore
@@ -463,7 +463,7 @@ jobs:
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: inputs.api_exists != 'true'
         with:
-          name: middleware-publish-amd64-${{ github.sha }}
+          name: middleware-publish-amd64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: private/middleware/publish-final/
           retention-days: 3
 
@@ -545,7 +545,7 @@ jobs:
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: inputs.api_exists != 'true'
         with:
-          name: middleware-publish-arm64-${{ github.sha }}
+          name: middleware-publish-arm64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: private/middleware/publish-final/
           retention-days: 3
 
@@ -575,13 +575,13 @@ jobs:
 
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
-          name: middleware-publish-amd64-${{ github.sha }}
+          name: middleware-publish-amd64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: publish/amd64/
 
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         if: "!inputs.test_images_only"
         with:
-          name: middleware-publish-arm64-${{ github.sha }}
+          name: middleware-publish-arm64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: publish/arm64/
 
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v4
