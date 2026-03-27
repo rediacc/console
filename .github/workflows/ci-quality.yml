@@ -13,6 +13,10 @@ on:
     secrets:
       APP_PRIVATE_KEY:
         required: false
+      DOCKERHUB_USERNAME:
+        required: false
+      DOCKERHUB_TOKEN:
+        required: false
 
 permissions:
   contents: read

@@ -181,6 +181,8 @@ jobs:
       next_version: ${{ needs.initialize.outputs.next_version }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   # ============================================================================
   # REVIEW GATE: Trigger Gemini review, wait for it, check threads & comments
