@@ -213,7 +213,7 @@ module.exports = async ({ github, context, core }) => {
       }
       // Still auto-retry independent failures (handles flaky infra like SSL errors)
       const isNoRetryJob = noRetryPatterns.some(p => independentFailed[0].name.includes(p));
-      if (run.run_attempt < MAX_ATTEMPTS && !isNoRetryJob) {
+      if (run.run_attempt < MAX_ATTEMPTS && !isNoRetryJob && !skipAutoRetry) {
         console.log(`Dispatching auto-retry for independent job failure...`);
         await dispatchRerun();
       }
