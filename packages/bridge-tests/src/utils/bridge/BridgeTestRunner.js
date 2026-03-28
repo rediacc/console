@@ -716,6 +716,10 @@ export class BridgeTestRunner {
         }
         // 1b. Close any stale LUKS devices (prevents "storage already open" errors on retry)
         await this.executeViaBridge(`sudo dmsetup ls --target crypt 2>/dev/null | awk '{print $1}' | xargs -r -I{} sudo cryptsetup close {} 2>/dev/null || true`);
+        // 1c. Kill orphaned renet/dockerd processes and remove stale flock
+        await this.executeViaBridge('sudo pkill -9 -f "renet daemon start-foreground" 2>/dev/null || true');
+        await this.executeViaBridge('sudo pkill -9 -f "dockerd.*rediacc" 2>/dev/null || true');
+        await this.executeViaBridge('sudo rm -f /var/lock/rediacc-dockerd-start.lock');
         // 2. Kill any processes using the datastore (prevents busy mount)
         await this.executeViaBridge(`sudo lsof +D ${datastorePath} 2>/dev/null | awk 'NR>1 {print $2}' | xargs -r sudo kill 2>/dev/null || true`);
         // 3. Sync filesystem before unmount
