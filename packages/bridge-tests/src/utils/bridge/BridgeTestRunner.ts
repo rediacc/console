@@ -727,7 +727,9 @@ export class BridgeTestRunner {
     );
 
     // 1c. Kill orphaned renet/dockerd processes and remove stale flock
-    await this.executeViaBridge('sudo pkill -9 -f "renet daemon start-foreground" 2>/dev/null || true');
+    await this.executeViaBridge(
+      'sudo pkill -9 -f "renet daemon start-foreground" 2>/dev/null || true'
+    );
     await this.executeViaBridge('sudo pkill -9 -f "dockerd.*rediacc" 2>/dev/null || true');
     await this.executeViaBridge('sudo rm -f /var/lock/rediacc-dockerd-start.lock');
 
