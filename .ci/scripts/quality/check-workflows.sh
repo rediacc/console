@@ -5,7 +5,8 @@
 # violate CI design principles:
 #   - continue-on-error: Silently ignores step/job failures
 #   - script: |          Inline scripts violate multi-CI design (use .ci/scripts/)
-#   - fail-fast:         Watchdog handles failure cancellation; GitHub defaults to false
+#   (fail-fast was previously banned but GitHub defaults to true, not false.
+#    Matrix fail-fast cancellation happens BEFORE the watchdog sees the failure.)
 #
 # Usage: check-workflows.sh
 
@@ -68,10 +69,9 @@ check_pattern \
     "inline script: |" \
     "Move script to .ci/scripts/ and use: script: return await require('./.ci/scripts/ci/my-script.cjs')({github, context, core})"
 
-check_pattern \
-    "fail-fast" \
-    "fail-fast" \
-    "Remove fail-fast — the watchdog handles failure cancellation. GitHub defaults to false when omitted"
+# fail-fast: no longer banned. GitHub defaults to true (not false as previously assumed).
+# Matrix fail-fast cancellation happens at the GitHub level BEFORE the watchdog sees the failure.
+# Jobs that need independent matrix entries should set fail-fast: false explicitly.
 
 # Security: Ban pull_request_target (exposes secrets to fork PRs)
 check_pattern \
