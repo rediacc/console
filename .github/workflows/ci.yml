@@ -162,7 +162,7 @@ jobs:
         env:
           WATCHDOG_EXCLUDE_PATTERNS: 'Watchdog,CI Complete'
           WATCHDOG_NO_RETRY_PATTERNS: 'Quality,Review Gate'
-          WATCHDOG_INDEPENDENT_PATTERNS: 'Build (CLI),Build (Desktop),Bridge Workers,CLI (macOS),CLI (Windows),CLI Local,Bridge Ceph,SQL HA,OPS Tests,Standalone Run'
+          WATCHDOG_INDEPENDENT_PATTERNS: 'Build (CLI),Build (Desktop),Bridge Workers,CLI (macOS),CLI (Windows),CLI Local,Bridge Ceph,SQL HA,OPS Tests,Standalone Run,Account E2E'
         with:
           script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
 
