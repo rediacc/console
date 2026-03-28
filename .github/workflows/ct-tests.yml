@@ -645,6 +645,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
+      fail-fast: false
       matrix:
         os-image:
           - ubuntu-24.04
