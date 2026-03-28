@@ -4,6 +4,7 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { UserPageIDs } from '@/pages/user/UserPageIDs';
 import { waitForTeamRow } from '@/test-helpers/team-helpers';
+import { dismissDrawerMask } from '@/test-helpers/ui-helpers';
 import { createUserViaUI } from '@/test-helpers/user-helpers';
 import type { Page } from '@playwright/test';
 
@@ -35,27 +36,9 @@ test.describe('User Team Assignment Tests - Add Specific User', () => {
     await addButton.click();
   };
   const openTeamMembersDialog = async (page: Page, teamName: string): Promise<void> => {
-    const dismissDrawerMask = async (): Promise<void> => {
-      const mask = page.locator('.ant-drawer-mask');
-      if (await mask.isVisible().catch(() => false)) {
-        try {
-          await mask.click({ force: true });
-          await mask.waitFor({ state: 'hidden', timeout: 3000 });
-        } catch {
-          await page.keyboard.press('Escape').catch(() => null);
-          await page.evaluate(() => {
-            const overlay = document.querySelector<HTMLElement>('.ant-drawer-mask');
-            if (overlay) {
-              overlay.style.pointerEvents = 'none';
-              overlay.style.opacity = '0';
-            }
-          });
-        }
-      }
-    };
     const teamMembersButton = page.getByTestId(UserPageIDs.systemTeamMembersButton(teamName));
     if (await teamMembersButton.isVisible().catch(() => false)) {
-      await dismissDrawerMask();
+      await dismissDrawerMask(page);
       await teamMembersButton.click();
       return;
     }
@@ -81,7 +64,7 @@ test.describe('User Team Assignment Tests - Add Specific User', () => {
 
     const actionsButton = teamRow.getByRole('button', { name: /actions/i });
     await expect(actionsButton).toBeVisible();
-    await dismissDrawerMask();
+    await dismissDrawerMask(page);
     await actionsButton.click();
     const membersMenuItem = page.getByRole('menuitem', { name: /members/i });
     await expect(membersMenuItem).toBeVisible();
