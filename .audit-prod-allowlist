@@ -40,3 +40,6 @@
 1115551
 1115552
 1115554
+# path-to-regexp ReDoS via sequential optional groups/wildcards (transitive dep, no fix)
+1115573
+1115582
