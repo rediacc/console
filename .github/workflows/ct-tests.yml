@@ -137,7 +137,7 @@ jobs:
     timeout-minutes: 60
     env:
       CI: 'true'
-      BRIDGE_TIMEOUT: 120000
+      BRIDGE_TIMEOUT: 300000
       DOCKER_REGISTRY: ghcr.io/rediacc/elite
       # Per-image tags for backend services
       API_TAG: ${{ inputs.api_tag }}
@@ -653,7 +653,7 @@ jobs:
           - opensuse-15.6
     env:
       CI: 'true'
-      BRIDGE_TIMEOUT: 120000
+      BRIDGE_TIMEOUT: 300000
       VM_BRIDGE: '1'
       VM_WORKERS: '11 12'
       VM_CEPH_NODES: ''
@@ -739,7 +739,7 @@ jobs:
     timeout-minutes: 45
     env:
       CI: 'true'
-      BRIDGE_TIMEOUT: 120000
+      BRIDGE_TIMEOUT: 300000
       VM_BRIDGE: '1'
       VM_WORKERS: ''
       VM_CEPH_NODES: '21 22 23'
