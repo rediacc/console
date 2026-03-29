@@ -123,7 +123,7 @@ jobs:
 
           # Copy edge -> stable
           echo "Copying cli/edge/ -> cli/stable/"
-          rclone copy r2:rediacc-release/cli/edge/ r2:rediacc-release/cli/stable/ --progress
+          rclone copy r2:rediacc-releases/cli/edge/ r2:rediacc-releases/cli/stable/ --progress
 
           echo "Promoted edge v${{ steps.edge.outputs.version }} to stable"
 
