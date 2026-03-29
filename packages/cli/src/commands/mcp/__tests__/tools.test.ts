@@ -218,7 +218,16 @@ describe('MCP tool definitions', () => {
       const tool = TOOLS.find((t) => t.name === 'term_exec')!;
       expect(
         tool.command({ machine: 'prod', repository: 'webapp', command: 'docker ps | grep running' })
-      ).toEqual(['term', 'connect', '-m', 'prod', '-r', 'webapp', '-c', 'docker ps | grep running']);
+      ).toEqual([
+        'term',
+        'connect',
+        '-m',
+        'prod',
+        '-r',
+        'webapp',
+        '-c',
+        'docker ps | grep running',
+      ]);
     });
 
     it('term_exec omits repository when not provided', () => {
