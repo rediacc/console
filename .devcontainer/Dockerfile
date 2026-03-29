@@ -149,6 +149,13 @@ RUN npx playwright install-deps chromium
 RUN npm install -g @openai/codex @google/gemini-cli \
     && npm cache clean --force
 
+# glab — GitLab CLI (https://gitlab.com/gitlab-org/cli)
+ARG GLAB_VERSION=1.90.0
+RUN ARCH=$(dpkg --print-architecture) \
+    && curl -fsSL -o /tmp/glab.deb "https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_${ARCH}.deb" \
+    && dpkg -i /tmp/glab.deb \
+    && rm /tmp/glab.deb
+
 # bottom (btm) — system monitor (https://github.com/ClementTsang/bottom)
 ARG BTM_VERSION=0.12.3
 RUN curl -fsSL -o /tmp/bottom.deb "https://github.com/ClementTsang/bottom/releases/download/${BTM_VERSION}/bottom_${BTM_VERSION}-1_$(dpkg --print-architecture).deb" \
