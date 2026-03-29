@@ -49,7 +49,7 @@ test.describe('Storage Commands @cli @resources', () => {
 
     test('should create a storage configuration', async () => {
       // Use table format for action commands that only produce success messages
-      const result = await runner.run(['storage', 'create', testStorageName, '--team', teamName], {
+      const result = await runner.run(['storage', 'create', '--name', testStorageName, '--team', teamName], {
         outputFormat: 'table',
         skipJsonParse: true,
       });
@@ -78,7 +78,7 @@ test.describe('Storage Commands @cli @resources', () => {
     test('should rename a storage configuration', async () => {
       // Use table format for action commands that only produce success messages
       const result = await runner.run(
-        ['storage', 'rename', testStorageName, renamedStorageName, '--team', teamName],
+        ['storage', 'rename', '--current-name', testStorageName, '--new-name', renamedStorageName, '--team', teamName],
         { outputFormat: 'table', skipJsonParse: true }
       );
 
@@ -92,7 +92,7 @@ test.describe('Storage Commands @cli @resources', () => {
     test('should delete a storage configuration', async () => {
       // Use table format for action commands that only produce success messages
       const result = await runner.run(
-        ['storage', 'delete', renamedStorageName, '--team', teamName, '--force'],
+        ['storage', 'delete', '--name', renamedStorageName, '--team', teamName, '--force'],
         { outputFormat: 'table', skipJsonParse: true }
       );
 

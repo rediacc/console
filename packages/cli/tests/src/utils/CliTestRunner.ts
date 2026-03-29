@@ -269,15 +269,15 @@ export class CliTestRunner {
   }
 
   async teamCreate(name: string): Promise<CliResult> {
-    return this.run(['team', 'create', name]);
+    return this.run(['team', 'create', '--name', name]);
   }
 
   async teamDelete(name: string): Promise<CliResult> {
-    return this.run(['team', 'delete', name, '--force']);
+    return this.run(['team', 'delete', '--name', name, '--force']);
   }
 
   async teamRename(oldName: string, newName: string): Promise<CliResult> {
-    return this.run(['team', 'rename', oldName, newName]);
+    return this.run(['team', 'rename', '--current-name', oldName, '--new-name', newName]);
   }
 
   async teamMemberList(teamName: string): Promise<CliResult> {
@@ -301,15 +301,15 @@ export class CliTestRunner {
   }
 
   async machineCreate(name: string, teamName: string, bridgeName: string): Promise<CliResult> {
-    return this.run(['machine', 'create', name, '--team', teamName, '--bridge', bridgeName]);
+    return this.run(['machine', 'create', '--name', name, '--team', teamName, '--bridge', bridgeName]);
   }
 
   async machineDelete(name: string, teamName: string): Promise<CliResult> {
-    return this.run(['machine', 'delete', name, '--team', teamName, '--force']);
+    return this.run(['machine', 'delete', '--name', name, '--team', teamName, '--force']);
   }
 
   async machineHealth(machineName: string, teamName: string): Promise<CliResult> {
-    return this.run(['machine', 'health', machineName, '--team', teamName]);
+    return this.run(['machine', 'health', '--name', machineName, '--team', teamName]);
   }
 
   // ===========================================================================
@@ -321,11 +321,11 @@ export class CliTestRunner {
   }
 
   async regionCreate(name: string): Promise<CliResult> {
-    return this.run(['region', 'create', name]);
+    return this.run(['region', 'create', '--name', name]);
   }
 
   async regionDelete(name: string): Promise<CliResult> {
-    return this.run(['region', 'delete', name, '--force']);
+    return this.run(['region', 'delete', '--name', name, '--force']);
   }
 
   // ===========================================================================
@@ -337,11 +337,11 @@ export class CliTestRunner {
   }
 
   async bridgeCreate(name: string, regionName: string): Promise<CliResult> {
-    return this.run(['bridge', 'create', name, '--region', regionName]);
+    return this.run(['bridge', 'create', '--name', name, '--region', regionName]);
   }
 
   async bridgeDelete(name: string, regionName: string): Promise<CliResult> {
-    return this.run(['bridge', 'delete', name, '--region', regionName, '--force']);
+    return this.run(['bridge', 'delete', '--name', name, '--region', regionName, '--force']);
   }
 
   // ===========================================================================
@@ -353,11 +353,11 @@ export class CliTestRunner {
   }
 
   async repositoryCreate(name: string, teamName: string, machineName: string): Promise<CliResult> {
-    return this.run(['repository', 'create', name, '--team', teamName, '--machine', machineName]);
+    return this.run(['repository', 'create', '--name', name, '--team', teamName, '--machine', machineName]);
   }
 
   async repositoryDelete(name: string, teamName: string): Promise<CliResult> {
-    return this.run(['repository', 'delete', name, '--team', teamName, '--force']);
+    return this.run(['repository', 'delete', '--name', name, '--team', teamName, '--force']);
   }
 
   // ===========================================================================
@@ -369,11 +369,11 @@ export class CliTestRunner {
   }
 
   async storageCreate(name: string): Promise<CliResult> {
-    return this.run(['storage', 'create', name]);
+    return this.run(['storage', 'create', '--name', name]);
   }
 
   async storageDelete(name: string): Promise<CliResult> {
-    return this.run(['storage', 'delete', name, '--force']);
+    return this.run(['storage', 'delete', '--name', name, '--force']);
   }
 
   // ===========================================================================

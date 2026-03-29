@@ -150,7 +150,7 @@ export function runLocalFunction(
     ? CliTestRunner.withContext(options.contextName)
     : new CliTestRunner();
 
-  const args = ['run', functionName, '--machine', machineName];
+  const args = ['run', '--function', functionName, '--machine', machineName];
 
   if (options?.params) {
     for (const [key, value] of Object.entries(options.params)) {

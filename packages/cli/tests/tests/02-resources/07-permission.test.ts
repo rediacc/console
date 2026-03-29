@@ -32,7 +32,7 @@ test.describe('Permission Commands @cli @resources', () => {
     test.beforeAll(async () => {
       testGroupName = `test-group-${Date.now()}`;
       // Create a test permission group
-      const result = await runner.run(['permission', 'group', 'create', testGroupName]);
+      const result = await runner.run(['permission', 'group', 'create', '--name', testGroupName]);
       if (!result.success) {
         const errorMsg = runner.getErrorMessage(result);
         // Check if this is a feature limitation (Community edition)
@@ -51,7 +51,7 @@ test.describe('Permission Commands @cli @resources', () => {
     test.afterAll(async () => {
       // Cleanup - delete test group (only if it was created)
       if (featureAvailable) {
-        await runner.run(['permission', 'group', 'delete', testGroupName, '--force']);
+        await runner.run(['permission', 'group', 'delete', '--name', testGroupName, '--force']);
       }
     });
 
