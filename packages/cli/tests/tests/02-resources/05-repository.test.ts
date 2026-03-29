@@ -76,7 +76,14 @@ test.describe('Repository Commands @cli @resources', () => {
     const testRepoName = `test-repo-${Date.now()}`;
 
     test('should create a new repository', async () => {
-      const result = await runner.run(['repository', 'create', '--name', testRepoName, '--team', teamName]);
+      const result = await runner.run([
+        'repository',
+        'create',
+        '--name',
+        testRepoName,
+        '--team',
+        teamName,
+      ]);
       expect(runner.isSuccess(result)).toBe(true);
     });
 

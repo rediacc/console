@@ -49,10 +49,13 @@ test.describe('Storage Commands @cli @resources', () => {
 
     test('should create a storage configuration', async () => {
       // Use table format for action commands that only produce success messages
-      const result = await runner.run(['storage', 'create', '--name', testStorageName, '--team', teamName], {
-        outputFormat: 'table',
-        skipJsonParse: true,
-      });
+      const result = await runner.run(
+        ['storage', 'create', '--name', testStorageName, '--team', teamName],
+        {
+          outputFormat: 'table',
+          skipJsonParse: true,
+        }
+      );
 
       if (!result.success) {
         console.error('Storage create failed:', runner.getErrorMessage(result));
@@ -78,7 +81,16 @@ test.describe('Storage Commands @cli @resources', () => {
     test('should rename a storage configuration', async () => {
       // Use table format for action commands that only produce success messages
       const result = await runner.run(
-        ['storage', 'rename', '--current-name', testStorageName, '--new-name', renamedStorageName, '--team', teamName],
+        [
+          'storage',
+          'rename',
+          '--current-name',
+          testStorageName,
+          '--new-name',
+          renamedStorageName,
+          '--team',
+          teamName,
+        ],
         { outputFormat: 'table', skipJsonParse: true }
       );
 

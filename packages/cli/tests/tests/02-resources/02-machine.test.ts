@@ -97,7 +97,14 @@ test.describe('Machine Commands @cli @resources', () => {
 
     test.beforeAll(async () => {
       // Create a bridge for machine tests (machines require a bridge)
-      await runner.run(['bridge', 'create', '--name', testBridgeName, '--region', 'Default Region']);
+      await runner.run([
+        'bridge',
+        'create',
+        '--name',
+        testBridgeName,
+        '--region',
+        'Default Region',
+      ]);
     });
 
     test.afterAll(async () => {

@@ -301,7 +301,16 @@ export class CliTestRunner {
   }
 
   async machineCreate(name: string, teamName: string, bridgeName: string): Promise<CliResult> {
-    return this.run(['machine', 'create', '--name', name, '--team', teamName, '--bridge', bridgeName]);
+    return this.run([
+      'machine',
+      'create',
+      '--name',
+      name,
+      '--team',
+      teamName,
+      '--bridge',
+      bridgeName,
+    ]);
   }
 
   async machineDelete(name: string, teamName: string): Promise<CliResult> {
@@ -353,7 +362,16 @@ export class CliTestRunner {
   }
 
   async repositoryCreate(name: string, teamName: string, machineName: string): Promise<CliResult> {
-    return this.run(['repository', 'create', '--name', name, '--team', teamName, '--machine', machineName]);
+    return this.run([
+      'repository',
+      'create',
+      '--name',
+      name,
+      '--team',
+      teamName,
+      '--machine',
+      machineName,
+    ]);
   }
 
   async repositoryDelete(name: string, teamName: string): Promise<CliResult> {
