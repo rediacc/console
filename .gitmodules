@@ -22,11 +22,3 @@
 	path = private/account
 	url = https://github.com/rediacc/account.git
 	branch = main
-[submodule "private/growth"]
-	path = private/growth
-	url = https://github.com/rediacc/growth.git
-	branch = main
-[submodule "private/generative"]
-	path = private/generative
-	url = https://github.com/rediacc/generative.git
-	branch = main

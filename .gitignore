@@ -59,6 +59,10 @@ secrets.env
 .DS_Store
 Thumbs.db
 
+# Self-hosted submodules (migrated to GitLab, cloned manually)
+private/growth/
+private/generative/
+
 # Temporary files
 *.tmp
 .claude/scheduled_tasks.lock

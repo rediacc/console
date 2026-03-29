@@ -55,8 +55,6 @@ declare -A SUBMODULE_REPOS=(
     ["account"]="rediacc/account"
     ["elite"]="rediacc/elite"
     ["sql"]="rediacc/sql"
-    ["growth"]="rediacc/growth"
-    ["generative"]="rediacc/generative"
 )
 
 # Post commit status via GitHub API using STATUS_TOKEN (github.token).
