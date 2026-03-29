@@ -529,7 +529,8 @@ jobs:
       !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
     uses: ./.github/workflows/ct-install-methods.yml
     with:
-      version: ${{ needs.publish.outputs.pre_bump_version }}
+      version: ${{ needs.init.outputs.next_version }}
+      expected_version: ${{ needs.publish.outputs.pre_bump_version }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
