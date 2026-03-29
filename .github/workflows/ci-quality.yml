@@ -313,7 +313,7 @@ jobs:
         run: .ci/scripts/private/run-renet.sh quality
 
       - name: Check Go dependency freshness
-        if: !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))
+        if: "!(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))"
         run: .ci/scripts/quality/check-go-deps.sh
 
       - name: Check renet types freshness
