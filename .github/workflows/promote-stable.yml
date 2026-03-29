@@ -11,7 +11,6 @@ on:
         default: false
 
 permissions:
-  actions: write
   contents: read
   packages: write
   pull-requests: read
@@ -23,6 +22,9 @@ jobs:
   promote:
     name: Promote Edge to Stable
     runs-on: ubuntu-latest
+    outputs:
+      promoted: ${{ steps.result.outputs.promoted }}
+      version: ${{ steps.edge.outputs.version }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
@@ -128,26 +130,48 @@ jobs:
 
           echo "Promoted edge v${{ steps.edge.outputs.version }} to stable"
 
-      - name: Deploy production Worker
-        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Set promotion result
+        id: result
         run: |
-          echo "Triggering production deploy via CD workflow..."
-          CI_RUN_ID=$(gh run list --workflow=ci.yml --branch=main --status=success --limit=1 --json databaseId --jq '.[0].databaseId')
-          echo "Using CI run: $CI_RUN_ID"
-          gh workflow run cd-v2.yml \
-            --repo "$GITHUB_REPOSITORY" \
-            --ref main \
-            --field ci_run_id="$CI_RUN_ID" \
-            --field deploy_production=true
-          echo "Production deploy triggered"
+          if [[ "${{ steps.edge.outputs.skip }}" == "true" ]] || \
+             [[ "${{ steps.stable.outputs.same }}" == "true" ]] || \
+             [[ "${{ steps.soak.outputs.ready }}" != "true" ]]; then
+            echo "promoted=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "promoted=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Summary
-        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
+        if: steps.result.outputs.promoted == 'true'
         run: |
           echo "## Stable Promotion" >> $GITHUB_STEP_SUMMARY
           echo "- Edge version: ${{ steps.edge.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- Previous stable: ${{ steps.stable.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- Soak days: ${{ env.SOAK_DAYS }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Production deploy: triggered via cd-v2.yml" >> $GITHUB_STEP_SUMMARY
+          echo "- Production deploy: triggered via cd-deploy-worker.yml" >> $GITHUB_STEP_SUMMARY
+
+  # Deploy production Worker from the exact tagged version
+  deploy-production:
+    name: Deploy production Worker
+    needs: [promote]
+    if: needs.promote.outputs.promoted == 'true'
+    uses: ./.github/workflows/cd-deploy-worker.yml
+    with:
+      target: production
+      ref: v${{ needs.promote.outputs.version }}
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
+      ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+      ACCOUNT_X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
+      ACCOUNT_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
+      ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+      ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
+      AWS_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
+      AWS_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
+      TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}

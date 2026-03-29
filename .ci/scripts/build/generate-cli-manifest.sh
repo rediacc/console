@@ -82,7 +82,8 @@ MANIFEST=$(jq -n \
     --arg version "$VERSION" \
     --arg releaseDate "$RELEASE_DATE" \
     --arg releaseNotesUrl "$RELEASE_URL" \
-    '{version: $version, releaseDate: $releaseDate, releaseNotesUrl: $releaseNotesUrl, binaries: {}}')
+    --arg commit "${GITHUB_SHA:-unknown}" \
+    '{version: $version, releaseDate: $releaseDate, releaseNotesUrl: $releaseNotesUrl, commit: $commit, binaries: {}}')
 
 for PLATFORM in linux mac win; do
     for ARCH in x64 arm64; do
