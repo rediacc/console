@@ -151,7 +151,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth,generative
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
 
       - name: Checkout with Submodules
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4

@@ -17,7 +17,6 @@ packages/plugins
 # Private submodules not needed for Docker builds
 # Note: private/middleware is NOT excluded — API Docker build needs it
 private/homebrew-tap
-private/growth
 
 # CI files not needed in build context
 .ci/docker/ci

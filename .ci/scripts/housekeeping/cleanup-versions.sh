@@ -35,7 +35,7 @@ GHCR_PACKAGES=("api" "bridge" "web" "plugin-terminal" "plugin-browser" "cli")
 DEPLOYMENT_REPOS=("console")
 
 # Repos to clean stale branches from (all repos in the org)
-BRANCH_REPOS=("console" "renet" "middleware" "account" "elite" "generative" "growth" "homebrew-tap" "sql")
+BRANCH_REPOS=("console" "renet" "middleware" "account" "elite" "homebrew-tap" "sql")
 BRANCH_MAX_AGE_DAYS=30
 
 # Release repo
