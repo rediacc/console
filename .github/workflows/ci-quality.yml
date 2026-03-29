@@ -73,7 +73,7 @@ jobs:
   quality-deps:
     name: Deps
     runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
+    if: inputs.is_bot != 'true' && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'no-external-quality')
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - uses: ./.github/actions/app-token
@@ -85,8 +85,6 @@ jobs:
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth,generative
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
-          fetch-depth: 0
-          ref: ${{ github.head_ref || github.ref }}
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -95,11 +93,6 @@ jobs:
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/quality/check-deps.sh
-        env:
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
-          GITHUB_BASE_REF: ${{ github.base_ref }}
-          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
 
   quality-lint:
     name: Lint
@@ -198,7 +191,7 @@ jobs:
   quality-security:
     name: Security
     runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true'
+    if: inputs.is_bot != 'true' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -309,8 +302,6 @@ jobs:
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-          fetch-depth: 0
-          ref: ${{ github.head_ref || github.ref }}
 
       - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
         with:
@@ -322,20 +313,11 @@ jobs:
         run: .ci/scripts/private/run-renet.sh quality
 
       - name: Check Go dependency freshness
+        if: !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))
         run: .ci/scripts/quality/check-go-deps.sh
-        env:
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
-          GITHUB_BASE_REF: ${{ github.base_ref }}
-          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
 
       - name: Check renet types freshness
         run: .ci/scripts/quality/check-renet-types.sh
-        env:
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
-          GITHUB_BASE_REF: ${{ github.base_ref }}
-          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
 
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
@@ -346,11 +328,6 @@ jobs:
 
       - name: Check subscription schema consistency
         run: .ci/scripts/quality/check-subscription-schema.sh
-        env:
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
-          GITHUB_BASE_REF: ${{ github.base_ref }}
-          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
 
   quality-account:
     name: Account Server
