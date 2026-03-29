@@ -11714,7 +11714,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc term patch-test-ubuntu-24",
+              "cmd": "rdc term connect -m patch-test-ubuntu-24",
               "flag": "-c",
               "prompt": "$",
               "type": "command",

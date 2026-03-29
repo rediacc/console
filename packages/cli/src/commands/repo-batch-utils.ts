@@ -5,8 +5,11 @@ import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { deployAllRepoKeys } from '../services/repo-key-deployment.js';
-import { getOutputFormat } from '../utils/errors.js';
+import { telemetryService } from '../services/telemetry.js';
+import { getOutputFormat, handleError } from '../utils/errors.js';
+import { createGuidResolver, loadGuidMap, resolveGuids } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { parseRepositoryListOutput } from './repo-list-parser.js';
 
 /** Prompt the user for batch confirmation. Returns true if confirmed. */
 export async function confirmBatch(
@@ -217,5 +220,69 @@ export async function handleDownAll(options: {
     outputService.success(t('commands.repo.down.allCompleted'));
   } else {
     renderLocalExecutionFailure(result, t('commands.repo.down.allFailed'));
+  }
+}
+
+export async function handleRepoList(options: {
+  machine: string;
+  debug?: boolean;
+  skipRouterRestart?: boolean;
+}): Promise<void> {
+  try {
+    outputService.info(t('commands.repo.list.starting', { machine: options.machine }));
+    const format = getOutputFormat();
+    const result = await localExecutorService.execute({
+      functionName: 'repository_list',
+      machineName: options.machine,
+      params: {},
+      debug: options.debug,
+      captureOutput: true,
+      skipRouterRestart: options.skipRouterRestart,
+    });
+
+    if (result.success) {
+      const repositories = parseRepositoryListOutput(result.stdout ?? '[]');
+      const resolve = createGuidResolver(await loadGuidMap());
+      const resolved = resolveGuids(repositories, resolve, 'name');
+      if (format === 'table') {
+        const { parseRepoRef } = await import('../utils/config-schema.js');
+        const repoConfigs = await configService.listRepositories().catch((err: unknown) => {
+          telemetryService.trackError(err, { operation: 'repo.list_repositories' });
+          return [];
+        });
+        const configLookup = new Map<string, { grandGuid?: string; tag?: string }>();
+        for (const rc of repoConfigs) {
+          configLookup.set(rc.config.repositoryGuid, {
+            grandGuid: rc.config.grandGuid,
+            tag: rc.config.tag,
+          });
+        }
+        const compact = resolved.map((r) => {
+          const guid = (r.guid ?? r.name) as string;
+          const cfg = configLookup.get(guid);
+          const resolvedName = r.name as string;
+          const { name: baseName, tag: parsedTag } = parseRepoRef(resolvedName);
+          return {
+            name: baseName,
+            tag: cfg?.tag ?? parsedTag,
+            type: cfg?.grandGuid ? 'fork' : 'grand',
+            size: r.size_human,
+            mounted: r.mounted ? 'Yes' : 'No',
+            docker: r.docker_running ? 'Yes' : 'No',
+            containers: r.container_count,
+            services: r.service_count,
+            modified: r.modified_human,
+          };
+        });
+        outputService.print(compact, format);
+      } else {
+        outputService.print(resolved, format);
+      }
+      outputService.success(t('commands.repo.list.completed'));
+    } else {
+      renderLocalExecutionFailure(result, t('commands.repo.list.failed', { error: result.error }));
+    }
+  } catch (error) {
+    handleError(error);
   }
 }

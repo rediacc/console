@@ -4,8 +4,8 @@ description: "Règles et conventions essentielles pour construire des applicatio
 category: "Guides"
 order: 5
 language: fr
-sourceHash: "f7ca177c604f0ff7"
-sourceCommit: "c4820684802963ecf645e56c87e13815deb84688"
+sourceHash: "17f2cc084c2782cc"
+sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
 # Règles de Rediacc
@@ -155,5 +155,5 @@ Renet auto-injecte celles-ci dans chaque conteneur :
 - Ne pas se lier à `SERVICE_IP` — cause des conflits de ports entre dépôts.
 - Coder les IPs en dur — utilisez la variable d'environnement `SERVICE_IP` ; les IPs sont allouées dynamiquement par networkId.
 - Oublier `--mount` lors du premier déploiement après `backup push` — le volume LUKS nécessite une ouverture explicite.
-- Utiliser `rdc term -c` comme contournement pour les commandes échouées — signalez les bugs à la place.
+- Utiliser `rdc term connect -c` comme contournement pour les commandes échouées — signalez les bugs à la place.
 - `repo delete` effectue un nettoyage complet incluant les IPs de loopback et les unités systemd. Exécutez `rdc machine prune <name>` pour nettoyer les restes des suppressions anciennes.

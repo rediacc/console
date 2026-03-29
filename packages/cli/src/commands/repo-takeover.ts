@@ -9,19 +9,24 @@ import { renderLocalExecutionFailure } from '../utils/local-execution-failures.j
 
 export function registerRepoTakeoverCommand(repo: Command): void {
   repo
-    .command('takeover <fork>')
+    .command('takeover')
     .summary(t('commands.repo.takeover.descriptionShort'))
     .description(t('commands.repo.takeover.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--force', t('commands.repo.takeover.forceOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
-      async (
-        forkRef: string,
-        options: { machine: string; force?: boolean; debug?: boolean; skipRouterRestart?: boolean }
-      ) => {
+      async (options: {
+        name: string;
+        machine: string;
+        force?: boolean;
+        debug?: boolean;
+        skipRouterRestart?: boolean;
+      }) => {
         try {
+          const forkRef = options.name;
           const forkConfig = await configService.getRepository(forkRef);
           if (!forkConfig) {
             throw new Error(`Repository "${forkRef}" not found in context`);

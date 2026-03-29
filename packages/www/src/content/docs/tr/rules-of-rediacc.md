@@ -4,8 +4,8 @@ description: "Rediacc platformunda uygulama geliştirmek için temel kurallar ve
 category: "Guides"
 order: 5
 language: tr
-sourceHash: "f7ca177c604f0ff7"
-sourceCommit: "c4820684802963ecf645e56c87e13815deb84688"
+sourceHash: "17f2cc084c2782cc"
+sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
 # Rediacc Kuralları
@@ -155,5 +155,5 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 - `SERVICE_IP`'ye bağlanmamak — depolar arasında port çakışmalarına neden olur.
 - IP'leri sabit kodlamak — `SERVICE_IP` ortam değişkenini kullanın; IP'ler networkId başına dinamik olarak atanır.
 - `backup push` sonrası ilk dağıtımda `--mount`'u unutmak — LUKS birimi açık bir şekilde açılmalıdır.
-- Başarısız komutlar için geçici çözüm olarak `rdc term -c` kullanmak — bunun yerine hataları bildirin.
+- Başarısız komutlar için geçici çözüm olarak `rdc term connect -c` kullanmak — bunun yerine hataları bildirin.
 - `repo delete` loopback IP'leri ve systemd birimlerini de dahil ederek tam temizlik yapar. Eski silmelerden kalan artıkları temizlemek için `rdc machine prune <name>` çalıştırın.

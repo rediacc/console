@@ -69,13 +69,13 @@ test.describe('Local Context Commands @cli @core', () => {
 
   test.afterAll(async () => {
     // Cleanup: delete test context
-    await runner.run(['config', 'delete', testLocalContext], { skipJsonParse: true });
+    await runner.run(['config', 'delete', '--name', testLocalContext], { skipJsonParse: true });
   });
 
   test.describe('config init', () => {
     test('should create a new local context', async () => {
       const result = await runner.run(
-        ['config', 'init', testLocalContext, '--ssh-key', '~/.ssh/id_rsa'],
+        ['config', 'init', '--name', testLocalContext, '--ssh-key', '~/.ssh/id_rsa'],
         { skipJsonParse: true }
       );
 
@@ -86,13 +86,13 @@ test.describe('Local Context Commands @cli @core', () => {
 
     test('should succeed without SSH key (ssh-key is optional)', async () => {
       const noKeyCtx = `test-no-key-${Date.now()}`;
-      const result = await runner.run(['config', 'init', noKeyCtx], {
+      const result = await runner.run(['config', 'init', '--name', noKeyCtx], {
         skipJsonParse: true,
       });
 
       expect(result.success).toBe(true);
       // Cleanup
-      await runner.run(['config', 'delete', noKeyCtx], { skipJsonParse: true });
+      await runner.run(['config', 'delete', '--name', noKeyCtx], { skipJsonParse: true });
     });
 
     test('should accept custom renet path', async () => {
@@ -102,6 +102,7 @@ test.describe('Local Context Commands @cli @core', () => {
         [
           'config',
           'init',
+          '--name',
           customPathContext,
           '--ssh-key',
           '~/.ssh/id_rsa',
@@ -120,14 +121,14 @@ test.describe('Local Context Commands @cli @core', () => {
       expect((showResult.json as { renetPath: string }).renetPath).toBe('/opt/bin/renet');
 
       // Cleanup
-      await runner.run(['config', 'delete', customPathContext], {
+      await runner.run(['config', 'delete', '--name', customPathContext], {
         skipJsonParse: true,
       });
     });
 
     test('should fail for duplicate context name', async () => {
       const result = await runner.run(
-        ['config', 'init', testLocalContext, '--ssh-key', '~/.ssh/id_rsa'],
+        ['config', 'init', '--name', testLocalContext, '--ssh-key', '~/.ssh/id_rsa'],
         { skipJsonParse: true }
       );
 
@@ -145,6 +146,7 @@ test.describe('Local Context Commands @cli @core', () => {
           'config',
           'machine',
           'add',
+          '--name',
           testMachine,
           '--ip',
           '192.168.1.100',
@@ -167,6 +169,7 @@ test.describe('Local Context Commands @cli @core', () => {
           'config',
           'machine',
           'add',
+          '--name',
           'full-machine',
           '--ip',
           '10.0.0.1',
@@ -185,7 +188,17 @@ test.describe('Local Context Commands @cli @core', () => {
 
     test('should fail without required --ip', async () => {
       const result = await runner.run(
-        ['--config', testLocalContext, 'config', 'machine', 'add', 'no-ip', '--user', 'testuser'],
+        [
+          '--config',
+          testLocalContext,
+          'config',
+          'machine',
+          'add',
+          '--name',
+          'no-ip',
+          '--user',
+          'testuser',
+        ],
         { skipJsonParse: true }
       );
 
@@ -195,7 +208,17 @@ test.describe('Local Context Commands @cli @core', () => {
 
     test('should fail without required --user', async () => {
       const result = await runner.run(
-        ['--config', testLocalContext, 'config', 'machine', 'add', 'no-user', '--ip', '10.0.0.1'],
+        [
+          '--config',
+          testLocalContext,
+          'config',
+          'machine',
+          'add',
+          '--name',
+          'no-user',
+          '--ip',
+          '10.0.0.1',
+        ],
         { skipJsonParse: true }
       );
 
@@ -281,6 +304,7 @@ test.describe('Local Context Commands @cli @core', () => {
           'config',
           'machine',
           'add',
+          '--name',
           'to-remove',
           '--ip',
           '1.1.1.1',
@@ -291,7 +315,7 @@ test.describe('Local Context Commands @cli @core', () => {
       );
 
       const result = await runner.run(
-        ['--config', testLocalContext, 'config', 'machine', 'remove', 'to-remove'],
+        ['--config', testLocalContext, 'config', 'machine', 'remove', '--name', 'to-remove'],
         { skipJsonParse: true }
       );
 
@@ -312,7 +336,7 @@ test.describe('Local Context Commands @cli @core', () => {
 
     test('should fail for non-existent machine', async () => {
       const result = await runner.run(
-        ['--config', testLocalContext, 'config', 'machine', 'remove', 'nonexistent'],
+        ['--config', testLocalContext, 'config', 'machine', 'remove', '--name', 'nonexistent'],
         { skipJsonParse: true }
       );
 
@@ -341,7 +365,7 @@ test.describe('Local Context Commands @cli @core', () => {
 
     test('should require machine in local mode', async () => {
       // Clear the default machine first
-      await runner.run(['--config', testLocalContext, 'config', 'clear', 'machine'], {
+      await runner.run(['--config', testLocalContext, 'config', 'clear', '--key', 'machine'], {
         skipJsonParse: true,
       });
 
@@ -378,17 +402,17 @@ test.describe('Switching Between Local and Cloud Contexts @cli @core', () => {
   });
 
   test.afterAll(async () => {
-    await runner.run(['config', 'delete', localContext], { skipJsonParse: true });
-    await runner.run(['config', 'delete', cloudContext], { skipJsonParse: true });
+    await runner.run(['config', 'delete', '--name', localContext], { skipJsonParse: true });
+    await runner.run(['config', 'delete', '--name', cloudContext], { skipJsonParse: true });
   });
 
   test('should use correct adapter for each config with --config flag', async () => {
     // Create both configs
-    await runner.run(['config', 'init', localContext, '--ssh-key', '~/.ssh/id_rsa'], {
+    await runner.run(['config', 'init', '--name', localContext, '--ssh-key', '~/.ssh/id_rsa'], {
       skipJsonParse: true,
     });
     await runner.run(
-      ['config', 'init', cloudContext, '--api-url', 'https://test.example.com/api'],
+      ['config', 'init', '--name', cloudContext, '--api-url', 'https://test.example.com/api'],
       { skipJsonParse: true }
     );
 
@@ -446,7 +470,7 @@ test.describe('Local Storage Commands @cli @core', () => {
   });
 
   test.afterAll(async () => {
-    await runner.run(['config', 'delete', storageContext], { skipJsonParse: true });
+    await runner.run(['config', 'delete', '--name', storageContext], { skipJsonParse: true });
     try {
       fs.unlinkSync(rcloneConfigPath);
     } catch {
@@ -459,7 +483,7 @@ test.describe('Local Storage Commands @cli @core', () => {
 
   test('should create local context for storage testing', async () => {
     const result = await runner.run(
-      ['config', 'init', storageContext, '--ssh-key', '~/.ssh/id_rsa'],
+      ['config', 'init', '--name', storageContext, '--ssh-key', '~/.ssh/id_rsa'],
       { skipJsonParse: true }
     );
     expect(result.success).toBe(true);
@@ -479,7 +503,7 @@ test.describe('Local Storage Commands @cli @core', () => {
 
   test('should import all supported storages from rclone config', async () => {
     const result = await runner.run(
-      ['--config', storageContext, 'config', 'storage', 'import', rcloneConfigPath],
+      ['--config', storageContext, 'config', 'storage', 'import', '--file', rcloneConfigPath],
       { skipJsonParse: true }
     );
 
@@ -495,12 +519,22 @@ test.describe('Local Storage Commands @cli @core', () => {
   test('should import single storage with --name', async () => {
     // Create a fresh context to test --name isolation
     const singleCtx = `test-single-import-${timestamp}`;
-    await runner.run(['config', 'init', singleCtx, '--ssh-key', '~/.ssh/id_rsa'], {
+    await runner.run(['config', 'init', '--name', singleCtx, '--ssh-key', '~/.ssh/id_rsa'], {
       skipJsonParse: true,
     });
 
     const result = await runner.run(
-      ['--config', singleCtx, 'config', 'storage', 'import', rcloneConfigPath, '--name', 'my-s3'],
+      [
+        '--config',
+        singleCtx,
+        'config',
+        'storage',
+        'import',
+        '--file',
+        rcloneConfigPath,
+        '--name',
+        'my-s3',
+      ],
       { skipJsonParse: true }
     );
 
@@ -515,7 +549,7 @@ test.describe('Local Storage Commands @cli @core', () => {
     }
 
     // Cleanup
-    await runner.run(['config', 'delete', singleCtx], { skipJsonParse: true });
+    await runner.run(['config', 'delete', '--name', singleCtx], { skipJsonParse: true });
   });
 
   test('should fail when --name references non-existent section', async () => {
@@ -526,6 +560,7 @@ test.describe('Local Storage Commands @cli @core', () => {
         'config',
         'storage',
         'import',
+        '--file',
         rcloneConfigPath,
         '--name',
         'nonexistent',
@@ -539,7 +574,15 @@ test.describe('Local Storage Commands @cli @core', () => {
 
   test('should fail when file does not exist', async () => {
     const result = await runner.run(
-      ['--config', storageContext, 'config', 'storage', 'import', '/tmp/nonexistent-rclone.conf'],
+      [
+        '--config',
+        storageContext,
+        'config',
+        'storage',
+        'import',
+        '--file',
+        '/tmp/nonexistent-rclone.conf',
+      ],
       { skipJsonParse: true }
     );
 
@@ -551,7 +594,7 @@ test.describe('Local Storage Commands @cli @core', () => {
     fs.writeFileSync(emptyConf, '# only comments\n; nothing here\n');
 
     const result = await runner.run(
-      ['--config', storageContext, 'config', 'storage', 'import', emptyConf],
+      ['--config', storageContext, 'config', 'storage', 'import', '--file', emptyConf],
       { skipJsonParse: true }
     );
 
@@ -585,7 +628,7 @@ test.describe('Local Storage Commands @cli @core', () => {
 
   test('should remove a specific storage', async () => {
     const result = await runner.run(
-      ['--config', storageContext, 'config', 'storage', 'remove', 'my-drive'],
+      ['--config', storageContext, 'config', 'storage', 'remove', '--name', 'my-drive'],
       { skipJsonParse: true }
     );
 
@@ -612,7 +655,7 @@ test.describe('Local Storage Commands @cli @core', () => {
 
   test('should fail for non-existent storage name on remove', async () => {
     const result = await runner.run(
-      ['--config', storageContext, 'config', 'storage', 'remove', 'nonexistent'],
+      ['--config', storageContext, 'config', 'storage', 'remove', '--name', 'nonexistent'],
       { skipJsonParse: true }
     );
 

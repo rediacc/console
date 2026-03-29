@@ -4,7 +4,7 @@ description: 使用 .cursorrules 和终端集成配置 Cursor IDE 以使用 Redi
 category: Guides
 order: 32
 language: zh
-sourceHash: "c6caf89e3bb3f461"
+sourceHash: "ab61340d4a260fdd"
 ---
 
 Cursor 通过终端命令和 `.cursorrules` 配置文件与 Rediacc 集成。
@@ -56,7 +56,7 @@ rdc repo up nextcloud -m prod-1 --yes
 
 Cursor 在终端中运行：
 ```bash
-rdc term prod-1 mail -c "docker logs mail-postfix --tail 100"
+rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
 ```
 
 ## 工作区设置

@@ -6439,7 +6439,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc term patch-test-ubuntu-24",
+              "cmd": "rdc term connect -m patch-test-ubuntu-24",
               "flag": "-c",
               "value": "\"apt upgrade -y\""
             },

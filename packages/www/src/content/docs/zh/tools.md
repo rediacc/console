@@ -4,7 +4,7 @@ description: 文件同步、终端访问、VS Code 集成、更新和诊断。
 category: Guides
 order: 9
 language: zh
-sourceHash: "f304688fdc1a41c1"
+sourceHash: "bc5864d869d191be"
 ---
 
 # 工具
@@ -57,8 +57,8 @@ rdc repo sync status -m server-1 -r my-app
 最快的连接方式：
 
 ```bash
-rdc term server-1                    # 连接到机器
-rdc term server-1 my-app             # 连接到仓库
+rdc term connect -m server-1                    # 连接到机器
+rdc term connect -m server-1 -r my-app             # 连接到仓库
 ```
 
 ### 运行命令
@@ -66,8 +66,8 @@ rdc term server-1 my-app             # 连接到仓库
 无需打开交互式会话即可执行命令：
 
 ```bash
-rdc term server-1 -c "uptime"
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -c "uptime"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 ```
 
 连接到仓库时，`DOCKER_HOST` 会自动设置为该仓库的隔离 Docker 套接字，因此 `docker ps` 只显示该仓库的容器。
@@ -87,19 +87,19 @@ rdc term connect -m server-1 -r my-app
 
 ```bash
 # 在容器内打开 shell
-rdc term server-1 my-app --container <container-id>
+rdc term connect -m server-1 -r my-app --container <container-id>
 
 # 查看容器日志
-rdc term server-1 my-app --container <container-id> --container-action logs
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs
 
 # 实时跟踪日志
-rdc term server-1 my-app --container <container-id> --container-action logs --follow
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow
 
 # 查看容器统计信息
-rdc term server-1 my-app --container <container-id> --container-action stats
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats
 
 # 在容器中执行命令
-rdc term server-1 my-app --container <container-id> --container-action exec -c "ls -la"
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c "ls -la"
 ```
 
 | 选项 | 说明 |

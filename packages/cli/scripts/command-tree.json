@@ -291,41 +291,47 @@
         {
           "name": "create",
           "descriptionKey": null,
-          "options": [],
-          "arguments": [
+          "options": [
             {
-              "name": "name",
-              "required": true,
-              "variadic": false,
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
               "defaultValue": null
             }
           ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "rename",
           "descriptionKey": null,
-          "options": [],
-          "arguments": [
+          "options": [
             {
-              "name": "oldName",
-              "required": true,
-              "variadic": false,
+              "flags": "--current-name <name>",
+              "descriptionKey": "options.currentName",
+              "mandatory": true,
               "defaultValue": null
             },
             {
-              "name": "newName",
-              "required": true,
-              "variadic": false,
+              "flags": "--new-name <name>",
+              "descriptionKey": "options.newName",
+              "mandatory": true,
               "defaultValue": null
             }
           ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "delete",
           "descriptionKey": null,
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
             {
               "flags": "-f, --force",
               "descriptionKey": "options.force",
@@ -339,14 +345,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -358,21 +357,27 @@
             {
               "name": "get",
               "descriptionKey": null,
-              "options": [],
-              "arguments": [
+              "options": [
                 {
-                  "name": "teamName",
-                  "required": true,
-                  "variadic": false,
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
                   "defaultValue": null
                 }
               ],
+              "arguments": [],
               "subcommands": []
             },
             {
               "name": "update",
               "descriptionKey": null,
               "options": [
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
                 {
                   "flags": "--vault <json>",
                   "descriptionKey": "options.vaultContent",
@@ -386,14 +391,7 @@
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "teamName",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             }
           ]
@@ -505,6 +503,12 @@
           "descriptionKey": "commands.machine.create.description",
           "options": [
             {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "-t, --team <name>",
               "descriptionKey": "options.team",
               "mandatory": false,
@@ -523,14 +527,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -538,32 +535,37 @@
           "descriptionKey": "commands.machine.rename.description",
           "options": [
             {
+              "flags": "--current-name <name>",
+              "descriptionKey": "options.currentName",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--new-name <name>",
+              "descriptionKey": "options.newName",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "-t, --team <name>",
               "descriptionKey": "options.team",
               "mandatory": false,
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "oldName",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            },
-            {
-              "name": "newName",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "delete",
           "descriptionKey": "commands.machine.delete.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
             {
               "flags": "-t, --team <name>",
               "descriptionKey": "options.team",
@@ -583,14 +585,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -604,26 +599,31 @@
               "descriptionKey": null,
               "options": [
                 {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
                   "flags": "-t, --team <name>",
                   "descriptionKey": "options.team",
                   "mandatory": false,
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "machineName",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
               "name": "update",
               "descriptionKey": null,
               "options": [
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
                 {
                   "flags": "--vault <json>",
                   "descriptionKey": "options.vaultContent",
@@ -643,14 +643,7 @@
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "machineName",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             }
           ]
@@ -660,26 +653,25 @@
           "descriptionKey": null,
           "options": [
             {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--target <name>",
+              "descriptionKey": "options.target",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "-t, --team <name>",
               "descriptionKey": "options.team",
               "mandatory": false,
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "machineName",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            },
-            {
-              "name": "bridgeName",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -687,20 +679,19 @@
           "descriptionKey": "commands.machine.vaultStatus.description",
           "options": [
             {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "-t, --team <name>",
               "descriptionKey": "options.team",
               "mandatory": false,
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -872,6 +863,12 @@
           "descriptionKey": "commands.machine.query.description",
           "options": [
             {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -914,20 +911,19 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "provision",
           "descriptionKey": "commands.machine.provision.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
             {
               "flags": "--provider <name>",
               "descriptionKey": "commands.machine.provision.optionProvider",
@@ -977,20 +973,19 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "deprovision",
           "descriptionKey": "commands.machine.deprovision.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
             {
               "flags": "--force",
               "descriptionKey": "options.yes",
@@ -1004,14 +999,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -1025,20 +1013,19 @@
               "descriptionKey": "commands.machine.backup.schedule.description",
               "options": [
                 {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "options.machine",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--debug",
                   "descriptionKey": "options.debug",
                   "mandatory": false,
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "machine",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             }
           ]
@@ -1047,6 +1034,12 @@
           "name": "prune",
           "descriptionKey": "commands.machine.prune.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
             {
               "flags": "--dry-run",
               "descriptionKey": "commands.machine.prune.dryRunOption",
@@ -1078,14 +1071,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         }
       ]
@@ -1335,6 +1321,12 @@
           "descriptionKey": "commands.repo.create.description",
           "options": [
             {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
               "mandatory": true,
@@ -1365,20 +1357,19 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "delete",
           "descriptionKey": "commands.repo.delete.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
@@ -1410,20 +1401,19 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "mount",
           "descriptionKey": "commands.repo.mount.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": false,
+              "defaultValue": null
+            },
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
@@ -1473,20 +1463,19 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": false,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "unmount",
           "descriptionKey": "commands.repo.unmount.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": false,
+              "defaultValue": null
+            },
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
@@ -1530,20 +1519,19 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": false,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "up",
           "descriptionKey": "commands.repo.up.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": false,
+              "defaultValue": null
+            },
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
@@ -1617,20 +1605,19 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": false,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "down",
           "descriptionKey": "commands.repo.down.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": false,
+              "defaultValue": null
+            },
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
@@ -1674,20 +1661,19 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": false,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "status",
           "descriptionKey": "commands.repo.status.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
@@ -1707,14 +1693,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -1748,6 +1727,12 @@
           "descriptionKey": "commands.repo.fork.description",
           "options": [
             {
+              "flags": "--parent <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
               "mandatory": true,
@@ -1756,7 +1741,7 @@
             {
               "flags": "--tag <name>",
               "descriptionKey": "commands.repo.fork.tagOption",
-              "mandatory": false,
+              "mandatory": true,
               "defaultValue": null
             },
             {
@@ -1784,26 +1769,19 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "parent",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            },
-            {
-              "name": "tag",
-              "required": false,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "takeover",
           "descriptionKey": "commands.repo.takeover.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
@@ -1829,14 +1807,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "fork",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -1844,6 +1815,12 @@
           "descriptionKey": "commands.repo.resize.description",
           "options": [
             {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
               "mandatory": true,
@@ -1868,14 +1845,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -1883,6 +1853,12 @@
           "descriptionKey": "commands.repo.expand.description",
           "options": [
             {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
               "mandatory": true,
@@ -1907,20 +1883,19 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "validate",
           "descriptionKey": "commands.repo.validate.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
@@ -1940,14 +1915,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -1961,6 +1929,12 @@
               "descriptionKey": "commands.repo.autostart.enable.description",
               "options": [
                 {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "-m, --machine <name>",
                   "descriptionKey": "commands.repo.machineOption",
                   "mandatory": true,
@@ -1979,14 +1953,7 @@
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "name",
-                  "required": false,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
@@ -1994,6 +1961,12 @@
               "descriptionKey": "commands.repo.autostart.disable.description",
               "options": [
                 {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "-m, --machine <name>",
                   "descriptionKey": "commands.repo.machineOption",
                   "mandatory": true,
@@ -2012,14 +1985,7 @@
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "name",
-                  "required": false,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
@@ -2055,6 +2021,12 @@
           "descriptionKey": "commands.repo.ownership.description",
           "options": [
             {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
               "mandatory": true,
@@ -2079,14 +2051,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -2106,6 +2071,12 @@
               "name": "apply",
               "descriptionKey": "commands.repo.template.apply.description",
               "options": [
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
                 {
                   "flags": "-m, --machine <name>",
                   "descriptionKey": "commands.repo.machineOption",
@@ -2143,14 +2114,7 @@
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "template",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             }
           ]
@@ -2159,6 +2123,12 @@
           "name": "push",
           "descriptionKey": "commands.repo.push.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": false,
+              "defaultValue": null
+            },
             {
               "flags": "--to <remote>",
               "descriptionKey": "commands.repo.push.optionTo",
@@ -2244,20 +2214,19 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "repo",
-              "required": false,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "pull",
           "descriptionKey": "commands.repo.pull.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": false,
+              "defaultValue": null
+            },
             {
               "flags": "--from <remote>",
               "descriptionKey": "commands.repo.pull.optionFrom",
@@ -2325,14 +2294,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "repo",
-              "required": false,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -2390,20 +2352,19 @@
               "descriptionKey": "commands.backup.schedule.description",
               "options": [
                 {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "options.machine",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--debug",
                   "descriptionKey": "options.debug",
                   "mandatory": false,
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "machine",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             }
           ]
@@ -2595,6 +2556,18 @@
           "descriptionKey": "commands.repo.tunnel.description",
           "options": [
             {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-r, --repository <name>",
+              "descriptionKey": "options.repository",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "-c, --container <name>",
               "descriptionKey": "commands.repo.tunnel.containerOption",
               "mandatory": false,
@@ -2613,20 +2586,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "machine",
-              "required": false,
-              "variadic": false,
-              "defaultValue": null
-            },
-            {
-              "name": "repository",
-              "required": false,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         }
       ]
@@ -2674,20 +2634,19 @@
           "descriptionKey": null,
           "options": [
             {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "-t, --team <name>",
               "descriptionKey": "options.team",
               "mandatory": false,
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -2695,32 +2654,37 @@
           "descriptionKey": null,
           "options": [
             {
+              "flags": "--current-name <name>",
+              "descriptionKey": "options.currentName",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--new-name <name>",
+              "descriptionKey": "options.newName",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "-t, --team <name>",
               "descriptionKey": "options.team",
               "mandatory": false,
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "oldName",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            },
-            {
-              "name": "newName",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "delete",
           "descriptionKey": null,
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
             {
               "flags": "-t, --team <name>",
               "descriptionKey": "options.team",
@@ -2740,14 +2704,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -2761,26 +2718,31 @@
               "descriptionKey": null,
               "options": [
                 {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
                   "flags": "-t, --team <name>",
                   "descriptionKey": "options.team",
                   "mandatory": false,
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "storageName",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
               "name": "update",
               "descriptionKey": null,
               "options": [
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
                 {
                   "flags": "--vault <json>",
                   "descriptionKey": "options.vaultContent",
@@ -2800,14 +2762,7 @@
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "storageName",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             }
           ]
@@ -2817,26 +2772,31 @@
           "descriptionKey": "commands.storage.browse.description",
           "options": [
             {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "--path <subpath>",
               "descriptionKey": "commands.storage.browse.pathOption",
               "mandatory": false,
               "defaultValue": ""
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "prune",
           "descriptionKey": "commands.storage.prune.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "options.machine",
@@ -2874,14 +2834,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "storageName",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         }
       ]
@@ -2954,7 +2907,7 @@
           "options": [
             {
               "flags": "-f, --function <name>",
-              "descriptionKey": "options.functionName",
+              "descriptionKey": null,
               "mandatory": true,
               "defaultValue": null
             },
@@ -3111,41 +3064,47 @@
         {
           "name": "create",
           "descriptionKey": null,
-          "options": [],
-          "arguments": [
+          "options": [
             {
-              "name": "name",
-              "required": true,
-              "variadic": false,
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
               "defaultValue": null
             }
           ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "rename",
           "descriptionKey": null,
-          "options": [],
-          "arguments": [
+          "options": [
             {
-              "name": "oldName",
-              "required": true,
-              "variadic": false,
+              "flags": "--current-name <name>",
+              "descriptionKey": "options.currentName",
+              "mandatory": true,
               "defaultValue": null
             },
             {
-              "name": "newName",
-              "required": true,
-              "variadic": false,
+              "flags": "--new-name <name>",
+              "descriptionKey": "options.newName",
+              "mandatory": true,
               "defaultValue": null
             }
           ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "delete",
           "descriptionKey": null,
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
             {
               "flags": "-f, --force",
               "descriptionKey": "options.force",
@@ -3159,14 +3118,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -3178,21 +3130,27 @@
             {
               "name": "get",
               "descriptionKey": null,
-              "options": [],
-              "arguments": [
+              "options": [
                 {
-                  "name": "regionName",
-                  "required": true,
-                  "variadic": false,
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
                   "defaultValue": null
                 }
               ],
+              "arguments": [],
               "subcommands": []
             },
             {
               "name": "update",
               "descriptionKey": null,
               "options": [
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
                 {
                   "flags": "--vault <json>",
                   "descriptionKey": "options.vaultContent",
@@ -3206,14 +3164,7 @@
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "regionName",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             }
           ]
@@ -3263,20 +3214,19 @@
           "descriptionKey": null,
           "options": [
             {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "-r, --region <name>",
               "descriptionKey": "options.region",
               "mandatory": false,
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -3284,32 +3234,37 @@
           "descriptionKey": null,
           "options": [
             {
+              "flags": "--current-name <name>",
+              "descriptionKey": "options.currentName",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--new-name <name>",
+              "descriptionKey": "options.newName",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "-r, --region <name>",
               "descriptionKey": "options.region",
               "mandatory": false,
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "oldName",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            },
-            {
-              "name": "newName",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "delete",
           "descriptionKey": null,
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
             {
               "flags": "-r, --region <name>",
               "descriptionKey": "options.region",
@@ -3329,14 +3284,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -3350,26 +3298,31 @@
               "descriptionKey": null,
               "options": [
                 {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
                   "flags": "-r, --region <name>",
                   "descriptionKey": "options.region",
                   "mandatory": false,
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "bridgeName",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
               "name": "update",
               "descriptionKey": null,
               "options": [
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
                 {
                   "flags": "--vault <json>",
                   "descriptionKey": "options.vaultContent",
@@ -3389,14 +3342,7 @@
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "bridgeName",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             }
           ]
@@ -4507,6 +4453,12 @@
           "descriptionKey": "commands.config.init.description",
           "options": [
             {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--ssh-key <path>",
               "descriptionKey": "options.sshKey",
               "mandatory": false,
@@ -4531,14 +4483,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": false,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -4558,49 +4503,49 @@
         {
           "name": "delete",
           "descriptionKey": "commands.config.delete.description",
-          "options": [],
-          "arguments": [
+          "options": [
             {
-              "name": "name",
-              "required": true,
-              "variadic": false,
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
               "defaultValue": null
             }
           ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "set",
           "descriptionKey": "commands.config.set.description",
-          "options": [],
-          "arguments": [
+          "options": [
             {
-              "name": "key",
-              "required": true,
-              "variadic": false,
+              "flags": "--key <key>",
+              "descriptionKey": "options.configKey",
+              "mandatory": true,
               "defaultValue": null
             },
             {
-              "name": "value",
-              "required": true,
-              "variadic": false,
+              "flags": "--value <value>",
+              "descriptionKey": "options.configValue",
+              "mandatory": true,
               "defaultValue": null
             }
           ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "clear",
           "descriptionKey": "commands.config.clear.description",
-          "options": [],
-          "arguments": [
+          "options": [
             {
-              "name": "key",
-              "required": false,
-              "variadic": false,
+              "flags": "--key <key>",
+              "descriptionKey": "options.configKey",
+              "mandatory": false,
               "defaultValue": null
             }
           ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -4608,20 +4553,19 @@
           "descriptionKey": "commands.config.recover.description",
           "options": [
             {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "-y, --yes",
               "descriptionKey": "options.yes",
               "mandatory": false,
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": false,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -4682,6 +4626,12 @@
               "descriptionKey": "commands.config.machine.add.description",
               "options": [
                 {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--ip <address>",
                   "descriptionKey": "options.machineIp",
                   "mandatory": true,
@@ -4706,28 +4656,21 @@
                   "defaultValue": "/mnt/rediacc"
                 }
               ],
-              "arguments": [
-                {
-                  "name": "name",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
               "name": "remove",
               "descriptionKey": "commands.config.machine.remove.description",
-              "options": [],
-              "arguments": [
+              "options": [
                 {
-                  "name": "name",
-                  "required": true,
-                  "variadic": false,
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
                   "defaultValue": null
                 }
               ],
+              "arguments": [],
               "subcommands": []
             },
             {
@@ -4740,21 +4683,27 @@
             {
               "name": "scan-keys",
               "descriptionKey": "commands.config.machine.scanKeys.description",
-              "options": [],
-              "arguments": [
+              "options": [
                 {
-                  "name": "machine",
-                  "required": false,
-                  "variadic": false,
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "options.machine",
+                  "mandatory": false,
                   "defaultValue": null
                 }
               ],
+              "arguments": [],
               "subcommands": []
             },
             {
               "name": "setup",
               "descriptionKey": "commands.config.machine.setup.description",
               "options": [
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
                 {
                   "flags": "--datastore <path>",
                   "descriptionKey": "commands.config.machine.setup.datastoreOption",
@@ -4774,14 +4723,7 @@
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "name",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
@@ -4828,6 +4770,12 @@
               "name": "add",
               "descriptionKey": "commands.config.provider.add.description",
               "options": [
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
                 {
                   "flags": "--provider <source>",
                   "descriptionKey": "commands.config.provider.add.optionProvider",
@@ -4931,28 +4879,21 @@
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "name",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
               "name": "remove",
               "descriptionKey": "commands.config.provider.remove.description",
-              "options": [],
-              "arguments": [
+              "options": [
                 {
-                  "name": "name",
-                  "required": true,
-                  "variadic": false,
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
                   "defaultValue": null
                 }
               ],
+              "arguments": [],
               "subcommands": []
             },
             {
@@ -4974,6 +4915,12 @@
               "name": "add",
               "descriptionKey": "commands.config.repository.add.description",
               "options": [
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
                 {
                   "flags": "--guid <guid>",
                   "descriptionKey": "commands.config.repository.add.optionGuid",
@@ -4999,28 +4946,21 @@
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "name",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
               "name": "remove",
               "descriptionKey": "commands.config.repository.remove.description",
-              "options": [],
-              "arguments": [
+              "options": [
                 {
-                  "name": "name",
-                  "required": true,
-                  "variadic": false,
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
                   "defaultValue": null
                 }
               ],
+              "arguments": [],
               "subcommands": []
             },
             {
@@ -5043,19 +4983,18 @@
               "options": [
                 {
                   "flags": "--name <name>",
-                  "descriptionKey": "commands.config.repository.restoreArchived.optionName",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--new-name <name>",
+                  "descriptionKey": "options.newName",
                   "mandatory": false,
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "guid",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
@@ -5078,34 +5017,33 @@
               "descriptionKey": "commands.config.storage.import.description",
               "options": [
                 {
+                  "flags": "--file <path>",
+                  "descriptionKey": "options.file",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--name <name>",
                   "descriptionKey": "commands.config.storage.import.optionName",
                   "mandatory": false,
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "file",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
               "name": "remove",
               "descriptionKey": "commands.config.storage.remove.description",
-              "options": [],
-              "arguments": [
+              "options": [
                 {
-                  "name": "name",
-                  "required": true,
-                  "variadic": false,
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
                   "defaultValue": null
                 }
               ],
+              "arguments": [],
               "subcommands": []
             },
             {
@@ -5127,6 +5065,12 @@
               "name": "set",
               "descriptionKey": "commands.config.infra.set.description",
               "options": [
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "options.machine",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
                 {
                   "flags": "--public-ipv4 <ip>",
                   "descriptionKey": "commands.config.infra.set.optionPublicIPv4",
@@ -5170,28 +5114,21 @@
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "machine",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
               "name": "show",
               "descriptionKey": "commands.config.infra.show.description",
-              "options": [],
-              "arguments": [
+              "options": [
                 {
-                  "name": "machine",
-                  "required": true,
-                  "variadic": false,
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "options.machine",
+                  "mandatory": true,
                   "defaultValue": null
                 }
               ],
+              "arguments": [],
               "subcommands": []
             },
             {
@@ -5199,20 +5136,19 @@
               "descriptionKey": "commands.config.infra.push.description",
               "options": [
                 {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "options.machine",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--debug",
                   "descriptionKey": "options.debug",
                   "mandatory": false,
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "machine",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             }
           ]
@@ -5228,6 +5164,12 @@
               "descriptionKey": "commands.config.certCache.pull.description",
               "options": [
                 {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "options.machine",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--no-prune",
                   "descriptionKey": "commands.config.certCache.pull.optionNoPrune",
                   "mandatory": false,
@@ -5240,14 +5182,7 @@
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "machine",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
@@ -5255,20 +5190,19 @@
               "descriptionKey": "commands.config.certCache.push.description",
               "options": [
                 {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "options.machine",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--debug",
                   "descriptionKey": "options.debug",
                   "mandatory": false,
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "machine",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
@@ -5564,70 +5498,8 @@
     {
       "name": "term",
       "descriptionKey": "commands.term.description",
-      "options": [
-        {
-          "flags": "-t, --team <name>",
-          "descriptionKey": "options.team",
-          "mandatory": false,
-          "defaultValue": null
-        },
-        {
-          "flags": "-c, --command <cmd>",
-          "descriptionKey": "options.command",
-          "mandatory": false,
-          "defaultValue": null
-        },
-        {
-          "flags": "--container <id>",
-          "descriptionKey": "options.container",
-          "mandatory": false,
-          "defaultValue": null
-        },
-        {
-          "flags": "--container-action <action>",
-          "descriptionKey": "options.containerAction",
-          "mandatory": false,
-          "defaultValue": null
-        },
-        {
-          "flags": "--log-lines <lines>",
-          "descriptionKey": "options.logLines",
-          "mandatory": false,
-          "defaultValue": null
-        },
-        {
-          "flags": "--follow",
-          "descriptionKey": "options.follow",
-          "mandatory": false,
-          "defaultValue": null
-        },
-        {
-          "flags": "--external",
-          "descriptionKey": "options.external",
-          "mandatory": false,
-          "defaultValue": null
-        },
-        {
-          "flags": "--reset-home",
-          "descriptionKey": "options.resetHome",
-          "mandatory": false,
-          "defaultValue": null
-        }
-      ],
-      "arguments": [
-        {
-          "name": "machine",
-          "required": false,
-          "variadic": false,
-          "defaultValue": null
-        },
-        {
-          "name": "repository",
-          "required": false,
-          "variadic": false,
-          "defaultValue": null
-        }
-      ],
+      "options": [],
+      "arguments": [],
       "subcommands": [
         {
           "name": "connect",
@@ -5823,58 +5695,8 @@
     {
       "name": "vscode",
       "descriptionKey": "commands.vscode.description",
-      "options": [
-        {
-          "flags": "-t, --team <name>",
-          "descriptionKey": "options.team",
-          "mandatory": false,
-          "defaultValue": null
-        },
-        {
-          "flags": "-f, --folder <path>",
-          "descriptionKey": "options.folder",
-          "mandatory": false,
-          "defaultValue": null
-        },
-        {
-          "flags": "--url-only",
-          "descriptionKey": "options.urlOnly",
-          "mandatory": false,
-          "defaultValue": null
-        },
-        {
-          "flags": "-n, --new-window",
-          "descriptionKey": "options.newWindow",
-          "mandatory": false,
-          "defaultValue": null
-        },
-        {
-          "flags": "--skip-env-setup",
-          "descriptionKey": "options.skipEnvSetup",
-          "mandatory": false,
-          "defaultValue": null
-        },
-        {
-          "flags": "--insiders",
-          "descriptionKey": "options.insiders",
-          "mandatory": false,
-          "defaultValue": null
-        }
-      ],
-      "arguments": [
-        {
-          "name": "machine",
-          "required": false,
-          "variadic": false,
-          "defaultValue": null
-        },
-        {
-          "name": "repository",
-          "required": false,
-          "variadic": false,
-          "defaultValue": null
-        }
-      ],
+      "options": [],
+      "arguments": [],
       "subcommands": [
         {
           "name": "connect",
@@ -6114,6 +5936,18 @@
           "descriptionKey": "commands.ops.ssh.description",
           "options": [
             {
+              "flags": "--vm-id <id>",
+              "descriptionKey": "options.vmId",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-c, --command <cmd>",
+              "descriptionKey": "options.command",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--backend <backend>",
               "descriptionKey": "options.opsBackend",
               "mandatory": false,
@@ -6126,20 +5960,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "vmId",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            },
-            {
-              "name": "command",
-              "required": false,
-              "variadic": true,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -6467,20 +6288,19 @@
               "descriptionKey": "commands.subscription.refresh.repo.description",
               "options": [
                 {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
                   "flags": "-m, --machine <name>",
                   "descriptionKey": "options.machine",
                   "mandatory": true,
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "repo",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             }
           ]
@@ -6503,29 +6323,29 @@
         {
           "name": "schema",
           "descriptionKey": "commands.agent.schema.description",
-          "options": [],
-          "arguments": [
+          "options": [
             {
-              "name": "command",
-              "required": true,
-              "variadic": false,
+              "flags": "--command <path>",
+              "descriptionKey": "options.command",
+              "mandatory": true,
               "defaultValue": null
             }
           ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "exec",
           "descriptionKey": "commands.agent.exec.description",
-          "options": [],
-          "arguments": [
+          "options": [
             {
-              "name": "command",
-              "required": true,
-              "variadic": false,
+              "flags": "--command <path>",
+              "descriptionKey": "options.command",
+              "mandatory": true,
               "defaultValue": null
             }
           ],
+          "arguments": [],
           "subcommands": []
         },
         {

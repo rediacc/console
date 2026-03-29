@@ -249,11 +249,11 @@ export class CliTestRunner {
   // ===========================================================================
 
   async contextCreate(name: string): Promise<CliResult> {
-    return this.run(['config', 'init', name, '--api-url', this.config.apiUrl]);
+    return this.run(['config', 'init', '--name', name, '--api-url', this.config.apiUrl]);
   }
 
   async contextDelete(name: string): Promise<CliResult> {
-    return this.run(['config', 'delete', name]);
+    return this.run(['config', 'delete', '--name', name]);
   }
 
   async contextList(): Promise<CliResult> {

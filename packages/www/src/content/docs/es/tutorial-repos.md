@@ -4,7 +4,7 @@ description: "Crear un repositorio cifrado, desplegar una aplicación en contene
 category: "Tutorials"
 order: 3
 language: es
-sourceHash: f28a6f56286d8853
+sourceHash: ee3455c196ea1479
 ---
 
 # Cómo desplegar y gestionar repositorios con Rediacc
@@ -46,7 +46,7 @@ Muestra todos los repositorios en la máquina con su tamaño, estado de montaje 
 Antes de desplegar, verifica que el almacenamiento del repositorio está montado y accesible.
 
 ```bash
-rdc term server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
+rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
 El directorio de montaje es donde residen los archivos de la aplicación — `Rediaccfile`, `docker-compose.yml` y cualquier volumen de datos.
@@ -76,7 +76,7 @@ Muestra todos los contenedores en ejecución en todos los repositorios de la má
 Para ejecutar comandos dentro del entorno Docker aislado del repositorio:
 
 ```bash
-rdc term server-1 test-app -c "docker ps"
+rdc term connect -m server-1 -r test-app -c "docker ps"
 ```
 
 La sesión de terminal establece `DOCKER_HOST` al socket Docker aislado del repositorio. Cualquier comando Docker se ejecuta solo contra los contenedores de ese repositorio.

@@ -4,7 +4,7 @@ description: "Создайте профиль конфигурации, заре
 category: "Tutorials"
 order: 2
 language: ru
-sourceHash: "04756cddd86e097c"
+sourceHash: "a7e5e0c30a4bb7d6"
 ---
 
 # Как настроить машину с Rediacc
@@ -72,8 +72,8 @@ rdc config set machine bridge-vm --config tutorial-demo
 Перед развёртыванием чего-либо убедитесь, что машина доступна по SSH.
 
 ```bash
-rdc term bridge-vm -c "hostname"
-rdc term bridge-vm -c "uptime"
+rdc term connect -m bridge-vm -c "hostname"
+rdc term connect -m bridge-vm -c "uptime"
 ```
 
 Обе команды выполняются на удалённой машине и возвращают результат немедленно. Если какая-либо из них не выполняется, проверьте правильность SSH-ключа и доступность сервера.

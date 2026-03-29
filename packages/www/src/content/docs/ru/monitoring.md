@@ -6,7 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: ru
-sourceHash: ed667247d300508a
+sourceHash: 13e3bed39301023c
+sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
 # Мониторинг
@@ -118,7 +119,7 @@ rdc machine vault-status server-1
 
 ## Проверка соединения
 
-> **Только для облачного адаптера.** В локальном режиме используйте `rdc term server-1 -c "hostname"` для проверки подключения.
+> **Только для облачного адаптера.** В локальном режиме используйте `rdc term connect -m server-1 -c "hostname"` для проверки подключения.
 
 Проверка SSH-подключения к машине:
 

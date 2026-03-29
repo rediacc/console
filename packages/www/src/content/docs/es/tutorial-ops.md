@@ -4,7 +4,7 @@ description: "Aprovisionar un clúster de VM local, ejecutar comandos por SSH y 
 category: "Tutorials"
 order: 1
 language: es
-sourceHash: "2fdc49f796b03e18"
+sourceHash: "c1ba17e9a145c599"
 ---
 
 # Cómo aprovisionar VMs locales con Rediacc
@@ -52,11 +52,11 @@ Muestra el estado de cada VM en el clúster — direcciones IP, asignación de r
 ### Paso 4: Ejecutar comandos en una VM
 
 ```bash
-rdc ops ssh 1 hostname
-rdc ops ssh 1 uname -a
+rdc ops ssh --vm-id 1 hostname
+rdc ops ssh --vm-id 1 -c "uname -a"
 ```
 
-Ejecuta comandos en la VM puente (ID `1`) por SSH. Pase cualquier comando después del ID de la VM. Para una sesión interactiva, omita el comando: `rdc ops ssh 1`.
+Ejecuta comandos en la VM puente (ID `1`) por SSH. Pase cualquier comando después del ID de la VM. Para una sesión interactiva, omita el comando: `rdc ops ssh --vm-id 1`.
 
 ### Paso 5: Eliminar el clúster
 

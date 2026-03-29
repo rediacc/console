@@ -4,7 +4,7 @@ description: "Bir yapılandırma profili oluşturun, uzak bir makine kaydedin, S
 category: "Tutorials"
 order: 2
 language: tr
-sourceHash: "04756cddd86e097c"
+sourceHash: "a7e5e0c30a4bb7d6"
 ---
 
 # Rediacc ile Makine Nasıl Kurulur
@@ -72,8 +72,8 @@ rdc config set machine bridge-vm --config tutorial-demo
 Herhangi bir şey dağıtmadan önce, makinenin SSH üzerinden erişilebilir olduğunu doğrulayın.
 
 ```bash
-rdc term bridge-vm -c "hostname"
-rdc term bridge-vm -c "uptime"
+rdc term connect -m bridge-vm -c "hostname"
+rdc term connect -m bridge-vm -c "uptime"
 ```
 
 Her iki komut da uzak makinede çalışır ve hemen sonuç döndürür. Herhangi biri başarısız olursa, SSH anahtarınızın doğru olduğunu ve sunucuya erişilebildiğini kontrol edin.

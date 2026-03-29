@@ -4,7 +4,7 @@ description: "Verificar el estado de la máquina, inspeccionar contenedores, rev
 category: "Tutorials"
 order: 4
 language: es
-sourceHash: "af9f17a05dfb13b9"
+sourceHash: "806137d9c33f4d7f"
 ---
 
 # Cómo monitorear y diagnosticar infraestructura con Rediacc
@@ -79,8 +79,8 @@ Obtiene las claves de host actuales del servidor y actualiza su configuración. 
 Una verificación rápida de conectividad SSH para confirmar que la máquina es accesible y responde.
 
 ```bash
-rdc term server-1 -c "hostname"
-rdc term server-1 -c "uptime"
+rdc term connect -m server-1 -c "hostname"
+rdc term connect -m server-1 -c "uptime"
 ```
 
 El nombre de host confirma que está conectado al servidor correcto. El tiempo de actividad confirma que el sistema está funcionando normalmente.
@@ -88,13 +88,13 @@ El nombre de host confirma que está conectado al servidor correcto. El tiempo d
 ## Solución de problemas
 
 **La verificación de salud expira o muestra "SSH connection failed"**
-Verifique que la máquina esté en línea y sea accesible: `ping <ip>`. Compruebe que su clave SSH esté configurada correctamente con `rdc term <machine> -c "echo ok"`.
+Verifique que la máquina esté en línea y sea accesible: `ping <ip>`. Compruebe que su clave SSH esté configurada correctamente con `rdc term connect -m <machine> -c "echo ok"`.
 
 **"Service not found" en el listado de servicios**
 Los servicios de Rediacc solo aparecen después de que se haya desplegado al menos un repositorio. Si no existen repositorios, la lista de servicios está vacía.
 
 **El listado de contenedores muestra contenedores obsoletos o detenidos**
-Los contenedores de despliegues anteriores pueden permanecer si `repo down` no se ejecutó limpiamente. Deténgalos con `rdc repo down <repo> -m <machine>` o inspeccione directamente vía `rdc term <machine> <repo> -c "docker ps -a"`.
+Los contenedores de despliegues anteriores pueden permanecer si `repo down` no se ejecutó limpiamente. Deténgalos con `rdc repo down <repo> -m <machine>` o inspeccione directamente vía `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
 
 ## Próximos pasos
 

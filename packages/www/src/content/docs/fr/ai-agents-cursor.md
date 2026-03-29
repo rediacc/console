@@ -4,7 +4,7 @@ description: Configurez l'IDE Cursor pour travailler avec l'infrastructure Redia
 category: Guides
 order: 32
 language: fr
-sourceHash: "c6caf89e3bb3f461"
+sourceHash: "ab61340d4a260fdd"
 ---
 
 Cursor s'intègre à Rediacc via les commandes du terminal et le fichier de configuration `.cursorrules`.
@@ -56,7 +56,7 @@ Demandez à Cursor : *"Montre-moi les journaux récents du conteneur de messager
 
 Cursor exécute dans le terminal :
 ```bash
-rdc term prod-1 mail -c "docker logs mail-postfix --tail 100"
+rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
 ```
 
 ## Paramètres de l'espace de travail

@@ -4,7 +4,7 @@ description: "Utilisez l'accès terminal SSH, la synchronisation de fichiers, l'
 category: "Tutorials"
 order: 5
 language: fr
-sourceHash: "9391a34dfb244942"
+sourceHash: "8043725fd714ab02"
 ---
 
 # Comment utiliser les outils Terminal, Sync et VS Code avec Rediacc
@@ -25,8 +25,8 @@ Le CLI comprend des outils de productivité pour les opérations quotidiennes : 
 Exécutez des commandes en ligne sur une machine distante via SSH sans ouvrir une session interactive.
 
 ```bash
-rdc term server-1 -c "hostname"
-rdc term server-1 -c "uptime"
+rdc term connect -m server-1 -c "hostname"
+rdc term connect -m server-1 -c "uptime"
 ```
 
 Le drapeau `-c` exécute une seule commande et retourne la sortie. Omettez `-c` pour ouvrir une session SSH interactive.
@@ -36,7 +36,7 @@ Le drapeau `-c` exécute une seule commande et retourne la sortie. Omettez `-c` 
 Pour exécuter des commandes dans l'environnement Docker isolé d'un dépôt :
 
 ```bash
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 ```
 
 Lors de la connexion à un dépôt, `DOCKER_HOST` est automatiquement défini sur le socket Docker isolé du dépôt. Toute commande Docker s'exécute uniquement contre les conteneurs de ce dépôt.
@@ -66,7 +66,7 @@ Les fichiers sont transférés via rsync sur SSH. Seuls les fichiers modifiés s
 Confirmez l'arrivée des fichiers en listant le répertoire de montage du dépôt.
 
 ```bash
-rdc term server-1 my-app -c "ls -la"
+rdc term connect -m server-1 -r my-app -c "ls -la"
 ```
 
 ### Étape 6 : Vérification de l'intégration VS Code
@@ -77,7 +77,7 @@ Pour développer à distance avec VS Code, vérifiez que les composants requis s
 rdc vscode check
 ```
 
-Vérifie votre installation VS Code, l'extension Remote SSH et la configuration SSH. Suivez la sortie pour résoudre les prérequis manquants, puis connectez-vous avec `rdc vscode <machine> [repo]`.
+Vérifie votre installation VS Code, l'extension Remote SSH et la configuration SSH. Suivez la sortie pour résoudre les prérequis manquants, puis connectez-vous avec `rdc vscode connect -m <machine> [-r <repo>]`.
 
 ### Étape 7 : Vérifier les mises à jour du CLI
 

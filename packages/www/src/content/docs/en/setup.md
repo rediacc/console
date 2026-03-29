@@ -91,7 +91,7 @@ This updates the `knownHosts` field in your config for that machine.
 After adding a machine, verify it's reachable:
 
 ```bash
-rdc term server-1 -c "hostname"
+rdc term connect -m server-1 -c "hostname"
 ```
 
 This opens an SSH connection to the machine and runs the command. If it succeeds, your SSH configuration is correct.

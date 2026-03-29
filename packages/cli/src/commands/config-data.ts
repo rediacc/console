@@ -18,14 +18,16 @@ export function registerRepositoryCommands(config: Command, program: Command): v
 
   // config repository add
   repository
-    .command('add <name>')
+    .command('add')
     .description(t('commands.config.repository.add.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .requiredOption('--guid <guid>', t('commands.config.repository.add.optionGuid'))
     .option('--tag <tag>', t('commands.config.repository.add.optionTag'), DEFAULTS.REPOSITORY.TAG)
     .option('--credential <credential>', t('commands.config.repository.add.optionCredential'))
     .option('--network-id <id>', t('commands.config.repository.add.optionNetworkId'))
-    .action(async (name, options) => {
+    .action(async (options) => {
       try {
+        const name = options.name;
         assertResourceName(name);
 
         let networkId: number | undefined;
@@ -67,10 +69,12 @@ export function registerRepositoryCommands(config: Command, program: Command): v
 
   // config repository remove
   repository
-    .command('remove <name>')
+    .command('remove')
     .description(t('commands.config.repository.remove.description'))
-    .action(async (name) => {
+    .requiredOption('--name <name>', t('options.name'))
+    .action(async (options) => {
       try {
+        const name = options.name;
         await configService.removeRepository(name);
         outputService.success(t('commands.config.repository.remove.success', { name }));
       } catch (error) {
@@ -141,12 +145,14 @@ export function registerRepositoryCommands(config: Command, program: Command): v
 
   // config repository restore-archived
   repository
-    .command('restore-archived <guid>')
+    .command('restore-archived')
     .description(t('commands.config.repository.restoreArchived.description'))
-    .option('--name <name>', t('commands.config.repository.restoreArchived.optionName'))
-    .action(async (guid, options) => {
+    .requiredOption('--name <name>', t('options.name'))
+    .option('--new-name <name>', t('options.newName'))
+    .action(async (options) => {
       try {
-        const restoredName = await configService.restoreArchivedRepository(guid, options.name);
+        const guid = options.name;
+        const restoredName = await configService.restoreArchivedRepository(guid, options.newName);
         outputService.success(
           t('commands.config.repository.restoreArchived.success', { name: restoredName, guid })
         );
@@ -178,11 +184,13 @@ export function registerStorageCommands(config: Command, program: Command): void
 
   // config storage import
   storage
-    .command('import <file>')
+    .command('import')
     .description(t('commands.config.storage.import.description'))
+    .requiredOption('--file <path>', t('options.file'))
     .option('--name <name>', t('commands.config.storage.import.optionName'))
-    .action(async (file, options) => {
+    .action(async (options) => {
       try {
+        const file = options.file;
         const { parseRcloneConfig, mapRcloneToStorageProvider, PROVIDER_MAPPING } = await import(
           '@rediacc/shared/queue-vault'
         );
@@ -242,10 +250,12 @@ export function registerStorageCommands(config: Command, program: Command): void
 
   // config storage remove
   storage
-    .command('remove <name>')
+    .command('remove')
     .description(t('commands.config.storage.remove.description'))
-    .action(async (name) => {
+    .requiredOption('--name <name>', t('options.name'))
+    .action(async (options) => {
       try {
+        const name = options.name;
         await configService.removeStorage(name);
         outputService.success(t('commands.config.storage.remove.success', { name }));
       } catch (error) {

@@ -4,7 +4,8 @@ description: 'Maschinengesundheit, Container, Dienste, Repositories und Diagnose
 category: Guides
 order: 9
 language: de
-sourceHash: ed667247d300508a
+sourceHash: 13e3bed39301023c
+sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
 # Überwachung
@@ -116,7 +117,7 @@ Verwenden Sie `--output json` für maschinenlesbare Ausgabe.
 
 ## Verbindung testen
 
-> **Nur Cloud-Adapter.** Im lokalen Modus verwenden Sie `rdc term server-1 -c "hostname"`, um die Konnektivität zu prüfen.
+> **Nur Cloud-Adapter.** Im lokalen Modus verwenden Sie `rdc term connect -m server-1 -c "hostname"`, um die Konnektivität zu prüfen.
 
 SSH-Konnektivität zu einer Maschine überprüfen:
 

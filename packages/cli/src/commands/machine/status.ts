@@ -297,9 +297,10 @@ function collectSections(options: QueryOptions): string[] {
 
 export function registerQueryCommand(machine: Command, program: Command): void {
   machine
-    .command('query <name>')
+    .command('query')
     .summary(t('commands.machine.query.descriptionShort'))
     .description(t('commands.machine.query.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .option('--debug', t('options.debug'))
     .option('--system', t('options.querySystem'))
     .option('--repositories', t('options.queryRepositories'))
@@ -307,9 +308,9 @@ export function registerQueryCommand(machine: Command, program: Command): void {
     .option('--services', t('options.queryServices'))
     .option('--network', t('options.queryNetwork'))
     .option('--block-devices', t('options.queryBlockDevices'))
-    .action(async (name: string, options: QueryOptions) => {
+    .action(async (options: QueryOptions & { name: string }) => {
       try {
-        const machineName = name;
+        const machineName = options.name;
         if (!machineName) {
           throw new Error(t('errors.machineRequiredLocal'));
         }

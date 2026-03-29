@@ -4,7 +4,7 @@ description: "Nutzen Sie SSH-Terminalzugriff, Dateisynchronisation, VS Code-Inte
 category: "Tutorials"
 order: 5
 language: de
-sourceHash: "9391a34dfb244942"
+sourceHash: "8043725fd714ab02"
 ---
 
 # So verwenden Sie Terminal-, Sync- und VS Code-Werkzeuge mit Rediacc
@@ -25,8 +25,8 @@ Das CLI enthält Produktivitätswerkzeuge für den täglichen Betrieb: SSH-Termi
 Führen Sie Inline-Befehle auf einer Remote-Maschine über SSH aus, ohne eine interaktive Sitzung zu öffnen.
 
 ```bash
-rdc term server-1 -c "hostname"
-rdc term server-1 -c "uptime"
+rdc term connect -m server-1 -c "hostname"
+rdc term connect -m server-1 -c "uptime"
 ```
 
 Das `-c`-Flag führt einen einzelnen Befehl aus und gibt die Ausgabe zurück. Lassen Sie `-c` weg, um eine interaktive SSH-Sitzung zu öffnen.
@@ -36,7 +36,7 @@ Das `-c`-Flag führt einen einzelnen Befehl aus und gibt die Ausgabe zurück. La
 Um Befehle in der isolierten Docker-Umgebung eines Repositories auszuführen:
 
 ```bash
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 ```
 
 Beim Verbinden mit einem Repository wird `DOCKER_HOST` automatisch auf den isolierten Docker-Socket des Repositories gesetzt. Jeder Docker-Befehl wird nur gegen die Container dieses Repositories ausgeführt.
@@ -66,7 +66,7 @@ Dateien werden über rsync via SSH übertragen. Bei nachfolgenden Uploads werden
 Bestätigen Sie die Ankunft der Dateien, indem Sie das Mount-Verzeichnis des Repositories auflisten.
 
 ```bash
-rdc term server-1 my-app -c "ls -la"
+rdc term connect -m server-1 -r my-app -c "ls -la"
 ```
 
 ### Schritt 6: VS Code-Integrationsprüfung
@@ -77,7 +77,7 @@ Um remote mit VS Code zu entwickeln, überprüfen Sie, ob die erforderlichen Kom
 rdc vscode check
 ```
 
-Prüft Ihre VS Code-Installation, die Remote SSH-Erweiterung und die SSH-Konfiguration. Folgen Sie der Ausgabe, um fehlende Voraussetzungen zu beheben, und verbinden Sie sich dann mit `rdc vscode <machine> [repo]`.
+Prüft Ihre VS Code-Installation, die Remote SSH-Erweiterung und die SSH-Konfiguration. Folgen Sie der Ausgabe, um fehlende Voraussetzungen zu beheben, und verbinden Sie sich dann mit `rdc vscode connect -m <machine> -r <repo>`.
 
 ### Schritt 7: Nach CLI-Updates suchen
 

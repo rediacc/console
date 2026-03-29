@@ -139,15 +139,17 @@ export function registerMachineCommands(config: Command, program: Command): void
 
   // config machine add
   machine
-    .command('add <name>')
+    .command('add')
     .summary(t('commands.config.machine.add.descriptionShort'))
     .description(t('commands.config.machine.add.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .requiredOption('--ip <address>', t('options.machineIp'))
     .requiredOption('--user <username>', t('options.sshUser'))
     .option('--port <port>', t('options.sshPort'), '22')
     .option('--datastore <path>', t('options.datastore'), '/mnt/rediacc')
-    .action(async (name, options) => {
+    .action(async (options) => {
       try {
+        const name = options.name;
         assertResourceName(name);
         const machineConfig = parseConfig(
           MachineConfigSchema,
@@ -187,10 +189,12 @@ export function registerMachineCommands(config: Command, program: Command): void
 
   // config machine remove
   machine
-    .command('remove <name>')
+    .command('remove')
     .description(t('commands.config.machine.remove.description'))
-    .action(async (name) => {
+    .requiredOption('--name <name>', t('options.name'))
+    .action(async (options) => {
       try {
+        const name = options.name;
         await configService.removeMachine(name);
         outputService.success(t('commands.config.machine.remove.success', { name }));
       } catch (error) {
@@ -228,12 +232,13 @@ export function registerMachineCommands(config: Command, program: Command): void
 
   // config machine scan-keys
   machine
-    .command('scan-keys [machine]')
+    .command('scan-keys')
     .description(t('commands.config.machine.scanKeys.description'))
-    .action(async (machineName?: string) => {
+    .option('-m, --machine <name>', t('options.machine'))
+    .action(async (options) => {
       try {
-        if (machineName) {
-          await scanSingleMachine(machineName);
+        if (options.machine) {
+          await scanSingleMachine(options.machine);
         } else {
           await scanAllMachines();
         }
@@ -244,9 +249,10 @@ export function registerMachineCommands(config: Command, program: Command): void
 
   // config machine setup
   machine
-    .command('setup <name>')
+    .command('setup')
     .summary(t('commands.config.machine.setup.descriptionShort'))
     .description(t('commands.config.machine.setup.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .option(
       '--datastore <path>',
       t('commands.config.machine.setup.datastoreOption'),
@@ -258,8 +264,9 @@ export function registerMachineCommands(config: Command, program: Command): void
       '95%'
     )
     .option('--debug', t('options.debug'))
-    .action(async (name, options) => {
+    .action(async (options) => {
       try {
+        const name = options.name;
         const localConfig = await configService.getLocalConfig();
         const machineObj = await configService.getLocalMachine(name);
         const sshPrivateKey =
@@ -357,8 +364,9 @@ export function registerProviderCommands(config: Command, program: Command): voi
 
   // config provider add
   provider
-    .command('add <name>')
+    .command('add')
     .description(t('commands.config.provider.add.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .option('--provider <source>', t('commands.config.provider.add.optionProvider'))
     .option('--source <source>', t('commands.config.provider.add.optionSource'))
     .requiredOption('--token <token>', t('commands.config.provider.add.optionToken'))
@@ -376,8 +384,9 @@ export function registerProviderCommands(config: Command, program: Command): voi
     .option('--ssh-key-attr <attr>', t('commands.config.provider.add.optionSshKeyAttr'))
     .option('--ssh-key-format <format>', t('commands.config.provider.add.optionSshKeyFormat'))
     .option('--ssh-key-resource <type>', t('commands.config.provider.add.optionSshKeyResource'))
-    .action(async (name, options) => {
+    .action(async (options) => {
       try {
+        const name = options.name;
         assertResourceName(name);
 
         if (!options.provider && !options.source) {
@@ -401,10 +410,12 @@ export function registerProviderCommands(config: Command, program: Command): voi
 
   // config provider remove
   provider
-    .command('remove <name>')
+    .command('remove')
     .description(t('commands.config.provider.remove.description'))
-    .action(async (name) => {
+    .requiredOption('--name <name>', t('options.name'))
+    .action(async (options) => {
       try {
+        const name = options.name;
         await configService.removeCloudProvider(name);
         outputService.success(t('commands.config.provider.remove.success', { name }));
       } catch (error) {

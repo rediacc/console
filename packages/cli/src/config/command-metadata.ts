@@ -30,6 +30,8 @@ export interface CommandMeta {
   grandGuard?: boolean;
   /** Block fork repos — command is nonsensical on interim fork environments */
   forkBlocked?: boolean;
+  /** Absolute agent block — command is fundamentally incompatible with agent usage. No override. */
+  agentBlocked?: boolean;
   /** MCP tool metadata. If present, auto-derive an MCP tool from Commander. */
   mcp?: McpMeta;
   /** If set, this command is explicitly excluded from MCP with this reason. */
@@ -363,7 +365,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   sync: { mcpExcludeReason: 'Requires local filesystem paths — MCP agents have no local FS' },
 
   // ── Covered by sub-operations ─────────────────────────────────────
-  run: { mcpExcludeReason: 'Escape hatch for raw renet functions — agents should use typed tools' },
+  run: {
+    agentBlocked: true,
+    mcpExcludeReason: 'Escape hatch for raw renet functions — agents should use typed tools',
+  },
 
   // ── Subcommands ───────────────────────────────────────────────────
   'storage browse': { mcpExcludeReason: 'Interactive file browser — requires TTY' },
