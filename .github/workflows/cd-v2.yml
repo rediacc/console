@@ -239,8 +239,8 @@ jobs:
       needs.init.outputs.skip_release != 'true' &&
       !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
     environment:
-      name: production
-      url: https://www.rediacc.com
+      name: edge
+      url: https://edge.rediacc.com
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
