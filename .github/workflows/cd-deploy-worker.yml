@@ -82,6 +82,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install account dependencies
+        run: npm install
+        working-directory: private/account
+
       - name: Build shared packages
         run: npm run build:packages
 
