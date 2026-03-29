@@ -38,6 +38,7 @@ CD_GITHUB_SECRET="CLOUDFLARE_API_TOKEN"
 CD_ACCOUNT_PERMS=(
     "Workers Scripts Write"
     "Workers KV Storage Write"
+    "Workers R2 Storage Write"
     "D1 Write"
     "Pages Write"
     "Turnstile Sites Write"
