@@ -11,6 +11,7 @@ on:
         default: false
 
 permissions:
+  actions: write
   contents: read
   packages: write
   pull-requests: read
@@ -127,6 +128,21 @@ jobs:
 
           echo "Promoted edge v${{ steps.edge.outputs.version }} to stable"
 
+      - name: Deploy production Worker
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Triggering production deploy via CD workflow..."
+          CI_RUN_ID=$(gh run list --workflow=ci.yml --branch=main --status=success --limit=1 --json databaseId --jq '.[0].databaseId')
+          echo "Using CI run: $CI_RUN_ID"
+          gh workflow run cd-v2.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main \
+            --field ci_run_id="$CI_RUN_ID" \
+            --field deploy_production=true
+          echo "Production deploy triggered"
+
       - name: Summary
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
         run: |
@@ -134,3 +150,4 @@ jobs:
           echo "- Edge version: ${{ steps.edge.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- Previous stable: ${{ steps.stable.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- Soak days: ${{ env.SOAK_DAYS }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Production deploy: triggered via cd-v2.yml" >> $GITHUB_STEP_SUMMARY
