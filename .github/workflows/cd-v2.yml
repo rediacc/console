@@ -26,6 +26,11 @@ on:
         required: false
         type: boolean
         default: false
+      deploy_production:
+        description: 'Deploy to production (www.rediacc.com) instead of edge'
+        required: false
+        type: boolean
+        default: false
 
 # Required for release publishing, Docker, and Cloudflare Pages deployment
 permissions:
@@ -239,8 +244,8 @@ jobs:
       needs.init.outputs.skip_release != 'true' &&
       !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
     environment:
-      name: edge
-      url: https://edge.rediacc.com
+      name: ${{ inputs.deploy_production == true && 'production' || 'edge' }}
+      url: ${{ inputs.deploy_production == true && 'https://www.rediacc.com' || 'https://edge.rediacc.com' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -473,8 +478,9 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       # -----------------------------------------------------------------------
-      # Step 6: Deploy edge Worker (static assets + embedded account server)
-      # Deploys to edge.rediacc.com (not production). Production is manual.
+      # Step 6: Deploy Worker (static assets + embedded account server)
+      # deploy_production=true  -> www.rediacc.com  (production)
+      # deploy_production=false -> edge.rediacc.com (default on merge)
       # -----------------------------------------------------------------------
       - name: Copy pages to www worker assets
         run: |
@@ -492,13 +498,28 @@ jobs:
         run: npm install
         working-directory: workers/www
 
-      - name: Deploy edge Worker
-        run: .ci/scripts/deploy/deploy-edge.sh
+      - name: Set deploy target
+        id: target
+        run: |
+          if [[ "${{ inputs.deploy_production }}" == "true" ]]; then
+            echo "script=deploy-www.sh" >> "$GITHUB_OUTPUT"
+            echo "worker=rediacc-www" >> "$GITHUB_OUTPUT"
+            echo "domain=www.rediacc.com" >> "$GITHUB_OUTPUT"
+            echo "sandbox=" >> "$GITHUB_OUTPUT"
+          else
+            echo "script=deploy-edge.sh" >> "$GITHUB_OUTPUT"
+            echo "worker=edge-rediacc-www" >> "$GITHUB_OUTPUT"
+            echo "domain=edge.rediacc.com" >> "$GITHUB_OUTPUT"
+            echo "sandbox=--sandbox" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy Worker
+        run: .ci/scripts/deploy/${{ steps.target.outputs.script }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Set edge Worker secrets
+      - name: Set Worker secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
@@ -508,8 +529,8 @@ jobs:
           SECRET_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
           SECRET_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           SECRET_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-          SECRET_STRIPE_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-          SECRET_STRIPE_WEBHOOK: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
+          SECRET_STRIPE_KEY: ${{ inputs.deploy_production == true && secrets.STRIPE_SECRET_KEY || secrets.STRIPE_SANDBOX_SECRET_KEY }}
+          SECRET_STRIPE_WEBHOOK: ${{ inputs.deploy_production == true && secrets.STRIPE_WEBHOOK_SECRET || secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
           SECRET_ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
           SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
           SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
@@ -577,13 +598,14 @@ jobs:
               SELLER_POSTAL_CODE: $seller_postal,
               SELLER_COUNTRY: $seller_country,
               SELLER_EMAIL: $seller_email
-            }' | npx wrangler secret bulk --name edge-rediacc-www
+            }' | npx wrangler secret bulk --name ${{ steps.target.outputs.worker }}
 
-      - name: Verify edge Stripe webhook
-        run: npx tsx scripts/verify-webhook.ts --sandbox --expected-url "https://edge.rediacc.com/account/api/v1/webhooks/stripe"
+      - name: Verify Stripe webhook
+        run: npx tsx scripts/verify-webhook.ts ${{ steps.target.outputs.sandbox }} --expected-url "https://${{ steps.target.outputs.domain }}/account/api/v1/webhooks/stripe"
         working-directory: private/account
         env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+          STRIPE_SECRET_KEY: ${{ inputs.deploy_production == true && secrets.STRIPE_SECRET_KEY || '' }}
+          STRIPE_SANDBOX_SECRET_KEY: ${{ inputs.deploy_production != true && secrets.STRIPE_SANDBOX_SECRET_KEY || '' }}
 
       # -----------------------------------------------------------------------
       # Step 7: Cleanup staging tags
