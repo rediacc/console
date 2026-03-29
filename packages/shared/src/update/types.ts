@@ -1,3 +1,6 @@
+/** Release channel for CLI/desktop updates. */
+export type ReleaseChannel = 'stable' | 'edge';
+
 /** Common update state fields shared between CLI and desktop. */
 export interface UpdateStateBase {
   schemaVersion: 1;
@@ -5,6 +8,7 @@ export interface UpdateStateBase {
   lastAttemptAt: string | null;
   consecutiveFailures: number;
   lastError: string | null;
+  channel?: ReleaseChannel;
 }
 
 /** CLI-specific pending update info. */

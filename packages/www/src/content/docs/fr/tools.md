@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: fr
-sourceHash: "b9aa7cdcf088b645"
+sourceHash: "f304688fdc1a41c1"
 ---
 
 # Outils
@@ -184,4 +184,12 @@ Revient à la version précédemment installée. Disponible uniquement après l'
 rdc update status
 ```
 
-Affiche la version actuelle, le canal de mise à jour et la configuration de la mise à jour automatique.
+Affiche la version actuelle, le canal de mise a jour et la configuration de la mise a jour automatique.
+
+#### Canaux de publication
+
+```bash
+rdc update --channel edge      # Dernieres fonctionnalites, mis a jour frequemment
+rdc update --channel stable    # Versions pretes pour la production (par defaut)
+rdc update --status            # Afficher le canal actuel et les informations de version
+```

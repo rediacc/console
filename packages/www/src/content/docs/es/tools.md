@@ -4,7 +4,7 @@ description: "Sincronización de archivos, acceso por terminal, integración con
 category: Guides
 order: 9
 language: es
-sourceHash: "b9aa7cdcf088b645"
+sourceHash: "f304688fdc1a41c1"
 ---
 
 # Herramientas
@@ -182,4 +182,12 @@ Revierte a la versión previamente instalada. Solo disponible después de que se
 rdc update status
 ```
 
-Muestra la versión actual, el canal de actualización y la configuración de actualización automática.
+Muestra la version actual, el canal de actualizacion y la configuracion de actualizacion automatica.
+
+#### Canales de Lanzamiento
+
+```bash
+rdc update --channel edge      # Ultimas funciones, actualizado frecuentemente
+rdc update --channel stable    # Versiones listas para produccion (predeterminado)
+rdc update --status            # Mostrar canal actual e informacion de version
+```

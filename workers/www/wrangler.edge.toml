@@ -1,0 +1,41 @@
+name = "edge-rediacc-www"
+main = "src/index.ts"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+
+routes = [
+  { pattern = "edge.rediacc.com", custom_domain = true }
+]
+
+[vars]
+ENVIRONMENT = "edge"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "404-page"
+run_worker_first = ["/account", "/account/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "edge-account-db"
+database_id = "edaa5c46-44c7-430d-9740-20a55d89ea51"
+migrations_dir = "../../private/account/drizzle"
+
+[[r2_buckets]]
+binding = "CONFIG_BUCKET"
+bucket_name = "edge-rediacc-configs"
+
+# Secrets set via deploy-edge.sh (same crypto keys as production, sandbox Stripe)

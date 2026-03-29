@@ -473,6 +473,38 @@
         "noBackup": "Aucune sauvegarde trouvée pour la configuration \"{{name}}\"",
         "success": "Configuration \"{{name}}\" restaurée depuis la sauvegarde (version {{version}})"
       },
+      "remote": {
+        "description": "Gérer la connexion au stockage distant de configuration",
+        "disable": {
+          "description": "Déconnecter du stockage distant et sauvegarder la configuration localement",
+          "notEnabled": "La configuration distante n'est pas activée.",
+          "success": "Configuration distante désactivée. Configuration \"{{name}}\" sauvegardée localement."
+        },
+        "enable": {
+          "alreadyEnabled": "La configuration \"{{name}}\" est déjà liée au stockage distant. Déconnectez d'abord avec : rdc config remote disable",
+          "description": "Lier cette configuration au stockage distant chiffré",
+          "expired": "Code d'appareil expiré. Réessayez.",
+          "openBrowser": "Ouvrez cette URL pour terminer la configuration :",
+          "optionApiUrl": "URL du serveur de compte",
+          "optionHeadless": "Utiliser le flux de code d'appareil (pour les serveurs sans interface)",
+          "polling": "Interrogation en cours pour l'approbation du navigateur...",
+          "received": "Transfert reçu",
+          "success": "Configuration distante activée. La configuration \"{{name}}\" est maintenant synchronisée avec {{apiUrl}}.",
+          "waiting": "En attente de l'approbation du navigateur..."
+        },
+        "passkeySecretMissing": "Secret de passkey introuvable dans le trousseau du système. Réauthentifiez-vous avec : rdc config remote enable",
+        "refresh": {
+          "description": "Forcer la récupération de la configuration depuis le stockage distant",
+          "notEnabled": "La configuration distante n'est pas activée.",
+          "pulled": "Configuration récupérée",
+          "pulling": "Récupération de la configuration depuis le serveur distant...",
+          "success": "Configuration actualisée depuis le serveur distant (version {{version}})."
+        },
+        "status": {
+          "description": "Afficher l'état de la connexion distante"
+        },
+        "tokenExpired": "Jeton de configuration distante expiré. Réauthentifiez-vous avec : rdc config remote enable"
+      },
       "repository": {
         "add": {
           "description": "Ajouter un mappage GUID de dépôt à la configuration actuelle",
@@ -625,7 +657,11 @@
         "renetRsync": "rsync intégré",
         "renetVersion": "Version de Renet",
         "seaMode": "Mode SEA",
-        "sshKey": "Clé SSH"
+        "sshKey": "Clé SSH",
+        "subscriptionMachineSlots": "Emplacements de machines",
+        "subscriptionRepoLicenses": "Licences de dépôts",
+        "subscriptionStatus": "Status",
+        "subscriptionToken": "Jeton d'accès"
       },
       "description": "Diagnostiquer l'environnement CLI et l'intégration renet",
       "descriptionShort": "Diagnostiquer l'environnement CLI et l'intégration renet",
@@ -635,6 +671,7 @@
       "notAuthenticated": "non authentifié",
       "notConfigured": "non configuré",
       "notInstalled": "non installé",
+      "notLoggedIn": "non connecté",
       "opsNotSupported": "non pris en charge sur {{platform}}",
       "opsSkipped": "renet non disponible (ignoré)",
       "seaActive": "oui (Single Executable Application)",
@@ -643,13 +680,16 @@
         "configuration": "Paramétrage",
         "environment": "Environnement",
         "renet": "Réseau Renet",
+        "subscription": "Abonnement",
         "virtualization": "Virtualisation"
       },
+      "serverMismatch": "incohérence de serveur",
       "status": {
         "fail": "ÉCHEC",
         "ok": "OK",
         "warn": "AVERTISSEMENT"
       },
+      "subscriptionUnreachable": "impossible de joindre le serveur d'abonnement",
       "title": "Diagnostic Rediacc CLI"
     },
     "machine": {
@@ -1711,6 +1751,8 @@
       "applyFailed": "Échec de l'application de la mise à jour préparée : {{error}}",
       "autoApplied": "Mis à jour vers v{{version}} (était v{{from}}). Les modifications prendront effet au prochain lancement.",
       "available": "Mise à jour disponible : v{{version}} (actuel : v{{current}})",
+      "channelDescription": "Définir le canal de publication (stable ou edge)",
+      "channelSet": "Canal de publication défini sur {{channel}}",
       "checking": "Recherche de mises à jour...",
       "checkOnly": "Vérifier les mises à jour sans télécharger",
       "description": "Vérifier et appliquer les mises à jour du CLI",
@@ -1718,6 +1760,7 @@
       "downloading": "Téléchargement de v{{version}}...",
       "failed": "Échec de la mise à jour : {{error}}",
       "force": "Forcer la mise à jour même si déjà à jour",
+      "invalidChannel": "Canal non valide : {{channel}}. Utilisez stable ou edge.",
       "notSEA": "Mise à jour impossible : pas un binaire empaqueté. Compilez avec SEA d'abord.",
       "progress": "Téléchargement... {{percent}}%",
       "releaseNotes": "Notes de version : {{url}}",

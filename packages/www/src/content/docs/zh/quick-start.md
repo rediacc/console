@@ -1,86 +1,284 @@
 ---
 title: 快速开始
-description: 5分钟内在您的服务器上运行容器化服务。
+description: 几分钟内在您的服务器上运行容器化服务。
 category: Guides
 order: -1
 language: zh
-sourceHash: "a67f1e8442eb492e"
+sourceHash: "73dc08190016a305"
 ---
 
 # 快速开始
 
-5分钟内在您自己的服务器上部署加密、隔离的容器环境。无需云账户或SaaS依赖。
+在您自己的服务器上部署加密、隔离的容器环境。无需云账户或 SaaS 依赖。一切都运行在您掌控的硬件上。
 
-## 前提条件
+---
 
-- 一台Linux或macOS工作站
-- 一台远程服务器（Ubuntu 24.04+、Debian 12+或Fedora 43+），需要SSH访问权限和sudo权限
-- 一对SSH密钥（例如 `~/.ssh/id_ed25519`）
+## 简介
 
-## 1. 安装CLI
+### 核心概念
+
+仓库是磁盘上的一个加密文件。可以移动、备份、分叉。它就是一个文件。挂载后，它变成一个文件夹，内含专属的 Docker 守护进程和您的应用数据。
+
+可以把仓库想象成一个 USB 驱动器。它就在您手中，插入后系统就能看到并访问它。您的应用和数据完全可移植。在任何云服务商的任何机器上即插即用。
+
+**两个工具，两种角色：**
+
+- **rdc** = 笔记本电脑上的 CLI（TypeScript，全局安装）
+- **renet** = 服务器上的编排器（Go 二进制文件，管理守护进程/网络/隔离）
+- RDC 在 `config machine setup` 过程中自动配置 renet。无需在服务器上手动设置。
+
+> [架构](/en/docs/architecture)介绍了安全模型。[rdc vs renet](/en/docs/rdc-vs-renet)说明了何时使用哪个工具。
+
+### 1. 安装 CLI
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
+rdc doctor     # 验证：Node、SSH 密钥、renet、Docker
 ```
 
-## 2. 创建配置
+> Windows、Alpine、Arch：参见[安装指南](/en/docs/installation)。完整系统要求：[系统要求](/en/docs/requirements)。
+
+### 2. SSH 密钥设置
+
+rdc 通过 SSH 连接。服务器必须先信任您的公钥，rdc 才能访问。
 
 ```bash
-rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
+# 生成密钥（如果已有则跳过）
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
+
+# 将公钥复制到服务器（会提示输入密码）
+ssh-copy-id -i ~/.ssh/id_ed25519 user@your-server-ip
+
+# 告诉 rdc 使用哪个密钥
+rdc config ssh set --key ~/.ssh/id_ed25519
 ```
 
-## 3. 添加服务器
+此后每个 rdc 命令都使用此密钥进行认证。无需密码。
+
+### 3. 添加服务器
 
 ```bash
-rdc config machine add server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config machine add my-server --ip 192.168.1.100 --user muhammed
+rdc config machine setup my-server        # 配置 renet + 创建数据存储
 ```
 
-## 4. 配置服务器
+**过程说明：** 扫描 SSH 主机密钥，上传 renet 二进制文件，在服务器上初始化加密数据存储。准备好接收仓库。
+
+> 数据存储大小、Ceph RBD、云服务商：[服务器设置](/en/docs/setup)。SSH 故障：[故障排除](/en/docs/troubleshooting)。
+
+### 4. 配置文件
 
 ```bash
-rdc config machine setup server-1
+rdc config show                            # 可读的摘要信息
+cat ~/.config/rediacc/rediacc.json         # 原始 JSON：机器、仓库、存储、SSH 密钥
 ```
 
-此命令会在您的服务器上安装Docker、cryptsetup和renet二进制文件。
+**一个文件 = 一个环境。** 复制到另一台笔记本电脑即可使用。
 
-## 5. 创建加密仓库
+---
+
+## 使用仓库
+
+### 1. 创建仓库
 
 ```bash
-rdc repo create my-app -m server-1 --size 5G
+rdc repo create my-app -m my-server --size 2G       # 创建 2 GB 加密仓库
 ```
 
-## 6. 部署服务
+创建加密卷，挂载它，并启动其 Docker 守护进程。仓库已注册到您的配置中，可以使用了。
 
-挂载仓库，在其中创建`docker-compose.yml`和`Rediaccfile`，然后启动：
+> 调整大小、删除、验证：[仓库](/en/docs/repositories)。
+
+### 2. 应用模板
 
 ```bash
-rdc repo up my-app -m server-1 --mount
+rdc repo template list                                        # 显示内置模板
+rdc repo template apply app-postgres -m my-server -r my-app   # 部署 docker-compose.yml + Rediaccfile
 ```
 
-## 7. 验证
+模板提供 `docker-compose.yml`、`Rediaccfile` 和辅助文件。如果没有模板（或您自己的 compose 文件），就没有可启动的内容。
+
+### 3. 启动仓库
 
 ```bash
-rdc machine containers server-1
+rdc repo up my-app -m my-server                      # 运行 Rediaccfile up()
+rdc repo list -m my-server                           # 查看机器上的所有仓库
+rdc repo status my-app -m my-server                  # 挂载状态、Docker、大小、加密
 ```
 
-您应该能看到容器正在运行。
+`repo up` 会在需要时自动挂载。无需额外参数。
 
-## 什么是Rediacc？
+### 4. VS Code
 
-Rediacc将容器化服务部署到您控制的远程服务器上。所有数据使用LUKS进行静态加密，每个仓库拥有独立的隔离Docker守护进程，所有编排操作通过SSH从您的工作站完成。
+```bash
+rdc vscode my-server my-app              # 打开 VS Code SSH，进入仓库沙箱
+```
 
-无需云账户。无需SaaS依赖。您的数据留在您自己的服务器上。
+您正在加密卷*内部*编辑文件。`docker ps` 只显示此仓库的容器。保存、compose up、迭代。
+
+### 5. `rdc repo up` 与 `renet dev up`
+
+| | `rdc repo up` | `renet dev up` |
+|---|---|---|
+| **运行位置** | 您的笔记本电脑（CLI） | VS Code 沙箱内 |
+| **功能** | SSH → 自动挂载 → 运行 Rediaccfile `up()` | 直接运行 Rediaccfile `up()` |
+| **使用场景** | CI/CD、自动化、远程运维 | 开发者内循环 |
+| **隔离性** | 从外部编排 | 已在沙箱内部 |
+
+**演示流程：** `rdc repo template apply` → `rdc vscode my-server my-app` → 编辑 `docker-compose.yml` → `renet dev up` → 看到应用运行 → 迭代。
+
+> Rediaccfile 结构：[服务](/en/docs/services)。何时使用哪个工具：[rdc vs renet](/en/docs/rdc-vs-renet)。
+
+### 6. 隔离模型
+
+- **通用用户**（`rediacc`）：所有机器上使用相同的 UID。将仓库迁移到另一台服务器，文件所有权直接生效。无需为 `chown` 烦恼。
+- **每仓库独立 Docker 守护进程**：每个仓库拥有自己的隔离 Docker 守护进程。`docker ps` 只显示本仓库的容器。
+- **Landlock + OverlayFS 沙箱**：VS Code shell 受文件系统限制。无法读取其他仓库。对 `$HOME` 的写入是每仓库的覆盖层。
+
+> 隔离工作原理：[架构](/en/docs/architecture)。Rediaccfile 生命周期：[服务](/en/docs/services)。
+
+### 7. 终端、同步与隧道
+
+**终端：**
+```bash
+rdc term my-server my-app                            # SSH 进入仓库沙箱
+rdc term my-server my-app -c "curl localhost:3000"   # 运行命令并退出
+rdc term my-server                                   # SSH 到机器（无沙箱）
+```
+
+**文件同步（通过 SSH 的 rsync）：**
+```bash
+rdc repo sync upload -m my-server -r my-app --local ./src       # 将本地文件推送到仓库
+rdc repo sync download -m my-server -r my-app --local ./backup  # 将仓库文件拉取到本地
+rdc repo sync download -m my-server -r my-app --local ./backup --dry-run  # 先预览
+```
+
+**隧道（SSH 端口转发到容器）：**
+```bash
+rdc repo tunnel my-server my-app                     # 自动检测容器和端口
+rdc repo tunnel my-server my-app --port 5432         # 隧道连接 Postgres
+rdc repo tunnel my-server my-app --port 5432 --local 15432  # 自定义本地端口
+```
+
+运行隧道 → 在浏览器中打开 `localhost:3000` → 从远程服务器访问实时应用。
+
+> 同步、终端、VS Code 详情：[工具](/en/docs/tools)。
+
+---
+
+## 分叉与备份
+
+### 1. 主仓库与分叉仓库
+
+```bash
+rdc repo fork my-app -m my-server --tag experiment --up     # 即时 CoW 克隆 + 启动
+rdc repo list -m my-server                                  # 显示：my-app（主仓库）+ my-app:experiment（分叉）
+rdc repo delete my-app:experiment -m my-server              # 删除分叉，主仓库不受影响
+```
+
+**即时、零拷贝克隆。** CoW（写时复制）。微秒级完成，不复制数据。块在一方写入前保持共享。
+
+**使用场景：**
+- **AI / ML：** 分叉生产数据集，运行实验，丢弃或提升
+- **DevOps：** 分叉 → 测试迁移 → 失败则删除，成功则提升
+- **备份：** 分叉 = 即时快照，推送到异地
+
+> 分叉生命周期、跨机器分叉：[仓库](/en/docs/repositories)。
+
+### 2. 推送到另一台机器
+
+```bash
+# 将仓库推送到另一台机器
+rdc repo push my-app -m my-server --to backup-server
+
+# 推送并在目标机器上自动部署
+rdc repo push my-app -m my-server --to backup-server --up
+
+# 使用 CRIU 检查点推送（实时迁移，保留内存状态）
+rdc repo push my-app -m my-server --to new-server --checkpoint --up
+
+# 推送到新机器（通过云服务商自动配置）
+rdc repo push my-app -m my-server --to new-server --provision linode --up
+```
+
+### 3. 推送到云存储（OneDrive、Google Drive、S3）
+
+```bash
+# 导入您的 rclone 配置作为存储后端
+rdc config storage import ~/rclone.conf
+
+# 列出可用的存储
+rdc storage list
+
+# 将仓库推送到云存储
+rdc repo push my-app -m my-server --to my-s3-backup
+
+# 列出存储上的备份
+rdc repo backup list --from my-s3-backup -m my-server
+```
+
+`--to` 自动检测目标是机器还是存储后端。支持所有 rclone 支持的提供商：S3、R2、B2、OneDrive、Google Drive、SFTP 等。
+
+### 4. 从远程拉取
+
+```bash
+# 从云机器拉取仓库到本地服务器
+rdc repo pull my-app -m my-local-server --from cloud-server
+
+# 从云存储拉取
+rdc repo pull my-app -m my-local-server --from my-s3-backup
+
+# 拉取并立即启动
+rdc repo pull my-app -m my-local-server --from my-s3-backup --up
+```
+
+**为什么要拉取？** 您的本地机器在 NAT 之后。云端无法推送到您这里。但您可以访问云端。拉取将仓库带回本地。
+
+**完整流程：** 在开发机上创建 → 推送到云端 → 在生产环境拉取 → `--up`。一个仓库，任意机器，任意云。
+
+> 计划任务、自动备份、恢复：[备份与恢复](/en/docs/backup-restore)。
+
+---
+
+## 代理与 SSL
+
+### 1. 基础设施配置
+
+```bash
+rdc config infra set my-server           # 配置：基础域名、公共 IP、端口范围
+rdc config infra show my-server          # 查看配置
+rdc config infra push my-server          # 将代理配置推送到远程
+```
+
+**路由工作原理：**
+- Traefik 通过 `rediacc.service_name` 和 `rediacc.service_port` 标签自动发现容器
+- 路由：`{service}-{networkId}.{baseDomain}` → 容器 IP:端口
+- SSL：通过 Cloudflare DNS-01 验证使用 Let's Encrypt（自动续期，通配符证书）
+
+### 2. 代理模板
+
+```bash
+rdc repo template apply proxy -m my-server -r infra     # 将代理部署到仓库
+rdc repo up infra -m my-server                           # 启动 Traefik
+```
+
+Traefik 现在将外部流量路由到此机器上的所有仓库。每个容器自动获得 HTTPS 端点。
+
+```bash
+# 访问 https://my-app.example.com → 路由到容器
+# 数据库的 TCP/UDP 转发：
+#   rediacc.tcp_ports=3306,5432 → 自动分配的外部端口
+```
+
+> 路由规则、DNS、TLS 配置：[网络](/en/docs/networking)。
+
+---
 
 ## 后续步骤
 
-- **[架构](/zh/docs/architecture)** — 了解Rediacc的工作原理：适配器检测、安全模型、Docker隔离
-- **[rdc vs renet](/zh/docs/rdc-vs-renet)** — 了解日常操作与底层远程工作分别使用哪个CLI
-- **[服务器设置](/zh/docs/setup)** — 详细设置指南：配置、机器、基础设施配置
-- **[仓库](/zh/docs/repositories)** — 创建、管理、调整大小、分叉和验证仓库
-- **[服务](/zh/docs/services)** — Rediaccfile、服务网络、部署、自动启动
-- **[备份与恢复](/zh/docs/backup-restore)** — 备份到外部存储并安排自动备份
-- **[监控](/zh/docs/monitoring)** — 服务器健康状况、容器、服务、诊断
-- **[工具](/zh/docs/tools)** — 文件同步、SSH终端、VS Code集成
-- **[迁移指南](/zh/docs/migration)** — 将现有项目迁移到Rediacc仓库
-- **[故障排除](/zh/docs/troubleshooting)** — 常见问题的解决方案
-- **[CLI参考](/zh/docs/cli-application)** — 完整的命令参考
+- **[迁移指南](/en/docs/migration)** - 将现有项目迁移到 Rediacc 仓库
+- **[监控](/en/docs/monitoring)** - 机器健康状况、容器、服务、诊断
+- **[CLI 参考](/en/docs/cli-application)** - 完整的命令参考
+- **[速查表](/en/docs/rdc-cheat-sheet)** - 快速命令查询
+- **[故障排除](/en/docs/troubleshooting)** - 常见问题的解决方案
+- **[Rediacc 规则](/en/docs/rules-of-rediacc)** - Rediaccfile 最佳实践和部署清单

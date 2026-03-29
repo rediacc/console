@@ -4,7 +4,7 @@ description: "Procédure d'installation du CLI Rediacc sur Linux, macOS ou Windo
 category: "Guides"
 order: 1
 language: fr
-sourceHash: "7710f243d1cde01e"
+sourceHash: "f4d35bb8c2447783"
 ---
 
 # Installation
@@ -88,6 +88,23 @@ Pour revenir à la version précédente après une mise à jour :
 
 ```bash
 rdc update rollback
+```
+
+### Canaux de mise a jour
+
+Le CLI prend en charge deux canaux de publication :
+- **stable** (par defaut) : Versions rigoureusement testees, recommande pour la production
+- **edge** : Dernieres fonctionnalites et corrections de bugs, mis a jour a chaque publication
+
+```bash
+rdc update --channel edge      # Passer au canal edge
+rdc update --channel stable    # Revenir au canal stable
+rdc update --status            # Afficher le canal actuel et la version
+```
+
+Pour installer directement depuis le canal edge :
+```bash
+REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 ### Remote Binary Updates

@@ -153,5 +153,5 @@
     "react-i18next",
     "tiny-typed-emitter"
   ],
-  "ignoreBinaries": ["rimraf", "vite", "wrangler"]
+  "ignoreBinaries": ["rimraf", "vite", "vitest", "wrangler"]
 }

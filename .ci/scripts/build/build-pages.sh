@@ -67,12 +67,13 @@ mkdir -p "$OUTPUT_DIR/json"
 cp -r packages/json/dist/* "$OUTPUT_DIR/json/"
 log_info "Copied json to $OUTPUT_DIR/json/"
 
-# Copy CLI manifest to /cli/ subpath (if generated)
+# Copy CLI manifest to channel subpaths (if generated)
 if [[ -f "dist/cli-manifest/manifest.json" ]]; then
-    log_step "Copying CLI manifest to /cli/..."
-    mkdir -p "$OUTPUT_DIR/cli"
-    cp dist/cli-manifest/manifest.json "$OUTPUT_DIR/cli/manifest.json"
-    log_info "Copied CLI manifest to $OUTPUT_DIR/cli/"
+    log_step "Copying CLI manifest to /cli/edge/ and /cli/stable/..."
+    mkdir -p "$OUTPUT_DIR/cli/edge" "$OUTPUT_DIR/cli/stable"
+    cp dist/cli-manifest/manifest.json "$OUTPUT_DIR/cli/edge/manifest.json"
+    cp dist/cli-manifest/manifest.json "$OUTPUT_DIR/cli/stable/manifest.json"
+    log_info "Copied CLI manifest to $OUTPUT_DIR/cli/{edge,stable}/"
 fi
 
 # Note: apt/ and rpm/ directories are added by build-pkg-repo.sh

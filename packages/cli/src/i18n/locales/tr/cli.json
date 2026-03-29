@@ -473,6 +473,38 @@
         "noBackup": "\"{{name}}\" yapılandırması için yedek bulunamadı",
         "success": "\"{{name}}\" yapılandırması yedekten geri yüklendi (sürüm {{version}})"
       },
+      "remote": {
+        "description": "Uzak yapılandırma depolama bağlantısını yönet",
+        "disable": {
+          "description": "Uzak depolamadan bağlantıyı kes ve yapılandırmayı yerel olarak kaydet",
+          "notEnabled": "Uzak yapılandırma etkin değil.",
+          "success": "Uzak yapılandırma devre dışı bırakıldı. Yapılandırma \"{{name}}\" yerel olarak kaydedildi."
+        },
+        "enable": {
+          "alreadyEnabled": "Yapılandırma \"{{name}}\" zaten uzak depolamaya bağlı. Önce bağlantıyı kesin: rdc config remote disable",
+          "description": "Bu yapılandırmayı uzak şifreli depolamaya bağla",
+          "expired": "Cihaz kodu süresi doldu. Tekrar deneyin.",
+          "openBrowser": "Kurulumu tamamlamak için bu URL'yi açın:",
+          "optionApiUrl": "Hesap sunucusu URL'si",
+          "optionHeadless": "Cihaz kodu akışını kullan (arayüzsüz sunucular için)",
+          "polling": "Tarayıcı onayı bekleniyor...",
+          "received": "Aktarım alındı",
+          "success": "Uzak yapılandırma etkinleştirildi. Yapılandırma \"{{name}}\" artık {{apiUrl}} ile senkronize ediliyor.",
+          "waiting": "Tarayıcı onayı bekleniyor..."
+        },
+        "passkeySecretMissing": "Geçiş anahtarı sırrı işletim sistemi anahtar deposunda bulunamadı. Yeniden kimlik doğrulayın: rdc config remote enable",
+        "refresh": {
+          "description": "Yapılandırmayı uzak depolamadan zorla yeniden al",
+          "notEnabled": "Uzak yapılandırma etkin değil.",
+          "pulled": "Yapılandırma alındı",
+          "pulling": "Yapılandırma uzak sunucudan alınıyor...",
+          "success": "Yapılandırma uzak sunucudan güncellendi (sürüm {{version}})."
+        },
+        "status": {
+          "description": "Uzak bağlantı durumunu göster"
+        },
+        "tokenExpired": "Uzak yapılandırma jetonu süresi doldu. Yeniden kimlik doğrulayın: rdc config remote enable"
+      },
       "repository": {
         "add": {
           "description": "Mevcut yapılandırmaya depo GUID eşlemesi ekle",
@@ -625,7 +657,11 @@
         "renetRsync": "Gömülü rsync",
         "renetVersion": "Sürüm",
         "seaMode": "SEA modu",
-        "sshKey": "SSH anahtarı"
+        "sshKey": "SSH anahtarı",
+        "subscriptionMachineSlots": "Makine yuvaları",
+        "subscriptionRepoLicenses": "Depo lisansları",
+        "subscriptionStatus": "Status",
+        "subscriptionToken": "Erişim jetonu"
       },
       "description": "CLI ortamını ve renet entegrasyonunu tanıla",
       "descriptionShort": "CLI ortamını ve renet entegrasyonunu tanıla",
@@ -635,6 +671,7 @@
       "notAuthenticated": "kimliği doğrulanmamış",
       "notConfigured": "yapılandırılmamış",
       "notInstalled": "yüklü değil",
+      "notLoggedIn": "giriş yapılmamış",
       "opsNotSupported": "{{platform}} üzerinde desteklenmiyor",
       "opsSkipped": "renet mevcut değil (atlandı)",
       "seaActive": "evet (Tek Dosya Uygulaması)",
@@ -643,13 +680,16 @@
         "configuration": "Yapılandırma",
         "environment": "Ortam",
         "renet": "Renet ağı",
+        "subscription": "Abonelik",
         "virtualization": "Sanallaştırma"
       },
+      "serverMismatch": "sunucu uyumsuzluğu",
       "status": {
         "fail": "HATA",
         "ok": "OK",
         "warn": "UYARI"
       },
+      "subscriptionUnreachable": "abonelik sunucusuna ulaşılamıyor",
       "title": "Rediacc CLI Tanılama"
     },
     "machine": {
@@ -1711,6 +1751,8 @@
       "applyFailed": "Hazırlanan güncelleme uygulanamadı: {{error}}",
       "autoApplied": "v{{version}} sürümüne güncellendi (önceki: v{{from}}). Değişiklikler bir sonraki çalıştırmada geçerli olacak.",
       "available": "Güncelleme mevcut: v{{version}} (mevcut: v{{current}})",
+      "channelDescription": "Yayın kanalını ayarla (stable veya edge)",
+      "channelSet": "Yayın kanalı {{channel}} olarak ayarlandı",
       "checking": "Güncellemeler kontrol ediliyor...",
       "checkOnly": "Sadece güncellemeleri kontrol et, indirme",
       "description": "CLI güncellemelerini kontrol et ve uygula",
@@ -1718,6 +1760,7 @@
       "downloading": "v{{version}} indiriliyor...",
       "failed": "Güncelleme başarısız: {{error}}",
       "force": "Güncel olsa bile güncellemeyi zorla",
+      "invalidChannel": "Geçersiz kanal: {{channel}}. stable veya edge kullanın.",
       "notSEA": "Güncellenemiyor: paketlenmiş ikili dosya olarak çalışmıyor. Önce SEA ile derleyin.",
       "progress": "İndiriliyor... {{percent}}%",
       "releaseNotes": "Sürüm notları: {{url}}",

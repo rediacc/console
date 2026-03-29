@@ -4,7 +4,7 @@ description: "Rediacc CLI'ı Linux, macOS veya Windows üzerine kurun."
 category: "Guides"
 order: 1
 language: tr
-sourceHash: "7710f243d1cde01e"
+sourceHash: "f4d35bb8c2447783"
 ---
 
 # Kurulum
@@ -88,6 +88,23 @@ Bir güncellemeden sonra önceki sürüme geri dönmek için:
 
 ```bash
 rdc update rollback
+```
+
+### Guncelleme Kanallari
+
+CLI iki yayin kanalini destekler:
+- **stable** (varsayilan): Kapsamli test edilmis surumler, uretim ortami icin onerilir
+- **edge**: En son ozellikler ve hata duzeltmleri, her surumde guncellenir
+
+```bash
+rdc update --channel edge      # Edge kanalina gec
+rdc update --channel stable    # Stable kanalina geri don
+rdc update --status            # Mevcut kanal ve surumu goster
+```
+
+Dogrudan edge kanalindan yuklemek icin:
+```bash
+REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 ### Remote Binary Updates

@@ -269,7 +269,7 @@ set_github_secret() {
         log_warn "[DRY-RUN] Would update GitHub secret: $secret_name"
         return
     fi
-    echo "$secret_value" | gh secret set "$secret_name" --org "$GITHUB_ORG" --visibility all
+    echo "$secret_value" | gh secret set "$secret_name" --org "$GITHUB_ORG" --visibility selected --repos "console"
 }
 
 # Rotate a token: find existing, delete, create, return result JSON

@@ -13,6 +13,7 @@ set -euo pipefail
 
 # Configuration (can be overridden via environment variables)
 RELEASES_URL="${REDIACC_RELEASES_URL:-https://releases.rediacc.com}"
+CHANNEL="${REDIACC_CHANNEL:-stable}"
 SERVER_URL="${REDIACC_SERVER_URL:-}"
 INSTALL_DIR="${HOME}/.local/bin"
 VERSIONS_DIR="${HOME}/.local/share/rediacc/versions"
@@ -124,9 +125,9 @@ main() {
     echo "Detected: $PLATFORM ($ARCH)"
   fi
 
-  # Get latest version
-  echo "Fetching latest version..."
-  LATEST_JSON=$(curl -fsSL -A "Rediacc-Installer/1.0" "${RELEASES_URL}/cli/latest.json") || error "Failed to fetch version information"
+  # Get latest version from channel
+  echo "Fetching latest version (channel: ${CHANNEL})..."
+  LATEST_JSON=$(curl -fsSL -A "Rediacc-Installer/1.0" "${RELEASES_URL}/cli/${CHANNEL}/latest.json") || error "Failed to fetch version information"
 
   # Extract version - use jq if available, otherwise fall back to grep/sed
   if command -v jq &> /dev/null; then

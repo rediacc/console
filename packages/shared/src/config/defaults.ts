@@ -621,7 +621,7 @@ export const UPDATE_DEFAULTS = {
   PROVIDER: 'generic' as const,
 
   /** Default update channel */
-  CHANNEL: 'latest' as const,
+  CHANNEL: 'stable' as const,
 } as const;
 
 // Re-export aggregated defaults with new additions

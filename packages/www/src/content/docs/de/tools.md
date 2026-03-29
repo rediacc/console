@@ -4,7 +4,7 @@ description: "Dateisynchronisation, Terminalzugriff, VS Code-Unterstützung und 
 category: Guides
 order: 9
 language: de
-sourceHash: "b9aa7cdcf088b645"
+sourceHash: "f304688fdc1a41c1"
 ---
 
 # Werkzeuge
@@ -183,3 +183,11 @@ rdc update status
 ```
 
 Zeigt die aktuelle Version, den Update-Kanal und die Auto-Update-Konfiguration an.
+
+#### Release-Kanale
+
+```bash
+rdc update --channel edge      # Neueste Funktionen, haufig aktualisiert
+rdc update --channel stable    # Produktionsreife Versionen (Standard)
+rdc update --status            # Aktuellen Kanal und Versionsinformationen anzeigen
+```

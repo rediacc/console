@@ -488,7 +488,7 @@ test_quick_install() {
 
 # Resolve "latest" version from R2
 if [[ "$VERSION" == "latest" && -z "$LOCAL_ARTIFACTS" && "$DRY_RUN" == "false" ]]; then
-    LATEST_JSON=$(curl -fsSL "${RELEASES_BASE_URL}/cli/latest.json" 2>/dev/null || echo "")
+    LATEST_JSON=$(curl -fsSL "${RELEASES_BASE_URL}/cli/edge/latest.json" 2>/dev/null || echo "")
     if [[ -n "$LATEST_JSON" ]] && command -v jq &>/dev/null; then
         RESOLVED=$(echo "$LATEST_JSON" | jq -r '.version' 2>/dev/null)
         if [[ -n "$RESOLVED" && "$RESOLVED" != "null" ]]; then

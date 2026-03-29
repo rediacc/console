@@ -277,7 +277,7 @@ export class InfrastructureManager {
       const currentDir = `${installRoot}/current`;
       const moveResult = await this.sshExecutor.execute(
         ip,
-        `sudo mkdir -p ${installDir} ${currentDir} && sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH} && sudo ln -sf ${VM_RENET_INSTALL_PATH} ${currentDir}/renet && sudo ln -sf ${VM_RENET_INSTALL_PATH} /usr/bin/renet`,
+        `sudo mkdir -p ${installDir} ${currentDir} && sudo install -m 755 /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo ln -sf ${VM_RENET_INSTALL_PATH} ${currentDir}/renet && sudo ln -sf ${VM_RENET_INSTALL_PATH} /usr/bin/renet`,
         { execTimeout: 10000 }
       );
 

@@ -714,6 +714,8 @@ export class BridgeTestRunner {
         for (const netId of [DEFAULT_NETWORK_ID, FORK_NETWORK_ID_A, FORK_NETWORK_ID_B]) {
             await this.executeViaBridge(`sudo renet daemon teardown --network-id ${netId} --force 2>/dev/null || true`);
         }
+        // 1b. Close any stale LUKS devices (prevents "storage already open" errors on retry)
+        await this.executeViaBridge(`sudo dmsetup ls --target crypt 2>/dev/null | awk '{print $1}' | xargs -r -I{} sudo cryptsetup close {} 2>/dev/null || true`);
         // 2. Kill any processes using the datastore (prevents busy mount)
         await this.executeViaBridge(`sudo lsof +D ${datastorePath} 2>/dev/null | awk 'NR>1 {print $2}' | xargs -r sudo kill 2>/dev/null || true`);
         // 3. Sync filesystem before unmount

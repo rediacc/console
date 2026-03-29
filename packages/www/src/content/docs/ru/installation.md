@@ -4,7 +4,7 @@ description: "Установка CLI Rediacc на Linux, macOS или Windows."
 category: "Guides"
 order: 1
 language: ru
-sourceHash: "7710f243d1cde01e"
+sourceHash: "f4d35bb8c2447783"
 ---
 
 # Установка
@@ -88,6 +88,23 @@ rdc update --check-only
 
 ```bash
 rdc update rollback
+```
+
+### Каналы обновлений
+
+CLI поддерживает два канала выпуска:
+- **stable** (по умолчанию): тщательно протестированные релизы, рекомендуется для продакшена
+- **edge**: новейшие функции и исправления ошибок, обновляется с каждым релизом
+
+```bash
+rdc update --channel edge      # Переключиться на канал edge
+rdc update --channel stable    # Вернуться на канал stable
+rdc update --status            # Показать текущий канал и версию
+```
+
+Для установки напрямую из канала edge:
+```bash
+REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 ### Remote Binary Updates

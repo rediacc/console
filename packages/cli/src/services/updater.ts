@@ -3,6 +3,8 @@ import { promises as fs } from 'node:fs';
 import { get as httpGet } from 'node:http';
 import { get as httpsGet } from 'node:https';
 import { dirname, join } from 'node:path';
+import type { ReleaseChannel } from '@rediacc/shared/update/types';
+import { UPDATE_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { type UpdateManifest } from '../types/index.js';
 import {
   acquireUpdateLock,
@@ -14,11 +16,35 @@ import {
 } from '../utils/platform.js';
 import { VERSION } from '../version.js';
 import { telemetryService } from './telemetry.js';
+import { loadServerConfig } from './subscription-auth.js';
 import { getStagedBinaryPath, readUpdateState, writeUpdateState } from './update-state.js';
 
-const MANIFEST_URL = 'https://www.rediacc.com/cli/manifest.json';
+const MANIFEST_BASE_URL = 'https://www.rediacc.com/cli';
 const CHECK_TIMEOUT_MS = 3000;
 const DOWNLOAD_TIMEOUT_MS = 120_000;
+
+/** Resolve the active release channel from env, server.json, or default. */
+export function resolveChannel(): ReleaseChannel {
+  const envChannel = process.env.RDC_UPDATE_CHANNEL;
+  if (envChannel === 'edge' || envChannel === 'stable') return envChannel;
+
+  try {
+    const serverConfig = loadServerConfig();
+    if (serverConfig?.updateChannel === 'edge' || serverConfig?.updateChannel === 'stable') {
+      return serverConfig.updateChannel;
+    }
+  } catch {
+    // server.json may not exist
+  }
+
+  return UPDATE_DEFAULTS.CHANNEL;
+}
+
+/** Get the manifest URL for a given channel. */
+export function getManifestUrl(channel?: ReleaseChannel): string {
+  const ch = channel ?? resolveChannel();
+  return `${MANIFEST_BASE_URL}/${ch}/manifest.json`;
+}
 
 export interface UpdateCheckResult {
   updateAvailable: boolean;
@@ -170,8 +196,11 @@ export function compareVersions(a: string, b: string): number {
 /**
  * Fetch the update manifest from the primary manifest URL.
  */
-export async function fetchManifest(timeoutMs: number = CHECK_TIMEOUT_MS): Promise<UpdateManifest> {
-  return await fetchJson<UpdateManifest>(MANIFEST_URL, timeoutMs);
+export async function fetchManifest(
+  timeoutMs: number = CHECK_TIMEOUT_MS,
+  channel?: ReleaseChannel
+): Promise<UpdateManifest> {
+  return await fetchJson<UpdateManifest>(getManifestUrl(channel), timeoutMs);
 }
 
 /**

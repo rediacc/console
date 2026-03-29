@@ -473,6 +473,38 @@
         "noBackup": "未找到配置 \"{{name}}\" 的备份",
         "success": "配置 \"{{name}}\" 已从备份恢复（版本 {{version}}）"
       },
+      "remote": {
+        "description": "管理远程配置存储连接",
+        "disable": {
+          "description": "断开远程存储连接并将配置保存到本地",
+          "notEnabled": "远程配置未启用。",
+          "success": "远程配置已禁用。配置 \"{{name}}\" 已保存到本地。"
+        },
+        "enable": {
+          "alreadyEnabled": "配置 \"{{name}}\" 已链接到远程存储。请先断开连接: rdc config remote disable",
+          "description": "将此配置链接到远程加密存储",
+          "expired": "设备代码已过期。请重试。",
+          "openBrowser": "打开此URL以完成设置:",
+          "optionApiUrl": "账户服务器URL",
+          "optionHeadless": "使用设备代码流程（用于无界面服务器）",
+          "polling": "正在查询浏览器审批状态...",
+          "received": "已接收移交数据",
+          "success": "远程配置已启用。配置 \"{{name}}\" 现已与 {{apiUrl}} 同步。",
+          "waiting": "等待浏览器审批..."
+        },
+        "passkeySecretMissing": "在系统密钥链中未找到通行密钥。请重新认证: rdc config remote enable",
+        "refresh": {
+          "description": "强制从远程存储重新获取配置",
+          "notEnabled": "远程配置未启用。",
+          "pulled": "配置已拉取",
+          "pulling": "正在从远程服务器拉取配置...",
+          "success": "已从远程服务器刷新配置（版本 {{version}}）。"
+        },
+        "status": {
+          "description": "显示远程连接状态"
+        },
+        "tokenExpired": "远程配置令牌已过期。请重新认证: rdc config remote enable"
+      },
       "repository": {
         "add": {
           "description": "将仓库 GUID 映射添加到当前配置",
@@ -625,7 +657,11 @@
         "renetRsync": "内置rsync",
         "renetVersion": "版本",
         "seaMode": "SEA模式",
-        "sshKey": "SSH密钥"
+        "sshKey": "SSH密钥",
+        "subscriptionMachineSlots": "机器槽位",
+        "subscriptionRepoLicenses": "仓库许可证",
+        "subscriptionStatus": "Status",
+        "subscriptionToken": "访问令牌"
       },
       "description": "诊断CLI环境和renet集成",
       "descriptionShort": "诊断CLI环境和renet集成",
@@ -635,6 +671,7 @@
       "notAuthenticated": "未认证",
       "notConfigured": "未配置",
       "notInstalled": "未安装",
+      "notLoggedIn": "未登录",
       "opsNotSupported": "不支持 {{platform}}",
       "opsSkipped": "renet 不可用（已跳过）",
       "seaActive": "是（单一可执行应用程序）",
@@ -643,13 +680,16 @@
         "configuration": "配置",
         "environment": "环境",
         "renet": "Renet网络",
+        "subscription": "订阅",
         "virtualization": "虚拟化"
       },
+      "serverMismatch": "服务器不匹配",
       "status": {
         "fail": "失败",
         "ok": "OK",
         "warn": "警告"
       },
+      "subscriptionUnreachable": "无法连接订阅服务器",
       "title": "Rediacc CLI 诊断工具"
     },
     "machine": {
@@ -1711,6 +1751,8 @@
       "applyFailed": "应用暂存更新失败: {{error}}",
       "autoApplied": "已更新到 v{{version}}（之前为 v{{from}}）。更改将在下次运行时生效。",
       "available": "有可用更新: v{{version}} (当前: v{{current}})",
+      "channelDescription": "设置发布渠道 (stable 或 edge)",
+      "channelSet": "发布渠道已设置为 {{channel}}",
       "checking": "正在检查更新...",
       "checkOnly": "仅检查更新，不下载",
       "description": "检查并应用CLI更新",
@@ -1718,6 +1760,7 @@
       "downloading": "正在下载 v{{version}}...",
       "failed": "更新失败: {{error}}",
       "force": "即使已是最新也强制更新",
+      "invalidChannel": "无效的渠道: {{channel}}。请使用 stable 或 edge。",
       "notSEA": "无法更新：未作为打包二进制文件运行。请先使用SEA构建。",
       "progress": "正在下载... {{percent}}%",
       "releaseNotes": "发行说明: {{url}}",

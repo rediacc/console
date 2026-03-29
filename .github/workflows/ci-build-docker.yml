@@ -36,6 +36,10 @@ on:
       cli_exists:
         type: string
         required: false
+      test_images_only:
+        type: boolean
+        required: false
+        default: false
     secrets:
       APP_PRIVATE_KEY:
         required: false
@@ -71,7 +75,7 @@ jobs:
 
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
-          name: cli-bundle-${{ github.sha }}
+          name: cli-bundle${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: bundle/
           retention-days: 3
 
@@ -86,7 +90,7 @@ jobs:
 
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
-          name: cli-npm-${{ github.sha }}
+          name: cli-npm${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: /tmp/cli-npm/
           retention-days: 3
 
@@ -110,7 +114,7 @@ jobs:
           VITE_BASE_PATH: /console/
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
-          name: build-web-${{ github.sha }}
+          name: build-web${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: packages/web/dist/
           retention-days: 3
 
@@ -131,13 +135,14 @@ jobs:
       - run: .ci/scripts/build/build-www.sh
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
-          name: build-www-${{ github.sha }}
+          name: build-www${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: packages/www/dist/
           retention-days: 3
 
   build-json:
     name: JSON
     runs-on: ubuntu-slim
+    if: "!inputs.test_images_only"
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - name: Apply version bump
@@ -151,7 +156,7 @@ jobs:
       - run: .ci/scripts/build/build-json.sh
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
-          name: build-json-${{ github.sha }}
+          name: build-json${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: packages/json/dist/
           retention-days: 3
 
@@ -159,6 +164,7 @@ jobs:
     name: Plugins & Docker
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    if: "!inputs.test_images_only"
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - name: Apply version bump
@@ -213,17 +219,17 @@ jobs:
 
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
-          name: build-web-${{ github.sha }}
+          name: build-web${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: web-assets/
 
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
-          name: build-www-${{ github.sha }}
+          name: build-www${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: www-assets/
 
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
-          name: cli-npm-${{ github.sha }}
+          name: cli-npm${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: cli-npm/
 
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -258,6 +264,7 @@ jobs:
             .
 
       - name: Build & push Web image (arm64)
+        if: "!inputs.test_images_only"
         run: |
           docker buildx build \
             --file Dockerfile.native \
@@ -269,6 +276,7 @@ jobs:
             .
 
       - name: Create multi-arch manifest
+        if: "!inputs.test_images_only"
         run: |
           .ci/scripts/docker/create-manifest.sh \
             --image web \
@@ -288,13 +296,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [build-cli]
-    if: inputs.cli_exists != 'true'
+    if: "!inputs.test_images_only && inputs.cli_exists != 'true'"
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
-          name: cli-bundle-${{ github.sha }}
+          name: cli-bundle${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: bundle/
 
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v4
@@ -332,7 +340,7 @@ jobs:
   build-cli-docker-skip:
     name: CLI Docker (cached)
     runs-on: ubuntu-latest
-    if: inputs.cli_exists == 'true'
+    if: "!inputs.test_images_only && inputs.cli_exists == 'true'"
     steps:
       - run: echo "::notice::Skipping Docker build - cli:${{ inputs.cli_tag }} already exists in registry"
 
@@ -404,7 +412,7 @@ jobs:
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
-          name: build-middleware-coverage-amd64-${{ github.sha }}
+          name: build-middleware-coverage-amd64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: private/middleware/coverage/
           retention-days: 3
           if-no-files-found: ignore
@@ -455,7 +463,7 @@ jobs:
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: inputs.api_exists != 'true'
         with:
-          name: middleware-publish-amd64-${{ github.sha }}
+          name: middleware-publish-amd64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: private/middleware/publish-final/
           retention-days: 3
 
@@ -465,6 +473,7 @@ jobs:
     name: Middleware (arm64)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 25
+    if: "!inputs.test_images_only"
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - uses: ./.github/actions/app-token
@@ -536,7 +545,7 @@ jobs:
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: inputs.api_exists != 'true'
         with:
-          name: middleware-publish-arm64-${{ github.sha }}
+          name: middleware-publish-arm64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: private/middleware/publish-final/
           retention-days: 3
 
@@ -547,7 +556,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [build-middleware-amd64, build-middleware-arm64]
-    if: inputs.api_exists != 'true'
+    if: >-
+      always() && inputs.api_exists != 'true' &&
+      needs.build-middleware-amd64.result == 'success' &&
+      (inputs.test_images_only || needs.build-middleware-arm64.result == 'success')
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - uses: ./.github/actions/app-token
@@ -563,12 +575,13 @@ jobs:
 
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
-          name: middleware-publish-amd64-${{ github.sha }}
+          name: middleware-publish-amd64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: publish/amd64/
 
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+        if: "!inputs.test_images_only"
         with:
-          name: middleware-publish-arm64-${{ github.sha }}
+          name: middleware-publish-arm64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: publish/arm64/
 
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v4
@@ -591,6 +604,7 @@ jobs:
             .
 
       - name: Build & push API image (arm64)
+        if: "!inputs.test_images_only"
         run: |
           docker buildx build \
             --file private/middleware/Dockerfile.native \
@@ -602,6 +616,7 @@ jobs:
             .
 
       - name: Create multi-arch manifest
+        if: "!inputs.test_images_only"
         run: |
           .ci/scripts/docker/create-manifest.sh \
             --image api \
@@ -610,7 +625,7 @@ jobs:
   build-middleware-docker-skip:
     name: API Docker (cached)
     runs-on: ubuntu-latest
-    if: inputs.api_exists == 'true'
+    if: "!inputs.test_images_only && inputs.api_exists == 'true'"
     steps:
       - run: echo "::notice::Skipping Docker build - api:${{ inputs.api_tag }} already exists in registry"
 
@@ -680,6 +695,7 @@ jobs:
             .
 
       - name: Build & push arm64 bridge image
+        if: "!inputs.test_images_only"
         run: |
           docker buildx build \
             --file private/renet/Dockerfile.native \
@@ -690,6 +706,7 @@ jobs:
             .
 
       - name: Create multi-arch manifest
+        if: "!inputs.test_images_only"
         run: |
           .ci/scripts/docker/create-manifest.sh \
             --image bridge \
@@ -710,6 +727,7 @@ jobs:
     name: Devcontainer (amd64)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: "!inputs.test_images_only"
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -742,6 +760,7 @@ jobs:
     name: Devcontainer (arm64)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 45
+    if: "!inputs.test_images_only"
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -774,7 +793,7 @@ jobs:
     name: Devcontainer Manifest
     runs-on: ubuntu-latest
     needs: [build-devcontainer-amd64, build-devcontainer-arm64]
-    if: github.event_name == 'push'
+    if: "!inputs.test_images_only && github.event_name == 'push'"
     steps:
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v4
 

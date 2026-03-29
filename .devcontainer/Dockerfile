@@ -204,12 +204,19 @@ RUN ARCH=$(dpkg --print-architecture) \
 COPY start-desktop.sh /usr/local/bin/start-desktop.sh
 RUN chmod +x /usr/local/bin/start-desktop.sh
 
+# ttyd web terminal (lightweight, static binary from official image)
+COPY --from=tsl0922/ttyd:1.7.8-alpine /usr/bin/ttyd /usr/bin/ttyd
+
+# ttyd startup script (starts ttyd with tmux session persistence)
+COPY start-ttyd.sh /usr/local/bin/start-ttyd.sh
+RUN chmod +x /usr/local/bin/start-ttyd.sh
+
 # KVM startup script (starts libvirtd + default network if /dev/kvm exists)
 COPY start-kvm.sh /usr/local/bin/start-kvm.sh
 RUN chmod +x /usr/local/bin/start-kvm.sh
 
-# Expose ports for self-hosted VS Code and desktop access
-EXPOSE 6080 8080
+# Expose ports for self-hosted VS Code, ttyd terminal, and desktop access
+EXPOSE 6080 7681 8080
 
 # =============================================================================
 # Environment setup

@@ -15,6 +15,7 @@ export const TELEMETRY_ATTRIBUTES = {
   functionName: 'function.name',
   executorType: 'executor.type',
   taskId: 'task.id',
+  updateChannel: 'update.channel',
 } as const;
 
 export const TELEMETRY_SUBSCRIPTION_SOURCES = {

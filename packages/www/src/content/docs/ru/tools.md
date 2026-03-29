@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: ru
-sourceHash: "b9aa7cdcf088b645"
+sourceHash: "f304688fdc1a41c1"
 ---
 
 # Инструменты
@@ -185,3 +185,11 @@ rdc update status
 ```
 
 Отображает текущую версию, канал обновлений и конфигурацию автообновления.
+
+#### Каналы выпуска
+
+```bash
+rdc update --channel edge      # Новейшие функции, часто обновляется
+rdc update --channel stable    # Релизы для продакшена (по умолчанию)
+rdc update --status            # Показать текущий канал и информацию о версии
+```

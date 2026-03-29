@@ -28,7 +28,7 @@ let serverKeyCache: {
   keyId: string;
 } | null = null;
 
-async function getServerKeyMaterial() {
+export async function getServerKeyMaterial() {
   if (!serverKeyCache) {
     // 1. Explicit env var override (development mode)
     const envKey = process.env.X25519_PUBLIC_KEY;

@@ -12,6 +12,7 @@ $ErrorActionPreference = "Stop"
 
 # Configuration (can be overridden via environment variables)
 $ReleasesUrl = if ($env:REDIACC_RELEASES_URL) { $env:REDIACC_RELEASES_URL } else { "https://releases.rediacc.com" }
+$Channel = if ($env:REDIACC_CHANNEL) { $env:REDIACC_CHANNEL } else { "stable" }
 $UserAgent = "Rediacc-Installer/1.0"
 $InstallDir = "$env:LOCALAPPDATA\rediacc\bin"
 $VersionsDir = "$env:LOCALAPPDATA\rediacc\versions"
@@ -44,11 +45,11 @@ function Install-RDC {
 
     Write-Host "Detected: Windows ($Arch)"
 
-    # Get latest version
-    Write-Host "Fetching latest version..."
+    # Get latest version from channel
+    Write-Host "Fetching latest version (channel: $Channel)..."
     try {
         $Headers = @{"User-Agent" = $UserAgent}
-        $Latest = Invoke-RestMethod "$ReleasesUrl/cli/latest.json" -Headers $Headers
+        $Latest = Invoke-RestMethod "$ReleasesUrl/cli/$Channel/latest.json" -Headers $Headers
     }
     catch {
         throw "Failed to fetch version information: $_"

@@ -318,6 +318,7 @@
         "renet": "Renet",
         "configuration": "Configuration",
         "authentication": "Authentication",
+        "subscription": "Subscription",
         "virtualization": "Virtualization"
       },
       "checks": {
@@ -335,6 +336,10 @@
         "machines": "Machines",
         "sshKey": "SSH key",
         "authStatus": "Status",
+        "subscriptionToken": "Token",
+        "subscriptionStatus": "Status",
+        "subscriptionMachineSlots": "Machine slots",
+        "subscriptionRepoLicenses": "Repo licenses",
         "opsPrereqs": "OPS prerequisites"
       },
       "status": {
@@ -348,6 +353,9 @@
       "notInstalled": "not installed",
       "notConfigured": "not configured",
       "notAuthenticated": "not authenticated",
+      "notLoggedIn": "not logged in",
+      "serverMismatch": "server mismatch",
+      "subscriptionUnreachable": "unable to reach subscription server",
       "devMode": "no (dev mode)",
       "seaActive": "yes (Single Executable Application)",
       "opsNotSupported": "not supported on {{platform}}",
@@ -417,6 +425,38 @@
           "description": "Remove SSH key from the current config",
           "success": "SSH key removed",
           "noKey": "No SSH key configured"
+        }
+      },
+      "remote": {
+        "description": "Manage remote config storage connection",
+        "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable",
+        "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
+        "enable": {
+          "description": "Link this config to remote encrypted storage",
+          "optionHeadless": "Use device code flow (for headless servers)",
+          "optionApiUrl": "Account server URL",
+          "openBrowser": "Open this URL to complete setup:",
+          "waiting": "Waiting for browser approval...",
+          "received": "Handoff received",
+          "polling": "Polling for browser approval...",
+          "success": "Remote config enabled. Config \"{{name}}\" is now synced to {{apiUrl}}.",
+          "alreadyEnabled": "Config \"{{name}}\" is already linked to remote storage. Disable first with: rdc config remote disable",
+          "expired": "Device code expired. Try again."
+        },
+        "disable": {
+          "description": "Disconnect from remote storage and save config locally",
+          "success": "Remote config disabled. Config \"{{name}}\" saved locally.",
+          "notEnabled": "Remote config is not enabled."
+        },
+        "status": {
+          "description": "Show remote connection status"
+        },
+        "refresh": {
+          "description": "Force re-fetch config from remote storage",
+          "pulling": "Pulling config from remote...",
+          "pulled": "Config pulled",
+          "success": "Config refreshed from remote (version {{version}}).",
+          "notEnabled": "Remote config is not enabled."
         }
       },
       "machine": {
@@ -1733,7 +1773,10 @@
       "rollbackSuccess": "Rolled back successfully. Restart rdc to use the previous version.",
       "rollbackNoBackup": "No previous version found. Rollback is only available after an update.",
       "rollbackFailed": "Rollback failed: {{error}}",
-      "statusDescription": "Show auto-update status and diagnostics"
+      "statusDescription": "Show auto-update status and diagnostics",
+      "channelDescription": "Set release channel (stable or edge)",
+      "channelSet": "Release channel set to {{channel}}",
+      "invalidChannel": "Invalid channel: {{channel}}. Use stable or edge."
     },
     "term": {
       "descriptionShort": "SSH terminal access to machines and repositories",
