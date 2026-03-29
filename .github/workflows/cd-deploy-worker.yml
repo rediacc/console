@@ -70,8 +70,10 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           ref: ${{ inputs.ref }}
-          submodules: true
           token: ${{ steps.app-token.outputs.token }}
+
+      - name: Init account submodule
+        run: git submodule update --init private/account
 
       - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4
         with:
