@@ -1,6 +1,6 @@
 {
   "name": "@rediacc/cli",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "type": "module",
   "scripts": {
     "prebuild": "tsx scripts/embed-templates.ts",
