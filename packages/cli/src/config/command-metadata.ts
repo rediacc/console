@@ -166,8 +166,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       timeout: 'write',
       descriptionOverride:
         'Create a CoW fork of a repository with a NEW GUID and networkId (fully independent copy). Fork shares the parent name with a different tag (name:tag model, like Docker images). Online forking supported (parent can stay running). Fork gets new auto-route domain. After fork, deploy with repo_up (use --mount). Fork-of-fork allowed (same base name, different tag). CROSS-MACHINE: fork locally first, then use repo_push to transfer fork to target machine, then repo_up on target',
-      // --tag option duplicates [tag] positional arg
-      excludeOptions: ['tag', 'debug', 'skip-router-restart'],
+      excludeOptions: ['debug', 'skip-router-restart'],
     },
   },
 
