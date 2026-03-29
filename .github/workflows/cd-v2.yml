@@ -204,28 +204,6 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
   # ============================================================================
-  # CD WATCHDOG - monitors jobs, auto-retries transient build failures
-  # ============================================================================
-  cd-watchdog:
-    name: CD Watchdog
-    needs: [init]
-    runs-on: ubuntu-latest
-    timeout-minutes: 240  # 4 hours (CD builds take longer than CI)
-    if: ${{ !cancelled() && needs.init.result == 'success' && needs.init.outputs.skip_release != 'true' }}
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-        with:
-          sparse-checkout: .ci/scripts
-
-      - name: Monitor jobs and auto-retry on failure
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
-        env:
-          WATCHDOG_EXCLUDE_PATTERNS: 'Watchdog,CD Watchdog'
-          WATCHDOG_NO_RETRY_PATTERNS: 'Publish,Validate Install Methods,Cleanup,Housekeeping'
-        with:
-          script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
-
-  # ============================================================================
   # PUBLISH
   # Actually publish to GitHub Release, Docker, Pages
   # Downloads artifacts cross-workflow from the CI run using --run-id
@@ -238,6 +216,8 @@ jobs:
       success() &&
       needs.init.outputs.skip_release != 'true' &&
       !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+    outputs:
+      pre_bump_version: ${{ steps.pre-bump.outputs.version }}
     environment:
       name: edge
       url: https://edge.rediacc.com
@@ -348,6 +328,10 @@ jobs:
           if [[ "$FAILED" == "true" ]]; then
             echo "::warning::Some artifacts lack attestation — this is expected during the transition period"
           fi
+
+      - name: Read pre-bump version
+        id: pre-bump
+        run: echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
 
       - name: Version bump
         if: needs.init.outputs.retry_mode != 'true'
@@ -545,7 +529,7 @@ jobs:
       !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
     uses: ./.github/workflows/ct-install-methods.yml
     with:
-      version: ${{ needs.init.outputs.next_version }}
+      version: ${{ needs.publish.outputs.pre_bump_version }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
