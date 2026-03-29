@@ -27,8 +27,8 @@ export default test.defineConfig({
   fullyParallel: false,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* More retries in CI for stability */
-  retries: process.env.CI ? 2 : 1,
+  /* One retry in CI (with --max-failures=3, this is enough to distinguish flaky from broken) */
+  retries: process.env.CI ? 1 : 1,
   /* Single worker for bridge tests to avoid conflicts */
   workers: 1,
   /* Longer timeout in CI (10 min vs 5 min locally) */

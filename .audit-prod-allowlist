@@ -17,3 +17,29 @@
 1115114
 # h3 double decoding path traversal bypass in serveStatic (transitive dep, no fix available)
 1115117
+# flatted prototype pollution via parse() (devDep via @vitest/ui, supersedes 1114934)
+1115357
+# fast-xml-parser entity expansion limits bypassed when set to zero (transitive dep, no fix)
+1115359
+# yaml stack overflow via deeply nested collections (transitive dep, no fix available)
+1115369
+# picomatch ReDoS via extglob quantifiers (transitive dep, no fix available)
+1115382
+1115384
+# smol-toml DoS via thousands of consecutive commented lines (transitive dep, no fix)
+1115393
+# picomatch method injection in POSIX character classes (transitive dep, no fix available)
+1115394
+1115396
+# picomatch method injection + ReDoS (superseded advisories, same root cause, no fix)
+1115490
+1115492
+1115493
+1115495
+1115549
+1115551
+1115552
+1115554
+# path-to-regexp ReDoS via sequential optional groups/wildcards (transitive dep, no fix)
+1115573
+1115582

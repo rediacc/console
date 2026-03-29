@@ -4,7 +4,7 @@ description: "在 Linux、macOS 或 Windows 上安装 Rediacc CLI。"
 category: "Guides"
 order: 1
 language: zh
-sourceHash: "7710f243d1cde01e"
+sourceHash: "f4d35bb8c2447783"
 ---
 
 # 安装
@@ -88,6 +88,23 @@ rdc update --check-only
 
 ```bash
 rdc update rollback
+```
+
+### 更新通道
+
+CLI 支持两个发布通道：
+- **stable**（默认）：经过全面测试的版本，推荐用于生产环境
+- **edge**：最新功能和错误修复，每次发布时更新
+
+```bash
+rdc update --channel edge      # 切换到 edge 通道
+rdc update --channel stable    # 切换回 stable 通道
+rdc update --status            # 显示当前通道和版本
+```
+
+从 edge 通道直接安装：
+```bash
+REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 ### Remote Binary Updates

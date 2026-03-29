@@ -15,6 +15,7 @@ import { handleError, ValidationError } from '../utils/errors.js';
 import { registerRepositoryCommands, registerStorageCommands } from './config-data.js';
 import { registerInfraCommands } from './config-infra.js';
 import { registerMachineCommands, registerProviderCommands } from './config-setup.js';
+import { registerRemoteCommands } from './config-remote.js';
 import { registerSSHCommands } from './config-ssh.js';
 
 /** Resolve enabled state from --enable/--disable flags. */
@@ -424,4 +425,5 @@ ${t('help.examples')}
   registerStorageCommands(config, program);
   registerInfraCommands(config, program);
   registerSSHCommands(config, program);
+  registerRemoteCommands(config);
 }

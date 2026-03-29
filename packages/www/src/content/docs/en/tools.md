@@ -182,3 +182,11 @@ rdc update status
 ```
 
 Shows current version, update channel, and auto-update configuration.
+
+#### Release Channels
+
+```bash
+rdc update --channel edge      # Latest features, updated frequently
+rdc update --channel stable    # Production-ready releases (default)
+rdc update --status            # Show current channel and version info
+```

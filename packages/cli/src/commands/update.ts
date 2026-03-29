@@ -14,6 +14,24 @@ import { getOldBinaryPath, isSEA } from '../utils/platform.js';
 import { VERSION } from '../version.js';
 
 /**
+ * Handle --channel switch. Returns true if the action is complete (no further update needed).
+ */
+async function handleChannelSwitch(
+  channel: string,
+  options: { force?: boolean; checkOnly?: boolean }
+): Promise<boolean> {
+  if (channel !== 'stable' && channel !== 'edge') {
+    outputService.error(t('commands.update.invalidChannel', { channel }));
+    process.exit(1);
+  }
+  const { loadServerConfig, saveServerConfig } = await import('../services/subscription-auth.js');
+  const config = loadServerConfig() ?? { accountServer: 'https://www.rediacc.com' };
+  saveServerConfig({ ...config, updateChannel: channel });
+  outputService.success(t('commands.update.channelSet', { channel }));
+  return !options.force && !options.checkOnly;
+}
+
+/**
  * Handle the --check-only flow.
  */
 async function handleCheckOnly(): Promise<void> {
@@ -228,11 +246,17 @@ export function registerUpdateCommand(program: Command): void {
     .option('--check-only', t('commands.update.checkOnly'))
     .option('--rollback', t('commands.update.rollback'))
     .option('--status', t('commands.update.statusDescription'))
+    .option('--channel <channel>', t('commands.update.channelDescription'))
     .action(async (options) => {
       try {
         if (!isSEA()) {
           outputService.error(t('commands.update.notSEA'));
           process.exit(1);
+        }
+
+        if (options.channel) {
+          const done = await handleChannelSwitch(options.channel, options);
+          if (done) return;
         }
 
         if (options.rollback) {

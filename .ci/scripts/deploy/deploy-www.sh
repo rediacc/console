@@ -82,6 +82,13 @@ if [[ -n "${ARG_NAME:-}" ]]; then
         log_info "D1 database $DB_NAME already exists (UUID: $DB_UUID)"
     fi
 
+    # Clone production D1 data into PR database (if requested)
+    if [[ "${ARG_CLONE_PROD_D1:-false}" == "true" ]]; then
+        log_step "Cloning production D1 into $DB_NAME..."
+        "$SCRIPT_DIR/clone-d1.sh" --source account-db --target "$DB_NAME"
+        log_info "Production D1 cloned into $DB_NAME"
+    fi
+
     cat >wrangler.preview.toml <<TOML
 name = "$ARG_NAME"
 main = "src/index.ts"

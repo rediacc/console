@@ -162,7 +162,7 @@ jobs:
         env:
           WATCHDOG_EXCLUDE_PATTERNS: 'Watchdog,CI Complete'
           WATCHDOG_NO_RETRY_PATTERNS: 'Quality,Review Gate'
-          WATCHDOG_INDEPENDENT_PATTERNS: 'Build (CLI),Build (Desktop)'
+          WATCHDOG_INDEPENDENT_PATTERNS: 'Build (CLI),Build (Desktop),Bridge Workers,CLI (macOS),CLI (Windows),CLI Local,Bridge Ceph,SQL HA,OPS Tests,Standalone Run,Account E2E'
         with:
           script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
 
@@ -181,6 +181,8 @@ jobs:
       next_version: ${{ needs.initialize.outputs.next_version }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   # ============================================================================
   # REVIEW GATE: Trigger Gemini review, wait for it, check threads & comments
@@ -334,6 +336,8 @@ jobs:
       bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      LICENSE_ED25519_PUBLIC_KEY: ${{ secrets.LICENSE_ED25519_PUBLIC_KEY }}
+      OTLP_AUTH_TOKEN: ${{ secrets.OTLP_AUTH_TOKEN }}
 
   build-docker:
     name: Build (Docker)
@@ -355,6 +359,30 @@ jobs:
       web_exists: ${{ needs.initialize.outputs.web_exists }}
       cli_tag: ${{ needs.initialize.outputs.cli_tag }}
       cli_exists: ${{ needs.initialize.outputs.cli_exists }}
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+
+  build-docker-fast:
+    name: Build (Docker Fast)
+    needs: [initialize, quality, review-gate, build-renet]
+    permissions:
+      contents: read
+      packages: write   # GHCR push
+    if: always() && needs.initialize.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    uses: ./.github/workflows/ci-build-docker.yml
+    with:
+      next_version: ${{ needs.initialize.outputs.next_version }}
+      api_tag: ${{ needs.initialize.outputs.api_tag }}
+      api_exists: ${{ needs.initialize.outputs.api_exists }}
+      bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
+      bridge_exists: ${{ needs.initialize.outputs.bridge_exists }}
+      plugins_tag: ${{ needs.initialize.outputs.plugins_tag }}
+      plugins_exists: ${{ needs.initialize.outputs.plugins_exists }}
+      web_tag: ${{ needs.initialize.outputs.web_tag }}
+      web_exists: ${{ needs.initialize.outputs.web_exists }}
+      cli_tag: ${{ needs.initialize.outputs.cli_tag }}
+      cli_exists: ${{ needs.initialize.outputs.cli_exists }}
+      test_images_only: true
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
@@ -381,6 +409,7 @@ jobs:
     uses: ./.github/workflows/ci-build-cli.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
+      skip_win_arm64: ${{ github.event_name != 'push' }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
@@ -445,13 +474,13 @@ jobs:
   # ============================================================================
   tests:
     name: Tests + Infra
-    needs: [initialize, build-docker]
-    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
+    needs: [initialize, build-docker-fast]
+    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.build-docker-fast.result == 'success'
     uses: ./.github/workflows/ct-tests.yml
     with:
-      api_tag: ${{ needs.initialize.outputs.api_tag }}
-      bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
-      web_tag: ${{ needs.initialize.outputs.web_tag }}
+      api_tag: ${{ needs.initialize.outputs.api_tag }}-amd64
+      bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}-amd64
+      web_tag: ${{ needs.initialize.outputs.web_tag }}-amd64
       e2e_browsers: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.browsers == 'all-browsers' && 'chromium firefox webkit msedge' || 'chromium' }}
       provision_vms: true
     secrets:
@@ -472,21 +501,21 @@ jobs:
   # ============================================================================
   standalone-run-test:
     name: Standalone Run
-    needs: [initialize, build-docker]
+    needs: [initialize, build-docker-fast]
     if: >-
       always() &&
       needs.initialize.outputs.is_fork != 'true' &&
       needs.initialize.outputs.full_suite == 'true' &&
       needs.initialize.result == 'success' &&
-      needs.build-docker.result == 'success'
+      needs.build-docker-fast.result == 'success'
     uses: ./.github/workflows/standalone-run.yml
     with:
       run-name: 'CI Validation'
       duration: '5'
       version: ${{ needs.initialize.outputs.bridge_tag }}
-      api-tag: ${{ needs.initialize.outputs.api_tag }}
-      web-tag: ${{ needs.initialize.outputs.web_tag }}
-      bridge-tag: ${{ needs.initialize.outputs.bridge_tag }}
+      api-tag: ${{ needs.initialize.outputs.api_tag }}-amd64
+      web-tag: ${{ needs.initialize.outputs.web_tag }}-amd64
+      bridge-tag: ${{ needs.initialize.outputs.bridge_tag }}-amd64
       ci-mode: true
       vm-os-list: '["none", "ubuntu-24.04", "debian-12"]'
     secrets:
@@ -523,13 +552,13 @@ jobs:
   # ============================================================================
   elite-run-test:
     name: Elite Run
-    needs: [initialize, build-docker]
+    needs: [initialize, build-docker-fast]
     if: >-
       always() &&
       needs.initialize.outputs.is_fork != 'true' &&
       needs.initialize.outputs.full_suite == 'true' &&
       needs.initialize.result == 'success' &&
-      needs.build-docker.result == 'success'
+      needs.build-docker-fast.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -557,15 +586,15 @@ jobs:
             ${{ needs.initialize.outputs.image_tag && format('--version "{0}"', needs.initialize.outputs.image_tag) || '' }} \
             --env-file
 
-          # Override individual tags from initialize job
+          # Override individual tags from initialize job (use -amd64 suffix for fast builds)
           if [[ -n "${{ needs.initialize.outputs.api_tag }}" ]]; then
-            echo "API_TAG=${{ needs.initialize.outputs.api_tag }}" >> $GITHUB_ENV
+            echo "API_TAG=${{ needs.initialize.outputs.api_tag }}-amd64" >> $GITHUB_ENV
           fi
           if [[ -n "${{ needs.initialize.outputs.web_tag }}" ]]; then
-            echo "WEB_TAG=${{ needs.initialize.outputs.web_tag }}" >> $GITHUB_ENV
+            echo "WEB_TAG=${{ needs.initialize.outputs.web_tag }}-amd64" >> $GITHUB_ENV
           fi
           if [[ -n "${{ needs.initialize.outputs.bridge_tag }}" ]]; then
-            echo "BRIDGE_TAG=${{ needs.initialize.outputs.bridge_tag }}" >> $GITHUB_ENV
+            echo "BRIDGE_TAG=${{ needs.initialize.outputs.bridge_tag }}-amd64" >> $GITHUB_ENV
           fi
 
       - name: Pre-pull Docker Images
@@ -699,7 +728,7 @@ jobs:
 
       # Deploy single combined pr-N Worker (static assets + embedded account server)
       - name: Deploy preview worker
-        run: .ci/scripts/deploy/deploy-www.sh --name "pr-${PR_NUMBER}"
+        run: .ci/scripts/deploy/deploy-www.sh --name "pr-${PR_NUMBER}" --clone-prod-d1
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
@@ -716,7 +745,7 @@ jobs:
           SECRET_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
           SECRET_STRIPE_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
           SECRET_STRIPE_WEBHOOK: ${{ steps.stripe-webhook.outputs.stripe_webhook_secret }}
-          SECRET_ADMIN_EMAIL: ${{ vars.ACCOUNT_ADMIN_EMAIL }}
+          SECRET_ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
           SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
           SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
           SECRET_SES_REGION: ${{ vars.AWS_SES_REGION }}
@@ -736,7 +765,7 @@ jobs:
             --arg jwt "$SECRET_JWT_SECRET" \
             --arg stripe "$SECRET_STRIPE_KEY" \
             --arg stripe_wh "$SECRET_STRIPE_WEBHOOK" \
-            --arg admin "$SECRET_ADMIN_EMAIL" \
+            --arg admin "$SECRET_ROOT_EMAIL" \
             --arg ses_key "$SECRET_SES_ACCESS_KEY_ID" \
             --arg ses_secret "$SECRET_SES_SECRET_ACCESS_KEY" \
             --arg ses_region "$SECRET_SES_REGION" \
@@ -751,7 +780,7 @@ jobs:
               JWT_SECRET: $jwt,
               STRIPE_SECRET_KEY: $stripe,
               STRIPE_WEBHOOK_SECRET: $stripe_wh,
-              ADMIN_EMAIL: $admin,
+              ROOT_EMAIL: $admin,
               AWS_SES_ACCESS_KEY_ID: $ses_key,
               AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
               AWS_SES_REGION: $ses_region,
@@ -838,7 +867,7 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-desktop, build-cli, package-tests, deploy-dryrun, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview, test-preview-install]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, deploy-dryrun, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview, test-preview-install]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -914,6 +943,7 @@ jobs:
              [[ "$REVIEW_GATE_OK" != "true" ]] || \
              [[ "$STRIPE_SANDBOX_OK" != "true" ]] || \
              [[ "${{ needs.build-docker.result }}" != "success" ]] || \
+             [[ "${{ needs.build-docker-fast.result }}" != "success" ]] || \
              [[ "${{ needs.build-desktop.result }}" != "success" ]] || \
              [[ "${{ needs.build-cli.result }}" != "success" ]] || \
              [[ "$PACKAGE_TESTS_OK" != "true" ]] || \
@@ -930,6 +960,7 @@ jobs:
             echo "  review-gate: ${{ needs.review-gate.result }}"
             echo "  stripe-sandbox: ${{ needs.stripe-sandbox.result }}"
             echo "  build-docker: ${{ needs.build-docker.result }}"
+            echo "  build-docker-fast: ${{ needs.build-docker-fast.result }}"
             echo "  build-desktop: ${{ needs.build-desktop.result }}"
             echo "  build-cli: ${{ needs.build-cli.result }}"
             echo "  package-tests: ${{ needs.package-tests.result }}"

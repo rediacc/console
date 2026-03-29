@@ -199,10 +199,11 @@ module.exports = async ({ github, context, core }) => {
     }
 
     // Separate independent failures from critical failures.
-    // When no-auto-retry is set, treat ALL failures as critical (fail-fast).
-    const independentFailed = skipAutoRetry ? [] : failed.filter(j =>
+    // Independent patterns are ALWAYS respected (even with no-auto-retry).
+    // no-auto-retry only disables the auto-retry dispatch, not the independent classification.
+    const independentFailed = failed.filter(j =>
       independentPatterns.some(p => j.name.includes(p)));
-    const criticalFailed = skipAutoRetry ? failed : failed.filter(j =>
+    const criticalFailed = failed.filter(j =>
       !independentPatterns.some(p => j.name.includes(p)));
 
     // Log independent failures, dispatch auto-retry once, but don't cancel siblings
@@ -212,7 +213,7 @@ module.exports = async ({ github, context, core }) => {
       }
       // Still auto-retry independent failures (handles flaky infra like SSL errors)
       const isNoRetryJob = noRetryPatterns.some(p => independentFailed[0].name.includes(p));
-      if (run.run_attempt < MAX_ATTEMPTS && !isNoRetryJob) {
+      if (run.run_attempt < MAX_ATTEMPTS && !isNoRetryJob && !skipAutoRetry) {
         console.log(`Dispatching auto-retry for independent job failure...`);
         await dispatchRerun();
       }
@@ -227,10 +228,10 @@ module.exports = async ({ github, context, core }) => {
       return;
     }
 
-    // Same treatment for cancelled jobs
-    const independentCancelled = skipAutoRetry ? [] : cancelled.filter(j =>
+    // Same treatment for cancelled jobs (independent patterns always respected)
+    const independentCancelled = cancelled.filter(j =>
       independentPatterns.some(p => j.name.includes(p)));
-    const criticalCancelled = skipAutoRetry ? cancelled : cancelled.filter(j =>
+    const criticalCancelled = cancelled.filter(j =>
       !independentPatterns.some(p => j.name.includes(p)));
 
     if (independentCancelled.length > 0) {

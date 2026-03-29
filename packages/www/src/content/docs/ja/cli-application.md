@@ -6,7 +6,7 @@ order: 2
 language: ja
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ja/cli.json
-sourceHash: "e467d7c8c5635f07"
+sourceHash: "900b47c823865edb"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -229,8 +229,55 @@ rdc config ssh show
 rdc config ssh remove
 ```
 
+<a id="cli-local-config-remote"></a>
+### 2.11 remote
+
+{{t:cli.commands.config.remote.description}}
+
+<a id="cli-local-config-remote-enable"></a>
+#### enable
+
+{{t:cli.commands.config.remote.enable.description}}
+
+```bash
+rdc config remote enable [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--headless` | {{t:cli.commands.config.remote.enable.optionHeadless}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--api-url <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-config-remote-disable"></a>
+#### disable
+
+{{t:cli.commands.config.remote.disable.description}}
+
+```bash
+rdc config remote disable
+```
+
+<a id="cli-local-config-remote-status"></a>
+#### status
+
+{{t:cli.commands.config.remote.status.description}}
+
+```bash
+rdc config remote status
+```
+
+<a id="cli-local-config-remote-refresh"></a>
+#### refresh
+
+{{t:cli.commands.config.remote.refresh.description}}
+
+```bash
+rdc config remote refresh
+```
+
 <a id="cli-local-config-machine"></a>
-### 2.11 machine
+### 2.12 machine
 
 {{t:cli.commands.config.machine.description}}
 
@@ -312,7 +359,7 @@ rdc config machine set-ceph [options]
 
 
 <a id="cli-local-config-repository"></a>
-### 2.12 repository
+### 2.13 repository
 
 {{t:cli.commands.config.repository.description}}
 
@@ -384,7 +431,7 @@ rdc config repository purge-archived
 ```
 
 <a id="cli-local-config-provider"></a>
-### 2.13 provider
+### 2.14 provider
 
 {{t:cli.commands.config.provider.description}}
 
@@ -437,7 +484,7 @@ rdc config provider list
 ```
 
 <a id="cli-local-config-storage"></a>
-### 2.14 storage
+### 2.15 storage
 
 {{t:cli.commands.config.storage.description}}
 
@@ -474,7 +521,7 @@ rdc config storage list
 ```
 
 <a id="cli-local-config-infra"></a>
-### 2.15 infra
+### 2.16 infra
 
 {{t:cli.commands.config.infra.description}}
 
@@ -522,7 +569,7 @@ rdc config infra push <machine> [options]
 
 
 <a id="cli-local-config-cert-cache"></a>
-### 2.16 cert-cache
+### 2.17 cert-cache
 
 {{t:cli.commands.config.certCache.description}}
 
@@ -574,7 +621,7 @@ rdc config cert-cache clear
 ```
 
 <a id="cli-local-config-backup-strategy"></a>
-### 2.17 backup-strategy
+### 2.18 backup-strategy
 
 {{t:cli.commands.config.backupStrategy.description}}
 
@@ -2052,6 +2099,7 @@ rdc update [options]
 | `--check-only` | {{t:cli.commands.update.checkOnly}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--rollback` | {{t:cli.commands.update.rollback}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--status` | {{t:cli.commands.update.statusDescription}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--channel <channel>` | {{t:cli.commands.update.channelDescription}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---

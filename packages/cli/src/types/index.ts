@@ -338,6 +338,13 @@ export interface RdcConfig {
   pruneGraceDays?: number;
   /** Default datastore size for new provisions and machine setup (e.g., "95%", "500G") */
   datastoreSize?: string;
+
+  // ============================================================================
+  // Remote Config Storage
+  // ============================================================================
+
+  /** Remote config pointer. When present, config is fetched/pushed to encrypted server. */
+  remote?: RemoteConfig;
 }
 
 /**
@@ -367,6 +374,35 @@ export function hasCloudCredentials(config: RdcConfig | null | undefined): boole
  */
 export function hasCloudIntent(config: RdcConfig | null | undefined): boolean {
   return Boolean(config?.apiUrl);
+}
+
+/**
+ * Remote config storage pointer.
+ * When present on an RdcConfig, the CLI transparently fetches/pushes
+ * encrypted config from the account server. The local file stores only
+ * this pointer and non-sensitive settings (language, etc.).
+ */
+export interface RemoteConfig {
+  /** Account server URL (e.g., 'https://account.rediacc.com') */
+  apiUrl: string;
+  /** Config store UUID on the server */
+  storeId: string;
+  /** Config entry UUID (this config's identity on the server) */
+  configId: string;
+  /** Optional team scope */
+  teamId?: string;
+  /** Key for OS secure storage lookup (passkey_secret) */
+  storageKeyId: string;
+}
+
+/**
+ * Detect if a config has a remote storage pointer.
+ * When true, getCurrent() transparently fetches from the server.
+ */
+export function hasRemoteConfig(
+  config: RdcConfig | null | undefined
+): config is RdcConfig & { remote: RemoteConfig } {
+  return Boolean(config?.remote?.apiUrl && config.remote.storeId && config.remote.configId);
 }
 
 export interface OutputConfig {

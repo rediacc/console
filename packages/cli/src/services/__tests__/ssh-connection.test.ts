@@ -10,6 +10,12 @@ vi.mock('../../providers/index.js', () => ({
   })),
 }));
 
+vi.mock('../config-resources.js', () => ({
+  configService: {
+    getRepository: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 vi.mock('../../i18n/index.js', () => ({
   t: (key: string, params?: Record<string, unknown>) => {
     if (params) {

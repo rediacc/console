@@ -23,6 +23,10 @@ on:
     secrets:
       APP_PRIVATE_KEY:
         required: false
+      LICENSE_ED25519_PUBLIC_KEY:
+        required: false
+      OTLP_AUTH_TOKEN:
+        required: false
 
 permissions:
   contents: read

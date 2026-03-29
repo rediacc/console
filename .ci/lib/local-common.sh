@@ -324,7 +324,11 @@ ensure_renet_built() {
     fi
 
     check_go_installed
-    (cd "$renet_dir" && ./build.sh dev)
+    local build_flags=""
+    if [[ "${RENET_NOLICENSE:-true}" == "true" ]]; then
+        build_flags="--nolicense"
+    fi
+    (cd "$renet_dir" && ./build.sh dev $build_flags)
 
     if [[ ! -f "$renet_bin" ]]; then
         log_error "Renet build failed: binary not found at $renet_bin"

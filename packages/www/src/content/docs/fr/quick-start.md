@@ -1,86 +1,284 @@
 ---
 title: Démarrage rapide
-description: Lancez un service conteneurisé sur votre serveur en 5 minutes.
+description: Lancez un service conteneurisé sur votre serveur en quelques minutes.
 category: Guides
 order: -1
 language: fr
-sourceHash: "a67f1e8442eb492e"
+sourceHash: "73dc08190016a305"
 ---
 
 # Démarrage rapide
 
-Déployez un environnement de conteneurs chiffré et isolé sur votre propre serveur en 5 minutes. Aucun compte cloud ni dépendance SaaS requis.
+Déployez un environnement de conteneurs chiffré et isolé sur votre propre serveur. Aucun compte cloud ni dépendance SaaS. Tout fonctionne sur du matériel que vous contrôlez.
 
-## Prérequis
+---
 
-- Un poste de travail Linux ou macOS
-- Un serveur distant (Ubuntu 24.04+, Debian 12+ ou Fedora 43+) avec accès SSH et privilèges sudo
-- Une paire de clés SSH (par exemple `~/.ssh/id_ed25519`)
+## Introduction
 
-## 1. Installer le CLI
+### Concepts clés
+
+Un repo est un fichier chiffré unique sur le disque. Déplacez-le, sauvegardez-le, dupliquez-le. C'est juste un fichier. Une fois monté, il devient un dossier avec un démon Docker dédié et les données de votre application à l'intérieur.
+
+Pensez à un repo comme une clé USB. C'est quelque chose que vous avez en main, et quand vous le branchez, il devient visible et accessible pour le système. Vos applications et données sont entièrement portables. Branchez et exécutez sur n'importe quelle machine chez n'importe quel fournisseur cloud.
+
+**Deux outils, deux rôles :**
+
+- **rdc** = CLI sur votre poste de travail (TypeScript, installé globalement)
+- **renet** = orchestrateur sur le serveur (binaire Go, gère les démons/réseaux/isolation)
+- RDC provisionne renet automatiquement lors de `config machine setup`. Aucune configuration manuelle sur le serveur.
+
+> [Architecture](/fr/docs/architecture) explique le modèle de sécurité. [rdc vs renet](/fr/docs/rdc-vs-renet) explique quel outil utiliser selon le cas.
+
+### 1. Installer le CLI
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
+rdc doctor     # Vérification : Node, clé SSH, renet, Docker
 ```
 
-## 2. Créer une configuration
+> Windows, Alpine, Arch : voir [Installation](/fr/docs/installation). Configuration système requise complète : [Prérequis](/fr/docs/requirements).
+
+### 2. Configuration de la clé SSH
+
+rdc se connecte via SSH. Le serveur doit approuver votre clé publique avant que rdc puisse l'atteindre.
 
 ```bash
-rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
+# Générer une clé (passez cette étape si vous en avez déjà une)
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
+
+# Copier la clé publique sur le serveur (demandera le mot de passe)
+ssh-copy-id -i ~/.ssh/id_ed25519 user@your-server-ip
+
+# Indiquer à rdc quelle clé utiliser
+rdc config ssh set --key ~/.ssh/id_ed25519
 ```
 
-## 3. Ajouter votre serveur
+Chaque commande rdc s'authentifie désormais avec cette clé. Aucun mot de passe.
+
+### 3. Ajouter votre serveur
 
 ```bash
-rdc config machine add server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config machine add my-server --ip 192.168.1.100 --user muhammed
+rdc config machine setup my-server        # Provisionne renet + crée le datastore
 ```
 
-## 4. Provisionner le serveur
+**Ce qui se passe :** L'empreinte de la clé SSH de l'hôte est analysée, le binaire renet est téléversé, le datastore chiffré est initialisé sur le serveur. Prêt pour les repos.
+
+> Dimensionnement du datastore, Ceph RBD, fournisseurs cloud : [Configuration du serveur](/fr/docs/setup). Échecs SSH : [Dépannage](/fr/docs/troubleshooting).
+
+### 4. Fichier de configuration
 
 ```bash
-rdc config machine setup server-1
+rdc config show                            # Résumé lisible
+cat ~/.config/rediacc/rediacc.json         # JSON brut : machines, repos, stockages, clé SSH
 ```
 
-Cela installe Docker, cryptsetup et le binaire renet sur votre serveur.
+**Un fichier = un environnement.** Copiez-le sur un autre poste et vous êtes prêt.
 
-## 5. Créer un dépôt chiffré
+---
+
+## Travailler avec un repo
+
+### 1. Créer un repo
 
 ```bash
-rdc repo create my-app -m server-1 --size 5G
+rdc repo create my-app -m my-server --size 2G       # Créer un repo chiffré de 2 Go
 ```
 
-## 6. Déployer les services
+Crée le volume chiffré, le monte et démarre son démon Docker. Le repo est enregistré dans votre configuration et prêt à l'emploi.
 
-Montez le dépôt, créez vos fichiers `docker-compose.yml` et `Rediaccfile` à l'intérieur, puis démarrez :
+> Redimensionnement, suppression, validation : [Dépôts](/fr/docs/repositories).
+
+### 2. Appliquer un modèle
 
 ```bash
-rdc repo up my-app -m server-1 --mount
+rdc repo template list                                        # Afficher les modèles intégrés
+rdc repo template apply app-postgres -m my-server -r my-app   # Déployer docker-compose.yml + Rediaccfile
 ```
 
-## 7. Vérifier
+Les modèles fournissent un `docker-compose.yml`, un `Rediaccfile` et des fichiers de support. Sans modèle (ou votre propre fichier compose), il n'y a rien à démarrer.
+
+### 3. Démarrer le repo
 
 ```bash
-rdc machine containers server-1
+rdc repo up my-app -m my-server                      # Exécuter Rediaccfile up()
+rdc repo list -m my-server                           # Voir tous les repos sur la machine
+rdc repo status my-app -m my-server                  # État du montage, Docker, taille, chiffrement
 ```
 
-Vous devriez voir vos conteneurs en cours d'exécution.
+`repo up` monte automatiquement si nécessaire. Aucun paramètre requis.
 
-## Qu'est-ce que Rediacc ?
+### 4. VS Code
 
-Rediacc déploie des services conteneurisés sur des serveurs distants que vous contrôlez. Tout est chiffré au repos avec LUKS, chaque dépôt dispose de son propre démon Docker isolé, et toute l'orchestration se fait via SSH depuis votre poste de travail.
+```bash
+rdc vscode my-server my-app              # Ouvre VS Code SSH, atterrit dans le bac à sable du repo
+```
 
-Pas de comptes cloud. Pas de dépendances SaaS. Vos données restent sur vos serveurs.
+Vous éditez des fichiers *à l'intérieur* du volume chiffré. `docker ps` n'affiche que les conteneurs de ce repo. Enregistrez, compose up, itérez.
 
-## Étapes suivantes
+### 5. `rdc repo up` vs `renet dev up`
 
-- **[Architecture](/fr/docs/architecture)** — Comprendre le fonctionnement de Rediacc : détection d'adaptateur, modèle de sécurité, isolation Docker
-- **[rdc vs renet](/fr/docs/rdc-vs-renet)** — Comprendre quel CLI utiliser pour les opérations quotidiennes ou le travail distant de bas niveau
-- **[Configuration du serveur](/fr/docs/setup)** — Guide de configuration détaillé : configs, machines, configuration de l'infrastructure
-- **[Dépôts](/fr/docs/repositories)** — Créer, gérer, redimensionner, dupliquer et valider des dépôts
-- **[Services](/fr/docs/services)** — Rediaccfiles, réseau de services, déploiement, démarrage automatique
-- **[Sauvegarde et restauration](/fr/docs/backup-restore)** — Sauvegarder vers un stockage externe et planifier des sauvegardes automatisées
-- **[Surveillance](/fr/docs/monitoring)** — Santé du serveur, conteneurs, services, diagnostics
-- **[Outils](/fr/docs/tools)** — Synchronisation de fichiers, terminal SSH, intégration VS Code
-- **[Guide de migration](/fr/docs/migration)** — Intégrer des projets existants dans des dépôts Rediacc
-- **[Dépannage](/fr/docs/troubleshooting)** — Solutions aux problèmes courants
-- **[Référence CLI](/fr/docs/cli-application)** — Référence complète des commandes
+| | `rdc repo up` | `renet dev up` |
+|---|---|---|
+| **Où l'exécuter** | Votre poste de travail (CLI) | Dans le bac à sable VS Code |
+| **Ce que ça fait** | SSH → montage auto → exécute Rediaccfile `up()` | Exécute Rediaccfile `up()` directement |
+| **Cas d'usage** | CI/CD, automatisation, opérations à distance | Boucle de développement interne |
+| **Isolation** | Orchestre depuis l'extérieur | Déjà dans le bac à sable |
+
+**Flux de démonstration :** `rdc repo template apply` → `rdc vscode my-server my-app` → modifier `docker-compose.yml` → `renet dev up` → voir l'application en cours d'exécution → itérer.
+
+> Structure du Rediaccfile : [Services](/fr/docs/services). Quand utiliser quel outil : [rdc vs renet](/fr/docs/rdc-vs-renet).
+
+### 6. Modèle d'isolation
+
+- **Utilisateur universel** (`rediacc`) : Même UID sur chaque machine. Déplacez un repo vers un autre serveur et les permissions de fichiers fonctionnent directement. Aucun casse-tête avec `chown`.
+- **Démon Docker par repo** : Chaque repo dispose de son propre démon Docker isolé. `docker ps` n'affiche que les conteneurs de CE repo.
+- **Bac à sable Landlock + OverlayFS** : Le shell VS Code est restreint au niveau du système de fichiers. Vous ne pouvez pas lire d'autres repos. Les écritures dans `$HOME` sont des overlays par repo.
+
+> Fonctionnement de l'isolation : [Architecture](/fr/docs/architecture). Cycle de vie du Rediaccfile : [Services](/fr/docs/services).
+
+### 7. Terminal, synchronisation et tunnel
+
+**Terminal :**
+```bash
+rdc term my-server my-app                            # SSH dans le bac à sable du repo
+rdc term my-server my-app -c "curl localhost:3000"   # Exécuter une commande et quitter
+rdc term my-server                                   # SSH vers la machine (sans bac à sable)
+```
+
+**Synchronisation de fichiers (rsync via SSH) :**
+```bash
+rdc repo sync upload -m my-server -r my-app --local ./src       # Envoyer les fichiers locaux vers le repo
+rdc repo sync download -m my-server -r my-app --local ./backup  # Récupérer les fichiers du repo en local
+rdc repo sync download -m my-server -r my-app --local ./backup --dry-run  # Aperçu d'abord
+```
+
+**Tunnel (redirection de port SSH vers un conteneur) :**
+```bash
+rdc repo tunnel my-server my-app                     # Détection automatique du conteneur et du port
+rdc repo tunnel my-server my-app --port 5432         # Tunnel vers Postgres
+rdc repo tunnel my-server my-app --port 5432 --local 15432  # Port local personnalisé
+```
+
+Lancez le tunnel → ouvrez `localhost:3000` dans le navigateur → application en direct depuis le serveur distant.
+
+> Synchronisation, terminal, détails VS Code : [Outils](/fr/docs/tools).
+
+---
+
+## Fork et sauvegarde
+
+### 1. Grand et fork de repos
+
+```bash
+rdc repo fork my-app -m my-server --tag experiment --up     # Clone CoW instantané + démarrage
+rdc repo list -m my-server                                  # Affiche : my-app (grand) + my-app:experiment (fork)
+rdc repo delete my-app:experiment -m my-server              # Supprimer le fork, grand intact
+```
+
+**Clone instantané, zéro copie.** CoW (copy-on-write). Microsecondes, aucune donnée copiée. Les blocs sont partagés jusqu'à ce qu'un côté écrive.
+
+**Cas d'usage :**
+- **IA / ML :** Fork du jeu de données de production, exécuter une expérience, abandonner ou promouvoir
+- **DevOps :** Fork → tester la migration → supprimer si échec, promouvoir si succès
+- **Sauvegarde :** Fork = instantané immédiat, envoyez-le hors site
+
+> Cycle de vie des forks, forks inter-machines : [Dépôts](/fr/docs/repositories).
+
+### 2. Pousser vers une autre machine
+
+```bash
+# Pousser le repo vers une autre machine
+rdc repo push my-app -m my-server --to backup-server
+
+# Pousser et déployer automatiquement sur la cible
+rdc repo push my-app -m my-server --to backup-server --up
+
+# Pousser avec un checkpoint CRIU (migration en direct, préserve l'état mémoire)
+rdc repo push my-app -m my-server --to new-server --checkpoint --up
+
+# Pousser vers une nouvelle machine (provisionnement auto via fournisseur cloud)
+rdc repo push my-app -m my-server --to new-server --provision linode --up
+```
+
+### 3. Pousser vers un stockage cloud (OneDrive, Google Drive, S3)
+
+```bash
+# Importer votre configuration rclone comme backend de stockage
+rdc config storage import ~/rclone.conf
+
+# Lister les stockages disponibles
+rdc storage list
+
+# Pousser le repo vers un stockage cloud
+rdc repo push my-app -m my-server --to my-s3-backup
+
+# Lister les sauvegardes sur le stockage
+rdc repo backup list --from my-s3-backup -m my-server
+```
+
+`--to` détecte automatiquement si la cible est une machine ou un backend de stockage. Fonctionne avec tout fournisseur supporté par rclone : S3, R2, B2, OneDrive, Google Drive, SFTP, etc.
+
+### 4. Récupérer depuis un emplacement distant
+
+```bash
+# Récupérer le repo depuis une machine cloud vers votre serveur local
+rdc repo pull my-app -m my-local-server --from cloud-server
+
+# Récupérer depuis un stockage cloud
+rdc repo pull my-app -m my-local-server --from my-s3-backup
+
+# Récupérer et démarrer immédiatement
+rdc repo pull my-app -m my-local-server --from my-s3-backup --up
+```
+
+**Pourquoi récupérer ?** Votre machine locale est derrière un NAT. Le cloud ne peut pas pousser vers vous. Mais vous pouvez atteindre le cloud. Pull ramène le repo chez vous.
+
+**Cycle complet :** Créer en dev → pousser vers le cloud → récupérer en production → `--up`. Un repo, n'importe quelle machine, n'importe quel cloud.
+
+> Planification, sauvegardes automatisées, restauration : [Sauvegarde et restauration](/fr/docs/backup-restore).
+
+---
+
+## Proxy et SSL
+
+### 1. Configuration de l'infrastructure
+
+```bash
+rdc config infra set my-server           # Configurer : domaine de base, IPs publiques, plages de ports
+rdc config infra show my-server          # Vérifier la configuration
+rdc config infra push my-server          # Pousser la configuration du proxy vers le serveur distant
+```
+
+**Fonctionnement du routage :**
+- Traefik découvre automatiquement les conteneurs via les labels `rediacc.service_name` et `rediacc.service_port`
+- Routes : `{service}-{networkId}.{baseDomain}` → IP du conteneur:port
+- SSL : Let's Encrypt via le challenge DNS-01 de Cloudflare (renouvellement automatique, certificats wildcard)
+
+### 2. Modèle de proxy
+
+```bash
+rdc repo template apply proxy -m my-server -r infra     # Déployer le proxy dans un repo
+rdc repo up infra -m my-server                           # Démarrer Traefik
+```
+
+Traefik route désormais le trafic externe vers tous les repos sur cette machine. Chaque conteneur obtient automatiquement un point de terminaison HTTPS.
+
+```bash
+# Accédez à https://my-app.example.com → routé vers le conteneur
+# Redirection TCP/UDP pour les bases de données :
+#   rediacc.tcp_ports=3306,5432 → ports externes alloués automatiquement
+```
+
+> Règles de routage, DNS, configuration TLS : [Réseau](/fr/docs/networking).
+
+---
+
+## Prochaines étapes
+
+- **[Guide de migration](/fr/docs/migration)** - Intégrer des projets existants dans des dépôts Rediacc
+- **[Surveillance](/fr/docs/monitoring)** - Santé de la machine, conteneurs, services, diagnostics
+- **[Référence CLI](/fr/docs/cli-application)** - Référence complète des commandes
+- **[Aide-mémoire](/fr/docs/rdc-cheat-sheet)** - Recherche rapide de commandes
+- **[Dépannage](/fr/docs/troubleshooting)** - Solutions aux problèmes courants
+- **[Règles de Rediacc](/fr/docs/rules-of-rediacc)** - Bonnes pratiques pour les Rediaccfiles et checklist de déploiement

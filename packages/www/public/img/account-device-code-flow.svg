@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320" width="800" height="320">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <polygon points="0 0, 10 5, 0 10" fill="#556b2f"/>
+    </marker>
+  </defs>
+
+  <rect width="800" height="320" fill="#f5f5f5"/>
+
+  <!-- Column headers -->
+  <!-- CLI column header with terminal icon -->
+  <rect x="30" y="10" width="330" height="26" rx="6" fill="rgba(85,107,47,0.15)"/>
+  <!-- Terminal icon -->
+  <g transform="translate(160, 23)">
+    <rect x="-30" y="-10" width="20" height="14" rx="2" fill="#1a1a1a"/>
+    <text x="-26" y="0" font-family="monospace" font-size="8" fill="#6f8243">>_</text>
+  </g>
+  <text x="205" y="28" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#556b2f">CLI</text>
+
+  <!-- Browser column header with browser icon -->
+  <rect x="440" y="10" width="330" height="26" rx="6" fill="rgba(85,107,47,0.15)"/>
+  <!-- Browser window icon -->
+  <g transform="translate(570, 23)">
+    <rect x="-30" y="-10" width="20" height="14" rx="2" fill="none" stroke="#556b2f" stroke-width="1.2"/>
+    <line x1="-30" y1="-5" x2="-10" y2="-5" stroke="#556b2f" stroke-width="0.8"/>
+    <circle cx="-26" cy="-7.5" r="1.2" fill="#c0392b"/>
+    <circle cx="-22" cy="-7.5" r="1.2" fill="#f39c12"/>
+    <circle cx="-18" cy="-7.5" r="1.2" fill="#556b2f"/>
+  </g>
+  <text x="615" y="28" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#556b2f">Browser</text>
+
+  <!-- Divider line -->
+  <line x1="400" y1="10" x2="400" y2="245" stroke="#e0e0e0" stroke-width="1.5" stroke-dasharray="6,4"/>
+
+  <!-- Person icon in the middle -->
+  <g transform="translate(400, 140)">
+    <circle cx="0" cy="-6" r="7" fill="#556b2f" opacity="0.3"/>
+    <path d="M -10,10 Q -10,2 0,2 Q 10,2 10,10" fill="#556b2f" opacity="0.3"/>
+  </g>
+
+  <!-- Step 1: Create Device Code (CLI) -->
+  <g filter="url(#shadow)">
+    <rect x="60" y="52" width="250" height="42" rx="10" fill="#ffffff" stroke="#556b2f" stroke-width="2"/>
+  </g>
+  <!-- Small terminal prompt inside -->
+  <text x="80" y="78" font-family="monospace" font-size="10" fill="#6f8243">$</text>
+  <text x="185" y="78" font-family="Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle" fill="#1a1a1a">Create Device Code</text>
+
+  <!-- Dashed arrow: userCode from CLI to Browser -->
+  <line x1="310" y1="73" x2="480" y2="73" stroke="#556b2f" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrow)"/>
+  <!-- Code display box -->
+  <rect x="360" y="56" width="90" height="16" rx="4" fill="#556b2f" opacity="0.1"/>
+  <text x="405" y="67" font-family="monospace" font-size="9" font-weight="700" text-anchor="middle" fill="#556b2f">XXXX-XXXX</text>
+
+  <!-- Step 2: User enters code (Browser) -->
+  <g filter="url(#shadow)">
+    <rect x="490" y="52" width="240" height="42" rx="10" fill="#ffffff" stroke="#556b2f" stroke-width="2"/>
+  </g>
+  <text x="610" y="78" font-family="Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle" fill="#1a1a1a">User enters code</text>
+
+  <!-- Arrow down on CLI side -->
+  <line x1="185" y1="94" x2="185" y2="124" stroke="#556b2f" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Arrow down on Browser side -->
+  <line x1="610" y1="94" x2="610" y2="124" stroke="#556b2f" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Step 3: Poll for status (CLI) -->
+  <g filter="url(#shadow)">
+    <rect x="60" y="134" width="250" height="42" rx="10" fill="#ffffff" stroke="#556b2f" stroke-width="2"/>
+  </g>
+  <!-- Circular polling arrow -->
+  <g transform="translate(82, 155)">
+    <path d="M 3,-5 A 5,5 0 1,1 -3,-5" fill="none" stroke="#6f8243" stroke-width="1.2"/>
+    <polygon points="-3,-5 -1,-8 -5,-6" fill="#6f8243"/>
+  </g>
+  <text x="195" y="160" font-family="Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle" fill="#1a1a1a">Poll for status</text>
+
+  <!-- Step 4: Approve + handoff (Browser) -->
+  <g filter="url(#shadow)">
+    <rect x="490" y="134" width="240" height="42" rx="10" fill="#ffffff" stroke="#556b2f" stroke-width="2"/>
+  </g>
+  <!-- Checkmark icon -->
+  <g transform="translate(510, 155)">
+    <polyline points="-4,0 -1,3 5,-3" fill="none" stroke="#556b2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="620" y="160" font-family="Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle" fill="#1a1a1a">Approve + handoff</text>
+
+  <!-- Dashed arrow: token from Browser back to CLI -->
+  <line x1="490" y1="176" x2="310" y2="200" stroke="#556b2f" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrow)"/>
+  <rect x="370" y="183" width="52" height="14" rx="4" fill="#556b2f" opacity="0.1"/>
+  <text x="396" y="193" font-family="Arial, sans-serif" font-size="9" font-weight="700" text-anchor="middle" fill="#556b2f">token</text>
+
+  <!-- Step 5: Receive token (CLI) -->
+  <g filter="url(#shadow)">
+    <rect x="60" y="206" width="250" height="42" rx="10" fill="#ffffff" stroke="#556b2f" stroke-width="2"/>
+  </g>
+  <!-- Key icon for token -->
+  <g transform="translate(82, 227)">
+    <circle cx="-4" cy="0" r="4" fill="none" stroke="#556b2f" stroke-width="1.2"/>
+    <line x1="0" y1="0" x2="8" y2="0" stroke="#556b2f" stroke-width="1.2"/>
+    <line x1="6" y1="0" x2="6" y2="3" stroke="#556b2f" stroke-width="1.2"/>
+  </g>
+  <text x="195" y="232" font-family="Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle" fill="#1a1a1a">Receive token</text>
+
+  <!-- Bottom badge -->
+  <g filter="url(#shadow)">
+    <rect x="50" y="268" width="700" height="36" rx="18" fill="#556b2f"/>
+    <text x="400" y="291" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#ffffff">CLI Creates Code --> User Approves in Browser --> CLI Receives Token</text>
+  </g>
+</svg>

@@ -473,6 +473,38 @@
         "noBackup": "設定 \"{{name}}\" のバックアップが見つかりません",
         "success": "設定 \"{{name}}\" をバックアップから復元しました（バージョン {{version}}）"
       },
+      "remote": {
+        "description": "リモート設定ストレージ接続を管理",
+        "disable": {
+          "description": "リモートストレージから切断し、設定をローカルに保存",
+          "notEnabled": "リモート設定は有効になっていません。",
+          "success": "リモート設定を無効化しました。設定 \"{{name}}\" をローカルに保存しました。"
+        },
+        "enable": {
+          "alreadyEnabled": "設定 \"{{name}}\" は既にリモートストレージにリンクされています。先に無効化してください: rdc config remote disable",
+          "description": "この設定をリモート暗号化ストレージにリンク",
+          "expired": "デバイスコードの有効期限が切れました。もう一度お試しください。",
+          "openBrowser": "このURLを開いてセットアップを完了してください:",
+          "optionApiUrl": "アカウントサーバーURL",
+          "optionHeadless": "デバイスコードフローを使用（ヘッドレスサーバー用）",
+          "polling": "ブラウザの承認を確認中...",
+          "received": "ハンドオフを受信",
+          "success": "リモート設定を有効化しました。設定 \"{{name}}\" は {{apiUrl}} と同期されています。",
+          "waiting": "ブラウザの承認を待機中..."
+        },
+        "passkeySecretMissing": "OSキーリングにパスキーシークレットが見つかりません。再認証してください: rdc config remote enable",
+        "refresh": {
+          "description": "リモートストレージから設定を強制再取得",
+          "notEnabled": "リモート設定は有効になっていません。",
+          "pulled": "設定を取得済み",
+          "pulling": "リモートから設定を取得中...",
+          "success": "リモートから設定を更新しました (バージョン {{version}})。"
+        },
+        "status": {
+          "description": "リモート接続状態を表示"
+        },
+        "tokenExpired": "リモート設定トークンの有効期限が切れました。再認証してください: rdc config remote enable"
+      },
       "repository": {
         "add": {
           "description": "現在の設定にリポジトリ GUID マッピングを追加する",
@@ -625,7 +657,11 @@
         "renetRsync": "組み込みrsync",
         "renetVersion": "バージョン",
         "seaMode": "SEAモード",
-        "sshKey": "SSHキー"
+        "sshKey": "SSHキー",
+        "subscriptionMachineSlots": "マシンスロット",
+        "subscriptionRepoLicenses": "リポジトリライセンス",
+        "subscriptionStatus": "Status",
+        "subscriptionToken": "トークン"
       },
       "description": "CLI環境とrenet統合を診断",
       "descriptionShort": "CLI環境とrenet統合を診断",
@@ -635,6 +671,7 @@
       "notAuthenticated": "未認証",
       "notConfigured": "未設定",
       "notInstalled": "未インストール",
+      "notLoggedIn": "未ログイン",
       "opsNotSupported": "{{platform}}ではサポートされていません",
       "opsSkipped": "renetが利用できません（スキップ）",
       "seaActive": "はい（単一実行可能アプリケーション）",
@@ -643,13 +680,16 @@
         "configuration": "設定",
         "environment": "環境",
         "renet": "Renetネットワーク",
+        "subscription": "サブスクリプション",
         "virtualization": "仮想化"
       },
+      "serverMismatch": "サーバー不一致",
       "status": {
         "fail": "失敗",
         "ok": "OK",
         "warn": "警告"
       },
+      "subscriptionUnreachable": "サブスクリプションサーバーに接続できません",
       "title": "Rediacc CLI 診断ツール"
     },
     "machine": {
@@ -1711,6 +1751,8 @@
       "applyFailed": "準備された更新の適用に失敗しました: {{error}}",
       "autoApplied": "v{{version}} に更新しました（以前は v{{from}}）。変更は次回の実行時に反映されます。",
       "available": "アップデート利用可能: v{{version}} (現在: v{{current}})",
+      "channelDescription": "リリースチャンネルを設定 (stable または edge)",
+      "channelSet": "リリースチャンネルを {{channel}} に設定しました",
       "checking": "アップデートを確認中...",
       "checkOnly": "ダウンロードせずにアップデートの確認のみ",
       "description": "CLIのアップデートを確認して適用",
@@ -1718,6 +1760,7 @@
       "downloading": "v{{version}}をダウンロード中...",
       "failed": "アップデート失敗: {{error}}",
       "force": "最新でも強制的にアップデート",
+      "invalidChannel": "無効なチャンネル: {{channel}}。stable または edge を使用してください。",
       "notSEA": "アップデートできません：パッケージバイナリとして実行されていません。先にSEAでビルドしてください。",
       "progress": "ダウンロード中... {{percent}}%",
       "releaseNotes": "リリースノート: {{url}}",

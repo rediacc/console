@@ -1,7 +1,8 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { configFileStorage } from '../adapters/config-file-storage.js';
+import type { RemoteConfigAdapter } from '../adapters/remote-config-adapter.js';
 import type { RdcConfig } from '../types/index.js';
-import { hasCloudCredentials } from '../types/index.js';
+import { hasCloudCredentials, hasRemoteConfig } from '../types/index.js';
 import {
   detectSystemLanguage,
   getSupportedLanguages as getSupportedLanguagesList,
@@ -16,10 +17,15 @@ const DEFAULT_API_URL = 'https://www.rediacc.com/api';
  * Service for managing CLI config files.
  * Each config is a separate file (e.g., rediacc.json, production.json).
  * In self-hosted mode, resource CRUD delegates to LocalResourceState.
+ * When a remote pointer is present, transparently fetches/pushes encrypted config.
  */
 export class ConfigServiceBase {
   private runtimeConfigOverride: string | null = null;
   private _resourceState: ResourceState | null = null;
+  private _remoteAdapter: RemoteConfigAdapter | null = null;
+  private _remoteConfig: RdcConfig | null = null;
+  private _remoteVersion = 0;
+  private _remoteSdkEpoch = 0;
 
   /**
    * Set a runtime config override (used by --config flag).
@@ -28,10 +34,13 @@ export class ConfigServiceBase {
   setRuntimeConfig(name: string | null): void {
     this.runtimeConfigOverride = name;
     this._resourceState = null;
+    this._remoteAdapter = null;
+    this._remoteConfig = null;
   }
 
   /**
    * Get the ResourceState for the current config, initializing lazily.
+   * When remote is enabled, uses RemoteResourceState (push on mutation).
    */
   async getResourceState(): Promise<ResourceState> {
     if (this._resourceState) return this._resourceState;
@@ -39,13 +48,25 @@ export class ConfigServiceBase {
     const config = await this.getCurrent();
     if (!config) throw new Error('No active config');
 
+    const configName = this.getEffectiveConfigName();
+
+    if (hasRemoteConfig(config) && this._remoteAdapter) {
+      const { RemoteResourceState } = await import('./resource-state.js');
+      this._resourceState = RemoteResourceState.load(
+        config,
+        configName,
+        this._remoteAdapter,
+        this._remoteVersion,
+        this._remoteSdkEpoch
+      );
+      return this._resourceState;
+    }
+
     let masterPassword: string | null = null;
     if (config.masterPassword) {
       const { authService } = await import('./auth.js');
       masterPassword = await authService.requireMasterPassword();
     }
-
-    const configName = this.getEffectiveConfigName();
 
     const { LocalResourceState } = await import('./resource-state.js');
     this._resourceState = await LocalResourceState.load(config, configName, masterPassword);
@@ -74,18 +95,81 @@ export class ConfigServiceBase {
 
   /**
    * Get the current active config.
+   * When a remote pointer is present, transparently fetches from the server.
    */
   async getCurrent(): Promise<RdcConfig | null> {
+    // Return cached remote config if already loaded this session
+    if (this._remoteConfig) return this._remoteConfig;
+
     const name = this.getEffectiveConfigName();
 
-    // Auto-create the default config on first access
+    let config: RdcConfig | null;
     if (name === 'rediacc') {
-      return configFileStorage.getOrCreateDefault();
+      config = await configFileStorage.getOrCreateDefault();
+    } else {
+      const exists = await configFileStorage.exists(name);
+      if (!exists) return null;
+      config = await configFileStorage.load(name);
     }
 
-    const exists = await configFileStorage.exists(name);
-    if (!exists) return null;
-    return configFileStorage.load(name);
+    if (hasRemoteConfig(config)) {
+      return this.loadRemote(config, name);
+    }
+
+    return config;
+  }
+
+  /**
+   * Fields stored only in the local pointer file, never in the remote blob.
+   * These must be preserved from localConfig when composing the merged state.
+   */
+  private static readonly LOCAL_ONLY_FIELDS = [
+    'language',
+    'remote',
+    'team',
+    'region',
+    'bridge',
+  ] as const;
+
+  /**
+   * Load config from the remote server, caching for the session.
+   * Preserves all local-only settings (language, remote pointer, defaults).
+   */
+  private async loadRemote(localConfig: RdcConfig, configName: string): Promise<RdcConfig> {
+    const adapter = await this.getRemoteAdapter(localConfig, configName);
+    const { config, version, sdkEpoch } = await adapter.pull();
+
+    // Preserve local-only settings on the pulled config.
+    // Local values take precedence; fall back to whatever the remote has.
+    for (const field of ConfigServiceBase.LOCAL_ONLY_FIELDS) {
+      const localValue = localConfig[field];
+      if (localValue !== undefined) {
+        (config as unknown as Record<string, unknown>)[field] = localValue;
+      }
+    }
+
+    this._remoteConfig = config;
+    this._remoteVersion = version;
+    this._remoteSdkEpoch = sdkEpoch;
+    return config;
+  }
+
+  /**
+   * Get or create a RemoteConfigAdapter for the current config.
+   */
+  private async getRemoteAdapter(
+    config: RdcConfig,
+    configName: string
+  ): Promise<RemoteConfigAdapter> {
+    if (this._remoteAdapter) return this._remoteAdapter;
+
+    const remote = config.remote!;
+    const { RemoteConfigAdapter: Adapter } = await import('../adapters/remote-config-adapter.js');
+    const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
+    const { getSecureStorage } = await import('../utils/secure-storage.js');
+
+    this._remoteAdapter = new Adapter(remote, configName, remoteTokenStorage, getSecureStorage());
+    return this._remoteAdapter;
   }
 
   /**

@@ -4,7 +4,7 @@ description: "تثبيت سطر أوامر Rediacc على Linux أو macOS أو 
 category: "Guides"
 order: 1
 language: ar
-sourceHash: "7710f243d1cde01e"
+sourceHash: "f4d35bb8c2447783"
 ---
 
 # التثبيت
@@ -88,6 +88,23 @@ rdc update --check-only
 
 ```bash
 rdc update rollback
+```
+
+### قنوات التحديث
+
+يدعم سطر الاوامر قناتي اصدار:
+- **stable** (افتراضي): اصدارات مختبرة بدقة، موصى بها لبيئة الانتاج
+- **edge**: احدث الميزات وإصلاحات الاخطاء، يتم التحديث مع كل اصدار
+
+```bash
+rdc update --channel edge      # التبديل إلى قناة edge
+rdc update --channel stable    # العودة إلى قناة stable
+rdc update --status            # عرض القناة الحالية والاصدار
+```
+
+للتثبيت مباشرة من قناة edge:
+```bash
+REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 ### Remote Binary Updates

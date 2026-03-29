@@ -1,0 +1,136 @@
+name: Promote Edge to Stable
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # Daily at 6:00 UTC
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force promotion (skip 7-day soak period)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+  pull-requests: read
+
+env:
+  SOAK_DAYS: 7
+
+jobs:
+  promote:
+    name: Promote Edge to Stable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Check edge manifest
+        id: edge
+        run: |
+          EDGE_MANIFEST=$(curl -sf "https://www.rediacc.com/cli/edge/manifest.json" || echo "")
+          if [[ -z "$EDGE_MANIFEST" ]]; then
+            echo "No edge manifest found, skipping"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          EDGE_VERSION=$(echo "$EDGE_MANIFEST" | jq -r '.version')
+          EDGE_DATE=$(echo "$EDGE_MANIFEST" | jq -r '.releaseDate')
+          echo "version=$EDGE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "date=$EDGE_DATE" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+          echo "Edge version: $EDGE_VERSION (released: $EDGE_DATE)"
+
+      - name: Check stable manifest
+        if: steps.edge.outputs.skip != 'true'
+        id: stable
+        run: |
+          STABLE_MANIFEST=$(curl -sf "https://www.rediacc.com/cli/stable/manifest.json" || echo "")
+          STABLE_VERSION=""
+          if [[ -n "$STABLE_MANIFEST" ]]; then
+            STABLE_VERSION=$(echo "$STABLE_MANIFEST" | jq -r '.version')
+          fi
+          echo "version=$STABLE_VERSION" >> "$GITHUB_OUTPUT"
+
+          if [[ "$STABLE_VERSION" == "${{ steps.edge.outputs.version }}" ]]; then
+            echo "Edge and stable are the same version ($STABLE_VERSION), skipping"
+            echo "same=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "same=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check soak period
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true'
+        id: soak
+        run: |
+          EDGE_DATE="${{ steps.edge.outputs.date }}"
+          EDGE_EPOCH=$(date -d "$EDGE_DATE" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%S" "$EDGE_DATE" +%s 2>/dev/null)
+          NOW_EPOCH=$(date +%s)
+          AGE_DAYS=$(( (NOW_EPOCH - EDGE_EPOCH) / 86400 ))
+
+          echo "Edge release age: ${AGE_DAYS} days (soak: ${SOAK_DAYS} days)"
+
+          if [[ "${{ inputs.force }}" == "true" ]]; then
+            echo "Force promotion requested, skipping soak check"
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          elif [[ $AGE_DAYS -lt $SOAK_DAYS ]]; then
+            echo "Edge needs $((SOAK_DAYS - AGE_DAYS)) more day(s) of soak"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Soak period complete"
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check for rollback labels
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          EDGE_DATE="${{ steps.edge.outputs.date }}"
+          ROLLBACKS=$(gh pr list --repo "$GITHUB_REPOSITORY" --state merged \
+            --search "merged:>=${EDGE_DATE} label:rollback" --json number --jq 'length')
+
+          if [[ "$ROLLBACKS" -gt 0 ]]; then
+            echo "::error::Found $ROLLBACKS PR(s) with rollback label since edge release. Promotion blocked."
+            exit 1
+          fi
+          echo "No rollback labels found"
+
+      - name: Promote CLI artifacts
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+        run: |
+          # Install rclone for R2 operations
+          curl -sL https://rclone.org/install.sh | bash
+
+          # Configure rclone for R2
+          mkdir -p ~/.config/rclone
+          cat > ~/.config/rclone/rclone.conf <<CONF
+          [r2]
+          type = s3
+          provider = Cloudflare
+          access_key_id = ${R2_ACCESS_KEY_ID}
+          secret_access_key = ${R2_SECRET_ACCESS_KEY}
+          endpoint = ${R2_ENDPOINT}
+          acl = private
+          no_check_bucket = true
+          CONF
+
+          # Copy edge -> stable
+          echo "Copying cli/edge/ -> cli/stable/"
+          rclone copy r2:rediacc-release/cli/edge/ r2:rediacc-release/cli/stable/ --progress
+
+          echo "Promoted edge v${{ steps.edge.outputs.version }} to stable"
+
+      - name: Summary
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
+        run: |
+          echo "## Stable Promotion" >> $GITHUB_STEP_SUMMARY
+          echo "- Edge version: ${{ steps.edge.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Previous stable: ${{ steps.stable.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Soak days: ${{ env.SOAK_DAYS }}" >> $GITHUB_STEP_SUMMARY

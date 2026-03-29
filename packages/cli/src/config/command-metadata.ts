@@ -275,6 +275,9 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'config ssh': {
     mcpExcludeReason: 'SSH key management — writes key material to config, use CLI directly',
   },
+  'config remote': {
+    mcpExcludeReason: 'Remote config management — interactive browser flow, use CLI directly',
+  },
 
   // ══════════════════════════════════════════════════════════════════════
   // Policy-only entries (no MCP tools — enforced by assertCommandPolicy)

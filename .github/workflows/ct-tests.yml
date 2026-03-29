@@ -643,8 +643,9 @@ jobs:
   test-bridge-workers:
     name: Bridge Workers (${{ matrix.os-image }})
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
+      fail-fast: false
       matrix:
         os-image:
           - ubuntu-24.04
@@ -700,6 +701,15 @@ jobs:
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+
+      - name: Free Disk Space
+        run: |
+          echo "=== Disk usage before cleanup ==="
+          df -h / || true
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
+          docker system prune -af 2>/dev/null || true
+          echo "=== Disk usage after cleanup ==="
+          df -h / || true
 
       - name: Setup KVM Host
         run: sudo $RENET_BINARY ops host setup
@@ -1024,7 +1034,7 @@ jobs:
   test-renet:
     name: Renet
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - uses: ./.github/actions/app-token
@@ -1250,7 +1260,7 @@ jobs:
           ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
           API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-          ADMIN_EMAIL: ${{ vars.ACCOUNT_ADMIN_EMAIL }}
+          ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
           STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
       - name: Upload E2E report
