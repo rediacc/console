@@ -1,0 +1,200 @@
+name: Deploy Worker
+
+# Reusable workflow for deploying the www Worker to edge or production.
+# Called by cd-v2.yml (edge, on every release) and promote-stable.yml (production, after soak).
+# Builds pages + account portal from source at the specified git ref, then deploys.
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: 'Deploy target: edge or production'
+        required: true
+        type: string
+      ref:
+        description: 'Git ref to checkout (SHA, tag, or branch)'
+        required: true
+        type: string
+    secrets:
+      APP_PRIVATE_KEY:
+        required: true
+      CLOUDFLARE_API_TOKEN:
+        required: true
+      ACCOUNT_ED25519_PRIVATE_KEY:
+        required: true
+      ACCOUNT_ED25519_PUBLIC_KEY:
+        required: true
+      ACCOUNT_X25519_PRIVATE_KEY:
+        required: true
+      ACCOUNT_X25519_PUBLIC_KEY:
+        required: true
+      ACCOUNT_SERVER_API_KEY:
+        required: true
+      ACCOUNT_JWT_SECRET:
+        required: true
+      STRIPE_SECRET_KEY:
+        required: true
+      STRIPE_SANDBOX_SECRET_KEY:
+        required: true
+      STRIPE_WEBHOOK_SECRET:
+        required: true
+      STRIPE_SANDBOX_WEBHOOK_SECRET:
+        required: true
+      AWS_SES_ACCESS_KEY_ID:
+        required: true
+      AWS_SES_SECRET_ACCESS_KEY:
+        required: true
+      TURNSTILE_SECRET_KEY:
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.target }} Worker
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target }}
+      url: ${{ inputs.target == 'production' && 'https://www.rediacc.com' || 'https://edge.rediacc.com' }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+          token: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4
+        with:
+          node-version-file: '.node-version'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - name: Build pages
+        run: npm run build -w @rediacc/www
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
+
+      - name: Copy pages to www worker assets
+        run: |
+          rm -rf workers/www/dist
+          mkdir -p workers/www/dist
+          cp -r packages/www/dist/* workers/www/dist/
+
+      - name: Build account portal
+        run: npm install && npx vite build --outDir ../../../workers/www/dist/account
+        working-directory: private/account/web
+        env:
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+          VITE_CI_MODE: 'false'
+
+      - name: Install www worker dependencies
+        run: npm install
+        working-directory: workers/www
+
+      - name: Set deploy target
+        id: target
+        run: |
+          if [[ "${{ inputs.target }}" == "production" ]]; then
+            echo "script=deploy-www.sh" >> "$GITHUB_OUTPUT"
+            echo "worker=rediacc-www" >> "$GITHUB_OUTPUT"
+            echo "domain=www.rediacc.com" >> "$GITHUB_OUTPUT"
+            echo "sandbox=" >> "$GITHUB_OUTPUT"
+          else
+            echo "script=deploy-edge.sh" >> "$GITHUB_OUTPUT"
+            echo "worker=edge-rediacc-www" >> "$GITHUB_OUTPUT"
+            echo "domain=edge.rediacc.com" >> "$GITHUB_OUTPUT"
+            echo "sandbox=--sandbox" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy Worker
+        run: .ci/scripts/deploy/${{ steps.target.outputs.script }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Set Worker secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          SECRET_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
+          SECRET_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+          SECRET_X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
+          SECRET_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
+          SECRET_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+          SECRET_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
+          SECRET_STRIPE_KEY: ${{ inputs.target == 'production' && secrets.STRIPE_SECRET_KEY || secrets.STRIPE_SANDBOX_SECRET_KEY }}
+          SECRET_STRIPE_WEBHOOK: ${{ inputs.target == 'production' && secrets.STRIPE_WEBHOOK_SECRET || secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
+          SECRET_ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
+          SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
+          SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
+          SECRET_SES_REGION: ${{ vars.AWS_SES_REGION }}
+          SECRET_TURNSTILE_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
+          VAR_SELLER_NAME: ${{ vars.SELLER_NAME }}
+          VAR_SELLER_VAT_NUMBER: ${{ vars.SELLER_VAT_NUMBER }}
+          VAR_SELLER_REGISTRATION_NUMBER: ${{ vars.SELLER_REGISTRATION_NUMBER }}
+          VAR_SELLER_ADDRESS_LINE1: ${{ vars.SELLER_ADDRESS_LINE1 }}
+          VAR_SELLER_ADDRESS_LINE2: ${{ vars.SELLER_ADDRESS_LINE2 }}
+          VAR_SELLER_CITY: ${{ vars.SELLER_CITY }}
+          VAR_SELLER_POSTAL_CODE: ${{ vars.SELLER_POSTAL_CODE }}
+          VAR_SELLER_COUNTRY: ${{ vars.SELLER_COUNTRY }}
+          VAR_SELLER_EMAIL: ${{ vars.SELLER_EMAIL }}
+        run: |
+          jq -n \
+            --arg ed25519_priv "$SECRET_ED25519_PRIVATE_KEY" \
+            --arg ed25519_pub "$SECRET_ED25519_PUBLIC_KEY" \
+            --arg x25519_priv "$SECRET_X25519_PRIVATE_KEY" \
+            --arg x25519_pub "$SECRET_X25519_PUBLIC_KEY" \
+            --arg api_key "$SECRET_API_KEY" \
+            --arg jwt "$SECRET_JWT_SECRET" \
+            --arg stripe "$SECRET_STRIPE_KEY" \
+            --arg stripe_wh "$SECRET_STRIPE_WEBHOOK" \
+            --arg admin "$SECRET_ROOT_EMAIL" \
+            --arg ses_key "$SECRET_SES_ACCESS_KEY_ID" \
+            --arg ses_secret "$SECRET_SES_SECRET_ACCESS_KEY" \
+            --arg ses_region "$SECRET_SES_REGION" \
+            --arg ses_from "$VAR_SES_FROM" \
+            --arg turnstile "$SECRET_TURNSTILE_KEY" \
+            --arg seller_name "$VAR_SELLER_NAME" \
+            --arg seller_vat "$VAR_SELLER_VAT_NUMBER" \
+            --arg seller_reg "$VAR_SELLER_REGISTRATION_NUMBER" \
+            --arg seller_addr1 "$VAR_SELLER_ADDRESS_LINE1" \
+            --arg seller_addr2 "$VAR_SELLER_ADDRESS_LINE2" \
+            --arg seller_city "$VAR_SELLER_CITY" \
+            --arg seller_postal "$VAR_SELLER_POSTAL_CODE" \
+            --arg seller_country "$VAR_SELLER_COUNTRY" \
+            --arg seller_email "$VAR_SELLER_EMAIL" \
+            '{
+              ED25519_PRIVATE_KEY: $ed25519_priv,
+              ED25519_PUBLIC_KEY: $ed25519_pub,
+              X25519_PRIVATE_KEY: $x25519_priv,
+              X25519_PUBLIC_KEY: $x25519_pub,
+              API_KEY: $api_key,
+              JWT_SECRET: $jwt,
+              STRIPE_SECRET_KEY: $stripe,
+              STRIPE_WEBHOOK_SECRET: $stripe_wh,
+              ROOT_EMAIL: $admin,
+              AWS_SES_ACCESS_KEY_ID: $ses_key,
+              AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
+              AWS_SES_REGION: $ses_region,
+              AWS_SES_FROM: $ses_from,
+              TURNSTILE_SECRET_KEY: $turnstile,
+              SELLER_NAME: $seller_name,
+              SELLER_VAT_NUMBER: $seller_vat,
+              SELLER_REGISTRATION_NUMBER: $seller_reg,
+              SELLER_ADDRESS_LINE1: $seller_addr1,
+              SELLER_ADDRESS_LINE2: $seller_addr2,
+              SELLER_CITY: $seller_city,
+              SELLER_POSTAL_CODE: $seller_postal,
+              SELLER_COUNTRY: $seller_country,
+              SELLER_EMAIL: $seller_email
+            }' | npx wrangler secret bulk --name ${{ steps.target.outputs.worker }}
+
+      - name: Verify Stripe webhook
+        run: npx tsx scripts/verify-webhook.ts ${{ steps.target.outputs.sandbox }} --expected-url "https://${{ steps.target.outputs.domain }}/account/api/v1/webhooks/stripe"
+        working-directory: private/account
+        env:
+          STRIPE_SECRET_KEY: ${{ inputs.target == 'production' && secrets.STRIPE_SECRET_KEY || '' }}
+          STRIPE_SANDBOX_SECRET_KEY: ${{ inputs.target != 'production' && secrets.STRIPE_SANDBOX_SECRET_KEY || '' }}
