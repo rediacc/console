@@ -60,11 +60,18 @@ while [[ $# -gt 0 ]]; do
             LOCAL_ARTIFACTS="${2:-}"
             shift 2
             ;;
+        --expected-version)
+            EXPECTED_VERSION="${2:-}"
+            shift 2
+            ;;
         *)
             shift
             ;;
     esac
 done
+
+# Default expected-version to version (CI builds at the same version it tests)
+EXPECTED_VERSION="${EXPECTED_VERSION:-$VERSION}"
 
 # Auto-detect platform and arch if not specified
 if [[ -z "$PLATFORM" ]]; then
@@ -214,8 +221,8 @@ test_binary_download() {
 
         local output
         output=$("$download_dir/$binary_name" --version 2>&1 || true)
-        if ! verify_version "$output" "$VERSION"; then
-            log_error "Version mismatch: expected '$VERSION', got '$output'"
+        if ! verify_version "$output" "$EXPECTED_VERSION"; then
+            log_error "Version mismatch: expected '$EXPECTED_VERSION', got '$output'"
             return 1
         fi
         return 0
@@ -259,8 +266,8 @@ test_binary_download() {
         chmod +x "$binary_name"
         local output
         output=$("./$binary_name" --version 2>&1 || true)
-        if ! verify_version "$output" "$VERSION"; then
-            log_error "Version mismatch: expected '$VERSION', got '$output'"
+        if ! verify_version "$output" "$EXPECTED_VERSION"; then
+            log_error "Version mismatch: expected '$EXPECTED_VERSION', got '$output'"
             return 1
         fi
     fi
@@ -284,8 +291,8 @@ test_docker_pull_and_run() {
     docker pull "$image"
     local output
     output=$(docker run --rm "$image" --version 2>&1 || true)
-    if ! verify_version "$output" "$VERSION"; then
-        log_error "Version mismatch: expected '$VERSION', got '$output'"
+    if ! verify_version "$output" "$EXPECTED_VERSION"; then
+        log_error "Version mismatch: expected '$EXPECTED_VERSION', got '$output'"
         return 1
     fi
 }
@@ -439,7 +446,7 @@ test_homebrew_install() {
     # Verify
     local output
     output=$("${PKG_BINARY_NAME}" --version 2>&1 || true)
-    verify_version "$output" "$VERSION"
+    verify_version "$output" "$EXPECTED_VERSION"
 }
 
 test_homebrew_linuxbrew() {

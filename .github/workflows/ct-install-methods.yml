@@ -15,9 +15,14 @@ on:
   workflow_call:
     inputs:
       version:
-        description: 'Version to test (e.g., 0.4.58)'
+        description: 'Version to test (R2 download path, e.g., 0.4.58)'
         required: true
         type: string
+      expected_version:
+        description: 'Expected binary --version output (defaults to version if empty)'
+        required: false
+        type: string
+        default: ''
       local_artifacts:
         description: 'Path to locally-built artifacts for pre-release testing'
         required: false
@@ -41,6 +46,7 @@ jobs:
     timeout-minutes: 45
     env:
       LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
+      EXPECTED_VERSION_FLAG: ${{ inputs.expected_version && format('--expected-version {0}', inputs.expected_version) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -58,49 +64,56 @@ jobs:
             --version ${{ inputs.version }} \
             --platform linux \
             --arch x64 \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
       - name: Test Docker
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method docker \
             --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
       - name: Test APT Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method apt \
             --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
       - name: Test DNF Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method dnf \
             --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
       - name: Test APK Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method apk \
             --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
       - name: Test Pacman Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method pacman \
             --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
       - name: Test Quick Install
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method quick \
             --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
       - name: Install Homebrew (Linuxbrew)
         run: |
@@ -113,7 +126,8 @@ jobs:
           .ci/scripts/test/test-install-methods.sh \
             --method homebrew \
             --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
   # ===========================================================================
   # Linux arm64: Binary, Docker, Quick Install
@@ -124,6 +138,7 @@ jobs:
     timeout-minutes: 30
     env:
       LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
+      EXPECTED_VERSION_FLAG: ${{ inputs.expected_version && format('--expected-version {0}', inputs.expected_version) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -141,21 +156,24 @@ jobs:
             --version ${{ inputs.version }} \
             --platform linux \
             --arch arm64 \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
       - name: Test Docker
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method docker \
             --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
       - name: Test Quick Install
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method quick \
             --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
   # ===========================================================================
   # macOS ARM64: Binary, Homebrew
@@ -166,6 +184,7 @@ jobs:
     timeout-minutes: 30
     env:
       LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
+      EXPECTED_VERSION_FLAG: ${{ inputs.expected_version && format('--expected-version {0}', inputs.expected_version) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -176,14 +195,16 @@ jobs:
             --version ${{ inputs.version }} \
             --platform mac \
             --arch arm64 \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
       - name: Test Homebrew Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method homebrew \
             --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
   # ===========================================================================
   # macOS x64: Binary, Homebrew
@@ -194,6 +215,7 @@ jobs:
     timeout-minutes: 30
     env:
       LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
+      EXPECTED_VERSION_FLAG: ${{ inputs.expected_version && format('--expected-version {0}', inputs.expected_version) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -204,14 +226,16 @@ jobs:
             --version ${{ inputs.version }} \
             --platform mac \
             --arch x64 \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
       - name: Test Homebrew Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method homebrew \
             --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
   # ===========================================================================
   # Windows x64: Binary
@@ -222,6 +246,7 @@ jobs:
     timeout-minutes: 15
     env:
       LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
+      EXPECTED_VERSION_FLAG: ${{ inputs.expected_version && format('--expected-version {0}', inputs.expected_version) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -233,7 +258,8 @@ jobs:
             --version ${{ inputs.version }} \
             --platform win \
             --arch x64 \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
   # ===========================================================================
   # Windows arm64: Binary
@@ -244,6 +270,7 @@ jobs:
     timeout-minutes: 15
     env:
       LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
+      EXPECTED_VERSION_FLAG: ${{ inputs.expected_version && format('--expected-version {0}', inputs.expected_version) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -255,7 +282,8 @@ jobs:
             --version ${{ inputs.version }} \
             --platform win \
             --arch arm64 \
-            $LOCAL_ARTIFACTS_FLAG
+            $LOCAL_ARTIFACTS_FLAG \
+            $EXPECTED_VERSION_FLAG
 
   # ===========================================================================
   # Gate Job - All tests must pass
