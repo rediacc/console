@@ -258,6 +258,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
           for (const priority of priorities) {
             const createResult = await ctx.runner.run([
               'run',
+              '--function',
               'machine_ping',
               '--team',
               teamName,
