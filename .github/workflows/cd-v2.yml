@@ -696,6 +696,8 @@ jobs:
 
       - name: Initialize account submodule
         run: |
+          # Clear the checkout extraheader (uses housekeeping token without account access)
+          git config --local --unset-all http.https://github.com/.extraheader || true
           git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
           git submodule update --init private/account
         env:
