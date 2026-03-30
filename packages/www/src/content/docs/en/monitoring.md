@@ -115,7 +115,7 @@ Use `--output json` for machine-readable output.
 
 ## Test Connection
 
-> **Cloud adapter only.** In local mode, use `rdc term server-1 -c "hostname"` to verify connectivity.
+> **Cloud adapter only.** In local mode, use `rdc term connect -m server-1 -c "hostname"` to verify connectivity.
 
 Verify SSH connectivity to a machine:
 

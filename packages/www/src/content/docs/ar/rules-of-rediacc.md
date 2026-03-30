@@ -4,8 +4,8 @@ description: "القواعد والاصطلاحات الأساسية لبناء 
 category: "Guides"
 order: 5
 language: ar
-sourceHash: "f7ca177c604f0ff7"
-sourceCommit: "c4820684802963ecf645e56c87e13815deb84688"
+sourceHash: "17f2cc084c2782cc"
+sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
 # قواعد Rediacc
@@ -155,5 +155,5 @@ down() {
 - عدم الربط بـ `SERVICE_IP` — يسبب تعارض المنافذ بين المستودعات.
 - ترميز عناوين IP بشكل ثابت — استخدم متغير البيئة `SERVICE_IP`؛ يتم تخصيص عناوين IP ديناميكياً لكل networkId.
 - نسيان `--mount` في أول نشر بعد `backup push` — تحتاج وحدة تخزين LUKS إلى فتح صريح.
-- استخدام `rdc term -c` كحل بديل للأوامر الفاشلة — أبلغ عن الأخطاء بدلاً من ذلك.
+- استخدام `rdc term connect -c` كحل بديل للأوامر الفاشلة — أبلغ عن الأخطاء بدلاً من ذلك.
 - `repo delete` ينفذ تنظيفاً كاملاً يشمل عناوين IP loopback ووحدات systemd. شغّل `rdc machine prune <name>` لتنظيف بقايا عمليات الحذف القديمة.

@@ -4,7 +4,7 @@ description: "Создание зашифрованного репозитори
 category: "Tutorials"
 order: 3
 language: ru
-sourceHash: f28a6f56286d8853
+sourceHash: ee3455c196ea1479
 ---
 
 # Как развёртывать и управлять репозиториями с Rediacc
@@ -46,7 +46,7 @@ rdc repo list -m server-1
 Перед развёртыванием убедитесь, что хранилище репозитория смонтировано и доступно.
 
 ```bash
-rdc term server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
+rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
 Каталог монтирования — это место, где находятся файлы приложения: `Rediaccfile`, `docker-compose.yml` и тома данных.
@@ -76,7 +76,7 @@ rdc machine containers server-1
 Для выполнения команд в изолированной Docker-среде репозитория:
 
 ```bash
-rdc term server-1 test-app -c "docker ps"
+rdc term connect -m server-1 -r test-app -c "docker ps"
 ```
 
 Терминальная сессия устанавливает `DOCKER_HOST` на изолированный Docker-сокет репозитория. Любая команда Docker выполняется только для контейнеров этого репозитория.

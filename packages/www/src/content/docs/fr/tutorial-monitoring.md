@@ -4,7 +4,7 @@ description: "Vérifier l'état de la machine, inspecter les conteneurs, examine
 category: "Tutorials"
 order: 4
 language: fr
-sourceHash: "af9f17a05dfb13b9"
+sourceHash: "806137d9c33f4d7f"
 ---
 
 # Comment surveiller et diagnostiquer l'infrastructure avec Rediacc
@@ -79,8 +79,8 @@ Récupère les clés d'hôte actuelles du serveur et met à jour votre configura
 Une vérification rapide de la connectivité SSH pour confirmer que la machine est accessible et répond.
 
 ```bash
-rdc term server-1 -c "hostname"
-rdc term server-1 -c "uptime"
+rdc term connect -m server-1 -c "hostname"
+rdc term connect -m server-1 -c "uptime"
 ```
 
 Le nom d'hôte confirme que vous êtes connecté au bon serveur. Le temps de fonctionnement confirme que le système fonctionne normalement.
@@ -88,13 +88,13 @@ Le nom d'hôte confirme que vous êtes connecté au bon serveur. Le temps de fon
 ## Dépannage
 
 **La vérification de santé expire ou affiche "SSH connection failed"**
-Vérifiez que la machine est en ligne et accessible : `ping <ip>`. Vérifiez que votre clé SSH est correctement configurée avec `rdc term <machine> -c "echo ok"`.
+Vérifiez que la machine est en ligne et accessible : `ping <ip>`. Vérifiez que votre clé SSH est correctement configurée avec `rdc term connect -m <machine> -c "echo ok"`.
 
 **"Service not found" dans la liste des services**
 Les services Rediacc n'apparaissent qu'après le déploiement d'au moins un dépôt. Si aucun dépôt n'existe, la liste des services est vide.
 
 **La liste des conteneurs affiche des conteneurs obsolètes ou arrêtés**
-Les conteneurs de déploiements précédents peuvent persister si `repo down` n'a pas été exécuté proprement. Arrêtez-les avec `rdc repo down <repo> -m <machine>` ou inspectez directement via `rdc term <machine> <repo> -c "docker ps -a"`.
+Les conteneurs de déploiements précédents peuvent persister si `repo down` n'a pas été exécuté proprement. Arrêtez-les avec `rdc repo down <repo> -m <machine>` ou inspectez directement via `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
 
 ## Étapes suivantes
 

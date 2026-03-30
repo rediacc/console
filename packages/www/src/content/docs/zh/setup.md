@@ -4,7 +4,7 @@ description: "创建配置、添加机器、配置服务器和设置基础设施
 category: "Guides"
 order: 3
 language: zh
-sourceHash: "ebf1c9967814ec86"
+sourceHash: "7d4756adb17e63d4"
 ---
 
 # 机器设置
@@ -92,7 +92,7 @@ rdc config machine scan-keys server-1
 添加机器后，验证其是否可达：
 
 ```bash
-rdc term server-1 -c "hostname"
+rdc term connect -m server-1 -c "hostname"
 ```
 
 此命令打开到机器的 SSH 连接并运行命令。如果成功，您的 SSH 配置正确。

@@ -77,7 +77,7 @@ describe('MCP server', () => {
     await containerHandler!({ name: 'staging' });
 
     expect(executeRdcCommand).toHaveBeenCalledWith(
-      ['machine', 'query', 'staging', '--containers'],
+      ['machine', 'query', '--name', 'staging', '--containers'],
       expect.objectContaining({ defaultTimeoutMs: 120_000 })
     );
   });

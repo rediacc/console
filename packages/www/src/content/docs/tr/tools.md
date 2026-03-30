@@ -4,7 +4,7 @@ description: "Dosya senkronizasyonu, terminal erişimi, VS Code entegrasyonu ve 
 category: Guides
 order: 9
 language: tr
-sourceHash: "f304688fdc1a41c1"
+sourceHash: "bc5864d869d191be"
 ---
 
 # Araçlar
@@ -57,8 +57,8 @@ Bir makineye veya depo ortamına etkileşimli SSH oturumu açın.
 Bağlanmanın en hızlı yolu:
 
 ```bash
-rdc term server-1                    # Bir makineye bağlan
-rdc term server-1 my-app             # Bir depoya bağlan
+rdc term connect -m server-1                    # Bir makineye bağlan
+rdc term connect -m server-1 -r my-app             # Bir depoya bağlan
 ```
 
 ### Komut Çalıştırma
@@ -66,8 +66,8 @@ rdc term server-1 my-app             # Bir depoya bağlan
 Etkileşimli oturum açmadan bir komut çalıştırın:
 
 ```bash
-rdc term server-1 -c "uptime"
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -c "uptime"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 ```
 
 Bir depoya bağlanırken, `DOCKER_HOST` otomatik olarak deponun izole Docker soketine ayarlanır, böylece `docker ps` yalnızca o deponun konteynerlerini gösterir.
@@ -87,19 +87,19 @@ rdc term connect -m server-1 -r my-app
 
 ```bash
 # Konteyner içinde kabuk aç
-rdc term server-1 my-app --container <container-id>
+rdc term connect -m server-1 -r my-app --container <container-id>
 
 # Konteyner günlüklerini görüntüle
-rdc term server-1 my-app --container <container-id> --container-action logs
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs
 
 # Günlükleri gerçek zamanlı takip et
-rdc term server-1 my-app --container <container-id> --container-action logs --follow
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow
 
 # Konteyner istatistiklerini görüntüle
-rdc term server-1 my-app --container <container-id> --container-action stats
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats
 
 # Konteynerde komut çalıştır
-rdc term server-1 my-app --container <container-id> --container-action exec -c "ls -la"
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c "ls -la"
 ```
 
 | Seçenek | Açıklama |

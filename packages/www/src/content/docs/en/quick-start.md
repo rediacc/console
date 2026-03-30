@@ -110,7 +110,7 @@ rdc repo status my-app -m my-server                  # Mount state, Docker, size
 ### 4. VS Code
 
 ```bash
-rdc vscode my-server my-app              # Opens VS Code SSH, lands inside the repo sandbox
+rdc vscode connect -m my-server -r my-app              # Opens VS Code SSH, lands inside the repo sandbox
 ```
 
 You're editing files *inside* the encrypted volume. `docker ps` only shows this repo's containers. Save, compose up, iterate.
@@ -124,7 +124,7 @@ You're editing files *inside* the encrypted volume. `docker ps` only shows this 
 | **Use case** | CI/CD, automation, remote ops | Developer inner loop |
 | **Isolation** | Orchestrates from outside | Already inside the sandbox |
 
-**Demo flow:** `rdc repo template apply` → `rdc vscode my-server my-app` → edit `docker-compose.yml` → `renet dev up` → see app running → iterate.
+**Demo flow:** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → edit `docker-compose.yml` → `renet dev up` → see app running → iterate.
 
 > Rediaccfile structure: [Services](/en/docs/services). When to use which tool: [rdc vs renet](/en/docs/rdc-vs-renet).
 
@@ -140,9 +140,9 @@ You're editing files *inside* the encrypted volume. `docker ps` only shows this 
 
 **Terminal:**
 ```bash
-rdc term my-server my-app                            # SSH into repo sandbox
-rdc term my-server my-app -c "curl localhost:3000"   # Run command & exit
-rdc term my-server                                   # SSH to machine (no sandbox)
+rdc term connect -m my-server -r my-app                            # SSH into repo sandbox
+rdc term connect -m my-server -r my-app -c "curl localhost:3000"   # Run command & exit
+rdc term connect -m my-server                                   # SSH to machine (no sandbox)
 ```
 
 **File Sync (rsync over SSH):**

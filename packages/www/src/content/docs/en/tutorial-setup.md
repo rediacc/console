@@ -71,8 +71,8 @@ rdc config set machine bridge-vm --config tutorial-demo
 Before deploying anything, verify the machine is reachable over SSH.
 
 ```bash
-rdc term bridge-vm -c "hostname"
-rdc term bridge-vm -c "uptime"
+rdc term connect -m bridge-vm -c "hostname"
+rdc term connect -m bridge-vm -c "uptime"
 ```
 
 Both commands run on the remote machine and return immediately. If either fails, check that your SSH key is correct and the server is reachable.

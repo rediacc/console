@@ -87,7 +87,7 @@ describe('MCP tool definitions', () => {
   describe('command builders produce valid argv', () => {
     it('machine_query builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'machine_query')!;
-      expect(tool.command({ name: 'prod' })).toEqual(['machine', 'query', 'prod']);
+      expect(tool.command({ name: 'prod' })).toEqual(['machine', 'query', '--name', 'prod']);
     });
 
     it('machine_containers builds correct argv', () => {
@@ -95,6 +95,7 @@ describe('MCP tool definitions', () => {
       expect(tool.command({ name: 'staging' })).toEqual([
         'machine',
         'query',
+        '--name',
         'staging',
         '--containers',
       ]);
@@ -110,6 +111,7 @@ describe('MCP tool definitions', () => {
       const argv = tool.command({ name: 'webapp', machine: 'prod', size: '10G' });
       expect(argv).toContain('repo');
       expect(argv).toContain('create');
+      expect(argv).toContain('--name');
       expect(argv).toContain('webapp');
       expect(argv).toContain('10G');
       expect(argv).toContain('prod');
@@ -118,7 +120,9 @@ describe('MCP tool definitions', () => {
     it('repo_up builds correct argv with machine flag', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_up')!;
       const argv = tool.command({ name: 'gitlab', machine: 'prod' });
-      expect(argv.slice(0, 3)).toEqual(['repo', 'up', 'gitlab']);
+      expect(argv.slice(0, 2)).toEqual(['repo', 'up']);
+      expect(argv).toContain('--name');
+      expect(argv).toContain('gitlab');
       expect(argv).toContain('prod');
     });
 
@@ -138,7 +142,9 @@ describe('MCP tool definitions', () => {
     it('repo_down builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_down')!;
       const argv = tool.command({ name: 'gitlab', machine: 'prod' });
-      expect(argv.slice(0, 3)).toEqual(['repo', 'down', 'gitlab']);
+      expect(argv.slice(0, 2)).toEqual(['repo', 'down']);
+      expect(argv).toContain('--name');
+      expect(argv).toContain('gitlab');
       expect(argv).toContain('prod');
     });
 
@@ -157,15 +163,20 @@ describe('MCP tool definitions', () => {
     it('repo_fork builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_fork')!;
       const argv = tool.command({ parent: 'webapp', machine: 'prod', tag: 'test' });
-      // Positional args: parent, tag; then option: --machine
-      expect(argv.slice(0, 4)).toEqual(['repo', 'fork', 'webapp', 'test']);
+      expect(argv.slice(0, 2)).toEqual(['repo', 'fork']);
+      expect(argv).toContain('--parent');
+      expect(argv).toContain('webapp');
+      expect(argv).toContain('--tag');
+      expect(argv).toContain('test');
       expect(argv).toContain('prod');
     });
 
     it('repo_push builds correct argv with --to-machine', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_push')!;
-      const argv = tool.command({ repo: 'webapp', machine: 'prod', to_machine: 'staging' });
-      expect(argv.slice(0, 3)).toEqual(['repo', 'push', 'webapp']);
+      const argv = tool.command({ name: 'webapp', machine: 'prod', to_machine: 'staging' });
+      expect(argv.slice(0, 2)).toEqual(['repo', 'push']);
+      expect(argv).toContain('--name');
+      expect(argv).toContain('webapp');
       expect(argv).toContain('--to-machine');
       expect(argv).toContain('staging');
       expect(argv).toContain('prod');
@@ -173,8 +184,10 @@ describe('MCP tool definitions', () => {
 
     it('repo_pull builds correct argv with --from-machine', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_pull')!;
-      const argv = tool.command({ repo: 'webapp', machine: 'staging', from_machine: 'prod' });
-      expect(argv.slice(0, 3)).toEqual(['repo', 'pull', 'webapp']);
+      const argv = tool.command({ name: 'webapp', machine: 'staging', from_machine: 'prod' });
+      expect(argv.slice(0, 2)).toEqual(['repo', 'pull']);
+      expect(argv).toContain('--name');
+      expect(argv).toContain('webapp');
       expect(argv).toContain('--from-machine');
       expect(argv).toContain('prod');
       expect(argv).toContain('staging');
@@ -183,7 +196,9 @@ describe('MCP tool definitions', () => {
     it('repo_delete builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_delete')!;
       const argv = tool.command({ name: 'webapp', machine: 'prod' });
-      expect(argv.slice(0, 3)).toEqual(['repo', 'delete', 'webapp']);
+      expect(argv.slice(0, 2)).toEqual(['repo', 'delete']);
+      expect(argv).toContain('--name');
+      expect(argv).toContain('webapp');
       expect(argv).toContain('prod');
     });
 
@@ -191,6 +206,8 @@ describe('MCP tool definitions', () => {
       const tool = TOOLS.find((t) => t.name === 'term_exec')!;
       expect(tool.command({ machine: 'prod', command: 'uptime' })).toEqual([
         'term',
+        'connect',
+        '-m',
         'prod',
         '-c',
         'uptime',
@@ -201,13 +218,24 @@ describe('MCP tool definitions', () => {
       const tool = TOOLS.find((t) => t.name === 'term_exec')!;
       expect(
         tool.command({ machine: 'prod', repository: 'webapp', command: 'docker ps | grep running' })
-      ).toEqual(['term', 'prod', 'webapp', '-c', 'docker ps | grep running']);
+      ).toEqual([
+        'term',
+        'connect',
+        '-m',
+        'prod',
+        '-r',
+        'webapp',
+        '-c',
+        'docker ps | grep running',
+      ]);
     });
 
     it('term_exec omits repository when not provided', () => {
       const tool = TOOLS.find((t) => t.name === 'term_exec')!;
       expect(tool.command({ machine: 'prod', command: 'df -h' })).toEqual([
         'term',
+        'connect',
+        '-m',
         'prod',
         '-c',
         'df -h',
@@ -219,6 +247,7 @@ describe('MCP tool definitions', () => {
       expect(tool.command({ name: 'old-server' })).toEqual([
         'machine',
         'deprovision',
+        '--name',
         'old-server',
         '--force',
       ]);

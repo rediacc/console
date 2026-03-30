@@ -30,6 +30,8 @@ export interface CommandMeta {
   grandGuard?: boolean;
   /** Block fork repos — command is nonsensical on interim fork environments */
   forkBlocked?: boolean;
+  /** Absolute agent block — command is fundamentally incompatible with agent usage. No override. */
+  agentBlocked?: boolean;
   /** MCP tool metadata. If present, auto-derive an MCP tool from Commander. */
   mcp?: McpMeta;
   /** If set, this command is explicitly excluded from MCP with this reason. */
@@ -164,8 +166,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       timeout: 'write',
       descriptionOverride:
         'Create a CoW fork of a repository with a NEW GUID and networkId (fully independent copy). Fork shares the parent name with a different tag (name:tag model, like Docker images). Online forking supported (parent can stay running). Fork gets new auto-route domain. After fork, deploy with repo_up (use --mount). Fork-of-fork allowed (same base name, different tag). CROSS-MACHINE: fork locally first, then use repo_push to transfer fork to target machine, then repo_up on target',
-      // --tag option duplicates [tag] positional arg
-      excludeOptions: ['tag', 'debug', 'skip-router-restart'],
+      excludeOptions: ['debug', 'skip-router-restart'],
     },
   },
 
@@ -363,7 +364,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   sync: { mcpExcludeReason: 'Requires local filesystem paths — MCP agents have no local FS' },
 
   // ── Covered by sub-operations ─────────────────────────────────────
-  run: { mcpExcludeReason: 'Escape hatch for raw renet functions — agents should use typed tools' },
+  run: {
+    agentBlocked: true,
+    mcpExcludeReason: 'Escape hatch for raw renet functions — agents should use typed tools',
+  },
 
   // ── Subcommands ───────────────────────────────────────────────────
   'storage browse': { mcpExcludeReason: 'Interactive file browser — requires TTY' },

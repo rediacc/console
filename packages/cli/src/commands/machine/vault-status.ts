@@ -89,11 +89,13 @@ function displayRepositories(parsed: ParsedVaultStatus): void {
 
 export function registerVaultStatusCommand(machine: Command, program: Command): void {
   machine
-    .command('vault-status <name>')
+    .command('vault-status')
     .description(t('commands.machine.vaultStatus.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .option('-t, --team <name>', t('options.team'))
-    .action(async (name: string, options: { team?: string }) => {
+    .action(async (options: { name: string; team?: string }) => {
       try {
+        const name = options.name;
         const provider = await getStateProvider();
         if (provider.isCloud) {
           await authService.requireAuth();

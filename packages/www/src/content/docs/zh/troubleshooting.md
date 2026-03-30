@@ -4,7 +4,7 @@ description: "SSH、设置、仓库、服务和Docker常见问题的解决方案
 category: "Guides"
 order: 10
 language: zh
-sourceHash: "b392ab73d90c62e1"
+sourceHash: "f666ba3be3be29f7"
 ---
 
 # 故障排除
@@ -16,7 +16,7 @@ sourceHash: "b392ab73d90c62e1"
 - 验证您是否可以手动连接: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
 - 运行 `rdc config machine scan-keys server-1` 以刷新主机密钥
 - 检查SSH端口是否匹配: `--port 22`
-- 使用简单命令测试: `rdc term server-1 -c "hostname"`
+- 使用简单命令测试: `rdc term connect -m server-1 -c "hostname"`
 
 ## 主机密钥不匹配
 
@@ -48,7 +48,7 @@ rdc config machine scan-keys server-1
 - 通过仓库的Docker套接字检查容器日志:
 
 ```bash
-rdc term server-1 my-app -c "docker logs <container-name>"
+rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 ```
 
 或查看所有容器:
@@ -69,7 +69,7 @@ rdc machine containers server-1
 
 ```bash
 # 使用rdc term（自动配置）:
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 
 # 或手动指定套接字:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -93,7 +93,7 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 
 - 使用 `-c` 的内联模式直接运行命令:
   ```bash
-  rdc term server-1 -c "ls -la"
+  rdc term connect -m server-1 -c "ls -la"
   ```
 - 如果内联模式有问题，使用 `--external` 强制打开外部终端
 - 在Linux上，确保已安装 `gnome-terminal`、`xterm` 或其他终端模拟器

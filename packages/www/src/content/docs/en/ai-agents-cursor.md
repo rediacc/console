@@ -55,7 +55,7 @@ Ask Cursor: *"Show me the recent mail container logs"*
 
 Cursor runs in terminal:
 ```bash
-rdc term prod-1 mail -c "docker logs mail-postfix --tail 100"
+rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
 ```
 
 ## Workspace Settings

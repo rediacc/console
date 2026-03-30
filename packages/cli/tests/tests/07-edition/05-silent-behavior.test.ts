@@ -54,6 +54,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
           await ctx.runner.run([
             'machine',
             'create',
+            '--name',
             machineName,
             '--team',
             teamName,
@@ -70,7 +71,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
           }
           await sleep(1000);
           await ctx.runner
-            .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
+            .run(['machine', 'delete', '--name', machineName, '--team', teamName, '--force'])
             .catch(() => {});
           await ctx?.cleanup();
         });
@@ -78,6 +79,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
         test('should accept priority parameter without error', async () => {
           const result = await ctx.runner.run([
             'run',
+            '--function',
             'machine_ping',
             '--team',
             teamName,
@@ -100,6 +102,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
         test('should reset custom priority to default (4)', async () => {
           const createResult = await ctx.runner.run([
             'run',
+            '--function',
             'machine_ping',
             '--team',
             teamName,
@@ -143,6 +146,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
 
           const createResult = await ctx.runner.run([
             'run',
+            '--function',
             'machine_ping',
             '--team',
             teamName,
@@ -192,6 +196,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
           await ctx.runner.run([
             'machine',
             'create',
+            '--name',
             machineName,
             '--team',
             teamName,
@@ -208,7 +213,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
           }
           await sleep(1000);
           await ctx.runner
-            .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
+            .run(['machine', 'delete', '--name', machineName, '--team', teamName, '--force'])
             .catch(() => {});
           await ctx?.cleanup();
         });
@@ -216,6 +221,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
         test('should respect custom priority 2', async () => {
           const createResult = await ctx.runner.run([
             'run',
+            '--function',
             'machine_ping',
             '--team',
             teamName,
@@ -252,6 +258,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
           for (const priority of priorities) {
             const createResult = await ctx.runner.run([
               'run',
+              '--function',
               'machine_ping',
               '--team',
               teamName,
@@ -305,6 +312,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
         await ctx.runner.run([
           'machine',
           'create',
+          '--name',
           machineName,
           '--team',
           teamName,
@@ -321,7 +329,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
         }
         await sleep(1000);
         await ctx.runner
-          .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
+          .run(['machine', 'delete', '--name', machineName, '--team', teamName, '--force'])
           .catch(() => {});
         await ctx?.cleanup();
       });
@@ -332,6 +340,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
         for (let i = 0; i < 3; i++) {
           const result = await ctx.runner.run([
             'run',
+            '--function',
             'machine_ping',
             '--team',
             teamName,

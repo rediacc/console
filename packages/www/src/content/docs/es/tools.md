@@ -4,7 +4,7 @@ description: "Sincronización de archivos, acceso por terminal, integración con
 category: Guides
 order: 9
 language: es
-sourceHash: "f304688fdc1a41c1"
+sourceHash: "bc5864d869d191be"
 ---
 
 # Herramientas
@@ -57,8 +57,8 @@ Abra una sesión SSH interactiva a una máquina o al entorno de un repositorio.
 La forma más rápida de conectarse:
 
 ```bash
-rdc term server-1                    # Conectarse a una máquina
-rdc term server-1 my-app             # Conectarse a un repositorio
+rdc term connect -m server-1                    # Conectarse a una máquina
+rdc term connect -m server-1 -r my-app             # Conectarse a un repositorio
 ```
 
 ### Ejecutar un Comando
@@ -66,8 +66,8 @@ rdc term server-1 my-app             # Conectarse a un repositorio
 Ejecute un comando sin abrir una sesión interactiva:
 
 ```bash
-rdc term server-1 -c "uptime"
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -c "uptime"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 ```
 
 Al conectarse a un repositorio, `DOCKER_HOST` se configura automáticamente al socket Docker aislado del repositorio, por lo que `docker ps` muestra solo los contenedores de ese repositorio.
@@ -87,19 +87,19 @@ Interactúe directamente con un contenedor en ejecución:
 
 ```bash
 # Abrir una shell dentro de un contenedor
-rdc term server-1 my-app --container <container-id>
+rdc term connect -m server-1 -r my-app --container <container-id>
 
 # Ver logs del contenedor
-rdc term server-1 my-app --container <container-id> --container-action logs
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs
 
 # Seguir logs en tiempo real
-rdc term server-1 my-app --container <container-id> --container-action logs --follow
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow
 
 # Ver estadísticas del contenedor
-rdc term server-1 my-app --container <container-id> --container-action stats
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats
 
 # Ejecutar un comando en un contenedor
-rdc term server-1 my-app --container <container-id> --container-action exec -c "ls -la"
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c "ls -la"
 ```
 
 | Opción | Descripción |

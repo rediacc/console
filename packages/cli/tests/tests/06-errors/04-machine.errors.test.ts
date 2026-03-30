@@ -68,6 +68,7 @@ test.describe('Machine Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'machine',
         'create',
+        '--name',
         'test-machine',
         '--team',
         nonExistentName('team'),
@@ -83,6 +84,7 @@ test.describe('Machine Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'machine',
         'delete',
+        '--name',
         nonExistentName('machine'),
         '--team',
         defaultTeamName,
@@ -95,6 +97,7 @@ test.describe('Machine Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'machine',
         'delete',
+        '--name',
         'some-machine',
         '--team',
         nonExistentName('team'),
@@ -109,7 +112,9 @@ test.describe('Machine Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'machine',
         'rename',
+        '--current-name',
         nonExistentName('machine'),
+        '--new-name',
         'new-name',
         '--team',
         defaultTeamName,
@@ -121,7 +126,9 @@ test.describe('Machine Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'machine',
         'rename',
+        '--current-name',
         'some-machine',
+        '--new-name',
         'new-name',
         '--team',
         nonExistentName('team'),
@@ -157,7 +164,9 @@ test.describe('Machine Error Scenarios @cli @errors', () => {
         const renameResult = await runner.run([
           'machine',
           'rename',
+          '--current-name',
           tempMachine1,
+          '--new-name',
           tempMachine2,
           '--team',
           defaultTeamName,
@@ -176,7 +185,9 @@ test.describe('Machine Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'machine',
         'assign-bridge',
+        '--name',
         nonExistentName('machine'),
+        '--target',
         defaultBridgeName,
         '--team',
         defaultTeamName,
@@ -188,7 +199,9 @@ test.describe('Machine Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'machine',
         'assign-bridge',
+        '--name',
         'some-machine',
+        '--target',
         defaultBridgeName,
         '--team',
         nonExistentName('team'),
@@ -216,7 +229,9 @@ test.describe('Machine Error Scenarios @cli @errors', () => {
         const renameResult = await runner.run([
           'machine',
           'rename',
+          '--current-name',
           tempMachineName,
+          '--new-name',
           '',
           '--team',
           defaultTeamName,

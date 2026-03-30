@@ -339,11 +339,12 @@ async function pullSingleRepo(
  * - repo list-backups
  */
 export function registerRepoBackupCommands(repoCommand: Command): void {
-  // repo push [repo]
+  // repo push [--name <name>]
   repoCommand
-    .command('push [repo]')
+    .command('push')
     .summary(t('commands.repo.push.descriptionShort'))
     .description(t('commands.repo.push.description'))
+    .option('--name <name>', t('options.name'))
     .option('--to <remote>', t('commands.repo.push.optionTo'))
     .addOption(new Option('--to-machine <machine>').hideHelp())
     .option('--provision <provider>', t('commands.repo.push.optionProvision'))
@@ -358,8 +359,9 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (repo, options) => {
+    .action(async (options) => {
       try {
+        const repo = options.name;
         if (repo) {
           await pushSingleRepo(repo, options, repoCommand);
         } else {
@@ -376,11 +378,12 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
       }
     });
 
-  // repo pull [repo]
+  // repo pull [--name <name>]
   repoCommand
-    .command('pull [repo]')
+    .command('pull')
     .summary(t('commands.repo.pull.descriptionShort'))
     .description(t('commands.repo.pull.description'))
+    .option('--name <name>', t('options.name'))
     .option('--from <remote>', t('commands.repo.pull.optionFrom'))
     .addOption(new Option('--from-machine <machine>').hideHelp())
     .option('--force', t('commands.repo.pull.optionForce'))
@@ -392,8 +395,9 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (repo, options) => {
+    .action(async (options) => {
       try {
+        const repo = options.name;
         if (repo) {
           await pullSingleRepo(repo, options, repoCommand);
         } else {
@@ -444,13 +448,15 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
       }
     });
 
-  // repo backup schedule <machine>
+  // repo backup schedule -m <machine>
   backup
-    .command('schedule <machine>')
+    .command('schedule')
     .description(t('commands.backup.schedule.description'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--debug', t('options.debug'))
-    .action(async (machine: string, options: { debug?: boolean }) => {
+    .action(async (options: { machine: string; debug?: boolean }) => {
       try {
+        const machine = options.machine;
         const { pushBackupSchedule } = await import('../services/backup-schedule.js');
         await pushBackupSchedule(machine, options);
       } catch (error) {

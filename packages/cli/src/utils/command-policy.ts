@@ -17,6 +17,8 @@ export interface CommandPolicy {
   grandGuard: boolean;
   /** Block fork repos — command is nonsensical on interim fork environments */
   forkBlocked: boolean;
+  /** Absolute block — command is fundamentally incompatible with agent usage. No override. */
+  agentBlocked: boolean;
 }
 
 /**
@@ -43,6 +45,7 @@ export const CMD = {
   REPO_TUNNEL: 'repo tunnel',
   TERM_REPO: 'term repo',
   VSCODE_REPO: 'vscode repo',
+  RUN: 'run',
 } as const;
 
 export type CommandPath = (typeof CMD)[keyof typeof CMD];
@@ -53,12 +56,13 @@ export type CommandPath = (typeof CMD)[keyof typeof CMD];
  */
 function getPolicy(commandPath: string): CommandPolicy | null {
   const meta = COMMAND_METADATA[commandPath] as
-    | { grandGuard?: boolean; forkBlocked?: boolean }
+    | { grandGuard?: boolean; forkBlocked?: boolean; agentBlocked?: boolean }
     | undefined;
-  if (!meta || (!meta.grandGuard && !meta.forkBlocked)) return null;
+  if (!meta || (!meta.grandGuard && !meta.forkBlocked && !meta.agentBlocked)) return null;
   return {
     grandGuard: meta.grandGuard ?? false,
     forkBlocked: meta.forkBlocked ?? false,
+    agentBlocked: meta.agentBlocked ?? false,
   };
 }
 
@@ -69,10 +73,14 @@ function getPolicy(commandPath: string): CommandPolicy | null {
 function buildPoliciesMap(): ReadonlyMap<CommandPath, CommandPolicy> {
   const entries: [CommandPath, CommandPolicy][] = [];
   for (const [path, meta] of Object.entries(COMMAND_METADATA)) {
-    if (meta.grandGuard || meta.forkBlocked) {
+    if (meta.grandGuard || meta.forkBlocked || meta.agentBlocked) {
       entries.push([
         path as CommandPath,
-        { grandGuard: meta.grandGuard ?? false, forkBlocked: meta.forkBlocked ?? false },
+        {
+          grandGuard: meta.grandGuard ?? false,
+          forkBlocked: meta.forkBlocked ?? false,
+          agentBlocked: meta.agentBlocked ?? false,
+        },
       ]);
     }
   }
@@ -120,7 +128,14 @@ export async function assertCommandPolicy(
   if (!isAgentEnvironment()) return;
 
   const policy = getPolicy(commandPath);
-  if (!policy || !repoName) return;
+  if (!policy) return;
+
+  // Absolute block — no override, no repo check needed
+  if (policy.agentBlocked) {
+    throw new ValidationError(t('errors.agent.commandBlocked', { command: commandPath }));
+  }
+
+  if (!repoName) return;
 
   const repo = await configService.getRepository(repoName);
   if (!repo) return;

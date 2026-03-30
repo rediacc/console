@@ -4,7 +4,7 @@ description: "Mevcut projeleri şifrelenmiş Rediacc depolarına taşıyın."
 category: "Guides"
 order: 11
 language: tr
-sourceHash: fdecebe5bf7d4a86
+sourceHash: e66f9ad6bbf5930f
 ---
 
 # Geçiş Rehberi
@@ -283,10 +283,10 @@ Servislerin `0.0.0.0` veya `localhost` yerine atanmış IP'lerine bağlandığı
 
 ```bash
 # Atanmış IP'leri kontrol edin
-rdc term server-1 my-project -c "cat .rediacc.json"
+rdc term connect -m server-1 -r my-project -c "cat .rediacc.json"
 
 # Konteyner günlüklerini kontrol edin
-rdc term server-1 my-project -c "docker logs <container-name>"
+rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 ```
 
 ### Depolar Arasında Port Çakışması

@@ -362,9 +362,9 @@ export function registerTermCommands(program: Command): void {
     'after',
     `
 ${t('help.examples')}
-  $ rdc term server-1                  ${t('help.term.machine')}
-  $ rdc term server-1 my-app           ${t('help.term.repo')}
-  $ rdc term server-1 -c "uptime"      ${t('help.term.command')}
+  $ rdc term connect -m server-1                  ${t('help.term.machine')}
+  $ rdc term connect -m server-1 -r my-app        ${t('help.term.repo')}
+  $ rdc term connect -m server-1 -c "uptime"      ${t('help.term.command')}
 `
   );
 
@@ -392,45 +392,4 @@ ${t('help.examples')}
         handleError(error);
       }
     });
-
-  // Shorthand: rdc term <machine> [repository]
-  term
-    .argument('[machine]', t('options.machineShorthand'))
-    .argument('[repository]', t('options.repositoryShorthand'))
-    .option('-t, --team <name>', t('options.team'))
-    .option('-c, --command <cmd>', t('options.command'))
-    .option('--container <id>', t('options.container'))
-    .option('--container-action <action>', t('options.containerAction'))
-    .option('--log-lines <lines>', t('options.logLines'))
-    .option('--follow', t('options.follow'))
-    .option('--external', t('options.external'))
-    .option('--reset-home', t('options.resetHome'))
-    .action(
-      async (
-        machine: string | undefined,
-        repository: string | undefined,
-        options: TermConnectOptions,
-        cmd: Command
-      ) => {
-        try {
-          const resolvedMachine = machine ?? options.machine;
-          if (resolvedMachine) {
-            options.machine = resolvedMachine;
-          } else {
-            cmd.help();
-            return;
-          }
-          const provider = await getStateProvider();
-          if (provider.isCloud) {
-            await authService.requireAuth();
-          }
-          await connectTerminal({
-            ...options,
-            repository: repository ?? options.repository,
-          });
-        } catch (error) {
-          handleError(error);
-        }
-      }
-    );
 }

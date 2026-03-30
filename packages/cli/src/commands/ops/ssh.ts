@@ -21,14 +21,16 @@ interface OpsStatusResponse {
 
 export function registerOpsSSHCommand(ops: Command, _program: Command): void {
   ops
-    .command('ssh <vmId> [command...]')
+    .command('ssh')
     .description(t('commands.ops.ssh.description'))
+    .requiredOption('--vm-id <id>', t('options.vmId'))
+    .option('-c, --command <cmd>', t('options.command'))
     .option('--backend <backend>', t('options.opsBackend'))
     .option('--user <user>', t('options.opsSSHUser'))
-    .allowUnknownOption()
     .action(
-      async (vmId: string, command: string[], options: { backend?: string; user?: string }) => {
+      async (options: { vmId: string; command?: string; backend?: string; user?: string }) => {
         try {
+          const vmId = options.vmId;
           const backend = options.backend ? (options.backend as OpsBackend) : undefined;
           const response = await opsExecutorService.runOpsJSON<OpsStatusResponse>('status', [], {
             backend,
@@ -62,8 +64,8 @@ export function registerOpsSSHCommand(ops: Command, _program: Command): void {
           }
 
           // Append remote command if provided
-          if (command.length > 0) {
-            sshArgs.push('--', command.join(' '));
+          if (options.command) {
+            sshArgs.push('--', options.command);
           }
 
           outputService.info(t('commands.ops.ssh.connecting', { id: vmId }));

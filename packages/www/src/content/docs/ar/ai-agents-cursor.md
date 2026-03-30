@@ -4,7 +4,7 @@ description: تهيئة بيئة تطوير Cursor للعمل مع بنية Redi
 category: Guides
 order: 32
 language: ar
-sourceHash: "c6caf89e3bb3f461"
+sourceHash: "ab61340d4a260fdd"
 ---
 
 يتكامل Cursor مع Rediacc من خلال أوامر الطرفية وملف التهيئة `.cursorrules`.
@@ -56,7 +56,7 @@ rdc repo up nextcloud -m prod-1 --yes
 
 يُنفّذ Cursor في الطرفية:
 ```bash
-rdc term prod-1 mail -c "docker logs mail-postfix --tail 100"
+rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
 ```
 
 ## إعدادات مساحة العمل

@@ -300,44 +300,32 @@ export function registerRepoTunnelCommand(repoCommand: Command): void {
     'after',
     `
 ${t('help.examples')}
-  $ rdc repo tunnel hostinger sonarqube -c sonarqube-database --port 5432
-  $ rdc repo tunnel hostinger sonarqube                    # auto-detect container & port
+  $ rdc repo tunnel -m hostinger -r sonarqube -c sonarqube-database --port 5432
+  $ rdc repo tunnel -m hostinger -r sonarqube                    # auto-detect container & port
   $ rdc repo tunnel -m hostinger -r sonarqube --port 5432 --local 15432
 `
   );
 
-  // Shorthand: rdc repo tunnel <machine> <repo>
+  // rdc repo tunnel -m <machine> -r <repo>
   tunnel
-    .argument('[machine]', t('options.machineShorthand'))
-    .argument('[repository]', t('options.repositoryShorthand'))
+    .option('-m, --machine <name>', t('options.machine'))
+    .option('-r, --repository <name>', t('options.repository'))
     .option('-c, --container <name>', t('commands.repo.tunnel.containerOption'))
     .option('--port <port>', t('commands.repo.tunnel.portOption'))
     .option('--local <port>', t('commands.repo.tunnel.localOption'))
-    .action(
-      async (
-        machine: string | undefined,
-        repository: string | undefined,
-        options: TunnelOptions,
-        cmd: Command
-      ) => {
-        try {
-          const resolvedMachine = machine ?? options.machine;
-          if (!resolvedMachine) {
-            cmd.help();
-            return;
-          }
-          const provider = await getStateProvider();
-          if (provider.isCloud) {
-            await authService.requireAuth();
-          }
-          await tunnelConnect({
-            ...options,
-            machine: resolvedMachine,
-            repository: repository ?? options.repository,
-          });
-        } catch (error) {
-          handleError(error);
+    .action(async (options: TunnelOptions, cmd: Command) => {
+      try {
+        if (!options.machine) {
+          cmd.help();
+          return;
         }
+        const provider = await getStateProvider();
+        if (provider.isCloud) {
+          await authService.requireAuth();
+        }
+        await tunnelConnect(options);
+      } catch (error) {
+        handleError(error);
       }
-    );
+    });
 }

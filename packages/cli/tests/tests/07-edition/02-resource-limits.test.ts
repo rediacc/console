@@ -32,7 +32,7 @@ test.describe('Resource Limits by Edition @cli @edition', () => {
       test.afterAll(async () => {
         for (const storage of createdStorages) {
           await ctx.runner
-            .run(['storage', 'delete', storage, '--team', teamName, '--force'])
+            .run(['storage', 'delete', '--name', storage, '--team', teamName, '--force'])
             .catch(() => {});
         }
         await ctx?.cleanup();
@@ -40,7 +40,14 @@ test.describe('Resource Limits by Edition @cli @edition', () => {
 
       test('should allow creating storage within limits', async () => {
         const storageName = uniqueName('storage');
-        const result = await ctx.runner.run(['storage', 'create', storageName, '--team', teamName]);
+        const result = await ctx.runner.run([
+          'storage',
+          'create',
+          '--name',
+          storageName,
+          '--team',
+          teamName,
+        ]);
 
         if (result.success) {
           createdStorages.push(storageName);

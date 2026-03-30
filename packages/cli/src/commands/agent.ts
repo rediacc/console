@@ -99,11 +99,13 @@ export function registerAgentCommands(program: Command): void {
       outputService.print(result, 'json');
     });
 
-  // rdc agent schema <command>
+  // rdc agent schema --command <path>
   agent
-    .command('schema <command>')
+    .command('schema')
     .description(t('commands.agent.schema.description'))
-    .action((commandPath: string) => {
+    .requiredOption('--command <path>', t('options.command'))
+    .action((opts: { command: string }) => {
+      const commandPath = opts.command;
       const cmd = findCommand(program, commandPath);
       if (!cmd) {
         outputService.error(`Command "${commandPath}" not found`);
@@ -142,11 +144,13 @@ export function registerAgentCommands(program: Command): void {
       outputService.print(schema, 'json');
     });
 
-  // rdc agent exec <command>
+  // rdc agent exec --command <path>
   agent
-    .command('exec <command>')
+    .command('exec')
     .description(t('commands.agent.exec.description'))
-    .action(async (commandPath: string) => {
+    .requiredOption('--command <path>', t('options.command'))
+    .action(async (options: { command: string }) => {
+      const commandPath = options.command;
       const cmd = findCommand(program, commandPath);
       if (!cmd) {
         outputService.error(`Command "${commandPath}" not found`);
@@ -160,8 +164,7 @@ export function registerAgentCommands(program: Command): void {
       }
       const input = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
 
-      const cmdArgs = (cmd as unknown as { _args: { _name: string }[] })._args;
-      const argv = buildExecArgv(commandPath, cmdArgs, input);
+      const argv = buildExecArgv(commandPath, input);
 
       await program.parseAsync(argv);
     });
@@ -185,26 +188,12 @@ function serializeOption(key: string, value: unknown): string[] {
   return [flag, String(value)];
 }
 
-function buildExecArgv(
-  commandPath: string,
-  cmdArgs: { _name: string }[],
-  input: Record<string, unknown>
-): string[] {
+function buildExecArgv(commandPath: string, input: Record<string, unknown>): string[] {
   const argv: string[] = ['node', 'rdc', ...commandPath.split(/\s+/)];
 
-  // Add positional arguments
-  for (const argDef of cmdArgs) {
-    if (input[argDef._name] !== undefined) {
-      argv.push(String(input[argDef._name]));
-    }
-  }
-
-  // Add options
-  const positionalNames = new Set(cmdArgs.map((a) => a._name));
+  // All input keys are named options (no positional arguments)
   for (const [key, value] of Object.entries(input)) {
-    if (!positionalNames.has(key)) {
-      argv.push(...serializeOption(key, value));
-    }
+    argv.push(...serializeOption(key, value));
   }
 
   // Force JSON output
@@ -249,8 +238,10 @@ function renderOptions(lines: string[], options: CommandCapability['options']): 
 /** Collect annotation badges for a command based on its metadata. */
 function collectAnnotations(meta: CommandMeta): string[] {
   const annotations: string[] = [];
-  if (meta.mcp) annotations.push('MCP tool');
   // Markdown annotation labels (not user-facing CLI text)
+  const AGENT_BLOCKED_LABEL = 'agent: BLOCKED';
+  if (meta.agentBlocked) annotations.push(AGENT_BLOCKED_LABEL);
+  if (meta.mcp) annotations.push('MCP tool');
   const FORK_ONLY_LABEL = 'agent: fork-only';
   if (meta.grandGuard) annotations.push(FORK_ONLY_LABEL);
   if (meta.forkBlocked) annotations.push('fork-blocked');

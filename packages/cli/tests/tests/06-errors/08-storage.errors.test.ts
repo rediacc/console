@@ -25,6 +25,7 @@ test.describe('Storage Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'storage',
         'create',
+        '--name',
         'test-storage',
         '--team',
         nonExistentName('team'),
@@ -39,6 +40,7 @@ test.describe('Storage Error Scenarios @cli @errors', () => {
       const createResult = await runner.run([
         'storage',
         'create',
+        '--name',
         storageName,
         '--team',
         defaultTeamName,
@@ -58,6 +60,7 @@ test.describe('Storage Error Scenarios @cli @errors', () => {
         const duplicateResult = await runner.run([
           'storage',
           'create',
+          '--name',
           storageName,
           '--team',
           defaultTeamName,
@@ -67,7 +70,15 @@ test.describe('Storage Error Scenarios @cli @errors', () => {
         });
       } finally {
         // Cleanup
-        await runner.run(['storage', 'delete', storageName, '--team', defaultTeamName, '--force']);
+        await runner.run([
+          'storage',
+          'delete',
+          '--name',
+          storageName,
+          '--team',
+          defaultTeamName,
+          '--force',
+        ]);
       }
     });
   });
@@ -77,6 +88,7 @@ test.describe('Storage Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'storage',
         'delete',
+        '--name',
         nonExistentName('storage'),
         '--team',
         defaultTeamName,
@@ -89,6 +101,7 @@ test.describe('Storage Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'storage',
         'delete',
+        '--name',
         'some-storage',
         '--team',
         nonExistentName('team'),
@@ -103,7 +116,9 @@ test.describe('Storage Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'storage',
         'rename',
+        '--current-name',
         nonExistentName('storage'),
+        '--new-name',
         'new-name',
         '--team',
         defaultTeamName,
@@ -115,7 +130,9 @@ test.describe('Storage Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'storage',
         'rename',
+        '--current-name',
         'some-storage',
+        '--new-name',
         'new-name',
         '--team',
         nonExistentName('team'),
@@ -131,6 +148,7 @@ test.describe('Storage Error Scenarios @cli @errors', () => {
       const createResult1 = await runner.run([
         'storage',
         'create',
+        '--name',
         storageName1,
         '--team',
         defaultTeamName,
@@ -142,6 +160,7 @@ test.describe('Storage Error Scenarios @cli @errors', () => {
       const createResult2 = await runner.run([
         'storage',
         'create',
+        '--name',
         storageName2,
         '--team',
         defaultTeamName,
@@ -156,7 +175,9 @@ test.describe('Storage Error Scenarios @cli @errors', () => {
         renameResult = await runner.run([
           'storage',
           'rename',
+          '--current-name',
           storageName1,
+          '--new-name',
           storageName2,
           '--team',
           defaultTeamName,
@@ -170,13 +191,22 @@ test.describe('Storage Error Scenarios @cli @errors', () => {
           await runner.run([
             'storage',
             'delete',
+            '--name',
             storageName1,
             '--team',
             defaultTeamName,
             '--force',
           ]);
         }
-        await runner.run(['storage', 'delete', storageName2, '--team', defaultTeamName, '--force']);
+        await runner.run([
+          'storage',
+          'delete',
+          '--name',
+          storageName2,
+          '--team',
+          defaultTeamName,
+          '--force',
+        ]);
       }
     });
 
@@ -187,6 +217,7 @@ test.describe('Storage Error Scenarios @cli @errors', () => {
       const createResult = await runner.run([
         'storage',
         'create',
+        '--name',
         storageName,
         '--team',
         defaultTeamName,
@@ -200,7 +231,9 @@ test.describe('Storage Error Scenarios @cli @errors', () => {
         const renameResult = await runner.run([
           'storage',
           'rename',
+          '--current-name',
           storageName,
+          '--new-name',
           '',
           '--team',
           defaultTeamName,
@@ -208,7 +241,15 @@ test.describe('Storage Error Scenarios @cli @errors', () => {
         expectError(runner, renameResult, { messageContains: ErrorPatterns.STORAGE_NAME_EMPTY });
       } finally {
         // Cleanup
-        await runner.run(['storage', 'delete', storageName, '--team', defaultTeamName, '--force']);
+        await runner.run([
+          'storage',
+          'delete',
+          '--name',
+          storageName,
+          '--team',
+          defaultTeamName,
+          '--force',
+        ]);
       }
     });
   });

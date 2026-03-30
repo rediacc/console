@@ -137,7 +137,14 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       const runner = new CliTestRunner();
       const timeoutContext = `timeout-test-${Date.now()}`;
 
-      await runner.run(['config', 'init', timeoutContext, '--ssh-key', config.sshKeyPath]);
+      await runner.run([
+        'config',
+        'init',
+        '--name',
+        timeoutContext,
+        '--ssh-key',
+        config.sshKeyPath,
+      ]);
 
       // Add a non-routable machine
       const timeoutRunner = CliTestRunner.withContext(timeoutContext);
@@ -145,6 +152,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
         'config',
         'machine',
         'add',
+        '--name',
         'timeout-vm',
         '--ip',
         '10.255.255.1',
@@ -153,14 +161,17 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       ]);
 
       // This should timeout
-      const result = await timeoutRunner.run(['run', 'machine_ping', '--machine', 'timeout-vm'], {
-        timeout: 30000,
-      });
+      const result = await timeoutRunner.run(
+        ['run', '--function', 'machine_ping', '--machine', 'timeout-vm'],
+        {
+          timeout: 30000,
+        }
+      );
 
       expect(result.success).toBe(false);
 
       // Cleanup
-      await runner.run(['config', 'delete', timeoutContext]);
+      await runner.run(['config', 'delete', '--name', timeoutContext]);
     });
   });
 
@@ -220,8 +231,15 @@ test.describe('E2E Context Switching @cli @e2e', () => {
     runner = new CliTestRunner();
 
     // Create both contexts
-    await runner.run(['config', 'init', localContext, '--ssh-key', config.sshKeyPath]);
-    await runner.run(['config', 'init', cloudContext, '--api-url', 'https://test.example.com/api']);
+    await runner.run(['config', 'init', '--name', localContext, '--ssh-key', config.sshKeyPath]);
+    await runner.run([
+      'config',
+      'init',
+      '--name',
+      cloudContext,
+      '--api-url',
+      'https://test.example.com/api',
+    ]);
 
     // Add a machine to local context
     const localRunner = CliTestRunner.withContext(localContext);
@@ -229,6 +247,7 @@ test.describe('E2E Context Switching @cli @e2e', () => {
       'config',
       'machine',
       'add',
+      '--name',
       'e2e-vm',
       '--ip',
       config.vm1Ip,
@@ -239,8 +258,8 @@ test.describe('E2E Context Switching @cli @e2e', () => {
 
   test.afterAll(async () => {
     if (runner) {
-      await runner.run(['config', 'delete', localContext]).catch(() => {});
-      await runner.run(['config', 'delete', cloudContext]).catch(() => {});
+      await runner.run(['config', 'delete', '--name', localContext]).catch(() => {});
+      await runner.run(['config', 'delete', '--name', cloudContext]).catch(() => {});
     }
   });
 
@@ -264,9 +283,12 @@ test.describe('E2E Context Switching @cli @e2e', () => {
     test.setTimeout(300000);
 
     const localRunner = CliTestRunner.withContext(localContext);
-    const result = await localRunner.run(['run', 'machine_ping', '--machine', 'e2e-vm'], {
-      timeout: 300000,
-    });
+    const result = await localRunner.run(
+      ['run', '--function', 'machine_ping', '--machine', 'e2e-vm'],
+      {
+        timeout: 300000,
+      }
+    );
 
     const output = result.stdout + result.stderr;
     const isLocalAttempt = output.includes('renet') || output.includes('Executing');
@@ -289,6 +311,7 @@ test.describe('E2E Renet Availability @cli @e2e', () => {
     const createResult = await runner.run([
       'config',
       'init',
+      '--name',
       renetContextName,
       '--ssh-key',
       config.sshKeyPath,
@@ -301,6 +324,7 @@ test.describe('E2E Renet Availability @cli @e2e', () => {
       'config',
       'machine',
       'add',
+      '--name',
       'check-vm',
       '--ip',
       config.vm1Ip,
@@ -310,7 +334,7 @@ test.describe('E2E Renet Availability @cli @e2e', () => {
 
     // Try to run - this tests if renet is available
     const runResult = await contextRunner.run(
-      ['run', 'machine_ping', '--machine', 'check-vm', '--debug'],
+      ['run', '--function', 'machine_ping', '--machine', 'check-vm', '--debug'],
       { timeout: 300000 }
     );
 
@@ -324,6 +348,6 @@ test.describe('E2E Renet Availability @cli @e2e', () => {
     }
 
     // Cleanup
-    await runner.run(['config', 'delete', renetContextName]);
+    await runner.run(['config', 'delete', '--name', renetContextName]);
   });
 });

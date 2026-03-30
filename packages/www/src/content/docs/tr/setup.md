@@ -4,7 +4,7 @@ description: "Yapılandırma oluşturma, makine ekleme, sunucuları hazırlama v
 category: "Guides"
 order: 3
 language: tr
-sourceHash: "ebf1c9967814ec86"
+sourceHash: "7d4756adb17e63d4"
 ---
 
 # Makine Kurulumu
@@ -92,7 +92,7 @@ Bu komut, yapılandırmanızdaki ilgili makinenin `knownHosts` alanını güncel
 Makine ekledikten sonra erişilebilir olduğunu doğrulayın:
 
 ```bash
-rdc term server-1 -c "hostname"
+rdc term connect -m server-1 -c "hostname"
 ```
 
 Bu komut makineye SSH bağlantısı açar ve komutu çalıştırır. Başarılı olursa SSH yapılandırmanız doğrudur.

@@ -122,6 +122,26 @@ describe('command-policy', () => {
       await expect(assertCommandPolicy(CMD.REPO_UP)).resolves.not.toThrow();
       expect(mockGetRepo).not.toHaveBeenCalled();
     });
+
+    it('blocks agentBlocked commands unconditionally in agent mode', async () => {
+      mockIsAgent.mockReturnValue(true);
+
+      await expect(assertCommandPolicy(CMD.RUN)).rejects.toThrow('errors.agent.commandBlocked');
+      expect(mockGetRepo).not.toHaveBeenCalled();
+    });
+
+    it('allows agentBlocked commands for non-agent environments', async () => {
+      mockIsAgent.mockReturnValue(false);
+
+      await expect(assertCommandPolicy(CMD.RUN)).resolves.not.toThrow();
+    });
+
+    it('agentBlocked ignores REDIACC_ALLOW_GRAND_REPO override', async () => {
+      mockIsAgent.mockReturnValue(true);
+      process.env.REDIACC_ALLOW_GRAND_REPO = '*';
+
+      await expect(assertCommandPolicy(CMD.RUN)).rejects.toThrow('errors.agent.commandBlocked');
+    });
   });
 
   describe('validateRemotePath', () => {

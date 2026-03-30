@@ -4,7 +4,7 @@ description: "Créer un dépôt chiffré, déployer une application conteneuris�
 category: "Tutorials"
 order: 3
 language: fr
-sourceHash: f28a6f56286d8853
+sourceHash: ee3455c196ea1479
 ---
 
 # Comment déployer et gérer des dépôts avec Rediacc
@@ -46,7 +46,7 @@ Affiche tous les dépôts sur la machine avec leur taille, état de montage et �
 Avant de déployer, vérifiez que le stockage du dépôt est monté et accessible.
 
 ```bash
-rdc term server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
+rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
 Le répertoire de montage est l'emplacement des fichiers d'application — `Rediaccfile`, `docker-compose.yml` et tous les volumes de données.
@@ -76,7 +76,7 @@ Affiche tous les conteneurs en cours d'exécution sur tous les dépôts de la ma
 Pour exécuter des commandes dans l'environnement Docker isolé du dépôt :
 
 ```bash
-rdc term server-1 test-app -c "docker ps"
+rdc term connect -m server-1 -r test-app -c "docker ps"
 ```
 
 La session terminal définit `DOCKER_HOST` sur le socket Docker isolé du dépôt. Toute commande Docker s'exécute uniquement sur les conteneurs de ce dépôt.

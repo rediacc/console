@@ -124,16 +124,18 @@ async function pruneOrphanedRepos(machineName: string, options: PruneOptions): P
 
 export function registerPruneCommand(machine: Command): void {
   machine
-    .command('prune <name>')
+    .command('prune')
     .summary(t('commands.machine.prune.descriptionShort'))
     .description(t('commands.machine.prune.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .option('--dry-run', t('commands.machine.prune.dryRunOption'))
     .option('--orphaned-repos', t('commands.machine.prune.orphanedReposOption'))
     .option('--force', t('options.force'))
     .option('--grace-days <days>', t('options.graceDays'), Number.parseInt)
     .option('--debug', t('options.debug'))
-    .action(async (machineName: string, options: PruneOptions) => {
+    .action(async (options: PruneOptions & { name: string }) => {
       try {
+        const machineName = options.name;
         await pruneDatastore(machineName, options);
 
         if (options.orphanedRepos) {

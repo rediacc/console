@@ -4,7 +4,7 @@ description: Configure el IDE Cursor para trabajar con la infraestructura Rediac
 category: Guides
 order: 32
 language: es
-sourceHash: "c6caf89e3bb3f461"
+sourceHash: "ab61340d4a260fdd"
 ---
 
 Cursor se integra con Rediacc a través de comandos de terminal y el archivo de configuración `.cursorrules`.
@@ -56,7 +56,7 @@ Pregunte a Cursor: *"Muéstrame los registros recientes del contenedor de correo
 
 Cursor ejecuta en el terminal:
 ```bash
-rdc term prod-1 mail -c "docker logs mail-postfix --tail 100"
+rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
 ```
 
 ## Configuración del espacio de trabajo

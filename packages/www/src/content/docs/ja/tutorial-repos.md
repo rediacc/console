@@ -4,7 +4,7 @@ description: "暗号化されたリポジトリの作成、コンテナ化され
 category: "Tutorials"
 order: 3
 language: ja
-sourceHash: f28a6f56286d8853
+sourceHash: ee3455c196ea1479
 ---
 
 # Rediaccでリポジトリをデプロイ・管理する方法
@@ -46,7 +46,7 @@ rdc repo list -m server-1
 デプロイ前に、リポジトリのストレージがマウントされアクセス可能であることを確認します。
 
 ```bash
-rdc term server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
+rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
 マウントディレクトリはアプリケーションファイルが配置される場所です — `Rediaccfile`、`docker-compose.yml`、およびデータボリュームが含まれます。
@@ -76,7 +76,7 @@ rdc machine containers server-1
 リポジトリの隔離されたDocker環境内でコマンドを実行するには:
 
 ```bash
-rdc term server-1 test-app -c "docker ps"
+rdc term connect -m server-1 -r test-app -c "docker ps"
 ```
 
 ターミナルセッションは`DOCKER_HOST`をリポジトリの隔離されたDockerソケットに設定します。すべてのDockerコマンドはそのリポジトリのコンテナのみに対して実行されます。

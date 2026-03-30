@@ -57,14 +57,20 @@ if [[ -n "$WRANGLER_CONFIG" ]]; then
 fi
 
 # Step 1: Export source database
+# Wrangler prints a pre-signed R2 URL valid for 1 hour -- strip it from output
+# to prevent leaking a database download link in CI logs.
 log_step "Exporting D1 database: $SOURCE_DB"
-npx wrangler d1 export "$SOURCE_DB" --remote --output="$TMPDIR/export.sql"
+npx wrangler d1 export "$SOURCE_DB" --remote --output="$TMPDIR/export.sql" 2>&1 |
+    grep -v 'r2.cloudflarestorage.com\|valid for one hour'
 log_info "Exported $(wc -l <"$TMPDIR/export.sql") lines ($(du -h "$TMPDIR/export.sql" | cut -f1))"
 
-# Step 2: Wrap with PRAGMA foreign_keys=OFF for safe import
+# Step 2: Generate DROP statements for all tables in the export
 log_step "Preparing import with FK safety wrapper"
 {
     echo "PRAGMA foreign_keys=OFF;"
+    # Drop existing tables so re-cloning into a non-empty DB works
+    # Handles: CREATE TABLE name(, CREATE TABLE `name` (, CREATE TABLE IF NOT EXISTS "name" (
+    sed -n 's/^CREATE TABLE \(IF NOT EXISTS \)\?[`"]*\([a-zA-Z_][a-zA-Z0-9_]*\)[`"]*.*/DROP TABLE IF EXISTS "\2";/p' "$TMPDIR/export.sql"
     cat "$TMPDIR/export.sql"
     echo "PRAGMA foreign_keys=ON;"
 } >"$TMPDIR/import.sql"
