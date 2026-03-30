@@ -14,26 +14,52 @@
 CF_API_BASE="https://api.cloudflare.com/client/v4"
 CF_AUTH_HEADERS=()
 
+# Update or append a key=value in a .env file.
+update_env_file() {
+    local file="$1" key="$2" value="$3"
+    if grep -q "^${key}=" "$file" 2>/dev/null; then
+        sed -i "s|^${key}=.*|${key}=${value}|" "$file"
+    else
+        echo "${key}=${value}" >> "$file"
+    fi
+}
+
 # Resolve Cloudflare authentication.
 # Sets CF_AUTH_HEADERS array for use with curl.
+# If CF_API_KEY + CF_EMAIL are provided (Global API Key), auto-creates a scoped
+# management token so self-destruct works. The token is deleted at the end.
 resolve_cf_auth() {
     if [[ -n "${CF_MANAGEMENT_TOKEN:-}" ]]; then
         CF_AUTH_HEADERS=(-H "Authorization: Bearer ${CF_MANAGEMENT_TOKEN}")
     elif [[ -n "${CF_API_KEY:-}" && -n "${CF_EMAIL:-}" ]]; then
-        CF_AUTH_HEADERS=(-H "X-Auth-Key: ${CF_API_KEY}" -H "X-Auth-Email: ${CF_EMAIL}")
+        log_step "Creating scoped management token from Global API Key..."
+        CF_MANAGEMENT_TOKEN=$(_create_management_token)
+        if [[ -z "$CF_MANAGEMENT_TOKEN" || "$CF_MANAGEMENT_TOKEN" == "null" ]]; then
+            log_error "Failed to create management token from Global API Key"
+            exit 1
+        fi
+        CF_AUTH_HEADERS=(-H "Authorization: Bearer ${CF_MANAGEMENT_TOKEN}")
+        log_info "Management token created (will self-destruct after run)"
     else
         echo "Authentication method:"
-        echo "  1) API Token (recommended, supports self-destruct)"
-        echo "  2) Global API Key + Email"
+        echo "  1) Global API Key + Email (auto-creates scoped token)"
+        echo "  2) Scoped API Token (if you have one ready)"
         echo -n "Choose [1/2]: "
         read -r auth_choice
-        if [[ "$auth_choice" == "2" ]]; then
+        if [[ "$auth_choice" == "1" ]]; then
             echo -n "Enter email: "
             read -r CF_EMAIL
             echo -n "Enter Global API Key: "
             read -rs CF_API_KEY
             echo
-            CF_AUTH_HEADERS=(-H "X-Auth-Key: ${CF_API_KEY}" -H "X-Auth-Email: ${CF_EMAIL}")
+            log_step "Creating scoped management token..."
+            CF_MANAGEMENT_TOKEN=$(_create_management_token)
+            if [[ -z "$CF_MANAGEMENT_TOKEN" || "$CF_MANAGEMENT_TOKEN" == "null" ]]; then
+                log_error "Failed to create management token"
+                exit 1
+            fi
+            CF_AUTH_HEADERS=(-H "Authorization: Bearer ${CF_MANAGEMENT_TOKEN}")
+            log_info "Management token created (will self-destruct after run)"
         else
             echo -n "Enter API Token: "
             read -rs CF_MANAGEMENT_TOKEN
@@ -46,6 +72,60 @@ resolve_cf_auth() {
         log_error "Cloudflare authentication credentials are required"
         exit 1
     fi
+}
+
+# Create a scoped management token using the Global API Key.
+# Requires CF_API_KEY, CF_EMAIL, and ACCOUNT_ID to be set.
+# Prints the token value to stdout.
+_create_management_token() {
+    local account_id="${ACCOUNT_ID:-fa51e4a18d553c30e1633288e9733d04}"
+
+    # Get user ID for user-level permissions
+    local user_id
+    user_id=$(curl -s -X GET "${CF_API_BASE}/user" \
+        -H "X-Auth-Key: ${CF_API_KEY}" -H "X-Auth-Email: ${CF_EMAIL}" \
+        -H "Content-Type: application/json" | jq -r '.result.id // empty')
+
+    if [[ -z "$user_id" ]]; then
+        return 1
+    fi
+
+    # Account permissions:
+    #   Account API Tokens Read + Write (manage account tokens)
+    #   Turnstile Sites Write (rotate Turnstile secret)
+    #   Workers Scripts Read + Write (list workers, push secrets)
+    # User permissions:
+    #   API Tokens Read + Write (list permission groups, self-destruct)
+    local response
+    response=$(curl -s -X POST "${CF_API_BASE}/user/tokens" \
+        -H "X-Auth-Key: ${CF_API_KEY}" -H "X-Auth-Email: ${CF_EMAIL}" \
+        -H "Content-Type: application/json" \
+        -d "$(jq -n --arg account_id "$account_id" --arg user_id "$user_id" '{
+            name: "auto-rotation-management",
+            policies: [
+                {
+                    effect: "allow",
+                    resources: { ("com.cloudflare.api.account." + $account_id): "*" },
+                    permission_groups: [
+                        { id: "eb56a6953c034b9d97dd838155666f06" },
+                        { id: "5bc3f8b21c554832afc660159ab75fa4" },
+                        { id: "755c05aa014b4f9ab263aa80b8167bd8" },
+                        { id: "1a71c399035b4950a1bd1466bbe4f420" },
+                        { id: "e086da7e2179491d91ee5f35b3ca210a" }
+                    ]
+                },
+                {
+                    effect: "allow",
+                    resources: { ("com.cloudflare.api.user." + $user_id): "*" },
+                    permission_groups: [
+                        { id: "0cc3a61731504c89b99ec1be78b77aa0" },
+                        { id: "686d18d5ac6c441c867cbf6771e58a0a" }
+                    ]
+                }
+            ]
+        }')")
+
+    echo "$response" | jq -r '.result.value // empty'
 }
 
 # Resolve AWS SES admin authentication.
@@ -61,12 +141,11 @@ resolve_aws_auth() {
 }
 
 # Verify self-destruct is possible (requires CF_MANAGEMENT_TOKEN).
-# Call this during preflight if self-destruct is enabled.
+# After resolve_cf_auth, CF_MANAGEMENT_TOKEN is always set (auto-created from Global API Key if needed).
 check_self_destruct_capable() {
     if [[ -z "${CF_MANAGEMENT_TOKEN:-}" ]]; then
-        log_error "Self-destruct requires CF_MANAGEMENT_TOKEN (scoped API token)"
-        log_error "Global API Key cannot be deleted via API."
-        log_error "Either use CF_MANAGEMENT_TOKEN, or pass --keep-credentials to skip self-destruct."
+        log_error "Self-destruct requires Cloudflare authentication"
+        log_error "Set CF_MANAGEMENT_TOKEN or CF_API_KEY + CF_EMAIL"
         exit 1
     fi
 }

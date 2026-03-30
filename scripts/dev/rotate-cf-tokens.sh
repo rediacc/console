@@ -8,25 +8,18 @@
 # Then updates the corresponding GitHub org secrets.
 #
 # Usage:
-#   export CF_MANAGEMENT_TOKEN="<scoped-api-token>"
+#   export CF_API_KEY="<global-api-key>"
+#   export CF_EMAIL="<cloudflare-account-email>"
 #   export AWS_SES_ADMIN_KEY_ID="<iam-admin-access-key-id>"
 #   export AWS_SES_ADMIN_SECRET="<iam-admin-secret-access-key>"
 #   ./scripts/dev/rotate-cf-tokens.sh [--dry-run] [--rotate-turnstile] [--keep-credentials]
 #
 # Auth:
-#   Cloudflare (pick one):
-#     CF_MANAGEMENT_TOKEN  - Scoped API token (recommended, supports --self-destruct)
-#     CF_API_KEY + CF_EMAIL - Global API Key (legacy, cannot self-destruct)
-#     Interactive prompt    - Asks for either of the above
-#
-#   Create a CF_MANAGEMENT_TOKEN at: https://dash.cloudflare.com/profile/api-tokens
-#     Required permissions:
-#       Account scope (Rediacc OU):
-#         - Account API Tokens Read + Write
-#         - Turnstile Sites Write
-#         - Workers Scripts Read + Write
-#       User scope:
-#         - API Tokens Read + Write (for permission groups + self-destruct)
+#   Cloudflare:
+#     CF_API_KEY + CF_EMAIL  - Global API Key (simplest, auto-creates a scoped token)
+#     CF_MANAGEMENT_TOKEN    - Pre-created scoped API token (if you have one)
+#     Interactive prompt     - Asks for either of the above
+#     Get your Global API Key: https://dash.cloudflare.com/profile/api-tokens
 #
 #   AWS SES:   AWS_SES_ADMIN_KEY_ID + AWS_SES_ADMIN_SECRET
 #     IAM admin/root credentials with permission to manage keys for 'rediacc-ses-worker'.
@@ -113,8 +106,7 @@ SES_GITHUB_SECRET_SECRET="AWS_SES_SECRET_ACCESS_KEY"
 #    Needs wrangler secret put or manual env update on machines.
 #
 # 3. Local development:
-#    - private/account/.env: may contain AWS_SES_*, TURNSTILE_SECRET_KEY
-#    Developers must manually update after rotation.
+#    - private/account/.env: updated automatically by this script (if file exists, skipped in CI)
 
 # =============================================================================
 # ARGUMENT PARSING
@@ -660,6 +652,21 @@ fi
 # ---- Sync rotated secrets to live workers ----
 worker_sync_failures=0
 sync_secrets_to_workers || worker_sync_failures=$?
+
+# ---- Update local .env (skip in CI) ----
+ENV_FILE="$ROOT_DIR/private/account/.env"
+if [[ -f "$ENV_FILE" ]] && ! is_ci; then
+    log_step "Updating local .env"
+    [[ -n "${new_turnstile_secret:-}" && "$new_turnstile_secret" != "<dry-run>" ]] && \
+        update_env_file "$ENV_FILE" "TURNSTILE_SECRET_KEY" "$new_turnstile_secret"
+    [[ -n "${new_ses_key_id:-}" && "$new_ses_key_id" != "<dry-run>" ]] && \
+        update_env_file "$ENV_FILE" "AWS_SES_ACCESS_KEY_ID" "$new_ses_key_id"
+    [[ -n "${new_ses_secret:-}" && "$new_ses_secret" != "<dry-run>" ]] && \
+        update_env_file "$ENV_FILE" "AWS_SES_SECRET_ACCESS_KEY" "$new_ses_secret"
+    log_info "Updated $ENV_FILE"
+elif is_ci; then
+    log_info "Skipping .env update (CI environment)"
+fi
 
 # ---- Deferred: Delete old AWS SES keys ----
 # Only delete old keys AFTER workers have been updated, so workers are never

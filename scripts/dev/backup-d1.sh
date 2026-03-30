@@ -98,7 +98,9 @@ backup_database() {
 
     mkdir -p "$out_dir"
 
-    npx wrangler d1 export "$db_name" --remote --output="$out_file"
+    # Wrangler prints a pre-signed R2 URL valid for 1 hour -- strip it to avoid leaking
+    npx wrangler d1 export "$db_name" --remote --output="$out_file" 2>&1 \
+        | grep -v 'r2.cloudflarestorage.com\|valid for one hour'
 
     local lines size
     lines=$(wc -l <"$out_file")
