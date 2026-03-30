@@ -60,8 +60,8 @@ fi
 # Wrangler prints a pre-signed R2 URL valid for 1 hour -- strip it from output
 # to prevent leaking a database download link in CI logs.
 log_step "Exporting D1 database: $SOURCE_DB"
-npx wrangler d1 export "$SOURCE_DB" --remote --output="$TMPDIR/export.sql" 2>&1 \
-    | grep -v 'r2.cloudflarestorage.com\|valid for one hour'
+npx wrangler d1 export "$SOURCE_DB" --remote --output="$TMPDIR/export.sql" 2>&1 |
+    grep -v 'r2.cloudflarestorage.com\|valid for one hour'
 log_info "Exported $(wc -l <"$TMPDIR/export.sql") lines ($(du -h "$TMPDIR/export.sql" | cut -f1))"
 
 # Step 2: Generate DROP statements for all tables in the export
