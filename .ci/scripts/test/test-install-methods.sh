@@ -93,6 +93,7 @@ fi
 
 DOCKER_IMAGE="ghcr.io/rediacc/elite/cli"
 SITE_URL="${SITE_URL:-https://www.rediacc.com}"
+RELEASES_BASE_URL="${RELEASES_BASE_URL:-https://releases.rediacc.com}"
 HOMEBREW_TAP="rediacc/tap/rediacc-cli"
 
 # Test counters
