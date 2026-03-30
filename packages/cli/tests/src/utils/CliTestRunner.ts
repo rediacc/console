@@ -362,20 +362,11 @@ export class CliTestRunner {
   }
 
   async repositoryCreate(name: string, teamName: string, machineName: string): Promise<CliResult> {
-    return this.run([
-      'repository',
-      'create',
-      '--name',
-      name,
-      '--team',
-      teamName,
-      '--machine',
-      machineName,
-    ]);
+    return this.run(['repository', 'create', name, '--team', teamName, '--machine', machineName]);
   }
 
   async repositoryDelete(name: string, teamName: string): Promise<CliResult> {
-    return this.run(['repository', 'delete', '--name', name, '--team', teamName, '--force']);
+    return this.run(['repository', 'delete', name, '--team', teamName, '--force']);
   }
 
   // ===========================================================================
