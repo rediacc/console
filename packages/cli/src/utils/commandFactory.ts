@@ -164,16 +164,18 @@ function setupCreateCommand(
   transformCreatePayload?: ResourceCommandConfig['transformCreatePayload']
 ): void {
   const createCmd = resource
-    .command('create <name>')
-    .description(`Create a new ${ctx.resourceName}`);
+    .command('create')
+    .description(`Create a new ${ctx.resourceName}`)
+    .requiredOption('--name <name>', t('options.name'));
   if (ctx.hasParent) {
     createCmd.option(ctx.parentFlag, ctx.parentDesc);
     hideParentOption(createCmd, ctx.parentFlag);
   }
   createOptions?.forEach((opt) => createCmd.option(opt.flags, opt.description));
-  createCmd.action(async (name, options) => {
+  createCmd.action(async (options) => {
     try {
       await requireAuthForMode();
+      const name = options.name;
       const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
 
       if (!(await ctx.checkParent(opts))) process.exit(1);
@@ -210,15 +212,19 @@ function setupRenameCommand(
   operations: ResourceCommandConfig['operations']
 ): void {
   const renameCmd = resource
-    .command('rename <oldName> <newName>')
-    .description(`Rename a ${ctx.resourceName}`);
+    .command('rename')
+    .description(`Rename a ${ctx.resourceName}`)
+    .requiredOption('--current-name <name>', t('options.currentName'))
+    .requiredOption('--new-name <name>', t('options.newName'));
   if (ctx.hasParent) {
     renameCmd.option(ctx.parentFlag, ctx.parentDesc);
     hideParentOption(renameCmd, ctx.parentFlag);
   }
-  renameCmd.action(async (oldName, newName, options) => {
+  renameCmd.action(async (options) => {
     try {
       await requireAuthForMode();
+      const oldName = options.currentName;
+      const newName = options.newName;
       const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
       if (!(await ctx.checkParent(opts))) process.exit(1);
 
@@ -247,7 +253,10 @@ function setupDeleteCommand(
   ctx: CommandContext,
   operations: ResourceCommandConfig['operations']
 ): void {
-  const deleteCmd = resource.command('delete <name>').description(`Delete a ${ctx.resourceName}`);
+  const deleteCmd = resource
+    .command('delete')
+    .description(`Delete a ${ctx.resourceName}`)
+    .requiredOption('--name <name>', t('options.name'));
   if (ctx.hasParent) {
     deleteCmd.option(ctx.parentFlag, ctx.parentDesc);
     hideParentOption(deleteCmd, ctx.parentFlag);
@@ -255,9 +264,10 @@ function setupDeleteCommand(
   deleteCmd
     .option('-f, --force', t('options.force'))
     .option('--dry-run', t('options.dryRun'))
-    .action(async (name, options) => {
+    .action(async (options) => {
       try {
         await requireAuthForMode();
+        const name = options.name;
         const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
         if (!(await ctx.checkParent(opts))) process.exit(1);
 
@@ -301,13 +311,15 @@ function setupVaultGetCommand(
   vaultConfig: NonNullable<ResourceCommandConfig['vaultConfig']>
 ): void {
   const getCmd = vault
-    .command(`get <${ctx.resourceName}Name>`)
-    .description(`Get ${ctx.resourceName} vault data`);
+    .command('get')
+    .description(`Get ${ctx.resourceName} vault data`)
+    .requiredOption('--name <name>', t('options.name'));
   if (ctx.hasParent) {
     getCmd.option(ctx.parentFlag, ctx.parentDesc);
     hideParentOption(getCmd, ctx.parentFlag);
   }
-  getCmd.action(async (resourceItemName, options) => {
+  getCmd.action(async (options) => {
+    const resourceItemName = options.name;
     try {
       await requireAuthForMode();
       const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
@@ -342,8 +354,9 @@ function setupVaultUpdateCommand(
   vaultUpdateConfig: NonNullable<ResourceCommandConfig['vaultUpdateConfig']>
 ): void {
   const updateCmd = vault
-    .command(`update <${ctx.resourceName}Name>`)
+    .command('update')
     .description(`Update ${ctx.resourceName} vault data`)
+    .requiredOption('--name <name>', t('options.name'))
     .option('--vault <json>', t('options.vaultJson'))
     .option('--vault-version <n>', t('options.vaultVersion'), Number.parseInt);
 
@@ -352,7 +365,8 @@ function setupVaultUpdateCommand(
     hideParentOption(updateCmd, ctx.parentFlag);
   }
 
-  updateCmd.action(async (resourceItemName, options) => {
+  updateCmd.action(async (options) => {
+    const resourceItemName = options.name;
     try {
       await requireAuthForMode();
       const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
@@ -478,11 +492,15 @@ export function addAssignCommand(
   const checkParent = createParentCheck(parentOption);
 
   const assignCmd = resourceCommand
-    .command(`assign-${targetName} <${resourceName}Name> <${targetName}Name>`)
+    .command(`assign-${targetName}`)
     .description(`Assign ${resourceName} to a ${targetName}`)
+    .requiredOption('--name <name>', t('options.name'))
+    .requiredOption(`--target <name>`, t('options.target'))
     .option(parentFlag, parentDesc);
   hideParentOption(assignCmd, parentFlag);
-  assignCmd.action(async (resourceItemName, targetItemName, options) => {
+  assignCmd.action(async (options) => {
+    const resourceItemName = options.name;
+    const targetItemName = options.target;
     try {
       await requireAuthForMode();
       const opts = await configService.applyDefaults(options);

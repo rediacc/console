@@ -4,7 +4,7 @@ description: "Maschinengesundheit prüfen, Container inspizieren, systemd-Dienst
 category: "Tutorials"
 order: 4
 language: de
-sourceHash: "af9f17a05dfb13b9"
+sourceHash: "806137d9c33f4d7f"
 ---
 
 # Infrastruktur mit Rediacc überwachen und diagnostizieren
@@ -79,8 +79,8 @@ Ruft die aktuellen Host-Schlüssel des Servers ab und aktualisiert Ihre Konfigur
 Eine schnelle SSH-Konnektivitätsprüfung, um zu bestätigen, dass die Maschine erreichbar ist und antwortet.
 
 ```bash
-rdc term server-1 -c "hostname"
-rdc term server-1 -c "uptime"
+rdc term connect -m server-1 -c "hostname"
+rdc term connect -m server-1 -c "uptime"
 ```
 
 Der Hostname bestätigt, dass Sie mit dem richtigen Server verbunden sind. Die Betriebszeit bestätigt, dass das System normal läuft.
@@ -88,13 +88,13 @@ Der Hostname bestätigt, dass Sie mit dem richtigen Server verbunden sind. Die B
 ## Fehlerbehebung
 
 **Gesundheitsprüfung läuft ab oder zeigt "SSH connection failed"**
-Überprüfen Sie, ob die Maschine online und erreichbar ist: `ping <ip>`. Stellen Sie sicher, dass Ihr SSH-Schlüssel korrekt konfiguriert ist mit `rdc term <machine> -c "echo ok"`.
+Überprüfen Sie, ob die Maschine online und erreichbar ist: `ping <ip>`. Stellen Sie sicher, dass Ihr SSH-Schlüssel korrekt konfiguriert ist mit `rdc term connect -m <machine> -c "echo ok"`.
 
 **"Service not found" in der Dienstliste**
 Rediacc-Dienste erscheinen erst, nachdem mindestens ein Repository bereitgestellt wurde. Wenn keine Repositories existieren, ist die Dienstliste leer.
 
 **Container-Liste zeigt veraltete oder gestoppte Container**
-Container aus früheren Bereitstellungen können bestehen bleiben, wenn `repo down` nicht sauber ausgeführt wurde. Stoppen Sie sie mit `rdc repo down <repo> -m <machine>` oder inspizieren Sie direkt über `rdc term <machine> <repo> -c "docker ps -a"`.
+Container aus früheren Bereitstellungen können bestehen bleiben, wenn `repo down` nicht sauber ausgeführt wurde. Stoppen Sie sie mit `rdc repo down <repo> -m <machine>` oder inspizieren Sie direkt über `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
 
 ## Nächste Schritte
 

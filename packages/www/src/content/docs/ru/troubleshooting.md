@@ -4,7 +4,7 @@ description: "Решения распространённых проблем с 
 category: "Guides"
 order: 10
 language: ru
-sourceHash: "b392ab73d90c62e1"
+sourceHash: "f666ba3be3be29f7"
 ---
 
 # Устранение неполадок
@@ -16,7 +16,7 @@ sourceHash: "b392ab73d90c62e1"
 - Убедитесь, что можете подключиться вручную: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
 - Выполните `rdc config machine scan-keys server-1` для обновления ключей хоста
 - Проверьте соответствие порта SSH: `--port 22`
-- Проверьте простой командой: `rdc term server-1 -c "hostname"`
+- Проверьте простой командой: `rdc term connect -m server-1 -c "hostname"`
 
 ## Несоответствие ключа хоста
 
@@ -48,7 +48,7 @@ rdc config machine scan-keys server-1
 - Просмотрите логи контейнеров через Docker-сокет репозитория:
 
 ```bash
-rdc term server-1 my-app -c "docker logs <container-name>"
+rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 ```
 
 Или просмотрите все контейнеры:
@@ -69,7 +69,7 @@ rdc machine containers server-1
 
 ```bash
 # С помощью rdc term (настроено автоматически):
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 
 # Или вручную с указанием сокета:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -93,7 +93,7 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 
 - Используйте встроенный режим с `-c` для прямого выполнения команд:
   ```bash
-  rdc term server-1 -c "ls -la"
+  rdc term connect -m server-1 -c "ls -la"
   ```
 - Принудительно используйте внешний терминал с `--external`, если встроенный режим вызывает проблемы
 - На Linux убедитесь, что установлен `gnome-terminal`, `xterm` или другой эмулятор терминала

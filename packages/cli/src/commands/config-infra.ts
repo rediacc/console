@@ -46,11 +46,12 @@ function parseInfraOptions(options: Record<string, string>): ParsedInfraOptions 
 export function registerInfraCommands(config: Command, program: Command): void {
   const infra = config.command('infra').description(t('commands.config.infra.description'));
 
-  // config infra set <machine>
+  // config infra set
   infra
-    .command('set <machine>')
+    .command('set')
     .summary(t('commands.config.infra.set.descriptionShort'))
     .description(t('commands.config.infra.set.description'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--public-ipv4 <ip>', t('commands.config.infra.set.optionPublicIPv4'))
     .option('--public-ipv6 <ip>', t('commands.config.infra.set.optionPublicIPv6'))
     .option('--base-domain <domain>', t('commands.config.infra.set.optionBaseDomain'))
@@ -58,7 +59,8 @@ export function registerInfraCommands(config: Command, program: Command): void {
     .option('--cf-dns-token <token>', t('commands.config.infra.set.optionCfDnsToken'))
     .option('--tcp-ports <ports>', t('commands.config.infra.set.optionTcpPorts'))
     .option('--udp-ports <ports>', t('commands.config.infra.set.optionUdpPorts'))
-    .action(async (machineName, options) => {
+    .action(async (options) => {
+      const machineName = options.machine;
       try {
         const { infra: infraOpts, configLevel } = parseInfraOptions(options);
 
@@ -91,12 +93,14 @@ export function registerInfraCommands(config: Command, program: Command): void {
       }
     });
 
-  // config infra show <machine>
+  // config infra show
   infra
-    .command('show <machine>')
+    .command('show')
     .description(t('commands.config.infra.show.description'))
-    .action(async (machineName) => {
+    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .action(async (options) => {
       try {
+        const machineName = options.machine;
         const machine = await configService.getLocalMachine(machineName);
         const localConfig = await configService.getLocalConfig();
         const format = program.opts().output as OutputFormat;
@@ -137,14 +141,16 @@ export function registerInfraCommands(config: Command, program: Command): void {
       }
     });
 
-  // config infra push <machine>
+  // config infra push
   infra
-    .command('push <machine>')
+    .command('push')
     .summary(t('commands.config.infra.push.descriptionShort'))
     .description(t('commands.config.infra.push.description'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--debug', t('options.debug'))
-    .action(async (machineName, options) => {
+    .action(async (options) => {
       try {
+        const machineName = options.machine;
         const { pushInfraConfig } = await import('../services/infra-provision.js');
         await pushInfraConfig(machineName, { debug: options.debug });
         outputService.success(t('commands.config.infra.push.success', { name: machineName }));
@@ -162,12 +168,14 @@ export function registerInfraCommands(config: Command, program: Command): void {
     .description(t('commands.config.certCache.description'));
 
   certCache
-    .command('pull <machine>')
+    .command('pull')
     .description(t('commands.config.certCache.pull.description'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--no-prune', t('commands.config.certCache.pull.optionNoPrune'))
     .option('--debug', t('options.debug'))
-    .action(async (machineName, options) => {
+    .action(async (options) => {
       try {
+        const machineName = options.machine;
         const { downloadCertCache } = await import('../services/cert-cache.js');
         await downloadCertCache(machineName, {
           noPrune: options.prune === false,
@@ -179,11 +187,13 @@ export function registerInfraCommands(config: Command, program: Command): void {
     });
 
   certCache
-    .command('push <machine>')
+    .command('push')
     .description(t('commands.config.certCache.push.description'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--debug', t('options.debug'))
-    .action(async (machineName, options) => {
+    .action(async (options) => {
       try {
+        const machineName = options.machine;
         const { uploadCertCache } = await import('../services/cert-cache.js');
         await uploadCertCache(machineName, {
           debug: options.debug,

@@ -4,7 +4,7 @@ description: "Makine sağlığını kontrol edin, konteynerleri inceleyin, syste
 category: "Tutorials"
 order: 4
 language: tr
-sourceHash: "af9f17a05dfb13b9"
+sourceHash: "806137d9c33f4d7f"
 ---
 
 # Rediacc ile Altyapıyı İzleme ve Tanılama
@@ -79,8 +79,8 @@ Sunucunun mevcut host anahtarlarını alır ve yapılandırmanızı günceller. 
 Makinenin erişilebilir olduğunu ve yanıt verdiğini doğrulamak için hızlı bir SSH bağlantı kontrolü.
 
 ```bash
-rdc term server-1 -c "hostname"
-rdc term server-1 -c "uptime"
+rdc term connect -m server-1 -c "hostname"
+rdc term connect -m server-1 -c "uptime"
 ```
 
 Ana bilgisayar adı doğru sunucuya bağlandığınızı onaylar. Çalışma süresi sistemin normal çalıştığını onaylar.
@@ -88,13 +88,13 @@ Ana bilgisayar adı doğru sunucuya bağlandığınızı onaylar. Çalışma sü
 ## Sorun Giderme
 
 **Sağlık kontrolü zaman aşımına uğruyor veya "SSH connection failed" gösteriyor**
-Makinenin çevrimiçi ve erişilebilir olduğunu doğrulayın: `ping <ip>`. SSH anahtarınızın doğru yapılandırıldığını `rdc term <machine> -c "echo ok"` ile kontrol edin.
+Makinenin çevrimiçi ve erişilebilir olduğunu doğrulayın: `ping <ip>`. SSH anahtarınızın doğru yapılandırıldığını `rdc term connect -m <machine> -c "echo ok"` ile kontrol edin.
 
 **Servis listesinde "Service not found"**
 Rediacc servisleri yalnızca en az bir depo dağıtıldıktan sonra görünür. Depo yoksa servis listesi boştur.
 
 **Konteyner listesi eski veya durmuş konteynerleri gösteriyor**
-Önceki dağıtımlardan kalan konteynerler, `repo down` temiz çalıştırılmadıysa kalabilir. Bunları `rdc repo down <repo> -m <machine>` ile durdurun veya `rdc term <machine> <repo> -c "docker ps -a"` ile doğrudan inceleyin.
+Önceki dağıtımlardan kalan konteynerler, `repo down` temiz çalıştırılmadıysa kalabilir. Bunları `rdc repo down <repo> -m <machine>` ile durdurun veya `rdc term connect -m <machine> -r <repo> -c "docker ps -a"` ile doğrudan inceleyin.
 
 ## Sonraki Adımlar
 

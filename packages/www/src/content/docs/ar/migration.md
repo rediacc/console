@@ -4,7 +4,7 @@ description: "ترحيل المشاريع الحالية إلى مستودعات
 category: "Guides"
 order: 11
 language: ar
-sourceHash: fdecebe5bf7d4a86
+sourceHash: e66f9ad6bbf5930f
 ---
 
 # دليل الترحيل
@@ -283,10 +283,10 @@ rdc repo ownership my-project -m server-1
 
 ```bash
 # تحقق من عناوين IP المعيّنة
-rdc term server-1 my-project -c "cat .rediacc.json"
+rdc term connect -m server-1 -r my-project -c "cat .rediacc.json"
 
 # تحقق من سجلات الحاوية
-rdc term server-1 my-project -c "docker logs <container-name>"
+rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 ```
 
 ### تعارض المنافذ بين المستودعات

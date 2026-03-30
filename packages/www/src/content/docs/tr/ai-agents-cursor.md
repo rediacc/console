@@ -4,7 +4,7 @@ description: Cursor IDE'yi .cursorrules ve terminal entegrasyonu kullanarak Redi
 category: Guides
 order: 32
 language: tr
-sourceHash: "c6caf89e3bb3f461"
+sourceHash: "ab61340d4a260fdd"
 ---
 
 Cursor, terminal komutları ve `.cursorrules` yapılandırma dosyası aracılığıyla Rediacc ile entegre olur.
@@ -56,7 +56,7 @@ Cursor'a sorun: *"Bana son mail konteyner günlüklerini göster"*
 
 Cursor terminalde çalıştırır:
 ```bash
-rdc term prod-1 mail -c "docker logs mail-postfix --tail 100"
+rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
 ```
 
 ## Çalışma Alanı Ayarları

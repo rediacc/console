@@ -4,8 +4,8 @@ description: "在 Rediacc 平台上构建应用程序的基本规则和约定。
 category: "Guides"
 order: 5
 language: zh
-sourceHash: "f7ca177c604f0ff7"
-sourceCommit: "c4820684802963ecf645e56c87e13815deb84688"
+sourceHash: "17f2cc084c2782cc"
+sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
 # Rediacc 规则
@@ -155,5 +155,5 @@ Renet 会自动将以下变量注入每个容器：
 - 不绑定到 `SERVICE_IP` — 会导致仓库之间的端口冲突。
 - 硬编码 IP — 使用 `SERVICE_IP` 环境变量；IP 按 networkId 动态分配。
 - 在 `backup push` 后首次部署时忘记 `--mount` — LUKS 卷需要显式打开。
-- 使用 `rdc term -c` 作为失败命令的变通方法 — 请改为报告 bug。
+- 使用 `rdc term connect -c` 作为失败命令的变通方法 — 请改为报告 bug。
 - `repo delete` 执行完整清理，包括回环 IP 和 systemd 单元。运行 `rdc machine prune <name>` 清理旧版删除操作遗留的残余。

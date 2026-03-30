@@ -4,7 +4,7 @@ description: "SSH、セットアップ、リポジトリ、サービス、Docker
 category: "Guides"
 order: 10
 language: ja
-sourceHash: "b392ab73d90c62e1"
+sourceHash: "f666ba3be3be29f7"
 ---
 
 # トラブルシューティング
@@ -16,7 +16,7 @@ sourceHash: "b392ab73d90c62e1"
 - 手動で接続できるか確認してください: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
 - `rdc config machine scan-keys server-1` を実行してホストキーを更新してください
 - SSHポートが一致しているか確認してください: `--port 22`
-- 簡単なコマンドでテストしてください: `rdc term server-1 -c "hostname"`
+- 簡単なコマンドでテストしてください: `rdc term connect -m server-1 -c "hostname"`
 
 ## ホストキーの不一致
 
@@ -48,7 +48,7 @@ rdc config machine scan-keys server-1
 - リポジトリのDockerソケットを使用してコンテナログを確認してください:
 
 ```bash
-rdc term server-1 my-app -c "docker logs <container-name>"
+rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 ```
 
 または全てのコンテナを表示:
@@ -69,7 +69,7 @@ rdc machine containers server-1
 
 ```bash
 # rdc termを使用（自動設定済み）:
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 
 # またはソケットを手動で指定:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -93,7 +93,7 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 
 - `-c` を使用してインラインモードでコマンドを直接実行してください:
   ```bash
-  rdc term server-1 -c "ls -la"
+  rdc term connect -m server-1 -c "ls -la"
   ```
 - インラインモードに問題がある場合は `--external` で外部ターミナルを強制してください
 - Linuxでは、`gnome-terminal`、`xterm`、またはその他のターミナルエミュレータがインストールされていることを確認してください

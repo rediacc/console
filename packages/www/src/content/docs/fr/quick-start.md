@@ -4,7 +4,7 @@ description: Lancez un service conteneurisé sur votre serveur en quelques minut
 category: Guides
 order: -1
 language: fr
-sourceHash: "73dc08190016a305"
+sourceHash: "83fb84d9a631a73e"
 ---
 
 # Démarrage rapide
@@ -111,7 +111,7 @@ rdc repo status my-app -m my-server                  # État du montage, Docker,
 ### 4. VS Code
 
 ```bash
-rdc vscode my-server my-app              # Ouvre VS Code SSH, atterrit dans le bac à sable du repo
+rdc vscode connect -m my-server -r my-app              # Ouvre VS Code SSH, atterrit dans le bac à sable du repo
 ```
 
 Vous éditez des fichiers *à l'intérieur* du volume chiffré. `docker ps` n'affiche que les conteneurs de ce repo. Enregistrez, compose up, itérez.
@@ -125,7 +125,7 @@ Vous éditez des fichiers *à l'intérieur* du volume chiffré. `docker ps` n'af
 | **Cas d'usage** | CI/CD, automatisation, opérations à distance | Boucle de développement interne |
 | **Isolation** | Orchestre depuis l'extérieur | Déjà dans le bac à sable |
 
-**Flux de démonstration :** `rdc repo template apply` → `rdc vscode my-server my-app` → modifier `docker-compose.yml` → `renet dev up` → voir l'application en cours d'exécution → itérer.
+**Flux de démonstration :** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → modifier `docker-compose.yml` → `renet dev up` → voir l'application en cours d'exécution → itérer.
 
 > Structure du Rediaccfile : [Services](/fr/docs/services). Quand utiliser quel outil : [rdc vs renet](/fr/docs/rdc-vs-renet).
 
@@ -141,9 +141,9 @@ Vous éditez des fichiers *à l'intérieur* du volume chiffré. `docker ps` n'af
 
 **Terminal :**
 ```bash
-rdc term my-server my-app                            # SSH dans le bac à sable du repo
-rdc term my-server my-app -c "curl localhost:3000"   # Exécuter une commande et quitter
-rdc term my-server                                   # SSH vers la machine (sans bac à sable)
+rdc term connect -m my-server -r my-app                            # SSH dans le bac à sable du repo
+rdc term connect -m my-server -r my-app -c "curl localhost:3000"   # Exécuter une commande et quitter
+rdc term connect -m my-server                                   # SSH vers la machine (sans bac à sable)
 ```
 
 **Synchronisation de fichiers (rsync via SSH) :**

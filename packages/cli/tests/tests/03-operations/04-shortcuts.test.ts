@@ -41,6 +41,7 @@ test.describe('Shortcut Commands @cli @operations', () => {
       test('should run a function via shortcut', async () => {
         const result = await runner.run([
           'run',
+          '--function',
           'test-function',
           '--team',
           teamName,

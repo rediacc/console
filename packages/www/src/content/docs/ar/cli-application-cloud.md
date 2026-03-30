@@ -6,7 +6,7 @@ order: 3
 language: ar
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ar/cli.json
-sourceHash: "4444ea8dff323936"
+sourceHash: "5113c86b2e17e2f0"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -463,8 +463,13 @@ rdc team list [options]
 {{t:cli.commands.team.create.description}}
 
 ```bash
-rdc team create <name>
+rdc team create [options]
 ```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
+
 
 <a id="cli-cloud-team-member"></a>
 ### 4.3 member
@@ -804,7 +809,7 @@ rdc queue create [options]
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-f, --function <name>` | {{t:cli.options.functionName}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `-f, --function <name>` | — | {{t:cli.docs.optionLabels.yes}} | - |
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-b, --bridge <name>` | {{t:cli.options.bridge}} | {{t:cli.docs.optionLabels.no}} | - |

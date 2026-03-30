@@ -45,6 +45,7 @@ test.describe('Ceph Snapshot Commands @cli @ceph', () => {
       await ctx.runner.run([
         'machine',
         'create',
+        '--name',
         machineName,
         '--team',
         teamName,
@@ -126,7 +127,7 @@ test.describe('Ceph Snapshot Commands @cli @ceph', () => {
 
       // Cleanup machine
       await ctx.runner
-        .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
+        .run(['machine', 'delete', '--name', machineName, '--team', teamName, '--force'])
         .catch(() => {});
 
       await ctx?.cleanup();

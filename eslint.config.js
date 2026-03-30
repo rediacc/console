@@ -18,6 +18,7 @@ import { noRawApiCalls } from './eslint-rules/no-raw-api-calls.js';
 import { noDuplicateTranslationProps } from './eslint-rules/no-duplicate-translation-props.js';
 import { preferConstArrays } from './eslint-rules/prefer-const-arrays.js';
 import { noHardcodedNullishDefaults } from './eslint-rules/no-hardcoded-nullish-defaults.js';
+import { noPositionalArguments } from './eslint-rules/no-positional-arguments.js';
 import { e2eTestNamingConvention } from './eslint-rules/e2e-test-naming-convention.js';
 import { requireDataTrack } from './eslint-rules/require-data-track.js';
 import { i18nJsonPlugin, i18nSourcePlugin } from './eslint-rules/i18n/index.js';
@@ -222,6 +223,7 @@ export default tseslint.config(
           'no-hardcoded-nullish-defaults': noHardcodedNullishDefaults,
           'e2e-test-naming-convention': e2eTestNamingConvention,
           'require-data-track': requireDataTrack,
+          'no-positional-arguments': noPositionalArguments,
         },
       },
     },
@@ -522,6 +524,29 @@ export default tseslint.config(
       'i18n-source': i18nSourcePlugin,
     },
     rules: {
+      // Ban positional arguments -- enforce named options in Commander.js commands
+      'custom/no-positional-arguments': ['error', {
+        exemptFiles: [
+          // Experimental cloud-only commands
+          'packages/cli/src/commands/auth.ts',
+          'packages/cli/src/commands/audit.ts',
+          'packages/cli/src/commands/bridge.ts',
+          'packages/cli/src/commands/organization.ts',
+          'packages/cli/src/commands/permission.ts',
+          'packages/cli/src/commands/protocol.ts',
+          'packages/cli/src/commands/queue.ts',
+          'packages/cli/src/commands/region.ts',
+          'packages/cli/src/commands/repository.ts',
+          'packages/cli/src/commands/team.ts',
+          'packages/cli/src/commands/user.ts',
+          'packages/cli/src/commands/ceph/**',
+          // Experimental machine subcommands
+          'packages/cli/src/commands/machine/containers.ts',
+          'packages/cli/src/commands/machine/services.ts',
+          'packages/cli/src/commands/machine/repositories.ts',
+          'packages/cli/src/commands/machine/health.ts',
+        ],
+      }],
       // Enforce t() for CLI-specific patterns
       'custom/no-hardcoded-cli-text': ['error'],
       'custom/require-command-summary': ['error', {

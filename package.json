@@ -99,7 +99,7 @@
     "proper-lockfile": "^4.1.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.9",
+    "@biomejs/biome": "^2.4.10",
     "@eslint/js": "^9.39.2",
     "@eslint/json": "^1.2.0",
     "@types/proper-lockfile": "^4.1.4",
@@ -118,7 +118,7 @@
     "globals": "^17.4.0",
     "jsdom": "^29.0.0",
     "knip": "^6.1.0",
-    "syncpack": "^14.2.1",
+    "syncpack": "^14.3.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.2"

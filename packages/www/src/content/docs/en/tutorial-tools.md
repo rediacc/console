@@ -24,8 +24,8 @@ The CLI includes productivity tools for day-to-day operations: SSH terminal acce
 Run inline commands on a remote machine via SSH without opening an interactive session.
 
 ```bash
-rdc term server-1 -c "hostname"
-rdc term server-1 -c "uptime"
+rdc term connect -m server-1 -c "hostname"
+rdc term connect -m server-1 -c "uptime"
 ```
 
 The `-c` flag executes a single command and returns the output. Omit `-c` to open an interactive SSH session.
@@ -35,7 +35,7 @@ The `-c` flag executes a single command and returns the output. Omit `-c` to ope
 To run commands inside a repository's isolated Docker environment:
 
 ```bash
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 ```
 
 When connecting to a repository, `DOCKER_HOST` is automatically set to the repository's isolated Docker socket. Any Docker command runs against that repository's containers only.
@@ -65,7 +65,7 @@ Files are transferred via rsync over SSH. Only changed files are sent on subsequ
 Confirm the files arrived by listing the repository's mount directory.
 
 ```bash
-rdc term server-1 my-app -c "ls -la"
+rdc term connect -m server-1 -r my-app -c "ls -la"
 ```
 
 ### Step 6: VS Code integration check
@@ -76,7 +76,7 @@ To develop remotely with VS Code, verify that the required components are instal
 rdc vscode check
 ```
 
-Checks your VS Code installation, Remote SSH extension, and SSH configuration. Follow the output to resolve any missing prerequisites, then connect with `rdc vscode <machine> [repo]`.
+Checks your VS Code installation, Remote SSH extension, and SSH configuration. Follow the output to resolve any missing prerequisites, then connect with `rdc vscode connect -m <machine> -r <repo>`.
 
 ### Step 7: Check for CLI updates
 

@@ -4,7 +4,7 @@ description: "Создание конфигурации, добавление м
 category: "Guides"
 order: 3
 language: ru
-sourceHash: "ebf1c9967814ec86"
+sourceHash: "7d4756adb17e63d4"
 ---
 
 # Настройка машины
@@ -92,7 +92,7 @@ rdc config machine scan-keys server-1
 После добавления машины убедитесь, что она доступна:
 
 ```bash
-rdc term server-1 -c "hostname"
+rdc term connect -m server-1 -c "hostname"
 ```
 
 Открывает SSH-подключение к машине и выполняет команду. Если всё прошло успешно, ваша конфигурация SSH верна.

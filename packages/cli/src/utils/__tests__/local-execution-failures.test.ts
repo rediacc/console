@@ -6,12 +6,14 @@ const {
   mockGetCommandName,
   mockGetWarnings,
   mockGetDurationMs,
+  mockIsAgent,
 } = vi.hoisted(() => ({
   mockGetOutputFormat: vi.fn(),
   mockOutputError: vi.fn(),
   mockGetCommandName: vi.fn(() => 'repo push'),
   mockGetWarnings: vi.fn(() => []),
   mockGetDurationMs: vi.fn(() => 42),
+  mockIsAgent: vi.fn(() => false),
 }));
 
 vi.mock('../errors.js', async () => {
@@ -21,6 +23,10 @@ vi.mock('../errors.js', async () => {
     getOutputFormat: mockGetOutputFormat,
   };
 });
+
+vi.mock('../agent-guard.js', () => ({
+  isAgentEnvironment: mockIsAgent,
+}));
 
 vi.mock('../../services/output.js', () => ({
   outputService: {
@@ -60,6 +66,7 @@ describe('renderLocalExecutionFailure', () => {
 
   it('prints structured failures in json output mode', () => {
     mockGetOutputFormat.mockReturnValue('json');
+    mockIsAgent.mockReturnValue(false);
 
     renderLocalExecutionFailure(
       {
@@ -84,5 +91,47 @@ describe('renderLocalExecutionFailure', () => {
       retryable: false,
     });
     expect(process.exitCode).toBe(10);
+  });
+
+  it('calls process.exit() in agent mode for json failures', () => {
+    mockGetOutputFormat.mockReturnValue('json');
+    mockIsAgent.mockReturnValue(true);
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('exit');
+    });
+
+    expect(() =>
+      renderLocalExecutionFailure({ error: 'fail', errorCode: 'TEST', exitCode: 10 }, 'fallback')
+    ).toThrow('exit');
+
+    expect(mockExit).toHaveBeenCalledWith(10);
+    mockExit.mockRestore();
+  });
+
+  it('calls process.exit() in agent mode for text failures', () => {
+    mockGetOutputFormat.mockReturnValue('table');
+    mockIsAgent.mockReturnValue(true);
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('exit');
+    });
+
+    expect(() =>
+      renderLocalExecutionFailure({ error: 'fail', errorCode: 'TEST', exitCode: 5 }, 'fallback')
+    ).toThrow('exit');
+
+    expect(mockExit).toHaveBeenCalledWith(5);
+    mockExit.mockRestore();
+  });
+
+  it('does NOT call process.exit() in non-agent mode', () => {
+    mockGetOutputFormat.mockReturnValue('json');
+    mockIsAgent.mockReturnValue(false);
+    const mockExit = vi.spyOn(process, 'exit');
+
+    renderLocalExecutionFailure({ error: 'fail', errorCode: 'TEST', exitCode: 10 }, 'fallback');
+
+    expect(mockExit).not.toHaveBeenCalled();
+    expect(process.exitCode).toBe(10);
+    mockExit.mockRestore();
   });
 });

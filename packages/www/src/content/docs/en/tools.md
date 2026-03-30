@@ -56,8 +56,8 @@ Open an interactive SSH session to a machine or into a repository's environment.
 The fastest way to connect:
 
 ```bash
-rdc term server-1                    # Connect to a machine
-rdc term server-1 my-app             # Connect to a repository
+rdc term connect -m server-1                    # Connect to a machine
+rdc term connect -m server-1 -r my-app             # Connect to a repository
 ```
 
 ### Run a Command
@@ -65,8 +65,8 @@ rdc term server-1 my-app             # Connect to a repository
 Execute a command without opening an interactive session:
 
 ```bash
-rdc term server-1 -c "uptime"
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -c "uptime"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 ```
 
 When connecting to a repository, `DOCKER_HOST` is automatically set to the repository's isolated Docker socket, so `docker ps` shows only that repository's containers.
@@ -86,19 +86,19 @@ Interact directly with a running container:
 
 ```bash
 # Open a shell inside a container
-rdc term server-1 my-app --container <container-id>
+rdc term connect -m server-1 -r my-app --container <container-id>
 
 # View container logs
-rdc term server-1 my-app --container <container-id> --container-action logs
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs
 
 # Follow logs in real-time
-rdc term server-1 my-app --container <container-id> --container-action logs --follow
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow
 
 # View container stats
-rdc term server-1 my-app --container <container-id> --container-action stats
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats
 
 # Execute a command in a container
-rdc term server-1 my-app --container <container-id> --container-action exec -c "ls -la"
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c "ls -la"
 ```
 
 | Option | Description |

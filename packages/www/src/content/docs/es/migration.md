@@ -4,7 +4,7 @@ description: "Migrar proyectos existentes a repositorios cifrados de Rediacc."
 category: "Guides"
 order: 11
 language: es
-sourceHash: fdecebe5bf7d4a86
+sourceHash: e66f9ad6bbf5930f
 ---
 
 # Guía de migración
@@ -283,10 +283,10 @@ Verifique que los servicios se vinculen a su IP asignada, no a `0.0.0.0` o `loca
 
 ```bash
 # Verificar IPs asignadas
-rdc term server-1 my-project -c "cat .rediacc.json"
+rdc term connect -m server-1 -r my-project -c "cat .rediacc.json"
 
 # Verificar logs del contenedor
-rdc term server-1 my-project -c "docker logs <container-name>"
+rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 ```
 
 ### Conflicto de puertos entre repositorios

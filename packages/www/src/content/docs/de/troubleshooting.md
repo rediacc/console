@@ -4,7 +4,7 @@ description: "Lösungen für häufige Probleme mit SSH, Einrichtung, Repositorie
 category: "Guides"
 order: 10
 language: de
-sourceHash: "b392ab73d90c62e1"
+sourceHash: "f666ba3be3be29f7"
 ---
 
 # Fehlerbehebung
@@ -16,7 +16,7 @@ Häufige Probleme und ihre Lösungen. Im Zweifelsfall starten Sie mit `rdc docto
 - Überprüfen Sie, ob Sie sich manuell verbinden können: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
 - Führen Sie `rdc config machine scan-keys server-1` aus, um die Host-Schlüssel zu aktualisieren
 - Stellen Sie sicher, dass der SSH-Port übereinstimmt: `--port 22`
-- Testen Sie mit einem einfachen Befehl: `rdc term server-1 -c "hostname"`
+- Testen Sie mit einem einfachen Befehl: `rdc term connect -m server-1 -c "hostname"`
 
 ## Host-Schlüssel stimmt nicht überein
 
@@ -48,7 +48,7 @@ Dieser Befehl ruft frische Host-Schlüssel ab und aktualisiert Ihre Konfiguratio
 - Überprüfen Sie die Container-Logs über den Docker-Socket des Repositories:
 
 ```bash
-rdc term server-1 my-app -c "docker logs <container-name>"
+rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 ```
 
 Oder alle Container anzeigen:
@@ -69,7 +69,7 @@ Jedes Repository hat seinen eigenen Docker-Daemon. Wenn Sie Docker-Befehle manue
 
 ```bash
 # Mit rdc term (automatisch konfiguriert):
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 
 # Oder manuell mit dem Socket:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -93,7 +93,7 @@ Wenn `rdc term` kein Terminal-Fenster öffnen kann:
 
 - Verwenden Sie den Inline-Modus mit `-c`, um Befehle direkt auszuführen:
   ```bash
-  rdc term server-1 -c "ls -la"
+  rdc term connect -m server-1 -c "ls -la"
   ```
 - Erzwingen Sie ein externes Terminal mit `--external`, wenn der Inline-Modus Probleme bereitet
 - Unter Linux stellen Sie sicher, dass `gnome-terminal`, `xterm` oder ein anderer Terminal-Emulator installiert ist

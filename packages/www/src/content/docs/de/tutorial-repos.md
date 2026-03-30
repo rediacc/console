@@ -4,7 +4,7 @@ description: "Ein verschlüsseltes Repository erstellen, eine containerisierte A
 category: "Tutorials"
 order: 3
 language: de
-sourceHash: f28a6f56286d8853
+sourceHash: ee3455c196ea1479
 ---
 
 # So stellen Sie Repositories mit Rediacc bereit und verwalten sie
@@ -46,7 +46,7 @@ Zeigt alle Repositories auf der Maschine mit ihrer Größe, Mount-Status und Ver
 Überprüfen Sie vor der Bereitstellung, ob der Speicher des Repositories gemountet und zugänglich ist.
 
 ```bash
-rdc term server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
+rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
 Das Mount-Verzeichnis ist der Ort, an dem sich die Anwendungsdateien befinden — `Rediaccfile`, `docker-compose.yml` und alle Datenvolumen.
@@ -76,7 +76,7 @@ Zeigt alle laufenden Container über alle Repositories auf der Maschine, einschl
 Um Befehle in der isolierten Docker-Umgebung des Repositories auszuführen:
 
 ```bash
-rdc term server-1 test-app -c "docker ps"
+rdc term connect -m server-1 -r test-app -c "docker ps"
 ```
 
 Die Terminal-Sitzung setzt `DOCKER_HOST` auf den isolierten Docker-Socket des Repositories. Jeder Docker-Befehl wird nur gegen die Container dieses Repositories ausgeführt.

@@ -4,7 +4,7 @@ description: ファイル同期、ターミナルアクセス、VS Code統合、
 category: Guides
 order: 9
 language: ja
-sourceHash: "f304688fdc1a41c1"
+sourceHash: "bc5864d869d191be"
 ---
 
 # ツール
@@ -57,8 +57,8 @@ rdc repo sync status -m server-1 -r my-app
 最も手軽な接続方法：
 
 ```bash
-rdc term server-1                    # マシンに接続
-rdc term server-1 my-app             # リポジトリに接続
+rdc term connect -m server-1                    # マシンに接続
+rdc term connect -m server-1 -r my-app             # リポジトリに接続
 ```
 
 ### コマンドの実行
@@ -66,8 +66,8 @@ rdc term server-1 my-app             # リポジトリに接続
 インタラクティブセッションを開かずにコマンドを実行します：
 
 ```bash
-rdc term server-1 -c "uptime"
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -c "uptime"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 ```
 
 リポジトリに接続する際、`DOCKER_HOST`はリポジトリの分離されたDockerソケットに自動的に設定されるため、`docker ps`はそのリポジトリのコンテナのみを表示します。
@@ -87,19 +87,19 @@ rdc term connect -m server-1 -r my-app
 
 ```bash
 # コンテナ内でシェルを開く
-rdc term server-1 my-app --container <container-id>
+rdc term connect -m server-1 -r my-app --container <container-id>
 
 # コンテナログを表示
-rdc term server-1 my-app --container <container-id> --container-action logs
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs
 
 # リアルタイムでログを追跡
-rdc term server-1 my-app --container <container-id> --container-action logs --follow
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow
 
 # コンテナの統計情報を表示
-rdc term server-1 my-app --container <container-id> --container-action stats
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats
 
 # コンテナ内でコマンドを実行
-rdc term server-1 my-app --container <container-id> --container-action exec -c "ls -la"
+rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c "ls -la"
 ```
 
 | オプション | 説明 |

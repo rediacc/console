@@ -48,6 +48,7 @@ test.describe('Ceph Clone Commands @cli @ceph', () => {
       await ctx.runner.run([
         'machine',
         'create',
+        '--name',
         machineName,
         '--team',
         teamName,
@@ -60,6 +61,7 @@ test.describe('Ceph Clone Commands @cli @ceph', () => {
       await ctx.runner.run([
         'machine',
         'create',
+        '--name',
         assignMachineName,
         '--team',
         teamName,
@@ -174,10 +176,10 @@ test.describe('Ceph Clone Commands @cli @ceph', () => {
 
       // Cleanup machines
       await ctx.runner
-        .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
+        .run(['machine', 'delete', '--name', machineName, '--team', teamName, '--force'])
         .catch(() => {});
       await ctx.runner
-        .run(['machine', 'delete', assignMachineName, '--team', teamName, '--force'])
+        .run(['machine', 'delete', '--name', assignMachineName, '--team', teamName, '--force'])
         .catch(() => {});
 
       await ctx?.cleanup();

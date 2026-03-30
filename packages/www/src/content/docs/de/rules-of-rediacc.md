@@ -4,8 +4,8 @@ description: "Wesentliche Regeln und Konventionen für die Entwicklung von Anwen
 category: "Guides"
 order: 5
 language: de
-sourceHash: "f7ca177c604f0ff7"
-sourceCommit: "c4820684802963ecf645e56c87e13815deb84688"
+sourceHash: "17f2cc084c2782cc"
+sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
 # Regeln von Rediacc
@@ -155,5 +155,5 @@ Renet injiziert diese automatisch in jeden Container:
 - Nicht an `SERVICE_IP` binden — verursacht Portkonflikte zwischen Repos.
 - IPs hardcoden — verwenden Sie die Umgebungsvariable `SERVICE_IP`; IPs werden dynamisch pro networkId zugewiesen.
 - `--mount` beim ersten Deploy nach `backup push` vergessen — das LUKS-Volume muss explizit geöffnet werden.
-- `rdc term -c` als Workaround für fehlgeschlagene Befehle verwenden — melden Sie stattdessen Bugs.
+- `rdc term connect -c` als Workaround für fehlgeschlagene Befehle verwenden — melden Sie stattdessen Bugs.
 - `repo delete` führt eine vollständige Bereinigung durch, einschließlich Loopback-IPs und systemd-Units. Führen Sie `rdc machine prune <name>` aus, um Überreste aus alten Löschvorgängen zu bereinigen.

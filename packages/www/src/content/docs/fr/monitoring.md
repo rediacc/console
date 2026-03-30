@@ -6,7 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: fr
-sourceHash: ed667247d300508a
+sourceHash: 13e3bed39301023c
+sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
 # Supervision
@@ -118,7 +119,7 @@ Utilisez `--output json` pour une sortie lisible par les machines.
 
 ## Tester la connexion
 
-> **Adaptateur cloud uniquement.** En mode local, utilisez `rdc term server-1 -c "hostname"` pour vérifier la connectivité.
+> **Adaptateur cloud uniquement.** En mode local, utilisez `rdc term connect -m server-1 -c "hostname"` pour vérifier la connectivité.
 
 Vérifiez la connectivité SSH vers une machine :
 

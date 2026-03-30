@@ -4,7 +4,7 @@ description: "構成プロファイルの作成、リモートマシンの登録
 category: "Tutorials"
 order: 2
 language: ja
-sourceHash: "04756cddd86e097c"
+sourceHash: "a7e5e0c30a4bb7d6"
 ---
 
 # Rediaccでマシンをセットアップする方法
@@ -72,8 +72,8 @@ rdc config set machine bridge-vm --config tutorial-demo
 何かをデプロイする前に、マシンがSSH経由でアクセス可能であることを確認します。
 
 ```bash
-rdc term bridge-vm -c "hostname"
-rdc term bridge-vm -c "uptime"
+rdc term connect -m bridge-vm -c "hostname"
+rdc term connect -m bridge-vm -c "uptime"
 ```
 
 両方のコマンドはリモートマシンで実行され、すぐに結果を返します。どちらかが失敗した場合は、SSHキーが正しいこととサーバーにアクセスできることを確認してください。

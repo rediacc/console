@@ -4,7 +4,7 @@ description: "Миграция существующих проектов в за
 category: "Guides"
 order: 11
 language: ru
-sourceHash: fdecebe5bf7d4a86
+sourceHash: e66f9ad6bbf5930f
 ---
 
 # Руководство по миграции
@@ -283,10 +283,10 @@ rdc repo ownership my-project -m server-1
 
 ```bash
 # Проверить назначенные IP
-rdc term server-1 my-project -c "cat .rediacc.json"
+rdc term connect -m server-1 -r my-project -c "cat .rediacc.json"
 
 # Проверить логи контейнера
-rdc term server-1 my-project -c "docker logs <container-name>"
+rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 ```
 
 ### Конфликт портов между репозиториями

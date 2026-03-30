@@ -283,10 +283,10 @@ Check that services bind to their assigned IP, not `localhost`:
 
 ```bash
 # Check assigned IPs
-rdc term server-1 my-project -c "cat .rediacc.json"
+rdc term connect -m server-1 -r my-project -c "cat .rediacc.json"
 
 # Check container logs
-rdc term server-1 my-project -c "docker logs <container-name>"
+rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 ```
 
 ### Port Conflict Between Repositories

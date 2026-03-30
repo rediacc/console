@@ -4,7 +4,7 @@ description: "إنشاء ملف تعريف التكوين، تسجيل جهاز 
 category: "Tutorials"
 order: 2
 language: ar
-sourceHash: "04756cddd86e097c"
+sourceHash: "a7e5e0c30a4bb7d6"
 ---
 
 # كيفية إعداد جهاز باستخدام Rediacc
@@ -72,8 +72,8 @@ rdc config set machine bridge-vm --config tutorial-demo
 قبل نشر أي شيء، تحقق من إمكانية الوصول إلى الجهاز عبر SSH.
 
 ```bash
-rdc term bridge-vm -c "hostname"
-rdc term bridge-vm -c "uptime"
+rdc term connect -m bridge-vm -c "hostname"
+rdc term connect -m bridge-vm -c "uptime"
 ```
 
 يعمل كلا الأمرين على الجهاز البعيد ويعيدان النتيجة فوراً. إذا فشل أي منهما، تحقق من صحة مفتاح SSH وإمكانية الوصول إلى الخادم.

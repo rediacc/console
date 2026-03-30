@@ -97,11 +97,12 @@ export function registerRepoVolumeCommands(
     meta: { action: string }
   ) => Promise<void>
 ): void {
-  // repo mount [name]
+  // repo mount [--name <name>]
   repo
-    .command('mount [name]')
+    .command('mount')
     .summary(t('commands.repo.mount.descriptionShort'))
     .description(t('commands.repo.mount.description'))
+    .option('--name <name>', t('options.name'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--checkpoint', t('commands.repo.mount.checkpointOption'))
     .option('--no-docker', t('commands.repo.mount.noDockerOption'))
@@ -110,19 +111,21 @@ export function registerRepoVolumeCommands(
     .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (name: string | undefined, options: MountOptions) => {
+    .action(async (options: MountOptions & { name?: string }) => {
       try {
+        const name = options.name;
         await executeMountAction(name, options, executeRepoFunction, iterateAllRepos);
       } catch (error) {
         handleError(error);
       }
     });
 
-  // repo unmount [name]
+  // repo unmount [--name <name>]
   repo
-    .command('unmount [name]')
+    .command('unmount')
     .summary(t('commands.repo.unmount.descriptionShort'))
     .description(t('commands.repo.unmount.description'))
+    .option('--name <name>', t('options.name'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--checkpoint', t('commands.repo.unmount.checkpointOption'))
     .option('--parallel', t('commands.repo.upAll.parallelOption'))
@@ -131,19 +134,18 @@ export function registerRepoVolumeCommands(
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
-      async (
-        name: string | undefined,
-        options: {
-          machine: string;
-          checkpoint?: boolean;
-          parallel?: boolean;
-          concurrency?: string;
-          yes?: boolean;
-          debug?: boolean;
-          skipRouterRestart?: boolean;
-        }
-      ) => {
+      async (options: {
+        name?: string;
+        machine: string;
+        checkpoint?: boolean;
+        parallel?: boolean;
+        concurrency?: string;
+        yes?: boolean;
+        debug?: boolean;
+        skipRouterRestart?: boolean;
+      }) => {
         try {
+          const name = options.name;
           if (name) {
             await assertCommandPolicy(CMD.REPO_UNMOUNT, name);
 

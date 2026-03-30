@@ -4,7 +4,7 @@ description: "Créez un profil de configuration, enregistrez une machine distant
 category: "Tutorials"
 order: 2
 language: fr
-sourceHash: "04756cddd86e097c"
+sourceHash: "a7e5e0c30a4bb7d6"
 ---
 
 # Comment configurer une machine avec Rediacc
@@ -72,8 +72,8 @@ rdc config set machine bridge-vm --config tutorial-demo
 Avant de déployer quoi que ce soit, vérifiez que la machine est accessible via SSH.
 
 ```bash
-rdc term bridge-vm -c "hostname"
-rdc term bridge-vm -c "uptime"
+rdc term connect -m bridge-vm -c "hostname"
+rdc term connect -m bridge-vm -c "uptime"
 ```
 
 Les deux commandes s'exécutent sur la machine distante et retournent immédiatement. Si l'une échoue, vérifiez que votre clé SSH est correcte et que le serveur est accessible.

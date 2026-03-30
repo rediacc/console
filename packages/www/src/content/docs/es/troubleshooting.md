@@ -4,7 +4,7 @@ description: "Soluciones para problemas comunes con SSH, configuración, reposit
 category: "Guides"
 order: 10
 language: es
-sourceHash: "b392ab73d90c62e1"
+sourceHash: "f666ba3be3be29f7"
 ---
 
 # Solución de problemas
@@ -16,7 +16,7 @@ Problemas comunes y sus soluciones. En caso de duda, comience con `rdc doctor` p
 - Verifique que puede conectarse manualmente: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
 - Ejecute `rdc config machine scan-keys server-1` para actualizar las claves del host
 - Compruebe que el puerto SSH coincida: `--port 22`
-- Pruebe con un comando simple: `rdc term server-1 -c "hostname"`
+- Pruebe con un comando simple: `rdc term connect -m server-1 -c "hostname"`
 
 ## Discrepancia de clave del host
 
@@ -48,7 +48,7 @@ Este comando obtiene claves de host nuevas y actualiza su configuración.
 - Revise los registros del contenedor usando el socket Docker del repositorio:
 
 ```bash
-rdc term server-1 my-app -c "docker logs <container-name>"
+rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 ```
 
 O vea todos los contenedores:
@@ -69,7 +69,7 @@ Cada repositorio tiene su propio Docker daemon. Al ejecutar comandos Docker manu
 
 ```bash
 # Usando rdc term (configurado automáticamente):
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 
 # O manualmente con el socket:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -93,7 +93,7 @@ Si `rdc term` no logra abrir una ventana de terminal:
 
 - Use el modo en línea con `-c` para ejecutar comandos directamente:
   ```bash
-  rdc term server-1 -c "ls -la"
+  rdc term connect -m server-1 -c "ls -la"
   ```
 - Fuerce una terminal externa con `--external` si el modo en línea tiene problemas
 - En Linux, asegúrese de tener instalado `gnome-terminal`, `xterm` u otro emulador de terminal

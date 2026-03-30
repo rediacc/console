@@ -4,7 +4,7 @@ description: Starten Sie einen containerisierten Dienst auf Ihrem Server in weni
 category: Guides
 order: -1
 language: de
-sourceHash: "73dc08190016a305"
+sourceHash: "83fb84d9a631a73e"
 ---
 
 # Schnellstart
@@ -111,7 +111,7 @@ rdc repo status my-app -m my-server                  # Mount-Status, Docker, Gr�
 ### 4. VS Code
 
 ```bash
-rdc vscode my-server my-app              # Öffnet VS Code SSH, landet in der Repo-Sandbox
+rdc vscode connect -m my-server -r my-app              # Öffnet VS Code SSH, landet in der Repo-Sandbox
 ```
 
 Sie bearbeiten Dateien *innerhalb* des verschlüsselten Volumes. `docker ps` zeigt nur die Container dieses Repos. Speichern, compose up, iterieren.
@@ -125,7 +125,7 @@ Sie bearbeiten Dateien *innerhalb* des verschlüsselten Volumes. `docker ps` zei
 | **Anwendungsfall** | CI/CD, Automatisierung, Remote-Betrieb | Entwickler-Arbeitsschleife |
 | **Isolation** | Orchestriert von außen | Bereits in der Sandbox |
 
-**Demo-Ablauf:** `rdc repo template apply` → `rdc vscode my-server my-app` → `docker-compose.yml` bearbeiten → `renet dev up` → App läuft → iterieren.
+**Demo-Ablauf:** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → `docker-compose.yml` bearbeiten → `renet dev up` → App läuft → iterieren.
 
 > Rediaccfile-Struktur: [Dienste](/de/docs/services). Wann welches Werkzeug verwenden: [rdc vs renet](/de/docs/rdc-vs-renet).
 
@@ -141,9 +141,9 @@ Sie bearbeiten Dateien *innerhalb* des verschlüsselten Volumes. `docker ps` zei
 
 **Terminal:**
 ```bash
-rdc term my-server my-app                            # SSH in die Repo-Sandbox
-rdc term my-server my-app -c "curl localhost:3000"   # Befehl ausführen & beenden
-rdc term my-server                                   # SSH zur Maschine (keine Sandbox)
+rdc term connect -m my-server -r my-app                            # SSH in die Repo-Sandbox
+rdc term connect -m my-server -r my-app -c "curl localhost:3000"   # Befehl ausführen & beenden
+rdc term connect -m my-server                                   # SSH zur Maschine (keine Sandbox)
 ```
 
 **Dateisynchronisation (rsync über SSH):**

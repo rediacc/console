@@ -4,7 +4,7 @@ description: Birkaç dakika içinde sunucunuzda konteynerize bir servis çalış
 category: Guides
 order: -1
 language: tr
-sourceHash: "73dc08190016a305"
+sourceHash: "83fb84d9a631a73e"
 ---
 
 # Hızlı Başlangıç
@@ -111,7 +111,7 @@ rdc repo status my-app -m my-server                  # Bağlama durumu, Docker, 
 ### 4. VS Code
 
 ```bash
-rdc vscode my-server my-app              # VS Code SSH açar, repo sandbox'una iner
+rdc vscode connect -m my-server -r my-app              # VS Code SSH açar, repo sandbox'una iner
 ```
 
 Şifrelenmiş birim *içinde* dosyaları düzenliyorsunuz. `docker ps` yalnızca bu reponun konteynerlerini gösterir. Kaydedin, compose up yapın, tekrarlayın.
@@ -125,7 +125,7 @@ rdc vscode my-server my-app              # VS Code SSH açar, repo sandbox'una i
 | **Kullanım senaryosu** | CI/CD, otomasyon, uzaktan işlemler | Geliştirici iç döngüsü |
 | **İzolasyon** | Dışarıdan yönetir | Zaten sandbox içindedir |
 
-**Demo akışı:** `rdc repo template apply` → `rdc vscode my-server my-app` → `docker-compose.yml` düzenle → `renet dev up` → uygulamanın çalıştığını gör → tekrarla.
+**Demo akışı:** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → `docker-compose.yml` düzenle → `renet dev up` → uygulamanın çalıştığını gör → tekrarla.
 
 > Rediaccfile yapısı: [Servisler](/en/docs/services). Hangi aracı ne zaman kullanmalı: [rdc vs renet](/en/docs/rdc-vs-renet).
 
@@ -141,9 +141,9 @@ rdc vscode my-server my-app              # VS Code SSH açar, repo sandbox'una i
 
 **Terminal:**
 ```bash
-rdc term my-server my-app                            # Repo sandbox'una SSH bağlantısı
-rdc term my-server my-app -c "curl localhost:3000"   # Komut çalıştır ve çık
-rdc term my-server                                   # Makineye SSH (sandbox yok)
+rdc term connect -m my-server -r my-app                            # Repo sandbox'una SSH bağlantısı
+rdc term connect -m my-server -r my-app -c "curl localhost:3000"   # Komut çalıştır ve çık
+rdc term connect -m my-server                                   # Makineye SSH (sandbox yok)
 ```
 
 **Dosya Senkronizasyonu (SSH üzerinden rsync):**

@@ -4,7 +4,7 @@ description: "إنشاء مستودع مشفر ونشر تطبيق حاوية و
 category: "Tutorials"
 order: 3
 language: ar
-sourceHash: f28a6f56286d8853
+sourceHash: ee3455c196ea1479
 ---
 
 # كيفية نشر وإدارة المستودعات باستخدام Rediacc
@@ -46,7 +46,7 @@ rdc repo list -m server-1
 قبل النشر، تحقق من أن تخزين المستودع موصّل ويمكن الوصول إليه.
 
 ```bash
-rdc term server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
+rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
 مجلد التوصيل هو المكان الذي تتواجد فيه ملفات التطبيق — `Rediaccfile` و `docker-compose.yml` وأي وحدات تخزين بيانات.
@@ -76,7 +76,7 @@ rdc machine containers server-1
 لتشغيل الأوامر داخل بيئة Docker المعزولة للمستودع:
 
 ```bash
-rdc term server-1 test-app -c "docker ps"
+rdc term connect -m server-1 -r test-app -c "docker ps"
 ```
 
 تقوم جلسة الطرفية بتعيين `DOCKER_HOST` إلى مقبس Docker المعزول الخاص بالمستودع. أي أمر Docker يعمل فقط على حاويات ذلك المستودع.

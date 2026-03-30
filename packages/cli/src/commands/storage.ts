@@ -170,11 +170,13 @@ export function registerStorageCommands(program: Command): void {
 
   // Add browse subcommand for listing files in a storage system
   storage
-    .command('browse <name>')
+    .command('browse')
     .description(t('commands.storage.browse.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .option('--path <subpath>', t('commands.storage.browse.pathOption'), '')
-    .action(async (name: string, options: { path: string }) => {
+    .action(async (options: { name: string; path: string }) => {
       try {
+        const name = options.name;
         const storageConfig = await configService.getStorage(name);
         const guidMap = await configService.getRepositoryGuidMap();
 
@@ -205,17 +207,19 @@ export function registerStorageCommands(program: Command): void {
 
   // storage prune <storageName> — remove orphaned backups from storage
   storage
-    .command('prune <storageName>')
+    .command('prune')
     .summary(t('commands.storage.prune.descriptionShort'))
     .description(t('commands.storage.prune.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--dry-run', t('options.dryRun'))
     .option('--force', t('options.force'))
     .option('--grace-days <days>', t('options.graceDays'), Number.parseInt)
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (storageName: string, options: StoragePruneOptions) => {
+    .action(async (options: StoragePruneOptions & { name: string }) => {
       try {
+        const storageName = options.name;
         await executeStoragePrune(storageName, options);
       } catch (error) {
         handleError(error);

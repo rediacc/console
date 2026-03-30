@@ -4,7 +4,7 @@ description: "Konfiguration erstellen, Maschinen hinzufügen, Server provisionie
 category: "Guides"
 order: 3
 language: de
-sourceHash: "ebf1c9967814ec86"
+sourceHash: "7d4756adb17e63d4"
 ---
 
 # Maschineneinrichtung
@@ -92,7 +92,7 @@ Dies aktualisiert das `knownHosts`-Feld in Ihrer Konfiguration für diese Maschi
 Nach dem Hinzufügen einer Maschine prüfen Sie, ob sie erreichbar ist:
 
 ```bash
-rdc term server-1 -c "hostname"
+rdc term connect -m server-1 -c "hostname"
 ```
 
 Dies öffnet eine SSH-Verbindung zur Maschine und führt den Befehl aus. Bei Erfolg ist Ihre SSH-Konfiguration korrekt.

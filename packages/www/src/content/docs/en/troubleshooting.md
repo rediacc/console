@@ -15,7 +15,7 @@ Common issues and their solutions. When in doubt, start with `rdc doctor` to run
 - Verify you can connect manually: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
 - Run `rdc config machine scan-keys server-1` to refresh host keys
 - Check that the SSH port matches: `--port 22`
-- Test with a simple command: `rdc term server-1 -c "hostname"`
+- Test with a simple command: `rdc term connect -m server-1 -c "hostname"`
 
 ## Host Key Mismatch
 
@@ -47,7 +47,7 @@ This fetches fresh host keys and updates your config.
 - Check container logs using the repository's Docker socket:
 
 ```bash
-rdc term server-1 my-app -c "docker logs <container-name>"
+rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 ```
 
 Or view all containers:
@@ -68,7 +68,7 @@ Each repository has its own Docker daemon. When running Docker commands manually
 
 ```bash
 # Using rdc term (auto-configured):
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 
 # Or manually with the socket:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -92,7 +92,7 @@ If `rdc term` fails to open a terminal window:
 
 - Use inline mode with `-c` to run commands directly:
   ```bash
-  rdc term server-1 -c "ls -la"
+  rdc term connect -m server-1 -c "ls -la"
   ```
 - Force external terminal with `--external` if inline mode has issues
 - On Linux, ensure you have `gnome-terminal`, `xterm`, or another terminal emulator installed

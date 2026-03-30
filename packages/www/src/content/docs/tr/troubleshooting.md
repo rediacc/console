@@ -4,7 +4,7 @@ description: "SSH, kurulum, depolar, servisler ve Docker ile ilgili yaygın soru
 category: "Guides"
 order: 10
 language: tr
-sourceHash: "b392ab73d90c62e1"
+sourceHash: "f666ba3be3be29f7"
 ---
 
 # Sorun Giderme
@@ -16,7 +16,7 @@ Yaygın sorunlar ve çözümleri. Şüphe durumunda, kapsamlı bir tanılama kon
 - Manuel olarak bağlanabildiğinizi doğrulayın: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
 - Host anahtarlarını yenilemek için `rdc config machine scan-keys server-1` komutunu çalıştırın
 - SSH portunun eşleştiğini kontrol edin: `--port 22`
-- Basit bir komutla test edin: `rdc term server-1 -c "hostname"`
+- Basit bir komutla test edin: `rdc term connect -m server-1 -c "hostname"`
 
 ## Host Anahtarı Uyuşmazlığı
 
@@ -48,7 +48,7 @@ Bu komut yeni host anahtarlarını alır ve yapılandırmanızı günceller.
 - Deponun Docker soketi üzerinden konteyner günlüklerini kontrol edin:
 
 ```bash
-rdc term server-1 my-app -c "docker logs <container-name>"
+rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 ```
 
 Veya tüm konteynerleri görüntüleyin:
@@ -69,7 +69,7 @@ Her deponun kendi Docker daemon'u vardır. Docker komutlarını manuel olarak ç
 
 ```bash
 # rdc term kullanarak (otomatik yapılandırılmış):
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 
 # Veya soket ile manuel olarak:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -93,7 +93,7 @@ Konteynerleriniz deponun izole daemon'u yerine ana sistemin Docker daemon'unda g
 
 - Komutları doğrudan çalıştırmak için `-c` ile satır içi modu kullanın:
   ```bash
-  rdc term server-1 -c "ls -la"
+  rdc term connect -m server-1 -c "ls -la"
   ```
 - Satır içi modda sorun varsa `--external` ile harici terminali zorlayın
 - Linux'ta `gnome-terminal`, `xterm` veya başka bir terminal emülatörünün yüklü olduğundan emin olun

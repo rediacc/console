@@ -7,11 +7,13 @@ export function registerDeployBackupCommand(machine: Command): void {
   const backup = machine.command('backup').description(t('commands.machine.backup.description'));
 
   backup
-    .command('schedule <machine>')
+    .command('schedule')
     .description(t('commands.machine.backup.schedule.description'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--debug', t('options.debug'))
-    .action(async (machineName, options) => {
+    .action(async (options) => {
       try {
+        const machineName = options.machine;
         const { pushBackupSchedule } = await import('../../services/backup-schedule.js');
         await pushBackupSchedule(machineName, { debug: options.debug });
         outputService.success(

@@ -4,6 +4,7 @@ import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
+import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import {
@@ -130,9 +131,10 @@ export function registerShortcuts(program: Command): void {
   // run - shortcut for queue create with optional watch
   // In local mode, executes directly via renet subprocess
   program
-    .command('run <function>', { hidden: true })
+    .command('run', { hidden: true })
     .summary(t('commands.shortcuts.run.descriptionShort'))
     .description(t('commands.shortcuts.run.description'))
+    .requiredOption('-f, --function <name>', t('options.function'))
     .option('-t, --team <name>', t('options.team'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('-b, --bridge <name>', t('options.bridge'))
@@ -158,8 +160,11 @@ export function registerShortcuts(program: Command): void {
     .option('-w, --watch', t('options.watch'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (functionName, options) => {
+    .action(async (options) => {
       try {
+        await assertCommandPolicy(CMD.RUN);
+
+        const functionName = options.function;
         const provider = await getStateProvider();
 
         if (provider.isCloud) {

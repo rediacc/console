@@ -4,7 +4,7 @@ description: Ejecute un servicio en contenedores en su servidor en minutos.
 category: Guides
 order: -1
 language: es
-sourceHash: "73dc08190016a305"
+sourceHash: "83fb84d9a631a73e"
 ---
 
 # Inicio rápido
@@ -111,7 +111,7 @@ rdc repo status my-app -m my-server                  # Estado de montaje, Docker
 ### 4. VS Code
 
 ```bash
-rdc vscode my-server my-app              # Abre VS Code SSH, aterriza dentro del sandbox del repo
+rdc vscode connect -m my-server -r my-app              # Abre VS Code SSH, aterriza dentro del sandbox del repo
 ```
 
 Está editando archivos *dentro* del volumen cifrado. `docker ps` solo muestra los contenedores de este repo. Guarde, compose up, itere.
@@ -125,7 +125,7 @@ Está editando archivos *dentro* del volumen cifrado. `docker ps` solo muestra l
 | **Caso de uso** | CI/CD, automatización, operaciones remotas | Ciclo interno del desarrollador |
 | **Aislamiento** | Orquesta desde afuera | Ya está dentro del sandbox |
 
-**Flujo de demostración:** `rdc repo template apply` → `rdc vscode my-server my-app` → editar `docker-compose.yml` → `renet dev up` → ver la app ejecutándose → iterar.
+**Flujo de demostración:** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → editar `docker-compose.yml` → `renet dev up` → ver la app ejecutándose → iterar.
 
 > Estructura del Rediaccfile: [Servicios](/en/docs/services). Cuándo usar cada herramienta: [rdc vs renet](/en/docs/rdc-vs-renet).
 
@@ -141,9 +141,9 @@ Está editando archivos *dentro* del volumen cifrado. `docker ps` solo muestra l
 
 **Terminal:**
 ```bash
-rdc term my-server my-app                            # SSH al sandbox del repo
-rdc term my-server my-app -c "curl localhost:3000"   # Ejecutar comando y salir
-rdc term my-server                                   # SSH a la máquina (sin sandbox)
+rdc term connect -m my-server -r my-app                            # SSH al sandbox del repo
+rdc term connect -m my-server -r my-app -c "curl localhost:3000"   # Ejecutar comando y salir
+rdc term connect -m my-server                                   # SSH a la máquina (sin sandbox)
 ```
 
 **Sincronización de archivos (rsync sobre SSH):**

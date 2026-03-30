@@ -4,7 +4,7 @@ description: "Créez une configuration, ajoutez des machines, provisionnez des s
 category: "Guides"
 order: 3
 language: fr
-sourceHash: "ebf1c9967814ec86"
+sourceHash: "7d4756adb17e63d4"
 ---
 
 # Configuration de la machine
@@ -92,7 +92,7 @@ Ceci met à jour le champ `knownHosts` dans votre configuration pour cette machi
 Après l'ajout d'une machine, vérifiez qu'elle est accessible :
 
 ```bash
-rdc term server-1 -c "hostname"
+rdc term connect -m server-1 -c "hostname"
 ```
 
 Cette commande ouvre une connexion SSH vers la machine et exécute la commande. Si elle réussit, votre configuration SSH est correcte.

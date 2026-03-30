@@ -45,7 +45,7 @@ Shows all repositories on the machine with their size, mount status, and encrypt
 Before deploying, verify the repository's storage is mounted and accessible.
 
 ```bash
-rdc term server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
+rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
 The mount directory is where application files live — `Rediaccfile`, `docker-compose.yml`, and any data volumes.
@@ -75,7 +75,7 @@ Shows all running containers across all repositories on the machine, including C
 To run commands inside the repository's isolated Docker environment:
 
 ```bash
-rdc term server-1 test-app -c "docker ps"
+rdc term connect -m server-1 -r test-app -c "docker ps"
 ```
 
 The terminal session sets `DOCKER_HOST` to the repository's isolated Docker socket. Any Docker command runs against that repository's containers only.

@@ -4,7 +4,7 @@ description: "Migrer des projets existants vers des dépôts chiffrés Rediacc."
 category: "Guides"
 order: 11
 language: fr
-sourceHash: fdecebe5bf7d4a86
+sourceHash: e66f9ad6bbf5930f
 ---
 
 # Guide de migration
@@ -283,10 +283,10 @@ Vérifiez que les services se lient à leur IP attribuée, pas à `0.0.0.0` ou `
 
 ```bash
 # Vérifier les IPs attribuées
-rdc term server-1 my-project -c "cat .rediacc.json"
+rdc term connect -m server-1 -r my-project -c "cat .rediacc.json"
 
 # Vérifier les logs du conteneur
-rdc term server-1 my-project -c "docker logs <container-name>"
+rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 ```
 
 ### Conflit de ports entre les dépôts

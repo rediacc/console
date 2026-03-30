@@ -4,7 +4,7 @@ description: "Solutions aux problèmes courants avec SSH, la configuration, les 
 category: "Guides"
 order: 10
 language: fr
-sourceHash: "b392ab73d90c62e1"
+sourceHash: "f666ba3be3be29f7"
 ---
 
 # Dépannage
@@ -16,7 +16,7 @@ Problèmes courants et leurs solutions. En cas de doute, commencez par `rdc doct
 - Vérifiez que vous pouvez vous connecter manuellement : `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
 - Exécutez `rdc config machine scan-keys server-1` pour actualiser les clés de l'hôte
 - Vérifiez que le port SSH correspond : `--port 22`
-- Testez avec une commande simple : `rdc term server-1 -c "hostname"`
+- Testez avec une commande simple : `rdc term connect -m server-1 -c "hostname"`
 
 ## Discordance de clé d'hôte
 
@@ -48,7 +48,7 @@ Cette commande récupère de nouvelles clés d'hôte et met à jour votre config
 - Consultez les journaux des conteneurs via le socket Docker du dépôt :
 
 ```bash
-rdc term server-1 my-app -c "docker logs <container-name>"
+rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 ```
 
 Ou affichez tous les conteneurs :
@@ -69,7 +69,7 @@ Chaque dépôt dispose de son propre Docker daemon. Lorsque vous exécutez des c
 
 ```bash
 # Avec rdc term (configuré automatiquement) :
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 
 # Ou manuellement avec le socket :
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -93,7 +93,7 @@ Si `rdc term` ne parvient pas à ouvrir une fenêtre de terminal :
 
 - Utilisez le mode en ligne avec `-c` pour exécuter des commandes directement :
   ```bash
-  rdc term server-1 -c "ls -la"
+  rdc term connect -m server-1 -c "ls -la"
   ```
 - Forcez un terminal externe avec `--external` si le mode en ligne pose des problèmes
 - Sous Linux, assurez-vous d'avoir installé `gnome-terminal`, `xterm` ou un autre émulateur de terminal

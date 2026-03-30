@@ -4,7 +4,7 @@ description: "SSH terminal erişimi, dosya senkronizasyonu, VS Code entegrasyonu
 category: "Tutorials"
 order: 5
 language: tr
-sourceHash: "9391a34dfb244942"
+sourceHash: "8043725fd714ab02"
 ---
 
 # Rediacc ile Terminal, Senkronizasyon ve VS Code Araçları Nasıl Kullanılır
@@ -25,8 +25,8 @@ CLI, günlük işlemler için üretkenlik araçları içerir: SSH terminal eriş
 Etkileşimli bir oturum açmadan SSH üzerinden uzak bir makinede satır içi komutlar çalıştırın.
 
 ```bash
-rdc term server-1 -c "hostname"
-rdc term server-1 -c "uptime"
+rdc term connect -m server-1 -c "hostname"
+rdc term connect -m server-1 -c "uptime"
 ```
 
 `-c` bayrağı tek bir komutu çalıştırır ve çıktıyı döndürür. Etkileşimli bir SSH oturumu açmak için `-c`'yi atlayın.
@@ -36,7 +36,7 @@ rdc term server-1 -c "uptime"
 Bir deponun izole Docker ortamında komut çalıştırmak için:
 
 ```bash
-rdc term server-1 my-app -c "docker ps"
+rdc term connect -m server-1 -r my-app -c "docker ps"
 ```
 
 Bir depoya bağlanıldığında, `DOCKER_HOST` otomatik olarak deponun izole Docker soketine ayarlanır. Herhangi bir Docker komutu yalnızca o deponun konteynerlerine karşı çalışır.
@@ -66,7 +66,7 @@ Dosyalar SSH üzerinden rsync ile aktarılır. Sonraki yüklemelerde yalnızca d
 Deponun bağlama dizinini listeleyerek dosyaların ulaştığını onaylayın.
 
 ```bash
-rdc term server-1 my-app -c "ls -la"
+rdc term connect -m server-1 -r my-app -c "ls -la"
 ```
 
 ### Adım 6: VS Code entegrasyon kontrolü
@@ -77,7 +77,7 @@ VS Code ile uzaktan geliştirme yapmak için gerekli bileşenlerin kurulu olduğ
 rdc vscode check
 ```
 
-VS Code kurulumunuzu, Remote SSH eklentisini ve SSH yapılandırmasını kontrol eder. Eksik ön koşulları çözmek için çıktıyı takip edin, ardından `rdc vscode <machine> [repo]` ile bağlanın.
+VS Code kurulumunuzu, Remote SSH eklentisini ve SSH yapılandırmasını kontrol eder. Eksik ön koşulları çözmek için çıktıyı takip edin, ardından `rdc vscode connect -m <machine> -r [repo]` ile bağlanın.
 
 ### Adım 7: CLI güncellemelerini kontrol edin
 

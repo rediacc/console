@@ -260,11 +260,13 @@ export function registerSubscriptionCommands(program: Command): void {
     });
 
   refresh
-    .command('repo <repo>')
+    .command('repo')
     .description(t('commands.subscription.refresh.repo.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
-    .action(async (repoName, options) => {
+    .action(async (options) => {
       try {
+        const repoName = options.name;
         await withSpinner(
           t('commands.subscription.refresh.repo.refreshing'),
           async () => {

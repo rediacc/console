@@ -19,7 +19,7 @@ const MACHINE_QUERY_VIEWS: ToolDef[] = [
     description:
       'List Docker containers on a machine. JSON includes full container details (labels, port_mappings, image), repository resolved to name (original in repository_guid), domain, and autoRoute ({service}.{repo}.{machine}.{baseDomain})',
     schema: { name: z.string().describe('Machine name') },
-    command: (args) => ['machine', 'query', args.name as string, '--containers'],
+    command: (args) => ['machine', 'query', '--name', args.name as string, '--containers'],
     isDestructive: false,
     isIdempotent: true,
     timeoutMs: READ_TIMEOUT,
@@ -29,7 +29,7 @@ const MACHINE_QUERY_VIEWS: ToolDef[] = [
     description:
       'List rediacc-managed systemd services on a machine (name, state, sub-state, restart count, memory, repository resolved to name with original in repository_guid)',
     schema: { name: z.string().describe('Machine name') },
-    command: (args) => ['machine', 'query', args.name as string, '--services'],
+    command: (args) => ['machine', 'query', '--name', args.name as string, '--services'],
     isDestructive: false,
     isIdempotent: true,
     timeoutMs: READ_TIMEOUT,
@@ -55,10 +55,10 @@ const MACHINE_QUERY_VIEWS: ToolDef[] = [
   },
 ];
 
-/** Build argv for term_exec: term <machine> [repository] -c <command> */
+/** Build argv for term_exec: term connect -m <machine> [-r <repository>] -c <command> */
 function buildTermExecArgv(args: Record<string, unknown>): string[] {
-  const argv = ['term', args.machine as string];
-  if (args.repository) argv.push(args.repository as string);
+  const argv = ['term', 'connect', '-m', args.machine as string];
+  if (args.repository) argv.push('-r', args.repository as string);
   argv.push('-c', args.command as string);
   return argv;
 }

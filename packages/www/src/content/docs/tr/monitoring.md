@@ -6,7 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: ed667247d300508a
+sourceHash: 13e3bed39301023c
+sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
 # İzleme
@@ -118,7 +119,7 @@ Makine tarafından okunabilir çıktı için `--output json` kullanın.
 
 ## Bağlantı Testi
 
-> **Yalnızca bulut adaptörü.** Yerel modda, bağlantıyı doğrulamak için `rdc term server-1 -c "hostname"` kullanın.
+> **Yalnızca bulut adaptörü.** Yerel modda, bağlantıyı doğrulamak için `rdc term connect -m server-1 -c "hostname"` kullanın.
 
 Bir makineye SSH bağlantısını doğrulayın:
 

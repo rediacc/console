@@ -4,7 +4,7 @@ description: Konfiguration der Cursor-IDE für die Arbeit mit der Rediacc-Infras
 category: Guides
 order: 32
 language: de
-sourceHash: "c6caf89e3bb3f461"
+sourceHash: "ab61340d4a260fdd"
 ---
 
 Cursor integriert sich mit Rediacc über Terminal-Befehle und die Konfigurationsdatei `.cursorrules`.
@@ -56,7 +56,7 @@ Fragen Sie Cursor: *"Zeige mir die letzten mail-Container-Logs"*
 
 Cursor fuehrt im Terminal aus:
 ```bash
-rdc term prod-1 mail -c "docker logs mail-postfix --tail 100"
+rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
 ```
 
 ## Arbeitsbereichseinstellungen

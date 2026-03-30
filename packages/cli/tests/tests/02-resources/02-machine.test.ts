@@ -97,7 +97,14 @@ test.describe('Machine Commands @cli @resources', () => {
 
     test.beforeAll(async () => {
       // Create a bridge for machine tests (machines require a bridge)
-      await runner.run(['bridge', 'create', testBridgeName, '--region', 'Default Region']);
+      await runner.run([
+        'bridge',
+        'create',
+        '--name',
+        testBridgeName,
+        '--region',
+        'Default Region',
+      ]);
     });
 
     test.afterAll(async () => {
@@ -105,6 +112,7 @@ test.describe('Machine Commands @cli @resources', () => {
       await runner.run([
         'bridge',
         'delete',
+        '--name',
         testBridgeName,
         '--region',
         'Default Region',
@@ -116,6 +124,7 @@ test.describe('Machine Commands @cli @resources', () => {
       const result = await runner.run([
         'machine',
         'create',
+        '--name',
         testMachineName,
         '--team',
         teamName,
@@ -130,7 +139,9 @@ test.describe('Machine Commands @cli @resources', () => {
       const result = await runner.run([
         'machine',
         'rename',
+        '--current-name',
         testMachineName,
+        '--new-name',
         renamedMachineName,
         '--team',
         teamName,

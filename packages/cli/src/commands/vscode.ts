@@ -483,8 +483,8 @@ export function registerVSCodeCommands(program: Command): void {
     'after',
     `
 ${t('help.examples')}
-  $ rdc vscode server-1              ${t('help.vscode.machine')}
-  $ rdc vscode server-1 my-app       ${t('help.vscode.repo')}
+  $ rdc vscode connect -m server-1              ${t('help.vscode.machine')}
+  $ rdc vscode connect -m server-1 -r my-app    ${t('help.vscode.repo')}
 `
   );
 
@@ -550,41 +550,4 @@ ${t('help.examples')}
         handleError(error);
       }
     });
-
-  // Shorthand: rdc vscode <machine> [repository]
-  vscode
-    .argument('[machine]', t('options.machineShorthand'))
-    .argument('[repository]', t('options.repositoryShorthand'))
-    .option('-t, --team <name>', t('options.team'))
-    .option('-f, --folder <path>', t('options.folder'))
-    .option('--url-only', t('options.urlOnly'))
-    .option('-n, --new-window', t('options.newWindow'))
-    .option('--skip-env-setup', t('options.skipEnvSetup'))
-    .option('--insiders', t('options.insiders'))
-    .action(
-      async (
-        machine: string | undefined,
-        repository: string | undefined,
-        options: VSCodeConnectOptions,
-        cmd: Command
-      ) => {
-        try {
-          if (!machine) {
-            cmd.help();
-            return;
-          }
-          const provider = await getStateProvider();
-          if (provider.isCloud) {
-            await authService.requireAuth();
-          }
-          await connectVSCode({
-            ...options,
-            machine,
-            repository,
-          });
-        } catch (error) {
-          handleError(error);
-        }
-      }
-    );
 }

@@ -4,7 +4,7 @@ description: "Bestehende Projekte in verschlüsselte Rediacc-Repositories migrie
 category: "Guides"
 order: 11
 language: de
-sourceHash: fdecebe5bf7d4a86
+sourceHash: e66f9ad6bbf5930f
 ---
 
 # Migrationsleitfaden
@@ -283,10 +283,10 @@ rdc repo ownership my-project -m server-1
 
 ```bash
 # Zugewiesene IPs überprüfen
-rdc term server-1 my-project -c "cat .rediacc.json"
+rdc term connect -m server-1 -r my-project -c "cat .rediacc.json"
 
 # Container-Logs überprüfen
-rdc term server-1 my-project -c "docker logs <container-name>"
+rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 ```
 
 ### Port-Konflikte zwischen Repositories

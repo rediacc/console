@@ -46,6 +46,7 @@ test.describe('Bridge Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'bridge',
         'create',
+        '--name',
         'test-bridge',
         '--region',
         nonExistentName('region'),
@@ -59,6 +60,7 @@ test.describe('Bridge Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'bridge',
         'delete',
+        '--name',
         nonExistentName('bridge'),
         '--region',
         defaultRegionName,
@@ -71,6 +73,7 @@ test.describe('Bridge Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'bridge',
         'delete',
+        '--name',
         'some-bridge',
         '--region',
         nonExistentName('region'),
@@ -98,6 +101,7 @@ test.describe('Bridge Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'bridge',
         'delete',
+        '--name',
         defaultBridge,
         '--region',
         defaultRegion,
@@ -112,7 +116,9 @@ test.describe('Bridge Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'bridge',
         'rename',
+        '--current-name',
         nonExistentName('bridge'),
+        '--new-name',
         'new-name',
         '--region',
         defaultRegionName,
@@ -124,7 +130,9 @@ test.describe('Bridge Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'bridge',
         'rename',
+        '--current-name',
         'some-bridge',
+        '--new-name',
         'new-name',
         '--region',
         nonExistentName('region'),
@@ -152,7 +160,9 @@ test.describe('Bridge Error Scenarios @cli @errors', () => {
         const renameResult = await runner.run([
           'bridge',
           'rename',
+          '--current-name',
           tempBridgeName,
+          '--new-name',
           existingBridgeName,
           '--region',
           defaultRegionName,
@@ -181,7 +191,9 @@ test.describe('Bridge Error Scenarios @cli @errors', () => {
         const renameResult = await runner.run([
           'bridge',
           'rename',
+          '--current-name',
           tempBridgeName,
+          '--new-name',
           '',
           '--region',
           defaultRegionName,

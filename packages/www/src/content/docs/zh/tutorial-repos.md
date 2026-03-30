@@ -4,7 +4,7 @@ description: "创建加密仓库、部署容器化应用、检查容器和清理
 category: "Tutorials"
 order: 3
 language: zh
-sourceHash: f28a6f56286d8853
+sourceHash: ee3455c196ea1479
 ---
 
 # 如何使用 Rediacc 部署和管理仓库
@@ -46,7 +46,7 @@ rdc repo list -m server-1
 在部署之前，验证仓库存储已挂载且可访问。
 
 ```bash
-rdc term server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
+rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
 挂载目录是应用文件所在的位置——`Rediaccfile`、`docker-compose.yml` 以及任何数据卷。
@@ -76,7 +76,7 @@ rdc machine containers server-1
 要在仓库的隔离 Docker 环境中运行命令：
 
 ```bash
-rdc term server-1 test-app -c "docker ps"
+rdc term connect -m server-1 -r test-app -c "docker ps"
 ```
 
 终端会话将 `DOCKER_HOST` 设置为仓库的隔离 Docker 套接字。所有 Docker 命令仅针对该仓库的容器执行。

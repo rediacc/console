@@ -121,6 +121,9 @@ reports/
 # Git worktrees
 .worktrees/
 
+# D1 database backups (local exports via scripts/dev/backup-d1.sh)
+.backups/
+
 # SQLite databases (account E2E artifacts)
 *.db
 *.db-shm

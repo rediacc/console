@@ -4,7 +4,7 @@ description: "Erstellen Sie ein Konfigurationsprofil, registrieren Sie eine Remo
 category: "Tutorials"
 order: 2
 language: de
-sourceHash: "04756cddd86e097c"
+sourceHash: "a7e5e0c30a4bb7d6"
 ---
 
 # So richten Sie eine Maschine mit Rediacc ein
@@ -72,8 +72,8 @@ rdc config set machine bridge-vm --config tutorial-demo
 Bevor Sie etwas bereitstellen, überprüfen Sie, ob die Maschine über SSH erreichbar ist.
 
 ```bash
-rdc term bridge-vm -c "hostname"
-rdc term bridge-vm -c "uptime"
+rdc term connect -m bridge-vm -c "hostname"
+rdc term connect -m bridge-vm -c "uptime"
 ```
 
 Beide Befehle werden auf der Remote-Maschine ausgeführt und liefern sofort ein Ergebnis zurück. Wenn einer fehlschlägt, überprüfen Sie, ob Ihr SSH-Schlüssel korrekt ist und der Server erreichbar ist.

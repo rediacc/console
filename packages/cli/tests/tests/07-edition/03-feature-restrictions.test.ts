@@ -262,6 +262,7 @@ test.describe('Feature Restrictions by Edition @cli @edition', () => {
         const result = await ctx.runner.run([
           'bridge',
           'create',
+          '--name',
           bridgeName,
           '--region',
           regionName,
@@ -287,7 +288,7 @@ test.describe('Feature Restrictions by Edition @cli @edition', () => {
       test.afterAll(async () => {
         for (const bridge of createdBridges) {
           await ctx.runner
-            .run(['bridge', 'delete', bridge, '--region', regionName, '--force'])
+            .run(['bridge', 'delete', '--name', bridge, '--region', regionName, '--force'])
             .catch(() => {});
         }
         await ctx?.cleanup();
@@ -298,6 +299,7 @@ test.describe('Feature Restrictions by Edition @cli @edition', () => {
         const result = await ctx.runner.run([
           'bridge',
           'create',
+          '--name',
           bridgeName,
           '--region',
           regionName,
@@ -312,6 +314,7 @@ test.describe('Feature Restrictions by Edition @cli @edition', () => {
         const result = await ctx.runner.run([
           'bridge',
           'create',
+          '--name',
           bridgeName,
           '--region',
           regionName,
@@ -337,7 +340,7 @@ test.describe('Feature Restrictions by Edition @cli @edition', () => {
       test.afterAll(async () => {
         for (const bridge of createdBridges) {
           await ctx.runner
-            .run(['bridge', 'delete', bridge, '--region', regionName, '--force'])
+            .run(['bridge', 'delete', '--name', bridge, '--region', regionName, '--force'])
             .catch(() => {});
         }
         await ctx?.cleanup();
@@ -349,6 +352,7 @@ test.describe('Feature Restrictions by Edition @cli @edition', () => {
           const result = await ctx.runner.run([
             'bridge',
             'create',
+            '--name',
             bridgeName,
             '--region',
             regionName,
@@ -367,6 +371,7 @@ test.describe('Feature Restrictions by Edition @cli @edition', () => {
         const result = await ctx.runner.run([
           'bridge',
           'create',
+          '--name',
           bridgeName,
           '--region',
           regionName,

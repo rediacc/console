@@ -4,7 +4,7 @@ description: "检查机器健康状况、检查容器、查看 systemd 服务、
 category: "Tutorials"
 order: 4
 language: zh
-sourceHash: "af9f17a05dfb13b9"
+sourceHash: "806137d9c33f4d7f"
 ---
 
 # 如何使用 Rediacc 监控和诊断基础设施
@@ -79,8 +79,8 @@ rdc config machine scan-keys server-1
 快速 SSH 连接检查，确认机器可达并正在响应。
 
 ```bash
-rdc term server-1 -c "hostname"
-rdc term server-1 -c "uptime"
+rdc term connect -m server-1 -c "hostname"
+rdc term connect -m server-1 -c "uptime"
 ```
 
 主机名确认您连接到了正确的服务器。运行时间确认系统正常运行。
@@ -88,13 +88,13 @@ rdc term server-1 -c "uptime"
 ## 故障排除
 
 **健康检查超时或显示"SSH connection failed"**
-验证机器在线且可达：`ping <ip>`。使用 `rdc term <machine> -c "echo ok"` 检查您的 SSH 密钥是否配置正确。
+验证机器在线且可达：`ping <ip>`。使用 `rdc term connect -m <machine> -c "echo ok"` 检查您的 SSH 密钥是否配置正确。
 
 **服务列表中显示"Service not found"**
 Rediacc 服务仅在部署至少一个仓库后才会出现。如果没有仓库，服务列表为空。
 
 **容器列表显示过时或已停止的容器**
-如果 `repo down` 未干净执行，之前部署的容器可能会残留。使用 `rdc repo down <repo> -m <machine>` 停止它们，或通过 `rdc term <machine> <repo> -c "docker ps -a"` 直接检查。
+如果 `repo down` 未干净执行，之前部署的容器可能会残留。使用 `rdc repo down <repo> -m <machine>` 停止它们，或通过 `rdc term connect -m <machine> -r <repo> -c "docker ps -a"` 直接检查。
 
 ## 后续步骤
 

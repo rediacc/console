@@ -78,8 +78,8 @@ Fetches the server's current host keys and updates your config. This prevents "h
 A quick SSH connectivity check to confirm the machine is reachable and responding.
 
 ```bash
-rdc term server-1 -c "hostname"
-rdc term server-1 -c "uptime"
+rdc term connect -m server-1 -c "hostname"
+rdc term connect -m server-1 -c "uptime"
 ```
 
 The hostname confirms you're connected to the right server. The uptime confirms the system is running normally.
@@ -87,13 +87,13 @@ The hostname confirms you're connected to the right server. The uptime confirms 
 ## Troubleshooting
 
 **Health check times out or shows "SSH connection failed"**
-Verify the machine is online and reachable: `ping <ip>`. Check that your SSH key is configured correctly with `rdc term <machine> -c "echo ok"`.
+Verify the machine is online and reachable: `ping <ip>`. Check that your SSH key is configured correctly with `rdc term connect -m <machine> -c "echo ok"`.
 
 **"Service not found" in service listing**
 Rediacc services only appear after at least one repository has been deployed. If no repositories exist, the service list is empty.
 
 **Container listing shows stale or stopped containers**
-Containers from previous deployments may linger if `repo down` was not run cleanly. Stop them with `rdc repo down <repo> -m <machine>` or inspect directly via `rdc term <machine> <repo> -c "docker ps -a"`.
+Containers from previous deployments may linger if `repo down` was not run cleanly. Stop them with `rdc repo down <repo> -m <machine>` or inspect directly via `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
 
 ## Next Steps
 

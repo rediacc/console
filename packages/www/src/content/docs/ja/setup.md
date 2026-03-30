@@ -4,7 +4,7 @@ description: "設定の作成、マシンの追加、サーバーのプロビジ
 category: "Guides"
 order: 3
 language: ja
-sourceHash: "ebf1c9967814ec86"
+sourceHash: "7d4756adb17e63d4"
 ---
 
 # マシンセットアップ
@@ -92,7 +92,7 @@ rdc config machine scan-keys server-1
 マシンを追加した後、到達可能であることを確認します：
 
 ```bash
-rdc term server-1 -c "hostname"
+rdc term connect -m server-1 -c "hostname"
 ```
 
 このコマンドはマシンへのSSH接続を開き、コマンドを実行します。成功すれば、SSH設定が正しいことが確認できます。

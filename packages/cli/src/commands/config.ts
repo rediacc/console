@@ -118,22 +118,24 @@ export function registerConfigCommands(program: Command): void {
     'after',
     `
 ${t('help.examples')}
-  $ rdc config init production --ssh-key ~/.ssh/id_ed25519   ${t('help.config.init')}
-  $ rdc config machine add server-1 --ip 10.0.0.1           ${t('help.config.addMachine')}
-  $ rdc config machine setup server-1                        ${t('help.config.setupMachine')}
+  $ rdc config init --name production --ssh-key ~/.ssh/id_ed25519   ${t('help.config.init')}
+  $ rdc config machine add --name server-1 --ip 10.0.0.1           ${t('help.config.addMachine')}
+  $ rdc config machine setup --name server-1                        ${t('help.config.setupMachine')}
 `
   );
 
-  // config init [name] - Initialize a new config file
+  // config init - Initialize a new config file
   config
-    .command('init [name]')
+    .command('init')
     .description(t('commands.config.init.description'))
+    .option('--name <name>', t('options.name'))
     .option('--ssh-key <path>', t('options.sshKey'))
     .option('--renet-path <path>', t('options.renetPath'))
     .option('--master-password <password>', t('commands.config.init.optionMasterPassword'))
     .option('-u, --api-url <url>', t('options.apiUrl'))
-    .action(async (name, options) => {
+    .action(async (options) => {
       try {
+        const name = options.name;
         const configName = name ?? DEFAULTS.CONTEXT.CONFIG_NAME;
 
         const { configFileStorage } = await import('../adapters/config-file-storage.js');
@@ -251,11 +253,13 @@ ${t('help.examples')}
 
   // config delete
   config
-    .command('delete <name>')
+    .command('delete')
     .alias('rm')
     .description(t('commands.config.delete.description'))
-    .action(async (name) => {
+    .requiredOption('--name <name>', t('options.name'))
+    .action(async (options) => {
       try {
+        const name = options.name;
         await configService.delete(name);
         outputService.success(t('commands.config.delete.success', { name }));
       } catch (error) {
@@ -265,10 +269,13 @@ ${t('help.examples')}
 
   // config set
   config
-    .command('set <key> <value>')
+    .command('set')
     .description(t('commands.config.set.description'))
-    .action(async (key, value) => {
+    .requiredOption('--key <key>', t('options.configKey'))
+    .requiredOption('--value <value>', t('options.configValue'))
+    .action(async (options) => {
       try {
+        const { key, value } = options;
         const validKeys = ['team', 'region', 'bridge'];
         if (!validKeys.includes(key)) {
           throw new ValidationError(t('errors.invalidKey', { keys: validKeys.join(', ') }));
@@ -282,10 +289,12 @@ ${t('help.examples')}
 
   // config clear
   config
-    .command('clear [key]')
+    .command('clear')
     .description(t('commands.config.clear.description'))
-    .action(async (key) => {
+    .option('--key <key>', t('options.configKey'))
+    .action(async (options) => {
       try {
+        const key = options.key;
         if (key) {
           const validKeys = ['team', 'region', 'bridge'];
           if (!validKeys.includes(key)) {
@@ -304,13 +313,14 @@ ${t('help.examples')}
 
   // config recover
   config
-    .command('recover [name]')
+    .command('recover')
     .description(t('commands.config.recover.description'))
+    .option('--name <name>', t('options.name'))
     .option('-y, --yes', t('options.yes'))
-    .action(async (name, options) => {
+    .action(async (options) => {
       try {
         const { configFileStorage } = await import('../adapters/config-file-storage.js');
-        const configName = name ?? configService.getCurrentName();
+        const configName = options.name ?? configService.getCurrentName();
 
         const backupInfo = await configFileStorage.getBackupInfo(configName);
         if (!backupInfo) {

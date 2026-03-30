@@ -47,6 +47,7 @@ test.describe('Bridge Commands @cli @resources', () => {
       const result = await runner.run([
         'bridge',
         'create',
+        '--name',
         testBridgeName,
         '--region',
         'Default Region',
@@ -58,6 +59,7 @@ test.describe('Bridge Commands @cli @resources', () => {
       const result = await runner.run([
         'bridge',
         'delete',
+        '--name',
         testBridgeName,
         '--region',
         'Default Region',

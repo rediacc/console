@@ -51,6 +51,10 @@ vi.mock('../../services/local-executor.js', () => ({
   localExecutorService: {},
 }));
 
+vi.mock('../../utils/agent-guard.js', () => ({
+  isAgentEnvironment: vi.fn(() => false),
+}));
+
 const { handleExecutionResult } = await import('../shortcuts.js');
 
 describe('handleExecutionResult', () => {

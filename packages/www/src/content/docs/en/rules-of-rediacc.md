@@ -153,5 +153,5 @@ Renet auto-injects these into every container:
 - Not binding to `SERVICE_IP` — causes port conflicts between repos.
 - Hardcoding IPs — use `SERVICE_IP` env var; IPs are allocated dynamically per networkId.
 - Forgetting `--mount` on first deploy after `backup push` — LUKS volume needs explicit opening.
-- Using `rdc term -c` as a workaround for failed commands — report bugs instead.
+- Using `rdc term connect -c` as a workaround for failed commands — report bugs instead.
 - `repo delete` performs full cleanup including loopback IPs and systemd units. Run `rdc machine prune <name>` to clean leftovers from legacy deletions.

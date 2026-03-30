@@ -5,7 +5,6 @@ import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
-import { telemetryService } from '../services/telemetry.js';
 import {
   generateConnectionName,
   removePersistedKeys,
@@ -14,7 +13,6 @@ import {
 import { assertAgentRepoCreate, isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD, type CommandPath } from '../utils/command-policy.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
-import { createGuidResolver, loadGuidMap, resolveGuids } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { formatStepDuration } from '../utils/timeline.js';
@@ -22,6 +20,7 @@ import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
 import {
   handleDownAll,
+  handleRepoList,
   handleUpAll,
   postRepoUpTasks,
   runBatchOperation,
@@ -35,7 +34,6 @@ async function cleanupDeletedRepoSSH(machineName: string, repoName: string): Pro
   removePersistedKeys(teamName, machineName, repoName);
 }
 import { registerExtendedRepoCommands } from './repo-extended.js';
-import { parseRepositoryListOutput } from './repo-list-parser.js';
 import { registerRepoSyncCommands } from './repo-sync.js';
 import { registerRepoTunnelCommand } from './repo-tunnel.js';
 import { registerRepoVolumeCommands } from './repo-volume.js';
@@ -324,40 +322,45 @@ export function registerRepoCommands(program: Command): void {
     repo.addHelpText('after', t('help.repo.keyConcepts'));
   }
 
-  // repo create <name>
+  // repo create --name <name>
   repo
-    .command('create <name>')
+    .command('create')
     .description(t('commands.repo.create.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .requiredOption('--size <size>', t('commands.repo.create.sizeOption'))
     .option('--no-docker', t('commands.repo.create.noDockerOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (name: string, options) => {
+    .action(async (options) => {
+      const name = options.name;
       await handleRepoCreate(name, options);
     });
 
-  // repo delete <name>
+  // repo delete --name <name>
   repo
-    .command('delete <name>')
+    .command('delete')
     .summary(t('commands.repo.delete.descriptionShort'))
     .description(t('commands.repo.delete.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--archive-config', t('commands.repo.delete.archiveOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .option('--dry-run', t('options.dryRun'))
-    .action(async (name: string, options) => {
+    .action(async (options) => {
+      const name = options.name;
       await handleRepoDelete(name, options);
     });
 
   registerRepoVolumeCommands(repo, executeRepoFunction, iterateAllRepos);
 
-  // repo up [name]
+  // repo up [--name <name>]
   repo
-    .command('up [name]')
+    .command('up')
     .summary(t('commands.repo.up.descriptionShort'))
     .description(t('commands.repo.up.description'))
+    .option('--name <name>', t('options.name'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--mount', t('commands.repo.up.mountOption'))
     .option('--skip-checkpoint', t('commands.repo.up.skipCheckpointOption'))
@@ -371,24 +374,23 @@ export function registerRepoCommands(program: Command): void {
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .option('--dry-run', t('options.dryRun'))
     .action(
-      async (
-        name: string | undefined,
-        options: {
-          machine: string;
-          mount?: boolean;
-          skipCheckpoint?: boolean;
-          tls?: boolean;
-          includeForks?: boolean;
-          mountOnly?: boolean;
-          parallel?: boolean;
-          concurrency?: string;
-          yes?: boolean;
-          debug?: boolean;
-          skipRouterRestart?: boolean;
-          dryRun?: boolean;
-        }
-      ) => {
+      async (options: {
+        name?: string;
+        machine: string;
+        mount?: boolean;
+        skipCheckpoint?: boolean;
+        tls?: boolean;
+        includeForks?: boolean;
+        mountOnly?: boolean;
+        parallel?: boolean;
+        concurrency?: string;
+        yes?: boolean;
+        debug?: boolean;
+        skipRouterRestart?: boolean;
+        dryRun?: boolean;
+      }) => {
         try {
+          const name = options.name;
           if (name) {
             await handleSingleRepoUp(name, options);
           } else {
@@ -400,11 +402,12 @@ export function registerRepoCommands(program: Command): void {
       }
     );
 
-  // repo down [name]
+  // repo down [--name <name>]
   repo
-    .command('down [name]')
+    .command('down')
     .summary(t('commands.repo.down.descriptionShort'))
     .description(t('commands.repo.down.description'))
+    .option('--name <name>', t('options.name'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--unmount', t('commands.repo.down.unmountOption'))
     .option('--checkpoint', t('commands.repo.down.checkpointOption'))
@@ -413,19 +416,18 @@ export function registerRepoCommands(program: Command): void {
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .option('--dry-run', t('options.dryRun'))
     .action(
-      async (
-        name: string | undefined,
-        options: {
-          machine: string;
-          unmount?: boolean;
-          checkpoint?: boolean;
-          yes?: boolean;
-          debug?: boolean;
-          skipRouterRestart?: boolean;
-          dryRun?: boolean;
-        }
-      ) => {
+      async (options: {
+        name?: string;
+        machine: string;
+        unmount?: boolean;
+        checkpoint?: boolean;
+        yes?: boolean;
+        debug?: boolean;
+        skipRouterRestart?: boolean;
+        dryRun?: boolean;
+      }) => {
         try {
+          const name = options.name;
           if (name) {
             // Single-repo down
             await assertCommandPolicy(CMD.REPO_DOWN, name);
@@ -466,19 +468,23 @@ export function registerRepoCommands(program: Command): void {
       }
     );
 
-  // repo status <name>
+  // repo status --name <name>
   repo
-    .command('status <name>')
+    .command('status')
     .description(t('commands.repo.status.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
-      async (
-        name: string,
-        options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }
-      ) => {
+      async (options: {
+        name: string;
+        machine: string;
+        debug?: boolean;
+        skipRouterRestart?: boolean;
+      }) => {
         try {
+          const name = options.name;
           await executeRepoFunction('repository_status', name, options.machine, {}, options, {
             starting: t('commands.repo.status.starting', {
               repository: name,
@@ -500,69 +506,7 @@ export function registerRepoCommands(program: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
-      try {
-        outputService.info(t('commands.repo.list.starting', { machine: options.machine }));
-        const format = getOutputFormat();
-        const result = await localExecutorService.execute({
-          functionName: 'repository_list',
-          machineName: options.machine,
-          params: {},
-          debug: options.debug,
-          captureOutput: true,
-          skipRouterRestart: options.skipRouterRestart,
-        });
-
-        if (result.success) {
-          const repositories = parseRepositoryListOutput(result.stdout ?? '[]');
-          const resolve = createGuidResolver(await loadGuidMap());
-          const resolved = resolveGuids(repositories, resolve, 'name');
-          if (format === 'table') {
-            const { parseRepoRef } = await import('../utils/config-schema.js');
-            // Build GUID → config lookup from config to determine fork/grand + tag
-            const repoConfigs = await configService.listRepositories().catch((err: unknown) => {
-              telemetryService.trackError(err, { operation: 'repo.list_repositories' });
-              return [];
-            });
-            const configLookup = new Map<string, { grandGuid?: string; tag?: string }>();
-            for (const rc of repoConfigs) {
-              configLookup.set(rc.config.repositoryGuid, {
-                grandGuid: rc.config.grandGuid,
-                tag: rc.config.tag,
-              });
-            }
-            const compact = resolved.map((r) => {
-              const guid = (r.guid ?? r.name) as string;
-              const cfg = configLookup.get(guid);
-              const resolvedName = r.name as string;
-              const { name: baseName, tag: parsedTag } = parseRepoRef(resolvedName);
-              return {
-                name: baseName,
-                tag: cfg?.tag ?? parsedTag,
-                type: cfg?.grandGuid ? 'fork' : 'grand',
-                size: r.size_human,
-                mounted: r.mounted ? 'Yes' : 'No',
-                docker: r.docker_running ? 'Yes' : 'No',
-                containers: r.container_count,
-                services: r.service_count,
-                modified: r.modified_human,
-              };
-            });
-            outputService.print(compact, format);
-          } else {
-            outputService.print(resolved, format);
-          }
-          outputService.success(t('commands.repo.list.completed'));
-        } else {
-          renderLocalExecutionFailure(
-            result,
-            t('commands.repo.list.failed', { error: result.error })
-          );
-        }
-      } catch (error) {
-        handleError(error);
-      }
-    });
+    .action(handleRepoList);
   registerExtendedRepoCommands(repo);
   registerRepoBackupCommands(repo);
   registerRepoSyncCommands(repo);
