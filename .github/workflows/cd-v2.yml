@@ -26,6 +26,15 @@ on:
         required: false
         type: boolean
         default: false
+      bump_type:
+        description: 'Version bump type (only used with force_release)'
+        required: false
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
 
 # Required for release publishing, Docker, and Cloudflare Pages deployment
 permissions:
@@ -55,8 +64,8 @@ jobs:
     outputs:
       ci_run_id: ${{ steps.resolve.outputs.ci_run_id }}
       ci_sha: ${{ steps.resolve.outputs.ci_sha }}
-      next_version: ${{ steps.version.outputs.next_version || steps.init.outputs.next_version }}
-      bump_type: ${{ steps.version.outputs.bump_type || steps.init.outputs.bump_type }}
+      next_version: ${{ steps.override.outputs.next_version || steps.version.outputs.next_version || steps.init.outputs.next_version }}
+      bump_type: ${{ steps.override.outputs.bump_type || steps.version.outputs.bump_type || steps.init.outputs.bump_type }}
       staging_tag: ${{ steps.staging.outputs.staging_tag }}
       skip_release: ${{ steps.skip-check.outputs.skip_release }}
       retry_mode: ${{ steps.skip-check.outputs.retry_mode }}
@@ -166,6 +175,17 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
+
+      # Manual force_release: override the auto-detected bump type
+      - name: Override bump type (manual dispatch)
+        id: override
+        if: github.event_name == 'workflow_dispatch' && inputs.force_release && inputs.bump_type != 'patch'
+        run: |
+          BUMP="${{ inputs.bump_type }}"
+          NEXT=$(.ci/scripts/version/bump.sh --${BUMP} --dry-run | tail -n 1)
+          echo "bump_type=${BUMP}" >> $GITHUB_OUTPUT
+          echo "next_version=${NEXT}" >> $GITHUB_OUTPUT
+          echo "::notice::Manual bump override: ${BUMP} -> v${NEXT}"
 
       - name: Generate staging tag
         if: steps.skip-check.outputs.skip_release != 'true'
