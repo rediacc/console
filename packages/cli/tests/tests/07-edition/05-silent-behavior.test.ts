@@ -54,6 +54,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
           await ctx.runner.run([
             'machine',
             'create',
+            '--name',
             machineName,
             '--team',
             teamName,
@@ -70,7 +71,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
           }
           await sleep(1000);
           await ctx.runner
-            .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
+            .run(['machine', 'delete', '--name', machineName, '--team', teamName, '--force'])
             .catch(() => {});
           await ctx?.cleanup();
         });
@@ -192,6 +193,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
           await ctx.runner.run([
             'machine',
             'create',
+            '--name',
             machineName,
             '--team',
             teamName,
@@ -208,7 +210,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
           }
           await sleep(1000);
           await ctx.runner
-            .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
+            .run(['machine', 'delete', '--name', machineName, '--team', teamName, '--force'])
             .catch(() => {});
           await ctx?.cleanup();
         });
@@ -305,6 +307,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
         await ctx.runner.run([
           'machine',
           'create',
+          '--name',
           machineName,
           '--team',
           teamName,
@@ -321,7 +324,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
         }
         await sleep(1000);
         await ctx.runner
-          .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
+          .run(['machine', 'delete', '--name', machineName, '--team', teamName, '--force'])
           .catch(() => {});
         await ctx?.cleanup();
       });

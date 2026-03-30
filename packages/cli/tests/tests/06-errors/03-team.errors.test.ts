@@ -47,12 +47,18 @@ test.describe('Team Error Scenarios @cli @errors', () => {
 
   test.describe('DeleteTeam errors', () => {
     test('should fail when deleting non-existent team', async () => {
-      const result = await runner.run(['team', 'delete', nonExistentName('team'), '--force']);
+      const result = await runner.run([
+        'team',
+        'delete',
+        '--name',
+        nonExistentName('team'),
+        '--force',
+      ]);
       expectError(runner, result, { messageContains: ErrorPatterns.TEAM_NOT_FOUND });
     });
 
     test('should fail when deleting Private Team (system entity)', async () => {
-      const result = await runner.run(['team', 'delete', 'Private Team', '--force']);
+      const result = await runner.run(['team', 'delete', '--name', 'Private Team', '--force']);
       expectError(runner, result, { messageContains: ErrorPatterns.TEAM_CANNOT_DELETE_DEFAULT });
     });
   });
