@@ -47,6 +47,8 @@ module.exports = async ({ github, context, core }) => {
 
   // Track whether a retry has been dispatched this run
   let rerunDispatched = false;
+  // Track jobs already handled to avoid re-logging the same failure every poll
+  const handledJobs = new Set();
 
   // Helper: dispatch rerun-failed.yml to retry failed jobs
   async function dispatchRerun() {
@@ -139,12 +141,15 @@ module.exports = async ({ github, context, core }) => {
       }
 
       const data = await response.json();
-      if (!data.success || !data.result?.response) {
+      const aiResponse = data.result?.response;
+      if (!data.success || !aiResponse) {
         console.log(`[AI] Unexpected response: ${JSON.stringify(data).slice(0, 200)}`);
         return null;
       }
 
-      const cleaned = data.result.response.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      // Workers AI may return response as string, array, or object depending on model
+      const rawText = typeof aiResponse === 'string' ? aiResponse : JSON.stringify(aiResponse);
+      const cleaned = rawText.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
       const parsed = JSON.parse(cleaned);
 
       if (!['transient', 'code-change'].includes(parsed.classification)) return null;
@@ -278,10 +283,14 @@ module.exports = async ({ github, context, core }) => {
     // code-change (force-cancel everything). No independent/critical distinction needed.
     const failedOrCancelled = [...failed, ...cancelled];
 
-    if (failedOrCancelled.length > 0) {
-      const job = failedOrCancelled[0];
+    // Filter to only NEW failures (not already handled in a previous poll)
+    const newFailures = failedOrCancelled.filter(j => !handledJobs.has(j.name));
+
+    if (newFailures.length > 0) {
+      const job = newFailures[0];
       const reason = failed.includes(job) ? 'Job failed' : 'Job cancelled (likely timeout)';
       const failureMsg = logFailure(job, reason, run.run_attempt);
+      handledJobs.add(job.name);
 
       // 1. No-retry jobs (Quality, Review Gate) -- fast fail, no AI
       if (noRetryPatterns.some(p => job.name.includes(p))) {
@@ -308,7 +317,7 @@ module.exports = async ({ github, context, core }) => {
         await forceCancel(failureMsg);
         return;
       }
-      // 5. Already dispatched retry -- just log
+      // 5. Already dispatched retry -- log once for the new job
       else if (rerunDispatched) {
         console.log(`Additional failure: "${job.name}" (retry already dispatched)`);
         core.setFailed(failureMsg);
