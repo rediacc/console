@@ -199,7 +199,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          VERSION="${{ steps.init.outputs.next_version }}"
+          VERSION="${{ steps.override.outputs.next_version || steps.init.outputs.next_version }}"
           git fetch --tags --quiet
           if git tag -l "v${VERSION}" | grep -q .; then
             echo "::error::Git tag v${VERSION} already exists. Aborting to prevent duplicate publish."
