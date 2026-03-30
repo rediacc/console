@@ -185,7 +185,9 @@ test.describe('Machine Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'machine',
         'assign-bridge',
+        '--name',
         nonExistentName('machine'),
+        '--target',
         defaultBridgeName,
         '--team',
         defaultTeamName,
@@ -197,7 +199,9 @@ test.describe('Machine Error Scenarios @cli @errors', () => {
       const result = await runner.run([
         'machine',
         'assign-bridge',
+        '--name',
         'some-machine',
+        '--target',
         defaultBridgeName,
         '--team',
         nonExistentName('team'),

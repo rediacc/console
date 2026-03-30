@@ -79,6 +79,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
         test('should accept priority parameter without error', async () => {
           const result = await ctx.runner.run([
             'run',
+            '--function',
             'machine_ping',
             '--team',
             teamName,
@@ -101,6 +102,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
         test('should reset custom priority to default (4)', async () => {
           const createResult = await ctx.runner.run([
             'run',
+            '--function',
             'machine_ping',
             '--team',
             teamName,
@@ -144,6 +146,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
 
           const createResult = await ctx.runner.run([
             'run',
+            '--function',
             'machine_ping',
             '--team',
             teamName,
@@ -218,6 +221,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
         test('should respect custom priority 2', async () => {
           const createResult = await ctx.runner.run([
             'run',
+            '--function',
             'machine_ping',
             '--team',
             teamName,
@@ -335,6 +339,7 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
         for (let i = 0; i < 3; i++) {
           const result = await ctx.runner.run([
             'run',
+            '--function',
             'machine_ping',
             '--team',
             teamName,

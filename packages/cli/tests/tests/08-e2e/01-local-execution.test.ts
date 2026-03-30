@@ -161,9 +161,12 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       ]);
 
       // This should timeout
-      const result = await timeoutRunner.run(['run', 'machine_ping', '--machine', 'timeout-vm'], {
-        timeout: 30000,
-      });
+      const result = await timeoutRunner.run(
+        ['run', '--function', 'machine_ping', '--machine', 'timeout-vm'],
+        {
+          timeout: 30000,
+        }
+      );
 
       expect(result.success).toBe(false);
 
@@ -280,9 +283,12 @@ test.describe('E2E Context Switching @cli @e2e', () => {
     test.setTimeout(300000);
 
     const localRunner = CliTestRunner.withContext(localContext);
-    const result = await localRunner.run(['run', 'machine_ping', '--machine', 'e2e-vm'], {
-      timeout: 300000,
-    });
+    const result = await localRunner.run(
+      ['run', '--function', 'machine_ping', '--machine', 'e2e-vm'],
+      {
+        timeout: 300000,
+      }
+    );
 
     const output = result.stdout + result.stderr;
     const isLocalAttempt = output.includes('renet') || output.includes('Executing');
@@ -328,7 +334,7 @@ test.describe('E2E Renet Availability @cli @e2e', () => {
 
     // Try to run - this tests if renet is available
     const runResult = await contextRunner.run(
-      ['run', 'machine_ping', '--machine', 'check-vm', '--debug'],
+      ['run', '--function', 'machine_ping', '--machine', 'check-vm', '--debug'],
       { timeout: 300000 }
     );
 

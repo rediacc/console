@@ -350,7 +350,15 @@ test.describe('Local Context Commands @cli @core', () => {
       // This test verifies that run command detects local mode
       // It will fail if renet isn't installed, but that's expected
       const result = await runner.run(
-        ['--config', testLocalContext, 'run', 'machine_ping', '--machine', testMachine],
+        [
+          '--config',
+          testLocalContext,
+          'run',
+          '--function',
+          'machine_ping',
+          '--machine',
+          testMachine,
+        ],
         { skipJsonParse: true }
       );
 
@@ -369,9 +377,12 @@ test.describe('Local Context Commands @cli @core', () => {
         skipJsonParse: true,
       });
 
-      const result = await runner.run(['--config', testLocalContext, 'run', 'machine_ping'], {
-        skipJsonParse: true,
-      });
+      const result = await runner.run(
+        ['--config', testLocalContext, 'run', '--function', 'machine_ping'],
+        {
+          skipJsonParse: true,
+        }
+      );
 
       expect(result.success).toBe(false);
       expect(result.stdout + result.stderr).toContain('machine');
@@ -379,7 +390,16 @@ test.describe('Local Context Commands @cli @core', () => {
 
     test('should accept --debug flag', async () => {
       const result = await runner.run(
-        ['--config', testLocalContext, 'run', 'machine_ping', '--machine', testMachine, '--debug'],
+        [
+          '--config',
+          testLocalContext,
+          'run',
+          '--function',
+          'machine_ping',
+          '--machine',
+          testMachine,
+          '--debug',
+        ],
         { skipJsonParse: true }
       );
 
