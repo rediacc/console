@@ -47,7 +47,7 @@ for arg in "$@"; do
     case "$arg" in
         --dry-run) DRY_RUN=true ;;
         --self-destruct) SELF_DESTRUCT=true ;;
-        production|prod) TARGET="production" ;;
+        production | prod) TARGET="production" ;;
         edge) TARGET="edge" ;;
         *)
             log_error "Unknown argument: $arg"

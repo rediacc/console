@@ -465,11 +465,11 @@ sync_secrets_to_workers() {
     while IFS= read -r name; do
         [[ -z "$name" ]] && continue
         case "$name" in
-            rediacc-www|edge-rediacc-www|pr-*)
+            rediacc-www | edge-rediacc-www | pr-*)
                 target_workers+=("$name")
                 ;;
         esac
-    done <<< "$all_workers"
+    done <<<"$all_workers"
 
     if [[ ${#target_workers[@]} -eq 0 ]]; then
         log_warn "No target workers found (expected rediacc-www, edge-rediacc-www, pr-*)"
