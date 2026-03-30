@@ -305,12 +305,25 @@ jobs:
       # Step 8: Pre-release install method validation (binary only)
       # Runs the built linux-x64 binary to verify it works before publish
       # -----------------------------------------------------------------------
+      - name: Detect binary version from artifact
+        id: binary-version
+        run: |
+          BINARY=$(find dist/cli -name "rdc-linux-x64" | head -1)
+          if [[ -n "$BINARY" ]] && [[ -f "$BINARY" ]]; then
+            chmod +x "$BINARY"
+            BV=$("$BINARY" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+            echo "version=${BV:-${{ inputs.next_version }}}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ inputs.next_version }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Test install methods (pre-release)
         if: ${{ !inputs.dry_run && steps.validate.outputs.passed == 'true' }}
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method binary \
             --version ${{ inputs.next_version }} \
+            --expected-version ${{ steps.binary-version.outputs.version }} \
             --platform linux \
             --arch x64 \
             --local-artifacts dist/
