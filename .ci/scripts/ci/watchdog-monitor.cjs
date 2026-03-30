@@ -1,14 +1,15 @@
-// Watchdog - monitors workflow jobs, auto-retries transient failures, and force-cancels on failure
-// Polls every 15 seconds, exits only when the workflow run completes or a failure is detected.
+// Watchdog - monitors workflow jobs, uses AI to classify failures, and manages retries.
+// Polls every 15 seconds, exits when the workflow completes or a failure requires action.
 //
-// Auto-retry: On first failure (attempt 1), dispatches rerun-failed.yml to retry failed jobs
-// WITHOUT force-cancelling (so only truly failed jobs are retried, not cancelled bystanders).
-// On attempt 2+, force-cancels without retry.
+// On first failure: AI classifies logs as transient or code-change.
+//   - Transient: dispatches rerun-failed.yml, keeps monitoring (other jobs continue).
+//   - Code-change: force-cancels immediately (no point waiting for other jobs).
+//   - AI unavailable: falls back to retry (same as transient).
+// On attempt 2+: force-cancels without retry.
 //
 // Required env vars:
 //   WATCHDOG_EXCLUDE_PATTERNS   - Comma-separated job name patterns to exclude from monitoring
 //   WATCHDOG_NO_RETRY_PATTERNS  - Comma-separated job name patterns that should never auto-retry
-//   WATCHDOG_INDEPENDENT_PATTERNS - Comma-separated job name patterns whose failures don't cancel siblings (optional)
 //
 // Optional env vars (AI failure classification):
 //   CLOUDFLARE_API_TOKEN        - Cloudflare API token with Workers AI Read permission
@@ -16,7 +17,7 @@
 //
 // Labels (PR context only):
 //   no-cancel-failure  - Skip cancellation on job failure (workflow continues)
-//   no-auto-retry      - Skip auto-retry on failure (force-cancel immediately)
+//   no-auto-retry      - Skip AI + retry entirely (force-cancel immediately)
 //
 // Usage (from actions/github-script):
 //   script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
@@ -44,10 +45,8 @@ module.exports = async ({ github, context, core }) => {
   // Jobs that should not trigger auto-retry (failures are never transient)
   const noRetryPatterns = process.env.WATCHDOG_NO_RETRY_PATTERNS.split(',').map(s => s.trim());
 
-  // Jobs whose failures should not cancel sibling jobs (optional env var)
-  const independentPatterns = (process.env.WATCHDOG_INDEPENDENT_PATTERNS || '')
-    .split(',').map(s => s.trim()).filter(Boolean);
-  let independentRerunDispatched = false;
+  // Track whether a retry has been dispatched this run
+  let rerunDispatched = false;
 
   // Helper: dispatch rerun-failed.yml to retry failed jobs
   async function dispatchRerun() {
@@ -175,56 +174,22 @@ module.exports = async ({ github, context, core }) => {
     return result;
   }
 
-  // Helper: log failure details and handle the workflow run.
-  // On auto-retry (attempt 1): dispatches rerun without force-cancel so only truly
-  // failed jobs are retried. On final attempt: force-cancels the run.
-  async function cancelOnFailure(job, reason, runAttempt) {
-    const failureMsg = `${reason}: "${job.name}"`;
+  // Helper: log failure details with formatted header
+  function logFailure(job, reason, runAttempt) {
+    const msg = `${reason}: "${job.name}"`;
     console.log('');
     console.log('='.repeat(70));
-    console.log(failureMsg);
+    console.log(msg);
     if (job.id) {
       console.log(`   Job URL: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}/job/${job.id}`);
     }
     console.log(`   Run attempt: ${runAttempt}/${MAX_ATTEMPTS}`);
     console.log('='.repeat(70));
+    return msg;
+  }
 
-    if (skipCancellationOnFailure) {
-      console.log('');
-      console.log('NOTICE: Skipping workflow cancellation due to "no-cancel-failure" label');
-      console.log('Workflow will continue running despite this failure.');
-      core.setFailed(failureMsg + ' (cancellation skipped due to label)');
-      return;
-    }
-
-    // Auto-retry: dispatch rerun on first attempt, but do NOT force-cancel.
-    // Force-cancelling kills unrelated in-progress jobs, turning them into
-    // "cancelled". gh run rerun --failed reruns cancelled jobs too, causing
-    // a near-full pipeline rerun instead of retrying just the failed job.
-    // By skipping the cancel, other jobs finish naturally and the rerun
-    // workflow only picks up the truly failed job(s).
-    const isNoRetryJob = noRetryPatterns.some(pattern => job.name.includes(pattern));
-    if (runAttempt < MAX_ATTEMPTS && !skipAutoRetry && !isNoRetryJob) {
-      const ai = await classifyFailure(job);
-      if (ai.classification === 'code-change' && ai.confidence > AI_CONFIDENCE_THRESHOLD) {
-        console.log(`[AI] "${job.name}" -> code-change (${ai.confidence}): ${ai.reason}`);
-        console.log('Skipping retry -- failure is not transient');
-        // Fall through to force-cancel
-      } else {
-        console.log(`[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`);
-        console.log(`Attempt ${runAttempt}/${MAX_ATTEMPTS} - triggering auto-retry (skipping force-cancel to avoid cascading reruns)...`);
-        await dispatchRerun();
-        core.setFailed(failureMsg);
-        return;
-      }
-    } else if (isNoRetryJob) {
-      console.log(`Auto-retry skipped: "${job.name}" matches no-retry pattern`);
-    } else if (skipAutoRetry) {
-      console.log('Auto-retry skipped due to "no-auto-retry" label');
-    } else {
-      console.log(`Attempt ${runAttempt}/${MAX_ATTEMPTS} - no more retries`);
-    }
-
+  // Helper: force-cancel the workflow run
+  async function forceCancel(failureMsg) {
     console.log('Force-cancelling workflow run...');
     try {
       await github.request('POST /repos/{owner}/{repo}/actions/runs/{run_id}/force-cancel', {
@@ -241,7 +206,6 @@ module.exports = async ({ github, context, core }) => {
         run_id: context.runId
       });
     }
-
     core.setFailed('PIPELINE CANCELLED: ' + failureMsg);
   }
 
@@ -263,9 +227,6 @@ module.exports = async ({ github, context, core }) => {
   console.log('Watchdog started - monitoring jobs for failures...');
   console.log(`Exclude patterns: ${excludePatterns.join(', ')}`);
   console.log(`No-retry patterns: ${noRetryPatterns.join(', ')}`);
-  if (independentPatterns.length > 0) {
-    console.log(`Independent patterns (no sibling cancellation): ${independentPatterns.join(', ')}`);
-  }
   console.log(`Max runtime: ${maxRuntime / 3600000} hours`);
 
   while (Date.now() - startTime < maxRuntime) {
@@ -312,58 +273,63 @@ module.exports = async ({ github, context, core }) => {
       return;
     }
 
-    // Separate independent failures from critical failures.
-    // Independent patterns are ALWAYS respected (even with no-auto-retry).
-    // no-auto-retry only disables the auto-retry dispatch, not the independent classification.
-    const independentFailed = failed.filter(j =>
-      independentPatterns.some(p => j.name.includes(p)));
-    const criticalFailed = failed.filter(j =>
-      !independentPatterns.some(p => j.name.includes(p)));
+    // Unified failure + cancellation handling.
+    // AI classifies the failure and decides: transient (retry + keep monitoring) or
+    // code-change (force-cancel everything). No independent/critical distinction needed.
+    const failedOrCancelled = [...failed, ...cancelled];
 
-    // Log independent failures, dispatch auto-retry once, but don't cancel siblings
-    if (independentFailed.length > 0 && !independentRerunDispatched) {
-      for (const job of independentFailed) {
-        console.log(`[${elapsedMin}m] Independent job failed (no sibling cancellation): "${job.name}"`);
+    if (failedOrCancelled.length > 0) {
+      const job = failedOrCancelled[0];
+      const reason = failed.includes(job) ? 'Job failed' : 'Job cancelled (likely timeout)';
+      const failureMsg = logFailure(job, reason, run.run_attempt);
+
+      // 1. No-retry jobs (Quality, Review Gate) -- fast fail, no AI
+      if (noRetryPatterns.some(p => job.name.includes(p))) {
+        console.log(`"${job.name}" matches no-retry pattern`);
+        await forceCancel(failureMsg);
+        return;
       }
-      // Auto-retry independent failures unless AI classifies as code-change
-      const isNoRetryJob = noRetryPatterns.some(p => independentFailed[0].name.includes(p));
-      if (run.run_attempt < MAX_ATTEMPTS && !isNoRetryJob && !skipAutoRetry) {
-        const ai = await classifyFailure(independentFailed[0]);
+
+      // 2. Label: no-cancel-failure -- let everything finish
+      if (skipCancellationOnFailure) {
+        console.log('NOTICE: Skipping cancellation due to "no-cancel-failure" label');
+        core.setFailed(failureMsg + ' (cancellation skipped)');
+        // DON'T return -- keep monitoring
+      }
+      // 3. Label: no-auto-retry -- force-cancel immediately
+      else if (skipAutoRetry) {
+        console.log('Force-cancel due to "no-auto-retry" label');
+        await forceCancel(failureMsg);
+        return;
+      }
+      // 4. Max attempts reached -- force-cancel
+      else if (run.run_attempt >= MAX_ATTEMPTS) {
+        console.log(`Attempt ${run.run_attempt}/${MAX_ATTEMPTS} -- no more retries`);
+        await forceCancel(failureMsg);
+        return;
+      }
+      // 5. Already dispatched retry -- just log
+      else if (rerunDispatched) {
+        console.log(`Additional failure: "${job.name}" (retry already dispatched)`);
+        core.setFailed(failureMsg);
+        // DON'T return -- keep monitoring
+      }
+      // 6. First failure: AI classifies
+      else {
+        const ai = await classifyFailure(job);
         if (ai.classification === 'code-change' && ai.confidence > AI_CONFIDENCE_THRESHOLD) {
-          console.log(`[AI] Independent "${independentFailed[0].name}" -> code-change (${ai.confidence}): ${ai.reason}`);
-          console.log('Skipping retry for independent job -- failure is not transient');
+          console.log(`[AI] "${job.name}" -> code-change (${ai.confidence}): ${ai.reason}`);
+          await forceCancel(failureMsg);
+          return;
         } else {
-          console.log(`[AI] Independent "${independentFailed[0].name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`);
-          console.log('Dispatching auto-retry for independent job failure...');
+          console.log(`[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`);
+          console.log('Dispatching auto-retry, continuing to monitor...');
           await dispatchRerun();
+          rerunDispatched = true;
+          core.setFailed(failureMsg);
+          // DON'T return -- keep monitoring other jobs
         }
       }
-      independentRerunDispatched = true;
-    } else if (independentFailed.length > 0) {
-      console.log(`[${elapsedMin}m] Independent failures (already handled): ${independentFailed.map(j => j.name).join(', ')}`);
-    }
-
-    // Cancel on critical failures
-    if (criticalFailed.length > 0) {
-      await cancelOnFailure(criticalFailed[0], 'Job failed', run.run_attempt);
-      return;
-    }
-
-    // Same treatment for cancelled jobs (independent patterns always respected)
-    const independentCancelled = cancelled.filter(j =>
-      independentPatterns.some(p => j.name.includes(p)));
-    const criticalCancelled = cancelled.filter(j =>
-      !independentPatterns.some(p => j.name.includes(p)));
-
-    if (independentCancelled.length > 0) {
-      console.log(`[${elapsedMin}m] Independent job cancelled (no action): ${independentCancelled.map(j => j.name).join(', ')}`);
-    }
-
-    // Check for individually cancelled jobs (e.g., timeout-killed).
-    // Mass cancellation is already handled above.
-    if (criticalCancelled.length > 0) {
-      await cancelOnFailure(criticalCancelled[0], 'Job cancelled (likely timeout)', run.run_attempt);
-      return;
     }
 
     // Exit when workflow run is externally completed

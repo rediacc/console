@@ -187,10 +187,13 @@ When fixing CI failures, follow this loop:
 
 The CI has a watchdog (`watchdog-monitor.cjs`) and cancellation script (`cancel-older-runs.sh`) that manage run lifecycle:
 
-- **New push → old runs cancelled**: `cancel-older-runs.sh` force-cancels all older in-progress runs on the same branch. **Never re-run a cancelled run** — cancelled means superseded.
-- **Job failure (attempt 1)**: Watchdog auto-retries only the failed jobs via `rerun-failed.yml`.
-- **Job failure (attempt 2+)**: Watchdog force-cancels the entire run — no infinite retry loops.
-- **Quality / Review Gate failures**: Never auto-retry. Fail immediately and force-cancel.
+- **New push -> old runs cancelled**: `cancel-older-runs.sh` force-cancels all older in-progress runs on the same branch. **Never re-run a cancelled run** -- cancelled means superseded.
+- **Job failure (attempt 1)**: Watchdog uses AI (Cloudflare Workers AI) to classify the failure:
+  - **Transient** (network timeout, flaky test, npm error): Auto-retries via `rerun-failed.yml`, other jobs keep running.
+  - **Code-change** (TypeScript error, lint failure, missing artifact): Force-cancels immediately, no retry.
+  - **AI unavailable**: Falls back to retry (same as pre-AI behavior).
+- **Job failure (attempt 2+)**: Watchdog force-cancels the entire run -- no infinite retry loops.
+- **Quality / Review Gate failures**: Never auto-retry, never use AI. Fail immediately and force-cancel.
 
 **PR labels** to control behavior:
 
