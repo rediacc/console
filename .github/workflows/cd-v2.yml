@@ -345,9 +345,29 @@ jobs:
             echo "::warning::Some artifacts lack attestation — this is expected during the transition period"
           fi
 
-      - name: Read pre-bump version
+      # Detect the actual version baked into the CLI binary (may differ from package.json
+      # if a previous CD run bumped the version after the CI build, or if a squash merge
+      # reset the version). This is the ground truth for install validation.
+      - name: Detect binary version from staging artifact
         id: pre-bump
-        run: echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+        run: |
+          # Extract the linux-x64 binary from staging artifacts
+          BINARY=$(find dist/cli -name "rdc-linux-x64" -o -name "rdc" | head -1)
+          if [[ -n "$BINARY" ]] && [[ -f "$BINARY" ]]; then
+            chmod +x "$BINARY"
+            BINARY_VERSION=$("$BINARY" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+            if [[ -n "$BINARY_VERSION" ]]; then
+              echo "version=$BINARY_VERSION" >> "$GITHUB_OUTPUT"
+              echo "::notice::Binary reports version: $BINARY_VERSION"
+            else
+              # Fallback to package.json
+              echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+              echo "::warning::Could not detect binary version, falling back to package.json"
+            fi
+          else
+            echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+            echo "::warning::No linux-x64 binary in staging artifacts, falling back to package.json"
+          fi
 
       - name: Version bump
         if: needs.init.outputs.retry_mode != 'true'
@@ -675,9 +695,11 @@ jobs:
           repositories: console,account
 
       - name: Initialize account submodule
-        run: git submodule update --init private/account
+        run: |
+          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
+          git submodule update --init private/account
         env:
-          GH_TOKEN: ${{ steps.app-token-stripe.outputs.token }}
+          TOKEN: ${{ steps.app-token-stripe.outputs.token }}
 
       - name: Install account dependencies
         run: npm install
