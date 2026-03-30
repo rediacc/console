@@ -20,7 +20,7 @@ update_env_file() {
     if grep -q "^${key}=" "$file" 2>/dev/null; then
         sed -i "s|^${key}=.*|${key}=${value}|" "$file"
     else
-        echo "${key}=${value}" >> "$file"
+        echo "${key}=${value}" >>"$file"
     fi
 }
 

@@ -657,11 +657,11 @@ sync_secrets_to_workers || worker_sync_failures=$?
 ENV_FILE="$ROOT_DIR/private/account/.env"
 if [[ -f "$ENV_FILE" ]] && ! is_ci; then
     log_step "Updating local .env"
-    [[ -n "${new_turnstile_secret:-}" && "$new_turnstile_secret" != "<dry-run>" ]] && \
+    [[ -n "${new_turnstile_secret:-}" && "$new_turnstile_secret" != "<dry-run>" ]] &&
         update_env_file "$ENV_FILE" "TURNSTILE_SECRET_KEY" "$new_turnstile_secret"
-    [[ -n "${new_ses_key_id:-}" && "$new_ses_key_id" != "<dry-run>" ]] && \
+    [[ -n "${new_ses_key_id:-}" && "$new_ses_key_id" != "<dry-run>" ]] &&
         update_env_file "$ENV_FILE" "AWS_SES_ACCESS_KEY_ID" "$new_ses_key_id"
-    [[ -n "${new_ses_secret:-}" && "$new_ses_secret" != "<dry-run>" ]] && \
+    [[ -n "${new_ses_secret:-}" && "$new_ses_secret" != "<dry-run>" ]] &&
         update_env_file "$ENV_FILE" "AWS_SES_SECRET_ACCESS_KEY" "$new_ses_secret"
     log_info "Updated $ENV_FILE"
 elif is_ci; then
