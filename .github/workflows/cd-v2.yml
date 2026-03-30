@@ -21,20 +21,16 @@ on:
         required: false
         type: boolean
         default: false
-      force_release:
-        description: 'Create NEW release (bump version). Default: retry existing version.'
-        required: false
-        type: boolean
-        default: false
-      bump_type:
-        description: 'Version bump type (only used with force_release)'
-        required: false
+      release_mode:
+        description: 'Release mode'
+        required: true
         type: choice
         options:
+          - retry
           - patch
           - minor
           - major
-        default: patch
+        default: retry
 
 # Required for release publishing, Docker, and Cloudflare Pages deployment
 permissions:
@@ -111,20 +107,20 @@ jobs:
       # Check if the merged PR has the 'release' label (opt-in to CD pipeline)
       # Without the label, CD is skipped — prevents accidental releases from chore PRs.
       #
-      # Manual workflow_dispatch has two modes:
+      # Manual workflow_dispatch: release_mode determines behavior
       #   - retry (default): re-deploy current version without bumping
-      #   - force_release: create new version bump (opt-in)
+      #   - patch/minor/major: create new version bump
       - name: Check for release label
         id: skip-check
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [[ "${{ github.event_name }}" != "workflow_run" ]]; then
-            # Manual trigger: retry mode by default, force_release for new version
-            if [[ "${{ inputs.force_release }}" == "true" ]]; then
+            RELEASE_MODE="${{ inputs.release_mode }}"
+            if [[ "$RELEASE_MODE" != "retry" ]]; then
               echo "skip_release=false" >> $GITHUB_OUTPUT
               echo "retry_mode=false" >> $GITHUB_OUTPUT
-              echo "::notice::Force release mode — will bump version and create new release"
+              echo "::notice::Release mode: ${RELEASE_MODE} bump — will create new release"
             else
               echo "skip_release=false" >> $GITHUB_OUTPUT
               echo "retry_mode=true" >> $GITHUB_OUTPUT
@@ -176,12 +172,12 @@ jobs:
         run: |
           .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
 
-      # Manual force_release: override the auto-detected bump type
+      # Manual dispatch: override the auto-detected bump type with release_mode
       - name: Override bump type (manual dispatch)
         id: override
-        if: github.event_name == 'workflow_dispatch' && inputs.force_release && inputs.bump_type != 'patch'
+        if: github.event_name == 'workflow_dispatch' && inputs.release_mode != 'retry' && inputs.release_mode != 'patch'
         run: |
-          BUMP="${{ inputs.bump_type }}"
+          BUMP="${{ inputs.release_mode }}"
           NEXT=$(.ci/scripts/version/bump.sh --${BUMP} --dry-run | tail -n 1)
           echo "bump_type=${BUMP}" >> $GITHUB_OUTPUT
           echo "next_version=${NEXT}" >> $GITHUB_OUTPUT
