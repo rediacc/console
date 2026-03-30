@@ -8,11 +8,35 @@
 # Then updates the corresponding GitHub org secrets.
 #
 # Usage:
-#   CF_MANAGEMENT_TOKEN=<token> ./scripts/dev/rotate-cf-tokens.sh [--dry-run]
-#   CF_API_KEY=<key> CF_EMAIL=<email> ./scripts/dev/rotate-cf-tokens.sh [--dry-run]
-#   ./scripts/dev/rotate-cf-tokens.sh [--dry-run]  # interactive prompt
+#   export CF_MANAGEMENT_TOKEN="<scoped-api-token>"
+#   export AWS_SES_ADMIN_KEY_ID="<iam-admin-access-key-id>"
+#   export AWS_SES_ADMIN_SECRET="<iam-admin-secret-access-key>"
+#   ./scripts/dev/rotate-cf-tokens.sh [--dry-run] [--rotate-turnstile] [--keep-credentials]
 #
-# Auth: API Token (Create Additional Tokens) or Global API Key + Email.
+# Auth:
+#   Cloudflare (pick one):
+#     CF_MANAGEMENT_TOKEN  - Scoped API token (recommended, supports --self-destruct)
+#     CF_API_KEY + CF_EMAIL - Global API Key (legacy, cannot self-destruct)
+#     Interactive prompt    - Asks for either of the above
+#
+#   Create a CF_MANAGEMENT_TOKEN at: https://dash.cloudflare.com/profile/api-tokens
+#     Required permissions:
+#       Account scope (Rediacc OU):
+#         - Account API Tokens Read + Write
+#         - Turnstile Sites Write
+#         - Workers Scripts Read + Write
+#       User scope:
+#         - API Tokens Read + Write (for permission groups + self-destruct)
+#
+#   AWS SES:   AWS_SES_ADMIN_KEY_ID + AWS_SES_ADMIN_SECRET
+#     IAM admin/root credentials with permission to manage keys for 'rediacc-ses-worker'.
+#     Your own credentials: https://us-east-1.console.aws.amazon.com/iam/home#/security_credentials
+#     SES worker user:      https://us-east-1.console.aws.amazon.com/iam/home#/users/details/rediacc-ses-worker?section=security_credentials
+#
+# Flags:
+#   --dry-run           Show what would be done without making changes
+#   --rotate-turnstile  Include Turnstile secret rotation (skipped by default due to 2hr grace period)
+#   --keep-credentials  Skip self-destruct (keep CF token + AWS admin key alive after rotation)
 #
 # Exit codes:
 #   0 - Success
@@ -22,6 +46,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$ROOT_DIR/.ci/scripts/lib/common.sh"
+source "$SCRIPT_DIR/lib/cf-auth.sh"
 
 # =============================================================================
 # CONFIGURATION
@@ -39,6 +64,7 @@ CD_ACCOUNT_PERMS=(
     "Workers Scripts Write"
     "Workers KV Storage Write"
     "Workers R2 Storage Write"
+    "Workers AI Read"
     "D1 Write"
     "Pages Write"
     "Turnstile Sites Write"
@@ -67,23 +93,44 @@ R2_ACCOUNT_PERMS=(
 TURNSTILE_GITHUB_SECRET="TURNSTILE_SECRET_KEY"
 
 # --- AWS SES credential rotation ---
-# SES uses standard IAM access keys. Rotated via aws iam CLI using root/admin profile.
-AWS_PROFILE="rediacc-ses"
+# SES uses standard IAM access keys. Rotated via aws iam CLI.
+# Auth: AWS_SES_ADMIN_KEY_ID + AWS_SES_ADMIN_SECRET env vars (IAM admin that can manage rediacc-ses-worker keys).
 AWS_IAM_USER="rediacc-ses-worker"
 SES_GITHUB_KEY_SECRET="AWS_SES_ACCESS_KEY_ID"
 SES_GITHUB_SECRET_SECRET="AWS_SES_SECRET_ACCESS_KEY"
+
+# TODO: Non-worker secret stores that also need updating after rotation:
+#
+# 1. Docker containers on machines:
+#    - private/middleware/docker-compose.yml: TURNSTILE_SECRET_KEY (TurnstileValidator.cs)
+#    - private/account/docker-compose.yml: AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY,
+#      TURNSTILE_SECRET_KEY, CLOUDFLARE_API_TOKEN
+#    Requires restarting containers with updated env after rotation.
+#
+# 2. SQL HA cluster:
+#    - private/sql/coordinator/wrangler.toml: CLOUDFLARE_API_TOKEN (runtime secret for DNS/certs/failover)
+#    - private/sql/lib/dns.sh, commands/cert.sh, commands/ha.sh: CLOUDFLARE_API_TOKEN
+#    Needs wrangler secret put or manual env update on machines.
+#
+# 3. Local development:
+#    - private/account/.env: may contain AWS_SES_*, TURNSTILE_SECRET_KEY
+#    Developers must manually update after rotation.
 
 # =============================================================================
 # ARGUMENT PARSING
 # =============================================================================
 
 DRY_RUN=false
+ROTATE_TURNSTILE=false
+KEEP_CREDENTIALS=false
 for arg in "$@"; do
     case "$arg" in
         --dry-run) DRY_RUN=true ;;
+        --rotate-turnstile) ROTATE_TURNSTILE=true ;;
+        --keep-credentials) KEEP_CREDENTIALS=true ;;
         *)
             log_error "Unknown argument: $arg"
-            log_error "Usage: rotate-cf-tokens.sh [--dry-run]"
+            log_error "Usage: rotate-cf-tokens.sh [--dry-run] [--rotate-turnstile] [--keep-credentials]"
             exit 1
             ;;
     esac
@@ -96,40 +143,82 @@ done
 require_cmd curl
 require_cmd jq
 require_cmd gh
+require_cmd aws
 
-# Authentication: supports API Token (Bearer) or Global API Key (X-Auth-Key + X-Auth-Email)
-# Priority: CF_MANAGEMENT_TOKEN > CF_API_KEY + CF_EMAIL > interactive prompt
-CF_AUTH_HEADERS=()
+resolve_cf_auth
+resolve_aws_auth
 
-if [[ -n "${CF_MANAGEMENT_TOKEN:-}" ]]; then
-    CF_AUTH_HEADERS=(-H "Authorization: Bearer ${CF_MANAGEMENT_TOKEN}")
-elif [[ -n "${CF_API_KEY:-}" && -n "${CF_EMAIL:-}" ]]; then
-    CF_AUTH_HEADERS=(-H "X-Auth-Key: ${CF_API_KEY}" -H "X-Auth-Email: ${CF_EMAIL}")
+if [[ "$KEEP_CREDENTIALS" != "true" ]]; then
+    check_self_destruct_capable
+fi
+
+# =============================================================================
+# PREFLIGHT CHECKS (all-or-nothing: verify everything before any mutations)
+# =============================================================================
+
+log_step "Running preflight checks..."
+preflight_failed=false
+
+# 1. Cloudflare API access
+cf_verify=$(curl -s -X GET "${CF_API_BASE}/user/tokens/verify" "${CF_AUTH_HEADERS[@]}" -H "Content-Type: application/json" 2>/dev/null)
+if ! echo "$cf_verify" | jq -e '.success' >/dev/null 2>&1; then
+    # Global API Key uses a different verification endpoint
+    cf_verify=$(curl -s -X GET "${CF_API_BASE}/user" "${CF_AUTH_HEADERS[@]}" -H "Content-Type: application/json" 2>/dev/null)
+    if ! echo "$cf_verify" | jq -e '.success' >/dev/null 2>&1; then
+        log_error "Preflight: Cloudflare API authentication failed"
+        preflight_failed=true
+    fi
+fi
+[[ "$preflight_failed" != "true" ]] && log_info "Cloudflare API: authenticated"
+
+# 2. GitHub CLI access
+if ! gh auth status >/dev/null 2>&1; then
+    log_error "Preflight: GitHub CLI not authenticated (run 'gh auth login')"
+    preflight_failed=true
 else
-    echo "Authentication method:"
-    echo "  1) API Token (Create Additional Tokens permission)"
-    echo "  2) Global API Key + Email"
-    echo -n "Choose [1/2]: "
-    read -r auth_choice
-    if [[ "$auth_choice" == "2" ]]; then
-        echo -n "Enter email: "
-        read -r CF_EMAIL
-        echo -n "Enter Global API Key: "
-        read -rs CF_API_KEY
-        echo
-        CF_AUTH_HEADERS=(-H "X-Auth-Key: ${CF_API_KEY}" -H "X-Auth-Email: ${CF_EMAIL}")
+    log_info "GitHub CLI: authenticated"
+fi
+
+# 3. AWS SES credentials
+if ! aws sts get-caller-identity >/dev/null 2>&1; then
+    log_error "Preflight: AWS_SES_ADMIN_KEY_ID/AWS_SES_ADMIN_SECRET credentials are invalid"
+    preflight_failed=true
+else
+    log_info "AWS IAM: accessible"
+fi
+
+# 4. Turnstile widget exists (skip check if --skip-turnstile)
+if [[ "$ROTATE_TURNSTILE" != "true" ]]; then
+    log_info "Turnstile: skipped (pass --rotate-turnstile to include)"
+else
+    ts_preflight=$(curl -s -X GET "${CF_API_BASE}/accounts/$ACCOUNT_ID/challenges/widgets" "${CF_AUTH_HEADERS[@]}" -H "Content-Type: application/json" 2>/dev/null)
+    if ! echo "$ts_preflight" | jq -e '.success' >/dev/null 2>&1; then
+        log_error "Preflight: Cannot access Turnstile API"
+        preflight_failed=true
+    elif [[ -z "$(echo "$ts_preflight" | jq -r '.result[0].sitekey // empty')" ]]; then
+        log_error "Preflight: No Turnstile widgets found in account"
+        preflight_failed=true
     else
-        echo -n "Enter API Token: "
-        read -rs CF_MANAGEMENT_TOKEN
-        echo
-        CF_AUTH_HEADERS=(-H "Authorization: Bearer ${CF_MANAGEMENT_TOKEN}")
+        log_info "Turnstile: widget found"
     fi
 fi
 
-if [[ ${#CF_AUTH_HEADERS[@]} -eq 0 ]]; then
-    log_error "Authentication credentials are required"
+# 5. Can list workers (needed for sync step)
+wk_preflight=$(curl -s -X GET "${CF_API_BASE}/accounts/$ACCOUNT_ID/workers/scripts" "${CF_AUTH_HEADERS[@]}" -H "Content-Type: application/json" 2>/dev/null)
+if ! echo "$wk_preflight" | jq -e '.success' >/dev/null 2>&1; then
+    log_error "Preflight: Cannot list Cloudflare Workers"
+    preflight_failed=true
+else
+    wk_count=$(echo "$wk_preflight" | jq '.result | length')
+    log_info "Workers API: $wk_count worker(s) found"
+fi
+
+if [[ "$preflight_failed" == "true" ]]; then
+    log_error "Preflight checks failed. Aborting to prevent partial rotation."
+    log_error "Fix the issues above and re-run."
     exit 1
 fi
+log_info "All preflight checks passed"
 
 # =============================================================================
 # HELPERS
@@ -293,6 +382,147 @@ rotate_token() {
     create_account_token "$name" "$policies"
 }
 
+# Push a single secret to a deployed Worker via CF API.
+# Returns 0 on success, 1 on failure (does NOT exit the script).
+sync_worker_secret() {
+    local worker="$1" secret_name="$2" secret_value="$3"
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_warn "[DRY-RUN] Would sync secret '$secret_name' to worker '$worker'"
+        return 0
+    fi
+    local payload
+    payload=$(jq -n \
+        --arg name "$secret_name" \
+        --arg text "$secret_value" \
+        '{name: $name, text: $text, type: "secret_text"}')
+    local response
+    response=$(cf_api PUT "/accounts/$ACCOUNT_ID/workers/scripts/$worker/secrets" -d "$payload") || return 1
+    local success
+    success=$(echo "$response" | jq -r '.success // false')
+    if [[ "$success" != "true" ]]; then
+        local errors
+        errors=$(echo "$response" | jq -r '.errors // [] | map(.message) | join(", ")')
+        log_error "Failed to sync '$secret_name' to worker '$worker': $errors"
+        return 1
+    fi
+    return 0
+}
+
+# Sync rotated secrets to live workers.
+# For each worker, queries its actual bound secrets via CF API, intersects with
+# what was rotated, and only pushes the overlap. No assumptions about which
+# secrets a worker uses -- we check every time.
+# Returns the number of workers that had at least one sync failure.
+sync_secrets_to_workers() {
+    log_step "=== Syncing rotated secrets to live workers ==="
+
+    # Collect rotated secrets that are allowed to be synced to workers.
+    # Only runtime secrets go here -- never CI/CD-only tokens (CLOUDFLARE_API_TOKEN, R2_*).
+    # An attacker who binds a CI/CD secret name to a worker should not receive the real value.
+    local -a rotated_names=()
+    local -a rotated_values=()
+
+    if [[ -n "${new_turnstile_secret:-}" ]]; then
+        rotated_names+=("TURNSTILE_SECRET_KEY")
+        rotated_values+=("$new_turnstile_secret")
+    fi
+    if [[ -n "${new_ses_key_id:-}" ]]; then
+        rotated_names+=("AWS_SES_ACCESS_KEY_ID")
+        rotated_values+=("$new_ses_key_id")
+    fi
+    if [[ -n "${new_ses_secret:-}" ]]; then
+        rotated_names+=("AWS_SES_SECRET_ACCESS_KEY")
+        rotated_values+=("$new_ses_secret")
+    fi
+
+    if [[ ${#rotated_names[@]} -eq 0 ]]; then
+        log_info "No secrets were rotated, skipping worker sync"
+        return 0
+    fi
+
+    log_info "Rotated secrets: ${rotated_names[*]}"
+
+    # Discover live workers
+    log_step "Listing workers in account..."
+    local page=1 all_workers=""
+    while true; do
+        local response
+        response=$(cf_api GET "/accounts/$ACCOUNT_ID/workers/scripts?page=$page&per_page=100")
+        cf_check_response "$response" "Failed to list workers"
+        local names
+        names=$(echo "$response" | jq -r '.result[].id // empty')
+        all_workers+=$'\n'"$names"
+        local count
+        count=$(echo "$response" | jq '.result | length')
+        if [[ "$count" -lt 100 ]]; then
+            break
+        fi
+        page=$((page + 1))
+    done
+
+    # Filter to target workers
+    local -a target_workers=()
+    while IFS= read -r name; do
+        [[ -z "$name" ]] && continue
+        case "$name" in
+            rediacc-www|edge-rediacc-www|pr-*)
+                target_workers+=("$name")
+                ;;
+        esac
+    done <<< "$all_workers"
+
+    if [[ ${#target_workers[@]} -eq 0 ]]; then
+        log_warn "No target workers found (expected rediacc-www, edge-rediacc-www, pr-*)"
+        return 0
+    fi
+
+    log_info "Target workers (${#target_workers[@]}): ${target_workers[*]}"
+
+    # For each worker: query its secrets, intersect with rotated, push matches
+    local failed_workers=0
+    for worker in "${target_workers[@]}"; do
+        log_step "Checking secrets on worker: $worker"
+
+        # Fetch the worker's actual secret names
+        local worker_secrets_response
+        worker_secrets_response=$(cf_api GET "/accounts/$ACCOUNT_ID/workers/scripts/$worker/secrets")
+        if ! echo "$worker_secrets_response" | jq -e '.success' >/dev/null 2>&1; then
+            log_warn "Failed to list secrets for worker '$worker', skipping"
+            failed_workers=$((failed_workers + 1))
+            continue
+        fi
+        local worker_secret_names
+        worker_secret_names=$(echo "$worker_secrets_response" | jq -r '.result[].name')
+
+        # Intersect: only push rotated secrets that the worker actually has
+        local worker_failed=false
+        local synced=0
+        for i in "${!rotated_names[@]}"; do
+            if echo "$worker_secret_names" | grep -qx "${rotated_names[$i]}"; then
+                if [[ "$DRY_RUN" == "true" ]]; then
+                    log_warn "[DRY-RUN] Would sync secret '${rotated_names[$i]}' to worker '$worker'"
+                else
+                    if ! sync_worker_secret "$worker" "${rotated_names[$i]}" "${rotated_values[$i]}"; then
+                        worker_failed=true
+                    fi
+                fi
+                synced=$((synced + 1))
+            fi
+        done
+
+        if [[ "$synced" -eq 0 ]]; then
+            log_info "No matching secrets on worker: $worker"
+        elif [[ "$worker_failed" == "true" ]]; then
+            log_warn "One or more secrets failed to sync to worker: $worker"
+            failed_workers=$((failed_workers + 1))
+        else
+            log_info "Synced $synced secret(s) to worker: $worker"
+        fi
+    done
+
+    return "$failed_workers"
+}
+
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -302,10 +532,71 @@ if [[ "$DRY_RUN" == "true" ]]; then
     log_warn "DRY-RUN mode: no mutations will be performed"
 fi
 
-fetch_permission_groups
+# Rotation order: runtime secrets first (Turnstile, SES), then CI/CD-only (CD, R2).
+# If a runtime rotation fails, we abort before touching CI/CD tokens -- no partial state.
 
-# ---- Token 1: Github-CD ----
+# ---- 1. Turnstile secret rotation (runtime) ----
+if [[ "$ROTATE_TURNSTILE" != "true" ]]; then
+    log_step "=== Skipping Turnstile secret (pass --rotate-turnstile to include) ==="
+else
+    log_step "=== Rotating Turnstile secret ==="
+
+    # Discover sitekey by listing widgets (preflight already verified access)
+    turnstile_widgets=$(cf_api GET "/accounts/$ACCOUNT_ID/challenges/widgets")
+    cf_check_response "$turnstile_widgets" "Failed to list Turnstile widgets"
+    turnstile_sitekey=$(echo "$turnstile_widgets" | jq -r '.result[0].sitekey')
+
+    log_info "Found Turnstile widget: $turnstile_sitekey"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_warn "[DRY-RUN] Would rotate Turnstile secret for sitekey: $turnstile_sitekey"
+        new_turnstile_secret="<dry-run>"
+    else
+        rotate_response=$(cf_api POST "/accounts/$ACCOUNT_ID/challenges/widgets/$turnstile_sitekey/rotate_secret" \
+            -d '{"invalidate_immediately": false}')
+        cf_check_response "$rotate_response" "Failed to rotate Turnstile secret"
+        new_turnstile_secret=$(echo "$rotate_response" | jq -r '.result.secret')
+        log_info "Rotated Turnstile secret"
+
+        log_step "Updating GitHub secret: $TURNSTILE_GITHUB_SECRET..."
+        set_github_secret "$TURNSTILE_GITHUB_SECRET" "$new_turnstile_secret"
+        log_info "Updated $TURNSTILE_GITHUB_SECRET"
+    fi
+fi
+
+# ---- 2. AWS SES credentials (runtime) ----
+log_step "=== Rotating AWS SES credentials ==="
+
+# Preflight already verified AWS CLI + profile access
+ses_old_keys=$(aws iam list-access-keys --user-name "$AWS_IAM_USER" \
+    --query 'AccessKeyMetadata[].AccessKeyId' --output text)
+
+if [[ "$DRY_RUN" == "true" ]]; then
+    log_warn "[DRY-RUN] Would rotate keys for IAM user: $AWS_IAM_USER"
+    log_warn "[DRY-RUN] Current keys: $ses_old_keys"
+    new_ses_key_id="<dry-run>"
+    new_ses_secret="<dry-run>"
+else
+    # Create new key
+    log_step "Creating new access key for $AWS_IAM_USER..."
+    new_key_json=$(aws iam create-access-key --user-name "$AWS_IAM_USER")
+    new_ses_key_id=$(echo "$new_key_json" | jq -r '.AccessKey.AccessKeyId')
+    new_ses_secret=$(echo "$new_key_json" | jq -r '.AccessKey.SecretAccessKey')
+    log_info "Created new key: $new_ses_key_id"
+
+    # Update GitHub secrets
+    log_step "Updating GitHub secrets: SES credentials..."
+    set_github_secret "$SES_GITHUB_KEY_SECRET" "$new_ses_key_id"
+    set_github_secret "$SES_GITHUB_SECRET_SECRET" "$new_ses_secret"
+    log_info "Updated $SES_GITHUB_KEY_SECRET, $SES_GITHUB_SECRET_SECRET"
+
+    # Old key deletion is deferred until after worker secret sync (see below)
+fi
+
+# ---- 3. Github-CD token (CI/CD only) ----
 log_step "=== Rotating CD token: $CD_TOKEN_NAME ==="
+
+fetch_permission_groups
 
 cd_acct_ids=$(resolve_perm_ids "com.cloudflare.api.account" "${CD_ACCOUNT_PERMS[@]}")
 cd_zone_ids=$(resolve_perm_ids "com.cloudflare.api.account.zone" "${CD_ZONE_PERMS[@]}")
@@ -322,7 +613,9 @@ cd_policies=$(jq -n \
 
 cd_result=$(rotate_token "$CD_TOKEN_NAME" "$cd_policies")
 
-if [[ "$DRY_RUN" != "true" ]]; then
+if [[ "$DRY_RUN" == "true" ]]; then
+    cd_token_value="<dry-run>"
+else
     cd_token_value=$(echo "$cd_result" | jq -r '.value')
     log_info "Created $CD_TOKEN_NAME token"
 
@@ -331,7 +624,7 @@ if [[ "$DRY_RUN" != "true" ]]; then
     log_info "Updated $CD_GITHUB_SECRET"
 fi
 
-# ---- Token 2: Github-R2 ----
+# ---- 4. Github-R2 token (CI/CD only) ----
 log_step "=== Rotating R2 token: $R2_TOKEN_NAME ==="
 
 r2_acct_ids=$(resolve_perm_ids "com.cloudflare.api.account" "${R2_ACCOUNT_PERMS[@]}")
@@ -347,7 +640,10 @@ r2_policies=$(jq -n \
 
 r2_result=$(rotate_token "$R2_TOKEN_NAME" "$r2_policies")
 
-if [[ "$DRY_RUN" != "true" ]]; then
+if [[ "$DRY_RUN" == "true" ]]; then
+    r2_access_key="<dry-run>"
+    r2_secret_key="<dry-run>"
+else
     # Per CF docs: Access Key ID = token id, Secret Access Key = SHA-256(token value)
     r2_access_key=$(echo "$r2_result" | jq -r '.id')
     r2_token_value=$(echo "$r2_result" | jq -r '.value')
@@ -361,87 +657,54 @@ if [[ "$DRY_RUN" != "true" ]]; then
     log_info "Updated $R2_GITHUB_KEY_SECRET, $R2_GITHUB_SECRET_SECRET, $R2_GITHUB_ENDPOINT_SECRET"
 fi
 
-# ---- Turnstile secret rotation ----
-log_step "=== Rotating Turnstile secret ==="
+# ---- Sync rotated secrets to live workers ----
+worker_sync_failures=0
+sync_secrets_to_workers || worker_sync_failures=$?
 
-# Discover sitekey by listing widgets
-turnstile_widgets=$(cf_api GET "/accounts/$ACCOUNT_ID/challenges/widgets")
-if echo "$turnstile_widgets" | jq -e '.success' >/dev/null 2>&1; then
-    turnstile_sitekey=$(echo "$turnstile_widgets" | jq -r '.result[0].sitekey // empty')
-    if [[ -n "$turnstile_sitekey" ]]; then
-        log_info "Found Turnstile widget: $turnstile_sitekey"
-
-        if [[ "$DRY_RUN" == "true" ]]; then
-            log_warn "[DRY-RUN] Would rotate Turnstile secret for sitekey: $turnstile_sitekey"
-        else
-            rotate_response=$(cf_api POST "/accounts/$ACCOUNT_ID/challenges/widgets/$turnstile_sitekey/rotate_secret" \
-                -d '{"invalidate_immediately": false}')
-            if ! echo "$rotate_response" | jq -e '.success' >/dev/null 2>&1; then
-                ts_err=$(echo "$rotate_response" | jq -r '.errors[0].message // "unknown error"')
-                log_warn "Turnstile rotation skipped: $ts_err"
-            else
-                new_turnstile_secret=$(echo "$rotate_response" | jq -r '.result.secret')
-                log_info "Rotated Turnstile secret"
-
-                log_step "Updating GitHub secret: $TURNSTILE_GITHUB_SECRET..."
-                set_github_secret "$TURNSTILE_GITHUB_SECRET" "$new_turnstile_secret"
-                log_info "Updated $TURNSTILE_GITHUB_SECRET"
-            fi
-        fi
-    else
-        log_warn "No Turnstile widgets found, skipping"
-    fi
-else
-    log_warn "Could not list Turnstile widgets (missing permission?), skipping"
-fi
-
-# ---- AWS SES credentials ----
-log_step "=== Rotating AWS SES credentials ==="
-
-if command -v aws >/dev/null 2>&1 && aws sts get-caller-identity --profile "$AWS_PROFILE" >/dev/null 2>&1; then
-    # List current keys for the SES user
-    old_keys=$(aws iam list-access-keys --user-name "$AWS_IAM_USER" --profile "$AWS_PROFILE" \
-        --query 'AccessKeyMetadata[].AccessKeyId' --output text 2>/dev/null || true)
-
+# ---- Deferred: Delete old AWS SES keys ----
+# Only delete old keys AFTER workers have been updated, so workers are never
+# left with deleted credentials. If any worker sync failed, keep old keys alive.
+if [[ -n "${ses_old_keys:-}" && -n "${new_ses_key_id:-}" ]]; then
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_warn "[DRY-RUN] Would rotate keys for IAM user: $AWS_IAM_USER"
-        log_warn "[DRY-RUN] Current keys: $old_keys"
+        log_warn "[DRY-RUN] Would delete old AWS SES keys: $ses_old_keys"
+    elif [[ "$worker_sync_failures" -gt 0 ]]; then
+        log_warn "Skipping old AWS SES key deletion: $worker_sync_failures worker(s) failed secret sync"
+        log_warn "Old keys still active: $ses_old_keys"
+        log_warn "Manually delete after fixing worker sync, or re-run this script"
     else
-        # Create new key
-        log_step "Creating new access key for $AWS_IAM_USER..."
-        if ! new_key_json=$(aws iam create-access-key --user-name "$AWS_IAM_USER" --profile "$AWS_PROFILE" 2>&1); then
-            log_error "Failed to create access key: $new_key_json"
-            log_warn "Skipping AWS SES rotation"
-        else
-            new_key_id=$(echo "$new_key_json" | jq -r '.AccessKey.AccessKeyId')
-            new_secret=$(echo "$new_key_json" | jq -r '.AccessKey.SecretAccessKey')
-            log_info "Created new key: $new_key_id"
-
-            # Update GitHub secrets
-            log_step "Updating GitHub secrets: SES credentials..."
-            set_github_secret "$SES_GITHUB_KEY_SECRET" "$new_key_id"
-            set_github_secret "$SES_GITHUB_SECRET_SECRET" "$new_secret"
-            log_info "Updated $SES_GITHUB_KEY_SECRET, $SES_GITHUB_SECRET_SECRET"
-
-            # Delete old keys
-            for old_key in $old_keys; do
-                if [[ "$old_key" != "$new_key_id" ]]; then
-                    log_step "Deleting old key: $old_key"
-                    aws iam delete-access-key --user-name "$AWS_IAM_USER" \
-                        --access-key-id "$old_key" --profile "$AWS_PROFILE" 2>/dev/null || true
+        for old_key in $ses_old_keys; do
+            if [[ "$old_key" != "$new_ses_key_id" ]]; then
+                log_step "Deleting old AWS SES key: $old_key"
+                if ! aws iam delete-access-key --user-name "$AWS_IAM_USER" \
+                    --access-key-id "$old_key" 2>&1; then
+                    log_warn "Failed to delete old AWS SES key: $old_key"
+                    log_warn "Manually delete it: aws iam delete-access-key --user-name $AWS_IAM_USER --access-key-id $old_key"
                 fi
-            done
-            log_info "SES credential rotation complete"
-        fi
+            fi
+        done
+        log_info "Old AWS SES key cleanup done"
     fi
-else
-    log_warn "AWS CLI not available or profile '$AWS_PROFILE' not configured, skipping SES rotation"
 fi
 
 # ---- Summary ----
-log_step "All secrets rotated successfully"
+log_step "Rotation complete"
 log_info "  CD token: $CD_TOKEN_NAME -> $CD_GITHUB_SECRET"
 log_info "  R2 token: $R2_TOKEN_NAME -> $R2_GITHUB_KEY_SECRET, $R2_GITHUB_SECRET_SECRET"
 log_info "  R2 endpoint: $R2_ENDPOINT_VALUE"
 log_info "  Turnstile: $TURNSTILE_GITHUB_SECRET"
 log_info "  AWS SES: $SES_GITHUB_KEY_SECRET, $SES_GITHUB_SECRET_SECRET"
+if [[ "$worker_sync_failures" -gt 0 ]]; then
+    log_warn "  Worker sync: $worker_sync_failures worker(s) had failures (old AWS SES keys preserved)"
+    exit 1
+else
+    log_info "  Worker sync: all live workers updated"
+fi
+
+# ---- Self-destruct: burn credentials used to run this script ----
+if [[ "$KEEP_CREDENTIALS" != "true" ]]; then
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_warn "[DRY-RUN] Would delete CF management token and AWS admin key"
+    else
+        self_destruct_credentials --aws
+    fi
+fi

@@ -147,7 +147,9 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
-          sparse-checkout: .ci/scripts
+          sparse-checkout: |
+            .ci/scripts
+            .ci/prompts
 
       - name: Cancel older runs
         if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'no-cancel-push')
@@ -163,6 +165,8 @@ jobs:
           WATCHDOG_EXCLUDE_PATTERNS: 'Watchdog,CI Complete'
           WATCHDOG_NO_RETRY_PATTERNS: 'Quality,Review Gate'
           WATCHDOG_INDEPENDENT_PATTERNS: 'Build (CLI),Build (Desktop),Bridge Workers,CLI (macOS),CLI (Windows),CLI Local,Bridge Ceph,SQL HA,OPS Tests,Standalone Run,Account E2E'
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         with:
           script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
 

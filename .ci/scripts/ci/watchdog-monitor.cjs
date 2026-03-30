@@ -10,6 +10,10 @@
 //   WATCHDOG_NO_RETRY_PATTERNS  - Comma-separated job name patterns that should never auto-retry
 //   WATCHDOG_INDEPENDENT_PATTERNS - Comma-separated job name patterns whose failures don't cancel siblings (optional)
 //
+// Optional env vars (AI failure classification):
+//   CLOUDFLARE_API_TOKEN        - Cloudflare API token with Workers AI Read permission
+//   CLOUDFLARE_ACCOUNT_ID       - Cloudflare account ID
+//
 // Labels (PR context only):
 //   no-cancel-failure  - Skip cancellation on job failure (workflow continues)
 //   no-auto-retry      - Skip auto-retry on failure (force-cancel immediately)
@@ -69,6 +73,108 @@ module.exports = async ({ github, context, core }) => {
     }
   }
 
+  // AI failure classification: fetch job logs, call Workers AI, classify as transient/code-change.
+  // Falls back to { classification: 'transient', confidence: 0 } on any error (safe default = retry).
+  const AI_CONFIDENCE_THRESHOLD = 0.8;
+  const AI_MODEL = '@cf/qwen/qwen2.5-coder-32b-instruct';
+  const AI_TIMEOUT = 10000; // 10 seconds
+
+  async function fetchJobLogs(job) {
+    try {
+      const response = await github.rest.actions.downloadJobLogsForWorkflowRun({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        job_id: job.id,
+      });
+      const lines = String(response.data).split('\n');
+      // Strip timestamp prefixes and ANSI escape codes
+      const stripped = lines.map(l =>
+        l.replace(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z\s?/, '').replace(/\x1b\[[0-9;]*m/g, '')
+      );
+      return stripped.slice(-80).join('\n');
+    } catch (e) {
+      console.log(`[AI] Failed to fetch logs for "${job.name}": ${e.message}`);
+      return null;
+    }
+  }
+
+  async function callWorkersAI(logTail) {
+    const token = process.env.CLOUDFLARE_API_TOKEN;
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    if (!token || !accountId) return null;
+
+    const fs = require('fs');
+    let systemPrompt;
+    try {
+      systemPrompt = fs.readFileSync('.ci/prompts/ci-failure-classifier.md', 'utf8').trim();
+    } catch (e) {
+      console.log(`[AI] Failed to read prompt file: ${e.message}`);
+      return null;
+    }
+
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${AI_MODEL}`;
+    const body = JSON.stringify({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: logTail }
+      ],
+      max_tokens: 150,
+      temperature: 0.1
+    });
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body,
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        console.log(`[AI] Workers AI returned HTTP ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      if (!data.success || !data.result?.response) {
+        console.log(`[AI] Unexpected response: ${JSON.stringify(data).slice(0, 200)}`);
+        return null;
+      }
+
+      const cleaned = data.result.response.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      const parsed = JSON.parse(cleaned);
+
+      if (!['transient', 'code-change'].includes(parsed.classification)) return null;
+      if (typeof parsed.confidence !== 'number' || parsed.confidence < 0 || parsed.confidence > 1) return null;
+
+      return {
+        classification: parsed.classification,
+        confidence: parsed.confidence,
+        reason: String(parsed.reason || '').slice(0, 200)
+      };
+    } catch (e) {
+      clearTimeout(timeout);
+      console.log(`[AI] ${e.name === 'AbortError' ? 'Request timed out' : e.message}`);
+      return null;
+    }
+  }
+
+  async function classifyFailure(job) {
+    const fallback = { classification: 'transient', confidence: 0, reason: 'AI unavailable, defaulting to retry' };
+    const logTail = await fetchJobLogs(job);
+    if (!logTail) return fallback;
+    const result = await callWorkersAI(logTail);
+    if (!result) {
+      console.log(`[AI] Classification failed for "${job.name}", falling back to retry`);
+      return fallback;
+    }
+    return result;
+  }
+
   // Helper: log failure details and handle the workflow run.
   // On auto-retry (attempt 1): dispatches rerun without force-cancel so only truly
   // failed jobs are retried. On final attempt: force-cancels the run.
@@ -99,10 +205,18 @@ module.exports = async ({ github, context, core }) => {
     // workflow only picks up the truly failed job(s).
     const isNoRetryJob = noRetryPatterns.some(pattern => job.name.includes(pattern));
     if (runAttempt < MAX_ATTEMPTS && !skipAutoRetry && !isNoRetryJob) {
-      console.log(`Attempt ${runAttempt}/${MAX_ATTEMPTS} - triggering auto-retry (skipping force-cancel to avoid cascading reruns)...`);
-      await dispatchRerun();
-      core.setFailed(failureMsg);
-      return;
+      const ai = await classifyFailure(job);
+      if (ai.classification === 'code-change' && ai.confidence > AI_CONFIDENCE_THRESHOLD) {
+        console.log(`[AI] "${job.name}" -> code-change (${ai.confidence}): ${ai.reason}`);
+        console.log('Skipping retry -- failure is not transient');
+        // Fall through to force-cancel
+      } else {
+        console.log(`[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`);
+        console.log(`Attempt ${runAttempt}/${MAX_ATTEMPTS} - triggering auto-retry (skipping force-cancel to avoid cascading reruns)...`);
+        await dispatchRerun();
+        core.setFailed(failureMsg);
+        return;
+      }
     } else if (isNoRetryJob) {
       console.log(`Auto-retry skipped: "${job.name}" matches no-retry pattern`);
     } else if (skipAutoRetry) {
@@ -211,11 +325,18 @@ module.exports = async ({ github, context, core }) => {
       for (const job of independentFailed) {
         console.log(`[${elapsedMin}m] Independent job failed (no sibling cancellation): "${job.name}"`);
       }
-      // Still auto-retry independent failures (handles flaky infra like SSL errors)
+      // Auto-retry independent failures unless AI classifies as code-change
       const isNoRetryJob = noRetryPatterns.some(p => independentFailed[0].name.includes(p));
       if (run.run_attempt < MAX_ATTEMPTS && !isNoRetryJob && !skipAutoRetry) {
-        console.log(`Dispatching auto-retry for independent job failure...`);
-        await dispatchRerun();
+        const ai = await classifyFailure(independentFailed[0]);
+        if (ai.classification === 'code-change' && ai.confidence > AI_CONFIDENCE_THRESHOLD) {
+          console.log(`[AI] Independent "${independentFailed[0].name}" -> code-change (${ai.confidence}): ${ai.reason}`);
+          console.log('Skipping retry for independent job -- failure is not transient');
+        } else {
+          console.log(`[AI] Independent "${independentFailed[0].name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`);
+          console.log('Dispatching auto-retry for independent job failure...');
+          await dispatchRerun();
+        }
       }
       independentRerunDispatched = true;
     } else if (independentFailed.length > 0) {
