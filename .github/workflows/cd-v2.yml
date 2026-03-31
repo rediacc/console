@@ -21,6 +21,10 @@ on:
         type: string
   workflow_dispatch:
     inputs:
+      ci_run_id:
+        description: 'CI workflow run ID to publish from'
+        required: true
+        type: string
       release_mode:
         description: 'Release mode'
         required: true
@@ -53,11 +57,13 @@ jobs:
     name: Initialize
     runs-on: ubuntu-latest
     outputs:
-      next_version: ${{ steps.resolve.outputs.next_version }}
-      bump_type: ${{ steps.resolve.outputs.bump_type }}
-      staging_tag: ${{ steps.resolve.outputs.staging_tag }}
-      skip_release: ${{ steps.resolve.outputs.skip_release }}
-      retry_mode: ${{ steps.resolve.outputs.retry_mode }}
+      ci_run_id: ${{ steps.resolve.outputs.ci_run_id }}
+      ci_sha: ${{ steps.resolve.outputs.ci_sha }}
+      next_version: ${{ steps.override.outputs.next_version || steps.version.outputs.next_version || steps.init.outputs.next_version }}
+      bump_type: ${{ steps.override.outputs.bump_type || steps.version.outputs.bump_type || steps.init.outputs.bump_type }}
+      staging_tag: ${{ steps.staging.outputs.staging_tag }}
+      skip_release: ${{ steps.skip-check.outputs.skip_release }}
+      retry_mode: ${{ steps.skip-check.outputs.retry_mode }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -78,24 +84,17 @@ jobs:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      # Resolve CI run context from workflow_run event or workflow_dispatch input
+      # Resolve CI run context from workflow_call inputs or workflow_dispatch input
       - name: Resolve CI run context
         id: resolve
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
-            echo "ci_run_id=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
-            echo "ci_sha=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
-            echo "Resolved from workflow_run: run=${{ github.event.workflow_run.id }}, sha=${{ github.event.workflow_run.head_sha }}"
-          else
-            CI_RUN_ID="${{ inputs.ci_run_id }}"
-            # Fetch the SHA from the specified CI run
-            CI_SHA=$(gh api "repos/${{ github.repository }}/actions/runs/${CI_RUN_ID}" --jq '.head_sha')
-            echo "ci_run_id=${CI_RUN_ID}" >> $GITHUB_OUTPUT
-            echo "ci_sha=${CI_SHA}" >> $GITHUB_OUTPUT
-            echo "Resolved from workflow_dispatch: run=${CI_RUN_ID}, sha=${CI_SHA}"
-          fi
+          CI_RUN_ID="${{ inputs.ci_run_id || github.run_id }}"
+          CI_SHA=$(gh api "repos/${{ github.repository }}/actions/runs/${CI_RUN_ID}" --jq '.head_sha' 2>/dev/null || echo "${{ github.sha }}")
+          echo "ci_run_id=${CI_RUN_ID}" >> $GITHUB_OUTPUT
+          echo "ci_sha=${CI_SHA}" >> $GITHUB_OUTPUT
+          echo "Resolved: run=${CI_RUN_ID}, sha=${CI_SHA}"
 
       # Check if the merged PR has the 'release' label (opt-in to CD pipeline)
       # Without the label, CD is skipped — prevents accidental releases from chore PRs.
@@ -108,7 +107,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [[ "${{ github.event_name }}" != "workflow_run" ]]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             RELEASE_MODE="${{ inputs.release_mode }}"
             if [[ "$RELEASE_MODE" != "retry" ]]; then
               echo "skip_release=false" >> $GITHUB_OUTPUT
