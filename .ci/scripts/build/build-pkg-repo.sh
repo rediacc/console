@@ -256,12 +256,7 @@ else
     for arch in amd64 arm64; do
         log_info "Generating Packages for $arch..."
         cd "$APT_WORK_DIR"
-        dpkg-scanpackages --arch "$arch" pool/ >"$DISTS_DIR/main/binary-${arch}/Packages.tmp"
-        # Rewrite pool/ paths to relative paths pointing to R2 packages directory.
-        # APT prepends the archive root URL, so ../packages/ traverses up from apt/ to the sibling packages/ dir.
-        sed "s|^Filename: pool/main/r/${PKG_NAME}/\(.*\)|Filename: ../packages/v${VERSION}/\1|" \
-            "$DISTS_DIR/main/binary-${arch}/Packages.tmp" >"$DISTS_DIR/main/binary-${arch}/Packages"
-        rm -f "$DISTS_DIR/main/binary-${arch}/Packages.tmp"
+        dpkg-scanpackages --arch "$arch" pool/ >"$DISTS_DIR/main/binary-${arch}/Packages"
         gzip -9c "$DISTS_DIR/main/binary-${arch}/Packages" >"$DISTS_DIR/main/binary-${arch}/Packages.gz"
         cd - >/dev/null
     done
@@ -316,7 +311,11 @@ else
     gpg "${GPG_OPTS[@]}" --default-key "$GPG_KEY_ID" \
         --clearsign --output "$DISTS_DIR/InRelease" "$DISTS_DIR/Release"
 
-    log_info "APT repository metadata built (no pool/ in output — served via R2)"
+    # Copy pool/ to output so debs are served alongside APT metadata.
+    # APT resolves Filename relative to the archive root, so pool/ must be a sibling of dists/.
+    cp -r "$APT_WORK_DIR/pool" "$APT_DIR/pool"
+
+    log_info "APT repository metadata built (pool/ included in output)"
 fi
 
 # =============================================================================
