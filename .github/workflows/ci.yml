@@ -865,13 +865,33 @@ jobs:
             --method quick --version "$CLI_VERSION" --platform linux --arch x64
 
   # ============================================================================
+  # VALIDATE INSTALL METHODS - Pre-publish validation on all 6 platforms
+  # Runs BEFORE publish to catch broken artifacts before they go live.
+  # Pre-publish mode: tests binary + packages only (Docker/Homebrew/Quick skipped).
+  # ============================================================================
+  validate-install:
+    name: Validate Install Methods
+    needs: [initialize, deploy-dryrun]
+    if: >-
+      always() &&
+      github.event_name == 'push' &&
+      needs.deploy-dryrun.result == 'success'
+    uses: ./.github/workflows/ct-install-methods.yml
+    with:
+      version: ${{ needs.initialize.outputs.next_version }}
+      staging_sha: ${{ github.sha }}
+      pre_publish: true
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+
+  # ============================================================================
   # CI COMPLETE - Gate for merge queue
   # This job only succeeds if ALL CI jobs pass
   # ============================================================================
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, deploy-dryrun, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview, test-preview-install]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, deploy-dryrun, validate-install, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview, test-preview-install]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -942,6 +962,12 @@ jobs:
             DEPLOY_DRYRUN_OK="true"
           fi
 
+          # validate-install can be skipped when deploy-dryrun is skipped
+          VALIDATE_INSTALL_OK="false"
+          if [[ "${{ needs.validate-install.result }}" == "success" ]] || [[ "${{ needs.validate-install.result }}" == "skipped" ]]; then
+            VALIDATE_INSTALL_OK="true"
+          fi
+
           if [[ "${{ needs.initialize.result }}" != "success" ]] || \
              [[ "$QUALITY_OK" != "true" ]] || \
              [[ "$REVIEW_GATE_OK" != "true" ]] || \
@@ -952,6 +978,7 @@ jobs:
              [[ "${{ needs.build-cli.result }}" != "success" ]] || \
              [[ "$PACKAGE_TESTS_OK" != "true" ]] || \
              [[ "$DEPLOY_DRYRUN_OK" != "true" ]] || \
+             [[ "$VALIDATE_INSTALL_OK" != "true" ]] || \
              [[ "$TESTS_OK" != "true" ]] || \
              [[ "$STANDALONE_RUN_OK" != "true" ]] || \
              [[ "$ELITE_RUN_OK" != "true" ]] || \
@@ -969,6 +996,7 @@ jobs:
             echo "  build-cli: ${{ needs.build-cli.result }}"
             echo "  package-tests: ${{ needs.package-tests.result }}"
             echo "  deploy-dryrun: ${{ needs.deploy-dryrun.result }}"
+            echo "  validate-install: ${{ needs.validate-install.result }}"
             echo "  tests: ${{ needs.tests.result }}"
             echo "  standalone-run-test: ${{ needs.standalone-run-test.result }}"
             echo "  elite-run-test: ${{ needs.elite-run-test.result }}"

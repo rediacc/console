@@ -100,16 +100,15 @@ jobs:
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-      - name: Apply version bump
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/setup/build-packages.sh
-      - run: .ci/scripts/build/build-web.sh --type RELEASE
+      - run: .ci/scripts/build/build-web.sh
+        env:
+          VITE_APP_VERSION: ${{ inputs.next_version || 'dev' }} --type RELEASE
         env:
           VITE_APP_VERSION: ${{ inputs.web_tag }}
           VITE_BASE_PATH: /console/

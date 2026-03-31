@@ -8,7 +8,7 @@
 # Auth:
 #   CF_MANAGEMENT_TOKEN  - Scoped API token (recommended)
 #   CF_API_KEY + CF_EMAIL - Global API Key (legacy)
-#   See rotate-cf-tokens.sh header for token creation guide.
+#   See rotate-secrets.sh header for token creation guide.
 #
 # Flags:
 #   --dry-run        Show what would be done without exporting

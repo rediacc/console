@@ -242,7 +242,7 @@ commit_and_push() {
     fi
 
     git -C "$TAP_DIR" add "$HOMEBREW_FORMULA_PATH"
-    git -C "$TAP_DIR" -c user.name="$PUBLISH_BOT_NAME" -c user.email="$PUBLISH_BOT_EMAIL" \
+    git -C "$TAP_DIR" -c user.name="$GIT_BOT_NAME" -c user.email="$GIT_BOT_EMAIL" \
         commit -m "chore(release): bump rediacc-cli to $VERSION [skip ci]"
     log_info "Committed formula update"
 
@@ -276,7 +276,7 @@ update_submodule_pointer() {
         if git diff --cached --quiet; then
             log_info "No submodule pointer changes"
         else
-            git -c user.name="$PUBLISH_BOT_NAME" -c user.email="$PUBLISH_BOT_EMAIL" \
+            git -c user.name="$GIT_BOT_NAME" -c user.email="$GIT_BOT_EMAIL" \
                 commit -m "chore(release): update homebrew-tap submodule pointer [skip ci]"
             git push origin HEAD:main
             log_info "Committed and pushed homebrew-tap submodule pointer update"

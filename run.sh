@@ -800,7 +800,7 @@ pr_publish() {
 
     # Build CLI binary (linux-x64) and upload to R2 staging via wrangler
     local cli_version
-    cli_version=$(node -p "require('./packages/cli/package.json').version")
+    cli_version=$(git describe --tags --match 'v*' --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0-dev")
     local staging_prefix="staging/pr-${pr_number}"
 
     log_step "Building CLI binary (linux-x64)..."

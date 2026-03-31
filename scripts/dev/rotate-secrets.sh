@@ -12,7 +12,7 @@
 #   export CF_EMAIL="<cloudflare-account-email>"
 #   export AWS_SES_ADMIN_KEY_ID="<iam-admin-access-key-id>"
 #   export AWS_SES_ADMIN_SECRET="<iam-admin-secret-access-key>"
-#   ./scripts/dev/rotate-cf-tokens.sh [--dry-run] [--rotate-turnstile] [--keep-credentials]
+#   ./scripts/dev/rotate-secrets.sh [--dry-run] [--rotate-turnstile] [--keep-credentials]
 #
 # Auth:
 #   Cloudflare:
@@ -122,7 +122,7 @@ for arg in "$@"; do
         --keep-credentials) KEEP_CREDENTIALS=true ;;
         *)
             log_error "Unknown argument: $arg"
-            log_error "Usage: rotate-cf-tokens.sh [--dry-run] [--rotate-turnstile] [--keep-credentials]"
+            log_error "Usage: rotate-secrets.sh [--dry-run] [--rotate-turnstile] [--keep-credentials]"
             exit 1
             ;;
     esac
