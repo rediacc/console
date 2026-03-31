@@ -305,26 +305,14 @@ jobs:
       # Step 8: Pre-release install method validation (binary only)
       # Runs the built linux-x64 binary to verify it works before publish
       # -----------------------------------------------------------------------
-      - name: Detect binary version from artifact
+      - name: Detect compiled binary version
         id: binary-version
         run: |
-          BINARY=$(find dist/cli -name "rdc-linux-x64" | head -1)
-          BV=""
-          if [[ -n "$BINARY" ]] && [[ -f "$BINARY" ]]; then
-            chmod +x "$BINARY"
-            # Try running the binary first
-            BV=$("$BINARY" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
-            # Fallback: extract version string from the binary with strings
-            if [[ -z "$BV" ]]; then
-              BV=$(strings "$BINARY" | grep -oE 'VERSION = .([0-9]+\.[0-9]+\.[0-9]+)' | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
-            fi
-            # Fallback: read from version.ts source
-            if [[ -z "$BV" ]]; then
-              BV=$(grep -oE "[0-9]+\.[0-9]+\.[0-9]+" packages/cli/src/version.ts | head -1 || true)
-            fi
-          fi
-          echo "version=${BV:-${{ inputs.next_version }}}" >> "$GITHUB_OUTPUT"
-          echo "::notice::Detected binary version: ${BV:-${{ inputs.next_version }}}"
+          # The binary was built from version.ts at this commit -- read it directly.
+          # This is always correct because CI builds from the same source checkout.
+          BV=$(grep -oE "[0-9]+\.[0-9]+\.[0-9]+" packages/cli/src/version.ts | head -1)
+          echo "version=$BV" >> "$GITHUB_OUTPUT"
+          echo "::notice::Binary compiled with version: $BV"
 
       - name: Test install methods (pre-release)
         if: ${{ !inputs.dry_run && steps.validate.outputs.passed == 'true' }}
