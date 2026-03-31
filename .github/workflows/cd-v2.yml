@@ -655,7 +655,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: housekeeping
-          repositories: console,renet,middleware,elite
+          repositories: console,renet,middleware,elite,account
 
       - name: Cleanup old releases, tags, and packages
         run: .ci/scripts/housekeeping/cleanup-versions.sh
@@ -683,13 +683,7 @@ jobs:
           repositories: console,account
 
       - name: Initialize account submodule
-        run: |
-          # Clear the checkout extraheader (uses housekeeping token without account access)
-          git config --local --unset-all http.https://github.com/.extraheader || true
-          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
-          git submodule update --init private/account
-        env:
-          TOKEN: ${{ steps.app-token-stripe.outputs.token }}
+        run: git submodule update --init private/account
 
       - name: Install account dependencies
         run: npm install

@@ -155,10 +155,10 @@ BUMP_TYPE=$(.ci/scripts/version/detect-bump-type.sh --verbose)
 log_info "Bump type: $BUMP_TYPE"
 write_output "bump_type" "$BUMP_TYPE"
 
-log_step "Calculating next version..."
-NEXT_VERSION=$(.ci/scripts/version/bump.sh --${BUMP_TYPE} --dry-run | tail -n 1)
+log_step "Calculating next version from git tags..."
+NEXT_VERSION=$(.ci/scripts/version/resolve-version.sh --bump-type "$BUMP_TYPE")
 write_output "next_version" "$NEXT_VERSION"
-log_info "Next version: $NEXT_VERSION"
+log_info "Next version: $NEXT_VERSION (from tag: $(.ci/scripts/version/resolve-version.sh --current))"
 
 # On push-to-main, append version to ALL image tags to invalidate CI/merge-queue cache.
 # CI builds (merge_group event) don't embed version, CD builds (push event) do —

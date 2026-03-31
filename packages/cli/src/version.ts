@@ -1,10 +1,8 @@
 /**
- * Version information for @rediacc/cli package.
- *
- * This file is the single source of truth for the package version.
- * It is updated programmatically during the build/publish process.
+ * CLI version -- injected at build time via esbuild define.
+ * Source of truth: git tags (e.g., v0.8.2).
+ * Dev builds show '0.0.0-dev'.
  */
-
-// This is automatically updated during ./go deploy publish
-// DO NOT modify manually - changes will be overwritten
-export const VERSION = '0.8.1';
+declare const __CLI_VERSION__: string;
+export const VERSION: string =
+  typeof __CLI_VERSION__ !== 'undefined' ? __CLI_VERSION__ : '0.0.0-dev';
