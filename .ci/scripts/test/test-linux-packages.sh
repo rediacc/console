@@ -264,6 +264,7 @@ phase4_build_repo_metadata() {
         --version "$TEST_VERSION" \
         --local-pkgs "$TEST_DIR/packages" \
         --output "$TEST_DIR/repo" \
+        --channel test \
         --dry-run
 }
 
@@ -291,7 +292,8 @@ phase4_validate_apt_metadata() {
     "$SCRIPT_DIR/../build/build-pkg-repo.sh" \
         --version "$TEST_VERSION" \
         --local-pkgs "$TEST_DIR/packages" \
-        --output "$repo_out"
+        --output "$repo_out" \
+        --channel test
 
     unset GNUPGHOME GPG_PRIVATE_KEY
     rm -rf "$gnupg_tmp"
@@ -366,12 +368,12 @@ phase4_validate_rpm_metadata() {
         log_error "rediacc.repo missing"
         return 1
     }
-    grep -q "baseurl=${RELEASES_BASE_URL}/rpm/" "$repo_file" || {
-        log_error ".repo baseurl wrong (expected ${RELEASES_BASE_URL}/rpm/)"
+    grep -q "baseurl=${RELEASES_BASE_URL}/rpm/test/" "$repo_file" || {
+        log_error ".repo baseurl wrong (expected ${RELEASES_BASE_URL}/rpm/test/)"
         return 1
     }
-    grep -q "gpgkey=${RELEASES_BASE_URL}/rpm/gpg.key" "$repo_file" || {
-        log_error ".repo gpgkey wrong (expected ${RELEASES_BASE_URL}/rpm/gpg.key)"
+    grep -q "gpgkey=${RELEASES_BASE_URL}/rpm/test/gpg.key" "$repo_file" || {
+        log_error ".repo gpgkey wrong (expected ${RELEASES_BASE_URL}/rpm/test/gpg.key)"
         return 1
     }
 
