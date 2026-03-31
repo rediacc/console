@@ -64,7 +64,7 @@ if [[ -z "$BUMP_TYPE" ]]; then
 fi
 
 # Parse semver with defaults for missing components
-IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_CORE"
+IFS='.' read -r MAJOR MINOR PATCH <<<"$VERSION_CORE"
 MAJOR="${MAJOR:-0}"
 MINOR="${MINOR:-0}"
 PATCH="${PATCH:-0}"
