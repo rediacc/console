@@ -5,6 +5,10 @@ name: Console CD
 # Version comes from git tags (no version bump commits).
 
 on:
+  workflow_run:
+    workflows: ["Console CI"]
+    types: [completed]
+    branches: [main]
   workflow_call:
     inputs:
       next_version:
@@ -56,6 +60,11 @@ jobs:
   init:
     name: Initialize
     runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'workflow_run'
+        && github.event.workflow_run.conclusion == 'success'
+        && github.event.workflow_run.event == 'push')
     outputs:
       ci_run_id: ${{ steps.resolve.outputs.ci_run_id }}
       ci_sha: ${{ steps.resolve.outputs.ci_sha }}
@@ -90,11 +99,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          CI_RUN_ID="${{ inputs.ci_run_id || github.run_id }}"
-          CI_SHA=$(gh api "repos/${{ github.repository }}/actions/runs/${CI_RUN_ID}" --jq '.head_sha' 2>/dev/null || echo "${{ github.sha }}")
-          echo "ci_run_id=${CI_RUN_ID}" >> $GITHUB_OUTPUT
-          echo "ci_sha=${CI_SHA}" >> $GITHUB_OUTPUT
-          echo "Resolved: run=${CI_RUN_ID}, sha=${CI_SHA}"
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            echo "ci_run_id=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
+            echo "ci_sha=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          else
+            CI_RUN_ID="${{ inputs.ci_run_id || github.run_id }}"
+            CI_SHA=$(gh api "repos/${{ github.repository }}/actions/runs/${CI_RUN_ID}" --jq '.head_sha' 2>/dev/null || echo "${{ github.sha }}")
+            echo "ci_run_id=${CI_RUN_ID}" >> $GITHUB_OUTPUT
+            echo "ci_sha=${CI_SHA}" >> $GITHUB_OUTPUT
+          fi
 
       # Check if the merged PR has the 'release' label (opt-in to CD pipeline)
       # Without the label, CD is skipped — prevents accidental releases from chore PRs.
@@ -107,7 +120,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          if [[ "${{ github.event_name }}" != "workflow_run" ]]; then
             RELEASE_MODE="${{ inputs.release_mode }}"
             if [[ "$RELEASE_MODE" != "retry" ]]; then
               echo "skip_release=false" >> $GITHUB_OUTPUT
@@ -179,11 +192,7 @@ jobs:
         if: steps.skip-check.outputs.skip_release != 'true'
         id: staging
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.dry_run }}" == "true" ]]; then
-            echo "staging_tag=dryrun-${{ steps.resolve.outputs.ci_sha }}" >> $GITHUB_OUTPUT
-          else
-            echo "staging_tag=staging-${{ steps.resolve.outputs.ci_sha }}" >> $GITHUB_OUTPUT
-          fi
+          echo "staging_tag=staging-${{ steps.resolve.outputs.ci_sha }}" >> $GITHUB_OUTPUT
 
       # Version guard: fail early if this version was already published (skip in retry mode)
       - name: Check for existing release
@@ -222,8 +231,7 @@ jobs:
     needs: [init]
     if: >-
       success() &&
-      needs.init.outputs.skip_release != 'true' &&
-      !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+      needs.init.outputs.skip_release != 'true'
     environment:
       name: edge
       url: https://edge.rediacc.com
@@ -341,8 +349,8 @@ jobs:
         if: needs.init.outputs.retry_mode != 'true'
         run: |
           VERSION="${{ needs.init.outputs.next_version }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "${{ vars.GIT_BOT_NAME }}"
+          git config user.email "${{ vars.GIT_BOT_EMAIL }}"
           git tag -a "v${VERSION}" -m "v${VERSION}"
           git push origin "v${VERSION}"
           echo "::notice::Created tag v${VERSION}"
@@ -373,6 +381,8 @@ jobs:
             --push
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
+          GIT_BOT_NAME: ${{ vars.GIT_BOT_NAME }}
+          GIT_BOT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
 
       # -----------------------------------------------------------------------
       # Step 3: Create GitHub Release (upload packages + binaries)
@@ -525,24 +535,8 @@ jobs:
           echo "- ghcr.io/rediacc/elite/web:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
           echo "- ghcr.io/rediacc/elite/cli:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
 
-  # ============================================================================
-  # VALIDATE INSTALL METHODS - Test all documented installation methods
-  # Skipped in retry mode: retry reuses existing R2 binaries without bumping
-  # version, so the version in package.json won't match what's on R2.
-  # ============================================================================
-  validate-install-methods:
-    name: Validate Install Methods
-    needs: [init, publish]
-    if: >-
-      success() &&
-      needs.init.outputs.skip_release != 'true' &&
-      needs.init.outputs.retry_mode != 'true' &&
-      !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
-    uses: ./.github/workflows/ct-install-methods.yml
-    with:
-      version: ${{ needs.init.outputs.next_version }}
-    secrets:
-      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+  # Install validation moved to CI (pre-publish). CI validates on all 6 platforms
+  # BEFORE publish, so broken artifacts never reach production.
 
   # ============================================================================
   # DEPLOY EDGE WORKER - Build pages from source and deploy to edge.rediacc.com
@@ -552,8 +546,7 @@ jobs:
     needs: [init, publish]
     if: >-
       success() &&
-      needs.init.outputs.skip_release != 'true' &&
-      !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+      needs.init.outputs.skip_release != 'true'
     uses: ./.github/workflows/cd-deploy-worker.yml
     with:
       target: edge
@@ -585,7 +578,6 @@ jobs:
     if: |
       always() &&
       needs.init.outputs.skip_release != 'true' &&
-      !(github.event_name == 'workflow_dispatch' && inputs.dry_run) &&
       needs.publish.result == 'failure'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -630,8 +622,7 @@ jobs:
     needs: [init, publish]
     if: >-
       success() &&
-      needs.init.outputs.skip_release != 'true' &&
-      !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+      needs.init.outputs.skip_release != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 

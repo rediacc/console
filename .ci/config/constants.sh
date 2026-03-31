@@ -127,9 +127,9 @@ readonly DOCKER_BUILD_ARG_NODE_VERSION="NODE_VERSION=$NODE_VERSION_REQUIRED"
 # =============================================================================
 PUBLISH_DOCKER_REGISTRY="${PUBLISH_DOCKER_REGISTRY:-ghcr.io/rediacc/elite}"
 
-# Bot identity for CI commits
-readonly PUBLISH_BOT_NAME="github-actions[bot]"
-readonly PUBLISH_BOT_EMAIL="github-actions[bot]@users.noreply.github.com"
+# Bot identity for CI commits: set GIT_BOT_NAME / GIT_BOT_EMAIL org variables.
+# Used by: update-homebrew-tap.sh, cd-v2.yml (git tag creation).
+# NOT declared here to avoid breaking local scripts that source constants.sh.
 
 # Docker images to publish
 readonly PUBLISH_IMAGES=("api" "bridge" "plugin-terminal" "plugin-browser" "web" "cli")
@@ -158,22 +158,10 @@ if ((BASH_VERSINFO[0] >= 4)); then
     )
 fi
 
-# Version files to update (relative to CONSOLE_ROOT_DIR)
-readonly VERSION_FILES_JSON=(
-    "package.json"
-    "packages/cli/package.json"
-    "packages/shared/package.json"
-    "packages/shared-desktop/package.json"
-    "packages/web/package.json"
-    "packages/desktop/package.json"
-    "packages/e2e/package.json"
-    "packages/bridge-tests/package.json"
-    "packages/www/package.json"
-    "packages/json/package.json"
-)
-readonly VERSION_FILE_TS="packages/cli/src/version.ts"
-readonly VERSION_FILE_GO="private/renet/cmd/renet/version.go"
-readonly VERSION_FILE_CSPROJ="private/middleware/middleware.csproj"
+# Version source of truth: git tags (e.g., v0.8.3)
+# Version injection: CLI via __CLI_VERSION__ esbuild define, www via APP_VERSION env,
+# web via VITE_APP_VERSION env, renet via ldflags, middleware via /p:Version MSBuild arg.
+# bump.sh still used by: desktop (electron-builder), middleware (.csproj), CLI (npm pack)
 
 # =============================================================================
 # RELEASE DISTRIBUTION CONFIGURATION (Cloudflare R2)
