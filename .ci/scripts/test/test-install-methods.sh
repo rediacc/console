@@ -272,8 +272,13 @@ test_binary_download() {
 # =============================================================================
 
 test_docker_pull_and_run() {
-    # DOCKER_TAG env var overrides version-based tag (for staging images)
-    local tag="${DOCKER_TAG:-${VERSION}}"
+    # DOCKER_TAG env var overrides version-based tag (for staging images).
+    # Empty DOCKER_TAG means no staging image was pushed (e.g., PR dry-run) -- skip.
+    if [[ -z "${DOCKER_TAG:-}" ]]; then
+        log_info "DOCKER_TAG not set -- skipping Docker test (images not pushed for this event)"
+        return 0
+    fi
+    local tag="${DOCKER_TAG}"
     local image="${DOCKER_IMAGE}:${tag}"
 
     if [[ "$DRY_RUN" == "true" ]]; then

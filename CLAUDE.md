@@ -185,7 +185,7 @@ CI: quality -> build -> dry-run -> validate install (6 platforms) -> ci-complete
 CD (auto on CI success): promote Docker -> git tag -> GitHub Release -> R2 upload -> deploy edge
 ```
 
-Install validation runs pre-publish with local staging artifacts (binary + packages). Docker/Homebrew/Quick Install validated post-publish. If CI fails, CD never triggers.
+Install validation runs pre-publish against R2 staging artifacts. Docker validated on push-to-main only (PR images are dry-run). If CI fails, CD never triggers.
 
 CD manual dispatch: `gh workflow run "Console CD" -f ci_run_id=<id> -f release_mode=patch|minor|major|retry`
 
