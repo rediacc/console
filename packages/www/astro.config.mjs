@@ -2,7 +2,9 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import { execSync } from 'child_process';
-import { version } from './package.json' with { type: 'json' };
+// Version from env (CI injects APP_VERSION from git tags) or git tag, fallback to dev
+const version = process.env.APP_VERSION
+  || (() => { try { return execSync('git describe --tags --abbrev=0 2>/dev/null').toString().trim().replace(/^v/, ''); } catch { return 'dev'; } })();
 
 import react from '@astrojs/react';
 import sitemap, { ChangeFreqEnum } from '@astrojs/sitemap';
