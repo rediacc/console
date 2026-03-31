@@ -347,7 +347,7 @@ jobs:
     permissions:
       contents: read
       packages: write   # GHCR push
-    if: always() && needs.initialize.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    if: always() && needs.initialize.result == 'success'
     uses: ./.github/workflows/ci-build-renet.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -387,7 +387,7 @@ jobs:
     permissions:
       contents: read
       packages: write   # GHCR push
-    if: always() && needs.initialize.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    if: always() && needs.initialize.result == 'success' && needs.build-renet.result == 'success'
     uses: ./.github/workflows/ci-build-docker.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -411,7 +411,7 @@ jobs:
     permissions:
       contents: read
       packages: write   # GHCR push
-    if: always() && needs.initialize.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    if: always() && needs.initialize.result == 'success'
     uses: ./.github/workflows/ci-build-desktop.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -424,7 +424,7 @@ jobs:
     permissions:
       contents: read
       packages: write   # GHCR push
-    if: always() && needs.initialize.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    if: always() && needs.initialize.result == 'success' && needs.build-renet.result == 'success'
     uses: ./.github/workflows/ci-build-cli.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
