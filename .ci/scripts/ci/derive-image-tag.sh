@@ -84,15 +84,16 @@ else
     # Running from a branch (or local/unknown)
     # Resolve the actual version from package.json instead of literal "latest"
     # so CI guards (docker-pull-ghcr.sh) don't reject the tag
-    REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
     BRANCH="${GITHUB_REF_NAME:-local}"
-    if [[ -f "$REPO_ROOT/package.json" ]] && command -v jq &>/dev/null; then
-        TAG=$(jq -r '.version' "$REPO_ROOT/package.json")
-        log_info "Auto-derived from package.json ($BRANCH): $TAG" >&2
-    else
-        TAG="latest"
-        log_warn "Could not read package.json version, falling back to: $TAG" >&2
+    # Try git tag first (source of truth). Fetch tags if not available (shallow clones).
+    if [[ -z "$(git tag -l 'v*' 2>/dev/null)" ]]; then
+        git fetch --tags --force --no-recurse-submodules origin 2>/dev/null || true
     fi
+    TAG=$(git tag -l 'v*' --sort=-v:refname 2>/dev/null | head -1 | sed 's/^v//' || true)
+    if [[ -z "$TAG" || "$TAG" == "0.0.0-dev" ]]; then
+        TAG="latest"
+    fi
+    log_info "Auto-derived from git tags ($BRANCH): $TAG" >&2
 fi
 
 # Validate tag format (alphanumeric, dots, hyphens, underscores)
