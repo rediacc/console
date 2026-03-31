@@ -156,6 +156,7 @@ log_info "Bump type: $BUMP_TYPE"
 write_output "bump_type" "$BUMP_TYPE"
 
 log_step "Calculating next version from git tags..."
+git fetch --tags --quiet 2>/dev/null || true
 NEXT_VERSION=$(.ci/scripts/version/resolve-version.sh --bump-type "$BUMP_TYPE")
 write_output "next_version" "$NEXT_VERSION"
 log_info "Next version: $NEXT_VERSION (from tag: $(.ci/scripts/version/resolve-version.sh --current))"
