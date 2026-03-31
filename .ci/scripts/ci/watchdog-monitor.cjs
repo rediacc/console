@@ -326,7 +326,7 @@ module.exports = async ({ github, context, core }) => {
       // 6. First failure: AI classifies
       else {
         const ai = await classifyFailure(job);
-        if (ai.classification === 'code-change' && ai.confidence > AI_CONFIDENCE_THRESHOLD) {
+        if (ai.classification === 'code-change' && ai.confidence >= AI_CONFIDENCE_THRESHOLD) {
           console.log(`[AI] "${job.name}" -> code-change (${ai.confidence}): ${ai.reason}`);
           await forceCancel(failureMsg);
           return;
