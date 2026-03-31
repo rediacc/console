@@ -156,12 +156,8 @@ log_info "Bump type: $BUMP_TYPE"
 write_output "bump_type" "$BUMP_TYPE"
 
 log_step "Calculating next version from git tags..."
-# Shallow CI checkout has no tags -- fetch them.
-# The app-token action configures git insteadOf with credentials, so origin works.
-git -c protocol.version=2 fetch --tags --force origin 2>&1 || {
-    log_warn "git fetch --tags failed, trying with explicit URL..."
-    git fetch --tags --force "https://x-access-token:${GITHUB_PAT:-}@github.com/${GITHUB_REPOSITORY:-}.git" 2>&1 || true
-}
+# Shallow CI checkout has no tags -- fetch them from origin (skip submodules).
+git fetch --tags --force --no-recurse-submodules origin 2>/dev/null || true
 log_info "Latest tag: $(git describe --tags --match 'v*' --abbrev=0 2>/dev/null || echo 'none')"
 NEXT_VERSION=$(.ci/scripts/version/resolve-version.sh --bump-type "$BUMP_TYPE")
 write_output "next_version" "$NEXT_VERSION"
