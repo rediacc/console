@@ -150,7 +150,6 @@ else
     fi
 fi
 
-
 # Historical versions: not downloaded. Each channel is self-contained with only
 # the current version. Previous versions accumulate via s3 sync (no --delete).
 
