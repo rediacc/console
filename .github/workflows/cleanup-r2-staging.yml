@@ -1,6 +1,6 @@
-name: Cleanup R2 Staging
+name: Cleanup PR Channel
 
-# Delete staging R2 artifacts when a PR is closed (merged or abandoned)
+# Delete R2 channel artifacts when a PR is closed (merged or abandoned)
 
 on:
   pull_request:
@@ -11,19 +11,22 @@ permissions:
 
 jobs:
   cleanup:
-    name: Delete R2 Staging
+    name: Delete PR Channel
     runs-on: ubuntu-latest
     steps:
-      - name: Delete staging artifacts
+      - name: Delete channel artifacts
         run: |
           PR_NUM="${{ github.event.pull_request.number }}"
-          echo "Cleaning up R2 staging for PR #${PR_NUM}..."
+          CHANNEL="pr-${PR_NUM}"
+          echo "Cleaning up R2 channel: ${CHANNEL}..."
 
-          aws s3 rm "s3://${RELEASES_BUCKET}/staging/pr-${PR_NUM}/" \
-            --recursive \
-            --endpoint-url "$R2_ENDPOINT" || true
+          for dir in cli desktop apt rpm apk archlinux; do
+            aws s3 rm "s3://${RELEASES_BUCKET}/${dir}/${CHANNEL}/" \
+              --recursive \
+              --endpoint-url "$R2_ENDPOINT" 2>/dev/null || true
+          done
 
-          echo "Staging artifacts deleted for PR #${PR_NUM}"
+          echo "Channel '${CHANNEL}' deleted from R2"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}

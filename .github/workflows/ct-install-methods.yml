@@ -18,13 +18,13 @@ on:
         description: 'Version to test (R2 download path, e.g., 0.4.58)'
         required: true
         type: string
-      staging_url:
-        description: 'R2 staging URL (e.g., https://releases.rediacc.com/staging/pr-123). Empty = production defaults.'
+      docker_tag:
+        description: 'Docker image tag override (for staging images, e.g., staging-abc123)'
         required: false
         type: string
         default: ''
-      docker_tag:
-        description: 'Docker image tag override (for staging images, e.g., staging-abc123)'
+      repo_channel:
+        description: 'Repo channel path segment (e.g., "stable", "edge", or "" for staging)'
         required: false
         type: string
         default: ''
@@ -45,9 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      SITE_URL: ${{ inputs.staging_url }}
-      RELEASES_BASE_URL: ${{ inputs.staging_url }}
       DOCKER_TAG: ${{ inputs.docker_tag }}
+      REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -101,9 +100,8 @@ jobs:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     env:
-      SITE_URL: ${{ inputs.staging_url }}
-      RELEASES_BASE_URL: ${{ inputs.staging_url }}
       DOCKER_TAG: ${{ inputs.docker_tag }}
+      REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -137,7 +135,7 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 30
     env:
-      RELEASES_BASE_URL: ${{ inputs.staging_url }}
+      REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -154,7 +152,7 @@ jobs:
     runs-on: macos-15-intel
     timeout-minutes: 30
     env:
-      RELEASES_BASE_URL: ${{ inputs.staging_url }}
+      REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -171,7 +169,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 15
     env:
-      RELEASES_BASE_URL: ${{ inputs.staging_url }}
+      REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -189,7 +187,7 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 15
     env:
-      RELEASES_BASE_URL: ${{ inputs.staging_url }}
+      REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 

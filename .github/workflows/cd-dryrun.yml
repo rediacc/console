@@ -16,7 +16,8 @@ on:
       next_version:
         type: string
         required: false
-      staging_tag:
+      channel:
+        description: 'Release channel (e.g., pr-123, edge, stable)'
         type: string
         required: false
       api_tag:
@@ -38,9 +39,6 @@ on:
         required: false
         type: boolean
         default: false
-      staging_prefix:
-        description: 'R2 staging prefix (e.g., pr-123 or commit SHA). Empty = skip R2 staging.'
-        required: false
         type: string
         default: ''
     outputs:
@@ -179,19 +177,12 @@ jobs:
         run: |
           VERSION="${{ inputs.next_version }}"
 
-          # Build repos using the packages we just built
-          # Use staging R2 URL when staging_prefix is set (both PR and push-to-main)
-          if [[ -n "${{ inputs.staging_prefix }}" ]]; then
-            PKG_URL="https://releases.rediacc.com/staging/${{ inputs.staging_prefix }}"
-          else
-            PKG_URL="https://releases.rediacc.com"
-          fi
+          # Build self-contained repos (packages alongside metadata)
           .ci/scripts/build/build-pkg-repo.sh \
             --version "$VERSION" \
             --local-pkgs dist/packages \
             --output dist/repos \
-            --max-versions 3 \
-            --packages-url "$PKG_URL"
+            --channel "${{ inputs.channel }}"
         env:
           GH_TOKEN: ${{ github.token }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
@@ -209,14 +200,14 @@ jobs:
 
       - name: Stage Docker images
         run: |
-          STAGING_TAG="${{ inputs.staging_tag }}"
+          CHANNEL="${{ inputs.channel }}"
 
-          .ci/scripts/docker/retag-image.sh --image api --from "${{ inputs.api_tag }}" --to "$STAGING_TAG"
-          .ci/scripts/docker/retag-image.sh --image bridge --from "${{ inputs.bridge_tag }}" --to "$STAGING_TAG"
-          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "${{ inputs.plugins_tag }}" --to "$STAGING_TAG"
-          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "${{ inputs.plugins_tag }}" --to "$STAGING_TAG"
-          .ci/scripts/docker/retag-image.sh --image web --from "${{ inputs.web_tag }}" --to "$STAGING_TAG"
-          .ci/scripts/docker/retag-image.sh --image cli --from "${{ inputs.cli_tag }}" --to "$STAGING_TAG"
+          .ci/scripts/docker/retag-image.sh --image api --from "${{ inputs.api_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag-image.sh --image bridge --from "${{ inputs.bridge_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "${{ inputs.plugins_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "${{ inputs.plugins_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag-image.sh --image web --from "${{ inputs.web_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag-image.sh --image cli --from "${{ inputs.cli_tag }}" --to "$CHANNEL"
 
       # -----------------------------------------------------------------------
       # Step 6: Clean up debug artifacts
@@ -255,7 +246,7 @@ jobs:
           echo "| RPM metadata | $RPM_FILES files |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** v${{ inputs.next_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Staging Tag:** ${{ inputs.staging_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Channel:** ${{ inputs.channel }}" >> $GITHUB_STEP_SUMMARY
 
           FAILED=false
 
@@ -349,56 +340,36 @@ jobs:
       # -----------------------------------------------------------------------
       # Upload to R2 staging (pre-publish validation needs ALL artifacts on R2)
       # -----------------------------------------------------------------------
-      - name: Prepare R2 staging (co-locate packages with repo metadata)
-        if: inputs.staging_prefix != ''
-        run: |
-          # Copy APK packages alongside APKINDEX so apk can find them in same directory
-          # APK arch dirs: x86_64, aarch64. Package names use: amd64, arm64
-          for dir_arch in "x86_64:amd64" "aarch64:arm64"; do
-            dir="${dir_arch%%:*}"; pkg_arch="${dir_arch##*:}"
-            if [[ -d "dist/repos/apk/$dir" ]]; then
-              find dist/packages/ -name "*${pkg_arch}*.apk" -exec cp {} "dist/repos/apk/$dir/" \; 2>/dev/null || true
-            fi
-          done
-          # Copy Arch packages alongside repo DB
-          for dir_arch in "x86_64:x86_64" "aarch64:aarch64"; do
-            dir="${dir_arch%%:*}"; pkg_arch="${dir_arch##*:}"
-            if [[ -d "dist/repos/archlinux/$dir" ]]; then
-              find dist/packages/ -name "*${pkg_arch}*.pkg.tar.zst" -exec cp {} "dist/repos/archlinux/$dir/" \; 2>/dev/null || true
-            fi
-          done
-
-      - name: Upload artifacts to R2 staging
-        if: inputs.staging_prefix != ''
+      - name: Upload artifacts to R2 channel
+        if: inputs.channel != ''
         run: |
           .ci/scripts/deploy/upload-to-r2.sh \
             --version "${{ inputs.next_version }}" \
-            --staging "${{ inputs.staging_prefix }}"
+            --channel "${{ inputs.channel }}"
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
 
-      - name: Upload repo metadata to R2 staging
-        if: inputs.staging_prefix != ''
+      - name: Upload repos to R2 channel
+        if: inputs.channel != ''
         run: |
-          SHA="${{ inputs.staging_prefix }}"
+          CHANNEL="${{ inputs.channel }}"
           export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
           export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
           export AWS_DEFAULT_REGION="auto"
-          # Upload repo metadata to R2 staging
           for dir in apt rpm apk archlinux; do
             if [[ -d "dist/repos/$dir" ]]; then
-              aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/staging/${SHA}/${dir}/" \
+              aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/${dir}/${CHANNEL}/" \
                 --endpoint-url "$R2_ENDPOINT" --quiet
             fi
           done
           # Upload install scripts
           for f in dist/pages/install.sh dist/pages/install.ps1; do
-            [[ -f "$f" ]] && aws s3 cp "$f" "s3://rediacc-releases/staging/${SHA}/$(basename "$f")" \
+            [[ -f "$f" ]] && aws s3 cp "$f" "s3://rediacc-releases/cli/${CHANNEL}/$(basename "$f")" \
               --endpoint-url "$R2_ENDPOINT" --quiet
           done
-          echo "Pages metadata uploaded to R2 staging/${SHA}/"
+          echo "Repos uploaded to R2 channel: ${CHANNEL}"
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}

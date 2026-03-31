@@ -5,7 +5,7 @@
 #
 # Options:
 #   --dry-run            Print commands without executing
-#   --method <method>    Test specific method: binary, docker, apt, dnf, apk, pacman, homebrew, quick, all (default: all)
+#   --method <method>    Test specific method: binary, update, docker, apt, dnf, apk, pacman, homebrew, quick, all (default: all)
 #   --version <ver>      Version to test (default: latest)
 #   --platform <plat>    Platform: linux, mac, win (default: auto-detect)
 #   --arch <arch>        Architecture: x64, arm64 (default: auto-detect)
@@ -87,6 +87,16 @@ fi
 DOCKER_IMAGE="ghcr.io/rediacc/elite/cli"
 SITE_URL="${SITE_URL:-https://www.rediacc.com}"
 # RELEASES_BASE_URL is set by constants.sh (sourced via common.sh) as readonly
+# REPO_CHANNEL: optional channel path segment (e.g., "stable", "edge", or "" for staging)
+REPO_CHANNEL="${REPO_CHANNEL:-}"
+# Build repo URL: ${RELEASES_BASE_URL}/apt[/${REPO_CHANNEL}] etc.
+if [[ -n "$REPO_CHANNEL" ]]; then
+    REPO_URL="${RELEASES_BASE_URL}"
+    REPO_CHANNEL_SUFFIX="/${REPO_CHANNEL}"
+else
+    REPO_URL="${RELEASES_BASE_URL}"
+    REPO_CHANNEL_SUFFIX=""
+fi
 HOMEBREW_TAP="rediacc/tap/rediacc-cli"
 
 # Test counters
@@ -161,7 +171,11 @@ get_binary_url() {
         win) filename="rdc-win-${arch}.exe" ;;
     esac
 
-    echo "${RELEASES_BASE_URL}/cli/v${version}/${filename}"
+    if [[ -n "$REPO_CHANNEL" ]]; then
+        echo "${RELEASES_BASE_URL}/cli/${REPO_CHANNEL}/${filename}"
+    else
+        echo "${RELEASES_BASE_URL}/cli/v${version}/${filename}"
+    fi
 }
 
 # Verify version output
@@ -268,6 +282,51 @@ test_binary_download() {
 }
 
 # =============================================================================
+# Update Check Tests
+# =============================================================================
+
+test_update_check() {
+    if ! command -v jq &>/dev/null; then
+        log_warn "jq not available, skipping update check"
+        return 77
+    fi
+
+    local manifest_url="${REPO_URL}/cli/${REPO_CHANNEL}/manifest.json"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would fetch manifest from: $manifest_url"
+        return 0
+    fi
+
+    # Fetch and validate manifest
+    local manifest
+    manifest=$(curl -fsSL "$manifest_url") || {
+        log_error "Failed to fetch manifest from $manifest_url"
+        return 1
+    }
+
+    if ! echo "$manifest" | jq -e '.version, .binaries' >/dev/null 2>&1; then
+        log_error "Invalid manifest structure"
+        return 1
+    fi
+
+    local manifest_ver
+    manifest_ver=$(echo "$manifest" | jq -r '.version')
+    log_info "  Manifest version: $manifest_ver"
+
+    # Verify at least one binary URL is reachable
+    local binary_url
+    binary_url=$(echo "$manifest" | jq -r '.binaries["linux-x64"].url // empty')
+    if [[ -n "$binary_url" ]]; then
+        if ! curl -fsSL -o /dev/null --head "$binary_url" 2>/dev/null; then
+            log_error "Binary URL not reachable: $binary_url"
+            return 1
+        fi
+        log_info "  Binary URL reachable: $binary_url"
+    fi
+}
+
+# =============================================================================
 # Docker Tests
 # =============================================================================
 
@@ -309,10 +368,10 @@ test_apt_install() {
         apt-get install -y -qq curl gnupg ca-certificates >/dev/null 2>&1
 
         # Add GPG key
-        curl -fsSL ${RELEASES_BASE_URL}/apt/gpg.key | gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
+        curl -fsSL ${REPO_URL}/apt${REPO_CHANNEL_SUFFIX}/gpg.key | gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
 
         # Add sources list
-        echo 'deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${RELEASES_BASE_URL}/apt stable main' > /etc/apt/sources.list.d/rediacc.list
+        echo 'deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${REPO_URL}/apt${REPO_CHANNEL_SUFFIX} stable main' > /etc/apt/sources.list.d/rediacc.list
 
         # Install
         apt-get update -qq
@@ -339,7 +398,7 @@ test_dnf_install() {
     docker run --rm "$distro" bash -c "
         set -e
         # Add repo
-        curl -fsSL ${RELEASES_BASE_URL}/rpm/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
+        curl -fsSL ${REPO_URL}/rpm${REPO_CHANNEL_SUFFIX}/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
 
         # Install
         dnf install -y ${PKG_NAME} >/dev/null 2>&1
@@ -364,8 +423,8 @@ test_apk_install() {
 
     docker run --rm "$distro" sh -c "
         set -e
-        # Add APK repository
-        echo '${RELEASES_BASE_URL}/apk/x86_64' >> /etc/apk/repositories
+        # Add APK repository (apk appends arch automatically)
+        echo '${REPO_URL}/apk${REPO_CHANNEL_SUFFIX}' >> /etc/apk/repositories
         apk update --allow-untrusted
 
         # Install from repo
@@ -394,7 +453,7 @@ test_pacman_install() {
         # Add rediacc repository
         echo '[rediacc]' >> /etc/pacman.conf
         echo 'SigLevel = Optional TrustAll' >> /etc/pacman.conf
-        echo 'Server = ${RELEASES_BASE_URL}/archlinux/\\\$arch' >> /etc/pacman.conf
+        echo 'Server = ${REPO_URL}/archlinux${REPO_CHANNEL_SUFFIX}/\\\$arch' >> /etc/pacman.conf
 
         pacman -Sy --noconfirm
 
@@ -520,6 +579,13 @@ if [[ "$METHOD" == "binary" || "$METHOD" == "all" ]]; then
     elif [[ "$PLATFORM" == "win" ]]; then
         run_test "Binary Download (Windows ${ARCH})" test_binary_download win "$ARCH"
     fi
+    echo ""
+fi
+
+# Update check tests (manifest + binary URL reachability)
+if [[ "$METHOD" == "update" || "$METHOD" == "all" ]]; then
+    log_step "Update Check Tests"
+    run_test "Update Check (manifest)" test_update_check
     echo ""
 fi
 

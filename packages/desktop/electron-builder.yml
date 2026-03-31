@@ -113,7 +113,7 @@ appImage:
 # Publish Configuration
 publish:
   - provider: generic
-    url: https://releases.rediacc.com/desktop/
+    url: https://releases.rediacc.com/desktop/stable/
     channel: latest
 
 # Protocol Handler (rediacc://)

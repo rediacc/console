@@ -1,6 +1,7 @@
 import { SITE_URL } from './constants';
 
 const RELEASES_URL = 'https://releases.rediacc.com';
+const CHANNEL = import.meta.env.PUBLIC_REPO_CHANNEL ?? 'stable';
 
 export type Platform = 'linux' | 'macos' | 'windows';
 
@@ -68,15 +69,15 @@ docker run --rm ghcr.io/rediacc/elite/cli:latest --version
 # Create an alias for convenience
 alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:latest'`;
 
-export const APT_COMMANDS = `curl -fsSL ${RELEASES_URL}/apt/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
-echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${RELEASES_URL}/apt stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
+export const APT_COMMANDS = `curl -fsSL ${RELEASES_URL}/apt/${CHANNEL}/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
+echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${RELEASES_URL}/apt/${CHANNEL} stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
 sudo apt-get update && sudo apt-get install rediacc-cli`;
 
-export const DNF_COMMANDS = `sudo curl -fsSL ${RELEASES_URL}/rpm/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
+export const DNF_COMMANDS = `sudo curl -fsSL ${RELEASES_URL}/rpm/${CHANNEL}/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
 sudo dnf install rediacc-cli`;
 
 export const APK_COMMANDS = `# Add the repository
-echo "${RELEASES_URL}/apk/x86_64" | sudo tee -a /etc/apk/repositories
+echo "${RELEASES_URL}/apk/${CHANNEL}" | sudo tee -a /etc/apk/repositories
 
 # Install (unsigned repo -- use --allow-untrusted)
 sudo apk update
@@ -85,7 +86,7 @@ sudo apk add --allow-untrusted rediacc-cli`;
 export const PACMAN_COMMANDS = `# Add the repository to /etc/pacman.conf
 echo "[rediacc]
 SigLevel = Optional TrustAll
-Server = ${RELEASES_URL}/archlinux/\\$arch" | sudo tee -a /etc/pacman.conf
+Server = ${RELEASES_URL}/archlinux/${CHANNEL}/\\$arch" | sudo tee -a /etc/pacman.conf
 
 # Install
 sudo pacman -Sy rediacc-cli`;

@@ -41,7 +41,7 @@ Cela télécharge le binaire `rdc.exe` dans `%LOCALAPPDATA%\rediacc\bin\`. Assur
 
 ```bash
 # Add the repository
-echo "https://releases.rediacc.com/apk/x86_64" | sudo tee -a /etc/apk/repositories
+echo "https://releases.rediacc.com/apk/stable" | sudo tee -a /etc/apk/repositories
 
 # Install
 sudo apk update
@@ -56,7 +56,7 @@ Note : Le paquet `gcompat` (couche de compatibilité glibc) est installé automa
 # Add the repository to /etc/pacman.conf
 echo "[rediacc]
 SigLevel = Optional TrustAll
-Server = https://releases.rediacc.com/archlinux/\$arch" | sudo tee -a /etc/pacman.conf
+Server = https://releases.rediacc.com/archlinux/stable/\$arch" | sudo tee -a /etc/pacman.conf
 
 # Install
 sudo pacman -Sy rediacc-cli

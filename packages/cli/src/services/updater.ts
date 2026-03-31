@@ -19,7 +19,7 @@ import { telemetryService } from './telemetry.js';
 import { loadServerConfig } from './subscription-auth.js';
 import { getStagedBinaryPath, readUpdateState, writeUpdateState } from './update-state.js';
 
-const MANIFEST_BASE_URL = 'https://www.rediacc.com/cli';
+const MANIFEST_BASE_URL = 'https://releases.rediacc.com/cli';
 const CHECK_TIMEOUT_MS = 3000;
 const DOWNLOAD_TIMEOUT_MS = 120_000;
 

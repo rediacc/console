@@ -43,7 +43,7 @@ jobs:
       is_bot: ${{ steps.init.outputs.is_bot }}
       next_version: ${{ steps.init.outputs.next_version }}
       bump_type: ${{ steps.init.outputs.bump_type }}
-      staging_tag: ${{ steps.staging.outputs.staging_tag }}
+      channel: ${{ steps.staging.outputs.channel }}
       api_tag: ${{ steps.init.outputs.api_tag }}
       api_exists: ${{ steps.init.outputs.api_exists }}
       bridge_tag: ${{ steps.init.outputs.bridge_tag }}
@@ -55,9 +55,6 @@ jobs:
       cli_tag: ${{ steps.init.outputs.cli_tag }}
       cli_exists: ${{ steps.init.outputs.cli_exists }}
       image_tag: ${{ steps.init.outputs.image_tag }}
-      # Staging: R2 prefix + URL for pre-publish validation (empty on merge_queue/schedule)
-      staging_prefix: ${{ steps.staging.outputs.staging_prefix }}
-      staging_url: ${{ steps.staging.outputs.staging_url }}
       # full_suite: run all jobs on PR, merge queue, and nightly. Skip expensive
       # jobs (quality, standalone, elite) on push-to-main since PR already validated.
       full_suite: ${{ github.event_name != 'push' }}
@@ -112,25 +109,17 @@ jobs:
         run: |
           .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
 
-      - name: Generate staging context
+      - name: Generate channel context
         id: staging
         run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            PREFIX="${{ github.sha }}"
-            echo "staging_tag=staging-${PREFIX}" >> $GITHUB_OUTPUT
+            CHANNEL="edge"
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            PREFIX="pr-${{ github.event.pull_request.number }}"
-            echo "staging_tag=staging-pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            CHANNEL="pr-${{ github.event.pull_request.number }}"
           else
-            PREFIX=""
-            echo "staging_tag=dryrun-${{ github.sha }}" >> $GITHUB_OUTPUT
+            CHANNEL="dryrun-${{ github.sha }}"
           fi
-          echo "staging_prefix=${PREFIX}" >> $GITHUB_OUTPUT
-          if [[ -n "$PREFIX" ]]; then
-            echo "staging_url=https://releases.rediacc.com/staging/${PREFIX}" >> $GITHUB_OUTPUT
-          else
-            echo "staging_url=" >> $GITHUB_OUTPUT
-          fi
+          echo "channel=${CHANNEL}" >> $GITHUB_OUTPUT
 
       # Upload CI tags as artifact for debugging
       - name: Upload CI Tags
@@ -473,9 +462,8 @@ jobs:
     uses: ./.github/workflows/cd-dryrun.yml
     with:
       upload_pages: ${{ github.event_name == 'pull_request' }}
-      staging_prefix: ${{ needs.initialize.outputs.staging_prefix }}
+      channel: ${{ needs.initialize.outputs.channel }}
       next_version: ${{ needs.initialize.outputs.next_version }}
-      staging_tag: ${{ needs.initialize.outputs.staging_tag }}
       api_tag: ${{ needs.initialize.outputs.api_tag }}
       bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
       plugins_tag: ${{ needs.initialize.outputs.plugins_tag }}
@@ -837,8 +825,8 @@ jobs:
     uses: ./.github/workflows/ct-install-methods.yml
     with:
       version: ${{ needs.initialize.outputs.next_version }}
-      staging_url: ${{ needs.initialize.outputs.staging_url }}
-      docker_tag: ${{ needs.initialize.outputs.staging_tag }}
+      docker_tag: ${{ needs.initialize.outputs.channel }}
+      repo_channel: ${{ needs.initialize.outputs.channel }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 

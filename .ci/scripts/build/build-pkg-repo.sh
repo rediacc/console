@@ -1,13 +1,14 @@
 #!/bin/bash
-# Assemble multi-version APT + RPM + APK + Archlinux package repositories with GPG signing
+# Build self-contained APT + RPM + APK + Archlinux package repositories with GPG signing.
+# Each repo includes packages alongside metadata (no external URL references).
 # Usage:
-#   build-pkg-repo.sh --version VER --local-pkgs DIR --output DIR [--max-versions N] [--dry-run]
+#   build-pkg-repo.sh --version VER --local-pkgs DIR --output DIR --channel CHANNEL [--dry-run]
 #
 # Options:
 #   --version VER       Current version being built
-#   --local-pkgs DIR    Directory containing current version .deb, .rpm, .apk, .pkg.tar.zst files
-#   --output DIR        Output directory (apt/, rpm/, apk/, archlinux/ will be created here)
-#   --max-versions N    Maximum number of versions to include (default: 3)
+#   --local-pkgs DIR    Directory containing .deb, .rpm, .apk, .pkg.tar.zst files
+#   --output DIR        Output directory (apt/, rpm/, apk/, archlinux/ created here)
+#   --channel CHANNEL   Release channel (e.g., pr-420, edge, stable)
 #   --dry-run           Preview without building
 #
 # Environment:
@@ -26,8 +27,7 @@ source "$SCRIPT_DIR/../../config/constants.sh"
 VERSION=""
 LOCAL_PKGS=""
 OUTPUT_DIR=""
-MAX_VERSIONS="$PKG_MAX_VERSIONS"
-PACKAGES_URL="${RELEASES_BASE_URL}"
+CHANNEL=""
 DRY_RUN=false
 
 # Parse arguments
@@ -46,11 +46,11 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --max-versions)
-            MAX_VERSIONS="$2"
+            # Deprecated: ignored (historical versions accumulate via s3 sync)
             shift 2
             ;;
-        --packages-url)
-            PACKAGES_URL="$2"
+        --channel)
+            CHANNEL="$2"
             shift 2
             ;;
         --dry-run)
@@ -58,7 +58,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -h | --help)
-            echo "Usage: $0 --version VER --local-pkgs DIR --output DIR [--max-versions N] [--dry-run]"
+            echo "Usage: $0 --version VER --local-pkgs DIR --output DIR --channel CHANNEL [--dry-run]"
             exit 0
             ;;
         *)
@@ -81,6 +81,10 @@ if [[ -z "$OUTPUT_DIR" ]]; then
     log_error "Missing required argument: --output"
     exit 1
 fi
+if [[ -z "$CHANNEL" ]]; then
+    log_error "Missing required argument: --channel"
+    exit 1
+fi
 
 require_dir "$LOCAL_PKGS"
 
@@ -93,7 +97,7 @@ log_step "Building package repositories"
 log_info "  Version: $VERSION"
 log_info "  Local packages: $LOCAL_PKGS"
 log_info "  Output: $OUTPUT_DIR"
-log_info "  Max versions: $MAX_VERSIONS"
+log_info "  Channel: $CHANNEL"
 
 # =============================================================================
 # Phase 1: GPG Setup
@@ -146,82 +150,9 @@ else
     fi
 fi
 
-# =============================================================================
-# Phase 2: Discover Releases (from R2 versions.json)
-# =============================================================================
-log_step "Phase 2: Discovering releases"
 
-VERSIONS=()
-VERSIONS_JSON=$(curl -fsSL "${RELEASES_BASE_URL}/packages/versions.json" 2>/dev/null || echo "[]")
-
-if command -v jq &>/dev/null; then
-    while IFS= read -r ver; do
-        [[ -z "$ver" ]] && continue
-        if [[ "$ver" != "$VERSION" ]]; then
-            VERSIONS+=("$ver")
-        fi
-    done < <(echo "$VERSIONS_JSON" | jq -r ".[:$MAX_VERSIONS][]" 2>/dev/null)
-else
-    log_warn "jq not available, skipping historical versions"
-fi
-
-log_info "Found ${#VERSIONS[@]} historical versions: ${VERSIONS[*]:-none}"
-
-# =============================================================================
-# Phase 3: Download Historical Packages (from R2)
-# =============================================================================
-log_step "Phase 3: Downloading historical packages"
-
-DOWNLOAD_DIR="$(mktemp -d)"
-CLEANUP_DIRS+=("$DOWNLOAD_DIR")
-
-for ver in "${VERSIONS[@]}"; do
-    log_info "Downloading packages for v$ver..."
-
-    for arch in amd64 arm64; do
-        deb_asset="${PKG_NAME}_${ver}_${arch}.deb"
-        if curl -fsSL "${RELEASES_BASE_URL}/packages/v${ver}/${deb_asset}" \
-            -o "$DOWNLOAD_DIR/${deb_asset}" 2>/dev/null; then
-            log_info "  Downloaded $deb_asset"
-        else
-            log_warn "  Asset not found: $deb_asset (skipping)"
-            rm -f "$DOWNLOAD_DIR/${deb_asset}"
-        fi
-    done
-
-    for arch in x86_64 aarch64; do
-        rpm_asset="${PKG_NAME}-${ver}-1.${arch}.rpm"
-        if curl -fsSL "${RELEASES_BASE_URL}/packages/v${ver}/${rpm_asset}" \
-            -o "$DOWNLOAD_DIR/${rpm_asset}" 2>/dev/null; then
-            log_info "  Downloaded $rpm_asset"
-        else
-            log_warn "  Asset not found: $rpm_asset (skipping)"
-            rm -f "$DOWNLOAD_DIR/${rpm_asset}"
-        fi
-    done
-
-    for arch in amd64 arm64; do
-        apk_asset="${PKG_NAME}-${ver}-r1-${arch}.apk"
-        if curl -fsSL "${RELEASES_BASE_URL}/packages/v${ver}/${apk_asset}" \
-            -o "$DOWNLOAD_DIR/${apk_asset}" 2>/dev/null; then
-            log_info "  Downloaded $apk_asset"
-        else
-            log_warn "  Asset not found: $apk_asset (skipping)"
-            rm -f "$DOWNLOAD_DIR/${apk_asset}"
-        fi
-    done
-
-    for arch in x86_64 aarch64; do
-        arch_asset="${PKG_NAME}-${ver}-1-${arch}.pkg.tar.zst"
-        if curl -fsSL "${RELEASES_BASE_URL}/packages/v${ver}/${arch_asset}" \
-            -o "$DOWNLOAD_DIR/${arch_asset}" 2>/dev/null; then
-            log_info "  Downloaded $arch_asset"
-        else
-            log_warn "  Asset not found: $arch_asset (skipping)"
-            rm -f "$DOWNLOAD_DIR/${arch_asset}"
-        fi
-    done
-done
+# Historical versions: not downloaded. Each channel is self-contained with only
+# the current version. Previous versions accumulate via s3 sync (no --delete).
 
 # =============================================================================
 # Phase 4: Build APT Repository
@@ -242,7 +173,6 @@ mkdir -p "$DISTS_DIR/main/binary-arm64"
 
 # Copy packages to temp pool for metadata generation
 find "$LOCAL_PKGS" -name "*.deb" -exec cp {} "$APT_POOL_DIR/" \;
-find "$DOWNLOAD_DIR" -name "*.deb" -exec cp {} "$APT_POOL_DIR/" \;
 
 DEB_COUNT=$(find "$APT_POOL_DIR" -name "*.deb" | wc -l)
 log_info "APT: generating metadata for $DEB_COUNT packages (packages served via R2)"
@@ -256,12 +186,7 @@ else
     for arch in amd64 arm64; do
         log_info "Generating Packages for $arch..."
         cd "$APT_WORK_DIR"
-        dpkg-scanpackages --arch "$arch" pool/ >"$DISTS_DIR/main/binary-${arch}/Packages.tmp"
-        # Rewrite pool/ paths to relative paths pointing to sibling packages/ dir on R2.
-        # APT prepends the archive root URL, so ../packages/ goes from apt/ to packages/.
-        sed "s|^Filename: pool/main/r/${PKG_NAME}/\(.*\)|Filename: ../packages/v${VERSION}/\1|" \
-            "$DISTS_DIR/main/binary-${arch}/Packages.tmp" >"$DISTS_DIR/main/binary-${arch}/Packages"
-        rm -f "$DISTS_DIR/main/binary-${arch}/Packages.tmp"
+        dpkg-scanpackages --arch "$arch" pool/ >"$DISTS_DIR/main/binary-${arch}/Packages"
         gzip -9c "$DISTS_DIR/main/binary-${arch}/Packages" >"$DISTS_DIR/main/binary-${arch}/Packages.gz"
         cd - >/dev/null
     done
@@ -316,7 +241,10 @@ else
     gpg "${GPG_OPTS[@]}" --default-key "$GPG_KEY_ID" \
         --clearsign --output "$DISTS_DIR/InRelease" "$DISTS_DIR/Release"
 
-    log_info "APT repository metadata built (packages served from ../packages/ on R2)"
+    # Copy pool/ to output (self-contained repo: packages alongside metadata)
+    cp -r "$APT_WORK_DIR/pool" "$APT_DIR/pool"
+
+    log_info "APT repository built (self-contained with pool/)"
 fi
 
 # =============================================================================
@@ -327,49 +255,40 @@ log_step "Phase 5: Building RPM repository metadata"
 RPM_DIR="$OUTPUT_DIR/rpm"
 
 # Use a temp working directory for package files (metadata generation only)
-RPM_WORK_DIR="$(mktemp -d)"
-RPM_WORK_PKG_DIR="$RPM_WORK_DIR/packages"
-CLEANUP_DIRS+=("$RPM_WORK_DIR")
+mkdir -p "$RPM_DIR"
 
-mkdir -p "$RPM_WORK_PKG_DIR"
+# Copy RPMs directly into output dir (self-contained repo)
+find "$LOCAL_PKGS" -name "*.rpm" -exec cp {} "$RPM_DIR/" \;
 
-# Copy packages to temp dir for metadata generation
-find "$LOCAL_PKGS" -name "*.rpm" -exec cp {} "$RPM_WORK_PKG_DIR/" \;
-find "$DOWNLOAD_DIR" -name "*.rpm" -exec cp {} "$RPM_WORK_PKG_DIR/" \;
-
-RPM_COUNT=$(find "$RPM_WORK_PKG_DIR" -name "*.rpm" | wc -l)
-log_info "RPM: generating metadata for $RPM_COUNT packages (packages served via R2)"
+RPM_COUNT=$(find "$RPM_DIR" -name "*.rpm" | wc -l)
+log_info "RPM: generating metadata for $RPM_COUNT packages (self-contained)"
 
 if [[ "$DRY_RUN" == "true" ]]; then
     log_info "[DRY-RUN] Would generate RPM repository metadata"
 else
     require_cmd createrepo_c
 
-    # Create repository metadata in temp working dir
-    # --baseurl points to R2 where the actual .rpm files live
+    # Packages are in RPM_DIR alongside repodata/ -- no --baseurl needed.
+    # createrepo_c generates href="filename.rpm" relative to repo root.
     log_info "Running createrepo_c..."
-    createrepo_c --baseurl "${PACKAGES_URL}/packages/v${VERSION}/" "$RPM_WORK_DIR"
-
-    # Copy only repodata/ to output (not the actual packages)
-    mkdir -p "$RPM_DIR"
-    cp -r "$RPM_WORK_DIR/repodata" "$RPM_DIR/"
+    createrepo_c "$RPM_DIR"
 
     # Sign repomd.xml
     log_info "Signing RPM repository..."
     gpg "${GPG_OPTS[@]}" --default-key "$GPG_KEY_ID" \
         --detach-sign --armor --output "$RPM_DIR/repodata/repomd.xml.asc" "$RPM_DIR/repodata/repomd.xml"
 
-    log_info "RPM repository metadata built (no packages/ in output — served via R2)"
+    log_info "RPM repository built (self-contained with packages)"
 fi
 
 # Write .repo file for DNF/YUM
 cat >"$RPM_DIR/rediacc.repo" <<EOF
 [rediacc]
 name=Rediacc CLI Repository
-baseurl=${PACKAGES_URL}/rpm/
+baseurl=${RELEASES_BASE_URL}/rpm/${CHANNEL}/
 enabled=1
 gpgcheck=1
-gpgkey=${PACKAGES_URL}/rpm/gpg.key
+gpgkey=${RELEASES_BASE_URL}/rpm/${CHANNEL}/gpg.key
 EOF
 
 # =============================================================================
@@ -391,9 +310,7 @@ for arch in x86_64 aarch64; do
     mkdir -p "$arch_work"
 
     # Copy APK packages for this architecture
-    for src_dir in "$LOCAL_PKGS" "$DOWNLOAD_DIR"; do
-        find "$src_dir" -name "*-${nfpm_arch}.apk" -exec cp {} "$arch_work/" \; 2>/dev/null || true
-    done
+    find "$LOCAL_PKGS" -name "*-${nfpm_arch}.apk" -exec cp {} "$arch_work/" \; 2>/dev/null || true
 done
 
 APK_COUNT_TOTAL=0
@@ -425,9 +342,21 @@ else
         else
             log_warn "Docker not available, cannot generate APKINDEX for $arch"
         fi
+
+        # Copy packages to output, renamed to match APKINDEX expectations.
+        # APK downloads as {name}-{version}.apk but nfpm names files differently.
+        for apk_file in "$arch_work"/*.apk; do
+            [[ -f "$apk_file" ]] || continue
+            apk_name=$(tar xzf "$APK_DIR/$arch/APKINDEX.tar.gz" -O APKINDEX 2>/dev/null | awk -F: '/^P:/{name=$2} /^V:/{print name"-"$2".apk"; exit}')
+            if [[ -n "$apk_name" ]]; then
+                cp "$apk_file" "$APK_DIR/$arch/$apk_name"
+            else
+                cp "$apk_file" "$APK_DIR/$arch/"
+            fi
+        done
     done
 
-    log_info "APK repository metadata built (unsigned — APK signing uses RSA keys, not GPG)"
+    log_info "APK repository built (self-contained with packages)"
 fi
 
 # =============================================================================
@@ -445,9 +374,7 @@ for arch in x86_64 aarch64; do
     mkdir -p "$arch_work"
 
     # Copy Archlinux packages for this architecture
-    for src_dir in "$LOCAL_PKGS" "$DOWNLOAD_DIR"; do
-        find "$src_dir" -name "*-${arch}.pkg.tar.zst" -exec cp {} "$arch_work/" \; 2>/dev/null || true
-    done
+    find "$LOCAL_PKGS" -name "*-${arch}.pkg.tar.zst" -exec cp {} "$arch_work/" \; 2>/dev/null || true
 done
 
 ARCH_COUNT_TOTAL=0
@@ -475,7 +402,7 @@ else
         if command -v docker &>/dev/null; then
             docker run --rm -v "$arch_work:/repo" -v "$ARCHLINUX_DIR/$arch:/out" \
                 archlinux:latest bash -c \
-                "cp /repo/*.pkg.tar.zst /out/ 2>/dev/null; repo-add /out/rediacc.db.tar.gz /out/*.pkg.tar.zst 2>/dev/null; rm -f /out/*.pkg.tar.zst"
+                "cp /repo/*.pkg.tar.zst /out/ 2>/dev/null; repo-add /out/rediacc.db.tar.gz /out/*.pkg.tar.zst 2>/dev/null"
         else
             log_warn "Docker not available, cannot generate pacman database for $arch"
         fi
@@ -485,7 +412,7 @@ else
     cat >"$ARCHLINUX_DIR/rediacc.conf" <<EOF
 [rediacc]
 SigLevel = Optional TrustAll
-Server = ${PACKAGES_URL}/archlinux/\$arch
+Server = ${RELEASES_BASE_URL}/archlinux/${CHANNEL}/\$arch
 EOF
 
     log_info "Archlinux repository metadata built"
