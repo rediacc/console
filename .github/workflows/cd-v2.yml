@@ -1,26 +1,26 @@
-name: Console CD v2
+name: Console CD
 
-# Publish-only CD workflow triggered when CI completes on main.
-# All builds run in CI; CD only publishes artifacts produced by CI.
-# 1. init: Resolve CI run context, recalculate version, guard against duplicates
-# 2. publish: Promote Docker images, create Release, deploy Pages
+# Publish workflow -- called from CI on push-to-main, or manually.
+# Promotes Docker images, creates git tag + GitHub Release, deploys edge worker.
+# Version comes from git tags (no version bump commits).
 
 on:
-  workflow_run:
-    workflows: ["Console CI"]
-    types: [completed]
-    branches: [main]
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      ci_run_id:
-        description: 'CI workflow run ID to publish from'
+      next_version:
+        description: 'Version to publish (calculated from git tags)'
         required: true
         type: string
-      dry_run:
-        description: 'Dry-run mode (validate without publishing)'
-        required: false
-        type: boolean
-        default: false
+      bump_type:
+        description: 'Bump type (patch, minor, major)'
+        required: true
+        type: string
+      staging_tag:
+        description: 'Docker staging tag to promote'
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
       release_mode:
         description: 'Release mode'
         required: true
@@ -52,19 +52,12 @@ jobs:
   init:
     name: Initialize
     runs-on: ubuntu-latest
-    if: >-
-      (github.event_name == 'workflow_dispatch') ||
-      (github.event_name == 'workflow_run'
-        && github.event.workflow_run.conclusion == 'success'
-        && github.event.workflow_run.event == 'push')
     outputs:
-      ci_run_id: ${{ steps.resolve.outputs.ci_run_id }}
-      ci_sha: ${{ steps.resolve.outputs.ci_sha }}
-      next_version: ${{ steps.override.outputs.next_version || steps.version.outputs.next_version || steps.init.outputs.next_version }}
-      bump_type: ${{ steps.override.outputs.bump_type || steps.version.outputs.bump_type || steps.init.outputs.bump_type }}
-      staging_tag: ${{ steps.staging.outputs.staging_tag }}
-      skip_release: ${{ steps.skip-check.outputs.skip_release }}
-      retry_mode: ${{ steps.skip-check.outputs.retry_mode }}
+      next_version: ${{ steps.resolve.outputs.next_version }}
+      bump_type: ${{ steps.resolve.outputs.bump_type }}
+      staging_tag: ${{ steps.resolve.outputs.staging_tag }}
+      skip_release: ${{ steps.resolve.outputs.skip_release }}
+      retry_mode: ${{ steps.resolve.outputs.retry_mode }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -154,10 +147,10 @@ jobs:
         if: steps.skip-check.outputs.retry_mode == 'true'
         id: version
         run: |
-          VERSION=$(jq -r '.version' package.json)
+          VERSION=$(.ci/scripts/version/resolve-version.sh --current)
           echo "next_version=$VERSION" >> $GITHUB_OUTPUT
           echo "bump_type=none" >> $GITHUB_OUTPUT
-          echo "::notice::Retry mode: using existing version $VERSION"
+          echo "::notice::Retry mode: using existing version $VERSION (from latest tag)"
 
       # Normal mode: recalculate version from git state
       - name: Initialize CI
@@ -178,7 +171,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.release_mode != 'retry' && inputs.release_mode != 'patch'
         run: |
           BUMP="${{ inputs.release_mode }}"
-          NEXT=$(.ci/scripts/version/bump.sh --${BUMP} --dry-run | tail -n 1)
+          NEXT=$(.ci/scripts/version/resolve-version.sh --bump-type "${BUMP}")
           echo "bump_type=${BUMP}" >> $GITHUB_OUTPUT
           echo "next_version=${NEXT}" >> $GITHUB_OUTPUT
           echo "::notice::Manual bump override: ${BUMP} -> v${NEXT}"
@@ -232,8 +225,6 @@ jobs:
       success() &&
       needs.init.outputs.skip_release != 'true' &&
       !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
-    outputs:
-      pre_bump_version: ${{ steps.pre-bump.outputs.version }}
     environment:
       name: edge
       url: https://edge.rediacc.com
@@ -345,26 +336,28 @@ jobs:
             echo "::warning::Some artifacts lack attestation — this is expected during the transition period"
           fi
 
-      # Detect the actual version baked into the CLI binary (may differ from package.json
-      # if a previous CD run bumped the version after the CI build, or if a squash merge
-      # reset the version). This is the ground truth for install validation.
-      # The CI build workflow applies `bump.sh --version next_version` BEFORE compiling,
-      # so the binary reports next_version. No detection needed -- it matches the version
-      # we're about to publish.
-      - name: Set pre-bump version
-        id: pre-bump
-        run: |
-          echo "version=${{ needs.init.outputs.next_version }}" >> "$GITHUB_OUTPUT"
-          echo "::notice::Binary compiled with version: ${{ needs.init.outputs.next_version }}"
-
-      - name: Version bump
-        if: needs.init.outputs.retry_mode != 'true'
-        run: .ci/scripts/version/bump.sh --version ${{ needs.init.outputs.next_version }}
-
-      - name: Bump submodule versions
+      # Tag-based versioning: create git tag instead of version bump commit.
+      # No file changes needed -- version is injected at build time.
+      - name: Create version tag
         if: needs.init.outputs.retry_mode != 'true'
         run: |
-          .ci/scripts/version/bump-submodules.sh --version ${{ needs.init.outputs.next_version }} --stage-only
+          VERSION="${{ needs.init.outputs.next_version }}"
+          git tag -a "v${VERSION}" -m "v${VERSION}"
+          git push origin "v${VERSION}"
+          echo "::notice::Created tag v${VERSION}"
+
+      - name: Tag submodules
+        if: needs.init.outputs.retry_mode != 'true'
+        run: |
+          VERSION="${{ needs.init.outputs.next_version }}"
+          for sub in private/renet private/middleware; do
+            if [[ -d "$sub/.git" ]] || [[ -f "$sub/.git" ]]; then
+              cd "$sub"
+              git tag -a "v${VERSION}" -m "v${VERSION}" 2>/dev/null || echo "Tag v${VERSION} already exists in $(basename $sub)"
+              git push origin "v${VERSION}" 2>/dev/null || echo "Tag v${VERSION} already pushed in $(basename $sub)"
+              cd "$GITHUB_WORKSPACE"
+            fi
+          done
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
 
@@ -374,18 +367,9 @@ jobs:
           .ci/scripts/release/update-homebrew-tap.sh \
             --version ${{ needs.init.outputs.next_version }} \
             --local-checksums dist/cli \
-            --stage-only
+            --push
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
-
-      - name: Version commit
-        if: needs.init.outputs.retry_mode != 'true'
-        id: commit
-        run: |
-          .ci/scripts/version/commit.sh --version ${{ needs.init.outputs.next_version }} --bump-type ${{ needs.init.outputs.bump_type }} --push --include-submodules
-          echo "release_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_HEAD_REF: main
 
       # -----------------------------------------------------------------------
       # Step 3: Create GitHub Release (upload packages + binaries)
@@ -396,7 +380,7 @@ jobs:
         with:
           tag_name: v${{ needs.init.outputs.next_version }}
           name: v${{ needs.init.outputs.next_version }}
-          target_commitish: ${{ steps.commit.outputs.release_sha }}
+          target_commitish: ${{ github.sha }}
           files: |
             dist/desktop/**/*
             dist/cli/**/*
@@ -554,7 +538,6 @@ jobs:
     uses: ./.github/workflows/ct-install-methods.yml
     with:
       version: ${{ needs.init.outputs.next_version }}
-      expected_version: ${{ needs.publish.outputs.pre_bump_version }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
@@ -655,7 +638,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: housekeeping
-          repositories: console,renet,middleware,elite
+          repositories: console,renet,middleware,elite,account
 
       - name: Cleanup old releases, tags, and packages
         run: .ci/scripts/housekeeping/cleanup-versions.sh
@@ -683,13 +666,7 @@ jobs:
           repositories: console,account
 
       - name: Initialize account submodule
-        run: |
-          # Clear the checkout extraheader (uses housekeeping token without account access)
-          git config --local --unset-all http.https://github.com/.extraheader || true
-          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
-          git submodule update --init private/account
-        env:
-          TOKEN: ${{ steps.app-token-stripe.outputs.token }}
+        run: git submodule update --init private/account
 
       - name: Install account dependencies
         run: npm install

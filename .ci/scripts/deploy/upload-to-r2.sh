@@ -260,7 +260,18 @@ if [[ -d "$CLI_DIR" ]]; then
     r2_put "{\"version\":\"${VERSION}\"}" "$(r2_path "cli/edge/latest.json")"
     ((UPLOADED++)) || true
 
-    log_info "CLI: uploaded to $(r2_path "cli/v${VERSION}/") + $(r2_path "cli/edge/")"
+    # Also publish to stable channel (same content, both channels always in sync)
+    if [[ -f "$CLI_DIR/manifest.json" ]]; then
+        r2_cp "$CLI_DIR/manifest.json" "$(r2_path "cli/stable/manifest.json")"
+    fi
+    for binary in "$CLI_DIR"/rdc-*; do
+        [[ -f "$binary" ]] || continue
+        local_name="$(basename "$binary")"
+        r2_cp "$binary" "$(r2_path "cli/stable/${local_name}")"
+    done
+    r2_put "{\"version\":\"${VERSION}\"}" "$(r2_path "cli/stable/latest.json")"
+
+    log_info "CLI: uploaded to $(r2_path "cli/v${VERSION}/") + $(r2_path "cli/edge/") + $(r2_path "cli/stable/")"
 
     # Track CLI versions for retention cleanup (production only)
     if [[ -z "$STAGING" ]]; then

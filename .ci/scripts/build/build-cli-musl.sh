@@ -91,6 +91,7 @@ docker run --rm \
     -v "$REPO_ROOT:/workspace" \
     -w /workspace \
     -e CI="${CI:-}" \
+    -e CLI_VERSION="${CLI_VERSION:-0.0.0-dev}" \
     node:22-alpine sh -c '
 set -e
 
