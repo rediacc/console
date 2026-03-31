@@ -520,13 +520,14 @@ test_quick_install() {
 
     docker run --rm \
         -e "REDIACC_RELEASES_URL=${RELEASES_BASE_URL}" \
+        -e "REDIACC_CHANNEL=${REPO_CHANNEL:-stable}" \
         "$distro" bash -c "
         set -e
         apt-get update -qq
         apt-get install -y -qq curl ca-certificates >/dev/null 2>&1
 
-        # Run install script
-        curl -fsSL ${SITE_URL}/install.sh | bash
+        # Run install script from channel
+        curl -fsSL ${REPO_URL}/cli${REPO_CHANNEL_SUFFIX}/install.sh | bash
 
         # Verify (install.sh puts binary in ~/.local/bin)
         ~/.local/bin/${PKG_BINARY_NAME} --version
