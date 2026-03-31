@@ -111,6 +111,8 @@ fi
 
 # Step 1: Build the CJS bundle
 log_step "Building CLI bundle..."
+export CLI_VERSION="${CLI_VERSION:-0.0.0-dev}"
+log_info "CLI version: $CLI_VERSION"
 cd "$CLI_DIR"
 node bundle.mjs
 require_file "$CLI_DIR/dist/cli-bundle.cjs"

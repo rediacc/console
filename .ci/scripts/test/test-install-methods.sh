@@ -479,7 +479,6 @@ test_quick_install() {
 
     docker run --rm \
         -e "REDIACC_RELEASES_URL=${RELEASES_BASE_URL}" \
-        -e "REDIACC_CHANNEL=edge" \
         "$distro" bash -c "
         set -e
         apt-get update -qq

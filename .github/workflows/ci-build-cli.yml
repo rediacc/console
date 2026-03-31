@@ -83,11 +83,6 @@ jobs:
           name: renet-binaries-${{ github.sha }}
           path: private/bin/
 
-      - name: Apply version bump
-        if: env.SKIP_THIS != 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: bash
-        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
-
       # Native build steps (skip for musl — handled inside Docker)
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         if: env.SKIP_THIS != 'true' && matrix.platform != 'linux-musl'
@@ -106,12 +101,16 @@ jobs:
         if: env.SKIP_THIS != 'true' && matrix.platform != 'linux-musl'
         shell: bash
         run: .ci/scripts/build/build-cli-executables.sh --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+        env:
+          CLI_VERSION: ${{ inputs.next_version || '0.0.0-dev' }}
 
       # Musl build (runs entire build inside Alpine Docker container)
       - name: Build CLI SEA executable (musl)
         if: env.SKIP_THIS != 'true' && matrix.platform == 'linux-musl'
         shell: bash
         run: .ci/scripts/build/build-cli-musl.sh --arch ${{ matrix.arch }}
+        env:
+          CLI_VERSION: ${{ inputs.next_version || '0.0.0-dev' }}
 
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: env.SKIP_THIS != 'true'

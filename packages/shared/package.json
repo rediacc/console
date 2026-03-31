@@ -1,6 +1,6 @@
 {
   "name": "@rediacc/shared",
-  "version": "0.8.2",
+  "version": "0.0.0-dev",
   "private": true,
   "type": "module",
   "scripts": {
