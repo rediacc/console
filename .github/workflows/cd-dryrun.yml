@@ -210,17 +210,13 @@ jobs:
       - name: Stage Docker images
         run: |
           STAGING_TAG="${{ inputs.staging_tag }}"
-          DRY_RUN_FLAG=""
-          if [[ "${{ github.event_name }}" != "push" ]]; then
-            DRY_RUN_FLAG="--dry-run"
-          fi
 
-          .ci/scripts/docker/retag-image.sh --image api --from "${{ inputs.api_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
-          .ci/scripts/docker/retag-image.sh --image bridge --from "${{ inputs.bridge_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
-          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "${{ inputs.plugins_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
-          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "${{ inputs.plugins_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
-          .ci/scripts/docker/retag-image.sh --image web --from "${{ inputs.web_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
-          .ci/scripts/docker/retag-image.sh --image cli --from "${{ inputs.cli_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image api --from "${{ inputs.api_tag }}" --to "$STAGING_TAG"
+          .ci/scripts/docker/retag-image.sh --image bridge --from "${{ inputs.bridge_tag }}" --to "$STAGING_TAG"
+          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "${{ inputs.plugins_tag }}" --to "$STAGING_TAG"
+          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "${{ inputs.plugins_tag }}" --to "$STAGING_TAG"
+          .ci/scripts/docker/retag-image.sh --image web --from "${{ inputs.web_tag }}" --to "$STAGING_TAG"
+          .ci/scripts/docker/retag-image.sh --image cli --from "${{ inputs.cli_tag }}" --to "$STAGING_TAG"
 
       # -----------------------------------------------------------------------
       # Step 6: Clean up debug artifacts

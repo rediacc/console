@@ -120,7 +120,7 @@ jobs:
             echo "staging_tag=staging-${PREFIX}" >> $GITHUB_OUTPUT
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             PREFIX="pr-${{ github.event.pull_request.number }}"
-            echo "staging_tag=dryrun-${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "staging_tag=staging-pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
           else
             PREFIX=""
             echo "staging_tag=dryrun-${{ github.sha }}" >> $GITHUB_OUTPUT
@@ -428,7 +428,7 @@ jobs:
     uses: ./.github/workflows/ci-build-cli.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
-      skip_win_arm64: ${{ github.event_name != 'push' }}
+      skip_win_arm64: false
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
@@ -838,7 +838,7 @@ jobs:
     with:
       version: ${{ needs.initialize.outputs.next_version }}
       staging_url: ${{ needs.initialize.outputs.staging_url }}
-      docker_tag: ${{ github.event_name == 'push' && needs.initialize.outputs.staging_tag || '' }}
+      docker_tag: ${{ needs.initialize.outputs.staging_tag }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
