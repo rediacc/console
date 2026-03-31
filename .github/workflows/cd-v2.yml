@@ -501,11 +501,13 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       # -----------------------------------------------------------------------
-      # Upload release artifacts to R2
+      # Promote R2 staging to production channels
+      # CI already uploaded to staging/{sha}/ -- just copy to edge/stable
       # -----------------------------------------------------------------------
-      - name: Upload release artifacts to R2
+      - name: Promote R2 staging to production
         run: |
-          .ci/scripts/deploy/upload-to-r2.sh \
+          .ci/scripts/deploy/promote-r2-staging.sh \
+            --sha "${{ needs.init.outputs.ci_sha }}" \
             --version "${{ needs.init.outputs.next_version }}"
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -567,6 +569,35 @@ jobs:
       AWS_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
       AWS_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+
+  # ============================================================================
+  # POST-PUBLISH SMOKE TEST - Verify endpoints respond after deployment
+  # ============================================================================
+  smoke-test:
+    name: Smoke Test
+    runs-on: ubuntu-slim
+    needs: [init, publish, deploy-edge]
+    if: >-
+      success() &&
+      needs.init.outputs.skip_release != 'true'
+    steps:
+      - name: Verify edge endpoints
+        run: |
+          VERSION="${{ needs.init.outputs.next_version }}"
+          echo "Verifying edge deployment for v${VERSION}..."
+
+          # Verify install.sh is served
+          curl -fsSL https://edge.rediacc.com/install.sh -o /dev/null
+          echo "  install.sh: OK"
+
+          # Verify latest.json on R2
+          curl -fsSL https://releases.rediacc.com/cli/edge/latest.json | jq -e ".version == \"${VERSION}\""
+          echo "  edge latest.json: OK (v${VERSION})"
+
+          curl -fsSL https://releases.rediacc.com/cli/stable/latest.json | jq -e ".version == \"${VERSION}\""
+          echo "  stable latest.json: OK (v${VERSION})"
+
+          echo "Smoke test passed"
 
   # ============================================================================
   # CLEANUP ON FAILURE - Remove staging artifacts if publish fails
@@ -640,6 +671,22 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Cleanup R2 staging artifacts
+        run: |
+          # Keep last 3 staging snapshots, delete older ones
+          STAGING_DIRS=$(aws s3 ls "s3://${RELEASES_BUCKET}/staging/" --endpoint-url "${R2_ENDPOINT}" 2>/dev/null \
+            | awk '{print $2}' | sort -r | tail -n +4)
+          for dir in $STAGING_DIRS; do
+            echo "Deleting staging/${dir}..."
+            aws s3 rm "s3://${RELEASES_BUCKET}/staging/${dir}" --endpoint-url "${R2_ENDPOINT}" --recursive --quiet || true
+          done
+          echo "R2 staging cleanup done"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          RELEASES_BUCKET: rediacc-releases
 
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:

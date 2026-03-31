@@ -18,21 +18,16 @@ on:
         description: 'Version to test (R2 download path, e.g., 0.4.58)'
         required: true
         type: string
-      local_artifacts:
-        description: 'Path to locally-built artifacts for pre-release testing'
+      staging_url:
+        description: 'R2 staging URL (e.g., https://releases.rediacc.com/staging/pr-123). Empty = production defaults.'
         required: false
         type: string
         default: ''
-      staging_sha:
-        description: 'SHA to download staging artifacts (pre-publish mode)'
+      docker_tag:
+        description: 'Docker image tag override (for staging images, e.g., staging-abc123)'
         required: false
         type: string
         default: ''
-      pre_publish:
-        description: 'Skip tests requiring published artifacts (Docker, Homebrew, Quick Install)'
-        required: false
-        type: boolean
-        default: false
     secrets:
       APP_PRIVATE_KEY:
         required: false
@@ -50,19 +45,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      LOCAL_ARTIFACTS_FLAG: ${{ (inputs.staging_sha || inputs.local_artifacts) && format('--local-artifacts {0}', inputs.local_artifacts || 'dist/') || '' }}
+      SITE_URL: ${{ inputs.staging_url }}
+      RELEASES_BASE_URL: ${{ inputs.staging_url }}
+      DOCKER_TAG: ${{ inputs.docker_tag }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
-      - name: Download staging artifacts
-        if: inputs.staging_sha != ''
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
-        with:
-          name: staging-release-${{ inputs.staging_sha }}
-          path: dist/
-
       - name: Login to GHCR
-        if: ${{ !inputs.pre_publish }}
         uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
         with:
           registry: ghcr.io
@@ -72,70 +61,37 @@ jobs:
       - name: Test Binary Download
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method binary \
-            --version ${{ inputs.version }} \
-            --platform linux \
-            --arch x64 \
-            $LOCAL_ARTIFACTS_FLAG \
+            --method binary --version ${{ inputs.version }} --platform linux --arch x64
 
       - name: Test Docker
-        if: ${{ !inputs.pre_publish }}
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method docker \
-            --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG \
+            --method docker --version ${{ inputs.version }}
 
       - name: Test APT Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method apt \
-            --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG \
+            --method apt --version ${{ inputs.version }}
 
       - name: Test DNF Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method dnf \
-            --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG \
+            --method dnf --version ${{ inputs.version }}
 
       - name: Test APK Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method apk \
-            --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG \
+            --method apk --version ${{ inputs.version }}
 
       - name: Test Pacman Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method pacman \
-            --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG \
+            --method pacman --version ${{ inputs.version }}
 
       - name: Test Quick Install
-        if: ${{ !inputs.pre_publish }}
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method quick \
-            --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG \
-
-      - name: Install Homebrew (Linuxbrew)
-        if: ${{ !inputs.pre_publish }}
-        run: |
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-          echo "/home/linuxbrew/.linuxbrew/bin" >> $GITHUB_PATH
-
-      - name: Test Homebrew (Linuxbrew)
-        if: ${{ !inputs.pre_publish }}
-        run: |
-          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-          .ci/scripts/test/test-install-methods.sh \
-            --method homebrew \
-            --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG \
+            --method quick --version ${{ inputs.version }}
 
   # ===========================================================================
   # Linux arm64: Binary, Docker, Quick Install
@@ -145,19 +101,13 @@ jobs:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     env:
-      LOCAL_ARTIFACTS_FLAG: ${{ (inputs.staging_sha || inputs.local_artifacts) && format('--local-artifacts {0}', inputs.local_artifacts || 'dist/') || '' }}
+      SITE_URL: ${{ inputs.staging_url }}
+      RELEASES_BASE_URL: ${{ inputs.staging_url }}
+      DOCKER_TAG: ${{ inputs.docker_tag }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
-      - name: Download staging artifacts
-        if: inputs.staging_sha != ''
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
-        with:
-          name: staging-release-${{ inputs.staging_sha }}
-          path: dist/
-
       - name: Login to GHCR
-        if: ${{ !inputs.pre_publish }}
         uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
         with:
           registry: ghcr.io
@@ -167,99 +117,51 @@ jobs:
       - name: Test Binary Download
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method binary \
-            --version ${{ inputs.version }} \
-            --platform linux \
-            --arch arm64 \
-            $LOCAL_ARTIFACTS_FLAG \
+            --method binary --version ${{ inputs.version }} --platform linux --arch arm64
 
       - name: Test Docker
-        if: ${{ !inputs.pre_publish }}
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method docker \
-            --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG \
+            --method docker --version ${{ inputs.version }}
 
       - name: Test Quick Install
-        if: ${{ !inputs.pre_publish }}
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method quick \
-            --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG \
+            --method quick --version ${{ inputs.version }}
 
   # ===========================================================================
-  # macOS ARM64: Binary, Homebrew
+  # macOS ARM64: Binary
   # ===========================================================================
   test-macos-arm64:
     name: macOS (ARM64)
     runs-on: macos-latest
     timeout-minutes: 30
     env:
-      LOCAL_ARTIFACTS_FLAG: ${{ (inputs.staging_sha || inputs.local_artifacts) && format('--local-artifacts {0}', inputs.local_artifacts || 'dist/') || '' }}
+      RELEASES_BASE_URL: ${{ inputs.staging_url }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-
-      - name: Download staging artifacts
-        if: inputs.staging_sha != ''
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
-        with:
-          name: staging-release-${{ inputs.staging_sha }}
-          path: dist/
 
       - name: Test Binary Download
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method binary \
-            --version ${{ inputs.version }} \
-            --platform mac \
-            --arch arm64 \
-            $LOCAL_ARTIFACTS_FLAG \
-
-      - name: Test Homebrew Installation
-        if: ${{ !inputs.pre_publish }}
-        run: |
-          .ci/scripts/test/test-install-methods.sh \
-            --method homebrew \
-            --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG \
+            --method binary --version ${{ inputs.version }} --platform mac --arch arm64
 
   # ===========================================================================
-  # macOS x64: Binary, Homebrew
+  # macOS x64: Binary
   # ===========================================================================
   test-macos-x64:
     name: macOS (x64)
     runs-on: macos-15-intel
     timeout-minutes: 30
     env:
-      LOCAL_ARTIFACTS_FLAG: ${{ (inputs.staging_sha || inputs.local_artifacts) && format('--local-artifacts {0}', inputs.local_artifacts || 'dist/') || '' }}
+      RELEASES_BASE_URL: ${{ inputs.staging_url }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-
-      - name: Download staging artifacts
-        if: inputs.staging_sha != ''
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
-        with:
-          name: staging-release-${{ inputs.staging_sha }}
-          path: dist/
 
       - name: Test Binary Download
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method binary \
-            --version ${{ inputs.version }} \
-            --platform mac \
-            --arch x64 \
-            $LOCAL_ARTIFACTS_FLAG \
-
-      - name: Test Homebrew Installation
-        if: ${{ !inputs.pre_publish }}
-        run: |
-          .ci/scripts/test/test-install-methods.sh \
-            --method homebrew \
-            --version ${{ inputs.version }} \
-            $LOCAL_ARTIFACTS_FLAG \
+            --method binary --version ${{ inputs.version }} --platform mac --arch x64
 
   # ===========================================================================
   # Windows x64: Binary
@@ -269,26 +171,15 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 15
     env:
-      LOCAL_ARTIFACTS_FLAG: ${{ (inputs.staging_sha || inputs.local_artifacts) && format('--local-artifacts {0}', inputs.local_artifacts || 'dist/') || '' }}
+      RELEASES_BASE_URL: ${{ inputs.staging_url }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-
-      - name: Download staging artifacts
-        if: inputs.staging_sha != ''
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
-        with:
-          name: staging-release-${{ inputs.staging_sha }}
-          path: dist/
 
       - name: Test Binary Download
         shell: bash
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method binary \
-            --version ${{ inputs.version }} \
-            --platform win \
-            --arch x64 \
-            $LOCAL_ARTIFACTS_FLAG \
+            --method binary --version ${{ inputs.version }} --platform win --arch x64
 
   # ===========================================================================
   # Windows arm64: Binary
@@ -298,26 +189,15 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 15
     env:
-      LOCAL_ARTIFACTS_FLAG: ${{ (inputs.staging_sha || inputs.local_artifacts) && format('--local-artifacts {0}', inputs.local_artifacts || 'dist/') || '' }}
+      RELEASES_BASE_URL: ${{ inputs.staging_url }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-
-      - name: Download staging artifacts
-        if: inputs.staging_sha != ''
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
-        with:
-          name: staging-release-${{ inputs.staging_sha }}
-          path: dist/
 
       - name: Test Binary Download
         shell: bash
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method binary \
-            --version ${{ inputs.version }} \
-            --platform win \
-            --arch arm64 \
-            $LOCAL_ARTIFACTS_FLAG \
+            --method binary --version ${{ inputs.version }} --platform win --arch arm64
 
   # ===========================================================================
   # Gate Job - All tests must pass

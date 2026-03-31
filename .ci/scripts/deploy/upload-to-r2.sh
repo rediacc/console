@@ -284,7 +284,7 @@ fi
 # =============================================================================
 # Desktop Artifacts
 # =============================================================================
-if [[ -d "$DESKTOP_DIR" ]] && [[ -z "$STAGING" ]]; then
+if [[ -d "$DESKTOP_DIR" ]]; then
     log_step "Uploading Desktop artifacts"
 
     # Upload all desktop files to versioned directory
@@ -311,9 +311,7 @@ if [[ -d "$DESKTOP_DIR" ]] && [[ -z "$STAGING" ]]; then
     # Track Desktop versions for retention cleanup
     DESKTOP_PRUNED=$(update_versions_tracker "desktop" "$VERSION" "$R2_MAX_RELEASE_VERSIONS")
 else
-    if [[ -n "$STAGING" ]]; then
-        log_info "Desktop: skipped (staging mode — CLI only)"
-    else
+    if [[ -z "$STAGING" ]]; then
         log_warn "Desktop directory not found: $DESKTOP_DIR"
     fi
 fi
@@ -321,7 +319,7 @@ fi
 # =============================================================================
 # Linux Packages
 # =============================================================================
-if [[ -d "$PACKAGES_DIR" ]] && [[ -z "$STAGING" ]]; then
+if [[ -d "$PACKAGES_DIR" ]]; then
     log_step "Uploading Linux packages"
 
     for pkg in "$PACKAGES_DIR"/*; do
@@ -336,9 +334,7 @@ if [[ -d "$PACKAGES_DIR" ]] && [[ -z "$STAGING" ]]; then
     # Track Package versions for retention cleanup
     PACKAGES_PRUNED=$(update_versions_tracker "packages" "$VERSION" "$R2_MAX_RELEASE_VERSIONS")
 else
-    if [[ -n "$STAGING" ]]; then
-        log_info "Packages: skipped (staging mode — CLI only)"
-    else
+    if [[ -z "$STAGING" ]]; then
         log_warn "Packages directory not found: $PACKAGES_DIR"
     fi
 fi

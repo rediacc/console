@@ -272,9 +272,8 @@ test_binary_download() {
 # =============================================================================
 
 test_docker_pull_and_run() {
-    local tag="${VERSION}"
-    [[ "$tag" == "latest" ]] || tag="$VERSION"
-
+    # DOCKER_TAG env var overrides version-based tag (for staging images)
+    local tag="${DOCKER_TAG:-${VERSION}}"
     local image="${DOCKER_IMAGE}:${tag}"
 
     if [[ "$DRY_RUN" == "true" ]]; then
@@ -365,17 +364,12 @@ test_apk_install() {
 
     docker run --rm "$distro" sh -c "
         set -e
-        # Add repository (unsigned for now — APK signing uses RSA, deferred)
+        # Add APK repository from worker
         echo '${SITE_URL}/apk/x86_64' >> /etc/apk/repositories
-        apk update --allow-untrusted 2>/dev/null || true
+        apk update --allow-untrusted
 
-        # Direct download and install
-        apk add --no-cache curl
-        curl -fsSL '${RELEASES_BASE_URL}/packages/v${VERSION}/${PKG_NAME}-${VERSION}-r1-amd64.apk' -o /tmp/${PKG_NAME}.apk || {
-            echo 'Direct download not available, trying repo install...'
-            apk add --no-cache --allow-untrusted ${PKG_NAME} 2>/dev/null || exit 1
-        }
-        [ -f /tmp/${PKG_NAME}.apk ] && apk add --no-cache --allow-untrusted /tmp/${PKG_NAME}.apk 2>/dev/null || true
+        # Install from repo
+        apk add --no-cache --allow-untrusted ${PKG_NAME}
 
         # Verify
         ${PKG_BINARY_NAME} --version
@@ -397,20 +391,15 @@ test_pacman_install() {
 
     docker run --rm "$distro" bash -c "
         set -e
-        # Add rediacc repository
+        # Add rediacc repository from worker
         echo '[rediacc]' >> /etc/pacman.conf
         echo 'SigLevel = Optional TrustAll' >> /etc/pacman.conf
         echo 'Server = ${SITE_URL}/archlinux/\\\$arch' >> /etc/pacman.conf
 
-        pacman -Sy --noconfirm 2>/dev/null || true
+        pacman -Sy --noconfirm
 
-        # Try repo install first, fall back to direct download from R2
-        pacman -S --noconfirm ${PKG_NAME} 2>/dev/null || {
-            echo 'Pacman repo not available — downloading from R2...'
-            pacman -S --noconfirm curl 2>/dev/null || true
-            curl -fsSL '${RELEASES_BASE_URL}/packages/v${VERSION}/${PKG_NAME}-${VERSION}-1-x86_64.pkg.tar.zst' -o /tmp/${PKG_NAME}.pkg.tar.zst
-            pacman -U --noconfirm /tmp/${PKG_NAME}.pkg.tar.zst
-        }
+        # Install from repo
+        pacman -S --noconfirm ${PKG_NAME}
 
         # Verify
         ${PKG_BINARY_NAME} --version

@@ -55,6 +55,9 @@ jobs:
       cli_tag: ${{ steps.init.outputs.cli_tag }}
       cli_exists: ${{ steps.init.outputs.cli_exists }}
       image_tag: ${{ steps.init.outputs.image_tag }}
+      # Staging: R2 prefix + URL for pre-publish validation (empty on merge_queue/schedule)
+      staging_prefix: ${{ steps.staging.outputs.staging_prefix }}
+      staging_url: ${{ steps.staging.outputs.staging_url }}
       # full_suite: run all jobs on PR, merge queue, and nightly. Skip expensive
       # jobs (quality, standalone, elite) on push-to-main since PR already validated.
       full_suite: ${{ github.event_name != 'push' }}
@@ -109,13 +112,24 @@ jobs:
         run: |
           .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
 
-      - name: Generate staging tag
+      - name: Generate staging context
         id: staging
         run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            echo "staging_tag=staging-${{ github.sha }}" >> $GITHUB_OUTPUT
-          else
+            PREFIX="${{ github.sha }}"
+            echo "staging_tag=staging-${PREFIX}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            PREFIX="pr-${{ github.event.pull_request.number }}"
             echo "staging_tag=dryrun-${{ github.sha }}" >> $GITHUB_OUTPUT
+          else
+            PREFIX=""
+            echo "staging_tag=dryrun-${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+          echo "staging_prefix=${PREFIX}" >> $GITHUB_OUTPUT
+          if [[ -n "$PREFIX" ]]; then
+            echo "staging_url=https://releases.rediacc.com/staging/${PREFIX}" >> $GITHUB_OUTPUT
+          else
+            echo "staging_url=" >> $GITHUB_OUTPUT
           fi
 
       # Upload CI tags as artifact for debugging
@@ -321,14 +335,15 @@ jobs:
   # ============================================================================
   # COLUMN 3: BUILD & DOCKER
   # Jobs: build-renet (unified), build-docker, build-desktop (parallel reusable workflows)
-  # Dependencies: quality + review-gate -> build-renet -> build-docker, build-cli
+  # Fast path (tests): initialize -> build-renet -> build-docker-fast -> tests
+  # Publish path: quality + review-gate -> build-docker (full) -> stage-artifacts
   # ============================================================================
 
   # Unified renet build - produces full binaries with embedded CRIU/rsync
   # Used by BOTH CLI (SEA embedding) and Docker (bridge images)
   build-renet:
     name: Build (Renet)
-    needs: [initialize, quality, review-gate]
+    needs: [initialize]
     permissions:
       contents: read
       packages: write   # GHCR push
@@ -368,7 +383,7 @@ jobs:
 
   build-docker-fast:
     name: Build (Docker Fast)
-    needs: [initialize, quality, review-gate, build-renet]
+    needs: [initialize, build-renet]
     permissions:
       contents: read
       packages: write   # GHCR push
@@ -392,7 +407,7 @@ jobs:
 
   build-desktop:
     name: Build (Desktop)
-    needs: [initialize, quality, review-gate]
+    needs: [initialize]
     permissions:
       contents: read
       packages: write   # GHCR push
@@ -405,7 +420,7 @@ jobs:
 
   build-cli:
     name: Build (CLI)
-    needs: [initialize, quality, review-gate, build-renet]
+    needs: [initialize, build-renet]
     permissions:
       contents: read
       packages: write   # GHCR push
@@ -443,11 +458,11 @@ jobs:
 
   # ============================================================================
   # COLUMN 3B: DEPLOY DRY-RUN
-  # Jobs: deploy-dryrun (reusable workflow)
+  # Jobs: stage-artifacts (reusable workflow)
   # Dependencies: build-docker, build-desktop, build-cli
   # ============================================================================
-  deploy-dryrun:
-    name: Deploy Dry-Run
+  stage-artifacts:
+    name: Stage Artifacts
     needs: [initialize, build-docker, build-desktop, build-cli, stripe-sandbox]
     permissions:
       contents: read
@@ -457,8 +472,8 @@ jobs:
     if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-desktop.result == 'success' && needs.build-cli.result == 'success' && (needs.stripe-sandbox.result == 'success' || needs.stripe-sandbox.result == 'skipped')
     uses: ./.github/workflows/cd-dryrun.yml
     with:
-      dry_run: ${{ github.event_name != 'push' }}
       upload_pages: ${{ github.event_name == 'pull_request' }}
+      staging_prefix: ${{ needs.initialize.outputs.staging_prefix }}
       next_version: ${{ needs.initialize.outputs.next_version }}
       staging_tag: ${{ needs.initialize.outputs.staging_tag }}
       api_tag: ${{ needs.initialize.outputs.api_tag }}
@@ -470,6 +485,9 @@ jobs:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
       GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
 
   # ============================================================================
   # COLUMN 4: TESTS + INFRA
@@ -637,19 +655,19 @@ jobs:
   # ============================================================================
   # COLUMN 5: DEPLOY PREVIEW
   # Deploys pages preview to Cloudflare Pages for PR validation
-  # Dependencies: deploy-dryrun, tests, standalone-run-test (ALL must pass)
+  # Dependencies: stage-artifacts, tests, standalone-run-test (ALL must pass)
   # Only runs on pull_request events
   # ============================================================================
   deploy-preview:
     name: Deploy Preview
-    needs: [initialize, deploy-dryrun, tests, standalone-run-test]
+    needs: [initialize, stage-artifacts, tests, standalone-run-test]
     runs-on: ubuntu-latest
     if: >-
       always() &&
       needs.initialize.outputs.is_fork != 'true' &&
       github.event_name == 'pull_request' &&
       needs.initialize.result == 'success' &&
-      needs.deploy-dryrun.result == 'success' &&
+      needs.stage-artifacts.result == 'success' &&
       needs.tests.result == 'success' &&
       needs.standalone-run-test.result == 'success'
     environment:
@@ -801,86 +819,26 @@ jobs:
           echo "**Account API:** https://pr-${PR_NUMBER}.rediacc.workers.dev/account/api/v1/health" >> $GITHUB_STEP_SUMMARY
           echo "**PR:** #${PR_NUMBER}" >> $GITHUB_STEP_SUMMARY
 
-  # ============================================================================
-  # TEST PREVIEW INSTALL - Verify CLI install methods work against PR preview
-  # Downloads linux-x64 binary from build-cli, uploads to R2 staging,
-  # then tests binary download and quick install against the preview deployment.
-  # ============================================================================
-  test-preview-install:
-    name: Test Preview Install
-    needs: [initialize, deploy-preview, build-cli]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    if: >-
-      always() &&
-      needs.deploy-preview.result == 'success' &&
-      needs.build-cli.result == 'success'
-    env:
-      PR_NUMBER: ${{ github.event.pull_request.number }}
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-
-      - name: Download linux-x64 CLI binary
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
-        with:
-          name: build-cli-linux-x64-${{ github.sha }}
-          path: dist/cli/
-
-      - name: Resolve CLI version
-        run: |
-          VERSION=$(jq -r '.version' packages/cli/package.json)
-          echo "CLI_VERSION=$VERSION" >> $GITHUB_ENV
-
-      - name: Upload CLI to R2 staging
-        id: r2-upload
-        run: |
-          RELEASES_BASE_URL="https://releases.rediacc.com/staging/pr-${PR_NUMBER}" \
-            bash .ci/scripts/build/generate-cli-manifest.sh \
-            --version "$CLI_VERSION" --input dist/cli/
-          if .ci/scripts/deploy/upload-to-r2.sh \
-            --version "$CLI_VERSION" --staging "pr-${PR_NUMBER}" --cli-dir dist/cli/; then
-            echo "uploaded=true" >> $GITHUB_OUTPUT
-          else
-            echo "::warning::R2 upload failed (credentials may not have staging access), skipping install tests"
-            echo "uploaded=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-
-      - name: Test Binary Install
-        if: steps.r2-upload.outputs.uploaded == 'true'
-        run: |
-          RELEASES_BASE_URL="https://releases.rediacc.com/staging/pr-${PR_NUMBER}" \
-            .ci/scripts/test/test-install-methods.sh \
-            --method binary --version "$CLI_VERSION" --platform linux --arch x64
-
-      - name: Test Quick Install
-        if: steps.r2-upload.outputs.uploaded == 'true'
-        run: |
-          SITE_URL="https://pr-${PR_NUMBER}.rediacc.workers.dev" \
-          RELEASES_BASE_URL="https://releases.rediacc.com/staging/pr-${PR_NUMBER}" \
-            .ci/scripts/test/test-install-methods.sh \
-            --method quick --version "$CLI_VERSION" --platform linux --arch x64
+  # test-preview-install removed: validate-install now handles all install testing
+  # for both PRs (R2 staging/pr-N/) and push-to-main (R2 staging/{sha}/).
 
   # ============================================================================
-  # VALIDATE INSTALL METHODS - Pre-publish validation on all 6 platforms
-  # Runs BEFORE publish to catch broken artifacts before they go live.
-  # Pre-publish mode: tests binary + packages only (Docker/Homebrew/Quick skipped).
+  # VALIDATE INSTALL METHODS - Full pre-publish validation on all 6 platforms
+  # Tests ALL methods against staging worker + R2 staging artifacts.
+  # Catches broken packages/Docker/install BEFORE they reach production.
   # ============================================================================
   validate-install:
     name: Validate Install Methods
-    needs: [initialize, deploy-dryrun]
+    needs: [initialize, stage-artifacts]
     if: >-
       always() &&
-      github.event_name == 'push' &&
-      needs.deploy-dryrun.result == 'success'
+      needs.initialize.outputs.is_fork != 'true' &&
+      needs.stage-artifacts.result == 'success'
     uses: ./.github/workflows/ct-install-methods.yml
     with:
       version: ${{ needs.initialize.outputs.next_version }}
-      staging_sha: ${{ github.sha }}
-      pre_publish: true
+      staging_url: ${{ needs.initialize.outputs.staging_url }}
+      docker_tag: ${{ github.event_name == 'push' && needs.initialize.outputs.staging_tag || '' }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
@@ -891,103 +849,40 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, deploy-dryrun, validate-install, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview, test-preview-install]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, stage-artifacts, validate-install, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
         run: |
-          # quality can be skipped on push-to-main (full suite already ran in PR)
-          QUALITY_OK="false"
-          if [[ "${{ needs.quality.result }}" == "success" ]] || [[ "${{ needs.quality.result }}" == "skipped" ]]; then
-            QUALITY_OK="true"
-          fi
+          FAILED=false
 
-          # review-gate can be skipped for non-PR events or bots
-          REVIEW_GATE_OK="false"
-          if [[ "${{ needs.review-gate.result }}" == "success" ]] || [[ "${{ needs.review-gate.result }}" == "skipped" ]]; then
-            REVIEW_GATE_OK="true"
-          fi
+          # Hard-required jobs (must succeed, never skipped)
+          for job in initialize build-docker build-docker-fast build-desktop build-cli; do
+            result="${{ needs[job].result }}" 2>/dev/null || result="unknown"
+          done
+          [[ "${{ needs.initialize.result }}" != "success" ]] && FAILED=true
+          [[ "${{ needs.build-docker.result }}" != "success" ]] && FAILED=true
+          [[ "${{ needs.build-docker-fast.result }}" != "success" ]] && FAILED=true
+          [[ "${{ needs.build-desktop.result }}" != "success" ]] && FAILED=true
+          [[ "${{ needs.build-cli.result }}" != "success" ]] && FAILED=true
 
-          # ops-tests can be skipped when ops files didn't change
-          OPS_TESTS_OK="false"
-          if [[ "${{ needs.ops-tests.result }}" == "success" ]] || [[ "${{ needs.ops-tests.result }}" == "skipped" ]]; then
-            OPS_TESTS_OK="true"
-          fi
+          # Soft-required jobs (success or skipped both OK, only failure blocks)
+          [[ "${{ needs.quality.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.review-gate.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.stripe-sandbox.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.package-tests.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.stage-artifacts.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.validate-install.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.tests.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.standalone-run-test.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.elite-run-test.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.ops-tests.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.deploy-preview.result }}" == "failure" ]] && FAILED=true
 
-          # deploy-preview can be skipped for non-PR events
-          DEPLOY_PREVIEW_OK="false"
-          if [[ "${{ needs.deploy-preview.result }}" == "success" ]] || [[ "${{ needs.deploy-preview.result }}" == "skipped" ]]; then
-            DEPLOY_PREVIEW_OK="true"
-          fi
-
-          # test-preview-install can be skipped when deploy-preview is skipped
-          PREVIEW_INSTALL_OK="false"
-          if [[ "${{ needs.test-preview-install.result }}" == "success" ]] || [[ "${{ needs.test-preview-install.result }}" == "skipped" ]]; then
-            PREVIEW_INSTALL_OK="true"
-          fi
-
-          # stripe-sandbox can be skipped for non-PR events or fork PRs
-          STRIPE_SANDBOX_OK="false"
-          if [[ "${{ needs.stripe-sandbox.result }}" == "success" ]] || [[ "${{ needs.stripe-sandbox.result }}" == "skipped" ]]; then
-            STRIPE_SANDBOX_OK="true"
-          fi
-
-          # tests can be skipped for fork PRs
-          TESTS_OK="false"
-          if [[ "${{ needs.tests.result }}" == "success" ]] || [[ "${{ needs.tests.result }}" == "skipped" ]]; then
-            TESTS_OK="true"
-          fi
-
-          # standalone-run-test can be skipped for fork PRs
-          STANDALONE_RUN_OK="false"
-          if [[ "${{ needs.standalone-run-test.result }}" == "success" ]] || [[ "${{ needs.standalone-run-test.result }}" == "skipped" ]]; then
-            STANDALONE_RUN_OK="true"
-          fi
-
-          # elite-run-test can be skipped for fork PRs
-          ELITE_RUN_OK="false"
-          if [[ "${{ needs.elite-run-test.result }}" == "success" ]] || [[ "${{ needs.elite-run-test.result }}" == "skipped" ]]; then
-            ELITE_RUN_OK="true"
-          fi
-
-          # package-tests can be skipped for fork PRs
-          PACKAGE_TESTS_OK="false"
-          if [[ "${{ needs.package-tests.result }}" == "success" ]] || [[ "${{ needs.package-tests.result }}" == "skipped" ]]; then
-            PACKAGE_TESTS_OK="true"
-          fi
-
-          # deploy-dryrun can be skipped for fork PRs
-          DEPLOY_DRYRUN_OK="false"
-          if [[ "${{ needs.deploy-dryrun.result }}" == "success" ]] || [[ "${{ needs.deploy-dryrun.result }}" == "skipped" ]]; then
-            DEPLOY_DRYRUN_OK="true"
-          fi
-
-          # validate-install can be skipped when deploy-dryrun is skipped
-          VALIDATE_INSTALL_OK="false"
-          if [[ "${{ needs.validate-install.result }}" == "success" ]] || [[ "${{ needs.validate-install.result }}" == "skipped" ]]; then
-            VALIDATE_INSTALL_OK="true"
-          fi
-
-          if [[ "${{ needs.initialize.result }}" != "success" ]] || \
-             [[ "$QUALITY_OK" != "true" ]] || \
-             [[ "$REVIEW_GATE_OK" != "true" ]] || \
-             [[ "$STRIPE_SANDBOX_OK" != "true" ]] || \
-             [[ "${{ needs.build-docker.result }}" != "success" ]] || \
-             [[ "${{ needs.build-docker-fast.result }}" != "success" ]] || \
-             [[ "${{ needs.build-desktop.result }}" != "success" ]] || \
-             [[ "${{ needs.build-cli.result }}" != "success" ]] || \
-             [[ "$PACKAGE_TESTS_OK" != "true" ]] || \
-             [[ "$DEPLOY_DRYRUN_OK" != "true" ]] || \
-             [[ "$VALIDATE_INSTALL_OK" != "true" ]] || \
-             [[ "$TESTS_OK" != "true" ]] || \
-             [[ "$STANDALONE_RUN_OK" != "true" ]] || \
-             [[ "$ELITE_RUN_OK" != "true" ]] || \
-             [[ "$OPS_TESTS_OK" != "true" ]] || \
-             [[ "$DEPLOY_PREVIEW_OK" != "true" ]] || \
-             [[ "$PREVIEW_INSTALL_OK" != "true" ]]; then
+          if [[ "$FAILED" == "true" ]]; then
             echo "One or more jobs failed:"
             echo "  initialize: ${{ needs.initialize.result }}"
-            echo "  quality: ${{ needs.quality.result }} (QUALITY_OK=$QUALITY_OK)"
+            echo "  quality: ${{ needs.quality.result }}"
             echo "  review-gate: ${{ needs.review-gate.result }}"
             echo "  stripe-sandbox: ${{ needs.stripe-sandbox.result }}"
             echo "  build-docker: ${{ needs.build-docker.result }}"
@@ -995,14 +890,13 @@ jobs:
             echo "  build-desktop: ${{ needs.build-desktop.result }}"
             echo "  build-cli: ${{ needs.build-cli.result }}"
             echo "  package-tests: ${{ needs.package-tests.result }}"
-            echo "  deploy-dryrun: ${{ needs.deploy-dryrun.result }}"
+            echo "  stage-artifacts: ${{ needs.stage-artifacts.result }}"
             echo "  validate-install: ${{ needs.validate-install.result }}"
             echo "  tests: ${{ needs.tests.result }}"
             echo "  standalone-run-test: ${{ needs.standalone-run-test.result }}"
             echo "  elite-run-test: ${{ needs.elite-run-test.result }}"
             echo "  ops-tests: ${{ needs.ops-tests.result }}"
             echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
-            echo "  test-preview-install: ${{ needs.test-preview-install.result }}"
             exit 1
           fi
           echo "All CI jobs passed successfully!"

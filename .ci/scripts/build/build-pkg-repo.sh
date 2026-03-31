@@ -27,6 +27,7 @@ VERSION=""
 LOCAL_PKGS=""
 OUTPUT_DIR=""
 MAX_VERSIONS="$PKG_MAX_VERSIONS"
+PACKAGES_URL="${RELEASES_BASE_URL}"
 DRY_RUN=false
 
 # Parse arguments
@@ -46,6 +47,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --max-versions)
             MAX_VERSIONS="$2"
+            shift 2
+            ;;
+        --packages-url)
+            PACKAGES_URL="$2"
             shift 2
             ;;
         --dry-run)
@@ -251,7 +256,11 @@ else
     for arch in amd64 arm64; do
         log_info "Generating Packages for $arch..."
         cd "$APT_WORK_DIR"
-        dpkg-scanpackages --arch "$arch" pool/ >"$DISTS_DIR/main/binary-${arch}/Packages"
+        dpkg-scanpackages --arch "$arch" pool/ >"$DISTS_DIR/main/binary-${arch}/Packages.tmp"
+        # Rewrite relative pool/ paths to absolute R2 URLs so APT downloads from R2
+        sed "s|^Filename: pool/main/r/${PKG_NAME}/\(.*\)|Filename: ${PACKAGES_URL}/packages/v${VERSION}/\1|" \
+            "$DISTS_DIR/main/binary-${arch}/Packages.tmp" >"$DISTS_DIR/main/binary-${arch}/Packages"
+        rm -f "$DISTS_DIR/main/binary-${arch}/Packages.tmp"
         gzip -9c "$DISTS_DIR/main/binary-${arch}/Packages" >"$DISTS_DIR/main/binary-${arch}/Packages.gz"
         cd - >/dev/null
     done
@@ -336,8 +345,9 @@ else
     require_cmd createrepo_c
 
     # Create repository metadata in temp working dir
+    # --baseurl points to R2 where the actual .rpm files live
     log_info "Running createrepo_c..."
-    createrepo_c "$RPM_WORK_DIR"
+    createrepo_c --baseurl "${PACKAGES_URL}/packages/v${VERSION}/" "$RPM_WORK_DIR"
 
     # Copy only repodata/ to output (not the actual packages)
     mkdir -p "$RPM_DIR"
@@ -355,10 +365,10 @@ fi
 cat >"$RPM_DIR/rediacc.repo" <<EOF
 [rediacc]
 name=Rediacc CLI Repository
-baseurl=https://www.rediacc.com/rpm/
+baseurl=${PACKAGES_URL}/rpm/
 enabled=1
 gpgcheck=1
-gpgkey=https://www.rediacc.com/rpm/gpg.key
+gpgkey=${PACKAGES_URL}/rpm/gpg.key
 EOF
 
 # =============================================================================
