@@ -26,7 +26,11 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --bump-type)
-            BUMP_TYPE="$2"
+            BUMP_TYPE="${2:-}"
+            if [[ -z "$BUMP_TYPE" ]]; then
+                echo "Error: --bump-type requires a value" >&2
+                exit 1
+            fi
             shift 2
             ;;
         *)
@@ -36,12 +40,19 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Get latest version tag
-LATEST_TAG=$(git describe --tags --match 'v*' --abbrev=0 2>/dev/null || echo "v0.0.0")
+# Get latest version tag -- fail loudly if no tags exist (tag-based versioning requires tags)
+LATEST_TAG=$(git describe --tags --match 'v*' --abbrev=0 2>/dev/null || true)
+if [[ -z "$LATEST_TAG" ]]; then
+    echo "Error: no version tags found. Create an initial tag: git tag -a v0.0.0 -m v0.0.0" >&2
+    exit 1
+fi
+
+# Strip tag prefix and any pre-release suffix (e.g., v0.8.2-beta.1 -> 0.8.2)
 CURRENT="${LATEST_TAG#v}"
+VERSION_CORE="${CURRENT%%-*}"
 
 if [[ "$CURRENT_ONLY" == "true" ]]; then
-    echo "$CURRENT"
+    echo "$VERSION_CORE"
     exit 0
 fi
 
@@ -50,8 +61,11 @@ if [[ -z "$BUMP_TYPE" ]]; then
     exit 1
 fi
 
-# Parse semver
-IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+# Parse semver with defaults for missing components
+IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_CORE"
+MAJOR="${MAJOR:-0}"
+MINOR="${MINOR:-0}"
+PATCH="${PATCH:-0}"
 
 case "$BUMP_TYPE" in
     patch)
