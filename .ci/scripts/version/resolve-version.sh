@@ -40,8 +40,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Get latest version tag -- fail loudly if no tags exist (tag-based versioning requires tags)
-LATEST_TAG=$(git describe --tags --match 'v*' --abbrev=0 2>/dev/null || true)
+# Get latest version tag -- fail loudly if no tags exist (tag-based versioning requires tags).
+# Uses `git tag -l` + sort instead of `git describe` because describe requires tags
+# to be reachable from HEAD, which fails in shallow CI clones.
+LATEST_TAG=$(git tag -l 'v*' --sort=-v:refname | head -1 || true)
 if [[ -z "$LATEST_TAG" ]]; then
     echo "Error: no version tags found. Create an initial tag: git tag -a v0.0.0 -m v0.0.0" >&2
     exit 1
