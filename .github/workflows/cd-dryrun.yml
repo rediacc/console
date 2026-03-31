@@ -309,13 +309,22 @@ jobs:
         id: binary-version
         run: |
           BINARY=$(find dist/cli -name "rdc-linux-x64" | head -1)
+          BV=""
           if [[ -n "$BINARY" ]] && [[ -f "$BINARY" ]]; then
             chmod +x "$BINARY"
+            # Try running the binary first
             BV=$("$BINARY" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
-            echo "version=${BV:-${{ inputs.next_version }}}" >> "$GITHUB_OUTPUT"
-          else
-            echo "version=${{ inputs.next_version }}" >> "$GITHUB_OUTPUT"
+            # Fallback: extract version string from the binary with strings
+            if [[ -z "$BV" ]]; then
+              BV=$(strings "$BINARY" | grep -oE 'VERSION = .([0-9]+\.[0-9]+\.[0-9]+)' | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+            fi
+            # Fallback: read from version.ts source
+            if [[ -z "$BV" ]]; then
+              BV=$(grep -oE "[0-9]+\.[0-9]+\.[0-9]+" packages/cli/src/version.ts | head -1 || true)
+            fi
           fi
+          echo "version=${BV:-${{ inputs.next_version }}}" >> "$GITHUB_OUTPUT"
+          echo "::notice::Detected binary version: ${BV:-${{ inputs.next_version }}}"
 
       - name: Test install methods (pre-release)
         if: ${{ !inputs.dry_run && steps.validate.outputs.passed == 'true' }}
