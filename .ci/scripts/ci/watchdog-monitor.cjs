@@ -317,9 +317,18 @@ module.exports = async ({ github, context, core }) => {
         await forceCancel(failureMsg);
         return;
       }
-      // 5. Already dispatched retry -- log once for the new job
+      // 5. Already dispatched retry -- still classify new failures
+      // If a subsequent failure is code-change, force-cancel (retry won't help)
       else if (rerunDispatched) {
-        console.log(`Additional failure: "${job.name}" (retry already dispatched)`);
+        console.log(`Additional failure: "${job.name}" (retry already dispatched) -- classifying...`);
+        const ai = await classifyFailure(job);
+        if (ai.classification === 'code-change' && ai.confidence >= AI_CONFIDENCE_THRESHOLD) {
+          console.log(`[AI] "${job.name}" -> code-change (${ai.confidence}): ${ai.reason}`);
+          console.log('Code-change detected after retry dispatched -- force-cancelling');
+          await forceCancel(failureMsg);
+          return;
+        }
+        console.log(`[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`);
         core.setFailed(failureMsg);
         // DON'T return -- keep monitoring
       }

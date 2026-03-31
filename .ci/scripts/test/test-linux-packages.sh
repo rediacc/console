@@ -366,12 +366,12 @@ phase4_validate_rpm_metadata() {
         log_error "rediacc.repo missing"
         return 1
     }
-    grep -q "baseurl=https://www.rediacc.com/rpm/" "$repo_file" || {
-        log_error ".repo baseurl wrong"
+    grep -q "baseurl=${RELEASES_BASE_URL}/rpm/" "$repo_file" || {
+        log_error ".repo baseurl wrong (expected ${RELEASES_BASE_URL}/rpm/)"
         return 1
     }
-    grep -q "gpgkey=https://www.rediacc.com/rpm/gpg.key" "$repo_file" || {
-        log_error ".repo gpgkey wrong"
+    grep -q "gpgkey=${RELEASES_BASE_URL}/rpm/gpg.key" "$repo_file" || {
+        log_error ".repo gpgkey wrong (expected ${RELEASES_BASE_URL}/rpm/gpg.key)"
         return 1
     }
 
