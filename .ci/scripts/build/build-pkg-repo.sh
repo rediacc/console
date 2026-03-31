@@ -257,8 +257,9 @@ else
         log_info "Generating Packages for $arch..."
         cd "$APT_WORK_DIR"
         dpkg-scanpackages --arch "$arch" pool/ >"$DISTS_DIR/main/binary-${arch}/Packages.tmp"
-        # Rewrite relative pool/ paths to absolute R2 URLs so APT downloads from R2
-        sed "s|^Filename: pool/main/r/${PKG_NAME}/\(.*\)|Filename: ${PACKAGES_URL}/packages/v${VERSION}/\1|" \
+        # Rewrite pool/ paths to relative paths pointing to R2 packages directory.
+        # APT prepends the archive root URL, so ../packages/ traverses up from apt/ to the sibling packages/ dir.
+        sed "s|^Filename: pool/main/r/${PKG_NAME}/\(.*\)|Filename: ../packages/v${VERSION}/\1|" \
             "$DISTS_DIR/main/binary-${arch}/Packages.tmp" >"$DISTS_DIR/main/binary-${arch}/Packages"
         rm -f "$DISTS_DIR/main/binary-${arch}/Packages.tmp"
         gzip -9c "$DISTS_DIR/main/binary-${arch}/Packages" >"$DISTS_DIR/main/binary-${arch}/Packages.gz"

@@ -17,6 +17,10 @@ CF_AUTH_HEADERS=()
 # Update or append a key=value in a .env file.
 update_env_file() {
     local file="$1" key="$2" value="$3"
+    # Quote values that contain spaces or shell-special characters
+    if [[ "$value" =~ [[:space:]\|\&\;\(\)\<\>\$\`\\\"\'#] ]]; then
+        value="\"$value\""
+    fi
     if grep -q "^${key}=" "$file" 2>/dev/null; then
         sed -i "s|^${key}=.*|${key}=${value}|" "$file"
     else
