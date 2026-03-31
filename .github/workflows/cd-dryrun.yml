@@ -189,7 +189,7 @@ jobs:
           .ci/scripts/build/build-pkg-repo.sh \
             --version "$VERSION" \
             --local-pkgs dist/packages \
-            --output dist/pages \
+            --output dist/repos \
             --max-versions 3 \
             --packages-url "$PKG_URL"
         env:
@@ -242,8 +242,8 @@ jobs:
           APK_COUNT=$(find dist/packages -name "*.apk" 2>/dev/null | wc -l)
           ARCH_COUNT=$(find dist/packages -name "*.pkg.tar.zst" 2>/dev/null | wc -l)
           PAGES_SIZE=$(du -sh dist/pages/ 2>/dev/null | cut -f1 || echo "N/A")
-          APT_FILES=$(find dist/pages/apt/dists -type f 2>/dev/null | wc -l)
-          RPM_FILES=$(find dist/pages/rpm/repodata -type f 2>/dev/null | wc -l)
+          APT_FILES=$(find dist/repos/apt/dists -type f 2>/dev/null | wc -l)
+          RPM_FILES=$(find dist/repos/rpm/repodata -type f 2>/dev/null | wc -l)
 
           echo "| Artifact | Count/Size |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|------------|" >> $GITHUB_STEP_SUMMARY
@@ -356,15 +356,15 @@ jobs:
           # APK arch dirs: x86_64, aarch64. Package names use: amd64, arm64
           for dir_arch in "x86_64:amd64" "aarch64:arm64"; do
             dir="${dir_arch%%:*}"; pkg_arch="${dir_arch##*:}"
-            if [[ -d "dist/pages/apk/$dir" ]]; then
-              find dist/packages/ -name "*${pkg_arch}*.apk" -exec cp {} "dist/pages/apk/$dir/" \; 2>/dev/null || true
+            if [[ -d "dist/repos/apk/$dir" ]]; then
+              find dist/packages/ -name "*${pkg_arch}*.apk" -exec cp {} "dist/repos/apk/$dir/" \; 2>/dev/null || true
             fi
           done
           # Copy Arch packages alongside repo DB
           for dir_arch in "x86_64:x86_64" "aarch64:aarch64"; do
             dir="${dir_arch%%:*}"; pkg_arch="${dir_arch##*:}"
-            if [[ -d "dist/pages/archlinux/$dir" ]]; then
-              find dist/packages/ -name "*${pkg_arch}*.pkg.tar.zst" -exec cp {} "dist/pages/archlinux/$dir/" \; 2>/dev/null || true
+            if [[ -d "dist/repos/archlinux/$dir" ]]; then
+              find dist/packages/ -name "*${pkg_arch}*.pkg.tar.zst" -exec cp {} "dist/repos/archlinux/$dir/" \; 2>/dev/null || true
             fi
           done
 
@@ -379,17 +379,17 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
 
-      - name: Upload pages metadata to R2 staging
+      - name: Upload repo metadata to R2 staging
         if: inputs.staging_prefix != ''
         run: |
           SHA="${{ inputs.staging_prefix }}"
           export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
           export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
           export AWS_DEFAULT_REGION="auto"
-          # Upload repo metadata + install.sh to R2 staging
+          # Upload repo metadata to R2 staging
           for dir in apt rpm apk archlinux; do
-            if [[ -d "dist/pages/$dir" ]]; then
-              aws s3 sync "dist/pages/$dir" "s3://rediacc-releases/staging/${SHA}/${dir}/" \
+            if [[ -d "dist/repos/$dir" ]]; then
+              aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/staging/${SHA}/${dir}/" \
                 --endpoint-url "$R2_ENDPOINT" --quiet
             fi
           done

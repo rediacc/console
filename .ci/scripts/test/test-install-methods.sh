@@ -309,10 +309,10 @@ test_apt_install() {
         apt-get install -y -qq curl gnupg ca-certificates >/dev/null 2>&1
 
         # Add GPG key
-        curl -fsSL ${SITE_URL}/apt/gpg.key | gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
+        curl -fsSL ${RELEASES_BASE_URL}/apt/gpg.key | gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
 
         # Add sources list
-        echo 'deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${SITE_URL}/apt stable main' > /etc/apt/sources.list.d/rediacc.list
+        echo 'deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${RELEASES_BASE_URL}/apt stable main' > /etc/apt/sources.list.d/rediacc.list
 
         # Install
         apt-get update -qq
@@ -339,7 +339,7 @@ test_dnf_install() {
     docker run --rm "$distro" bash -c "
         set -e
         # Add repo
-        curl -fsSL ${SITE_URL}/rpm/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
+        curl -fsSL ${RELEASES_BASE_URL}/rpm/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
 
         # Install
         dnf install -y ${PKG_NAME} >/dev/null 2>&1
@@ -364,8 +364,8 @@ test_apk_install() {
 
     docker run --rm "$distro" sh -c "
         set -e
-        # Add APK repository from worker
-        echo '${SITE_URL}/apk/x86_64' >> /etc/apk/repositories
+        # Add APK repository
+        echo '${RELEASES_BASE_URL}/apk/x86_64' >> /etc/apk/repositories
         apk update --allow-untrusted
 
         # Install from repo
@@ -391,10 +391,10 @@ test_pacman_install() {
 
     docker run --rm "$distro" bash -c "
         set -e
-        # Add rediacc repository from worker
+        # Add rediacc repository
         echo '[rediacc]' >> /etc/pacman.conf
         echo 'SigLevel = Optional TrustAll' >> /etc/pacman.conf
-        echo 'Server = ${SITE_URL}/archlinux/\\\$arch' >> /etc/pacman.conf
+        echo 'Server = ${RELEASES_BASE_URL}/archlinux/\\\$arch' >> /etc/pacman.conf
 
         pacman -Sy --noconfirm
 

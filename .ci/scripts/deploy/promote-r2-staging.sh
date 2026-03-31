@@ -1,9 +1,8 @@
 #!/bin/bash
 # Promote R2 staging artifacts to production channels (edge + stable).
 #
-# Copies CLI binaries, packages, and desktop artifacts from staging/{sha}/ to
-# their final channel paths. Does NOT copy repo metadata (apt/, rpm/) -- those
-# are rebuilt by CD with production URLs and deployed via the edge worker.
+# Copies CLI binaries, packages, desktop artifacts, and repo metadata
+# (apt/, rpm/, apk/, archlinux/) from staging/{sha}/ to their final paths.
 #
 # Usage:
 #   promote-r2-staging.sh --sha <commit-sha> --version <version>
@@ -76,7 +75,8 @@ if $S3 ls "s3://${BUCKET}/${STAGING_PREFIX}/desktop/" >/dev/null 2>&1; then
     log_info "Desktop promoted to desktop/v${VERSION}/"
 fi
 
-# NOTE: repo metadata (apt/, rpm/, apk/, archlinux/) is NOT promoted.
-# CD rebuilds metadata with production URLs and deploys via the edge worker pages bundle.
+# NOTE: repo metadata (apt/, rpm/, apk/, archlinux/) is NOT promoted from staging.
+# Staging metadata contains staging-specific URLs (RPM baseurl, etc.).
+# CD rebuilds metadata with production URLs and uploads directly to R2.
 
 log_info "R2 promotion complete"
