@@ -453,7 +453,7 @@ test_pacman_install() {
         # Add rediacc repository
         echo '[rediacc]' >> /etc/pacman.conf
         echo 'SigLevel = Optional TrustAll' >> /etc/pacman.conf
-        echo 'Server = ${REPO_URL}/archlinux${REPO_CHANNEL_SUFFIX}/\\\$arch' >> /etc/pacman.conf
+        echo 'Server = ${REPO_URL}/archlinux${REPO_CHANNEL_SUFFIX}/\$arch' >> /etc/pacman.conf
 
         pacman -Sy --noconfirm
 
