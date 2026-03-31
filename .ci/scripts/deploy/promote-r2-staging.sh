@@ -21,9 +21,18 @@ VERSION=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --sha) SHA="$2"; shift 2 ;;
-        --version) VERSION="$2"; shift 2 ;;
-        *) log_error "Unknown: $1"; exit 1 ;;
+        --sha)
+            SHA="$2"
+            shift 2
+            ;;
+        --version)
+            VERSION="$2"
+            shift 2
+            ;;
+        *)
+            log_error "Unknown: $1"
+            exit 1
+            ;;
     esac
 done
 
