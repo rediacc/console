@@ -305,22 +305,14 @@ jobs:
       # Step 8: Pre-release install method validation (binary only)
       # Runs the built linux-x64 binary to verify it works before publish
       # -----------------------------------------------------------------------
-      - name: Detect compiled binary version
-        id: binary-version
-        run: |
-          # The binary was built from version.ts at this commit -- read it directly.
-          # This is always correct because CI builds from the same source checkout.
-          BV=$(grep -oE "[0-9]+\.[0-9]+\.[0-9]+" packages/cli/src/version.ts | head -1)
-          echo "version=$BV" >> "$GITHUB_OUTPUT"
-          echo "::notice::Binary compiled with version: $BV"
-
+      # The CI build workflow applies `bump.sh --version next_version` BEFORE compiling,
+      # so the binary reports next_version, not the version in version.ts on disk.
       - name: Test install methods (pre-release)
         if: ${{ !inputs.dry_run && steps.validate.outputs.passed == 'true' }}
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method binary \
             --version ${{ inputs.next_version }} \
-            --expected-version ${{ steps.binary-version.outputs.version }} \
             --platform linux \
             --arch x64 \
             --local-artifacts dist/
