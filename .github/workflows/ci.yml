@@ -862,12 +862,13 @@ jobs:
           [[ -n "$R2_ENDPOINT" ]] || { echo "::error::R2_ENDPOINT not set"; exit 1; }
 
           # Copy all repo formats from PR channel to promoted channel
-          # Use cp --recursive (R2 doesn't support s3 sync tagging directives)
+          # R2 doesn't support GetObjectTagging, so download+reupload via local tmp
           for dir in apt rpm apk archlinux; do
             echo "Copying ${dir}/${CHANNEL}/ -> ${dir}/${PROMOTED}/"
-            aws s3 cp "s3://${BUCKET}/${dir}/${CHANNEL}/" \
-                      "s3://${BUCKET}/${dir}/${PROMOTED}/" \
-              $EP --recursive
+            TMP="/tmp/promote-${dir}"
+            aws s3 cp "s3://${BUCKET}/${dir}/${CHANNEL}/" "$TMP/" $EP --recursive
+            aws s3 cp "$TMP/" "s3://${BUCKET}/${dir}/${PROMOTED}/" $EP --recursive
+            rm -rf "$TMP"
           done
 
           # Sed-fix config files (replace channel in URLs)

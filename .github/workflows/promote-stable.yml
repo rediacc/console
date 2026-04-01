@@ -116,10 +116,14 @@ jobs:
           BUCKET="rediacc-releases"
 
           # Copy all channel artifacts from edge to stable
+          # R2 doesn't support GetObjectTagging, so download+reupload via local tmp
+          EP="--endpoint-url $R2_ENDPOINT"
           for dir in cli desktop apt rpm apk archlinux; do
             echo "Promoting ${dir}/edge/ -> ${dir}/stable/"
-            aws s3 cp "s3://${BUCKET}/${dir}/edge/" "s3://${BUCKET}/${dir}/stable/" \
-              --endpoint-url "$R2_ENDPOINT" --recursive --quiet
+            TMP="/tmp/promote-${dir}"
+            aws s3 cp "s3://${BUCKET}/${dir}/edge/" "$TMP/" $EP --recursive --quiet
+            aws s3 cp "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --recursive --quiet
+            rm -rf "$TMP"
           done
 
           # Fix channel-specific config files (they reference 'edge' in URLs)
