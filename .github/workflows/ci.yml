@@ -851,24 +851,30 @@ jobs:
 
       - name: Simulate promotion (copy + sed-fix)
         run: |
+          set -ex
           PROMOTED="${CHANNEL}-promoted"
           echo "PROMOTED=${PROMOTED}" >> "$GITHUB_ENV"
           BUCKET="rediacc-releases"
+          EP="--endpoint-url $R2_ENDPOINT"
+
+          # Verify credentials are set
+          [[ -n "$AWS_ACCESS_KEY_ID" ]] || { echo "::error::R2_ACCESS_KEY_ID not set"; exit 1; }
+          [[ -n "$R2_ENDPOINT" ]] || { echo "::error::R2_ENDPOINT not set"; exit 1; }
 
           # Copy all repo formats from PR channel to promoted channel
           for dir in apt rpm apk archlinux; do
+            echo "Copying ${dir}/${CHANNEL}/ -> ${dir}/${PROMOTED}/"
             aws s3 sync "s3://${BUCKET}/${dir}/${CHANNEL}/" \
                         "s3://${BUCKET}/${dir}/${PROMOTED}/" \
-              --endpoint-url "$R2_ENDPOINT" --quiet
+              $EP
           done
 
           # Sed-fix config files (replace channel in URLs)
           for file in "rpm/${PROMOTED}/rediacc.repo" "archlinux/${PROMOTED}/rediacc.conf"; do
-            if aws s3 cp "s3://${BUCKET}/${file}" /tmp/config \
-                --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null; then
+            if aws s3 cp "s3://${BUCKET}/${file}" /tmp/config $EP 2>/dev/null; then
               sed -i "s|/${CHANNEL}/|/${PROMOTED}/|g" /tmp/config
-              aws s3 cp /tmp/config "s3://${BUCKET}/${file}" \
-                --endpoint-url "$R2_ENDPOINT" --quiet
+              aws s3 cp /tmp/config "s3://${BUCKET}/${file}" $EP
+              echo "Fixed channel in ${file}"
             fi
           done
 
