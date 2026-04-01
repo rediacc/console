@@ -134,11 +134,17 @@ jobs:
 
           echo "R2 promotion complete: edge v${{ steps.edge.outputs.version }} -> stable"
 
+      - name: Login to GHCR
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
       - name: Promote Docker images (:edge -> :stable)
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-
           for image in api bridge plugin-terminal plugin-browser web cli; do
             SRC="ghcr.io/rediacc/elite/${image}:edge"
             DST="ghcr.io/rediacc/elite/${image}:stable"
