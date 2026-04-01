@@ -404,21 +404,29 @@ test_channel_verify() {
     # Verify channel resolution (via env var, simulating what install.sh configures)
     local doctor_output
     doctor_output=$(RDC_UPDATE_CHANNEL="${REPO_CHANNEL}" "$binary" doctor -o json 2>/dev/null || true)
-    if [[ -n "$doctor_output" ]] && command -v jq &>/dev/null; then
-        local channel_value
-        channel_value=$(echo "$doctor_output" | jq -r '.Environment[] | select(.name == "Update channel") | .value' 2>/dev/null)
-        if [[ -z "$channel_value" ]]; then
-            log_warn "  Binary does not expose 'Update channel' in doctor (older version)"
-        elif [[ "$channel_value" == "${REPO_CHANNEL}" ]]; then
-            log_info "  Channel verified: $channel_value"
-        else
-            log_error "Channel mismatch: expected '${REPO_CHANNEL}', got '$channel_value'"
-            rm -f "$binary"
-            return 1
-        fi
-    else
-        log_warn "  Could not parse doctor output (skipping channel check)"
+    if [[ -z "$doctor_output" ]] || ! command -v jq &>/dev/null; then
+        log_error "Failed to get doctor output or jq not available"
+        rm -f "$binary"
+        return 1
     fi
+
+    local channel_value
+    channel_value=$(echo "$doctor_output" | jq -r '.Environment[] | select(.name == "Update channel") | .value' 2>/dev/null)
+    if [[ "$channel_value" != "${REPO_CHANNEL}" ]]; then
+        log_error "Channel mismatch: expected '${REPO_CHANNEL}', got '$channel_value'"
+        rm -f "$binary"
+        return 1
+    fi
+    log_info "  Channel verified: $channel_value"
+
+    local server_value
+    server_value=$(echo "$doctor_output" | jq -r '.Environment[] | select(.name == "Account server") | .value' 2>/dev/null)
+    if [[ -z "$server_value" ]]; then
+        log_error "Account server not found in doctor output"
+        rm -f "$binary"
+        return 1
+    fi
+    log_info "  Account server: $server_value"
 
     # Verify manifest URL for this channel is reachable
     local manifest_url="${RELEASES_BASE_URL}/cli/${REPO_CHANNEL}/manifest.json"
