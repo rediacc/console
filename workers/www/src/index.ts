@@ -39,15 +39,36 @@ function shouldRewrite(contentType: string | null): boolean {
   return REWRITABLE_TYPES.some((t) => contentType.startsWith(t));
 }
 
-async function rewriteOrigin(response: Response, origin: string): Promise<Response> {
+/** Extract release channel from hostname (pr-420 | edge | stable). */
+function getChannel(hostname: string): string {
+  const match = hostname.match(/^([^.]+)\.rediacc\./);
+  return match ? match[1] : 'stable';
+}
+
+async function rewriteOrigin(response: Response, origin: string, channel: string): Promise<Response> {
   if (!shouldRewrite(response.headers.get('content-type'))) return response;
 
-  const body = await response.text();
-  const rewritten = body.includes(PRODUCTION_ORIGIN)
-    ? body.replaceAll(PRODUCTION_ORIGIN, origin)
-    : body;
+  let body = await response.text();
 
-  return new Response(rewritten, {
+  // Rewrite production origin -> preview origin
+  if (body.includes(PRODUCTION_ORIGIN)) {
+    body = body.replaceAll(PRODUCTION_ORIGIN, origin);
+  }
+
+  // Rewrite install script defaults so CLI uses the preview channel
+  // and auto-connects to the preview account server.
+  // Bash: ${REDIACC_CHANNEL:-stable}  PowerShell: } else { "stable" }
+  body = body.replaceAll('REDIACC_CHANNEL:-stable', `REDIACC_CHANNEL:-${channel}`);
+  body = body.replaceAll('REDIACC_SERVER_URL:-}', `REDIACC_SERVER_URL:-${origin}}`);
+  body = body.replaceAll('} else { "stable" }', `} else { "${channel}" }`);
+
+  // Rewrite channel references in website HTML (install commands baked at build time)
+  for (const format of ['apt', 'rpm', 'apk', 'archlinux']) {
+    body = body.replaceAll(`releases.rediacc.com/${format}/stable`, `releases.rediacc.com/${format}/${channel}`);
+  }
+  body = body.replaceAll('elite/cli:stable', `elite/cli:${channel}`);
+
+  return new Response(body, {
     status: response.status,
     statusText: response.statusText,
     headers: response.headers,
@@ -71,6 +92,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const isPreview = url.hostname !== 'www.rediacc.com';
+    const channel = getChannel(url.hostname);
 
     // Handle account API requests directly (account server embedded)
     if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
@@ -88,16 +110,16 @@ export default {
       if (url.pathname !== '/account' && url.pathname !== '/account/') {
         const spaRequest = new Request(new URL('/account/', url.origin), request);
         const response = await env.ASSETS.fetch(spaRequest);
-        return isPreview ? rewriteOrigin(response, url.origin) : response;
+        return isPreview ? rewriteOrigin(response, url.origin, channel) : response;
       }
       const response = await env.ASSETS.fetch(request);
-      return isPreview ? rewriteOrigin(response, url.origin) : response;
+      return isPreview ? rewriteOrigin(response, url.origin, channel) : response;
     }
 
     // All other routes — served from static assets.
     // In preview, run_worker_first = ["/*"] routes everything through here.
     // In production, this path is only reached for /account/* (handled above).
     const response = await env.ASSETS.fetch(request);
-    return isPreview ? rewriteOrigin(response, url.origin) : response;
+    return isPreview ? rewriteOrigin(response, url.origin, channel) : response;
   },
 };

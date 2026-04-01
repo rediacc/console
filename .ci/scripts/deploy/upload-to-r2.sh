@@ -2,14 +2,14 @@
 # Upload release artifacts to Cloudflare R2
 #
 # Usage:
-#   upload-to-r2.sh --version 0.5.0 [--staging pr-123]
+#   upload-to-r2.sh --version 0.5.0 --channel pr-123
 #
 # Options:
 #   --version VERSION    Release version (required)
-#   --staging PREFIX     Upload to staging path (e.g., "pr-123" → staging/pr-123/)
+#   --channel CHANNEL    Release channel (e.g., "pr-123", "edge", "stable")
 #   --cli-dir DIR        CLI binaries directory (default: dist/cli/)
 #   --desktop-dir DIR    Desktop artifacts directory (default: dist/desktop/)
-#   --packages-dir DIR   Linux packages directory (default: dist/packages/)
+#   --packages-dir DIR   DEPRECATED (packages now in self-contained repos)
 #   --dry-run            Print commands without executing
 #
 # Environment:
@@ -24,7 +24,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 source "$SCRIPT_DIR/../../config/constants.sh"
 
 VERSION=""
-STAGING=""
+CHANNEL=""
 CLI_DIR=""
 DESKTOP_DIR=""
 PACKAGES_DIR=""
@@ -36,8 +36,8 @@ while [[ $# -gt 0 ]]; do
             VERSION="$2"
             shift 2
             ;;
-        --staging)
-            STAGING="$2"
+        --channel)
+            CHANNEL="$2"
             shift 2
             ;;
         --cli-dir)
@@ -57,7 +57,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -h | --help)
-            echo "Usage: $0 --version VERSION [--staging PREFIX] [--cli-dir DIR] [--desktop-dir DIR] [--packages-dir DIR] [--dry-run]"
+            echo "Usage: $0 --version VERSION --channel CHANNEL [--cli-dir DIR] [--desktop-dir DIR] [--packages-dir DIR] [--dry-run]"
             exit 0
             ;;
         *)
@@ -77,14 +77,12 @@ REPO_ROOT="$(get_repo_root)"
 [[ -z "$DESKTOP_DIR" ]] && DESKTOP_DIR="$REPO_ROOT/dist/desktop"
 [[ -z "$PACKAGES_DIR" ]] && PACKAGES_DIR="$REPO_ROOT/dist/packages"
 
-# Determine R2 path prefix
-if [[ -n "$STAGING" ]]; then
-    PREFIX="staging/${STAGING}"
-    log_step "Uploading to R2 staging: $PREFIX"
-else
-    PREFIX=""
-    log_step "Uploading release v$VERSION to R2"
+if [[ -z "$CHANNEL" ]]; then
+    log_error "--channel is required"
+    exit 1
 fi
+
+log_step "Uploading v$VERSION to R2 channel: $CHANNEL"
 
 # Validate R2 credentials
 if [[ "$DRY_RUN" == "false" ]]; then
@@ -165,14 +163,16 @@ r2_get() {
         --endpoint-url "$R2_ENDPOINT" 2>/dev/null || echo ""
 }
 
-# Build R2 path with optional staging prefix
+# Build R2 path: {type}/{channel}/{rest}
 r2_path() {
-    local path="$1"
-    if [[ -n "$PREFIX" ]]; then
-        echo "${PREFIX}/${path}"
-    else
-        echo "$path"
-    fi
+    local type="$1"
+    local rest="$2"
+    echo "${type}/${CHANNEL}/${rest}"
+}
+
+# Build R2 versioned path (no channel): {path}
+r2_versioned_path() {
+    echo "$1"
 }
 
 # Update a versions.json tracker and output versions to prune
@@ -234,47 +234,30 @@ UPLOADED=0
 if [[ -d "$CLI_DIR" ]]; then
     log_step "Uploading CLI binaries"
 
+    # Upload to versioned path (permanent link)
     for binary in "$CLI_DIR"/rdc-*; do
         [[ -f "$binary" ]] || continue
         local_name="$(basename "$binary")"
-        r2_cp "$binary" "$(r2_path "cli/v${VERSION}/${local_name}")"
+        r2_cp "$binary" "$(r2_versioned_path "cli/v${VERSION}/${local_name}")"
         ((UPLOADED++)) || true
     done
 
-    # Upload manifest to edge channel
-    if [[ -f "$CLI_DIR/manifest.json" ]]; then
-        r2_cp "$CLI_DIR/manifest.json" "$(r2_path "cli/edge/manifest.json")"
-        ((UPLOADED++)) || true
-    fi
-
-    # Copy binaries to cli/edge/ for edge channel downloads
+    # Upload to channel path
     for binary in "$CLI_DIR"/rdc-*; do
         [[ -f "$binary" ]] || continue
         local_name="$(basename "$binary")"
-        r2_cp "$binary" "$(r2_path "cli/edge/${local_name}")"
+        r2_cp "$binary" "$(r2_path "cli" "${local_name}")"
     done
-
-    # Write edge latest.json LAST -- all binaries and manifest must be in place
-    # first to avoid race conditions where latest.json points to a version
-    # whose files haven't finished uploading yet.
-    r2_put "{\"version\":\"${VERSION}\"}" "$(r2_path "cli/edge/latest.json")"
-    ((UPLOADED++)) || true
-
-    # Also publish to stable channel (same content, both channels always in sync)
     if [[ -f "$CLI_DIR/manifest.json" ]]; then
-        r2_cp "$CLI_DIR/manifest.json" "$(r2_path "cli/stable/manifest.json")"
+        r2_cp "$CLI_DIR/manifest.json" "$(r2_path "cli" "manifest.json")"
     fi
-    for binary in "$CLI_DIR"/rdc-*; do
-        [[ -f "$binary" ]] || continue
-        local_name="$(basename "$binary")"
-        r2_cp "$binary" "$(r2_path "cli/stable/${local_name}")"
-    done
-    r2_put "{\"version\":\"${VERSION}\"}" "$(r2_path "cli/stable/latest.json")"
+    # Write latest.json LAST to avoid race conditions
+    r2_put "{\"version\":\"${VERSION}\"}" "$(r2_path "cli" "latest.json")"
 
-    log_info "CLI: uploaded to $(r2_path "cli/v${VERSION}/") + $(r2_path "cli/edge/") + $(r2_path "cli/stable/")"
+    log_info "CLI: uploaded to cli/v${VERSION}/ + cli/${CHANNEL}/"
 
-    # Track CLI versions for retention cleanup (production only)
-    if [[ -z "$STAGING" ]]; then
+    # Track CLI versions for retention cleanup (production channels only)
+    if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
         CLI_PRUNED=$(update_versions_tracker "cli" "$VERSION" "$R2_MAX_RELEASE_VERSIONS")
     fi
 else
@@ -284,72 +267,38 @@ fi
 # =============================================================================
 # Desktop Artifacts
 # =============================================================================
-if [[ -d "$DESKTOP_DIR" ]] && [[ -z "$STAGING" ]]; then
+if [[ -d "$DESKTOP_DIR" ]]; then
     log_step "Uploading Desktop artifacts"
 
-    # Upload all desktop files to versioned directory
     for artifact in "$DESKTOP_DIR"/*; do
         [[ -f "$artifact" ]] || continue
         local_name="$(basename "$artifact")"
-
-        # Skip build debug files
         [[ "$local_name" == "builder-debug.yml" ]] && continue
 
-        r2_cp "$artifact" "$(r2_path "desktop/v${VERSION}/${local_name}")"
+        # Upload to versioned path (permanent link)
+        r2_cp "$artifact" "$(r2_versioned_path "desktop/v${VERSION}/${local_name}")"
         ((UPLOADED++)) || true
 
-        # Copy electron-updater feed files to root
-        case "$local_name" in
-            latest*.yml | latest*.yaml)
-                r2_cp "$artifact" "$(r2_path "desktop/${local_name}")"
-                ;;
-        esac
+        # Upload to channel path
+        r2_cp "$artifact" "$(r2_path "desktop" "${local_name}")"
     done
 
-    log_info "Desktop: uploaded to $(r2_path "desktop/v${VERSION}/")"
+    log_info "Desktop: uploaded to desktop/v${VERSION}/ + desktop/${CHANNEL}/"
 
-    # Track Desktop versions for retention cleanup
-    DESKTOP_PRUNED=$(update_versions_tracker "desktop" "$VERSION" "$R2_MAX_RELEASE_VERSIONS")
-else
-    if [[ -n "$STAGING" ]]; then
-        log_info "Desktop: skipped (staging mode — CLI only)"
-    else
-        log_warn "Desktop directory not found: $DESKTOP_DIR"
+    # Track Desktop versions for retention cleanup (production channels only)
+    if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
+        DESKTOP_PRUNED=$(update_versions_tracker "desktop" "$VERSION" "$R2_MAX_RELEASE_VERSIONS")
     fi
+else
+    log_info "Desktop directory not found: $DESKTOP_DIR (skipping)"
 fi
 
 # =============================================================================
-# Linux Packages
+# Cleanup Old Versions (production channels only)
 # =============================================================================
-if [[ -d "$PACKAGES_DIR" ]] && [[ -z "$STAGING" ]]; then
-    log_step "Uploading Linux packages"
-
-    for pkg in "$PACKAGES_DIR"/*; do
-        [[ -f "$pkg" ]] || continue
-        local_name="$(basename "$pkg")"
-        r2_cp "$pkg" "$(r2_path "packages/v${VERSION}/${local_name}")"
-        ((UPLOADED++)) || true
-    done
-
-    log_info "Packages: uploaded to $(r2_path "packages/v${VERSION}/")"
-
-    # Track Package versions for retention cleanup
-    PACKAGES_PRUNED=$(update_versions_tracker "packages" "$VERSION" "$R2_MAX_RELEASE_VERSIONS")
-else
-    if [[ -n "$STAGING" ]]; then
-        log_info "Packages: skipped (staging mode — CLI only)"
-    else
-        log_warn "Packages directory not found: $PACKAGES_DIR"
-    fi
-fi
-
-# =============================================================================
-# Cleanup Old Versions
-# =============================================================================
-if [[ -z "$STAGING" ]]; then
+if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
     cleanup_old_versions "cli" "${CLI_PRUNED:-}"
     cleanup_old_versions "desktop" "${DESKTOP_PRUNED:-}"
-    cleanup_old_versions "packages" "${PACKAGES_PRUNED:-}"
 fi
 
 # =============================================================================
@@ -358,9 +307,5 @@ fi
 log_step "R2 upload complete"
 log_info "  Artifacts uploaded: $UPLOADED"
 log_info "  Version: v$VERSION"
-if [[ -n "$STAGING" ]]; then
-    log_info "  Staging prefix: $PREFIX"
-else
-    log_info "  Retention: last $R2_MAX_RELEASE_VERSIONS versions"
-fi
+log_info "  Channel: $CHANNEL"
 log_info "  Bucket: $RELEASES_BUCKET"

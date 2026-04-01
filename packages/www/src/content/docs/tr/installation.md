@@ -1,25 +1,24 @@
 ---
 title: "Kurulum"
-description: "Rediacc CLI'ı Linux, macOS veya Windows üzerine kurun."
+description: "Rediacc CLI'yı Linux, macOS veya Windows üzerine yükleyin."
 category: "Guides"
 order: 1
 language: tr
-sourceHash: "f4d35bb8c2447783"
 ---
 
 # Kurulum
 
-`rdc` CLI'ı iş istasyonunuza kurun. Manuel olarak kurmanız gereken tek araç budur -- diğer her şey uzak makineleri kurduğunuzda otomatik olarak halledilir.
+`rdc` CLI'yi iş istasyonunuza kurun. Manuel olarak kurmanız gereken tek araç budur -- geri kalan her şey uzak makineleri yapılandırırken otomatik olarak halledilir.
 
-## Linux ve macOS
+## Hızlı Kurulum
 
-Kurulum betiğini çalıştırın:
+### Linux ve macOS
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
-Bu komut `rdc` ikili dosyasını `$HOME/.local/bin/` dizinine indirir. Bu dizinin PATH değişkeninizde olduğundan emin olun:
+Bu komut `rdc` ikili dosyasını `$HOME/.local/bin/` dizinine indirir. Bu dizinin PATH'inizde olduğundan emin olun:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -27,40 +26,77 @@ export PATH="$HOME/.local/bin:$PATH"
 
 Kalıcı hale getirmek için bu satırı kabuk profilinize (`~/.bashrc`, `~/.zshrc`, vb.) ekleyin.
 
-## Windows
+### Windows
 
-PowerShell'de kurulum betiğini çalıştırın:
+PowerShell'de çalıştırın:
 
 ```powershell
 irm https://www.rediacc.com/install.ps1 | iex
 ```
 
-Bu, `rdc.exe` dosyasını `%LOCALAPPDATA%\rediacc\bin\` dizinine indirir. Bu dizinin PATH'inizde olduğundan emin olun. Yükleyici, henüz eklenmemişse eklemenizi isteyecektir.
+Bu komut `rdc.exe` dosyasını `%LOCALAPPDATA%\rediacc\bin\` dizinine indirir. Gerekirse yükleyici, dosyayı PATH'inize eklemenizi isteyecektir.
 
-## Alpine Linux (APK)
+## Paket Yöneticileri
+
+### APT (Debian / Ubuntu)
 
 ```bash
-# Add the repository
-echo "https://www.rediacc.com/apk/x86_64" | sudo tee -a /etc/apk/repositories
+curl -fsSL https://releases.rediacc.com/apt/stable/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
+echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/stable stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
+sudo apt-get update && sudo apt-get install rediacc-cli
+```
 
-# Install
+### DNF (Fedora / RHEL)
+
+```bash
+sudo curl -fsSL https://releases.rediacc.com/rpm/stable/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
+sudo dnf install rediacc-cli
+```
+
+### APK (Alpine Linux)
+
+```bash
+echo "https://releases.rediacc.com/apk/stable" | sudo tee -a /etc/apk/repositories
 sudo apk update
 sudo apk add --allow-untrusted rediacc-cli
 ```
 
-Not: `gcompat` paketi (glibc uyumluluk katmanı) bağımlılık olarak otomatik yüklenir.
+Not: `gcompat` paketi (glibc uyumluluk katmanı) bağımlılık olarak otomatik kurulur.
 
-## Arch Linux (Pacman)
+### Pacman (Arch Linux)
 
 ```bash
-# Add the repository to /etc/pacman.conf
 echo "[rediacc]
 SigLevel = Optional TrustAll
-Server = https://www.rediacc.com/archlinux/\$arch" | sudo tee -a /etc/pacman.conf
+Server = https://releases.rediacc.com/archlinux/stable/\$arch" | sudo tee -a /etc/pacman.conf
 
-# Install
 sudo pacman -Sy rediacc-cli
 ```
+
+## Docker
+
+CLI'yi bir konteyner olarak çekin ve çalıştırın:
+
+```bash
+docker pull ghcr.io/rediacc/elite/cli:stable
+
+docker run --rm ghcr.io/rediacc/elite/cli:stable --version
+```
+
+Kolaylık için bir takma ad oluşturun:
+
+```bash
+alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable'
+```
+
+Mevcut Docker etiketleri:
+
+| Etiket | Açıklama |
+|--------|----------|
+| `:stable` | En son kararlı sürüm (önerilen) |
+| `:edge` | En son edge sürümü |
+| `:0.8.4` | Sabitlenmiş sürüm (değiştirilemez) |
+| `:latest` | `:stable` için takma ad |
 
 ## Kurulumu Doğrulama
 
@@ -68,55 +104,95 @@ sudo pacman -Sy rediacc-cli
 rdc --version
 ```
 
-Kurulu sürüm numarasını görmelisiniz.
-
 ## Güncelleme
 
-`rdc` aracını en son sürüme güncellemek için:
+En son sürüme güncelleyin:
 
 ```bash
 rdc update
 ```
 
-Kurmadan güncellemeleri kontrol etmek için:
+Kurulum yapmadan güncellemeleri kontrol edin:
 
 ```bash
 rdc update --check-only
 ```
 
-Bir güncellemeden sonra önceki sürüme geri dönmek için:
+Mevcut güncelleme durumunu görüntüleyin:
+
+```bash
+rdc update --status
+```
+
+Önceki sürüme geri dönün:
 
 ```bash
 rdc update rollback
 ```
 
-### Guncelleme Kanallari
+## Yayın Kanalları
 
-CLI iki yayin kanalini destekler:
-- **stable** (varsayilan): Kapsamli test edilmis surumler, uretim ortami icin onerilir
-- **edge**: En son ozellikler ve hata duzeltmleri, her surumde guncellenir
+Rediacc, kanal tabanlı bir yayın sistemi kullanır. Kanal, CLI güncellemeleri, paket yöneticisi kurulumları ve Docker çekme işlemleri için hangi sürümü alacağınızı belirler.
+
+| Kanal | Açıklama | Ne zaman güncellenir |
+|-------|----------|----------------------|
+| `stable` | Üretime hazır sürümler | 7 günlük deneme süresinden sonra edge'den yükseltilir |
+| `edge` | En son özellikler ve düzeltmeler | Main dalına her birleştirmede |
+| `pr-N` | PR önizleme derlemeleri | Her pull request için otomatik |
+
+### Kanal değiştirme
 
 ```bash
-rdc update --channel edge      # Edge kanalina gec
-rdc update --channel stable    # Stable kanalina geri don
-rdc update --status            # Mevcut kanal ve surumu goster
+rdc update --channel edge      # Edge kanalına geç
+rdc update --channel stable    # Stable kanalına geri dön
 ```
 
-Dogrudan edge kanalindan yuklemek icin:
+Doğrudan edge kanalından kurulum yapın:
+
 ```bash
 REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
-### Remote Binary Updates
+Paket yöneticileri için depo URL'sindeki `stable` ifadesini `edge` ile değiştirin:
 
-When you run commands against a remote machine, the CLI automatically provisions the matching `renet` binary. If the binary is updated, the route server (`rediacc-router`) is restarted automatically so it picks up the new version.
+```bash
+# APT edge
+echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
 
-The restart is transparent and causes **no downtime**:
+# Docker edge
+docker pull ghcr.io/rediacc/elite/cli:edge
+```
 
-- The route server restarts in ~1–2 seconds.
-- During that window, Traefik continues serving traffic using its last known routing configuration. No routes are dropped.
-- Traefik picks up the new configuration on its next poll cycle (within 5 seconds).
-- **Existing client connections (HTTP, TCP, UDP) are not affected.** The route server is a configuration provider — it is not in the data path. Traefik handles all traffic directly.
-- Your application containers are not touched — only the system-level route server process is restarted.
+### Kanallar nasıl çalışır
 
-To skip the automatic restart, pass `--skip-router-restart` to any command, or set the `RDC_SKIP_ROUTER_RESTART=1` environment variable.
+Kanal, tüm dağıtım yöntemlerinde aynı şekilde uygulanır:
+
+- **Kurulum betikleri**: `REDIACC_CHANNEL` ortam değişkeni kanalı seçer
+- **Paket depoları**: `releases.rediacc.com/{format}/{kanal}/`
+- **Docker etiketleri**: `ghcr.io/rediacc/elite/cli:{kanal}`
+- **CLI güncellemeleri**: `rdc update` kurulum sırasında yapılandırılan kanalı kontrol eder
+
+### PR önizleme otomatik yapılandırması
+
+Bir PR önizleme dağıtımından (örn. `pr-420.rediacc.workers.dev`) kurulum yaptığınızda, kanal ve hesap sunucusu otomatik olarak yapılandırılır:
+
+- CLI ikili dosyası `pr-420` kanalından indirilir
+- `rdc update` güncellemeler için `pr-420` kanalını kontrol eder
+- Tüm hesap/abonelik komutları PR önizleme sunucusuna bağlanır
+- Önizleme sitesindeki Docker komutları `cli:pr-420` gösterir
+
+Manuel yapılandırma gerekmez. Kurulum betiği, dağıtım bağlamını URL'den algılar.
+
+## Uzak İkili Güncellemeler
+
+Uzak bir makineye karşı komut çalıştırdığınızda, CLI otomatik olarak eşleşen `renet` ikili dosyasını sağlar. İkili dosya güncellenirse, yeni sürümü alması için yol sunucusu (`rediacc-router`) otomatik olarak yeniden başlatılır.
+
+Yeniden başlatma şeffaftır ve **kesinti yaratmaz**:
+
+- Yol sunucusu ~1-2 saniyede yeniden başlar.
+- Bu süre zarfında Traefik, bilinen son yönlendirme yapılandırmasını kullanarak trafiğe hizmet etmeye devam eder. Hiçbir yol düşmez.
+- Traefik, bir sonraki yoklama döngüsünde (5 saniye içinde) yeni yapılandırmayı alır.
+- **Mevcut istemci bağlantıları (HTTP, TCP, UDP) etkilenmez.** Yol sunucusu bir yapılandırma sağlayıcısıdır -- veri yolunda değildir. Traefik tüm trafiği doğrudan yönetir.
+- Uygulama konteynerlerinize dokunulmaz -- yalnızca sistem düzeyindeki yol sunucusu süreci yeniden başlatılır.
+
+Otomatik yeniden başlatmayı atlamak için herhangi bir komuta `--skip-router-restart` parametresini ekleyin veya `RDC_SKIP_ROUTER_RESTART=1` ortam değişkenini ayarlayın.

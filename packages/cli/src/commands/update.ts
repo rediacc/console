@@ -7,6 +7,8 @@ import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { applyPendingUpdate } from '../services/background-updater.js';
 import { outputService } from '../services/output.js';
+import { getSubscriptionServerUrl } from '../services/subscription-auth.js';
+import { resolveChannel } from '../services/updater.js';
 import { readUpdateState, writeUpdateState } from '../services/update-state.js';
 import { checkForUpdate, performUpdate } from '../services/updater.js';
 import { handleError } from '../utils/errors.js';
@@ -20,7 +22,7 @@ async function handleChannelSwitch(
   channel: string,
   options: { force?: boolean; checkOnly?: boolean }
 ): Promise<boolean> {
-  if (channel !== 'stable' && channel !== 'edge') {
+  if (!channel) {
     outputService.error(t('commands.update.invalidChannel', { channel }));
     process.exit(1);
   }
@@ -207,6 +209,8 @@ async function handleStatus(): Promise<void> {
 
   const lines: string[] = [];
   lines.push(`Current version: ${VERSION}`);
+  lines.push(`Channel: ${resolveChannel()}`);
+  lines.push(`Account server: ${getSubscriptionServerUrl()}`);
   lines.push(`Auto-update: ${isSEA() ? 'enabled' : 'disabled (not SEA)'}`);
   lines.push(`Last check: ${state.lastCheckAt ?? STATUS_DEFAULTS.NEVER}`);
   lines.push(`Last attempt: ${state.lastAttemptAt ?? STATUS_DEFAULTS.NEVER}`);

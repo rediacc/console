@@ -1,66 +1,102 @@
 ---
 title: "التثبيت"
-description: "تثبيت سطر أوامر Rediacc على Linux أو macOS أو Windows."
+description: "قم بتثبيت واجهة سطر أوامر Rediacc على Linux أو macOS أو Windows."
 category: "Guides"
 order: 1
 language: ar
-sourceHash: "f4d35bb8c2447783"
 ---
 
 # التثبيت
 
-ثبّت سطر أوامر `rdc` على محطة عملك. هذه هي الأداة الوحيدة التي تحتاج لتثبيتها يدوياً — كل شيء آخر يُعالج تلقائياً عند إعداد الأجهزة البعيدة.
+قم بتثبيت واجهة سطر الأوامر `rdc` على محطة العمل الخاصة بك. هذه هي الأداة الوحيدة التي تحتاج إلى تثبيتها يدويًا -- يتم التعامل مع كل شيء آخر تلقائيًا عند إعداد الأجهزة البعيدة.
 
-## Linux و macOS
+## التثبيت السريع
 
-شغّل سكريبت التثبيت:
+### Linux و macOS
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
-يقوم هذا بتنزيل ملف `rdc` التنفيذي إلى `$HOME/.local/bin/`. تأكد من أن هذا المجلد موجود في متغير PATH:
+يقوم هذا الأمر بتنزيل ملف `rdc` الثنائي إلى `$HOME/.local/bin/`. تأكد من أن هذا المجلد موجود في PATH الخاص بك:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-أضف هذا السطر إلى ملف تعريف الصدفة الخاص بك (`~/.bashrc` أو `~/.zshrc` وغيرها) لجعله دائماً.
+أضف هذا السطر إلى ملف تعريف shell الخاص بك (`~/.bashrc`، `~/.zshrc`، إلخ) لجعله دائمًا.
 
-## Windows
+### Windows
 
-شغّل سكريبت التثبيت في PowerShell:
+قم بالتشغيل في PowerShell:
 
 ```powershell
 irm https://www.rediacc.com/install.ps1 | iex
 ```
 
-يُنزل هذا الملف التنفيذي `rdc.exe` إلى `%LOCALAPPDATA%\rediacc\bin\`. تأكد من أن هذا المجلد موجود في PATH. سيطلب منك المُثبِّت إضافته إذا لم يكن موجوداً بالفعل.
+يقوم هذا الأمر بتنزيل `rdc.exe` إلى `%LOCALAPPDATA%\rediacc\bin\`. سيطلب منك المثبّت إضافته إلى PATH إذا لزم الأمر.
 
-## ألباين لينكس (APK)
+## مديرو الحزم
+
+### APT (Debian / Ubuntu)
 
 ```bash
-# Add the repository
-echo "https://www.rediacc.com/apk/x86_64" | sudo tee -a /etc/apk/repositories
+curl -fsSL https://releases.rediacc.com/apt/stable/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
+echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/stable stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
+sudo apt-get update && sudo apt-get install rediacc-cli
+```
 
-# Install
+### DNF (Fedora / RHEL)
+
+```bash
+sudo curl -fsSL https://releases.rediacc.com/rpm/stable/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
+sudo dnf install rediacc-cli
+```
+
+### APK (Alpine Linux)
+
+```bash
+echo "https://releases.rediacc.com/apk/stable" | sudo tee -a /etc/apk/repositories
 sudo apk update
 sudo apk add --allow-untrusted rediacc-cli
 ```
 
 ملاحظة: يتم تثبيت حزمة `gcompat` (طبقة التوافق مع glibc) تلقائيًا كتبعية.
 
-## آرتش لينكس (Pacman)
+### Pacman (Arch Linux)
 
 ```bash
-# Add the repository to /etc/pacman.conf
 echo "[rediacc]
 SigLevel = Optional TrustAll
-Server = https://www.rediacc.com/archlinux/\$arch" | sudo tee -a /etc/pacman.conf
+Server = https://releases.rediacc.com/archlinux/stable/\$arch" | sudo tee -a /etc/pacman.conf
 
-# Install
 sudo pacman -Sy rediacc-cli
 ```
+
+## Docker
+
+قم بسحب وتشغيل واجهة سطر الأوامر كحاوية:
+
+```bash
+docker pull ghcr.io/rediacc/elite/cli:stable
+
+docker run --rm ghcr.io/rediacc/elite/cli:stable --version
+```
+
+أنشئ اسمًا مستعارًا للراحة:
+
+```bash
+alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable'
+```
+
+علامات Docker المتاحة:
+
+| العلامة | الوصف |
+|---------|-------|
+| `:stable` | أحدث إصدار مستقر (مُوصى به) |
+| `:edge` | أحدث إصدار edge |
+| `:0.8.4` | إصدار مثبّت (غير قابل للتغيير) |
+| `:latest` | اسم مستعار لـ `:stable` |
 
 ## التحقق من التثبيت
 
@@ -68,55 +104,95 @@ sudo pacman -Sy rediacc-cli
 rdc --version
 ```
 
-يجب أن ترى رقم الإصدار المثبّت.
-
 ## التحديث
 
-لتحديث `rdc` إلى أحدث إصدار:
+التحديث إلى أحدث إصدار:
 
 ```bash
 rdc update
 ```
 
-للتحقق من وجود تحديثات بدون تثبيتها:
+التحقق من التحديثات دون التثبيت:
 
 ```bash
 rdc update --check-only
 ```
 
-للتراجع إلى الإصدار السابق بعد التحديث:
+عرض حالة التحديث الحالية:
+
+```bash
+rdc update --status
+```
+
+الرجوع إلى الإصدار السابق:
 
 ```bash
 rdc update rollback
 ```
 
-### قنوات التحديث
+## قنوات الإصدار
 
-يدعم سطر الاوامر قناتي اصدار:
-- **stable** (افتراضي): اصدارات مختبرة بدقة، موصى بها لبيئة الانتاج
-- **edge**: احدث الميزات وإصلاحات الاخطاء، يتم التحديث مع كل اصدار
+يستخدم Rediacc نظام إصدار قائم على القنوات. تحدد القناة الإصدار الذي تتلقاه لتحديثات CLI وعمليات تثبيت مدير الحزم وسحب Docker.
+
+| القناة | الوصف | متى يتم التحديث |
+|--------|-------|------------------|
+| `stable` | إصدارات جاهزة للإنتاج | يتم الترقية من edge بعد فترة اختبار 7 أيام |
+| `edge` | أحدث الميزات والإصلاحات | عند كل دمج في main |
+| `pr-N` | بناءات معاينة PR | تلقائيًا لكل pull request |
+
+### تبديل القنوات
 
 ```bash
 rdc update --channel edge      # التبديل إلى قناة edge
 rdc update --channel stable    # العودة إلى قناة stable
-rdc update --status            # عرض القناة الحالية والاصدار
 ```
 
-للتثبيت مباشرة من قناة edge:
+التثبيت مباشرة من قناة edge:
+
 ```bash
 REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
-### Remote Binary Updates
+لمديري الحزم، استبدل `stable` بـ `edge` في عنوان URL للمستودع:
 
-When you run commands against a remote machine, the CLI automatically provisions the matching `renet` binary. If the binary is updated, the route server (`rediacc-router`) is restarted automatically so it picks up the new version.
+```bash
+# APT edge
+echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
 
-The restart is transparent and causes **no downtime**:
+# Docker edge
+docker pull ghcr.io/rediacc/elite/cli:edge
+```
 
-- The route server restarts in ~1–2 seconds.
-- During that window, Traefik continues serving traffic using its last known routing configuration. No routes are dropped.
-- Traefik picks up the new configuration on its next poll cycle (within 5 seconds).
-- **Existing client connections (HTTP, TCP, UDP) are not affected.** The route server is a configuration provider — it is not in the data path. Traefik handles all traffic directly.
-- Your application containers are not touched — only the system-level route server process is restarted.
+### كيف تعمل القنوات
 
-To skip the automatic restart, pass `--skip-router-restart` to any command, or set the `RDC_SKIP_ROUTER_RESTART=1` environment variable.
+تُطبّق القناة بشكل موحد عبر جميع طرق التوزيع:
+
+- **سكريبتات التثبيت**: متغير البيئة `REDIACC_CHANNEL` يحدد القناة
+- **مستودعات الحزم**: `releases.rediacc.com/{التنسيق}/{القناة}/`
+- **علامات Docker**: `ghcr.io/rediacc/elite/cli:{القناة}`
+- **تحديثات CLI**: يتحقق `rdc update` من القناة المُعدّة أثناء التثبيت
+
+### التكوين التلقائي لمعاينة PR
+
+عند التثبيت من نشر معاينة PR (مثل `pr-420.rediacc.workers.dev`)، يتم تكوين القناة وخادم الحساب تلقائيًا:
+
+- يتم تنزيل ملف CLI الثنائي من قناة `pr-420`
+- يتحقق `rdc update` من قناة `pr-420` للتحديثات
+- جميع أوامر الحساب/الاشتراك تتصل بخادم معاينة PR
+- تعرض أوامر Docker على موقع المعاينة `cli:pr-420`
+
+لا حاجة لتكوين يدوي. يكتشف سكريبت التثبيت سياق النشر من عنوان URL.
+
+## تحديثات الملفات الثنائية البعيدة
+
+عند تشغيل أوامر على جهاز بعيد، تقوم واجهة سطر الأوامر تلقائيًا بتوفير ملف `renet` الثنائي المطابق. إذا تم تحديث الملف الثنائي، يتم إعادة تشغيل خادم المسارات (`rediacc-router`) تلقائيًا لالتقاط الإصدار الجديد.
+
+إعادة التشغيل شفافة ولا تسبب **أي توقف**:
+
+- يُعاد تشغيل خادم المسارات في حوالي 1-2 ثانية.
+- خلال تلك الفترة، يستمر Traefik في تقديم حركة المرور باستخدام آخر تكوين توجيه معروف. لا يتم إسقاط أي مسارات.
+- يلتقط Traefik التكوين الجديد في دورة الاستطلاع التالية (خلال 5 ثوانٍ).
+- **لا تتأثر اتصالات العملاء الحالية (HTTP، TCP، UDP).** خادم المسارات هو مزوّد تكوين -- وليس في مسار البيانات. يتعامل Traefik مع كل حركة المرور مباشرة.
+- لا يتم المساس بحاويات التطبيقات الخاصة بك -- يتم إعادة تشغيل عملية خادم المسارات على مستوى النظام فقط.
+
+لتخطي إعادة التشغيل التلقائية، مرّر `--skip-router-restart` إلى أي أمر، أو عيّن متغير البيئة `RDC_SKIP_ROUTER_RESTART=1`.

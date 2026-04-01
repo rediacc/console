@@ -5,4 +5,4 @@
  */
 declare const __CLI_VERSION__: string;
 export const VERSION: string =
-  typeof __CLI_VERSION__ !== 'undefined' ? __CLI_VERSION__ : '0.0.0-dev';
+  typeof __CLI_VERSION__ === 'undefined' ? '0.0.0-dev' : __CLI_VERSION__;

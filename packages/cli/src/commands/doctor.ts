@@ -10,7 +10,11 @@ import { configService } from '../services/config-resources.js';
 import { getEmbeddedMetadata, isSEA as isSEAEmbedded } from '../services/embedded-assets.js';
 import { fetchSubscriptionLicenseReport } from '../services/license.js';
 import { outputService } from '../services/output.js';
-import { getSubscriptionTokenState } from '../services/subscription-auth.js';
+import {
+  getSubscriptionServerUrl,
+  getSubscriptionTokenState,
+} from '../services/subscription-auth.js';
+import { resolveChannel } from '../services/updater.js';
 import type { OutputFormat } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
 import { isSEA } from '../utils/platform.js';
@@ -87,6 +91,14 @@ function checkEnvironment(): CheckSection {
       value: isSEA() ? t('commands.doctor.seaActive') : t('commands.doctor.devMode'),
       status: 'ok',
     },
+    { name: 'Update channel', value: resolveChannel(), status: 'ok' },
+    (() => {
+      try {
+        return { name: 'Account server', value: getSubscriptionServerUrl(), status: 'ok' as const };
+      } catch {
+        return { name: 'Account server', value: 'not configured', status: 'warn' as const };
+      }
+    })(),
     checkToolVersion(
       'go',
       ['version'],

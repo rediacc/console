@@ -40,6 +40,18 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
+      - name: Cleanup R2 staging artifacts
+        run: |
+          PR_NUM="${{ github.event.pull_request.number }}"
+          aws s3 rm "s3://rediacc-releases/staging/pr-${PR_NUM}/" \
+            --endpoint-url "$R2_ENDPOINT" --recursive --quiet 2>/dev/null \
+            && echo "Deleted R2 staging/pr-${PR_NUM}/" \
+            || echo "R2 staging/pr-${PR_NUM}/ not found (already deleted or never created)"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+
       - name: Cleanup preview D1 database
         run: |
           DB_NAME="account-db-pr-${{ github.event.pull_request.number }}"

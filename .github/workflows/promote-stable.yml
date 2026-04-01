@@ -31,7 +31,7 @@ jobs:
       - name: Check edge manifest
         id: edge
         run: |
-          EDGE_MANIFEST=$(curl -sf "https://www.rediacc.com/cli/edge/manifest.json" || echo "")
+          EDGE_MANIFEST=$(curl -sf "https://releases.rediacc.com/cli/edge/manifest.json" || echo "")
           if [[ -z "$EDGE_MANIFEST" ]]; then
             echo "No edge manifest found, skipping"
             echo "skip=true" >> "$GITHUB_OUTPUT"
@@ -50,7 +50,7 @@ jobs:
         if: steps.edge.outputs.skip != 'true'
         id: stable
         run: |
-          STABLE_MANIFEST=$(curl -sf "https://www.rediacc.com/cli/stable/manifest.json" || echo "")
+          STABLE_MANIFEST=$(curl -sf "https://releases.rediacc.com/cli/stable/manifest.json" || echo "")
           STABLE_VERSION=""
           if [[ -n "$STABLE_MANIFEST" ]]; then
             STABLE_VERSION=$(echo "$STABLE_MANIFEST" | jq -r '.version')
@@ -101,34 +101,62 @@ jobs:
           fi
           echo "No rollback labels found"
 
-      - name: Promote CLI artifacts
+      # =====================================================================
+      # Promote ALL artifacts from edge to stable
+      # =====================================================================
+
+      - name: Promote R2 artifacts (CLI, Desktop, Repos)
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
         env:
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
         run: |
-          # Install rclone for R2 operations
-          curl -sL https://rclone.org/install.sh | bash
+          BUCKET="rediacc-releases"
 
-          # Configure rclone for R2
-          mkdir -p ~/.config/rclone
-          cat > ~/.config/rclone/rclone.conf <<CONF
-          [r2]
-          type = s3
-          provider = Cloudflare
-          access_key_id = ${R2_ACCESS_KEY_ID}
-          secret_access_key = ${R2_SECRET_ACCESS_KEY}
-          endpoint = ${R2_ENDPOINT}
-          acl = private
-          no_check_bucket = true
-          CONF
+          # Copy all channel artifacts from edge to stable
+          # R2 doesn't support GetObjectTagging, so download+reupload via local tmp
+          EP="--endpoint-url $R2_ENDPOINT"
+          for dir in cli desktop apt rpm apk archlinux; do
+            echo "Promoting ${dir}/edge/ -> ${dir}/stable/"
+            TMP="/tmp/promote-${dir}"
+            aws s3 cp "s3://${BUCKET}/${dir}/edge/" "$TMP/" $EP --recursive --quiet
+            aws s3 cp "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --recursive --quiet
+            rm -rf "$TMP"
+          done
 
-          # Copy edge -> stable
-          echo "Copying cli/edge/ -> cli/stable/"
-          rclone copy r2:rediacc-releases/cli/edge/ r2:rediacc-releases/cli/stable/ --progress
+          # Fix channel-specific config files (they reference 'edge' in URLs)
+          for file in rpm/stable/rediacc.repo archlinux/stable/rediacc.conf; do
+            echo "Fixing channel in ${file}..."
+            aws s3 cp "s3://${BUCKET}/${file}" /tmp/config \
+              --endpoint-url "$R2_ENDPOINT" --quiet
+            sed -i 's|/edge/|/stable/|g' /tmp/config
+            aws s3 cp /tmp/config "s3://${BUCKET}/${file}" \
+              --endpoint-url "$R2_ENDPOINT" --quiet
+          done
 
-          echo "Promoted edge v${{ steps.edge.outputs.version }} to stable"
+          echo "R2 promotion complete: edge v${{ steps.edge.outputs.version }} -> stable"
+
+      - name: Login to GHCR
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Promote Docker images (:edge -> :stable)
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
+        run: |
+          for image in api bridge plugin-terminal plugin-browser web cli; do
+            SRC="ghcr.io/rediacc/elite/${image}:edge"
+            DST="ghcr.io/rediacc/elite/${image}:stable"
+            echo "Promoting ${image}: edge -> stable"
+            docker buildx imagetools create -t "$DST" "$SRC"
+          done
+
+          echo "Docker promotion complete"
 
       - name: Set promotion result
         id: result
@@ -148,7 +176,8 @@ jobs:
           echo "- Edge version: ${{ steps.edge.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- Previous stable: ${{ steps.stable.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- Soak days: ${{ env.SOAK_DAYS }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Production deploy: triggered via cd-deploy-worker.yml" >> $GITHUB_STEP_SUMMARY
+          echo "- R2: CLI, Desktop, APT, RPM, APK, Archlinux promoted" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker: all images retagged :edge -> :stable" >> $GITHUB_STEP_SUMMARY
 
   # Deploy production Worker from the exact tagged version
   deploy-production:

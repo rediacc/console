@@ -663,6 +663,12 @@ if [[ -f "$ENV_FILE" ]] && ! is_ci; then
         update_env_file "$ENV_FILE" "AWS_SES_ACCESS_KEY_ID" "$new_ses_key_id"
     [[ -n "${new_ses_secret:-}" && "$new_ses_secret" != "<dry-run>" ]] &&
         update_env_file "$ENV_FILE" "AWS_SES_SECRET_ACCESS_KEY" "$new_ses_secret"
+    # R2 credentials for local testing (promotion simulation, pr publish R2 uploads)
+    [[ -n "${r2_access_key:-}" && "$r2_access_key" != "<dry-run>" ]] &&
+        update_env_file "$ENV_FILE" "R2_ACCESS_KEY_ID" "$r2_access_key"
+    [[ -n "${r2_secret_key:-}" && "$r2_secret_key" != "<dry-run>" ]] &&
+        update_env_file "$ENV_FILE" "R2_SECRET_ACCESS_KEY" "$r2_secret_key"
+    update_env_file "$ENV_FILE" "R2_ENDPOINT" "$R2_ENDPOINT_VALUE"
     log_info "Updated $ENV_FILE"
 elif is_ci; then
     log_info "Skipping .env update (CI environment)"

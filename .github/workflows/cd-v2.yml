@@ -19,8 +19,8 @@ on:
         description: 'Bump type (patch, minor, major)'
         required: true
         type: string
-      staging_tag:
-        description: 'Docker staging tag to promote'
+      channel:
+        description: 'Release channel (Docker tag + R2 channel path)'
         required: true
         type: string
   workflow_dispatch:
@@ -70,7 +70,7 @@ jobs:
       ci_sha: ${{ steps.resolve.outputs.ci_sha }}
       next_version: ${{ steps.override.outputs.next_version || steps.version.outputs.next_version || steps.init.outputs.next_version }}
       bump_type: ${{ steps.override.outputs.bump_type || steps.version.outputs.bump_type || steps.init.outputs.bump_type }}
-      staging_tag: ${{ steps.staging.outputs.staging_tag }}
+      channel: ${{ steps.staging.outputs.channel }}
       skip_release: ${{ steps.skip-check.outputs.skip_release }}
       retry_mode: ${{ steps.skip-check.outputs.retry_mode }}
     steps:
@@ -188,11 +188,11 @@ jobs:
           echo "next_version=${NEXT}" >> $GITHUB_OUTPUT
           echo "::notice::Manual bump override: ${BUMP} -> v${NEXT}"
 
-      - name: Generate staging tag
+      - name: Generate channel
         if: steps.skip-check.outputs.skip_release != 'true'
         id: staging
         run: |
-          echo "staging_tag=staging-${{ steps.resolve.outputs.ci_sha }}" >> $GITHUB_OUTPUT
+          echo "channel=${{ steps.resolve.outputs.ci_sha }}" >> $GITHUB_OUTPUT
 
       # Version guard: fail early if this version was already published (skip in retry mode)
       - name: Check for existing release
@@ -267,15 +267,15 @@ jobs:
 
       - name: Promote Docker images
         run: |
-          STAGING_TAG="${{ needs.init.outputs.staging_tag }}"
+          CHANNEL="${{ needs.init.outputs.channel }}"
           VERSION="${{ needs.init.outputs.next_version }}"
 
-          .ci/scripts/docker/retag-image.sh --image api --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
-          .ci/scripts/docker/retag-image.sh --image bridge --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
-          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
-          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
-          .ci/scripts/docker/retag-image.sh --image web --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
-          .ci/scripts/docker/retag-image.sh --image cli --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag-image.sh --image api --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag-image.sh --image bridge --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag-image.sh --image web --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag-image.sh --image cli --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
 
       # -----------------------------------------------------------------------
       # Step 1b: Install dependencies and build shared packages
@@ -403,26 +403,7 @@ jobs:
           generate_release_notes: true
 
       # -----------------------------------------------------------------------
-      # Step 4: Download packages from Release for metadata (ensures exact match)
-      # -----------------------------------------------------------------------
-      - name: Download packages from Release
-        run: |
-          VERSION="${{ needs.init.outputs.next_version }}"
-          mkdir -p dist/release-pkgs
-
-          echo "Downloading packages from GitHub Release v$VERSION..."
-          gh release download "v$VERSION" --pattern "*.deb" --pattern "*.rpm" --pattern "*.apk" --pattern "*.pkg.tar.zst" --dir dist/release-pkgs --clobber || true
-
-          # Filter to only CLI packages (exclude desktop packages)
-          find dist/release-pkgs -name "rediacc-desktop-*" -delete 2>/dev/null || true
-
-          echo "Downloaded packages:"
-          ls -la dist/release-pkgs/
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-
-      # -----------------------------------------------------------------------
-      # Step 5: Build final APT/RPM repo metadata (matching Release)
+      # Step 4: Build self-contained repos for edge + stable channels
       # -----------------------------------------------------------------------
       - name: Install repo build tools
         run: sudo apt-get update -qq && sudo apt-get install -y -qq dpkg-dev createrepo-c gnupg
@@ -469,15 +450,34 @@ jobs:
           # This ensures metadata checksums match the actual release assets
           .ci/scripts/build/build-pkg-repo.sh \
             --version "$VERSION" \
-            --local-pkgs dist/release-pkgs \
-            --output dist/pages \
-            --max-versions 3
+            --local-pkgs dist/packages \
+            --output dist/repos \
+            --channel edge
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
-      # Step 6: Worker deploy moved to cd-deploy-worker.yml (reusable workflow)
+      # Step 6: Upload self-contained repos to R2 edge channel
+      # Stable promotion is handled by promote-stable.yml after 7-day soak.
+      - name: Upload repos to R2 (edge)
+        run: |
+          export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
+          export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
+          export AWS_DEFAULT_REGION="auto"
+          for dir in apt rpm apk archlinux; do
+            if [[ -d "dist/repos/$dir" ]]; then
+              aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/${dir}/edge/" \
+                --endpoint-url "$R2_ENDPOINT" --quiet
+            fi
+          done
+          echo "Repos uploaded to R2 edge channel"
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+
+      # Step 7: Worker deploy moved to cd-deploy-worker.yml (reusable workflow)
       # Called as a separate job below (deploy-edge)
 
       # -----------------------------------------------------------------------
@@ -485,32 +485,23 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Cleanup staging Docker tags
         run: |
-          STAGING_TAG="${{ needs.init.outputs.staging_tag }}"
+          CHANNEL="${{ needs.init.outputs.channel }}"
           echo "## Cleanup Staging Tags" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Cleanup is non-critical (staging tags are harmless if they remain),
           # so we log failures to the step summary but don't fail the job.
-          if .ci/scripts/docker/cleanup-staging.sh --tag "$STAGING_TAG"; then
-            echo "**Staging tag cleaned up:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
+          if .ci/scripts/docker/cleanup-staging.sh --tag "$CHANNEL"; then
+            echo "**Staging tag cleaned up:** $CHANNEL" >> $GITHUB_STEP_SUMMARY
           else
-            echo "**Failed to clean up staging tag:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
+            echo "**Failed to clean up staging tag:** $CHANNEL" >> $GITHUB_STEP_SUMMARY
             echo "Staging tag cleanup requires \`delete:packages\` scope (non-critical)." >> $GITHUB_STEP_SUMMARY
           fi
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
-      # -----------------------------------------------------------------------
-      # Upload release artifacts to R2
-      # -----------------------------------------------------------------------
-      - name: Upload release artifacts to R2
-        run: |
-          .ci/scripts/deploy/upload-to-r2.sh \
-            --version "${{ needs.init.outputs.next_version }}"
-        env:
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      # Stable promotion (CLI, desktop, repos, Docker :stable) is handled by
+      # promote-stable.yml after 7-day soak. CD only publishes to edge.
 
       # -----------------------------------------------------------------------
       # Final summary
@@ -569,6 +560,35 @@ jobs:
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
   # ============================================================================
+  # POST-PUBLISH SMOKE TEST - Verify endpoints respond after deployment
+  # ============================================================================
+  smoke-test:
+    name: Smoke Test
+    runs-on: ubuntu-slim
+    needs: [init, publish, deploy-edge]
+    if: >-
+      success() &&
+      needs.init.outputs.skip_release != 'true'
+    steps:
+      - name: Verify edge endpoints
+        run: |
+          VERSION="${{ needs.init.outputs.next_version }}"
+          echo "Verifying edge deployment for v${VERSION}..."
+
+          # Verify install.sh is served
+          curl -fsSL https://edge.rediacc.com/install.sh -o /dev/null
+          echo "  install.sh: OK"
+
+          # Verify latest.json on R2
+          curl -fsSL https://releases.rediacc.com/cli/edge/latest.json | jq -e ".version == \"${VERSION}\""
+          echo "  edge latest.json: OK (v${VERSION})"
+
+          curl -fsSL https://releases.rediacc.com/cli/stable/latest.json | jq -e ".version == \"${VERSION}\""
+          echo "  stable latest.json: OK (v${VERSION})"
+
+          echo "Smoke test passed"
+
+  # ============================================================================
   # CLEANUP ON FAILURE - Remove staging artifacts if publish fails
   # ============================================================================
   cleanup-on-failure:
@@ -599,14 +619,14 @@ jobs:
 
       - name: Cleanup staging Docker tags
         run: |
-          STAGING_TAG="${{ needs.init.outputs.staging_tag }}"
+          CHANNEL="${{ needs.init.outputs.channel }}"
           echo "## Cleanup Staging Tags (Failure)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if .ci/scripts/docker/cleanup-staging.sh --tag "$STAGING_TAG"; then
-            echo "**Staging tag cleaned up:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
+          if .ci/scripts/docker/cleanup-staging.sh --tag "$CHANNEL"; then
+            echo "**Staging tag cleaned up:** $CHANNEL" >> $GITHUB_STEP_SUMMARY
           else
-            echo "**Failed to clean up staging tag:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
+            echo "**Failed to clean up staging tag:** $CHANNEL" >> $GITHUB_STEP_SUMMARY
             echo "Staging tag cleanup requires \`delete:packages\` scope (non-critical)." >> $GITHUB_STEP_SUMMARY
           fi
         env:
@@ -640,6 +660,22 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Cleanup R2 staging artifacts
+        run: |
+          # Keep last 3 staging snapshots, delete older ones
+          STAGING_DIRS=$(aws s3 ls "s3://${RELEASES_BUCKET}/staging/" --endpoint-url "${R2_ENDPOINT}" 2>/dev/null \
+            | awk '{print $2}' | sort -r | tail -n +4)
+          for dir in $STAGING_DIRS; do
+            echo "Deleting staging/${dir}..."
+            aws s3 rm "s3://${RELEASES_BUCKET}/staging/${dir}" --endpoint-url "${R2_ENDPOINT}" --recursive --quiet || true
+          done
+          echo "R2 staging cleanup done"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          RELEASES_BUCKET: rediacc-releases
 
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:

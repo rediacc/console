@@ -790,7 +790,7 @@ pr_publish() {
     local preview_url="https://pr-${pr_number}.rediacc.workers.dev"
 
     log_step "Building www (marketing site)..."
-    PUBLIC_SITE_URL="$preview_url" npm run build:www
+    PUBLIC_SITE_URL="$preview_url" PUBLIC_REPO_CHANNEL="pr-${pr_number}" npm run build:www
 
     log_step "Building web (console)..."
     VITE_BASE_PATH=/console/ npm run build:web
@@ -798,53 +798,40 @@ pr_publish() {
     log_step "Building json (template catalog)..."
     npm run build:json
 
-    # Build CLI binary (linux-x64) and upload to R2 staging via wrangler
+    # Build CLI binary (linux-x64) and upload to R2 channel via wrangler
     local cli_version
     cli_version=$(git describe --tags --match 'v*' --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0-dev")
-    local staging_prefix="staging/pr-${pr_number}"
+    local channel="pr-${pr_number}"
 
     log_step "Building CLI binary (linux-x64)..."
     "$ROOT_DIR/.ci/scripts/build/build-cli-executables.sh" --platform linux --arch x64
 
     log_step "Generating CLI manifest..."
-    env RELEASES_BASE_URL="https://releases.rediacc.com/${staging_prefix}" \
-        bash "$ROOT_DIR/.ci/scripts/build/generate-cli-manifest.sh" \
+    bash "$ROOT_DIR/.ci/scripts/build/generate-cli-manifest.sh" \
         --version "$cli_version" --input dist/cli/
 
-    log_step "Uploading CLI binary to R2 (${staging_prefix})..."
+    log_step "Uploading CLI binary to R2 (channel: ${channel})..."
     local r2_bucket="rediacc-releases"
     for f in dist/cli/rdc-*; do
         [[ -f "$f" ]] || continue
         local fname
         fname="$(basename "$f")"
-        npx wrangler r2 object put "${r2_bucket}/${staging_prefix}/cli/v${cli_version}/${fname}" --file "$f" --content-type application/octet-stream --remote
-        npx wrangler r2 object put "${r2_bucket}/${staging_prefix}/cli/edge/${fname}" --file "$f" --content-type application/octet-stream --remote
+        npx wrangler r2 object put "${r2_bucket}/cli/${channel}/${fname}" --file "$f" --content-type application/octet-stream --remote
     done
     if [[ -f "dist/cli/manifest.json" ]]; then
-        npx wrangler r2 object put "${r2_bucket}/${staging_prefix}/cli/edge/manifest.json" --file dist/cli/manifest.json --content-type application/json --remote
+        npx wrangler r2 object put "${r2_bucket}/cli/${channel}/manifest.json" --file dist/cli/manifest.json --content-type application/json --remote
     fi
     echo "{\"version\":\"${cli_version}\"}" >/tmp/latest.json
-    npx wrangler r2 object put "${r2_bucket}/${staging_prefix}/cli/edge/latest.json" --file /tmp/latest.json --content-type application/json --remote
+    npx wrangler r2 object put "${r2_bucket}/cli/${channel}/latest.json" --file /tmp/latest.json --content-type application/json --remote
     rm -f /tmp/latest.json
-    log_info "CLI binary uploaded to R2 staging"
+    log_info "CLI binary uploaded to R2 channel: ${channel}"
 
     # Assemble pages into workers/www/dist/
     log_step "Assembling pages..."
     "$ROOT_DIR/.ci/scripts/build/build-pages.sh" --output dist/pages
 
-    # Rewrite install scripts for preview: releases URL + server URL
-    if [[ -n "${staging_prefix:-}" ]]; then
-        local staging_url="https://releases.rediacc.com/${staging_prefix}"
-        # Rewrite RELEASES_URL default
-        sed -i "s|REDIACC_RELEASES_URL:-https://releases.rediacc.com|REDIACC_RELEASES_URL:-${staging_url}|" \
-            "$ROOT_DIR/workers/www/dist/install.sh"
-        sed -i "s|REDIACC_RELEASES_URL:-https://releases.rediacc.com|REDIACC_RELEASES_URL:-${staging_url}|" \
-            "$ROOT_DIR/workers/www/dist/install.ps1" 2>/dev/null || true
-        # Rewrite SERVER_URL default so CLI auto-connects to the preview
-        sed -i "s|REDIACC_SERVER_URL:-}|REDIACC_SERVER_URL:-${preview_url}}|" \
-            "$ROOT_DIR/workers/www/dist/install.sh"
-        log_info "Rewrote install scripts for preview"
-    fi
+    # Install script defaults (channel, server URL) are rewritten at runtime
+    # by the worker based on the deployment hostname. No sed needed.
 
     # Build account portal
     log_step "Building account portal..."
