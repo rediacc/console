@@ -43,3 +43,6 @@
 # path-to-regexp ReDoS via sequential optional groups/wildcards (transitive dep, no fix)
 1115573
 1115582
+# xmldom CDATA injection (transitive dep via electron-builder/plist and marp/mathjax, no fix)
+1115764
+1115765
