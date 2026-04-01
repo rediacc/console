@@ -24,9 +24,13 @@ jobs:
             aws s3 rm "s3://${RELEASES_BUCKET}/${dir}/${CHANNEL}/" \
               --recursive \
               --endpoint-url "$R2_ENDPOINT" 2>/dev/null || true
+            # Also clean up promotion simulation artifacts
+            aws s3 rm "s3://${RELEASES_BUCKET}/${dir}/${CHANNEL}-promoted/" \
+              --recursive \
+              --endpoint-url "$R2_ENDPOINT" 2>/dev/null || true
           done
 
-          echo "Channel '${CHANNEL}' deleted from R2"
+          echo "Channel '${CHANNEL}' (+ promoted) deleted from R2"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}

@@ -831,13 +831,106 @@ jobs:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   # ============================================================================
+  # VALIDATE PROMOTION - Simulates edge-to-stable promotion
+  # Copies PR channel repos to a temp promoted channel, sed-fixes configs,
+  # then tests APT/DNF/APK/Pacman install against the promoted channel.
+  # ============================================================================
+  validate-promote:
+    name: Validate Promotion
+    needs: [initialize, stage-artifacts]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: >-
+      always() &&
+      needs.initialize.outputs.is_fork != 'true' &&
+      needs.stage-artifacts.result == 'success'
+    env:
+      CHANNEL: ${{ needs.initialize.outputs.channel }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - name: Simulate promotion (copy + sed-fix)
+        run: |
+          PROMOTED="${CHANNEL}-promoted"
+          echo "PROMOTED=${PROMOTED}" >> "$GITHUB_ENV"
+          BUCKET="rediacc-releases"
+
+          # Copy all repo formats from PR channel to promoted channel
+          for dir in apt rpm apk archlinux; do
+            aws s3 sync "s3://${BUCKET}/${dir}/${CHANNEL}/" \
+                        "s3://${BUCKET}/${dir}/${PROMOTED}/" \
+              --endpoint-url "$R2_ENDPOINT" --quiet
+          done
+
+          # Sed-fix config files (replace channel in URLs)
+          for file in "rpm/${PROMOTED}/rediacc.repo" "archlinux/${PROMOTED}/rediacc.conf"; do
+            if aws s3 cp "s3://${BUCKET}/${file}" /tmp/config \
+                --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null; then
+              sed -i "s|/${CHANNEL}/|/${PROMOTED}/|g" /tmp/config
+              aws s3 cp /tmp/config "s3://${BUCKET}/${file}" \
+                --endpoint-url "$R2_ENDPOINT" --quiet
+            fi
+          done
+
+          echo "Promotion simulated: ${CHANNEL} -> ${PROMOTED}"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+
+      - name: Test APT install from promoted channel
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method apt --version ${{ needs.initialize.outputs.next_version }}
+        env:
+          REPO_CHANNEL: ${{ env.PROMOTED }}
+
+      - name: Test DNF install from promoted channel
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method dnf --version ${{ needs.initialize.outputs.next_version }}
+        env:
+          REPO_CHANNEL: ${{ env.PROMOTED }}
+
+      - name: Test APK install from promoted channel
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method apk --version ${{ needs.initialize.outputs.next_version }}
+        env:
+          REPO_CHANNEL: ${{ env.PROMOTED }}
+
+      - name: Test Pacman install from promoted channel
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method pacman --version ${{ needs.initialize.outputs.next_version }}
+        env:
+          REPO_CHANNEL: ${{ env.PROMOTED }}
+
+      - name: Cleanup promoted channel
+        if: always()
+        run: |
+          PROMOTED="${CHANNEL}-promoted"
+          BUCKET="rediacc-releases"
+          for dir in apt rpm apk archlinux; do
+            aws s3 rm "s3://${BUCKET}/${dir}/${PROMOTED}/" --recursive \
+              --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null || true
+          done
+          echo "Cleaned up promoted channel: ${PROMOTED}"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+
+  # ============================================================================
   # CI COMPLETE - Gate for merge queue
   # This job only succeeds if ALL CI jobs pass
   # ============================================================================
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, stage-artifacts, validate-install, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, stage-artifacts, validate-install, validate-promote, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -861,6 +954,7 @@ jobs:
           [[ "${{ needs.package-tests.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.stage-artifacts.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.validate-install.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.validate-promote.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.tests.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.standalone-run-test.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.elite-run-test.result }}" == "failure" ]] && FAILED=true
@@ -880,6 +974,7 @@ jobs:
             echo "  package-tests: ${{ needs.package-tests.result }}"
             echo "  stage-artifacts: ${{ needs.stage-artifacts.result }}"
             echo "  validate-install: ${{ needs.validate-install.result }}"
+            echo "  validate-promote: ${{ needs.validate-promote.result }}"
             echo "  tests: ${{ needs.tests.result }}"
             echo "  standalone-run-test: ${{ needs.standalone-run-test.result }}"
             echo "  elite-run-test: ${{ needs.elite-run-test.result }}"
