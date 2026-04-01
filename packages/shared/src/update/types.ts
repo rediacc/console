@@ -1,5 +1,5 @@
-/** Release channel for CLI/desktop updates. */
-export type ReleaseChannel = 'stable' | 'edge';
+/** Release channel for CLI/desktop updates (stable, edge, or pr-N for previews). */
+export type ReleaseChannel = string;
 
 /** Common update state fields shared between CLI and desktop. */
 export interface UpdateStateBase {

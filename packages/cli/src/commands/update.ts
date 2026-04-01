@@ -20,7 +20,7 @@ async function handleChannelSwitch(
   channel: string,
   options: { force?: boolean; checkOnly?: boolean }
 ): Promise<boolean> {
-  if (channel !== 'stable' && channel !== 'edge') {
+  if (!channel) {
     outputService.error(t('commands.update.invalidChannel', { channel }));
     process.exit(1);
   }

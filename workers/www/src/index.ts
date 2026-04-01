@@ -60,6 +60,11 @@ async function rewriteOrigin(response: Response, origin: string, channel: string
   body = body.replaceAll('REDIACC_CHANNEL:-stable', `REDIACC_CHANNEL:-${channel}`);
   body = body.replaceAll('REDIACC_SERVER_URL:-}', `REDIACC_SERVER_URL:-${origin}}`);
 
+  // Rewrite repo channel URLs in website HTML (install commands baked at build time)
+  for (const format of ['apt', 'rpm', 'apk', 'archlinux']) {
+    body = body.replaceAll(`releases.rediacc.com/${format}/stable`, `releases.rediacc.com/${format}/${channel}`);
+  }
+
   return new Response(body, {
     status: response.status,
     statusText: response.statusText,

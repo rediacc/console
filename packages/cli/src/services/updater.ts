@@ -26,11 +26,11 @@ const DOWNLOAD_TIMEOUT_MS = 120_000;
 /** Resolve the active release channel from env, server.json, or default. */
 export function resolveChannel(): ReleaseChannel {
   const envChannel = process.env.RDC_UPDATE_CHANNEL;
-  if (envChannel === 'edge' || envChannel === 'stable') return envChannel;
+  if (envChannel) return envChannel;
 
   try {
     const serverConfig = loadServerConfig();
-    if (serverConfig?.updateChannel === 'edge' || serverConfig?.updateChannel === 'stable') {
+    if (serverConfig?.updateChannel) {
       return serverConfig.updateChannel;
     }
   } catch {
