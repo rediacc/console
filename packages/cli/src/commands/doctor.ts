@@ -10,7 +10,10 @@ import { configService } from '../services/config-resources.js';
 import { getEmbeddedMetadata, isSEA as isSEAEmbedded } from '../services/embedded-assets.js';
 import { fetchSubscriptionLicenseReport } from '../services/license.js';
 import { outputService } from '../services/output.js';
-import { getSubscriptionServerUrl, getSubscriptionTokenState } from '../services/subscription-auth.js';
+import {
+  getSubscriptionServerUrl,
+  getSubscriptionTokenState,
+} from '../services/subscription-auth.js';
 import { resolveChannel } from '../services/updater.js';
 import type { OutputFormat } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
