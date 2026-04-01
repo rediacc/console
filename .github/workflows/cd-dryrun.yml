@@ -385,10 +385,10 @@ jobs:
             dist/cli/**/*
             dist/packages/**/*
 
-      - name: Attest staging pages artifact
+      - name: Attest staging repos artifact
         if: github.event_name == 'push'
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32  # v4
         with:
           subject-path: |
-            dist/pages/apt/dists/**/*
-            dist/pages/rpm/repodata/**/*
+            dist/repos/apt/dists/**/*
+            dist/repos/rpm/repodata/**/*
