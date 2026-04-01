@@ -119,7 +119,7 @@ jobs:
           for dir in cli desktop apt rpm apk archlinux; do
             echo "Promoting ${dir}/edge/ -> ${dir}/stable/"
             aws s3 sync "s3://${BUCKET}/${dir}/edge/" "s3://${BUCKET}/${dir}/stable/" \
-              --endpoint-url "$R2_ENDPOINT" --quiet
+              --endpoint-url "$R2_ENDPOINT" --copy-props none --quiet
           done
 
           # Fix channel-specific config files (they reference 'edge' in URLs)

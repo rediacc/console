@@ -862,11 +862,12 @@ jobs:
           [[ -n "$R2_ENDPOINT" ]] || { echo "::error::R2_ENDPOINT not set"; exit 1; }
 
           # Copy all repo formats from PR channel to promoted channel
+          # --copy-props none: skip GetObjectTagging (not supported by R2)
           for dir in apt rpm apk archlinux; do
             echo "Copying ${dir}/${CHANNEL}/ -> ${dir}/${PROMOTED}/"
             aws s3 sync "s3://${BUCKET}/${dir}/${CHANNEL}/" \
                         "s3://${BUCKET}/${dir}/${PROMOTED}/" \
-              $EP
+              $EP --copy-props none
           done
 
           # Sed-fix config files (replace channel in URLs)
