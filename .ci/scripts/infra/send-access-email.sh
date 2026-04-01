@@ -185,7 +185,7 @@ log_step "Sending access information email to ${RECIPIENT}..."
 # BUILD HTML EMAIL
 # =============================================================================
 
-# Email contains ONLY sensitive data — no URLs that could trigger spam filters
+# Email contains sensitive access data (credentials, tunnel URLs, connection strings)
 TD="style=\"padding: 6px 12px;\""
 TH="style=\"padding: 6px 12px; font-weight: bold;\""
 SENS_TABLE="style=\"border-collapse: collapse; width: 100%; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px;\""
@@ -200,8 +200,11 @@ if [[ -n "$RUN_URL" ]]; then
     HTML+="<tr><td ${TH}>Workflow Run</td><td ${TD}><a href=\"${RUN_URL}\">View in GitHub</a></td></tr>"
 fi
 
+if [[ -n "$TUNNEL_URL" ]]; then
+    HTML+="<tr><td ${TH}>Cloudflare Tunnel</td><td ${TD}><a href=\"${TUNNEL_URL}\">${TUNNEL_URL}</a></td></tr>"
+fi
+
 HTML+="</table>"
-HTML+="<p style=\"color: #6b7280; font-size: 13px;\">Tunnel URLs and other non-sensitive details are available in the workflow logs.</p>"
 
 # VM credentials + SSH access
 if [[ "$VM_OS" != "none" ]] && [[ "$VM_KVM" == "true" ]]; then

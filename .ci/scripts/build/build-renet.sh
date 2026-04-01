@@ -131,6 +131,8 @@ if [[ -n "${OTLP_AUTH_TOKEN:-}" ]]; then
     OTLP_USER="${OTLP_DECODED%%:*}"
     OTLP_PASS="${OTLP_DECODED#*:}"
     if [[ -n "$OTLP_USER" && -n "$OTLP_PASS" ]]; then
+        echo "::add-mask::$OTLP_USER"
+        echo "::add-mask::$OTLP_PASS"
         OTLP_LDFLAGS="-X github.com/rediacc/renet/pkg/telemetry.otlpUser=${OTLP_USER} -X github.com/rediacc/renet/pkg/telemetry.otlpPass=${OTLP_PASS}"
         log_info "OTLP auth credentials injected from environment"
     fi

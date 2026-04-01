@@ -114,6 +114,12 @@ else
     echo ""
 fi
 
+# Mask sensitive connection strings so GitHub Actions redacts them from logs
+if [ -n "$SSH_CONNECTION" ]; then echo "::add-mask::$SSH_CONNECTION"; fi
+if [ -n "$WEB_URL" ]; then echo "::add-mask::$WEB_URL"; fi
+if [ -n "$SSH_RO_CONNECTION" ]; then echo "::add-mask::$SSH_RO_CONNECTION"; fi
+if [ -n "$WEB_RO_URL" ]; then echo "::add-mask::$WEB_RO_URL"; fi
+
 # Set outputs for GitHub Actions
 {
     echo "ssh-connection=$SSH_CONNECTION"

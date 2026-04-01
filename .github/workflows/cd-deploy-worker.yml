@@ -100,6 +100,14 @@ jobs:
           mkdir -p workers/www/dist
           cp -r packages/www/dist/* workers/www/dist/
 
+      - name: Inject E2E videos
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          .ci/scripts/docs/inject-e2e-videos.sh
+          --search-latest
+          --output workers/www/dist/assets/videos/user-guide/
+
       - name: Build account portal
         run: npm install && npx vite build --outDir ../../../workers/www/dist/account
         working-directory: private/account/web

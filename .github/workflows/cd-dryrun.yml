@@ -320,20 +320,14 @@ jobs:
         if: github.event_name == 'push'
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
-          name: staging-release-${{ github.sha }}
+          name: release-artifacts-${{ github.sha }}
           path: |
             dist/desktop/
             dist/cli/
             dist/packages/
           retention-days: 1
 
-      - name: Upload staging pages artifact
-        if: github.event_name == 'push'
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
-        with:
-          name: staging-pages-${{ github.sha }}
-          path: dist/pages/
-          retention-days: 1
+      # Pages artifact no longer needed -- cd-deploy-worker.yml builds from source.
 
       # -----------------------------------------------------------------------
       # Upload to R2 staging (pre-publish validation needs ALL artifacts on R2)
