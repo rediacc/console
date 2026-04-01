@@ -11,7 +11,7 @@ const SERVER_CONFIG_FILE = 'server.json';
 export interface ServerConfig {
   accountServer: string;
   e2ePublicKey?: string;
-  updateChannel?: 'stable' | 'edge';
+  updateChannel?: string;
 }
 
 export function getServerConfigFile(): string {

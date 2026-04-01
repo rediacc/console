@@ -55,10 +55,12 @@ async function rewriteOrigin(response: Response, origin: string, channel: string
     body = body.replaceAll(PRODUCTION_ORIGIN, origin);
   }
 
-  // Rewrite install.sh/install.ps1 defaults so CLI uses the preview channel
-  // and auto-connects to the preview account server
+  // Rewrite install script defaults so CLI uses the preview channel
+  // and auto-connects to the preview account server.
+  // Bash: ${REDIACC_CHANNEL:-stable}  PowerShell: } else { "stable" }
   body = body.replaceAll('REDIACC_CHANNEL:-stable', `REDIACC_CHANNEL:-${channel}`);
   body = body.replaceAll('REDIACC_SERVER_URL:-}', `REDIACC_SERVER_URL:-${origin}}`);
+  body = body.replaceAll('} else { "stable" }', `} else { "${channel}" }`);
 
   // Rewrite repo channel URLs in website HTML (install commands baked at build time)
   for (const format of ['apt', 'rpm', 'apk', 'archlinux']) {
