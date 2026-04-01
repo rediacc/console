@@ -8,7 +8,7 @@ language: de
 
 # Installation
 
-Installieren Sie die `rdc` CLI auf Ihrer Arbeitsstation. Dies ist das einzige Tool, das Sie manuell installieren muessen -- alles andere wird automatisch erledigt, wenn Sie Remote-Maschinen einrichten.
+Installieren Sie die `rdc` CLI auf Ihrer Arbeitsstation. Dies ist das einzige Tool, das Sie manuell installieren müssen -- alles andere wird automatisch erledigt, wenn Sie Remote-Maschinen einrichten.
 
 ## Schnellinstallation
 
@@ -18,23 +18,23 @@ Installieren Sie die `rdc` CLI auf Ihrer Arbeitsstation. Dies ist das einzige To
 curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
-Dieser Befehl laedt die `rdc`-Binaerdatei nach `$HOME/.local/bin/` herunter. Stellen Sie sicher, dass dieses Verzeichnis in Ihrem PATH enthalten ist:
+Dieser Befehl lädt die `rdc`-Binärdatei nach `$HOME/.local/bin/` herunter. Stellen Sie sicher, dass dieses Verzeichnis in Ihrem PATH enthalten ist:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-Fuegen Sie diese Zeile zu Ihrem Shell-Profil (`~/.bashrc`, `~/.zshrc`, usw.) hinzu, um sie dauerhaft zu machen.
+Fügen Sie diese Zeile zu Ihrem Shell-Profil (`~/.bashrc`, `~/.zshrc`, usw.) hinzu, um sie dauerhaft zu machen.
 
 ### Windows
 
-Fuehren Sie dies in PowerShell aus:
+Führen Sie dies in PowerShell aus:
 
 ```powershell
 irm https://www.rediacc.com/install.ps1 | iex
 ```
 
-Dieser Befehl laedt `rdc.exe` nach `%LOCALAPPDATA%\rediacc\bin\` herunter. Das Installationsprogramm fordert Sie auf, es bei Bedarf zu Ihrem PATH hinzuzufuegen.
+Dieser Befehl lädt `rdc.exe` nach `%LOCALAPPDATA%\rediacc\bin\` herunter. Das Installationsprogramm fordert Sie auf, es bei Bedarf zu Ihrem PATH hinzuzufügen.
 
 ## Paketmanager
 
@@ -61,7 +61,7 @@ sudo apk update
 sudo apk add --allow-untrusted rediacc-cli
 ```
 
-Hinweis: Das Paket `gcompat` (glibc-Kompatibilitaetsschicht) wird automatisch als Abhaengigkeit installiert.
+Hinweis: Das Paket `gcompat` (glibc-Kompatibilitätsschicht) wird automatisch als Abhängigkeit installiert.
 
 ### Pacman (Arch Linux)
 
@@ -89,16 +89,16 @@ Erstellen Sie einen Alias zur Vereinfachung:
 alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable'
 ```
 
-Verfuegbare Docker-Tags:
+Verfügbare Docker-Tags:
 
 | Tag | Beschreibung |
 |-----|-------------|
 | `:stable` | Neuestes stabiles Release (empfohlen) |
 | `:edge` | Neuestes Edge-Release |
-| `:0.8.4` | Fixierte Version (unveraenderlich) |
-| `:latest` | Alias fuer `:stable` |
+| `:0.8.4` | Fixierte Version (unveränderlich) |
+| `:latest` | Alias für `:stable` |
 
-## Installation ueberpruefen
+## Installation überprüfen
 
 ```bash
 rdc --version
@@ -124,19 +124,19 @@ Aktuellen Update-Status anzeigen:
 rdc update --status
 ```
 
-Auf die vorherige Version zuruecksetzen:
+Auf die vorherige Version zurücksetzen:
 
 ```bash
 rdc update rollback
 ```
 
-## Release-Kanaele
+## Release-Kanäle
 
 Rediacc verwendet ein kanalbasiertes Release-System. Der Kanal bestimmt, welche Version Sie bei CLI-Updates, Paketmanager-Installationen und Docker-Pulls erhalten.
 
 | Kanal | Beschreibung | Wann aktualisiert |
 |-------|-------------|-------------------|
-| `stable` | Produktionsreife Releases | Nach 7-taegiger Testphase von Edge uebernommen |
+| `stable` | Produktionsreife Releases | Nach 7-tägiger Testphase von Edge übernommen |
 | `edge` | Neueste Funktionen und Fehlerbehebungen | Bei jedem Merge in Main |
 | `pr-N` | PR-Vorschau-Builds | Automatisch pro Pull Request |
 
@@ -144,7 +144,7 @@ Rediacc verwendet ein kanalbasiertes Release-System. Der Kanal bestimmt, welche 
 
 ```bash
 rdc update --channel edge      # Zum Edge-Kanal wechseln
-rdc update --channel stable    # Zurueck zum Stable-Kanal
+rdc update --channel stable    # Zurück zum Stable-Kanal
 ```
 
 Direkt vom Edge-Kanal installieren:
@@ -153,7 +153,7 @@ Direkt vom Edge-Kanal installieren:
 REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
-Fuer Paketmanager ersetzen Sie `stable` durch `edge` in der Repository-URL:
+Für Paketmanager ersetzen Sie `stable` durch `edge` in der Repository-URL:
 
 ```bash
 # APT edge
@@ -163,36 +163,36 @@ echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.c
 docker pull ghcr.io/rediacc/elite/cli:edge
 ```
 
-### Wie Kanaele funktionieren
+### Wie Kanäle funktionieren
 
-Der Kanal gilt einheitlich fuer alle Bereitstellungsmethoden:
+Der Kanal gilt einheitlich für alle Bereitstellungsmethoden:
 
-- **Installationsskripte**: Die Umgebungsvariable `REDIACC_CHANNEL` waehlt den Kanal
+- **Installationsskripte**: Die Umgebungsvariable `REDIACC_CHANNEL` wählt den Kanal
 - **Paket-Repositories**: `releases.rediacc.com/{format}/{kanal}/`
 - **Docker-Tags**: `ghcr.io/rediacc/elite/cli:{kanal}`
-- **CLI-Updates**: `rdc update` prueft den bei der Installation konfigurierten Kanal
+- **CLI-Updates**: `rdc update` prüft den bei der Installation konfigurierten Kanal
 
 ### Automatische PR-Vorschau-Konfiguration
 
 Wenn Sie von einer PR-Vorschau-Bereitstellung (z.B. `pr-420.rediacc.workers.dev`) installieren, werden Kanal und Account-Server automatisch konfiguriert:
 
-- Die CLI-Binaerdatei wird vom Kanal `pr-420` heruntergeladen
-- `rdc update` prueft den Kanal `pr-420` auf Updates
+- Die CLI-Binärdatei wird vom Kanal `pr-420` heruntergeladen
+- `rdc update` prüft den Kanal `pr-420` auf Updates
 - Alle Account-/Abonnement-Befehle verbinden sich mit dem PR-Vorschau-Server
 - Docker-Befehle auf der Vorschau-Seite zeigen `cli:pr-420`
 
 Keine manuelle Konfiguration erforderlich. Das Installationsskript erkennt den Bereitstellungskontext anhand der URL.
 
-## Remote-Binaer-Updates
+## Remote-Binär-Updates
 
-Wenn Sie Befehle gegen eine Remote-Maschine ausfuehren, stellt die CLI automatisch die passende `renet`-Binaerdatei bereit. Wenn die Binaerdatei aktualisiert wird, wird der Route-Server (`rediacc-router`) automatisch neu gestartet, damit er die neue Version uebernimmt.
+Wenn Sie Befehle gegen eine Remote-Maschine ausführen, stellt die CLI automatisch die passende `renet`-Binärdatei bereit. Wenn die Binärdatei aktualisiert wird, wird der Route-Server (`rediacc-router`) automatisch neu gestartet, damit er die neue Version übernimmt.
 
 Der Neustart ist transparent und verursacht **keine Ausfallzeit**:
 
 - Der Route-Server startet in ~1-2 Sekunden neu.
-- Waehrend dieses Zeitfensters bedient Traefik den Datenverkehr mit seiner zuletzt bekannten Routing-Konfiguration weiter. Keine Routen gehen verloren.
-- Traefik uebernimmt die neue Konfiguration beim naechsten Abfragezyklus (innerhalb von 5 Sekunden).
+- Während dieses Zeitfensters bedient Traefik den Datenverkehr mit seiner zuletzt bekannten Routing-Konfiguration weiter. Keine Routen gehen verloren.
+- Traefik übernimmt die neue Konfiguration beim nächsten Abfragezyklus (innerhalb von 5 Sekunden).
 - **Bestehende Client-Verbindungen (HTTP, TCP, UDP) sind nicht betroffen.** Der Route-Server ist ein Konfigurationsanbieter -- er befindet sich nicht im Datenpfad. Traefik verarbeitet den gesamten Datenverkehr direkt.
-- Ihre Anwendungscontainer werden nicht beruehrt -- nur der Route-Server-Prozess auf Systemebene wird neu gestartet.
+- Ihre Anwendungscontainer werden nicht berührt -- nur der Route-Server-Prozess auf Systemebene wird neu gestartet.
 
-Um den automatischen Neustart zu ueberspringen, uebergeben Sie `--skip-router-restart` an einen beliebigen Befehl oder setzen Sie die Umgebungsvariable `RDC_SKIP_ROUTER_RESTART=1`.
+Um den automatischen Neustart zu überspringen, übergeben Sie `--skip-router-restart` an einen beliebigen Befehl oder setzen Sie die Umgebungsvariable `RDC_SKIP_ROUTER_RESTART=1`.
