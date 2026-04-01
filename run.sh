@@ -830,16 +830,8 @@ pr_publish() {
     log_step "Assembling pages..."
     "$ROOT_DIR/.ci/scripts/build/build-pages.sh" --output dist/pages
 
-    # Rewrite install scripts for preview: channel + server URL
-    # Rewrite default channel from "stable" to "pr-N"
-    sed -i "s|REDIACC_CHANNEL:-stable|REDIACC_CHANNEL:-${channel}|" \
-        "$ROOT_DIR/workers/www/dist/install.sh"
-    sed -i "s|REDIACC_CHANNEL:-stable|REDIACC_CHANNEL:-${channel}|" \
-        "$ROOT_DIR/workers/www/dist/install.ps1" 2>/dev/null || true
-    # Rewrite SERVER_URL so CLI auto-connects to the preview
-    sed -i "s|REDIACC_SERVER_URL:-}|REDIACC_SERVER_URL:-${preview_url}}|" \
-        "$ROOT_DIR/workers/www/dist/install.sh"
-    log_info "Rewrote install scripts for preview (channel: ${channel})"
+    # Install script defaults (channel, server URL) are rewritten at runtime
+    # by the worker based on the deployment hostname. No sed needed.
 
     # Build account portal
     log_step "Building account portal..."
