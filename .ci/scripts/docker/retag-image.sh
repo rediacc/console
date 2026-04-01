@@ -137,6 +137,7 @@ retag_image() {
             return 1
         fi
         log_info "Pushed :latest tag"
+        # Note: :stable tag is pushed by promote-stable.yml after 7-day soak
     fi
 
     log_info "Re-tagged $name successfully"

@@ -5,7 +5,7 @@
 #
 # Options:
 #   --dry-run            Print commands without executing
-#   --method <method>    Test specific method: binary, docker, apt, dnf, apk, pacman, homebrew, quick, all (default: all)
+#   --method <method>    Test specific method: binary, verify, update, promote, docker, apt, dnf, apk, pacman, homebrew, quick, all (default: all)
 #   --version <ver>      Version to test (default: latest)
 #   --platform <plat>    Platform: linux, mac, win (default: auto-detect)
 #   --arch <arch>        Architecture: x64, arm64 (default: auto-detect)
@@ -87,6 +87,16 @@ fi
 DOCKER_IMAGE="ghcr.io/rediacc/elite/cli"
 SITE_URL="${SITE_URL:-https://www.rediacc.com}"
 # RELEASES_BASE_URL is set by constants.sh (sourced via common.sh) as readonly
+# REPO_CHANNEL: optional channel path segment (e.g., "stable", "edge", or "" for staging)
+REPO_CHANNEL="${REPO_CHANNEL:-}"
+# Build repo URL: ${RELEASES_BASE_URL}/apt[/${REPO_CHANNEL}] etc.
+if [[ -n "$REPO_CHANNEL" ]]; then
+    REPO_URL="${RELEASES_BASE_URL}"
+    REPO_CHANNEL_SUFFIX="/${REPO_CHANNEL}"
+else
+    REPO_URL="${RELEASES_BASE_URL}"
+    REPO_CHANNEL_SUFFIX=""
+fi
 HOMEBREW_TAP="rediacc/tap/rediacc-cli"
 
 # Test counters
@@ -161,7 +171,11 @@ get_binary_url() {
         win) filename="rdc-win-${arch}.exe" ;;
     esac
 
-    echo "${RELEASES_BASE_URL}/cli/v${version}/${filename}"
+    if [[ -n "$REPO_CHANNEL" ]]; then
+        echo "${RELEASES_BASE_URL}/cli/${REPO_CHANNEL}/${filename}"
+    else
+        echo "${RELEASES_BASE_URL}/cli/v${version}/${filename}"
+    fi
 }
 
 # Verify version output
@@ -268,13 +282,172 @@ test_binary_download() {
 }
 
 # =============================================================================
+# Update Check Tests
+# =============================================================================
+
+test_update_check() {
+    if ! command -v jq &>/dev/null; then
+        log_warn "jq not available, skipping update check"
+        return 77
+    fi
+
+    local manifest_url="${REPO_URL}/cli/${REPO_CHANNEL}/manifest.json"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would fetch manifest from: $manifest_url"
+        return 0
+    fi
+
+    # Fetch and validate manifest
+    local manifest
+    manifest=$(curl -fsSL "$manifest_url") || {
+        log_error "Failed to fetch manifest from $manifest_url"
+        return 1
+    }
+
+    if ! echo "$manifest" | jq -e '.version, .binaries' >/dev/null 2>&1; then
+        log_error "Invalid manifest structure"
+        return 1
+    fi
+
+    local manifest_ver
+    manifest_ver=$(echo "$manifest" | jq -r '.version')
+    log_info "  Manifest version: $manifest_ver"
+
+    # Verify at least one binary URL is reachable
+    local binary_url
+    binary_url=$(echo "$manifest" | jq -r '.binaries["linux-x64"].url // empty')
+    if [[ -n "$binary_url" ]]; then
+        if ! curl -fsSL -o /dev/null --head "$binary_url" 2>/dev/null; then
+            log_error "Binary URL not reachable: $binary_url"
+            return 1
+        fi
+        log_info "  Binary URL reachable: $binary_url"
+    fi
+}
+
+# =============================================================================
+# Promotion Validation Tests
+# =============================================================================
+
+test_promotion_config_fixup() {
+    if ! command -v jq &>/dev/null; then
+        log_warn "jq not available, skipping promotion test"
+        return 77
+    fi
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would validate promotion config fixup"
+        return 0
+    fi
+
+    # Fetch .repo file from current channel
+    local repo_url="${REPO_URL}/rpm${REPO_CHANNEL_SUFFIX}/rediacc.repo"
+    local repo_content
+    repo_content=$(curl -fsSL "$repo_url" 2>/dev/null) || {
+        log_error "Failed to fetch .repo from $repo_url"
+        return 1
+    }
+
+    # Verify it contains the current channel
+    if ! echo "$repo_content" | grep -q "${REPO_CHANNEL}"; then
+        log_error ".repo file does not contain channel '${REPO_CHANNEL}'"
+        return 1
+    fi
+    log_info "  .repo contains channel: ${REPO_CHANNEL}"
+
+    # Simulate promotion: sed-replace channel with 'stable'
+    local promoted
+    promoted=$(echo "$repo_content" | sed "s|/${REPO_CHANNEL}/|/stable/|g")
+
+    if ! echo "$promoted" | grep -q "/stable/"; then
+        log_error "Promotion sed-fix failed: /stable/ not found"
+        return 1
+    fi
+    if echo "$promoted" | grep -q "/${REPO_CHANNEL}/"; then
+        log_error "Promotion sed-fix incomplete: /${REPO_CHANNEL}/ still present"
+        return 1
+    fi
+    log_info "  Promotion sed-fix validated: ${REPO_CHANNEL} -> stable"
+}
+
+# =============================================================================
+# Channel Verification Tests
+# =============================================================================
+
+test_channel_verify() {
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would verify channel configuration"
+        return 0
+    fi
+
+    # Download binary from channel
+    local url
+    url="$(get_binary_url "linux" "x64" "$VERSION")"
+    local binary="/tmp/rdc-verify-$$"
+    curl -fsSL "$url" -o "$binary" || {
+        log_error "Failed to download binary from $url"
+        return 1
+    }
+    chmod +x "$binary"
+
+    # Verify binary runs
+    local ver_output
+    ver_output=$("$binary" --version 2>&1 || true)
+    if ! verify_version "$ver_output" "$VERSION"; then
+        log_error "Version mismatch: expected '$VERSION', got '$ver_output'"
+        rm -f "$binary"
+        return 1
+    fi
+    log_info "  Binary version: $ver_output"
+
+    # Verify channel resolution (via env var, simulating what install.sh configures)
+    local doctor_output
+    doctor_output=$(RDC_UPDATE_CHANNEL="${REPO_CHANNEL}" "$binary" doctor -o json 2>/dev/null || true)
+    if [[ -z "$doctor_output" ]] || ! command -v jq &>/dev/null; then
+        log_error "Failed to get doctor output or jq not available"
+        rm -f "$binary"
+        return 1
+    fi
+
+    local channel_value
+    channel_value=$(echo "$doctor_output" | jq -r '.Environment[] | select(.name == "Update channel") | .value' 2>/dev/null)
+    if [[ "$channel_value" != "${REPO_CHANNEL}" ]]; then
+        log_error "Channel mismatch: expected '${REPO_CHANNEL}', got '$channel_value'"
+        rm -f "$binary"
+        return 1
+    fi
+    log_info "  Channel verified: $channel_value"
+
+    local server_value
+    server_value=$(echo "$doctor_output" | jq -r '.Environment[] | select(.name == "Account server") | .value' 2>/dev/null)
+    if [[ -z "$server_value" ]]; then
+        log_error "Account server not found in doctor output"
+        rm -f "$binary"
+        return 1
+    fi
+    log_info "  Account server: $server_value"
+
+    # Verify manifest URL for this channel is reachable
+    local manifest_url="${RELEASES_BASE_URL}/cli/${REPO_CHANNEL}/manifest.json"
+    if curl -fsSL -o /dev/null --head "$manifest_url" 2>/dev/null; then
+        log_info "  Manifest reachable: $manifest_url"
+    else
+        log_error "Manifest not reachable: $manifest_url"
+        rm -f "$binary"
+        return 1
+    fi
+
+    rm -f "$binary"
+}
+
+# =============================================================================
 # Docker Tests
 # =============================================================================
 
 test_docker_pull_and_run() {
-    local tag="${VERSION}"
-    [[ "$tag" == "latest" ]] || tag="$VERSION"
-
+    # DOCKER_TAG env var overrides version-based tag (for staging images)
+    local tag="${DOCKER_TAG:-${VERSION}}"
     local image="${DOCKER_IMAGE}:${tag}"
 
     if [[ "$DRY_RUN" == "true" ]]; then
@@ -310,10 +483,10 @@ test_apt_install() {
         apt-get install -y -qq curl gnupg ca-certificates >/dev/null 2>&1
 
         # Add GPG key
-        curl -fsSL ${SITE_URL}/apt/gpg.key | gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
+        curl -fsSL ${REPO_URL}/apt${REPO_CHANNEL_SUFFIX}/gpg.key | gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
 
         # Add sources list
-        echo 'deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${SITE_URL}/apt stable main' > /etc/apt/sources.list.d/rediacc.list
+        echo 'deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${REPO_URL}/apt${REPO_CHANNEL_SUFFIX} stable main' > /etc/apt/sources.list.d/rediacc.list
 
         # Install
         apt-get update -qq
@@ -340,7 +513,7 @@ test_dnf_install() {
     docker run --rm "$distro" bash -c "
         set -e
         # Add repo
-        curl -fsSL ${SITE_URL}/rpm/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
+        curl -fsSL ${REPO_URL}/rpm${REPO_CHANNEL_SUFFIX}/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
 
         # Install
         dnf install -y ${PKG_NAME} >/dev/null 2>&1
@@ -365,17 +538,12 @@ test_apk_install() {
 
     docker run --rm "$distro" sh -c "
         set -e
-        # Add repository (unsigned for now — APK signing uses RSA, deferred)
-        echo '${SITE_URL}/apk/x86_64' >> /etc/apk/repositories
-        apk update --allow-untrusted 2>/dev/null || true
+        # Add APK repository (apk appends arch automatically)
+        echo '${REPO_URL}/apk${REPO_CHANNEL_SUFFIX}' >> /etc/apk/repositories
+        apk update --allow-untrusted
 
-        # Direct download and install
-        apk add --no-cache curl
-        curl -fsSL '${RELEASES_BASE_URL}/packages/v${VERSION}/${PKG_NAME}-${VERSION}-r1-amd64.apk' -o /tmp/${PKG_NAME}.apk || {
-            echo 'Direct download not available, trying repo install...'
-            apk add --no-cache --allow-untrusted ${PKG_NAME} 2>/dev/null || exit 1
-        }
-        [ -f /tmp/${PKG_NAME}.apk ] && apk add --no-cache --allow-untrusted /tmp/${PKG_NAME}.apk 2>/dev/null || true
+        # Install from repo
+        apk add --no-cache --allow-untrusted ${PKG_NAME}
 
         # Verify
         ${PKG_BINARY_NAME} --version
@@ -400,17 +568,12 @@ test_pacman_install() {
         # Add rediacc repository
         echo '[rediacc]' >> /etc/pacman.conf
         echo 'SigLevel = Optional TrustAll' >> /etc/pacman.conf
-        echo 'Server = ${SITE_URL}/archlinux/\\\$arch' >> /etc/pacman.conf
+        echo 'Server = ${REPO_URL}/archlinux${REPO_CHANNEL_SUFFIX}/\$arch' >> /etc/pacman.conf
 
-        pacman -Sy --noconfirm 2>/dev/null || true
+        pacman -Sy --noconfirm
 
-        # Try repo install first, fall back to direct download from R2
-        pacman -S --noconfirm ${PKG_NAME} 2>/dev/null || {
-            echo 'Pacman repo not available — downloading from R2...'
-            pacman -S --noconfirm curl 2>/dev/null || true
-            curl -fsSL '${RELEASES_BASE_URL}/packages/v${VERSION}/${PKG_NAME}-${VERSION}-1-x86_64.pkg.tar.zst' -o /tmp/${PKG_NAME}.pkg.tar.zst
-            pacman -U --noconfirm /tmp/${PKG_NAME}.pkg.tar.zst
-        }
+        # Install from repo
+        pacman -S --noconfirm ${PKG_NAME}
 
         # Verify
         ${PKG_BINARY_NAME} --version
@@ -472,13 +635,14 @@ test_quick_install() {
 
     docker run --rm \
         -e "REDIACC_RELEASES_URL=${RELEASES_BASE_URL}" \
+        -e "REDIACC_CHANNEL=${REPO_CHANNEL:-stable}" \
         "$distro" bash -c "
         set -e
         apt-get update -qq
         apt-get install -y -qq curl ca-certificates >/dev/null 2>&1
 
-        # Run install script
-        curl -fsSL ${SITE_URL}/install.sh | bash
+        # Run install script from channel
+        curl -fsSL ${REPO_URL}/cli${REPO_CHANNEL_SUFFIX}/install.sh | bash
 
         # Verify (install.sh puts binary in ~/.local/bin)
         ~/.local/bin/${PKG_BINARY_NAME} --version
@@ -491,7 +655,7 @@ test_quick_install() {
 
 # Resolve "latest" version from R2
 if [[ "$VERSION" == "latest" && -z "$LOCAL_ARTIFACTS" && "$DRY_RUN" == "false" ]]; then
-    LATEST_JSON=$(curl -fsSL "${RELEASES_BASE_URL}/cli/edge/latest.json" 2>/dev/null || echo "")
+    LATEST_JSON=$(curl -fsSL "${RELEASES_BASE_URL}/cli/${REPO_CHANNEL:-edge}/latest.json" 2>/dev/null || echo "")
     if [[ -n "$LATEST_JSON" ]] && command -v jq &>/dev/null; then
         RESOLVED=$(echo "$LATEST_JSON" | jq -r '.version' 2>/dev/null)
         if [[ -n "$RESOLVED" && "$RESOLVED" != "null" ]]; then
@@ -531,6 +695,29 @@ if [[ "$METHOD" == "binary" || "$METHOD" == "all" ]]; then
     elif [[ "$PLATFORM" == "win" ]]; then
         run_test "Binary Download (Windows ${ARCH})" test_binary_download win "$ARCH"
     fi
+    echo ""
+fi
+
+# Channel verification tests (binary + channel resolution + manifest)
+if [[ "$METHOD" == "verify" || "$METHOD" == "all" ]]; then
+    if [[ "$PLATFORM" == "linux" && -n "$REPO_CHANNEL" ]]; then
+        log_step "Channel Verification Tests"
+        run_test "Channel Verify (${REPO_CHANNEL})" test_channel_verify
+        echo ""
+    fi
+fi
+
+# Update check tests (manifest + binary URL reachability)
+if [[ "$METHOD" == "update" || "$METHOD" == "all" ]]; then
+    log_step "Update Check Tests"
+    run_test "Update Check (manifest)" test_update_check
+    echo ""
+fi
+
+# Promotion validation tests
+if [[ "$METHOD" == "promote" || "$METHOD" == "all" ]]; then
+    log_step "Promotion Validation Tests"
+    run_test "Promotion Config Fixup" test_promotion_config_fixup
     echo ""
 fi
 

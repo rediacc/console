@@ -1,66 +1,102 @@
 ---
 title: "Установка"
-description: "Установка CLI Rediacc на Linux, macOS или Windows."
+description: "Установите CLI Rediacc на Linux, macOS или Windows."
 category: "Guides"
 order: 1
 language: ru
-sourceHash: "f4d35bb8c2447783"
 ---
 
 # Установка
 
-Установите CLI `rdc` на вашу рабочую станцию. Это единственный инструмент, который нужно установить вручную — всё остальное обрабатывается автоматически при настройке удаленных машин.
+Установите CLI `rdc` на свою рабочую станцию. Это единственный инструмент, который нужно установить вручную -- все остальное обрабатывается автоматически при настройке удаленных машин.
 
-## Linux и macOS
+## Быстрая установка
 
-Запустите скрипт установки:
+### Linux и macOS
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
-Эта команда загружает бинарный файл `rdc` в `$HOME/.local/bin/`. Убедитесь, что эта директория добавлена в PATH:
+Эта команда загружает бинарный файл `rdc` в `$HOME/.local/bin/`. Убедитесь, что этот каталог присутствует в вашем PATH:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-Добавьте эту строку в профиль вашей оболочки (`~/.bashrc`, `~/.zshrc` и т.д.), чтобы сделать это постоянным.
+Добавьте эту строку в профиль вашей оболочки (`~/.bashrc`, `~/.zshrc` и т.д.), чтобы сделать изменение постоянным.
 
-## Windows
+### Windows
 
-Запустите скрипт установки в PowerShell:
+Выполните в PowerShell:
 
 ```powershell
 irm https://www.rediacc.com/install.ps1 | iex
 ```
 
-Это загружает исполняемый файл `rdc.exe` в `%LOCALAPPDATA%\rediacc\bin\`. Убедитесь, что этот каталог добавлен в PATH. Установщик предложит добавить его, если он ещё не присутствует.
+Эта команда загружает `rdc.exe` в `%LOCALAPPDATA%\rediacc\bin\`. Установщик предложит добавить его в PATH при необходимости.
 
-## Alpine Linux (APK)
+## Менеджеры пакетов
+
+### APT (Debian / Ubuntu)
 
 ```bash
-# Add the repository
-echo "https://www.rediacc.com/apk/x86_64" | sudo tee -a /etc/apk/repositories
+curl -fsSL https://releases.rediacc.com/apt/stable/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
+echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/stable stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
+sudo apt-get update && sudo apt-get install rediacc-cli
+```
 
-# Install
+### DNF (Fedora / RHEL)
+
+```bash
+sudo curl -fsSL https://releases.rediacc.com/rpm/stable/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
+sudo dnf install rediacc-cli
+```
+
+### APK (Alpine Linux)
+
+```bash
+echo "https://releases.rediacc.com/apk/stable" | sudo tee -a /etc/apk/repositories
 sudo apk update
 sudo apk add --allow-untrusted rediacc-cli
 ```
 
 Примечание: Пакет `gcompat` (слой совместимости с glibc) устанавливается автоматически как зависимость.
 
-## Arch Linux (Pacman)
+### Pacman (Arch Linux)
 
 ```bash
-# Add the repository to /etc/pacman.conf
 echo "[rediacc]
 SigLevel = Optional TrustAll
-Server = https://www.rediacc.com/archlinux/\$arch" | sudo tee -a /etc/pacman.conf
+Server = https://releases.rediacc.com/archlinux/stable/\$arch" | sudo tee -a /etc/pacman.conf
 
-# Install
 sudo pacman -Sy rediacc-cli
 ```
+
+## Docker
+
+Загрузите и запустите CLI как контейнер:
+
+```bash
+docker pull ghcr.io/rediacc/elite/cli:stable
+
+docker run --rm ghcr.io/rediacc/elite/cli:stable --version
+```
+
+Создайте псевдоним для удобства:
+
+```bash
+alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable'
+```
+
+Доступные теги Docker:
+
+| Тег | Описание |
+|-----|----------|
+| `:stable` | Последний стабильный релиз (рекомендуется) |
+| `:edge` | Последний edge-релиз |
+| `:0.8.4` | Фиксированная версия (неизменяемая) |
+| `:latest` | Псевдоним для `:stable` |
 
 ## Проверка установки
 
@@ -68,55 +104,95 @@ sudo pacman -Sy rediacc-cli
 rdc --version
 ```
 
-Вы должны увидеть номер установленной версии.
-
 ## Обновление
 
-Для обновления `rdc` до последней версии:
+Обновить до последней версии:
 
 ```bash
 rdc update
 ```
 
-Для проверки наличия обновлений без установки:
+Проверить наличие обновлений без установки:
 
 ```bash
 rdc update --check-only
 ```
 
-Для отката к предыдущей версии после обновления:
+Просмотреть текущий статус обновления:
+
+```bash
+rdc update --status
+```
+
+Откатить до предыдущей версии:
 
 ```bash
 rdc update rollback
 ```
 
-### Каналы обновлений
+## Каналы выпуска
 
-CLI поддерживает два канала выпуска:
-- **stable** (по умолчанию): тщательно протестированные релизы, рекомендуется для продакшена
-- **edge**: новейшие функции и исправления ошибок, обновляется с каждым релизом
+Rediacc использует систему выпуска на основе каналов. Канал определяет, какую версию вы получаете при обновлениях CLI, установках через менеджеры пакетов и загрузках Docker.
+
+| Канал | Описание | Когда обновляется |
+|-------|----------|-------------------|
+| `stable` | Релизы для продакшена | Продвигается из edge после 7-дневного тестирования |
+| `edge` | Последние функции и исправления | При каждом мерже в main |
+| `pr-N` | Превью-сборки PR | Автоматически для каждого pull request |
+
+### Переключение каналов
 
 ```bash
 rdc update --channel edge      # Переключиться на канал edge
 rdc update --channel stable    # Вернуться на канал stable
-rdc update --status            # Показать текущий канал и версию
 ```
 
-Для установки напрямую из канала edge:
+Установить напрямую из канала edge:
+
 ```bash
 REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
-### Remote Binary Updates
+Для менеджеров пакетов замените `stable` на `edge` в URL репозитория:
 
-When you run commands against a remote machine, the CLI automatically provisions the matching `renet` binary. If the binary is updated, the route server (`rediacc-router`) is restarted automatically so it picks up the new version.
+```bash
+# APT edge
+echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
 
-The restart is transparent and causes **no downtime**:
+# Docker edge
+docker pull ghcr.io/rediacc/elite/cli:edge
+```
 
-- The route server restarts in ~1–2 seconds.
-- During that window, Traefik continues serving traffic using its last known routing configuration. No routes are dropped.
-- Traefik picks up the new configuration on its next poll cycle (within 5 seconds).
-- **Existing client connections (HTTP, TCP, UDP) are not affected.** The route server is a configuration provider — it is not in the data path. Traefik handles all traffic directly.
-- Your application containers are not touched — only the system-level route server process is restarted.
+### Как работают каналы
 
-To skip the automatic restart, pass `--skip-router-restart` to any command, or set the `RDC_SKIP_ROUTER_RESTART=1` environment variable.
+Канал применяется единообразно ко всем методам доставки:
+
+- **Скрипты установки**: Переменная окружения `REDIACC_CHANNEL` выбирает канал
+- **Репозитории пакетов**: `releases.rediacc.com/{формат}/{канал}/`
+- **Теги Docker**: `ghcr.io/rediacc/elite/cli:{канал}`
+- **Обновления CLI**: `rdc update` проверяет канал, настроенный при установке
+
+### Автоматическая настройка превью PR
+
+При установке из развертывания превью PR (например, `pr-420.rediacc.workers.dev`) канал и сервер аккаунта настраиваются автоматически:
+
+- Бинарный файл CLI загружается из канала `pr-420`
+- `rdc update` проверяет канал `pr-420` на наличие обновлений
+- Все команды аккаунта/подписки подключаются к серверу превью PR
+- Команды Docker на сайте превью показывают `cli:pr-420`
+
+Ручная настройка не требуется. Скрипт установки определяет контекст развертывания из URL.
+
+## Обновления удаленных бинарных файлов
+
+При выполнении команд на удаленной машине CLI автоматически предоставляет соответствующий бинарный файл `renet`. Если бинарный файл обновляется, маршрутный сервер (`rediacc-router`) автоматически перезапускается для подхвата новой версии.
+
+Перезапуск прозрачен и не вызывает **простоя**:
+
+- Маршрутный сервер перезапускается за ~1-2 секунды.
+- В течение этого окна Traefik продолжает обслуживать трафик, используя последнюю известную конфигурацию маршрутизации. Маршруты не теряются.
+- Traefik подхватывает новую конфигурацию в следующем цикле опроса (в течение 5 секунд).
+- **Существующие клиентские подключения (HTTP, TCP, UDP) не затрагиваются.** Маршрутный сервер является поставщиком конфигурации -- он не находится на пути данных. Traefik обрабатывает весь трафик напрямую.
+- Контейнеры ваших приложений не затрагиваются -- перезапускается только системный процесс маршрутного сервера.
+
+Чтобы пропустить автоматический перезапуск, передайте `--skip-router-restart` любой команде или установите переменную окружения `RDC_SKIP_ROUTER_RESTART=1`.

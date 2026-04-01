@@ -34,7 +34,7 @@
     "rdc": "./dist/cli-bundle.cjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.28.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@opentelemetry/api-logs": "^0.214.0",
     "@opentelemetry/context-zone": "^2.5.0",
     "@opentelemetry/core": "^2.6.0",

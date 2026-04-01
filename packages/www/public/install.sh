@@ -256,8 +256,8 @@ main() {
       fi
     fi
 
-    # Write server.json
-    local server_json="{\"accountServer\":\"$SERVER_URL\""
+    # Write server.json (includes channel so rdc update uses the same channel)
+    local server_json="{\"accountServer\":\"$SERVER_URL\",\"updateChannel\":\"$CHANNEL\""
     if [[ -n "$e2e_key" ]]; then
       server_json="$server_json,\"e2ePublicKey\":\"$e2e_key\""
     fi

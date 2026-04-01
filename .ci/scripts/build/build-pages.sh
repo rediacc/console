@@ -76,9 +76,6 @@ if [[ -f "dist/cli-manifest/manifest.json" ]]; then
     log_info "Copied CLI manifest to $OUTPUT_DIR/cli/{edge,stable}/"
 fi
 
-# Note: apt/ and rpm/ directories are added by build-pkg-repo.sh
-# directly into the output directory after this script runs
-
 # Copy assembled pages to www worker static assets directory
 REPO_ROOT="$(get_repo_root)"
 WORKER_DIR="$REPO_ROOT/workers/www"
@@ -93,5 +90,3 @@ log_info "  - Root:     www.rediacc.com (marketing site)"
 log_info "  - /console: www.rediacc.com/console/ (web app)"
 log_info "  - /json:    www.rediacc.com/json/ (template catalog)"
 log_info "  - /cli:     www.rediacc.com/cli/ (CLI update manifest)"
-log_info "  - /apt:     www.rediacc.com/apt/ (APT repository)"
-log_info "  - /rpm:     www.rediacc.com/rpm/ (RPM repository)"

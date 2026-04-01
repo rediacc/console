@@ -145,6 +145,25 @@ cd packages/www && npm run build
 cd packages/www && npm run dev
 ```
 
+## Versioning
+
+Version source of truth: **git tags** (e.g., `v0.8.3`). No version bump commits.
+
+- `resolve-version.sh --current` reads latest tag, `--bump-type patch|minor|major` calculates next
+- Version injected at build time, never stored in source files
+- `package.json` files contain `0.0.0-dev` placeholder (never published to npm)
+
+| Component | Injection method |
+|-----------|-----------------|
+| CLI binary | `CLI_VERSION` env -> esbuild `--define:__CLI_VERSION__` |
+| CLI Docker | Same as CLI binary (bundle built with env) |
+| www footer | `APP_VERSION` env / git tag fallback |
+| web console | `VITE_APP_VERSION` env |
+| renet (Go) | `-ldflags "-X main.Version=..."` |
+| middleware (C#) | `/p:Version=...` MSBuild arg |
+
+`bump.sh` still used by: desktop (electron-builder reads package.json), middleware (.csproj), CLI (npm pack tarball name). These run only on push-to-main.
+
 ## Release Channels
 
 The CLI supports two release channels:
@@ -156,6 +175,28 @@ R2 structure: `rediacc-releases/cli/{edge,stable}/{manifest.json,latest.json,rdc
 Environments:
 - `edge.rediacc.com` -- auto-deployed on merge to main, D1 cloned from production daily
 - `www.rediacc.com` -- production, promoted from edge after 7-day soak
+
+## CI/CD Pipeline
+
+Single pipeline: CI validates everything BEFORE publish. CD is a thin promote step.
+
+```
+CI: quality -> build -> dry-run -> validate install (6 platforms) -> ci-complete
+CD (auto on CI success): promote Docker -> git tag -> GitHub Release -> R2 upload -> deploy edge
+```
+
+Install validation runs pre-publish against R2 staging artifacts. Docker validated on push-to-main only (PR images are dry-run). If CI fails, CD never triggers.
+
+CD manual dispatch: `gh workflow run "Console CD" -f ci_run_id=<id> -f release_mode=patch|minor|major|retry`
+
+## Dev Scripts (`scripts/dev/`)
+
+| Script | Purpose |
+|--------|---------|
+| `rotate-secrets.sh` | Rotate CF tokens, R2, Turnstile, AWS SES keys. Syncs to workers, self-destructs credentials. |
+| `backup-d1.sh` | Export production/edge D1 databases to `.backups/` |
+| `sync-env.sh` | Pull GitHub variables into `private/account/.env` |
+| `lib/cf-auth.sh` | Shared Cloudflare + AWS auth helpers |
 
 ## Quality Gates (`npm run ci`)
 

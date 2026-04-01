@@ -19,18 +19,18 @@ import { telemetryService } from './telemetry.js';
 import { loadServerConfig } from './subscription-auth.js';
 import { getStagedBinaryPath, readUpdateState, writeUpdateState } from './update-state.js';
 
-const MANIFEST_BASE_URL = 'https://www.rediacc.com/cli';
+const MANIFEST_BASE_URL = 'https://releases.rediacc.com/cli';
 const CHECK_TIMEOUT_MS = 3000;
 const DOWNLOAD_TIMEOUT_MS = 120_000;
 
 /** Resolve the active release channel from env, server.json, or default. */
 export function resolveChannel(): ReleaseChannel {
   const envChannel = process.env.RDC_UPDATE_CHANNEL;
-  if (envChannel === 'edge' || envChannel === 'stable') return envChannel;
+  if (envChannel) return envChannel;
 
   try {
     const serverConfig = loadServerConfig();
-    if (serverConfig?.updateChannel === 'edge' || serverConfig?.updateChannel === 'stable') {
+    if (serverConfig?.updateChannel) {
       return serverConfig.updateChannel;
     }
   } catch {

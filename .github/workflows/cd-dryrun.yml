@@ -8,19 +8,16 @@ name: CD - Dry Run (Reusable)
 # - Builds Pages bundle (www + apt/rpm metadata)
 # - Stages Docker images
 # - Validates all artifacts
-# - Uploads staging artifacts (when !dry_run)
+# - Uploads staging artifacts (when push-to-main)
 
 on:
   workflow_call:
     inputs:
-      dry_run:
-        type: boolean
-        required: false
-        default: false
       next_version:
         type: string
         required: false
-      staging_tag:
+      channel:
+        description: 'Release channel (e.g., pr-123, edge, stable)'
         type: string
         required: false
       api_tag:
@@ -53,10 +50,16 @@ on:
         required: false
       GPG_PASSPHRASE:
         required: false
+      R2_ACCESS_KEY_ID:
+        required: false
+      R2_SECRET_ACCESS_KEY:
+        required: false
+      R2_ENDPOINT:
+        required: false
 
 permissions:
   contents: read
-  packages: write   # GHCR pull + retag push when !dry_run
+  packages: write   # GHCR pull + retag push when push-to-main
   id-token: write   # OIDC token for Sigstore signing
   attestations: write  # Store attestations on GitHub
 
@@ -172,12 +175,12 @@ jobs:
         run: |
           VERSION="${{ inputs.next_version }}"
 
-          # Build repos using the packages we just built
+          # Build self-contained repos (packages alongside metadata)
           .ci/scripts/build/build-pkg-repo.sh \
             --version "$VERSION" \
             --local-pkgs dist/packages \
-            --output dist/pages \
-            --max-versions 3
+            --output dist/repos \
+            --channel "${{ inputs.channel }}"
         env:
           GH_TOKEN: ${{ github.token }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
@@ -195,18 +198,14 @@ jobs:
 
       - name: Stage Docker images
         run: |
-          STAGING_TAG="${{ inputs.staging_tag }}"
-          DRY_RUN_FLAG=""
-          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
-            DRY_RUN_FLAG="--dry-run"
-          fi
+          CHANNEL="${{ inputs.channel }}"
 
-          .ci/scripts/docker/retag-image.sh --image api --from "${{ inputs.api_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
-          .ci/scripts/docker/retag-image.sh --image bridge --from "${{ inputs.bridge_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
-          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "${{ inputs.plugins_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
-          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "${{ inputs.plugins_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
-          .ci/scripts/docker/retag-image.sh --image web --from "${{ inputs.web_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
-          .ci/scripts/docker/retag-image.sh --image cli --from "${{ inputs.cli_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image api --from "${{ inputs.api_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag-image.sh --image bridge --from "${{ inputs.bridge_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "${{ inputs.plugins_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "${{ inputs.plugins_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag-image.sh --image web --from "${{ inputs.web_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag-image.sh --image cli --from "${{ inputs.cli_tag }}" --to "$CHANNEL"
 
       # -----------------------------------------------------------------------
       # Step 6: Clean up debug artifacts
@@ -220,7 +219,7 @@ jobs:
       - name: Validate artifacts
         id: validate
         run: |
-          MODE="${{ inputs.dry_run == true && '(DRY-RUN) ' || '' }}"
+          MODE="${{ github.event_name != 'push' && '(DRY-RUN) ' || '' }}"
           echo "## ${MODE}Dry-Run Validation Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
@@ -232,8 +231,8 @@ jobs:
           APK_COUNT=$(find dist/packages -name "*.apk" 2>/dev/null | wc -l)
           ARCH_COUNT=$(find dist/packages -name "*.pkg.tar.zst" 2>/dev/null | wc -l)
           PAGES_SIZE=$(du -sh dist/pages/ 2>/dev/null | cut -f1 || echo "N/A")
-          APT_FILES=$(find dist/pages/apt/dists -type f 2>/dev/null | wc -l)
-          RPM_FILES=$(find dist/pages/rpm/repodata -type f 2>/dev/null | wc -l)
+          APT_FILES=$(find dist/repos/apt/dists -type f 2>/dev/null | wc -l)
+          RPM_FILES=$(find dist/repos/rpm/repodata -type f 2>/dev/null | wc -l)
 
           echo "| Artifact | Count/Size |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|------------|" >> $GITHUB_STEP_SUMMARY
@@ -245,7 +244,7 @@ jobs:
           echo "| RPM metadata | $RPM_FILES files |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** v${{ inputs.next_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Staging Tag:** ${{ inputs.staging_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Channel:** ${{ inputs.channel }}" >> $GITHUB_STEP_SUMMARY
 
           FAILED=false
 
@@ -294,34 +293,20 @@ jobs:
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
-            echo "**Status:** All validation passed. Dry-run complete." >> $GITHUB_STEP_SUMMARY
-          else
+          if [[ "${{ github.event_name }}" == "push" ]]; then
             echo "**Status:** All validation passed. Ready for publish." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Status:** All validation passed." >> $GITHUB_STEP_SUMMARY
           fi
           echo "passed=true" >> $GITHUB_OUTPUT
 
-      # -----------------------------------------------------------------------
-      # Step 8: Pre-release install method validation (binary only)
-      # Runs the built linux-x64 binary to verify it works before publish
-      # -----------------------------------------------------------------------
-      # The CI build workflow applies `bump.sh --version next_version` BEFORE compiling,
-      # so the binary reports next_version, not the version in version.ts on disk.
-      - name: Test install methods (pre-release)
-        if: ${{ !inputs.dry_run && steps.validate.outputs.passed == 'true' }}
-        run: |
-          .ci/scripts/test/test-install-methods.sh \
-            --method binary \
-            --version ${{ inputs.next_version }} \
-            --platform linux \
-            --arch x64 \
-            --local-artifacts dist/
+      # Install validation handled by validate-install job in ci.yml (6 platforms).
 
       # -----------------------------------------------------------------------
       # Upload preview pages artifact (dry-run mode for PR preview deploys)
       # -----------------------------------------------------------------------
       - name: Upload preview pages artifact
-        if: ${{ inputs.upload_pages && inputs.dry_run }}
+        if: ${{ inputs.upload_pages && github.event_name != 'push' }}
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: preview-pages-${{ github.sha }}
@@ -329,10 +314,10 @@ jobs:
           retention-days: 1
 
       # -----------------------------------------------------------------------
-      # Upload staging artifacts for publish job (only when !dry_run)
+      # Upload staging artifacts for publish job (only when push-to-main)
       # -----------------------------------------------------------------------
       - name: Upload staging release artifact
-        if: ${{ !inputs.dry_run }}
+        if: github.event_name == 'push'
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: staging-release-${{ github.sha }}
@@ -343,7 +328,7 @@ jobs:
           retention-days: 1
 
       - name: Upload staging pages artifact
-        if: ${{ !inputs.dry_run }}
+        if: github.event_name == 'push'
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: staging-pages-${{ github.sha }}
@@ -351,10 +336,48 @@ jobs:
           retention-days: 1
 
       # -----------------------------------------------------------------------
+      # Upload to R2 staging (pre-publish validation needs ALL artifacts on R2)
+      # -----------------------------------------------------------------------
+      - name: Upload artifacts to R2 channel
+        if: inputs.channel != ''
+        run: |
+          .ci/scripts/deploy/upload-to-r2.sh \
+            --version "${{ inputs.next_version }}" \
+            --channel "${{ inputs.channel }}"
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+
+      - name: Upload repos to R2 channel
+        if: inputs.channel != ''
+        run: |
+          CHANNEL="${{ inputs.channel }}"
+          export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
+          export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
+          export AWS_DEFAULT_REGION="auto"
+          for dir in apt rpm apk archlinux; do
+            if [[ -d "dist/repos/$dir" ]]; then
+              aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/${dir}/${CHANNEL}/" \
+                --endpoint-url "$R2_ENDPOINT" --quiet
+            fi
+          done
+          # Upload install scripts
+          for f in dist/pages/install.sh dist/pages/install.ps1; do
+            [[ -f "$f" ]] && aws s3 cp "$f" "s3://rediacc-releases/cli/${CHANNEL}/$(basename "$f")" \
+              --endpoint-url "$R2_ENDPOINT" --quiet
+          done
+          echo "Repos uploaded to R2 channel: ${CHANNEL}"
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+
+      # -----------------------------------------------------------------------
       # Attest staging artifacts (Sigstore provenance for supply chain integrity)
       # -----------------------------------------------------------------------
       - name: Attest staging release artifact
-        if: ${{ !inputs.dry_run }}
+        if: github.event_name == 'push'
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32  # v4
         with:
           subject-path: |
@@ -363,7 +386,7 @@ jobs:
             dist/packages/**/*
 
       - name: Attest staging pages artifact
-        if: ${{ !inputs.dry_run }}
+        if: github.event_name == 'push'
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32  # v4
         with:
           subject-path: |

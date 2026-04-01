@@ -124,7 +124,7 @@ class CliTelemetryService implements TelemetryHandler {
     // server.json channel is resolved later by the updater; for telemetry
     // resource attributes, env var is sufficient since it's set at startup.
     const envChannel = process.env.RDC_UPDATE_CHANNEL;
-    if (envChannel === 'edge' || envChannel === 'stable') return envChannel;
+    if (envChannel) return envChannel;
     return UPDATE_DEFAULTS.CHANNEL;
   }
 

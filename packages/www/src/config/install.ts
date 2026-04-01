@@ -1,4 +1,8 @@
 import { SITE_URL } from './constants';
+import { UPDATE_DEFAULTS } from '@rediacc/shared/config/defaults';
+
+const RELEASES_URL = 'https://releases.rediacc.com';
+const CHANNEL = import.meta.env.PUBLIC_REPO_CHANNEL ?? UPDATE_DEFAULTS.CHANNEL;
 
 export type Platform = 'linux' | 'macos' | 'windows';
 
@@ -58,32 +62,32 @@ Invoke-WebRequest -Uri https://releases.rediacc.com/cli/stable/rdc-win-arm64.exe
 };
 
 export const DOCKER_COMMANDS = `# Pull the image
-docker pull ghcr.io/rediacc/elite/cli:latest
+docker pull ghcr.io/rediacc/elite/cli:${CHANNEL}
 
 # Run a command
-docker run --rm ghcr.io/rediacc/elite/cli:latest --version
+docker run --rm ghcr.io/rediacc/elite/cli:${CHANNEL} --version
 
 # Create an alias for convenience
-alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:latest'`;
+alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:${CHANNEL}'`;
 
-export const APT_COMMANDS = `curl -fsSL ${SITE_URL}/apt/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
-echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${SITE_URL}/apt stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
+export const APT_COMMANDS = `curl -fsSL ${RELEASES_URL}/apt/${CHANNEL}/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
+echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${RELEASES_URL}/apt/${CHANNEL} stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
 sudo apt-get update && sudo apt-get install rediacc-cli`;
 
-export const DNF_COMMANDS = `sudo curl -fsSL ${SITE_URL}/rpm/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
+export const DNF_COMMANDS = `sudo curl -fsSL ${RELEASES_URL}/rpm/${CHANNEL}/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
 sudo dnf install rediacc-cli`;
 
 export const APK_COMMANDS = `# Add the repository
-echo "${SITE_URL}/apk/x86_64" | sudo tee -a /etc/apk/repositories
+echo "${RELEASES_URL}/apk/${CHANNEL}" | sudo tee -a /etc/apk/repositories
 
-# Install (unsigned repo — use --allow-untrusted)
+# Install (unsigned repo -- use --allow-untrusted)
 sudo apk update
 sudo apk add --allow-untrusted rediacc-cli`;
 
 export const PACMAN_COMMANDS = `# Add the repository to /etc/pacman.conf
 echo "[rediacc]
 SigLevel = Optional TrustAll
-Server = ${SITE_URL}/archlinux/\\$arch" | sudo tee -a /etc/pacman.conf
+Server = ${RELEASES_URL}/archlinux/${CHANNEL}/\\$arch" | sudo tee -a /etc/pacman.conf
 
 # Install
 sudo pacman -Sy rediacc-cli`;
