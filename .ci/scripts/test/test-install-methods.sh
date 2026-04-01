@@ -5,7 +5,7 @@
 #
 # Options:
 #   --dry-run            Print commands without executing
-#   --method <method>    Test specific method: binary, update, docker, apt, dnf, apk, pacman, homebrew, quick, all (default: all)
+#   --method <method>    Test specific method: binary, update, promote, docker, apt, dnf, apk, pacman, homebrew, quick, all (default: all)
 #   --version <ver>      Version to test (default: latest)
 #   --platform <plat>    Platform: linux, mac, win (default: auto-detect)
 #   --arch <arch>        Architecture: x64, arm64 (default: auto-detect)
@@ -327,6 +327,51 @@ test_update_check() {
 }
 
 # =============================================================================
+# Promotion Validation Tests
+# =============================================================================
+
+test_promotion_config_fixup() {
+    if ! command -v jq &>/dev/null; then
+        log_warn "jq not available, skipping promotion test"
+        return 77
+    fi
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would validate promotion config fixup"
+        return 0
+    fi
+
+    # Fetch .repo file from current channel
+    local repo_url="${REPO_URL}/rpm${REPO_CHANNEL_SUFFIX}/rediacc.repo"
+    local repo_content
+    repo_content=$(curl -fsSL "$repo_url" 2>/dev/null) || {
+        log_error "Failed to fetch .repo from $repo_url"
+        return 1
+    }
+
+    # Verify it contains the current channel
+    if ! echo "$repo_content" | grep -q "${REPO_CHANNEL}"; then
+        log_error ".repo file does not contain channel '${REPO_CHANNEL}'"
+        return 1
+    fi
+    log_info "  .repo contains channel: ${REPO_CHANNEL}"
+
+    # Simulate promotion: sed-replace channel with 'stable'
+    local promoted
+    promoted=$(echo "$repo_content" | sed "s|/${REPO_CHANNEL}/|/stable/|g")
+
+    if ! echo "$promoted" | grep -q "/stable/"; then
+        log_error "Promotion sed-fix failed: /stable/ not found"
+        return 1
+    fi
+    if echo "$promoted" | grep -q "/${REPO_CHANNEL}/"; then
+        log_error "Promotion sed-fix incomplete: /${REPO_CHANNEL}/ still present"
+        return 1
+    fi
+    log_info "  Promotion sed-fix validated: ${REPO_CHANNEL} -> stable"
+}
+
+# =============================================================================
 # Docker Tests
 # =============================================================================
 
@@ -587,6 +632,13 @@ fi
 if [[ "$METHOD" == "update" || "$METHOD" == "all" ]]; then
     log_step "Update Check Tests"
     run_test "Update Check (manifest)" test_update_check
+    echo ""
+fi
+
+# Promotion validation tests
+if [[ "$METHOD" == "promote" || "$METHOD" == "all" ]]; then
+    log_step "Promotion Validation Tests"
+    run_test "Promotion Config Fixup" test_promotion_config_fixup
     echo ""
 fi
 

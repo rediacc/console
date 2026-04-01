@@ -452,27 +452,26 @@ jobs:
             --version "$VERSION" \
             --local-pkgs dist/packages \
             --output dist/repos \
-            --channel stable
+            --channel edge
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
-      # Step 6: Upload self-contained repos to R2 edge + stable channels
-      - name: Upload repos to R2 (edge + stable)
+      # Step 6: Upload self-contained repos to R2 edge channel
+      # Stable promotion is handled by promote-stable.yml after 7-day soak.
+      - name: Upload repos to R2 (edge)
         run: |
           export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
           export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
           export AWS_DEFAULT_REGION="auto"
-          for channel in edge stable; do
-            for dir in apt rpm apk archlinux; do
-              if [[ -d "dist/repos/$dir" ]]; then
-                aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/${dir}/${channel}/" \
-                  --endpoint-url "$R2_ENDPOINT" --quiet
-              fi
-            done
+          for dir in apt rpm apk archlinux; do
+            if [[ -d "dist/repos/$dir" ]]; then
+              aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/${dir}/edge/" \
+                --endpoint-url "$R2_ENDPOINT" --quiet
+            fi
           done
-          echo "Repos uploaded to R2 edge + stable channels"
+          echo "Repos uploaded to R2 edge channel"
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -501,25 +500,8 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
-      # -----------------------------------------------------------------------
-      # Promote CLI + Desktop from edge to stable
-      # CI already uploaded to edge on push-to-main. Repos were rebuilt above
-      # with --channel stable and uploaded. Only CLI/desktop need copying.
-      # -----------------------------------------------------------------------
-      - name: Promote CLI + Desktop to stable
-        run: |
-          export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
-          export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
-          export AWS_DEFAULT_REGION="auto"
-          aws s3 sync "s3://rediacc-releases/cli/edge/" "s3://rediacc-releases/cli/stable/" \
-            --endpoint-url "$R2_ENDPOINT" --quiet
-          aws s3 sync "s3://rediacc-releases/desktop/edge/" "s3://rediacc-releases/desktop/stable/" \
-            --endpoint-url "$R2_ENDPOINT" --quiet
-          echo "CLI + Desktop promoted from edge to stable"
-        env:
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      # Stable promotion (CLI, desktop, repos, Docker :stable) is handled by
+      # promote-stable.yml after 7-day soak. CD only publishes to edge.
 
       # -----------------------------------------------------------------------
       # Final summary

@@ -136,12 +136,8 @@ retag_image() {
             log_error "Failed to re-tag $src -> $dst_latest"
             return 1
         fi
-        local dst_stable="${PUBLISH_DOCKER_REGISTRY}/${name}:stable"
-        if ! docker buildx imagetools create -t "$dst_stable" "$src"; then
-            log_error "Failed to re-tag $src -> $dst_stable"
-            return 1
-        fi
-        log_info "Pushed :latest + :stable tags"
+        log_info "Pushed :latest tag"
+        # Note: :stable tag is pushed by promote-stable.yml after 7-day soak
     fi
 
     log_info "Re-tagged $name successfully"
