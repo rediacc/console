@@ -118,8 +118,8 @@ jobs:
           # Copy all channel artifacts from edge to stable
           for dir in cli desktop apt rpm apk archlinux; do
             echo "Promoting ${dir}/edge/ -> ${dir}/stable/"
-            aws s3 sync "s3://${BUCKET}/${dir}/edge/" "s3://${BUCKET}/${dir}/stable/" \
-              --endpoint-url "$R2_ENDPOINT" --copy-props none --quiet
+            aws s3 cp "s3://${BUCKET}/${dir}/edge/" "s3://${BUCKET}/${dir}/stable/" \
+              --endpoint-url "$R2_ENDPOINT" --recursive --quiet
           done
 
           # Fix channel-specific config files (they reference 'edge' in URLs)
