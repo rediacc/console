@@ -10,7 +10,8 @@ import { configService } from '../services/config-resources.js';
 import { getEmbeddedMetadata, isSEA as isSEAEmbedded } from '../services/embedded-assets.js';
 import { fetchSubscriptionLicenseReport } from '../services/license.js';
 import { outputService } from '../services/output.js';
-import { getSubscriptionTokenState } from '../services/subscription-auth.js';
+import { getSubscriptionTokenState, loadServerConfig } from '../services/subscription-auth.js';
+import { resolveChannel } from '../services/updater.js';
 import type { OutputFormat } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
 import { isSEA } from '../utils/platform.js';
@@ -85,6 +86,12 @@ function checkEnvironment(): CheckSection {
     {
       name: t('commands.doctor.checks.seaMode'),
       value: isSEA() ? t('commands.doctor.seaActive') : t('commands.doctor.devMode'),
+      status: 'ok',
+    },
+    { name: 'Update channel', value: resolveChannel(), status: 'ok' },
+    {
+      name: 'Account server',
+      value: loadServerConfig()?.accountServer ?? 'https://www.rediacc.com',
       status: 'ok',
     },
     checkToolVersion(

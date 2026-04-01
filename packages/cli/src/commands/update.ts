@@ -7,6 +7,8 @@ import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { applyPendingUpdate } from '../services/background-updater.js';
 import { outputService } from '../services/output.js';
+import { loadServerConfig } from '../services/subscription-auth.js';
+import { resolveChannel } from '../services/updater.js';
 import { readUpdateState, writeUpdateState } from '../services/update-state.js';
 import { checkForUpdate, performUpdate } from '../services/updater.js';
 import { handleError } from '../utils/errors.js';
@@ -206,7 +208,10 @@ async function handleStatus(): Promise<void> {
   const state = await readUpdateState();
 
   const lines: string[] = [];
+  const serverConfig = loadServerConfig();
   lines.push(`Current version: ${VERSION}`);
+  lines.push(`Channel: ${resolveChannel()}`);
+  lines.push(`Account server: ${serverConfig?.accountServer ?? 'https://www.rediacc.com'}`);
   lines.push(`Auto-update: ${isSEA() ? 'enabled' : 'disabled (not SEA)'}`);
   lines.push(`Last check: ${state.lastCheckAt ?? STATUS_DEFAULTS.NEVER}`);
   lines.push(`Last attempt: ${state.lastAttemptAt ?? STATUS_DEFAULTS.NEVER}`);
