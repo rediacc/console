@@ -205,7 +205,7 @@ jobs:
         if: steps.skip-check.outputs.skip_release != 'true'
         id: channel
         run: |
-          echo "channel=${{ steps.resolve.outputs.ci_sha }}" >> $GITHUB_OUTPUT
+          echo "channel=edge" >> $GITHUB_OUTPUT
 
       # Version guard: fail early if this version was already published (skip in retry mode)
       - name: Check for existing release
