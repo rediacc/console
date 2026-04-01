@@ -5,7 +5,7 @@
 #
 # Options:
 #   --dry-run            Print commands without executing
-#   --method <method>    Test specific method: binary, update, promote, docker, apt, dnf, apk, pacman, homebrew, quick, all (default: all)
+#   --method <method>    Test specific method: binary, verify, update, promote, docker, apt, dnf, apk, pacman, homebrew, quick, all (default: all)
 #   --version <ver>      Version to test (default: latest)
 #   --platform <plat>    Platform: linux, mac, win (default: auto-detect)
 #   --arch <arch>        Architecture: x64, arm64 (default: auto-detect)
@@ -372,6 +372,68 @@ test_promotion_config_fixup() {
 }
 
 # =============================================================================
+# Channel Verification Tests
+# =============================================================================
+
+test_channel_verify() {
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would verify channel configuration"
+        return 0
+    fi
+
+    # Download binary from channel
+    local url
+    url="$(get_binary_url "linux" "x64" "$VERSION")"
+    local binary="/tmp/rdc-verify-$$"
+    curl -fsSL "$url" -o "$binary" || {
+        log_error "Failed to download binary from $url"
+        return 1
+    }
+    chmod +x "$binary"
+
+    # Verify binary runs
+    local ver_output
+    ver_output=$("$binary" --version 2>&1 || true)
+    if ! verify_version "$ver_output" "$VERSION"; then
+        log_error "Version mismatch: expected '$VERSION', got '$ver_output'"
+        rm -f "$binary"
+        return 1
+    fi
+    log_info "  Binary version: $ver_output"
+
+    # Verify channel resolution (via env var, simulating what install.sh configures)
+    local doctor_output
+    doctor_output=$(RDC_UPDATE_CHANNEL="${REPO_CHANNEL}" "$binary" doctor -o json 2>/dev/null || true)
+    if [[ -n "$doctor_output" ]] && command -v jq &>/dev/null; then
+        local channel_value
+        channel_value=$(echo "$doctor_output" | jq -r '.Environment[] | select(.name == "Update channel") | .value' 2>/dev/null)
+        if [[ -z "$channel_value" ]]; then
+            log_warn "  Binary does not expose 'Update channel' in doctor (older version)"
+        elif [[ "$channel_value" == "${REPO_CHANNEL}" ]]; then
+            log_info "  Channel verified: $channel_value"
+        else
+            log_error "Channel mismatch: expected '${REPO_CHANNEL}', got '$channel_value'"
+            rm -f "$binary"
+            return 1
+        fi
+    else
+        log_warn "  Could not parse doctor output (skipping channel check)"
+    fi
+
+    # Verify manifest URL for this channel is reachable
+    local manifest_url="${RELEASES_BASE_URL}/cli/${REPO_CHANNEL}/manifest.json"
+    if curl -fsSL -o /dev/null --head "$manifest_url" 2>/dev/null; then
+        log_info "  Manifest reachable: $manifest_url"
+    else
+        log_error "Manifest not reachable: $manifest_url"
+        rm -f "$binary"
+        return 1
+    fi
+
+    rm -f "$binary"
+}
+
+# =============================================================================
 # Docker Tests
 # =============================================================================
 
@@ -585,7 +647,7 @@ test_quick_install() {
 
 # Resolve "latest" version from R2
 if [[ "$VERSION" == "latest" && -z "$LOCAL_ARTIFACTS" && "$DRY_RUN" == "false" ]]; then
-    LATEST_JSON=$(curl -fsSL "${RELEASES_BASE_URL}/cli/edge/latest.json" 2>/dev/null || echo "")
+    LATEST_JSON=$(curl -fsSL "${RELEASES_BASE_URL}/cli/${REPO_CHANNEL:-edge}/latest.json" 2>/dev/null || echo "")
     if [[ -n "$LATEST_JSON" ]] && command -v jq &>/dev/null; then
         RESOLVED=$(echo "$LATEST_JSON" | jq -r '.version' 2>/dev/null)
         if [[ -n "$RESOLVED" && "$RESOLVED" != "null" ]]; then
@@ -626,6 +688,15 @@ if [[ "$METHOD" == "binary" || "$METHOD" == "all" ]]; then
         run_test "Binary Download (Windows ${ARCH})" test_binary_download win "$ARCH"
     fi
     echo ""
+fi
+
+# Channel verification tests (binary + channel resolution + manifest)
+if [[ "$METHOD" == "verify" || "$METHOD" == "all" ]]; then
+    if [[ "$PLATFORM" == "linux" && -n "$REPO_CHANNEL" ]]; then
+        log_step "Channel Verification Tests"
+        run_test "Channel Verify (${REPO_CHANNEL})" test_channel_verify
+        echo ""
+    fi
 fi
 
 # Update check tests (manifest + binary URL reachability)
