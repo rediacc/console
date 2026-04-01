@@ -125,12 +125,15 @@ BRIDGE_IP="${VM_NET_BASE}.$((VM_BRIDGE + VM_NET_OFFSET))"
 # Build worker IPs list (comma-separated, with offset)
 WORKER_IPS=$(for ID in $VM_WORKERS; do echo "${VM_NET_BASE}.$((ID + VM_NET_OFFSET))"; done | paste -sd, -)
 
+# Mask password before any output (::add-mask:: only affects future log lines)
+echo "::add-mask::$VM_PASSWORD"
+
 echo ""
 log_info "VMs provisioned successfully!"
 echo "  Bridge IP:  $BRIDGE_IP"
 echo "  Worker IPs: $WORKER_IPS"
 echo "  User:       $USER"
-echo "  Password:   $VM_PASSWORD"
+echo "  Password:   [masked]"
 
 # =============================================================================
 # STEP 8: WRITE STATE FILE

@@ -195,6 +195,7 @@ jobs:
         uses: ./.github/actions/tmate
         with:
           timeout: 60
+          silent-mode: true
 
       # SECURITY NOTE: tmate debug session is started BEFORE services
       # This ensures no GITHUB_TOKEN is present in the environment when debug access is available
@@ -247,9 +248,12 @@ jobs:
         run: |
           LOCAL_URL="${{ inputs.desktop-environment != 'none' && 'http://localhost:8080' || 'http://localhost' }}"
           TUNNEL_URL=$(.ci/scripts/tunnel/start-cloudflare.sh --url "$LOCAL_URL" --timeout 60) || true
+          if [[ -n "$TUNNEL_URL" ]]; then
+            echo "::add-mask::$TUNNEL_URL"
+          fi
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
           if [[ -n "$TUNNEL_URL" ]]; then
-            echo "Cloudflare tunnel: $TUNNEL_URL"
+            echo "Cloudflare tunnel created (URL sent via email)"
           else
             echo "::warning::Cloudflare tunnel failed — services available only via localhost"
           fi
@@ -295,91 +299,40 @@ jobs:
           echo "⏱️  DURATION: ${DURATION_MIN} minutes"
           echo ""
 
+          # Never log sensitive access info -- all credentials are sent via email
+          echo "🌐 WEB ACCESS: [sent via email]"
+          if [ "${{ inputs.desktop-environment }}" != "none" ]; then
+            echo "   • Environment: ${{ inputs.desktop-environment }}"
+            echo "   • Resolution: ${{ inputs.desktop-resolution }}"
+          fi
+          echo ""
+          if [ "${{ matrix.vm-os }}" != "none" ] && [ "${{ steps.vms.outputs.kvm-available }}" == "true" ]; then
+            echo "🖥️  VM INFRASTRUCTURE:"
+            echo "   • Provider: KVM"
+            echo "   • OS: ${{ matrix.vm-os }}"
+            echo ""
+            echo "🔐 VM CREDENTIALS: [sent via email]"
+            echo "🔑 SSH ACCESS: [sent via email]"
+            echo ""
+          fi
+          echo "🐳 LOCAL SERVICES:"
+          echo "   • Web UI:  http://localhost"
+          echo "   • API:     http://localhost/api"
+          if [ "${{ inputs.desktop-environment }}" != "none" ]; then
+            echo "   • Desktop: http://localhost:6080/vnc.html"
+            echo "   • Gateway: http://localhost:8080"
+          fi
+          echo ""
+          echo "🗄️  DATABASE: [sent via email]"
+          echo ""
+          if [ "${{ inputs.enable-debug }}" == "true" ]; then
+            echo "🔧 DEBUG ACCESS: [sent via email]"
+            echo ""
+          fi
           if [ "${EMAIL_SENT}" == "true" ]; then
-            # Show tunnel URLs in logs, redact credentials
-            echo "🌐 WEB ACCESS:"
-            echo "   • Cloudflare Tunnel: ${TUNNEL_URL}"
-            if [ "${{ inputs.desktop-environment }}" != "none" ]; then
-              echo "   • Desktop (noVNC): ${TUNNEL_URL}/desktop"
-              echo "   • Environment: ${{ inputs.desktop-environment }}"
-              echo "   • Resolution: ${{ inputs.desktop-resolution }}"
-            fi
-            echo ""
-            if [ "${{ matrix.vm-os }}" != "none" ] && [ "${{ steps.vms.outputs.kvm-available }}" == "true" ]; then
-              echo "🖥️  VM INFRASTRUCTURE:"
-              echo "   • Provider: KVM"
-              echo "   • OS: ${{ matrix.vm-os }}"
-              echo ""
-              echo "🔐 VM CREDENTIALS: [sent via email]"
-              echo "🔑 SSH ACCESS: [sent via email]"
-              echo ""
-            fi
-            echo "🐳 LOCAL SERVICES:"
-            echo "   • Web UI:  http://localhost"
-            echo "   • API:     http://localhost/api"
-            if [ "${{ inputs.desktop-environment }}" != "none" ]; then
-              echo "   • Desktop: http://localhost:6080/vnc.html"
-              echo "   • Gateway: http://localhost:8080"
-            fi
-            echo ""
-            echo "🗄️  DATABASE: [sent via email]"
-            echo ""
-            if [ "${{ inputs.enable-debug }}" == "true" ]; then
-              echo "🔧 DEBUG ACCESS: [sent via email]"
-              echo ""
-            fi
             echo "📧 Sensitive details have been sent to your email."
           else
-            # Full output — fallback when email was not sent
-            echo "🌐 WEB ACCESS:"
-            echo "   • Cloudflare Tunnel: ${TUNNEL_URL}"
-            if [ "${{ inputs.desktop-environment }}" != "none" ]; then
-              echo "   • Desktop (noVNC): ${TUNNEL_URL}/desktop"
-              echo "   • Environment: ${{ inputs.desktop-environment }}"
-              echo "   • Resolution: ${{ inputs.desktop-resolution }}"
-            fi
-            echo ""
-            if [ "${{ matrix.vm-os }}" != "none" ] && [ "${{ steps.vms.outputs.kvm-available }}" == "true" ]; then
-              echo "🖥️  VM INFRASTRUCTURE:"
-              echo "   • Provider: KVM"
-              echo "   • OS: ${{ matrix.vm-os }}"
-              echo "   • Bridge IP: ${{ steps.vms.outputs.bridge-ip }}"
-              echo "   • Worker IPs: ${{ steps.vms.outputs.worker-ips }}"
-              echo ""
-              echo "📍 VM SERVICE URLS:"
-              echo "   • API: http://${{ steps.vms.outputs.bridge-ip }}"
-              echo "   • Web UI: http://${{ steps.vms.outputs.bridge-ip }}"
-              echo "   • Registry: ${{ steps.vms.outputs.bridge-ip }}:5000"
-              echo ""
-              echo "🔐 VM CREDENTIALS:"
-              echo "   • Username: ${{ steps.vms.outputs.machine-user }}"
-              echo "   • Password: ${{ steps.vms.outputs.machine-password }}"
-              echo ""
-              echo "🔑 SSH ACCESS TO VMS:"
-              echo "   • Bridge:  ssh ${{ steps.vms.outputs.machine-user }}@${{ steps.vms.outputs.bridge-ip }}"
-              IFS=',' read -ra WORKER_ARRAY <<< "${{ steps.vms.outputs.worker-ips }}"
-              for i in "${!WORKER_ARRAY[@]}"; do
-                echo "   • Worker $((i+1)): ssh ${{ steps.vms.outputs.machine-user }}@${WORKER_ARRAY[$i]}"
-              done
-              echo ""
-            fi
-            echo "🐳 LOCAL SERVICES:"
-            echo "   • Web UI:  http://localhost"
-            echo "   • API:     http://localhost/api"
-            if [ "${{ inputs.desktop-environment }}" != "none" ]; then
-              echo "   • Desktop: http://localhost:6080/vnc.html"
-              echo "   • Gateway: http://localhost:8080"
-            fi
-            echo ""
-            echo "🗄️  DATABASE:"
-            echo "   • SQL Server: ${{ env.CONNECTION_STRING }}"
-            echo ""
-            if [ "${{ inputs.enable-debug }}" == "true" ]; then
-              echo "🔧 DEBUG ACCESS:"
-              echo "   • SSH: ${{ steps.tmate.outputs.ssh-connection }}"
-              echo "   • Web: ${{ steps.tmate.outputs.web-url }}"
-              echo ""
-            fi
+            echo "⚠️  Email not sent -- access details are only available via masked step outputs."
           fi
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

@@ -195,6 +195,7 @@ if [[ "$FORMAT" == "rpm" || "$FORMAT" == "deb" ]] && [[ -n "${GPG_PRIVATE_KEY:-}
 
     # Set passphrase via nfpm environment variable
     if [[ -n "${GPG_PASSPHRASE:-}" ]]; then
+        echo "::add-mask::$GPG_PASSPHRASE"
         export NFPM_RPM_PASSPHRASE="$GPG_PASSPHRASE"
         export NFPM_DEB_PASSPHRASE="$GPG_PASSPHRASE"
     fi

@@ -110,6 +110,7 @@ trap cleanup EXIT
 
 GPG_OPTS=(--batch --yes --no-tty --pinentry-mode loopback)
 if [[ -n "${GPG_PASSPHRASE:-}" ]]; then
+    echo "::add-mask::$GPG_PASSPHRASE"
     GPG_OPTS+=(--passphrase "$GPG_PASSPHRASE")
 fi
 
