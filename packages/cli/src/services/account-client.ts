@@ -189,7 +189,7 @@ export async function accountServerFetch<T = unknown>(
   if (status === 426) {
     const info = parsed as { error?: string; minVersion?: string; currentVersion?: string };
     const method = getInstallMethod();
-    const updateCmd = method === 'sea' ? 'rdc update' : getNpmUpdateCommand('stable');
+    const updateCmd = method === 'sea' ? 'rdc update' : getNpmUpdateCommand(resolveChannel());
     const msg = [
       info.error ?? API_VERSION_DEFAULTS.UPGRADE_ERROR_MSG,
       '',
