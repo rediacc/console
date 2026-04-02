@@ -8,6 +8,54 @@
       "markerIndex": 0,
       "at": 6.238964,
       "text": "現在構成されているバックアップ先を検査します。"
+    },
+    {
+      "id": "backup-tutorial-02",
+      "markerIndex": 1,
+      "at": 15.277836,
+      "text": "TODO: translate event 2"
+    },
+    {
+      "id": "backup-tutorial-03",
+      "markerIndex": 2,
+      "at": 24.064797,
+      "text": "TODO: translate event 3"
+    },
+    {
+      "id": "backup-tutorial-04",
+      "markerIndex": 3,
+      "at": 35.084547,
+      "text": "TODO: translate event 4"
+    },
+    {
+      "id": "backup-tutorial-05",
+      "markerIndex": 4,
+      "at": 44.169952,
+      "text": "TODO: translate event 5"
+    },
+    {
+      "id": "backup-tutorial-06",
+      "markerIndex": 5,
+      "at": 56.932523,
+      "text": "TODO: translate event 6"
+    },
+    {
+      "id": "backup-tutorial-07",
+      "markerIndex": 6,
+      "at": 68.031062,
+      "text": "TODO: translate event 7"
+    },
+    {
+      "id": "backup-tutorial-08",
+      "markerIndex": 7,
+      "at": 77.244348,
+      "text": "TODO: translate event 8"
+    },
+    {
+      "id": "backup-tutorial-09",
+      "markerIndex": 8,
+      "at": 84.661426,
+      "text": "TODO: translate event 9"
     }
   ]
 }

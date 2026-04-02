@@ -26,6 +26,18 @@
       "markerIndex": 3,
       "at": 401.083711,
       "text": "Exécutez une vérification rapide du nom d'hôte sur une VM sélectionnée."
+    },
+    {
+      "id": "ops-tutorial-05",
+      "markerIndex": 4,
+      "at": 557.731539,
+      "text": "TODO: translate event 5"
+    },
+    {
+      "id": "ops-tutorial-06",
+      "markerIndex": 5,
+      "at": 716.42116,
+      "text": "TODO: translate event 6"
     }
   ]
 }

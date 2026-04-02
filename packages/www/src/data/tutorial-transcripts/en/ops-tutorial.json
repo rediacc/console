@@ -26,6 +26,18 @@
       "markerIndex": 3,
       "at": 401.083711,
       "text": "Both VMs are online. We verify SSH access to the bridge node by running a remote command. You'll see its hostname returned, confirming the tunnel works."
+    },
+    {
+      "id": "ops-tutorial-05",
+      "markerIndex": 4,
+      "at": 557.731539,
+      "text": "TODO: write transcript sentence for event 5"
+    },
+    {
+      "id": "ops-tutorial-06",
+      "markerIndex": 5,
+      "at": 716.42116,
+      "text": "TODO: write transcript sentence for event 6"
     }
   ]
 }

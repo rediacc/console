@@ -20,6 +20,36 @@
       "markerIndex": 2,
       "at": 36.164745,
       "text": "To see every running container across all isolated Docker daemons on the machine, we pull a unified view -- with state, health checks, CPU, and memory per container."
+    },
+    {
+      "id": "monitoring-tutorial-04",
+      "markerIndex": 3,
+      "at": 46.679109,
+      "text": "TODO: write transcript sentence for event 4"
+    },
+    {
+      "id": "monitoring-tutorial-05",
+      "markerIndex": 4,
+      "at": 57.096927,
+      "text": "TODO: write transcript sentence for event 5"
+    },
+    {
+      "id": "monitoring-tutorial-06",
+      "markerIndex": 5,
+      "at": 67.06586,
+      "text": "TODO: write transcript sentence for event 6"
+    },
+    {
+      "id": "monitoring-tutorial-07",
+      "markerIndex": 6,
+      "at": 76.746932,
+      "text": "TODO: write transcript sentence for event 7"
+    },
+    {
+      "id": "monitoring-tutorial-08",
+      "markerIndex": 7,
+      "at": 85.166541,
+      "text": "TODO: write transcript sentence for event 8"
     }
   ]
 }
