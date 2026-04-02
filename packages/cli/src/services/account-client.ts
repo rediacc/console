@@ -16,6 +16,7 @@ import {
 import { API_VERSION_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { t } from '../i18n/index.js';
 import { getInstallMethod, getNpmUpdateCommand } from '../utils/platform.js';
+import { resolveChannel } from './updater.js';
 import { ValidationError } from '../utils/errors.js';
 import { VERSION } from '../version.js';
 import {
