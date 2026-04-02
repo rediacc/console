@@ -16,6 +16,8 @@ export type PlatformKey =
   | 'win-x64'
   | 'win-arm64';
 
+export type InstallMethod = 'sea' | 'npm' | 'dev';
+
 /**
  * Detect if running as a Node.js Single Executable Application (SEA).
  * SEA binaries have the executable basename starting with 'rdc'.
@@ -25,6 +27,26 @@ export function isSEA(): boolean {
     .toLowerCase()
     .replace(/\.exe$/, '');
   return execName.startsWith('rdc');
+}
+
+/**
+ * Detect how the CLI was installed.
+ * - 'sea': Running as a Node.js Single Executable Application
+ * - 'npm': Running via npm global install (node_modules in script path)
+ * - 'dev': Running from source (tsx, ts-node, direct node invocation)
+ */
+export function getInstallMethod(): InstallMethod {
+  if (isSEA()) return 'sea';
+  const scriptPath = process.argv[1] ?? '';
+  if (/[/\\]node_modules[/\\]/i.test(scriptPath)) return 'npm';
+  return 'dev';
+}
+
+/**
+ * Get the npm install command for updating the CLI.
+ */
+export function getNpmUpdateCommand(channel: string): string {
+  return `npm install -g https://releases.rediacc.com/npm/${channel}/rediacc-cli-latest.tgz`;
 }
 
 /**

@@ -13,8 +13,11 @@ import {
   openResponse,
   sealRequest,
 } from '@rediacc/shared/e2e';
+import { API_VERSION_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { t } from '../i18n/index.js';
+import { getInstallMethod, getNpmUpdateCommand } from '../utils/platform.js';
 import { ValidationError } from '../utils/errors.js';
+import { VERSION } from '../version.js';
 import {
   getSubscriptionServerUrl,
   getSubscriptionTokenState,
@@ -138,7 +141,9 @@ export async function accountServerFetch<T = unknown>(
   const serverUrl = options.serverUrl ?? resolveServerUrl();
 
   // Build inner request headers
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = {
+    'x-cli-version': VERSION,
+  };
   if (!options.noAuth) {
     const token = options.token ?? resolveStoredToken();
     headers['Authorization'] = `Bearer ${token}`;
@@ -179,6 +184,22 @@ export async function accountServerFetch<T = unknown>(
 
   // Parse the decrypted response
   const parsed: T & { error?: string; code?: string } = body ? JSON.parse(body) : {};
+
+  // Handle CLI upgrade required (426)
+  if (status === 426) {
+    const info = parsed as { error?: string; minVersion?: string; currentVersion?: string };
+    const method = getInstallMethod();
+    const updateCmd = method === 'sea' ? 'rdc update' : getNpmUpdateCommand('stable');
+    const msg = [
+      info.error ?? API_VERSION_DEFAULTS.UPGRADE_ERROR_MSG,
+      '',
+      `  Current: ${info.currentVersion ?? VERSION}`,
+      `  Required: ${info.minVersion ?? API_VERSION_DEFAULTS.UNKNOWN_VERSION}`,
+      `  Update: ${updateCmd}`,
+    ].join('\n');
+    process.stderr.write(`\n${msg}\n\n`);
+    throw createAccountError(msg, 426, 'CLI_UPGRADE_REQUIRED');
+  }
 
   // Check the inner HTTP status
   if (status >= 400) {

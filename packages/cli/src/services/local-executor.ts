@@ -759,6 +759,7 @@ class LocalExecutorService {
     remoteRenetPath: string,
     sftp: SFTPClient
   ): Promise<void> {
+    if (process.env.REDIACC_SKIP_MACHINE_ACTIVATION === '1') return;
     if (
       options.functionName !== 'repository_create' &&
       options.functionName !== 'repository_fork'

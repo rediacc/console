@@ -180,18 +180,9 @@ export async function computeSha256(filePath: string): Promise<string> {
  *   0 if a == b
  *   1 if a > b
  */
-export function compareVersions(a: string, b: string): number {
-  const pa = a.replace(/^v/, '').split('.').map(Number);
-  const pb = b.replace(/^v/, '').split('.').map(Number);
-
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const na = pa[i] ?? 0;
-    const nb = pb[i] ?? 0;
-    if (na < nb) return -1;
-    if (na > nb) return 1;
-  }
-  return 0;
-}
+import { compareVersions } from '@rediacc/shared/utils';
+// Re-export for backward compatibility with existing imports
+export { compareVersions };
 
 /**
  * Fetch the update manifest from the primary manifest URL.
@@ -212,7 +203,7 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
     currentVersion: VERSION,
   };
 
-  if (!isSEA() || isUpdateDisabled()) {
+  if (isUpdateDisabled()) {
     return result;
   }
 

@@ -6,20 +6,50 @@
     {
       "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "at": 1.508759,
+      "at": 5.903159,
       "text": "Ejecute un diagnóstico completo del entorno para detectar problemas básicos."
     },
     {
       "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "at": 9.844365,
+      "at": 24.516457,
       "text": "Verifique los indicadores de salud de la máquina remota."
     },
     {
       "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "at": 18.393678,
+      "at": 36.164745,
       "text": "Enumere los contenedores activos en la máquina de destino."
+    },
+    {
+      "id": "monitoring-tutorial-04",
+      "markerIndex": 3,
+      "at": 46.679109,
+      "text": "TODO: translate event 4"
+    },
+    {
+      "id": "monitoring-tutorial-05",
+      "markerIndex": 4,
+      "at": 57.096927,
+      "text": "TODO: translate event 5"
+    },
+    {
+      "id": "monitoring-tutorial-06",
+      "markerIndex": 5,
+      "at": 67.06586,
+      "text": "TODO: translate event 6"
+    },
+    {
+      "id": "monitoring-tutorial-07",
+      "markerIndex": 6,
+      "at": 76.746932,
+      "text": "TODO: translate event 7"
+    },
+    {
+      "id": "monitoring-tutorial-08",
+      "markerIndex": 7,
+      "at": 85.166541,
+      "text": "TODO: translate event 8"
     }
   ]
 }

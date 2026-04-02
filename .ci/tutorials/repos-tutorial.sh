@@ -15,10 +15,24 @@ source "$SCRIPT_DIR/lib/tutorial-helpers.sh"
 M="$TUTORIAL_MACHINE_NAME"
 C="--config tutorial"
 
+# Pre-recording setup (cleared by clear_screen below)
+rm -f ~/.config/rediacc/tutorial.json 2>/dev/null || true
+rdc config init --name tutorial --ssh-key "$TUTORIAL_SSH_KEY"
+rdc --config tutorial config machine add --name "$M" --ip "$TUTORIAL_MACHINE_IP" --user "$TUTORIAL_MACHINE_USER"
+
+# Wait for SSH to be ready before running machine setup
+for i in $(seq 1 30); do
+    ssh -i "$TUTORIAL_SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 \
+        "$TUTORIAL_MACHINE_USER@$TUTORIAL_MACHINE_IP" true 2>/dev/null && break
+    sleep 2
+done
+
+rdc --config tutorial config machine setup --name "$M"
+
 clear_screen
 
 section "Step 1: Create an encrypted repository"
-run_cmd "rdc $C repo create test-app -m $M --size 2G"
+run_cmd "rdc $C repo create --name test-app -m $M --size 2G"
 
 pause 2
 
@@ -28,38 +42,39 @@ run_cmd "rdc $C repo list -m $M"
 pause 2
 
 section "Step 3: Upload application files"
-# Pre-stage files via SSH (non-interactive)
-scp -i "$TUTORIAL_SSH_KEY" -o StrictHostKeyChecking=no -q /tmp/tutorial-app/Rediaccfile /tmp/tutorial-app/docker-compose.yml "$TUTORIAL_MACHINE_USER@$TUTORIAL_MACHINE_IP:/tmp/" 2>/dev/null
-ssh -i "$TUTORIAL_SSH_KEY" -o StrictHostKeyChecking=no "$TUTORIAL_MACHINE_USER@$TUTORIAL_MACHINE_IP" "sudo cp /tmp/Rediaccfile /tmp/docker-compose.yml /mnt/rediacc/mounts/test-app/ && sudo chown rediacc:rediacc /mnt/rediacc/mounts/test-app/Rediaccfile /mnt/rediacc/mounts/test-app/docker-compose.yml" 2>/dev/null
-run_cmd "rdc $C term $M -c 'ls -la /mnt/rediacc/mounts/test-app/'"
+run_cmd "rdc $C repo sync upload -m $M -r test-app --local /tmp/tutorial-app"
+
+pause 1
+
+run_cmd "rdc $C term connect -m $M -r test-app -c 'ls -la'"
 
 pause 2
 
 section "Step 4: Start services"
-run_cmd "rdc $C repo up test-app -m $M --mount"
+run_cmd "rdc $C repo up --name test-app -m $M"
 
 pause 2
 
 section "Step 5: View running containers"
-run_cmd "rdc $C machine containers $M"
+run_cmd "rdc $C machine query --name $M --containers"
 
 pause 2
 
 section "Step 6: Access the repo via terminal"
-run_cmd "rdc $C term $M test-app -c 'docker ps'"
+run_cmd "rdc $C term connect -m $M -r test-app -c 'docker ps'"
 
 pause 2
 
 section "Step 7: Stop and clean up"
-run_cmd "rdc $C repo down test-app -m $M"
+run_cmd "rdc $C repo down --name test-app -m $M"
 
 pause 1
 
-run_cmd "rdc $C repo unmount test-app -m $M"
+run_cmd "rdc $C repo down --name test-app -m $M --unmount"
 
 pause 1
 
-run_cmd "rdc $C repo delete test-app -m $M"
+run_cmd "rdc $C repo delete --name test-app -m $M"
 
 pause 1
 

@@ -83,6 +83,11 @@ jobs:
       - name: Create CLI npm package
         working-directory: packages/cli
         run: |
+          # Inject version for correct tarball naming
+          VERSION="${{ inputs.next_version || '0.0.0-dev' }}"
+          if [[ "$VERSION" != "0.0.0-dev" ]]; then
+            jq --arg v "$VERSION" '.version = $v' package.json > package.json.tmp && mv package.json.tmp package.json
+          fi
           mkdir -p /tmp/cli-npm
           npm pack --pack-destination /tmp/cli-npm
           cd /tmp/cli-npm

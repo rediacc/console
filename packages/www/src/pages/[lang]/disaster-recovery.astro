@@ -89,23 +89,23 @@ const buildMetrics = (planId: string) =>
             <button
               type="button"
               role="radio"
-              class="billing-toggle-btn"
+              class="billing-toggle-btn active"
               data-period="monthly"
-              aria-checked="false"
+              aria-checked="true"
             >
               {t('pages.pricing.ui.billingToggle.monthly')}
             </button>
             <button
               type="button"
               role="radio"
-              class="billing-toggle-btn active"
+              class="billing-toggle-btn"
               data-period="annual"
-              aria-checked="true"
+              aria-checked="false"
             >
               {t('pages.pricing.ui.billingToggle.annual')}
             </button>
           </div>
-          <span class="billing-toggle-savings visible">{t('pages.pricing.ui.billingToggle.annualSavings')}</span>
+          <span class="billing-toggle-savings">{t('pages.pricing.ui.billingToggle.annualSavings')}</span>
         </div>
 
         <div class="cf-pricing-grid three-up">

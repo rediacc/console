@@ -12,7 +12,12 @@ import { resolveChannel } from '../services/updater.js';
 import { readUpdateState, writeUpdateState } from '../services/update-state.js';
 import { checkForUpdate, performUpdate } from '../services/updater.js';
 import { handleError } from '../utils/errors.js';
-import { getOldBinaryPath, isSEA } from '../utils/platform.js';
+import {
+  getInstallMethod,
+  getNpmUpdateCommand,
+  getOldBinaryPath,
+  isSEA,
+} from '../utils/platform.js';
 import { VERSION } from '../version.js';
 
 /**
@@ -202,6 +207,39 @@ async function handleRollback(): Promise<void> {
 }
 
 /**
+ * Show the npm install command to upgrade. Used for --check-only and the main update flow.
+ */
+function showNpmUpdateHint(): void {
+  outputService.info(
+    t('commands.update.npmUpdateHint', { command: getNpmUpdateCommand(resolveChannel()) })
+  );
+}
+
+/**
+ * Handle update flow for npm installations.
+ * Checks for updates and shows the npm install command.
+ */
+async function handleNpmUpdate(): Promise<void> {
+  outputService.info(t('commands.update.checking'));
+  const result = await checkForUpdate();
+
+  if (result.updateAvailable) {
+    outputService.info(
+      t('commands.update.available', {
+        version: result.latestVersion!,
+        current: result.currentVersion,
+      })
+    );
+    if (result.releaseNotesUrl) {
+      outputService.info(t('commands.update.releaseNotes', { url: result.releaseNotesUrl }));
+    }
+    showNpmUpdateHint();
+  } else {
+    outputService.success(t('commands.update.upToDate', { version: VERSION }));
+  }
+}
+
+/**
  * Handle the --status flow.
  */
 async function handleStatus(): Promise<void> {
@@ -241,6 +279,59 @@ async function handleStatus(): Promise<void> {
   outputService.info(lines.join('\n'));
 }
 
+async function showNpmHintIfUpdateAvailable(): Promise<void> {
+  const result = await checkForUpdate();
+  if (result.updateAvailable) showNpmUpdateHint();
+}
+
+async function dispatchUpdate(installMethod: ReturnType<typeof getInstallMethod>, force: boolean): Promise<void> {
+  if (installMethod === 'sea') {
+    await handleUpdate(force);
+  } else if (installMethod === 'npm') {
+    await handleNpmUpdate();
+  } else {
+    outputService.error(t('commands.update.notSEA'));
+    process.exit(1);
+  }
+}
+
+async function runUpdateAction(options: {
+  channel?: string;
+  status?: boolean;
+  rollback?: boolean;
+  checkOnly?: boolean;
+  force?: boolean;
+}): Promise<void> {
+  const installMethod = getInstallMethod();
+
+  if (options.channel) {
+    const done = await handleChannelSwitch(options.channel, options);
+    if (done) return;
+  }
+
+  if (options.status) {
+    await handleStatus();
+    return;
+  }
+
+  if (options.rollback) {
+    if (installMethod !== 'sea') {
+      outputService.error(t('commands.update.rollbackRequiresSEA'));
+      process.exit(1);
+    }
+    await handleRollback();
+    return;
+  }
+
+  if (options.checkOnly) {
+    await handleCheckOnly();
+    if (installMethod === 'npm') await showNpmHintIfUpdateAvailable();
+    return;
+  }
+
+  await dispatchUpdate(installMethod, options.force ?? false);
+}
+
 export function registerUpdateCommand(program: Command): void {
   program
     .command('update')
@@ -253,25 +344,7 @@ export function registerUpdateCommand(program: Command): void {
     .option('--channel <channel>', t('commands.update.channelDescription'))
     .action(async (options) => {
       try {
-        if (!isSEA()) {
-          outputService.error(t('commands.update.notSEA'));
-          process.exit(1);
-        }
-
-        if (options.channel) {
-          const done = await handleChannelSwitch(options.channel, options);
-          if (done) return;
-        }
-
-        if (options.rollback) {
-          await handleRollback();
-        } else if (options.status) {
-          await handleStatus();
-        } else if (options.checkOnly) {
-          await handleCheckOnly();
-        } else {
-          await handleUpdate(options.force);
-        }
+        await runUpdateAction(options);
       } catch (error) {
         handleError(error);
       }

@@ -7,31 +7,31 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "e4700e729aa4f291775cc1c02f45cbc8250ddd6cd8fe6629205c713d58228f03",
+  "transcriptHash": "783e3c46560bb6216f9f8ae1f92121edaa5de7a977ba1d67ffffd7689fee5625",
   "steps": [
     {
       "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.508759,
-      "replayEndSec": 9.844365,
+      "replayStartSec": 1.50892,
+      "replayEndSec": 20.759864,
       "narrationText": "Запустите полную диагностику среды, чтобы выявить проблемы с базовыми показателями.",
       "audioSrc": "/assets/tutorials/audio/ru/monitoring-tutorial/monitoring-tutorial-01.2d457507.mp3",
-      "audioDurationSec": 5.877551
+      "audioDurationSec": 5.067755
     },
     {
       "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 9.844365,
-      "replayEndSec": 18.393678,
+      "replayStartSec": 20.759864,
+      "replayEndSec": 29.693662,
       "narrationText": "Проверьте индикаторы состояния удаленной машины.",
       "audioSrc": "/assets/tutorials/audio/ru/monitoring-tutorial/monitoring-tutorial-02.80d43c2b.mp3",
-      "audioDurationSec": 4.362449
+      "audioDurationSec": 2.847347
     },
     {
       "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 18.393678,
-      "replayEndSec": 22.197305,
+      "replayStartSec": 29.693662,
+      "replayEndSec": 33.919992,
       "narrationText": "Перечислите активные контейнеры на целевой машине.",
       "audioSrc": "/assets/tutorials/audio/ru/monitoring-tutorial/monitoring-tutorial-03.47bea3d3.mp3",
       "audioDurationSec": 3.239184

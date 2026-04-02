@@ -1776,7 +1776,9 @@
       "statusDescription": "Show auto-update status and diagnostics",
       "channelDescription": "Set release channel (stable or edge)",
       "channelSet": "Release channel set to {{channel}}",
-      "invalidChannel": "Invalid channel: {{channel}}. Use stable or edge."
+      "invalidChannel": "Invalid channel: {{channel}}. Use stable or edge.",
+      "npmUpdateHint": "To update, run:\n  {{command}}",
+      "rollbackRequiresSEA": "Rollback is only available for SEA binary installations."
     },
     "term": {
       "descriptionShort": "SSH terminal access to machines and repositories",

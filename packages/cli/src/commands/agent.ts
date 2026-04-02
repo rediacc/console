@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { COMMAND_METADATA, type CommandMeta } from '../config/command-metadata.js';
+import { getCommandMeta, type CommandMeta } from '../config/command-metadata.js';
 import { COMMAND_DOMAINS, getCommandDef } from '../config/command-registry.js';
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/output.js';
@@ -262,7 +262,8 @@ function renderCommandBlock(lines: string[], cmd: CommandCapability): void {
 
   renderOptions(lines, cmd.options);
 
-  const annotations = collectAnnotations(COMMAND_METADATA[cmd.name]);
+  const meta = getCommandMeta(cmd.name);
+  const annotations = meta ? collectAnnotations(meta) : [];
   if (annotations.length > 0) {
     lines.push(`> ${annotations.join(' | ')}`, '');
   }

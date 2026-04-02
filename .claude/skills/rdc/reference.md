@@ -16,74 +16,82 @@ List machines
 
 > MCP tool
 
-### rdc machine create <name>
+### rdc machine create
 
 Create a new machine
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-t, --team <name>` — Team name
 - `-b, --bridge <name>` — Bridge name
 - `--vault <json>` — Machine vault data as JSON string
 
 > MCP excluded: Config CRUD — use config machine commands instead
 
-### rdc machine rename <oldName> <newName>
+### rdc machine rename
 
 Rename a machine
 
 **Options:**
 
+- `--current-name <name>` — Current resource name
+- `--new-name <name>` — New resource name
 - `-t, --team <name>` — Team name
 
 > MCP excluded: Config CRUD — use config machine commands instead
 
-### rdc machine delete <name>
+### rdc machine delete
 
 Delete a machine
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-t, --team <name>` — Team name
 - `-f, --force` — Skip confirmation prompts
 - `--dry-run` — Show what would be done without making changes
 
 > MCP excluded: Config CRUD — use config machine commands instead
 
-### rdc machine vault get <machineName>
+### rdc machine vault get
 
 Get machine vault data
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-t, --team <name>` — Team name
 
-### rdc machine vault update <machineName>
+### rdc machine vault update
 
 Update machine vault data
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `--vault <json>` — Vault content as JSON string
 - `--vault-version <n>` — Current vault version for optimistic locking
 - `-t, --team <name>` — Team name
 
-### rdc machine vault-status <name>
+### rdc machine vault-status
 
 Show parsed vault status for a machine
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-t, --team <name>` — Team name
 
 > MCP excluded: Cloud adapter only — vault status
 
-### rdc machine query <name>
+### rdc machine query
 
 Show full machine status (infra, system, repos with name/guid, containers with repository/repository_guid/domain/autoRoute, services with repository/repository_guid)
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `--debug` — Enable debug output
 - `--system` — Include system info only
 - `--repositories` — Include repositories only
@@ -94,12 +102,13 @@ Show full machine status (infra, system, repos with name/guid, containers with r
 
 > MCP tool
 
-### rdc machine provision <name>
+### rdc machine provision
 
 Provision a new machine on a cloud provider using OpenTofu
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `--provider <name>` — Cloud provider name (from config provider add)
 - `--region <region>` — Override default region
 - `--type <type>` — Override default instance type
@@ -111,31 +120,34 @@ Provision a new machine on a cloud provider using OpenTofu
 
 > MCP tool
 
-### rdc machine deprovision <name>
+### rdc machine deprovision
 
 Destroy a cloud-provisioned machine and remove from config
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `--force` — Skip confirmation prompt
 - `--debug` — Enable debug output
 
 > MCP tool
 
-### rdc machine backup schedule <machine>
+### rdc machine backup schedule
 
 Push backup schedule to a remote machine (systemd timer)
 
 **Options:**
 
+- `-m, --machine <name>` — Machine name
 - `--debug` — Enable debug output
 
-### rdc machine prune <name>
+### rdc machine prune
 
 Remove orphaned datastore resources and stale snapshots from a machine
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `--dry-run` — Show what would be removed without making changes
 - `--orphaned-repos` — Also prune repo images not in any config
 - `--force` — Skip confirmation prompts
@@ -157,72 +169,80 @@ List storage systems
 
 > MCP excluded: Config CRUD — covered by config storage commands
 
-### rdc storage create <name>
+### rdc storage create
 
 Create a new storage
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-t, --team <name>` — Team name
 
 > MCP excluded: Config CRUD — covered by config storage commands
 
-### rdc storage rename <oldName> <newName>
+### rdc storage rename
 
 Rename a storage
 
 **Options:**
 
+- `--current-name <name>` — Current resource name
+- `--new-name <name>` — New resource name
 - `-t, --team <name>` — Team name
 
 > MCP excluded: Config CRUD — covered by config storage commands
 
-### rdc storage delete <name>
+### rdc storage delete
 
 Delete a storage
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-t, --team <name>` — Team name
 - `-f, --force` — Skip confirmation prompts
 - `--dry-run` — Show what would be done without making changes
 
 > MCP excluded: Config CRUD — covered by config storage commands
 
-### rdc storage vault get <storageName>
+### rdc storage vault get
 
 Get storage vault data
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-t, --team <name>` — Team name
 
-### rdc storage vault update <storageName>
+### rdc storage vault update
 
 Update storage vault data
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `--vault <json>` — Vault content as JSON string
 - `--vault-version <n>` — Current vault version for optimistic locking
 - `-t, --team <name>` — Team name
 
-### rdc storage browse <name>
+### rdc storage browse
 
 Browse files in a storage system
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `--path <subpath>` — Subdirectory path to list (default: )
 
 > MCP excluded: Interactive file browser — requires TTY
 
-### rdc storage prune <storageName>
+### rdc storage prune
 
 Delete orphaned backups from storage that are no longer in any config. Multi-config safe with grace period protection.
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Machine name
 - `--dry-run` — Show what would be done without making changes
 - `--force` — Skip confirmation prompts
@@ -264,12 +284,14 @@ Show VM cluster status
 
 - `--backend <backend>` — Virtualization backend (kvm|qemu, auto-detected)
 
-### rdc ops ssh <vmId> [command]
+### rdc ops ssh
 
 SSH into a VM
 
 **Options:**
 
+- `--vm-id <id>` — Virtual machine ID
+- `-c, --command <cmd>` — Execute a command instead of interactive shell
 - `--backend <backend>` — Virtualization backend (kvm|qemu, auto-detected)
 - `--user <user>` — SSH username for VM connection
 
@@ -337,12 +359,13 @@ Clean up a fork: unmount COW, remove clone, remove snapshot
 
 ## Repositories
 
-### rdc repo create <name>
+### rdc repo create
 
 Create a new encrypted repository
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--size <size>` — Repository size (e.g., 10G, 100G, 1T)
 - `--no-docker` — Skip starting Docker daemon after creation
@@ -351,12 +374,13 @@ Create a new encrypted repository
 
 > MCP tool
 
-### rdc repo delete <name>
+### rdc repo delete
 
 Delete a repository (destroys containers, volumes, and encrypted image). Config entry is preserved. Use --archive-config to move credentials to deletedRepositories for recovery via 'config restore-archived'
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--archive-config` — Move config entry to deletedRepositories for later recovery
 - `--debug` — Enable debug output
@@ -365,12 +389,13 @@ Delete a repository (destroys containers, volumes, and encrypted image). Config 
 
 > MCP tool | agent: fork-only
 
-### rdc repo mount [name]
+### rdc repo mount
 
 Mount a repository (decrypt and open the LUKS container, making the filesystem accessible). Needed on first deploy, after 'repo push' to a new machine, or after 'repo unmount'. Can also be done via 'repo up --mount'. The volume stays mounted until explicitly unmounted. Omit name to mount all repos on the machine
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--checkpoint` — Restore CRIU container checkpoint after mount (resume processes from saved memory state). Used after 'repo push --checkpoint' for live migration
 - `--no-docker` — Skip starting Docker daemon after mount
@@ -382,12 +407,13 @@ Mount a repository (decrypt and open the LUKS container, making the filesystem a
 
 > agent: fork-only
 
-### rdc repo unmount [name]
+### rdc repo unmount
 
 Unmount a repository (close the LUKS container, detaching the encrypted filesystem). Services must be stopped first ('repo down'). After unmount, repo data is inaccessible until remounted. Required before 'repo resize'. Omit name to unmount all repos on the machine
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--checkpoint` — Create CRIU container checkpoint before unmount (capture running process memory state for later restore)
 - `--parallel` — Start repositories concurrently
@@ -398,15 +424,16 @@ Unmount a repository (close the LUKS container, detaching the encrypted filesyst
 
 > agent: fork-only
 
-### rdc repo up [name]
+### rdc repo up
 
-Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). Proxy routes take ~3s to become active after deploy. Use --mount for first deploy or forked repos. Use --checkpoint to restore containers from a CRIU checkpoint (for live process migration). Omit name to deploy all repos on the machine
+Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). Proxy routes take ~3s to become active after deploy. Use --mount for first deploy or forked repos. CRIU checkpoint restore is auto-detected — use --skip-checkpoint to force fresh start. Omit name to deploy all repos on the machine
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--mount` — Mount repository first (required for forked repos on first deploy)
-- `--checkpoint` — Restore containers from CRIU checkpoint after deploy (for live process migration from another machine)
+- `--skip-checkpoint` — Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)
 - `--tls` — Request dedicated TLS cert for this repo (forks use shared machine cert by default)
 - `--include-forks` — Also mount/start forked repositories
 - `--mount-only` — Only mount, don't start services
@@ -419,14 +446,16 @@ Deploy or update a repository (mount, run Rediaccfile up which calls renet compo
 
 > MCP tool | agent: fork-only
 
-### rdc repo down [name]
+### rdc repo down
 
-Stop repository Docker containers (runs Rediaccfile down via renet compose). Does NOT unmount the encrypted volume -- the repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping. Omit name to stop all repos on the machine
+Stop repository Docker containers (runs Rediaccfile down via renet compose). Does NOT unmount the encrypted volume -- the repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping. Use --checkpoint to save CRIU process state before stopping (next 'repo up' auto-restores). Omit name to stop all repos on the machine
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--unmount` — Also unmount (close LUKS container) after stopping. Equivalent to 'repo down' then 'repo unmount'. Required before 'repo resize' or to fully secure the volume
+- `--checkpoint` — Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')
 - `-y, --yes` — Skip confirmation for batch operations
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
@@ -434,15 +463,18 @@ Stop repository Docker containers (runs Rediaccfile down via renet compose). Doe
 
 > MCP tool | agent: fork-only
 
-### rdc repo status <name>
+### rdc repo status
 
 Get repository status (mount state, Docker daemon running, container count, disk usage)
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
+
+> MCP tool
 
 ### rdc repo list
 
@@ -454,25 +486,31 @@ List repositories on a machine
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
-### rdc repo fork <parent> [tag]
+> MCP tool
 
-Create a CoW (Copy-on-Write) fork of a repository. Fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}.{forkName}.{machine}.{baseDomain}) — it is a fully independent copy. Online forking is supported — the parent can remain running. Fork inherits the parent's encryption credentials automatically. CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking — it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically
+### rdc repo fork
+
+Create a CoW (Copy-on-Write) fork of a repository. Fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}.{forkName}.{machine}.{baseDomain}) — it is a fully independent copy. Online forking is supported — the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking — the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking — it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically
 
 **Options:**
 
+- `--parent <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--tag <name>` — Tag for the fork (creates name:tag)
+- `--checkpoint` — Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)
+- `--up` — Mount and start services after forking (fork + mount + up in one command)
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
 > MCP tool
 
-### rdc repo takeover <fork>
+### rdc repo takeover
 
 Replace grand repo's data with a fork's data. The grand keeps its identity (GUID, networkId, domains, autostart, backup chain) but gets the fork's upgraded data. The old production data is preserved as a backup fork. Use for: test upgrade on fork → verify → takeover to production.
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--force` — Skip modification warnings
 - `--debug` — Enable debug output
@@ -480,60 +518,67 @@ Replace grand repo's data with a fork's data. The grand keeps its identity (GUID
 
 > agent: fork-only
 
-### rdc repo resize <name>
+### rdc repo resize
 
 Resize a repository offline (supports both grow and shrink). Repo must be unmounted first ('repo down --unmount'). For zero-downtime growth without stopping, use 'repo expand' instead
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--size <size>` — New repository size (e.g., 10G, 100G, 1T)
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
-> agent: fork-only | fork-blocked
+> agent: fork-only | fork-blocked | MCP excluded: Disk resize — destructive infrastructure operation, use CLI directly
 
-### rdc repo expand <name>
+### rdc repo expand
 
 Expand a mounted repository online (zero downtime, grow-only). Grows the LUKS container and filesystem while containers keep running. Cannot shrink -- use 'repo resize' for that (requires unmount)
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--size <size>` — New repository size (e.g., 10G, 100G, 1T)
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
-> agent: fork-only | fork-blocked
+> agent: fork-only | fork-blocked | MCP excluded: Storage expansion — destructive infrastructure operation, use CLI directly
 
-### rdc repo validate <name>
+### rdc repo validate
 
 Validate repository integrity (LUKS container, filesystem consistency, configuration). Use after unexpected shutdowns or to verify backup health
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
-### rdc repo autostart enable [name]
+> agent: fork-only | MCP excluded: Validation runs on remote machine — use repo status for MCP
+
+### rdc repo autostart enable
 
 Enable autostart for a repository (omit name to enable all)
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
 > agent: fork-only | fork-blocked
 
-### rdc repo autostart disable [name]
+### rdc repo autostart disable
 
 Disable autostart for a repository (omit name to disable all)
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
@@ -550,44 +595,49 @@ List repositories with autostart enabled
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
-### rdc repo ownership <name>
+### rdc repo ownership
 
 Change repository directory ownership UID on the mounted volume (default: 7111). Use when containers need a specific UID to access repo files
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--uid <uid>` — Owner UID (default: 7111)
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
-> agent: fork-only
+> agent: fork-only | MCP excluded: Ownership transfer — destructive operation, use CLI directly
 
-### rdc repo template <name>
+### rdc repo template list
 
-Apply a template to a repository (writes docker-compose.yml and Rediaccfile). Rediaccfile must use 'renet compose' (not 'docker compose'). Restart policies are safe (renet auto-strips them, watchdog handles recovery). Renet auto-injects network_mode:host, CRIU capabilities, and rediacc labels. Dangerous settings (privileged, pid:host, ipc:host) are blocked unless --unsafe is passed to renet compose
+List all embedded deployment templates shipped with the CLI
+
+### rdc repo template apply
+
+Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose' — 'docker compose' is rejected. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. APP_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REDIACC_NETWORK_ID env vars. Use SERVICE_IP in your app code to bind to the correct loopback IP. Containers MUST bind to SERVICE_IP:<port> (not 0.0.0.0) since network_mode:host is injected and ports: are ignored. STORAGE: Both ${REDIACC_WORKING_DIR}/... bind mounts and Docker named volumes are safe — Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe — renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). Multi-project: place each sub-project in its own subdirectory with its own Rediaccfile — renet auto-discovers and runs them in order. HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
-- `--file <path>` — Path to template JSON file ({"version":"1","compose":"<yaml>","rediaccfile":"<bash>"}). Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose' — 'docker compose' is rejected. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. OPENCLAW_IP), ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REPOSITORY_NETWORK_ID env vars. Use SERVICE_IP in your app code to bind to the correct loopback IP. Containers MUST bind to SERVICE_IP:<port> (not 0.0.0.0) since network_mode:host is injected and ports: are ignored. STORAGE: Both ${REPOSITORY_PATH}/... bind mounts and Docker named volumes are safe — Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe to use — renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). The compose service name becomes the auto-route URL prefix (e.g. service 'openclaw' in repo 'myapp' → openclaw.myapp.{machineName}.{baseDomain}). HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53
+- `-r, --repository <name>` — Repository name (connects to repository environment)
+- `--file <path>` — Path to custom template JSON file ({"version":"2","files":{"Rediaccfile":"...","docker-compose.yml":"..."}}) — overrides the built-in template name
 - `--grand <name>` — Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
-> agent: fork-only
+### rdc repo push
 
-### rdc repo push [repo]
-
-Push repository backup to storage or machine. Omit name to push all repos. For machine-to-machine transfer (--to-machine), the encrypted repo image is copied directly with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork on another machine, use 'repo fork' first (gets new GUID/networkId), then push the fork. After push, deploy on the target with: repo up <name> -m <target> --mount
+Push repository to a remote (machine or storage). Omit name to push all repos. The target type is auto-detected from config. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. Use --up to deploy after push
 
 **Options:**
 
-- `--dest <filename>` — Destination filename
-- `--to <storage>` — Destination storage name
-- `--to-machine <machine>` — Destination machine name
-- `--provider <name>` — Cloud provider to auto-provision target machine if it doesn't exist (from config provider add)
-- `--checkpoint` — Create CRIU container checkpoint before backup (captures process memory state). For live migration: repo push <repo> -m <source> --to-machine <target> --checkpoint, then: repo up <repo> -m <target> --mount --checkpoint (restores process state on target)
+- `--name <name>` — Resource name
+- `--to <remote>` — Destination machine or storage name (auto-detected from config)
+- `--to-machine <machine>` — 
+- `--provision <provider>` — Auto-provision target machine via cloud provider if it doesn't exist
+- `--checkpoint` — Create CRIU checkpoint before backup (captures process memory state for live migration)
 - `--force` — Force overwrite existing backup
 - `--up` — After push, mount and deploy repository on target machine
 - `--tag <tag>` — Deployment tag for versioning
@@ -601,15 +651,17 @@ Push repository backup to storage or machine. Omit name to push all repos. For m
 
 > MCP tool | agent: fork-only
 
-### rdc repo pull [repo]
+### rdc repo pull
 
-Pull repository backup from storage or another machine (restores the encrypted LUKS image). Omit name to pull all repos. After pull, deploy with 'repo up <name> -m <machine> --mount'. Use --force to overwrite existing
+Pull repository from a remote (machine or storage). Omit name to pull all repos. The source type is auto-detected from config. Use --up to deploy after pull
 
 **Options:**
 
-- `--from <storage>` — Source storage name
-- `--from-machine <machine>` — Source machine name
+- `--name <name>` — Resource name
+- `--from <remote>` — Source machine or storage name (auto-detected from config)
+- `--from-machine <machine>` — 
 - `--force` — Force overwrite existing repository
+- `--up` — After pull, mount and deploy repository on this machine
 - `-m, --machine <name>` — Machine name
 - `-w, --watch` — Watch for changes
 - `--parallel` — Start repositories concurrently
@@ -622,23 +674,24 @@ Pull repository backup from storage or another machine (restores the encrypted L
 
 ### rdc repo backup list
 
-List available backups on storage or machine
+List available backups on a remote (machine or storage)
 
 **Options:**
 
-- `--from <storage>` — Source storage name
-- `--from-machine <machine>` — Source machine name
+- `--from <remote>` — Source machine or storage name (auto-detected from config)
+- `--from-machine <machine>` — 
 - `-m, --machine <name>` — Machine name
 - `-w, --watch` — Watch for changes
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
-### rdc repo backup schedule <machine>
+### rdc repo backup schedule
 
 Deploy backup schedules to remote machines
 
 **Options:**
 
+- `-m, --machine <name>` — Machine name
 - `--debug` — Enable debug output
 
 ### rdc repo sync upload
@@ -650,7 +703,7 @@ Upload files to a repository via rsync over SSH (delta transfer). Use --mirror t
 - `-t, --team <name>` — Team name
 - `-m, --machine <name>` — Machine name
 - `-r, --repository <name>` — Repository name (connects to repository environment)
-- `-l, --local <path>` — Local directory path (default: current directory)
+- `--local <path>` — Local directory path (default: current directory)
 - `--remote <path>` — Remote subdirectory path within repository
 - `--mirror` — Mirror mode - delete remote files not present locally
 - `--verify` — Verify files using checksums after sync
@@ -669,7 +722,7 @@ Download files from a repository via rsync over SSH (delta transfer). Use --mirr
 - `-t, --team <name>` — Team name
 - `-m, --machine <name>` — Machine name
 - `-r, --repository <name>` — Repository name (connects to repository environment)
-- `-l, --local <path>` — Local directory path (default: current directory)
+- `--local <path>` — Local directory path (default: current directory)
 - `--remote <path>` — Remote subdirectory path within repository
 - `--mirror` — Mirror mode - delete local files not present on remote
 - `--verify` — Verify files using checksums after sync
@@ -688,26 +741,35 @@ Dry-run comparison of local and remote files (shows what would be transferred wi
 - `-t, --team <name>` — Team name
 - `-m, --machine <name>` — Machine name
 - `-r, --repository <name>` — Repository name (connects to repository environment)
-- `-l, --local <path>` — Local directory path (default: current directory)
+- `--local <path>` — Local directory path (default: current directory)
 - `--remote <path>` — Remote subdirectory path within repository
+
+### rdc repo tunnel
+
+Create an SSH port-forward tunnel to a container's port on a remote machine. Auto-detects container and port when unambiguous. The tunnel stays open until you press Ctrl+C
+
+**Options:**
+
+- `-m, --machine <name>` — Machine name
+- `-r, --repository <name>` — Repository name (connects to repository environment)
+- `-c, --container <name>` — Container name (auto-detected if only one running)
+- `--port <port>` — Remote container port to forward
+- `--local <port>` — Local port (defaults to same as remote port)
+
+> agent: fork-only | MCP excluded: Interactive SSH tunnel — blocks until Ctrl+C
 
 ## Tools
 
-### rdc config init [name]
+### rdc config init
 
 Create a new named config file
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `--ssh-key <path>` — Path to SSH private key (e.g., ~/.ssh/id_rsa)
 - `--renet-path <path>` — Path to renet binary (default: renet in PATH)
 - `--master-password <password>` — Encrypt resources with a master password
-- `--s3-endpoint <url>` — S3 endpoint URL
-- `--s3-bucket <name>` — S3 bucket name
-- `--s3-access-key-id <key>` — S3 access key ID
-- `--s3-secret-access-key <key>` — S3 secret access key
-- `--s3-region <region>` — S3 region (default: auto)
-- `--s3-prefix <prefix>` — Key prefix in S3 bucket
 - `-u, --api-url <url>` — API URL
 
 ### rdc config list
@@ -718,24 +780,42 @@ List all config files
 
 Show current config details
 
-### rdc config delete <name>
+### rdc config delete
 
 Delete a config file
 
-### rdc config set <key> <value>
+**Options:**
 
-Set a default value (team, region, bridge, machine)
+- `--name <name>` — Resource name
 
-### rdc config clear [key]
+### rdc config set
+
+Set a default value (team, region, bridge)
+
+**Options:**
+
+- `--key <key>` — Configuration key
+- `--value <value>` — Configuration value
+
+> MCP excluded: Config value mutation — use CLI directly
+
+### rdc config clear
 
 Clear defaults (all or specific key)
 
-### rdc config recover [name]
+**Options:**
+
+- `--key <key>` — Configuration key
+
+> MCP excluded: Config value deletion — use CLI directly
+
+### rdc config recover
 
 Restore config from backup (.bak) file
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-y, --yes` — Skip confirmation prompt
 
 ### rdc config backup-strategy set
@@ -753,35 +833,45 @@ Configure backup strategy settings
 
 Show current backup strategy configuration
 
-### rdc config machine add <name>
+### rdc config machine add
 
 Add a machine to the current config. Auto-scans SSH host keys. After adding, run: config machine setup <name>
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `--ip <address>` — Machine IP address or hostname
 - `--user <username>` — SSH username
 - `--port <port>` — SSH port (default: 22)
 - `--datastore <path>` — Datastore path on machine (default: /mnt/rediacc)
 
-### rdc config machine remove <name>
+### rdc config machine remove
 
 Remove a machine from the current config
+
+**Options:**
+
+- `--name <name>` — Resource name
 
 ### rdc config machine list
 
 List machines in the current config
 
-### rdc config machine scan-keys [machine]
+### rdc config machine scan-keys
 
 Scan SSH host keys for machines in the current config
 
-### rdc config machine setup <name>
+**Options:**
+
+- `-m, --machine <name>` — Machine name
+
+### rdc config machine setup
 
 Provision a remote machine for repositories (installs renet, configures Docker, BTRFS datastore). Idempotent. Required after 'config machine add' and before 'repo create'
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `--datastore <path>` — Datastore path on remote machine (default: /mnt/rediacc)
 - `--datastore-size <size>` — Datastore size (e.g., 95%, 100G) (default: 95%)
 - `--debug` — Enable debug output
@@ -797,12 +887,13 @@ Set Ceph RBD configuration for a machine
 - `--image <name>` — RBD image name (e.g., datastore-prod1)
 - `--cluster <name>` — Ceph cluster name (default: ceph)
 
-### rdc config provider add <name>
+### rdc config provider add
 
 Add a cloud provider
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `--provider <source>` — Known provider source (e.g., linode/linode, hetznercloud/hcloud)
 - `--source <source>` — Custom OpenTofu provider source (e.g., vultr/vultr)
 - `--token <token>` — API token for the cloud provider
@@ -823,9 +914,13 @@ Add a cloud provider
 
 > MCP tool
 
-### rdc config provider remove <name>
+### rdc config provider remove
 
 Remove a cloud provider configuration
+
+**Options:**
+
+- `--name <name>` — Resource name
 
 > MCP tool
 
@@ -835,20 +930,25 @@ List configured cloud providers
 
 > MCP tool
 
-### rdc config repository add <name>
+### rdc config repository add
 
 Add a repository GUID mapping to the current config
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `--guid <guid>` — Repository GUID (UUID from storage backup filenames)
 - `--tag <tag>` — Repository tag (default: latest)
 - `--credential <credential>` — Repository credential (encryption passphrase)
 - `--network-id <id>` — Network ID for Docker isolation (2816, 2880, ...). Auto-assigned if omitted
 
-### rdc config repository remove <name>
+### rdc config repository remove
 
 Remove a repository mapping from the current config
+
+**Options:**
+
+- `--name <name>` — Resource name
 
 ### rdc config repository list
 
@@ -860,40 +960,47 @@ List repository GUID mappings in the current config
 
 List archived repository credentials
 
-### rdc config repository restore-archived <guid>
+### rdc config repository restore-archived
 
 Restore an archived repository credential
 
 **Options:**
 
-- `--name <name>` — Restore with a different name
+- `--name <name>` — Resource name
+- `--new-name <name>` — New resource name
 
 ### rdc config repository purge-archived
 
 Permanently delete all archived credentials
 
-### rdc config storage import <file>
+### rdc config storage import
 
 Import storages from an rclone config file
 
 **Options:**
 
+- `--file <path>` — Path to file
 - `--name <name>` — Import only this named section
 
-### rdc config storage remove <name>
+### rdc config storage remove
 
 Remove a storage from the current config
+
+**Options:**
+
+- `--name <name>` — Resource name
 
 ### rdc config storage list
 
 List storages in the current config
 
-### rdc config infra set <machine>
+### rdc config infra set
 
 Set infrastructure configuration for a machine (machine-specific: IPs, domain, ports; shared: cert email, CF DNS token)
 
 **Options:**
 
+- `-m, --machine <name>` — Machine name
 - `--public-ipv4 <ip>` — Public IPv4 address (per-machine)
 - `--public-ipv6 <ip>` — Public IPv6 address (per-machine)
 - `--base-domain <domain>` — Base domain for applications (per-machine)
@@ -902,35 +1009,42 @@ Set infrastructure configuration for a machine (machine-specific: IPs, domain, p
 - `--tcp-ports <ports>` — TCP ports to forward (comma-separated, e.g., 25,143,465)
 - `--udp-ports <ports>` — UDP ports to forward (comma-separated, e.g., 53)
 
-### rdc config infra show <machine>
+### rdc config infra show
 
 Show infrastructure configuration for a machine
 
+**Options:**
+
+- `-m, --machine <name>` — Machine name
+
 > MCP tool
 
-### rdc config infra push <machine>
+### rdc config infra push
 
 Push infrastructure config to machine (Traefik proxy, router, Cloudflare DNS). Run 'config infra set <machine>' first
 
 **Options:**
 
+- `-m, --machine <name>` — Machine name
 - `--debug` — Enable debug output
 
-### rdc config cert-cache pull <machine>
+### rdc config cert-cache pull
 
 Download and cache TLS certificates from a machine
 
 **Options:**
 
+- `-m, --machine <name>` — Machine name
 - `--no-prune` — Skip pruning stale network-ID certificates
 - `--debug` — Enable debug output
 
-### rdc config cert-cache push <machine>
+### rdc config cert-cache push
 
 Upload cached TLS certificates to a machine
 
 **Options:**
 
+- `-m, --machine <name>` — Machine name
 - `--debug` — Enable debug output
 
 ### rdc config cert-cache status
@@ -941,65 +1055,43 @@ Show cached certificate inventory
 
 Remove the certificate cache
 
-### rdc store add <name>
+### rdc config ssh set
 
-Add a new sync store
-
-**Options:**
-
-- `--type <type>` — Store type (s3, local-file, bitwarden, git, vault)
-- `--encryption-key <key>` — Encryption key for this store
-- `--s3-endpoint <url>` — S3 endpoint URL
-- `--s3-bucket <name>` — S3 bucket name
-- `--s3-region <region>` — S3 region (default: auto)
-- `--s3-access-key-id <key>` — S3 access key ID
-- `--s3-secret-access-key <key>` — S3 secret access key
-- `--s3-prefix <prefix>` — S3 key prefix
-- `--local-path <path>` — Local directory path
-- `--bw-folder-id <id>` — Bitwarden folder ID to organize config items (optional)
-- `--git-url <url>` — Git repository URL
-- `--git-branch <branch>` — Git branch name
-- `--git-path <path>` — Path within Git repository
-- `--vault-addr <url>` — Vault server address (e.g., http://127.0.0.1:8200)
-- `--vault-token <token>` — Vault authentication token
-- `--vault-mount <path>` — Vault KV v2 mount path (default: secret)
-- `--vault-prefix <path>` — Path prefix within Vault KV engine (default: rdc/configs)
-- `--vault-namespace <ns>` — Vault namespace (enterprise only)
-
-### rdc store list
-
-List configured stores
-
-### rdc store remove <name>
-
-Remove a sync store
-
-### rdc store push
-
-Push current config to stores
+Set SSH key for the current config
 
 **Options:**
 
-- `--store <name>` — Push to a specific store
-- `--all` — Push to all stores
+- `--key <path>` — Path to SSH private key file
+- `--embed` — Embed key content in config instead of storing path
 
-### rdc store pull
+### rdc config ssh show
 
-Pull config from a store
+Show current SSH key configuration
+
+### rdc config ssh remove
+
+Remove SSH key from the current config
+
+### rdc config remote enable
+
+Link this config to remote encrypted storage
 
 **Options:**
 
-- `--store <name>` — Pull from a specific store
-- `--config <name>` — Config name to pull into
+- `--headless` — Use device code flow (for headless servers)
+- `--api-url <url>` — Account server URL
 
-### rdc store sync
+### rdc config remote disable
 
-Sync config with stores (pull then push)
+Disconnect from remote storage and save config locally
 
-**Options:**
+### rdc config remote status
 
-- `--store <name>` — Sync with a specific store
-- `--all` — Sync with all stores
+Show remote connection status
+
+### rdc config remote refresh
+
+Force re-fetch config from remote storage
 
 ### rdc doctor
 
@@ -1057,6 +1149,7 @@ Check for new CLI versions and apply updates. Supports --check-only to check wit
 - `--check-only` — Only check for updates without downloading
 - `--rollback` — Rollback to the previous version
 - `--status` — Show auto-update status and diagnostics
+- `--channel <channel>` — Set release channel (stable or edge)
 
 > MCP excluded: CLI self-update — not a remote operation
 
@@ -1109,12 +1202,13 @@ Batch-refresh repo licenses on a remote machine
 
 - `-m, --machine <name>` — Machine name
 
-### rdc subscription refresh repo <repo>
+### rdc subscription refresh repo
 
 Refresh the repo license for a specific repository
 
 **Options:**
 
+- `--name <name>` — Resource name
 - `-m, --machine <name>` — Machine name
 
 ### rdc agent capabilities
@@ -1123,13 +1217,21 @@ List all available commands with arguments and options
 
 > MCP tool
 
-### rdc agent schema <command>
+### rdc agent schema
 
 Show detailed schema for a specific command
 
-### rdc agent exec <command>
+**Options:**
+
+- `--command <path>` — Execute a command instead of interactive shell
+
+### rdc agent exec
 
 Execute a command with JSON input from stdin
+
+**Options:**
+
+- `--command <path>` — Execute a command instead of interactive shell
 
 ### rdc agent generate-reference
 

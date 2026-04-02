@@ -15,6 +15,7 @@ import {
   getSubscriptionTokenState,
 } from '../services/subscription-auth.js';
 import { resolveChannel } from '../services/updater.js';
+import { getInstallMethod } from '../utils/platform.js';
 import type { OutputFormat } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
 import { isSEA } from '../utils/platform.js';
@@ -87,8 +88,13 @@ function checkEnvironment(): CheckSection {
     { name: t('commands.doctor.checks.nodeVersion'), value: process.version, status: 'ok' },
     { name: t('commands.doctor.checks.cliVersion'), value: VERSION, status: 'ok' },
     {
-      name: t('commands.doctor.checks.seaMode'),
-      value: isSEA() ? t('commands.doctor.seaActive') : t('commands.doctor.devMode'),
+      name: 'Install method',
+      value: (() => {
+        const m = getInstallMethod();
+        if (m === 'sea') return 'SEA binary';
+        if (m === 'npm') return 'npm (global)';
+        return 'dev mode';
+      })(),
       status: 'ok',
     },
     { name: 'Update channel', value: resolveChannel(), status: 'ok' },

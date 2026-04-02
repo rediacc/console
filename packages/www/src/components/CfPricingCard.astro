@@ -54,11 +54,11 @@ const usesCheckout = checkoutPlans.has(plan.id);
     ) : (
       <>
         <div class="cf-price-line">
-          <span class="cf-price" data-monthly={formatPrice(plan.monthly)} data-annual={formatPrice(plan.annual)}>{formatPrice(plan.annual)}</span>
-          <span class="cf-price-period" data-monthly="/mo" data-annual="/yr">/yr</span>
+          <span class="cf-price" data-monthly={formatPrice(plan.monthly)} data-annual={formatPrice(plan.annual)}>{formatPrice(plan.monthly)}</span>
+          <span class="cf-price-period" data-monthly="/mo" data-annual="/yr">/mo</span>
         </div>
         <div class="cf-price-subtitle cf-annual-note" data-monthly={`or ${formatPrice(plan.annual)}/yr`} data-annual={`or ${formatPrice(plan.monthly)}/mo`}>
-          or {formatPrice(plan.monthly)}/mo
+          or {formatPrice(plan.annual)}/yr
         </div>
       </>
     )}

@@ -7,34 +7,34 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "e7df3204917ddb114fa685ca62680c0ebd28af1dc523fc565d10069a9a395d55",
+  "transcriptHash": "7e71c5067b210ecc084086595453ab6e56fc715fac42621906ac67217f1c296c",
   "steps": [
     {
       "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.508759,
-      "replayEndSec": 9.844365,
+      "replayStartSec": 1.50892,
+      "replayEndSec": 20.759864,
       "narrationText": "Healthy infrastructure starts with a healthy workstation. We scan the local environment for configuration issues -- Node.js version, SSH key presence, and KVM virtualization readiness.",
       "audioSrc": "/assets/tutorials/audio/en/monitoring-tutorial/monitoring-tutorial-01.12e24277.mp3",
-      "audioDurationSec": 12.59102
+      "audioDurationSec": 11.964082
     },
     {
       "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 9.844365,
-      "replayEndSec": 18.393678,
+      "replayStartSec": 20.759864,
+      "replayEndSec": 29.693662,
       "narrationText": "Local environment clear. Now we check the remote machine over SSH. You'll see uptime, disk and memory usage, SMART disk health, container counts, and service status.",
       "audioSrc": "/assets/tutorials/audio/en/monitoring-tutorial/monitoring-tutorial-02.56778847.mp3",
-      "audioDurationSec": 11.31102
+      "audioDurationSec": 10.840816
     },
     {
       "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 18.393678,
-      "replayEndSec": 22.197305,
+      "replayStartSec": 29.693662,
+      "replayEndSec": 33.919992,
       "narrationText": "To see every running container across all isolated Docker daemons on the machine, we pull a unified view -- with state, health checks, CPU, and memory per container.",
       "audioSrc": "/assets/tutorials/audio/en/monitoring-tutorial/monitoring-tutorial-03.0ae8f87f.mp3",
-      "audioDurationSec": 11.232653
+      "audioDurationSec": 11.31102
     }
   ]
 }

@@ -35,6 +35,11 @@ while IFS= read -r file; do
         continue
     fi
 
+    # Skip machine-generated checksum files (.hash) — no final newline by design
+    if [[ "$file" == *.hash ]]; then
+        continue
+    fi
+
     # Skip empty files
     [[ ! -s "$file" ]] && continue
 
