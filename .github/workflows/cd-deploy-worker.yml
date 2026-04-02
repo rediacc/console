@@ -1,7 +1,7 @@
 name: Deploy Worker
 
 # Reusable workflow for deploying the www Worker to edge or production.
-# Called by cd-v2.yml (edge, on every release) and promote-stable.yml (production, after soak).
+# Called by Release workflow (edge, and production for hotfixes) and promote-stable.yml (production, after soak).
 # Builds pages + account portal from source at the specified git ref, then deploys.
 
 on:

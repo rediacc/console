@@ -187,7 +187,8 @@ CD (auto on CI success): promote Docker -> git tag -> GitHub Release -> R2 uploa
 
 Install validation runs pre-publish against R2 staging artifacts. Docker validated on push-to-main only (PR images are dry-run). If CI fails, CD never triggers.
 
-CD manual dispatch: `gh workflow run "Console CD" -f ci_run_id=<id> -f release_mode=patch|minor|major|retry`
+Release dispatch: `gh workflow run "Release" -f ci_run_id=<id> -f release_mode=patch|minor|major|retry`
+Hotfix (edge + stable): `gh workflow run "Release" -f ci_run_id=<id> -f release_mode=patch -f publish_stable=true`
 
 ## Dev Scripts (`scripts/dev/`)
 
@@ -262,5 +263,5 @@ cd /path/to/console && git add -A && git commit -m "fix: ..." && git push
 ### Secrets in CI vs CD
 
 - **CI workflows** (`ci.yml`, `ci-quality.yml`, `ct-tests.yml`, `standalone-run.yml`): Use **generated throwaway keys** via `ci-env.sh`. Never pass production secrets.
-- **CD workflows** (`cd-v2.yml`): Use **real org secrets** from GitHub for production deployment.
+- **Release workflow** (`cd-v2.yml`): Uses **real org secrets** from GitHub for production deployment.
 - Generated secrets are masked via `::add-mask::` in `ci-env.sh`.

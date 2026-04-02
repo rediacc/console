@@ -1,7 +1,7 @@
 name: CD - Dry Run (Reusable)
 
 # Reusable workflow for dry-run validation
-# Used by both ci.yml (PR validation) and cd-v2.yml (deploy validation)
+# Used by ci.yml (PR validation) for staging artifacts and install validation
 # - Downloads all build artifacts
 # - Builds Linux packages (DEB/RPM) ONCE
 # - Generates CLI manifest ONCE
