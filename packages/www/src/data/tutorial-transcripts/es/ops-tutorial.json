@@ -6,25 +6,25 @@
     {
       "id": "ops-tutorial-01",
       "markerIndex": 0,
-      "at": 1.5108,
+      "at": 1.507643,
       "text": "Verifique los requisitos de virtualización local antes del aprovisionamiento."
     },
     {
       "id": "ops-tutorial-02",
       "markerIndex": 1,
-      "at": 34.500143,
+      "at": 34.220052,
       "text": "Inicie un clúster de VM mínimo para experimentar."
     },
     {
       "id": "ops-tutorial-03",
       "markerIndex": 2,
-      "at": 243.727131,
+      "at": 243.2698,
       "text": "Verifique el estado del clúster y la disponibilidad de la máquina."
     },
     {
       "id": "ops-tutorial-04",
       "markerIndex": 3,
-      "at": 401.750224,
+      "at": 401.083711,
       "text": "Ejecute una verificación rápida del nombre de host en una VM seleccionada."
     }
   ]

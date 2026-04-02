@@ -6,7 +6,7 @@
     {
       "id": "backup-tutorial-01",
       "markerIndex": 0,
-      "at": 6.224951,
+      "at": 6.238964,
       "text": "Protecting repositories requires an external storage destination for incremental backup transfers. We start by checking which storage providers -- S3, B2, or remote machine -- are configured."
     }
   ]

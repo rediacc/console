@@ -7,7 +7,7 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "1e0930e4c13f7bbdffa4ebee1368c064df8a07296ae042593d18400fcfbcc70d",
+  "transcriptHash": "0389570a9998461ec8f1c103db27df185f6beb613b3c8dedd53e47211490e205",
   "steps": [
     {
       "id": "monitoring-tutorial-01",

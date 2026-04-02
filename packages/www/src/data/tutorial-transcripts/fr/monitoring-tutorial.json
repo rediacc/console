@@ -6,19 +6,19 @@
     {
       "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "at": 6.176639,
+      "at": 5.903159,
       "text": "Exécutez un diagnostic complet de l’environnement pour faire apparaître les problèmes de base."
     },
     {
       "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "at": 25.705613,
+      "at": 24.516457,
       "text": "Vérifiez les indicateurs d’état de la machine à distance."
     },
     {
       "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "at": 37.199979,
+      "at": 36.164745,
       "text": "Répertoriez les conteneurs actifs sur la machine cible."
     }
   ]

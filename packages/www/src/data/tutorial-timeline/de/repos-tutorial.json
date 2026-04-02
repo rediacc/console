@@ -7,7 +7,7 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "98f9f8d960629ee5af518e8d260e7e082f42e3e2324fba055afe8e056db2aeb9",
+  "transcriptHash": "892bd9c124e60459f0f9e2c00ccc1ef314524873ffcd0419f02c45e7325ab3f7",
   "steps": [
     {
       "id": "repos-tutorial-01",

@@ -6,19 +6,19 @@
     {
       "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "at": 6.176639,
+      "at": 5.903159,
       "text": "完全な環境診断を実行して、ベースラインの問題を明らかにします。"
     },
     {
       "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "at": 25.705613,
+      "at": 24.516457,
       "text": "リモート マシンの健全性インジケーターを確認します。"
     },
     {
       "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "at": 37.199979,
+      "at": 36.164745,
       "text": "ターゲット マシン上のアクティブなコンテナを一覧表示します。"
     }
   ]
