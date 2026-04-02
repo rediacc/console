@@ -5,6 +5,7 @@ import { get as httpsGet } from 'node:https';
 import { dirname, join } from 'node:path';
 import type { ReleaseChannel } from '@rediacc/shared/update/types';
 import { UPDATE_DEFAULTS } from '@rediacc/shared/config/defaults';
+import { compareVersions } from '@rediacc/shared/utils';
 import { type UpdateManifest } from '../types/index.js';
 import {
   acquireUpdateLock,
@@ -174,13 +175,6 @@ export async function computeSha256(filePath: string): Promise<string> {
   return hash.digest('hex');
 }
 
-/**
- * Compare two semantic versions. Returns:
- *  -1 if a < b
- *   0 if a == b
- *   1 if a > b
- */
-import { compareVersions } from '@rediacc/shared/utils';
 // Re-export for backward compatibility with existing imports
 export { compareVersions };
 

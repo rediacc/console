@@ -284,7 +284,10 @@ async function showNpmHintIfUpdateAvailable(): Promise<void> {
   if (result.updateAvailable) showNpmUpdateHint();
 }
 
-async function dispatchUpdate(installMethod: ReturnType<typeof getInstallMethod>, force: boolean): Promise<void> {
+async function dispatchUpdate(
+  installMethod: ReturnType<typeof getInstallMethod>,
+  force: boolean
+): Promise<void> {
   if (installMethod === 'sea') {
     await handleUpdate(force);
   } else if (installMethod === 'npm') {
