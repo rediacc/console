@@ -6,7 +6,7 @@
     {
       "id": "tools-tutorial-01",
       "markerIndex": 0,
-      "at": 1.510008,
+      "at": 43.70817,
       "text": "Day-to-day operations rely on reliable SSH connectivity. We start by verifying the tunnel to the remote machine -- a hostname check confirms the connection target."
     }
   ]

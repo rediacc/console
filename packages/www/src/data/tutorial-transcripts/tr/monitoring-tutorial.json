@@ -6,19 +6,19 @@
     {
       "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "at": 5.903159,
+      "at": 6.176639,
       "text": "Temel sorunları ortaya çıkarmak için tam ortam tanılamayı çalıştırın."
     },
     {
       "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "at": 24.516457,
+      "at": 25.705613,
       "text": "Uzak makine sağlığı göstergelerini kontrol edin."
     },
     {
       "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "at": 36.164745,
+      "at": 37.199979,
       "text": "Hedef makinedeki etkin kapsayıcıları listeleyin."
     }
   ]

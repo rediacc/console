@@ -6,25 +6,25 @@
     {
       "id": "ops-tutorial-01",
       "markerIndex": 0,
-      "at": 1.507643,
+      "at": 1.5108,
       "text": "Vérifiez les exigences de virtualisation locale avant le provisionnement."
     },
     {
       "id": "ops-tutorial-02",
       "markerIndex": 1,
-      "at": 34.220052,
+      "at": 34.500143,
       "text": "Lancez un cluster de VM minimal à des fins d'expérimentation."
     },
     {
       "id": "ops-tutorial-03",
       "markerIndex": 2,
-      "at": 243.2698,
+      "at": 243.727131,
       "text": "Vérifiez l'état du cluster et la disponibilité de la machine."
     },
     {
       "id": "ops-tutorial-04",
       "markerIndex": 3,
-      "at": 401.083711,
+      "at": 401.750224,
       "text": "Exécutez une vérification rapide du nom d'hôte sur une VM sélectionnée."
     }
   ]

@@ -6,7 +6,7 @@
     {
       "id": "setup-tutorial-01",
       "markerIndex": 0,
-      "at": 1.512604,
+      "at": 1.509621,
       "text": "Every machine connection begins with a configuration profile -- it holds SSH keys, server addresses, and infrastructure settings. We create a new profile now, linked to your private key."
     }
   ]

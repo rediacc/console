@@ -7,7 +7,7 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "ab1d4ca725d1fbbd197beb766773322aad544d4c42ecdbbe945896b72a1d588d",
+  "transcriptHash": "1b9b112f7f7b716f6a9b0779232b1b2318a54629c00c25bf00121dc32d554e5b",
   "steps": [
     {
       "id": "backup-tutorial-01",
