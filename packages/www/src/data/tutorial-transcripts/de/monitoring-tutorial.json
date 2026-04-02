@@ -20,36 +20,6 @@
       "markerIndex": 2,
       "at": 36.164745,
       "text": "Aktive Container auf dem Zielcomputer auflisten."
-    },
-    {
-      "id": "monitoring-tutorial-04",
-      "markerIndex": 3,
-      "at": 46.679109,
-      "text": "TODO: translate event 4"
-    },
-    {
-      "id": "monitoring-tutorial-05",
-      "markerIndex": 4,
-      "at": 57.096927,
-      "text": "TODO: translate event 5"
-    },
-    {
-      "id": "monitoring-tutorial-06",
-      "markerIndex": 5,
-      "at": 67.06586,
-      "text": "TODO: translate event 6"
-    },
-    {
-      "id": "monitoring-tutorial-07",
-      "markerIndex": 6,
-      "at": 76.746932,
-      "text": "TODO: translate event 7"
-    },
-    {
-      "id": "monitoring-tutorial-08",
-      "markerIndex": 7,
-      "at": 85.166541,
-      "text": "TODO: translate event 8"
     }
   ]
 }
