@@ -7,16 +7,79 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "5c41ff64a0a77991ea62a92472d37fe4027cad182bb61e346ec1532d45dc4492",
+  "transcriptHash": "9432f4ef2835b067fa024e5e5ff1f09e4e3763d193dea80769c376cd01d381e7",
   "steps": [
     {
       "id": "tools-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.510008,
-      "replayEndSec": 5.571455,
+      "replayStartSec": 43.70817,
+      "replayEndSec": 52.191236,
       "narrationText": "Откройте команду удаленной оболочки, чтобы проверить личность целевого компьютера.",
       "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-01.53c79006.mp3",
       "audioDurationSec": 5.250612
+    },
+    {
+      "id": "tools-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 52.191236,
+      "replayEndSec": 62.595547,
+      "narrationText": "Проверяем время работы и среднюю нагрузку по SSH, чтобы убедиться, что машина отзывчива и хорошо справляется с текущей нагрузкой.",
+      "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-02.1a0a4eb5.mp3",
+      "audioDurationSec": 7.47102
+    },
+    {
+      "id": "tools-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 62.595547,
+      "replayEndSec": 74.148935,
+      "narrationText": "Теперь подключаемся напрямую к изолированной среде репозитория. docker ps показывает контейнеры под выделенным изолированным демоном этого репозитория.",
+      "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-03.2cc04aff.mp3",
+      "audioDurationSec": 9.639184
+    },
+    {
+      "id": "tools-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 74.148935,
+      "replayEndSec": 86.706562,
+      "narrationText": "Перед загрузкой файлов пробный запуск синхронизации показывает, что было бы передано, ничего не записывая. Здесь всё уже синхронизировано.",
+      "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-04.d82b9e3d.mp3",
+      "audioDurationSec": 7.967347
+    },
+    {
+      "id": "tools-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 86.706562,
+      "replayEndSec": 98.826776,
+      "narrationText": "Фактическая загрузка подтверждает ноль переданных файлов -- содержимое репозитория уже совпадает с локальным каталогом.",
+      "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-05.215b4ac1.mp3",
+      "audioDurationSec": 8.045714
+    },
+    {
+      "id": "tools-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 98.826776,
+      "replayEndSec": 110.142656,
+      "narrationText": "Выводим список файлов репозитория для проверки содержимого -- файлы приложения рядом с внутренней конфигурацией.",
+      "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-06.58d6e2d1.mp3",
+      "audioDurationSec": 6.844082
+    },
+    {
+      "id": "tools-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 110.142656,
+      "replayEndSec": 118.777182,
+      "narrationText": "Проверка интеграции VS Code показывает статус установки, расширение Remote SSH и все активные удалённые подключения, управляемые CLI.",
+      "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-07.69ba6347.mp3",
+      "audioDurationSec": 10.44898
+    },
+    {
+      "id": "tools-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 118.777182,
+      "replayEndSec": 125.456449,
+      "narrationText": "Быстрая проверка обновлений сообщает о доступных версиях CLI без установки -- полезно, чтобы быть в курсе последних возможностей.",
+      "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-08.3f2e55f4.mp3",
+      "audioDurationSec": 9.090612
     }
   ]
 }

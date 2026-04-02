@@ -6,50 +6,50 @@
     {
       "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "at": 5.903159,
+      "at": 6.176639,
       "text": "Healthy infrastructure starts with a healthy workstation. We scan the local environment for configuration issues -- Node.js version, SSH key presence, and KVM virtualization readiness."
     },
     {
       "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "at": 24.516457,
+      "at": 25.705613,
       "text": "Local environment clear. Now we check the remote machine over SSH. You'll see uptime, disk and memory usage, SMART disk health, container counts, and service status."
     },
     {
       "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "at": 36.164745,
+      "at": 37.199979,
       "text": "To see every running container across all isolated Docker daemons on the machine, we pull a unified view -- with state, health checks, CPU, and memory per container."
     },
     {
       "id": "monitoring-tutorial-04",
       "markerIndex": 3,
-      "at": 46.679109,
-      "text": "TODO: write transcript sentence for event 4"
+      "at": 47.874153,
+      "text": "Containers checked. Now we query the systemd services running on the machine to see which infrastructure daemons are active and healthy."
     },
     {
       "id": "monitoring-tutorial-05",
       "markerIndex": 4,
-      "at": 57.096927,
-      "text": "TODO: write transcript sentence for event 5"
+      "at": 58.417483,
+      "text": "For a complete picture, we run a full machine query with no filters -- returning system metrics, network, services, containers, and block devices in one call."
     },
     {
       "id": "monitoring-tutorial-06",
       "markerIndex": 5,
-      "at": 67.06586,
-      "text": "TODO: write transcript sentence for event 6"
+      "at": 68.461906,
+      "text": "We refresh the SSH host key fingerprints stored in the config for this machine, ensuring future connections can verify the server identity."
     },
     {
       "id": "monitoring-tutorial-07",
       "markerIndex": 6,
-      "at": 76.746932,
-      "text": "TODO: write transcript sentence for event 7"
+      "at": 78.211059,
+      "text": "Host keys updated. We verify end-to-end connectivity by running a remote command over SSH and confirming the machine's hostname is returned."
     },
     {
       "id": "monitoring-tutorial-08",
       "markerIndex": 7,
-      "at": 85.166541,
-      "text": "TODO: write transcript sentence for event 8"
+      "at": 86.795419,
+      "text": "One more remote command -- this time we check the machine's uptime and load average, demonstrating arbitrary command execution through the SSH tunnel."
     }
   ]
 }

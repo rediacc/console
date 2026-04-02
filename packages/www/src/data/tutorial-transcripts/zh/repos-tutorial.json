@@ -6,8 +6,62 @@
     {
       "id": "repos-tutorial-01",
       "markerIndex": 0,
-      "at": 1.508051,
+      "at": 12.189423,
       "text": "创建具有定义的存储大小的加密存储库。"
+    },
+    {
+      "id": "repos-tutorial-02",
+      "markerIndex": 1,
+      "at": 38.442369,
+      "text": "存储库已创建。我们列出机器上的所有存储库，确认新的加密卷已挂载并准备就绪。"
+    },
+    {
+      "id": "repos-tutorial-03",
+      "markerIndex": 2,
+      "at": 48.791132,
+      "text": "现在我们使用基于 rsync 的同步将应用程序文件上传到存储库 -- 快速、增量且传输过程中加密。"
+    },
+    {
+      "id": "repos-tutorial-04",
+      "markerIndex": 3,
+      "at": 58.851033,
+      "text": "我们在存储库内打开终端会话，验证上传的文件是否位于加密卷上的正确位置。"
+    },
+    {
+      "id": "repos-tutorial-05",
+      "markerIndex": 4,
+      "at": 70.153823,
+      "text": "文件已就位。我们使用上传的 compose 文件启动存储库的 Docker 服务 -- 本例中是一个 nginx 网页服务器。"
+    },
+    {
+      "id": "repos-tutorial-06",
+      "markerIndex": 5,
+      "at": 89.740567,
+      "text": "我们查询机器上正在运行的容器，确认 Web 服务已启动，显示其镜像、状态、内存使用量和分配的环回 IP。"
+    },
+    {
+      "id": "repos-tutorial-07",
+      "markerIndex": 6,
+      "at": 100.380993,
+      "text": "连接到存储库的隔离环境后运行 docker ps，可以看到每个存储库都有自己专用的 Docker 守护进程。"
+    },
+    {
+      "id": "repos-tutorial-08",
+      "markerIndex": 7,
+      "at": 111.920858,
+      "text": "我们停止正在运行的容器，同时保持存储库挂载 -- 在不触碰加密卷的情况下优雅地关闭服务。"
+    },
+    {
+      "id": "repos-tutorial-09",
+      "markerIndex": 8,
+      "at": 121.48644,
+      "text": "现在我们完全拆除存储库 -- 停止服务、关闭隔离的 Docker 守护进程并卸载 LUKS 加密卷。"
+    },
+    {
+      "id": "repos-tutorial-10",
+      "markerIndex": 9,
+      "at": 131.431736,
+      "text": "最后，我们从机器上彻底删除存储库，移除加密卷。配置条目会为其他机器保留。"
     }
   ]
 }

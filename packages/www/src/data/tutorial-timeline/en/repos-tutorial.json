@@ -7,16 +7,97 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "756462b8f99a6d7f76be897f218ca3e1e6bcdf08187db7d5cda2bf7be888753d",
+  "transcriptHash": "5acdfc68a2a3066ad85ba5e49cfa91a50dd25599c460cfcc8cc7c9ad7b437992",
   "steps": [
     {
       "id": "repos-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.508051,
-      "replayEndSec": 6.308468,
+      "replayStartSec": 12.189423,
+      "replayEndSec": 38.442369,
       "narrationText": "Each repository is a LUKS-encrypted BTRFS volume with its own Docker daemon and loopback subnet -- fully isolated. We create a two-gigabyte repository now.",
       "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-tutorial-01.eb447f36.mp3",
-      "audioDurationSec": 11.232653
+      "audioDurationSec": 11.075918
+    },
+    {
+      "id": "repos-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 38.442369,
+      "replayEndSec": 48.791132,
+      "narrationText": "Repository created. We list all repositories on the machine to confirm the new encrypted volume is mounted and ready.",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-tutorial-02.7eeffe35.mp3",
+      "audioDurationSec": 7.706122
+    },
+    {
+      "id": "repos-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 48.791132,
+      "replayEndSec": 58.851033,
+      "narrationText": "Now we upload application files into the repository using rsync-based sync -- fast, incremental, and encrypted in transit.",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-tutorial-03.3ed285e7.mp3",
+      "audioDurationSec": 8.202449
+    },
+    {
+      "id": "repos-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 58.851033,
+      "replayEndSec": 70.153823,
+      "narrationText": "We open a terminal session inside the repository to verify the uploaded files landed in the correct location on the encrypted volume.",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-tutorial-04.190e7bee.mp3",
+      "audioDurationSec": 7.88898
+    },
+    {
+      "id": "repos-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 70.153823,
+      "replayEndSec": 89.740567,
+      "narrationText": "Files in place. We start the repository's Docker services using the uploaded compose file -- in this case, an nginx web server.",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-tutorial-05.29f7917d.mp3",
+      "audioDurationSec": 8.986122
+    },
+    {
+      "id": "repos-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 89.740567,
+      "replayEndSec": 100.380993,
+      "narrationText": "We query the machine for running containers to confirm the web service is up, showing its image, status, memory usage, and assigned loopback IP.",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-tutorial-06.336a1247.mp3",
+      "audioDurationSec": 9.16898
+    },
+    {
+      "id": "repos-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 100.380993,
+      "replayEndSec": 111.920858,
+      "narrationText": "Connecting into the repository's isolated environment and running docker ps shows that each repository has its own dedicated Docker daemon.",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-tutorial-07.a2e3b242.mp3",
+      "audioDurationSec": 8.437551
+    },
+    {
+      "id": "repos-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 111.920858,
+      "replayEndSec": 121.48644,
+      "narrationText": "We stop the running containers while keeping the repository mounted -- a graceful service shutdown without touching the encrypted volume.",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-tutorial-08.1f48b13d.mp3",
+      "audioDurationSec": 7.235918
+    },
+    {
+      "id": "repos-tutorial-09",
+      "markerIndex": 8,
+      "replayStartSec": 121.48644,
+      "replayEndSec": 131.431736,
+      "narrationText": "Now we fully tear down the repository -- stopping services, shutting down the isolated Docker daemon, and unmounting the LUKS-encrypted volume.",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-tutorial-09.72266aa3.mp3",
+      "audioDurationSec": 9.560816
+    },
+    {
+      "id": "repos-tutorial-10",
+      "markerIndex": 9,
+      "replayStartSec": 131.431736,
+      "replayEndSec": 141.260339,
+      "narrationText": "Finally, we delete the repository from the machine entirely, removing the encrypted volume. The config entry is retained for other machines.",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-tutorial-10.e559f5cf.mp3",
+      "audioDurationSec": 9.090612
     }
   ]
 }

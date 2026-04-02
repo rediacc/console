@@ -7,43 +7,61 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "f5b75a756c6d776e370f7b0561478c952beebaf5458b303053d478ade49c9ace",
+  "transcriptHash": "2f99757dba85c2134615b97eaa248afbe83fdb322ffdbb6c64757870d169d11e",
   "steps": [
     {
       "id": "ops-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.507384,
-      "replayEndSec": 34.404021,
+      "replayStartSec": 1.5108,
+      "replayEndSec": 34.500143,
       "narrationText": "Verifique los requisitos de virtualización local antes del aprovisionamiento.",
       "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-tutorial-01.ab13a6af.mp3",
-      "audioDurationSec": 4.597551
+      "audioDurationSec": 5.485714
     },
     {
       "id": "ops-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 34.404021,
-      "replayEndSec": 243.73436,
+      "replayStartSec": 34.500143,
+      "replayEndSec": 243.727131,
       "narrationText": "Inicie un clúster de VM mínimo para experimentar.",
       "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-tutorial-02.240977ee.mp3",
-      "audioDurationSec": 5.32898
+      "audioDurationSec": 3.63102
     },
     {
       "id": "ops-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 243.73436,
-      "replayEndSec": 401.81915,
+      "replayStartSec": 243.727131,
+      "replayEndSec": 401.750224,
       "narrationText": "Verifique el estado del clúster y la disponibilidad de la máquina.",
       "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-tutorial-03.350eac3e.mp3",
-      "audioDurationSec": 4.04898
+      "audioDurationSec": 3.787755
     },
     {
       "id": "ops-tutorial-04",
       "markerIndex": 3,
-      "replayStartSec": 401.81915,
-      "replayEndSec": 404.763464,
+      "replayStartSec": 401.750224,
+      "replayEndSec": 558.51649,
       "narrationText": "Ejecute una verificación rápida del nombre de host en una VM seleccionada.",
       "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-tutorial-04.5243a253.mp3",
-      "audioDurationSec": 5.407347
+      "audioDurationSec": 4.519184
+    },
+    {
+      "id": "ops-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 558.51649,
+      "replayEndSec": 717.466324,
+      "narrationText": "SSH confirmado. Ejecutamos uname en el nodo bridge para mostrar la versión del kernel y la arquitectura, demostrando la ejecución arbitraria de comandos remotos.",
+      "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-tutorial-05.049f5d8d.mp3",
+      "audioDurationSec": 13.087347
+    },
+    {
+      "id": "ops-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 717.466324,
+      "replayEndSec": 1176.459923,
+      "narrationText": "Prueba completada. Desmantelamos todo el clúster, destruyendo todas las VMs en orden inverso y confirmando un apagado limpio.",
+      "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-tutorial-06.8ca969a5.mp3",
+      "audioDurationSec": 9.325714
     }
   ]
 }

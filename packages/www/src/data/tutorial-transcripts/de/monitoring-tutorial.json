@@ -6,50 +6,50 @@
     {
       "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "at": 5.903159,
+      "at": 6.176639,
       "text": "Führen Sie eine vollständige Umgebungsdiagnose durch, um grundlegende Probleme aufzudecken."
     },
     {
       "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "at": 24.516457,
+      "at": 25.705613,
       "text": "Überprüfen Sie die Gesundheitsindikatoren der Remote-Maschine."
     },
     {
       "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "at": 36.164745,
+      "at": 37.199979,
       "text": "Aktive Container auf dem Zielcomputer auflisten."
     },
     {
       "id": "monitoring-tutorial-04",
       "markerIndex": 3,
-      "at": 46.679109,
-      "text": "TODO: translate event 4"
+      "at": 47.874153,
+      "text": "Container geprüft. Jetzt fragen wir die systemd-Dienste auf der Maschine ab, um zu sehen, welche Infrastruktur-Daemons aktiv und funktionsfähig sind."
     },
     {
       "id": "monitoring-tutorial-05",
       "markerIndex": 4,
-      "at": 57.096927,
-      "text": "TODO: translate event 5"
+      "at": 58.417483,
+      "text": "Für ein vollständiges Bild führen wir eine ungefilterte Maschinenabfrage aus -- Systemmetriken, Netzwerk, Dienste, Container und Blockgeräte in einem Aufruf."
     },
     {
       "id": "monitoring-tutorial-06",
       "markerIndex": 5,
-      "at": 67.06586,
-      "text": "TODO: translate event 6"
+      "at": 68.461906,
+      "text": "Wir aktualisieren die in der Konfiguration gespeicherten SSH-Host-Key-Fingerprints für diese Maschine, damit zukünftige Verbindungen die Serveridentität verifizieren können."
     },
     {
       "id": "monitoring-tutorial-07",
       "markerIndex": 6,
-      "at": 76.746932,
-      "text": "TODO: translate event 7"
+      "at": 78.211059,
+      "text": "Host-Keys aktualisiert. Wir verifizieren die End-to-End-Konnektivität, indem wir einen Remote-Befehl über SSH ausführen und den Hostnamen der Maschine bestätigen."
     },
     {
       "id": "monitoring-tutorial-08",
       "markerIndex": 7,
-      "at": 85.166541,
-      "text": "TODO: translate event 8"
+      "at": 86.795419,
+      "text": "Noch ein Remote-Befehl -- diesmal prüfen wir die Betriebszeit und Lastdurchschnitt der Maschine und demonstrieren die beliebige Befehlsausführung über den SSH-Tunnel."
     }
   ]
 }

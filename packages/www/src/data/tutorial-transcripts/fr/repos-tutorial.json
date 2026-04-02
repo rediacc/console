@@ -6,8 +6,62 @@
     {
       "id": "repos-tutorial-01",
       "markerIndex": 0,
-      "at": 1.508051,
+      "at": 12.189423,
       "text": "Créez un référentiel chiffré avec une taille de stockage définie."
+    },
+    {
+      "id": "repos-tutorial-02",
+      "markerIndex": 1,
+      "at": 38.442369,
+      "text": "Référentiel créé. Nous listons tous les référentiels sur la machine pour confirmer que le nouveau volume chiffré est monté et prêt."
+    },
+    {
+      "id": "repos-tutorial-03",
+      "markerIndex": 2,
+      "at": 48.791132,
+      "text": "Nous téléversons maintenant les fichiers de l'application dans le référentiel via une synchronisation basée sur rsync -- rapide, incrémentale et chiffrée en transit."
+    },
+    {
+      "id": "repos-tutorial-04",
+      "markerIndex": 3,
+      "at": 58.851033,
+      "text": "Nous ouvrons une session terminal dans le référentiel pour vérifier que les fichiers téléversés sont au bon emplacement sur le volume chiffré."
+    },
+    {
+      "id": "repos-tutorial-05",
+      "markerIndex": 4,
+      "at": 70.153823,
+      "text": "Fichiers en place. Nous démarrons les services Docker du référentiel avec le fichier compose téléversé -- ici, un serveur web nginx."
+    },
+    {
+      "id": "repos-tutorial-06",
+      "markerIndex": 5,
+      "at": 89.740567,
+      "text": "Nous interrogeons la machine pour les conteneurs en cours d'exécution afin de confirmer que le service web est actif, avec son image, son état, son utilisation mémoire et son IP de loopback."
+    },
+    {
+      "id": "repos-tutorial-07",
+      "markerIndex": 6,
+      "at": 100.380993,
+      "text": "En se connectant à l'environnement isolé du référentiel, docker ps montre que chaque référentiel dispose de son propre daemon Docker dédié."
+    },
+    {
+      "id": "repos-tutorial-08",
+      "markerIndex": 7,
+      "at": 111.920858,
+      "text": "Nous arrêtons les conteneurs en cours d'exécution tout en gardant le référentiel monté -- un arrêt contrôlé des services sans toucher au volume chiffré."
+    },
+    {
+      "id": "repos-tutorial-09",
+      "markerIndex": 8,
+      "at": 121.48644,
+      "text": "Maintenant nous démontons complètement le référentiel -- arrêt des services, extinction du daemon Docker isolé et démontage du volume chiffré LUKS."
+    },
+    {
+      "id": "repos-tutorial-10",
+      "markerIndex": 9,
+      "at": 131.431736,
+      "text": "Enfin, nous supprimons entièrement le référentiel de la machine, en effaçant le volume chiffré. L'entrée de configuration est conservée pour les autres machines."
     }
   ]
 }

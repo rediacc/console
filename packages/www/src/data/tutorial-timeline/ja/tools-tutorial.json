@@ -7,16 +7,79 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "fcabd104b384cbb1e4f5a01bee16ee89b6fdc916671c8d704ac47d5710e5057e",
+  "transcriptHash": "1520e9f2929d43c08ce2f10d7f96a8a46d345019ee7b4ea51e431371498a4296",
   "steps": [
     {
       "id": "tools-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.510008,
-      "replayEndSec": 5.571455,
+      "replayStartSec": 43.70817,
+      "replayEndSec": 52.191236,
       "narrationText": "リモート シェル コマンドを開いて、ターゲット マシンの ID を確認します。",
       "audioSrc": "/assets/tutorials/audio/ja/tools-tutorial/tools-tutorial-01.0b70a0c0.mp3",
       "audioDurationSec": 4.362449
+    },
+    {
+      "id": "tools-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 52.191236,
+      "replayEndSec": 62.595547,
+      "narrationText": "SSH 経由で稼働時間と負荷平均を確認し、マシンが応答性良く現在のワークロードを適切に処理していることを確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/tools-tutorial/tools-tutorial-02.8b085120.mp3",
+      "audioDurationSec": 10.527347
+    },
+    {
+      "id": "tools-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 62.595547,
+      "replayEndSec": 74.148935,
+      "narrationText": "リポジトリのサンドボックス環境に直接接続します。docker ps でそのリポジトリ専用の分離されたデーモン配下のコンテナが表示されます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tools-tutorial/tools-tutorial-03.ce8fd89c.mp3",
+      "audioDurationSec": 10.44898
+    },
+    {
+      "id": "tools-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 74.148935,
+      "replayEndSec": 86.706562,
+      "narrationText": "ファイルをアップロードする前に、同期のドライランで何が転送されるかを確認します。ここではすべてが既に同期済みです。",
+      "audioSrc": "/assets/tutorials/audio/ja/tools-tutorial/tools-tutorial-04.7bf86aeb.mp3",
+      "audioDurationSec": 8.515918
+    },
+    {
+      "id": "tools-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 86.706562,
+      "replayEndSec": 98.826776,
+      "narrationText": "実際のアップロードを実行するとファイル転送ゼロが確認されます -- リポジトリの内容はローカル ディレクトリと既に一致しています。",
+      "audioSrc": "/assets/tutorials/audio/ja/tools-tutorial/tools-tutorial-05.712477f8.mp3",
+      "audioDurationSec": 9.874286
+    },
+    {
+      "id": "tools-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 98.826776,
+      "replayEndSec": 110.142656,
+      "narrationText": "リポジトリのファイルを一覧表示して内容を確認します。アプリケーション ファイルと内部設定が表示されます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tools-tutorial/tools-tutorial-06.3e185f3d.mp3",
+      "audioDurationSec": 7.549388
+    },
+    {
+      "id": "tools-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 110.142656,
+      "replayEndSec": 118.777182,
+      "narrationText": "VS Code 統合チェックでは、インストール状態、Remote SSH 拡張機能、CLI が管理するすべてのアクティブなリモート接続が表示されます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tools-tutorial/tools-tutorial-07.701c43a2.mp3",
+      "audioDurationSec": 10.605714
+    },
+    {
+      "id": "tools-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 118.777182,
+      "replayEndSec": 125.456449,
+      "narrationText": "簡易アップデート チェックで利用可能な CLI バージョンをインストールせずに確認できます -- 最新機能を把握するのに便利です。",
+      "audioSrc": "/assets/tutorials/audio/ja/tools-tutorial/tools-tutorial-08.e362c3e2.mp3",
+      "audioDurationSec": 9.404082
     }
   ]
 }

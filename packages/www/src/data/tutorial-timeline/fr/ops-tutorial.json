@@ -7,31 +7,31 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "4cde9986519f96cf0c0822cc264c2bd5e5f42ffb5d5789ec00351984e95f947b",
+  "transcriptHash": "6e1cebd1172b4a5087e57ef007abd10131c244f5fe339f3ddc268ffb40c2986b",
   "steps": [
     {
       "id": "ops-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.507384,
-      "replayEndSec": 34.404021,
+      "replayStartSec": 1.5108,
+      "replayEndSec": 34.500143,
       "narrationText": "Vérifiez les exigences de virtualisation locale avant le provisionnement.",
       "audioSrc": "/assets/tutorials/audio/fr/ops-tutorial/ops-tutorial-01.3d5c31f4.mp3",
-      "audioDurationSec": 4.91102
+      "audioDurationSec": 4.362449
     },
     {
       "id": "ops-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 34.404021,
-      "replayEndSec": 243.73436,
+      "replayStartSec": 34.500143,
+      "replayEndSec": 243.727131,
       "narrationText": "Lancez un cluster de VM minimal à des fins d'expérimentation.",
       "audioSrc": "/assets/tutorials/audio/fr/ops-tutorial/ops-tutorial-02.3ab99ff9.mp3",
-      "audioDurationSec": 4.362449
+      "audioDurationSec": 3.474286
     },
     {
       "id": "ops-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 243.73436,
-      "replayEndSec": 401.81915,
+      "replayStartSec": 243.727131,
+      "replayEndSec": 401.750224,
       "narrationText": "Vérifiez l'état du cluster et la disponibilité de la machine.",
       "audioSrc": "/assets/tutorials/audio/fr/ops-tutorial/ops-tutorial-03.2cfb394c.mp3",
       "audioDurationSec": 4.04898
@@ -39,11 +39,29 @@
     {
       "id": "ops-tutorial-04",
       "markerIndex": 3,
-      "replayStartSec": 401.81915,
-      "replayEndSec": 404.763464,
+      "replayStartSec": 401.750224,
+      "replayEndSec": 558.51649,
       "narrationText": "Exécutez une vérification rapide du nom d'hôte sur une VM sélectionnée.",
       "audioSrc": "/assets/tutorials/audio/fr/ops-tutorial/ops-tutorial-04.2897561b.mp3",
-      "audioDurationSec": 4.04898
+      "audioDurationSec": 4.205714
+    },
+    {
+      "id": "ops-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 558.51649,
+      "replayEndSec": 717.466324,
+      "narrationText": "SSH confirmé. Nous exécutons uname sur le noeud bridge pour afficher la version du noyau et l'architecture, démontrant l'exécution arbitraire de commandes à distance.",
+      "audioSrc": "/assets/tutorials/audio/fr/ops-tutorial/ops-tutorial-05.857736e5.mp3",
+      "audioDurationSec": 11.964082
+    },
+    {
+      "id": "ops-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 717.466324,
+      "replayEndSec": 1176.459923,
+      "narrationText": "Test terminé. Nous démantelons l'ensemble du cluster, en détruisant toutes les VMs dans l'ordre inverse et en confirmant un arrêt propre.",
+      "audioSrc": "/assets/tutorials/audio/fr/ops-tutorial/ops-tutorial-06.fe3132bd.mp3",
+      "audioDurationSec": 8.437551
     }
   ]
 }

@@ -7,16 +7,88 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "a205669536544cfa7e3bb09ba3ae61ea2229f5fd9a506b4cf39e2943af0f9a1b",
+  "transcriptHash": "fa2bd3ff1af442ff3cd69b91c5fff450ee47c523d216916f641f05092c15d229",
   "steps": [
     {
       "id": "setup-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.512604,
-      "replayEndSec": 7.006482,
+      "replayStartSec": 1.509621,
+      "replayEndSec": 11.379114,
       "narrationText": "Initialisez un profil de configuration dédié pour cet environnement.",
       "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-01.4e95a3fa.mp3",
-      "audioDurationSec": 4.04898
+      "audioDurationSec": 4.284082
+    },
+    {
+      "id": "setup-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 11.379114,
+      "replayEndSec": 19.116458,
+      "narrationText": "Profil créé. Nous listons tous les profils de configuration du système pour voir le nouveau aux côtés des profils existants.",
+      "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-02.b151619d.mp3",
+      "audioDurationSec": 7.967347
+    },
+    {
+      "id": "setup-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 19.116458,
+      "replayEndSec": 30.612519,
+      "narrationText": "Ensuite nous enregistrons une machine distante -- en fournissant son adresse IP et son utilisateur SSH. Les clés d'hôte sont scannées automatiquement pour un accès de confiance.",
+      "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-03.faf65ca7.mp3",
+      "audioDurationSec": 13.00898
+    },
+    {
+      "id": "setup-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 30.612519,
+      "replayEndSec": 39.668059,
+      "narrationText": "Nous listons les machines configurées dans ce profil pour confirmer que le worker a été ajouté avec les bons paramètres de connexion.",
+      "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-04.7738d928.mp3",
+      "audioDurationSec": 8.124082
+    },
+    {
+      "id": "setup-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 39.668059,
+      "replayEndSec": 48.511187,
+      "narrationText": "Il est temps de tester la connectivité. Nous exécutons une commande distante via SSH et confirmons que le nom d'hôte de la machine est renvoyé.",
+      "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-05.896d663f.mp3",
+      "audioDurationSec": 8.75102
+    },
+    {
+      "id": "setup-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 48.511187,
+      "replayEndSec": 59.171133,
+      "narrationText": "Une vérification supplémentaire -- nous interrogeons le temps de fonctionnement et la charge moyenne de la machine pour nous assurer qu'elle répond et fonctionne bien.",
+      "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-06.23d9a735.mp3",
+      "audioDurationSec": 8.515918
+    },
+    {
+      "id": "setup-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 59.171133,
+      "replayEndSec": 78.418551,
+      "narrationText": "Nous lançons un diagnostic complet couvrant l'environnement CLI, l'installation de renet, la configuration et l'état de l'abonnement en une seule commande.",
+      "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-07.841bfaf8.mp3",
+      "audioDurationSec": 9.952653
+    },
+    {
+      "id": "setup-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 78.418551,
+      "replayEndSec": 89.493582,
+      "narrationText": "La connectivité étant confirmée, nous configurons l'infrastructure de la machine -- IP publique, domaine de base pour le routage et adresse e-mail pour les certificats TLS automatisés.",
+      "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-08.b946a77b.mp3",
+      "audioDurationSec": 13.165714
+    },
+    {
+      "id": "setup-tutorial-09",
+      "markerIndex": 8,
+      "replayStartSec": 89.493582,
+      "replayEndSec": 98.079365,
+      "narrationText": "Nous affichons la configuration d'infrastructure enregistrée pour confirmer que l'IP, le domaine et les paramètres de certificat ont été correctement stockés.",
+      "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-09.1bf5a558.mp3",
+      "audioDurationSec": 9.874286
     }
   ]
 }

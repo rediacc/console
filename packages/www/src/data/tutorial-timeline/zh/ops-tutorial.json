@@ -7,43 +7,61 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "005d01c9109a84172607ec12b29cf20405062e1b147700b5fd1e068b37abce05",
+  "transcriptHash": "f7379129b071bc1d82ecf428645150ede85c2799de20829a57dc1b44fb7485a6",
   "steps": [
     {
       "id": "ops-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.507384,
-      "replayEndSec": 34.404021,
+      "replayStartSec": 1.5108,
+      "replayEndSec": 34.500143,
       "narrationText": "在配置之前验证本地虚拟化要求。",
       "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-tutorial-01.9ddab1fc.mp3",
-      "audioDurationSec": 3.239184
+      "audioDurationSec": 2.690612
     },
     {
       "id": "ops-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 34.404021,
-      "replayEndSec": 243.73436,
+      "replayStartSec": 34.500143,
+      "replayEndSec": 243.727131,
       "narrationText": "启动一个最小的虚拟机集群进行实验。",
       "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-tutorial-02.46469dc7.mp3",
-      "audioDurationSec": 4.284082
+      "audioDurationSec": 3.63102
     },
     {
       "id": "ops-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 243.73436,
-      "replayEndSec": 401.81915,
+      "replayStartSec": 243.727131,
+      "replayEndSec": 401.750224,
       "narrationText": "检查集群状态和机器可用性。",
       "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-tutorial-03.acbbc162.mp3",
-      "audioDurationSec": 2.272653
+      "audioDurationSec": 2.690612
     },
     {
       "id": "ops-tutorial-04",
       "markerIndex": 3,
-      "replayStartSec": 401.81915,
-      "replayEndSec": 404.763464,
+      "replayStartSec": 401.750224,
+      "replayEndSec": 558.51649,
       "narrationText": "对选定的虚拟机运行快速主机名检查。",
       "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-tutorial-04.8a50cccf.mp3",
       "audioDurationSec": 3.474286
+    },
+    {
+      "id": "ops-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 558.51649,
+      "replayEndSec": 717.466324,
+      "narrationText": "SSH已确认。我们在桥接节点上运行uname以显示内核版本和架构，演示任意远程命令执行。",
+      "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-tutorial-05.7f8460f3.mp3",
+      "audioDurationSec": 9.952653
+    },
+    {
+      "id": "ops-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 717.466324,
+      "replayEndSec": 1176.459923,
+      "narrationText": "测试完成。我们拆除整个集群，按逆序销毁所有虚拟机并确认干净关闭。",
+      "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-tutorial-06.9d01228b.mp3",
+      "audioDurationSec": 8.124082
     }
   ]
 }

@@ -6,56 +6,56 @@
     {
       "id": "backup-tutorial-01",
       "markerIndex": 0,
-      "at": 6.238964,
+      "at": 6.224951,
       "text": "Inspeccione los destinos de copia de seguridad actualmente configurados."
     },
     {
       "id": "backup-tutorial-02",
       "markerIndex": 1,
-      "at": 15.277836,
-      "text": "TODO: translate event 2"
+      "at": 15.432035,
+      "text": "Almacenamiento importado. Listamos todos los backends configurados para confirmar que el destino S3 está registrado y listo para transferencias de respaldo."
     },
     {
       "id": "backup-tutorial-03",
       "markerIndex": 2,
-      "at": 24.064797,
-      "text": "TODO: translate event 3"
+      "at": 24.286068,
+      "text": "A continuación creamos una estrategia de respaldo -- estableciendo el destino a nuestro backend S3, programando ejecuciones diarias a las dos de la mañana y activándola de inmediato."
     },
     {
       "id": "backup-tutorial-04",
       "markerIndex": 3,
-      "at": 35.084547,
-      "text": "TODO: translate event 4"
+      "at": 35.540522,
+      "text": "Estrategia guardada. Inspeccionamos la configuración completa para verificar la programación, el destino y el estado de activación antes de continuar."
     },
     {
       "id": "backup-tutorial-05",
       "markerIndex": 4,
-      "at": 44.169952,
-      "text": "TODO: translate event 5"
+      "at": 44.765645,
+      "text": "Con los respaldos configurados, establecemos la infraestructura de la máquina -- IP pública, dominio base y correo de certificado para el aprovisionamiento TLS automático."
     },
     {
       "id": "backup-tutorial-06",
       "markerIndex": 5,
-      "at": 56.932523,
-      "text": "TODO: translate event 6"
+      "at": 57.747851,
+      "text": "Ahora abrimos los puertos de red que la máquina necesita -- puertos TCP para protocolos de correo y un puerto UDP para resolución DNS."
     },
     {
       "id": "backup-tutorial-07",
       "markerIndex": 6,
-      "at": 68.031062,
-      "text": "TODO: translate event 7"
+      "at": 68.973334,
+      "text": "Revisamos la configuración completa de infraestructura de la máquina -- dirección IP, dominio, correo de certificado y todas las asignaciones de puertos en una sola vista."
     },
     {
       "id": "backup-tutorial-08",
       "markerIndex": 7,
-      "at": 77.244348,
-      "text": "TODO: translate event 8"
+      "at": 78.308748,
+      "text": "Finalmente, desactivamos la estrategia de respaldo sin eliminarla. La configuración permanece guardada para poder reactivarla en cualquier momento."
     },
     {
       "id": "backup-tutorial-09",
       "markerIndex": 8,
-      "at": 84.661426,
-      "text": "TODO: translate event 9"
+      "at": 85.975424,
+      "text": "Confirmado -- la estrategia está desactivada mientras el destino y la programación permanecen intactos. Reactive con un solo flag cuando esté listo."
     }
   ]
 }

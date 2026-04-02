@@ -6,8 +6,50 @@
     {
       "id": "tools-tutorial-01",
       "markerIndex": 0,
-      "at": 1.510008,
+      "at": 43.70817,
       "text": "Öffnen Sie einen Remote-Shell-Befehl, um die Identität des Zielcomputers zu überprüfen."
+    },
+    {
+      "id": "tools-tutorial-02",
+      "markerIndex": 1,
+      "at": 52.191236,
+      "text": "Wir prüfen Betriebszeit und Lastdurchschnitt über SSH, um zu bestätigen, dass die Maschine reagiert und ihre aktuelle Arbeitslast gut bewältigt."
+    },
+    {
+      "id": "tools-tutorial-03",
+      "markerIndex": 2,
+      "at": 62.595547,
+      "text": "Jetzt verbinden wir uns direkt in die Sandbox-Umgebung eines Repositorys. docker ps zeigt die Container unter dem eigenen isolierten Daemon dieses Repositorys."
+    },
+    {
+      "id": "tools-tutorial-04",
+      "markerIndex": 3,
+      "at": 74.148935,
+      "text": "Vor dem Hochladen von Dateien zeigt ein Probelauf der Synchronisierung, was übertragen würde, ohne etwas zu schreiben. Hier ist bereits alles synchron."
+    },
+    {
+      "id": "tools-tutorial-05",
+      "markerIndex": 4,
+      "at": 86.706562,
+      "text": "Der tatsächliche Upload bestätigt, dass keine Dateien übertragen wurden -- der Inhalt des Repositorys stimmt bereits mit dem lokalen Verzeichnis überein."
+    },
+    {
+      "id": "tools-tutorial-06",
+      "markerIndex": 5,
+      "at": 98.826776,
+      "text": "Wir listen die Dateien des Repositorys auf, um den Inhalt zu überprüfen -- die Anwendungsdateien neben der internen Konfiguration."
+    },
+    {
+      "id": "tools-tutorial-07",
+      "markerIndex": 6,
+      "at": 110.142656,
+      "text": "Die VS Code-Integrationsprüfung zeigt den Installationsstatus, die Remote SSH-Erweiterung und alle aktiven Remote-Verbindungen, die von der CLI verwaltet werden."
+    },
+    {
+      "id": "tools-tutorial-08",
+      "markerIndex": 7,
+      "at": 118.777182,
+      "text": "Eine schnelle Update-Prüfung meldet verfügbare CLI-Versionen ohne Installation -- nützlich, um mit den neuesten Funktionen auf dem Laufenden zu bleiben."
     }
   ]
 }

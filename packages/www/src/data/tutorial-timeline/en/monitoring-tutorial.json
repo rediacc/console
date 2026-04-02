@@ -7,34 +7,79 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "7e71c5067b210ecc084086595453ab6e56fc715fac42621906ac67217f1c296c",
+  "transcriptHash": "1418e20216f8728dbcc2560f08092639822d56d01d98f8344dc5db7d45ab51fe",
   "steps": [
     {
       "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.50892,
-      "replayEndSec": 20.759864,
+      "replayStartSec": 6.176639,
+      "replayEndSec": 25.705613,
       "narrationText": "Healthy infrastructure starts with a healthy workstation. We scan the local environment for configuration issues -- Node.js version, SSH key presence, and KVM virtualization readiness.",
       "audioSrc": "/assets/tutorials/audio/en/monitoring-tutorial/monitoring-tutorial-01.12e24277.mp3",
-      "audioDurationSec": 11.964082
+      "audioDurationSec": 13.165714
     },
     {
       "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 20.759864,
-      "replayEndSec": 29.693662,
+      "replayStartSec": 25.705613,
+      "replayEndSec": 37.199979,
       "narrationText": "Local environment clear. Now we check the remote machine over SSH. You'll see uptime, disk and memory usage, SMART disk health, container counts, and service status.",
       "audioSrc": "/assets/tutorials/audio/en/monitoring-tutorial/monitoring-tutorial-02.56778847.mp3",
-      "audioDurationSec": 10.840816
+      "audioDurationSec": 10.919184
     },
     {
       "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 29.693662,
-      "replayEndSec": 33.919992,
+      "replayStartSec": 37.199979,
+      "replayEndSec": 47.874153,
       "narrationText": "To see every running container across all isolated Docker daemons on the machine, we pull a unified view -- with state, health checks, CPU, and memory per container.",
       "audioSrc": "/assets/tutorials/audio/en/monitoring-tutorial/monitoring-tutorial-03.0ae8f87f.mp3",
-      "audioDurationSec": 11.31102
+      "audioDurationSec": 10.997551
+    },
+    {
+      "id": "monitoring-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 47.874153,
+      "replayEndSec": 58.417483,
+      "narrationText": "Containers checked. Now we query the systemd services running on the machine to see which infrastructure daemons are active and healthy.",
+      "audioSrc": "/assets/tutorials/audio/en/monitoring-tutorial/monitoring-tutorial-04.48e1cfec.mp3",
+      "audioDurationSec": 8.594286
+    },
+    {
+      "id": "monitoring-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 58.417483,
+      "replayEndSec": 68.461906,
+      "narrationText": "For a complete picture, we run a full machine query with no filters -- returning system metrics, network, services, containers, and block devices in one call.",
+      "audioSrc": "/assets/tutorials/audio/en/monitoring-tutorial/monitoring-tutorial-05.6746386b.mp3",
+      "audioDurationSec": 10.187755
+    },
+    {
+      "id": "monitoring-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 68.461906,
+      "replayEndSec": 78.211059,
+      "narrationText": "We refresh the SSH host key fingerprints stored in the config for this machine, ensuring future connections can verify the server identity.",
+      "audioSrc": "/assets/tutorials/audio/en/monitoring-tutorial/monitoring-tutorial-06.0eac4aa7.mp3",
+      "audioDurationSec": 9.090612
+    },
+    {
+      "id": "monitoring-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 78.211059,
+      "replayEndSec": 86.795419,
+      "narrationText": "Host keys updated. We verify end-to-end connectivity by running a remote command over SSH and confirming the machine's hostname is returned.",
+      "audioSrc": "/assets/tutorials/audio/en/monitoring-tutorial/monitoring-tutorial-07.2c23b11c.mp3",
+      "audioDurationSec": 9.090612
+    },
+    {
+      "id": "monitoring-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 86.795419,
+      "replayEndSec": 95.264993,
+      "narrationText": "One more remote command -- this time we check the machine's uptime and load average, demonstrating arbitrary command execution through the SSH tunnel.",
+      "audioSrc": "/assets/tutorials/audio/en/monitoring-tutorial/monitoring-tutorial-08.097589f6.mp3",
+      "audioDurationSec": 8.907755
     }
   ]
 }

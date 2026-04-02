@@ -137,7 +137,7 @@ function validateSchema(transcript, file, errors) {
         errors,
         file,
         `events[${index}].text is a TODO placeholder.`,
-        'Write or translate the event text'
+        'Write narration describing what happens in the terminal at this marker, then translate for locale files'
       );
     }
   });
@@ -270,8 +270,23 @@ function validateOptionalLocale(castKey, lang, transcript, markers, file, errors
 //   FIX: Run ./run.sh www tutorials scaffold-locales, then generate.
 //
 // ERROR: "events[N].text is a TODO placeholder"
-//   CAUSE: Transcript was scaffolded but narration text not yet written.
-//   FIX: Write real narration text for the event, then run generate.
+//   CAUSE: Transcript was scaffolded from cast markers but narration not written.
+//   THE TODO TEXT MUST BE REPLACED BEFORE RUNNING TTS GENERATION. If you run
+//   the TTS generator with TODO text, it will synthesize "TODO write transcript
+//   sentence for event N" as spoken audio -- producing unusable files.
+//   FIX:
+//     1. Read the cast file to understand what happens at each marker:
+//        - Parse the .cast file (asciicast v2 format)
+//        - For each marker ("m" event), look at terminal output in the ~5 seconds
+//          before/after to see what command ran and what output appeared
+//     2. Write a 1-2 sentence narration for each TODO event describing what the
+//        user sees in the terminal. Match the style of existing narrated events
+//        in the same file. Do NOT expose raw CLI command names (e.g. "rdc") --
+//        describe the action in user-facing language.
+//     3. Translate the new English text for all locale files (de, es, fr, ja,
+//        ar, ru, tr, zh). Match terminology used in existing translated events.
+//        Use "--" (double dash) not em dashes in all languages.
+//     4. Then run: ./run.sh www tutorials generate
 //
 // SHORTCUT (full pipeline from existing casts):
 //   ./run.sh www tutorials extract

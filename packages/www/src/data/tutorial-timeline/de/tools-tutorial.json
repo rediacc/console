@@ -7,16 +7,79 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "51c83a491da775b190a675c6e70886d8346b0bcbab1c11084f3792723a5ca17e",
+  "transcriptHash": "cdcf369c8b2a593043091d9598c709f99fb2ba551f400f1dc07b56e9dc6f838f",
   "steps": [
     {
       "id": "tools-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.510008,
-      "replayEndSec": 5.571455,
+      "replayStartSec": 43.70817,
+      "replayEndSec": 52.191236,
       "narrationText": "Öffnen Sie einen Remote-Shell-Befehl, um die Identität des Zielcomputers zu überprüfen.",
       "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-tutorial-01.a6600f20.mp3",
-      "audioDurationSec": 5.32898
+      "audioDurationSec": 7.314286
+    },
+    {
+      "id": "tools-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 52.191236,
+      "replayEndSec": 62.595547,
+      "narrationText": "Wir prüfen Betriebszeit und Lastdurchschnitt über SSH, um zu bestätigen, dass die Maschine reagiert und ihre aktuelle Arbeitslast gut bewältigt.",
+      "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-tutorial-02.ab3d31c4.mp3",
+      "audioDurationSec": 9.16898
+    },
+    {
+      "id": "tools-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 62.595547,
+      "replayEndSec": 74.148935,
+      "narrationText": "Jetzt verbinden wir uns direkt in die Sandbox-Umgebung eines Repositorys. docker ps zeigt die Container unter dem eigenen isolierten Daemon dieses Repositorys.",
+      "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-tutorial-03.b7be8a25.mp3",
+      "audioDurationSec": 10.840816
+    },
+    {
+      "id": "tools-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 74.148935,
+      "replayEndSec": 86.706562,
+      "narrationText": "Vor dem Hochladen von Dateien zeigt ein Probelauf der Synchronisierung, was übertragen würde, ohne etwas zu schreiben. Hier ist bereits alles synchron.",
+      "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-tutorial-04.e62ef242.mp3",
+      "audioDurationSec": 10.109388
+    },
+    {
+      "id": "tools-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 86.706562,
+      "replayEndSec": 98.826776,
+      "narrationText": "Der tatsächliche Upload bestätigt, dass keine Dateien übertragen wurden -- der Inhalt des Repositorys stimmt bereits mit dem lokalen Verzeichnis überein.",
+      "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-tutorial-05.43cb1b2e.mp3",
+      "audioDurationSec": 9.717551
+    },
+    {
+      "id": "tools-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 98.826776,
+      "replayEndSec": 110.142656,
+      "narrationText": "Wir listen die Dateien des Repositorys auf, um den Inhalt zu überprüfen -- die Anwendungsdateien neben der internen Konfiguration.",
+      "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-tutorial-06.112273ee.mp3",
+      "audioDurationSec": 9.16898
+    },
+    {
+      "id": "tools-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 110.142656,
+      "replayEndSec": 118.777182,
+      "narrationText": "Die VS Code-Integrationsprüfung zeigt den Installationsstatus, die Remote SSH-Erweiterung und alle aktiven Remote-Verbindungen, die von der CLI verwaltet werden.",
+      "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-tutorial-07.0c402f2c.mp3",
+      "audioDurationSec": 11.964082
+    },
+    {
+      "id": "tools-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 118.777182,
+      "replayEndSec": 125.456449,
+      "narrationText": "Eine schnelle Update-Prüfung meldet verfügbare CLI-Versionen ohne Installation -- nützlich, um mit den neuesten Funktionen auf dem Laufenden zu bleiben.",
+      "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-tutorial-08.103528a9.mp3",
+      "audioDurationSec": 10.187755
     }
   ]
 }

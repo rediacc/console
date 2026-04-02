@@ -6,38 +6,38 @@
     {
       "id": "ops-tutorial-01",
       "markerIndex": 0,
-      "at": 1.507643,
+      "at": 1.5108,
       "text": "プロビジョニングの前に、ローカル仮想化要件を確認してください。"
     },
     {
       "id": "ops-tutorial-02",
       "markerIndex": 1,
-      "at": 34.220052,
+      "at": 34.500143,
       "text": "実験用に最小限の VM クラスターを起動します。"
     },
     {
       "id": "ops-tutorial-03",
       "markerIndex": 2,
-      "at": 243.2698,
+      "at": 243.727131,
       "text": "クラスターの状態とマシンの可用性を確認します。"
     },
     {
       "id": "ops-tutorial-04",
       "markerIndex": 3,
-      "at": 401.083711,
+      "at": 401.750224,
       "text": "選択した VM でホスト名のクイック チェックを実行します。"
     },
     {
       "id": "ops-tutorial-05",
       "markerIndex": 4,
-      "at": 557.731539,
-      "text": "TODO: translate event 5"
+      "at": 558.51649,
+      "text": "SSH接続を確認しました。ブリッジノードでunameを実行してカーネルバージョンとアーキテクチャを表示し、任意のリモートコマンド実行を実演します。"
     },
     {
       "id": "ops-tutorial-06",
       "markerIndex": 5,
-      "at": 716.42116,
-      "text": "TODO: translate event 6"
+      "at": 717.466324,
+      "text": "テスト完了。クラスター全体を解体し、全VMを逆順に破棄してクリーンなシャットダウンを確認します。"
     }
   ]
 }

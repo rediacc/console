@@ -7,16 +7,88 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "8a05d4d1250589a561c2676ef4cd5321d9a44d08252aa91ef8efbf7f0bb57b6c",
+  "transcriptHash": "bdc2dd34e22073554ba6ea1a02f0b1f4c297c19dddd9b3befe1320c1cf35433a",
   "steps": [
     {
       "id": "backup-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.508468,
-      "replayEndSec": 6.230711,
+      "replayStartSec": 6.224951,
+      "replayEndSec": 15.432035,
       "narrationText": "現在構成されているバックアップ先を検査します。",
       "audioSrc": "/assets/tutorials/audio/ja/backup-tutorial/backup-tutorial-01.86595fa7.mp3",
-      "audioDurationSec": 3.160816
+      "audioDurationSec": 3.552653
+    },
+    {
+      "id": "backup-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 15.432035,
+      "replayEndSec": 24.286068,
+      "narrationText": "ストレージをインポートしました。構成済みの全バックエンドを一覧表示し、S3宛先が登録されバックアップ転送の準備ができていることを確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/backup-tutorial/backup-tutorial-02.a71ad0c5.mp3",
+      "audioDurationSec": 10.44898
+    },
+    {
+      "id": "backup-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 24.286068,
+      "replayEndSec": 35.540522,
+      "narrationText": "次にバックアップ戦略を作成します -- S3バックエンドを宛先に設定し、毎日午前2時の実行をスケジュールし、即座に有効化します。",
+      "audioSrc": "/assets/tutorials/audio/ja/backup-tutorial/backup-tutorial-03.7bd00d38.mp3",
+      "audioDurationSec": 10.527347
+    },
+    {
+      "id": "backup-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 35.540522,
+      "replayEndSec": 44.765645,
+      "narrationText": "戦略を保存しました。次に進む前に、完全な構成を検査してスケジュール、宛先、有効化状態を確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/backup-tutorial/backup-tutorial-04.d54a1dbe.mp3",
+      "audioDurationSec": 9.404082
+    },
+    {
+      "id": "backup-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 44.765645,
+      "replayEndSec": 57.747851,
+      "narrationText": "バックアップの設定が完了したので、マシンのインフラを設定します -- パブリックIP、ベースドメイン、自動TLSプロビジョニング用の証明書メールアドレスです。",
+      "audioSrc": "/assets/tutorials/audio/ja/backup-tutorial/backup-tutorial-05.7a3f2ceb.mp3",
+      "audioDurationSec": 11.807347
+    },
+    {
+      "id": "backup-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 57.747851,
+      "replayEndSec": 68.973334,
+      "narrationText": "次にマシンが必要とするネットワークポートを開放します -- メールプロトコル用のTCPポートとDNS解決用のUDPポートです。",
+      "audioSrc": "/assets/tutorials/audio/ja/backup-tutorial/backup-tutorial-06.8d4537ed.mp3",
+      "audioDurationSec": 10.03102
+    },
+    {
+      "id": "backup-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 68.973334,
+      "replayEndSec": 78.308748,
+      "narrationText": "マシンの完全なインフラ構成を確認します -- IPアドレス、ドメイン、証明書メール、全ポートマッピングを一つのビューで表示します。",
+      "audioSrc": "/assets/tutorials/audio/ja/backup-tutorial/backup-tutorial-07.fa2347dc.mp3",
+      "audioDurationSec": 9.795918
+    },
+    {
+      "id": "backup-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 78.308748,
+      "replayEndSec": 85.975424,
+      "narrationText": "最後に、バックアップ戦略を削除せずに無効化します。構成は保存されたままなので、いつでも再有効化できます。",
+      "audioSrc": "/assets/tutorials/audio/ja/backup-tutorial/backup-tutorial-08.a344b442.mp3",
+      "audioDurationSec": 8.359184
+    },
+    {
+      "id": "backup-tutorial-09",
+      "markerIndex": 8,
+      "replayStartSec": 85.975424,
+      "replayEndSec": 93.104958,
+      "narrationText": "確認完了 -- 戦略は無効化されましたが、宛先とスケジュールはそのまま残っています。準備ができたら単一のフラグで再有効化できます。",
+      "audioSrc": "/assets/tutorials/audio/ja/backup-tutorial/backup-tutorial-09.0eaf1bc0.mp3",
+      "audioDurationSec": 10.605714
     }
   ]
 }

@@ -7,34 +7,79 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "38da0e73820f9b1e4ce7b0a1b43fc69ff14470f6f950b89db92eb96a767af899",
+  "transcriptHash": "c8fa8fe8b6d4f018d3e873901b47aa573e24ad1dc5f0e4f5c9295bd5216ed9ed",
   "steps": [
     {
       "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.50892,
-      "replayEndSec": 20.759864,
+      "replayStartSec": 6.176639,
+      "replayEndSec": 25.705613,
       "narrationText": "运行完整的环境诊断以发现基线问题。",
       "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-01.2bb35780.mp3",
-      "audioDurationSec": 3.474286
+      "audioDurationSec": 3.709388
     },
     {
       "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 20.759864,
-      "replayEndSec": 29.693662,
+      "replayStartSec": 25.705613,
+      "replayEndSec": 37.199979,
       "narrationText": "检查远程机器健康状况指标。",
       "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-02.366bc5af.mp3",
-      "audioDurationSec": 2.690612
+      "audioDurationSec": 2.586122
     },
     {
       "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 29.693662,
-      "replayEndSec": 33.919992,
+      "replayStartSec": 37.199979,
+      "replayEndSec": 47.874153,
       "narrationText": "列出目标机器上的活动容器。",
       "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-03.ad0dbb0e.mp3",
-      "audioDurationSec": 2.35102
+      "audioDurationSec": 2.194286
+    },
+    {
+      "id": "monitoring-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 47.874153,
+      "replayEndSec": 58.417483,
+      "narrationText": "容器已检查。现在查询机器上的systemd服务，查看哪些基础设施守护进程处于活动和健康状态。",
+      "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-04.677b19d3.mp3",
+      "audioDurationSec": 8.672653
+    },
+    {
+      "id": "monitoring-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 58.417483,
+      "replayEndSec": 68.461906,
+      "narrationText": "为获取完整视图，我们运行无过滤器的完整机器查询 -- 在一次调用中返回系统指标、网络、服务、容器和块设备。",
+      "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-05.549b694a.mp3",
+      "audioDurationSec": 14.210612
+    },
+    {
+      "id": "monitoring-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 68.461906,
+      "replayEndSec": 78.211059,
+      "narrationText": "我们刷新配置中存储的此机器SSH主机密钥指纹，确保未来的连接能够验证服务器身份。",
+      "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-06.0e7f47e2.mp3",
+      "audioDurationSec": 7.810612
+    },
+    {
+      "id": "monitoring-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 78.211059,
+      "replayEndSec": 86.795419,
+      "narrationText": "主机密钥已更新。我们通过SSH执行远程命令并确认返回机器主机名，验证端到端连通性。",
+      "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-07.7db9ed79.mp3",
+      "audioDurationSec": 8.437551
+    },
+    {
+      "id": "monitoring-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 86.795419,
+      "replayEndSec": 95.264993,
+      "narrationText": "再执行一个远程命令 -- 这次检查机器的运行时间和平均负载，演示通过SSH隧道执行任意命令。",
+      "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-08.caff22f5.mp3",
+      "audioDurationSec": 9.560816
     }
   ]
 }

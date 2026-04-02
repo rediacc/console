@@ -6,8 +6,50 @@
     {
       "id": "tools-tutorial-01",
       "markerIndex": 0,
-      "at": 1.510008,
+      "at": 43.70817,
       "text": "Abra un comando de shell remoto para verificar la identidad de la máquina de destino."
+    },
+    {
+      "id": "tools-tutorial-02",
+      "markerIndex": 1,
+      "at": 52.191236,
+      "text": "Verificamos el tiempo de actividad y la carga promedio por SSH para confirmar que la máquina responde y maneja bien su carga de trabajo actual."
+    },
+    {
+      "id": "tools-tutorial-03",
+      "markerIndex": 2,
+      "at": 62.595547,
+      "text": "Ahora nos conectamos directamente al entorno aislado de un repositorio. docker ps muestra los contenedores bajo el daemon aislado propio de ese repositorio."
+    },
+    {
+      "id": "tools-tutorial-04",
+      "markerIndex": 3,
+      "at": 74.148935,
+      "text": "Antes de subir archivos, una sincronización de prueba muestra lo que se transferiría sin escribir nada. Aquí todo ya está sincronizado."
+    },
+    {
+      "id": "tools-tutorial-05",
+      "markerIndex": 4,
+      "at": 86.706562,
+      "text": "La subida real confirma cero archivos transferidos -- el contenido del repositorio ya coincide con el directorio local."
+    },
+    {
+      "id": "tools-tutorial-06",
+      "markerIndex": 5,
+      "at": 98.826776,
+      "text": "Listamos los archivos del repositorio para verificar el contenido, mostrando los archivos de la aplicación junto a la configuración interna."
+    },
+    {
+      "id": "tools-tutorial-07",
+      "markerIndex": 6,
+      "at": 110.142656,
+      "text": "La verificación de integración con VS Code muestra el estado de instalación, la extensión Remote SSH y todas las conexiones remotas activas gestionadas por la CLI."
+    },
+    {
+      "id": "tools-tutorial-08",
+      "markerIndex": 7,
+      "at": 118.777182,
+      "text": "Una comprobación rápida de actualizaciones informa de las versiones de CLI disponibles sin instalar -- útil para mantenerse al día con las últimas novedades."
     }
   ]
 }

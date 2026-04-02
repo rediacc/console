@@ -6,56 +6,56 @@
     {
       "id": "backup-tutorial-01",
       "markerIndex": 0,
-      "at": 6.238964,
+      "at": 6.224951,
       "text": "現在構成されているバックアップ先を検査します。"
     },
     {
       "id": "backup-tutorial-02",
       "markerIndex": 1,
-      "at": 15.277836,
-      "text": "TODO: translate event 2"
+      "at": 15.432035,
+      "text": "ストレージをインポートしました。構成済みの全バックエンドを一覧表示し、S3宛先が登録されバックアップ転送の準備ができていることを確認します。"
     },
     {
       "id": "backup-tutorial-03",
       "markerIndex": 2,
-      "at": 24.064797,
-      "text": "TODO: translate event 3"
+      "at": 24.286068,
+      "text": "次にバックアップ戦略を作成します -- S3バックエンドを宛先に設定し、毎日午前2時の実行をスケジュールし、即座に有効化します。"
     },
     {
       "id": "backup-tutorial-04",
       "markerIndex": 3,
-      "at": 35.084547,
-      "text": "TODO: translate event 4"
+      "at": 35.540522,
+      "text": "戦略を保存しました。次に進む前に、完全な構成を検査してスケジュール、宛先、有効化状態を確認します。"
     },
     {
       "id": "backup-tutorial-05",
       "markerIndex": 4,
-      "at": 44.169952,
-      "text": "TODO: translate event 5"
+      "at": 44.765645,
+      "text": "バックアップの設定が完了したので、マシンのインフラを設定します -- パブリックIP、ベースドメイン、自動TLSプロビジョニング用の証明書メールアドレスです。"
     },
     {
       "id": "backup-tutorial-06",
       "markerIndex": 5,
-      "at": 56.932523,
-      "text": "TODO: translate event 6"
+      "at": 57.747851,
+      "text": "次にマシンが必要とするネットワークポートを開放します -- メールプロトコル用のTCPポートとDNS解決用のUDPポートです。"
     },
     {
       "id": "backup-tutorial-07",
       "markerIndex": 6,
-      "at": 68.031062,
-      "text": "TODO: translate event 7"
+      "at": 68.973334,
+      "text": "マシンの完全なインフラ構成を確認します -- IPアドレス、ドメイン、証明書メール、全ポートマッピングを一つのビューで表示します。"
     },
     {
       "id": "backup-tutorial-08",
       "markerIndex": 7,
-      "at": 77.244348,
-      "text": "TODO: translate event 8"
+      "at": 78.308748,
+      "text": "最後に、バックアップ戦略を削除せずに無効化します。構成は保存されたままなので、いつでも再有効化できます。"
     },
     {
       "id": "backup-tutorial-09",
       "markerIndex": 8,
-      "at": 84.661426,
-      "text": "TODO: translate event 9"
+      "at": 85.975424,
+      "text": "確認完了 -- 戦略は無効化されましたが、宛先とスケジュールはそのまま残っています。準備ができたら単一のフラグで再有効化できます。"
     }
   ]
 }

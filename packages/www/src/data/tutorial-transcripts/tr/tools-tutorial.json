@@ -6,8 +6,50 @@
     {
       "id": "tools-tutorial-01",
       "markerIndex": 0,
-      "at": 1.510008,
+      "at": 43.70817,
       "text": "Hedef makine kimliğini doğrulamak için uzak kabuk komutunu açın."
+    },
+    {
+      "id": "tools-tutorial-02",
+      "markerIndex": 1,
+      "at": 52.191236,
+      "text": "Makinenin yanıt verdiğini ve mevcut iş yükünü iyi yönettiğini doğrulamak için SSH üzerinden çalışma süresini ve yük ortalamasını kontrol ediyoruz."
+    },
+    {
+      "id": "tools-tutorial-03",
+      "markerIndex": 2,
+      "at": 62.595547,
+      "text": "Şimdi bir deponun korumalı ortamına doğrudan bağlanıyoruz. docker ps, o deponun kendi izole daemon'u altındaki konteynerleri gösterir."
+    },
+    {
+      "id": "tools-tutorial-04",
+      "markerIndex": 3,
+      "at": 74.148935,
+      "text": "Dosyaları yüklemeden önce, deneme senkronizasyonu hiçbir şey yazmadan nelerin aktarılacağını gösterir. Burada her şey zaten senkronize."
+    },
+    {
+      "id": "tools-tutorial-05",
+      "markerIndex": 4,
+      "at": 86.706562,
+      "text": "Gerçek yükleme sıfır dosya aktarıldığını doğruluyor -- depo içeriği zaten yerel dizinle eşleşiyor."
+    },
+    {
+      "id": "tools-tutorial-06",
+      "markerIndex": 5,
+      "at": 98.826776,
+      "text": "İçeriği doğrulamak için deponun dosyalarını listeliyoruz -- uygulama dosyaları dahili yapılandırmayla birlikte gösteriliyor."
+    },
+    {
+      "id": "tools-tutorial-07",
+      "markerIndex": 6,
+      "at": 110.142656,
+      "text": "VS Code entegrasyon kontrolü kurulum durumunu, Remote SSH eklentisini ve CLI tarafından yönetilen tüm aktif uzak bağlantıları gösterir."
+    },
+    {
+      "id": "tools-tutorial-08",
+      "markerIndex": 7,
+      "at": 118.777182,
+      "text": "Hızlı bir güncelleme kontrolü, yüklemeden mevcut CLI sürümlerini bildirir -- en son özelliklerden haberdar olmak için kullanışlıdır."
     }
   ]
 }

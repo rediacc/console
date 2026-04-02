@@ -6,38 +6,38 @@
     {
       "id": "ops-tutorial-01",
       "markerIndex": 0,
-      "at": 1.507643,
+      "at": 1.5108,
       "text": "在配置之前验证本地虚拟化要求。"
     },
     {
       "id": "ops-tutorial-02",
       "markerIndex": 1,
-      "at": 34.220052,
+      "at": 34.500143,
       "text": "启动一个最小的虚拟机集群进行实验。"
     },
     {
       "id": "ops-tutorial-03",
       "markerIndex": 2,
-      "at": 243.2698,
+      "at": 243.727131,
       "text": "检查集群状态和机器可用性。"
     },
     {
       "id": "ops-tutorial-04",
       "markerIndex": 3,
-      "at": 401.083711,
+      "at": 401.750224,
       "text": "对选定的虚拟机运行快速主机名检查。"
     },
     {
       "id": "ops-tutorial-05",
       "markerIndex": 4,
-      "at": 557.731539,
-      "text": "TODO: translate event 5"
+      "at": 558.51649,
+      "text": "SSH已确认。我们在桥接节点上运行uname以显示内核版本和架构，演示任意远程命令执行。"
     },
     {
       "id": "ops-tutorial-06",
       "markerIndex": 5,
-      "at": 716.42116,
-      "text": "TODO: translate event 6"
+      "at": 717.466324,
+      "text": "测试完成。我们拆除整个集群，按逆序销毁所有虚拟机并确认干净关闭。"
     }
   ]
 }

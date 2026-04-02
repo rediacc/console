@@ -7,16 +7,88 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "a842fa28fdc38a2499fc0fa51e27db54a8551f0389b2952d1ecee82d7ba1c1e9",
+  "transcriptHash": "dcbb71d46a45d9be556f72b313c0153121de42c0fe5094a43ea25e699dfca46e",
   "steps": [
     {
       "id": "backup-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.508468,
-      "replayEndSec": 6.230711,
+      "replayStartSec": 6.224951,
+      "replayEndSec": 15.432035,
       "narrationText": "Protecting repositories requires an external storage destination for incremental backup transfers. We start by checking which storage providers -- S3, B2, or remote machine -- are configured.",
       "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-tutorial-01.32ba1093.mp3",
-      "audioDurationSec": 12.59102
+      "audioDurationSec": 14.524082
+    },
+    {
+      "id": "backup-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 15.432035,
+      "replayEndSec": 24.286068,
+      "narrationText": "Storage imported. We list all configured backends to confirm the S3 destination is registered and ready for backup transfers.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-tutorial-02.6d7f6ba2.mp3",
+      "audioDurationSec": 8.124082
+    },
+    {
+      "id": "backup-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 24.286068,
+      "replayEndSec": 35.540522,
+      "narrationText": "Next we create a backup strategy -- setting the destination to our S3 backend, scheduling daily runs at two AM, and enabling it immediately.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-tutorial-03.47162492.mp3",
+      "audioDurationSec": 8.986122
+    },
+    {
+      "id": "backup-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 35.540522,
+      "replayEndSec": 44.765645,
+      "narrationText": "Strategy saved. We inspect the full configuration to verify the schedule, destination, and enabled status before moving on.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-tutorial-04.70bf5d11.mp3",
+      "audioDurationSec": 7.967347
+    },
+    {
+      "id": "backup-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 44.765645,
+      "replayEndSec": 57.747851,
+      "narrationText": "With backups configured, we set up the machine's infrastructure -- public IP, base domain, and certificate email for automatic TLS provisioning.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-tutorial-05.08cd8be0.mp3",
+      "audioDurationSec": 8.515918
+    },
+    {
+      "id": "backup-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 57.747851,
+      "replayEndSec": 68.973334,
+      "narrationText": "Now we open the network ports the machine needs -- TCP ports for mail protocols and a UDP port for DNS resolution.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-tutorial-06.6e699faa.mp3",
+      "audioDurationSec": 8.359184
+    },
+    {
+      "id": "backup-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 68.973334,
+      "replayEndSec": 78.308748,
+      "narrationText": "We review the full infrastructure configuration for the machine -- IP address, domain, certificate email, and all port mappings in one view.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-tutorial-07.aba160df.mp3",
+      "audioDurationSec": 9.482449
+    },
+    {
+      "id": "backup-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 78.308748,
+      "replayEndSec": 85.975424,
+      "narrationText": "Finally, we disable the backup strategy without removing it. The configuration stays saved so it can be re-enabled at any time.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-tutorial-08.5ed66a44.mp3",
+      "audioDurationSec": 7.235918
+    },
+    {
+      "id": "backup-tutorial-09",
+      "markerIndex": 8,
+      "replayStartSec": 85.975424,
+      "replayEndSec": 93.104958,
+      "narrationText": "Confirmed -- the strategy is disabled while the destination and schedule remain intact. Re-enable with a single flag when you are ready.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-tutorial-09.b2a4cb78.mp3",
+      "audioDurationSec": 8.359184
     }
   ]
 }

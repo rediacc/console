@@ -7,31 +7,31 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "a732a39060d9063ecb44fb0d0edcdbefb62290f095f2afa0b4de999b200afc97",
+  "transcriptHash": "1eecd981c67e3b06b859cac4cfc874bd84f85edf0cf229ae59e514ecc9872a72",
   "steps": [
     {
       "id": "ops-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.507384,
-      "replayEndSec": 34.404021,
+      "replayStartSec": 1.5108,
+      "replayEndSec": 34.500143,
       "narrationText": "プロビジョニングの前に、ローカル仮想化要件を確認してください。",
       "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-01.a5707a2d.mp3",
-      "audioDurationSec": 4.205714
+      "audioDurationSec": 4.754286
     },
     {
       "id": "ops-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 34.404021,
-      "replayEndSec": 243.73436,
+      "replayStartSec": 34.500143,
+      "replayEndSec": 243.727131,
       "narrationText": "実験用に最小限の VM クラスターを起動します。",
       "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-02.a996b2fe.mp3",
-      "audioDurationSec": 3.395918
+      "audioDurationSec": 3.970612
     },
     {
       "id": "ops-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 243.73436,
-      "replayEndSec": 401.81915,
+      "replayStartSec": 243.727131,
+      "replayEndSec": 401.750224,
       "narrationText": "クラスターの状態とマシンの可用性を確認します。",
       "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-03.93437685.mp3",
       "audioDurationSec": 3.395918
@@ -39,11 +39,29 @@
     {
       "id": "ops-tutorial-04",
       "markerIndex": 3,
-      "replayStartSec": 401.81915,
-      "replayEndSec": 404.763464,
+      "replayStartSec": 401.750224,
+      "replayEndSec": 558.51649,
       "narrationText": "選択した VM でホスト名のクイック チェックを実行します。",
       "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-04.7594c302.mp3",
-      "audioDurationSec": 4.04898
+      "audioDurationSec": 3.709388
+    },
+    {
+      "id": "ops-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 558.51649,
+      "replayEndSec": 717.466324,
+      "narrationText": "SSH接続を確認しました。ブリッジノードでunameを実行してカーネルバージョンとアーキテクチャを表示し、任意のリモートコマンド実行を実演します。",
+      "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-05.1dd99eba.mp3",
+      "audioDurationSec": 11.31102
+    },
+    {
+      "id": "ops-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 717.466324,
+      "replayEndSec": 1176.459923,
+      "narrationText": "テスト完了。クラスター全体を解体し、全VMを逆順に破棄してクリーンなシャットダウンを確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-06.fd06fa6d.mp3",
+      "audioDurationSec": 7.967347
     }
   ]
 }
