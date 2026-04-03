@@ -4,7 +4,7 @@ description: "SSH、セットアップ、リポジトリ、サービス、Docker
 category: "Guides"
 order: 10
 language: ja
-sourceHash: "f666ba3be3be29f7"
+sourceHash: "a68982c895a81eef"
 ---
 
 # トラブルシューティング
@@ -23,7 +23,7 @@ sourceHash: "f666ba3be3be29f7"
 サーバーが再インストールされた場合やSSHキーが変更された場合、「host key verification failed」というエラーが表示されます:
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 このコマンドは新しいホストキーを取得し、設定を更新します。

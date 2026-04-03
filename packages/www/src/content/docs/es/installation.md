@@ -4,7 +4,7 @@ description: "Instale la CLI de Rediacc en Linux, macOS o Windows."
 category: "Guides"
 order: 1
 language: es
-sourceHash: "bf1eda371e5ced00"
+sourceHash: "f67060ce45e1dc96"
 sourceCommit: "58fce41a73c6abc64260fe5e71afd23d17f56cde"
 ---
 
@@ -129,7 +129,7 @@ rdc update --status
 Revertir a la versión anterior:
 
 ```bash
-rdc update rollback
+rdc update --rollback
 ```
 
 ## Canales de lanzamiento

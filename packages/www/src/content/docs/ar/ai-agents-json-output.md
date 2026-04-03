@@ -4,7 +4,7 @@ description: مرجع كامل لتنسيق مخرجات JSON لأداة rdc CLI
 category: Reference
 order: 51
 language: ar
-sourceHash: "49cfcc5e2e4621a9"
+sourceHash: "a84e20b09aadfd28"
 ---
 
 تدعم جميع أوامر `rdc` مخرجات JSON المنظمة للاستهلاك البرمجي بواسطة وكلاء الذكاء الاصطناعي والنصوص البرمجية.
@@ -14,8 +14,8 @@ sourceHash: "49cfcc5e2e4621a9"
 ### العلم الصريح
 
 ```bash
-rdc machine query prod-1 --output json
-rdc machine query prod-1 -o json
+rdc machine query --name prod-1 --output json
+rdc machine query --name prod-1 -o json
 ```
 
 ### الاكتشاف التلقائي
@@ -114,7 +114,7 @@ rdc machine containers prod-1 -o json --fields name,status,repository
 تدعم الأوامر المدمرة `--dry-run` لمعاينة ما سيحدث:
 
 ```bash
-rdc repo delete mail -m prod-1 --dry-run -o json
+rdc repo delete --name mail -m prod-1 --dry-run -o json
 ```
 
 ```json
@@ -174,7 +174,7 @@ rdc agent capabilities
 ### الحصول على مخطط الأمر
 
 ```bash
-rdc agent schema "machine query"
+rdc agent schema --command "machine query"
 ```
 
 يُعيد المخطط التفصيلي لأمر واحد، بما في ذلك جميع الوسائط والخيارات مع أنواعها وقيمها الافتراضية.

@@ -6,7 +6,7 @@ description: >-
 category: Use Cases
 order: 6
 language: es
-sourceHash: 51a38f7f8567e63e
+sourceHash: "51a38f7f8567e63e"
 ---
 
 > **Cuando se apagan las luces, su negocio permanece encendido.**

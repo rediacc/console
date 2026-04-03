@@ -4,7 +4,7 @@ description: "在 Linux、macOS 或 Windows 上安装 Rediacc CLI。"
 category: "Guides"
 order: 1
 language: zh
-sourceHash: "bf1eda371e5ced00"
+sourceHash: "f67060ce45e1dc96"
 sourceCommit: "58fce41a73c6abc64260fe5e71afd23d17f56cde"
 ---
 
@@ -129,7 +129,7 @@ rdc update --status
 回滚到上一个版本：
 
 ```bash
-rdc update rollback
+rdc update --rollback
 ```
 
 ## 发布渠道

@@ -139,7 +139,7 @@ rdc update --status
 Rollback to the previous version:
 
 ```bash
-rdc update rollback
+rdc update --rollback
 ```
 
 ## Release Channels

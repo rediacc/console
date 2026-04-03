@@ -4,7 +4,7 @@ description: "SSH, kurulum, depolar, servisler ve Docker ile ilgili yaygın soru
 category: "Guides"
 order: 10
 language: tr
-sourceHash: "f666ba3be3be29f7"
+sourceHash: "a68982c895a81eef"
 ---
 
 # Sorun Giderme
@@ -23,7 +23,7 @@ Yaygın sorunlar ve çözümleri. Şüphe durumunda, kapsamlı bir tanılama kon
 Bir sunucu yeniden kurulduysa veya SSH anahtarları değiştiyse, "host key verification failed" hatası görürsünüz:
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 Bu komut yeni host anahtarlarını alır ve yapılandırmanızı günceller.

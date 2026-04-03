@@ -25,7 +25,7 @@ Every Rediacc deployment starts with a configuration profile and a registered ma
 A configuration profile stores machine definitions, SSH credentials, and infrastructure settings. Create one for this environment.
 
 ```bash
-rdc config init tutorial-demo --ssh-key ~/.ssh/id_ed25519
+rdc config init --name tutorial-demo --ssh-key ~/.ssh/id_ed25519
 ```
 
 This creates a named config file at `~/.config/rediacc/tutorial-demo.json`.
@@ -45,7 +45,7 @@ Lists all available configs with their adapter type (local or cloud) and machine
 Register a machine with its IP address and SSH user. The CLI automatically fetches and stores the server's host keys via `ssh-keyscan`.
 
 ```bash
-rdc config machine add bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
+rdc config machine add --name bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
 ```
 
 ### Step 4: View machines
@@ -63,7 +63,7 @@ Shows all machines in the current config with their connection details.
 Setting a default machine avoids repeating `-m bridge-vm` on every command.
 
 ```bash
-rdc config set machine bridge-vm --config tutorial-demo
+rdc config set --key machine --value bridge-vm --config tutorial-demo
 ```
 
 ### Step 6: Test connectivity
@@ -90,7 +90,7 @@ Checks your local environment: CLI version, Docker, renet binary, config status,
 For public-facing services, the machine needs networking configuration — its external IP, a base domain, and a certificate email for TLS.
 
 ```bash
-rdc config infra set bridge-vm \
+rdc config infra set -m bridge-vm \
   --public-ipv4 192.168.111.1 \
   --base-domain test.local \
   --cert-email admin@test.local
@@ -99,7 +99,7 @@ rdc config infra set bridge-vm \
 Verify the configuration:
 
 ```bash
-rdc config infra show bridge-vm
+rdc config infra show -m bridge-vm
 ```
 
 Deploy the generated Traefik proxy config to the server with `rdc config infra push bridge-vm`.

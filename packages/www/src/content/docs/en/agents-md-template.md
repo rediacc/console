@@ -90,7 +90,7 @@ Replace `<machine>` and `<repo>` with your actual machine and repository names. 
 
 ```bash
 # List configured machines
-rdc machine query <machine-name>
+rdc machine query --name <machine-name>
 
 # List repositories with GUIDs
 rdc config repository list

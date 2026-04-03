@@ -4,7 +4,7 @@ description: "إزالة النسخ الاحتياطية المعزولة وال
 category: "Guides"
 order: 12
 language: ar
-sourceHash: "39df2a50797597f6"
+sourceHash: "a9bfc5eaffb9bca9"
 ---
 
 # التنظيف
@@ -20,13 +20,13 @@ sourceHash: "39df2a50797597f6"
 
 ```bash
 # Dry-run (default) — shows what would be deleted
-rdc storage prune my-s3 -m server-1
+rdc storage prune --name my-s3 -m server-1
 
 # Actually delete orphaned backups
-rdc storage prune my-s3 -m server-1
+rdc storage prune --name my-s3 -m server-1
 
 # Override grace period (default 7 days)
-rdc storage prune my-s3 -m server-1 --grace-days 14
+rdc storage prune --name my-s3 -m server-1 --grace-days 14
 ```
 
 ### ما الذي يتم فحصه
@@ -46,10 +46,10 @@ rdc storage prune my-s3 -m server-1 --grace-days 14
 
 ```bash
 # Dry-run
-rdc machine prune server-1 --dry-run
+rdc machine prune --name server-1 --dry-run
 
 # Execute cleanup
-rdc machine prune server-1
+rdc machine prune --name server-1
 ```
 
 ### المرحلة 2: صور المستودعات المعزولة (اختياري)
@@ -58,13 +58,13 @@ rdc machine prune server-1
 
 ```bash
 # Dry-run (default behavior when is set)
-rdc machine prune server-1
+rdc machine prune --name server-1
 
 # Actually delete orphaned repos
-rdc machine prune server-1
+rdc machine prune --name server-1
 
 # Custom grace period
-rdc machine prune server-1 --grace-days 30
+rdc machine prune --name server-1 --grace-days 30
 ```
 
 ## نموذج الأمان
@@ -91,7 +91,7 @@ rdc machine prune server-1 --grace-days 30
 
 ```bash
 # Set grace period to 14 days in the active config
-rdc config set pruneGraceDays 14
+rdc config set --key pruneGraceDays --value 14
 ```
 
 يتجاوز علم CLI `--grace-days` هذه القيمة عند تقديمه.
@@ -108,5 +108,5 @@ rdc config set pruneGraceDays 14
 - **حافظ على تحديث التكوينات المتعددة.** يفحص التنظيف جميع التكوينات في مجلد التكوين. إذا كان ملف تكوين قديمًا أو محذوفًا، تفقد مستودعاته الحماية. حافظ على دقة ملفات التكوين.
 - **استخدم فترات سماح سخية للإنتاج.** فترة السماح الافتراضية 7 أيام تناسب معظم سيناريوهات العمل. لبيئات الإنتاج ذات فترات الصيانة غير المتكررة، فكر في 14 أو 30 يومًا.
 - **جدوِل تنظيف التخزين بعد عمليات النسخ الاحتياطي.** اربط `storage prune` بجدول النسخ الاحتياطي للتحكم في تكاليف التخزين دون تدخل يدوي.
-- **ادمج تنظيف الجهاز مع deploy-backup.** بعد نشر جداول النسخ الاحتياطي (`rdc machine deploy-backup`)، أضف تنظيفًا دوريًا للجهاز لتنظيف اللقطات القديمة وعناصر مخزن البيانات المعزولة.
+- **ادمج تنظيف الجهاز مع backup schedule.** بعد نشر جداول النسخ الاحتياطي (`rdc machine backup schedule`)، أضف تنظيفًا دوريًا للجهاز لتنظيف اللقطات القديمة وعناصر مخزن البيانات المعزولة.
 - **راجع قبل استخدام `--force`.** يتجاوز علم `--force` فترة السماح. استخدمه فقط عندما تكون متأكدًا أن لا تكوين آخر يشير إلى المستودعات المعنية.

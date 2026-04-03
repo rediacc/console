@@ -13,8 +13,8 @@ All `rdc` commands support structured JSON output for programmatic consumption b
 ### Explicit Flag
 
 ```bash
-rdc machine query prod-1 --output json
-rdc machine query prod-1 -o json
+rdc machine query --name prod-1 --output json
+rdc machine query --name prod-1 -o json
 ```
 
 ### Auto-Detection
@@ -113,7 +113,7 @@ rdc machine containers prod-1 -o json --fields name,status,repository
 Destructive commands support `--dry-run` to preview what would happen:
 
 ```bash
-rdc repo delete mail -m prod-1 --dry-run -o json
+rdc repo delete --name mail -m prod-1 --dry-run -o json
 ```
 
 ```json
@@ -173,7 +173,7 @@ Returns the full command tree with arguments, options, and descriptions:
 ### Get Command Schema
 
 ```bash
-rdc agent schema "machine query"
+rdc agent schema --command "machine query"
 ```
 
 Returns detailed schema for a single command, including all arguments and options with their types and defaults.

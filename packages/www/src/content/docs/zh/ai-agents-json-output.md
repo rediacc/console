@@ -4,7 +4,7 @@ description: rdc CLI JSON 输出格式、信封模式、错误处理和代理发
 category: Reference
 order: 51
 language: zh
-sourceHash: "49cfcc5e2e4621a9"
+sourceHash: "a84e20b09aadfd28"
 ---
 
 所有 `rdc` 命令都支持结构化 JSON 输出，供 AI 代理和脚本进行程序化消费。
@@ -14,8 +14,8 @@ sourceHash: "49cfcc5e2e4621a9"
 ### 显式标志
 
 ```bash
-rdc machine query prod-1 --output json
-rdc machine query prod-1 -o json
+rdc machine query --name prod-1 --output json
+rdc machine query --name prod-1 -o json
 ```
 
 ### 自动检测
@@ -114,7 +114,7 @@ rdc machine containers prod-1 -o json --fields name,status,repository
 破坏性命令支持 `--dry-run` 来预览将要发生的操作：
 
 ```bash
-rdc repo delete mail -m prod-1 --dry-run -o json
+rdc repo delete --name mail -m prod-1 --dry-run -o json
 ```
 
 ```json
@@ -174,7 +174,7 @@ rdc agent capabilities
 ### 获取命令模式
 
 ```bash
-rdc agent schema "machine query"
+rdc agent schema --command "machine query"
 ```
 
 返回单个命令的详细模式，包括所有参数和选项的类型和默认值。

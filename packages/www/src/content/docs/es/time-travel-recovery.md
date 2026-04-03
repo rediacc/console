@@ -6,7 +6,7 @@ description: >-
 category: Use Cases
 order: 2
 language: es
-sourceHash: b8dbfddbf5b46895
+sourceHash: "b8dbfddbf5b46895"
 ---
 
 > ** Cuando otras pierden datos para siempre, puedes viajar en el tiempo. **

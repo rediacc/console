@@ -4,7 +4,7 @@ description: "配置自动备份计划、管理存储提供商、设置基础设
 category: "Tutorials"
 order: 6
 language: zh
-sourceHash: "14244f699c506ce9"
+sourceHash: "0bdff6ce5d24c154"
 ---
 
 # 如何使用 Rediacc 配置备份和网络
@@ -62,7 +62,7 @@ rdc config backup-strategy show
 对于面向公众的服务，机器需要其外部 IP、基础域名和用于 Let's Encrypt TLS 的证书电子邮件。
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com
@@ -75,7 +75,7 @@ Rediacc 根据这些设置生成 Traefik 反向代理配置。
 如果您的服务需要非 HTTP 端口（例如 SMTP、DNS），请将它们注册为 Traefik 入口点。
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 ```
@@ -87,7 +87,7 @@ rdc config infra set server-1 \
 验证完整的基础设施配置。
 
 ```bash
-rdc config infra show server-1
+rdc config infra show -m server-1
 ```
 
 显示公共 IP、域名、证书电子邮件和所有已注册端口。

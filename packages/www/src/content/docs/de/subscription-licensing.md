@@ -4,7 +4,7 @@ description: Erfahren Sie, wie Account, rdc und renet Maschinenplätze, Repo-Liz
 category: Guides
 order: 7
 language: de
-sourceHash: "fcc4e06609545bf7"
+sourceHash: "49428ac8fe913194"
 ---
 
 # Abonnement & Lizenzierung
@@ -181,7 +181,7 @@ Repositories, die auf der Maschine entdeckt wurden, aber in der lokalen `rdc`-Ko
 Repo-Lizenz-Aktualisierung für ein vorhandenes Repository erzwingen:
 
 ```bash
-rdc subscription refresh repo my-app -m hostinger
+rdc subscription refresh repo --name my-app -m hostinger
 ```
 
 Bei der ersten Verwendung kann eine lizenzierte Repo- oder Backup-Operation, die keine verwendbare Repo-Lizenz findet, automatisch eine Konto-Autorisierungs-Übergabe auslösen. Die CLI gibt eine Autorisierungs-URL aus, versucht den Browser in interaktiven Terminals zu öffnen, und wiederholt die Operation einmal nach erfolgreicher Autorisierung und Ausstellung.

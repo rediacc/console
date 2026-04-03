@@ -4,7 +4,7 @@ description: تهيئة بيئة تطوير Cursor للعمل مع بنية Redi
 category: Guides
 order: 32
 language: ar
-sourceHash: "ab61340d4a260fdd"
+sourceHash: "f2de270cae1a7ac1"
 ---
 
 يتكامل Cursor مع Rediacc من خلال أوامر الطرفية وملف التهيئة `.cursorrules`.
@@ -38,7 +38,7 @@ sourceHash: "ab61340d4a260fdd"
 
 يُنفّذ Cursor في الطرفية:
 ```bash
-rdc machine query prod-1 -o json
+rdc machine query --name prod-1 -o json
 ```
 
 ### نشر التغييرات
@@ -47,7 +47,7 @@ rdc machine query prod-1 -o json
 
 يُنفّذ Cursor في الطرفية:
 ```bash
-rdc repo up nextcloud -m prod-1 --yes
+rdc repo up --name nextcloud -m prod-1 --yes
 ```
 
 ### عرض السجلات

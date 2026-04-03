@@ -4,7 +4,7 @@ description: 什么时候使用 rdc，什么时候使用 renet。
 category: Concepts
 order: 1
 language: zh
-sourceHash: "69cb9c27f7c3afaf"
+sourceHash: "8b7443928e0be27e"
 ---
 
 # rdc vs renet
@@ -36,14 +36,14 @@ Rediacc 有两个二进制文件。以下是各自的使用场景。
 
 ```bash
 # Set up a new server
-rdc config machine setup server-1
+rdc config machine setup --name server-1
 
 # Create and start a repository
-rdc repo create my-app -m server-1 --size 10G
-rdc repo up my-app -m server-1 --mount
+rdc repo create --name my-app -m server-1 --size 10G
+rdc repo up --name my-app -m server-1 --mount
 
 # Stop a repository
-rdc repo down my-app -m server-1
+rdc repo down --name my-app -m server-1
 
 # Check machine health
 rdc machine health server-1
@@ -69,8 +69,8 @@ rdc machine health server-1
 rdc ops setup              # Install prerequisites (KVM or QEMU)
 rdc ops up --basic         # Start a minimal cluster
 rdc ops status             # Check VM status
-rdc ops ssh 1              # SSH into bridge VM
-rdc ops ssh 1 hostname     # Run a command on bridge VM
+rdc ops ssh --vm-id 1  # SSH into bridge VM
+rdc ops ssh --vm-id 1 -c hostname  # Run a command on bridge VM
 rdc ops down               # Destroy cluster
 ```
 

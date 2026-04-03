@@ -4,7 +4,7 @@ description: "Provisionner des clusters de VM locaux pour le développement et l
 category: "Concepts"
 order: 2
 language: fr
-sourceHash: fa4069c48c650a79
+sourceHash: "13bf9b8be113a0ad"
 ---
 
 # Experimental VMs
@@ -89,10 +89,10 @@ rdc ops up --basic
 rdc ops status
 
 # 4. Se connecter en SSH à la VM bridge
-rdc ops ssh 1
+rdc ops ssh --vm-id 1
 
 # 4b. Ou exécuter une commande directement
-rdc ops ssh 1 hostname
+rdc ops ssh --vm-id 1 -c hostname
 
 # 5. Démanteler
 rdc ops down

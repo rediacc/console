@@ -4,7 +4,7 @@ description: "Sincronización de archivos, acceso por terminal, integración con
 category: Guides
 order: 9
 language: es
-sourceHash: "bc5864d869d191be"
+sourceHash: "5577c66ce89c1925"
 ---
 
 # Herramientas
@@ -117,7 +117,7 @@ Abra una sesión SSH remota en VS Code, preconfigurada con los ajustes SSH corre
 ### Conectarse a un Repositorio
 
 ```bash
-rdc vscode connect my-app -m server-1
+rdc vscode connect -r my-app -m server-1
 ```
 
 Este comando:
@@ -135,7 +135,7 @@ rdc vscode list
 ### Limpiar Conexiones
 
 ```bash
-rdc vscode clean
+rdc vscode cleanup
 ```
 
 Elimina configuraciones SSH de VS Code que ya no son necesarias.
@@ -171,7 +171,7 @@ Las actualizaciones se descargan y aplican en el lugar. La CLI selecciona autom�
 ### Revertir
 
 ```bash
-rdc update rollback
+rdc update --rollback
 ```
 
 Revierte a la versión previamente instalada. Solo disponible después de que se haya aplicado una actualización.
@@ -179,7 +179,7 @@ Revierte a la versión previamente instalada. Solo disponible después de que se
 ### Estado de Actualización
 
 ```bash
-rdc update status
+rdc update --status
 ```
 
 Muestra la version actual, el canal de actualizacion y la configuracion de actualizacion automatica.

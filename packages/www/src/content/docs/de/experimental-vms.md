@@ -4,7 +4,7 @@ description: "Lokale VM-Cluster für Entwicklung und Tests mit rdc ops bereitste
 category: "Concepts"
 order: 2
 language: de
-sourceHash: fa4069c48c650a79
+sourceHash: "13bf9b8be113a0ad"
 ---
 
 # Experimentelle VMs
@@ -89,10 +89,10 @@ rdc ops up --basic
 rdc ops status
 
 # 4. SSH in die Bridge-VM
-rdc ops ssh 1
+rdc ops ssh --vm-id 1
 
 # 4b. Oder direkt einen Befehl ausführen
-rdc ops ssh 1 hostname
+rdc ops ssh --vm-id 1 -c hostname
 
 # 5. Abbauen
 rdc ops down

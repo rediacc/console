@@ -4,7 +4,7 @@ description: "Решения распространённых проблем с 
 category: "Guides"
 order: 10
 language: ru
-sourceHash: "f666ba3be3be29f7"
+sourceHash: "a68982c895a81eef"
 ---
 
 # Устранение неполадок
@@ -23,7 +23,7 @@ sourceHash: "f666ba3be3be29f7"
 Если сервер был переустановлен или его SSH-ключи изменились, вы увидите "host key verification failed":
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 Эта команда получает новые ключи хоста и обновляет вашу конфигурацию.

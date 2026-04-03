@@ -4,7 +4,7 @@ description: "Cree una configuración, agregue máquinas, aprovisione servidores
 category: "Guides"
 order: 3
 language: es
-sourceHash: "7d4756adb17e63d4"
+sourceHash: "9fd8ebf2b98bfcf5"
 ---
 
 # Configuración de Máquinas
@@ -16,7 +16,7 @@ Esta página le guía a través de la configuración de su primera máquina: cre
 Una **configuración** es un archivo de configuración con nombre que almacena sus credenciales SSH, definiciones de máquinas y mapeos de repositorios. Piense en ella como un espacio de trabajo del proyecto.
 
 ```bash
-rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | Opción | Requerido | Descripción |
@@ -33,7 +33,7 @@ Esto crea una configuración llamada `my-infra` y la almacena en `~/.config/redi
 Registre su servidor remoto como una máquina en la configuración:
 
 ```bash
-rdc config machine add server-1 --ip 203.0.113.50 --user deploy
+rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Opción | Requerido | Predeterminado | Descripción |
@@ -46,7 +46,7 @@ rdc config machine add server-1 --ip 203.0.113.50 --user deploy
 Después de agregar la máquina, rdc ejecuta automáticamente `ssh-keyscan` para obtener las claves del host del servidor. También puede ejecutar esto manualmente:
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 Para ver todas las máquinas registradas:
@@ -60,7 +60,7 @@ rdc config machine list
 Aprovisione el servidor remoto con todas las dependencias requeridas:
 
 ```bash
-rdc config machine setup server-1
+rdc config machine setup --name server-1
 ```
 
 Este comando:
@@ -82,7 +82,7 @@ Este comando:
 Si las claves SSH de un servidor cambian (por ejemplo, después de una reinstalación), actualice las claves almacenadas:
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 Esto actualiza el campo `knownHosts` en su configuración para esa máquina.
@@ -112,7 +112,7 @@ Para máquinas que necesitan servir tráfico públicamente, configure los ajuste
 ### Establecer Infraestructura
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -134,7 +134,7 @@ Las opciones de alcance Machine se almacenan por máquina. Las opciones de alcan
 ### Ver Infraestructura
 
 ```bash
-rdc config infra show server-1
+rdc config infra show -m server-1
 ```
 
 ### Enviar al Servidor
@@ -142,7 +142,7 @@ rdc config infra show server-1
 Genere y despliegue la configuración del proxy inverso Traefik en el servidor:
 
 ```bash
-rdc config infra push server-1
+rdc config infra push -m server-1
 ```
 
 Este comando:
@@ -163,13 +163,13 @@ Instale OpenTofu: [opentofu.org/docs/intro/install](https://opentofu.org/docs/in
 Asegúrese de que su configuración SSH incluya una clave pública:
 
 ```bash
-rdc config set ssh.privateKeyPath ~/.ssh/id_ed25519
+rdc config set --key ssh.privateKeyPath --value ~/.ssh/id_ed25519
 ```
 
 ### Agregar un Proveedor de Nube
 
 ```bash
-rdc config provider add my-linode \
+rdc config provider add --name my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -191,7 +191,7 @@ rdc config provider add my-linode \
 ### Aprovisionar una Máquina
 
 ```bash
-rdc machine provision prod-2 --provider my-linode
+rdc machine provision --name prod-2 --provider my-linode
 ```
 
 Este único comando:
@@ -214,7 +214,7 @@ Este único comando:
 ### Desaprovisionar una Máquina
 
 ```bash
-rdc machine deprovision prod-2
+rdc machine deprovision --name prod-2
 ```
 
 Destruye la VM mediante OpenTofu y la elimina de su configuración. Requiere confirmación a menos que se use `--force`. Solo funciona para máquinas creadas con `machine provision`.
@@ -230,14 +230,14 @@ rdc config provider list
 Configure valores predeterminados para no tener que especificarlos en cada comando:
 
 ```bash
-rdc config set machine server-1    # Máquina predeterminada
-rdc config set team my-team        # Equipo predeterminado (adaptador cloud, experimental)
+rdc config set --key machine --value server-1  # Máquina predeterminada
+rdc config set --key team --value my-team  # Equipo predeterminado (adaptador cloud, experimental)
 ```
 
 Después de establecer una máquina predeterminada, puede omitir `-m server-1` en los comandos:
 
 ```bash
-rdc repo create my-app --size 10G   # Usa la máquina predeterminada
+rdc repo create --name my-app -m my-server --size 10G
 ```
 
 ## Múltiples Configuraciones
@@ -246,8 +246,8 @@ Gestione múltiples entornos con configuraciones con nombre:
 
 ```bash
 # Crear configuraciones separadas
-rdc config init production --ssh-key ~/.ssh/id_prod
-rdc config init staging --ssh-key ~/.ssh/id_staging
+rdc config init --name production --ssh-key ~/.ssh/id_prod
+rdc config init --name staging --ssh-key ~/.ssh/id_staging
 
 # Usar una configuración específica
 rdc repo list -m server-1 --config production

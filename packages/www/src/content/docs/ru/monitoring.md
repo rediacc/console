@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: ru
-sourceHash: 13e3bed39301023c
+sourceHash: "7b7349277b9d5f85"
 sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
@@ -106,7 +106,7 @@ JSON-вывод включает `name` (разрешённое) и `guid` (ис
 Получение полного обзора машины, включая информацию о развёртывании:
 
 ```bash
-rdc machine vault-status server-1
+rdc machine vault-status --name server-1
 ```
 
 Предоставляет:

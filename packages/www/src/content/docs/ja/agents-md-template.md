@@ -4,7 +4,7 @@ description: Claude Code、Cursor、その他のAIコーディングアシスタ
 category: Reference
 order: 50
 language: ja
-sourceHash: "7cf4d73659b76ee7"
+sourceHash: "5e5c2b0ad2a62967"
 ---
 
 このテンプレートを使用して、AIコーディングアシスタント（Claude Code、Cursor、Cline、Windsurf）をRediaccインフラストラクチャの自律管理用に設定します。以下のブロックをプロジェクトの `CLAUDE.md`、`.cursorrules`、または同等のエージェント設定ファイルにコピーしてください。
@@ -91,7 +91,7 @@ rdc agent schema "machine query"
 
 ```bash
 # List configured machines
-rdc machine query <machine-name>
+rdc machine query --name <machine-name>
 
 # List repositories with GUIDs
 rdc config repository list

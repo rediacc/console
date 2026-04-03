@@ -20,7 +20,7 @@ Before pushing backups, register a storage provider. Rediacc supports any rclone
 If you already have an rclone remote configured:
 
 ```bash
-rdc config storage import rclone.conf
+rdc config storage import --file rclone.conf
 ```
 
 This imports storage configurations from an rclone config file into the current config. Supported types: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob, and Swift.
@@ -36,7 +36,7 @@ rdc config storage list
 Push a repository backup to external storage:
 
 ```bash
-rdc repo push my-app -m server-1 --to my-storage
+rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
 | Option | Description |
@@ -56,7 +56,7 @@ rdc repo push my-app -m server-1 --to my-storage
 Pull a repository backup from external storage:
 
 ```bash
-rdc repo pull my-app -m server-1 --from my-storage
+rdc repo pull --name my-app -m server-1 --from my-storage
 ```
 
 | Option | Description |
@@ -130,7 +130,7 @@ rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --e
 Deploy the schedule configuration to a machine as a systemd timer:
 
 ```bash
-rdc machine deploy-backup server-1
+rdc machine backup schedule -m server-1
 ```
 
 ### View Schedule
@@ -144,7 +144,7 @@ rdc config backup-strategy show
 Browse the contents of a storage location:
 
 ```bash
-rdc storage browse my-storage
+rdc storage browse --name my-storage
 ```
 
 ## Best Practices

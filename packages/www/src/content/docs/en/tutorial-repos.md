@@ -25,7 +25,7 @@ Repositories are the core deployment unit in Rediacc — each one is an isolated
 Each repository gets its own LUKS-encrypted storage volume. Specify the machine and storage size.
 
 ```bash
-rdc repo create test-app -m server-1 --size 2G
+rdc repo create --name test-app -m server-1 --size 2G
 ```
 
 Rediacc creates a 2 GB encrypted volume, formats it, and mounts it automatically. The repository is ready for file uploads.
@@ -55,7 +55,7 @@ The mount directory is where application files live — `Rediaccfile`, `docker-c
 Deploy the application by mounting the repository and starting its Docker services.
 
 ```bash
-rdc repo up test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1 --mount
 ```
 
 This mounts the repository (if not already mounted), starts an isolated Docker daemon, and starts services via `up()`.
@@ -85,9 +85,9 @@ The terminal session sets `DOCKER_HOST` to the repository's isolated Docker sock
 When you're done, stop services, close the encrypted volume, and optionally delete the repository.
 
 ```bash
-rdc repo down test-app -m server-1      # Stop services
-rdc repo unmount test-app -m server-1   # Close encrypted volume
-rdc repo delete test-app -m server-1    # Delete repository permanently
+rdc repo down --name test-app -m server-1  # Stop services
+rdc repo unmount --name test-app -m server-1  # Close encrypted volume
+rdc repo delete --name test-app -m server-1  # Delete repository permanently
 ```
 
 `down` stops containers and the Docker daemon. `unmount` closes the LUKS volume. `delete` permanently removes the repository and its encrypted storage.

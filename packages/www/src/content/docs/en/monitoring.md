@@ -102,7 +102,7 @@ JSON output includes `name` (resolved) and `guid` (original GUID), and nests eac
 Get a complete overview of a machine including deployment information:
 
 ```bash
-rdc machine vault-status server-1
+rdc machine vault-status --name server-1
 ```
 
 This provides:

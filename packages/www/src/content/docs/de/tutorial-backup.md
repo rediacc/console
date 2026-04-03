@@ -4,7 +4,7 @@ description: "Automatische Backup-Zeitpläne konfigurieren, Speicheranbieter ver
 category: "Tutorials"
 order: 6
 language: de
-sourceHash: "14244f699c506ce9"
+sourceHash: "0bdff6ce5d24c154"
 ---
 
 # So konfigurieren Sie Backups und Netzwerk mit Rediacc
@@ -62,7 +62,7 @@ Zeigt die aktuelle Backup-Konfiguration: Ziel, Cron-Ausdruck und Aktivierungssta
 Für öffentlich zugängliche Services benötigt die Maschine ihre externe IP, Basisdomain und eine Zertifikats-E-Mail für Let's Encrypt TLS.
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com
@@ -75,7 +75,7 @@ Rediacc generiert eine Traefik-Reverse-Proxy-Konfiguration aus diesen Einstellun
 Wenn Ihre Services Nicht-HTTP-Ports benötigen (z.B. SMTP, DNS), registrieren Sie diese als Traefik-Einstiegspunkte.
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 ```
@@ -87,7 +87,7 @@ Dies erstellt Traefik-Einstiegspunkte (`tcp-25`, `udp-53`, etc.), auf die Docker
 Überprüfen Sie die vollständige Infrastrukturkonfiguration.
 
 ```bash
-rdc config infra show server-1
+rdc config infra show -m server-1
 ```
 
 Zeigt öffentliche IPs, Domain, Zertifikats-E-Mail und alle registrierten Ports an.

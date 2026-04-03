@@ -4,7 +4,7 @@ description: "Dateisynchronisation, Terminalzugriff, VS Code-Unterstützung und 
 category: Guides
 order: 9
 language: de
-sourceHash: "bc5864d869d191be"
+sourceHash: "5577c66ce89c1925"
 ---
 
 # Werkzeuge
@@ -117,7 +117,7 @@ rdc term connect -m server-1 -r my-app --container <container-id> --container-ac
 ### Mit einem Repository verbinden
 
 ```bash
-rdc vscode connect my-app -m server-1
+rdc vscode connect -r my-app -m server-1
 ```
 
 Dieser Befehl:
@@ -135,7 +135,7 @@ rdc vscode list
 ### Verbindungen bereinigen
 
 ```bash
-rdc vscode clean
+rdc vscode cleanup
 ```
 
 Entfernt VS Code SSH-Konfigurationen, die nicht mehr benötigt werden.
@@ -171,7 +171,7 @@ Updates werden heruntergeladen und direkt angewendet. Die CLI wählt automatisch
 ### Zurücksetzen
 
 ```bash
-rdc update rollback
+rdc update --rollback
 ```
 
 Setzt auf die zuvor installierte Version zurück. Nur verfügbar, nachdem ein Update angewendet wurde.
@@ -179,7 +179,7 @@ Setzt auf die zuvor installierte Version zurück. Nur verfügbar, nachdem ein Up
 ### Update-Status
 
 ```bash
-rdc update status
+rdc update --status
 ```
 
 Zeigt die aktuelle Version, den Update-Kanal und die Auto-Update-Konfiguration an.

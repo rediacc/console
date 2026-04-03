@@ -4,7 +4,7 @@ description: "Aprovisione clústeres de VMs locales para desarrollo y pruebas co
 category: "Concepts"
 order: 2
 language: es
-sourceHash: fa4069c48c650a79
+sourceHash: "13bf9b8be113a0ad"
 ---
 
 # VMs Experimentales
@@ -89,10 +89,10 @@ rdc ops up --basic
 rdc ops status
 
 # 4. Conectarse por SSH a la VM puente
-rdc ops ssh 1
+rdc ops ssh --vm-id 1
 
 # 4b. O ejecutar un comando directamente
-rdc ops ssh 1 hostname
+rdc ops ssh --vm-id 1 -c hostname
 
 # 5. Desmantelar
 rdc ops down
