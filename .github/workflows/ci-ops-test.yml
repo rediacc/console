@@ -138,6 +138,8 @@ jobs:
 
       - name: Record tutorials
         if: success()
+        env:
+          TUTORIAL_RDC_CMD: sudo -E node ${{ github.workspace }}/packages/cli/dist/cli-bundle.cjs
         run: .ci/tutorials/record.sh .ci/tutorials/ops-tutorial.sh /tmp/ops-tutorial.cast
 
       - name: Upload tutorial recordings
