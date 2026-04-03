@@ -56,8 +56,13 @@ function cronToOnCalendar(cron: string): string {
   const datePart = `*-${monthPart}-${dayPart}`;
 
   // Build time part — handle wildcards and */N intervals
-  const hourStr = hour === '*' ? '*' : hour.startsWith('*/') ? `00/${hour.slice(2)}` : hour.padStart(2, '0');
-  const minStr = minute === '*' ? '*' : minute.startsWith('*/') ? `00/${minute.slice(2)}` : minute.padStart(2, '0');
+  function toTimerField(value: string): string {
+    if (value === '*') return '*';
+    if (value.startsWith('*/')) return `00/${value.slice(2)}`;
+    return value.padStart(2, '0');
+  }
+  const hourStr = toTimerField(hour);
+  const minStr = toTimerField(minute);
   const timePart = `${hourStr}:${minStr}:00`;
 
   // Build day-of-week prefix

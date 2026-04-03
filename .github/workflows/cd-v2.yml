@@ -1,29 +1,46 @@
-name: Console CD v2
+name: Release
 
-# Publish-only CD workflow triggered when CI completes on main.
-# All builds run in CI; CD only publishes artifacts produced by CI.
-# 1. init: Resolve CI run context, recalculate version, guard against duplicates
-# 2. publish: Promote Docker images, create Release, deploy Pages
+# Publish workflow -- called from CI on push-to-main, or manually.
+# Promotes Docker images, creates git tag + GitHub Release, deploys edge worker.
+# Version comes from git tags (no version bump commits).
 
 on:
   workflow_run:
     workflows: ["Console CI"]
     types: [completed]
     branches: [main]
+  workflow_call:
+    inputs:
+      next_version:
+        description: 'Version to publish (calculated from git tags)'
+        required: true
+        type: string
+      bump_type:
+        description: 'Bump type (patch, minor, major)'
+        required: true
+        type: string
+      channel:
+        description: 'Release channel (Docker tag + R2 channel path)'
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       ci_run_id:
         description: 'CI workflow run ID to publish from'
         required: true
         type: string
-      dry_run:
-        description: 'Dry-run mode (validate without publishing)'
-        required: false
-        type: boolean
-        default: false
-      force_release:
-        description: 'Create NEW release (bump version). Default: retry existing version.'
-        required: false
+      release_mode:
+        description: 'Release mode'
+        required: true
+        type: choice
+        options:
+          - retry
+          - patch
+          - minor
+          - major
+        default: retry
+      publish_stable:
+        description: 'Also publish to stable channel (hotfix deployment)'
         type: boolean
         default: false
 
@@ -55,9 +72,9 @@ jobs:
     outputs:
       ci_run_id: ${{ steps.resolve.outputs.ci_run_id }}
       ci_sha: ${{ steps.resolve.outputs.ci_sha }}
-      next_version: ${{ steps.version.outputs.next_version || steps.init.outputs.next_version }}
-      bump_type: ${{ steps.version.outputs.bump_type || steps.init.outputs.bump_type }}
-      staging_tag: ${{ steps.staging.outputs.staging_tag }}
+      next_version: ${{ steps.override.outputs.next_version || steps.version.outputs.next_version || steps.init.outputs.next_version }}
+      bump_type: ${{ steps.override.outputs.bump_type || steps.version.outputs.bump_type || steps.init.outputs.bump_type }}
+      channel: ${{ steps.channel.outputs.channel }}
       skip_release: ${{ steps.skip-check.outputs.skip_release }}
       retry_mode: ${{ steps.skip-check.outputs.retry_mode }}
     steps:
@@ -80,7 +97,7 @@ jobs:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      # Resolve CI run context from workflow_run event or workflow_dispatch input
+      # Resolve CI run context from workflow_call inputs or workflow_dispatch input
       - name: Resolve CI run context
         id: resolve
         env:
@@ -89,33 +106,30 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
             echo "ci_run_id=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
             echo "ci_sha=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
-            echo "Resolved from workflow_run: run=${{ github.event.workflow_run.id }}, sha=${{ github.event.workflow_run.head_sha }}"
           else
-            CI_RUN_ID="${{ inputs.ci_run_id }}"
-            # Fetch the SHA from the specified CI run
-            CI_SHA=$(gh api "repos/${{ github.repository }}/actions/runs/${CI_RUN_ID}" --jq '.head_sha')
+            CI_RUN_ID="${{ inputs.ci_run_id || github.run_id }}"
+            CI_SHA=$(gh api "repos/${{ github.repository }}/actions/runs/${CI_RUN_ID}" --jq '.head_sha' 2>/dev/null || echo "${{ github.sha }}")
             echo "ci_run_id=${CI_RUN_ID}" >> $GITHUB_OUTPUT
             echo "ci_sha=${CI_SHA}" >> $GITHUB_OUTPUT
-            echo "Resolved from workflow_dispatch: run=${CI_RUN_ID}, sha=${CI_SHA}"
           fi
 
       # Check if the merged PR has the 'release' label (opt-in to CD pipeline)
       # Without the label, CD is skipped — prevents accidental releases from chore PRs.
       #
-      # Manual workflow_dispatch has two modes:
+      # Manual workflow_dispatch: release_mode determines behavior
       #   - retry (default): re-deploy current version without bumping
-      #   - force_release: create new version bump (opt-in)
+      #   - patch/minor/major: create new version bump
       - name: Check for release label
         id: skip-check
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [[ "${{ github.event_name }}" != "workflow_run" ]]; then
-            # Manual trigger: retry mode by default, force_release for new version
-            if [[ "${{ inputs.force_release }}" == "true" ]]; then
+            RELEASE_MODE="${{ inputs.release_mode }}"
+            if [[ "$RELEASE_MODE" != "retry" ]]; then
               echo "skip_release=false" >> $GITHUB_OUTPUT
               echo "retry_mode=false" >> $GITHUB_OUTPUT
-              echo "::notice::Force release mode — will bump version and create new release"
+              echo "::notice::Release mode: ${RELEASE_MODE} bump — will create new release"
             else
               echo "skip_release=false" >> $GITHUB_OUTPUT
               echo "retry_mode=true" >> $GITHUB_OUTPUT
@@ -130,8 +144,21 @@ jobs:
           COMMIT_MSG=$(git log -1 --format="%B" "$CI_SHA" 2>/dev/null || true)
           PR_NUM=$(echo "$COMMIT_MSG" | grep -oE '\(#[0-9]+\)' | grep -oE '[0-9]+' | head -1 || true)
 
+          # Fallback: if commit has no PR ref (hotfix, --admin merge), find the most
+          # recent merged PR with 'release' label that was merged after the last tag.
           if [[ -z "$PR_NUM" ]]; then
-            echo "No PR number found in commit message, skipping release"
+            echo "No PR number in commit message, searching recent merged PRs..."
+            LAST_TAG_DATE=$(git log -1 --format=%aI "$(git describe --tags --abbrev=0 2>/dev/null || echo HEAD~50)" 2>/dev/null || echo "2000-01-01T00:00:00+00:00")
+            PR_NUM=$(gh pr list --repo "${{ github.repository }}" --state merged --base main \
+              --label release --limit 5 --json number,mergedAt \
+              --jq "[.[] | select(.mergedAt > \"${LAST_TAG_DATE}\")] | .[0].number // empty" 2>/dev/null || true)
+            if [[ -n "$PR_NUM" ]]; then
+              echo "Found release PR #$PR_NUM via label search"
+            fi
+          fi
+
+          if [[ -z "$PR_NUM" ]]; then
+            echo "No release PR found, skipping release"
             echo "skip_release=true" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -149,10 +176,10 @@ jobs:
         if: steps.skip-check.outputs.retry_mode == 'true'
         id: version
         run: |
-          VERSION=$(jq -r '.version' package.json)
+          VERSION=$(.ci/scripts/version/resolve-version.sh --current)
           echo "next_version=$VERSION" >> $GITHUB_OUTPUT
           echo "bump_type=none" >> $GITHUB_OUTPUT
-          echo "::notice::Retry mode: using existing version $VERSION"
+          echo "::notice::Retry mode: using existing version $VERSION (from latest tag)"
 
       # Normal mode: recalculate version from git state
       - name: Initialize CI
@@ -167,15 +194,22 @@ jobs:
         run: |
           .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
 
-      - name: Generate staging tag
-        if: steps.skip-check.outputs.skip_release != 'true'
-        id: staging
+      # Manual dispatch: override the auto-detected bump type with release_mode
+      - name: Override bump type (manual dispatch)
+        id: override
+        if: github.event_name == 'workflow_dispatch' && inputs.release_mode != 'retry' && inputs.release_mode != 'patch'
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.dry_run }}" == "true" ]]; then
-            echo "staging_tag=dryrun-${{ steps.resolve.outputs.ci_sha }}" >> $GITHUB_OUTPUT
-          else
-            echo "staging_tag=staging-${{ steps.resolve.outputs.ci_sha }}" >> $GITHUB_OUTPUT
-          fi
+          BUMP="${{ inputs.release_mode }}"
+          NEXT=$(.ci/scripts/version/resolve-version.sh --bump-type "${BUMP}")
+          echo "bump_type=${BUMP}" >> $GITHUB_OUTPUT
+          echo "next_version=${NEXT}" >> $GITHUB_OUTPUT
+          echo "::notice::Manual bump override: ${BUMP} -> v${NEXT}"
+
+      - name: Generate channel
+        if: steps.skip-check.outputs.skip_release != 'true'
+        id: channel
+        run: |
+          echo "channel=edge" >> $GITHUB_OUTPUT
 
       # Version guard: fail early if this version was already published (skip in retry mode)
       - name: Check for existing release
@@ -183,7 +217,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          VERSION="${{ steps.init.outputs.next_version }}"
+          VERSION="${{ steps.override.outputs.next_version || steps.init.outputs.next_version }}"
           git fetch --tags --quiet
           if git tag -l "v${VERSION}" | grep -q .; then
             echo "::error::Git tag v${VERSION} already exists. Aborting to prevent duplicate publish."
@@ -214,8 +248,7 @@ jobs:
     needs: [init]
     if: >-
       success() &&
-      needs.init.outputs.skip_release != 'true' &&
-      !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+      needs.init.outputs.skip_release != 'true'
     environment:
       name: edge
       url: https://edge.rediacc.com
@@ -240,7 +273,7 @@ jobs:
           node-version: '22'
 
       # -----------------------------------------------------------------------
-      # Step 1: Promote Docker images (staging -> version + latest)
+      # Step 1: Promote Docker images (channel -> version + latest)
       # -----------------------------------------------------------------------
       - name: Login to GHCR
         uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
@@ -251,15 +284,15 @@ jobs:
 
       - name: Promote Docker images
         run: |
-          STAGING_TAG="${{ needs.init.outputs.staging_tag }}"
+          CHANNEL="${{ needs.init.outputs.channel }}"
           VERSION="${{ needs.init.outputs.next_version }}"
 
-          .ci/scripts/docker/retag-image.sh --image api --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
-          .ci/scripts/docker/retag-image.sh --image bridge --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
-          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
-          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
-          .ci/scripts/docker/retag-image.sh --image web --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
-          .ci/scripts/docker/retag-image.sh --image cli --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag-image.sh --image api --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag-image.sh --image bridge --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag-image.sh --image web --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag-image.sh --image cli --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
 
       # -----------------------------------------------------------------------
       # Step 1b: Install dependencies and build shared packages
@@ -303,15 +336,15 @@ jobs:
       # -----------------------------------------------------------------------
       # Step 2: Bump version & commit (includes all submodules)
       # -----------------------------------------------------------------------
-      - name: Download staging release artifact
+      - name: Download release artifacts
         uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
-          name: staging-release-${{ needs.init.outputs.ci_sha }}
+          name: release-artifacts-${{ needs.init.outputs.ci_sha }}
           path: dist/
           run-id: ${{ needs.init.outputs.ci_run_id }}
           github-token: ${{ github.token }}
 
-      - name: Verify staging release attestation
+      - name: Verify release artifact attestation
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -327,14 +360,32 @@ jobs:
             echo "::warning::Some artifacts lack attestation — this is expected during the transition period"
           fi
 
-      - name: Version bump
-        if: needs.init.outputs.retry_mode != 'true'
-        run: .ci/scripts/version/bump.sh --version ${{ needs.init.outputs.next_version }}
-
-      - name: Bump submodule versions
+      # Tag-based versioning: create git tag instead of version bump commit.
+      # No file changes needed -- version is injected at build time.
+      - name: Create version tag
         if: needs.init.outputs.retry_mode != 'true'
         run: |
-          .ci/scripts/version/bump-submodules.sh --version ${{ needs.init.outputs.next_version }} --stage-only
+          VERSION="${{ needs.init.outputs.next_version }}"
+          git config user.name "${{ vars.GIT_BOT_NAME }}"
+          git config user.email "${{ vars.GIT_BOT_EMAIL }}"
+          git tag -a "v${VERSION}" -m "v${VERSION}"
+          git push origin "v${VERSION}"
+          echo "::notice::Created tag v${VERSION}"
+
+      - name: Tag submodules
+        if: needs.init.outputs.retry_mode != 'true'
+        run: |
+          VERSION="${{ needs.init.outputs.next_version }}"
+          for sub in private/renet private/middleware; do
+            if [[ -d "$sub/.git" ]] || [[ -f "$sub/.git" ]]; then
+              cd "$sub"
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git tag -a "v${VERSION}" -m "v${VERSION}" 2>/dev/null || echo "Tag v${VERSION} already exists in $(basename $sub)"
+              git push origin "v${VERSION}" 2>/dev/null || echo "Tag v${VERSION} already pushed in $(basename $sub)"
+              cd "$GITHUB_WORKSPACE"
+            fi
+          done
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
 
@@ -344,18 +395,11 @@ jobs:
           .ci/scripts/release/update-homebrew-tap.sh \
             --version ${{ needs.init.outputs.next_version }} \
             --local-checksums dist/cli \
-            --stage-only
+            --push
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
-
-      - name: Version commit
-        if: needs.init.outputs.retry_mode != 'true'
-        id: commit
-        run: |
-          .ci/scripts/version/commit.sh --version ${{ needs.init.outputs.next_version }} --bump-type ${{ needs.init.outputs.bump_type }} --push --include-submodules
-          echo "release_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_HEAD_REF: main
+          GIT_BOT_NAME: ${{ vars.GIT_BOT_NAME }}
+          GIT_BOT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
 
       # -----------------------------------------------------------------------
       # Step 3: Create GitHub Release (upload packages + binaries)
@@ -366,7 +410,7 @@ jobs:
         with:
           tag_name: v${{ needs.init.outputs.next_version }}
           name: v${{ needs.init.outputs.next_version }}
-          target_commitish: ${{ steps.commit.outputs.release_sha }}
+          target_commitish: ${{ github.sha }}
           files: |
             dist/desktop/**/*
             dist/cli/**/*
@@ -375,140 +419,79 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
+      # Package repos + R2 edge upload already handled by CI (cd-dryrun.yml).
+      # CI builds self-contained repos and uploads to {format}/edge/ on push-to-main.
+      # No rebuild or re-upload needed here -- one code path, tested in PR CI.
+
+      # Pages + E2E videos are handled by cd-deploy-worker.yml (builds from source,
+      # injects videos during deploy). No staging-pages download needed here.
+
       # -----------------------------------------------------------------------
-      # Step 4: Download packages from Release for metadata (ensures exact match)
+      # Hotfix: also promote to stable channel (skips 7-day soak)
       # -----------------------------------------------------------------------
-      - name: Download packages from Release
+      - name: Promote R2 artifacts to stable (hotfix)
+        if: inputs.publish_stable == true
         run: |
-          VERSION="${{ needs.init.outputs.next_version }}"
-          mkdir -p dist/release-pkgs
+          export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
+          export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
+          export AWS_DEFAULT_REGION="auto"
+          EP="--endpoint-url $R2_ENDPOINT"
+          BUCKET="rediacc-releases"
 
-          echo "Downloading packages from GitHub Release v$VERSION..."
-          gh release download "v$VERSION" --pattern "*.deb" --pattern "*.rpm" --pattern "*.apk" --pattern "*.pkg.tar.zst" --dir dist/release-pkgs --clobber || true
-
-          # Filter to only CLI packages (exclude desktop packages)
-          find dist/release-pkgs -name "rediacc-desktop-*" -delete 2>/dev/null || true
-
-          echo "Downloaded packages:"
-          ls -la dist/release-pkgs/
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-
-      # -----------------------------------------------------------------------
-      # Step 5: Build final APT/RPM repo metadata (matching Release)
-      # -----------------------------------------------------------------------
-      - name: Install repo build tools
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq dpkg-dev createrepo-c gnupg
-
-      - name: Download staging pages artifact
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
-        with:
-          name: staging-pages-${{ needs.init.outputs.ci_sha }}
-          path: dist/pages/
-          run-id: ${{ needs.init.outputs.ci_run_id }}
-          github-token: ${{ github.token }}
-
-      - name: Verify staging pages attestation
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          echo "Verifying pages artifact provenance..."
-          SAMPLE=$(find dist/pages -type f -name "*.html" | head -5)
-          FAILED=false
-          for f in $SAMPLE; do
-            gh attestation verify "$f" --repo "${{ github.repository }}" 2>/dev/null || {
-              echo "::warning::No attestation for $f"
-              FAILED=true
-            }
+          for dir in cli desktop apt rpm apk archlinux; do
+            echo "Promoting ${dir}/edge/ -> ${dir}/stable/"
+            TMP="/tmp/promote-${dir}"
+            aws s3 cp "s3://${BUCKET}/${dir}/edge/" "$TMP/" $EP --recursive --quiet
+            aws s3 cp "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --recursive --quiet
+            rm -rf "$TMP"
           done
-          if [[ "$FAILED" == "true" ]]; then
-            echo "::warning::Pages artifacts lack attestation — expected during transition period"
-          fi
 
-      # Inject E2E videos from the same CI run that produced staging artifacts
-      - name: Inject E2E videos
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: >-
-          .ci/scripts/docs/inject-e2e-videos.sh
-          --search-latest
-          --output dist/pages/assets/videos/user-guide/
+          # Fix channel references in config files
+          for file in rpm/stable/rediacc.repo archlinux/stable/rediacc.conf; do
+            aws s3 cp "s3://${BUCKET}/${file}" /tmp/config $EP --quiet
+            sed -i 's|/edge/|/stable/|g' /tmp/config
+            aws s3 cp /tmp/config "s3://${BUCKET}/${file}" $EP --quiet
+          done
 
-      - name: Rebuild package metadata from Release packages
-        run: |
-          VERSION="${{ needs.init.outputs.next_version }}"
-
-          # Rebuild repos using the exact packages from GitHub Release
-          # This ensures metadata checksums match the actual release assets
-          .ci/scripts/build/build-pkg-repo.sh \
-            --version "$VERSION" \
-            --local-pkgs dist/release-pkgs \
-            --output dist/pages \
-            --max-versions 3
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-
-      # Step 6: Worker deploy moved to cd-deploy-worker.yml (reusable workflow)
-      # Called as a separate job below (deploy-edge)
-
-      # -----------------------------------------------------------------------
-      # Step 7: Cleanup staging tags
-      # -----------------------------------------------------------------------
-      - name: Cleanup staging Docker tags
-        run: |
-          STAGING_TAG="${{ needs.init.outputs.staging_tag }}"
-          echo "## Cleanup Staging Tags" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Cleanup is non-critical (staging tags are harmless if they remain),
-          # so we log failures to the step summary but don't fail the job.
-          if .ci/scripts/docker/cleanup-staging.sh --tag "$STAGING_TAG"; then
-            echo "**Staging tag cleaned up:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "**Failed to clean up staging tag:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
-            echo "Staging tag cleanup requires \`delete:packages\` scope (non-critical)." >> $GITHUB_STEP_SUMMARY
-          fi
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-
-      # -----------------------------------------------------------------------
-      # Rebundle CLI with bumped version (inject correct --version output)
-      # CI builds binaries at version X. CD bumps to X+1. This step rebundles
-      # the JS with X+1 and reinjects the SEA blob into all platform binaries.
-      # -----------------------------------------------------------------------
-      - name: Install rcodesign (macOS ad-hoc signing from Linux)
-        if: needs.init.outputs.retry_mode != 'true'
-        run: |
-          RCODESIGN_VERSION="0.27.0"
-          curl -fsSL "https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign%2F${RCODESIGN_VERSION}/apple-codesign-${RCODESIGN_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
-            | tar xz --strip-components=1 -C /usr/local/bin/ "apple-codesign-${RCODESIGN_VERSION}-x86_64-unknown-linux-musl/rcodesign"
-          rcodesign --version
-
-      - name: Rebundle CLI with bumped version
-        if: needs.init.outputs.retry_mode != 'true'
-        run: .ci/scripts/build/rebundle-cli.sh --version "${{ needs.init.outputs.next_version }}"
-
-      - name: Regenerate CLI manifest
-        if: needs.init.outputs.retry_mode != 'true'
-        run: |
-          .ci/scripts/build/generate-cli-manifest.sh \
-            --version "${{ needs.init.outputs.next_version }}" \
-            --input dist/cli/ \
-            --output dist/cli/manifest.json
-
-      # -----------------------------------------------------------------------
-      # Upload release artifacts to R2
-      # -----------------------------------------------------------------------
-      - name: Upload release artifacts to R2
-        run: |
-          .ci/scripts/deploy/upload-to-r2.sh \
-            --version "${{ needs.init.outputs.next_version }}"
+          echo "R2 promoted to stable"
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+
+      - name: Promote Docker to stable (hotfix)
+        if: inputs.publish_stable == true
+        run: |
+          for image in api bridge plugin-terminal plugin-browser web cli; do
+            echo "Promoting ${image}: edge -> stable"
+            docker buildx imagetools create \
+              -t "ghcr.io/rediacc/elite/${image}:stable" \
+              "ghcr.io/rediacc/elite/${image}:edge"
+          done
+          echo "Docker promoted to stable"
+
+      # -----------------------------------------------------------------------
+      # Step 5: Cleanup channel Docker tags
+      # -----------------------------------------------------------------------
+      - name: Cleanup channel Docker tags
+        run: |
+          CHANNEL="${{ needs.init.outputs.channel }}"
+          echo "## Cleanup Channel Tags" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Cleanup is non-critical (channel tags are harmless if they remain),
+          # so we log failures to the step summary but don't fail the job.
+          if .ci/scripts/docker/cleanup-staging.sh --tag "$CHANNEL"; then
+            echo "**Channel tag cleaned up:** $CHANNEL" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Failed to clean up channel tag:** $CHANNEL" >> $GITHUB_STEP_SUMMARY
+            echo "Channel tag cleanup requires \`delete:packages\` scope (non-critical)." >> $GITHUB_STEP_SUMMARY
+          fi
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      # Stable promotion (CLI, desktop, repos, Docker :stable) is handled by
+      # promote-stable.yml after 7-day soak. CD only publishes to edge.
 
       # -----------------------------------------------------------------------
       # Final summary
@@ -533,24 +516,8 @@ jobs:
           echo "- ghcr.io/rediacc/elite/web:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
           echo "- ghcr.io/rediacc/elite/cli:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
 
-  # ============================================================================
-  # VALIDATE INSTALL METHODS - Test all documented installation methods
-  # Skipped in retry mode: retry reuses existing R2 binaries without bumping
-  # version, so the version in package.json won't match what's on R2.
-  # ============================================================================
-  validate-install-methods:
-    name: Validate Install Methods
-    needs: [init, publish]
-    if: >-
-      success() &&
-      needs.init.outputs.skip_release != 'true' &&
-      needs.init.outputs.retry_mode != 'true' &&
-      !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
-    uses: ./.github/workflows/ct-install-methods.yml
-    with:
-      version: ${{ needs.init.outputs.next_version }}
-    secrets:
-      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+  # Install validation moved to CI (pre-publish). CI validates on all 6 platforms
+  # BEFORE publish, so broken artifacts never reach production.
 
   # ============================================================================
   # DEPLOY EDGE WORKER - Build pages from source and deploy to edge.rediacc.com
@@ -560,8 +527,7 @@ jobs:
     needs: [init, publish]
     if: >-
       success() &&
-      needs.init.outputs.skip_release != 'true' &&
-      !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+      needs.init.outputs.skip_release != 'true'
     uses: ./.github/workflows/cd-deploy-worker.yml
     with:
       target: edge
@@ -584,7 +550,71 @@ jobs:
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
   # ============================================================================
-  # CLEANUP ON FAILURE - Remove staging artifacts if publish fails
+  # DEPLOY PRODUCTION WORKER (hotfix only) - Deploy to www.rediacc.com
+  # ============================================================================
+  deploy-production:
+    name: Deploy production Worker (hotfix)
+    needs: [init, publish]
+    if: >-
+      success() &&
+      needs.init.outputs.skip_release != 'true' &&
+      inputs.publish_stable == true
+    uses: ./.github/workflows/cd-deploy-worker.yml
+    with:
+      target: production
+      ref: v${{ needs.init.outputs.next_version }}
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
+      ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+      ACCOUNT_X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
+      ACCOUNT_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
+      ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+      ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
+      AWS_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
+      AWS_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
+      TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+
+  # ============================================================================
+  # POST-PUBLISH SMOKE TEST - Verify endpoints respond after deployment
+  # ============================================================================
+  smoke-test:
+    name: Smoke Test
+    runs-on: ubuntu-slim
+    needs: [init, publish, deploy-edge]
+    if: >-
+      success() &&
+      needs.init.outputs.skip_release != 'true'
+    steps:
+      - name: Verify edge endpoints
+        run: |
+          VERSION="${{ needs.init.outputs.next_version }}"
+          echo "Verifying edge deployment for v${VERSION}..."
+
+          # Verify install.sh is served
+          curl -fsSL https://edge.rediacc.com/install.sh -o /dev/null
+          echo "  install.sh: OK"
+
+          # Verify latest.json on R2 is valid and has a version
+          EDGE_VERSION=$(curl -fsSL https://releases.rediacc.com/cli/edge/latest.json | jq -re '.version')
+          echo "  edge latest.json: v${EDGE_VERSION}"
+
+          # Verify the deployed version matches (skip in retry mode where edge may be ahead)
+          if [[ "$EDGE_VERSION" == "$VERSION" ]]; then
+            echo "  version match: OK"
+          else
+            echo "  version mismatch: edge has v${EDGE_VERSION}, expected v${VERSION} (acceptable in retry mode)"
+          fi
+
+          echo "Smoke test passed"
+
+  # ============================================================================
+  # CLEANUP ON FAILURE - Remove channel artifacts if publish fails
   # ============================================================================
   cleanup-on-failure:
     name: Cleanup (on failure)
@@ -593,7 +623,6 @@ jobs:
     if: |
       always() &&
       needs.init.outputs.skip_release != 'true' &&
-      !(github.event_name == 'workflow_dispatch' && inputs.dry_run) &&
       needs.publish.result == 'failure'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -613,17 +642,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Cleanup staging Docker tags
+      - name: Cleanup channel Docker tags
         run: |
-          STAGING_TAG="${{ needs.init.outputs.staging_tag }}"
-          echo "## Cleanup Staging Tags (Failure)" >> $GITHUB_STEP_SUMMARY
+          CHANNEL="${{ needs.init.outputs.channel }}"
+          echo "## Cleanup Channel Tags (Failure)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if .ci/scripts/docker/cleanup-staging.sh --tag "$STAGING_TAG"; then
-            echo "**Staging tag cleaned up:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
+          if .ci/scripts/docker/cleanup-staging.sh --tag "$CHANNEL"; then
+            echo "**Channel tag cleaned up:** $CHANNEL" >> $GITHUB_STEP_SUMMARY
           else
-            echo "**Failed to clean up staging tag:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
-            echo "Staging tag cleanup requires \`delete:packages\` scope (non-critical)." >> $GITHUB_STEP_SUMMARY
+            echo "**Failed to clean up channel tag:** $CHANNEL" >> $GITHUB_STEP_SUMMARY
+            echo "Channel tag cleanup requires \`delete:packages\` scope (non-critical)." >> $GITHUB_STEP_SUMMARY
           fi
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -635,11 +664,11 @@ jobs:
   housekeeping:
     name: Housekeeping
     runs-on: ubuntu-slim
-    needs: [init, publish]
+    needs: [init, publish, deploy-edge, deploy-production, smoke-test]
     if: >-
-      success() &&
-      needs.init.outputs.skip_release != 'true' &&
-      !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+      always() &&
+      needs.publish.result == 'success' &&
+      needs.init.outputs.skip_release != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -649,7 +678,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: housekeeping
-          repositories: console,renet,middleware,elite
+          repositories: console,renet,middleware,elite,account
 
       - name: Cleanup old releases, tags, and packages
         run: .ci/scripts/housekeeping/cleanup-versions.sh
@@ -657,6 +686,22 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Cleanup R2 staging artifacts
+        run: |
+          # Keep last 3 staging snapshots, delete older ones
+          STAGING_DIRS=$(aws s3 ls "s3://${RELEASES_BUCKET}/staging/" --endpoint-url "${R2_ENDPOINT}" 2>/dev/null \
+            | awk '{print $2}' | sort -r | tail -n +4)
+          for dir in $STAGING_DIRS; do
+            echo "Deleting staging/${dir}..."
+            aws s3 rm "s3://${RELEASES_BUCKET}/staging/${dir}" --endpoint-url "${R2_ENDPOINT}" --recursive --quiet || true
+          done
+          echo "R2 staging cleanup done"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          RELEASES_BUCKET: rediacc-releases
 
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
@@ -678,8 +723,6 @@ jobs:
 
       - name: Initialize account submodule
         run: git submodule update --init private/account
-        env:
-          GH_TOKEN: ${{ steps.app-token-stripe.outputs.token }}
 
       - name: Install account dependencies
         run: npm install

@@ -109,10 +109,10 @@ if [[ "$DRY_RUN" == "true" ]]; then
     exit 0
 fi
 
-# Step 1: Build the CJS bundle (inject version via esbuild --define)
+# Step 1: Build the CJS bundle
 log_step "Building CLI bundle..."
-export CLI_VERSION="${CLI_VERSION:-$(jq -r .version "$CLI_DIR/package.json")}"
-log_info "  Version: $CLI_VERSION"
+export CLI_VERSION="${CLI_VERSION:-0.0.0-dev}"
+log_info "CLI version: $CLI_VERSION"
 cd "$CLI_DIR"
 node bundle.mjs
 require_file "$CLI_DIR/dist/cli-bundle.cjs"
@@ -186,17 +186,6 @@ if [[ "$PLATFORM" == "mac" ]]; then
     codesign -s - "$OUTPUT_DIR/$BINARY_NAME"
 fi
 
-# Preserve rebundle assets for CD version injection
-# CD can rebundle the JS with a new version and reinject the SEA blob
-# without rebuilding from scratch (cross-platform via postject WASM).
-REBUNDLE_DIR="$OUTPUT_DIR/rebundle/${PLATFORM}-${ARCH}"
-mkdir -p "$REBUNDLE_DIR"
-cp "$CLI_DIR/dist/cli-bundle.cjs" "$REBUNDLE_DIR/" 2>/dev/null || true
-cp "$CLI_DIR/dist/sea-prep.blob" "$REBUNDLE_DIR/" 2>/dev/null || true
-cp -r "$CLI_DIR/dist/assets/" "$REBUNDLE_DIR/assets/" 2>/dev/null || true
-cp "$CLI_DIR/sea-config.generated.json" "$REBUNDLE_DIR/" 2>/dev/null || true
-log_info "Rebundle assets preserved: $REBUNDLE_DIR"
-
 # Verify
 log_step "Verifying executable..."
 BINARY_SIZE=$(wc -c <"$OUTPUT_DIR/$BINARY_NAME")
@@ -242,14 +231,14 @@ if [[ "$PLATFORM" == "$(detect_os | sed 's/macos/mac/; s/windows/win/')" ]] &&
             log_info "Doctor JSON output is valid"
 
             # Validate key checks
-            SEA_MODE=$(echo "$DOCTOR_OUTPUT" | jq -r '.Environment[] | select(.name == "SEA mode") | .value')
+            INSTALL_METHOD=$(echo "$DOCTOR_OUTPUT" | jq -r '.Environment[] | select(.name == "Install method") | .value')
             CLI_VERSION=$(echo "$DOCTOR_OUTPUT" | jq -r '.Environment[] | select(.name == "CLI version") | .value')
             NODE_STATUS=$(echo "$DOCTOR_OUTPUT" | jq -r '.Environment[] | select(.name == "Node.js") | .status')
 
-            if [[ "$SEA_MODE" == *"yes"* ]]; then
-                log_info "SEA mode: $SEA_MODE"
+            if [[ "$INSTALL_METHOD" == "SEA binary" ]]; then
+                log_info "Install method: $INSTALL_METHOD"
             else
-                log_error "SEA mode check failed: '$SEA_MODE'"
+                log_error "SEA mode check failed: '$INSTALL_METHOD'"
                 exit 1
             fi
 

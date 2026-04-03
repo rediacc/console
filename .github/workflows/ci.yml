@@ -825,6 +825,8 @@ jobs:
     uses: ./.github/workflows/ct-install-methods.yml
     with:
       version: ${{ needs.initialize.outputs.next_version }}
+      docker_tag: ${{ needs.initialize.outputs.channel }}
+      repo_channel: ${{ needs.initialize.outputs.channel }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 

@@ -1,9 +1,8 @@
 /**
- * Version information for @rediacc/cli package.
- *
- * Build-time: __CLI_VERSION__ is injected via esbuild --define (same pattern as Go -ldflags).
- * Dev-time:   Falls back to DEV_VERSION (updated by bump.sh).
+ * CLI version -- injected at build time via esbuild define.
+ * Source of truth: git tags (e.g., v0.8.2).
+ * Dev builds show '0.0.0-dev'.
  */
-declare const __CLI_VERSION__: string | undefined;
-const DEV_VERSION = '0.7.8';
-export const VERSION: string = typeof __CLI_VERSION__ !== 'undefined' && __CLI_VERSION__ !== '' ? __CLI_VERSION__ : DEV_VERSION;
+declare const __CLI_VERSION__: string;
+export const VERSION: string =
+  typeof __CLI_VERSION__ === 'undefined' ? '0.0.0-dev' : __CLI_VERSION__;
