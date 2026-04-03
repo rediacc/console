@@ -14,7 +14,7 @@
       "label": "Pin @types/node to latest",
       "packages": ["**"],
       "dependencies": ["@types/node"],
-      "pinVersion": "^22.10.2"
+      "pinVersion": "^25.5.1"
     },
     {
       "label": "Pin OpenTelemetry packages to compatible versions",
