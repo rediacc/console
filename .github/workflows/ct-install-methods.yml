@@ -18,13 +18,8 @@ on:
         description: 'Version to test (R2 download path, e.g., 0.4.58)'
         required: true
         type: string
-      docker_tag:
-        description: 'Docker image tag override (for staging images, e.g., staging-abc123)'
-        required: false
-        type: string
-        default: ''
-      repo_channel:
-        description: 'Repo channel path segment (e.g., "stable", "edge", or "" for staging)'
+      local_artifacts:
+        description: 'Path to locally-built artifacts for pre-release testing'
         required: false
         type: string
         default: ''
@@ -45,8 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      DOCKER_TAG: ${{ inputs.docker_tag }}
-      REPO_CHANNEL: ${{ inputs.repo_channel }}
+      LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -60,42 +54,66 @@ jobs:
       - name: Test Binary Download
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method binary --version ${{ inputs.version }} --platform linux --arch x64
+            --method binary \
+            --version ${{ inputs.version }} \
+            --platform linux \
+            --arch x64 \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test Docker
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method docker --version ${{ inputs.version }}
+            --method docker \
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test APT Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method apt --version ${{ inputs.version }}
+            --method apt \
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test DNF Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method dnf --version ${{ inputs.version }}
+            --method dnf \
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test APK Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method apk --version ${{ inputs.version }}
+            --method apk \
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test Pacman Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method pacman --version ${{ inputs.version }}
-
-      - name: Test npm Install
-        run: |
-          .ci/scripts/test/test-install-methods.sh \
-            --method npm --version ${{ inputs.version }}
+            --method pacman \
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test Quick Install
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method quick --version ${{ inputs.version }}
+            --method quick \
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
+
+      - name: Install Homebrew (Linuxbrew)
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          echo "/home/linuxbrew/.linuxbrew/bin" >> $GITHUB_PATH
+
+      - name: Test Homebrew (Linuxbrew)
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          .ci/scripts/test/test-install-methods.sh \
+            --method homebrew \
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
   # ===========================================================================
   # Linux arm64: Binary, Docker, Quick Install
@@ -105,8 +123,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     env:
-      DOCKER_TAG: ${{ inputs.docker_tag }}
-      REPO_CHANNEL: ${{ inputs.repo_channel }}
+      LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -120,51 +137,81 @@ jobs:
       - name: Test Binary Download
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method binary --version ${{ inputs.version }} --platform linux --arch arm64
+            --method binary \
+            --version ${{ inputs.version }} \
+            --platform linux \
+            --arch arm64 \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test Docker
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method docker --version ${{ inputs.version }}
+            --method docker \
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test Quick Install
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method quick --version ${{ inputs.version }}
+            --method quick \
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
   # ===========================================================================
-  # macOS ARM64: Binary
+  # macOS ARM64: Binary, Homebrew
   # ===========================================================================
   test-macos-arm64:
     name: macOS (ARM64)
     runs-on: macos-latest
     timeout-minutes: 30
     env:
-      REPO_CHANNEL: ${{ inputs.repo_channel }}
+      LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
       - name: Test Binary Download
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method binary --version ${{ inputs.version }} --platform mac --arch arm64
+            --method binary \
+            --version ${{ inputs.version }} \
+            --platform mac \
+            --arch arm64 \
+            $LOCAL_ARTIFACTS_FLAG
+
+      - name: Test Homebrew Installation
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method homebrew \
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
   # ===========================================================================
-  # macOS x64: Binary
+  # macOS x64: Binary, Homebrew
   # ===========================================================================
   test-macos-x64:
     name: macOS (x64)
     runs-on: macos-15-intel
     timeout-minutes: 30
     env:
-      REPO_CHANNEL: ${{ inputs.repo_channel }}
+      LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
       - name: Test Binary Download
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method binary --version ${{ inputs.version }} --platform mac --arch x64
+            --method binary \
+            --version ${{ inputs.version }} \
+            --platform mac \
+            --arch x64 \
+            $LOCAL_ARTIFACTS_FLAG
+
+      - name: Test Homebrew Installation
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method homebrew \
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
   # ===========================================================================
   # Windows x64: Binary
@@ -174,7 +221,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 15
     env:
-      REPO_CHANNEL: ${{ inputs.repo_channel }}
+      LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -182,7 +229,11 @@ jobs:
         shell: bash
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method binary --version ${{ inputs.version }} --platform win --arch x64
+            --method binary \
+            --version ${{ inputs.version }} \
+            --platform win \
+            --arch x64 \
+            $LOCAL_ARTIFACTS_FLAG
 
   # ===========================================================================
   # Windows arm64: Binary
@@ -192,7 +243,7 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 15
     env:
-      REPO_CHANNEL: ${{ inputs.repo_channel }}
+      LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -200,7 +251,11 @@ jobs:
         shell: bash
         run: |
           .ci/scripts/test/test-install-methods.sh \
-            --method binary --version ${{ inputs.version }} --platform win --arch arm64
+            --method binary \
+            --version ${{ inputs.version }} \
+            --platform win \
+            --arch arm64 \
+            $LOCAL_ARTIFACTS_FLAG
 
   # ===========================================================================
   # Gate Job - All tests must pass

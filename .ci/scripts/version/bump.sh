@@ -174,7 +174,8 @@ update_package_json() {
 }
 
 # Update TypeScript version constant
-# Pattern: export const VERSION = 'X.Y.Z';
+# Pattern: const DEV_VERSION = 'X.Y.Z';
+# (Build-time version is injected via esbuild --define, DEV_VERSION is the fallback)
 update_version_ts() {
     local file="$1"
     local version="$2"
@@ -190,7 +191,7 @@ update_version_ts() {
     fi
 
     # Handle both single and double quotes
-    sed_in_place "s/export const VERSION = ['\"][^'\"]*['\"]/export const VERSION = '$version'/" "$file"
+    sed_in_place "s/const DEV_VERSION = ['\"][^'\"]*['\"]/const DEV_VERSION = '$version'/" "$file"
     log_info "Updated $file"
 }
 
