@@ -129,8 +129,10 @@ jobs:
           echo "SSH connection failed after 15 attempts"
           exit 1
 
-      - name: "Test: rdc ops down"
-        run: sudo -E node packages/cli/dist/cli-bundle.cjs ops down -o json || true
+      # Note: "rdc ops down" is NOT run here. The tutorial recording script
+      # calls "rdc ops down" as its final step, and "Verify: cleanup" (if: always)
+      # catches any leftovers. Leaving VMs running lets the tutorial reuse them
+      # instead of re-provisioning from scratch (~10 min saving).
 
       - name: Install asciinema
         if: success()
