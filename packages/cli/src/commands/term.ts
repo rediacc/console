@@ -10,11 +10,11 @@ import { configService } from '../services/config-resources.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
 import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh-connection.js';
-import { assertAgentMachineAccess } from '../utils/agent-guard.js';
+import { assertAgentMachineAccess, isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
 import { handleError, ValidationError } from '../utils/errors.js';
-import { detectRepoContextCommand } from '../utils/repo-context-guard.js';
+import { detectDirectRenetCommand, detectRepoContextCommand } from '../utils/repo-context-guard.js';
 import { withSpinner } from '../utils/spinner.js';
 
 interface TermConnectOptions {
@@ -166,6 +166,20 @@ async function enforceTermPolicy(opts: TermConnectOptions): Promise<void> {
           machine: opts.machine ?? DEFAULTS.CLOUD.MACHINE_PLACEHOLDER,
           command: opts.command,
         })
+      );
+    }
+  }
+
+  if (opts.command) {
+    const renetMatch = detectDirectRenetCommand(opts.command);
+    if (renetMatch) {
+      if (isAgentEnvironment()) {
+        throw new ValidationError(
+          `Direct "${renetMatch.renetCommand}" is not allowed in agent mode.\n\nRun "${renetMatch.cliHelpCommand}" to see available CLI commands.`
+        );
+      }
+      process.stderr.write(
+        `\x1b[33mWarning:\x1b[0m Running "${renetMatch.renetCommand}" directly bypasses CLI orchestration.\nRun "${renetMatch.cliHelpCommand}" to see available CLI commands.\n`
       );
     }
   }
