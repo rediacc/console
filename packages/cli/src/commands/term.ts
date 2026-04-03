@@ -153,9 +153,19 @@ async function validateAndGetConnectionDetails(opts: {
   };
 }
 
-/**
- * Connects to a machine or repository via SSH
- */
+function enforceDirectRenetGuard(command: string): void {
+  const match = detectDirectRenetCommand(command);
+  if (!match) return;
+  if (isAgentEnvironment()) {
+    throw new ValidationError(
+      `Direct "${match.renetCommand}" is not allowed in agent mode.\n\nRun "${match.cliHelpCommand}" to see available CLI commands.`
+    );
+  }
+  process.stderr.write(
+    `\x1b[33mWarning:\x1b[0m Running "${match.renetCommand}" directly bypasses CLI orchestration.\nRun "${match.cliHelpCommand}" to see available CLI commands.\n`
+  );
+}
+
 async function enforceTermPolicy(opts: TermConnectOptions): Promise<void> {
   if (opts.command && !opts.repository) {
     const match = detectRepoContextCommand(opts.command);
@@ -171,17 +181,7 @@ async function enforceTermPolicy(opts: TermConnectOptions): Promise<void> {
   }
 
   if (opts.command) {
-    const renetMatch = detectDirectRenetCommand(opts.command);
-    if (renetMatch) {
-      if (isAgentEnvironment()) {
-        throw new ValidationError(
-          `Direct "${renetMatch.renetCommand}" is not allowed in agent mode.\n\nRun "${renetMatch.cliHelpCommand}" to see available CLI commands.`
-        );
-      }
-      process.stderr.write(
-        `\x1b[33mWarning:\x1b[0m Running "${renetMatch.renetCommand}" directly bypasses CLI orchestration.\nRun "${renetMatch.cliHelpCommand}" to see available CLI commands.\n`
-      );
-    }
+    enforceDirectRenetGuard(opts.command);
   }
 
   if (opts.repository) {
