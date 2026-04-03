@@ -10,10 +10,6 @@ source "$SCRIPT_DIR/lib/tutorial-helpers.sh"
 
 clear_screen
 
-# Ensure clean slate -- tear down any leftover VMs from prior test steps.
-# This is silent (not recorded as a tutorial step) so the user sees a fresh start.
-rdc ops down 2>/dev/null || true
-
 section "Step 1: Verify system requirements"
 run_cmd "rdc ops check"
 

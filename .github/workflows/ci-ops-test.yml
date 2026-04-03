@@ -15,7 +15,7 @@ jobs:
   ops-vm-provision:
     name: OPS Provision (${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 45
+    timeout-minutes: 30
     strategy:
       matrix:
         include:
@@ -129,19 +129,79 @@ jobs:
           echo "SSH connection failed after 15 attempts"
           exit 1
 
-      # Note: "rdc ops down" is NOT run here. The tutorial recording script
-      # calls "rdc ops down" as its final step, and "Verify: cleanup" (if: always)
-      # catches any leftovers. Leaving VMs running lets the tutorial reuse them
-      # instead of re-provisioning from scratch (~10 min saving).
+      - name: "Test: rdc ops down"
+        if: always()
+        run: sudo -E node packages/cli/dist/cli-bundle.cjs ops down -o json || true
+
+      - name: "Verify: cleanup"
+        if: always()
+        run: |
+          STATUS=$(sudo -E node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"data":{"vms":[]}}')
+          echo "$STATUS" | jq -e '.data.vms | length == 0' || echo "Warning: VMs still present after cleanup"
+
+  # ── Tutorial recording (validates tutorial scripts against current code) ──
+  # Runs the ops tutorial end-to-end inside asciinema to catch CLI regressions
+  # that would break the recorded tutorials. Separated from ops-vm-provision
+  # so each job fits within its timeout and can be re-run independently.
+  tutorial-recording:
+    name: Record Tutorials
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    needs: [ops-vm-provision]
+    if: needs.ops-vm-provision.result == 'success'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
+
+      - name: Checkout with Submodules
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: recursive
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+
+      - name: Build renet
+        run: .ci/scripts/infra/build-renet.sh --nolicense
+
+      - name: Build CLI
+        run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
 
       - name: Install asciinema
-        if: success()
         run: pip install asciinema
 
-      - name: Record tutorials
-        if: success()
+      - name: Record ops tutorial
         env:
           TUTORIAL_RDC_CMD: sudo -E node ${{ github.workspace }}/packages/cli/dist/cli-bundle.cjs
+          REDIACC_SKIP_MACHINE_ACTIVATION: '1'
         run: .ci/tutorials/record.sh .ci/tutorials/ops-tutorial.sh /tmp/ops-tutorial.cast
 
       - name: Upload tutorial recordings
@@ -152,12 +212,10 @@ jobs:
           path: /tmp/*.cast
           retention-days: 30
 
-      - name: "Verify: cleanup"
+      - name: Cleanup
         if: always()
         run: |
           sudo -E node packages/cli/dist/cli-bundle.cjs ops down -o json 2>/dev/null || true
-          STATUS=$(sudo -E node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"data":{"vms":[]}}')
-          echo "$STATUS" | jq -e '.data.vms | length == 0' || echo "Warning: VMs still present after cleanup"
 
   # ── Full VM provisioning test (QEMU + HVF on macOS Intel) ────
   # macOS Intel runners support HVF (Hypervisor Framework), enabling
