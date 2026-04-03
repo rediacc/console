@@ -31,11 +31,31 @@ export interface RenetCommandMatch {
 }
 
 const RENET_CLI_EQUIVALENTS: { pattern: RegExp; renetCommand: string; cliHelpCommand: string }[] = [
-  { pattern: /\brenet\s+repository\b/, renetCommand: 'renet repository', cliHelpCommand: 'rdc repo --help' },
-  { pattern: /\brenet\s+backup\b/, renetCommand: 'renet backup', cliHelpCommand: 'rdc repo backup --help' },
-  { pattern: /\brenet\s+daemon\b/, renetCommand: 'renet daemon', cliHelpCommand: 'rdc repo --help' },
-  { pattern: /\brenet\s+datastore\b/, renetCommand: 'renet datastore', cliHelpCommand: 'rdc machine --help' },
-  { pattern: /\brenet\s+network\b/, renetCommand: 'renet network', cliHelpCommand: 'rdc machine --help' },
+  {
+    pattern: /\brenet\s+repository\b/,
+    renetCommand: 'renet repository',
+    cliHelpCommand: 'rdc repo --help',
+  },
+  {
+    pattern: /\brenet\s+backup\b/,
+    renetCommand: 'renet backup',
+    cliHelpCommand: 'rdc repo backup --help',
+  },
+  {
+    pattern: /\brenet\s+daemon\b/,
+    renetCommand: 'renet daemon',
+    cliHelpCommand: 'rdc repo --help',
+  },
+  {
+    pattern: /\brenet\s+datastore\b/,
+    renetCommand: 'renet datastore',
+    cliHelpCommand: 'rdc machine --help',
+  },
+  {
+    pattern: /\brenet\s+network\b/,
+    renetCommand: 'renet network',
+    cliHelpCommand: 'rdc machine --help',
+  },
 ];
 
 /**
