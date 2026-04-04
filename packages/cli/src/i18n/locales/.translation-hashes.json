@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1711,
-    "sourceCommit": "7515b76e14337c970993699c5f0d0730be2fea31"
+    "keyCount": 1717,
+    "sourceCommit": "5fb722a0e65b5d56f47349c64cdb7d969fe42586"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1082,12 +1082,16 @@
     "commands.subscription.descriptionShort": "d22519b2",
     "commands.subscription.login.browserFailed": "ce0c171d",
     "commands.subscription.login.description": "7ce10966",
+    "commands.subscription.login.discoveringRegions": "e205214f",
     "commands.subscription.login.expired": "0a38444c",
     "commands.subscription.login.initFailed": "5675c987",
     "commands.subscription.login.machines": "a9c86ee4",
     "commands.subscription.login.openBrowser": "06885e18",
     "commands.subscription.login.plan": "13cf3e18",
     "commands.subscription.login.polling": "fee07559",
+    "commands.subscription.login.regionPrompt": "a23e9932",
+    "commands.subscription.login.regionsDiscovered": "d03b7e20",
+    "commands.subscription.login.regionSelected": "37f3d267",
     "commands.subscription.login.success": "33b15f97",
     "commands.subscription.login.tokenInvalid": "887e82d1",
     "commands.subscription.login.tokenPrompt": "4ba37e07",
@@ -1451,8 +1455,10 @@
     "errors.protocol.machineRequired": "fac8bf10",
     "errors.protocol.notSupported": "fe94f5a1",
     "errors.protocol.parseFailed": "192d85a1",
+    "errors.protocol.regionSelectionRequiresTTY": "f0ad30ff",
     "errors.protocol.teamRequired": "4c4df762",
     "errors.protocol.tokenRequired": "5e933ca0",
+    "errors.protocol.unknownRegion": "85e19de9",
     "errors.regionRequired": "38dd1ef5",
     "errors.registrationFailed": "0c71b54b",
     "errors.remoteNotFound": "cbf7edd2",

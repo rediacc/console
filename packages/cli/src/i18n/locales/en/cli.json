@@ -1618,7 +1618,8 @@
         "initFailed": "Failed to initiate login. Is the server running?",
         "discoveringRegions": "Discovering available regions...",
         "regionsDiscovered": "Regions loaded",
-        "regionSelected": "Data region: {{region}} ({{domain}})"
+        "regionSelected": "Data region: {{region}} ({{domain}})",
+        "regionPrompt": "Where should your data be stored?"
       },
       "logout": {
         "description": "Clear stored subscription token",
@@ -2018,7 +2019,9 @@
       "teamRequired": "Team name is required. Use --team <name>",
       "machineRequired": "Machine name is required. Use --machine <name>",
       "invalidAction": "Invalid action '{{action}}'. Must be one of: {{validActions}}",
-      "parseFailed": "Failed to parse URL: {{error}}"
+      "parseFailed": "Failed to parse URL: {{error}}",
+      "regionSelectionRequiresTTY": "Region selection requires interactive input. Use --server <url> to specify a server directly.",
+      "unknownRegion": "Unknown region: {{region}}"
     },
     "networkError": "Network error: {{message}}",
     "noActiveConfig": "No active config. Create one with: rdc config init <name>",

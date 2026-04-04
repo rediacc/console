@@ -5,6 +5,7 @@
 
 import { createPromptModule } from 'inquirer';
 import type { RegionInfo } from '@rediacc/shared/regions';
+import { t } from '../i18n/index.js';
 import { detectLikelyRegion } from '../services/region-discovery.js';
 import { EXIT_CODES } from '../types/index.js';
 
@@ -12,9 +13,7 @@ const prompt = createPromptModule();
 
 export async function promptRegionSelection(regions: RegionInfo[]): Promise<RegionInfo> {
   if (process.stdin.isTTY !== true) {
-    console.error(
-      'Error: Region selection requires interactive input. Use --server <url> to specify a server directly.'
-    );
+    console.error(t('errors.regionSelectionRequiresTTY'));
     process.exit(EXIT_CODES.INVALID_ARGUMENTS);
   }
 
@@ -24,7 +23,7 @@ export async function promptRegionSelection(regions: RegionInfo[]): Promise<Regi
     {
       type: 'list',
       name: 'region',
-      message: 'Where should your data be stored?',
+      message: t('commands.subscription.login.regionPrompt'),
       choices: regions.map((r) => ({
         name: `${r.label} (${r.domain})`,
         value: r.id,
@@ -34,6 +33,6 @@ export async function promptRegionSelection(regions: RegionInfo[]): Promise<Regi
   ]);
 
   const selected = regions.find((r) => r.id === region);
-  if (!selected) throw new Error(`Unknown region: ${region}`);
+  if (!selected) throw new Error(t('errors.unknownRegion', { region }));
   return selected;
 }
