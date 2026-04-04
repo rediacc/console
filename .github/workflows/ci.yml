@@ -204,8 +204,8 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Apply migrations"
-          # Generate temporary wrangler config for the test DB
-          TMPCONFIG="$(mktemp /tmp/wrangler-migration-test-XXXXXX.toml)"
+          # Generate temporary wrangler config inside workers/www/ so migrations_dir resolves correctly
+          TMPCONFIG="workers/www/wrangler-migration-test.toml"
           cat > "$TMPCONFIG" <<TOML
           name = "migration-test"
           main = "src/index.ts"
@@ -219,8 +219,8 @@ jobs:
           TOML
 
           cd workers/www
-          npx wrangler d1 migrations apply "$DB_NAME" --remote --config "$TMPCONFIG"
-          rm -f "$TMPCONFIG"
+          npx wrangler d1 migrations apply "$DB_NAME" --remote --config wrangler-migration-test.toml
+          rm -f wrangler-migration-test.toml
           echo "::endgroup::"
 
           echo "Migrations applied successfully against production data clone"
