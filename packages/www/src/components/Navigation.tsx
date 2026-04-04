@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { getAccountUrl } from '../config/constants';
 import { useLanguage } from '../hooks/useLanguage';
 import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';

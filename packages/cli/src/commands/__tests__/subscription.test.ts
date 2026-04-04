@@ -389,8 +389,9 @@ describe('subscription command helpers', () => {
       mockIsDevelopmentSubscriptionMode.mockReturnValue(false);
 
       // With accountServer set, the prompt should not trigger
-      const config = mockLoadServerConfig();
-      expect(config?.accountServer).toBeTruthy();
+      const config = mockLoadServerConfig() as { accountServer?: string } | null;
+      expect(config).not.toBeNull();
+      expect(config!.accountServer).toBeTruthy();
       expect(mockDiscoverRegions).not.toHaveBeenCalled();
       expect(mockPromptRegionSelection).not.toHaveBeenCalled();
     });

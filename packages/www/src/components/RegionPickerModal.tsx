@@ -3,6 +3,8 @@ import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 import { REGIONS, type Region } from '../config/regions';
 
+const DEFAULT_TARGET_PATH = '/account/';
+
 declare global {
   interface Window {
     openRegionPicker?: (targetPath?: string) => void;
@@ -62,7 +64,7 @@ const RegionPickerModal: React.FC = () => {
 
   const open = useCallback((path?: string) => {
     previousFocusRef.current = document.activeElement as HTMLElement;
-    setTargetPath(path ?? '/account/');
+    setTargetPath(path ?? DEFAULT_TARGET_PATH);
     setSelected(detectLikelyRegion(REGIONS).id);
     setIsOpen(true);
     window.plausible?.('region_picker_open', {
@@ -136,6 +138,7 @@ const RegionPickerModal: React.FC = () => {
             onClick={close}
             aria-label={t('common.close')}
             type="button"
+            data-track="region_picker_close"
           >
             <svg
               width="20"
@@ -159,6 +162,8 @@ const RegionPickerModal: React.FC = () => {
               onClick={() => handleSelect(region)}
               onMouseEnter={() => setSelected(region.id)}
               onFocus={() => setSelected(region.id)}
+              data-track="region_select"
+              data-track-label={region.id}
             >
               <div className="region-picker-card-label">{region.label}</div>
               <div className="region-picker-card-location">
