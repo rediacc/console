@@ -27,7 +27,7 @@ export async function discoverRegions(): Promise<RegionInfo[]> {
     });
     if (!resp.ok) return BAKED_IN_REGIONS;
 
-    const blob = await resp.json();
+    const blob = await resp.json() as { payload: string; signature: string; publicKeyId: string };
     const regions = await verifySignedRegions(blob);
     if (regions && regions.length > 0) return regions;
   } catch {
