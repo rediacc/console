@@ -1,7 +1,94 @@
-import { test } from '@/base/BaseTest';
+import { test, expect } from '@/base/BaseTest';
+import { LoginPage } from '@/pages/auth/LoginPage';
+import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 
-test.describe('2.8.1 Creating Storage', () => {
-  test.skip('should create a new storage configuration', async () => {
-    // TODO: Implement - corresponds to doc section 2.8.1
+test.describe('Storage Management', () => {
+  let dashboardPage: DashboardPage;
+  let loginPage: LoginPage;
+
+  test.beforeEach(async ({ page }) => {
+    loginPage = new LoginPage(page);
+    dashboardPage = new DashboardPage(page);
+
+    await loginPage.navigate();
+    await loginPage.performQuickLogin();
+    await dashboardPage.waitForNetworkIdle();
+  });
+
+  test('02-08-01-01-storage-create - should create a new storage configuration', async ({
+    page,
+    testReporter,
+  }) => {
+    test.setTimeout(90000);
+    testReporter.startStep('Navigate and open storage creation form');
+
+    // user-menu-button click and select "Expert/Uzman" mode
+    await page.getByTestId('user-menu-button').click();
+    await page
+      .getByTestId('main-mode-toggle')
+      .locator('.ant-segmented-item', { hasText: /Expert|Uzman/i })
+      .click();
+
+    // Click menu button again to close the menu after mode selection
+    await page.getByTestId('user-menu-button').click();
+
+    // data-testid="main-nav-storage" and href="/console/storage" exist check
+    const storageNavItem = page.locator(
+      '[data-testid="main-nav-storage"][href="/console/storage"]'
+    );
+    await expect(storageNavItem).toBeVisible();
+
+    // data-testid="main-nav-storage" and href="/console/storage" click
+    await storageNavItem.click();
+
+    // data-testid="resources-create-storage-button" click
+    await page.getByTestId('resources-create-storage-button').click();
+
+    testReporter.completeStep('Navigate and open storage creation form', 'passed');
+    testReporter.startStep('Fill storage creation form');
+    await page.evaluate(() => {
+      const banner = document.querySelector('[data-testid="preview-warning-banner"]');
+      if (banner) banner.remove();
+    });
+
+    // 7- data-testid="resource-modal-field-teamName-select" click and select 1st
+    const teamSelect = page.getByTestId('resource-modal-field-teamName-select');
+    await teamSelect.click();
+    // Assuming it's an Ant Design select, we might need to click the first option in the dropdown
+    await page.locator('.ant-select-item-option').first().click();
+
+    // 8- data-testid="resource-modal-field-storageName-input" -> "SQL SERVER BACKUP"
+    await page.getByTestId('resource-modal-field-storageName-input').fill('SQL SERVER BACKUP');
+
+    // 9- data-testid="vault-editor-field-description" -> "SQL SERVER BACKUP"
+    await page.getByTestId('vault-editor-field-description').fill('SQL SERVER BACKUP');
+
+    // 10- data-testid="vault-editor-field-provider" click and select "drive"
+    const providerSelect = page.getByTestId('vault-editor-field-provider');
+    await providerSelect.click();
+    await page.locator('.ant-select-item-option').getByText('drive', { exact: true }).click();
+
+    // 11- data-testid="vault-editor-field-token-new-key" -> "Test12345678"
+    await page.getByTestId('vault-editor-field-token-new-key').fill('Test12345678');
+
+    // 12- data-testid="vault-editor-field-token-add" click
+    await page.getByTestId('vault-editor-field-token-add').click();
+
+    // 13- data-testid="resource-modal-ok-button" click
+    await page.getByTestId('resource-modal-ok-button').click();
+
+    testReporter.completeStep('Fill storage creation form', 'passed');
+    testReporter.startStep('Verify storage creation');
+
+    // 14- Verify "SQL SERVER BACKUP" exists on the page
+    // 14- Verify "SQL SERVER BACKUP" exists on the page (use exact match to avoid notification banner collision)
+    await expect(
+      page
+        .getByTestId('resource-list-item-SQL SERVER BACKUP')
+        .getByText('SQL SERVER BACKUP', { exact: true })
+    ).toBeVisible({ timeout: 15000 });
+
+    testReporter.completeStep('Verify storage creation', 'passed');
+    await testReporter.finalizeTest();
   });
 });
