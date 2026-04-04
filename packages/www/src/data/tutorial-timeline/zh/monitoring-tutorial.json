@@ -16,7 +16,8 @@
       "replayEndSec": 25.705613,
       "narrationText": "运行完整的环境诊断以发现基线问题。",
       "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-01.2bb35780.mp3",
-      "audioDurationSec": 3.709388
+      "audioDurationSec": 3.709388,
+      "stepLabel": "Step 1: Run diagnostics"
     },
     {
       "id": "monitoring-tutorial-02",
@@ -25,7 +26,8 @@
       "replayEndSec": 37.199979,
       "narrationText": "检查远程机器健康状况指标。",
       "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-02.366bc5af.mp3",
-      "audioDurationSec": 2.586122
+      "audioDurationSec": 2.586122,
+      "stepLabel": "Step 2: System overview"
     },
     {
       "id": "monitoring-tutorial-03",
@@ -34,7 +36,8 @@
       "replayEndSec": 47.874153,
       "narrationText": "列出目标机器上的活动容器。",
       "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-03.ad0dbb0e.mp3",
-      "audioDurationSec": 2.194286
+      "audioDurationSec": 2.194286,
+      "stepLabel": "Step 3: View running containers"
     },
     {
       "id": "monitoring-tutorial-04",
@@ -43,7 +46,8 @@
       "replayEndSec": 58.417483,
       "narrationText": "容器已检查。现在查询机器上的systemd服务，查看哪些基础设施守护进程处于活动和健康状态。",
       "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-04.677b19d3.mp3",
-      "audioDurationSec": 8.672653
+      "audioDurationSec": 8.672653,
+      "stepLabel": "Step 4: Check systemd services"
     },
     {
       "id": "monitoring-tutorial-05",
@@ -52,7 +56,8 @@
       "replayEndSec": 68.461906,
       "narrationText": "为获取完整视图，我们运行无过滤器的完整机器查询 -- 在一次调用中返回系统指标、网络、服务、容器和块设备。",
       "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-05.549b694a.mp3",
-      "audioDurationSec": 14.210612
+      "audioDurationSec": 14.210612,
+      "stepLabel": "Step 5: Full machine status"
     },
     {
       "id": "monitoring-tutorial-06",
@@ -61,7 +66,8 @@
       "replayEndSec": 78.211059,
       "narrationText": "我们刷新配置中存储的此机器SSH主机密钥指纹，确保未来的连接能够验证服务器身份。",
       "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-06.0e7f47e2.mp3",
-      "audioDurationSec": 7.810612
+      "audioDurationSec": 7.810612,
+      "stepLabel": "Step 6: Scan host keys"
     },
     {
       "id": "monitoring-tutorial-07",
@@ -70,7 +76,8 @@
       "replayEndSec": 86.795419,
       "narrationText": "主机密钥已更新。我们通过SSH执行远程命令并确认返回机器主机名，验证端到端连通性。",
       "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-07.7db9ed79.mp3",
-      "audioDurationSec": 8.437551
+      "audioDurationSec": 8.437551,
+      "stepLabel": "Step 7: Verify connectivity"
     },
     {
       "id": "monitoring-tutorial-08",
@@ -79,7 +86,8 @@
       "replayEndSec": 95.264993,
       "narrationText": "再执行一个远程命令 -- 这次检查机器的运行时间和平均负载，演示通过SSH隧道执行任意命令。",
       "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-08.caff22f5.mp3",
-      "audioDurationSec": 9.560816
+      "audioDurationSec": 9.560816,
+      "stepLabel": "Step 8: Check block devices"
     }
   ]
 }

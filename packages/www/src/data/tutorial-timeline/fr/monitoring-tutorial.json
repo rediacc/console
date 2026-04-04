@@ -16,7 +16,8 @@
       "replayEndSec": 25.705613,
       "narrationText": "Exécutez un diagnostic complet de l’environnement pour faire apparaître les problèmes de base.",
       "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-tutorial-01.782d9819.mp3",
-      "audioDurationSec": 4.597551
+      "audioDurationSec": 4.597551,
+      "stepLabel": "Step 1: Run diagnostics"
     },
     {
       "id": "monitoring-tutorial-02",
@@ -25,7 +26,8 @@
       "replayEndSec": 37.199979,
       "narrationText": "Vérifiez les indicateurs d’état de la machine à distance.",
       "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-tutorial-02.a4d4374e.mp3",
-      "audioDurationSec": 3.787755
+      "audioDurationSec": 3.787755,
+      "stepLabel": "Step 2: System overview"
     },
     {
       "id": "monitoring-tutorial-03",
@@ -34,7 +36,8 @@
       "replayEndSec": 47.874153,
       "narrationText": "Répertoriez les conteneurs actifs sur la machine cible.",
       "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-tutorial-03.fc36fce4.mp3",
-      "audioDurationSec": 2.76898
+      "audioDurationSec": 2.76898,
+      "stepLabel": "Step 3: View running containers"
     },
     {
       "id": "monitoring-tutorial-04",
@@ -43,7 +46,8 @@
       "replayEndSec": 58.417483,
       "narrationText": "Conteneurs vérifiés. Nous interrogeons maintenant les services systemd de la machine pour voir quels daemons d'infrastructure sont actifs et fonctionnels.",
       "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-tutorial-04.d39b84a0.mp3",
-      "audioDurationSec": 7.967347
+      "audioDurationSec": 7.967347,
+      "stepLabel": "Step 4: Check systemd services"
     },
     {
       "id": "monitoring-tutorial-05",
@@ -52,7 +56,8 @@
       "replayEndSec": 68.461906,
       "narrationText": "Pour une vue complète, nous exécutons une requête machine sans filtres -- retournant les métriques système, le réseau, les services, les conteneurs et les périphériques bloc en un seul appel.",
       "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-tutorial-05.6b2548a4.mp3",
-      "audioDurationSec": 11.154286
+      "audioDurationSec": 11.154286,
+      "stepLabel": "Step 5: Full machine status"
     },
     {
       "id": "monitoring-tutorial-06",
@@ -61,7 +66,8 @@
       "replayEndSec": 78.211059,
       "narrationText": "Nous actualisons les empreintes des clés SSH stockées dans la configuration pour cette machine, garantissant que les connexions futures puissent vérifier l'identité du serveur.",
       "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-tutorial-06.c823513a.mp3",
-      "audioDurationSec": 10.44898
+      "audioDurationSec": 10.44898,
+      "stepLabel": "Step 6: Scan host keys"
     },
     {
       "id": "monitoring-tutorial-07",
@@ -70,7 +76,8 @@
       "replayEndSec": 86.795419,
       "narrationText": "Clés d'hôte mises à jour. Nous vérifions la connectivité de bout en bout en exécutant une commande distante via SSH et en confirmant que le nom d'hôte de la machine est retourné.",
       "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-tutorial-07.f979d69c.mp3",
-      "audioDurationSec": 10.997551
+      "audioDurationSec": 10.997551,
+      "stepLabel": "Step 7: Verify connectivity"
     },
     {
       "id": "monitoring-tutorial-08",
@@ -79,7 +86,8 @@
       "replayEndSec": 95.264993,
       "narrationText": "Encore une commande distante -- cette fois nous vérifions le temps de fonctionnement et la charge moyenne de la machine, démontrant l'exécution arbitraire de commandes via le tunnel SSH.",
       "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-tutorial-08.ba2638e6.mp3",
-      "audioDurationSec": 11.885714
+      "audioDurationSec": 11.885714,
+      "stepLabel": "Step 8: Check block devices"
     }
   ]
 }

@@ -16,7 +16,8 @@
       "replayEndSec": 52.191236,
       "narrationText": "Откройте команду удаленной оболочки, чтобы проверить личность целевого компьютера.",
       "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-01.53c79006.mp3",
-      "audioDurationSec": 5.250612
+      "audioDurationSec": 5.250612,
+      "stepLabel": "Step 1: Connect to a machine"
     },
     {
       "id": "tools-tutorial-02",
@@ -25,7 +26,8 @@
       "replayEndSec": 62.595547,
       "narrationText": "Проверяем время работы и среднюю нагрузку по SSH, чтобы убедиться, что машина отзывчива и хорошо справляется с текущей нагрузкой.",
       "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-02.1a0a4eb5.mp3",
-      "audioDurationSec": 7.47102
+      "audioDurationSec": 7.47102,
+      "stepLabel": "Step 2: Connect to a repository"
     },
     {
       "id": "tools-tutorial-03",
@@ -34,7 +36,8 @@
       "replayEndSec": 74.148935,
       "narrationText": "Теперь подключаемся напрямую к изолированной среде репозитория. docker ps показывает контейнеры под выделенным изолированным демоном этого репозитория.",
       "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-03.2cc04aff.mp3",
-      "audioDurationSec": 9.639184
+      "audioDurationSec": 9.639184,
+      "stepLabel": "Step 3: Preview file sync (dry-run)"
     },
     {
       "id": "tools-tutorial-04",
@@ -43,7 +46,8 @@
       "replayEndSec": 86.706562,
       "narrationText": "Перед загрузкой файлов пробный запуск синхронизации показывает, что было бы передано, ничего не записывая. Здесь всё уже синхронизировано.",
       "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-04.d82b9e3d.mp3",
-      "audioDurationSec": 7.967347
+      "audioDurationSec": 7.967347,
+      "stepLabel": "Step 4: Upload files"
     },
     {
       "id": "tools-tutorial-05",
@@ -52,7 +56,8 @@
       "replayEndSec": 98.826776,
       "narrationText": "Фактическая загрузка подтверждает ноль переданных файлов -- содержимое репозитория уже совпадает с локальным каталогом.",
       "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-05.215b4ac1.mp3",
-      "audioDurationSec": 8.045714
+      "audioDurationSec": 8.045714,
+      "stepLabel": "Step 5: Verify uploaded files"
     },
     {
       "id": "tools-tutorial-06",
@@ -61,7 +66,8 @@
       "replayEndSec": 110.142656,
       "narrationText": "Выводим список файлов репозитория для проверки содержимого -- файлы приложения рядом с внутренней конфигурацией.",
       "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-06.58d6e2d1.mp3",
-      "audioDurationSec": 6.844082
+      "audioDurationSec": 6.844082,
+      "stepLabel": "Step 6: VS Code integration check"
     },
     {
       "id": "tools-tutorial-07",
@@ -70,7 +76,8 @@
       "replayEndSec": 118.777182,
       "narrationText": "Проверка интеграции VS Code показывает статус установки, расширение Remote SSH и все активные удалённые подключения, управляемые CLI.",
       "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-07.69ba6347.mp3",
-      "audioDurationSec": 10.44898
+      "audioDurationSec": 10.44898,
+      "stepLabel": "Step 7: Check for CLI updates"
     },
     {
       "id": "tools-tutorial-08",
@@ -79,7 +86,8 @@
       "replayEndSec": 125.456449,
       "narrationText": "Быстрая проверка обновлений сообщает о доступных версиях CLI без установки -- полезно, чтобы быть в курсе последних возможностей.",
       "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-08.3f2e55f4.mp3",
-      "audioDurationSec": 9.090612
+      "audioDurationSec": 9.090612,
+      "stepLabel": "Step 8: Review CLI version info"
     }
   ]
 }

@@ -178,7 +178,8 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
         const cookieLang = getLanguageCookie();
         if (cookieLang && cookieLang !== currentLang && SUPPORTED_LANGUAGES.includes(cookieLang)) {
           // Build new URL with cookie language
-          const newPath = cookieLang === 'en' ? pathWithoutLang : `/${cookieLang}${pathWithoutLang}`;
+          const rawPath = cookieLang === 'en' ? pathWithoutLang : `/${cookieLang}${pathWithoutLang}`;
+          const newPath = rawPath.replace(/\/$/, '') || `/${cookieLang}`;
           const newUrl = `${newPath}${window.location.search}${window.location.hash}`;
 
           // Redirect to the preferred language

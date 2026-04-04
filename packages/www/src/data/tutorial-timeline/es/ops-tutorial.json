@@ -16,7 +16,8 @@
       "replayEndSec": 34.500143,
       "narrationText": "Verifique los requisitos de virtualización local antes del aprovisionamiento.",
       "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-tutorial-01.ab13a6af.mp3",
-      "audioDurationSec": 5.485714
+      "audioDurationSec": 5.485714,
+      "stepLabel": "Step 1: Verify system requirements"
     },
     {
       "id": "ops-tutorial-02",
@@ -25,7 +26,8 @@
       "replayEndSec": 243.727131,
       "narrationText": "Inicie un clúster de VM mínimo para experimentar.",
       "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-tutorial-02.240977ee.mp3",
-      "audioDurationSec": 3.63102
+      "audioDurationSec": 3.63102,
+      "stepLabel": "Step 2: Provision a minimal VM cluster"
     },
     {
       "id": "ops-tutorial-03",
@@ -34,7 +36,8 @@
       "replayEndSec": 401.750224,
       "narrationText": "Verifique el estado del clúster y la disponibilidad de la máquina.",
       "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-tutorial-03.350eac3e.mp3",
-      "audioDurationSec": 3.787755
+      "audioDurationSec": 3.787755,
+      "stepLabel": "Step 3: Check cluster status"
     },
     {
       "id": "ops-tutorial-04",
@@ -43,7 +46,8 @@
       "replayEndSec": 558.51649,
       "narrationText": "Ejecute una verificación rápida del nombre de host en una VM seleccionada.",
       "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-tutorial-04.5243a253.mp3",
-      "audioDurationSec": 4.519184
+      "audioDurationSec": 4.519184,
+      "stepLabel": "Step 4: Run command on bridge VM"
     },
     {
       "id": "ops-tutorial-05",
@@ -52,7 +56,8 @@
       "replayEndSec": 717.466324,
       "narrationText": "SSH confirmado. Ejecutamos uname en el nodo bridge para mostrar la versión del kernel y la arquitectura, demostrando la ejecución arbitraria de comandos remotos.",
       "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-tutorial-05.049f5d8d.mp3",
-      "audioDurationSec": 13.087347
+      "audioDurationSec": 13.087347,
+      "stepLabel": "Step 5: Tear down the cluster"
     },
     {
       "id": "ops-tutorial-06",
@@ -61,7 +66,8 @@
       "replayEndSec": 1176.459923,
       "narrationText": "Prueba completada. Desmantelamos todo el clúster, destruyendo todas las VMs en orden inverso y confirmando un apagado limpio.",
       "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-tutorial-06.8ca969a5.mp3",
-      "audioDurationSec": 9.325714
+      "audioDurationSec": 9.325714,
+      "stepLabel": "Step 6: Verify teardown"
     }
   ]
 }

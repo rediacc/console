@@ -16,7 +16,8 @@
       "replayEndSec": 38.442369,
       "narrationText": "Создайте зашифрованный репозиторий с определенным размером хранилища.",
       "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-tutorial-01.a1dfea45.mp3",
-      "audioDurationSec": 4.519184
+      "audioDurationSec": 4.519184,
+      "stepLabel": "Step 1: Create an encrypted repository"
     },
     {
       "id": "repos-tutorial-02",
@@ -25,7 +26,8 @@
       "replayEndSec": 48.791132,
       "narrationText": "Репозиторий создан. Выводим список всех репозиториев на машине, чтобы убедиться, что новый зашифрованный том смонтирован и готов к работе.",
       "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-tutorial-02.694e6142.mp3",
-      "audioDurationSec": 9.560816
+      "audioDurationSec": 9.560816,
+      "stepLabel": "Step 2: List repositories"
     },
     {
       "id": "repos-tutorial-03",
@@ -34,7 +36,8 @@
       "replayEndSec": 58.851033,
       "narrationText": "Теперь загружаем файлы приложения в репозиторий через синхронизацию на основе rsync -- быстро, инкрементально и с шифрованием при передаче.",
       "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-tutorial-03.0a6857cd.mp3",
-      "audioDurationSec": 10.840816
+      "audioDurationSec": 10.840816,
+      "stepLabel": "Step 3: Upload application files"
     },
     {
       "id": "repos-tutorial-04",
@@ -43,7 +46,8 @@
       "replayEndSec": 70.153823,
       "narrationText": "Открываем терминальную сессию внутри репозитория, чтобы убедиться, что загруженные файлы попали в нужное место на зашифрованном томе.",
       "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-tutorial-04.4ead017c.mp3",
-      "audioDurationSec": 7.157551
+      "audioDurationSec": 7.157551,
+      "stepLabel": "Step 4: Start services"
     },
     {
       "id": "repos-tutorial-05",
@@ -52,7 +56,8 @@
       "replayEndSec": 89.740567,
       "narrationText": "Файлы на месте. Запускаем Docker-сервисы репозитория с помощью загруженного compose-файла -- в данном случае это веб-сервер nginx.",
       "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-tutorial-05.2d5f21e7.mp3",
-      "audioDurationSec": 9.325714
+      "audioDurationSec": 9.325714,
+      "stepLabel": "Step 5: View running containers"
     },
     {
       "id": "repos-tutorial-06",
@@ -61,7 +66,8 @@
       "replayEndSec": 100.380993,
       "narrationText": "Запрашиваем у машины список запущенных контейнеров, чтобы подтвердить работу веб-сервиса -- с образом, статусом, потреблением памяти и назначенным loopback IP.",
       "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-tutorial-06.4fff0cef.mp3",
-      "audioDurationSec": 11.389388
+      "audioDurationSec": 11.389388,
+      "stepLabel": "Step 6: Access repo via terminal"
     },
     {
       "id": "repos-tutorial-07",
@@ -70,7 +76,8 @@
       "replayEndSec": 111.920858,
       "narrationText": "При подключении к изолированной среде репозитория docker ps показывает, что у каждого репозитория свой выделенный Docker-демон.",
       "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-tutorial-07.b3a23927.mp3",
-      "audioDurationSec": 8.280816
+      "audioDurationSec": 8.280816,
+      "stepLabel": "Step 7: View container logs"
     },
     {
       "id": "repos-tutorial-08",
@@ -79,7 +86,8 @@
       "replayEndSec": 121.48644,
       "narrationText": "Останавливаем запущенные контейнеры, оставляя репозиторий смонтированным -- контролируемая остановка сервисов без затрагивания зашифрованного тома.",
       "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-tutorial-08.648a2199.mp3",
-      "audioDurationSec": 9.247347
+      "audioDurationSec": 9.247347,
+      "stepLabel": "Step 8: Execute command in container"
     },
     {
       "id": "repos-tutorial-09",
@@ -88,7 +96,8 @@
       "replayEndSec": 131.431736,
       "narrationText": "Теперь полностью разбираем репозиторий -- остановка сервисов, выключение изолированного Docker-демона и размонтирование тома, зашифрованного LUKS.",
       "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-tutorial-09.c3755435.mp3",
-      "audioDurationSec": 9.639184
+      "audioDurationSec": 9.639184,
+      "stepLabel": "Step 9: Stop and clean up"
     },
     {
       "id": "repos-tutorial-10",
@@ -97,7 +106,8 @@
       "replayEndSec": 141.260339,
       "narrationText": "Наконец, полностью удаляем репозиторий с машины, включая зашифрованный том. Запись в конфигурации сохраняется для других машин.",
       "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-tutorial-10.3e04e371.mp3",
-      "audioDurationSec": 10.03102
+      "audioDurationSec": 10.03102,
+      "stepLabel": "Step 10: Verify cleanup"
     }
   ]
 }

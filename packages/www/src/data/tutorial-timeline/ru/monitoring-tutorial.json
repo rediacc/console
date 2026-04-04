@@ -16,7 +16,8 @@
       "replayEndSec": 25.705613,
       "narrationText": "Запустите полную диагностику среды, чтобы выявить проблемы с базовыми показателями.",
       "audioSrc": "/assets/tutorials/audio/ru/monitoring-tutorial/monitoring-tutorial-01.2d457507.mp3",
-      "audioDurationSec": 5.146122
+      "audioDurationSec": 5.146122,
+      "stepLabel": "Step 1: Run diagnostics"
     },
     {
       "id": "monitoring-tutorial-02",
@@ -25,7 +26,8 @@
       "replayEndSec": 37.199979,
       "narrationText": "Проверьте индикаторы состояния удаленной машины.",
       "audioSrc": "/assets/tutorials/audio/ru/monitoring-tutorial/monitoring-tutorial-02.80d43c2b.mp3",
-      "audioDurationSec": 2.925714
+      "audioDurationSec": 2.925714,
+      "stepLabel": "Step 2: System overview"
     },
     {
       "id": "monitoring-tutorial-03",
@@ -34,7 +36,8 @@
       "replayEndSec": 47.874153,
       "narrationText": "Перечислите активные контейнеры на целевой машине.",
       "audioSrc": "/assets/tutorials/audio/ru/monitoring-tutorial/monitoring-tutorial-03.47bea3d3.mp3",
-      "audioDurationSec": 3.709388
+      "audioDurationSec": 3.709388,
+      "stepLabel": "Step 3: View running containers"
     },
     {
       "id": "monitoring-tutorial-04",
@@ -43,7 +46,8 @@
       "replayEndSec": 58.417483,
       "narrationText": "Контейнеры проверены. Теперь запрашиваем службы systemd на машине, чтобы увидеть, какие инфраструктурные демоны активны и работают исправно.",
       "audioSrc": "/assets/tutorials/audio/ru/monitoring-tutorial/monitoring-tutorial-04.634a1d1d.mp3",
-      "audioDurationSec": 9.16898
+      "audioDurationSec": 9.16898,
+      "stepLabel": "Step 4: Check systemd services"
     },
     {
       "id": "monitoring-tutorial-05",
@@ -52,7 +56,8 @@
       "replayEndSec": 68.461906,
       "narrationText": "Для полной картины выполняем запрос машины без фильтров -- возвращая системные метрики, сеть, службы, контейнеры и блочные устройства за один вызов.",
       "audioSrc": "/assets/tutorials/audio/ru/monitoring-tutorial/monitoring-tutorial-05.dc0ef509.mp3",
-      "audioDurationSec": 9.795918
+      "audioDurationSec": 9.795918,
+      "stepLabel": "Step 5: Full machine status"
     },
     {
       "id": "monitoring-tutorial-06",
@@ -61,7 +66,8 @@
       "replayEndSec": 78.211059,
       "narrationText": "Обновляем отпечатки SSH-ключей хоста, сохранённые в конфигурации для этой машины, чтобы будущие подключения могли проверить подлинность сервера.",
       "audioSrc": "/assets/tutorials/audio/ru/monitoring-tutorial/monitoring-tutorial-06.04fe8ce4.mp3",
-      "audioDurationSec": 9.560816
+      "audioDurationSec": 9.560816,
+      "stepLabel": "Step 6: Scan host keys"
     },
     {
       "id": "monitoring-tutorial-07",
@@ -70,7 +76,8 @@
       "replayEndSec": 86.795419,
       "narrationText": "Ключи хоста обновлены. Проверяем сквозное подключение, выполняя удалённую команду по SSH и подтверждая возврат имени хоста машины.",
       "audioSrc": "/assets/tutorials/audio/ru/monitoring-tutorial/monitoring-tutorial-07.3486318e.mp3",
-      "audioDurationSec": 9.090612
+      "audioDurationSec": 9.090612,
+      "stepLabel": "Step 7: Verify connectivity"
     },
     {
       "id": "monitoring-tutorial-08",
@@ -79,7 +86,8 @@
       "replayEndSec": 95.264993,
       "narrationText": "Ещё одна удалённая команда -- на этот раз проверяем время работы и среднюю нагрузку машины, демонстрируя произвольное выполнение команд через SSH-туннель.",
       "audioSrc": "/assets/tutorials/audio/ru/monitoring-tutorial/monitoring-tutorial-08.77901509.mp3",
-      "audioDurationSec": 10.919184
+      "audioDurationSec": 10.919184,
+      "stepLabel": "Step 8: Check block devices"
     }
   ]
 }

@@ -169,8 +169,8 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
     } else if (navigationMode === 'button') {
       // Handle button-based navigation
       const currentPath = window.location.pathname;
-      const pathWithoutLang = currentPath.replace(/^\/[a-z]{2}/, '');
-      const newPath = `/${lang}${pathWithoutLang || '/'}`;
+      const pathWithoutLang = currentPath.replace(/^\/[a-z]{2}\/?/, '/');
+      const newPath = `/${lang}${pathWithoutLang}`.replace(/\/$/, '') || `/${lang}`;
       setPendingNavigation(newPath);
     }
 

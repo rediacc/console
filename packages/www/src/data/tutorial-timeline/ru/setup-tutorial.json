@@ -16,7 +16,8 @@
       "replayEndSec": 11.379114,
       "narrationText": "Инициализируйте специальный профиль конфигурации для этой среды.",
       "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-tutorial-01.5a6b5914.mp3",
-      "audioDurationSec": 3.552653
+      "audioDurationSec": 3.552653,
+      "stepLabel": "Step 1: Create a new config"
     },
     {
       "id": "setup-tutorial-02",
@@ -25,7 +26,8 @@
       "replayEndSec": 19.116458,
       "narrationText": "Профиль создан. Выводим список всех профилей конфигурации в системе, чтобы увидеть новый рядом с существующими.",
       "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-tutorial-02.f0093d31.mp3",
-      "audioDurationSec": 7.079184
+      "audioDurationSec": 7.079184,
+      "stepLabel": "Step 2: View configs"
     },
     {
       "id": "setup-tutorial-03",
@@ -34,7 +36,8 @@
       "replayEndSec": 30.612519,
       "narrationText": "Далее регистрируем удалённую машину -- указываем IP-адрес и пользователя SSH. Ключи хоста сканируются автоматически для доверенного доступа.",
       "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-tutorial-03.1be99cf5.mp3",
-      "audioDurationSec": 10.605714
+      "audioDurationSec": 10.605714,
+      "stepLabel": "Step 3: Add a machine"
     },
     {
       "id": "setup-tutorial-04",
@@ -43,7 +46,8 @@
       "replayEndSec": 39.668059,
       "narrationText": "Выводим список машин, настроенных в этом профиле, чтобы убедиться, что воркер добавлен с правильными данными подключения.",
       "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-tutorial-04.3deb2bfc.mp3",
-      "audioDurationSec": 8.829388
+      "audioDurationSec": 8.829388,
+      "stepLabel": "Step 4: View machines"
     },
     {
       "id": "setup-tutorial-05",
@@ -52,7 +56,8 @@
       "replayEndSec": 48.511187,
       "narrationText": "Пора проверить связь. Выполняем удалённую команду по SSH и убеждаемся, что возвращается имя хоста машины.",
       "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-tutorial-05.04bd0b15.mp3",
-      "audioDurationSec": 7.079184
+      "audioDurationSec": 7.079184,
+      "stepLabel": "Step 5: Test connectivity"
     },
     {
       "id": "setup-tutorial-06",
@@ -61,7 +66,8 @@
       "replayEndSec": 59.171133,
       "narrationText": "Ещё одна проверка -- запрашиваем время работы и среднюю нагрузку машины, чтобы убедиться в её отзывчивости и исправности.",
       "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-tutorial-06.e6fb721d.mp3",
-      "audioDurationSec": 10.03102
+      "audioDurationSec": 10.03102,
+      "stepLabel": "Step 6: Check uptime"
     },
     {
       "id": "setup-tutorial-07",
@@ -70,7 +76,8 @@
       "replayEndSec": 78.418551,
       "narrationText": "Запускаем полную диагностику, охватывающую среду CLI, установку renet, конфигурацию и статус подписки -- всё одной командой.",
       "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-tutorial-07.0880a466.mp3",
-      "audioDurationSec": 10.266122
+      "audioDurationSec": 10.266122,
+      "stepLabel": "Step 7: Run diagnostics"
     },
     {
       "id": "setup-tutorial-08",
@@ -79,7 +86,8 @@
       "replayEndSec": 89.493582,
       "narrationText": "Связь подтверждена -- настраиваем инфраструктуру машины: публичный IP, базовый домен для маршрутизации и почту сертификата для автоматического TLS.",
       "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-tutorial-08.9dd36453.mp3",
-      "audioDurationSec": 11.72898
+      "audioDurationSec": 11.72898,
+      "stepLabel": "Step 8: Configure infrastructure"
     },
     {
       "id": "setup-tutorial-09",
@@ -88,7 +96,8 @@
       "replayEndSec": 98.079365,
       "narrationText": "Отображаем сохранённую конфигурацию инфраструктуры, чтобы убедиться, что IP, домен и настройки сертификата записаны верно.",
       "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-tutorial-09.d824fd5d.mp3",
-      "audioDurationSec": 10.44898
+      "audioDurationSec": 10.44898,
+      "stepLabel": "Step 9: View infrastructure config"
     }
   ]
 }

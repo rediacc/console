@@ -17,6 +17,7 @@ import {
 } from './terminal-player-shell';
 import {
   activeWordIndex,
+  applyMarkerLabels,
   buildCaptionSegments,
   findStepIndex,
   pageIndexForWord,
@@ -409,6 +410,12 @@ const TerminalPlayer: FC<TerminalPlayerProps> = ({ src, title, lang = 'en', cast
       void seekCast(currentStep.replayStartSec);
     }
   }, [seekCast, setPhase, stepIndex, steps]);
+
+  // Replace asciinema marker tooltips (raw commands) with human-readable step labels
+  useEffect(() => {
+    if (!playbackHostEl) return;
+    return applyMarkerLabels(containerRef.current, steps);
+  }, [playbackHostEl, steps]);
 
   // Narration progress overlay: show a fill bar and step counter during narration
   useEffect(() => {

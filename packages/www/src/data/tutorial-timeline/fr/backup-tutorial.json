@@ -16,7 +16,8 @@
       "replayEndSec": 15.432035,
       "narrationText": "Inspectez les destinations de sauvegarde actuellement configurées.",
       "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-tutorial-01.2c3de829.mp3",
-      "audioDurationSec": 3.474286
+      "audioDurationSec": 3.474286,
+      "stepLabel": "Step 1: Import a storage backend"
     },
     {
       "id": "backup-tutorial-02",
@@ -25,7 +26,8 @@
       "replayEndSec": 24.286068,
       "narrationText": "Stockage importé. Nous listons tous les backends configurés pour confirmer que la destination S3 est enregistrée et prête pour les transferts de sauvegarde.",
       "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-tutorial-02.d4032947.mp3",
-      "audioDurationSec": 9.795918
+      "audioDurationSec": 9.795918,
+      "stepLabel": "Step 2: List storage backends"
     },
     {
       "id": "backup-tutorial-03",
@@ -34,7 +36,8 @@
       "replayEndSec": 35.540522,
       "narrationText": "Ensuite, nous créons une stratégie de sauvegarde -- en définissant la destination sur notre backend S3, en planifiant des exécutions quotidiennes à deux heures du matin et en l'activant immédiatement.",
       "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-tutorial-03.5f3b5789.mp3",
-      "audioDurationSec": 13.244082
+      "audioDurationSec": 13.244082,
+      "stepLabel": "Step 3: Configure backup strategy"
     },
     {
       "id": "backup-tutorial-04",
@@ -43,7 +46,8 @@
       "replayEndSec": 44.765645,
       "narrationText": "Stratégie enregistrée. Nous inspectons la configuration complète pour vérifier la planification, la destination et l'état d'activation avant de continuer.",
       "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-tutorial-04.9f6f3f98.mp3",
-      "audioDurationSec": 9.247347
+      "audioDurationSec": 9.247347,
+      "stepLabel": "Step 4: View backup strategy"
     },
     {
       "id": "backup-tutorial-05",
@@ -52,7 +56,8 @@
       "replayEndSec": 57.747851,
       "narrationText": "Avec les sauvegardes configurées, nous mettons en place l'infrastructure de la machine -- IP publique, domaine de base et email de certificat pour le provisionnement TLS automatique.",
       "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-tutorial-05.4e555626.mp3",
-      "audioDurationSec": 12.669388
+      "audioDurationSec": 12.669388,
+      "stepLabel": "Step 5: Configure infrastructure"
     },
     {
       "id": "backup-tutorial-06",
@@ -61,7 +66,8 @@
       "replayEndSec": 68.973334,
       "narrationText": "Maintenant nous ouvrons les ports réseau nécessaires à la machine -- des ports TCP pour les protocoles de messagerie et un port UDP pour la résolution DNS.",
       "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-tutorial-06.d5da432c.mp3",
-      "audioDurationSec": 10.266122
+      "audioDurationSec": 10.266122,
+      "stepLabel": "Step 6: Add TCP/UDP ports"
     },
     {
       "id": "backup-tutorial-07",
@@ -70,7 +76,8 @@
       "replayEndSec": 78.308748,
       "narrationText": "Nous examinons la configuration complète de l'infrastructure de la machine -- adresse IP, domaine, email de certificat et toutes les correspondances de ports en une seule vue.",
       "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-tutorial-07.4fda2dc5.mp3",
-      "audioDurationSec": 10.527347
+      "audioDurationSec": 10.527347,
+      "stepLabel": "Step 7: View infrastructure config"
     },
     {
       "id": "backup-tutorial-08",
@@ -79,7 +86,8 @@
       "replayEndSec": 85.975424,
       "narrationText": "Pour finir, nous désactivons la stratégie de sauvegarde sans la supprimer. La configuration reste enregistrée et peut être réactivée à tout moment.",
       "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-tutorial-08.68cf83c4.mp3",
-      "audioDurationSec": 8.829388
+      "audioDurationSec": 8.829388,
+      "stepLabel": "Step 8: Disable backup strategy"
     },
     {
       "id": "backup-tutorial-09",
@@ -88,7 +96,8 @@
       "replayEndSec": 93.104958,
       "narrationText": "Confirmé -- la stratégie est désactivée tandis que la destination et la planification restent intactes. Réactivez avec un seul flag quand vous êtes prêt.",
       "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-tutorial-09.7de516a1.mp3",
-      "audioDurationSec": 9.717551
+      "audioDurationSec": 9.717551,
+      "stepLabel": "Step 9: Verify disabled state"
     }
   ]
 }

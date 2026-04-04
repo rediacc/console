@@ -16,7 +16,8 @@
       "replayEndSec": 34.500143,
       "narrationText": "Перед инициализацией проверьте локальные требования к виртуализации.",
       "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-tutorial-01.75c5f4c6.mp3",
-      "audioDurationSec": 4.284082
+      "audioDurationSec": 4.284082,
+      "stepLabel": "Step 1: Verify system requirements"
     },
     {
       "id": "ops-tutorial-02",
@@ -25,7 +26,8 @@
       "replayEndSec": 243.727131,
       "narrationText": "Запустите минимальный кластер виртуальных машин для экспериментов.",
       "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-tutorial-02.47daed6e.mp3",
-      "audioDurationSec": 3.552653
+      "audioDurationSec": 3.552653,
+      "stepLabel": "Step 2: Provision a minimal VM cluster"
     },
     {
       "id": "ops-tutorial-03",
@@ -34,7 +36,8 @@
       "replayEndSec": 401.750224,
       "narrationText": "Проверьте состояние кластера и доступность машины.",
       "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-tutorial-03.8bb7d56d.mp3",
-      "audioDurationSec": 3.787755
+      "audioDurationSec": 3.787755,
+      "stepLabel": "Step 3: Check cluster status"
     },
     {
       "id": "ops-tutorial-04",
@@ -43,7 +46,8 @@
       "replayEndSec": 558.51649,
       "narrationText": "Запустите быструю проверку имени хоста на выбранной виртуальной машине.",
       "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-tutorial-04.6d5a9f25.mp3",
-      "audioDurationSec": 3.866122
+      "audioDurationSec": 3.866122,
+      "stepLabel": "Step 4: Run command on bridge VM"
     },
     {
       "id": "ops-tutorial-05",
@@ -52,7 +56,8 @@
       "replayEndSec": 717.466324,
       "narrationText": "SSH подтверждён. Выполняем uname на узле-мосте для отображения версии ядра и архитектуры, демонстрируя произвольное удалённое выполнение команд.",
       "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-tutorial-05.961c8b9d.mp3",
-      "audioDurationSec": 10.605714
+      "audioDurationSec": 10.605714,
+      "stepLabel": "Step 5: Tear down the cluster"
     },
     {
       "id": "ops-tutorial-06",
@@ -61,7 +66,8 @@
       "replayEndSec": 1176.459923,
       "narrationText": "Тестирование завершено. Разбираем весь кластер, уничтожая все виртуальные машины в обратном порядке и подтверждая чистое завершение работы.",
       "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-tutorial-06.4246092c.mp3",
-      "audioDurationSec": 10.919184
+      "audioDurationSec": 10.919184,
+      "stepLabel": "Step 6: Verify teardown"
     }
   ]
 }

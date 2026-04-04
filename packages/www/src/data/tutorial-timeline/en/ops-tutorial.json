@@ -16,7 +16,8 @@
       "replayEndSec": 34.500143,
       "narrationText": "Testing infrastructure locally prevents production misconfigurations. We verify that your workstation has KVM support, libvirt, QEMU, and cloud-init tools installed for virtual machine provisioning.",
       "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-01.c8159fa6.mp3",
-      "audioDurationSec": 13.244082
+      "audioDurationSec": 13.244082,
+      "stepLabel": "Step 1: Verify system requirements"
     },
     {
       "id": "ops-tutorial-02",
@@ -25,7 +26,8 @@
       "replayEndSec": 243.727131,
       "narrationText": "All prerequisites pass. We provision a minimal two-VM cluster on a virtual network -- a bridge node and a worker node -- with SSH access ready.",
       "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-02.68ff6a26.mp3",
-      "audioDurationSec": 9.482449
+      "audioDurationSec": 9.482449,
+      "stepLabel": "Step 2: Provision a minimal VM cluster"
     },
     {
       "id": "ops-tutorial-03",
@@ -34,7 +36,8 @@
       "replayEndSec": 401.750224,
       "narrationText": "Cluster provisioning complete. We check that both VMs are running, with their assigned IP addresses, CPU allocation, and memory visible in the status table.",
       "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-03.dbb384ff.mp3",
-      "audioDurationSec": 9.952653
+      "audioDurationSec": 9.952653,
+      "stepLabel": "Step 3: Check cluster status"
     },
     {
       "id": "ops-tutorial-04",
@@ -43,7 +46,8 @@
       "replayEndSec": 558.51649,
       "narrationText": "Both VMs are online. We verify SSH access to the bridge node by running a remote command. You'll see its hostname returned, confirming the tunnel works.",
       "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-04.3f800299.mp3",
-      "audioDurationSec": 10.919184
+      "audioDurationSec": 10.919184,
+      "stepLabel": "Step 4: Run command on bridge VM"
     },
     {
       "id": "ops-tutorial-05",
@@ -52,7 +56,8 @@
       "replayEndSec": 717.466324,
       "narrationText": "SSH confirmed. We run uname on the bridge node to show the kernel version and architecture, demonstrating arbitrary remote command execution.",
       "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-05.ca70dba7.mp3",
-      "audioDurationSec": 9.717551
+      "audioDurationSec": 9.717551,
+      "stepLabel": "Step 5: Tear down the cluster"
     },
     {
       "id": "ops-tutorial-06",
@@ -61,7 +66,8 @@
       "replayEndSec": 1176.459923,
       "narrationText": "Testing complete. We tear down the entire cluster, destroying all VMs in reverse order and confirming a clean shutdown.",
       "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-06.bbccf598.mp3",
-      "audioDurationSec": 7.235918
+      "audioDurationSec": 7.235918,
+      "stepLabel": "Step 6: Verify teardown"
     }
   ]
 }

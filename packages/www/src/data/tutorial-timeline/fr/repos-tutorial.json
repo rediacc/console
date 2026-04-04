@@ -16,7 +16,8 @@
       "replayEndSec": 38.442369,
       "narrationText": "Créez un référentiel chiffré avec une taille de stockage définie.",
       "audioSrc": "/assets/tutorials/audio/fr/repos-tutorial/repos-tutorial-01.d4625828.mp3",
-      "audioDurationSec": 3.552653
+      "audioDurationSec": 3.552653,
+      "stepLabel": "Step 1: Create an encrypted repository"
     },
     {
       "id": "repos-tutorial-02",
@@ -25,7 +26,8 @@
       "replayEndSec": 48.791132,
       "narrationText": "Référentiel créé. Nous listons tous les référentiels sur la machine pour confirmer que le nouveau volume chiffré est monté et prêt.",
       "audioSrc": "/assets/tutorials/audio/fr/repos-tutorial/repos-tutorial-02.b1ac141c.mp3",
-      "audioDurationSec": 7.967347
+      "audioDurationSec": 7.967347,
+      "stepLabel": "Step 2: List repositories"
     },
     {
       "id": "repos-tutorial-03",
@@ -34,7 +36,8 @@
       "replayEndSec": 58.851033,
       "narrationText": "Nous téléversons maintenant les fichiers de l'application dans le référentiel via une synchronisation basée sur rsync -- rapide, incrémentale et chiffrée en transit.",
       "audioSrc": "/assets/tutorials/audio/fr/repos-tutorial/repos-tutorial-03.b2f19732.mp3",
-      "audioDurationSec": 10.527347
+      "audioDurationSec": 10.527347,
+      "stepLabel": "Step 3: Upload application files"
     },
     {
       "id": "repos-tutorial-04",
@@ -43,7 +46,8 @@
       "replayEndSec": 70.153823,
       "narrationText": "Nous ouvrons une session terminal dans le référentiel pour vérifier que les fichiers téléversés sont au bon emplacement sur le volume chiffré.",
       "audioSrc": "/assets/tutorials/audio/fr/repos-tutorial/repos-tutorial-04.8a09ffc1.mp3",
-      "audioDurationSec": 7.967347
+      "audioDurationSec": 7.967347,
+      "stepLabel": "Step 4: Start services"
     },
     {
       "id": "repos-tutorial-05",
@@ -52,7 +56,8 @@
       "replayEndSec": 89.740567,
       "narrationText": "Fichiers en place. Nous démarrons les services Docker du référentiel avec le fichier compose téléversé -- ici, un serveur web nginx.",
       "audioSrc": "/assets/tutorials/audio/fr/repos-tutorial/repos-tutorial-05.d9e1ef99.mp3",
-      "audioDurationSec": 8.672653
+      "audioDurationSec": 8.672653,
+      "stepLabel": "Step 5: View running containers"
     },
     {
       "id": "repos-tutorial-06",
@@ -61,7 +66,8 @@
       "replayEndSec": 100.380993,
       "narrationText": "Nous interrogeons la machine pour les conteneurs en cours d'exécution afin de confirmer que le service web est actif, avec son image, son état, son utilisation mémoire et son IP de loopback.",
       "audioSrc": "/assets/tutorials/audio/fr/repos-tutorial/repos-tutorial-06.6acafb29.mp3",
-      "audioDurationSec": 14.524082
+      "audioDurationSec": 14.524082,
+      "stepLabel": "Step 6: Access repo via terminal"
     },
     {
       "id": "repos-tutorial-07",
@@ -70,7 +76,8 @@
       "replayEndSec": 111.920858,
       "narrationText": "En se connectant à l'environnement isolé du référentiel, docker ps montre que chaque référentiel dispose de son propre daemon Docker dédié.",
       "audioSrc": "/assets/tutorials/audio/fr/repos-tutorial/repos-tutorial-07.163fb0ba.mp3",
-      "audioDurationSec": 9.090612
+      "audioDurationSec": 9.090612,
+      "stepLabel": "Step 7: View container logs"
     },
     {
       "id": "repos-tutorial-08",
@@ -79,7 +86,8 @@
       "replayEndSec": 121.48644,
       "narrationText": "Nous arrêtons les conteneurs en cours d'exécution tout en gardant le référentiel monté -- un arrêt contrôlé des services sans toucher au volume chiffré.",
       "audioSrc": "/assets/tutorials/audio/fr/repos-tutorial/repos-tutorial-08.739b427c.mp3",
-      "audioDurationSec": 9.795918
+      "audioDurationSec": 9.795918,
+      "stepLabel": "Step 8: Execute command in container"
     },
     {
       "id": "repos-tutorial-09",
@@ -88,7 +96,8 @@
       "replayEndSec": 131.431736,
       "narrationText": "Maintenant nous démontons complètement le référentiel -- arrêt des services, extinction du daemon Docker isolé et démontage du volume chiffré LUKS.",
       "audioSrc": "/assets/tutorials/audio/fr/repos-tutorial/repos-tutorial-09.45bd8244.mp3",
-      "audioDurationSec": 10.187755
+      "audioDurationSec": 10.187755,
+      "stepLabel": "Step 9: Stop and clean up"
     },
     {
       "id": "repos-tutorial-10",
@@ -97,7 +106,8 @@
       "replayEndSec": 141.260339,
       "narrationText": "Enfin, nous supprimons entièrement le référentiel de la machine, en effaçant le volume chiffré. L'entrée de configuration est conservée pour les autres machines.",
       "audioSrc": "/assets/tutorials/audio/fr/repos-tutorial/repos-tutorial-10.8985bfc7.mp3",
-      "audioDurationSec": 8.672653
+      "audioDurationSec": 8.672653,
+      "stepLabel": "Step 10: Verify cleanup"
     }
   ]
 }

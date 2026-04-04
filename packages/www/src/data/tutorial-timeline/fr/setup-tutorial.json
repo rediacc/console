@@ -16,7 +16,8 @@
       "replayEndSec": 11.379114,
       "narrationText": "Initialisez un profil de configuration dédié pour cet environnement.",
       "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-01.4e95a3fa.mp3",
-      "audioDurationSec": 4.284082
+      "audioDurationSec": 4.284082,
+      "stepLabel": "Step 1: Create a new config"
     },
     {
       "id": "setup-tutorial-02",
@@ -25,7 +26,8 @@
       "replayEndSec": 19.116458,
       "narrationText": "Profil créé. Nous listons tous les profils de configuration du système pour voir le nouveau aux côtés des profils existants.",
       "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-02.b151619d.mp3",
-      "audioDurationSec": 7.967347
+      "audioDurationSec": 7.967347,
+      "stepLabel": "Step 2: View configs"
     },
     {
       "id": "setup-tutorial-03",
@@ -34,7 +36,8 @@
       "replayEndSec": 30.612519,
       "narrationText": "Ensuite nous enregistrons une machine distante -- en fournissant son adresse IP et son utilisateur SSH. Les clés d'hôte sont scannées automatiquement pour un accès de confiance.",
       "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-03.faf65ca7.mp3",
-      "audioDurationSec": 13.00898
+      "audioDurationSec": 13.00898,
+      "stepLabel": "Step 3: Add a machine"
     },
     {
       "id": "setup-tutorial-04",
@@ -43,7 +46,8 @@
       "replayEndSec": 39.668059,
       "narrationText": "Nous listons les machines configurées dans ce profil pour confirmer que le worker a été ajouté avec les bons paramètres de connexion.",
       "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-04.7738d928.mp3",
-      "audioDurationSec": 8.124082
+      "audioDurationSec": 8.124082,
+      "stepLabel": "Step 4: View machines"
     },
     {
       "id": "setup-tutorial-05",
@@ -52,7 +56,8 @@
       "replayEndSec": 48.511187,
       "narrationText": "Il est temps de tester la connectivité. Nous exécutons une commande distante via SSH et confirmons que le nom d'hôte de la machine est renvoyé.",
       "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-05.896d663f.mp3",
-      "audioDurationSec": 8.75102
+      "audioDurationSec": 8.75102,
+      "stepLabel": "Step 5: Test connectivity"
     },
     {
       "id": "setup-tutorial-06",
@@ -61,7 +66,8 @@
       "replayEndSec": 59.171133,
       "narrationText": "Une vérification supplémentaire -- nous interrogeons le temps de fonctionnement et la charge moyenne de la machine pour nous assurer qu'elle répond et fonctionne bien.",
       "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-06.23d9a735.mp3",
-      "audioDurationSec": 8.515918
+      "audioDurationSec": 8.515918,
+      "stepLabel": "Step 6: Check uptime"
     },
     {
       "id": "setup-tutorial-07",
@@ -70,7 +76,8 @@
       "replayEndSec": 78.418551,
       "narrationText": "Nous lançons un diagnostic complet couvrant l'environnement CLI, l'installation de renet, la configuration et l'état de l'abonnement en une seule commande.",
       "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-07.841bfaf8.mp3",
-      "audioDurationSec": 9.952653
+      "audioDurationSec": 9.952653,
+      "stepLabel": "Step 7: Run diagnostics"
     },
     {
       "id": "setup-tutorial-08",
@@ -79,7 +86,8 @@
       "replayEndSec": 89.493582,
       "narrationText": "La connectivité étant confirmée, nous configurons l'infrastructure de la machine -- IP publique, domaine de base pour le routage et adresse e-mail pour les certificats TLS automatisés.",
       "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-08.b946a77b.mp3",
-      "audioDurationSec": 13.165714
+      "audioDurationSec": 13.165714,
+      "stepLabel": "Step 8: Configure infrastructure"
     },
     {
       "id": "setup-tutorial-09",
@@ -88,7 +96,8 @@
       "replayEndSec": 98.079365,
       "narrationText": "Nous affichons la configuration d'infrastructure enregistrée pour confirmer que l'IP, le domaine et les paramètres de certificat ont été correctement stockés.",
       "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-09.1bf5a558.mp3",
-      "audioDurationSec": 9.874286
+      "audioDurationSec": 9.874286,
+      "stepLabel": "Step 9: View infrastructure config"
     }
   ]
 }

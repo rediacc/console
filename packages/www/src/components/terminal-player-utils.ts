@@ -296,6 +296,37 @@ export function updateNarrationProgress(
   setTimerDisplay(timer, `Step ${stepIndex + 1}/${totalSteps}`);
 }
 
+/**
+ * Replace asciinema marker tooltips (raw commands) with human-readable step labels.
+ * Retries briefly if markers aren't rendered yet (async player initialization).
+ */
+export function applyMarkerLabels(
+  container: HTMLElement | null,
+  steps: TutorialTimelineStep[]
+): (() => void) | undefined {
+  if (!container || steps.length === 0) return undefined;
+
+  const apply = () => {
+    const tooltips = container.querySelectorAll<HTMLElement>('.ap-marker-container .ap-tooltip');
+    for (let i = 0; i < tooltips.length && i < steps.length; i += 1) {
+      const label = steps[i].stepLabel;
+      if (label) tooltips[i].textContent = label;
+    }
+    return tooltips.length > 0;
+  };
+
+  if (apply()) return undefined;
+
+  // Markers may not be rendered yet -- retry briefly
+  let attempts = 0;
+  const timer = window.setInterval(() => {
+    attempts += 1;
+    if (apply() || attempts >= 10) window.clearInterval(timer);
+  }, 200);
+
+  return () => window.clearInterval(timer);
+}
+
 /** Find which page contains the word with the given timing index. */
 export function pageIndexForWord(pages: CaptionSegment[][], wordIndex: number): number {
   if (wordIndex < 0) return 0;

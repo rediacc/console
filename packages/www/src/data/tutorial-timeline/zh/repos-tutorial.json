@@ -16,7 +16,8 @@
       "replayEndSec": 38.442369,
       "narrationText": "创建具有定义的存储大小的加密存储库。",
       "audioSrc": "/assets/tutorials/audio/zh/repos-tutorial/repos-tutorial-01.e87f00df.mp3",
-      "audioDurationSec": 3.474286
+      "audioDurationSec": 3.474286,
+      "stepLabel": "Step 1: Create an encrypted repository"
     },
     {
       "id": "repos-tutorial-02",
@@ -25,7 +26,8 @@
       "replayEndSec": 48.791132,
       "narrationText": "存储库已创建。我们列出机器上的所有存储库，确认新的加密卷已挂载并准备就绪。",
       "audioSrc": "/assets/tutorials/audio/zh/repos-tutorial/repos-tutorial-02.6285b12a.mp3",
-      "audioDurationSec": 7.549388
+      "audioDurationSec": 7.549388,
+      "stepLabel": "Step 2: List repositories"
     },
     {
       "id": "repos-tutorial-03",
@@ -34,7 +36,8 @@
       "replayEndSec": 58.851033,
       "narrationText": "现在我们使用基于 rsync 的同步将应用程序文件上传到存储库 -- 快速、增量且传输过程中加密。",
       "audioSrc": "/assets/tutorials/audio/zh/repos-tutorial/repos-tutorial-03.c0bf27bf.mp3",
-      "audioDurationSec": 10.187755
+      "audioDurationSec": 10.187755,
+      "stepLabel": "Step 3: Upload application files"
     },
     {
       "id": "repos-tutorial-04",
@@ -43,7 +46,8 @@
       "replayEndSec": 70.153823,
       "narrationText": "我们在存储库内打开终端会话，验证上传的文件是否位于加密卷上的正确位置。",
       "audioSrc": "/assets/tutorials/audio/zh/repos-tutorial/repos-tutorial-04.12e62ffe.mp3",
-      "audioDurationSec": 6.687347
+      "audioDurationSec": 6.687347,
+      "stepLabel": "Step 4: Start services"
     },
     {
       "id": "repos-tutorial-05",
@@ -52,7 +56,8 @@
       "replayEndSec": 89.740567,
       "narrationText": "文件已就位。我们使用上传的 compose 文件启动存储库的 Docker 服务 -- 本例中是一个 nginx 网页服务器。",
       "audioSrc": "/assets/tutorials/audio/zh/repos-tutorial/repos-tutorial-05.e2ba2edd.mp3",
-      "audioDurationSec": 9.247347
+      "audioDurationSec": 9.247347,
+      "stepLabel": "Step 5: View running containers"
     },
     {
       "id": "repos-tutorial-06",
@@ -61,7 +66,8 @@
       "replayEndSec": 100.380993,
       "narrationText": "我们查询机器上正在运行的容器，确认 Web 服务已启动，显示其镜像、状态、内存使用量和分配的环回 IP。",
       "audioSrc": "/assets/tutorials/audio/zh/repos-tutorial/repos-tutorial-06.04cc3614.mp3",
-      "audioDurationSec": 10.684082
+      "audioDurationSec": 10.684082,
+      "stepLabel": "Step 6: Access repo via terminal"
     },
     {
       "id": "repos-tutorial-07",
@@ -70,7 +76,8 @@
       "replayEndSec": 111.920858,
       "narrationText": "连接到存储库的隔离环境后运行 docker ps，可以看到每个存储库都有自己专用的 Docker 守护进程。",
       "audioSrc": "/assets/tutorials/audio/zh/repos-tutorial/repos-tutorial-07.4817343a.mp3",
-      "audioDurationSec": 9.247347
+      "audioDurationSec": 9.247347,
+      "stepLabel": "Step 7: View container logs"
     },
     {
       "id": "repos-tutorial-08",
@@ -79,7 +86,8 @@
       "replayEndSec": 121.48644,
       "narrationText": "我们停止正在运行的容器，同时保持存储库挂载 -- 在不触碰加密卷的情况下优雅地关闭服务。",
       "audioSrc": "/assets/tutorials/audio/zh/repos-tutorial/repos-tutorial-08.ef3d47ee.mp3",
-      "audioDurationSec": 9.090612
+      "audioDurationSec": 9.090612,
+      "stepLabel": "Step 8: Execute command in container"
     },
     {
       "id": "repos-tutorial-09",
@@ -88,7 +96,8 @@
       "replayEndSec": 131.431736,
       "narrationText": "现在我们完全拆除存储库 -- 停止服务、关闭隔离的 Docker 守护进程并卸载 LUKS 加密卷。",
       "audioSrc": "/assets/tutorials/audio/zh/repos-tutorial/repos-tutorial-09.2d922b68.mp3",
-      "audioDurationSec": 7.967347
+      "audioDurationSec": 7.967347,
+      "stepLabel": "Step 9: Stop and clean up"
     },
     {
       "id": "repos-tutorial-10",
@@ -97,7 +106,8 @@
       "replayEndSec": 141.260339,
       "narrationText": "最后，我们从机器上彻底删除存储库，移除加密卷。配置条目会为其他机器保留。",
       "audioSrc": "/assets/tutorials/audio/zh/repos-tutorial/repos-tutorial-10.48d29d5d.mp3",
-      "audioDurationSec": 7.88898
+      "audioDurationSec": 7.88898,
+      "stepLabel": "Step 10: Verify cleanup"
     }
   ]
 }

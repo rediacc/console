@@ -16,7 +16,8 @@
       "replayEndSec": 25.705613,
       "narrationText": "Führen Sie eine vollständige Umgebungsdiagnose durch, um grundlegende Probleme aufzudecken.",
       "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-tutorial-01.47c5b961.mp3",
-      "audioDurationSec": 7.627755
+      "audioDurationSec": 7.627755,
+      "stepLabel": "Step 1: Run diagnostics"
     },
     {
       "id": "monitoring-tutorial-02",
@@ -25,7 +26,8 @@
       "replayEndSec": 37.199979,
       "narrationText": "Überprüfen Sie die Gesundheitsindikatoren der Remote-Maschine.",
       "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-tutorial-02.57e2b2e2.mp3",
-      "audioDurationSec": 3.970612
+      "audioDurationSec": 3.970612,
+      "stepLabel": "Step 2: System overview"
     },
     {
       "id": "monitoring-tutorial-03",
@@ -34,7 +36,8 @@
       "replayEndSec": 47.874153,
       "narrationText": "Aktive Container auf dem Zielcomputer auflisten.",
       "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-tutorial-03.582e8212.mp3",
-      "audioDurationSec": 3.160816
+      "audioDurationSec": 3.160816,
+      "stepLabel": "Step 3: View running containers"
     },
     {
       "id": "monitoring-tutorial-04",
@@ -43,7 +46,8 @@
       "replayEndSec": 58.417483,
       "narrationText": "Container geprüft. Jetzt fragen wir die systemd-Dienste auf der Maschine ab, um zu sehen, welche Infrastruktur-Daemons aktiv und funktionsfähig sind.",
       "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-tutorial-04.10f0db5d.mp3",
-      "audioDurationSec": 9.482449
+      "audioDurationSec": 9.482449,
+      "stepLabel": "Step 4: Check systemd services"
     },
     {
       "id": "monitoring-tutorial-05",
@@ -52,7 +56,8 @@
       "replayEndSec": 68.461906,
       "narrationText": "Für ein vollständiges Bild führen wir eine ungefilterte Maschinenabfrage aus -- Systemmetriken, Netzwerk, Dienste, Container und Blockgeräte in einem Aufruf.",
       "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-tutorial-05.0878920c.mp3",
-      "audioDurationSec": 10.840816
+      "audioDurationSec": 10.840816,
+      "stepLabel": "Step 5: Full machine status"
     },
     {
       "id": "monitoring-tutorial-06",
@@ -61,7 +66,8 @@
       "replayEndSec": 78.211059,
       "narrationText": "Wir aktualisieren die in der Konfiguration gespeicherten SSH-Host-Key-Fingerprints für diese Maschine, damit zukünftige Verbindungen die Serveridentität verifizieren können.",
       "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-tutorial-06.8f2f2ad6.mp3",
-      "audioDurationSec": 10.605714
+      "audioDurationSec": 10.605714,
+      "stepLabel": "Step 6: Scan host keys"
     },
     {
       "id": "monitoring-tutorial-07",
@@ -70,7 +76,8 @@
       "replayEndSec": 86.795419,
       "narrationText": "Host-Keys aktualisiert. Wir verifizieren die End-to-End-Konnektivität, indem wir einen Remote-Befehl über SSH ausführen und den Hostnamen der Maschine bestätigen.",
       "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-tutorial-07.03468ffd.mp3",
-      "audioDurationSec": 11.650612
+      "audioDurationSec": 11.650612,
+      "stepLabel": "Step 7: Verify connectivity"
     },
     {
       "id": "monitoring-tutorial-08",
@@ -79,7 +86,8 @@
       "replayEndSec": 95.264993,
       "narrationText": "Noch ein Remote-Befehl -- diesmal prüfen wir die Betriebszeit und Lastdurchschnitt der Maschine und demonstrieren die beliebige Befehlsausführung über den SSH-Tunnel.",
       "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-tutorial-08.56c53687.mp3",
-      "audioDurationSec": 9.874286
+      "audioDurationSec": 9.874286,
+      "stepLabel": "Step 8: Check block devices"
     }
   ]
 }

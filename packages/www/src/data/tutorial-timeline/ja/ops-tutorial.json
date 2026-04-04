@@ -16,7 +16,8 @@
       "replayEndSec": 34.500143,
       "narrationText": "プロビジョニングの前に、ローカル仮想化要件を確認してください。",
       "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-01.a5707a2d.mp3",
-      "audioDurationSec": 4.754286
+      "audioDurationSec": 4.754286,
+      "stepLabel": "Step 1: Verify system requirements"
     },
     {
       "id": "ops-tutorial-02",
@@ -25,7 +26,8 @@
       "replayEndSec": 243.727131,
       "narrationText": "実験用に最小限の VM クラスターを起動します。",
       "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-02.a996b2fe.mp3",
-      "audioDurationSec": 3.970612
+      "audioDurationSec": 3.970612,
+      "stepLabel": "Step 2: Provision a minimal VM cluster"
     },
     {
       "id": "ops-tutorial-03",
@@ -34,7 +36,8 @@
       "replayEndSec": 401.750224,
       "narrationText": "クラスターの状態とマシンの可用性を確認します。",
       "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-03.93437685.mp3",
-      "audioDurationSec": 3.395918
+      "audioDurationSec": 3.395918,
+      "stepLabel": "Step 3: Check cluster status"
     },
     {
       "id": "ops-tutorial-04",
@@ -43,7 +46,8 @@
       "replayEndSec": 558.51649,
       "narrationText": "選択した VM でホスト名のクイック チェックを実行します。",
       "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-04.7594c302.mp3",
-      "audioDurationSec": 3.709388
+      "audioDurationSec": 3.709388,
+      "stepLabel": "Step 4: Run command on bridge VM"
     },
     {
       "id": "ops-tutorial-05",
@@ -52,7 +56,8 @@
       "replayEndSec": 717.466324,
       "narrationText": "SSH接続を確認しました。ブリッジノードでunameを実行してカーネルバージョンとアーキテクチャを表示し、任意のリモートコマンド実行を実演します。",
       "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-05.1dd99eba.mp3",
-      "audioDurationSec": 11.31102
+      "audioDurationSec": 11.31102,
+      "stepLabel": "Step 5: Tear down the cluster"
     },
     {
       "id": "ops-tutorial-06",
@@ -61,7 +66,8 @@
       "replayEndSec": 1176.459923,
       "narrationText": "テスト完了。クラスター全体を解体し、全VMを逆順に破棄してクリーンなシャットダウンを確認します。",
       "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-06.fd06fa6d.mp3",
-      "audioDurationSec": 7.967347
+      "audioDurationSec": 7.967347,
+      "stepLabel": "Step 6: Verify teardown"
     }
   ]
 }

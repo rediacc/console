@@ -2208,6 +2208,15 @@ a[target='_blank']::after {
   padding-right: 0.35rem;
 }
 
+/* Fix marker tooltips: allow wrapping for long text, prevent overflow */
+.terminal-tutorial-player-inner .ap-marker-container .ap-tooltip {
+  white-space: normal;
+  max-width: 16rem;
+  text-align: center;
+  line-height: 1.35;
+  padding: 0.25em 0.6em;
+}
+
 .terminal-tutorial-player-inner .ap-control-bar .ap-playback-button {
   display: none !important;
 }
