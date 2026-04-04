@@ -137,3 +137,77 @@ export function buildCaptionSegments(
   if (cursor < text.length) segments.push({ text: text.slice(cursor), isWord: false, index: -1 });
   return segments;
 }
+
+const PHRASE_BREAK_RE = /[,;:.!?]|--/;
+
+function findSplitPoint(
+  segments: CaptionSegment[],
+  pageStart: number,
+  overflowIndex: number,
+  lastBreak: number,
+  charsAtBreak: number,
+  minBreakChars: number
+): number {
+  if (lastBreak >= pageStart && charsAtBreak >= minBreakChars) return lastBreak;
+  return overflowIndex;
+}
+
+function countChars(segments: CaptionSegment[], from: number, to: number): number {
+  let n = 0;
+  for (let j = from; j <= to; j += 1) n += segments[j].text.length;
+  return n;
+}
+
+/**
+ * Split caption segments into pages of ~maxCharsPerPage characters each,
+ * breaking at natural phrase boundaries (punctuation, dashes).
+ * Follows YouTube/Netflix convention: max 2 lines x ~42 chars = 84 chars per page.
+ */
+export function paginateCaptionSegments(
+  segments: CaptionSegment[],
+  maxCharsPerPage = 84
+): CaptionSegment[][] {
+  const totalChars = segments.reduce((sum, s) => sum + s.text.length, 0);
+  if (totalChars <= maxCharsPerPage) return [segments];
+
+  const pages: CaptionSegment[][] = [];
+  let pageStart = 0;
+  let charCount = 0;
+  let lastBreak = -1;
+  let charsAtBreak = 0;
+  const minBreakChars = maxCharsPerPage * 0.5;
+
+  for (let i = 0; i < segments.length; i += 1) {
+    charCount += segments[i].text.length;
+
+    if (PHRASE_BREAK_RE.test(segments[i].text)) {
+      lastBreak = i;
+      charsAtBreak = charCount;
+    }
+
+    if (charCount >= maxCharsPerPage && i < segments.length - 1) {
+      const splitAfter = findSplitPoint(segments, pageStart, i, lastBreak, charsAtBreak, minBreakChars);
+      pages.push(segments.slice(pageStart, splitAfter + 1));
+      pageStart = splitAfter + 1;
+      charCount = countChars(segments, pageStart, i);
+      lastBreak = -1;
+      charsAtBreak = 0;
+    }
+  }
+
+  if (pageStart < segments.length) {
+    pages.push(segments.slice(pageStart));
+  }
+  return pages;
+}
+
+/** Find which page contains the word with the given timing index. */
+export function pageIndexForWord(pages: CaptionSegment[][], wordIndex: number): number {
+  if (wordIndex < 0) return 0;
+  for (let p = 0; p < pages.length; p += 1) {
+    for (const seg of pages[p]) {
+      if (seg.isWord && seg.index === wordIndex) return p;
+    }
+  }
+  return pages.length - 1;
+}

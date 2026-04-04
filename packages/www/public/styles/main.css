@@ -2348,6 +2348,11 @@ a[target='_blank']::after {
     transform 0.18s ease;
 }
 
+.terminal-player-caption-layer--done {
+  opacity: 0;
+  transform: translateX(-50%) translateY(0.25rem);
+}
+
 .terminal-player-caption-layer--fullscreen {
   position: fixed;
   left: 50%;

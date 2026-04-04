@@ -19,6 +19,8 @@ import {
   activeWordIndex,
   buildCaptionSegments,
   findStepIndex,
+  pageIndexForWord,
+  paginateCaptionSegments,
   resolveCastKey,
   stepWordTimings,
   transcriptLabels,
@@ -409,13 +411,21 @@ const TerminalPlayer: FC<TerminalPlayerProps> = ({ src, title, lang = 'en', cast
 
   const activeStep = steps.length > 0 ? steps[Math.min(stepIndex, steps.length - 1)] : null;
   const timings = activeStep ? stepWordTimings(activeStep) : [];
-  const segments = activeStep ? buildCaptionSegments(activeStep.narrationText, timings) : [];
+  const allSegments = activeStep ? buildCaptionSegments(activeStep.narrationText, timings) : [];
   const highlightedWord =
     guidedPhase === 'narrating' ? activeWordIndex(narrationClockSec, timings) : -1;
 
-  const captionNodeClassName = fullscreenCaptionHostEl
-    ? 'terminal-player-caption-layer terminal-player-caption-layer--fullscreen'
-    : 'terminal-player-caption-layer';
+  // Paginate captions into YouTube-style 2-line blocks, show the block with the active word
+  const pages = paginateCaptionSegments(allSegments);
+  const segments = pages[pageIndexForWord(pages, highlightedWord)] ?? allSegments;
+
+  // Hide captions when narration ends: during replay or when no word is active
+  const captionVisible = highlightedWord >= 0 || allSegments.length === 0;
+  const captionNodeClassName = [
+    'terminal-player-caption-layer',
+    fullscreenCaptionHostEl ? 'terminal-player-caption-layer--fullscreen' : '',
+    captionVisible ? '' : 'terminal-player-caption-layer--done',
+  ].filter(Boolean).join(' ');
 
   const captionNode =
     activeStep && isCcEnabled ? (
