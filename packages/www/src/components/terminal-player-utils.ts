@@ -186,7 +186,14 @@ export function paginateCaptionSegments(
     }
 
     if (charCount >= maxCharsPerPage && i < segments.length - 1) {
-      const splitAfter = findSplitPoint(segments, pageStart, i, lastBreak, charsAtBreak, minBreakChars);
+      const splitAfter = findSplitPoint(
+        segments,
+        pageStart,
+        i,
+        lastBreak,
+        charsAtBreak,
+        minBreakChars
+      );
       pages.push(segments.slice(pageStart, splitAfter + 1));
       pageStart = splitAfter + 1;
       charCount = countChars(segments, pageStart, i);
@@ -199,6 +206,94 @@ export function paginateCaptionSegments(
     pages.push(segments.slice(pageStart));
   }
   return pages;
+}
+
+const NARRATION_OVERLAY_CLASS = 'terminal-player-narration-progress';
+
+function ensureOverlay(bar: HTMLElement): HTMLElement {
+  let overlay = bar.querySelector<HTMLElement>(`.${NARRATION_OVERLAY_CLASS}`);
+  if (!overlay) {
+    overlay = document.createElement('span');
+    overlay.className = NARRATION_OVERLAY_CLASS;
+    bar.appendChild(overlay);
+  }
+  return overlay;
+}
+
+function markerPct(marker: HTMLElement | undefined, fallback: number): number {
+  if (!marker) return fallback;
+  return Number.parseFloat(marker.style.left) || fallback;
+}
+
+function setTimerChild(
+  timer: HTMLElement,
+  selector: string,
+  text: string | null,
+  visible: boolean
+): void {
+  const el = timer.querySelector<HTMLElement>(selector);
+  if (!el) return;
+  if (text !== null) el.textContent = text;
+  el.style.display = visible ? '' : 'none';
+}
+
+function setTimerDisplay(timer: HTMLElement | null, stepLabel: string | null): void {
+  if (!timer) return;
+  setTimerChild(timer, '.ap-time-elapsed', stepLabel, true);
+  setTimerChild(timer, '.ap-time-remaining', null, stepLabel === null);
+}
+
+function applyOverlayStyle(
+  overlay: HTMLElement,
+  startPct: number,
+  widthPct: number,
+  visible: boolean
+): void {
+  Object.assign(overlay.style, {
+    position: 'absolute',
+    left: `${startPct}%`,
+    width: `${widthPct}%`,
+    top: '0',
+    bottom: '0',
+    background: 'rgba(85, 107, 47, 0.6)',
+    borderRadius: '2px',
+    transition: 'opacity 0.18s ease',
+    opacity: visible ? '1' : '0',
+    zIndex: '1',
+    pointerEvents: 'none',
+  });
+}
+
+/**
+ * Manage a narration progress overlay inside the asciinema progress bar.
+ * Shows a colored fill during narration and updates the timer display.
+ */
+export function updateNarrationProgress(
+  container: HTMLElement | null,
+  phase: string,
+  stepIndex: number,
+  totalSteps: number,
+  narrationProgress: number
+): void {
+  if (!container) return;
+  const bar = container.querySelector<HTMLElement>('.ap-bar');
+  if (!bar) return;
+  const timer = container.querySelector<HTMLElement>('.ap-timer');
+  const overlay = ensureOverlay(bar);
+
+  if (phase !== 'narrating') {
+    applyOverlayStyle(overlay, 0, 0, false);
+    setTimerDisplay(timer, null);
+    return;
+  }
+
+  const markers = bar.querySelectorAll<HTMLElement>('.ap-marker-container');
+  const startPct = markerPct(markers[stepIndex], 0);
+  const endPct = markerPct(markers[stepIndex + 1], 100);
+  const fillWidth = (endPct - startPct) * Math.min(1, narrationProgress);
+
+  applyOverlayStyle(overlay, startPct, fillWidth, true);
+  setTimerDisplay(timer, `Step ${stepIndex + 1}/${totalSteps}`);
 }
 
 /** Find which page contains the word with the given timing index. */

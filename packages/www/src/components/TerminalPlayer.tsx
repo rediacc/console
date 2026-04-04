@@ -24,6 +24,7 @@ import {
   resolveCastKey,
   stepWordTimings,
   transcriptLabels,
+  updateNarrationProgress,
 } from './terminal-player-utils';
 
 interface TerminalPlayerProps {
@@ -409,6 +410,14 @@ const TerminalPlayer: FC<TerminalPlayerProps> = ({ src, title, lang = 'en', cast
     }
   }, [seekCast, setPhase, stepIndex, steps]);
 
+  // Narration progress overlay: show a fill bar and step counter during narration
+  useEffect(() => {
+    const step = steps.length > 0 ? steps[Math.min(stepIndex, steps.length - 1)] : null;
+    const audioDur = step?.audioDurationSec ?? 0;
+    const progress = audioDur > 0 ? Math.min(1, narrationClockSec / audioDur) : 0;
+    updateNarrationProgress(containerRef.current, guidedPhase, stepIndex, steps.length, progress);
+  }, [guidedPhase, narrationClockSec, stepIndex, steps]);
+
   const activeStep = steps.length > 0 ? steps[Math.min(stepIndex, steps.length - 1)] : null;
   const timings = activeStep ? stepWordTimings(activeStep) : [];
   const allSegments = activeStep ? buildCaptionSegments(activeStep.narrationText, timings) : [];
@@ -425,7 +434,9 @@ const TerminalPlayer: FC<TerminalPlayerProps> = ({ src, title, lang = 'en', cast
     'terminal-player-caption-layer',
     fullscreenCaptionHostEl ? 'terminal-player-caption-layer--fullscreen' : '',
     captionVisible ? '' : 'terminal-player-caption-layer--done',
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const captionNode =
     activeStep && isCcEnabled ? (
