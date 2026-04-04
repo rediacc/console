@@ -27,7 +27,6 @@
   },
   "captchaRequired": "يرجى إكمال التحقق من الكابتشا.",
   "common": {
-    "close": "إغلاق",
     "aria": {
       "breadcrumbNavigation": "التنقل عبر مسار التصفح",
       "clickToEnlarge": "انقر لتكبير الصورة",
@@ -55,6 +54,7 @@
       "learnMore": "اعرف المزيد",
       "sendMessage": "إرسال رسالة"
     },
+    "close": "إغلاق",
     "contentNotAvailable": "هذا المحتوى غير متوفر بالـ{{language}}. يتم عرض النسخة الإنجليزية.",
     "copied": "تم النسخ!",
     "copyLink": "نسخ رابط هذا القسم",
@@ -316,7 +316,14 @@
     }
   },
   "logoWall": {
-    "categories": ["Git", "CI/CD", "حاويات", "قواعد بيانات", "مراقبة", "تخزين"],
+    "categories": [
+      "Git",
+      "CI/CD",
+      "حاويات",
+      "قواعد بيانات",
+      "مراقبة",
+      "تخزين"
+    ],
     "title": "يعمل مع بنيتك التحتية"
   },
   "metrics": {
@@ -561,12 +568,16 @@
           "title": "5. نهجنا في التحليلات"
         },
         "changes": {
-          "content": ["إذا قدمنا ملفات تعريف ارتباط إضافية، سنقوم بتحديث هذه السياسة."],
+          "content": [
+            "إذا قدمنا ملفات تعريف ارتباط إضافية، سنقوم بتحديث هذه السياسة."
+          ],
           "id": "changes",
           "title": "7. التغييرات على هذه السياسة"
         },
         "cookiesWeUse": {
-          "content": ["نستخدم ملف تعريف ارتباط واحد فقط:"],
+          "content": [
+            "نستخدم ملف تعريف ارتباط واحد فقط:"
+          ],
           "id": "cookies-we-use",
           "subsections": {
             "languageCookie": {
@@ -608,7 +619,9 @@
           "title": "2. ما هي ملفات تعريف الارتباط؟"
         },
         "whatWeDontUse": {
-          "content": ["التقنيات التالية <strong>لا</strong> تُستخدم على موقعنا:"],
+          "content": [
+            "التقنيات التالية <strong>لا</strong> تُستخدم على موقعنا:"
+          ],
           "content2": [
             "ملاحظة: تنطبق سياسة ملفات تعريف الارتباط هذه على موقع Rediacc التسويقي. تجمع منتجاتنا البرمجية (تطبيق الويب وCLI والبرمجيات الوسيطة والجسر) بيانات قياس عن بُعد منفصلة للاستخدام لا تستخدم ملفات تعريف الارتباط. لمعرفة تفاصيل القياس عن بُعد للمنتج، راجع <a href=\"telemetry-policy\">سياسة القياس عن بُعد</a>."
           ],
@@ -765,7 +778,9 @@
                 "التنفيذ القياسي (9,999 دولارًا أمريكيًا) أو الحزم المتدرجة (الصغيرة 7,499 دولارًا أمريكيًا · المتوسطة 14,999 دولارًا أمريكيًا · الكبيرة 29,999 دولارًا أمريكيًا · مخصص المؤسسة)",
                 "مشاركة الاستجابة للطوارئ (29,999 دولارًا عند الطلب)"
               ],
-              "included": ["وثائق الخدمة الذاتية، ودروس الفيديو، ومنتدى المجتمع"],
+              "included": [
+                "وثائق الخدمة الذاتية، ودروس الفيديو، ومنتدى المجتمع"
+              ],
               "planId": "مجتمع"
             },
             {
@@ -1050,7 +1065,10 @@
       },
       "trust": {
         "heading": "الأمان والموثوقية على مستوى المؤسسات",
-        "items": ["التشفير على مستوى البنك", "التزام بوقت التشغيل بنسبة 99.9%"]
+        "items": [
+          "التشفير على مستوى البنك",
+          "التزام بوقت التشغيل بنسبة 99.9%"
+        ]
       },
       "ui": {
         "anchor": "مرساة استراتيجية",
@@ -1495,7 +1513,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["rdc repo up", "JSON", "Done"],
+            "newSteps": [
+              "rdc repo up",
+              "JSON",
+              "Done"
+            ],
             "oldLabel": "البنية التحتية التقليدية",
             "oldSteps": [
               {
@@ -1717,7 +1739,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["$204/شهر", "ثابت", "ملكك"],
+            "newSteps": [
+              "$204/شهر",
+              "ثابت",
+              "ملكك"
+            ],
             "oldLabel": "البنية التحتية السحابية",
             "oldSteps": [
               {
@@ -1907,31 +1933,73 @@
           "features": [
             {
               "name": "استضافة ذاتية / داخل المؤسسة",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "عدم قابلية التغيير على مستوى نظام الملفات",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "استعادة فورية (أقل من 5 دقائق)",
-              "values": ["cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "لقطات بدون نسخ (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تسعير لكل جهاز (بدون رسوم لكل مقعد)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "التحقق التلقائي من الاستعادة",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "بدون تقييد بمورد",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "المشهد التنافسي",
@@ -1974,7 +2042,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["اكتشاف", "تراجع", "<5 min"],
+            "newSteps": [
+              "اكتشاف",
+              "تراجع",
+              "<5 min"
+            ],
             "oldLabel": "استعادة الكوارث التقليدية",
             "oldSteps": [
               {
@@ -2268,7 +2340,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["rdc ceph snapshot create", "52s", "تم"],
+            "newSteps": [
+              "rdc ceph snapshot create",
+              "52s",
+              "تم"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -2732,7 +2808,9 @@
                 "التنفيذ القياسي (9,999 دولارًا أمريكيًا) أو الحزم المتدرجة (الصغيرة 7,499 دولارًا أمريكيًا · المتوسطة 14,999 دولارًا أمريكيًا · الكبيرة 29,999 دولارًا أمريكيًا · مخصص المؤسسة)",
                 "مشاركة الاستجابة للطوارئ (29,999 دولارًا عند الطلب)"
               ],
-              "included": ["وثائق الخدمة الذاتية، ودروس الفيديو، ومنتدى المجتمع"],
+              "included": [
+                "وثائق الخدمة الذاتية، ودروس الفيديو، ومنتدى المجتمع"
+              ],
               "planId": "مجتمع"
             },
             {
@@ -3012,7 +3090,10 @@
       },
       "trust": {
         "heading": "الأمان والموثوقية على مستوى المؤسسات",
-        "items": ["التشفير على مستوى البنك", "التزام بوقت التشغيل بنسبة 99.9%"]
+        "items": [
+          "التشفير على مستوى البنك",
+          "التزام بوقت التشغيل بنسبة 99.9%"
+        ]
       },
       "trustSection": {
         "heading": "بنيتك التحتية. قواعدك أنت.",
@@ -3126,7 +3207,9 @@
           "title": "10. التغييرات على هذه السياسة"
         },
         "childrenPrivacy": {
-          "content": ["خدماتنا ليست موجهة للأشخاص الذين تقل أعمارهم عن 16 عاماً."],
+          "content": [
+            "خدماتنا ليست موجهة للأشخاص الذين تقل أعمارهم عن 16 عاماً."
+          ],
           "id": "children-privacy",
           "title": "9. خصوصية الأطفال"
         },
@@ -3147,7 +3230,9 @@
           "title": "7. أمان البيانات"
         },
         "dataSharing": {
-          "content": ["لا نبيع أو نؤجر بياناتك الشخصية لأطراف ثالثة."],
+          "content": [
+            "لا نبيع أو نؤجر بياناتك الشخصية لأطراف ثالثة."
+          ],
           "id": "data-sharing",
           "items": [
             "<strong>مزودي الخدمات</strong> الذين يساعدوننا في تشغيل المنصة",
@@ -3158,7 +3243,9 @@
           "title": "4. مشاركة البيانات والأطراف الثالثة"
         },
         "howWeUseInformation": {
-          "content": ["نستخدم المعلومات المجمعة للأغراض التالية:"],
+          "content": [
+            "نستخدم المعلومات المجمعة للأغراض التالية:"
+          ],
           "id": "how-we-use-information",
           "items": [
             "الرد على استفساراتك",
@@ -3172,7 +3259,9 @@
           "title": "3. كيف نستخدم معلوماتك"
         },
         "informationWeCollect": {
-          "content": ["نجمع الحد الأدنى من المعلومات اللازمة لتقديم خدماتنا."],
+          "content": [
+            "نجمع الحد الأدنى من المعلومات اللازمة لتقديم خدماتنا."
+          ],
           "id": "information-we-collect",
           "subsections": {
             "accountData": {
@@ -3210,7 +3299,9 @@
           "title": "2. المعلومات التي نجمعها"
         },
         "internationalTransfers": {
-          "content": ["قد يتم نقل معلوماتك ومعالجتها في بلدان أخرى. نضمن الضمانات المناسبة."],
+          "content": [
+            "قد يتم نقل معلوماتك ومعالجتها في بلدان أخرى. نضمن الضمانات المناسبة."
+          ],
           "id": "international-transfers",
           "title": "8. عمليات نقل البيانات الدولية"
         },
@@ -3223,7 +3314,9 @@
           "title": "1. المقدمة"
         },
         "yourRights": {
-          "content": ["بحسب اختصاصك القضائي، قد يكون لديك الحقوق التالية:"],
+          "content": [
+            "بحسب اختصاصك القضائي، قد يكون لديك الحقوق التالية:"
+          ],
           "content2": [
             "تواصل معنا على <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> لممارسة حقوقك."
           ],
@@ -3294,7 +3387,9 @@
       },
       "sections": {
         "changes": {
-          "content": ["قد نقوم بتحديث سياسة الاسترداد هذه من وقت لآخر."],
+          "content": [
+            "قد نقوم بتحديث سياسة الاسترداد هذه من وقت لآخر."
+          ],
           "id": "changes",
           "title": "7. التغييرات على هذه السياسة"
         },
@@ -3302,7 +3397,9 @@
           "content": [
             "أرسل بريداً إلكترونياً إلى <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> مع:"
           ],
-          "content2": ["سنرد خلال 5 أيام عمل."],
+          "content2": [
+            "سنرد خلال 5 أيام عمل."
+          ],
           "id": "how-to-request",
           "items": [
             "عنوان بريدك الإلكتروني للحساب",
@@ -3313,7 +3410,9 @@
           "title": "4. كيفية طلب الاسترداد"
         },
         "nonRefundable": {
-          "content": ["العناصر التالية غير مؤهلة للاسترداد:"],
+          "content": [
+            "العناصر التالية غير مؤهلة للاسترداد:"
+          ],
           "id": "non-refundable",
           "items": [
             "الاشتراكات الملغاة بعد فترة 14 يوماً",
@@ -3332,7 +3431,9 @@
           "title": "1. نظرة عامة"
         },
         "platformSubscriptions": {
-          "content": ["تقدم Rediacc مستويات اشتراك متعددة:"],
+          "content": [
+            "تقدم Rediacc مستويات اشتراك متعددة:"
+          ],
           "id": "platform-subscriptions",
           "subsections": {
             "annualSubscriptions": {
@@ -3342,7 +3443,9 @@
               "title": "2.3 الاشتراكات السنوية"
             },
             "freeTier": {
-              "content": ["مستوى Community مجاني للأبد."],
+              "content": [
+                "مستوى Community مجاني للأبد."
+              ],
               "title": "2.1 المستوى المجاني"
             },
             "paidTiers": {
@@ -3361,7 +3464,9 @@
           "title": "2. اشتراكات المنصة"
         },
         "professionalServices": {
-          "content": ["تُفوتر الخدمات المهنية بالساعة ($400–$1,200/ساعة):"],
+          "content": [
+            "تُفوتر الخدمات المهنية بالساعة ($400–$1,200/ساعة):"
+          ],
           "id": "professional-services",
           "items": [
             "<strong>قبل بدء العمل:</strong> استرداد كامل",
@@ -3722,7 +3827,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["تشغيل اختبار الاختراق", "47s", "7 ثغرات وُجدت"],
+            "newSteps": [
+              "تشغيل اختبار الاختراق",
+              "47s",
+              "7 ثغرات وُجدت"
+            ],
             "oldLabel": "اختبار الاختراق التقليدي",
             "oldSteps": [
               {
@@ -3972,38 +4081,122 @@
           "features": [
             {
               "name": "سجلات تدقيق مقاومة للعبث",
-              "refs": [0, 2, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                2,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "توقيع تشفيري (SHA-256)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "إنشاء تقارير فوري (CLI)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تسجيل عمليات أساسي",
-              "refs": [3, 4, 5, 6, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "نسب المستخدم لكل إجراء",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "تتبع تدوير المفاتيح",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "مستضاف ذاتيًا / بنيتك التحتية",
-              "refs": [11, 12, 13, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -4185,7 +4378,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["تشغيل التدقيق", "فوري", "تقرير كامل"],
+            "newSteps": [
+              "تشغيل التدقيق",
+              "فوري",
+              "تقرير كامل"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -4443,38 +4640,122 @@
           "features": [
             {
               "name": "تحقق تلقائي من الاستعادة",
-              "refs": [4, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "فحص سلامة كامل للخدمة",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "اختبار يومي مؤتمت",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "نسخة بدون تخزين للاختبار",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "مجموع اختباري / سلامة الملف",
-              "refs": [5, 6, 7, 8, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "تكامل التنبيهات",
-              "refs": [9, 10, 11, 12, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "مستضاف ذاتيًا / بنيتك التحتية",
-              "refs": [13, 14, 15, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                13,
+                14,
+                15,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -4657,7 +4938,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["نسخ احتياطي", "47s", "تم التحقق"],
+            "newSteps": [
+              "نسخ احتياطي",
+              "47s",
+              "تم التحقق"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -4955,38 +5240,122 @@
           "features": [
             {
               "name": "نسخ عبر السحب",
-              "refs": [0, 4, 5, 6, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تحويل في أقل من 30 ثانية",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "نقل تزايدي فقط (توفير 98%)",
-              "refs": [0, 7, 8, 9, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تحويل من أي مزود إلى أي مزود",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "مستضاف ذاتيًا، بدون وكيل سحابي",
-              "refs": [0, 10, 11, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                10,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تحويل DNS تلقائي",
-              "refs": [0, 0, 12, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                12,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "نسخ كامل المكدس (تطبيق + قاعدة بيانات)",
-              "refs": [0, 13, 14, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                13,
+                14,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -5170,7 +5539,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["اكتشاف", "<30s", "متصل"],
+            "newSteps": [
+              "اكتشاف",
+              "<30s",
+              "متصل"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -5565,7 +5938,12 @@
               },
               {
                 "footer": "Continuous improvement · automated",
-                "items": ["W1: ████████ 23", "W2: ████ 12", "W3: ██ 7", "W4: █ 3"],
+                "items": [
+                  "W1: ████████ 23",
+                  "W2: ████ 12",
+                  "W3: ██ 7",
+                  "W4: █ 3"
+                ],
                 "status": "-87%",
                 "title": "اتجاه 4 أسابيع"
               }
@@ -5620,7 +5998,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["فحوصات يومية", "0 أيام", "بدون نقاط عمياء"],
+            "newSteps": [
+              "فحوصات يومية",
+              "0 أيام",
+              "بدون نقاط عمياء"
+            ],
             "oldLabel": "اختبار اختراق سنوي",
             "oldSteps": [
               {
@@ -5853,38 +6235,122 @@
           "features": [
             {
               "name": "مفاتيح تشفير يحتفظ بها العميل",
-              "refs": [3, 4, 5, 6, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "بنية بدون معرفة",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تدوير مفاتيح ذاتي",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تشفير AES-256 في حالة السكون",
-              "refs": [11, 12, 13, 14, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "عزل مفتاح لكل مستودع",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تشفير أثناء النقل",
-              "refs": [15, 16, 17, 18, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                15,
+                16,
+                17,
+                18,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "مستضاف ذاتيًا / بنيتك التحتية",
-              "refs": [19, 20, 21, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                19,
+                20,
+                21,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -6066,7 +6532,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["مفتاحك", "AES-256", "Zero-knowledge"],
+            "newSteps": [
+              "مفتاحك",
+              "AES-256",
+              "Zero-knowledge"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -6362,33 +6832,117 @@
           "features": [
             {
               "name": "استنساخ التطبيقات",
-              "refs": [3, 4, 5, 0, 0, 0],
-              "values": ["check", "check", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "استنساخ قاعدة البيانات",
-              "refs": [0, 0, 0, 6, 7, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "استنساخ مجمع للتطبيق + قاعدة البيانات",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "أي محرك قاعدة بيانات",
-              "refs": [0, 0, 0, 8, 0, 0],
-              "values": ["cross", "cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                8,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "وقت التوفير",
-              "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                13,
+                0
+              ],
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Seconds",
+                "<60s"
+              ]
             },
             {
               "name": "بيانات مطابقة للإنتاج",
-              "refs": [0, 0, 0, 14, 15, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                14,
+                15,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -6575,7 +7129,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Run", "60s", "Done"],
+            "newSteps": [
+              "Run",
+              "60s",
+              "Done"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -6860,38 +7418,122 @@
           "features": [
             {
               "name": "اختبار تحويل كامل المكدس",
-              "refs": [0, 0, 2, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                2,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "بدون تأثير على الإنتاج",
-              "refs": [0, 3, 4, 5, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                3,
+                4,
+                5,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "أقل من 5 دقائق",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تقرير نجاح/فشل مؤتمت",
-              "refs": [0, 6, 7, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                7,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تكامل CI/CD",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "اختبار عبر السحب",
-              "refs": [0, 8, 9, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                8,
+                9,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "مستضاف ذاتيًا / بنيتك التحتية",
-              "refs": [0, 10, 11, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                10,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -7074,7 +7716,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["تشغيل الاختبار", "4 min", "التقرير"],
+            "newSteps": [
+              "تشغيل الاختبار",
+              "4 min",
+              "التقرير"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -7352,38 +7998,136 @@
           "features": [
             {
               "name": "نسخ احتياطية غير قابلة للتغيير",
-              "refs": [4, 5, 6, 7, 0, 0],
-              "values": ["check", "check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "فرض على مستوى نظام الملفات",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تحقق يومي تلقائي من الاستعادة",
-              "refs": [8, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                8,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تخزين بدون نسخ (CoW)",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "استنساخ فوري للاختبار",
-              "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["cross", "check", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                13,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "وقت الاستعادة",
-              "refs": [14, 15, 16, 17, 18, 0],
-              "values": ["Minutes", "Minutes", "Hours", "Hours", "Seconds", "<5 min"]
+              "refs": [
+                14,
+                15,
+                16,
+                17,
+                18,
+                0
+              ],
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Hours",
+                "Hours",
+                "Seconds",
+                "<5 min"
+              ]
             },
             {
               "name": "مستضاف ذاتيًا / بدون اعتماد على السحابة",
-              "refs": [19, 20, 21, 0, 22, 0],
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                19,
+                20,
+                21,
+                0,
+                22,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -7566,7 +8310,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["نسخ احتياطي", "مختوم", "تم التحقق"],
+            "newSteps": [
+              "نسخ احتياطي",
+              "مختوم",
+              "تم التحقق"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -7885,33 +8633,105 @@
           "features": [
             {
               "name": "تخزين نسخ بدون نقل بيانات (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "إتلاف تلقائي بـ TTL قابل للتكوين",
-              "refs": [4, 0, 0, 0, 0],
-              "values": ["check", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "بيانات إنتاج كاملة في النسخة",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "بيئات متعددة الخدمات",
-              "refs": [0, 5, 0, 6, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                5,
+                0,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "مستضاف ذاتيًا / بدون تسعير لكل مقعد",
-              "refs": [0, 7, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                7,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "توفير في أقل من 60 ثانية",
-              "refs": [0, 0, 8, 9, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -8084,7 +8904,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["تشغيل", "$0 خمول", "تنظيف تلقائي"],
+            "newSteps": [
+              "تشغيل",
+              "$0 خمول",
+              "تنظيف تلقائي"
+            ],
             "oldLabel": "بيئات تعمل دائماً",
             "oldSteps": [
               {
@@ -8344,38 +9168,122 @@
           "features": [
             {
               "name": "استعادة كاملة للبيئة (ليس فقط ملفات)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "وقت استعادة أقل من 5 دقائق",
-              "refs": [4, 5, 6, 7, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "فحوصات سلامة تلقائية بعد الاستعادة",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "دقة لقطة نقطة زمنية",
-              "refs": [8, 9, 10, 11, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "نسخ بدون حمل إضافي (بدون تخزين إضافي)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "استعادة بأمر واحد",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "مستضاف ذاتيًا / بنيتك التحتية",
-              "refs": [12, 13, 14, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                12,
+                13,
+                14,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -8558,7 +9466,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["تشغيل الاستعادة", "3m 47s", "يعمل"],
+            "newSteps": [
+              "تشغيل الاستعادة",
+              "3m 47s",
+              "يعمل"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -8850,33 +9762,105 @@
           "features": [
             {
               "name": "بيانات إنتاج في نسخ CI",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تكامل webhook بسطر واحد",
-              "refs": [3, 0, 4, 5, 0],
-              "values": ["check", "cross", "check", "check", "rediacc"]
+              "refs": [
+                3,
+                0,
+                4,
+                5,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "بيئة CI متعددة الخدمات",
-              "refs": [0, 6, 0, 7, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                6,
+                0,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "إتلاف تلقائي بعد المسار",
-              "refs": [8, 0, 9, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                8,
+                0,
+                9,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "بدون سكربتات توفير مخصصة",
-              "refs": [0, 0, 10, 11, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "مستضاف ذاتيًا / بدون تقييد بمورد",
-              "refs": [0, 12, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                12,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -8960,19 +9944,31 @@
             "cards": [
               {
                 "footer": "webhook → rdc",
-                "items": ["branch: feature/auth-v2", "commit: a3f7b2c", "author: sarah"],
+                "items": [
+                  "branch: feature/auth-v2",
+                  "commit: a3f7b2c",
+                  "author: sarah"
+                ],
                 "status": "تشغيل",
                 "title": "Git Push"
               },
               {
                 "footer": "ci-auth-v2",
-                "items": ["gitlab · nextcloud", "mariadb · mailcow", "380 GB → 2.1 GB"],
+                "items": [
+                  "gitlab · nextcloud",
+                  "mariadb · mailcow",
+                  "380 GB → 2.1 GB"
+                ],
                 "status": "CoW",
                 "title": "Clone"
               },
               {
                 "footer": "285 passed",
-                "items": ["247 unit tests ✓", "38 integration ✓", "auto-cleanup ✓"],
+                "items": [
+                  "247 unit tests ✓",
+                  "38 integration ✓",
+                  "auto-cleanup ✓"
+                ],
                 "status": "نجحت",
                 "title": "الاختبارات"
               }
@@ -9027,7 +10023,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["git push", "Auto", "بيانات حقيقية"],
+            "newSteps": [
+              "git push",
+              "Auto",
+              "بيانات حقيقية"
+            ],
             "oldLabel": "سكريبتات CI مخصصة",
             "oldSteps": [
               {
@@ -9307,38 +10307,122 @@
           "features": [
             {
               "name": "ترحيل بدون فك تشفير",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "مفاتيح يحتفظ بها العميل أثناء النقل",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "ترحيل ذري للتكوين + البيانات",
-              "refs": [0, 0, 5, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                5,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تحقق من السلامة بعد النقل",
-              "refs": [6, 7, 8, 9, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                6,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "ترحيل بأمر واحد",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "أي وجهة إلى أي وجهة",
-              "refs": [10, 11, 12, 0, 0],
-              "values": ["check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                10,
+                11,
+                12,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "استرجاع تلقائي عند الفشل",
-              "refs": [0, 0, 13, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                13,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -9521,7 +10605,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["تشغيل الترحيل", "0 تعرض", "تم التحقق"],
+            "newSteps": [
+              "تشغيل الترحيل",
+              "0 تعرض",
+              "تم التحقق"
+            ],
             "oldLabel": "الترحيل التقليدي",
             "oldSteps": [
               {
@@ -9812,38 +10900,122 @@
           "features": [
             {
               "name": "استنساخ كامل لبيانات الإنتاج",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تحقق من تطابق نظام التشغيل والمكتبات",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "أي محرك قاعدة بيانات (MariaDB، Postgres، Mongo)",
-              "refs": [0, 4, 0, 5, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                4,
+                0,
+                5,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "استنساخ متعدد الخدمات (تطبيق + قاعدة بيانات + بريد + تخزين)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تخزين بدون نسخ (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "مستضاف ذاتيًا / بدون تقييد بمورد",
-              "refs": [0, 6, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "توفير في أقل من 60 ثانية",
-              "refs": [0, 0, 7, 8, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -10016,7 +11188,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["تشغيل الاستنساخ", "47s", "تطابق 100%"],
+            "newSteps": [
+              "تشغيل الاستنساخ",
+              "47s",
+              "تطابق 100%"
+            ],
             "oldLabel": "بيئات التطوير التقليدية",
             "oldSteps": [
               {
@@ -10284,33 +11460,117 @@
           "features": [
             {
               "name": "استعادة كاملة للبيئة",
-              "refs": [0, 0, 0, 0, 4, 0],
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                4,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "استعادة في أقل من 5 دقائق",
-              "refs": [5, 6, 7, 8, 9, 0],
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "نقطة زمنية (مستوى الدقيقة)",
-              "refs": [10, 11, 12, 13, 14, 0],
-              "values": ["check", "check", "check", "check", "check", "rediacc"]
+              "refs": [
+                10,
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "تحقق تلقائي من الاستعادة",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "بدون حاجة لنقل البيانات",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "مستضاف ذاتيًا / بدون اعتماد على السحابة",
-              "refs": [15, 16, 17, 0, 18, 0],
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                15,
+                16,
+                17,
+                0,
+                18,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -10493,7 +11753,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["اكتشاف", "<5 min", "متصل"],
+            "newSteps": [
+              "اكتشاف",
+              "<5 min",
+              "متصل"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -10769,38 +12033,122 @@
           "features": [
             {
               "name": "سياسات احتفاظ قابلة للتكوين",
-              "refs": [4, 5, 6, 7, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "تنظيف دورة حياة تلقائي",
-              "refs": [8, 9, 10, 11, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "تحقق من النسخ المحتفظ بها",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تقارير فورية جاهزة للتدقيق",
-              "refs": [12, 13, 14, 15, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                12,
+                13,
+                14,
+                15,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "دعم أطر عمل متعددة",
-              "refs": [16, 17, 18, 19, 0],
-              "values": ["cross", "check", "check", "check", "rediacc"]
+              "refs": [
+                16,
+                17,
+                18,
+                19,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "مستضاف ذاتيًا / بنيتك التحتية",
-              "refs": [20, 21, 22, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                20,
+                21,
+                22,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "CLI / أتمتة أولًا",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -10984,7 +12332,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["تعيين السياسة", "Auto", "جاهز للتدقيق"],
+            "newSteps": [
+              "تعيين السياسة",
+              "Auto",
+              "جاهز للتدقيق"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -11312,38 +12664,122 @@
           "features": [
             {
               "name": "استنساخ كامل المكدس للاختبار",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "إنشاء نسخة في أقل من 60 ثانية",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "شبكة معزولة لكل نسخة",
-              "refs": [4, 0, 5, 6, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "بدون تخزين إضافي (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "فحص سلامة تلقائي بعد التحديث",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "مستضاف ذاتيًا، بدون اعتماد على السحابة",
-              "refs": [11, 12, 13, 14, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "سير عمل بأمر واحد",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -11526,7 +12962,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Clone", "60s", "تحديث وتحقق"],
+            "newSteps": [
+              "Clone",
+              "60s",
+              "تحديث وتحقق"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -11825,38 +13265,122 @@
           "features": [
             {
               "name": "ترحيل عبر المزودين",
-              "refs": [0, 4, 5, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                4,
+                5,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "ترحيل في أقل من ساعة",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "بدون تنسيقات احتكارية",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "نقل تزايدي فقط",
-              "refs": [0, 6, 7, 8, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "بدون حاجة لوكيل مورد",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "ترحيل كامل المكدس (تطبيق + قاعدة بيانات)",
-              "refs": [0, 9, 10, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                9,
+                10,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "ترحيل بدون وقت توقف",
-              "refs": [0, 0, 11, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -12039,7 +13563,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Snapshot", "<1hr", "Live"],
+            "newSteps": [
+              "Snapshot",
+              "<1hr",
+              "Live"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -12446,7 +13974,12 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["استنساخ + تصحيح", "<4 min", "تم التحقق", "نشر"],
+            "newSteps": [
+              "استنساخ + تصحيح",
+              "<4 min",
+              "تم التحقق",
+              "نشر"
+            ],
             "oldLabel": "التصحيح التقليدي",
             "oldSteps": [
               {
@@ -12745,7 +14278,9 @@
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": ["يجمع الجسر الفئات التالية من البيانات:"],
+              "content": [
+                "يجمع الجسر الفئات التالية من البيانات:"
+              ],
               "items": [
                 "<strong>عمليات قائمة الانتظار:</strong> معرف المهمة، مستوى الأولوية، نوع العملية، مدة التنفيذ، حالة النجاح أو الفشل",
                 "<strong>عمليات SSH:</strong> المضيف الهدف، اسم المستخدم، رقم المنفذ، رمز الخروج، مدة التنفيذ (لا يتم جمع محتوى الأوامر أو المخرجات)",
@@ -12792,7 +14327,9 @@
           "id": "cli",
           "subsections": {
             "cliDataCollected": {
-              "content": ["يجمع CLI الفئات التالية من البيانات:"],
+              "content": [
+                "يجمع CLI الفئات التالية من البيانات:"
+              ],
               "items": [
                 "<strong>استخدام الأوامر:</strong> اسم الأمر، إصدار CLI، رمز الخروج، حالة النجاح أو الفشل",
                 "<strong>الوسائط المجهولة:</strong> خيارات الأوامر مع حذف القيم الحساسة — يتم استبدال كلمات المرور والرموز المميزة والأسرار ومفاتيح API وبيانات الاعتماد بـ <code>[REDACTED]</code>",
@@ -12864,7 +14401,9 @@
           "id": "middleware",
           "subsections": {
             "middlewareDataCollected": {
-              "content": ["تجمع البرمجيات الوسيطة الفئات التالية من البيانات:"],
+              "content": [
+                "تجمع البرمجيات الوسيطة الفئات التالية من البيانات:"
+              ],
               "items": [
                 "<strong>معلومات النظام:</strong> اسم المضيف، إصدار نظام التشغيل، إصدار بيئة تشغيل .NET",
                 "<strong>استدعاءات API:</strong> طريقة HTTP، مسار نقطة النهاية، رمز حالة الاستجابة، مدة الطلب",
@@ -12886,7 +14425,9 @@
           "title": "6. القياس عن بُعد للبرمجيات الوسيطة"
         },
         "principles": {
-          "content": ["يتبع جمع القياس عن بُعد في Rediacc هذه المبادئ:"],
+          "content": [
+            "يتبع جمع القياس عن بُعد في Rediacc هذه المبادئ:"
+          ],
           "id": "principles",
           "items": [
             "<strong>الخصوصية حسب التصميم:</strong> يتم إخفاء هوية المعرفات الشخصية قبل الإرسال. يتم اختصار عناوين البريد الإلكتروني إلى النطاق فقط، ويتم تجزئة معرفات المستخدمين (SHA-256) واقتطاعها، ولا يتم جمع كلمات المرور والأسرار أبداً.",
@@ -12904,7 +14445,9 @@
           "id": "web-app",
           "subsections": {
             "webDataCollected": {
-              "content": ["يجمع تطبيق الويب الفئات التالية من البيانات:"],
+              "content": [
+                "يجمع تطبيق الويب الفئات التالية من البيانات:"
+              ],
               "items": [
                 "<strong>معلومات المتصفح:</strong> اسم المتصفح وإصداره، اللغة المفضلة، المنصة (مثل Windows وmacOS وLinux)، دقة الشاشة، عمق الألوان، سلسلة وكيل المستخدم، ذاكرة الجهاز (إن توفرت)، نوع اتصال الشبكة",
                 "<strong>سياق المستخدم:</strong> معرف الجلسة (يتم إنشاؤه عشوائياً لكل جلسة)، نطاق البريد الإلكتروني فقط (يتم حذف الجزء المحلي، مثل <code>***@example.com</code>)، اسم المؤسسة، اسم الفريق",
@@ -12918,7 +14461,9 @@
               "title": "4.1 البيانات المجمعة"
             },
             "webNotCollected": {
-              "content": ["لا يجمع تطبيق الويب:"],
+              "content": [
+                "لا يجمع تطبيق الويب:"
+              ],
               "items": [
                 "عناوين البريد الإلكتروني الكاملة (يتم حذف الجزء المحلي دائماً)",
                 "كلمات المرور أو الرموز المميزة أو بيانات اعتماد المصادقة",
@@ -13020,7 +14565,9 @@
           "title": "8. بياناتك"
         },
         "definitions": {
-          "content": ["تسري التعريفات التالية في جميع أنحاء شروط الخدمة هذه:"],
+          "content": [
+            "تسري التعريفات التالية في جميع أنحاء شروط الخدمة هذه:"
+          ],
           "id": "definitions",
           "items": [
             "<strong>\"الحساب\"</strong> يعني حساب المستخدم الذي تنشئه للوصول إلى المنصة وإدارة اشتراكك.",
@@ -13112,7 +14659,9 @@
               "title": "6.1 Installation and Machine Access"
             },
             "restrictions": {
-              "content": ["يُحظر عليك:"],
+              "content": [
+                "يُحظر عليك:"
+              ],
               "items": [
                 "الهندسة العكسية أو فك التجميع أو التفكيك أو محاولة استخراج الشفرة المصدرية لملف Bridge الثنائي أو أي مكون غير مفتوح المصدر من البرنامج المحلي",
                 "إعادة توزيع أو ترخيص من الباطن أو تأجير أو إعارة البرنامج المحلي لأي طرف ثالث",
@@ -13222,7 +14771,9 @@
           "title": "13. مكونات الطرف الثالث"
         },
         "useRestrictions": {
-          "content": ["توافق على أنك والمستخدمين المصرح لهم لن تستخدموا الخدمات من أجل:"],
+          "content": [
+            "توافق على أنك والمستخدمين المصرح لهم لن تستخدموا الخدمات من أجل:"
+          ],
           "content2": [
             "أنت وحدك المسؤول عن المحتوى والتطبيقات التي تنشرها على أجهزتك باستخدام الخدمات. نحتفظ بالحق في تعليق أو إنهاء الوصول إلى المنصة إذا اعتقدنا بشكل معقول أن انتهاكًا لهذه القيود قد حدث."
           ],

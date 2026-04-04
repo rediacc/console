@@ -1588,12 +1588,16 @@
       "login": {
         "browserFailed": "Не удалось открыть браузер автоматически. Пожалуйста, перейдите по указанному URL.",
         "description": "Аутентификация с помощью API-токена из веб-портала",
+        "discoveringRegions": "Discovering available regions...",
         "expired": "Время авторизации истекло. Пожалуйста, попробуйте снова.",
         "initFailed": "Не удалось начать вход. Сервер запущен?",
         "machines": "Машины: {{active}}/{{max}}",
         "openBrowser": "Перейдите по этому URL для авторизации:",
         "plan": "Тариф: {{plan}}",
         "polling": "Ожидание подтверждения (нажмите Ctrl+C для отмены)...",
+        "regionPrompt": "Where should your data be stored?",
+        "regionsDiscovered": "Regions loaded",
+        "regionSelected": "Data region: {{region}} ({{domain}})",
         "success": "Вход выполнен успешно",
         "tokenInvalid": "Токен должен начинаться с rdt_",
         "tokenPrompt": "Введите ваш API-токен (из веб-портала):",
@@ -2112,8 +2116,10 @@
       "machineRequired": "Требуется имя машины. Используйте --machine <name>",
       "notSupported": "Регистрация протокола не поддерживается на {{platform}}",
       "parseFailed": "Ошибка при разборе URL: {{error}}",
+      "regionSelectionRequiresTTY": "Region selection requires interactive input. Use --server <url> to specify a server directly.",
       "teamRequired": "Требуется имя команды. Используйте --team <name>",
-      "tokenRequired": "Требуется токен. Используйте --token <token>"
+      "tokenRequired": "Требуется токен. Используйте --token <token>",
+      "unknownRegion": "Unknown region: {{region}}"
     },
     "regionRequired": "Требуется имя региона. Используйте --region или установите контекст.",
     "registrationFailed": "Регистрация не удалась",

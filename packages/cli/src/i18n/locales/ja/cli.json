@@ -1588,12 +1588,16 @@
       "login": {
         "browserFailed": "ブラウザを自動的に開けませんでした。上記のURLにアクセスしてください。",
         "description": "WebポータルのAPIトークンで認証",
+        "discoveringRegions": "Discovering available regions...",
         "expired": "認証がタイムアウトしました。もう一度お試しください。",
         "initFailed": "ログインの開始に失敗しました。サーバーは稼働していますか？",
         "machines": "マシン: {{active}}/{{max}}",
         "openBrowser": "このURLにアクセスして認証してください：",
         "plan": "プラン: {{plan}}",
         "polling": "承認を待っています（Ctrl+Cでキャンセル）...",
+        "regionPrompt": "Where should your data be stored?",
+        "regionsDiscovered": "Regions loaded",
+        "regionSelected": "Data region: {{region}} ({{domain}})",
         "success": "ログイン成功",
         "tokenInvalid": "トークンは rdt_ で始まる必要があります",
         "tokenPrompt": "APIトークンを入力してください（Webポータルから）:",
@@ -2112,8 +2116,10 @@
       "machineRequired": "マシン名が必要です。--machine <name> を使用してください",
       "notSupported": "{{platform}} ではプロトコル登録がサポートされていません",
       "parseFailed": "URL の解析に失敗しました: {{error}}",
+      "regionSelectionRequiresTTY": "Region selection requires interactive input. Use --server <url> to specify a server directly.",
       "teamRequired": "チーム名が必要です。--team <name> を使用してください",
-      "tokenRequired": "トークンが必要です。--token <token> を使用してください"
+      "tokenRequired": "トークンが必要です。--token <token> を使用してください",
+      "unknownRegion": "Unknown region: {{region}}"
     },
     "regionRequired": "リージョン名が必要です。--region を使用するか、コンテキストを設定してください。",
     "registrationFailed": "登録に失敗しました",

@@ -1588,12 +1588,16 @@
       "login": {
         "browserFailed": "Tarayıcı otomatik olarak açılamadı. Lütfen yukarıdaki URL'yi ziyaret edin.",
         "description": "Web portaldan alınan API belirteci ile kimlik doğrulama",
+        "discoveringRegions": "Discovering available regions...",
         "expired": "Yetkilendirme zaman aşımına uğradı. Lütfen tekrar deneyin.",
         "initFailed": "Giriş başlatılamadı. Sunucu çalışıyor mu?",
         "machines": "Makineler: {{active}}/{{max}}",
         "openBrowser": "Yetkilendirmek için bu URL'yi ziyaret edin:",
         "plan": "Abonelik: {{plan}}",
         "polling": "Onay bekleniyor (iptal etmek için Ctrl+C'ye basın)...",
+        "regionPrompt": "Where should your data be stored?",
+        "regionsDiscovered": "Regions loaded",
+        "regionSelected": "Data region: {{region}} ({{domain}})",
         "success": "Giriş başarılı",
         "tokenInvalid": "Belirteç rdt_ ile başlamalıdır",
         "tokenPrompt": "API belirtecinizi girin (web portaldan):",
@@ -2112,8 +2116,10 @@
       "machineRequired": "Makine adı gerekli. --machine <name> kullanın",
       "notSupported": "Protokol kaydı {{platform}} üzerinde desteklenmiyor",
       "parseFailed": "URL ayrıştırılamadı: {{error}}",
+      "regionSelectionRequiresTTY": "Region selection requires interactive input. Use --server <url> to specify a server directly.",
       "teamRequired": "Takım adı gerekli. --team <name> kullanın",
-      "tokenRequired": "Token gerekli. --token <token> kullanın"
+      "tokenRequired": "Token gerekli. --token <token> kullanın",
+      "unknownRegion": "Unknown region: {{region}}"
     },
     "regionRequired": "Bölge adı gerekli. --region kullanın veya bağlamı ayarlayın.",
     "registrationFailed": "Kayıt başarısız",

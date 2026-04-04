@@ -1588,12 +1588,16 @@
       "login": {
         "browserFailed": "Impossible d’ouvrir le navigateur automatiquement. Veuillez visiter l’URL ci-dessus.",
         "description": "S’authentifier avec un jeton API du portail web",
+        "discoveringRegions": "Discovering available regions...",
         "expired": "L’autorisation a expiré. Veuillez réessayer.",
         "initFailed": "Échec de l’initialisation de la connexion. Le serveur est-il en cours d’exécution ?",
         "machines": "Machines : {{active}}/{{max}}",
         "openBrowser": "Visitez cette URL pour autoriser :",
         "plan": "Forfait : {{plan}}",
         "polling": "En attente de l’approbation (appuyez sur Ctrl+C pour annuler)...",
+        "regionPrompt": "Where should your data be stored?",
+        "regionsDiscovered": "Regions loaded",
+        "regionSelected": "Data region: {{region}} ({{domain}})",
         "success": "Connexion réussie",
         "tokenInvalid": "Le jeton doit commencer par rdt_",
         "tokenPrompt": "Entrez votre jeton API (depuis le portail web) :",
@@ -2112,8 +2116,10 @@
       "machineRequired": "Le nom de la machine est requis. Utilisez --machine <name>",
       "notSupported": "L'enregistrement du protocole n'est pas supporté sur {{platform}}",
       "parseFailed": "Impossible d'analyser l'URL : {{error}}",
+      "regionSelectionRequiresTTY": "Region selection requires interactive input. Use --server <url> to specify a server directly.",
       "teamRequired": "Le nom de l'équipe est requis. Utilisez --team <name>",
-      "tokenRequired": "Jeton requis. Utilisez --token <token>"
+      "tokenRequired": "Jeton requis. Utilisez --token <token>",
+      "unknownRegion": "Unknown region: {{region}}"
     },
     "regionRequired": "Le nom de la région est requis. Utilisez --region ou définissez un contexte.",
     "registrationFailed": "L'enregistrement a échoué",

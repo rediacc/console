@@ -24,7 +24,7 @@ sourceHash: "fa03a4167288a59c"
 
 ```bash
 # macOS / Linux
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com | sh
 
 # Or use the packaged binary directly
 ./rdc --help

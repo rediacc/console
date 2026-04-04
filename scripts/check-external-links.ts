@@ -50,8 +50,6 @@ const SKIP_PATTERNS = [
   /^https:\/\/github\.com\/org\//,
   /^https:\/\/github\.com\/login\/oauth\//,
   /^https:\/\/api\.github\.com\/user$/,
-  // Redirect-only domains that may not respond to HEAD/GET from CI runners
-  /^https?:\/\/get\.rediacc\.com/,
 ];
 
 interface LinkLocation {

@@ -388,9 +388,9 @@ describe('subscription command helpers', () => {
       mockLoadServerConfig.mockReturnValue({ accountServer: 'https://eu.rediacc.com' });
       mockIsDevelopmentSubscriptionMode.mockReturnValue(false);
 
-      // The condition is: !options.server && !isDevelopmentSubscriptionMode() && !loadServerConfig()?.accountServer
       // With accountServer set, the prompt should not trigger
-      expect(mockLoadServerConfig()?.accountServer).toBeTruthy();
+      const config = mockLoadServerConfig();
+      expect(config?.accountServer).toBeTruthy();
       expect(mockDiscoverRegions).not.toHaveBeenCalled();
       expect(mockPromptRegionSelection).not.toHaveBeenCalled();
     });
