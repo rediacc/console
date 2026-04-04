@@ -67,7 +67,7 @@ const RegionPickerModal: React.FC = () => {
     setTargetPath(path ?? DEFAULT_TARGET_PATH);
     setSelected(detectLikelyRegion(REGIONS).id);
     setIsOpen(true);
-    window.plausible?.('region_picker_open', {
+    window.plausible('region_picker_open', {
       props: { source: path?.includes('checkout') ? 'checkout' : 'nav' },
     });
   }, []);
@@ -79,7 +79,7 @@ const RegionPickerModal: React.FC = () => {
 
   const handleSelect = useCallback(
     (region: Region) => {
-      window.plausible?.('region_selected', { props: { region: region.id } });
+      window.plausible('region_selected', { props: { region: region.id } });
       window.location.href = `https://${region.domain}${targetPath}`;
     },
     [targetPath]
