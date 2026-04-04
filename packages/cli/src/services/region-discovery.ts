@@ -5,11 +5,7 @@
  * Ed25519 signature, and falls back to baked-in regions on failure.
  */
 
-import {
-  BAKED_IN_REGIONS,
-  verifySignedRegions,
-  type RegionInfo,
-} from '@rediacc/shared/regions';
+import { BAKED_IN_REGIONS, verifySignedRegions, type RegionInfo } from '@rediacc/shared/regions';
 import { PROTOCOL_DEFAULTS } from '@rediacc/shared/config/defaults';
 
 const REGIONS_URL = `${PROTOCOL_DEFAULTS.SITE_URL}/regions.json`;
@@ -27,7 +23,7 @@ export async function discoverRegions(): Promise<RegionInfo[]> {
     });
     if (!resp.ok) return BAKED_IN_REGIONS;
 
-    const blob = await resp.json() as { payload: string; signature: string; publicKeyId: string };
+    const blob = (await resp.json()) as { payload: string; signature: string; publicKeyId: string };
     const regions = await verifySignedRegions(blob);
     if (regions && regions.length > 0) return regions;
   } catch {

@@ -78,7 +78,11 @@ export function registerSubscriptionCommands(program: Command): void {
         // If no server is configured yet, prompt the user to select a data region.
         // The region determines which account server the CLI connects to.
         // Skip in dev mode -- dev uses REDIACC_ACCOUNT_SERVER from .env (localhost).
-        if (!options.server && !isDevelopmentSubscriptionMode() && !loadServerConfig()?.accountServer) {
+        if (
+          !options.server &&
+          !isDevelopmentSubscriptionMode() &&
+          !loadServerConfig()?.accountServer
+        ) {
           const regions = await withSpinner(
             t('commands.subscription.login.discoveringRegions'),
             () => discoverRegions(),
@@ -87,7 +91,10 @@ export function registerSubscriptionCommands(program: Command): void {
           const selected = await promptRegionSelection(regions);
           saveServerConfig({ accountServer: `https://${selected.domain}`, region: selected.id });
           outputService.info(
-            t('commands.subscription.login.regionSelected', { region: selected.label, domain: selected.domain })
+            t('commands.subscription.login.regionSelected', {
+              region: selected.label,
+              domain: selected.domain,
+            })
           );
         }
 

@@ -7,7 +7,12 @@ import {
   verifySignature,
 } from '../../subscription/crypto.js';
 import type { SignedSubscriptionBlob } from '../../subscription/types.js';
-import { BAKED_IN_REGIONS, DEFAULT_REGION, verifySignedRegions, type RegionInfo } from '../index.js';
+import {
+  BAKED_IN_REGIONS,
+  DEFAULT_REGION,
+  verifySignedRegions,
+  type RegionInfo,
+} from '../index.js';
 
 // Test keys (same as subscription crypto tests)
 // Fresh Ed25519 key pair generated for tests (verified to work with Node 22 crypto.subtle)
