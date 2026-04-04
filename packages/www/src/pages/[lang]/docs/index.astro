@@ -5,5 +5,5 @@ import type { Language } from '../../../i18n/types';
 export const getStaticPaths = getLanguagePaths;
 
 const { lang } = Astro.props as { lang: Language };
-return Astro.redirect(`/${lang}/docs/quick-start`);
+return Astro.redirect(`/${lang}/docs/quick-start`, 301);
 ---

@@ -4,6 +4,8 @@ description: "قم بتثبيت واجهة سطر أوامر Rediacc على Linu
 category: "Guides"
 order: 1
 language: ar
+sourceHash: "f67060ce45e1dc96"
+sourceCommit: "58fce41a73c6abc64260fe5e71afd23d17f56cde"
 ---
 
 # التثبيت
@@ -127,7 +129,7 @@ rdc update --status
 الرجوع إلى الإصدار السابق:
 
 ```bash
-rdc update rollback
+rdc update --rollback
 ```
 
 ## قنوات الإصدار

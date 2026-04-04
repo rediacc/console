@@ -6,7 +6,7 @@ description: >-
 category: Use Cases
 order: 4
 language: ru
-sourceHash: c905d2f42d1108c2
+sourceHash: "c905d2f42d1108c2"
 ---
 
 > **Проверяйте все. Ничего не рискуйте. Обновляйте с уверенностью.**

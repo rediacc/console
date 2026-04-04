@@ -7,16 +7,87 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "4ccf847322e085810d9065b312a7e11076925459009fc82c5aa7460f829e9813",
+  "transcriptHash": "61b879570ad28c53800f606e43d0e44331d83e00ae48b4969e56427c010347d9",
   "steps": [
     {
       "id": "tools-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.511459,
-      "replayEndSec": 5.270978,
+      "replayStartSec": 43.70817,
+      "replayEndSec": 52.191236,
       "narrationText": "打开远程 shell 命令来验证目标计算机身份。",
       "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-tutorial-01.5c4d7204.mp3",
-      "audioDurationSec": 3.970612
+      "audioDurationSec": 3.474286,
+      "stepLabel": "Step 1: Connect to a machine"
+    },
+    {
+      "id": "tools-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 52.191236,
+      "replayEndSec": 62.595547,
+      "narrationText": "我们通过 SSH 检查运行时间和平均负载，确认机器响应正常并能良好处理当前工作负载。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-tutorial-02.de8886cd.mp3",
+      "audioDurationSec": 7.810612,
+      "stepLabel": "Step 2: Connect to a repository"
+    },
+    {
+      "id": "tools-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 62.595547,
+      "replayEndSec": 74.148935,
+      "narrationText": "现在我们直接连接到存储库的沙箱环境。运行 docker ps 可以看到该存储库独立隔离守护进程下的容器。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-tutorial-03.be3eade8.mp3",
+      "audioDurationSec": 8.829388,
+      "stepLabel": "Step 3: Preview file sync (dry-run)"
+    },
+    {
+      "id": "tools-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 74.148935,
+      "replayEndSec": 86.706562,
+      "narrationText": "上传文件之前，同步试运行会预览将要传输的内容而不实际写入。这里一切已经同步。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-tutorial-04.bece723b.mp3",
+      "audioDurationSec": 7.627755,
+      "stepLabel": "Step 4: Upload files"
+    },
+    {
+      "id": "tools-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 86.706562,
+      "replayEndSec": 98.826776,
+      "narrationText": "实际上传确认零文件传输 -- 存储库内容已经与本地目录一致。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-tutorial-05.fb17fb19.mp3",
+      "audioDurationSec": 6.112653,
+      "stepLabel": "Step 5: Verify uploaded files"
+    },
+    {
+      "id": "tools-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 98.826776,
+      "replayEndSec": 110.142656,
+      "narrationText": "我们列出存储库的文件来验证内容，显示应用程序文件和内部配置。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-tutorial-06.bb664b34.mp3",
+      "audioDurationSec": 5.877551,
+      "stepLabel": "Step 6: VS Code integration check"
+    },
+    {
+      "id": "tools-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 110.142656,
+      "replayEndSec": 118.777182,
+      "narrationText": "VS Code 集成检查显示安装状态、Remote SSH 扩展以及 CLI 管理的所有活动远程连接。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-tutorial-07.029f3aba.mp3",
+      "audioDurationSec": 8.515918,
+      "stepLabel": "Step 7: Check for CLI updates"
+    },
+    {
+      "id": "tools-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 118.777182,
+      "replayEndSec": 125.456449,
+      "narrationText": "快速更新检查报告可用的 CLI 版本而不安装 -- 便于及时了解最新功能。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-tutorial-08.b2a6944e.mp3",
+      "audioDurationSec": 6.60898,
+      "stepLabel": "Step 8: Review CLI version info"
     }
   ]
 }

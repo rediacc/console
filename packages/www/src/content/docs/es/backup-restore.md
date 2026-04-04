@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: es
-sourceHash: "bd53047cef737088"
+sourceHash: "7f95ad082a023982"
 ---
 
 # Respaldo y Restauración
@@ -22,7 +22,7 @@ Antes de enviar respaldos, registre un proveedor de almacenamiento. Rediacc sopo
 Si ya tiene un remote de rclone configurado:
 
 ```bash
-rdc config storage import rclone.conf
+rdc config storage import --file rclone.conf
 ```
 
 Esto importa configuraciones de almacenamiento desde un archivo de configuración rclone a la configuración actual. Tipos compatibles: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob y Swift.
@@ -38,7 +38,7 @@ rdc config storage list
 Envíe un respaldo del repositorio al almacenamiento externo:
 
 ```bash
-rdc repo push my-app -m server-1 --to my-storage
+rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
 | Opción | Descripción |
@@ -58,7 +58,7 @@ rdc repo push my-app -m server-1 --to my-storage
 Descargue un respaldo del repositorio desde almacenamiento externo:
 
 ```bash
-rdc repo pull my-app -m server-1 --from my-storage
+rdc repo pull --name my-app -m server-1 --from my-storage
 ```
 
 | Opción | Descripción |
@@ -132,7 +132,7 @@ rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --e
 Despliegue la configuración del cronograma en una máquina como un temporizador systemd:
 
 ```bash
-rdc machine deploy-backup server-1
+rdc machine backup schedule -m server-1
 ```
 
 ### Ver Cronograma
@@ -146,7 +146,7 @@ rdc config backup-strategy show
 Explore el contenido de una ubicación de almacenamiento:
 
 ```bash
-rdc storage browse my-storage
+rdc storage browse --name my-storage
 ```
 
 ## Mejores Prácticas

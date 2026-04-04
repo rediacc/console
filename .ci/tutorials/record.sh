@@ -28,7 +28,8 @@ if ! command -v asciinema &>/dev/null; then
 fi
 
 RAW_CAST="$(mktemp /tmp/tutorial-raw-XXXXXX.cast)"
-trap 'rm -f "$RAW_CAST"' EXIT
+EXIT_CODE_FILE="/tmp/tutorial-exit-code-$$"
+trap 'rm -f "$RAW_CAST" "$EXIT_CODE_FILE"' EXIT
 
 echo "Recording: $(basename "$TUTORIAL_SCRIPT") → $(basename "$OUTPUT_CAST")"
 echo "Terminal: ${COLS}x${ROWS}"
@@ -36,12 +37,26 @@ echo "Terminal: ${COLS}x${ROWS}"
 # Cap idle time to keep recordings snappy
 export ASCIINEMA_REC_IDLE_TIME_LIMIT=3
 
+# Wrap the tutorial script to capture its exit code independently.
+# asciinema v2 exits 0 even when --command fails (it saves the recording regardless).
 asciinema rec \
     --cols "$COLS" \
     --rows "$ROWS" \
-    --command "bash '$TUTORIAL_SCRIPT'" \
+    --command "bash '$TUTORIAL_SCRIPT'; echo \$? > '$EXIT_CODE_FILE'" \
     --overwrite \
     "$RAW_CAST"
+
+if [[ -f "$EXIT_CODE_FILE" ]]; then
+    SCRIPT_EXIT=$(cat "$EXIT_CODE_FILE")
+    if [[ "$SCRIPT_EXIT" != "0" ]]; then
+        echo "Error: tutorial script exited with code $SCRIPT_EXIT" >&2
+        echo "Script: $TUTORIAL_SCRIPT" >&2
+        rm -f "$RAW_CAST"
+        exit 1
+    fi
+else
+    echo "Warning: could not determine script exit code" >&2
+fi
 
 echo "Post-processing markers..."
 

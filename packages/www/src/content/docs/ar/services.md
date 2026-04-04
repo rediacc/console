@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: "a555a8192fdb3b7c"
+sourceHash: "4a2050fece1accbb"
 ---
 
 # الخدمات
@@ -176,7 +176,7 @@ services:
 قم بتحميل المستودع وتشغيل جميع الخدمات:
 
 ```bash
-rdc repo up my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1 --mount
 ```
 
 | الخيار | الوصف |
@@ -193,7 +193,7 @@ rdc repo up my-app -m server-1 --mount
 ## إيقاف الخدمات
 
 ```bash
-rdc repo down my-app -m server-1
+rdc repo down --name my-app -m server-1
 ```
 
 | الخيار | الوصف |
@@ -242,7 +242,7 @@ rdc repo up -m server-1
 ### تفعيل
 
 ```bash
-rdc repo autostart enable my-app -m server-1
+rdc repo autostart enable --name my-app -m server-1
 ```
 
 سيُطلب منك إدخال عبارة مرور المستودع.
@@ -256,7 +256,7 @@ rdc repo autostart enable -m server-1
 ### تعطيل
 
 ```bash
-rdc repo autostart disable my-app -m server-1
+rdc repo autostart disable --name my-app -m server-1
 ```
 
 يزيل هذا ملف المفتاح ويحذف فتحة LUKS رقم 1.
@@ -275,16 +275,16 @@ rdc repo autostart list -m server-1
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
-rdc config init production --ssh-key ~/.ssh/id_ed25519
-rdc config machine add prod-1 --ip 203.0.113.50 --user deploy
-rdc config machine setup prod-1
-rdc repo create webapp -m prod-1 --size 10G
+rdc config init --name production --ssh-key ~/.ssh/id_ed25519
+rdc config machine add --name prod-1 --ip 203.0.113.50 --user deploy
+rdc config machine setup --name prod-1
+rdc repo create --name webapp -m prod-1 --size 10G
 ```
 
 ### 2. التحميل والتحضير
 
 ```bash
-rdc repo mount webapp -m prod-1
+rdc repo mount --name webapp -m prod-1
 ```
 
 ### 3. إنشاء ملفات التطبيق
@@ -345,11 +345,11 @@ down() {
 ### 4. التشغيل
 
 ```bash
-rdc repo up webapp -m prod-1
+rdc repo up --name webapp -m prod-1
 ```
 
 ### 5. تفعيل التشغيل التلقائي
 
 ```bash
-rdc repo autostart enable webapp -m prod-1
+rdc repo autostart enable --name webapp -m prod-1
 ```

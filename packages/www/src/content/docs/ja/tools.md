@@ -4,7 +4,7 @@ description: ファイル同期、ターミナルアクセス、VS Code統合、
 category: Guides
 order: 9
 language: ja
-sourceHash: "bc5864d869d191be"
+sourceHash: "5577c66ce89c1925"
 ---
 
 # ツール
@@ -117,7 +117,7 @@ rdc term connect -m server-1 -r my-app --container <container-id> --container-ac
 ### リポジトリへの接続
 
 ```bash
-rdc vscode connect my-app -m server-1
+rdc vscode connect -r my-app -m server-1
 ```
 
 このコマンドは以下を実行します：
@@ -135,7 +135,7 @@ rdc vscode list
 ### 接続のクリーンアップ
 
 ```bash
-rdc vscode clean
+rdc vscode cleanup
 ```
 
 不要になったVS CodeのSSH設定を削除します。
@@ -171,7 +171,7 @@ rdc update
 ### ロールバック
 
 ```bash
-rdc update rollback
+rdc update --rollback
 ```
 
 以前にインストールされたバージョンに戻します。アップデートが適用された後にのみ利用可能です。
@@ -179,7 +179,7 @@ rdc update rollback
 ### アップデートステータス
 
 ```bash
-rdc update status
+rdc update --status
 ```
 
 現在のバージョン、アップデートチャンネル、および自動アップデートの設定を表示します。

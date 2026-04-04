@@ -4,7 +4,7 @@ description: "SSH、设置、仓库、服务和Docker常见问题的解决方案
 category: "Guides"
 order: 10
 language: zh
-sourceHash: "f666ba3be3be29f7"
+sourceHash: "a68982c895a81eef"
 ---
 
 # 故障排除
@@ -23,7 +23,7 @@ sourceHash: "f666ba3be3be29f7"
 如果服务器被重新安装或其SSH密钥已更改，您将看到 "host key verification failed"：
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 此命令获取新的主机密钥并更新您的配置。

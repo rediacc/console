@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: "a555a8192fdb3b7c"
+sourceHash: "4a2050fece1accbb"
 ---
 
 # Servisler
@@ -176,7 +176,7 @@ services:
 Depoyu bağlayın ve tüm servisleri başlatın:
 
 ```bash
-rdc repo up my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1 --mount
 ```
 
 | Seçenek | Açıklama |
@@ -193,7 +193,7 @@ rdc repo up my-app -m server-1 --mount
 ## Servisleri Durdurma
 
 ```bash
-rdc repo down my-app -m server-1
+rdc repo down --name my-app -m server-1
 ```
 
 | Seçenek | Açıklama |
@@ -242,7 +242,7 @@ Sistem kapatma veya yeniden başlatma sırasında, servis tüm servisleri düzg�
 ### Etkinleştirme
 
 ```bash
-rdc repo autostart enable my-app -m server-1
+rdc repo autostart enable --name my-app -m server-1
 ```
 
 Depo parolası sorulacaktır.
@@ -256,7 +256,7 @@ rdc repo autostart enable -m server-1
 ### Devre Dışı Bırakma
 
 ```bash
-rdc repo autostart disable my-app -m server-1
+rdc repo autostart disable --name my-app -m server-1
 ```
 
 Bu, anahtar dosyasını kaldırır ve LUKS slot 1'i siler.
@@ -275,16 +275,16 @@ Bu örnek, PostgreSQL, Redis ve bir API sunucusu içeren bir web uygulamasını 
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
-rdc config init production --ssh-key ~/.ssh/id_ed25519
-rdc config machine add prod-1 --ip 203.0.113.50 --user deploy
-rdc config machine setup prod-1
-rdc repo create webapp -m prod-1 --size 10G
+rdc config init --name production --ssh-key ~/.ssh/id_ed25519
+rdc config machine add --name prod-1 --ip 203.0.113.50 --user deploy
+rdc config machine setup --name prod-1
+rdc repo create --name webapp -m prod-1 --size 10G
 ```
 
 ### 2. Depoyu Bağlama ve Hazırlama
 
 ```bash
-rdc repo mount webapp -m prod-1
+rdc repo mount --name webapp -m prod-1
 ```
 
 ### 3. Uygulama Dosyalarını Oluşturma
@@ -345,11 +345,11 @@ down() {
 ### 4. Başlatma
 
 ```bash
-rdc repo up webapp -m prod-1
+rdc repo up --name webapp -m prod-1
 ```
 
 ### 5. Otomatik Başlatmayı Etkinleştirme
 
 ```bash
-rdc repo autostart enable webapp -m prod-1
+rdc repo autostart enable --name webapp -m prod-1
 ```

@@ -7,16 +7,107 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "5ab31eeb92ec5b7f5385a506fc8f904c7862b75f704b1af4d903d4a02bfe40b1",
+  "transcriptHash": "864a59ec0ca89697e7eb4f29fcf23018007b049f8d770f37ec5373796d7a4eb3",
   "steps": [
     {
       "id": "repos-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.508464,
-      "replayEndSec": 6.646665,
+      "replayStartSec": 12.189423,
+      "replayEndSec": 38.442369,
       "narrationText": "Cree un repositorio cifrado con un tamaño de almacenamiento definido.",
       "audioSrc": "/assets/tutorials/audio/es/repos-tutorial/repos-tutorial-01.076d814f.mp3",
-      "audioDurationSec": 4.362449
+      "audioDurationSec": 4.91102,
+      "stepLabel": "Step 1: Create an encrypted repository"
+    },
+    {
+      "id": "repos-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 38.442369,
+      "replayEndSec": 48.791132,
+      "narrationText": "Repositorio creado. Listamos todos los repositorios en la máquina para confirmar que el nuevo volumen cifrado está montado y listo.",
+      "audioSrc": "/assets/tutorials/audio/es/repos-tutorial/repos-tutorial-02.5c1cbe56.mp3",
+      "audioDurationSec": 10.44898,
+      "stepLabel": "Step 2: List repositories"
+    },
+    {
+      "id": "repos-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 48.791132,
+      "replayEndSec": 58.851033,
+      "narrationText": "Ahora subimos archivos de la aplicación al repositorio mediante sincronización basada en rsync -- rápida, incremental y cifrada en tránsito.",
+      "audioSrc": "/assets/tutorials/audio/es/repos-tutorial/repos-tutorial-03.99f38520.mp3",
+      "audioDurationSec": 11.885714,
+      "stepLabel": "Step 3: Upload application files"
+    },
+    {
+      "id": "repos-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 58.851033,
+      "replayEndSec": 70.153823,
+      "narrationText": "Abrimos una sesión de terminal dentro del repositorio para verificar que los archivos subidos están en la ubicación correcta del volumen cifrado.",
+      "audioSrc": "/assets/tutorials/audio/es/repos-tutorial/repos-tutorial-04.3dd7a8bf.mp3",
+      "audioDurationSec": 8.907755,
+      "stepLabel": "Step 4: Start services"
+    },
+    {
+      "id": "repos-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 70.153823,
+      "replayEndSec": 89.740567,
+      "narrationText": "Archivos en su lugar. Iniciamos los servicios Docker del repositorio usando el archivo compose subido -- en este caso, un servidor web nginx.",
+      "audioSrc": "/assets/tutorials/audio/es/repos-tutorial/repos-tutorial-05.66572c5c.mp3",
+      "audioDurationSec": 9.952653,
+      "stepLabel": "Step 5: View running containers"
+    },
+    {
+      "id": "repos-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 89.740567,
+      "replayEndSec": 100.380993,
+      "narrationText": "Consultamos la máquina para ver los contenedores en ejecución y confirmar que el servicio web está activo, mostrando su imagen, estado, uso de memoria e IP de loopback asignada.",
+      "audioSrc": "/assets/tutorials/audio/es/repos-tutorial/repos-tutorial-06.fc32d7f4.mp3",
+      "audioDurationSec": 13.949388,
+      "stepLabel": "Step 6: Access repo via terminal"
+    },
+    {
+      "id": "repos-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 100.380993,
+      "replayEndSec": 111.920858,
+      "narrationText": "Al conectar al entorno aislado del repositorio, docker ps muestra que cada repositorio tiene su propio daemon Docker dedicado.",
+      "audioSrc": "/assets/tutorials/audio/es/repos-tutorial/repos-tutorial-07.21eda67f.mp3",
+      "audioDurationSec": 9.874286,
+      "stepLabel": "Step 7: View container logs"
+    },
+    {
+      "id": "repos-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 111.920858,
+      "replayEndSec": 121.48644,
+      "narrationText": "Detenemos los contenedores en ejecución manteniendo el repositorio montado -- un apagado controlado de servicios sin tocar el volumen cifrado.",
+      "audioSrc": "/assets/tutorials/audio/es/repos-tutorial/repos-tutorial-08.87341071.mp3",
+      "audioDurationSec": 10.605714,
+      "stepLabel": "Step 8: Execute command in container"
+    },
+    {
+      "id": "repos-tutorial-09",
+      "markerIndex": 8,
+      "replayStartSec": 121.48644,
+      "replayEndSec": 131.431736,
+      "narrationText": "Ahora desmontamos completamente el repositorio -- deteniendo servicios, apagando el daemon Docker aislado y desmontando el volumen cifrado con LUKS.",
+      "audioSrc": "/assets/tutorials/audio/es/repos-tutorial/repos-tutorial-09.10a50169.mp3",
+      "audioDurationSec": 9.247347,
+      "stepLabel": "Step 9: Stop and clean up"
+    },
+    {
+      "id": "repos-tutorial-10",
+      "markerIndex": 9,
+      "replayStartSec": 131.431736,
+      "replayEndSec": 141.260339,
+      "narrationText": "Finalmente, eliminamos el repositorio de la máquina por completo, borrando el volumen cifrado. La entrada de configuración se conserva para otras máquinas.",
+      "audioSrc": "/assets/tutorials/audio/es/repos-tutorial/repos-tutorial-10.5888bb2e.mp3",
+      "audioDurationSec": 11.154286,
+      "stepLabel": "Step 10: Verify cleanup"
     }
   ]
 }

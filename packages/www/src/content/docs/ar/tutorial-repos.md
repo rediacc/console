@@ -4,7 +4,7 @@ description: "إنشاء مستودع مشفر ونشر تطبيق حاوية و
 category: "Tutorials"
 order: 3
 language: ar
-sourceHash: ee3455c196ea1479
+sourceHash: "79d2707d0dc632b2"
 ---
 
 # كيفية نشر وإدارة المستودعات باستخدام Rediacc
@@ -26,7 +26,7 @@ sourceHash: ee3455c196ea1479
 يحصل كل مستودع على وحدة تخزين مشفرة بـ LUKS خاصة به. حدد الجهاز وحجم التخزين.
 
 ```bash
-rdc repo create test-app -m server-1 --size 2G
+rdc repo create --name test-app -m server-1 --size 2G
 ```
 
 يقوم Rediacc بإنشاء وحدة تخزين مشفرة بحجم 2 جيجابايت وتهيئتها وتوصيلها تلقائياً. المستودع جاهز لرفع الملفات.
@@ -56,7 +56,7 @@ rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 انشر التطبيق عن طريق توصيل المستودع وبدء خدمات Docker الخاصة به.
 
 ```bash
-rdc repo up test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1 --mount
 ```
 
 يقوم هذا بتوصيل المستودع (إذا لم يكن موصّلاً بالفعل)، وبدء Docker daemon معزول، وبدء الخدمات عبر `up()`.
@@ -86,9 +86,9 @@ rdc term connect -m server-1 -r test-app -c "docker ps"
 عندما تنتهي، أوقف الخدمات وأغلق وحدة التخزين المشفرة واحذف المستودع اختيارياً.
 
 ```bash
-rdc repo down test-app -m server-1      # إيقاف الخدمات
-rdc repo unmount test-app -m server-1   # إغلاق وحدة التخزين المشفرة
-rdc repo delete test-app -m server-1    # حذف المستودع نهائياً
+rdc repo down --name test-app -m server-1  # إيقاف الخدمات
+rdc repo unmount --name test-app -m server-1  # إغلاق وحدة التخزين المشفرة
+rdc repo delete --name test-app -m server-1  # حذف المستودع نهائياً
 ```
 
 `down` يوقف الحاويات و Docker daemon. `unmount` يغلق وحدة LUKS. `delete` يحذف المستودع ومساحة التخزين المشفرة نهائياً.

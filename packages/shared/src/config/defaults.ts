@@ -624,6 +624,26 @@ export const UPDATE_DEFAULTS = {
   CHANNEL: 'stable' as const,
 } as const;
 
+/**
+ * API version negotiation defaults
+ */
+export const API_VERSION_DEFAULTS = {
+  /** Current API version (server capability level) */
+  API_VERSION: 1,
+  /** Minimum CLI version the server will accept (0.0.0 = no enforcement) */
+  MIN_CLI_VERSION: '0.0.0',
+  /** Inner request header for CLI version */
+  CLI_VERSION_HEADER: 'x-cli-version',
+  /** Inner response header for server's minimum CLI version */
+  MIN_CLI_VERSION_HEADER: 'x-min-cli-version',
+  /** Error code for upgrade required */
+  UPGRADE_REQUIRED_CODE: 'CLI_UPGRADE_REQUIRED',
+  /** Fallback error message when server rejects CLI version */
+  UPGRADE_ERROR_MSG: 'CLI version no longer supported by the server.',
+  /** Fallback label for unknown version value */
+  UNKNOWN_VERSION: 'unknown',
+} as const;
+
 // Re-export aggregated defaults with new additions
 export const DEFAULTS_EXTENDED = {
   ...DEFAULTS,
@@ -639,5 +659,6 @@ export const DEFAULTS_EXTENDED = {
   CLI_TEST: CLI_TEST_DEFAULTS,
   WINDOW: WINDOW_DEFAULTS,
   UPDATE: UPDATE_DEFAULTS,
+  API_VERSION: API_VERSION_DEFAULTS,
   WWW: WWW_DEFAULTS,
 } as const;

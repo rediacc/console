@@ -68,7 +68,7 @@ The `rdc agent` subcommand provides structured introspection:
 rdc agent capabilities
 
 # Show detailed schema for a specific command
-rdc agent schema "machine query"
+rdc agent schema --command "machine query"
 
 # Execute a command with JSON stdin
 echo '{"name": "prod-1"}' | rdc agent exec "machine query"

@@ -4,7 +4,7 @@ description: 使用 .cursorrules 和终端集成配置 Cursor IDE 以使用 Redi
 category: Guides
 order: 32
 language: zh
-sourceHash: "ab61340d4a260fdd"
+sourceHash: "f2de270cae1a7ac1"
 ---
 
 Cursor 通过终端命令和 `.cursorrules` 配置文件与 Rediacc 集成。
@@ -38,7 +38,7 @@ Cursor 可以通过其集成终端执行 `rdc` 命令。常见模式：
 
 Cursor 在终端中运行：
 ```bash
-rdc machine query prod-1 -o json
+rdc machine query --name prod-1 -o json
 ```
 
 ### 部署更改
@@ -47,7 +47,7 @@ rdc machine query prod-1 -o json
 
 Cursor 在终端中运行：
 ```bash
-rdc repo up nextcloud -m prod-1 --yes
+rdc repo up --name nextcloud -m prod-1 --yes
 ```
 
 ### 查看日志

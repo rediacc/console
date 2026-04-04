@@ -61,6 +61,9 @@ const GLOBAL_ALWAYS_VALID = new Set([
   '--fields',
   '--no-color',
 ]);
+// Subset of GLOBAL_ALWAYS_VALID that accept a value argument but are not
+// listed in command-tree.json root options (so optionExpectsValue misses them).
+const GLOBAL_VALUE_FLAGS = new Set(['--output', '-o']);
 
 const COMMAND_TREE_PATH = path.resolve(__dirname, '../../../cli/scripts/command-tree.json');
 const CLI_JSON_PATH = path.resolve(__dirname, '../../../cli/src/i18n/locales/en/cli.json');
@@ -259,8 +262,31 @@ export function parseShellTokens(text) {
   return tokens;
 }
 
+function stripInlineComment(text) {
+  let inQuote = null;
+  for (let ci = 0; ci < text.length; ci++) {
+    const ch = text[ci];
+    if (ch === '\\') {
+      ci++;
+      continue;
+    }
+    if ((ch === '"' || ch === "'") && !inQuote) {
+      inQuote = ch;
+      continue;
+    }
+    if (ch === inQuote) {
+      inQuote = null;
+      continue;
+    }
+    if (ch === '#' && !inQuote && (ci === 0 || /\s/.test(text[ci - 1]))) {
+      return text.slice(0, ci).trimEnd();
+    }
+  }
+  return text;
+}
+
 export function parseRdcCommand(commandText) {
-  const tokens = parseShellTokens(commandText.trim());
+  const tokens = parseShellTokens(stripInlineComment(commandText.trim()));
   if (tokens[0] !== 'rdc') {
     return { ok: false, reason: 'not-rdc' };
   }
@@ -281,7 +307,10 @@ export function parseRdcCommand(commandText) {
       return { ok: false, reason: 'unknown-global-option', flag, commandText };
     }
 
-    if (!token.includes('=') && optionExpectsValue(flag, rootOptionDefs)) {
+    if (
+      !token.includes('=') &&
+      (optionExpectsValue(flag, rootOptionDefs) || GLOBAL_VALUE_FLAGS.has(flag))
+    ) {
       index += 1;
     }
 
@@ -316,6 +345,7 @@ export function parseRdcCommand(commandText) {
   const variadicIndex = args.findIndex((arg) => arg.variadic);
 
   let positionals = 0;
+  const seenFlags = new Set();
   let i = index + found.consumed;
   while (i < tokens.length) {
     const token = tokens[i];
@@ -323,6 +353,7 @@ export function parseRdcCommand(commandText) {
 
     if (token.startsWith('-') && !canConsumeVariadic) {
       const flag = token.includes('=') ? token.split('=')[0] : token;
+      seenFlags.add(flag);
       if (!validFlags.has(flag)) {
         return {
           ok: false,
@@ -335,7 +366,9 @@ export function parseRdcCommand(commandText) {
 
       if (
         !token.includes('=') &&
-        (optionExpectsValue(flag, rootOptionDefs) || optionExpectsValue(flag, commandOptionDefs))
+        (optionExpectsValue(flag, rootOptionDefs) ||
+          optionExpectsValue(flag, commandOptionDefs) ||
+          GLOBAL_VALUE_FLAGS.has(flag))
       ) {
         i += 1;
       }
@@ -356,6 +389,32 @@ export function parseRdcCommand(commandText) {
       positionals,
       commandText,
     };
+  }
+
+  const maxPositionals = variadicIndex !== -1 ? Infinity : args.length;
+  if (positionals > maxPositionals) {
+    return {
+      ok: false,
+      reason: 'excess-positional-args',
+      commandPath: found.commandPath,
+      expected: args.length,
+      actual: positionals,
+      commandText,
+    };
+  }
+
+  for (const option of commandOptionDefs) {
+    if (!option.mandatory) continue;
+    const names = extractFlagNames(option.flags);
+    if (!names.some((name) => seenFlags.has(name))) {
+      return {
+        ok: false,
+        reason: 'missing-mandatory-option',
+        commandPath: found.commandPath,
+        flag: option.flags,
+        commandText,
+      };
+    }
   }
 
   const catalog = getCliReferenceCatalog();

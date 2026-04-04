@@ -4,7 +4,7 @@ description: "Supprimer les sauvegardes orphelines, les snapshots obsolètes et 
 category: "Guides"
 order: 12
 language: fr
-sourceHash: "39df2a50797597f6"
+sourceHash: "a9bfc5eaffb9bca9"
 ---
 
 # Nettoyage
@@ -20,13 +20,13 @@ Analyse un fournisseur de stockage et supprime les sauvegardes dont les GUIDs n'
 
 ```bash
 # Dry-run (default) — shows what would be deleted
-rdc storage prune my-s3 -m server-1
+rdc storage prune --name my-s3 -m server-1
 
 # Actually delete orphaned backups
-rdc storage prune my-s3 -m server-1
+rdc storage prune --name my-s3 -m server-1
 
 # Override grace period (default 7 days)
-rdc storage prune my-s3 -m server-1 --grace-days 14
+rdc storage prune --name my-s3 -m server-1 --grace-days 14
 ```
 
 ### Ce qui est vérifié
@@ -46,10 +46,10 @@ Supprime les répertoires de montage vides, les fichiers de verrouillage obsolè
 
 ```bash
 # Dry-run
-rdc machine prune server-1 --dry-run
+rdc machine prune --name server-1 --dry-run
 
 # Execute cleanup
-rdc machine prune server-1
+rdc machine prune --name server-1
 ```
 
 ### Phase 2 : Images de dépôts orphelins (optionnel)
@@ -58,13 +58,13 @@ Avec `--orphaned-repos`, la CLI identifie également les images de dépôts LUKS
 
 ```bash
 # Dry-run (default behavior when is set)
-rdc machine prune server-1
+rdc machine prune --name server-1
 
 # Actually delete orphaned repos
-rdc machine prune server-1
+rdc machine prune --name server-1
 
 # Custom grace period
-rdc machine prune server-1 --grace-days 30
+rdc machine prune --name server-1 --grace-days 30
 ```
 
 ## Modèle de sécurité
@@ -91,7 +91,7 @@ Définissez une période de grâce par défaut personnalisée dans votre fichier
 
 ```bash
 # Set grace period to 14 days in the active config
-rdc config set pruneGraceDays 14
+rdc config set --key pruneGraceDays --value 14
 ```
 
 Le flag CLI `--grace-days` remplace cette valeur lorsqu'il est fourni.
@@ -108,5 +108,5 @@ Le flag CLI `--grace-days` remplace cette valeur lorsqu'il est fourni.
 - **Gardez les configurations multiples à jour.** Le nettoyage vérifie toutes les configurations dans le répertoire de configuration. Si un fichier de configuration est obsolète ou supprimé, ses dépôts perdent leur protection. Gardez les fichiers de configuration à jour.
 - **Utilisez des périodes de grâce généreuses pour la production.** La période de grâce par défaut de 7 jours convient à la plupart des workflows. Pour les environnements de production avec des fenêtres de maintenance peu fréquentes, envisagez 14 ou 30 jours.
 - **Planifiez le storage prune après les exécutions de sauvegarde.** Associez `storage prune` à votre planification de sauvegarde pour maîtriser les coûts de stockage sans intervention manuelle.
-- **Combinez machine prune avec deploy-backup.** Après avoir déployé les planifications de sauvegarde (`rdc machine deploy-backup`), ajoutez un nettoyage périodique de la machine pour supprimer les snapshots obsolètes et les artefacts de datastore orphelins.
+- **Combinez machine prune avec backup schedule.** Après avoir déployé les planifications de sauvegarde (`rdc machine backup schedule`), ajoutez un nettoyage périodique de la machine pour supprimer les snapshots obsolètes et les artefacts de datastore orphelins.
 - **Vérifiez avant d'utiliser `--force`.** Le flag `--force` contourne la période de grâce. Ne l'utilisez que lorsque vous êtes certain qu'aucune autre configuration ne référence les dépôts concernés.

@@ -4,7 +4,7 @@ description: قالب جاهز للنسخ واللصق لتهيئة Claude Code 
 category: Reference
 order: 50
 language: ar
-sourceHash: "7cf4d73659b76ee7"
+sourceHash: "5e5c2b0ad2a62967"
 ---
 
 استخدم هذا القالب لتهيئة مساعدي البرمجة الذكية (Claude Code، Cursor، Cline، Windsurf) لإدارة بنية Rediacc التحتية بشكل مستقل. انسخ الكتلة أدناه إلى ملف `CLAUDE.md` أو `.cursorrules` أو ملف تهيئة الوكيل المعادل في مشروعك.
@@ -91,7 +91,7 @@ rdc agent schema "machine query"
 
 ```bash
 # List configured machines
-rdc machine query <machine-name>
+rdc machine query --name <machine-name>
 
 # List repositories with GUIDs
 rdc config repository list

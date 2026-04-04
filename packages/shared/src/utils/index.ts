@@ -3,6 +3,8 @@
  * Platform-agnostic functions that work in both web and CLI environments
  */
 
+// Version comparison
+export { compareVersions } from './version';
 // CSV utilities
 export { buildCSVContent, escapeCSVValue } from './csv';
 // Text formatting

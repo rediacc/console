@@ -21,6 +21,7 @@ import { noHardcodedNullishDefaults } from './eslint-rules/no-hardcoded-nullish-
 import { noPositionalArguments } from './eslint-rules/no-positional-arguments.js';
 import { e2eTestNamingConvention } from './eslint-rules/e2e-test-naming-convention.js';
 import { requireDataTrack } from './eslint-rules/require-data-track.js';
+import { seoNoVagueAnchorText } from './eslint-rules/seo-no-vague-anchor-text.js';
 import { i18nJsonPlugin, i18nSourcePlugin } from './eslint-rules/i18n/index.js';
 
 // =============================================================
@@ -224,6 +225,7 @@ export default tseslint.config(
           'e2e-test-naming-convention': e2eTestNamingConvention,
           'require-data-track': requireDataTrack,
           'no-positional-arguments': noPositionalArguments,
+          'seo-no-vague-anchor-text': seoNoVagueAnchorText,
         },
       },
     },
@@ -990,6 +992,8 @@ export default tseslint.config(
       // Disable Ant Design restrictions (www uses native HTML)
       'react/forbid-elements': 'off',
       'no-restricted-imports': 'off',
+      // SEO: prevent non-descriptive anchor text
+      'custom/seo-no-vague-anchor-text': 'error',
     },
   },
 
@@ -1008,9 +1012,10 @@ export default tseslint.config(
     },
   },
 
-  // WWW translation JSON files - basic JSON linting
+  // WWW translation JSON files - basic JSON linting + SEO validation
   {
     files: ['packages/www/src/i18n/translations/*.json'],
+    ignores: ['packages/www/src/i18n/translations/.translation-hashes.json'],
     plugins: {
       json,
       'i18n': i18nJsonPlugin,
@@ -1020,6 +1025,19 @@ export default tseslint.config(
       'json/no-duplicate-keys': 'error',
       'i18n/no-empty-translations': 'error',
       'i18n/sorted-keys': 'error',
+      'i18n/seo-title-length': ['error', {
+        minLength: 30,
+        maxLength: 60,
+        exemptKeys: ['notFound', 'checkout.success'],
+      }],
+      'i18n/seo-description-length': ['error', {
+        minLength: 50,
+        maxLength: 160,
+        exemptKeys: ['checkout.success'],
+      }],
+      'i18n/seo-no-duplicate-h1-title': ['error', {
+        brandSuffixes: [' | Rediacc', ' \u2014 Rediacc', ' - Rediacc'],
+      }],
     },
   },
 

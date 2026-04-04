@@ -4,7 +4,7 @@ description: "Crear un repositorio cifrado, desplegar una aplicación en contene
 category: "Tutorials"
 order: 3
 language: es
-sourceHash: ee3455c196ea1479
+sourceHash: "79d2707d0dc632b2"
 ---
 
 # Cómo desplegar y gestionar repositorios con Rediacc
@@ -26,7 +26,7 @@ Los repositorios son la unidad de despliegue principal en Rediacc — cada uno e
 Cada repositorio obtiene su propio volumen de almacenamiento cifrado con LUKS. Especifica la máquina y el tamaño del almacenamiento.
 
 ```bash
-rdc repo create test-app -m server-1 --size 2G
+rdc repo create --name test-app -m server-1 --size 2G
 ```
 
 Rediacc crea un volumen cifrado de 2 GB, lo formatea y lo monta automáticamente. El repositorio está listo para subir archivos.
@@ -56,7 +56,7 @@ El directorio de montaje es donde residen los archivos de la aplicación — `Re
 Despliega la aplicación montando el repositorio e iniciando sus servicios Docker.
 
 ```bash
-rdc repo up test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1 --mount
 ```
 
 Esto monta el repositorio (si no está ya montado), inicia un Docker daemon aislado e inicia servicios mediante `up()`.
@@ -86,9 +86,9 @@ La sesión de terminal establece `DOCKER_HOST` al socket Docker aislado del repo
 Cuando hayas terminado, detén los servicios, cierra el volumen cifrado y opcionalmente elimina el repositorio.
 
 ```bash
-rdc repo down test-app -m server-1      # Detener servicios
-rdc repo unmount test-app -m server-1   # Cerrar volumen cifrado
-rdc repo delete test-app -m server-1    # Eliminar repositorio permanentemente
+rdc repo down --name test-app -m server-1  # Detener servicios
+rdc repo unmount --name test-app -m server-1  # Cerrar volumen cifrado
+rdc repo delete --name test-app -m server-1  # Eliminar repositorio permanentemente
 ```
 
 `down` detiene los contenedores y el Docker daemon. `unmount` cierra el volumen LUKS. `delete` elimina permanentemente el repositorio y su almacenamiento cifrado.

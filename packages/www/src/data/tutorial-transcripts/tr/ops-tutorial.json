@@ -6,38 +6,38 @@
     {
       "id": "ops-tutorial-01",
       "markerIndex": 0,
-      "at": 1.508295,
+      "at": 1.5108,
       "text": "Sağlamadan önce yerel sanallaştırma gereksinimlerini doğrulayın."
     },
     {
       "id": "ops-tutorial-02",
       "markerIndex": 1,
-      "at": 8.986537,
+      "at": 34.500143,
       "text": "Deneme için minimal bir VM kümesi başlatın."
     },
     {
       "id": "ops-tutorial-03",
       "markerIndex": 2,
-      "at": 17.752282,
+      "at": 243.727131,
       "text": "Küme durumunu ve makinenin kullanılabilirliğini kontrol edin."
     },
     {
       "id": "ops-tutorial-04",
       "markerIndex": 3,
-      "at": 25.263372,
+      "at": 401.750224,
       "text": "Seçilen bir VM'de hızlı bir ana bilgisayar adı kontrolü çalıştırın."
     },
     {
       "id": "ops-tutorial-05",
       "markerIndex": 4,
-      "at": 31.160484,
-      "text": "Sistem ayrıntılarını VM ortamının içinden inceleyin."
+      "at": 558.51649,
+      "text": "SSH doğrulandı. Çekirdek sürümünü ve mimariyi göstermek için köprü düğümünde uname çalıştırıyor, rastgele uzak komut yürütmeyi gösteriyoruz."
     },
     {
       "id": "ops-tutorial-06",
       "markerIndex": 5,
-      "at": 39.121485,
-      "text": "Geçici VM kümesini kapatın ve temizleyin."
+      "at": 717.466324,
+      "text": "Test tamamlandı. Tüm kümeyi söküyor, tüm VM'leri ters sırayla yok ediyor ve temiz bir kapanmayı onaylıyoruz."
     }
   ]
 }

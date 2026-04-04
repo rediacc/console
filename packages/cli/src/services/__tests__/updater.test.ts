@@ -180,12 +180,30 @@ describe('services/updater', () => {
       vi.mocked(isUpdateDisabled).mockReturnValue(false);
     });
 
-    it('returns not available when not SEA', async () => {
+    it('checks for updates regardless of install method', async () => {
       vi.mocked(isSEA).mockReturnValue(false);
+
+      const manifest = {
+        version: '0.5.0',
+        releaseDate: '2026-01-01T00:00:00Z',
+        releaseNotesUrl: 'https://github.com/rediacc/console/releases/tag/v0.5.0',
+        binaries: {
+          'linux-x64': { url: 'https://example.com/rdc-linux-x64', sha256: 'abc123' },
+        },
+      };
+
+      mockHttpsGet.mockImplementation(
+        (_url: string, _opts: unknown, callback: (res: unknown) => void) => {
+          const res = createMockResponse(200, JSON.stringify(manifest));
+          callback(res);
+          return createMockRequest();
+        }
+      );
 
       const result = await checkForUpdate();
 
-      expect(result.updateAvailable).toBe(false);
+      expect(result.updateAvailable).toBe(true);
+      expect(result.latestVersion).toBe('0.5.0');
       expect(result.currentVersion).toBe('0.4.42');
     });
 

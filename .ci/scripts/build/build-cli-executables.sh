@@ -231,14 +231,14 @@ if [[ "$PLATFORM" == "$(detect_os | sed 's/macos/mac/; s/windows/win/')" ]] &&
             log_info "Doctor JSON output is valid"
 
             # Validate key checks
-            SEA_MODE=$(echo "$DOCTOR_OUTPUT" | jq -r '.Environment[] | select(.name == "SEA mode") | .value')
+            INSTALL_METHOD=$(echo "$DOCTOR_OUTPUT" | jq -r '.Environment[] | select(.name == "Install method") | .value')
             CLI_VERSION=$(echo "$DOCTOR_OUTPUT" | jq -r '.Environment[] | select(.name == "CLI version") | .value')
             NODE_STATUS=$(echo "$DOCTOR_OUTPUT" | jq -r '.Environment[] | select(.name == "Node.js") | .status')
 
-            if [[ "$SEA_MODE" == *"yes"* ]]; then
-                log_info "SEA mode: $SEA_MODE"
+            if [[ "$INSTALL_METHOD" == "SEA binary" ]]; then
+                log_info "Install method: $INSTALL_METHOD"
             else
-                log_error "SEA mode check failed: '$SEA_MODE'"
+                log_error "SEA mode check failed: '$INSTALL_METHOD'"
                 exit 1
             fi
 

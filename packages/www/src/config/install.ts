@@ -14,7 +14,8 @@ export type InstallMethod =
   | 'dnf'
   | 'apk'
   | 'pacman'
-  | 'homebrew';
+  | 'homebrew'
+  | 'npm';
 
 export const PLATFORMS: {
   key: Platform;
@@ -93,6 +94,8 @@ Server = ${RELEASES_URL}/archlinux/${CHANNEL}/\\$arch" | sudo tee -a /etc/pacman
 sudo pacman -Sy rediacc-cli`;
 
 export const HOMEBREW_COMMAND = 'brew install rediacc/tap/rediacc-cli';
+
+export const NPM_COMMANDS = `npm install -g ${RELEASES_URL}/npm/${CHANNEL}/rediacc-cli-latest.tgz`;
 
 export interface MethodMeta {
   id: InstallMethod;

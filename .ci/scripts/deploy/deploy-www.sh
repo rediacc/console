@@ -67,27 +67,33 @@ if [[ -n "${ARG_NAME:-}" ]]; then
     PR_NUM="${ARG_NAME#pr-}"
     DB_NAME="account-db-pr-${PR_NUM}"
 
-    # Create D1 database if it does not already exist
-    DB_UUID="$(get_d1_uuid "$DB_NAME")"
-    if [[ -z "$DB_UUID" ]]; then
-        log_step "Creating D1 database: $DB_NAME"
-        npx wrangler d1 create "$DB_NAME" --location eeur
-        DB_UUID="$(get_d1_uuid "$DB_NAME")"
-        if [[ -z "$DB_UUID" ]]; then
-            log_error "Failed to retrieve UUID for newly created D1 database: $DB_NAME"
-            exit 1
-        fi
-        log_info "Created D1 database $DB_NAME (UUID: $DB_UUID)"
-    else
-        log_info "D1 database $DB_NAME already exists (UUID: $DB_UUID)"
+    # Always start with a fresh D1 database for preview deploys.
+    # This prevents dirty state from partial migration failures on prior pushes.
+    if [[ "$DB_NAME" == "account-db" || "$DB_NAME" == "edge-account-db" ]]; then
+        log_error "CRITICAL: refusing to delete production/edge database: $DB_NAME"
+        exit 1
     fi
 
-    # Clone production D1 data into PR database (if requested)
-    if [[ "${ARG_CLONE_PROD_D1:-false}" == "true" ]]; then
-        log_step "Cloning production D1 into $DB_NAME..."
-        "$SCRIPT_DIR/clone-d1.sh" --source account-db --target "$DB_NAME"
-        log_info "Production D1 cloned into $DB_NAME"
+    DB_UUID="$(get_d1_uuid "$DB_NAME")"
+    if [[ -n "$DB_UUID" ]]; then
+        log_step "Deleting existing D1 database: $DB_NAME (clean slate)"
+        npx wrangler d1 delete "$DB_NAME" --skip-confirmation
+        log_info "Deleted $DB_NAME"
     fi
+
+    log_step "Creating D1 database: $DB_NAME"
+    npx wrangler d1 create "$DB_NAME" --location eeur
+    DB_UUID="$(get_d1_uuid "$DB_NAME")"
+    if [[ -z "$DB_UUID" ]]; then
+        log_error "Failed to retrieve UUID for newly created D1 database: $DB_NAME"
+        exit 1
+    fi
+    log_info "Created D1 database $DB_NAME (UUID: $DB_UUID)"
+
+    # Clone production data into fresh PR database
+    log_step "Cloning production D1 into $DB_NAME..."
+    "$SCRIPT_DIR/clone-d1.sh" --source account-db --target "$DB_NAME"
+    log_info "Production D1 cloned into $DB_NAME"
 
     cat >wrangler.preview.toml <<TOML
 name = "$ARG_NAME"

@@ -4,7 +4,7 @@ description: "Cree un perfil de configuración, registre una máquina remota, ve
 category: "Tutorials"
 order: 2
 language: es
-sourceHash: "a7e5e0c30a4bb7d6"
+sourceHash: "3d92b47b323eb53e"
 ---
 
 # Cómo configurar una máquina con Rediacc
@@ -26,7 +26,7 @@ Cada implementación de Rediacc comienza con un perfil de configuración y una m
 Un perfil de configuración almacena definiciones de máquinas, credenciales SSH y ajustes de infraestructura. Cree uno para este entorno.
 
 ```bash
-rdc config init tutorial-demo --ssh-key ~/.ssh/id_ed25519
+rdc config init --name tutorial-demo --ssh-key ~/.ssh/id_ed25519
 ```
 
 Esto crea un archivo de configuración con nombre en `~/.config/rediacc/tutorial-demo.json`.
@@ -46,7 +46,7 @@ Lista todas las configuraciones disponibles con su tipo de adaptador (local o cl
 Registre una máquina con su dirección IP y usuario SSH. La CLI obtiene y almacena automáticamente las claves de host del servidor mediante `ssh-keyscan`.
 
 ```bash
-rdc config machine add bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
+rdc config machine add --name bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
 ```
 
 ### Paso 4: Ver máquinas
@@ -64,7 +64,7 @@ Muestra todas las máquinas en la configuración actual con sus detalles de cone
 Establecer una máquina predeterminada evita repetir `-m bridge-vm` en cada comando.
 
 ```bash
-rdc config set machine bridge-vm --config tutorial-demo
+rdc config set --key machine --value bridge-vm --config tutorial-demo
 ```
 
 ### Paso 6: Probar conectividad
@@ -91,7 +91,7 @@ Verifica su entorno local: versión de CLI, Docker, binario de renet, estado de 
 Para servicios de acceso público, la máquina necesita configuración de red — su IP externa, un dominio base y un correo de certificado para TLS.
 
 ```bash
-rdc config infra set bridge-vm \
+rdc config infra set -m bridge-vm \
   --public-ipv4 192.168.111.1 \
   --base-domain test.local \
   --cert-email admin@test.local
@@ -100,7 +100,7 @@ rdc config infra set bridge-vm \
 Verifique la configuración:
 
 ```bash
-rdc config infra show bridge-vm
+rdc config infra show -m bridge-vm
 ```
 
 Implemente la configuración de proxy Traefik generada en el servidor con `rdc config infra push bridge-vm`.

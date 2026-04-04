@@ -419,9 +419,9 @@
       "category": "Categoría",
       "featured": "Artículos destacados",
       "meta": {
-        "description": "Lea información valiosa, guías y actualizaciones sobre la ejecución de tareas distribuidas, la automatización de la infraestructura y las mejores prácticas de DevOps.",
+        "description": "Guías y actualizaciones sobre ejecución de tareas distribuidas, automatización de infraestructura y mejores prácticas de DevOps.",
         "keywords": "blog de automatización de infraestructura, guías de DevOps, sistemas distribuidos, ejecución de tareas, infraestructura en la nube",
-        "title": "Blog | Rediacc - Perspectivas de automatización de infraestructura"
+        "title": "Blog | Rediacc - Automatización de infraestructura"
       },
       "published": "Publicada",
       "readMore": "Leer más",
@@ -438,7 +438,7 @@
       "meta": {
         "description": "Sigue las últimas versiones, mejoras y correcciones de errores de Rediacc.",
         "keywords": "Registro de cambios Rediacc, notas de versión, actualizaciones, nuevas funciones",
-        "title": "Registro de cambios | Rediacc"
+        "title": "Registro de cambios - Updates y versiones | Rediacc"
       },
       "subscribeDescription": "Recibe una breve actualización cada vez que publicamos algo nuevo.",
       "subscribeTitle": "Recibe notificaciones de nuevas versiones",
@@ -512,9 +512,9 @@
         "title": "Lo que obtienes"
       },
       "meta": {
-        "description": "Póngase en contacto con el equipo de Rediacc.",
+        "description": "Contacte con el equipo de Rediacc para soporte, asociaciones o consultas sobre nuestra plataforma de infraestructura.",
         "keywords": "Rediacc contacto, plataforma de recuperación ante desastres, copias de seguridad verificadas",
-        "title": "Contacto | Rediacc"
+        "title": "Contacto - Soporte y asistencia | Rediacc"
       },
       "notice": {
         "description": "Haga clic en enviar para abrir su correo electrónico. ¿Preguntas? Correo electrónico",
@@ -529,12 +529,12 @@
       },
       "hero": {
         "effectiveDate": "Fecha de vigencia: 1 de febrero de 2026",
-        "title": "Política de Cookies"
+        "title": "Cómo usamos las cookies"
       },
       "meta": {
         "description": "Política de cookies de Rediacc. Una cookie funcional y Plausible Analytics sin cookies.",
         "keywords": "política de cookies, cookies, Plausible Analytics, RGPD, Rediacc",
-        "title": "Política de Cookies — Rediacc"
+        "title": "Política de Cookies - Uso de cookies | Rediacc"
       },
       "related": {
         "title": "Políticas relacionadas"
@@ -680,7 +680,7 @@
       "meta": {
         "description": "Elija el plan adecuado para su negocio. Desde acceso comunitario gratuito hasta protección de nivel empresarial. Sin tarifas ocultas.",
         "keywords": "precios recuperación ante desastres, precios de respaldo, planes de continuidad del negocio, protección de infraestructura, recuperación de ransomware",
-        "title": "Precios | Protección de infraestructura simple y transparente"
+        "title": "Precios - Protección de infraestructura | Rediacc"
       },
       "plans": {
         "business": {
@@ -1113,7 +1113,7 @@
       "meta": {
         "description": "Aprenda a utilizar Rediacc con nuestra documentación completa, guías y referencia de API para la ejecución de tareas distribuidas.",
         "keywords": "documentación, referencia de API, guías, automatización de infraestructura, referencia de CLI, sistema de colas",
-        "title": "Documentación | Rediacc - Plataforma de Automatización de Infraestructura"
+        "title": "Documentación | Rediacc - Automatización"
       },
       "queueSystem": "Sistema de cola",
       "queueSystemDesc": "Comprenda cómo se gestionan y ejecutan las tareas en todas las máquinas.",
@@ -1146,7 +1146,7 @@
       "hero": {
         "released": "Publicado",
         "subtitle": "Rediacc Desktop & CLI",
-        "title": "Descargas"
+        "title": "Descargar Rediacc CLI"
       },
       "installation": {
         "cli": "CLI: Descarga el binario para tu plataforma, hazlo ejecutable (chmod +x en Linux/macOS) y colócalo en tu PATH.",
@@ -1159,7 +1159,7 @@
       "meta": {
         "description": "Descarga Rediacc Desktop y CLI para Windows, macOS y Linux.",
         "keywords": "Descarga Rediacc, aplicación de escritorio, CLI, app Windows, app macOS, app Linux",
-        "title": "Descargas | Rediacc"
+        "title": "Descargar Rediacc CLI - Todas las plataformas | Rediacc"
       },
       "noReleases": "No hay versiones disponibles en este momento. Vuelve a consultar más tarde.",
       "platforms": {
@@ -1191,7 +1191,7 @@
         "indicator": "{{current}} de {{total}}"
       },
       "meta": {
-        "description": "Transforme el desarrollo con la automatización de infraestructura de Rediacc. Obtenga entornos instantáneos, recuperación ante desastres y operaciones seguras para IA.",
+        "description": "Clona producción en 60 segundos. Recuperación ante desastres en menos de 5 minutos. Self-hosted, en tu propio hardware.",
         "keywords": "automatización de infraestructura, entornos de desarrollo, recuperación ante desastres, automatización de DevOps, canalización de CI/CD, infraestructura en la nube, operaciones de desarrollo, protocolo de contexto modelo, infraestructura segura para IA",
         "title": "Rediacc — Clona Producción. Sin romper nada."
       }
@@ -1213,7 +1213,7 @@
       "meta": {
         "description": "Instale la CLI de Rediacc en Linux, macOS o Windows a través de APT, DNF, npm o descarga directa.",
         "keywords": "instalar rediacc, apt install, dnf install, npm install, instalación CLI",
-        "title": "Instalar | Rediacc CLI"
+        "title": "Instalar Rediacc CLI - Guía de inicio rápido"
       },
       "methods": {
         "apk": {
@@ -1303,10 +1303,13 @@
         "title": "Qué esperar"
       },
       "frequency": "Una vez al mes.",
+      "hero": {
+        "title": "Suscríbete a nuestro boletín"
+      },
       "meta": {
         "description": "Suscríbete al boletín de Rediacc para recibir actualizaciones mensuales del producto, guías de autoalojamiento y consejos de infraestructura.",
         "keywords": "Boletín Rediacc, actualizaciones de autoalojamiento, consejos de infraestructura, boletín DevOps",
-        "title": "Boletín | Rediacc"
+        "title": "Boletín - Novedades en infraestructura | Rediacc"
       },
       "privacy": "Usamos Plausible Analytics y nunca compartimos tu correo electrónico con terceros."
     },
@@ -1463,9 +1466,9 @@
           "title": "Tres pasos para infraestructura gestionada por agentes"
         },
         "meta": {
-          "description": "Rediacc está diseñado para asistentes de programación con IA. Operaciones CLI-first, salida JSON estructurada, acceso basado en SSH y descubrimiento completo de agentes mediante comandos rdc agent.",
+          "description": "Rediacc para asistentes de IA. Operaciones CLI-first, salida JSON estructurada, acceso SSH y descubrimiento de agentes mediante comandos rdc agent.",
           "keywords": "Agentes de IA, Claude Code, Cursor, Cline, automatización de infraestructura, CLI, salida JSON, autoalojado, nativo para agentes, MCP",
-          "title": "For AI Agents — CLI-Native Infrastructure Automation | Rediacc"
+          "title": "Agentes IA - Automatización CLI-nativa | Rediacc"
         },
         "problem": {
           "description": "Tu asistente de programación con IA puede escribir, probar y depurar código de forma autónoma. Pero cuando necesita desplegar, verificar el estado o gestionar infraestructura, se topa con un muro: paneles solo GUI, flujos OAuth en el navegador, APIs inestables y respuestas que desbordan la ventana de contexto.",
@@ -1685,9 +1688,9 @@
           "title": "Costes de infraestructura predecibles. Cero dependencia de proveedores."
         },
         "meta": {
-          "description": "Protección de infraestructura autoalojada con precios predecibles, cero dependencia de proveedores y propiedad total de los datos. Protege tu negocio sin la factura de la nube.",
+          "description": "Infraestructura autoalojada con precios predecibles, cero dependencia de proveedores y propiedad total de los datos. Sin factura cloud.",
           "keywords": "CEO, costes de infraestructura, autoalojado, protección de datos, dependencia de proveedores, precios predecibles, continuidad del negocio, PYME",
-          "title": "Para CEOs y fundadores — Costes predecibles, cero dependencia | Rediacc"
+          "title": "Para CEOs - Costes predecibles | Rediacc"
         },
         "problem": {
           "description": "Tu equipo empezó con una pequeña factura cloud. Ahora es tu tercer gasto más grande y crece un 20% anualmente. Los precios por usuario te penalizan por contratar. Tus datos están en el centro de datos de otro, en su formato propietario. Si quieres irte, te cobran tarifas de salida para acceder a tus propios datos.",
@@ -1942,9 +1945,9 @@
           "title": "Reduce el TCO de infraestructura en un 60%. Escala en tu hardware."
         },
         "meta": {
-          "description": "Protección de infraestructura autoalojada que escala en tu hardware. Reduce el TCO, elimina la dependencia de proveedores y recupérate de cualquier desastre en minutos.",
+          "description": "Infraestructura autoalojada en tu hardware. Reduce el TCO un 60%, elimina el vendor lock-in y recupera cualquier desastre en minutos.",
           "keywords": "CTO, TCO de infraestructura, autoalojado, recuperación ante desastres, dependencia de proveedores, snapshots btrfs, cumplimiento, escalabilidad",
-          "title": "Para CTOs — Reduce el TCO de infraestructura en un 60% | Rediacc"
+          "title": "Para CTOs - Reduce el TCO un 60% | Rediacc"
         },
         "problem": {
           "description": "Tu factura de la nube crece entre un 15-20% anualmente. Las licencias por usuario penalizan el crecimiento del equipo. Cuando ocurre un desastre, tu 'recuperación instantánea' tarda horas — porque la herramienta de backup que prometía RPO de minutos en realidad ofrece RPO de días. Mientras tanto, estás atrapado en un ecosistema de proveedores que se encarece con cada renovación.",
@@ -2236,9 +2239,9 @@
           "title": "Un comando. Clon completo de producción."
         },
         "meta": {
-          "description": "Infraestructura CLI-first que clona producción en 60 segundos, revierte en menos de cinco y se ejecuta en tu propio hardware. Construida para ingenieros que automatizan todo.",
+          "description": "Infraestructura CLI-first: clona producción en 60s, revierte en menos de 5 min, en tu hardware. Para ingenieros que automatizan todo.",
           "keywords": "devops, automatización de infraestructura, CLI, snapshots btrfs, autoalojado, clonación de entornos, reversión instantánea, paridad con producción",
-          "title": "Para ingenieros DevOps — Despliega más rápido, recupera al instante | Rediacc"
+          "title": "DevOps - Despliega rápido, recupera ya | Rediacc"
         },
         "problem": {
           "description": "Tu pipeline CI/CD despliega en minutos. Tu IaC aprovisiona en segundos. Pero cuando necesitas un entorno de pruebas con datos reales, abres un ticket y esperas tres días. Mientras tanto, staging es compartido, inestable y no se parece en nada a producción.",
@@ -2645,7 +2648,7 @@
       "meta": {
         "description": "Elija el plan adecuado para su negocio. Desde acceso comunitario gratuito hasta protección de nivel empresarial. Sin tarifas ocultas.",
         "keywords": "precios, automatización de infraestructura, planes DevOps, ejecución de tareas",
-        "title": "Precios | Protección de infraestructura simple y transparente"
+        "title": "Precios | Protección de infraestructura transparente"
       },
       "plans": {
         "business": {
@@ -3104,7 +3107,7 @@
       },
       "hero": {
         "effectiveDate": "Fecha de vigencia: 1 de febrero de 2026",
-        "title": "Política de Privacidad"
+        "title": "Nuestro compromiso de privacidad"
       },
       "meta": {
         "description": "Descubra cómo Rediacc recopila, utiliza y protege sus datos personales.",
@@ -3258,9 +3261,9 @@
         "title": "Ayuda experta cuando más la necesita"
       },
       "meta": {
-        "description": "Obtenga ayuda de expertos cuando más la necesite. Desde la implementación estándar hasta la respuesta de emergencia, nuestros servicios profesionales garantizan su éxito.",
+        "description": "Soporte de implementación, ayuda en migración y respuesta de emergencia. Tiempo de respuesta de 2 horas. 100% de éxito en migraciones.",
         "keywords": "servicios profesionales, soporte de implementación, consultoría de infraestructura, respuesta de emergencia, servicios de migración, recuperación de ransomware",
-        "title": "Servicios Profesionales | Implementación y soporte de expertos"
+        "title": "Servicios Profesionales - Soporte Experto | Rediacc"
       },
       "packages": {
         "heading": "Paquetes de servicios profesionales",
@@ -3283,7 +3286,7 @@
       },
       "hero": {
         "effectiveDate": "Fecha de vigencia: 1 de febrero de 2025",
-        "title": "Política de Reembolso"
+        "title": "Cancelación y política de reembolso"
       },
       "meta": {
         "description": "Política de reembolso de Rediacc para suscripciones y servicios profesionales.",
@@ -3427,10 +3430,13 @@
       },
       "description": "Seleccione el tamaño de su empresa y ajuste los parámetros para ver en tiempo real la comparación de TCO, las ganancias en productividad del desarrollador y el período de recuperación de la inversión.",
       "footnote": "Estimaciones basadas en referencias de la industria de ITIC, IBM/Ponemon, Sophos, Cortex y KPMG (2024). El TCO incluye infraestructura, administración, pruebas de DR y mantenimiento. La productividad del desarrollador utiliza una tasa de realización conservadora del 40%. El ahorro en DR se basa en la mejora del RTO mediante snapshots copy-on-write de btrfs. El ahorro en almacenamiento asume eficiencia CoW frente a cadenas de backup tradicionales. Los resultados reales varían según la carga de trabajo y la configuración.",
+      "hero": {
+        "title": "Calcula el ROI de tu infraestructura"
+      },
       "meta": {
         "description": "Calcule el ahorro en coste total de propiedad, el período de recuperación y el ROI de migrar a la infraestructura autoalojada de Rediacc.",
         "keywords": "calculadora ROI, comparación TCO, ahorro en infraestructura, ROI autoalojado, período de recuperación, reducción de costes de backup",
-        "title": "Calculadora de ROI — Cuantifique su ahorro en infraestructura | Rediacc"
+        "title": "Calculadora ROI - Ahorro en infraestructura | Rediacc"
       },
       "overline": "CALCULE SU ROI",
       "references": {
@@ -3693,7 +3699,7 @@
         "meta": {
           "description": "Crea copias idénticas de tu infraestructura y ejecuta pruebas de penetración impulsadas por IA — sin arriesgar producción.",
           "keywords": "pentesting con IA, pruebas de penetración, pruebas de seguridad, escaneo de vulnerabilidades, ataque a clon",
-          "title": "Pentesting con IA — Rediacc"
+          "title": "Pentesting con IA - Seguridad proactiva | Rediacc"
         },
         "problem": {
           "description": "Las pruebas de penetración en sistemas en vivo son peligrosas. Pueden colapsar servicios, corromper datos o disparar falsas alarmas. Así que la mayoría de los equipos o bien las omiten o prueban contra entornos de staging desactualizados que no reflejan la realidad. El resultado: las vulnerabilidades permanecen sin parchear durante meses — o hasta que un atacante las encuentra primero.",
@@ -4628,7 +4634,7 @@
         "meta": {
           "description": "No esperes a un desastre para descubrir que tu copia está corrupta. Rediacc verifica cada copia en el momento de crearla.",
           "keywords": "verificación de copias, pruebas de backup, verificación de restauración, integridad de copias, verificación automatizada de backup, clon btrfs, verificación de salud de copias",
-          "title": "Verificación de copias — Cada copia verificada automáticamente | Rediacc"
+          "title": "Verificación de copias - Validación automática | Rediacc"
         },
         "problem": {
           "description": "Crees que estás protegido. Tienes copias ejecutándose cada noche. Pero ¿realmente son buenas? La mayoría de los equipos no lo comprueban hasta que necesitan restaurar. Para entonces, es demasiado tarde. Una copia corrupta te da falsa confianza — y nada más.",
@@ -5141,7 +5147,7 @@
         "meta": {
           "description": "Tu infraestructura se ejecuta en múltiples nubes. Cuando una falla, las otras toman el control. Automáticamente.",
           "keywords": "protección contra caídas en la nube, failover multi-nube, replicación entre nubes, recuperación ante desastres, redundancia en la nube, failover automático, replicación btrfs",
-          "title": "Protección contra caídas en la nube — Cuando AWS cae, tú no | Rediacc"
+          "title": "Protección ante caídas cloud - Siempre online | Rediacc"
         },
         "problem": {
           "description": "Los eventos críticos de caída en la nube aumentaron un 18% interanual en 2024, duraron un 18,7% más, y el error humano causó el 68% de ellos [2]. Cuando tu única nube cae, todo cae. Tus clientes, tus ingresos, tu reputación. Todo rehén de la infraestructura de otro.",
@@ -6546,7 +6552,7 @@
         "meta": {
           "description": "Crea copias exactas de producción — aplicación, base de datos y configuración — para desarrollo y pruebas. Sin tickets. Sin esperas.",
           "keywords": "clonación de entornos, clon de producción, entorno de desarrollo, aprovisionamiento instantáneo, clon btrfs, copy-on-write, entornos efímeros",
-          "title": "Clonación de entornos — Clona producción en 60 segundos | Rediacc"
+          "title": "Clonación de entornos - Producción rápida | Rediacc"
         },
         "problem": {
           "description": "Tu desarrollador necesita un entorno de pruebas. Abre un ticket. Operaciones aprovisiona un servidor. Alguien lo configura. Tres días después, no coincide con producción de todos modos. Mientras tanto, tu desarrollador lleva bloqueado desde el lunes — y cada interrupción cuesta 23 minutos de tiempo de recuperación.",
@@ -7045,7 +7051,7 @@
         "meta": {
           "description": "Ejecuta simulaciones de desastres de forma segura. Confirma que tu recuperación realmente funciona. Sin sorpresas cuando más importa.",
           "keywords": "pruebas de failover, pruebas de recuperación ante desastres, simulación de DR, automatización de pruebas de DR, verificación de recuperación, clon btrfs, pruebas de RTO RPO",
-          "title": "Pruebas de failover — Prueba tu plan de DR antes de necesitarlo | Rediacc"
+          "title": "Pruebas de failover - Valida tu plan DR | Rediacc"
         },
         "problem": {
           "description": "Tienes un plan de recuperación ante desastres. Pero ¿cuándo lo probaste por última vez? La mayoría de los equipos no lo han hecho. Asumen que funciona. Luego ocurre el desastre y descubren que no. Un plan sin probar no es un plan. Es una esperanza.",
@@ -7537,7 +7543,7 @@
         "meta": {
           "description": "Tus copias de seguridad son inmutables desde el momento en que se crean. Nadie puede cambiarlas. Ni los hackers. Ni siquiera tú.",
           "keywords": "copias inmutables, protección contra ransomware, instantáneas btrfs, verificación de copias, recuperación ante desastres, copy-on-write, copias selladas",
-          "title": "Copias de seguridad inmutables — Copias a prueba de ransomware | Rediacc"
+          "title": "Copias inmutables - Anti-ransomware | Rediacc"
         },
         "problem": {
           "description": "Los atacantes modernos encuentran tus copias de seguridad antes de cifrar tus archivos. Si tus copias pueden modificarse, lo harán. Las herramientas de backup tradicionales dejan la puerta abierta — y el 94% de las víctimas de ransomware vieron sus copias atacadas durante el incidente. Necesitas copias que se bloqueen en el momento de crearse.",
@@ -8055,7 +8061,7 @@
         "meta": {
           "description": "Crea entornos bajo demanda. Destrúyelos cuando termines. Paga solo por lo que realmente usas.",
           "keywords": "costes de infraestructura, entornos inactivos, entornos bajo demanda, optimización de costes, clon btrfs, copy-on-write, TTL, auto-destrucción",
-          "title": "Costes de infraestructura — Deja de pagar por entornos inactivos | Rediacc"
+          "title": "Costes de infraestructura - Deja de pagar de más | Rediacc"
         },
         "problem": {
           "description": "Tienes 15 entornos de desarrollo funcionando 24/7. Los desarrolladores los usan 8 horas al día, 5 días a la semana. Eso es un 33% de utilización. Estás pagando por el otro 67% — servidores inactivos por las noches, fines de semana y festivos.",
@@ -8529,7 +8535,7 @@
         "meta": {
           "description": "No solo archivos. Entornos completos — servidores, configuraciones, bases de datos — restaurados y funcionando en minutos.",
           "keywords": "recuperación instantánea, restauración completa de entornos, clon btrfs, recuperación ante desastres, restauración de backup, recuperación en un punto en el tiempo, verificaciones de salud, recuperación con un comando",
-          "title": "Recuperación instantánea — Recuperación completa del entorno en minutos | Rediacc"
+          "title": "Recuperación instantánea - Restauración completa | Rediacc"
         },
         "problem": {
           "description": "Restaurar archivos individuales lleva horas. Reconstruir entornos completos lleva días. Cuando tu servidor de producción cae, no solo necesitas los archivos de vuelta — necesitas todo de vuelta. El servidor, la configuración, la base de datos, los ajustes de red. Todo.",
@@ -8998,7 +9004,7 @@
         "meta": {
           "description": "Un git push activa un entorno nuevo. Las pruebas se ejecutan en clones de producción. CI/CD simplemente funciona — sin scripts personalizados.",
           "keywords": "integración CI/CD, GitLab CI, GitHub Actions, webhook, clon de producción, entorno de prueba, automatización de pipelines",
-          "title": "Integraciones CI/CD — Intégrate en tu flujo de trabajo existente | Rediacc"
+          "title": "Integraciones CI/CD - Tu flujo de trabajo | Rediacc"
         },
         "problem": {
           "description": "Alguien escribió un script bash de 200 líneas para aprovisionar entornos de prueba en tu pipeline. Se fue de la empresa. El script se rompe cada mes. Nadie lo entiende. Tu pipeline de CI/CD se mantiene unido con cinta adhesiva y esperanza.",
@@ -9492,7 +9498,7 @@
         "meta": {
           "description": "¿Moviendo entre servidores, nubes o proveedores? Tus copias cifradas viajan de forma segura. Sin exposición. Sin pérdida de datos.",
           "keywords": "migración cifrada, transferencia sin exposición, seguridad en migración de datos, transferencia de backup cifrada, migración btrfs, migración de servidores, cifrado de migración en la nube",
-          "title": "Seguridad en la migración — Migra sin arriesgar tus datos | Rediacc"
+          "title": "Migración segura - Sin riesgo de datos | Rediacc"
         },
         "problem": {
           "description": "Mover datos entre sistemas crea exposición. Archivos temporales, transferencias sin cifrar, configuraciones incompatibles. Cada migración es una ventana de riesgo. Y la mayoría de las herramientas pierden la configuración de cifrado cuando mueves — obligándote a reconfigurar todo desde cero en el otro lado.",
@@ -9987,7 +9993,7 @@
         "meta": {
           "description": "Se acabó el \"funciona en mi máquina\". Cada entorno de desarrollo es un clon idéntico de producción.",
           "keywords": "paridad con producción, deriva de entornos, entorno de desarrollo, clon idéntico, clon btrfs, copy-on-write, coincidencia de configuración",
-          "title": "Paridad con producción — Entornos de desarrollo que coinciden exactamente con producción | Rediacc"
+          "title": "Paridad con producción - Entornos exactos | Rediacc"
         },
         "problem": {
           "description": "Tu entorno de desarrollo ejecuta una versión diferente del SO. Diferentes versiones de bibliotecas. Diferentes configuraciones. El código pasa todas las pruebas en desarrollo y luego falla en producción. Estos errores son difíciles de encontrar y caros de corregir. Ocurren porque desarrollo no coincide con producción.",
@@ -10464,7 +10470,7 @@
         "meta": {
           "description": "Cuando el ransomware ataca, cada minuto cuesta dinero. Rediacc te pone en línea antes de que el daño se extienda.",
           "keywords": "recuperación rápida, recuperación de ransomware, recuperación ante desastres, restauración btrfs, recuperación veloz",
-          "title": "Recuperación rápida — Rediacc"
+          "title": "Recuperación rápida - Respuesta ante desastres | Rediacc"
         },
         "problem": {
           "description": "La mayoría de los equipos pasan días reconstruyendo después de un ransomware. Mientras tanto, los clientes no pueden contactarte. Los ingresos se detienen. La confianza se rompe. El ataque dura una hora. La recuperación toma una semana. Ese es el verdadero daño — y la recuperación promedio de ransomware toma 24 días.",
@@ -10955,7 +10961,7 @@
         "meta": {
           "description": "Políticas de retención configurables que cumplen los requisitos normativos. HIPAA, SOC2, GDPR — cubiertos por defecto.",
           "keywords": "cumplimiento de retención, retención de datos, cumplimiento HIPAA, SOC2, GDPR, retención de copias, listo para auditoría, automatización de cumplimiento",
-          "title": "Cumplimiento de retención — Conserva los datos el tiempo que la ley exige | Rediacc"
+          "title": "Retención de datos - Cumplimiento legal | Rediacc"
         },
         "problem": {
           "description": "Las regulaciones exigen que conserves los datos durante períodos específicos. Si fallas, enfrentas multas, auditorías y problemas legales. La mayoría de las herramientas de backup tratan la retención como algo secundario. Terminas gestionándola manualmente con hojas de cálculo y esperanza.",
@@ -11497,7 +11503,7 @@
         "meta": {
           "description": "Clona tu entorno de producción. Aplica el parche. Observa qué se rompe. Revierte si es necesario. Todo sin tocar producción.",
           "keywords": "pruebas seguras del SO, pruebas de parches, pruebas de actualización del SO, clon btrfs, clon de producción, parcheo sin riesgo, verificación de actualizaciones",
-          "title": "Pruebas seguras del SO — Prueba actualizaciones sin riesgo | Rediacc"
+          "title": "Pruebas seguras del SO - Sin riesgo | Rediacc"
         },
         "problem": {
           "description": "Necesitas parchear. Pero cada actualización es una apuesta. ¿Romperá algo? No lo sabrás hasta que esté en vivo. La mayoría de los equipos o bien omiten los parches (arriesgado) o los prueban en entornos que no coinciden con producción (inútil). Ninguna opción es suficientemente buena.",
@@ -12417,7 +12423,7 @@
         "meta": {
           "description": "Encuentra, prueba y parchea brechas de seguridad en clones seguros. Despliega correcciones a producción con confianza.",
           "keywords": "gestión de vulnerabilidades, verificación de parches, remediación de CVE, parcheo basado en clones, parcheo seguro, pruebas de seguridad, verificación de corrección de vulnerabilidades",
-          "title": "Gestión de vulnerabilidades — Corrige vulnerabilidades antes de que lleguen los atacantes | Rediacc"
+          "title": "Gestión de vulnerabilidades - Corrección proactiva | Rediacc"
         },
         "problem": {
           "description": "Encontraste una vulnerabilidad. Ahora necesitas parchearla. Pero ¿el parche romperá algo? No puedes probar en producción. Y tu entorno de staging lleva 3 semanas de retraso. Así que o bien aplicas el parche a toda prisa y esperas, o esperas y quedas expuesto. Ninguna opción es buena — y ambas cuestan dinero.",
@@ -12657,7 +12663,7 @@
       "meta": {
         "description": "Conozca al equipo que construye infraestructura a prueba de desastres. Ingenieros dedicados a garantizar que sus sistemas sobrevivan a todos los desafíos.",
         "keywords": "Equipo Rediacc, ingeniería de infraestructura, expertos en recuperación ante desastres, confiabilidad del sistema, equipo DevOps",
-        "title": "Nuestro equipo | Rediacc - Construyendo infraestructura que sobrevive"
+        "title": "Nuestro equipo | Rediacc - Infraestructura fiable"
       },
       "mission": {
         "belief": "Creemos que todas las empresas, independientemente de su tamaño o presupuesto, merecen acceso a las mismas potentes herramientas de infraestructura que utilizan las empresas Fortune 500. Es por eso que creamos Rediacc: para nivelar el campo de juego y capacitar a las empresas para que se concentren en lo que mejor saben hacer, mientras nosotros manejamos la complejidad de la infraestructura.",
@@ -12725,10 +12731,10 @@
       },
       "hero": {
         "effectiveDate": "Fecha de vigencia: 1 de febrero de 2026",
-        "title": "Política de Telemetría"
+        "title": "Nuestras prácticas de telemetría"
       },
       "meta": {
-        "description": "Detalles sobre qué datos de telemetría recopilan los productos de Rediacc, por qué, cómo se procesan y cómo darse de baja. Cubre la aplicación web, CLI, Middleware y Bridge.",
+        "description": "Qué telemetría recopilan los productos Rediacc, por qué, cómo se procesa y cómo darse de baja. Cubre Web App, CLI, Middleware y Bridge.",
         "keywords": "política de telemetría, recopilación de datos, OpenTelemetry, darse de baja, privacidad, RGPD, Rediacc",
         "title": "Política de Telemetría — Rediacc"
       },
@@ -12965,7 +12971,7 @@
       },
       "hero": {
         "effectiveDate": "Fecha de vigencia: 1 de febrero de 2026",
-        "title": "Condiciones del Servicio"
+        "title": "Términos y condiciones"
       },
       "meta": {
         "description": "Condiciones que rigen el uso del sitio web y la plataforma de automatización de infraestructura de Rediacc.",

@@ -29,6 +29,7 @@ const breadcrumbItems = [
 >
   <div class="sp-page">
     <Breadcrumb items={breadcrumbItems} class="sp-breadcrumb" />
+    <h1>{t('pages.roiCalculator.hero.title')}</h1>
     <SPRoiCalculator client:visible content={content} />
     <SPReferences references={(content as any).references} />
   </div>

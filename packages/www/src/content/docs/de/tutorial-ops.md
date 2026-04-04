@@ -4,7 +4,7 @@ description: "Einen lokalen VM-Cluster bereitstellen, Befehle über SSH ausführ
 category: "Tutorials"
 order: 1
 language: de
-sourceHash: "c1ba17e9a145c599"
+sourceHash: "741534930d3fbc2a"
 ---
 
 # So stellen Sie lokale VMs mit Rediacc bereit
@@ -52,11 +52,11 @@ Zeigt den Status jeder VM im Cluster an — IP-Adressen, Ressourcenzuweisung und
 ### Schritt 4: Befehle auf einer VM ausführen
 
 ```bash
-rdc ops ssh --vm-id 1 hostname
+rdc ops ssh --vm-id 1 -c hostname
 rdc ops ssh --vm-id 1 -c "uname -a"
 ```
 
-Führt Befehle auf der Bridge-VM (ID `1`) über SSH aus. Übergeben Sie einen beliebigen Befehl nach der VM-ID. Für eine interaktive Shell lassen Sie den Befehl weg: `rdc ops ssh --vm-id 1`.
+Führt Befehle auf der Bridge-VM (ID `1`) über SSH aus. Verwenden Sie `-c`, um einen Befehl zu übergeben. Für eine interaktive Shell lassen Sie `-c` weg: `rdc ops ssh --vm-id 1`.
 
 ### Schritt 5: Cluster abbauen
 

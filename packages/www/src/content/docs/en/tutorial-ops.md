@@ -51,11 +51,11 @@ Displays the state of each VM in the cluster — IP addresses, resource allocati
 ### Step 4: Run commands on a VM
 
 ```bash
-rdc ops ssh --vm-id 1 hostname
+rdc ops ssh --vm-id 1 -c hostname
 rdc ops ssh --vm-id 1 -c "uname -a"
 ```
 
-Runs commands on the bridge VM (ID `1`) over SSH. Pass any command after the VM ID. For an interactive shell, omit the command: `rdc ops ssh --vm-id 1`.
+Runs commands on the bridge VM (ID `1`) over SSH. Use `-c` to pass a command. For an interactive shell, omit `-c`: `rdc ops ssh --vm-id 1`.
 
 ### Step 5: Tear down the cluster
 

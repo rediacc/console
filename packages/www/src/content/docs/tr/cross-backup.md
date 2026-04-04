@@ -6,7 +6,7 @@ description: >-
 category: Use Cases
 order: 5
 language: tr
-sourceHash: 592ecfdf6477dbba
+sourceHash: "592ecfdf6477dbba"
 ---
 
 > **Felaket Geldiğinde Verileriniz Hayatta Kalacak mı? Rediacc ile Her Zaman İşe Yarar.**

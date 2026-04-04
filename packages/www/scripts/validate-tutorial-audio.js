@@ -1,5 +1,38 @@
 #!/usr/bin/env node
 
+// ---------------------------------------------------------------------------
+// AI TROUBLESHOOTING GUIDE
+// ---------------------------------------------------------------------------
+//
+// This validator checks that tutorial timeline JSON files and audio assets
+// are consistent with the transcript files.
+//
+// IMPORTANT: This script must run AFTER validate-tutorial-transcripts.js.
+// If transcripts contain TODO placeholders, fix those FIRST -- otherwise
+// the TTS generator will synthesize the literal TODO text as spoken audio.
+//
+// COMMON ERRORS AND FIXES:
+//
+// ERROR: "transcriptHash is stale" / "step count must match transcript events"
+//   CAUSE: Transcript was updated but TTS audio + timeline not regenerated.
+//   FIX: Ensure transcript text is finalized (no TODOs), then run:
+//     ./run.sh www tutorials generate
+//
+// ERROR: "audio file missing"
+//   CAUSE: Timeline references an audio file that doesn't exist on disk.
+//   FIX: Run: ./run.sh www tutorials generate
+//
+// ERROR: "Missing tutorial timeline JSON"
+//   CAUSE: Timeline file not yet created for this tutorial/language.
+//   FIX: Run: ./run.sh www tutorials generate
+//
+// FULL PIPELINE (when cast files were re-recorded):
+//   ./run.sh www tutorials extract
+//   ./run.sh www tutorials scaffold-locales
+//   # Write narration text for any TODO events (see validate-tutorial-transcripts.js)
+//   ./run.sh www tutorials generate
+// ---------------------------------------------------------------------------
+
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';

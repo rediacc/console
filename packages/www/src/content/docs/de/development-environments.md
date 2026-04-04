@@ -7,7 +7,7 @@ description: >-
 category: Use Cases
 order: 10
 language: de
-sourceHash: c13b017afc2c8371
+sourceHash: "c13b017afc2c8371"
 ---
 
 > **Vergängliche Umgebungen. Produktionsparität. Keine DevOps-Tickets.**

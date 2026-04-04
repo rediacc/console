@@ -4,7 +4,7 @@ description: "Dosya senkronizasyonu, terminal erişimi, VS Code entegrasyonu ve 
 category: Guides
 order: 9
 language: tr
-sourceHash: "bc5864d869d191be"
+sourceHash: "5577c66ce89c1925"
 ---
 
 # Araçlar
@@ -117,7 +117,7 @@ Doğru SSH ayarlarıyla önceden yapılandırılmış bir uzak SSH oturumunu VS 
 ### Depoya Bağlanma
 
 ```bash
-rdc vscode connect my-app -m server-1
+rdc vscode connect -r my-app -m server-1
 ```
 
 Bu komut:
@@ -135,7 +135,7 @@ rdc vscode list
 ### Bağlantıları Temizleme
 
 ```bash
-rdc vscode clean
+rdc vscode cleanup
 ```
 
 Artık gerekli olmayan VS Code SSH yapılandırmalarını kaldırır.
@@ -171,7 +171,7 @@ Güncellemeler indirilir ve yerinde uygulanır. CLI, platformunuz (Linux, macOS 
 ### Geri Alma
 
 ```bash
-rdc update rollback
+rdc update --rollback
 ```
 
 Önceden yüklenmiş sürüme geri döner. Yalnızca bir güncelleme uygulandıktan sonra kullanılabilir.
@@ -179,7 +179,7 @@ rdc update rollback
 ### Güncelleme Durumu
 
 ```bash
-rdc update status
+rdc update --status
 ```
 
 Mevcut surumu, guncelleme kanalini ve otomatik guncelleme yapilandirmasini gosterir.

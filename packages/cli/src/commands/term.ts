@@ -10,11 +10,11 @@ import { configService } from '../services/config-resources.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
 import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh-connection.js';
-import { assertAgentMachineAccess } from '../utils/agent-guard.js';
+import { assertAgentMachineAccess, isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
 import { handleError, ValidationError } from '../utils/errors.js';
-import { detectRepoContextCommand } from '../utils/repo-context-guard.js';
+import { detectDirectRenetCommand, detectRepoContextCommand } from '../utils/repo-context-guard.js';
 import { withSpinner } from '../utils/spinner.js';
 
 interface TermConnectOptions {
@@ -153,9 +153,19 @@ async function validateAndGetConnectionDetails(opts: {
   };
 }
 
-/**
- * Connects to a machine or repository via SSH
- */
+function enforceDirectRenetGuard(command: string): void {
+  const match = detectDirectRenetCommand(command);
+  if (!match) return;
+  if (isAgentEnvironment()) {
+    throw new ValidationError(
+      `Direct "${match.renetCommand}" is not allowed in agent mode.\n\nRun "${match.cliHelpCommand}" to see available CLI commands.`
+    );
+  }
+  process.stderr.write(
+    `\x1b[33mWarning:\x1b[0m Running "${match.renetCommand}" directly bypasses CLI orchestration.\nRun "${match.cliHelpCommand}" to see available CLI commands.\n`
+  );
+}
+
 async function enforceTermPolicy(opts: TermConnectOptions): Promise<void> {
   if (opts.command && !opts.repository) {
     const match = detectRepoContextCommand(opts.command);
@@ -168,6 +178,10 @@ async function enforceTermPolicy(opts: TermConnectOptions): Promise<void> {
         })
       );
     }
+  }
+
+  if (opts.command) {
+    enforceDirectRenetGuard(opts.command);
   }
 
   if (opts.repository) {

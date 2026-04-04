@@ -4,7 +4,7 @@ description: Comment les assistants de programmation IA comme Claude Code, Curso
 category: Guides
 order: 30
 language: fr
-sourceHash: "2d8ab92216666d0e"
+sourceHash: "e96c19a3514c4369"
 ---
 
 Les assistants de programmation IA peuvent gérer l'infrastructure Rediacc de manière autonome via le CLI `rdc`. Ce guide couvre les approches d'intégration et comment démarrer.
@@ -69,7 +69,7 @@ Le sous-commande `rdc agent` fournit une introspection structurée :
 rdc agent capabilities
 
 # Show detailed schema for a specific command
-rdc agent schema "machine query"
+rdc agent schema --command "machine query"
 
 # Execute a command with JSON stdin
 echo '{"name": "prod-1"}' | rdc agent exec "machine query"

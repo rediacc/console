@@ -4,7 +4,7 @@ description: "Vérifier l'état de la machine, inspecter les conteneurs, examine
 category: "Tutorials"
 order: 4
 language: fr
-sourceHash: "806137d9c33f4d7f"
+sourceHash: "ac0ee8180fdb7644"
 ---
 
 # Comment surveiller et diagnostiquer l'infrastructure avec Rediacc
@@ -59,7 +59,7 @@ Liste les services systemd liés à Rediacc (Docker daemons, alias loopback) ave
 ### Étape 5 : Vue d'ensemble de l'état du coffre
 
 ```bash
-rdc machine vault-status server-1
+rdc machine vault-status --name server-1
 ```
 
 Fournit une vue d'ensemble de haut niveau de la machine : nom d'hôte, temps de fonctionnement, mémoire, disque, datastore et nombre total de dépôts.
@@ -69,7 +69,7 @@ Fournit une vue d'ensemble de haut niveau de la machine : nom d'hôte, temps de 
 Si une machine a été reconstruite ou si son IP a changé, actualisez la clé SSH d'hôte stockée.
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 Récupère les clés d'hôte actuelles du serveur et met à jour votre configuration. Cela évite les erreurs "host key verification failed".

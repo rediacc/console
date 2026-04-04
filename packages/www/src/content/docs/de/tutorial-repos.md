@@ -4,7 +4,7 @@ description: "Ein verschlüsseltes Repository erstellen, eine containerisierte A
 category: "Tutorials"
 order: 3
 language: de
-sourceHash: ee3455c196ea1479
+sourceHash: "79d2707d0dc632b2"
 ---
 
 # So stellen Sie Repositories mit Rediacc bereit und verwalten sie
@@ -26,7 +26,7 @@ Repositories sind die zentrale Bereitstellungseinheit in Rediacc — jedes ist e
 Jedes Repository erhält sein eigenes LUKS-verschlüsseltes Speichervolumen. Geben Sie die Maschine und die Speichergröße an.
 
 ```bash
-rdc repo create test-app -m server-1 --size 2G
+rdc repo create --name test-app -m server-1 --size 2G
 ```
 
 Rediacc erstellt ein 2 GB verschlüsseltes Volumen, formatiert es und mountet es automatisch. Das Repository ist bereit für Datei-Uploads.
@@ -56,7 +56,7 @@ Das Mount-Verzeichnis ist der Ort, an dem sich die Anwendungsdateien befinden �
 Stellen Sie die Anwendung bereit, indem Sie das Repository mounten und seine Docker-Dienste starten.
 
 ```bash
-rdc repo up test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1 --mount
 ```
 
 Dies mountet das Repository (falls nicht bereits gemountet), startet einen isolierten Docker Daemon und startet Dienste über `up()`.
@@ -86,9 +86,9 @@ Die Terminal-Sitzung setzt `DOCKER_HOST` auf den isolierten Docker-Socket des Re
 Wenn Sie fertig sind, stoppen Sie die Dienste, schließen Sie das verschlüsselte Volumen und löschen Sie optional das Repository.
 
 ```bash
-rdc repo down test-app -m server-1      # Dienste stoppen
-rdc repo unmount test-app -m server-1   # Verschlüsseltes Volumen schließen
-rdc repo delete test-app -m server-1    # Repository dauerhaft löschen
+rdc repo down --name test-app -m server-1  # Dienste stoppen
+rdc repo unmount --name test-app -m server-1  # Verschlüsseltes Volumen schließen
+rdc repo delete --name test-app -m server-1  # Repository dauerhaft löschen
 ```
 
 `down` stoppt Container und den Docker Daemon. `unmount` schließt das LUKS-Volumen. `delete` entfernt das Repository und seinen verschlüsselten Speicher dauerhaft.

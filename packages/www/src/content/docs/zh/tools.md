@@ -4,7 +4,7 @@ description: 文件同步、终端访问、VS Code 集成、更新和诊断。
 category: Guides
 order: 9
 language: zh
-sourceHash: "bc5864d869d191be"
+sourceHash: "5577c66ce89c1925"
 ---
 
 # 工具
@@ -117,7 +117,7 @@ rdc term connect -m server-1 -r my-app --container <container-id> --container-ac
 ### 连接到仓库
 
 ```bash
-rdc vscode connect my-app -m server-1
+rdc vscode connect -r my-app -m server-1
 ```
 
 此命令会：
@@ -135,7 +135,7 @@ rdc vscode list
 ### 清理连接
 
 ```bash
-rdc vscode clean
+rdc vscode cleanup
 ```
 
 移除不再需要的 VS Code SSH 配置。
@@ -171,7 +171,7 @@ rdc update
 ### 回滚
 
 ```bash
-rdc update rollback
+rdc update --rollback
 ```
 
 恢复到之前安装的版本。仅在应用更新后可用。
@@ -179,7 +179,7 @@ rdc update rollback
 ### 更新状态
 
 ```bash
-rdc update status
+rdc update --status
 ```
 
 显示当前版本、更新通道和自动更新配置。

@@ -4,7 +4,7 @@ description: Полный справочник по формату JSON-выво
 category: Reference
 order: 51
 language: ru
-sourceHash: "49cfcc5e2e4621a9"
+sourceHash: "a84e20b09aadfd28"
 ---
 
 Все команды `rdc` поддерживают структурированный JSON-вывод для программного использования AI-агентами и скриптами.
@@ -14,8 +14,8 @@ sourceHash: "49cfcc5e2e4621a9"
 ### Явный флаг
 
 ```bash
-rdc machine query prod-1 --output json
-rdc machine query prod-1 -o json
+rdc machine query --name prod-1 --output json
+rdc machine query --name prod-1 -o json
 ```
 
 ### Автоопределение
@@ -114,7 +114,7 @@ rdc machine containers prod-1 -o json --fields name,status,repository
 Деструктивные команды поддерживают `--dry-run` для предварительного просмотра:
 
 ```bash
-rdc repo delete mail -m prod-1 --dry-run -o json
+rdc repo delete --name mail -m prod-1 --dry-run -o json
 ```
 
 ```json
@@ -174,7 +174,7 @@ rdc agent capabilities
 ### Получение схемы команды
 
 ```bash
-rdc agent schema "machine query"
+rdc agent schema --command "machine query"
 ```
 
 Возвращает подробную схему для отдельной команды, включая все аргументы и опции с их типами и значениями по умолчанию.

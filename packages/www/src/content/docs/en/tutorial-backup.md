@@ -61,7 +61,7 @@ Shows the current backup configuration: destination, cron expression, and enable
 For public-facing services, the machine needs its external IP, base domain, and a certificate email for Let's Encrypt TLS.
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com
@@ -74,7 +74,7 @@ Rediacc generates a Traefik reverse proxy configuration from these settings.
 If your services need non-HTTP ports (e.g., SMTP, DNS), register them as Traefik entrypoints.
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 ```
@@ -86,7 +86,7 @@ This creates Traefik entrypoints (`tcp-25`, `udp-53`, etc.) that Docker services
 Verify the full infrastructure configuration.
 
 ```bash
-rdc config infra show server-1
+rdc config infra show -m server-1
 ```
 
 Displays public IPs, domain, certificate email, and all registered ports.

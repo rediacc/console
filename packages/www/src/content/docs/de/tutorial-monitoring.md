@@ -4,7 +4,7 @@ description: "Maschinengesundheit prüfen, Container inspizieren, systemd-Dienst
 category: "Tutorials"
 order: 4
 language: de
-sourceHash: "806137d9c33f4d7f"
+sourceHash: "ac0ee8180fdb7644"
 ---
 
 # Infrastruktur mit Rediacc überwachen und diagnostizieren
@@ -59,7 +59,7 @@ Listet Rediacc-bezogene systemd-Dienste (Docker-Daemons, Loopback-Aliase) mit ih
 ### Schritt 5: Vault-Statusübersicht
 
 ```bash
-rdc machine vault-status server-1
+rdc machine vault-status --name server-1
 ```
 
 Bietet einen Überblick über die Maschine: Hostname, Betriebszeit, Speicher, Festplatte, Datastore und Gesamtzahl der Repositories.
@@ -69,7 +69,7 @@ Bietet einen Überblick über die Maschine: Hostname, Betriebszeit, Speicher, Fe
 Wenn eine Maschine neu aufgebaut wurde oder sich ihre IP geändert hat, aktualisieren Sie den gespeicherten SSH-Host-Schlüssel.
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 Ruft die aktuellen Host-Schlüssel des Servers ab und aktualisiert Ihre Konfiguration. Dies verhindert Fehler wie "host key verification failed".

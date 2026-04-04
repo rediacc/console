@@ -6,7 +6,7 @@ description: >-
 category: Use Cases
 order: 5
 language: ru
-sourceHash: 592ecfdf6477dbba
+sourceHash: "592ecfdf6477dbba"
 ---
 
 > **Если произойдет бедствие, выживут ли ваши данные? С Rediacc это всегда так.**

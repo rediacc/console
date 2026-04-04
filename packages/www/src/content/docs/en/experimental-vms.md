@@ -88,10 +88,10 @@ rdc ops up --basic
 rdc ops status
 
 # 4. SSH into the bridge VM
-rdc ops ssh 1
+rdc ops ssh --vm-id 1
 
 # 4b. Or run a command directly
-rdc ops ssh 1 hostname
+rdc ops ssh --vm-id 1 -c hostname
 
 # 5. Tear down
 rdc ops down

@@ -4,7 +4,7 @@ description: "إنشاء ملف تعريف التكوين، تسجيل جهاز 
 category: "Tutorials"
 order: 2
 language: ar
-sourceHash: "a7e5e0c30a4bb7d6"
+sourceHash: "3d92b47b323eb53e"
 ---
 
 # كيفية إعداد جهاز باستخدام Rediacc
@@ -26,7 +26,7 @@ sourceHash: "a7e5e0c30a4bb7d6"
 يخزّن ملف تعريف التكوين تعريفات الأجهزة وبيانات اعتماد SSH وإعدادات البنية التحتية. أنشئ واحداً لهذه البيئة.
 
 ```bash
-rdc config init tutorial-demo --ssh-key ~/.ssh/id_ed25519
+rdc config init --name tutorial-demo --ssh-key ~/.ssh/id_ed25519
 ```
 
 ينشئ هذا ملف تكوين مسمى في `~/.config/rediacc/tutorial-demo.json`.
@@ -46,7 +46,7 @@ rdc config list
 سجّل جهازاً بعنوان IP الخاص به ومستخدم SSH. يقوم CLI تلقائياً بجلب وتخزين مفاتيح المضيف للخادم عبر `ssh-keyscan`.
 
 ```bash
-rdc config machine add bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
+rdc config machine add --name bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
 ```
 
 ### الخطوة 4: عرض الأجهزة
@@ -64,7 +64,7 @@ rdc config machine list --config tutorial-demo
 تعيين جهاز افتراضي يغنيك عن تكرار `-m bridge-vm` في كل أمر.
 
 ```bash
-rdc config set machine bridge-vm --config tutorial-demo
+rdc config set --key machine --value bridge-vm --config tutorial-demo
 ```
 
 ### الخطوة 6: اختبار الاتصال
@@ -91,7 +91,7 @@ rdc doctor
 للخدمات العامة، يحتاج الجهاز إلى تكوين الشبكة — عنوان IP الخارجي، ونطاق أساسي، وبريد إلكتروني للشهادة لـ TLS.
 
 ```bash
-rdc config infra set bridge-vm \
+rdc config infra set -m bridge-vm \
   --public-ipv4 192.168.111.1 \
   --base-domain test.local \
   --cert-email admin@test.local
@@ -100,7 +100,7 @@ rdc config infra set bridge-vm \
 تحقق من التكوين:
 
 ```bash
-rdc config infra show bridge-vm
+rdc config infra show -m bridge-vm
 ```
 
 انشر تكوين وكيل Traefik المُنشأ إلى الخادم باستخدام `rdc config infra push bridge-vm`.

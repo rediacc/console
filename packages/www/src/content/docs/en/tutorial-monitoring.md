@@ -58,7 +58,7 @@ Lists Rediacc-related systemd services (Docker daemons, loopback aliases) with t
 ### Step 5: Vault status overview
 
 ```bash
-rdc machine vault-status server-1
+rdc machine vault-status --name server-1
 ```
 
 Provides a high-level overview of the machine: hostname, uptime, memory, disk, datastore, and total repository counts.
@@ -68,7 +68,7 @@ Provides a high-level overview of the machine: hostname, uptime, memory, disk, d
 If a machine was rebuilt or its IP changed, refresh the stored SSH host key.
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 Fetches the server's current host keys and updates your config. This prevents "host key verification failed" errors.

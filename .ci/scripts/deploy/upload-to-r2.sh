@@ -265,6 +265,30 @@ else
 fi
 
 # =============================================================================
+# CLI npm Tarball
+# =============================================================================
+NPM_DIR="${NPM_DIR:-$REPO_ROOT/dist/npm}"
+if [[ -d "$NPM_DIR" ]]; then
+    log_step "Uploading CLI npm tarball"
+
+    for tgz in "$NPM_DIR"/rediacc-cli-*.tgz; do
+        [[ -f "$tgz" ]] || continue
+        local_name="$(basename "$tgz")"
+        [[ "$local_name" == "rediacc-cli-latest.tgz" ]] && continue
+        r2_cp "$tgz" "$(r2_path "npm" "${local_name}")"
+        ((UPLOADED++)) || true
+    done
+
+    if [[ -f "$NPM_DIR/rediacc-cli-latest.tgz" ]]; then
+        r2_cp "$NPM_DIR/rediacc-cli-latest.tgz" "$(r2_path "npm" "rediacc-cli-latest.tgz")"
+    fi
+
+    log_info "npm: uploaded to npm/${CHANNEL}/"
+else
+    log_info "npm directory not found: $NPM_DIR (skipping)"
+fi
+
+# =============================================================================
 # Desktop Artifacts
 # =============================================================================
 if [[ -d "$DESKTOP_DIR" ]]; then

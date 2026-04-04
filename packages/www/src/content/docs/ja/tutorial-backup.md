@@ -4,7 +4,7 @@ description: "自動バックアップスケジュールの設定、ストレー
 category: "Tutorials"
 order: 6
 language: ja
-sourceHash: "14244f699c506ce9"
+sourceHash: "0bdff6ce5d24c154"
 ---
 
 # Rediaccでバックアップとネットワークを設定する方法
@@ -62,7 +62,7 @@ rdc config backup-strategy show
 公開サービスの場合、マシンには外部IP、ベースドメイン、Let's Encrypt TLS用の証明書メールアドレスが必要です。
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com
@@ -75,7 +75,7 @@ Rediaccはこれらの設定からTraefikリバースプロキシ設定を生成
 サービスが非HTTPポート（例：SMTP、DNS）を必要とする場合、Traefikエントリポイントとして登録します。
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 ```
@@ -87,7 +87,7 @@ Traefikエントリポイント（`tcp-25`、`udp-53`など）を作成し、Doc
 インフラストラクチャ設定の全体を確認します。
 
 ```bash
-rdc config infra show server-1
+rdc config infra show -m server-1
 ```
 
 パブリックIP、ドメイン、証明書メールアドレス、登録済みの全ポートを表示します。

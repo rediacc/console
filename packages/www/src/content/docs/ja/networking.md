@@ -4,7 +4,7 @@ description: リバースプロキシ、Dockerラベル、TLS証明書、DNS、T
 category: Guides
 order: 6
 language: ja
-sourceHash: "911dde41922454ec"
+sourceHash: "cc79bbad07c3ef01"
 ---
 
 # ネットワーキング
@@ -111,16 +111,16 @@ labels:
 
    ```bash
    # 共有資格情報（configごとに一度、すべてのマシンに適用）
-   rdc config infra set server-1 \
+   rdc config infra set -m server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # マシン固有の設定
-   rdc config infra set server-1 \
+   rdc config infra set -m server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config infra push server-1
+   rdc config infra push -m server-1
    ```
 
 2. ドメインのDNSレコードがサーバーのパブリックIPを指していること（下記の[DNS設定](#dns設定)を参照）。
@@ -165,7 +165,7 @@ services:
 TLS証明書はCloudflare DNS-01チャレンジを使用してLet's Encrypt経由で自動的に取得されます。資格情報はconfigごとに一度設定します（すべてのマシンで共有）：
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
@@ -185,11 +185,11 @@ Cloudflare DNS APIトークンには、保護したいドメインに対する`Z
 インフラストラクチャ設定時に必要なポートを追加します：
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config infra push server-1
+rdc config infra push -m server-1
 ```
 
 これにより`tcp-{port}`と`udp-{port}`という名前のTraefikエントリポイントが作成されます。
@@ -434,7 +434,7 @@ app.example.com   A   203.0.113.50
 ### デプロイ
 
 ```bash
-rdc repo up my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1 --mount
 ```
 
 数秒以内にルートサーバーがコンテナを検出し、Traefikがルートを取得してTLS証明書をリクエストし、`https://app.example.com`が公開されます。

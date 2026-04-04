@@ -4,7 +4,7 @@ description: "Verwaiste Sicherungskopien, überholte Snapshots und ungenützte R
 category: "Guides"
 order: 12
 language: de
-sourceHash: "39df2a50797597f6"
+sourceHash: "a9bfc5eaffb9bca9"
 ---
 
 # Bereinigung
@@ -20,13 +20,13 @@ Durchsucht einen Speicheranbieter und löscht Backups, deren GUIDs in keiner Kon
 
 ```bash
 # Dry-run (default) — shows what would be deleted
-rdc storage prune my-s3 -m server-1
+rdc storage prune --name my-s3 -m server-1
 
 # Actually delete orphaned backups
-rdc storage prune my-s3 -m server-1
+rdc storage prune --name my-s3 -m server-1
 
 # Override grace period (default 7 days)
-rdc storage prune my-s3 -m server-1 --grace-days 14
+rdc storage prune --name my-s3 -m server-1 --grace-days 14
 ```
 
 ### Was geprüft wird
@@ -46,10 +46,10 @@ Entfernt leere Mount-Verzeichnisse, veraltete Lock-Dateien und veraltete BTRFS-S
 
 ```bash
 # Dry-run
-rdc machine prune server-1 --dry-run
+rdc machine prune --name server-1 --dry-run
 
 # Execute cleanup
-rdc machine prune server-1
+rdc machine prune --name server-1
 ```
 
 ### Phase 2: Verwaiste Repository-Images (optional)
@@ -58,13 +58,13 @@ Mit `--orphaned-repos` identifiziert die CLI zusätzlich LUKS-Repository-Images 
 
 ```bash
 # Dry-run (default behavior when is set)
-rdc machine prune server-1
+rdc machine prune --name server-1
 
 # Actually delete orphaned repos
-rdc machine prune server-1
+rdc machine prune --name server-1
 
 # Custom grace period
-rdc machine prune server-1 --grace-days 30
+rdc machine prune --name server-1 --grace-days 30
 ```
 
 ## Sicherheitsmodell
@@ -91,7 +91,7 @@ Legen Sie eine benutzerdefinierte Standard-Schonfrist in Ihrer Konfigurationsdat
 
 ```bash
 # Set grace period to 14 days in the active config
-rdc config set pruneGraceDays 14
+rdc config set --key pruneGraceDays --value 14
 ```
 
 Das CLI-Flag `--grace-days` überschreibt diesen Wert, wenn es angegeben wird.
@@ -108,5 +108,5 @@ Das CLI-Flag `--grace-days` überschreibt diesen Wert, wenn es angegeben wird.
 - **Mehrere Konfigurationen aktuell halten.** Die Bereinigung prüft alle Konfigurationen im Konfigurationsverzeichnis. Wenn eine Konfigurationsdatei veraltet oder gelöscht ist, verlieren ihre Repositories den Schutz. Halten Sie Konfigurationsdateien aktuell.
 - **Großzügige Schonfristen für Produktion verwenden.** Die standardmäßige 7-Tage-Schonfrist eignet sich für die meisten Workflows. Für Produktionsumgebungen mit seltenen Wartungsfenstern sollten Sie 14 oder 30 Tage in Betracht ziehen.
 - **Storage Prune nach Backup-Läufen planen.** Kombinieren Sie `storage prune` mit Ihrem Backup-Zeitplan, um die Speicherkosten ohne manuellen Eingriff unter Kontrolle zu halten.
-- **Machine Prune mit deploy-backup kombinieren.** Nach dem Bereitstellen von Backup-Zeitplänen (`rdc machine deploy-backup`) fügen Sie eine periodische Maschinenbereinigung hinzu, um veraltete Snapshots und verwaiste Datastore-Artefakte zu bereinigen.
+- **Machine Prune mit backup schedule kombinieren.** Nach dem Bereitstellen von Backup-Zeitplänen (`rdc machine backup schedule`) fügen Sie eine periodische Maschinenbereinigung hinzu, um veraltete Snapshots und verwaiste Datastore-Artefakte zu bereinigen.
 - **Vor Verwendung von `--force` prüfen.** Das `--force`-Flag umgeht die Schonfrist. Verwenden Sie es nur, wenn Sie sicher sind, dass keine andere Konfiguration die betreffenden Repositories referenziert.

@@ -226,6 +226,20 @@ www_tutorials_record() {
         exit 1
     fi
 
+    # Tutorials use term connect / repo create which require direct machine access.
+    # In AI agent sessions, the user must pre-set REDIACC_ALLOW_GRAND_REPO=* before
+    # starting the agent so the CLI accepts the override as legitimate.
+    if [[ "${CLAUDECODE:-}" == "1" || "${GEMINI_CLI:-}" == "1" || "${COPILOT_CLI:-}" == "1" || "${REDIACC_AGENT:-}" == "1" || -n "${CURSOR_TRACE_ID:-}" ]]; then
+        if [[ "${REDIACC_ALLOW_GRAND_REPO:-}" != "*" ]]; then
+            log_error "Tutorial recording requires direct machine access, which is blocked in agent mode."
+            log_error ""
+            log_error "Set REDIACC_ALLOW_GRAND_REPO=* in your terminal BEFORE starting the agent session:"
+            log_error "  export REDIACC_ALLOW_GRAND_REPO=*"
+            log_error "  claude  # then run ./run.sh www tutorials record"
+            exit 1
+        fi
+    fi
+
     ensure_deps
     ensure_packages_built
     ensure_renet_built
@@ -250,9 +264,12 @@ www_tutorials_record() {
         }
         candidates+=("$script")
     else
+        # ops-tutorial must run last -- it tears down VMs with 'rdc ops down'
         for script in "$tutorials_dir"/*-tutorial.sh; do
+            [[ "$(basename "$script")" == "ops-tutorial.sh" ]] && continue
             candidates+=("$script")
         done
+        [[ -f "$tutorials_dir/ops-tutorial.sh" ]] && candidates+=("$tutorials_dir/ops-tutorial.sh")
     fi
 
     # Filter by change detection (unless --force)
@@ -281,6 +298,22 @@ www_tutorials_record() {
     # Auto-provision VMs
     log_step "Provisioning VMs for tutorial recording..."
     provision_start
+
+    # Stage tutorial app files needed by repos-tutorial
+    mkdir -p /tmp/tutorial-app
+    cat >/tmp/tutorial-app/Rediaccfile <<'TEOF'
+#!/bin/bash
+up() { renet compose -- up -d; }
+down() { renet compose -- down; }
+info() { renet compose -- ps; }
+TEOF
+    cat >/tmp/tutorial-app/docker-compose.yml <<'TEOF'
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+TEOF
 
     # Record each changed tutorial
     for script in "${scripts_to_record[@]}"; do
@@ -362,6 +395,8 @@ www_tutorials_generate() {
 www_tutorials_validate() {
     check_node_version
     ensure_deps
+    log_step "Validating tutorial cast output..."
+    npm run validate:tutorial-cast-output -w @rediacc/www
     log_step "Validating tutorial transcripts..."
     npm run validate:tutorial-transcripts -w @rediacc/www
     log_step "Validating tutorial audio..."

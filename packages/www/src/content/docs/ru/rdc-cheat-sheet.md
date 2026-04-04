@@ -4,5 +4,5 @@ description: Краткий справочник по всем командам 
 category: Guides
 order: 3
 language: ru
-sourceHash: 9c16f56b1bc4ef6f
+sourceHash: "9c16f56b1bc4ef6f"
 ---

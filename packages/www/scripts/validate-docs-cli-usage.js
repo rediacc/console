@@ -60,6 +60,10 @@ function formatError(parsed) {
       return `Missing required positional arguments for "rdc ${parsed.commandPath}"`;
     case 'missing-reference-entry':
       return `No CLI reference entry for "rdc ${parsed.commandPath}"`;
+    case 'excess-positional-args':
+      return `Unexpected positional argument(s) for "rdc ${parsed.commandPath}" (expected ${parsed.expected}, got ${parsed.actual})`;
+    case 'missing-mandatory-option':
+      return `Missing mandatory option ${parsed.flag} for "rdc ${parsed.commandPath}"`;
     default:
       return `Invalid command usage (${parsed.reason || 'unknown'})`;
   }
@@ -77,6 +81,12 @@ function suggestedFix(parsed) {
   }
   if (parsed.reason === 'missing-reference-entry') {
     return 'Regenerate CLI docs and ensure command exists in reference';
+  }
+  if (parsed.reason === 'excess-positional-args') {
+    return 'Convert positional arguments to named options (e.g. --name)';
+  }
+  if (parsed.reason === 'missing-mandatory-option') {
+    return `Add the required ${parsed.flag} option`;
   }
   return null;
 }
@@ -100,6 +110,9 @@ function validateCodeFences(content, file, errors) {
     const merged = mergeContinuationLines(lines, i);
     const commandText = merged.command;
     i = merged.endIndex;
+
+    // Skip syntax templates with angle-bracket placeholders (e.g. rdc repo create <name>)
+    if (/<[^>]+>/.test(commandText)) continue;
 
     const parsed = parseRdcCommand(commandText);
     if (!parsed.ok && parsed.reason !== 'not-rdc') {

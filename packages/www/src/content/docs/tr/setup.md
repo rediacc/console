@@ -4,7 +4,7 @@ description: "Yapılandırma oluşturma, makine ekleme, sunucuları hazırlama v
 category: "Guides"
 order: 3
 language: tr
-sourceHash: "7d4756adb17e63d4"
+sourceHash: "9fd8ebf2b98bfcf5"
 ---
 
 # Makine Kurulumu
@@ -16,7 +16,7 @@ Bu sayfa, ilk makinenizi kurma sürecini anlatır: yapılandırma oluşturma, su
 Bir **yapılandırma** (config), SSH kimlik bilgilerinizi, makine tanımlarınızı ve depo eşlemelerinizi saklayan adlandırılmış bir yapılandırma dosyasıdır. Bunu bir proje çalışma alanı olarak düşünebilirsiniz.
 
 ```bash
-rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | Seçenek | Gerekli | Açıklama |
@@ -33,7 +33,7 @@ Bu komut `my-infra` adında bir yapılandırma oluşturur ve `~/.config/rediacc/
 Uzak sunucunuzu yapılandırmaya makine olarak kaydedin:
 
 ```bash
-rdc config machine add server-1 --ip 203.0.113.50 --user deploy
+rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Seçenek | Gerekli | Varsayılan | Açıklama |
@@ -46,7 +46,7 @@ rdc config machine add server-1 --ip 203.0.113.50 --user deploy
 Makine eklendikten sonra rdc, sunucunun host anahtarlarını almak için otomatik olarak `ssh-keyscan` çalıştırır. Bunu manuel olarak da çalıştırabilirsiniz:
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 Kayıtlı tüm makineleri görüntülemek için:
@@ -60,7 +60,7 @@ rdc config machine list
 Uzak sunucuyu gerekli tüm bağımlılıklarla hazırlayın:
 
 ```bash
-rdc config machine setup server-1
+rdc config machine setup --name server-1
 ```
 
 Bu komut:
@@ -82,7 +82,7 @@ Bu komut:
 Bir sunucunun SSH host anahtarı değiştiyse (ör. yeniden kurulum sonrası), saklanan anahtarları yenileyin:
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 Bu komut, yapılandırmanızdaki ilgili makinenin `knownHosts` alanını günceller.
@@ -112,7 +112,7 @@ Trafiği herkese açık olarak sunması gereken makineler için altyapı ayarlar
 ### Altyapıyı Ayarlama
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -134,7 +134,7 @@ Machine kapsamlı seçenekler makine başına saklanır. Config kapsamlı seçen
 ### Altyapıyı Görüntüleme
 
 ```bash
-rdc config infra show server-1
+rdc config infra show -m server-1
 ```
 
 ### Sunucuya Gönderme
@@ -142,7 +142,7 @@ rdc config infra show server-1
 Traefik ters proxy yapılandırmasını oluşturun ve sunucuya dağıtın:
 
 ```bash
-rdc config infra push server-1
+rdc config infra push -m server-1
 ```
 
 Bu komut:
@@ -163,13 +163,13 @@ OpenTofu'yu kurun: [opentofu.org/docs/intro/install](https://opentofu.org/docs/i
 SSH yapılandırmanızın bir genel anahtar içerdiğinden emin olun:
 
 ```bash
-rdc config set ssh.privateKeyPath ~/.ssh/id_ed25519
+rdc config set --key ssh.privateKeyPath --value ~/.ssh/id_ed25519
 ```
 
 ### Bulut Sağlayıcı Ekleme
 
 ```bash
-rdc config provider add my-linode \
+rdc config provider add --name my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -191,7 +191,7 @@ rdc config provider add my-linode \
 ### Makine Hazırlama
 
 ```bash
-rdc machine provision prod-2 --provider my-linode
+rdc machine provision --name prod-2 --provider my-linode
 ```
 
 Bu tek komut:
@@ -214,7 +214,7 @@ Bu tek komut:
 ### Makine Kaldırma
 
 ```bash
-rdc machine deprovision prod-2
+rdc machine deprovision --name prod-2
 ```
 
 VM'yi OpenTofu aracılığıyla yok eder ve yapılandırmanızdan kaldırır. `--force` kullanılmadıkça onay gerektirir. Yalnızca `machine provision` ile oluşturulan makineler için çalışır.
@@ -230,14 +230,14 @@ rdc config provider list
 Her komutta belirtmek zorunda kalmamak için varsayılan değerler ayarlayın:
 
 ```bash
-rdc config set machine server-1    # Varsayılan makine
-rdc config set team my-team        # Varsayılan ekip (bulut adaptörü, deneysel)
+rdc config set --key machine --value server-1  # Varsayılan makine
+rdc config set --key team --value my-team  # Varsayılan ekip (bulut adaptörü, deneysel)
 ```
 
 Varsayılan makineyi ayarladıktan sonra komutlardan `-m server-1` ifadesini çıkarabilirsiniz:
 
 ```bash
-rdc repo create my-app --size 10G   # Varsayılan makineyi kullanır
+rdc repo create --name my-app -m my-server --size 10G
 ```
 
 ## Birden Fazla Yapılandırma
@@ -246,8 +246,8 @@ Adlandırılmış yapılandırmalarla birden fazla ortamı yönetin:
 
 ```bash
 # Ayrı yapılandırmalar oluşturun
-rdc config init production --ssh-key ~/.ssh/id_prod
-rdc config init staging --ssh-key ~/.ssh/id_staging
+rdc config init --name production --ssh-key ~/.ssh/id_prod
+rdc config init --name staging --ssh-key ~/.ssh/id_staging
 
 # Belirli bir yapılandırmayı kullanın
 rdc repo list -m server-1 --config production

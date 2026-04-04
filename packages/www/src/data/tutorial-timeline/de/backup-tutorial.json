@@ -7,16 +7,97 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "818df075f9ad49f7cb0138a60a9c908e767551182f9393abe414555983181f80",
+  "transcriptHash": "5aa92cd134d692af67bf0421e3925431c830d22341afee5c1e257c0f90e7ac30",
   "steps": [
     {
       "id": "backup-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.510362,
-      "replayEndSec": 5.406939,
+      "replayStartSec": 6.224951,
+      "replayEndSec": 15.432035,
       "narrationText": "Überprüfen Sie die aktuell konfigurierten Sicherungsziele.",
       "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-tutorial-01.6eb7658f.mp3",
-      "audioDurationSec": 3.709388
+      "audioDurationSec": 3.552653,
+      "stepLabel": "Step 1: Import a storage backend"
+    },
+    {
+      "id": "backup-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 15.432035,
+      "replayEndSec": 24.286068,
+      "narrationText": "Speicher importiert. Wir listen alle konfigurierten Backends auf, um zu bestätigen, dass das S3-Ziel registriert und für Backup-Transfers bereit ist.",
+      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-tutorial-02.6dd8dad2.mp3",
+      "audioDurationSec": 9.560816,
+      "stepLabel": "Step 2: List storage backends"
+    },
+    {
+      "id": "backup-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 24.286068,
+      "replayEndSec": 35.540522,
+      "narrationText": "Als Nächstes erstellen wir eine Backup-Strategie -- mit dem S3-Backend als Ziel, täglicher Ausführung um zwei Uhr morgens und sofortiger Aktivierung.",
+      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-tutorial-03.e05fdfd5.mp3",
+      "audioDurationSec": 10.187755,
+      "stepLabel": "Step 3: Configure backup strategy"
+    },
+    {
+      "id": "backup-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 35.540522,
+      "replayEndSec": 44.765645,
+      "narrationText": "Strategie gespeichert. Wir prüfen die vollständige Konfiguration, um Zeitplan, Ziel und Aktivierungsstatus zu verifizieren, bevor wir fortfahren.",
+      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-tutorial-04.6f439c3c.mp3",
+      "audioDurationSec": 11.467755,
+      "stepLabel": "Step 4: View backup strategy"
+    },
+    {
+      "id": "backup-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 44.765645,
+      "replayEndSec": 57.747851,
+      "narrationText": "Mit konfigurierten Backups richten wir die Infrastruktur der Maschine ein -- öffentliche IP, Basisdomain und Zertifikats-E-Mail für automatische TLS-Bereitstellung.",
+      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-tutorial-05.9b290a30.mp3",
+      "audioDurationSec": 11.964082,
+      "stepLabel": "Step 5: Configure infrastructure"
+    },
+    {
+      "id": "backup-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 57.747851,
+      "replayEndSec": 68.973334,
+      "narrationText": "Jetzt öffnen wir die Netzwerkports, die die Maschine benötigt -- TCP-Ports für Mail-Protokolle und einen UDP-Port für DNS-Auflösung.",
+      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-tutorial-06.b824526c.mp3",
+      "audioDurationSec": 9.560816,
+      "stepLabel": "Step 6: Add TCP/UDP ports"
+    },
+    {
+      "id": "backup-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 68.973334,
+      "replayEndSec": 78.308748,
+      "narrationText": "Wir überprüfen die vollständige Infrastrukturkonfiguration der Maschine -- IP-Adresse, Domain, Zertifikats-E-Mail und alle Port-Zuordnungen in einer Ansicht.",
+      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-tutorial-07.4fa21be9.mp3",
+      "audioDurationSec": 10.527347,
+      "stepLabel": "Step 7: View infrastructure config"
+    },
+    {
+      "id": "backup-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 78.308748,
+      "replayEndSec": 85.975424,
+      "narrationText": "Zum Schluss deaktivieren wir die Backup-Strategie, ohne sie zu entfernen. Die Konfiguration bleibt gespeichert und kann jederzeit wieder aktiviert werden.",
+      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-tutorial-08.b2cf20fa.mp3",
+      "audioDurationSec": 8.907755,
+      "stepLabel": "Step 8: Disable backup strategy"
+    },
+    {
+      "id": "backup-tutorial-09",
+      "markerIndex": 8,
+      "replayStartSec": 85.975424,
+      "replayEndSec": 93.104958,
+      "narrationText": "Bestätigt -- die Strategie ist deaktiviert, während Ziel und Zeitplan intakt bleiben. Bei Bedarf mit einem einzigen Flag wieder aktivieren.",
+      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-tutorial-09.f942f6b6.mp3",
+      "audioDurationSec": 9.247347,
+      "stepLabel": "Step 9: Verify disabled state"
     }
   ]
 }

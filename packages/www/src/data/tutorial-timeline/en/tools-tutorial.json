@@ -7,16 +7,87 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "067a377ce96ff6b3b063038d30fd9f58bab13cf8cc14422e84525092bf6283c2",
+  "transcriptHash": "feae5f6eeffe88412ebfa1966a2b9c1aba79933002b4c34d02e67e870ac1f2cf",
   "steps": [
     {
       "id": "tools-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.511459,
-      "replayEndSec": 5.270978,
+      "replayStartSec": 43.70817,
+      "replayEndSec": 52.191236,
       "narrationText": "Day-to-day operations rely on reliable SSH connectivity. We start by verifying the tunnel to the remote machine -- a hostname check confirms the connection target.",
       "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-tutorial-01.3186f6b7.mp3",
-      "audioDurationSec": 11.075918
+      "audioDurationSec": 10.03102,
+      "stepLabel": "Step 1: Connect to a machine"
+    },
+    {
+      "id": "tools-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 52.191236,
+      "replayEndSec": 62.595547,
+      "narrationText": "We check uptime and load average over SSH to confirm the machine is responsive and handling its current workload well.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-tutorial-02.21857851.mp3",
+      "audioDurationSec": 7.157551,
+      "stepLabel": "Step 2: Connect to a repository"
+    },
+    {
+      "id": "tools-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 62.595547,
+      "replayEndSec": 74.148935,
+      "narrationText": "Now we connect directly into a repository's sandboxed environment. Running docker ps shows containers under that repository's own isolated daemon.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-tutorial-03.1c2bd0cf.mp3",
+      "audioDurationSec": 9.247347,
+      "stepLabel": "Step 3: Preview file sync (dry-run)"
+    },
+    {
+      "id": "tools-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 74.148935,
+      "replayEndSec": 86.706562,
+      "narrationText": "Before uploading files, a dry-run sync previews what would be transferred without writing anything. Here everything is already in sync.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-tutorial-04.9ca32e17.mp3",
+      "audioDurationSec": 7.079184,
+      "stepLabel": "Step 4: Upload files"
+    },
+    {
+      "id": "tools-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 86.706562,
+      "replayEndSec": 98.826776,
+      "narrationText": "Running the actual upload confirms zero files transferred -- the repository contents already match the local directory.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-tutorial-05.a2aea16a.mp3",
+      "audioDurationSec": 7.47102,
+      "stepLabel": "Step 5: Verify uploaded files"
+    },
+    {
+      "id": "tools-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 98.826776,
+      "replayEndSec": 110.142656,
+      "narrationText": "We list the repository's files to verify the contents, showing the application files alongside the internal configuration.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-tutorial-06.0a8ff282.mp3",
+      "audioDurationSec": 7.88898,
+      "stepLabel": "Step 6: VS Code integration check"
+    },
+    {
+      "id": "tools-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 110.142656,
+      "replayEndSec": 118.777182,
+      "narrationText": "The VS Code integration check shows the installation status, Remote SSH extension, and all active remote connections managed by the CLI.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-tutorial-07.22388bf8.mp3",
+      "audioDurationSec": 9.639184,
+      "stepLabel": "Step 7: Check for CLI updates"
+    },
+    {
+      "id": "tools-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 118.777182,
+      "replayEndSec": 125.456449,
+      "narrationText": "A quick update check reports available CLI versions without installing -- useful for staying current with the latest features.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-tutorial-08.51f1d70c.mp3",
+      "audioDurationSec": 6.922449,
+      "stepLabel": "Step 8: Review CLI version info"
     }
   ]
 }

@@ -4,7 +4,7 @@ description: "Sahipsiz yedekleri, eski anlık görüntüleri ve kullanılmayan d
 category: "Guides"
 order: 12
 language: tr
-sourceHash: "39df2a50797597f6"
+sourceHash: "a9bfc5eaffb9bca9"
 ---
 
 # Temizleme
@@ -20,13 +20,13 @@ Bir depolama sağlayıcısını tarar ve GUID'leri herhangi bir yapılandırma d
 
 ```bash
 # Dry-run (default) — shows what would be deleted
-rdc storage prune my-s3 -m server-1
+rdc storage prune --name my-s3 -m server-1
 
 # Actually delete orphaned backups
-rdc storage prune my-s3 -m server-1
+rdc storage prune --name my-s3 -m server-1
 
 # Override grace period (default 7 days)
-rdc storage prune my-s3 -m server-1 --grace-days 14
+rdc storage prune --name my-s3 -m server-1 --grace-days 14
 ```
 
 ### Ne kontrol edilir
@@ -46,10 +46,10 @@ Boş bağlama dizinlerini, eski kilit dosyalarını ve eski BTRFS anlık görün
 
 ```bash
 # Dry-run
-rdc machine prune server-1 --dry-run
+rdc machine prune --name server-1 --dry-run
 
 # Execute cleanup
-rdc machine prune server-1
+rdc machine prune --name server-1
 ```
 
 ### Aşama 2: Sahipsiz depo görüntüleri (isteğe bağlı)
@@ -58,13 +58,13 @@ rdc machine prune server-1
 
 ```bash
 # Dry-run (default behavior when is set)
-rdc machine prune server-1
+rdc machine prune --name server-1
 
 # Actually delete orphaned repos
-rdc machine prune server-1
+rdc machine prune --name server-1
 
 # Custom grace period
-rdc machine prune server-1 --grace-days 30
+rdc machine prune --name server-1 --grace-days 30
 ```
 
 ## Güvenlik Modeli
@@ -91,7 +91,7 @@ Her seferinde `--grace-days` geçmek zorunda kalmamak için yapılandırma dosya
 
 ```bash
 # Set grace period to 14 days in the active config
-rdc config set pruneGraceDays 14
+rdc config set --key pruneGraceDays --value 14
 ```
 
 CLI bayrağı `--grace-days` sağlandığında bu değeri geçersiz kılar.
@@ -108,5 +108,5 @@ CLI bayrağı `--grace-days` sağlandığında bu değeri geçersiz kılar.
 - **Birden fazla yapılandırmayı güncel tutun.** Temizleme, yapılandırma dizinindeki tüm yapılandırmaları kontrol eder. Bir yapılandırma dosyası eskimişse veya silinmişse, depoları korumalarını kaybeder. Yapılandırma dosyalarını doğru tutun.
 - **Üretim için cömert ek süreler kullanın.** Varsayılan 7 günlük ek süre çoğu iş akışı için uygundur. Seyrek bakım pencerelerine sahip üretim ortamları için 14 veya 30 günü düşünün.
 - **Storage prune'u yedekleme çalıştırmalarından sonra planlayın.** Manuel müdahale olmadan depolama maliyetlerini kontrol altında tutmak için `storage prune` komutunu yedekleme planınızla eşleştirin.
-- **Machine prune'u deploy-backup ile birleştirin.** Yedekleme planlarını dağıttıktan sonra (`rdc machine deploy-backup`), eski anlık görüntüleri ve sahipsiz veri deposu yapıtaşlarını temizlemek için periyodik bir makine temizlemesi ekleyin.
+- **Machine prune'u backup schedule ile birleştirin.** Yedekleme planlarını dağıttıktan sonra (`rdc machine backup schedule`), eski anlık görüntüleri ve sahipsiz veri deposu yapıtaşlarını temizlemek için periyodik bir makine temizlemesi ekleyin.
 - **`--force` kullanmadan önce denetleyin.** `--force` bayrağı ek süreyi atlar. Yalnızca söz konusu depolara başka hiçbir yapılandırmanın referans vermediğinden emin olduğunuzda kullanın.

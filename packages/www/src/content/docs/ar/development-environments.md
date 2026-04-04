@@ -6,7 +6,7 @@ description: >-
 category: Use Cases
 order: 10
 language: ar
-sourceHash: c13b017afc2c8371
+sourceHash: "c13b017afc2c8371"
 ---
 
 > ** البيئات سريعة الزوال. تكافؤ الإنتاج. صفر تذاكر DevOps.**

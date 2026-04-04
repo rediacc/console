@@ -4,7 +4,7 @@ description: "構成プロファイルの作成、リモートマシンの登録
 category: "Tutorials"
 order: 2
 language: ja
-sourceHash: "a7e5e0c30a4bb7d6"
+sourceHash: "3d92b47b323eb53e"
 ---
 
 # Rediaccでマシンをセットアップする方法
@@ -26,7 +26,7 @@ sourceHash: "a7e5e0c30a4bb7d6"
 構成プロファイルは、マシン定義、SSH認証情報、インフラストラクチャ設定を保存します。この環境用に1つ作成します。
 
 ```bash
-rdc config init tutorial-demo --ssh-key ~/.ssh/id_ed25519
+rdc config init --name tutorial-demo --ssh-key ~/.ssh/id_ed25519
 ```
 
 これにより、`~/.config/rediacc/tutorial-demo.json`に名前付き構成ファイルが作成されます。
@@ -46,7 +46,7 @@ rdc config list
 IPアドレスとSSHユーザーを指定してマシンを登録します。CLIは`ssh-keyscan`を介してサーバーのホストキーを自動的に取得・保存します。
 
 ```bash
-rdc config machine add bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
+rdc config machine add --name bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
 ```
 
 ### ステップ4: マシンを表示
@@ -64,7 +64,7 @@ rdc config machine list --config tutorial-demo
 デフォルトマシンを設定すると、すべてのコマンドで`-m bridge-vm`を繰り返す必要がなくなります。
 
 ```bash
-rdc config set machine bridge-vm --config tutorial-demo
+rdc config set --key machine --value bridge-vm --config tutorial-demo
 ```
 
 ### ステップ6: 接続をテスト
@@ -91,7 +91,7 @@ rdc doctor
 公開サービスの場合、マシンにはネットワーク構成が必要です — 外部IP、ベースドメイン、TLS用の証明書メールアドレス。
 
 ```bash
-rdc config infra set bridge-vm \
+rdc config infra set -m bridge-vm \
   --public-ipv4 192.168.111.1 \
   --base-domain test.local \
   --cert-email admin@test.local
@@ -100,7 +100,7 @@ rdc config infra set bridge-vm \
 構成を確認します:
 
 ```bash
-rdc config infra show bridge-vm
+rdc config infra show -m bridge-vm
 ```
 
 生成されたTraefikプロキシ構成を`rdc config infra push bridge-vm`でサーバーにデプロイします。

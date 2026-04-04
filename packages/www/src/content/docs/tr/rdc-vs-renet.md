@@ -4,7 +4,7 @@ description: 'rdc ne zaman, renet ne zaman kullanılır.'
 category: Concepts
 order: 1
 language: tr
-sourceHash: "69cb9c27f7c3afaf"
+sourceHash: "8b7443928e0be27e"
 ---
 
 # rdc vs renet
@@ -36,14 +36,14 @@ Tüm yaygın görevler iş istasyonunuzdaki `rdc` üzerinden gerçekleştirilir:
 
 ```bash
 # Yeni bir sunucu kur
-rdc config machine setup server-1
+rdc config machine setup --name server-1
 
 # Depo oluştur ve başlat
-rdc repo create my-app -m server-1 --size 10G
-rdc repo up my-app -m server-1 --mount
+rdc repo create --name my-app -m server-1 --size 10G
+rdc repo up --name my-app -m server-1 --mount
 
 # Depoyu durdur
-rdc repo down my-app -m server-1
+rdc repo down --name my-app -m server-1
 
 # Makine sağlığını kontrol et
 rdc machine health server-1
@@ -69,8 +69,8 @@ Tüm `renet` komutları root yetkisi (`sudo`) gerektirir. `renet` komutlarının
 rdc ops setup              # Ön koşulları kur (KVM veya QEMU)
 rdc ops up --basic         # Minimal küme başlat
 rdc ops status             # VM durumunu kontrol et
-rdc ops ssh 1              # Bridge VM'ye SSH ile bağlan
-rdc ops ssh 1 hostname     # Bridge VM'de komut çalıştır
+rdc ops ssh --vm-id 1  # Bridge VM'ye SSH ile bağlan
+rdc ops ssh --vm-id 1 -c hostname  # Bridge VM'de komut çalıştır
 rdc ops down               # Kümeyi yok et
 ```
 

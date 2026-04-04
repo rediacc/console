@@ -4,7 +4,7 @@ description: Configurez l'IDE Cursor pour travailler avec l'infrastructure Redia
 category: Guides
 order: 32
 language: fr
-sourceHash: "ab61340d4a260fdd"
+sourceHash: "f2de270cae1a7ac1"
 ---
 
 Cursor s'intègre à Rediacc via les commandes du terminal et le fichier de configuration `.cursorrules`.
@@ -38,7 +38,7 @@ Demandez à Cursor : *"Vérifie l'état de mon serveur de production"*
 
 Cursor exécute dans le terminal :
 ```bash
-rdc machine query prod-1 -o json
+rdc machine query --name prod-1 -o json
 ```
 
 ### Déployer des modifications
@@ -47,7 +47,7 @@ Demandez à Cursor : *"Déploie la configuration mise à jour de nextcloud"*
 
 Cursor exécute dans le terminal :
 ```bash
-rdc repo up nextcloud -m prod-1 --yes
+rdc repo up --name nextcloud -m prod-1 --yes
 ```
 
 ### Voir les journaux

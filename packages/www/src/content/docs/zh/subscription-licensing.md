@@ -4,7 +4,7 @@ description: 了解 account、rdc 和 renet 如何处理机器槽位、仓库许
 category: Guides
 order: 7
 language: zh
-sourceHash: "fcc4e06609545bf7"
+sourceHash: "49428ac8fe913194"
 ---
 
 # 订阅与许可
@@ -181,7 +181,7 @@ rdc subscription refresh -m hostinger
 强制刷新现有仓库的仓库许可证：
 
 ```bash
-rdc subscription refresh repo my-app -m hostinger
+rdc subscription refresh repo --name my-app -m hostinger
 ```
 
 首次使用时，找不到可用仓库许可证的已授权仓库或备份操作可以自动触发账户授权移交。CLI 打印授权 URL，尝试在交互式终端中打开浏览器，并在授权和发放成功后重试一次操作。

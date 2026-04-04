@@ -46,3 +46,9 @@
 # xmldom CDATA injection (transitive dep via electron-builder/plist and marp/mathjax, no fix)
 1115764
 1115765
+# lodash / lodash-es Code Injection via _.template imports key names (transitive prod dep, no fix)
+1115805
+1115806
+# lodash / lodash-es Prototype Pollution via array path bypass in _.unset/_.omit (no fix)
+1115809
+1115810

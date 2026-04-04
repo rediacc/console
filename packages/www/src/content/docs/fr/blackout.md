@@ -6,7 +6,7 @@ description: >-
 category: Use Cases
 order: 6
 language: fr
-sourceHash: 51a38f7f8567e63e
+sourceHash: "51a38f7f8567e63e"
 ---
 
 > **Lorsque les lumières s'éteignent, votre entreprise reste allumée.**

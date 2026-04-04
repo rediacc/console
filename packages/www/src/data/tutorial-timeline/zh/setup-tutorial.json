@@ -7,61 +7,97 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "196afe2f28fa5b4f756e44489ddb6fd15edb0b25d9f15684f9ee1b628d220e90",
+  "transcriptHash": "0ec1b927b98df5e6f1aec6701a5310983cbd6970ac4748cf859d2e13ec7d5b05",
   "steps": [
     {
       "id": "setup-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.50986,
-      "replayEndSec": 10.605861,
+      "replayStartSec": 1.509621,
+      "replayEndSec": 11.379114,
       "narrationText": "为此环境初始化专用配置文件。",
       "audioSrc": "/assets/tutorials/audio/zh/setup-tutorial/setup-tutorial-01.05842849.mp3",
-      "audioDurationSec": 2.586122
+      "audioDurationSec": 2.847347,
+      "stepLabel": "Step 1: Create a new config"
     },
     {
       "id": "setup-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 10.605861,
-      "replayEndSec": 17.961132,
-      "narrationText": "查看可用配置并确认新配置文件存在。",
-      "audioSrc": "/assets/tutorials/audio/zh/setup-tutorial/setup-tutorial-02.d7628551.mp3",
-      "audioDurationSec": 3.395918
+      "replayStartSec": 11.379114,
+      "replayEndSec": 19.116458,
+      "narrationText": "配置文件已创建。我们列出系统上的所有配置文件，查看新文件与现有文件并排显示。",
+      "audioSrc": "/assets/tutorials/audio/zh/setup-tutorial/setup-tutorial-02.5af4b246.mp3",
+      "audioDurationSec": 8.045714,
+      "stepLabel": "Step 2: View configs"
     },
     {
       "id": "setup-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 17.961132,
-      "replayEndSec": 31.651331,
-      "narrationText": "使用网络和用户详细信息注册机器条目。",
-      "audioSrc": "/assets/tutorials/audio/zh/setup-tutorial/setup-tutorial-03.9405f6a3.mp3",
-      "audioDurationSec": 3.552653
+      "replayStartSec": 19.116458,
+      "replayEndSec": 30.612519,
+      "narrationText": "接下来注册远程机器 -- 提供其 IP 地址和 SSH 用户。主机密钥会自动扫描以实现可信访问。",
+      "audioSrc": "/assets/tutorials/audio/zh/setup-tutorial/setup-tutorial-03.d8465e53.mp3",
+      "audioDurationSec": 9.717551,
+      "stepLabel": "Step 3: Add a machine"
     },
     {
       "id": "setup-tutorial-04",
       "markerIndex": 3,
-      "replayStartSec": 31.651331,
-      "replayEndSec": 40.16275,
-      "narrationText": "检查配置的计算机列表以验证注册。",
-      "audioSrc": "/assets/tutorials/audio/zh/setup-tutorial/setup-tutorial-04.04af80df.mp3",
-      "audioDurationSec": 3.395918
+      "replayStartSec": 30.612519,
+      "replayEndSec": 39.668059,
+      "narrationText": "我们列出此配置文件中已配置的机器，确认 worker 已使用正确的连接信息添加。",
+      "audioSrc": "/assets/tutorials/audio/zh/setup-tutorial/setup-tutorial-04.2f4fb295.mp3",
+      "audioDurationSec": 6.844082,
+      "stepLabel": "Step 4: View machines"
     },
     {
       "id": "setup-tutorial-05",
       "markerIndex": 4,
-      "replayStartSec": 40.16275,
-      "replayEndSec": 48.29967,
-      "narrationText": "设置默认机器以减少重复的定位标记。",
-      "audioSrc": "/assets/tutorials/audio/zh/setup-tutorial/setup-tutorial-05.a8e9a047.mp3",
-      "audioDurationSec": 3.787755
+      "replayStartSec": 39.668059,
+      "replayEndSec": 48.511187,
+      "narrationText": "是时候测试连接了。我们通过 SSH 执行远程命令，确认机器的主机名已返回。",
+      "audioSrc": "/assets/tutorials/audio/zh/setup-tutorial/setup-tutorial-05.99af5658.mp3",
+      "audioDurationSec": 6.347755,
+      "stepLabel": "Step 5: Test connectivity"
     },
     {
       "id": "setup-tutorial-06",
       "markerIndex": 5,
-      "replayStartSec": 48.29967,
-      "replayEndSec": 52.258257,
-      "narrationText": "运行基本的远程主机检查以验证连接。",
-      "audioSrc": "/assets/tutorials/audio/zh/setup-tutorial/setup-tutorial-06.dc2e8298.mp3",
-      "audioDurationSec": 3.866122
+      "replayStartSec": 48.511187,
+      "replayEndSec": 59.171133,
+      "narrationText": "再做一次检查 -- 我们查询机器的运行时间和平均负载，确保其响应正常且运行健康。",
+      "audioSrc": "/assets/tutorials/audio/zh/setup-tutorial/setup-tutorial-06.028c6d78.mp3",
+      "audioDurationSec": 7.235918,
+      "stepLabel": "Step 6: Check uptime"
+    },
+    {
+      "id": "setup-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 59.171133,
+      "replayEndSec": 78.418551,
+      "narrationText": "我们运行一次完整的诊断扫描，一条命令涵盖 CLI 环境、renet 安装状态、配置和订阅状态。",
+      "audioSrc": "/assets/tutorials/audio/zh/setup-tutorial/setup-tutorial-07.eb991476.mp3",
+      "audioDurationSec": 9.560816,
+      "stepLabel": "Step 7: Run diagnostics"
+    },
+    {
+      "id": "setup-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 78.418551,
+      "replayEndSec": 89.493582,
+      "narrationText": "连接验证通过后，我们配置机器的基础设施 -- 公网 IP、用于路由的基础域名以及用于自动 TLS 的证书邮箱。",
+      "audioSrc": "/assets/tutorials/audio/zh/setup-tutorial/setup-tutorial-08.3a5661b3.mp3",
+      "audioDurationSec": 9.952653,
+      "stepLabel": "Step 8: Configure infrastructure"
+    },
+    {
+      "id": "setup-tutorial-09",
+      "markerIndex": 8,
+      "replayStartSec": 89.493582,
+      "replayEndSec": 98.079365,
+      "narrationText": "我们显示已保存的基础设施配置，确认 IP、域名和证书设置已正确存储。",
+      "audioSrc": "/assets/tutorials/audio/zh/setup-tutorial/setup-tutorial-09.5109a66a.mp3",
+      "audioDurationSec": 7.000816,
+      "stepLabel": "Step 9: View infrastructure config"
     }
   ]
 }

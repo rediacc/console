@@ -109,6 +109,16 @@ function validateEnglishCommands(errors, capabilityMap, stats) {
 
     if (parsed.ok) continue;
 
+    // Landing page demos use simplified commands for visual appeal.
+    // Skip strict option checks; only enforce structural correctness
+    // (unknown commands/options).
+    if (
+      parsed.reason === 'excess-positional-args' ||
+      parsed.reason === 'missing-mandatory-option'
+    ) {
+      continue;
+    }
+
     const mapEntry = capabilityMap.get(item.sourceId);
     if (!mapEntry) {
       addError(

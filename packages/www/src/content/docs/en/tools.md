@@ -116,7 +116,7 @@ Open a remote SSH session in VS Code, pre-configured with the correct SSH settin
 ### Connect to a Repository
 
 ```bash
-rdc vscode connect my-app -m server-1
+rdc vscode connect -r my-app -m server-1
 ```
 
 This command:
@@ -134,7 +134,7 @@ rdc vscode list
 ### Clean Up Connections
 
 ```bash
-rdc vscode clean
+rdc vscode cleanup
 ```
 
 Removes VS Code SSH configurations that are no longer needed.
@@ -170,7 +170,7 @@ Updates are downloaded and applied in-place. The CLI automatically picks the rig
 ### Rollback
 
 ```bash
-rdc update rollback
+rdc update --rollback
 ```
 
 Reverts to the previously installed version. Only available after an update has been applied.
@@ -178,7 +178,7 @@ Reverts to the previously installed version. Only available after an update has 
 ### Update Status
 
 ```bash
-rdc update status
+rdc update --status
 ```
 
 Shows current version, update channel, and auto-update configuration.

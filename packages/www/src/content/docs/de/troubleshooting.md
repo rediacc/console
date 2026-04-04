@@ -4,7 +4,7 @@ description: "Lösungen für häufige Probleme mit SSH, Einrichtung, Repositorie
 category: "Guides"
 order: 10
 language: de
-sourceHash: "f666ba3be3be29f7"
+sourceHash: "a68982c895a81eef"
 ---
 
 # Fehlerbehebung
@@ -23,7 +23,7 @@ Häufige Probleme und ihre Lösungen. Im Zweifelsfall starten Sie mit `rdc docto
 Wenn ein Server neu installiert wurde oder seine SSH-Schlüssel geändert wurden, sehen Sie "host key verification failed":
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 Dieser Befehl ruft frische Host-Schlüssel ab und aktualisiert Ihre Konfiguration.

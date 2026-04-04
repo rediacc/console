@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "bd53047cef737088"
+sourceHash: "7f95ad082a023982"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -22,7 +22,7 @@ Yedekleri göndermeden önce bir depolama sağlayıcısı kaydedin. Rediacc, rcl
 Zaten yapılandırılmış bir rclone uzak bağlantınız varsa:
 
 ```bash
-rdc config storage import rclone.conf
+rdc config storage import --file rclone.conf
 ```
 
 Bu, bir rclone yapılandırma dosyasındaki depolama yapılandırmalarını mevcut yapılandırmaya aktarır. Desteklenen türler: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob ve Swift.
@@ -38,7 +38,7 @@ rdc config storage list
 Bir depo yedeğini harici depolamaya gönderin:
 
 ```bash
-rdc repo push my-app -m server-1 --to my-storage
+rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
 | Seçenek | Açıklama |
@@ -58,7 +58,7 @@ rdc repo push my-app -m server-1 --to my-storage
 Harici depolamadan bir depo yedeğini çekin:
 
 ```bash
-rdc repo pull my-app -m server-1 --from my-storage
+rdc repo pull --name my-app -m server-1 --from my-storage
 ```
 
 | Seçenek | Açıklama |
@@ -132,7 +132,7 @@ rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --e
 Zamanlama yapılandırmasını systemd zamanlayıcısı olarak bir makineye dağıtın:
 
 ```bash
-rdc machine deploy-backup server-1
+rdc machine backup schedule -m server-1
 ```
 
 ### Zamanlamayı Görüntüleme
@@ -146,7 +146,7 @@ rdc config backup-strategy show
 Bir depolama konumunun içeriğini tarayın:
 
 ```bash
-rdc storage browse my-storage
+rdc storage browse --name my-storage
 ```
 
 ## En İyi Uygulamalar

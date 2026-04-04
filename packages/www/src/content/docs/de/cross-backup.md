@@ -6,7 +6,7 @@ description: >-
 category: Use Cases
 order: 5
 language: de
-sourceHash: 592ecfdf6477dbba
+sourceHash: "592ecfdf6477dbba"
 ---
 
 > **Werden Ihre Daten im Katastrophenfall überleben? Mit Rediacc ist das immer der Fall.**

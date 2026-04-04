@@ -4,7 +4,7 @@ description: Wann Sie rdc verwenden und wann renet — eine Übersicht.
 category: Concepts
 order: 1
 language: de
-sourceHash: "69cb9c27f7c3afaf"
+sourceHash: "8b7443928e0be27e"
 ---
 
 # rdc vs renet
@@ -36,14 +36,14 @@ Alle gängigen Aufgaben laufen über `rdc` auf Ihrer Workstation:
 
 ```bash
 # Einen neuen Server einrichten
-rdc config machine setup server-1
+rdc config machine setup --name server-1
 
 # Ein Repository erstellen und starten
-rdc repo create my-app -m server-1 --size 10G
-rdc repo up my-app -m server-1 --mount
+rdc repo create --name my-app -m server-1 --size 10G
+rdc repo up --name my-app -m server-1 --mount
 
 # Ein Repository stoppen
-rdc repo down my-app -m server-1
+rdc repo down --name my-app -m server-1
 
 # Maschinengesundheit prüfen
 rdc machine health server-1
@@ -69,8 +69,8 @@ Alle `renet`-Befehle benötigen Root-Rechte (`sudo`). Siehe [Server-Referenz](/d
 rdc ops setup              # Voraussetzungen installieren (KVM oder QEMU)
 rdc ops up --basic         # Einen minimalen Cluster starten
 rdc ops status             # VM-Status prüfen
-rdc ops ssh 1              # SSH in die Bridge-VM
-rdc ops ssh 1 hostname     # Einen Befehl auf der Bridge-VM ausführen
+rdc ops ssh --vm-id 1  # SSH in die Bridge-VM
+rdc ops ssh --vm-id 1 -c hostname  # Einen Befehl auf der Bridge-VM ausführen
 rdc ops down               # Cluster zerstören
 ```
 

@@ -4,7 +4,7 @@ description: "Soluciones para problemas comunes con SSH, configuración, reposit
 category: "Guides"
 order: 10
 language: es
-sourceHash: "f666ba3be3be29f7"
+sourceHash: "a68982c895a81eef"
 ---
 
 # Solución de problemas
@@ -23,7 +23,7 @@ Problemas comunes y sus soluciones. En caso de duda, comience con `rdc doctor` p
 Si un servidor fue reinstalado o sus claves SSH cambiaron, verá "host key verification failed":
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 Este comando obtiene claves de host nuevas y actualiza su configuración.

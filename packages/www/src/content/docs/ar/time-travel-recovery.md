@@ -6,7 +6,7 @@ description: >-
 category: Use Cases
 order: 2
 language: ar
-sourceHash: b8dbfddbf5b46895
+sourceHash: "b8dbfddbf5b46895"
 ---
 
 > **عندما يفقد الآخرون البيانات إلى الأبد، يمكنك العودة بالزمن إلى الوراء.**

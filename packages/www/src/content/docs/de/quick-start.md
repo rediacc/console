@@ -4,7 +4,7 @@ description: Starten Sie einen containerisierten Dienst auf Ihrem Server in weni
 category: Guides
 order: -1
 language: de
-sourceHash: "83fb84d9a631a73e"
+sourceHash: "50b448b7b1e7b85b"
 ---
 
 # Schnellstart
@@ -58,8 +58,8 @@ Jeder rdc-Befehl authentifiziert sich nun mit diesem Schlüssel. Keine Passwört
 ### 3. Server hinzufügen
 
 ```bash
-rdc config machine add my-server --ip 192.168.1.100 --user muhammed
-rdc config machine setup my-server        # Provisioniert renet + erstellt Datenspeicher
+rdc config machine add --name my-server --ip 192.168.1.100 --user muhammed
+rdc config machine setup --name my-server  # Provisioniert renet + erstellt Datenspeicher
 ```
 
 **Was passiert:** SSH-Host-Schlüssel wird gescannt, renet-Binary hochgeladen, verschlüsselter Datenspeicher auf dem Server initialisiert. Bereit für Repos.
@@ -82,7 +82,7 @@ cat ~/.config/rediacc/rediacc.json         # Rohes JSON: Maschinen, Repos, Speic
 ### 1. Repo erstellen
 
 ```bash
-rdc repo create my-app -m my-server --size 2G       # 2 GB verschlüsseltes Repo erstellen
+rdc repo create --name my-app -m my-server --size 2G  # 2 GB verschlüsseltes Repo erstellen
 ```
 
 Erstellt das verschlüsselte Volume, mountet es und startet seinen Docker-Daemon. Das Repo wird in Ihrer Konfiguration registriert und ist einsatzbereit.
@@ -93,7 +93,7 @@ Erstellt das verschlüsselte Volume, mountet es und startet seinen Docker-Daemon
 
 ```bash
 rdc repo template list                                        # Eingebettete Templates anzeigen
-rdc repo template apply app-postgres -m my-server -r my-app   # docker-compose.yml + Rediaccfile bereitstellen
+rdc repo template apply --name app-postgres -m my-server -r my-app  # docker-compose.yml + Rediaccfile bereitstellen
 ```
 
 Templates liefern eine `docker-compose.yml`, ein `Rediaccfile` und unterstützende Dateien. Ohne ein Template (oder Ihre eigene Compose-Datei) gibt es nichts zu starten.
@@ -101,9 +101,9 @@ Templates liefern eine `docker-compose.yml`, ein `Rediaccfile` und unterstützen
 ### 3. Repo starten
 
 ```bash
-rdc repo up my-app -m my-server                      # Rediaccfile up() ausführen
+rdc repo up --name my-app -m my-server  # Rediaccfile up() ausführen
 rdc repo list -m my-server                           # Alle Repos auf der Maschine anzeigen
-rdc repo status my-app -m my-server                  # Mount-Status, Docker, Größe, Verschlüsselung
+rdc repo status --name my-app -m my-server  # Mount-Status, Docker, Größe, Verschlüsselung
 ```
 
 `repo up` mountet bei Bedarf automatisch. Keine zusätzlichen Flags erforderlich.
@@ -155,9 +155,9 @@ rdc repo sync download -m my-server -r my-app --local ./backup --dry-run  # Vors
 
 **Tunnel (SSH-Portweiterleitung zum Container):**
 ```bash
-rdc repo tunnel my-server my-app                     # Container & Port automatisch erkennen
-rdc repo tunnel my-server my-app --port 5432         # Tunnel für Postgres
-rdc repo tunnel my-server my-app --port 5432 --local 15432  # Benutzerdefinierter lokaler Port
+rdc repo tunnel -m my-server -r my-app  # Container & Port automatisch erkennen
+rdc repo tunnel -m my-server -r my-app --port 5432  # Tunnel für Postgres
+rdc repo tunnel -m my-server -r my-app --port 5432 --local 15432  # Benutzerdefinierter lokaler Port
 ```
 
 Tunnel starten → `localhost:3000` im Browser öffnen → Live-App vom Remote-Server.
@@ -171,9 +171,9 @@ Tunnel starten → `localhost:3000` im Browser öffnen → Live-App vom Remote-S
 ### 1. Grand & Fork von Repos
 
 ```bash
-rdc repo fork my-app -m my-server --tag experiment --up     # Sofortiger CoW-Klon + Start
+rdc repo fork --parent my-app -m my-server --tag experiment --up  # Sofortiger CoW-Klon + Start
 rdc repo list -m my-server                                  # Zeigt: my-app (Grand) + my-app:experiment (Fork)
-rdc repo delete my-app:experiment -m my-server              # Fork löschen, Grand bleibt unberührt
+rdc repo delete --name my-app:experiment -m my-server  # Fork löschen, Grand bleibt unberührt
 ```
 
 **Sofortiger Klon ohne Kopieraufwand.** CoW (Copy-on-Write). Mikrosekunden, keine Daten kopiert. Blöcke werden geteilt, bis eine Seite schreibt.
@@ -189,29 +189,29 @@ rdc repo delete my-app:experiment -m my-server              # Fork löschen, Gra
 
 ```bash
 # Repo auf eine andere Maschine pushen
-rdc repo push my-app -m my-server --to backup-server
+rdc repo push --name my-app -m my-server --to backup-server
 
 # Pushen und automatisch auf dem Ziel bereitstellen
-rdc repo push my-app -m my-server --to backup-server --up
+rdc repo push --name my-app -m my-server --to backup-server --up
 
 # Pushen mit CRIU-Checkpoint (Live-Migration, Speicherzustand bleibt erhalten)
-rdc repo push my-app -m my-server --to new-server --checkpoint --up
+rdc repo push --name my-app -m my-server --to new-server --checkpoint --up
 
 # Auf eine neue Maschine pushen (automatische Provisionierung über Cloud-Anbieter)
-rdc repo push my-app -m my-server --to new-server --provision linode --up
+rdc repo push --name my-app -m my-server --to new-server --provision linode --up
 ```
 
 ### 3. In Cloud-Speicher pushen (OneDrive, Google Drive, S3)
 
 ```bash
 # Ihre rclone-Konfiguration als Speicher-Backend importieren
-rdc config storage import ~/rclone.conf
+rdc config storage import --file ~/rclone.conf
 
 # Verfügbare Speicher auflisten
 rdc storage list
 
 # Repo in Cloud-Speicher pushen
-rdc repo push my-app -m my-server --to my-s3-backup
+rdc repo push --name my-app -m my-server --to my-s3-backup
 
 # Backups im Speicher auflisten
 rdc repo backup list --from my-s3-backup -m my-server
@@ -223,13 +223,13 @@ rdc repo backup list --from my-s3-backup -m my-server
 
 ```bash
 # Repo von einer Cloud-Maschine auf Ihren lokalen Server abrufen
-rdc repo pull my-app -m my-local-server --from cloud-server
+rdc repo pull --name my-app -m my-local-server --from cloud-server
 
 # Von Cloud-Speicher abrufen
-rdc repo pull my-app -m my-local-server --from my-s3-backup
+rdc repo pull --name my-app -m my-local-server --from my-s3-backup
 
 # Abrufen und sofort starten
-rdc repo pull my-app -m my-local-server --from my-s3-backup --up
+rdc repo pull --name my-app -m my-local-server --from my-s3-backup --up
 ```
 
 **Warum Pull?** Ihre lokale Maschine ist hinter NAT. Die Cloud kann nicht zu Ihnen pushen. Aber Sie können die Cloud erreichen. Pull bringt das Repo nach Hause.
@@ -245,9 +245,9 @@ rdc repo pull my-app -m my-local-server --from my-s3-backup --up
 ### 1. Infrastruktur-Konfiguration
 
 ```bash
-rdc config infra set my-server           # Konfigurieren: Basis-Domain, öffentliche IPs, Port-Bereiche
-rdc config infra show my-server          # Konfiguration überprüfen
-rdc config infra push my-server          # Proxy-Konfiguration auf Remote übertragen
+rdc config infra set -m my-server  # Konfigurieren: Basis-Domain, öffentliche IPs, Port-Bereiche
+rdc config infra show -m my-server  # Konfiguration überprüfen
+rdc config infra push -m my-server  # Proxy-Konfiguration auf Remote übertragen
 ```
 
 **Wie Routing funktioniert:**
@@ -258,8 +258,8 @@ rdc config infra push my-server          # Proxy-Konfiguration auf Remote übert
 ### 2. Proxy-Template
 
 ```bash
-rdc repo template apply proxy -m my-server -r infra     # Proxy in ein Repo bereitstellen
-rdc repo up infra -m my-server                           # Traefik starten
+rdc repo template apply --name proxy -m my-server -r infra  # Proxy in ein Repo bereitstellen
+rdc repo up --name infra -m my-server  # Traefik starten
 ```
 
 Traefik leitet nun externen Datenverkehr an alle Repos auf dieser Maschine weiter. Jeder Container erhält automatisch einen HTTPS-Endpunkt.

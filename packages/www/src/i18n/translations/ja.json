@@ -436,9 +436,9 @@
         "home": "ホーム"
       },
       "meta": {
-        "description": "Rediaccの最新リリース、改善、バグ修正をご確認ください。",
+        "description": "Rediaccの最新リリース、機能改善、バグ修正をご確認ください。インフラ自動化プラットフォームの全更新履歴。",
         "keywords": "Rediacc変更履歴, リリースノート, アップデート, 新機能",
-        "title": "変更履歴 | Rediacc"
+        "title": "変更履歴 - 最新アップデートとリリース情報 | Rediacc"
       },
       "subscribeDescription": "新しいリリースがあるたびに、短いアップデートをお届けします。",
       "subscribeTitle": "新しいリリースの通知を受け取る",
@@ -490,7 +490,7 @@
       },
       "hero": {
         "subtitle": "フォームにご記入いただければ、48 時間以内にご連絡いたします。",
-        "title": "お問い合わせ"
+        "title": "サポートへお問い合わせ"
       },
       "info": {
         "description": "私たちのチームと直接協力してください。 バックアップが機能することを確認してください。",
@@ -512,9 +512,9 @@
         "title": "得られるもの"
       },
       "meta": {
-        "description": "Rediaccチームにお問い合わせください。",
+        "description": "Rediaccチームへのお問い合わせ。サポート、パートナーシップ、インフラプラットフォームに関するご質問はこちらから。",
         "keywords": "Rediacc お問い合わせ、災害復旧プラットフォーム、検証済みバックアップ",
-        "title": "お問い合わせ | Rediacc"
+        "title": "お問い合わせ - サポートとご相談はこちら | Rediacc"
       },
       "notice": {
         "description": "「送信」をクリックして電子メールを開きます。 質問がありますか? 電子メール",
@@ -529,12 +529,12 @@
       },
       "hero": {
         "effectiveDate": "発効日：2026年2月1日",
-        "title": "Cookieポリシー"
+        "title": "Cookieの使用について"
       },
       "meta": {
         "description": "RediaccのCookieポリシー。1つの機能的CookieとCookieレスのPlausible Analytics。",
         "keywords": "Cookieポリシー, Cookie, Plausible Analytics, GDPR, Rediacc",
-        "title": "Cookieポリシー — Rediacc"
+        "title": "Cookieポリシー - Cookie使用に関する方針 | Rediacc"
       },
       "related": {
         "title": "関連ポリシー"
@@ -678,7 +678,7 @@
       "meta": {
         "description": "ビジネスに最適なプランをお選びください。 無料のコミュニティ アクセスからエンタープライズ グレードの保護まで。 隠れた手数料はありません。",
         "keywords": "災害復旧料金, バックアップ料金, 事業継続計画, インフラ保護, ランサムウェア復旧",
-        "title": "価格 | シンプルで透過的なインフラ保護"
+        "title": "災害復旧の料金プラン - シンプルなインフラ保護 | Rediacc"
       },
       "plans": {
         "business": {
@@ -1146,7 +1146,7 @@
       "hero": {
         "released": "リリース日",
         "subtitle": "Rediacc Desktop & CLI",
-        "title": "ダウンロード"
+        "title": "Rediacc CLIをダウンロード"
       },
       "installation": {
         "cli": "CLI：お使いのプラットフォーム用のバイナリをダウンロードし、実行可能にして（Linux/macOSではchmod +x）、PATHに配置してください。",
@@ -1159,7 +1159,7 @@
       "meta": {
         "description": "Windows、macOS、Linux向けのRediacc DesktopとCLIをダウンロードできます。",
         "keywords": "Rediaccダウンロード, デスクトップアプリ, CLI, Windowsアプリ, macOSアプリ, Linuxアプリ",
-        "title": "ダウンロード | Rediacc"
+        "title": "ダウンロード - 全プラットフォーム対応CLI | Rediacc"
       },
       "noReleases": "現在利用可能なリリースはありません。後ほどもう一度ご確認ください。",
       "platforms": {
@@ -1193,7 +1193,7 @@
       "meta": {
         "description": "Rediacc のインフラストラクチャ自動化で開発を変革します。 インスタント環境、災害復旧、AI に安全な運用を実現します。",
         "keywords": "インフラストラクチャ自動化、開発環境、災害復旧、DevOps 自動化、CI/CD パイプライン、クラウド インフラストラクチャ、開発運用、モデル コンテキスト プロトコル、AI セーフ インフラストラクチャ",
-        "title": "Rediacc — 本番環境をクローン。何も壊さない。"
+        "title": "Rediacc - 本番環境をクローン。何も壊さない。安全に復旧。"
       }
     },
     "install": {
@@ -1213,7 +1213,7 @@
       "meta": {
         "description": "APT、DNF、npm、または直接ダウンロードを使用して、Linux、macOS、またはWindowsにRediacc CLIをインストールします。",
         "keywords": "rediaccインストール, apt install, dnf install, npm install, CLIインストール",
-        "title": "インストール | Rediacc CLI"
+        "title": "Rediacc CLIインストール - クイックセットアップガイド"
       },
       "methods": {
         "apk": {
@@ -1263,9 +1263,9 @@
         "title": "法的情報"
       },
       "meta": {
-        "description": "透明性と法人連絡のための公式な会社情報です。",
+        "description": "透明性と法人連絡のための公式な会社情報です。{{companyName}}の法的詳細と事業所情報をご確認いただけます。",
         "keywords": "法的情報, 会社情報, 登録, VAT, 連絡先",
-        "title": "法的情報 - {{companyName}}"
+        "title": "法的情報 - 会社概要と事業所情報 - {{companyName}}"
       },
       "sections": {
         "companyDetails": {
@@ -1303,10 +1303,13 @@
         "title": "届く内容"
       },
       "frequency": "月に一度。",
+      "hero": {
+        "title": "ニュースレターを購読する"
+      },
       "meta": {
         "description": "Rediaccニュースレターを購読して、毎月の製品アップデート、セルフホスティングガイド、インフラのヒントを受け取りましょう。",
         "keywords": "Rediaccニュースレター, セルフホスティング更新, インフラヒント, DevOpsニュースレター",
-        "title": "ニュースレター | Rediacc"
+        "title": "ニュースレター - インフラ自動化の最新情報 | Rediacc"
       },
       "privacy": "Plausible Analyticsを使用しており、メールアドレスを第三者と共有することはありません。"
     },
@@ -1465,7 +1468,7 @@
         "meta": {
           "description": "Rediaccは、AIコーディングアシスタント向けに構築されています。CLI優先のオペレーション、構造化されたJSON出力、SSHベースのアクセス、rdc agentコマンドによる完全なエージェントディスカバリーを提供します。",
           "keywords": "AIエージェント, Claude Code, Cursor, Cline, インフラ自動化, CLI, JSON出力, セルフホスト, エージェントネイティブ, MCP",
-          "title": "For AI Agents — CLI-Native Infrastructure Automation | Rediacc"
+          "title": "AIエージェント向け - CLIネイティブ自動化 | Rediacc"
         },
         "problem": {
           "description": "AIコーディングアシスタントは、コードの作成、テスト、デバッグを自律的に行えます。しかし、デプロイやステータス確認、インフラ管理が必要になると壁にぶつかります：GUIのみのダッシュボード、OAuthブラウザフロー、不安定なAPI、コンテキストウィンドウを圧迫するレスポンス。",
@@ -1668,14 +1671,14 @@
           },
           "title": "どれくらい節約できる？",
           "withAnnual": "計算する →",
-          "withoutTag": "現在のクラウドコスト",
           "withResults": {
             "blockedTime": "60%削減",
             "contextSwitching": "5分未満",
             "quarterlySlip": "100%あなたのもの",
             "sprintCapacity": "最小化"
           },
-          "withTag": "Rediaccの場合"
+          "withTag": "Rediaccの場合",
+          "withoutTag": "現在のクラウドコスト"
         },
         "hero": {
           "badge": "CEO・創業者向け",
@@ -1889,14 +1892,14 @@
           },
           "title": "インフラの本当のコストは？",
           "withAnnual": "計算する →",
-          "withoutTag": "現在の支出",
           "withResults": {
             "blockedTime": "60%削減",
             "contextSwitching": "5分未満",
             "quarterlySlip": "なし",
             "sprintCapacity": "ほぼゼロ"
           },
-          "withTag": "Rediaccの場合"
+          "withTag": "Rediaccの場合",
+          "withoutTag": "現在の支出"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -2645,7 +2648,7 @@
       "meta": {
         "description": "ビジネスに最適なプランをお選びください。 無料のコミュニティ アクセスからエンタープライズ グレードの保護まで。 隠れた手数料はありません。",
         "keywords": "料金、インフラ自動化、DevOpsプラン、タスク実行",
-        "title": "価格 | シンプルで透過的なインフラ保護"
+        "title": "料金プラン | シンプルで透明なインフラ保護 | Rediacc"
       },
       "plans": {
         "business": {
@@ -2982,29 +2985,29 @@
           "business": {
             "floatingLicenses": "20",
             "jobsPerMonth": "20,000",
-            "repositories": "無制限",
             "repoSize": "500 GB",
+            "repositories": "無制限",
             "usersTeams": "無制限"
           },
           "community": {
             "floatingLicenses": "2",
             "jobsPerMonth": "500",
-            "repositories": "無制限",
             "repoSize": "10 GB",
+            "repositories": "無制限",
             "usersTeams": "無制限"
           },
           "enterprise": {
             "floatingLicenses": "50+",
             "jobsPerMonth": "100,000+",
-            "repositories": "無制限",
             "repoSize": "2 TB+",
+            "repositories": "無制限",
             "usersTeams": "無制限"
           },
           "professional": {
             "floatingLicenses": "5",
             "jobsPerMonth": "5,000",
-            "repositories": "無制限",
             "repoSize": "100 GB",
+            "repositories": "無制限",
             "usersTeams": "無制限"
           }
         }
@@ -3106,12 +3109,12 @@
       },
       "hero": {
         "effectiveDate": "発効日：2026年2月1日",
-        "title": "プライバシーポリシー"
+        "title": "プライバシーへの取り組み"
       },
       "meta": {
-        "description": "Rediaccが個人データをどのように収集、使用、保護するかをご確認ください。",
+        "description": "Rediaccが個人データをどのように収集、使用、保護するかをご確認ください。Cookieレス分析と最小限のデータ保存を採用しています。",
         "keywords": "プライバシーポリシー, データ保護, GDPR, Plausible Analytics, Rediacc",
-        "title": "プライバシーポリシー — Rediacc"
+        "title": "プライバシーポリシー - データ保護方針 | Rediacc"
       },
       "related": {
         "title": "関連ポリシー"
@@ -3260,7 +3263,7 @@
       "meta": {
         "description": "最も必要なときに専門家のサポートを受けてください。 標準的な実装から緊急対応まで、当社のプロフェッショナル サービスがお客様の成功を保証します。",
         "keywords": "プロフェッショナル サービス、導入サポート、インフラストラクチャ コンサルティング、緊急対応、移行サービス、ランサムウェア回復",
-        "title": "プロフェッショナルサービス | 専門家の導入とサポート"
+        "title": "プロフェッショナルサービス | 専門家による導入とサポート | Rediacc"
       },
       "packages": {
         "heading": "プロフェッショナルサービスパッケージ",
@@ -3283,12 +3286,12 @@
       },
       "hero": {
         "effectiveDate": "発効日：2025年2月1日",
-        "title": "返金ポリシー"
+        "title": "キャンセルと返金について"
       },
       "meta": {
         "description": "プラットフォームサブスクリプションおよびプロフェッショナルサービスに関するRediaccの返金ポリシー。",
         "keywords": "返金ポリシー, キャンセル, サブスクリプション返金, Rediacc",
-        "title": "返金ポリシー — Rediacc"
+        "title": "返金ポリシー - キャンセルと返金に関する条件 | Rediacc"
       },
       "related": {
         "title": "関連ポリシー"
@@ -3427,6 +3430,9 @@
       },
       "description": "企業規模を選択し、入力値を調整して、リアルタイムの TCO 比較、開発者の生産性向上、投資回収期間をご確認ください。",
       "footnote": "ITIC、IBM/Ponemon、Sophos、Cortex、KPMG の調査（2024年）に基づく業界ベンチマークの推計値です。TCO にはインフラストラクチャ、管理、DR テスト、メンテナンスが含まれます。開発者の生産性は保守的な40%の実現率を使用しています。DR の削減額は btrfs のコピーオンライトスナップショットによる RTO 改善に基づいています。ストレージの削減は従来のバックアップチェーンに対する CoW の効率性を前提としています。実際の結果はワークロードと構成により異なります。",
+      "hero": {
+        "title": "インフラROIを計算する"
+      },
       "meta": {
         "description": "Rediacc セルフホストインフラへの切り替えによる総所有コスト削減額、投資回収期間、ROI を計算できます。",
         "keywords": "ROI 計算ツール, TCO 比較, インフラ削減, セルフホスト ROI, 投資回収期間, バックアップコスト削減",
@@ -3545,13 +3551,13 @@
           },
           "title": "脆弱性の露出にどれだけのコストがかかっていますか？",
           "withAnnual": "年間セキュリティコスト",
-          "withoutTag": "REDIACCなし",
           "withResults": {
             "blindspot": "ブラインドスポット",
             "exposure": "脆弱性ごとの露出期間",
             "pentestCost": "ペンテストコスト"
           },
-          "withTag": "REDIACCあり"
+          "withTag": "REDIACCあり",
+          "withoutTag": "REDIACCなし"
         },
         "explore": {
           "solutions": [
@@ -3693,7 +3699,7 @@
         "meta": {
           "description": "インフラの完全なコピーを作成し、AIによるペネトレーションテストを実行 — 本番を危険にさらさずに。",
           "keywords": "AIペンテスト, ペネトレーションテスト, セキュリティテスト, 脆弱性スキャン, クローン攻撃",
-          "title": "AIペネトレーションテスト — Rediacc"
+          "title": "AIペネトレーションテスト - 自動セキュリティ診断 | Rediacc"
         },
         "problem": {
           "description": "稼働中のシステムへのペネトレーションテストは危険です。サービスをクラッシュさせたり、データを破損させたり、誤報を引き起こす可能性があります。そのため、ほとんどのチームはスキップするか、現実を反映しない古いステージング環境でテストします。結果：脆弱性が数ヶ月間未パッチのまま — または攻撃者が先に見つけるまで。",
@@ -3955,14 +3961,14 @@
           },
           "title": "監査ギャップにどれだけのコストがかかりますか？",
           "withAnnual": "年間監査リスクコスト",
-          "withoutTag": "分散ログ",
           "withResults": {
             "compileHours": "年間ログ集約時間",
             "delayCost": "調査遅延コスト",
             "gaps": "監査指摘リスク（ギャップ）",
             "penaltyCost": "コンプライアンス違反ペナルティリスク"
           },
-          "withTag": "REDIACCあり"
+          "withTag": "REDIACCあり",
+          "withoutTag": "分散ログ"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -4154,9 +4160,9 @@
           "title": "1コマンド。完全な可視性。"
         },
         "meta": {
-          "description": "誰が何をいつなぜ行ったかの完全な可視性。すべての操作に対する改ざん防止監査ログ。",
+          "description": "誰が何をいつなぜ行ったかの完全な可視性。すべての操作に対する改ざん防止監査ログで、コンプライアンスを確保します。",
           "keywords": "監査証跡, コンプライアンスログ, 改ざん防止ログ, SHA-256署名, 監査レポート",
-          "title": "監査証跡 — Rediacc"
+          "title": "監査証跡 - 完全なアクティビティログ記録 | Rediacc"
         },
         "problem": {
           "description": "何か問題が起きた時、最初の質問は「何が起きたか？」です。完全なログがなければ、推測するしかありません。不完全な監査証跡はブラインドスポットを意味します。ブラインドスポットはリスクを意味します。監査人は「おそらく」を回答として受け入れません。",
@@ -4426,14 +4432,14 @@
           },
           "title": "未検証バックアップにどれだけのコストがかかりますか？",
           "withAnnual": "$0",
-          "withoutTag": "検証なし",
           "withResults": {
             "corrupted": "未検出ゼロ",
             "dataLoss": "0",
             "recoveryCost": "$0",
             "undetected": "0"
           },
-          "withTag": "Rediaccあり"
+          "withTag": "Rediaccあり",
+          "withoutTag": "検証なし"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -4938,14 +4944,14 @@
           },
           "title": "クラウド障害にどれだけのコストがかかりますか？",
           "withAnnual": "$0",
-          "withoutTag": "Rediaccなし",
           "withResults": {
             "churn": "$0",
             "labor": "$0",
             "revenue": "$0",
             "sla": "$0"
           },
-          "withTag": "Rediaccあり"
+          "withTag": "Rediaccあり",
+          "withoutTag": "Rediaccなし"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -5139,7 +5145,7 @@
           "title": "1コマンド。常時オンライン。"
         },
         "meta": {
-          "description": "インフラは複数のクラウドで稼働。1つが障害を起こしても、他が自動的に引き継ぎます。",
+          "description": "インフラは複数のクラウドで稼働。1つが障害を起こしても、他が自動的に引き継ぎます。ダウンタイムなしで事業を継続。",
           "keywords": "クラウド障害保護, マルチクラウドフェイルオーバー, クロスクラウドレプリケーション, 災害復旧, クラウド冗長性, 自動フェイルオーバー, btrfsレプリケーション",
           "title": "クラウド障害保護 — AWSがダウンしても、あなたはダウンしない | Rediacc"
         },
@@ -5448,13 +5454,13 @@
           },
           "title": "露出ウィンドウにどれだけのコストがかかっていますか？",
           "withAnnual": "年間セキュリティコスト",
-          "withoutTag": "年次ペンテスト",
           "withResults": {
             "blindspot": "ブラインドスポットウィンドウ",
             "exposure": "脆弱性ごとの露出日数",
             "pentestCost": "年間ペンテストコスト"
           },
-          "withTag": "継続的（REDIACC）"
+          "withTag": "継続的（REDIACC）",
+          "withoutTag": "年次ペンテスト"
         },
         "explore": {
           "solutions": [
@@ -5589,9 +5595,9 @@
           "title": "1コマンド。毎日カバー。"
         },
         "meta": {
-          "description": "毎日新鮮な本番クローンでセキュリティテストを実行。脆弱性が現れた時に発見 — 数ヶ月後ではなく。",
+          "description": "毎日新鮮な本番クローンでセキュリティテストを実行。脆弱性が現れた時に発見します。数ヶ月後に気づくのではなく即座に対応。",
           "keywords": "継続的セキュリティテスト, 毎日のペンテスト, 自動セキュリティ, 脆弱性検出",
-          "title": "継続的セキュリティテスト — Rediacc"
+          "title": "継続的セキュリティテスト - 毎日の脆弱性検出 | Rediacc"
         },
         "problem": {
           "description": "年に1回ペネトレーションテストを実行します。問題が見つかります。修正します。しかし、来週導入される脆弱性はどうですか？来月は？年次テストは年次のブラインドスポットを意味します。攻撃者はあなたのスケジュールを待ちません。ペンテスト間のすべての日が、インフラが露出されている日です。",
@@ -5836,14 +5842,14 @@
           },
           "title": "弱い暗号化ガバナンスにどれだけのコストがかかりますか？",
           "withAnnual": "年間コンプライアンスコスト",
-          "withoutTag": "ベンダー管理鍵",
           "withResults": {
             "exposure": "年間の露出ウィンドウ",
             "gaps": "コンプライアンスギャップ（鍵アクセス）",
             "premium": "侵害リスクプレミアム",
             "prepHours": "年間監査準備時間"
           },
-          "withTag": "REDIACCあり"
+          "withTag": "REDIACCあり",
+          "withoutTag": "ベンダー管理鍵"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -6037,7 +6043,7 @@
         "meta": {
           "description": "すべてのバックアップがあなたが所有する鍵で暗号化されます。ベンダーの鍵ではありません。共有鍵ではありません。あなただけの鍵です。",
           "keywords": "暗号化, ゼロナレッジ, 顧客保持鍵, AES-256, バックアップ暗号化",
-          "title": "自分で管理する暗号化 — Rediacc"
+          "title": "自分で管理する暗号化 - データ保護の完全制御 | Rediacc"
         },
         "problem": {
           "description": "ほとんどのバックアップツールはデータを暗号化します — 彼らの鍵で。つまり彼らがアクセスできます。彼らの従業員がアクセスできます。彼ら側の侵害であなたのデータが露出します。鍵を管理していなければ、データを管理していません。",
@@ -6345,14 +6351,14 @@
           },
           "title": "チームにどれだけのコストがかかっていますか？",
           "withAnnual": "$0",
-          "withoutTag": "Rediaccなし",
           "withResults": {
             "blockedTime": "0日",
             "contextSwitching": "最小限",
             "quarterlySlip": "0日",
             "sprintCapacity": "0%"
           },
-          "withTag": "Rediaccあり"
+          "withTag": "Rediaccあり",
+          "withoutTag": "Rediaccなし"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -6843,14 +6849,14 @@
           },
           "title": "テストされていないフェイルオーバーにどれだけのコストがかかりますか？",
           "withAnnual": "$0",
-          "withoutTag": "テストなし",
           "withResults": {
             "churn": "$0",
             "compliance": "$0",
             "labor": "$0",
             "revenue": "$0"
           },
-          "withTag": "Rediaccテストあり"
+          "withTag": "Rediaccテストあり",
+          "withoutTag": "テストなし"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -7043,7 +7049,7 @@
           "title": "1コマンド。完全な自信。"
         },
         "meta": {
-          "description": "災害シミュレーションを安全に実行。復旧が実際に機能することを確認。最も重要な時にサプライズなし。",
+          "description": "災害シミュレーションを安全に実行。復旧が実際に機能することを事前に確認。最も重要な時にサプライズなしで対応可能。",
           "keywords": "フェイルオーバーテスト, 災害復旧テスト, DRシミュレーション, DRテスト自動化, 復旧検証, btrfsクローン, RTO RPOテスト",
           "title": "フェイルオーバーテスト — DRプランを必要になる前にテスト | Rediacc"
         },
@@ -7335,14 +7341,14 @@
           },
           "title": "ランサムウェア攻撃のコストは？",
           "withAnnual": "約$200",
-          "withoutTag": "Rediaccなし",
           "withResults": {
             "downtime": "5分未満",
             "labor": "約$200",
             "reputation": "$0",
             "revenue": "~$0"
           },
-          "withTag": "Rediaccあり"
+          "withTag": "Rediaccあり",
+          "withoutTag": "Rediaccなし"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -7866,7 +7872,6 @@
           "title": "アイドル環境にどれだけのコストがかかっているか",
           "withAnnual": "$24,120",
           "withAnnualLabel": "年間節約額",
-          "withoutTag": "常時稼働",
           "withResultLabels": {
             "idle": "CoWストレージオーバーヘッド"
           },
@@ -7875,7 +7880,8 @@
             "monthly": "$990",
             "waste": "0%"
           },
-          "withTag": "REDIACCあり"
+          "withTag": "REDIACCあり",
+          "withoutTag": "常時稼働"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -8053,7 +8059,7 @@
           "title": "1コマンド。浪費ゼロ。"
         },
         "meta": {
-          "description": "必要に応じて環境を作成。使い終わったら破棄。実際に使った分だけ支払い。",
+          "description": "必要に応じて環境を作成し、使い終わったら破棄。実際に使った分だけ支払い、アイドル環境のコストを削減します。",
           "keywords": "インフラコスト, アイドル環境, オンデマンド環境, コスト最適化, btrfsクローン, コピーオンライト, TTL, 自動破棄",
           "title": "インフラコスト — アイドル環境への支払いをやめる | Rediacc"
         },
@@ -8325,7 +8331,6 @@
           },
           "title": "遅い復旧にどれだけのコストがかかっていますか？",
           "withAnnual": "$868",
-          "withoutTag": "ファイルレベル復旧",
           "withResultLabels": {
             "labor": "スタッフ人件費（1コマンド）"
           },
@@ -8334,7 +8339,8 @@
             "labor": "$17",
             "recoveryTime": "5分未満"
           },
-          "withTag": "Rediaccあり"
+          "withTag": "Rediaccあり",
+          "withoutTag": "ファイルレベル復旧"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -8529,7 +8535,7 @@
         "meta": {
           "description": "ファイルだけではありません。環境全体 — サーバー、設定、データベース — が数分で復元・稼働します。",
           "keywords": "即時復旧, 環境全体復元, btrfsクローン, 災害復旧, バックアップ復元, ポイントインタイム復旧, ヘルスチェック, 単一コマンド復旧",
-          "title": "即時復旧 — 数分で環境全体を復旧 | Rediacc"
+          "title": "即時復旧 - 数分で環境全体を完全リストア | Rediacc"
         },
         "problem": {
           "description": "個別ファイルの復元には数時間かかります。環境全体の再構築には数日かかります。本番サーバーがダウンした時、ファイルだけ戻せばいいわけではありません — すべてが必要です。サーバー、設定、データベース、ネットワーク設定。すべて。",
@@ -8834,13 +8840,13 @@
           },
           "title": "壊れたCI/CDにどれだけのコストがかかっているか",
           "withAnnual": "$0",
-          "withoutTag": "カスタムスクリプト",
           "withResults": {
             "blocked": "0時間",
             "bugs": "0",
             "debug": "0時間"
           },
-          "withTag": "REDIACCあり"
+          "withTag": "REDIACCあり",
+          "withoutTag": "カスタムスクリプト"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -9291,13 +9297,13 @@
           },
           "title": "移行リスクにどれだけのコストがかかっているか",
           "withAnnual": "$0",
-          "withoutTag": "Rediaccなし",
           "withResults": {
             "labor": "$0",
             "risk": "0 TB",
             "windows": "0時間"
           },
-          "withTag": "Rediaccあり"
+          "withTag": "Rediaccあり",
+          "withoutTag": "Rediaccなし"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -9796,13 +9802,13 @@
           },
           "title": "環境の不一致にどれだけのコストがかかっているか",
           "withAnnual": "$0",
-          "withoutTag": "REDIACCなし",
           "withResults": {
             "capacity": "0%",
             "debug": "0時間",
             "incidents": "0"
           },
-          "withTag": "REDIACCあり"
+          "withTag": "REDIACCあり",
+          "withoutTag": "REDIACCなし"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -9985,7 +9991,7 @@
           "title": "1コマンド。完全な一致。"
         },
         "meta": {
-          "description": "「自分の環境では動く」はもう終わり。すべての開発環境が本番環境の完全なクローンです。",
+          "description": "「自分の環境では動く」はもう終わり。すべての開発環境が本番環境の完全なクローンで、一貫性のある開発を実現します。",
           "keywords": "本番パリティ, 環境ドリフト, 開発環境, 完全クローン, btrfsクローン, コピーオンライト, 設定一致",
           "title": "本番環境との一致 — 本番環境と完全に一致する開発環境 | Rediacc"
         },
@@ -10267,14 +10273,14 @@
           },
           "title": "遅い復旧にどれだけのコストがかかりますか？",
           "withAnnual": "年間ダウンタイムコスト",
-          "withoutTag": "REDIACCなし",
           "withResults": {
             "churn": "顧客離反コスト",
             "labor": "復旧人件費",
             "regulatory": "規制/評判",
             "revLost": "インシデントごとの収益損失"
           },
-          "withTag": "REDIACCあり"
+          "withTag": "REDIACCあり",
+          "withoutTag": "REDIACCなし"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -10464,7 +10470,7 @@
         "meta": {
           "description": "ランサムウェアが襲来した時、1分ごとにコストがかかります。Rediaccは被害が広がる前にオンラインに復帰させます。",
           "keywords": "迅速復旧, ランサムウェア復旧, 災害復旧, btrfs復元, 高速復旧",
-          "title": "迅速復旧 — Rediacc"
+          "title": "迅速復旧 - 高速な災害復旧ソリューション | Rediacc"
         },
         "problem": {
           "description": "ほとんどのチームはランサムウェア後の再構築に数日かかります。その間、顧客はアクセスできません。収益が停止します。信頼が崩れます。攻撃は1時間。復旧は1週間。それが本当の被害です — そしてランサムウェア復旧の平均は24日です。",
@@ -10752,14 +10758,14 @@
           },
           "title": "手動コンプライアンスにどれだけのコストがかかっていますか？",
           "withAnnual": "$0",
-          "withoutTag": "Rediaccなし",
           "withResults": {
             "gaps": "0",
             "labor": "$0",
             "penalty": "$0",
             "prepHours": "4時間"
           },
-          "withTag": "Rediaccあり"
+          "withTag": "Rediaccあり",
+          "withoutTag": "Rediaccなし"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -11295,14 +11301,14 @@
           },
           "title": "パッチのスキップにどれだけのコストがかかっていますか？",
           "withAnnual": "$0",
-          "withoutTag": "Rediaccなし",
           "withResults": {
             "breach": "最小限",
             "downtime": "$0",
             "exposure": "0日",
             "labor": "$0"
           },
-          "withTag": "Rediaccあり"
+          "withTag": "Rediaccあり",
+          "withoutTag": "Rediaccなし"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -11495,7 +11501,7 @@
           "title": "1コマンド。リスクゼロ。"
         },
         "meta": {
-          "description": "本番環境をクローン。パッチを適用。何が壊れるか確認。必要なら元に戻す。本番環境に一切触れずに。",
+          "description": "本番環境をクローンしてパッチを適用。何が壊れるか確認し、必要なら元に戻す。本番環境に一切触れずにテスト可能です。",
           "keywords": "安全なOSテスト, パッチテスト, OSアップデートテスト, btrfsクローン, 本番クローン, ゼロリスクパッチ, アップデート検証",
           "title": "安全なOSテスト — リスクなしでアップデートをテスト | Rediacc"
         },
@@ -11808,14 +11814,14 @@
           },
           "title": "ベンダーロックインにどれだけのコストがかかっていますか？",
           "withAnnual": "年間ロックイン税",
-          "withoutTag": "ロックイン状態",
           "withResults": {
             "egress": "エグレスデータ転送費用",
             "leverage": "再交渉レバレッジ",
             "markup": "市場価格に対するベンダーマークアップ",
             "migrate": "移行コスト"
           },
-          "withTag": "REDIACCあり"
+          "withTag": "REDIACCあり",
+          "withoutTag": "ロックイン状態"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -12008,9 +12014,9 @@
           "title": "1コマンド。完全な自由。"
         },
         "meta": {
-          "description": "どこにでもデプロイ。いつでも移行。ロックイン契約なし。独自フォーマットなし。データはあなたのもの。",
+          "description": "どこにでもデプロイし、いつでも移行可能。ロックイン契約なし、独自フォーマットなし。データは常にあなたのものです。",
           "keywords": "ベンダーロックイン, クラウド移行, マルチクラウド, ポータビリティ, btrfs移行",
-          "title": "ベンダーロックインからの解放 — Rediacc"
+          "title": "ベンダーロックインからの解放 - 自由な移行 | Rediacc"
         },
         "problem": {
           "description": "価格が良い時にサインアップしました。今は身動きが取れません。移行には数ヶ月かかります。データは独自フォーマット。ツールは彼らのAPIに依存。あなたが離れられないことを知っています。だから価格が上がります。",
@@ -12272,9 +12278,9 @@
           },
           "title": "遅いパッチ適用にどれだけのコストがかかっていますか？",
           "withAnnual": "",
-          "withoutTag": "Rediaccなし",
           "withResults": {},
-          "withTag": "Rediaccあり"
+          "withTag": "Rediaccあり",
+          "withoutTag": "Rediaccなし"
         },
         "explore": {
           "solutions": [
@@ -12415,7 +12421,7 @@
           "title": "1コマンド。検証済みの修正。"
         },
         "meta": {
-          "description": "安全なクローン上でセキュリティギャップを発見、テスト、パッチ適用。自信を持って本番にデプロイ。",
+          "description": "安全なクローン上でセキュリティギャップを発見、テスト、パッチ適用。自信を持って本番環境にデプロイできます。",
           "keywords": "脆弱性管理, パッチ検証, CVE修復, クローンベースパッチ, 安全なパッチ適用, セキュリティテスト, 脆弱性修正検証",
           "title": "脆弱性管理 — 攻撃者より先に脆弱性を修正 | Rediacc"
         },
@@ -12725,12 +12731,12 @@
       },
       "hero": {
         "effectiveDate": "発効日：2026年2月1日",
-        "title": "テレメトリポリシー"
+        "title": "テレメトリに関する取り組み"
       },
       "meta": {
         "description": "Rediacc製品が収集するテレメトリデータ、その理由、処理方法、およびオプトアウト方法の詳細。Webアプリ、CLI、ミドルウェア、Bridgeを対象とします。",
         "keywords": "テレメトリポリシー, データ収集, OpenTelemetry, オプトアウト, プライバシー, GDPR, Rediacc",
-        "title": "テレメトリポリシー — Rediacc"
+        "title": "テレメトリポリシー - データ収集に関する方針 | Rediacc"
       },
       "related": {
         "title": "関連ポリシー"
@@ -12965,12 +12971,12 @@
       },
       "hero": {
         "effectiveDate": "発効日：2026年2月1日",
-        "title": "利用規約"
+        "title": "ご利用にあたっての条件"
       },
       "meta": {
-        "description": "Rediaccウェブサイトおよびインフラ自動化プラットフォームの利用に関する規約。",
+        "description": "Rediaccインフラ自動化プラットフォーム、CLIツール、および関連サービスのご利用に関する規約をご確認ください。",
         "keywords": "利用規約, 利用条件, ユーザー契約, Rediacc",
-        "title": "利用規約 — Rediacc"
+        "title": "利用規約 - サービス利用に関する法的合意 | Rediacc"
       },
       "related": {
         "title": "関連ポリシー"

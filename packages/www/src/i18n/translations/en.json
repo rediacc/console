@@ -461,8 +461,8 @@
     },
     "contact": {
       "meta": {
-        "title": "Contact | Rediacc",
-        "description": "Get in touch with the Rediacc team.",
+        "title": "Contact Us - Get Support & Assistance | Rediacc",
+        "description": "Get in touch with the Rediacc team for support, partnerships, or general inquiries about our infrastructure platform.",
         "keywords": "Rediacc contact, disaster recovery platform, verified backups"
       },
       "breadcrumb": {
@@ -1364,12 +1364,12 @@
     },
     "downloads": {
       "meta": {
-        "title": "Downloads | Rediacc",
+        "title": "Download Rediacc CLI for All Platforms | Rediacc",
         "description": "Download Rediacc Desktop and CLI for Windows, macOS, and Linux.",
         "keywords": "Rediacc download, desktop application, CLI, Windows app, macOS app, Linux app"
       },
       "hero": {
-        "title": "Downloads",
+        "title": "Download Rediacc CLI",
         "subtitle": "Rediacc Desktop & CLI",
         "released": "Released"
       },
@@ -1426,7 +1426,7 @@
     },
     "install": {
       "meta": {
-        "title": "Install | Rediacc CLI",
+        "title": "Install Rediacc CLI - Quick Setup Guide",
         "description": "Install the Rediacc CLI on Linux, macOS, or Windows via APT, DNF, npm, or direct download.",
         "keywords": "install rediacc, apt install, dnf install, npm install, CLI installation"
       },
@@ -1538,12 +1538,12 @@
     },
     "privacyPolicy": {
       "meta": {
-        "title": "Privacy Policy — Rediacc",
+        "title": "Privacy Policy - Data Protection | Rediacc",
         "description": "Learn how Rediacc collects, uses, and protects your personal data. We use cookieless Plausible analytics and store minimal information.",
         "keywords": "privacy policy, data protection, GDPR, CCPA, Plausible analytics, Rediacc"
       },
       "hero": {
-        "title": "Privacy Policy",
+        "title": "Our Privacy Commitment",
         "effectiveDate": "Effective Date: February 1, 2026"
       },
       "toc": {
@@ -1692,12 +1692,12 @@
     },
     "termsOfService": {
       "meta": {
-        "title": "Terms of Service — Rediacc",
-        "description": "Terms governing your use of the Rediacc infrastructure automation platform, CLI, Bridge, and related services. Covers software licenses, subscriptions, data ownership, warranties, and liability.",
+        "title": "Terms of Service - Legal Agreement | Rediacc",
+        "description": "Review the terms and conditions governing your use of Rediacc infrastructure automation platform, CLI tools, and related services.",
         "keywords": "terms of service, customer agreement, software license, Rediacc, infrastructure platform, SaaS terms, CLI license"
       },
       "hero": {
-        "title": "Terms of Service",
+        "title": "Terms & Conditions",
         "effectiveDate": "Effective Date: March 15, 2026"
       },
       "toc": {
@@ -1984,12 +1984,12 @@
     },
     "cookiePolicy": {
       "meta": {
-        "title": "Cookie Policy — Rediacc",
+        "title": "Cookie Policy - How We Use Cookies | Rediacc",
         "description": "Rediacc's cookie policy. We use one functional cookie for language preference and cookieless Plausible analytics. No tracking cookies.",
         "keywords": "cookie policy, cookies, Plausible analytics, GDPR, ePrivacy, Rediacc"
       },
       "hero": {
-        "title": "Cookie Policy",
+        "title": "How We Use Cookies",
         "effectiveDate": "Effective Date: February 1, 2026"
       },
       "toc": {
@@ -2090,12 +2090,12 @@
     },
     "refundPolicy": {
       "meta": {
-        "title": "Refund Policy — Rediacc",
+        "title": "Refund Policy - Cancellation & Returns | Rediacc",
         "description": "Rediacc's refund policy for platform subscriptions and professional services. Covers eligibility, process, and timelines for refund requests.",
         "keywords": "refund policy, cancellation, subscription refund, professional services, Rediacc"
       },
       "hero": {
-        "title": "Refund Policy",
+        "title": "Cancellation & Refund Policy",
         "effectiveDate": "Effective Date: February 1, 2025"
       },
       "toc": {
@@ -2207,12 +2207,12 @@
     },
     "telemetryPolicy": {
       "meta": {
-        "title": "Telemetry Policy — Rediacc",
+        "title": "Telemetry Policy - Data Collection | Rediacc",
         "description": "Details on what telemetry data Rediacc products collect, why, how it is processed, and how to opt out. Covers Web App, CLI, Middleware, and Bridge.",
         "keywords": "telemetry policy, data collection, OpenTelemetry, opt-out, privacy, GDPR, Rediacc"
       },
       "hero": {
-        "title": "Telemetry Policy",
+        "title": "Our Telemetry Practices",
         "effectiveDate": "Effective Date: February 1, 2026"
       },
       "toc": {
@@ -2951,7 +2951,7 @@
     "solutionPages": {
       "environmentCloning": {
         "meta": {
-          "title": "Environment Cloning — Clone Production in 60 Seconds | Rediacc",
+          "title": "Environment Cloning - Clone Production Fast | Rediacc",
           "description": "Spin up exact copies of production — application, database, and configuration — for development and testing. No tickets. No waiting.",
           "keywords": "environment cloning, production clone, development environment, instant provisioning, btrfs clone, copy-on-write, ephemeral environments"
         },
@@ -3449,7 +3449,7 @@
       },
       "infrastructureCosts": {
         "meta": {
-          "title": "Infrastructure Costs — Stop Paying for Idle Environments | Rediacc",
+          "title": "Reduce Infrastructure Costs - Stop Overpaying | Rediacc",
           "description": "Create environments on demand. Destroy them when you're done. Pay only for what you actually use.",
           "keywords": "infrastructure costs, idle environments, on-demand environments, cost optimization, btrfs clone, copy-on-write, TTL, auto-destroy"
         },
@@ -3908,7 +3908,7 @@
       },
       "productionParity": {
         "meta": {
-          "title": "Production Parity — Dev Environments That Match Production Exactly | Rediacc",
+          "title": "Production Parity - Match Exact Envs | Rediacc",
           "description": "No more “it works on my machine.” Every development environment is an identical clone of production.",
           "keywords": "production parity, environment drift, development environment, identical clone, btrfs clone, copy-on-write, config match"
         },
@@ -4379,7 +4379,7 @@
       },
       "integrations": {
         "meta": {
-          "title": "CI/CD Integrations — Plug Into Your Existing Workflow | Rediacc",
+          "title": "CI/CD Integrations - Your Existing Workflow | Rediacc",
           "description": "Git push triggers a fresh environment. Tests run on production clones. CI/CD just works — no custom scripting required.",
           "keywords": "CI/CD integration, GitLab CI, GitHub Actions, webhook, production clone, test environment, pipeline automation"
         },
@@ -5367,7 +5367,7 @@
       },
       "migrationSafety": {
         "meta": {
-          "title": "Migration Safety — Migrate Without Risking Your Data | Rediacc",
+          "title": "Migration Safety - Risk-Free Data Migration | Rediacc",
           "description": "Moving between servers, clouds, or providers? Your encrypted backups travel safely. No exposure. No data loss.",
           "keywords": "encrypted migration, zero-exposure transfer, data migration security, encrypted backup transfer, btrfs migration, server migration, cloud migration encryption"
         },
@@ -5872,7 +5872,7 @@
       },
       "instantRecovery": {
         "meta": {
-          "title": "Instant Recovery — Full Environment Recovery in Minutes | Rediacc",
+          "title": "Instant Recovery - Full Environment Restore | Rediacc",
           "description": "Not just files. Entire environments — servers, configs, databases — restored and running in minutes.",
           "keywords": "instant recovery, full environment restore, btrfs clone, disaster recovery, backup restore, point-in-time recovery, health checks, single-command recovery"
         },
@@ -6896,7 +6896,7 @@
       },
       "retentionCompliance": {
         "meta": {
-          "title": "Retention Compliance — Keep Data as Long as the Law Requires | Rediacc",
+          "title": "Retention Compliance - Legal Data Retention | Rediacc",
           "description": "Configurable retention policies that meet compliance requirements. HIPAA, SOC2, GDPR — covered by default.",
           "keywords": "retention compliance, data retention, HIPAA compliance, SOC2, GDPR, backup retention, audit-ready, compliance automation"
         },
@@ -7439,7 +7439,7 @@
       },
       "cloudOutageProtection": {
         "meta": {
-          "title": "Cloud Outage Protection — When AWS Goes Down, You Don’t | Rediacc",
+          "title": "Cloud Outage Protection - Stay Online Always | Rediacc",
           "description": "Your infrastructure runs on multiple clouds. When one fails, the others take over. Automatically.",
           "keywords": "cloud outage protection, multi-cloud failover, cross-cloud replication, disaster recovery, cloud redundancy, automatic failover, btrfs replication"
         },
@@ -7951,7 +7951,7 @@
       },
       "failoverTesting": {
         "meta": {
-          "title": "Failover Testing — Test Your DR Plan Before You Need It | Rediacc",
+          "title": "Failover Testing - Validate Your DR Plan | Rediacc",
           "description": "Run disaster simulations safely. Know your recovery actually works. No surprises when it matters most.",
           "keywords": "failover testing, disaster recovery testing, DR simulation, DR test automation, recovery verification, btrfs clone, RTO RPO testing"
         },
@@ -8443,7 +8443,7 @@
       },
       "backupVerification": {
         "meta": {
-          "title": "Backup Verification — Every Backup Verified Automatically | Rediacc",
+          "title": "Backup Verification - Automated Validation | Rediacc",
           "description": "Don’t wait for a disaster to find out your backup is corrupted. Rediacc checks every backup the moment it’s created.",
           "keywords": "backup verification, backup testing, restore verification, backup integrity, automated backup check, btrfs clone, backup health check"
         },
@@ -8955,7 +8955,7 @@
       },
       "vulnerabilityManagement": {
         "meta": {
-          "title": "Vulnerability Management — Fix Vulnerabilities Before Attackers Arrive | Rediacc",
+          "title": "Vulnerability Management - Proactive Fixes | Rediacc",
           "description": "Find, test, and patch security gaps on safe clones. Deploy fixes to production with confidence.",
           "keywords": "vulnerability management, patch verification, CVE remediation, clone-based patching, safe patching, security testing, vulnerability fix verification"
         },
@@ -9369,7 +9369,7 @@
       },
       "aiPentesting": {
         "meta": {
-          "title": "AI Pentesting — Rediacc",
+          "title": "AI Pentesting - Automated Security Testing | Rediacc",
           "description": "Create identical copies of your infrastructure and run AI-powered penetration tests — without risking production.",
           "keywords": "ai pentesting, penetration testing, security testing, vulnerability scanning, clone attack"
         },
@@ -10673,7 +10673,7 @@
       },
       "auditTrail": {
         "meta": {
-          "title": "Audit Trail — Rediacc",
+          "title": "Audit Trail - Complete Activity Logging | Rediacc",
           "description": "Complete visibility into who did what, when, and why. Tamper-proof audit logs for every operation.",
           "keywords": "audit trail, compliance logging, tamper-proof logs, SHA-256 signed, audit report"
         },
@@ -11143,7 +11143,7 @@
       },
       "rapidRecovery": {
         "meta": {
-          "title": "Rapid Recovery — Rediacc",
+          "title": "Rapid Recovery - Fast Disaster Response | Rediacc",
           "description": "When ransomware hits, every minute costs money. Rediacc gets you back online before the damage spreads.",
           "keywords": "rapid recovery, ransomware recovery, disaster recovery, btrfs restore, fast recovery"
         },
@@ -12094,8 +12094,8 @@
     "personaPages": {
       "forDevops": {
         "meta": {
-          "title": "For DevOps Engineers — Ship Faster, Recover Instantly | Rediacc",
-          "description": "CLI-first infrastructure that clones production in 60 seconds, rolls back in under five, and runs on your own hardware. Built for engineers who automate everything.",
+          "title": "For DevOps - Ship Faster, Recover Instantly | Rediacc",
+          "description": "Ship faster with instant environment cloning, automated disaster recovery, and CLI-native workflows built for DevOps engineers.",
           "keywords": "devops, infrastructure automation, CLI, btrfs snapshots, self-hosted, environment cloning, instant rollback, production parity"
         },
         "hero": {
@@ -12663,7 +12663,7 @@
       },
       "forCeos": {
         "meta": {
-          "title": "For CEOs & Founders — Predictable Costs, Zero Lock-In | Rediacc",
+          "title": "For CEOs - Predictable Costs, Zero Lock-In | Rediacc",
           "description": "Self-hosted infrastructure protection with predictable pricing, zero vendor lock-in, and full data ownership. Protect your business without the cloud bill.",
           "keywords": "CEO, infrastructure costs, self-hosted, data protection, vendor lock-in, predictable pricing, business continuity, SMB"
         },
@@ -12884,7 +12884,7 @@
       },
       "forAiAgents": {
         "meta": {
-          "title": "For AI Agents — CLI-Native Infrastructure Automation | Rediacc",
+          "title": "For AI Agents - CLI-Native Automation | Rediacc",
           "description": "Rediacc is built for AI coding assistants. CLI-first operations, structured JSON output, SSH-based access, and full agent discovery via rdc agent commands.",
           "keywords": "AI agents, Claude Code, Cursor, Cline, infrastructure automation, CLI, JSON output, self-hosted, agent-native, MCP"
         },
@@ -13155,7 +13155,7 @@
     },
     "roiCalculator": {
       "meta": {
-        "title": "ROI Calculator — Quantify Your Infrastructure Savings | Rediacc",
+        "title": "ROI Calculator - Infrastructure Savings | Rediacc",
         "description": "Calculate total cost of ownership savings, payback period, and ROI of switching to Rediacc self-hosted infrastructure.",
         "keywords": "ROI calculator, TCO comparison, infrastructure savings, self-hosted ROI, payback period, backup cost reduction"
       },
@@ -13264,11 +13264,14 @@
           }
         ],
         "disclaimer": "All figures are based on published industry research and public vendor documentation. TCO comparisons use illustrative Rediacc pricing for modeling purposes. Actual pricing and savings may differ based on specific deployment configurations, negotiated rates, and organizational requirements."
+      },
+      "hero": {
+        "title": "Calculate Your Infrastructure ROI"
       }
     },
     "newsletter": {
       "meta": {
-        "title": "Newsletter | Rediacc",
+        "title": "Newsletter - Infrastructure Automation Updates | Rediacc",
         "description": "Subscribe to the Rediacc newsletter for monthly product updates, self-hosting guides, and infrastructure tips.",
         "keywords": "Rediacc newsletter, self-hosting updates, infrastructure tips, DevOps newsletter"
       },
@@ -13286,11 +13289,14 @@
         ]
       },
       "frequency": "Once a month.",
-      "privacy": "We use Plausible Analytics and never share your email with third parties."
+      "privacy": "We use Plausible Analytics and never share your email with third parties.",
+      "hero": {
+        "title": "Subscribe to Our Newsletter"
+      }
     },
     "changelog": {
       "meta": {
-        "title": "Changelog | Rediacc",
+        "title": "Changelog - Latest Updates & Releases | Rediacc",
         "description": "Follow the latest Rediacc releases, improvements, and bug fixes.",
         "keywords": "Rediacc changelog, release notes, updates, new features"
       },

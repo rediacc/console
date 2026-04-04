@@ -6,7 +6,7 @@ description: >-
 category: Use Cases
 order: 2
 language: tr
-sourceHash: b8dbfddbf5b46895
+sourceHash: "b8dbfddbf5b46895"
 ---
 
 > **Başkaları Verilerini Sonsuza Kadar Kaybedince, Zamanda Geriye Yolculuk Yapabilirsiniz.**

@@ -108,16 +108,16 @@ These use standard [Traefik v3 label syntax](https://doc.traefik.io/traefik/rout
 
    ```bash
    # Shared credentials (once per config, applies to all machines)
-   rdc config infra set server-1 \
+   rdc config infra set -m server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # Machine-specific settings
-   rdc config infra set server-1 \
+   rdc config infra set -m server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config infra push server-1
+   rdc config infra push -m server-1
    ```
 
 2. DNS records pointing your domain to the server's public IP (see [DNS Configuration](#dns-configuration) below).
@@ -162,7 +162,7 @@ The `{name}` in labels is an arbitrary identifier — it just needs to be consis
 TLS certificates are obtained automatically via Let's Encrypt using the Cloudflare DNS-01 challenge. Credentials are configured once per config (shared across all machines):
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
@@ -182,11 +182,11 @@ For non-HTTP protocols (mail servers, DNS, databases exposed externally), use TC
 Add the required ports during infrastructure configuration:
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config infra push server-1
+rdc config infra push -m server-1
 ```
 
 This creates Traefik entrypoints named `tcp-{port}` and `udp-{port}`.
@@ -433,7 +433,7 @@ app.example.com   A   203.0.113.50
 ### Deploy
 
 ```bash
-rdc repo up my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1 --mount
 ```
 
 Within a few seconds, the route server discovers the container, Traefik picks up the route, requests a TLS certificate, and `https://app.example.com` is live.

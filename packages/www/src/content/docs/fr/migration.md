@@ -4,7 +4,7 @@ description: "Migrer des projets existants vers des dépôts chiffrés Rediacc."
 category: "Guides"
 order: 11
 language: fr
-sourceHash: e66f9ad6bbf5930f
+sourceHash: "180b0e1e61b958b8"
 ---
 
 # Guide de migration
@@ -22,7 +22,7 @@ Migrez un projet existant — fichiers, services Docker, bases de données — d
 Créez un dépôt chiffré dimensionné pour votre projet. Prévoyez de l'espace supplémentaire pour les images Docker et les données des conteneurs.
 
 ```bash
-rdc repo create my-project -m server-1 --size 20G
+rdc repo create --name my-project -m server-1 --size 20G
 ```
 
 > **Astuce :** Vous pouvez redimensionner plus tard avec `rdc repo resize` si nécessaire, mais le dépôt doit d'abord être démonté. Il est plus simple de commencer avec suffisamment d'espace.
@@ -42,7 +42,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project
 Le dépôt doit être monté avant le téléversement. S'il ne l'est pas encore :
 
 ```bash
-rdc repo mount my-project -m server-1
+rdc repo mount --name my-project -m server-1
 ```
 
 Pour les synchronisations suivantes où vous souhaitez que le distant corresponde exactement à votre répertoire local :
@@ -58,7 +58,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 Les fichiers téléversés arrivent avec l'UID de votre utilisateur local (par ex. 1000). Rediacc utilise un utilisateur universel (UID 7111) afin que VS Code, les sessions terminal et les outils aient un accès cohérent. Exécutez la commande de propriété pour convertir :
 
 ```bash
-rdc repo ownership my-project -m server-1
+rdc repo ownership --name my-project -m server-1
 ```
 
 ### Exclusion compatible Docker
@@ -83,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Pour ignorer la détection des volumes Docker et modifier la propriété de tout, y compris les répertoires de données des conteneurs :
 
 ```bash
-rdc repo ownership my-project -m server-1
+rdc repo ownership --name my-project -m server-1
 ```
 
 > **Avertissement :** Cela peut casser les conteneurs en cours d'exécution. Arrêtez-les d'abord avec `rdc repo down` si nécessaire.
@@ -93,7 +93,7 @@ rdc repo ownership my-project -m server-1
 Pour définir un UID autre que l'UID par défaut 7111 :
 
 ```bash
-rdc repo ownership my-project -m server-1 --uid 1000
+rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
 
 ## Étape 4 : Configurer votre Rediaccfile
@@ -199,7 +199,7 @@ Voir [Réseau des services](/fr/docs/services#service-networking-rediaccjson) po
 Montez le dépôt (s'il n'est pas déjà monté) et démarrez tous les services :
 
 ```bash
-rdc repo up my-project -m server-1 --mount
+rdc repo up --name my-project -m server-1 --mount
 ```
 
 Cela va :
@@ -219,7 +219,7 @@ rdc machine containers server-1
 Par défaut, les dépôts doivent être montés et démarrés manuellement après un redémarrage du serveur. Activez le démarrage automatique pour que vos services se lancent automatiquement :
 
 ```bash
-rdc repo autostart enable my-project -m server-1
+rdc repo autostart enable --name my-project -m server-1
 ```
 
 Vous serez invité à saisir la phrase de passe du dépôt.
@@ -274,7 +274,7 @@ Pour tout projet avec des services Docker :
 Les fichiers ont encore votre UID local. Exécutez la commande de propriété :
 
 ```bash
-rdc repo ownership my-project -m server-1
+rdc repo ownership --name my-project -m server-1
 ```
 
 ### Le conteneur ne démarre pas
@@ -298,7 +298,7 @@ Chaque dépôt reçoit des IPs de loopback uniques. Si vous rencontrez des confl
 Si vous avez exécuté `rdc repo ownership` et qu'un conteneur a cessé de fonctionner, les fichiers de données du conteneur ont été modifiés. Arrêtez le conteneur, supprimez son répertoire de données et redémarrez — le conteneur le recréera :
 
 ```bash
-rdc repo down my-project -m server-1
+rdc repo down --name my-project -m server-1
 # Supprimer le répertoire de données du conteneur (par ex. database/data)
-rdc repo up my-project -m server-1
+rdc repo up --name my-project -m server-1
 ```

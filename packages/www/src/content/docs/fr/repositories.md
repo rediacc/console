@@ -4,7 +4,7 @@ description: 'Créez, gérez et opérez des dépôts chiffrés LUKS sur des mach
 category: Guides
 order: 4
 language: fr
-sourceHash: "f9d64d1323b2952d"
+sourceHash: "a3b38ca25b01b511"
 sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
@@ -18,7 +18,7 @@ Un **dépôt** est une image disque chiffrée LUKS sur un serveur distant. Une f
 ## Créer un dépôt
 
 ```bash
-rdc repo create my-app -m server-1 --size 10G
+rdc repo create --name my-app -m server-1 --size 10G
 ```
 
 | Option | Requis | Description |
@@ -40,8 +40,8 @@ La sortie affichera trois valeurs générées automatiquement :
 Le montage déchiffre et rend le système de fichiers du dépôt accessible. Le démontage ferme le volume chiffré.
 
 ```bash
-rdc repo mount my-app -m server-1       # Déchiffrer et monter
-rdc repo unmount my-app -m server-1     # Démonter et re-chiffrer
+rdc repo mount --name my-app -m server-1  # Déchiffrer et monter
+rdc repo unmount --name my-app -m server-1  # Démonter et re-chiffrer
 ```
 
 | Option | Description |
@@ -52,7 +52,7 @@ rdc repo unmount my-app -m server-1     # Démonter et re-chiffrer
 ## Vérifier le statut
 
 ```bash
-rdc repo status my-app -m server-1
+rdc repo status --name my-app -m server-1
 ```
 
 ## Lister les dépôts
@@ -66,8 +66,8 @@ rdc repo list -m server-1
 Définissez une taille exacte pour le dépôt ou ajoutez un montant donné :
 
 ```bash
-rdc repo resize my-app -m server-1 --size 20G    # Définir une taille exacte
-rdc repo expand my-app -m server-1 --size 5G      # Ajouter 5 Go à la taille actuelle
+rdc repo resize --name my-app -m server-1 --size 20G  # Définir une taille exacte
+rdc repo expand --name my-app -m server-1 --size 5G  # Ajouter 5 Go à la taille actuelle
 ```
 
 > Le dépôt doit être démonté avant le redimensionnement.
@@ -77,7 +77,7 @@ rdc repo expand my-app -m server-1 --size 5G      # Ajouter 5 Go à la taille ac
 Créez une copie d'un dépôt existant dans son état actuel :
 
 ```bash
-rdc repo fork my-app staging -m server-1
+rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
 Les forks utilisent le modèle name:tag : le fork résultant est nommé `my-app:staging`. Ceci crée une nouvelle copie chiffrée avec son propre GUID et ID réseau, tout en partageant le nom du parent. La copie partage le même identifiant LUKS que le parent.
@@ -87,7 +87,7 @@ Les forks utilisent le modèle name:tag : le fork résultant est nommé `my-app:
 Vérifiez l'intégrité du système de fichiers d'un dépôt :
 
 ```bash
-rdc repo validate my-app -m server-1
+rdc repo validate --name my-app -m server-1
 ```
 
 ## Propriété
@@ -95,7 +95,7 @@ rdc repo validate my-app -m server-1
 Définissez la propriété des fichiers au sein d'un dépôt sur l'utilisateur universel (UID 7111). Ceci est généralement nécessaire après le téléversement de fichiers depuis votre poste de travail, qui arrivent avec votre UID local.
 
 ```bash
-rdc repo ownership my-app -m server-1
+rdc repo ownership --name my-app -m server-1
 ```
 
 La commande détecte automatiquement les répertoires de données des conteneurs Docker (montages bind en écriture) et les exclut. Cela évite de casser les conteneurs qui gèrent des fichiers avec leurs propres UID (par ex., MariaDB=999, www-data=33).
@@ -108,7 +108,7 @@ La commande détecte automatiquement les répertoires de données des conteneurs
 Pour forcer la propriété sur tous les fichiers, y compris les données des conteneurs :
 
 ```bash
-rdc repo ownership my-app -m server-1
+rdc repo ownership --name my-app -m server-1
 ```
 
 
@@ -119,7 +119,7 @@ Consultez le [Guide de migration](/fr/docs/migration) pour un guide complet sur 
 Appliquez un modèle pour initialiser un dépôt avec des fichiers :
 
 ```bash
-rdc repo template apply my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## Supprimer
@@ -127,7 +127,7 @@ rdc repo template apply my-template -m server-1 -r my-app --file ./my-template.t
 Détruisez définitivement un dépôt et toutes les données qu'il contient :
 
 ```bash
-rdc repo delete my-app -m server-1
+rdc repo delete --name my-app -m server-1
 ```
 
 > Ceci détruit définitivement l'image disque chiffrée. Cette action est irréversible.

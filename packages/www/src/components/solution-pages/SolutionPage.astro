@@ -30,7 +30,7 @@ const { lang, slug } = Astro.props;
 const config = SOLUTION_PAGES[slug];
 
 if (!config) {
-  return Astro.redirect(`/${lang}/`);
+  return Astro.redirect(`/${lang}/`, 301);
 }
 
 const { t, to } = createTranslator(lang);

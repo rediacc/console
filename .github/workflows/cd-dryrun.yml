@@ -93,6 +93,12 @@ jobs:
           path: dist/cli/
           merge-multiple: true
 
+      - name: Download CLI npm tarball
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+        with:
+          name: cli-npm-${{ github.sha }}
+          path: dist/npm/
+
       - name: Download www build
         uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:

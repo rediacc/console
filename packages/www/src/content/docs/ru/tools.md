@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: ru
-sourceHash: "bc5864d869d191be"
+sourceHash: "5577c66ce89c1925"
 ---
 
 # Инструменты
@@ -119,7 +119,7 @@ rdc term connect -m server-1 -r my-app --container <container-id> --container-ac
 ### Подключение к репозиторию
 
 ```bash
-rdc vscode connect my-app -m server-1
+rdc vscode connect -r my-app -m server-1
 ```
 
 Эта команда:
@@ -137,7 +137,7 @@ rdc vscode list
 ### Очистка подключений
 
 ```bash
-rdc vscode clean
+rdc vscode cleanup
 ```
 
 Удаляет конфигурации SSH для VS Code, которые больше не нужны.
@@ -173,7 +173,7 @@ rdc update
 ### Откат
 
 ```bash
-rdc update rollback
+rdc update --rollback
 ```
 
 Возврат к ранее установленной версии. Доступен только после применения обновления.
@@ -181,7 +181,7 @@ rdc update rollback
 ### Статус обновления
 
 ```bash
-rdc update status
+rdc update --status
 ```
 
 Отображает текущую версию, канал обновлений и конфигурацию автообновления.

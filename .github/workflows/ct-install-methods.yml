@@ -87,6 +87,11 @@ jobs:
           .ci/scripts/test/test-install-methods.sh \
             --method pacman --version ${{ inputs.version }}
 
+      - name: Test npm Install
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method npm --version ${{ inputs.version }}
+
       - name: Test Quick Install
         run: |
           .ci/scripts/test/test-install-methods.sh \

@@ -4,7 +4,7 @@ description: "Создание конфигурации, добавление м
 category: "Guides"
 order: 3
 language: ru
-sourceHash: "7d4756adb17e63d4"
+sourceHash: "9fd8ebf2b98bfcf5"
 ---
 
 # Настройка машины
@@ -16,7 +16,7 @@ sourceHash: "7d4756adb17e63d4"
 **Конфигурация** — это именованный файл конфигурации, хранящий ваши SSH-учетные данные, определения машин и привязки репозиториев. Воспринимайте его как рабочее пространство проекта.
 
 ```bash
-rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | Опция | Обязательно | Описание |
@@ -33,7 +33,7 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 Зарегистрируйте ваш удаленный сервер как машину в конфигурации:
 
 ```bash
-rdc config machine add server-1 --ip 203.0.113.50 --user deploy
+rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Опция | Обязательно | По умолчанию | Описание |
@@ -46,7 +46,7 @@ rdc config machine add server-1 --ip 203.0.113.50 --user deploy
 После добавления машины rdc автоматически выполняет `ssh-keyscan` для получения ключей хоста сервера. Вы также можете выполнить это вручную:
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 Для просмотра всех зарегистрированных машин:
@@ -60,7 +60,7 @@ rdc config machine list
 Подготовьте удаленный сервер, установив все необходимые зависимости:
 
 ```bash
-rdc config machine setup server-1
+rdc config machine setup --name server-1
 ```
 
 Эта команда:
@@ -82,7 +82,7 @@ rdc config machine setup server-1
 Если SSH-ключи хоста сервера изменились (например, после переустановки), обновите сохраненные ключи:
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 Эта команда обновляет поле `knownHosts` в вашей конфигурации для данной машины.
@@ -112,7 +112,7 @@ rdc doctor
 ### Установка инфраструктуры
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -134,7 +134,7 @@ rdc config infra set server-1 \
 ### Просмотр инфраструктуры
 
 ```bash
-rdc config infra show server-1
+rdc config infra show -m server-1
 ```
 
 ### Применение на сервере
@@ -142,7 +142,7 @@ rdc config infra show server-1
 Сгенерируйте и разверните конфигурацию обратного прокси Traefik на сервере:
 
 ```bash
-rdc config infra push server-1
+rdc config infra push -m server-1
 ```
 
 Эта команда:
@@ -163,13 +163,13 @@ rdc config infra push server-1
 Убедитесь, что ваша конфигурация SSH включает публичный ключ:
 
 ```bash
-rdc config set ssh.privateKeyPath ~/.ssh/id_ed25519
+rdc config set --key ssh.privateKeyPath --value ~/.ssh/id_ed25519
 ```
 
 ### Добавление облачного провайдера
 
 ```bash
-rdc config provider add my-linode \
+rdc config provider add --name my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -191,7 +191,7 @@ rdc config provider add my-linode \
 ### Провизионирование машины
 
 ```bash
-rdc machine provision prod-2 --provider my-linode
+rdc machine provision --name prod-2 --provider my-linode
 ```
 
 Эта единственная команда:
@@ -214,7 +214,7 @@ rdc machine provision prod-2 --provider my-linode
 ### Депровизионирование машины
 
 ```bash
-rdc machine deprovision prod-2
+rdc machine deprovision --name prod-2
 ```
 
 Уничтожает VM через OpenTofu и удаляет её из вашей конфигурации. Требует подтверждения, если не используется `--force`. Работает только для машин, созданных с помощью `machine provision`.
@@ -230,14 +230,14 @@ rdc config provider list
 Установите значения по умолчанию, чтобы не указывать их в каждой команде:
 
 ```bash
-rdc config set machine server-1    # Машина по умолчанию
-rdc config set team my-team        # Команда по умолчанию (облачный адаптер, экспериментальный)
+rdc config set --key machine --value server-1  # Машина по умолчанию
+rdc config set --key team --value my-team  # Команда по умолчанию (облачный адаптер, экспериментальный)
 ```
 
 После установки машины по умолчанию можно опускать `-m server-1` в командах:
 
 ```bash
-rdc repo create my-app --size 10G   # Используется машина по умолчанию
+rdc repo create --name my-app -m my-server --size 10G
 ```
 
 ## Несколько конфигураций
@@ -246,8 +246,8 @@ rdc repo create my-app --size 10G   # Используется машина по
 
 ```bash
 # Создание отдельных конфигураций
-rdc config init production --ssh-key ~/.ssh/id_prod
-rdc config init staging --ssh-key ~/.ssh/id_staging
+rdc config init --name production --ssh-key ~/.ssh/id_prod
+rdc config init --name staging --ssh-key ~/.ssh/id_staging
 
 # Использование определенной конфигурации
 rdc repo list -m server-1 --config production

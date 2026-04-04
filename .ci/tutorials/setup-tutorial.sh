@@ -1,6 +1,6 @@
 #!/bin/bash
 # Tutorial: Machine Setup & Configuration
-# Records the complete workflow: config init, add machine, setup, infra, stores.
+# Records the complete workflow: config init, add machine, infra config, diagnostics.
 #
 # Prerequisites:
 #   - rdc CLI available in PATH (or TUTORIAL_RDC_CMD set)
@@ -17,7 +17,7 @@ rm -f ~/.config/rediacc/tutorial-demo.json 2>/dev/null || true
 clear_screen
 
 section "Step 1: Create a new config"
-run_cmd "rdc config init tutorial-demo --ssh-key $TUTORIAL_SSH_KEY"
+run_cmd "rdc config init --name tutorial-demo --ssh-key $TUTORIAL_SSH_KEY"
 
 pause 1
 
@@ -27,40 +27,35 @@ run_cmd "rdc config list"
 pause 2
 
 section "Step 3: Add a machine"
-run_cmd "rdc --config tutorial-demo config add-machine $TUTORIAL_MACHINE_NAME --ip $TUTORIAL_MACHINE_IP --user $TUTORIAL_MACHINE_USER"
+run_cmd "rdc --config tutorial-demo config machine add --name $TUTORIAL_MACHINE_NAME --ip $TUTORIAL_MACHINE_IP --user $TUTORIAL_MACHINE_USER"
 
 pause 2
 
 section "Step 4: View machines"
-run_cmd "rdc --config tutorial-demo config machines"
+run_cmd "rdc --config tutorial-demo config machine list"
 
 pause 2
 
-section "Step 5: Set default machine"
-run_cmd "rdc --config tutorial-demo config set machine $TUTORIAL_MACHINE_NAME"
+section "Step 5: Test connectivity"
+run_cmd "rdc --config tutorial-demo term connect -m $TUTORIAL_MACHINE_NAME -c hostname"
 
 pause 1
 
-section "Step 6: Test connectivity"
-run_cmd "rdc --config tutorial-demo term $TUTORIAL_MACHINE_NAME -c hostname"
-
-pause 1
-
-run_cmd "rdc --config tutorial-demo term $TUTORIAL_MACHINE_NAME -c uptime"
+run_cmd "rdc --config tutorial-demo term connect -m $TUTORIAL_MACHINE_NAME -c uptime"
 
 pause 2
 
-section "Step 7: Run diagnostics"
+section "Step 6: Run diagnostics"
 run_cmd "rdc --config tutorial-demo doctor || true"
 
 pause 2
 
-section "Step 8: Configure infrastructure"
-run_cmd "rdc --config tutorial-demo config set-infra $TUTORIAL_MACHINE_NAME --public-ipv4 $TUTORIAL_MACHINE_IP --base-domain test.local --cert-email admin@test.local"
+section "Step 7: Configure infrastructure"
+run_cmd "rdc --config tutorial-demo config infra set -m $TUTORIAL_MACHINE_NAME --public-ipv4 $TUTORIAL_MACHINE_IP --base-domain test.local --cert-email admin@test.local"
 
 pause 1
 
-run_cmd "rdc --config tutorial-demo config show-infra $TUTORIAL_MACHINE_NAME"
+run_cmd "rdc --config tutorial-demo config infra show -m $TUTORIAL_MACHINE_NAME"
 
 pause 2
 

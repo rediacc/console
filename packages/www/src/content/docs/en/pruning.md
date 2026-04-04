@@ -19,13 +19,13 @@ Scans a storage provider and deletes backups whose GUIDs no longer appear in any
 
 ```bash
 # Dry-run (default) — shows what would be deleted
-rdc storage prune my-s3 -m server-1
+rdc storage prune --name my-s3 -m server-1
 
 # Actually delete orphaned backups
-rdc storage prune my-s3 -m server-1
+rdc storage prune --name my-s3 -m server-1
 
 # Override grace period (default 7 days)
-rdc storage prune my-s3 -m server-1 --grace-days 14
+rdc storage prune --name my-s3 -m server-1 --grace-days 14
 ```
 
 ### What it checks
@@ -45,10 +45,10 @@ Removes empty mount directories, stale lock files, and stale BTRFS snapshots.
 
 ```bash
 # Dry-run
-rdc machine prune server-1 --dry-run
+rdc machine prune --name server-1 --dry-run
 
 # Execute cleanup
-rdc machine prune server-1
+rdc machine prune --name server-1
 ```
 
 ### Phase 2: Orphaned repository images (opt-in)
@@ -57,13 +57,13 @@ With `--orphaned-repos`, the CLI also identifies LUKS repo images on the machine
 
 ```bash
 # Dry-run (default behavior when is set)
-rdc machine prune server-1
+rdc machine prune --name server-1
 
 # Actually delete orphaned repos
-rdc machine prune server-1
+rdc machine prune --name server-1
 
 # Custom grace period
-rdc machine prune server-1 --grace-days 30
+rdc machine prune --name server-1 --grace-days 30
 ```
 
 ## Safety Model
@@ -90,7 +90,7 @@ Set a custom default grace period in your config file so you don't need to pass 
 
 ```bash
 # Set grace period to 14 days in the active config
-rdc config set pruneGraceDays 14
+rdc config set --key pruneGraceDays --value 14
 ```
 
 The `--grace-days` CLI flag overrides this value when provided.
@@ -107,5 +107,5 @@ The `--grace-days` CLI flag overrides this value when provided.
 - **Keep multiple configs current.** Prune checks all configs in the config directory. If a config file is stale or deleted, its repos lose protection. Keep config files accurate.
 - **Use generous grace periods for production.** The default 7-day grace period suits most workflows. For production environments with infrequent maintenance windows, consider 14 or 30 days.
 - **Schedule storage prune after backup runs.** Pair `storage prune` with your backup schedule to keep storage costs under control without manual intervention.
-- **Combine machine prune with deploy-backup.** After deploying backup schedules (`rdc machine deploy-backup`), add a periodic machine prune to clean up stale snapshots and orphaned datastore artifacts.
+- **Combine machine prune with backup schedule.** After deploying backup schedules (`rdc machine backup schedule`), add a periodic machine prune to clean up stale snapshots and orphaned datastore artifacts.
 - **Audit before using `--force`.** The `--force` flag bypasses the grace period. Only use it when you are certain no other config references the repos in question.

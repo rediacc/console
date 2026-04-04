@@ -4,7 +4,7 @@ description: "CLI kullanarak yerel bir VM kümesi hazırlayın, SSH üzerinden k
 category: "Tutorials"
 order: 1
 language: tr
-sourceHash: "c1ba17e9a145c599"
+sourceHash: "741534930d3fbc2a"
 ---
 
 # Rediacc ile Yerel VM'leri Nasıl Hazırlarsınız
@@ -52,11 +52,11 @@ Kümedeki her VM'nin durumunu görüntüler — IP adresleri, kaynak tahsisi ve 
 ### Adım 4: VM üzerinde komut çalıştırın
 
 ```bash
-rdc ops ssh --vm-id 1 hostname
+rdc ops ssh --vm-id 1 -c hostname
 rdc ops ssh --vm-id 1 -c "uname -a"
 ```
 
-Köprü VM'de (ID `1`) SSH üzerinden komut çalıştırır. VM ID'sinden sonra herhangi bir komut geçirebilirsiniz. Etkileşimli bir kabuk için komutu atlayın: `rdc ops ssh --vm-id 1`.
+Köprü VM'de (ID `1`) SSH üzerinden komut çalıştırır. Bir komut geçirmek için `-c` kullanın. Etkileşimli bir kabuk için `-c` atlayın: `rdc ops ssh --vm-id 1`.
 
 ### Adım 5: Kümeyi kaldırın
 

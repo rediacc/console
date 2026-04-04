@@ -32,3 +32,6 @@ zod # v4.x requires schema migration, different error handling
 
 # inquirer v13.3.x - npm publishes are broken (missing dist/ directory)
 inquirer # v13.3.1 and v13.3.2 published without dist/ folder
+
+# @types/node major must match Node engine version (22.x)
+@types/node # v25+ is for Node 25; project uses Node 22

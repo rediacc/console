@@ -4,7 +4,7 @@ description: "Makine sağlığını kontrol edin, konteynerleri inceleyin, syste
 category: "Tutorials"
 order: 4
 language: tr
-sourceHash: "806137d9c33f4d7f"
+sourceHash: "ac0ee8180fdb7644"
 ---
 
 # Rediacc ile Altyapıyı İzleme ve Tanılama
@@ -59,7 +59,7 @@ Rediacc ile ilgili systemd servislerini (Docker daemon'ları, loopback takma adl
 ### Adım 5: Kasa durum özeti
 
 ```bash
-rdc machine vault-status server-1
+rdc machine vault-status --name server-1
 ```
 
 Makinenin üst düzey bir genel görünümünü sağlar: ana bilgisayar adı, çalışma süresi, bellek, disk, veri deposu ve toplam depo sayıları.
@@ -69,7 +69,7 @@ Makinenin üst düzey bir genel görünümünü sağlar: ana bilgisayar adı, ç
 Bir makine yeniden oluşturulduysa veya IP'si değiştiyse, saklanan SSH host anahtarını yenileyin.
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 Sunucunun mevcut host anahtarlarını alır ve yapılandırmanızı günceller. Bu, "host key verification failed" hatalarını önler.

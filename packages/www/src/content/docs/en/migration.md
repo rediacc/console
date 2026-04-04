@@ -22,7 +22,7 @@ Migrate an existing project — files, Docker services, databases — from a tra
 Create an encrypted repository sized to fit your project. Allocate extra space for Docker images and container data.
 
 ```bash
-rdc repo create my-project -m server-1 --size 20G
+rdc repo create --name my-project -m server-1 --size 20G
 ```
 
 > **Tip:** You can resize later with `rdc repo resize` if needed, but the repository must be unmounted first. It's easier to start with enough space.
@@ -42,7 +42,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project
 The repository must be mounted before uploading. If it isn't already:
 
 ```bash
-rdc repo mount my-project -m server-1
+rdc repo mount --name my-project -m server-1
 ```
 
 For subsequent syncs where you want the remote to exactly match your local directory:
@@ -58,7 +58,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 Uploaded files arrive with your local user's UID (e.g., 1000). Rediacc uses a universal user (UID 7111) so that VS Code, terminal sessions, and tools all have consistent access. Run the ownership command to convert:
 
 ```bash
-rdc repo ownership my-project -m server-1
+rdc repo ownership --name my-project -m server-1
 ```
 
 ### Docker-Aware Exclusion
@@ -83,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 To skip Docker volume detection and chown everything, including container data directories:
 
 ```bash
-rdc repo ownership my-project -m server-1
+rdc repo ownership --name my-project -m server-1
 ```
 
 > **Warning:** This may break running containers. Stop them first with `rdc repo down` if needed.
@@ -93,7 +93,7 @@ rdc repo ownership my-project -m server-1
 To set a UID other than the default 7111:
 
 ```bash
-rdc repo ownership my-project -m server-1 --uid 1000
+rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
 
 ## Step 4: Set Up Your Rediaccfile
@@ -199,7 +199,7 @@ See [Service Networking](/en/docs/services#service-networking-rediaccjson) for d
 Mount the repository (if not already mounted) and start all services:
 
 ```bash
-rdc repo up my-project -m server-1 --mount
+rdc repo up --name my-project -m server-1 --mount
 ```
 
 This will:
@@ -219,7 +219,7 @@ rdc machine containers server-1
 By default, repositories must be manually mounted and started after a server reboot. Enable autostart so your services come up automatically:
 
 ```bash
-rdc repo autostart enable my-project -m server-1
+rdc repo autostart enable --name my-project -m server-1
 ```
 
 You will be prompted for the repository passphrase.
@@ -274,7 +274,7 @@ For any project with Docker services:
 Files still have your local UID. Run the ownership command:
 
 ```bash
-rdc repo ownership my-project -m server-1
+rdc repo ownership --name my-project -m server-1
 ```
 
 ### Container Won't Start
@@ -298,7 +298,7 @@ Each repository gets unique loopback IPs. If you see port conflicts, verify that
 If you ran `rdc repo ownership` and a container stopped working, the container's data files were chowned. Stop the container, delete its data directory, and restart — the container will recreate it:
 
 ```bash
-rdc repo down my-project -m server-1
+rdc repo down --name my-project -m server-1
 # Delete the container's data directory (e.g., database/data)
-rdc repo up my-project -m server-1
+rdc repo up --name my-project -m server-1
 ```

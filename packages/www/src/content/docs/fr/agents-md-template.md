@@ -4,7 +4,7 @@ description: Modèle prêt à copier-coller pour configurer Claude Code, Cursor 
 category: Reference
 order: 50
 language: fr
-sourceHash: "7cf4d73659b76ee7"
+sourceHash: "5e5c2b0ad2a62967"
 ---
 
 Utilisez ce modèle pour configurer les assistants de programmation IA (Claude Code, Cursor, Cline, Windsurf) pour la gestion autonome de l'infrastructure Rediacc. Copiez le bloc ci-dessous dans le fichier `CLAUDE.md`, `.cursorrules` ou le fichier de configuration d'agent équivalent de votre projet.
@@ -91,7 +91,7 @@ Remplacez `<machine>` et `<repo>` par les noms réels de votre machine et de vot
 
 ```bash
 # List configured machines
-rdc machine query <machine-name>
+rdc machine query --name <machine-name>
 
 # List repositories with GUIDs
 rdc config repository list

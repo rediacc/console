@@ -4,7 +4,7 @@ description: "Şifreli bir depo oluşturun, konteynerleştirilmiş bir uygulama 
 category: "Tutorials"
 order: 3
 language: tr
-sourceHash: ee3455c196ea1479
+sourceHash: "79d2707d0dc632b2"
 ---
 
 # Rediacc ile Depoları Dağıtma ve Yönetme
@@ -26,7 +26,7 @@ Depolar, Rediacc'ın temel dağıtım birimidir — her biri kendi Docker daemon
 Her depo kendi LUKS şifreli depolama birimine sahip olur. Makineyi ve depolama boyutunu belirtin.
 
 ```bash
-rdc repo create test-app -m server-1 --size 2G
+rdc repo create --name test-app -m server-1 --size 2G
 ```
 
 Rediacc 2 GB'lık şifreli bir birim oluşturur, biçimlendirir ve otomatik olarak bağlar. Depo, dosya yüklemeye hazırdır.
@@ -56,7 +56,7 @@ Bağlama dizini, uygulama dosyalarının bulunduğu yerdir — `Rediaccfile`, `d
 Depoyu bağlayarak ve Docker servislerini başlatarak uygulamayı dağıtın.
 
 ```bash
-rdc repo up test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1 --mount
 ```
 
 Bu, depoyu bağlar (zaten bağlı değilse), izole bir Docker daemon başlatır ve `up()` ile servisleri başlatır.
@@ -86,9 +86,9 @@ Terminal oturumu, `DOCKER_HOST`'u deponun izole Docker soketine ayarlar. Tüm Do
 İşiniz bittiğinde, servisleri durdurun, şifreli birimi kapatın ve isteğe bağlı olarak depoyu silin.
 
 ```bash
-rdc repo down test-app -m server-1      # Servisleri durdur
-rdc repo unmount test-app -m server-1   # Şifreli birimi kapat
-rdc repo delete test-app -m server-1    # Depoyu kalıcı olarak sil
+rdc repo down --name test-app -m server-1  # Servisleri durdur
+rdc repo unmount --name test-app -m server-1  # Şifreli birimi kapat
+rdc repo delete --name test-app -m server-1  # Depoyu kalıcı olarak sil
 ```
 
 `down` konteynerleri ve Docker daemon'ı durdurur. `unmount` LUKS birimini kapatır. `delete` depoyu ve şifreli depolamasını kalıcı olarak kaldırır.

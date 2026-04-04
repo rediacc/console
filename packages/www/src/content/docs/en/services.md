@@ -175,7 +175,7 @@ services:
 Mount the repository and start all services:
 
 ```bash
-rdc repo up my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1 --mount
 ```
 
 | Option | Description |
@@ -192,7 +192,7 @@ The execution sequence is:
 ## Stopping Services
 
 ```bash
-rdc repo down my-app -m server-1
+rdc repo down --name my-app -m server-1
 ```
 
 | Option | Description |
@@ -241,7 +241,7 @@ On shutdown, the service gracefully stops all services (Rediaccfile `down()`), s
 ### Enable
 
 ```bash
-rdc repo autostart enable my-app -m server-1
+rdc repo autostart enable --name my-app -m server-1
 ```
 
 You will be prompted for the repository passphrase.
@@ -255,7 +255,7 @@ rdc repo autostart enable -m server-1
 ### Disable
 
 ```bash
-rdc repo autostart disable my-app -m server-1
+rdc repo autostart disable --name my-app -m server-1
 ```
 
 This removes the keyfile and kills LUKS slot 1.
@@ -293,16 +293,16 @@ This deploys a web application with PostgreSQL, Redis, and an API server.
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
-rdc config init production --ssh-key ~/.ssh/id_ed25519
-rdc config machine add prod-1 --ip 203.0.113.50 --user deploy
-rdc config machine setup prod-1
-rdc repo create webapp -m prod-1 --size 10G
+rdc config init --name production --ssh-key ~/.ssh/id_ed25519
+rdc config machine add --name prod-1 --ip 203.0.113.50 --user deploy
+rdc config machine setup --name prod-1
+rdc repo create --name webapp -m prod-1 --size 10G
 ```
 
 ### 2. Mount and Prepare
 
 ```bash
-rdc repo mount webapp -m prod-1
+rdc repo mount --name webapp -m prod-1
 ```
 
 ### 3. Create Application Files
@@ -363,11 +363,11 @@ down() {
 ### 4. Start
 
 ```bash
-rdc repo up webapp -m prod-1
+rdc repo up --name webapp -m prod-1
 ```
 
 ### 5. Enable Autostart
 
 ```bash
-rdc repo autostart enable webapp -m prod-1
+rdc repo autostart enable --name webapp -m prod-1
 ```

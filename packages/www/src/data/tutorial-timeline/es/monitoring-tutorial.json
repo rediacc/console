@@ -7,34 +7,87 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "507accb832b5c1f861adad0aa74329dc90b9f0dc17cf6c266ab488c68770eb78",
+  "transcriptHash": "249ae086c6fc953c41f68803c43bdbf725b1d4780c795096733cd5b6215403e1",
   "steps": [
     {
       "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.508759,
-      "replayEndSec": 9.844365,
+      "replayStartSec": 6.176639,
+      "replayEndSec": 25.705613,
       "narrationText": "Ejecute un diagnóstico completo del entorno para detectar problemas básicos.",
       "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-tutorial-01.3740a176.mp3",
-      "audioDurationSec": 5.799184
+      "audioDurationSec": 4.832653,
+      "stepLabel": "Step 1: Run diagnostics"
     },
     {
       "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 9.844365,
-      "replayEndSec": 18.393678,
+      "replayStartSec": 25.705613,
+      "replayEndSec": 37.199979,
       "narrationText": "Verifique los indicadores de salud de la máquina remota.",
       "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-tutorial-02.55e86451.mp3",
-      "audioDurationSec": 3.395918
+      "audioDurationSec": 3.63102,
+      "stepLabel": "Step 2: System overview"
     },
     {
       "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 18.393678,
-      "replayEndSec": 22.197305,
+      "replayStartSec": 37.199979,
+      "replayEndSec": 47.874153,
       "narrationText": "Enumere los contenedores activos en la máquina de destino.",
       "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-tutorial-03.2fc662d7.mp3",
-      "audioDurationSec": 3.552653
+      "audioDurationSec": 3.63102,
+      "stepLabel": "Step 3: View running containers"
+    },
+    {
+      "id": "monitoring-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 47.874153,
+      "replayEndSec": 58.417483,
+      "narrationText": "Contenedores verificados. Ahora consultamos los servicios systemd en la máquina para ver qué daemons de infraestructura están activos y saludables.",
+      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-tutorial-04.3262559e.mp3",
+      "audioDurationSec": 8.907755,
+      "stepLabel": "Step 4: Check systemd services"
+    },
+    {
+      "id": "monitoring-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 58.417483,
+      "replayEndSec": 68.461906,
+      "narrationText": "Para una vista completa, ejecutamos una consulta de máquina sin filtros -- devolviendo métricas del sistema, red, servicios, contenedores y dispositivos de bloque en una sola llamada.",
+      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-tutorial-05.84a454aa.mp3",
+      "audioDurationSec": 13.87102,
+      "stepLabel": "Step 5: Full machine status"
+    },
+    {
+      "id": "monitoring-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 68.461906,
+      "replayEndSec": 78.211059,
+      "narrationText": "Actualizamos las huellas digitales de las claves SSH almacenadas en la configuración para esta máquina, asegurando que las conexiones futuras puedan verificar la identidad del servidor.",
+      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-tutorial-06.93dec85b.mp3",
+      "audioDurationSec": 11.389388,
+      "stepLabel": "Step 6: Scan host keys"
+    },
+    {
+      "id": "monitoring-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 78.211059,
+      "replayEndSec": 86.795419,
+      "narrationText": "Claves de host actualizadas. Verificamos la conectividad de extremo a extremo ejecutando un comando remoto por SSH y confirmando que se devuelve el nombre de host de la máquina.",
+      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-tutorial-07.c2ea2142.mp3",
+      "audioDurationSec": 13.322449,
+      "stepLabel": "Step 7: Verify connectivity"
+    },
+    {
+      "id": "monitoring-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 86.795419,
+      "replayEndSec": 95.264993,
+      "narrationText": "Un comando remoto más -- esta vez verificamos el tiempo de actividad y la carga promedio de la máquina, demostrando la ejecución arbitraria de comandos a través del túnel SSH.",
+      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-tutorial-08.db3bf203.mp3",
+      "audioDurationSec": 13.00898,
+      "stepLabel": "Step 8: Check block devices"
     }
   ]
 }

@@ -4,7 +4,7 @@ description: Referencia completa del formato de salida JSON del CLI rdc, esquema
 category: Reference
 order: 51
 language: es
-sourceHash: "49cfcc5e2e4621a9"
+sourceHash: "a84e20b09aadfd28"
 ---
 
 Todos los comandos `rdc` admiten salida JSON estructurada para consumo programático por agentes de IA y scripts.
@@ -14,8 +14,8 @@ Todos los comandos `rdc` admiten salida JSON estructurada para consumo programá
 ### Opción explícita
 
 ```bash
-rdc machine query prod-1 --output json
-rdc machine query prod-1 -o json
+rdc machine query --name prod-1 --output json
+rdc machine query --name prod-1 -o json
 ```
 
 ### Detección automática
@@ -114,7 +114,7 @@ rdc machine containers prod-1 -o json --fields name,status,repository
 Los comandos destructivos admiten `--dry-run` para previsualizar lo que ocurriría:
 
 ```bash
-rdc repo delete mail -m prod-1 --dry-run -o json
+rdc repo delete --name mail -m prod-1 --dry-run -o json
 ```
 
 ```json
@@ -174,7 +174,7 @@ Devuelve el árbol completo de comandos con argumentos, opciones y descripciones
 ### Obtener esquema de un comando
 
 ```bash
-rdc agent schema "machine query"
+rdc agent schema --command "machine query"
 ```
 
 Devuelve el esquema detallado de un solo comando, incluyendo todos los argumentos y opciones con sus tipos y valores predeterminados.

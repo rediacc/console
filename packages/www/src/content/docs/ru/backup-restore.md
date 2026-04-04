@@ -7,7 +7,7 @@ description: >-
 category: Guides
 order: 7
 language: ru
-sourceHash: "bd53047cef737088"
+sourceHash: "7f95ad082a023982"
 ---
 
 # Резервное копирование и восстановление
@@ -23,7 +23,7 @@ Rediacc может создавать резервные копии зашифр
 Если у вас уже настроен удаленный rclone-ресурс:
 
 ```bash
-rdc config storage import rclone.conf
+rdc config storage import --file rclone.conf
 ```
 
 Эта команда импортирует конфигурации хранилища из файла конфигурации rclone в текущую конфигурацию. Поддерживаемые типы: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob и Swift.
@@ -39,7 +39,7 @@ rdc config storage list
 Отправьте резервную копию репозитория во внешнее хранилище:
 
 ```bash
-rdc repo push my-app -m server-1 --to my-storage
+rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
 | Опция | Описание |
@@ -59,7 +59,7 @@ rdc repo push my-app -m server-1 --to my-storage
 Получите резервную копию репозитория из внешнего хранилища:
 
 ```bash
-rdc repo pull my-app -m server-1 --from my-storage
+rdc repo pull --name my-app -m server-1 --from my-storage
 ```
 
 | Опция | Описание |
@@ -133,7 +133,7 @@ rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --e
 Разверните конфигурацию расписания на машине как systemd-таймер:
 
 ```bash
-rdc machine deploy-backup server-1
+rdc machine backup schedule -m server-1
 ```
 
 ### Просмотр расписания
@@ -147,7 +147,7 @@ rdc config backup-strategy show
 Просмотрите содержимое хранилища:
 
 ```bash
-rdc storage browse my-storage
+rdc storage browse --name my-storage
 ```
 
 ## Лучшие практики

@@ -6,38 +6,56 @@
     {
       "id": "setup-tutorial-01",
       "markerIndex": 0,
-      "at": 1.50986,
+      "at": 1.509621,
       "text": "Every machine connection begins with a configuration profile -- it holds SSH keys, server addresses, and infrastructure settings. We create a new profile now, linked to your private key."
     },
     {
       "id": "setup-tutorial-02",
       "markerIndex": 1,
-      "at": 10.605861,
-      "text": "Profile created. We verify it appears in the configuration list alongside any existing profiles, showing their adapter type and registered machine count."
+      "at": 11.379114,
+      "text": "Profile created. We list all configuration profiles on the system to see the new one alongside any existing profiles."
     },
     {
       "id": "setup-tutorial-03",
       "markerIndex": 2,
-      "at": 17.961132,
-      "text": "To reach a remote server, we register it by IP address and SSH user. The CLI also fetches the server's host key fingerprint to prevent man-in-the-middle attacks."
+      "at": 19.116458,
+      "text": "Next we register a remote machine -- providing its IP address and SSH user. Host keys are scanned automatically for trusted access."
     },
     {
       "id": "setup-tutorial-04",
       "markerIndex": 3,
-      "at": 31.651331,
-      "text": "Machine registered. We confirm the entry is stored correctly. You'll see all machines in this profile with their IP addresses and SSH connection details."
+      "at": 30.612519,
+      "text": "We list the machines configured in this profile to confirm the worker was added with the correct connection details."
     },
     {
       "id": "setup-tutorial-05",
       "markerIndex": 4,
-      "at": 40.16275,
-      "text": "When managing a single server, a default machine eliminates repetitive targeting flags. Every command will route to this machine unless you override it explicitly."
+      "at": 39.668059,
+      "text": "Time to test connectivity. We run a remote command over SSH and confirm the machine's hostname is returned."
     },
     {
       "id": "setup-tutorial-06",
       "markerIndex": 5,
-      "at": 48.29967,
-      "text": "Before deploying anything, we verify the SSH tunnel is functional. A remote hostname check proves the machine is reachable and the host key is trusted."
+      "at": 48.511187,
+      "text": "One more check -- we query the machine's uptime and load average to make sure it is responsive and healthy."
+    },
+    {
+      "id": "setup-tutorial-07",
+      "markerIndex": 6,
+      "at": 59.171133,
+      "text": "We run a full diagnostic scan covering the CLI environment, renet installation, configuration, and subscription status in one command."
+    },
+    {
+      "id": "setup-tutorial-08",
+      "markerIndex": 7,
+      "at": 78.418551,
+      "text": "With connectivity proven, we configure the machine's infrastructure -- public IP, base domain for routing, and certificate email for automated TLS."
+    },
+    {
+      "id": "setup-tutorial-09",
+      "markerIndex": 8,
+      "at": 89.493582,
+      "text": "We display the saved infrastructure configuration to confirm the IP, domain, and certificate settings were stored correctly."
     }
   ]
 }

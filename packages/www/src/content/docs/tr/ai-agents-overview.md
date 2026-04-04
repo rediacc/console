@@ -4,7 +4,7 @@ description: Claude Code, Cursor ve Cline gibi AI kodlama asistanlarının otono
 category: Guides
 order: 30
 language: tr
-sourceHash: "2d8ab92216666d0e"
+sourceHash: "e96c19a3514c4369"
 ---
 
 AI kodlama asistanları, `rdc` CLI aracılığıyla Rediacc altyapısını otonom olarak yönetebilir. Bu kılavuz entegrasyon yaklaşımlarını ve nasıl başlayacağınızı kapsar.
@@ -69,7 +69,7 @@ Hata yanıtları `retryable` ve `guidance` alanlarını içerir:
 rdc agent capabilities
 
 # Show detailed schema for a specific command
-rdc agent schema "machine query"
+rdc agent schema --command "machine query"
 
 # Execute a command with JSON stdin
 echo '{"name": "prod-1"}' | rdc agent exec "machine query"

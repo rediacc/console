@@ -17,6 +17,7 @@ export interface TutorialTimelineStep {
   audioDurationSec?: number;
   wordTimings?: TutorialWordTiming[];
   dwellMs?: number;
+  stepLabel?: string;
 }
 
 export interface TutorialTimelineDocument {

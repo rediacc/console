@@ -27,9 +27,10 @@
     "validate:tutorial-transcripts": "node scripts/validate-tutorial-transcripts.js",
     "validate:team-video-transcripts": "node scripts/validate-team-video-transcripts.js",
     "validate:translation-freshness": "node scripts/validate-translation-freshness.js",
-    "validate:content": "node scripts/validate-content.js && npm run validate:tutorial-transcripts && npm run validate:tutorial-audio && npm run validate:team-video-transcripts",
+    "validate:tutorial-cast-output": "node scripts/validate-tutorial-cast-output.js",
+    "validate:content": "node scripts/validate-content.js && npm run validate:tutorial-transcripts && npm run validate:tutorial-audio && npm run validate:tutorial-cast-output && npm run validate:team-video-transcripts",
     "validate:comparison-refs": "node scripts/validate-comparison-refs.js",
-    "validate:content:strict": "node scripts/validate-content.js --strict && npm run validate:tutorial-transcripts && npm run validate:tutorial-audio && npm run validate:team-video-transcripts"
+    "validate:content:strict": "node scripts/validate-content.js --strict && npm run validate:tutorial-transcripts && npm run validate:tutorial-audio && npm run validate:tutorial-cast-output && npm run validate:team-video-transcripts"
   },
   "dependencies": {
     "@astrojs/react": "^5.0.2",
@@ -56,8 +57,8 @@
     "@vitest/utils": "^4.0.18",
     "asciinema-player": "^3.15.1",
     "astro": "^5.17.3",
-    "fast-xml-parser": "^5.5.9",
-    "fuse.js": "^7.1.0",
+    "fast-xml-parser": "^5.5.10",
+    "fuse.js": "^7.2.0",
     "gray-matter": "^4.0.3",
     "jszip": "^3.10.1",
     "react": "^19.1.1",

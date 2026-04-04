@@ -4,7 +4,7 @@ description: Cuándo usar rdc y cuándo usar renet.
 category: Concepts
 order: 1
 language: es
-sourceHash: "69cb9c27f7c3afaf"
+sourceHash: "8b7443928e0be27e"
 ---
 
 # rdc vs renet
@@ -36,14 +36,14 @@ Todas las tareas comunes se realizan a través de `rdc` en su estación de traba
 
 ```bash
 # Configurar un nuevo servidor
-rdc config machine setup server-1
+rdc config machine setup --name server-1
 
 # Crear e iniciar un repositorio
-rdc repo create my-app -m server-1 --size 10G
-rdc repo up my-app -m server-1 --mount
+rdc repo create --name my-app -m server-1 --size 10G
+rdc repo up --name my-app -m server-1 --mount
 
 # Detener un repositorio
-rdc repo down my-app -m server-1
+rdc repo down --name my-app -m server-1
 
 # Verificar el estado de la máquina
 rdc machine health server-1
@@ -69,8 +69,8 @@ Todos los comandos de `renet` necesitan privilegios de root (`sudo`). Consulte l
 rdc ops setup              # Instalar prerrequisitos (KVM o QEMU)
 rdc ops up --basic         # Iniciar un clúster mínimo
 rdc ops status             # Verificar el estado de las VMs
-rdc ops ssh 1              # Conectarse por SSH a la VM puente
-rdc ops ssh 1 hostname     # Ejecutar un comando en la VM puente
+rdc ops ssh --vm-id 1  # Conectarse por SSH a la VM puente
+rdc ops ssh --vm-id 1 -c hostname  # Ejecutar un comando en la VM puente
 rdc ops down               # Destruir el clúster
 ```
 

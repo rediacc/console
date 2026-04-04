@@ -4,7 +4,7 @@ description: "Создание зашифрованного репозитори
 category: "Tutorials"
 order: 3
 language: ru
-sourceHash: ee3455c196ea1479
+sourceHash: "79d2707d0dc632b2"
 ---
 
 # Как развёртывать и управлять репозиториями с Rediacc
@@ -26,7 +26,7 @@ sourceHash: ee3455c196ea1479
 Каждый репозиторий получает собственный том хранения с шифрованием LUKS. Укажите машину и размер хранилища.
 
 ```bash
-rdc repo create test-app -m server-1 --size 2G
+rdc repo create --name test-app -m server-1 --size 2G
 ```
 
 Rediacc создаёт зашифрованный том размером 2 ГБ, форматирует его и автоматически монтирует. Репозиторий готов для загрузки файлов.
@@ -56,7 +56,7 @@ rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 Разверните приложение, смонтировав репозиторий и запустив его Docker-сервисы.
 
 ```bash
-rdc repo up test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1 --mount
 ```
 
 Это монтирует репозиторий (если он ещё не смонтирован), запускает изолированный Docker daemon и запускает сервисы через `up()`.
@@ -86,9 +86,9 @@ rdc term connect -m server-1 -r test-app -c "docker ps"
 Когда закончите, остановите сервисы, закройте зашифрованный том и при необходимости удалите репозиторий.
 
 ```bash
-rdc repo down test-app -m server-1      # Остановить сервисы
-rdc repo unmount test-app -m server-1   # Закрыть зашифрованный том
-rdc repo delete test-app -m server-1    # Удалить репозиторий навсегда
+rdc repo down --name test-app -m server-1  # Остановить сервисы
+rdc repo unmount --name test-app -m server-1  # Закрыть зашифрованный том
+rdc repo delete --name test-app -m server-1  # Удалить репозиторий навсегда
 ```
 
 `down` останавливает контейнеры и Docker daemon. `unmount` закрывает том LUKS. `delete` безвозвратно удаляет репозиторий и его зашифрованное хранилище.

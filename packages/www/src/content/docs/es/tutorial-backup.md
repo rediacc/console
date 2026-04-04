@@ -4,7 +4,7 @@ description: "Configure programaciones de copias de seguridad automatizadas, ges
 category: "Tutorials"
 order: 6
 language: es
-sourceHash: "14244f699c506ce9"
+sourceHash: "0bdff6ce5d24c154"
 ---
 
 # Cómo configurar copias de seguridad y redes con Rediacc
@@ -62,7 +62,7 @@ Muestra la configuración actual de copia de seguridad: destino, expresión cron
 Para servicios de acceso público, la máquina necesita su IP externa, dominio base y un correo electrónico de certificado para Let's Encrypt TLS.
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com
@@ -75,7 +75,7 @@ Rediacc genera una configuración de proxy inverso Traefik a partir de estos aju
 Si sus servicios necesitan puertos no HTTP (por ejemplo, SMTP, DNS), regístrelos como puntos de entrada de Traefik.
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 ```
@@ -87,7 +87,7 @@ Esto crea puntos de entrada de Traefik (`tcp-25`, `udp-53`, etc.) que los servic
 Verifique la configuración completa de infraestructura.
 
 ```bash
-rdc config infra show server-1
+rdc config infra show -m server-1
 ```
 
 Muestra IPs públicas, dominio, correo electrónico de certificado y todos los puertos registrados.

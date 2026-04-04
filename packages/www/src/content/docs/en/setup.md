@@ -15,7 +15,7 @@ This page walks you through setting up your first machine: creating a config, re
 A **config** is a named configuration file that stores your SSH credentials, machine definitions, and repository mappings. Think of it as a project workspace.
 
 ```bash
-rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | Option | Required | Description |
@@ -32,7 +32,7 @@ This creates a config named `my-infra` and stores it in `~/.config/rediacc/my-in
 Register your remote server as a machine in the config:
 
 ```bash
-rdc config machine add server-1 --ip 203.0.113.50 --user deploy
+rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Option | Required | Default | Description |
@@ -45,7 +45,7 @@ rdc config machine add server-1 --ip 203.0.113.50 --user deploy
 After adding the machine, rdc automatically runs `ssh-keyscan` to fetch the server's host keys. You can also run this manually:
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 To view all registered machines:
@@ -59,7 +59,7 @@ rdc config machine list
 Provision the remote server with all required dependencies:
 
 ```bash
-rdc config machine setup server-1
+rdc config machine setup --name server-1
 ```
 
 This command:
@@ -81,7 +81,7 @@ This command:
 If a server's SSH host key changes (e.g., after reinstallation), refresh the stored keys:
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 This updates the `knownHosts` field in your config for that machine.
@@ -111,7 +111,7 @@ For machines that need to serve traffic publicly, configure infrastructure setti
 ### Set Infrastructure
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -133,7 +133,7 @@ Machine-scoped options are stored per-machine. Config-scoped options (`--cert-em
 ### View Infrastructure
 
 ```bash
-rdc config infra show server-1
+rdc config infra show -m server-1
 ```
 
 ### Push to Server
@@ -141,7 +141,7 @@ rdc config infra show server-1
 Generate and deploy the Traefik reverse proxy configuration to the server:
 
 ```bash
-rdc config infra push server-1
+rdc config infra push -m server-1
 ```
 
 This command:
@@ -162,13 +162,13 @@ Install OpenTofu: [opentofu.org/docs/intro/install](https://opentofu.org/docs/in
 Ensure your SSH config includes a public key:
 
 ```bash
-rdc config set ssh.privateKeyPath ~/.ssh/id_ed25519
+rdc config set --key ssh.privateKeyPath --value ~/.ssh/id_ed25519
 ```
 
 ### Add a Cloud Provider
 
 ```bash
-rdc config provider add my-linode \
+rdc config provider add --name my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -190,7 +190,7 @@ rdc config provider add my-linode \
 ### Provision a Machine
 
 ```bash
-rdc machine provision prod-2 --provider my-linode
+rdc machine provision --name prod-2 --provider my-linode
 ```
 
 This single command:
@@ -213,7 +213,7 @@ This single command:
 ### Deprovision a Machine
 
 ```bash
-rdc machine deprovision prod-2
+rdc machine deprovision --name prod-2
 ```
 
 Destroys the VM via OpenTofu and removes it from your config. Requires confirmation unless `--force` is used. Only works for machines created with `machine provision`.
@@ -229,14 +229,14 @@ rdc config provider list
 Set default values so you don't need to specify them on every command:
 
 ```bash
-rdc config set machine server-1    # Default machine
-rdc config set team my-team        # Default team (cloud adapter, experimental)
+rdc config set --key machine --value server-1  # Default machine
+rdc config set --key team --value my-team  # Default team (cloud adapter, experimental)
 ```
 
 After setting a default machine, you can omit `-m server-1` from commands:
 
 ```bash
-rdc repo create my-app --size 10G   # Uses default machine
+rdc repo create --name my-app -m my-server --size 10G
 ```
 
 ## Multiple Configs
@@ -245,8 +245,8 @@ Manage multiple environments with named configs:
 
 ```bash
 # Create separate configs
-rdc config init production --ssh-key ~/.ssh/id_prod
-rdc config init staging --ssh-key ~/.ssh/id_staging
+rdc config init --name production --ssh-key ~/.ssh/id_prod
+rdc config init --name staging --ssh-key ~/.ssh/id_staging
 
 # Use a specific config
 rdc repo list -m server-1 --config production

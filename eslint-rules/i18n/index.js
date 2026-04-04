@@ -15,6 +15,9 @@ import { noUntranslatedValues } from './no-untranslated-values.js';
 import { noUntranslatedTutorialTranscriptValues } from './no-untranslated-tutorial-transcript-values.js';
 import { interpolationConsistency } from './interpolation-consistency.js';
 import { translationStaleness } from './translation-staleness.js';
+import { seoTitleLength } from './seo-title-length.js';
+import { seoDescriptionLength } from './seo-description-length.js';
+import { seoNoDuplicateH1Title } from './seo-no-duplicate-h1-title.js';
 
 /**
  * Plugin for JSON locale file validation
@@ -31,6 +34,9 @@ export const i18nJsonPlugin = {
     'no-untranslated-tutorial-transcript-values': noUntranslatedTutorialTranscriptValues,
     'interpolation-consistency': interpolationConsistency,
     'translation-staleness': translationStaleness,
+    'seo-title-length': seoTitleLength,
+    'seo-description-length': seoDescriptionLength,
+    'seo-no-duplicate-h1-title': seoNoDuplicateH1Title,
   },
 };
 
@@ -55,6 +61,9 @@ export { noUntranslatedValues } from './no-untranslated-values.js';
 export { noUntranslatedTutorialTranscriptValues } from './no-untranslated-tutorial-transcript-values.js';
 export { interpolationConsistency } from './interpolation-consistency.js';
 export { translationStaleness } from './translation-staleness.js';
+export { seoTitleLength } from './seo-title-length.js';
+export { seoDescriptionLength } from './seo-description-length.js';
+export { seoNoDuplicateH1Title } from './seo-no-duplicate-h1-title.js';
 
 // Default export for ESLint plugin
 export default i18nJsonPlugin;

@@ -4,7 +4,7 @@ description: Comprendre comment account, rdc et renet gèrent les slots de machi
 category: Guides
 order: 7
 language: fr
-sourceHash: "fcc4e06609545bf7"
+sourceHash: "49428ac8fe913194"
 ---
 
 # Abonnement et licences
@@ -181,7 +181,7 @@ Les dépôts découverts sur la machine mais absents de la configuration locale 
 Forcer le renouvellement de licence de dépôt pour un dépôt existant :
 
 ```bash
-rdc subscription refresh repo my-app -m hostinger
+rdc subscription refresh repo --name my-app -m hostinger
 ```
 
 Lors de la première utilisation, une opération de dépôt ou de sauvegarde sous licence qui ne trouve pas de licence de dépôt utilisable peut déclencher automatiquement un transfert d'autorisation de compte. Le CLI imprime une URL d'autorisation, essaie d'ouvrir le navigateur dans les terminaux interactifs, et retente l'opération une fois après que l'autorisation et l'émission ont réussi.

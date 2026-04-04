@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: "bd53047cef737088"
+sourceHash: "7f95ad082a023982"
 ---
 
 # النسخ الاحتياطي والاستعادة
@@ -22,7 +22,7 @@ sourceHash: "bd53047cef737088"
 إذا كان لديك بالفعل جهاز rclone بعيد مُكوَّن:
 
 ```bash
-rdc config storage import rclone.conf
+rdc config storage import --file rclone.conf
 ```
 
 يستورد هذا تكوينات التخزين من ملف إعدادات rclone إلى التكوين الحالي. الأنواع المدعومة: S3 وB2 وGoogle Drive وOneDrive وMega وDropbox وBox وAzure Blob وSwift.
@@ -38,7 +38,7 @@ rdc config storage list
 إرسال نسخة احتياطية من مستودع إلى تخزين خارجي:
 
 ```bash
-rdc repo push my-app -m server-1 --to my-storage
+rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
 | الخيار | الوصف |
@@ -58,7 +58,7 @@ rdc repo push my-app -m server-1 --to my-storage
 سحب نسخة احتياطية لمستودع من تخزين خارجي:
 
 ```bash
-rdc repo pull my-app -m server-1 --from my-storage
+rdc repo pull --name my-app -m server-1 --from my-storage
 ```
 
 | الخيار | الوصف |
@@ -132,7 +132,7 @@ rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --e
 نشر تكوين الجدول على جهاز كمؤقت systemd:
 
 ```bash
-rdc machine deploy-backup server-1
+rdc machine backup schedule -m server-1
 ```
 
 ### عرض الجدول
@@ -146,7 +146,7 @@ rdc config backup-strategy show
 تصفح محتويات موقع تخزين:
 
 ```bash
-rdc storage browse my-storage
+rdc storage browse --name my-storage
 ```
 
 ## أفضل الممارسات
