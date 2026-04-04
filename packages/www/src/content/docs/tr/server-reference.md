@@ -4,7 +4,7 @@ description: "Dizin yapısı, renet komutları, systemd servisleri ve uzak sunuc
 category: "Concepts"
 order: 3
 language: tr
-sourceHash: "07b8aba408085eab"
+sourceHash: "f27a4135aed54918"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
@@ -255,11 +255,11 @@ renet list containers
 
 ## Tips
 
-- Always use `sudo` for `renet compose`, `renet repository`, and `renet docker` commands — they need root for LUKS and Docker operations
+- Always use `sudo` for `renet compose`, `renet repository`, and `renet docker` commands, they need root for LUKS and Docker operations
 - The `--` separator is required before passing arguments to `renet compose` and `renet docker`
 - Run compose from the directory that contains `docker-compose.yml`
-- `.rediacc.json` slot assignments are stable — do not change them after deployment
+- `.rediacc.json` slot assignments are stable, do not change them after deployment
 - Use `/run/rediacc/docker-{id}.sock` paths (systemd may change legacy `/var/run/` paths)
 - Run `renet prune --dry-run` from time to time to find orphaned resources
-- BTRFS snapshots (`renet backup`) are fast and cheap — use them before making risky changes
-- Repositories are LUKS-encrypted — losing the password means losing the data
+- BTRFS snapshots (`renet backup`) are fast and cheap, use them before making risky changes
+- Repositories are LUKS-encrypted, losing the password means losing the data

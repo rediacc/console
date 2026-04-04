@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: es
-sourceHash: "7b7349277b9d5f85"
+sourceHash: "8332f7d1cb8ee60b"
 sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
@@ -49,8 +49,8 @@ rdc machine containers server-1
 | Repository | Qué repositorio es propietario del contenedor |
 
 Opciones:
-- `--health-check` — Realizar verificaciones de estado activas en los contenedores
-- `--output json` — Salida JSON legible por máquinas
+- `--health-check`, Realizar verificaciones de estado activas en los contenedores
+- `--output json`, Salida JSON legible por máquinas
 
 La salida JSON incluye todos los detalles del contenedor (`labels`, `port_mappings`, `image`, `id`) además de `repository` (nombre resuelto), `repository_guid` (GUID original), `domain` y `autoRoute`.
 
@@ -72,8 +72,8 @@ rdc machine services server-1
 | Repository | Repositorio asociado |
 
 Opciones:
-- `--stability-check` — Marcar servicios inestables (fallidos, >3 reinicios, reinicio automático)
-- `--output json` — Salida JSON legible por máquinas
+- `--stability-check`, Marcar servicios inestables (fallidos, >3 reinicios, reinicio automático)
+- `--output json`, Salida JSON legible por máquinas
 
 La salida JSON incluye todos los detalles del servicio con `repository` (nombre resuelto) y `repository_guid` (GUID original).
 
@@ -96,8 +96,8 @@ rdc machine repos server-1
 | Modified | Hora de última modificación |
 
 Opciones:
-- `--search <text>` — Filtrar por nombre o ruta de montaje
-- `--output json` — Salida JSON legible por máquinas
+- `--search <text>`, Filtrar por nombre o ruta de montaje
+- `--output json`, Salida JSON legible por máquinas
 
 La salida JSON incluye `name` (resuelto) y `guid` (GUID original), y anida para cada repositorio los arreglos `containers` (con `domain`, `autoRoute`, `repository`/`repository_guid`) y `services`.
 
@@ -135,8 +135,8 @@ Reporta:
 - Entrada de hosts conocidos
 
 Opciones:
-- `--port <number>` — Puerto SSH (predeterminado: 22)
-- `--save -m server-1` — Guardar la clave del host verificada en la configuración de la máquina
+- `--port <number>`, Puerto SSH (predeterminado: 22)
+- `--save -m server-1`, Guardar la clave del host verificada en la configuración de la máquina
 
 ## Diagnósticos (doctor)
 

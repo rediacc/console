@@ -126,6 +126,15 @@ export function detectChangedFiles(repoRoot, baseRefArg) {
   tryFetchBaseRef(repoRoot, baseRef);
   const candidates = [`origin/${baseRef}`, baseRef];
 
+  // Untracked files are always included so that new translation files
+  // (not yet staged/committed) are recognized as "changed in this PR".
+  let untracked = [];
+  try {
+    untracked = git(['ls-files', '--others', '--exclude-standard', '--full-name'], repoRoot);
+  } catch {
+    // best effort
+  }
+
   for (const candidate of candidates) {
     try {
       git(['rev-parse', '--verify', candidate], repoRoot);
@@ -133,7 +142,7 @@ export function detectChangedFiles(repoRoot, baseRefArg) {
       const committed = git(['diff', '--name-only', `${mergeBase}...HEAD`], repoRoot);
       const staged = git(['diff', '--name-only', '--cached'], repoRoot);
       const unstaged = git(['diff', '--name-only'], repoRoot);
-      return Array.from(new Set([...committed, ...staged, ...unstaged]));
+      return Array.from(new Set([...committed, ...staged, ...unstaged, ...untracked]));
     } catch {
       // try next strategy
     }
@@ -143,7 +152,7 @@ export function detectChangedFiles(repoRoot, baseRefArg) {
     const committed = git(['diff', '--name-only', 'HEAD^...HEAD'], repoRoot);
     const staged = git(['diff', '--name-only', '--cached'], repoRoot);
     const unstaged = git(['diff', '--name-only'], repoRoot);
-    return Array.from(new Set([...committed, ...staged, ...unstaged]));
+    return Array.from(new Set([...committed, ...staged, ...unstaged, ...untracked]));
   } catch {
     // fallback below
   }
@@ -151,9 +160,9 @@ export function detectChangedFiles(repoRoot, baseRefArg) {
   try {
     const staged = git(['diff', '--name-only', '--cached'], repoRoot);
     const unstaged = git(['diff', '--name-only'], repoRoot);
-    return Array.from(new Set([...staged, ...unstaged]));
+    return Array.from(new Set([...staged, ...unstaged, ...untracked]));
   } catch {
-    return [];
+    return untracked;
   }
 }
 
@@ -506,7 +515,7 @@ export function validateTranslationFreshness({
       const localePaddingCount = countPaddingCommentLines(langParsed.content);
       const minimumLineCount = Math.max(10, Math.floor(enLineCount * 0.4));
 
-      if (localeLineCount < minimumLineCount) {
+      if (enLineCount > 0 && localeLineCount < minimumLineCount) {
         errors.push({
           rule: 'translation-line-count-too-low',
           file: langRel,

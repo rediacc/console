@@ -27,6 +27,7 @@
   },
   "captchaRequired": "Lütfen captcha doğrulamasını tamamlayın.",
   "common": {
+    "close": "Kapat",
     "aria": {
       "breadcrumbNavigation": "Breadcrumb gezinmesi",
       "clickToEnlarge": "Resmi büyütmek için tıklayın",
@@ -120,6 +121,7 @@
     "categories": {
       "concepts": "Kavramlar",
       "guides": "Kılavuzlar",
+      "legal": "Yasal",
       "reference": "Başvuru",
       "tutorials": "Öğreticiler",
       "useCases": "Kullanım Senaryoları"
@@ -1669,14 +1671,14 @@
           },
           "title": "Ne kadar tasarruf edebilirsiniz?",
           "withAnnual": "Hesapla →",
+          "withoutTag": "Mevcut bulut maliyetleri",
           "withResults": {
             "blockedTime": "%60 daha az",
             "contextSwitching": "<5 dakika",
             "quarterlySlip": "%100 sizin",
             "sprintCapacity": "Minimize edildi"
           },
-          "withTag": "Rediacc ile",
-          "withoutTag": "Mevcut bulut maliyetleri"
+          "withTag": "Rediacc ile"
         },
         "hero": {
           "badge": "CEO'LAR VE KURUCULAR İÇİN",
@@ -1890,14 +1892,14 @@
           },
           "title": "Altyapınız gerçekte size ne kadara mal oluyor?",
           "withAnnual": "Hesapla →",
+          "withoutTag": "Mevcut harcama",
           "withResults": {
             "blockedTime": "%60 daha az",
             "contextSwitching": "<5 dakika",
             "quarterlySlip": "Yok",
             "sprintCapacity": "Neredeyse sıfır"
           },
-          "withTag": "Rediacc ile",
-          "withoutTag": "Mevcut harcama"
+          "withTag": "Rediacc ile"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -2981,29 +2983,29 @@
           "business": {
             "floatingLicenses": "20",
             "jobsPerMonth": "20,000",
-            "repoSize": "500 GB",
             "repositories": "Sınırsız",
+            "repoSize": "500 GB",
             "usersTeams": "Sınırsız"
           },
           "community": {
             "floatingLicenses": "2",
             "jobsPerMonth": "500",
-            "repoSize": "10 GB",
             "repositories": "Sınırsız",
+            "repoSize": "10 GB",
             "usersTeams": "Sınırsız"
           },
           "enterprise": {
             "floatingLicenses": "50+",
             "jobsPerMonth": "100,000+",
-            "repoSize": "2 TB+",
             "repositories": "Sınırsız",
+            "repoSize": "2 TB+",
             "usersTeams": "Sınırsız"
           },
           "professional": {
             "floatingLicenses": "5",
             "jobsPerMonth": "5,000",
-            "repoSize": "100 GB",
             "repositories": "Sınırsız",
+            "repoSize": "100 GB",
             "usersTeams": "Sınırsız"
           }
         }
@@ -3547,13 +3549,13 @@
           },
           "title": "Güvenlik açığı maruziyetiniz ne kadara mal oluyor?",
           "withAnnual": "Yıllık güvenlik maliyeti",
+          "withoutTag": "REDİACC OLMADAN",
           "withResults": {
             "blindspot": "Kör nokta",
             "exposure": "Açık başına maruz kalma",
             "pentestCost": "Sızma testi maliyeti"
           },
-          "withTag": "REDİACC İLE",
-          "withoutTag": "REDİACC OLMADAN"
+          "withTag": "REDİACC İLE"
         },
         "explore": {
           "solutions": [
@@ -3957,14 +3959,14 @@
           },
           "title": "Denetim açıkları size ne kadara mal oluyor?",
           "withAnnual": "Yıllık denetim risk maliyeti",
+          "withoutTag": "DAĞINIK GÜNLÜKLER",
           "withResults": {
             "compileHours": "Yıllık günlük derleme saatleri",
             "delayCost": "Soruşturma gecikme maliyeti",
             "gaps": "Denetim bulgusu riski (açıklar)",
             "penaltyCost": "Uyumsuzluk ceza riski"
           },
-          "withTag": "REDİACC İLE",
-          "withoutTag": "DAĞINIK GÜNLÜKLER"
+          "withTag": "REDİACC İLE"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -4428,14 +4430,14 @@
           },
           "title": "Doğrulanmamış yedeklemeler size ne kadara mal oluyor?",
           "withAnnual": "$0",
+          "withoutTag": "Doğrulama Olmadan",
           "withResults": {
             "corrupted": "0 tespit edilmemiş",
             "dataLoss": "0",
             "recoveryCost": "$0",
             "undetected": "0"
           },
-          "withTag": "Rediacc ile",
-          "withoutTag": "Doğrulama Olmadan"
+          "withTag": "Rediacc ile"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -4940,14 +4942,14 @@
           },
           "title": "Bir bulut kesintisi size ne kadara mal oluyor?",
           "withAnnual": "$0",
+          "withoutTag": "Rediacc Olmadan",
           "withResults": {
             "churn": "$0",
             "labor": "$0",
             "revenue": "$0",
             "sla": "$0"
           },
-          "withTag": "Rediacc ile",
-          "withoutTag": "Rediacc Olmadan"
+          "withTag": "Rediacc ile"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -5450,13 +5452,13 @@
           },
           "title": "Maruz kalma pencereniz ne kadara mal oluyor?",
           "withAnnual": "Yıllık güvenlik maliyeti",
+          "withoutTag": "YILLIK SIZMA TESTİ",
           "withResults": {
             "blindspot": "Kör nokta penceresi",
             "exposure": "Açık başına maruz gün",
             "pentestCost": "Yıllık sızma testi maliyeti"
           },
-          "withTag": "SÜREKLİ (REDİACC)",
-          "withoutTag": "YILLIK SIZMA TESTİ"
+          "withTag": "SÜREKLİ (REDİACC)"
         },
         "explore": {
           "solutions": [
@@ -5838,14 +5840,14 @@
           },
           "title": "Zayıf şifreleme yönetimi size ne kadara mal oluyor?",
           "withAnnual": "Yıllık uyumluluk maliyeti",
+          "withoutTag": "SAĞLAYICI YÖNETİMLİ ANAHTARLAR",
           "withResults": {
             "exposure": "Yıllık maruz kalma pencereleri",
             "gaps": "Uyumluluk açıkları (anahtar erişimi)",
             "premium": "İhlal riski primi",
             "prepHours": "Yıllık denetim hazırlık saatleri"
           },
-          "withTag": "REDİACC İLE",
-          "withoutTag": "SAĞLAYICI YÖNETİMLİ ANAHTARLAR"
+          "withTag": "REDİACC İLE"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -6347,14 +6349,14 @@
           },
           "title": "Bu ekibinize ne kadara mal oluyor?",
           "withAnnual": "$0",
+          "withoutTag": "Rediacc Olmadan",
           "withResults": {
             "blockedTime": "0 gün",
             "contextSwitching": "Minimum",
             "quarterlySlip": "0 gün",
             "sprintCapacity": "0%"
           },
-          "withTag": "Rediacc ile",
-          "withoutTag": "Rediacc Olmadan"
+          "withTag": "Rediacc ile"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -6845,14 +6847,14 @@
           },
           "title": "Test edilmemiş yük devretme size ne kadara mal oluyor?",
           "withAnnual": "$0",
+          "withoutTag": "Test Olmadan",
           "withResults": {
             "churn": "$0",
             "compliance": "$0",
             "labor": "$0",
             "revenue": "$0"
           },
-          "withTag": "Rediacc Testiyle",
-          "withoutTag": "Test Olmadan"
+          "withTag": "Rediacc Testiyle"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -7337,14 +7339,14 @@
           },
           "title": "Bir fidye yazılımı saldırısı size ne kadara mal oluyor?",
           "withAnnual": "~$200",
+          "withoutTag": "Rediacc Olmadan",
           "withResults": {
             "downtime": "<5 dk",
             "labor": "~$200",
             "reputation": "$0",
             "revenue": "~$0"
           },
-          "withTag": "Rediacc ile",
-          "withoutTag": "Rediacc Olmadan"
+          "withTag": "Rediacc ile"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -7868,6 +7870,7 @@
           "title": "Boşta kalan ortamlar size ne kadara mal oluyor",
           "withAnnual": "$24,120",
           "withAnnualLabel": "Yıllık tasarruf",
+          "withoutTag": "HER ZAMAN AÇIK",
           "withResultLabels": {
             "idle": "CoW depolama ek yükü"
           },
@@ -7876,8 +7879,7 @@
             "monthly": "$990",
             "waste": "0%"
           },
-          "withTag": "REDİACC İLE",
-          "withoutTag": "HER ZAMAN AÇIK"
+          "withTag": "REDİACC İLE"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -8327,6 +8329,7 @@
           },
           "title": "Yavaş kurtarma size ne kadara mal oluyor?",
           "withAnnual": "$868",
+          "withoutTag": "Dosya Seviyesinde Kurtarma",
           "withResultLabels": {
             "labor": "Personel işçiliği (tek komut)"
           },
@@ -8335,8 +8338,7 @@
             "labor": "$17",
             "recoveryTime": "<5 dk"
           },
-          "withTag": "Rediacc ile",
-          "withoutTag": "Dosya Seviyesinde Kurtarma"
+          "withTag": "Rediacc ile"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -8836,13 +8838,13 @@
           },
           "title": "Bozuk CI/CD size ne kadara mal oluyor",
           "withAnnual": "$0",
+          "withoutTag": "ÖZEL BETİKLER",
           "withResults": {
             "blocked": "0 saat",
             "bugs": "0",
             "debug": "0 saat"
           },
-          "withTag": "REDİACC İLE",
-          "withoutTag": "ÖZEL BETİKLER"
+          "withTag": "REDİACC İLE"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -9293,13 +9295,13 @@
           },
           "title": "Göç riski size ne kadara mal oluyor",
           "withAnnual": "$0",
+          "withoutTag": "Rediacc Olmadan",
           "withResults": {
             "labor": "$0",
             "risk": "0 TB",
             "windows": "0 saat"
           },
-          "withTag": "Rediacc ile",
-          "withoutTag": "Rediacc Olmadan"
+          "withTag": "Rediacc ile"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -9798,13 +9800,13 @@
           },
           "title": "Ortam uyumsuzluğu size ne kadara mal oluyor",
           "withAnnual": "$0",
+          "withoutTag": "REDİACC OLMADAN",
           "withResults": {
             "capacity": "0%",
             "debug": "0 saat",
             "incidents": "0"
           },
-          "withTag": "REDİACC İLE",
-          "withoutTag": "REDİACC OLMADAN"
+          "withTag": "REDİACC İLE"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -10269,14 +10271,14 @@
           },
           "title": "Yavaş kurtarma size ne kadara mal oluyor?",
           "withAnnual": "Yıllık kesinti maliyeti",
+          "withoutTag": "REDİACC OLMADAN",
           "withResults": {
             "churn": "Müşteri kaybı maliyeti",
             "labor": "Kurtarma işçiliği",
             "regulatory": "Düzenleyici / itibar",
             "revLost": "Olay başına kaybedilen gelir"
           },
-          "withTag": "REDİACC İLE",
-          "withoutTag": "REDİACC OLMADAN"
+          "withTag": "REDİACC İLE"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -10754,14 +10756,14 @@
           },
           "title": "Manuel uyumluluk size ne kadara mal oluyor?",
           "withAnnual": "$0",
+          "withoutTag": "Rediacc Olmadan",
           "withResults": {
             "gaps": "0",
             "labor": "$0",
             "penalty": "$0",
             "prepHours": "4 saat"
           },
-          "withTag": "Rediacc ile",
-          "withoutTag": "Rediacc Olmadan"
+          "withTag": "Rediacc ile"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -11297,14 +11299,14 @@
           },
           "title": "Yama atlamak size ne kadara mal oluyor?",
           "withAnnual": "$0",
+          "withoutTag": "Rediacc Olmadan",
           "withResults": {
             "breach": "Minimum",
             "downtime": "$0",
             "exposure": "0 gün",
             "labor": "$0"
           },
-          "withTag": "Rediacc ile",
-          "withoutTag": "Rediacc Olmadan"
+          "withTag": "Rediacc ile"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -11810,14 +11812,14 @@
           },
           "title": "Sağlayıcı bağımlılığı size ne kadara mal oluyor?",
           "withAnnual": "Yıllık bağımlılık vergisi",
+          "withoutTag": "BAĞIMLI",
           "withResults": {
             "egress": "Çıkış veri transfer ücretleri",
             "leverage": "Yeniden müzakere gücü",
             "markup": "Piyasa üzeri sağlayıcı farkı",
             "migrate": "Göç maliyeti"
           },
-          "withTag": "REDİACC İLE",
-          "withoutTag": "BAĞIMLI"
+          "withTag": "REDİACC İLE"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -12274,9 +12276,9 @@
           },
           "title": "Yavaş yamalama size ne kadara mal oluyor?",
           "withAnnual": "",
+          "withoutTag": "Rediacc Olmadan",
           "withResults": {},
-          "withTag": "Rediacc ile",
-          "withoutTag": "Rediacc Olmadan"
+          "withTag": "Rediacc ile"
         },
         "explore": {
           "solutions": [
@@ -13273,6 +13275,15 @@
     },
     "subtitle": "Üretim ortamlarında terabaytlarca veri bulunurken korumalı alan ortamları yalnızca aylık olarak senkronize edildiğinde, ekipler tehlikeli geçici çözümlere yol açan imkansız seçimlerle karşı karşıya kalır.",
     "title": "Hız Uyuşmazlığı Krizi"
+  },
+  "regionPicker": {
+    "footer": "Size en yakın bölgeyi veya kuruluşunuzun gerektirdiği bölgeyi seçin. Kayıt sonrasında bu değiştirilemez.",
+    "locations": {
+      "eu": "Frankfurt, Almanya",
+      "us": "Virginia, ABD"
+    },
+    "subtitle": "Hesabınız, faturalarınız ve yapılandırmalarınız dahil her şey seçtiğiniz bölgede kalır. Asla oradan ayrılmaz.",
+    "title": "Verilerinizi nerede saklayalım?"
   },
   "solutions": {
     "categories": {

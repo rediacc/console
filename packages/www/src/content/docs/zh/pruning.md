@@ -4,7 +4,7 @@ description: "删除孤立备份、过期快照和未使用的仓库镜像以回
 category: "Guides"
 order: 12
 language: zh
-sourceHash: "a9bfc5eaffb9bca9"
+sourceHash: "dfa21ca915423599"
 ---
 
 # 清理
@@ -19,7 +19,7 @@ sourceHash: "a9bfc5eaffb9bca9"
 扫描存储提供商，并删除其 GUID 不再出现在任何配置文件中的备份。
 
 ```bash
-# Dry-run (default) — shows what would be deleted
+# Dry-run (default), shows what would be deleted
 rdc storage prune --name my-s3 -m server-1
 
 # Actually delete orphaned backups

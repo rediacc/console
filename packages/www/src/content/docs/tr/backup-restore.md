@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "7f95ad082a023982"
+sourceHash: "137aa1578ca99b8c"
 ---
 
 # Yedekleme ve Geri Yükleme

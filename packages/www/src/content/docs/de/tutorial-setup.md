@@ -4,7 +4,7 @@ description: "Erstellen Sie ein Konfigurationsprofil, registrieren Sie eine Remo
 category: "Tutorials"
 order: 2
 language: de
-sourceHash: "3d92b47b323eb53e"
+sourceHash: "2a32100e76d41bc0"
 ---
 
 # So richten Sie eine Maschine mit Rediacc ein
@@ -88,7 +88,7 @@ rdc doctor
 
 ### Schritt 8: Infrastruktur konfigurieren
 
-Für öffentlich zugängliche Dienste benötigt die Maschine eine Netzwerkkonfiguration — ihre externe IP, eine Basisdomain und eine Zertifikats-E-Mail für TLS.
+Für öffentlich zugängliche Dienste benötigt die Maschine eine Netzwerkkonfiguration, ihre externe IP, eine Basisdomain und eine Zertifikats-E-Mail für TLS.
 
 ```bash
 rdc config infra set -m bridge-vm \
@@ -120,6 +120,6 @@ Der gespeicherte Host-Schlüssel stimmt nicht mit dem aktuellen Schlüssel des S
 
 Sie haben ein Konfigurationsprofil erstellt, eine Maschine registriert, die Konnektivität überprüft und die Infrastrukturnetzwerke konfiguriert. Zum Bereitstellen von Anwendungen:
 
-- [Maschineneinrichtung](/de/docs/setup) — vollständige Referenz für alle Konfigurations- und Einrichtungsbefehle
-- [Tutorial: Repository-Lebenszyklus](/de/docs/tutorial-repos) — Repositories erstellen, bereitstellen und verwalten
-- [Schnellstart](/de/docs/quick-start) — eine containerisierte Anwendung Ende-zu-Ende bereitstellen
+- [Maschineneinrichtung](/de/docs/setup), vollständige Referenz für alle Konfigurations- und Einrichtungsbefehle
+- [Tutorial: Repository-Lebenszyklus](/de/docs/tutorial-repos), Repositories erstellen, bereitstellen und verwalten
+- [Schnellstart](/de/docs/quick-start), eine containerisierte Anwendung Ende-zu-Ende bereitstellen

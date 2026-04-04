@@ -4,7 +4,7 @@ description: "Makine sağlığını kontrol edin, konteynerleri inceleyin, syste
 category: "Tutorials"
 order: 4
 language: tr
-sourceHash: "ac0ee8180fdb7644"
+sourceHash: "2efd897e27dca34e"
 ---
 
 # Rediacc ile Altyapıyı İzleme ve Tanılama
@@ -100,6 +100,6 @@ Rediacc servisleri yalnızca en az bir depo dağıtıldıktan sonra görünür. 
 
 Tanılama çalıştırdınız, makine sağlığını kontrol ettiniz, konteynerleri ve servisleri inceleydiniz ve bağlantıyı doğruladınız. Dağıtımlarınızla çalışmak için:
 
-- [İzleme](/tr/docs/monitoring) — tüm izleme komutları için tam referans
-- [Sorun Giderme](/tr/docs/troubleshooting) — yaygın sorunlar ve çözümler
-- [Öğretici: Araçlar](/tr/docs/tutorial-tools) — terminal, dosya senkronizasyonu ve VS Code entegrasyonu
+- [İzleme](/tr/docs/monitoring), tüm izleme komutları için tam referans
+- [Sorun Giderme](/tr/docs/troubleshooting), yaygın sorunlar ve çözümler
+- [Öğretici: Araçlar](/tr/docs/tutorial-tools), terminal, dosya senkronizasyonu ve VS Code entegrasyonu

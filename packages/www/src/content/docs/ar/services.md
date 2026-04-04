@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: "4a2050fece1accbb"
+sourceHash: "f4949653be4a11cd"
 ---
 
 # الخدمات
@@ -167,7 +167,7 @@ services:
       LISTEN_ADDR: ${API_IP}:8080
 ```
 
-> **ملاحظة:** لا تضف `network_mode: host` يدوياً — يقوم `renet compose` بحقنه تلقائياً. سياسات إعادة التشغيل (مثل `restart: always`) آمنة للاستخدام — يزيلها renet تلقائياً لتوافق CRIU ويتولى watchdog استعادة الحاويات.
+> **ملاحظة:** لا تضف `network_mode: host` يدوياً, يقوم `renet compose` بحقنه تلقائياً. سياسات إعادة التشغيل (مثل `restart: always`) آمنة للاستخدام, يزيلها renet تلقائياً لتوافق CRIU ويتولى watchdog استعادة الحاويات.
 
 > **ملاحظة:** مستودعات fork تحصل على مسارات تلقائية مسطحة: `{service}-{tag}.{machine}.{baseDomain}`. يتم تخطي النطاقات المخصصة لمستودعات fork.
 

@@ -1,0 +1,42 @@
+name = "edge-rediacc-account-us"
+main = "src/index.ts"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+
+routes = [
+  { pattern = "edge-us.rediacc.com", custom_domain = true }
+]
+
+[vars]
+REGION = "us"
+ENVIRONMENT = "edge"
+WEBAUTHN_RP_ID = "edge-us.rediacc.com"
+WEBAUTHN_ORIGIN = "https://edge-us.rediacc.com"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "404-page"
+run_worker_first = ["/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "edge-account-db-us"
+database_id = "82d6cd7c-84fc-4ad9-910e-8d2d1eee82db"
+migrations_dir = "../../private/account/drizzle"
+
+[[r2_buckets]]
+binding = "CONFIG_BUCKET"
+bucket_name = "edge-rediacc-configs-us"

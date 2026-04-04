@@ -4,7 +4,7 @@ description: 'Maschinengesundheit, Container, Dienste, Repositories und Diagnose
 category: Guides
 order: 9
 language: de
-sourceHash: "7b7349277b9d5f85"
+sourceHash: "8332f7d1cb8ee60b"
 sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
@@ -47,8 +47,8 @@ rdc machine containers server-1
 | Repository | Welchem Repository der Container gehört |
 
 Optionen:
-- `--health-check` — Aktive Gesundheitsprüfungen an Containern durchführen
-- `--output json` — Maschinenlesbare JSON-Ausgabe
+- `--health-check`, Aktive Gesundheitsprüfungen an Containern durchführen
+- `--output json`, Maschinenlesbare JSON-Ausgabe
 
 Die JSON-Ausgabe enthält vollständige Containerdetails (`labels`, `port_mappings`, `image`, `id`) sowie `repository` (aufgelöster Name), `repository_guid` (ursprüngliche GUID), `domain` und `autoRoute`.
 
@@ -70,8 +70,8 @@ rdc machine services server-1
 | Repository | Zugehöriges Repository |
 
 Optionen:
-- `--stability-check` — Instabile Dienste markieren (fehlgeschlagen, >3 Neustarts, automatischer Neustart)
-- `--output json` — Maschinenlesbare JSON-Ausgabe
+- `--stability-check`, Instabile Dienste markieren (fehlgeschlagen, >3 Neustarts, automatischer Neustart)
+- `--output json`, Maschinenlesbare JSON-Ausgabe
 
 Die JSON-Ausgabe enthält vollständige Dienstdetails mit `repository` (aufgelöster Name) und `repository_guid` (ursprüngliche GUID).
 
@@ -94,8 +94,8 @@ rdc machine repos server-1
 | Geändert | Letzte Änderungszeit |
 
 Optionen:
-- `--search <text>` — Nach Name oder Einbindungspfad filtern
-- `--output json` — Maschinenlesbare JSON-Ausgabe
+- `--search <text>`, Nach Name oder Einbindungspfad filtern
+- `--output json`, Maschinenlesbare JSON-Ausgabe
 
 Die JSON-Ausgabe enthält `name` (aufgelöst) und `guid` (ursprüngliche GUID) und verschachtelt für jedes Repository die Arrays `containers` (mit `domain`, `autoRoute`, `repository`/`repository_guid`) und `services`.
 
@@ -133,8 +133,8 @@ Meldet:
 - Known-Hosts-Eintrag
 
 Optionen:
-- `--port <number>` — SSH-Port (Standard: 22)
-- `--save -m server-1` — Verifizierten Host-Schlüssel in der Maschinenkonfiguration speichern
+- `--port <number>`, SSH-Port (Standard: 22)
+- `--save -m server-1`, Verifizierten Host-Schlüssel in der Maschinenkonfiguration speichern
 
 ## Diagnose (doctor)
 

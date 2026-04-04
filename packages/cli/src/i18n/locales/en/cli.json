@@ -1615,7 +1615,10 @@
         "polling": "Waiting for approval (press Ctrl+C to cancel)...",
         "expired": "Authorization timed out. Please try again.",
         "browserFailed": "Could not open browser automatically. Please visit the URL above.",
-        "initFailed": "Failed to initiate login. Is the server running?"
+        "initFailed": "Failed to initiate login. Is the server running?",
+        "discoveringRegions": "Discovering available regions...",
+        "regionsDiscovered": "Regions loaded",
+        "regionSelected": "Data region: {{region}} ({{domain}})"
       },
       "logout": {
         "description": "Clear stored subscription token",

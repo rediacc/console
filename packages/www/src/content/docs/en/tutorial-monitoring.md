@@ -99,6 +99,6 @@ Containers from previous deployments may linger if `repo down` was not run clean
 
 You ran diagnostics, checked machine health, inspected containers and services, and verified connectivity. To work with your deployments:
 
-- [Monitoring](/en/docs/monitoring) — full reference for all monitoring commands
-- [Troubleshooting](/en/docs/troubleshooting) — common issues and solutions
-- [Tutorial: Tools](/en/docs/tutorial-tools) — terminal, file sync, and VS Code integration
+- [Monitoring](/en/docs/monitoring), full reference for all monitoring commands
+- [Troubleshooting](/en/docs/troubleshooting), common issues and solutions
+- [Tutorial: Tools](/en/docs/tutorial-tools), terminal, file sync, and VS Code integration

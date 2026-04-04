@@ -4,7 +4,7 @@ description: "Konfiguration erstellen, Maschinen hinzufügen, Server provisionie
 category: "Guides"
 order: 3
 language: de
-sourceHash: "9fd8ebf2b98bfcf5"
+sourceHash: "143694525e0fcd9b"
 ---
 
 # Maschineneinrichtung
@@ -121,15 +121,15 @@ rdc config infra set -m server-1 \
 
 | Option | Bereich | Beschreibung |
 |--------|---------|-------------|
-| `--public-ipv4 <ip>` | Machine | Public IPv4 address — proxy entrypoints are only created for configured address families |
-| `--public-ipv6 <ip>` | Machine | Public IPv6 address — proxy entrypoints are only created for configured address families |
+| `--public-ipv4 <ip>` | Machine | Public IPv4 address, proxy entrypoints are only created for configured address families |
+| `--public-ipv6 <ip>` | Machine | Public IPv6 address, proxy entrypoints are only created for configured address families |
 | `--base-domain <domain>` | Machine | Basis-Domain für Anwendungen (z. B. `example.com`) |
 | `--cert-email <email>` | Config | E-Mail für Let's Encrypt TLS-Zertifikate (maschinenübergreifend geteilt) |
 | `--cf-dns-token <token>` | Config | Cloudflare DNS API-Token für ACME DNS-01-Challenges (maschinenübergreifend geteilt) |
 | `--tcp-ports <ports>` | Machine | Kommagetrennte zusätzliche TCP-Ports zur Weiterleitung (z. B. `25,143,465,587,993`) |
 | `--udp-ports <ports>` | Machine | Kommagetrennte zusätzliche UDP-Ports zur Weiterleitung (z. B. `53`) |
 
-Machine-Optionen werden pro Maschine gespeichert. Config-Optionen (`--cert-email`, `--cf-dns-token`) gelten für alle Maschinen in der Konfiguration — einmal setzen und sie gelten überall.
+Machine-Optionen werden pro Maschine gespeichert. Config-Optionen (`--cert-email`, `--cf-dns-token`) gelten für alle Maschinen in der Konfiguration, einmal setzen und sie gelten überall.
 
 ### Infrastruktur anzeigen
 
@@ -150,7 +150,7 @@ Dieser Befehl:
 2. Konfiguriert den Traefik-Reverse-Proxy, Router und systemd-Dienste
 3. Erstellt Cloudflare-DNS-Einträge für die Maschinen-Subdomain (`server-1.example.com` und `*.server-1.example.com`), wenn `--cf-dns-token` gesetzt ist
 
-Der DNS-Schritt ist automatisch und idempotent — er erstellt fehlende Einträge, aktualisiert Einträge mit geänderten IPs und überspringt bereits korrekte Einträge. Wenn kein Cloudflare-Token konfiguriert ist, wird DNS mit einer Warnung übersprungen. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+Der DNS-Schritt ist automatisch und idempotent, er erstellt fehlende Einträge, aktualisiert Einträge mit geänderten IPs und überspringt bereits korrekte Einträge. Wenn kein Cloudflare-Token konfiguriert ist, wird DNS mit einer Warnung übersprungen. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
 
 ## Cloud-Provisionierung
 

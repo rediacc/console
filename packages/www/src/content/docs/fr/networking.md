@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: fr
-sourceHash: "cc79bbad07c3ef01"
+sourceHash: "c9d086d519625aa8"
 ---
 
 # Réseau
@@ -19,8 +19,8 @@ Pour comprendre comment les services obtiennent leurs adresses IP de bouclage et
 
 Rediacc utilise un système de proxy à deux composants pour router le trafic externe vers les conteneurs :
 
-1. **Serveur de routes** — un service systemd qui découvre les conteneurs en cours d'exécution sur tous les démons Docker des dépôts. Il inspecte les labels des conteneurs et génère la configuration de routage, servie comme un point d'accès YAML.
-2. **Traefik** — un proxy inverse qui interroge le serveur de routes toutes les 5 secondes et applique les routes découvertes. Il gère le routage HTTP/HTTPS, la terminaison TLS et la redirection TCP/UDP.
+1. **Serveur de routes**, un service systemd qui découvre les conteneurs en cours d'exécution sur tous les démons Docker des dépôts. Il inspecte les labels des conteneurs et génère la configuration de routage, servie comme un point d'accès YAML.
+2. **Traefik**, un proxy inverse qui interroge le serveur de routes toutes les 5 secondes et applique les routes découvertes. Il gère le routage HTTP/HTTPS, la terminaison TLS et la redirection TCP/UDP.
 
 Le flux est le suivant :
 
@@ -34,9 +34,9 @@ Internet → Traefik (ports 80/443/TCP/UDP)
            Conteneurs (liés aux IP de bouclage 127.x.x.x)
 ```
 
-Lorsque vous ajoutez les bons labels à un conteneur et le démarrez avec `renet compose`, il devient automatiquement routable — aucune configuration manuelle du proxy n'est nécessaire.
+Lorsque vous ajoutez les bons labels à un conteneur et le démarrez avec `renet compose`, il devient automatiquement routable, aucune configuration manuelle du proxy n'est nécessaire.
 
-> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime — Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime, Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
 
 ## Labels Docker
 
@@ -75,10 +75,10 @@ Vous pouvez définir un domaine personnalisé pour un service en utilisant le la
 
 ```yaml
 labels:
-  # Nom court — résolu en cloud.example.com en utilisant le baseDomain de la machine
+  # Nom court, résolu en cloud.example.com en utilisant le baseDomain de la machine
   - "rediacc.domain=cloud"
 
-  # Domaine complet — utilisé tel quel
+  # Domaine complet, utilisé tel quel
   - "rediacc.domain=cloud.example.com"
 ```
 
@@ -107,7 +107,7 @@ Ceux-ci utilisent la syntaxe standard des [labels Traefik v3](https://doc.traefi
 
 ### Prérequis
 
-1. Infrastructure configurée sur la machine ([Configuration de la machine — Configuration de l'infrastructure](/fr/docs/setup#configuration-de-linfrastructure)) :
+1. Infrastructure configurée sur la machine ([Configuration de la machine, Configuration de l'infrastructure](/fr/docs/setup#configuration-de-linfrastructure)) :
 
    ```bash
    # Identifiants partagés (une fois par config, s'applique à toutes les machines)
@@ -145,18 +145,18 @@ services:
   database:
     image: postgres:17
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
-    # Pas de labels traefik — la base de données est interne uniquement
+    # Pas de labels traefik, la base de données est interne uniquement
 ```
 
 | Label | Objectif |
 |-------|----------|
 | `traefik.enable=true` | Active le routage Traefik personnalisé pour ce conteneur |
-| `traefik.http.routers.{name}.rule` | Règle de routage — typiquement `Host(\`domaine\`)` |
+| `traefik.http.routers.{name}.rule` | Règle de routage, typiquement `Host(\`domaine\`)` |
 | `traefik.http.routers.{name}.entrypoints` | Ports d'écoute : `websecure` (HTTPS IPv4), `websecure-v6` (HTTPS IPv6) |
-| `traefik.http.routers.{name}.tls.certresolver` | Résolveur de certificats — utilisez `letsencrypt` pour Let's Encrypt automatique |
+| `traefik.http.routers.{name}.tls.certresolver` | Résolveur de certificats, utilisez `letsencrypt` pour Let's Encrypt automatique |
 | `traefik.http.services.{name}.loadbalancer.server.port` | Le port sur lequel votre application écoute à l'intérieur du conteneur |
 
-Le `{name}` dans les labels est un identifiant arbitraire — il doit simplement être cohérent entre les labels de routeur/service/middleware associés.
+Le `{name}` dans les labels est un identifiant arbitraire, il doit simplement être cohérent entre les labels de routeur/service/middleware associés.
 
 > **Note :** Les labels `rediacc.*` (`rediacc.service_name`, `rediacc.service_ip`, `rediacc.network_id`) sont injectés automatiquement par `renet compose`. Vous n'avez pas besoin de les ajouter à votre fichier compose.
 
@@ -233,7 +233,7 @@ services:
       - "traefik.tcp.routers.mail-smtp.service=mail-smtp"
       - "traefik.tcp.services.mail-smtp.loadbalancer.server.port=25"
 
-      # IMAPS (port 993) — passthrough TLS
+      # IMAPS (port 993), passthrough TLS
       - "traefik.tcp.routers.mail-imaps.entrypoints=tcp-993"
       - "traefik.tcp.routers.mail-imaps.rule=HostSNI(`mail.example.com`)"
       - "traefik.tcp.routers.mail-imaps.tls.passthrough=true"
@@ -243,12 +243,12 @@ services:
 
 Concepts clés :
 - **`HostSNI(\`*\`)`** correspond à n'importe quel nom d'hôte (pour les protocoles qui n'envoient pas de SNI, comme le SMTP en clair)
-- **`tls.passthrough=true`** signifie que Traefik transmet la connexion TLS brute sans la déchiffrer — l'application gère le TLS elle-même
+- **`tls.passthrough=true`** signifie que Traefik transmet la connexion TLS brute sans la déchiffrer, l'application gère le TLS elle-même
 - Les noms des points d'entrée suivent la convention `tcp-{port}` ou `udp-{port}`
 
 ### Ports pré-configurés
 
-Les ports TCP/UDP suivants ont des points d'entrée par défaut (pas besoin de les ajouter via `--tcp-ports`). Les points d'entrée ne sont générés que pour les familles d'adresses configurées — les points d'entrée IPv4 nécessitent `--public-ipv4`, les points d'entrée IPv6 nécessitent `--public-ipv6` :
+Les ports TCP/UDP suivants ont des points d'entrée par défaut (pas besoin de les ajouter via `--tcp-ports`). Les points d'entrée ne sont générés que pour les familles d'adresses configurées, les points d'entrée IPv4 nécessitent `--public-ipv4`, les points d'entrée IPv6 nécessitent `--public-ipv6` :
 
 | Port | Protocole | Utilisation courante |
 |------|-----------|---------------------|
@@ -278,7 +278,7 @@ Lorsque `--cf-dns-token` est configuré, `rdc config infra push` crée automatiq
 
 Les enregistrements au niveau machine sont créés par `push-infra` et couvrent les routes avec domaine personnalisé (`rediacc.domain`). Les enregistrements wildcard par dépôt sont créés automatiquement par `repo up` et couvrent les routes automatiques pour ce dépôt.
 
-C'est idempotent — les enregistrements existants sont mis à jour si l'IP change, et laissés inchangés s'ils sont déjà corrects.
+C'est idempotent, les enregistrements existants sont mis à jour si l'IP change, et laissés inchangés s'ils sont déjà corrects.
 
 Le wildcard du domaine de base (`*.example.com`) doit être créé manuellement si vous utilisez des labels de domaine personnalisés comme `rediacc.domain=erp`.
 
@@ -407,7 +407,7 @@ services:
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-    # Pas de labels traefik — interne uniquement
+    # Pas de labels traefik, interne uniquement
 ```
 
 ### Rediaccfile

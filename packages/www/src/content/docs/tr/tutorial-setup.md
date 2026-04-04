@@ -4,7 +4,7 @@ description: "Bir yapılandırma profili oluşturun, uzak bir makine kaydedin, S
 category: "Tutorials"
 order: 2
 language: tr
-sourceHash: "3d92b47b323eb53e"
+sourceHash: "2a32100e76d41bc0"
 ---
 
 # Rediacc ile Makine Nasıl Kurulur
@@ -88,7 +88,7 @@ Yerel ortamınızı kontrol eder: CLI sürümü, Docker, renet ikili dosyası, y
 
 ### Adım 8: Altyapıyı yapılandırın
 
-Halka açık hizmetler için makinenin ağ yapılandırmasına ihtiyacı vardır — harici IP'si, bir temel alan adı ve TLS için bir sertifika e-postası.
+Halka açık hizmetler için makinenin ağ yapılandırmasına ihtiyacı vardır, harici IP'si, bir temel alan adı ve TLS için bir sertifika e-postası.
 
 ```bash
 rdc config infra set -m bridge-vm \
@@ -120,6 +120,6 @@ Saklanan host anahtarı sunucunun mevcut anahtarıyla eşleşmiyor. Bu, sunucu y
 
 Bir yapılandırma profili oluşturdunuz, bir makine kaydettiniz, bağlantıyı doğruladınız ve altyapı ağını yapılandırdınız. Uygulamaları dağıtmak için:
 
-- [Makine Kurulumu](/tr/docs/setup) — tüm yapılandırma ve kurulum komutları için tam referans
-- [Öğretici: Depo Yaşam Döngüsü](/tr/docs/tutorial-repos) — depo oluşturma, dağıtma ve yönetme
-- [Hızlı Başlangıç](/tr/docs/quick-start) — konteynerleştirilmiş bir uygulamayı uçtan uca dağıtma
+- [Makine Kurulumu](/tr/docs/setup), tüm yapılandırma ve kurulum komutları için tam referans
+- [Öğretici: Depo Yaşam Döngüsü](/tr/docs/tutorial-repos), depo oluşturma, dağıtma ve yönetme
+- [Hızlı Başlangıç](/tr/docs/quick-start), konteynerleştirilmiş bir uygulamayı uçtan uca dağıtma

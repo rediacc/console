@@ -193,8 +193,39 @@ module.exports = async ({ github, context, core }) => {
     return msg;
   }
 
-  // Helper: force-cancel the workflow run
+  // Helper: force-cancel the workflow run.
+  // Waits for critical jobs (WATCHDOG_WAIT_PATTERNS) to finish before cancelling,
+  // so cleanup traps (e.g., deleting temp D1 databases) can complete.
   async function forceCancel(failureMsg) {
+    const waitPatternsRaw = process.env.WATCHDOG_WAIT_PATTERNS || '';
+    const waitPatterns = waitPatternsRaw.split(',').map(s => s.trim()).filter(Boolean);
+
+    if (waitPatterns.length > 0) {
+      const maxWait = 300000; // 5 minutes
+      const waitPoll = 15000; // 15 seconds
+      const waitStart = Date.now();
+
+      while (Date.now() - waitStart < maxWait) {
+        try {
+          const allJobs = await github.paginate(
+            github.rest.actions.listJobsForWorkflowRun,
+            { owner: context.repo.owner, repo: context.repo.repo, run_id: context.runId, per_page: 100 },
+            response => response.data
+          );
+          const criticalRunning = allJobs.filter(j =>
+            j.status === 'in_progress' && waitPatterns.some(p => j.name.includes(p))
+          );
+          if (criticalRunning.length === 0) break;
+          const elapsed = Math.round((Date.now() - waitStart) / 1000);
+          console.log(`Waiting for critical jobs (${elapsed}s): ${criticalRunning.map(j => j.name).join(', ')}`);
+        } catch (e) {
+          console.log(`Warning: failed to check critical jobs: ${e.message}`);
+          break; // Don't block cancellation on API errors
+        }
+        await new Promise(r => setTimeout(r, waitPoll));
+      }
+    }
+
     console.log('Force-cancelling workflow run...');
     try {
       await github.request('POST /repos/{owner}/{repo}/actions/runs/{run_id}/force-cancel', {

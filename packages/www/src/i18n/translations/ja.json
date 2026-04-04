@@ -27,6 +27,7 @@
   },
   "captchaRequired": "キャプチャ認証を完了してください。",
   "common": {
+    "close": "閉じる",
     "aria": {
       "breadcrumbNavigation": "パンくずナビゲーション",
       "clickToEnlarge": "クリックして画像を拡大",
@@ -120,6 +121,7 @@
     "categories": {
       "concepts": "コンセプト",
       "guides": "ガイド",
+      "legal": "法務",
       "reference": "リファレンス",
       "tutorials": "チュートリアル",
       "useCases": "ユースケース"
@@ -1671,14 +1673,14 @@
           },
           "title": "どれくらい節約できる？",
           "withAnnual": "計算する →",
+          "withoutTag": "現在のクラウドコスト",
           "withResults": {
             "blockedTime": "60%削減",
             "contextSwitching": "5分未満",
             "quarterlySlip": "100%あなたのもの",
             "sprintCapacity": "最小化"
           },
-          "withTag": "Rediaccの場合",
-          "withoutTag": "現在のクラウドコスト"
+          "withTag": "Rediaccの場合"
         },
         "hero": {
           "badge": "CEO・創業者向け",
@@ -1892,14 +1894,14 @@
           },
           "title": "インフラの本当のコストは？",
           "withAnnual": "計算する →",
+          "withoutTag": "現在の支出",
           "withResults": {
             "blockedTime": "60%削減",
             "contextSwitching": "5分未満",
             "quarterlySlip": "なし",
             "sprintCapacity": "ほぼゼロ"
           },
-          "withTag": "Rediaccの場合",
-          "withoutTag": "現在の支出"
+          "withTag": "Rediaccの場合"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -2985,29 +2987,29 @@
           "business": {
             "floatingLicenses": "20",
             "jobsPerMonth": "20,000",
-            "repoSize": "500 GB",
             "repositories": "無制限",
+            "repoSize": "500 GB",
             "usersTeams": "無制限"
           },
           "community": {
             "floatingLicenses": "2",
             "jobsPerMonth": "500",
-            "repoSize": "10 GB",
             "repositories": "無制限",
+            "repoSize": "10 GB",
             "usersTeams": "無制限"
           },
           "enterprise": {
             "floatingLicenses": "50+",
             "jobsPerMonth": "100,000+",
-            "repoSize": "2 TB+",
             "repositories": "無制限",
+            "repoSize": "2 TB+",
             "usersTeams": "無制限"
           },
           "professional": {
             "floatingLicenses": "5",
             "jobsPerMonth": "5,000",
-            "repoSize": "100 GB",
             "repositories": "無制限",
+            "repoSize": "100 GB",
             "usersTeams": "無制限"
           }
         }
@@ -3551,13 +3553,13 @@
           },
           "title": "脆弱性の露出にどれだけのコストがかかっていますか？",
           "withAnnual": "年間セキュリティコスト",
+          "withoutTag": "REDIACCなし",
           "withResults": {
             "blindspot": "ブラインドスポット",
             "exposure": "脆弱性ごとの露出期間",
             "pentestCost": "ペンテストコスト"
           },
-          "withTag": "REDIACCあり",
-          "withoutTag": "REDIACCなし"
+          "withTag": "REDIACCあり"
         },
         "explore": {
           "solutions": [
@@ -3961,14 +3963,14 @@
           },
           "title": "監査ギャップにどれだけのコストがかかりますか？",
           "withAnnual": "年間監査リスクコスト",
+          "withoutTag": "分散ログ",
           "withResults": {
             "compileHours": "年間ログ集約時間",
             "delayCost": "調査遅延コスト",
             "gaps": "監査指摘リスク（ギャップ）",
             "penaltyCost": "コンプライアンス違反ペナルティリスク"
           },
-          "withTag": "REDIACCあり",
-          "withoutTag": "分散ログ"
+          "withTag": "REDIACCあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -4432,14 +4434,14 @@
           },
           "title": "未検証バックアップにどれだけのコストがかかりますか？",
           "withAnnual": "$0",
+          "withoutTag": "検証なし",
           "withResults": {
             "corrupted": "未検出ゼロ",
             "dataLoss": "0",
             "recoveryCost": "$0",
             "undetected": "0"
           },
-          "withTag": "Rediaccあり",
-          "withoutTag": "検証なし"
+          "withTag": "Rediaccあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -4944,14 +4946,14 @@
           },
           "title": "クラウド障害にどれだけのコストがかかりますか？",
           "withAnnual": "$0",
+          "withoutTag": "Rediaccなし",
           "withResults": {
             "churn": "$0",
             "labor": "$0",
             "revenue": "$0",
             "sla": "$0"
           },
-          "withTag": "Rediaccあり",
-          "withoutTag": "Rediaccなし"
+          "withTag": "Rediaccあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -5454,13 +5456,13 @@
           },
           "title": "露出ウィンドウにどれだけのコストがかかっていますか？",
           "withAnnual": "年間セキュリティコスト",
+          "withoutTag": "年次ペンテスト",
           "withResults": {
             "blindspot": "ブラインドスポットウィンドウ",
             "exposure": "脆弱性ごとの露出日数",
             "pentestCost": "年間ペンテストコスト"
           },
-          "withTag": "継続的（REDIACC）",
-          "withoutTag": "年次ペンテスト"
+          "withTag": "継続的（REDIACC）"
         },
         "explore": {
           "solutions": [
@@ -5842,14 +5844,14 @@
           },
           "title": "弱い暗号化ガバナンスにどれだけのコストがかかりますか？",
           "withAnnual": "年間コンプライアンスコスト",
+          "withoutTag": "ベンダー管理鍵",
           "withResults": {
             "exposure": "年間の露出ウィンドウ",
             "gaps": "コンプライアンスギャップ（鍵アクセス）",
             "premium": "侵害リスクプレミアム",
             "prepHours": "年間監査準備時間"
           },
-          "withTag": "REDIACCあり",
-          "withoutTag": "ベンダー管理鍵"
+          "withTag": "REDIACCあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -6351,14 +6353,14 @@
           },
           "title": "チームにどれだけのコストがかかっていますか？",
           "withAnnual": "$0",
+          "withoutTag": "Rediaccなし",
           "withResults": {
             "blockedTime": "0日",
             "contextSwitching": "最小限",
             "quarterlySlip": "0日",
             "sprintCapacity": "0%"
           },
-          "withTag": "Rediaccあり",
-          "withoutTag": "Rediaccなし"
+          "withTag": "Rediaccあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -6849,14 +6851,14 @@
           },
           "title": "テストされていないフェイルオーバーにどれだけのコストがかかりますか？",
           "withAnnual": "$0",
+          "withoutTag": "テストなし",
           "withResults": {
             "churn": "$0",
             "compliance": "$0",
             "labor": "$0",
             "revenue": "$0"
           },
-          "withTag": "Rediaccテストあり",
-          "withoutTag": "テストなし"
+          "withTag": "Rediaccテストあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -7341,14 +7343,14 @@
           },
           "title": "ランサムウェア攻撃のコストは？",
           "withAnnual": "約$200",
+          "withoutTag": "Rediaccなし",
           "withResults": {
             "downtime": "5分未満",
             "labor": "約$200",
             "reputation": "$0",
             "revenue": "~$0"
           },
-          "withTag": "Rediaccあり",
-          "withoutTag": "Rediaccなし"
+          "withTag": "Rediaccあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -7872,6 +7874,7 @@
           "title": "アイドル環境にどれだけのコストがかかっているか",
           "withAnnual": "$24,120",
           "withAnnualLabel": "年間節約額",
+          "withoutTag": "常時稼働",
           "withResultLabels": {
             "idle": "CoWストレージオーバーヘッド"
           },
@@ -7880,8 +7883,7 @@
             "monthly": "$990",
             "waste": "0%"
           },
-          "withTag": "REDIACCあり",
-          "withoutTag": "常時稼働"
+          "withTag": "REDIACCあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -8331,6 +8333,7 @@
           },
           "title": "遅い復旧にどれだけのコストがかかっていますか？",
           "withAnnual": "$868",
+          "withoutTag": "ファイルレベル復旧",
           "withResultLabels": {
             "labor": "スタッフ人件費（1コマンド）"
           },
@@ -8339,8 +8342,7 @@
             "labor": "$17",
             "recoveryTime": "5分未満"
           },
-          "withTag": "Rediaccあり",
-          "withoutTag": "ファイルレベル復旧"
+          "withTag": "Rediaccあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -8840,13 +8842,13 @@
           },
           "title": "壊れたCI/CDにどれだけのコストがかかっているか",
           "withAnnual": "$0",
+          "withoutTag": "カスタムスクリプト",
           "withResults": {
             "blocked": "0時間",
             "bugs": "0",
             "debug": "0時間"
           },
-          "withTag": "REDIACCあり",
-          "withoutTag": "カスタムスクリプト"
+          "withTag": "REDIACCあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -9297,13 +9299,13 @@
           },
           "title": "移行リスクにどれだけのコストがかかっているか",
           "withAnnual": "$0",
+          "withoutTag": "Rediaccなし",
           "withResults": {
             "labor": "$0",
             "risk": "0 TB",
             "windows": "0時間"
           },
-          "withTag": "Rediaccあり",
-          "withoutTag": "Rediaccなし"
+          "withTag": "Rediaccあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -9802,13 +9804,13 @@
           },
           "title": "環境の不一致にどれだけのコストがかかっているか",
           "withAnnual": "$0",
+          "withoutTag": "REDIACCなし",
           "withResults": {
             "capacity": "0%",
             "debug": "0時間",
             "incidents": "0"
           },
-          "withTag": "REDIACCあり",
-          "withoutTag": "REDIACCなし"
+          "withTag": "REDIACCあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -10273,14 +10275,14 @@
           },
           "title": "遅い復旧にどれだけのコストがかかりますか？",
           "withAnnual": "年間ダウンタイムコスト",
+          "withoutTag": "REDIACCなし",
           "withResults": {
             "churn": "顧客離反コスト",
             "labor": "復旧人件費",
             "regulatory": "規制/評判",
             "revLost": "インシデントごとの収益損失"
           },
-          "withTag": "REDIACCあり",
-          "withoutTag": "REDIACCなし"
+          "withTag": "REDIACCあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -10758,14 +10760,14 @@
           },
           "title": "手動コンプライアンスにどれだけのコストがかかっていますか？",
           "withAnnual": "$0",
+          "withoutTag": "Rediaccなし",
           "withResults": {
             "gaps": "0",
             "labor": "$0",
             "penalty": "$0",
             "prepHours": "4時間"
           },
-          "withTag": "Rediaccあり",
-          "withoutTag": "Rediaccなし"
+          "withTag": "Rediaccあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -11301,14 +11303,14 @@
           },
           "title": "パッチのスキップにどれだけのコストがかかっていますか？",
           "withAnnual": "$0",
+          "withoutTag": "Rediaccなし",
           "withResults": {
             "breach": "最小限",
             "downtime": "$0",
             "exposure": "0日",
             "labor": "$0"
           },
-          "withTag": "Rediaccあり",
-          "withoutTag": "Rediaccなし"
+          "withTag": "Rediaccあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -11814,14 +11816,14 @@
           },
           "title": "ベンダーロックインにどれだけのコストがかかっていますか？",
           "withAnnual": "年間ロックイン税",
+          "withoutTag": "ロックイン状態",
           "withResults": {
             "egress": "エグレスデータ転送費用",
             "leverage": "再交渉レバレッジ",
             "markup": "市場価格に対するベンダーマークアップ",
             "migrate": "移行コスト"
           },
-          "withTag": "REDIACCあり",
-          "withoutTag": "ロックイン状態"
+          "withTag": "REDIACCあり"
         },
         "comparison": {
           "capabilityLabel": "機能",
@@ -12278,9 +12280,9 @@
           },
           "title": "遅いパッチ適用にどれだけのコストがかかっていますか？",
           "withAnnual": "",
+          "withoutTag": "Rediaccなし",
           "withResults": {},
-          "withTag": "Rediaccあり",
-          "withoutTag": "Rediaccなし"
+          "withTag": "Rediaccあり"
         },
         "explore": {
           "solutions": [
@@ -13277,6 +13279,15 @@
     },
     "subtitle": "実稼働環境にはテラバイト規模のデータがあるが、サンドボックス環境では毎月しか同期しない場合、チームは危険な回避策につながる不可能な選択に直面します。",
     "title": "スピードミスマッチの危機"
+  },
+  "regionPicker": {
+    "footer": "最寄りのリージョン、または組織が求めるリージョンを選択してください。登録後に変更することはできません。",
+    "locations": {
+      "eu": "フランクフルト、ドイツ",
+      "us": "バージニア、アメリカ"
+    },
+    "subtitle": "アカウント、請求、設定など、すべてのデータは選択したリージョンに保存されます。そこから外に出ることはありません。",
+    "title": "データの保存先はどこにしますか？"
   },
   "solutions": {
     "categories": {

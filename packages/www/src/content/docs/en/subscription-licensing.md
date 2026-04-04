@@ -69,10 +69,10 @@ A repo license is a signed license for one repository on one machine.
 
 It is used for:
 
-- `rdc repo resize` and `rdc repo expand` — full validation including expiry
-- `rdc repo up`, `rdc repo down`, `rdc repo delete` — validated with **expiry skipped**
-- `rdc repo push`, `rdc repo pull`, `rdc repo sync` — validated with **expiry skipped**
-- repo autostart on machine restart — validated with **expiry skipped**
+- `rdc repo resize` and `rdc repo expand`, full validation including expiry
+- `rdc repo up`, `rdc repo down`, `rdc repo delete`, validated with **expiry skipped**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, validated with **expiry skipped**
+- repo autostart on machine restart, validated with **expiry skipped**
 
 Repo licenses are bound to the machine and the target repository, and Rediacc hardens that binding with repository identity metadata. For encrypted repositories, that includes the LUKS identity of the underlying volume.
 
@@ -107,7 +107,7 @@ When you create or fork a repository:
 
 1. `rdc` ensures your subscription token is available (triggers device-code auth if needed)
 2. `rdc` activates the machine and writes the signed subscription blob to the remote machine
-3. The machine license is validated locally (it must be within 1 hour of activation) — the machine license also enforces the plan's repository size limit, blocking creation if the requested size exceeds the limit
+3. The machine license is validated locally (it must be within 1 hour of activation), the machine license also enforces the plan's repository size limit, blocking creation if the requested size exceeds the limit
 4. After successful creation, `rdc` issues the repo license for the new repository
 
 That account-backed issuance counts toward your monthly **repo license issuances** usage. Each license contains the account holder's email and company name, which is logged when renet validates the license.
@@ -122,7 +122,7 @@ That account-backed issuance counts toward your monthly **repo license issuances
 
 ### Machine restart and autostart
 
-Autostart uses the same rules as `rdc repo up` — expiry is skipped, so repositories always restart freely.
+Autostart uses the same rules as `rdc repo up`, expiry is skipped, so repositories always restart freely.
 
 Repo licenses use a long-lived validity model:
 
@@ -191,15 +191,15 @@ For first-time machine setup, see [Machine Setup](/en/docs/setup).
 
 ## Offline Behavior and Expiry
 
-License validation happens locally on the machine — it does not require live connectivity to the account server.
+License validation happens locally on the machine, it does not require live connectivity to the account server.
 
 That means:
 
 - a running environment does not need live account connectivity on every command
-- all repos can always start, stop, and be deleted even with expired licenses — users are never locked out of operating their own repositories
+- all repos can always start, stop, and be deleted even with expired licenses, users are never locked out of operating their own repositories
 - provisioning operations (`create`, `fork`) require a valid machine license, and growth operations (`resize`, `expand`) require a valid repo license
 - truly expired repo licenses must be refreshed through `rdc` before resize/expand
-- license signatures are verified against an embedded public key — signature verification cannot be disabled
+- license signatures are verified against an embedded public key, signature verification cannot be disabled
 
 Machine activation and repo runtime licenses are separate surfaces. A machine can be inactive in account state while some repositories still have valid installed repo licenses. When that happens, inspect both surfaces separately instead of assuming they mean the same thing.
 
@@ -213,7 +213,7 @@ Automatic recovery is intentionally narrow:
 - `repository_mismatch`: fails fast and tells you to refresh repo licenses explicitly
 - `sequence_regression`: fails fast as a repo-license integrity/state problem
 - `invalid_signature`: fails fast as a repo-license integrity/state problem
-- `identity_mismatch`: fails fast — the repository identity does not match the installed license
+- `identity_mismatch`: fails fast, the repository identity does not match the installed license
 
 These fail-fast cases do not automatically consume account-backed refresh or issuance calls.
 

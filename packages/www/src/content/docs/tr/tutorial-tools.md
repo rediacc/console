@@ -4,7 +4,7 @@ description: "SSH terminal erişimi, dosya senkronizasyonu, VS Code entegrasyonu
 category: "Tutorials"
 order: 5
 language: tr
-sourceHash: "8043725fd714ab02"
+sourceHash: "33756ae59957f16e"
 ---
 
 # Rediacc ile Terminal, Senkronizasyon ve VS Code Araçları Nasıl Kullanılır
@@ -102,6 +102,6 @@ VS Code marketplace'ten eklentiyi kurun: Microsoft'un "Remote - SSH" eklentisini
 
 Uzak komutlar çalıştırdınız, dosyaları senkronize ettiniz, VS Code entegrasyonunu kontrol ettiniz ve CLI güncellemelerini doğruladınız. Verilerinizi korumak için:
 
-- [Tools](/tr/docs/tools) — terminal, senkronizasyon, VS Code ve güncelleme komutları için tam referans
-- [Öğretici: Yedekleme ve Ağ](/tr/docs/tutorial-backup) — yedekleme planlaması ve ağ yapılandırması
-- [Hizmetler](/tr/docs/services) — Rediaccfile referansı ve hizmet ağları
+- [Tools](/tr/docs/tools), terminal, senkronizasyon, VS Code ve güncelleme komutları için tam referans
+- [Öğretici: Yedekleme ve Ağ](/tr/docs/tutorial-backup), yedekleme planlaması ve ağ yapılandırması
+- [Hizmetler](/tr/docs/services), Rediaccfile referansı ve hizmet ağları

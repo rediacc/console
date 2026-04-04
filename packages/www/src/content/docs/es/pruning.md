@@ -4,7 +4,7 @@ description: "Eliminar copias de seguridad huérfanas, snapshots obsoletos e im�
 category: "Guides"
 order: 12
 language: es
-sourceHash: "a9bfc5eaffb9bca9"
+sourceHash: "dfa21ca915423599"
 ---
 
 # Limpieza
@@ -19,7 +19,7 @@ La limpieza elimina recursos que ya no están referenciados por ningún archivo 
 Escanea un proveedor de almacenamiento y elimina respaldos cuyos GUIDs ya no aparecen en ningún archivo de configuración.
 
 ```bash
-# Dry-run (default) — shows what would be deleted
+# Dry-run (default), shows what would be deleted
 rdc storage prune --name my-s3 -m server-1
 
 # Actually delete orphaned backups

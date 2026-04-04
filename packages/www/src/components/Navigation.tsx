@@ -10,6 +10,12 @@ import SearchModal from './SearchModal';
 import Sidebar from './Sidebar';
 import ThemeToggle from './ThemeToggle';
 
+/** On regional or local domains, navigate directly. On www, open region picker. */
+function isRegionalDomain(origin?: string): boolean {
+  if (!origin) return false;
+  return /\b(eu|us)\.(rediacc\.com|localhost)/.test(origin) || origin.includes('localhost');
+}
+
 interface NavigationProps {
   origin?: string;
 }
@@ -23,7 +29,8 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
   const [isVisible, setIsVisible] = useState(true);
   const { t } = useTranslation(currentLang);
 
-  const accountUrl = getAccountUrl(origin);
+  const isRegional = isRegionalDomain(origin);
+  const accountUrl = isRegional ? '/account/' : undefined;
 
   // Handle scroll to show/hide navigation on solutions pages:
   // Hide when scrolling down past threshold, show when scrolling up
@@ -230,18 +237,30 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               navigationMode="button"
               ariaLabel={t('navigation.selectLanguage')}
             />
-            <a
-              href={accountUrl}
-              className="nav-cta-btn nav-account-btn"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`${t('navigation.login')} (${t('common.aria.opensInNewTab')})`}
-              data-track="cta_click"
-              data-track-label="nav-login"
-              data-track-dest="account"
-            >
-              {t('navigation.account')}
-            </a>
+            {accountUrl ? (
+              <a
+                href={accountUrl}
+                className="nav-cta-btn nav-account-btn"
+                aria-label={t('navigation.login')}
+                data-track="cta_click"
+                data-track-label="nav-login"
+                data-track-dest="account"
+              >
+                {t('navigation.account')}
+              </a>
+            ) : (
+              <button
+                type="button"
+                className="nav-cta-btn nav-account-btn"
+                onClick={() => window.openRegionPicker?.('/account/')}
+                aria-label={t('navigation.login')}
+                data-track="cta_click"
+                data-track-label="nav-login"
+                data-track-dest="account"
+              >
+                {t('navigation.account')}
+              </button>
+            )}
           </div>
         </div>
       </nav>

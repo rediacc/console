@@ -87,7 +87,7 @@ Checks your local environment: CLI version, Docker, renet binary, config status,
 
 ### Step 8: Configure infrastructure
 
-For public-facing services, the machine needs networking configuration — its external IP, a base domain, and a certificate email for TLS.
+For public-facing services, the machine needs networking configuration, its external IP, a base domain, and a certificate email for TLS.
 
 ```bash
 rdc config infra set -m bridge-vm \
@@ -119,6 +119,6 @@ The stored host key doesn't match the server's current key. This happens after a
 
 You created a configuration profile, registered a machine, verified connectivity, and configured infrastructure networking. To deploy applications:
 
-- [Machine Setup](/en/docs/setup) — full reference for all config and setup commands
-- [Tutorial: Repository Lifecycle](/en/docs/tutorial-repos) — create, deploy, and manage repositories
-- [Quick Start](/en/docs/quick-start) — deploy a containerized application end-to-end
+- [Machine Setup](/en/docs/setup), full reference for all config and setup commands
+- [Tutorial: Repository Lifecycle](/en/docs/tutorial-repos), create, deploy, and manage repositories
+- [Quick Start](/en/docs/quick-start), deploy a containerized application end-to-end

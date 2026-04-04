@@ -4,7 +4,7 @@ description: "Configure programaciones de copias de seguridad automatizadas, ges
 category: "Tutorials"
 order: 6
 language: es
-sourceHash: "0bdff6ce5d24c154"
+sourceHash: "f68d915af9daf0da"
 ---
 
 # Cómo configurar copias de seguridad y redes con Rediacc
@@ -28,7 +28,7 @@ Los proveedores de almacenamiento (S3, B2, Google Drive, etc.) sirven como desti
 rdc config storage list
 ```
 
-Lista todos los proveedores de almacenamiento configurados importados desde configuraciones de rclone. Si está vacío, agregue primero un proveedor de almacenamiento — vea [Copia de seguridad y restauración](/es/docs/backup-restore).
+Lista todos los proveedores de almacenamiento configurados importados desde configuraciones de rclone. Si está vacío, agregue primero un proveedor de almacenamiento, vea [Copia de seguridad y restauración](/es/docs/backup-restore).
 
 ### Paso 2: Configurar programación de copias
 
@@ -118,6 +118,6 @@ Los tres campos son obligatorios: `--public-ipv4`, `--base-domain` y `--cert-ema
 
 Ha configurado copias de seguridad automatizadas, establecido la red de infraestructura, registrado puertos de servicio y verificado la configuración. Para gestionar copias de seguridad:
 
-- [Copia de seguridad y restauración](/es/docs/backup-restore) — referencia completa para comandos push, pull, list y sync
-- [Redes](/es/docs/networking) — etiquetas Docker, certificados TLS, DNS y reenvío TCP/UDP
-- [Tutorial: Configuración de máquina](/es/docs/tutorial-setup) — configuración inicial y aprovisionamiento
+- [Copia de seguridad y restauración](/es/docs/backup-restore), referencia completa para comandos push, pull, list y sync
+- [Redes](/es/docs/networking), etiquetas Docker, certificados TLS, DNS y reenvío TCP/UDP
+- [Tutorial: Configuración de máquina](/es/docs/tutorial-setup), configuración inicial y aprovisionamiento

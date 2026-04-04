@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: de
-sourceHash: "cc79bbad07c3ef01"
+sourceHash: "c9d086d519625aa8"
 ---
 
 # Netzwerk
@@ -36,7 +36,7 @@ Internet → Traefik (Ports 80/443/TCP/UDP)
 
 Wenn Sie die richtigen Labels zu einem Container hinzufügen und ihn mit `renet compose` starten, wird er automatisch routbar -- keine manuelle Proxy-Konfiguration nötig.
 
-> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime — Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime, Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
 
 ## Docker-Labels
 
@@ -75,10 +75,10 @@ Sie können eine benutzerdefinierte Domain für einen Dienst über das `rediacc.
 
 ```yaml
 labels:
-  # Kurzname — wird zu cloud.example.com aufgelöst unter Verwendung der baseDomain der Maschine
+  # Kurzname, wird zu cloud.example.com aufgelöst unter Verwendung der baseDomain der Maschine
   - "rediacc.domain=cloud"
 
-  # Vollständige Domain — wird wie angegeben verwendet
+  # Vollständige Domain, wird wie angegeben verwendet
   - "rediacc.domain=cloud.example.com"
 ```
 
@@ -145,7 +145,7 @@ services:
   database:
     image: postgres:17
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
-    # Keine Traefik-Labels — Datenbank ist nur intern
+    # Keine Traefik-Labels, Datenbank ist nur intern
 ```
 
 | Label | Zweck |
@@ -233,7 +233,7 @@ services:
       - "traefik.tcp.routers.mail-smtp.service=mail-smtp"
       - "traefik.tcp.services.mail-smtp.loadbalancer.server.port=25"
 
-      # IMAPS (Port 993) — TLS-Passthrough
+      # IMAPS (Port 993), TLS-Passthrough
       - "traefik.tcp.routers.mail-imaps.entrypoints=tcp-993"
       - "traefik.tcp.routers.mail-imaps.rule=HostSNI(`mail.example.com`)"
       - "traefik.tcp.routers.mail-imaps.tls.passthrough=true"
@@ -248,7 +248,7 @@ Wichtige Konzepte:
 
 ### Vorkonfigurierte Ports
 
-Die folgenden TCP/UDP-Ports haben standardmäßig Einstiegspunkte (kein Hinzufügen über `--tcp-ports` erforderlich). Einstiegspunkte werden nur für konfigurierte Adressfamilien generiert — IPv4-Einstiegspunkte erfordern `--public-ipv4`, IPv6-Einstiegspunkte erfordern `--public-ipv6`:
+Die folgenden TCP/UDP-Ports haben standardmäßig Einstiegspunkte (kein Hinzufügen über `--tcp-ports` erforderlich). Einstiegspunkte werden nur für konfigurierte Adressfamilien generiert, IPv4-Einstiegspunkte erfordern `--public-ipv4`, IPv6-Einstiegspunkte erfordern `--public-ipv6`:
 
 | Port | Protokoll | Häufige Verwendung |
 |------|----------|-------------------|
@@ -278,7 +278,7 @@ Wenn `--cf-dns-token` konfiguriert ist, erstellt `rdc config infra push` automat
 
 Maschinen-Einträge werden von `push-infra` erstellt und decken Routen mit benutzerdefinierten Domains (`rediacc.domain`) ab. Pro-Repository-Wildcard-Einträge werden automatisch von `repo up` erstellt und decken Auto-Routen für dieses Repository ab.
 
-Dies ist idempotent — bestehende Einträge werden aktualisiert, wenn sich die IP ändert, und bleiben unverändert, wenn sie bereits korrekt sind.
+Dies ist idempotent, bestehende Einträge werden aktualisiert, wenn sich die IP ändert, und bleiben unverändert, wenn sie bereits korrekt sind.
 
 Der Basis-Domain-Wildcard (`*.example.com`) muss manuell erstellt werden, wenn Sie benutzerdefinierte Domain-Labels wie `rediacc.domain=erp` verwenden.
 
@@ -407,7 +407,7 @@ services:
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-    # Keine Traefik-Labels — nur intern
+    # Keine Traefik-Labels, nur intern
 ```
 
 ### Rediaccfile

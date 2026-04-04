@@ -4,7 +4,7 @@ description: "Maschinengesundheit prüfen, Container inspizieren, systemd-Dienst
 category: "Tutorials"
 order: 4
 language: de
-sourceHash: "ac0ee8180fdb7644"
+sourceHash: "2efd897e27dca34e"
 ---
 
 # Infrastruktur mit Rediacc überwachen und diagnostizieren
@@ -100,6 +100,6 @@ Container aus früheren Bereitstellungen können bestehen bleiben, wenn `repo do
 
 Sie haben Diagnosen ausgeführt, die Maschinengesundheit geprüft, Container und Dienste inspiziert und die Konnektivität verifiziert. Um mit Ihren Bereitstellungen zu arbeiten:
 
-- [Monitoring](/de/docs/monitoring) — vollständige Referenz für alle Überwachungsbefehle
-- [Troubleshooting](/de/docs/troubleshooting) — häufige Probleme und Lösungen
-- [Tutorial: Tools](/de/docs/tutorial-tools) — Terminal, Dateisynchronisierung und VS Code-Integration
+- [Monitoring](/de/docs/monitoring), vollständige Referenz für alle Überwachungsbefehle
+- [Troubleshooting](/de/docs/troubleshooting), häufige Probleme und Lösungen
+- [Tutorial: Tools](/de/docs/tutorial-tools), Terminal, Dateisynchronisierung und VS Code-Integration

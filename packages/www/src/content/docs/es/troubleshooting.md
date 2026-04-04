@@ -4,7 +4,7 @@ description: "Soluciones para problemas comunes con SSH, configuración, reposit
 category: "Guides"
 order: 10
 language: es
-sourceHash: "a68982c895a81eef"
+sourceHash: "23754822c67de564"
 ---
 
 # Solución de problemas
@@ -83,7 +83,7 @@ Si sus contenedores aparecen en el Docker daemon del sistema host en lugar del d
 
 `sudo` restablece las variables de entorno, por lo que `DOCKER_HOST` se pierde y Docker usa por defecto el socket del sistema (`/var/run/docker.sock`). Rediacc bloquea esto automáticamente, pero si lo encuentra:
 
-- **Use `docker` directamente** — las funciones del Rediaccfile ya se ejecutan con privilegios suficientes
+- **Use `docker` directamente**, las funciones del Rediaccfile ya se ejecutan con privilegios suficientes
 - Si debe usar sudo, use `sudo -E docker` para preservar las variables de entorno
 - Revise su Rediaccfile en busca de comandos `sudo docker` y elimine el `sudo`
 

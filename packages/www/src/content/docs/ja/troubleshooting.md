@@ -4,7 +4,7 @@ description: "SSH、セットアップ、リポジトリ、サービス、Docker
 category: "Guides"
 order: 10
 language: ja
-sourceHash: "a68982c895a81eef"
+sourceHash: "23754822c67de564"
 ---
 
 # トラブルシューティング
@@ -83,7 +83,7 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 
 `sudo` は環境変数をリセットするため、`DOCKER_HOST` が失われ、Dockerはシステムソケット（`/var/run/docker.sock`）をデフォルトで使用します。Rediaccはこれを自動的にブロックしますが、発生した場合:
 
-- **`docker` を直接使用してください** — Rediaccfileの関数は既に十分な権限で実行されています
+- **`docker` を直接使用してください**, Rediaccfileの関数は既に十分な権限で実行されています
 - sudoを使用する必要がある場合は、`sudo -E docker` を使用して環境変数を保持してください
 - Rediaccfileで `sudo docker` コマンドがないか確認し、`sudo` を削除してください
 

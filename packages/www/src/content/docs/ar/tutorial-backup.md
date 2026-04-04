@@ -4,7 +4,7 @@ description: "تكوين جداول النسخ الاحتياطي التلقائ
 category: "Tutorials"
 order: 6
 language: ar
-sourceHash: "0bdff6ce5d24c154"
+sourceHash: "f68d915af9daf0da"
 ---
 
 # كيفية تكوين النسخ الاحتياطي والشبكات مع Rediacc
@@ -28,7 +28,7 @@ sourceHash: "0bdff6ce5d24c154"
 rdc config storage list
 ```
 
-يعرض جميع موفري التخزين المُكوّنين المستوردين من إعدادات rclone. إذا كانت القائمة فارغة، أضف موفر تخزين أولاً — راجع [النسخ الاحتياطي والاستعادة](/ar/docs/backup-restore).
+يعرض جميع موفري التخزين المُكوّنين المستوردين من إعدادات rclone. إذا كانت القائمة فارغة، أضف موفر تخزين أولاً, راجع [النسخ الاحتياطي والاستعادة](/ar/docs/backup-restore).
 
 ### الخطوة 2: تكوين جدول النسخ الاحتياطي
 
@@ -118,6 +118,6 @@ rdc config backup-strategy show
 
 لقد قمت بتكوين النسخ الاحتياطية التلقائية، وإعداد شبكات البنية التحتية، وتسجيل منافذ الخدمات، والتحقق من التكوين. لإدارة النسخ الاحتياطية:
 
-- [النسخ الاحتياطي والاستعادة](/ar/docs/backup-restore) — المرجع الكامل لأوامر push وpull وlist وsync
-- [الشبكات](/ar/docs/networking) — تسميات Docker وشهادات TLS وDNS وتوجيه TCP/UDP
-- [درس: إعداد الجهاز](/ar/docs/tutorial-setup) — التكوين الأولي والتوفير
+- [النسخ الاحتياطي والاستعادة](/ar/docs/backup-restore), المرجع الكامل لأوامر push وpull وlist وsync
+- [الشبكات](/ar/docs/networking), تسميات Docker وشهادات TLS وDNS وتوجيه TCP/UDP
+- [درس: إعداد الجهاز](/ar/docs/tutorial-setup), التكوين الأولي والتوفير

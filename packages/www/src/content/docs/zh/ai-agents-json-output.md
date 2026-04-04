@@ -4,7 +4,7 @@ description: rdc CLI JSON 输出格式、信封模式、错误处理和代理发
 category: Reference
 order: 51
 language: zh
-sourceHash: "a84e20b09aadfd28"
+sourceHash: "29b827cf79cbba6e"
 ---
 
 所有 `rdc` 命令都支持结构化 JSON 输出，供 AI 代理和脚本进行程序化消费。
@@ -95,9 +95,9 @@ echo '{}' | rdc agent exec "machine query"
 
 以下错误类型标记为 `retryable: true`：
 
-- **NETWORK_ERROR** — SSH 连接或网络故障
-- **RATE_LIMITED** — 请求过多，等待后重试
-- **API_ERROR** — 暂时性后端故障
+- **NETWORK_ERROR**, SSH 连接或网络故障
+- **RATE_LIMITED**, 请求过多，等待后重试
+- **API_ERROR**, 暂时性后端故障
 
 不可重试的错误（身份验证、未找到、无效参数）需要在重试前采取纠正措施。
 

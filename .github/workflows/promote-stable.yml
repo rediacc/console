@@ -179,12 +179,24 @@ jobs:
           echo "- R2: CLI, Desktop, APT, RPM, APK, Archlinux promoted" >> $GITHUB_STEP_SUMMARY
           echo "- Docker: all images retagged :edge -> :stable" >> $GITHUB_STEP_SUMMARY
 
-  # Deploy production Worker from the exact tagged version
-  deploy-production:
-    name: Deploy production Worker
+  # Deploy production Workers from the exact tagged version
+  deploy-marketing-production:
+    name: Deploy production Marketing
     needs: [promote]
     if: needs.promote.outputs.promoted == 'true'
-    uses: ./.github/workflows/cd-deploy-worker.yml
+    uses: ./.github/workflows/cd-deploy-marketing.yml
+    with:
+      target: production
+      ref: v${{ needs.promote.outputs.version }}
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
+
+  deploy-account-production:
+    name: Deploy production Account (all regions)
+    needs: [promote]
+    if: needs.promote.outputs.promoted == 'true'
+    uses: ./.github/workflows/cd-deploy-account.yml
     with:
       target: production
       ref: v${{ needs.promote.outputs.version }}
@@ -197,10 +209,14 @@ jobs:
       ACCOUNT_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
       ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
       ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_SECRET_KEY_EU: ${{ secrets.STRIPE_SECRET_KEY_EU }}
+      STRIPE_SECRET_KEY_US: ${{ secrets.STRIPE_SECRET_KEY_US }}
       STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      STRIPE_WEBHOOK_SECRET_EU: ${{ secrets.STRIPE_WEBHOOK_SECRET_EU }}
+      STRIPE_WEBHOOK_SECRET_US: ${{ secrets.STRIPE_WEBHOOK_SECRET_US }}
       STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
-      AWS_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
-      AWS_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
+      AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
+      AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
+      AWS_SES_ACCESS_KEY_ID_US: ${{ secrets.AWS_SES_ACCESS_KEY_ID_US }}
+      AWS_SES_SECRET_ACCESS_KEY_US: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_US }}
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}

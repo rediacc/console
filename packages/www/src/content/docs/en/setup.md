@@ -120,15 +120,15 @@ rdc config infra set -m server-1 \
 
 | Option | Scope | Description |
 |--------|-------|-------------|
-| `--public-ipv4 <ip>` | Machine | Public IPv4 address — proxy entrypoints are only created for configured address families |
-| `--public-ipv6 <ip>` | Machine | Public IPv6 address — proxy entrypoints are only created for configured address families |
+| `--public-ipv4 <ip>` | Machine | Public IPv4 address, proxy entrypoints are only created for configured address families |
+| `--public-ipv6 <ip>` | Machine | Public IPv6 address, proxy entrypoints are only created for configured address families |
 | `--base-domain <domain>` | Machine | Base domain for applications (e.g., `example.com`) |
 | `--cert-email <email>` | Config | Email for Let's Encrypt TLS certificates (shared across machines) |
 | `--cf-dns-token <token>` | Config | Cloudflare DNS API token for ACME DNS-01 challenges (shared across machines) |
 | `--tcp-ports <ports>` | Machine | Comma-separated additional TCP ports to forward (e.g., `25,143,465,587,993`) |
 | `--udp-ports <ports>` | Machine | Comma-separated additional UDP ports to forward (e.g., `53`) |
 
-Machine-scoped options are stored per-machine. Config-scoped options (`--cert-email`, `--cf-dns-token`) are shared across all machines in the config — set them once and they apply everywhere.
+Machine-scoped options are stored per-machine. Config-scoped options (`--cert-email`, `--cf-dns-token`) are shared across all machines in the config, set them once and they apply everywhere.
 
 ### View Infrastructure
 
@@ -149,7 +149,7 @@ This command:
 2. Configures Traefik reverse proxy, router, and systemd services
 3. Creates Cloudflare DNS records for the machine subdomain (`server-1.example.com` and `*.server-1.example.com`) if `--cf-dns-token` is set
 
-The DNS step is automatic and idempotent — it creates missing records, updates records with changed IPs, and skips records that are already correct. If no Cloudflare token is configured, DNS is skipped with a warning. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+The DNS step is automatic and idempotent, it creates missing records, updates records with changed IPs, and skips records that are already correct. If no Cloudflare token is configured, DNS is skipped with a warning. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
 
 ## Cloud Provisioning
 

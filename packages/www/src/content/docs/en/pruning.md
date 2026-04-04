@@ -18,7 +18,7 @@ Pruning removes resources that are no longer referenced by any configuration fil
 Scans a storage provider and deletes backups whose GUIDs no longer appear in any config file.
 
 ```bash
-# Dry-run (default) — shows what would be deleted
+# Dry-run (default), shows what would be deleted
 rdc storage prune --name my-s3 -m server-1
 
 # Actually delete orphaned backups

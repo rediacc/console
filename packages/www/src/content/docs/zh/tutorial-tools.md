@@ -4,7 +4,7 @@ description: "使用 SSH 终端访问、文件同步、VS Code 集成和 CLI 更
 category: "Tutorials"
 order: 5
 language: zh
-sourceHash: "8043725fd714ab02"
+sourceHash: "33756ae59957f16e"
 ---
 
 # 如何在 Rediacc 中使用终端、同步和 VS Code 工具
@@ -102,6 +102,6 @@ rdc update --check-only
 
 您已运行远程命令、同步文件、检查 VS Code 集成并验证了 CLI 更新。要保护您的数据：
 
-- [Tools](/zh/docs/tools) — 终端、同步、VS Code 和更新命令的完整参考
-- [教程：备份与网络](/zh/docs/tutorial-backup) — 备份调度和网络配置
-- [服务](/zh/docs/services) — Rediaccfile 参考和服务网络
+- [Tools](/zh/docs/tools), 终端、同步、VS Code 和更新命令的完整参考
+- [教程：备份与网络](/zh/docs/tutorial-backup), 备份调度和网络配置
+- [服务](/zh/docs/services), Rediaccfile 参考和服务网络

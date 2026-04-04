@@ -4,7 +4,7 @@ description: "SSH, kurulum, depolar, servisler ve Docker ile ilgili yaygın soru
 category: "Guides"
 order: 10
 language: tr
-sourceHash: "a68982c895a81eef"
+sourceHash: "23754822c67de564"
 ---
 
 # Sorun Giderme
@@ -83,7 +83,7 @@ Konteynerleriniz deponun izole daemon'u yerine ana sistemin Docker daemon'unda g
 
 `sudo` ortam değişkenlerini sıfırlar, bu nedenle `DOCKER_HOST` kaybolur ve Docker varsayılan olarak sistem soketini (`/var/run/docker.sock`) kullanır. Rediacc bunu otomatik olarak engeller, ancak karşılaşırsanız:
 
-- **`docker` komutunu doğrudan kullanın** — Rediaccfile fonksiyonları zaten yeterli yetkilerle çalışır
+- **`docker` komutunu doğrudan kullanın**, Rediaccfile fonksiyonları zaten yeterli yetkilerle çalışır
 - sudo kullanmanız gerekiyorsa, ortam değişkenlerini korumak için `sudo -E docker` kullanın
 - Rediaccfile dosyanızı `sudo docker` komutları için kontrol edin ve `sudo` kısmını kaldırın
 

@@ -27,6 +27,7 @@
   },
   "captchaRequired": "Пожалуйста, пройдите проверку капчи.",
   "common": {
+    "close": "Закрыть",
     "aria": {
       "breadcrumbNavigation": "Навигация по хлебным крошкам",
       "clickToEnlarge": "Нажмите, чтобы увеличить изображение",
@@ -120,6 +121,7 @@
     "categories": {
       "concepts": "Концепции",
       "guides": "Руководства",
+      "legal": "Правовая информация",
       "reference": "Справочник",
       "tutorials": "Учебные пособия",
       "useCases": "Сценарии использования"
@@ -1669,14 +1671,14 @@
           },
           "title": "Сколько вы можете сэкономить?",
           "withAnnual": "Рассчитать →",
+          "withoutTag": "Текущие облачные расходы",
           "withResults": {
             "blockedTime": "На 60% меньше",
             "contextSwitching": "<5 минут",
             "quarterlySlip": "100% ваше",
             "sprintCapacity": "Минимизировано"
           },
-          "withTag": "С Rediacc",
-          "withoutTag": "Текущие облачные расходы"
+          "withTag": "С Rediacc"
         },
         "hero": {
           "badge": "ДЛЯ CEO И ОСНОВАТЕЛЕЙ",
@@ -1890,14 +1892,14 @@
           },
           "title": "Сколько на самом деле стоит ваша инфраструктура?",
           "withAnnual": "Рассчитать →",
+          "withoutTag": "Текущие расходы",
           "withResults": {
             "blockedTime": "На 60% меньше",
             "contextSwitching": "<5 минут",
             "quarterlySlip": "Отсутствует",
             "sprintCapacity": "Почти ноль"
           },
-          "withTag": "С Rediacc",
-          "withoutTag": "Текущие расходы"
+          "withTag": "С Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -2981,29 +2983,29 @@
           "business": {
             "floatingLicenses": "20",
             "jobsPerMonth": "20,000",
-            "repoSize": "500 ГБ",
             "repositories": "Без ограничений",
+            "repoSize": "500 ГБ",
             "usersTeams": "Без ограничений"
           },
           "community": {
             "floatingLicenses": "2",
             "jobsPerMonth": "500",
-            "repoSize": "10 ГБ",
             "repositories": "Без ограничений",
+            "repoSize": "10 ГБ",
             "usersTeams": "Без ограничений"
           },
           "enterprise": {
             "floatingLicenses": "50+",
             "jobsPerMonth": "100,000+",
-            "repoSize": "2 ТБ+",
             "repositories": "Без ограничений",
+            "repoSize": "2 ТБ+",
             "usersTeams": "Без ограничений"
           },
           "professional": {
             "floatingLicenses": "5",
             "jobsPerMonth": "5,000",
-            "repoSize": "100 ГБ",
             "repositories": "Без ограничений",
+            "repoSize": "100 ГБ",
             "usersTeams": "Без ограничений"
           }
         }
@@ -3547,13 +3549,13 @@
           },
           "title": "Сколько стоят непроверенные уязвимости?",
           "withAnnual": "Годовая стоимость безопасности",
+          "withoutTag": "БЕЗ REDIACC",
           "withResults": {
             "blindspot": "Слепая зона",
             "exposure": "Воздействие на уязвимость",
             "pentestCost": "Стоимость пентеста"
           },
-          "withTag": "С REDIACC",
-          "withoutTag": "БЕЗ REDIACC"
+          "withTag": "С REDIACC"
         },
         "explore": {
           "solutions": [
@@ -3957,14 +3959,14 @@
           },
           "title": "Сколько стоят пробелы в аудите?",
           "withAnnual": "Годовая стоимость рисков аудита",
+          "withoutTag": "РАЗРОЗНЕННЫЕ ЛОГИ",
           "withResults": {
             "compileHours": "Часов сбора логов / год",
             "delayCost": "Стоимость задержки расследования",
             "gaps": "Риск замечаний аудита (пробелы)",
             "penaltyCost": "Риск штрафа за несоответствие"
           },
-          "withTag": "С REDIACC",
-          "withoutTag": "РАЗРОЗНЕННЫЕ ЛОГИ"
+          "withTag": "С REDIACC"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -4428,14 +4430,14 @@
           },
           "title": "Сколько стоит неудачное восстановление?",
           "withAnnual": "$0",
+          "withoutTag": "Без Rediacc",
           "withResults": {
             "corrupted": "0 необнаруженных",
             "dataLoss": "0",
             "recoveryCost": "$0",
             "undetected": "0"
           },
-          "withTag": "С Rediacc",
-          "withoutTag": "Без Rediacc"
+          "withTag": "С Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -4940,14 +4942,14 @@
           },
           "title": "Сколько стоит облачный сбой?",
           "withAnnual": "$0",
+          "withoutTag": "Без Rediacc",
           "withResults": {
             "churn": "$0",
             "labor": "$0",
             "revenue": "$0",
             "sla": "$0"
           },
-          "withTag": "С Rediacc",
-          "withoutTag": "Без Rediacc"
+          "withTag": "С Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -5450,13 +5452,13 @@
           },
           "title": "Сколько стоит ваше окно уязвимости?",
           "withAnnual": "Годовая стоимость безопасности",
+          "withoutTag": "ЕЖЕГОДНОЕ ПЕНТЕСТИРОВАНИЕ",
           "withResults": {
             "blindspot": "Окно слепой зоны",
             "exposure": "Дней открытости / уязвимость",
             "pentestCost": "Годовая стоимость пентестов"
           },
-          "withTag": "НЕПРЕРЫВНОЕ (REDIACC)",
-          "withoutTag": "ЕЖЕГОДНОЕ ПЕНТЕСТИРОВАНИЕ"
+          "withTag": "НЕПРЕРЫВНОЕ (REDIACC)"
         },
         "explore": {
           "solutions": [
@@ -5838,14 +5840,14 @@
           },
           "title": "Сколько стоит слабое управление шифрованием?",
           "withAnnual": "Годовая стоимость соответствия",
+          "withoutTag": "КЛЮЧИ, УПРАВЛЯЕМЫЕ ВЕНДОРОМ",
           "withResults": {
             "exposure": "Окон раскрытия в год",
             "gaps": "Пробелы в соответствии (доступ к ключам)",
             "premium": "Премия за риск утечки",
             "prepHours": "Часов подготовки к аудиту / год"
           },
-          "withTag": "С REDIACC",
-          "withoutTag": "КЛЮЧИ, УПРАВЛЯЕМЫЕ ВЕНДОРОМ"
+          "withTag": "С REDIACC"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -6347,14 +6349,14 @@
           },
           "title": "Сколько это стоит вашей команде?",
           "withAnnual": "$0",
+          "withoutTag": "Без Rediacc",
           "withResults": {
             "blockedTime": "0 дней",
             "contextSwitching": "Минимально",
             "quarterlySlip": "0 дней",
             "sprintCapacity": "0%"
           },
-          "withTag": "С Rediacc",
-          "withoutTag": "Без Rediacc"
+          "withTag": "С Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -6845,14 +6847,14 @@
           },
           "title": "Сколько стоит непроверенный план DR?",
           "withAnnual": "$0",
+          "withoutTag": "Без Rediacc",
           "withResults": {
             "churn": "$0",
             "compliance": "$0",
             "labor": "$0",
             "revenue": "$0"
           },
-          "withTag": "С Rediacc",
-          "withoutTag": "Без Rediacc"
+          "withTag": "С Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -7337,14 +7339,14 @@
           },
           "title": "Сколько стоит атака программ-вымогателей?",
           "withAnnual": "~$200",
+          "withoutTag": "Без Rediacc",
           "withResults": {
             "downtime": "<5 min",
             "labor": "~$200",
             "reputation": "$0",
             "revenue": "~$0"
           },
-          "withTag": "С Rediacc",
-          "withoutTag": "Без Rediacc"
+          "withTag": "С Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -7868,6 +7870,7 @@
           "title": "Сколько вам стоят простаивающие среды",
           "withAnnual": "$24,120",
           "withAnnualLabel": "Годовая экономия",
+          "withoutTag": "ПОСТОЯННО РАБОТАЮЩИЕ",
           "withResultLabels": {
             "idle": "Накладные расходы CoW-хранилища"
           },
@@ -7876,8 +7879,7 @@
             "monthly": "$990",
             "waste": "0%"
           },
-          "withTag": "С REDIACC",
-          "withoutTag": "ПОСТОЯННО РАБОТАЮЩИЕ"
+          "withTag": "С REDIACC"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -8327,6 +8329,7 @@
           },
           "title": "Сколько стоит медленное восстановление?",
           "withAnnual": "$868",
+          "withoutTag": "Файловое восстановление",
           "withResultLabels": {
             "labor": "Труд персонала (одна команда)"
           },
@@ -8335,8 +8338,7 @@
             "labor": "$17",
             "recoveryTime": "<5 min"
           },
-          "withTag": "С Rediacc",
-          "withoutTag": "Файловое восстановление"
+          "withTag": "С Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -8836,13 +8838,13 @@
           },
           "title": "Сколько стоит сломанный CI/CD",
           "withAnnual": "$0",
+          "withoutTag": "ПОЛЬЗОВАТЕЛЬСКИЕ СКРИПТЫ",
           "withResults": {
             "blocked": "0 часов",
             "bugs": "0",
             "debug": "0 часов"
           },
-          "withTag": "С REDIACC",
-          "withoutTag": "ПОЛЬЗОВАТЕЛЬСКИЕ СКРИПТЫ"
+          "withTag": "С REDIACC"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -9293,13 +9295,13 @@
           },
           "title": "Сколько стоит риск миграции",
           "withAnnual": "$0",
+          "withoutTag": "Без Rediacc",
           "withResults": {
             "labor": "$0",
             "risk": "0 TB",
             "windows": "0 часов"
           },
-          "withTag": "С Rediacc",
-          "withoutTag": "Без Rediacc"
+          "withTag": "С Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -9798,13 +9800,13 @@
           },
           "title": "Сколько стоит несоответствие сред",
           "withAnnual": "$0",
+          "withoutTag": "БЕЗ REDIACC",
           "withResults": {
             "capacity": "0%",
             "debug": "0 часов",
             "incidents": "0"
           },
-          "withTag": "С REDIACC",
-          "withoutTag": "БЕЗ REDIACC"
+          "withTag": "С REDIACC"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -10269,14 +10271,14 @@
           },
           "title": "Сколько стоит медленное восстановление?",
           "withAnnual": "Годовая стоимость простоя",
+          "withoutTag": "БЕЗ REDIACC",
           "withResults": {
             "churn": "Стоимость оттока клиентов",
             "labor": "Труд на восстановление",
             "regulatory": "Регуляторные / репутационные",
             "revLost": "Потерянная выручка / инцидент"
           },
-          "withTag": "С REDIACC",
-          "withoutTag": "БЕЗ REDIACC"
+          "withTag": "С REDIACC"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -10754,14 +10756,14 @@
           },
           "title": "Сколько стоит ручное соответствие?",
           "withAnnual": "$0",
+          "withoutTag": "Без Rediacc",
           "withResults": {
             "gaps": "0",
             "labor": "$0",
             "penalty": "$0",
             "prepHours": "4 часа"
           },
-          "withTag": "С Rediacc",
-          "withoutTag": "Без Rediacc"
+          "withTag": "С Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -11297,14 +11299,14 @@
           },
           "title": "Сколько стоит пропуск патчей?",
           "withAnnual": "$0",
+          "withoutTag": "Без Rediacc",
           "withResults": {
             "breach": "Минимально",
             "downtime": "$0",
             "exposure": "0 дней",
             "labor": "$0"
           },
-          "withTag": "С Rediacc",
-          "withoutTag": "Без Rediacc"
+          "withTag": "С Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -11810,14 +11812,14 @@
           },
           "title": "Сколько стоит привязка к вендору?",
           "withAnnual": "Годовой налог на привязку",
+          "withoutTag": "ПРИВЯЗАНЫ",
           "withResults": {
             "egress": "Плата за исходящий трафик",
             "leverage": "Рычаг при пересогласовании",
             "markup": "Наценка вендора над рынком",
             "migrate": "Стоимость миграции"
           },
-          "withTag": "С REDIACC",
-          "withoutTag": "ПРИВЯЗАНЫ"
+          "withTag": "С REDIACC"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -12274,9 +12276,9 @@
           },
           "title": "Сколько стоит медленное патчирование?",
           "withAnnual": "",
+          "withoutTag": "Без Rediacc",
           "withResults": {},
-          "withTag": "С Rediacc",
-          "withoutTag": "Без Rediacc"
+          "withTag": "С Rediacc"
         },
         "explore": {
           "solutions": [
@@ -13275,6 +13277,15 @@
     },
     "subtitle": "Когда в производственных средах хранятся терабайты данных, а в изолированных средах синхронизация осуществляется только ежемесячно, команды сталкиваются с невозможным выбором, который приводит к опасным обходным путям.",
     "title": "Кризис несоответствия скорости"
+  },
+  "regionPicker": {
+    "footer": "Выберите ближайший к вам регион или тот, который требует ваша организация. Это нельзя изменить после регистрации.",
+    "locations": {
+      "eu": "Франкфурт, Германия",
+      "us": "Вирджиния, США"
+    },
+    "subtitle": "Все ваши данные: аккаунт, биллинг и конфигурации — остаются в выбранном вами регионе. Они никогда его не покидают.",
+    "title": "Где вы хотите хранить свои данные?"
   },
   "solutions": {
     "categories": {

@@ -4,7 +4,7 @@ description: "Yapılandırma oluşturma, makine ekleme, sunucuları hazırlama v
 category: "Guides"
 order: 3
 language: tr
-sourceHash: "9fd8ebf2b98bfcf5"
+sourceHash: "143694525e0fcd9b"
 ---
 
 # Makine Kurulumu
@@ -121,15 +121,15 @@ rdc config infra set -m server-1 \
 
 | Seçenek | Kapsam | Açıklama |
 |---------|--------|----------|
-| `--public-ipv4 <ip>` | Machine | Public IPv4 address — proxy entrypoints are only created for configured address families |
-| `--public-ipv6 <ip>` | Machine | Public IPv6 address — proxy entrypoints are only created for configured address families |
+| `--public-ipv4 <ip>` | Machine | Public IPv4 address, proxy entrypoints are only created for configured address families |
+| `--public-ipv6 <ip>` | Machine | Public IPv6 address, proxy entrypoints are only created for configured address families |
 | `--base-domain <domain>` | Machine | Uygulamalar için temel alan adı (ör. `example.com`) |
 | `--cert-email <email>` | Config | Let's Encrypt TLS sertifikaları için e-posta (makineler arasında paylaşılır) |
 | `--cf-dns-token <token>` | Config | ACME DNS-01 doğrulamaları için Cloudflare DNS API anahtarı (makineler arasında paylaşılır) |
 | `--tcp-ports <ports>` | Machine | Virgülle ayrılmış ek TCP portları (ör. `25,143,465,587,993`) |
 | `--udp-ports <ports>` | Machine | Virgülle ayrılmış ek UDP portları (ör. `53`) |
 
-Machine kapsamlı seçenekler makine başına saklanır. Config kapsamlı seçenekler (`--cert-email`, `--cf-dns-token`) yapılandırmadaki tüm makineler arasında paylaşılır — bir kez ayarlayın ve her yerde geçerli olsun.
+Machine kapsamlı seçenekler makine başına saklanır. Config kapsamlı seçenekler (`--cert-email`, `--cf-dns-token`) yapılandırmadaki tüm makineler arasında paylaşılır, bir kez ayarlayın ve her yerde geçerli olsun.
 
 ### Altyapıyı Görüntüleme
 
@@ -150,7 +150,7 @@ Bu komut:
 2. Traefik ters proxy, yönlendirici ve systemd hizmetlerini yapılandırır
 3. `--cf-dns-token` ayarlanmışsa makine alt alan adı için Cloudflare DNS kayıtları oluşturur (`server-1.example.com` ve `*.server-1.example.com`)
 
-DNS adımı otomatik ve etkisizdir (idempotent) — eksik kayıtları oluşturur, IP'leri değişen kayıtları günceller ve zaten doğru olan kayıtları atlar. Cloudflare anahtarı yapılandırılmamışsa DNS bir uyarıyla atlanır. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+DNS adımı otomatik ve etkisizdir (idempotent), eksik kayıtları oluşturur, IP'leri değişen kayıtları günceller ve zaten doğru olan kayıtları atlar. Cloudflare anahtarı yapılandırılmamışsa DNS bir uyarıyla atlanır. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
 
 ## Bulut Hazırlama
 

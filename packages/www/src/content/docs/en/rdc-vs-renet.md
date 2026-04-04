@@ -79,6 +79,6 @@ These commands run `renet` locally (not over SSH). See [Experimental VMs](/en/do
 
 ## Rediaccfile Note
 
-You may see `renet compose -- ...` inside a `Rediaccfile`. That is normal — Rediaccfile functions run on the server where `renet` is available.
+You may see `renet compose -- ...` inside a `Rediaccfile`. That is normal, Rediaccfile functions run on the server where `renet` is available.
 
 From your workstation, start and stop workloads with `rdc repo up` and `rdc repo down`.

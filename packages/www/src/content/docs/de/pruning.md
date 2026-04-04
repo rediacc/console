@@ -4,7 +4,7 @@ description: "Verwaiste Sicherungskopien, überholte Snapshots und ungenützte R
 category: "Guides"
 order: 12
 language: de
-sourceHash: "a9bfc5eaffb9bca9"
+sourceHash: "dfa21ca915423599"
 ---
 
 # Bereinigung
@@ -19,7 +19,7 @@ Die Bereinigung entfernt Ressourcen, die von keiner Konfigurationsdatei mehr ref
 Durchsucht einen Speicheranbieter und löscht Backups, deren GUIDs in keiner Konfigurationsdatei mehr vorkommen.
 
 ```bash
-# Dry-run (default) — shows what would be deleted
+# Dry-run (default), shows what would be deleted
 rdc storage prune --name my-s3 -m server-1
 
 # Actually delete orphaned backups

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: tr
-sourceHash: "cc79bbad07c3ef01"
+sourceHash: "c9d086d519625aa8"
 ---
 
 # Ağ
@@ -19,8 +19,8 @@ Servislerin geri döngü IP'lerini nasıl aldığı ve `.rediacc.json` slot sist
 
 Rediacc, harici trafiği konteynerlere yönlendirmek için iki bileşenli bir proxy sistemi kullanır:
 
-1. **Route server** — tüm depo Docker daemon'larındaki çalışan konteynerleri keşfeden bir systemd servisi. Konteyner etiketlerini inceler ve YAML uç noktası olarak sunulan yönlendirme yapılandırması oluşturur.
-2. **Traefik** — route server'ı her 5 saniyede sorgulayan ve keşfedilen yönlendirmeleri uygulayan ters proxy. HTTP/HTTPS yönlendirme, TLS sonlandırma ve TCP/UDP yönlendirme işlemlerini yönetir.
+1. **Route server**, tüm depo Docker daemon'larındaki çalışan konteynerleri keşfeden bir systemd servisi. Konteyner etiketlerini inceler ve YAML uç noktası olarak sunulan yönlendirme yapılandırması oluşturur.
+2. **Traefik**, route server'ı her 5 saniyede sorgulayan ve keşfedilen yönlendirmeleri uygulayan ters proxy. HTTP/HTTPS yönlendirme, TLS sonlandırma ve TCP/UDP yönlendirme işlemlerini yönetir.
 
 Akış şu şekildedir:
 
@@ -34,9 +34,9 @@ Akış şu şekildedir:
            Konteynerler (127.x.x.x geri döngü IP'lerine bağlı)
 ```
 
-Bir konteynere doğru etiketleri ekleyip `renet compose` ile başlattığınızda, otomatik olarak yönlendirilebilir hale gelir — manuel proxy yapılandırması gerekmez.
+Bir konteynere doğru etiketleri ekleyip `renet compose` ile başlattığınızda, otomatik olarak yönlendirilebilir hale gelir, manuel proxy yapılandırması gerekmez.
 
-> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime — Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime, Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
 
 ## Docker Etiketleri
 
@@ -75,10 +75,10 @@ Her deponun kendi alt alan adı seviyesi vardır, bu nedenle çatallamalar ve fa
 
 ```yaml
 labels:
-  # Kısa ad — makinenin baseDomain'i kullanılarak cloud.example.com olarak çözümlenir
+  # Kısa ad, makinenin baseDomain'i kullanılarak cloud.example.com olarak çözümlenir
   - "rediacc.domain=cloud"
 
-  # Tam alan adı — olduğu gibi kullanılır
+  # Tam alan adı, olduğu gibi kullanılır
   - "rediacc.domain=cloud.example.com"
 ```
 
@@ -107,7 +107,7 @@ Bunlar standart [Traefik v3 etiket sözdizimini](https://doc.traefik.io/traefik/
 
 ### Ön Koşullar
 
-1. Makinede yapılandırılmış altyapı ([Makine Kurulumu — Altyapı Yapılandırması](/tr/docs/setup#infrastructure-configuration)):
+1. Makinede yapılandırılmış altyapı ([Makine Kurulumu, Altyapı Yapılandırması](/tr/docs/setup#infrastructure-configuration)):
 
    ```bash
    # Paylaşılan kimlik bilgileri (yapılandırma başına bir kez, tüm makinelere uygulanır)
@@ -145,18 +145,18 @@ services:
   database:
     image: postgres:17
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
-    # Traefik etiketi yok — veritabanı yalnızca dahili
+    # Traefik etiketi yok, veritabanı yalnızca dahili
 ```
 
 | Etiket | Amaç |
 |--------|------|
 | `traefik.enable=true` | Bu konteyner için özel Traefik yönlendirmesini etkinleştirir |
-| `traefik.http.routers.{name}.rule` | Yönlendirme kuralı — genellikle `Host(\`domain\`)` |
+| `traefik.http.routers.{name}.rule` | Yönlendirme kuralı, genellikle `Host(\`domain\`)` |
 | `traefik.http.routers.{name}.entrypoints` | Hangi portlarda dinleneceği: `websecure` (HTTPS IPv4), `websecure-v6` (HTTPS IPv6) |
-| `traefik.http.routers.{name}.tls.certresolver` | Sertifika çözümleyici — otomatik Let's Encrypt için `letsencrypt` kullanın |
+| `traefik.http.routers.{name}.tls.certresolver` | Sertifika çözümleyici, otomatik Let's Encrypt için `letsencrypt` kullanın |
 | `traefik.http.services.{name}.loadbalancer.server.port` | Uygulamanızın konteyner içinde dinlediği port |
 
-Etiketlerdeki `{name}` rastgele bir tanımlayıcıdır — sadece ilgili router/service/middleware etiketleri arasında tutarlı olması yeterlidir.
+Etiketlerdeki `{name}` rastgele bir tanımlayıcıdır, sadece ilgili router/service/middleware etiketleri arasında tutarlı olması yeterlidir.
 
 > **Not:** `rediacc.*` etiketleri (`rediacc.service_name`, `rediacc.service_ip`, `rediacc.network_id`) `renet compose` tarafından otomatik olarak enjekte edilir. Compose dosyanıza eklemenize gerek yoktur.
 
@@ -233,7 +233,7 @@ services:
       - "traefik.tcp.routers.mail-smtp.service=mail-smtp"
       - "traefik.tcp.services.mail-smtp.loadbalancer.server.port=25"
 
-      # IMAPS (port 993) — TLS geçişi
+      # IMAPS (port 993), TLS geçişi
       - "traefik.tcp.routers.mail-imaps.entrypoints=tcp-993"
       - "traefik.tcp.routers.mail-imaps.rule=HostSNI(`mail.example.com`)"
       - "traefik.tcp.routers.mail-imaps.tls.passthrough=true"
@@ -243,12 +243,12 @@ services:
 
 Temel kavramlar:
 - **`HostSNI(\`*\`)`** herhangi bir ana bilgisayar adıyla eşleşir (düz SMTP gibi SNI göndermeyen protokoller için)
-- **`tls.passthrough=true`** Traefik'in ham TLS bağlantısını şifresini çözmeden ilettiği anlamına gelir — uygulama TLS'yi kendisi yönetir
+- **`tls.passthrough=true`** Traefik'in ham TLS bağlantısını şifresini çözmeden ilettiği anlamına gelir, uygulama TLS'yi kendisi yönetir
 - Giriş noktası adları `tcp-{port}` veya `udp-{port}` kuralını takip eder
 
 ### Önceden Yapılandırılmış Portlar
 
-Aşağıdaki TCP/UDP portları varsayılan olarak giriş noktalarına sahiptir (`--tcp-ports` ile eklemeye gerek yoktur). Giriş noktaları yalnızca yapılandırılmış adres aileleri için oluşturulur — IPv4 giriş noktaları `--public-ipv4`, IPv6 giriş noktaları `--public-ipv6` gerektirir:
+Aşağıdaki TCP/UDP portları varsayılan olarak giriş noktalarına sahiptir (`--tcp-ports` ile eklemeye gerek yoktur). Giriş noktaları yalnızca yapılandırılmış adres aileleri için oluşturulur, IPv4 giriş noktaları `--public-ipv4`, IPv6 giriş noktaları `--public-ipv6` gerektirir:
 
 | Port | Protokol | Yaygın Kullanım |
 |------|----------|-----------------|
@@ -278,7 +278,7 @@ Aşağıdaki TCP/UDP portları varsayılan olarak giriş noktalarına sahiptir (
 
 Makine seviyesi kayıtlar `push-infra` tarafından oluşturulur ve özel alan adlı yönlendirmeleri (`rediacc.domain`) kapsar. Depo başına joker kayıtlar `repo up` tarafından otomatik olarak oluşturulur ve o deponun otomatik yönlendirmelerini kapsar.
 
-Bu idempotent bir işlemdir — IP değişirse mevcut kayıtlar güncellenir, zaten doğruysa değiştirilmez.
+Bu idempotent bir işlemdir, IP değişirse mevcut kayıtlar güncellenir, zaten doğruysa değiştirilmez.
 
 Temel alan adı joker kaydı (`*.example.com`), `rediacc.domain=erp` gibi özel alan adı etiketleri kullanıyorsanız manuel olarak oluşturulmalıdır.
 
@@ -407,7 +407,7 @@ services:
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-    # Traefik etiketi yok — yalnızca dahili
+    # Traefik etiketi yok, yalnızca dahili
 ```
 
 ### Rediaccfile

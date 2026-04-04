@@ -1,6 +1,7 @@
 ---
 import Navigation from '../components/Navigation';
 import ContactModal from '../components/ContactModal';
+import RegionPickerModal from '../components/RegionPickerModal';
 import Footer from '../components/Footer';
 import NewsletterReturnPopup from '../components/NewsletterReturnPopup';
 import CliReferenceModal from '../components/docs/CliReferenceModal.astro';
@@ -236,6 +237,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <!-- Non-critical CSS loaded with lower priority -->
     <link rel="stylesheet" href="/styles/search-modal.css" media="print" onload="this.media='all'; this.onload=null;">
     <link rel="stylesheet" href="/styles/contact-modal.css" media="print" onload="this.media='all'; this.onload=null;">
+    <link rel="stylesheet" href="/styles/region-picker.css" media="print" onload="this.media='all'; this.onload=null;">
 
     <!-- Skip Navigation Styles -->
     <style>
@@ -420,6 +422,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     </main>
     <CliReferenceModal lang={currentLang} />
     <ContactModal client:load />
+    <RegionPickerModal client:load />
     <NewsletterReturnPopup client:load />
     <Footer client:visible />
     <script src="/scripts/main.js" is:inline></script>

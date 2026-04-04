@@ -4,7 +4,7 @@ description: متى تستخدم rdc ومتى تستخدم renet.
 category: Concepts
 order: 1
 language: ar
-sourceHash: "8b7443928e0be27e"
+sourceHash: "4f7b74a70b59d9c8"
 ---
 
 # rdc مقابل renet
@@ -80,6 +80,6 @@ rdc ops down               # Destroy cluster
 
 ## ملاحظة حول Rediaccfile
 
-قد ترى `renet compose -- ...` داخل ملف `Rediaccfile`. هذا أمر طبيعي — تعمل دوال Rediaccfile على الخادم حيث يكون `renet` متاحًا.
+قد ترى `renet compose -- ...` داخل ملف `Rediaccfile`. هذا أمر طبيعي, تعمل دوال Rediaccfile على الخادم حيث يكون `renet` متاحًا.
 
 من جهاز العمل الخاص بك، قم بتشغيل وإيقاف أحمال العمل باستخدام `rdc repo up` و `rdc repo down`.

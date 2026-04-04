@@ -1,5 +1,6 @@
 {
   "common": {
+    "close": "Close",
     "siteName": "Rediacc",
     "logoAlt": "Rediacc - Infrastructure Automation Platform",
     "buttons": {
@@ -422,6 +423,15 @@
     "privacyNote": "We respect your privacy. Unsubscribe at any time."
   },
   "captchaRequired": "Please complete the captcha verification.",
+  "regionPicker": {
+    "title": "Where should we store your data?",
+    "subtitle": "Everything -- your account, billing, and configurations -- stays in the region you choose. It never leaves.",
+    "footer": "Pick the region closest to you, or where your organization requires. This can't be changed after sign-up.",
+    "locations": {
+      "eu": "Frankfurt, Germany",
+      "us": "Virginia, USA"
+    }
+  },
   "contactModal": {
     "title": "Get in Touch",
     "description": "Have a question or want to discuss a project? Send us a message.",
@@ -13331,7 +13341,8 @@
       "guides": "Guides",
       "concepts": "Concepts",
       "reference": "Reference",
-      "useCases": "Use Cases"
+      "useCases": "Use Cases",
+      "legal": "Legal"
     }
   },
   "video": {

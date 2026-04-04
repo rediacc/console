@@ -27,6 +27,7 @@
   },
   "captchaRequired": "Veuillez compléter la vérification du captcha.",
   "common": {
+    "close": "Fermer",
     "aria": {
       "breadcrumbNavigation": "Navigation par fil d'Ariane",
       "clickToEnlarge": "Cliquez pour agrandir l'image",
@@ -120,6 +121,7 @@
     "categories": {
       "concepts": "Concepts",
       "guides": "Guides",
+      "legal": "Juridique",
       "reference": "Référence",
       "tutorials": "Tutoriels",
       "useCases": "Cas d'utilisation"
@@ -1675,14 +1677,14 @@
           },
           "title": "Combien pourriez-vous économiser ?",
           "withAnnual": "Calculer →",
+          "withoutTag": "Coûts cloud actuels",
           "withResults": {
             "blockedTime": "60 % de moins",
             "contextSwitching": "<5 minutes",
             "quarterlySlip": "100 % à vous",
             "sprintCapacity": "Minimisé"
           },
-          "withTag": "Avec Rediacc",
-          "withoutTag": "Coûts cloud actuels"
+          "withTag": "Avec Rediacc"
         },
         "hero": {
           "badge": "POUR LES PDG ET FONDATEURS",
@@ -1896,14 +1898,14 @@
           },
           "title": "Combien coûte réellement votre infrastructure ?",
           "withAnnual": "Calculer →",
+          "withoutTag": "Dépense actuelle",
           "withResults": {
             "blockedTime": "60 % de moins",
             "contextSwitching": "<5 minutes",
             "quarterlySlip": "Aucun",
             "sprintCapacity": "Quasi nul"
           },
-          "withTag": "Avec Rediacc",
-          "withoutTag": "Dépense actuelle"
+          "withTag": "Avec Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Capacité",
@@ -2989,29 +2991,29 @@
           "business": {
             "floatingLicenses": "20",
             "jobsPerMonth": "20,000",
-            "repoSize": "500 Go",
             "repositories": "Illimité",
+            "repoSize": "500 Go",
             "usersTeams": "Illimité"
           },
           "community": {
             "floatingLicenses": "2",
             "jobsPerMonth": "500",
-            "repoSize": "10 Go",
             "repositories": "Illimité",
+            "repoSize": "10 Go",
             "usersTeams": "Illimité"
           },
           "enterprise": {
             "floatingLicenses": "50+",
             "jobsPerMonth": "100,000+",
-            "repoSize": "2 To+",
             "repositories": "Illimité",
+            "repoSize": "2 To+",
             "usersTeams": "Illimité"
           },
           "professional": {
             "floatingLicenses": "5",
             "jobsPerMonth": "5,000",
-            "repoSize": "100 Go",
             "repositories": "Illimité",
+            "repoSize": "100 Go",
             "usersTeams": "Illimité"
           }
         }
@@ -3559,13 +3561,13 @@
           },
           "title": "Combien coûte votre exposition aux vulnérabilités ?",
           "withAnnual": "Coût de sécurité annuel",
+          "withoutTag": "SANS REDIACC",
           "withResults": {
             "blindspot": "Angle mort",
             "exposure": "Exposition par vulnérabilité",
             "pentestCost": "Coût du pentest"
           },
-          "withTag": "AVEC REDIACC",
-          "withoutTag": "SANS REDIACC"
+          "withTag": "AVEC REDIACC"
         },
         "explore": {
           "solutions": [
@@ -3969,14 +3971,14 @@
           },
           "title": "Combien coûtent les lacunes d’audit ?",
           "withAnnual": "Coût annuel de risque d’audit",
+          "withoutTag": "JOURNAUX DISPERSÉS",
           "withResults": {
             "compileHours": "Heures de compilation de journaux / an",
             "delayCost": "Coût de retard d’investigation",
             "gaps": "Risque de constatation d’audit (lacunes)",
             "penaltyCost": "Risque de pénalité de non-conformité"
           },
-          "withTag": "AVEC REDIACC",
-          "withoutTag": "JOURNAUX DISPERSÉS"
+          "withTag": "AVEC REDIACC"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -4440,14 +4442,14 @@
           },
           "title": "Combien coûtent les sauvegardes non vérifiées ?",
           "withAnnual": "$0",
+          "withoutTag": "Sans vérification",
           "withResults": {
             "corrupted": "0 non détecté",
             "dataLoss": "0",
             "recoveryCost": "$0",
             "undetected": "0"
           },
-          "withTag": "Avec Rediacc",
-          "withoutTag": "Sans vérification"
+          "withTag": "Avec Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -4952,14 +4954,14 @@
           },
           "title": "Combien coûte une panne cloud ?",
           "withAnnual": "$0",
+          "withoutTag": "Sans Rediacc",
           "withResults": {
             "churn": "$0",
             "labor": "$0",
             "revenue": "$0",
             "sla": "$0"
           },
-          "withTag": "Avec Rediacc",
-          "withoutTag": "Sans Rediacc"
+          "withTag": "Avec Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -5462,13 +5464,13 @@
           },
           "title": "Combien coûte votre fenêtre d’exposition ?",
           "withAnnual": "Coût de sécurité annuel",
+          "withoutTag": "PENTESTING ANNUEL",
           "withResults": {
             "blindspot": "Fenêtre d’angle mort",
             "exposure": "Jours d’exposition / vulnérabilité",
             "pentestCost": "Coût annuel de pentest"
           },
-          "withTag": "CONTINU (REDIACC)",
-          "withoutTag": "PENTESTING ANNUEL"
+          "withTag": "CONTINU (REDIACC)"
         },
         "explore": {
           "solutions": [
@@ -5850,14 +5852,14 @@
           },
           "title": "Combien coûte une mauvaise gouvernance du chiffrement ?",
           "withAnnual": "Coût annuel de conformité",
+          "withoutTag": "CLÉS GÉRÉES PAR LE FOURNISSEUR",
           "withResults": {
             "exposure": "Fenêtres d’exposition par an",
             "gaps": "Écarts de conformité (accès aux clés)",
             "premium": "Prime de risque de violation",
             "prepHours": "Heures de préparation d’audit / an"
           },
-          "withTag": "AVEC REDIACC",
-          "withoutTag": "CLÉS GÉRÉES PAR LE FOURNISSEUR"
+          "withTag": "AVEC REDIACC"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -6359,14 +6361,14 @@
           },
           "title": "Combien cela coûte-t-il à votre équipe ?",
           "withAnnual": "$0",
+          "withoutTag": "Sans Rediacc",
           "withResults": {
             "blockedTime": "0 jours",
             "contextSwitching": "Minime",
             "quarterlySlip": "0 jours",
             "sprintCapacity": "0%"
           },
-          "withTag": "Avec Rediacc",
-          "withoutTag": "Sans Rediacc"
+          "withTag": "Avec Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -6857,14 +6859,14 @@
           },
           "title": "Combien coûte un basculement non testé ?",
           "withAnnual": "$0",
+          "withoutTag": "Sans tests",
           "withResults": {
             "churn": "$0",
             "compliance": "$0",
             "labor": "$0",
             "revenue": "$0"
           },
-          "withTag": "Avec les tests Rediacc",
-          "withoutTag": "Sans tests"
+          "withTag": "Avec les tests Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -7349,14 +7351,14 @@
           },
           "title": "Combien vous coûte une attaque par ransomware ?",
           "withAnnual": "~200 $",
+          "withoutTag": "Sans Rediacc",
           "withResults": {
             "downtime": "<5 min",
             "labor": "~200 $",
             "reputation": "$0",
             "revenue": "~$0"
           },
-          "withTag": "Avec Rediacc",
-          "withoutTag": "Sans Rediacc"
+          "withTag": "Avec Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -7880,6 +7882,7 @@
           "title": "Ce que les environnements inactifs vous coûtent",
           "withAnnual": "24 120 $",
           "withAnnualLabel": "Économies annuelles",
+          "withoutTag": "TOUJOURS ACTIF",
           "withResultLabels": {
             "idle": "Surcoût de stockage CoW"
           },
@@ -7888,8 +7891,7 @@
             "monthly": "$990",
             "waste": "0%"
           },
-          "withTag": "AVEC REDIACC",
-          "withoutTag": "TOUJOURS ACTIF"
+          "withTag": "AVEC REDIACC"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -8339,6 +8341,7 @@
           },
           "title": "Combien coûte une récupération lente ?",
           "withAnnual": "$868",
+          "withoutTag": "Récupération fichier par fichier",
           "withResultLabels": {
             "labor": "Main-d’œuvre (une commande)"
           },
@@ -8347,8 +8350,7 @@
             "labor": "$17",
             "recoveryTime": "<5 min"
           },
-          "withTag": "Avec Rediacc",
-          "withoutTag": "Récupération fichier par fichier"
+          "withTag": "Avec Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -8848,13 +8850,13 @@
           },
           "title": "Ce que le CI/CD défaillant vous coûte",
           "withAnnual": "$0",
+          "withoutTag": "SCRIPTS PERSONNALISÉS",
           "withResults": {
             "blocked": "0 h",
             "bugs": "0",
             "debug": "0 h"
           },
-          "withTag": "AVEC REDIACC",
-          "withoutTag": "SCRIPTS PERSONNALISÉS"
+          "withTag": "AVEC REDIACC"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -9305,13 +9307,13 @@
           },
           "title": "Ce que le risque de migration vous coûte",
           "withAnnual": "$0",
+          "withoutTag": "Sans Rediacc",
           "withResults": {
             "labor": "$0",
             "risk": "0 TB",
             "windows": "0 h"
           },
-          "withTag": "Avec Rediacc",
-          "withoutTag": "Sans Rediacc"
+          "withTag": "Avec Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -9810,13 +9812,13 @@
           },
           "title": "Ce que les écarts d’environnement vous coûtent",
           "withAnnual": "$0",
+          "withoutTag": "SANS REDIACC",
           "withResults": {
             "capacity": "0%",
             "debug": "0 h",
             "incidents": "0"
           },
-          "withTag": "AVEC REDIACC",
-          "withoutTag": "SANS REDIACC"
+          "withTag": "AVEC REDIACC"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -10281,14 +10283,14 @@
           },
           "title": "Combien coûte une récupération lente ?",
           "withAnnual": "Coût annuel des temps d’arrêt",
+          "withoutTag": "SANS REDIACC",
           "withResults": {
             "churn": "Coût d’attrition clients",
             "labor": "Main-d’œuvre de récupération",
             "regulatory": "Réglementaire / réputation",
             "revLost": "Revenu perdu / incident"
           },
-          "withTag": "AVEC REDIACC",
-          "withoutTag": "SANS REDIACC"
+          "withTag": "AVEC REDIACC"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -10766,14 +10768,14 @@
           },
           "title": "Combien coûte la conformité manuelle ?",
           "withAnnual": "$0",
+          "withoutTag": "Sans Rediacc",
           "withResults": {
             "gaps": "0",
             "labor": "$0",
             "penalty": "$0",
             "prepHours": "4 h"
           },
-          "withTag": "Avec Rediacc",
-          "withoutTag": "Sans Rediacc"
+          "withTag": "Avec Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -11309,14 +11311,14 @@
           },
           "title": "Combien coûte le report des correctifs ?",
           "withAnnual": "$0",
+          "withoutTag": "Sans Rediacc",
           "withResults": {
             "breach": "Minime",
             "downtime": "$0",
             "exposure": "0 jours",
             "labor": "$0"
           },
-          "withTag": "Avec Rediacc",
-          "withoutTag": "Sans Rediacc"
+          "withTag": "Avec Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -11822,14 +11824,14 @@
           },
           "title": "Combien vous coûte le verrouillage fournisseur ?",
           "withAnnual": "Taxe annuelle de verrouillage",
+          "withoutTag": "VERROUILLÉ",
           "withResults": {
             "egress": "Frais de transfert de données sortantes",
             "leverage": "Pouvoir de renégociation",
             "markup": "Surcoût fournisseur par rapport au marché",
             "migrate": "Coût de migration"
           },
-          "withTag": "AVEC REDIACC",
-          "withoutTag": "VERROUILLÉ"
+          "withTag": "AVEC REDIACC"
         },
         "comparison": {
           "capabilityLabel": "Fonctionnalité",
@@ -12286,9 +12288,9 @@
           },
           "title": "Combien coûte une correction lente ?",
           "withAnnual": "",
+          "withoutTag": "Sans Rediacc",
           "withResults": {},
-          "withTag": "Avec Rediacc",
-          "withoutTag": "Sans Rediacc"
+          "withTag": "Avec Rediacc"
         },
         "explore": {
           "solutions": [
@@ -13287,6 +13289,15 @@
     },
     "subtitle": "Lorsque les environnements de production contiennent des téraoctets de données mais que les environnements sandbox ne se synchronisent que mensuellement, les équipes sont confrontées à des choix impossibles qui conduisent à des solutions de contournement dangereuses.",
     "title": "La crise du décalage de vitesse"
+  },
+  "regionPicker": {
+    "footer": "Choisissez la région la plus proche de vous ou celle requise par votre organisation. Ce choix ne peut pas être modifié après l'inscription.",
+    "locations": {
+      "eu": "Francfort, Allemagne",
+      "us": "Virginie, États-Unis"
+    },
+    "subtitle": "Tout, votre compte, votre facturation et vos configurations, reste dans la région que vous choisissez. Rien n'en sort jamais.",
+    "title": "Où souhaitez-vous stocker vos données ?"
   },
   "solutions": {
     "categories": {

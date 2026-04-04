@@ -74,7 +74,7 @@ async function buildSelfHostedDisplay(
     repoCount = Object.keys(config.repositories ?? {}).length;
   }
 
-  return {
+  const display: Record<string, unknown> = {
     name,
     id: config.id,
     version: config.version,
@@ -86,6 +86,11 @@ async function buildSelfHostedDisplay(
     storages: storageCount,
     repositories: repoCount,
   };
+  if (config.remote) {
+    display.remoteUrl = config.remote.apiUrl;
+    display.dataRegion = config.remote.dataRegion ?? '-';
+  }
+  return display;
 }
 
 /** Encrypt master password if provided. Returns config updates. */

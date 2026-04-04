@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: de
-sourceHash: "70943eacf16dbd21"
+sourceHash: "1ec1b0e490ef470c"
 ---
 
 # Architektur
@@ -32,7 +32,7 @@ Rediacc verwendet zwei Binaries, die über SSH zusammenarbeiten:
 
 Jeder Befehl, den Sie lokal eingeben, wird in einen SSH-Aufruf übersetzt, der renet auf dem entfernten Rechner ausführt. Sie müssen sich nie manuell per SSH auf den Servern anmelden.
 
-Für eine operatorfokussierte Faustregel, siehe [rdc vs renet](/de/docs/rdc-vs-renet). Sie können auch `rdc ops` verwenden, um einen lokalen VM-Cluster zum Testen zu starten — siehe [Experimentelle VMs](/de/docs/experimental-vms).
+Für eine operatorfokussierte Faustregel, siehe [rdc vs renet](/de/docs/rdc-vs-renet). Sie können auch `rdc ops` verwenden, um einen lokalen VM-Cluster zum Testen zu starten, siehe [Experimentelle VMs](/de/docs/experimental-vms).
 
 ## Konfiguration
 
