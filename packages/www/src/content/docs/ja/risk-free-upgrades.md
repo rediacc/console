@@ -4,7 +4,7 @@ description: インスタント クローン作成と 1 時間ごとのスナッ
 category: Use Cases
 order: 4
 language: ja
-sourceHash: c905d2f42d1108c2
+sourceHash: "c905d2f42d1108c2"
 ---
 
 > **すべてをテストします。 リスクは何もありません。 自信を持ってアップグレードしてください。**

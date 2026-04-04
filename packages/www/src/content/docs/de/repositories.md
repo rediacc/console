@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 4
 language: de
-sourceHash: "f9d64d1323b2952d"
+sourceHash: "a3b38ca25b01b511"
 sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
@@ -20,7 +20,7 @@ Ein **Repository** ist ein LUKS-verschlüsseltes Disk-Image auf einem entfernten
 ## Repository erstellen
 
 ```bash
-rdc repo create my-app -m server-1 --size 10G
+rdc repo create --name my-app -m server-1 --size 10G
 ```
 
 | Option | Erforderlich | Beschreibung |
@@ -42,8 +42,8 @@ Die Ausgabe zeigt drei automatisch generierte Werte:
 Das Einbinden entschlüsselt und macht das Repository-Dateisystem zugänglich. Das Aushängen schließt das verschlüsselte Volume.
 
 ```bash
-rdc repo mount my-app -m server-1       # Entschlüsseln und einbinden
-rdc repo unmount my-app -m server-1     # Aushängen und wieder verschlüsseln
+rdc repo mount --name my-app -m server-1  # Entschlüsseln und einbinden
+rdc repo unmount --name my-app -m server-1  # Aushängen und wieder verschlüsseln
 ```
 
 | Option | Beschreibung |
@@ -54,7 +54,7 @@ rdc repo unmount my-app -m server-1     # Aushängen und wieder verschlüsseln
 ## Status prüfen
 
 ```bash
-rdc repo status my-app -m server-1
+rdc repo status --name my-app -m server-1
 ```
 
 ## Repositories auflisten
@@ -68,8 +68,8 @@ rdc repo list -m server-1
 Das Repository auf eine exakte Größe setzen oder um einen bestimmten Betrag erweitern:
 
 ```bash
-rdc repo resize my-app -m server-1 --size 20G    # Auf exakte Größe setzen
-rdc repo expand my-app -m server-1 --size 5G      # 5G zur aktuellen Größe hinzufügen
+rdc repo resize --name my-app -m server-1 --size 20G  # Auf exakte Größe setzen
+rdc repo expand --name my-app -m server-1 --size 5G  # 5G zur aktuellen Größe hinzufügen
 ```
 
 > Das Repository muss vor der Größenänderung ausgehängt werden.
@@ -79,7 +79,7 @@ rdc repo expand my-app -m server-1 --size 5G      # 5G zur aktuellen Größe hin
 Eine Kopie eines vorhandenen Repositories in seinem aktuellen Zustand erstellen:
 
 ```bash
-rdc repo fork my-app staging -m server-1
+rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
 Forks verwenden das Name:Tag-Modell: Der resultierende Fork heisst `my-app:staging`. Dies erstellt eine neue verschlüsselte Kopie mit eigener GUID und Netzwerk-ID, wobei der Name des übergeordneten Repositories geteilt wird. Der Fork teilt sich das gleiche LUKS-Credential wie das übergeordnete Repository.
@@ -89,7 +89,7 @@ Forks verwenden das Name:Tag-Modell: Der resultierende Fork heisst `my-app:stagi
 Die Dateisystemintegrität eines Repositories prüfen:
 
 ```bash
-rdc repo validate my-app -m server-1
+rdc repo validate --name my-app -m server-1
 ```
 
 ## Eigentümerschaft
@@ -97,7 +97,7 @@ rdc repo validate my-app -m server-1
 Die Dateieigentümerschaft innerhalb eines Repositories auf den universellen Benutzer (UID 7111) setzen. Dies ist typischerweise erforderlich, nachdem Dateien von Ihrer Workstation hochgeladen wurden, die mit Ihrer lokalen UID ankommen.
 
 ```bash
-rdc repo ownership my-app -m server-1
+rdc repo ownership --name my-app -m server-1
 ```
 
 Der Befehl erkennt automatisch Docker-Container-Datenverzeichnisse (beschreibbare Bind-Mounts) und schließt sie aus. Dies verhindert das Beschädigen von Containern, die Dateien mit eigenen UIDs verwalten (z. B. MariaDB=999, www-data=33).
@@ -110,7 +110,7 @@ Der Befehl erkennt automatisch Docker-Container-Datenverzeichnisse (beschreibbar
 Um die Eigentümerschaft aller Dateien zu erzwingen, einschließlich Container-Daten:
 
 ```bash
-rdc repo ownership my-app -m server-1
+rdc repo ownership --name my-app -m server-1
 ```
 
 
@@ -121,7 +121,7 @@ Siehe den [Migrationsleitfaden](/de/docs/migration) für eine vollständige Anle
 Eine Vorlage anwenden, um ein Repository mit Dateien zu initialisieren:
 
 ```bash
-rdc repo template apply my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## Löschen
@@ -129,7 +129,7 @@ rdc repo template apply my-template -m server-1 -r my-app --file ./my-template.t
 Ein Repository und alle darin enthaltenen Daten dauerhaft zerstören:
 
 ```bash
-rdc repo delete my-app -m server-1
+rdc repo delete --name my-app -m server-1
 ```
 
 > Dies zerstört dauerhaft das verschlüsselte Disk-Image. Diese Aktion kann nicht rückgängig gemacht werden.

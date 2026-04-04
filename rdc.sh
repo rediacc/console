@@ -7,10 +7,6 @@ set -euo pipefail
 # Root directory (portable: works on Linux, macOS, and Windows/Git Bash)
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# Auto-install: ensure `rdc` is globally available, pointing to this worktree
-mkdir -p ~/.local/bin
-ln -sf "$ROOT_DIR/rdc.sh" ~/.local/bin/rdc
-
 # Source configuration and utilities
 source "$ROOT_DIR/.ci/config/constants.sh"
 source "$ROOT_DIR/.ci/lib/local-common.sh"

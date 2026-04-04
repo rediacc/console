@@ -4,7 +4,7 @@ description: Birkaç dakika içinde sunucunuzda konteynerize bir servis çalış
 category: Guides
 order: -1
 language: tr
-sourceHash: "83fb84d9a631a73e"
+sourceHash: "50b448b7b1e7b85b"
 ---
 
 # Hızlı Başlangıç
@@ -58,8 +58,8 @@ Artık her rdc komutu bu anahtarla kimlik doğrulaması yapar. Parola gerekmez.
 ### 3. Sunucunuzu Ekleyin
 
 ```bash
-rdc config machine add my-server --ip 192.168.1.100 --user muhammed
-rdc config machine setup my-server        # renet kurulumu + veri deposu oluşturma
+rdc config machine add --name my-server --ip 192.168.1.100 --user muhammed
+rdc config machine setup --name my-server  # renet kurulumu + veri deposu oluşturma
 ```
 
 **Ne olur:** SSH host anahtarı taranır, renet ikili dosyası yüklenir, sunucuda şifrelenmiş veri deposu başlatılır. Repolar için hazır.
@@ -82,7 +82,7 @@ cat ~/.config/rediacc/rediacc.json         # Ham JSON: makineler, repolar, depol
 ### 1. Repo Oluşturma
 
 ```bash
-rdc repo create my-app -m my-server --size 2G       # 2 GB şifrelenmiş repo oluştur
+rdc repo create --name my-app -m my-server --size 2G  # 2 GB şifrelenmiş repo oluştur
 ```
 
 Şifrelenmiş birimi oluşturur, bağlar ve Docker daemon'unu başlatır. Repo yapılandırmanıza kaydedilir ve kullanıma hazırdır.
@@ -93,7 +93,7 @@ rdc repo create my-app -m my-server --size 2G       # 2 GB şifrelenmiş repo ol
 
 ```bash
 rdc repo template list                                        # Gömülü şablonları göster
-rdc repo template apply app-postgres -m my-server -r my-app   # docker-compose.yml + Rediaccfile dağıt
+rdc repo template apply --name app-postgres -m my-server -r my-app  # docker-compose.yml + Rediaccfile dağıt
 ```
 
 Şablonlar bir `docker-compose.yml`, `Rediaccfile` ve destekleyici dosyalar sağlar. Bir şablon (veya kendi compose dosyanız) olmadan başlatılacak bir şey yoktur.
@@ -101,9 +101,9 @@ rdc repo template apply app-postgres -m my-server -r my-app   # docker-compose.y
 ### 3. Repoyu Başlatma
 
 ```bash
-rdc repo up my-app -m my-server                      # Rediaccfile up() çalıştır
+rdc repo up --name my-app -m my-server  # Rediaccfile up() çalıştır
 rdc repo list -m my-server                           # Makinedeki tüm repoları gör
-rdc repo status my-app -m my-server                  # Bağlama durumu, Docker, boyut, şifreleme
+rdc repo status --name my-app -m my-server  # Bağlama durumu, Docker, boyut, şifreleme
 ```
 
 `repo up` gerektiğinde otomatik bağlama yapar. Ek bayrak gerekmez.
@@ -155,9 +155,9 @@ rdc repo sync download -m my-server -r my-app --local ./backup --dry-run  # Önc
 
 **Tünel (Konteynere SSH port yönlendirme):**
 ```bash
-rdc repo tunnel my-server my-app                     # Konteyner ve portu otomatik algıla
-rdc repo tunnel my-server my-app --port 5432         # Postgres tüneli
-rdc repo tunnel my-server my-app --port 5432 --local 15432  # Özel yerel port
+rdc repo tunnel -m my-server -r my-app  # Konteyner ve portu otomatik algıla
+rdc repo tunnel -m my-server -r my-app --port 5432  # Postgres tüneli
+rdc repo tunnel -m my-server -r my-app --port 5432 --local 15432  # Özel yerel port
 ```
 
 Tünel çalıştırın → tarayıcıda `localhost:3000` açın → uzak sunucudan canlı uygulama.
@@ -171,9 +171,9 @@ Tünel çalıştırın → tarayıcıda `localhost:3000` açın → uzak sunucud
 ### 1. Grand ve Fork Repoları
 
 ```bash
-rdc repo fork my-app -m my-server --tag experiment --up     # Anında CoW klonu + başlat
+rdc repo fork --parent my-app -m my-server --tag experiment --up  # Anında CoW klonu + başlat
 rdc repo list -m my-server                                  # Gösterir: my-app (grand) + my-app:experiment (fork)
-rdc repo delete my-app:experiment -m my-server              # Fork'u sil, grand'a dokunulmaz
+rdc repo delete --name my-app:experiment -m my-server  # Fork'u sil, grand'a dokunulmaz
 ```
 
 **Anında, sıfır kopya klonlama.** CoW (copy-on-write). Mikrosaniyeler, veri kopyalanmaz. Bir taraf yazana kadar bloklar paylaşılır.
@@ -189,29 +189,29 @@ rdc repo delete my-app:experiment -m my-server              # Fork'u sil, grand'
 
 ```bash
 # Repoyu başka bir makineye gönder
-rdc repo push my-app -m my-server --to backup-server
+rdc repo push --name my-app -m my-server --to backup-server
 
 # Gönder ve hedefte otomatik dağıt
-rdc repo push my-app -m my-server --to backup-server --up
+rdc repo push --name my-app -m my-server --to backup-server --up
 
 # CRIU kontrol noktası ile gönder (canlı geçiş, bellek durumunu korur)
-rdc repo push my-app -m my-server --to new-server --checkpoint --up
+rdc repo push --name my-app -m my-server --to new-server --checkpoint --up
 
 # Yeni bir makineye gönder (bulut sağlayıcı ile otomatik kurulum)
-rdc repo push my-app -m my-server --to new-server --provision linode --up
+rdc repo push --name my-app -m my-server --to new-server --provision linode --up
 ```
 
 ### 3. Bulut Depolamaya Gönderme (OneDrive, Google Drive, S3)
 
 ```bash
 # rclone yapılandırmanızı depolama arka ucu olarak içe aktarın
-rdc config storage import ~/rclone.conf
+rdc config storage import --file ~/rclone.conf
 
 # Kullanılabilir depolamaları listeleyin
 rdc storage list
 
 # Repoyu bulut depolamaya gönderin
-rdc repo push my-app -m my-server --to my-s3-backup
+rdc repo push --name my-app -m my-server --to my-s3-backup
 
 # Depolamadaki yedekleri listeleyin
 rdc repo backup list --from my-s3-backup -m my-server
@@ -223,13 +223,13 @@ rdc repo backup list --from my-s3-backup -m my-server
 
 ```bash
 # Bir bulut makinesinden yerel sunucunuza repo çekin
-rdc repo pull my-app -m my-local-server --from cloud-server
+rdc repo pull --name my-app -m my-local-server --from cloud-server
 
 # Bulut depolamadan çekin
-rdc repo pull my-app -m my-local-server --from my-s3-backup
+rdc repo pull --name my-app -m my-local-server --from my-s3-backup
 
 # Çek ve hemen başlat
-rdc repo pull my-app -m my-local-server --from my-s3-backup --up
+rdc repo pull --name my-app -m my-local-server --from my-s3-backup --up
 ```
 
 **Neden pull?** Yerel makineniz NAT arkasındadır. Bulut size push yapamaz. Ama siz buluta ulaşabilirsiniz. Pull, repoyu eve getirir.
@@ -245,9 +245,9 @@ rdc repo pull my-app -m my-local-server --from my-s3-backup --up
 ### 1. Altyapı Yapılandırması
 
 ```bash
-rdc config infra set my-server           # Yapılandır: temel alan adı, genel IP'ler, port aralıkları
-rdc config infra show my-server          # Yapılandırmayı incele
-rdc config infra push my-server          # Proxy yapılandırmasını uzak sunucuya gönder
+rdc config infra set -m my-server  # Yapılandır: temel alan adı, genel IP'ler, port aralıkları
+rdc config infra show -m my-server  # Yapılandırmayı incele
+rdc config infra push -m my-server  # Proxy yapılandırmasını uzak sunucuya gönder
 ```
 
 **Yönlendirme nasıl çalışır:**
@@ -258,8 +258,8 @@ rdc config infra push my-server          # Proxy yapılandırmasını uzak sunuc
 ### 2. Proxy Şablonu
 
 ```bash
-rdc repo template apply proxy -m my-server -r infra     # Proxy'yi bir repoya dağıt
-rdc repo up infra -m my-server                           # Traefik'i başlat
+rdc repo template apply --name proxy -m my-server -r infra  # Proxy'yi bir repoya dağıt
+rdc repo up --name infra -m my-server  # Traefik'i başlat
 ```
 
 Traefik artık bu makinedeki tüm repolara gelen dış trafiği yönlendirir. Her konteyner otomatik olarak bir HTTPS uç noktası alır.

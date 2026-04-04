@@ -37,7 +37,7 @@ Ask Cursor: *"Check the status of my production server"*
 
 Cursor runs in terminal:
 ```bash
-rdc machine query prod-1 -o json
+rdc machine query --name prod-1 -o json
 ```
 
 ### Deploying Changes
@@ -46,7 +46,7 @@ Ask Cursor: *"Deploy the updated nextcloud config"*
 
 Cursor runs in terminal:
 ```bash
-rdc repo up nextcloud -m prod-1 --yes
+rdc repo up --name nextcloud -m prod-1 --yes
 ```
 
 ### Viewing Logs

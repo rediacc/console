@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: "bd53047cef737088"
+sourceHash: "7f95ad082a023982"
 ---
 
 # Backup & Wiederherstellung
@@ -22,7 +22,7 @@ Bevor Sie Backups übertragen, registrieren Sie einen Speicheranbieter. Rediacc 
 Wenn Sie bereits ein rclone-Remote konfiguriert haben:
 
 ```bash
-rdc config storage import rclone.conf
+rdc config storage import --file rclone.conf
 ```
 
 Dies importiert Speicherkonfigurationen aus einer rclone-Konfigurationsdatei in die aktuelle Konfiguration. Unterstützte Typen: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob und Swift.
@@ -38,7 +38,7 @@ rdc config storage list
 Ein Repository-Backup auf externen Speicher übertragen:
 
 ```bash
-rdc repo push my-app -m server-1 --to my-storage
+rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
 | Option | Beschreibung |
@@ -58,7 +58,7 @@ rdc repo push my-app -m server-1 --to my-storage
 Ein Repository-Backup vom externen Speicher abrufen:
 
 ```bash
-rdc repo pull my-app -m server-1 --from my-storage
+rdc repo pull --name my-app -m server-1 --from my-storage
 ```
 
 | Option | Beschreibung |
@@ -132,7 +132,7 @@ rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --e
 Die Zeitplan-Konfiguration als systemd-Timer auf eine Maschine verteilen:
 
 ```bash
-rdc machine deploy-backup server-1
+rdc machine backup schedule -m server-1
 ```
 
 ### Zeitplan anzeigen
@@ -146,7 +146,7 @@ rdc config backup-strategy show
 Den Inhalt eines Speicherorts durchsuchen:
 
 ```bash
-rdc storage browse my-storage
+rdc storage browse --name my-storage
 ```
 
 ## Bewährte Methoden

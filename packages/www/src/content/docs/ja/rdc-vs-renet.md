@@ -4,7 +4,7 @@ description: rdc を使う場面と renet を使う場面。
 category: Concepts
 order: 1
 language: ja
-sourceHash: "69cb9c27f7c3afaf"
+sourceHash: "8b7443928e0be27e"
 ---
 
 # rdc vs renet
@@ -36,14 +36,14 @@ Rediaccには2つのバイナリがあります。それぞれの使い分けを
 
 ```bash
 # 新しいサーバーをセットアップ
-rdc config machine setup server-1
+rdc config machine setup --name server-1
 
 # リポジトリを作成して起動
-rdc repo create my-app -m server-1 --size 10G
-rdc repo up my-app -m server-1 --mount
+rdc repo create --name my-app -m server-1 --size 10G
+rdc repo up --name my-app -m server-1 --mount
 
 # リポジトリを停止
-rdc repo down my-app -m server-1
+rdc repo down --name my-app -m server-1
 
 # マシンの健全性を確認
 rdc machine health server-1
@@ -69,8 +69,8 @@ rdc machine health server-1
 rdc ops setup              # 前提条件をインストール（KVMまたはQEMU）
 rdc ops up --basic         # 最小構成のクラスターを起動
 rdc ops status             # VMステータスを確認
-rdc ops ssh 1              # ブリッジVMにSSH接続
-rdc ops ssh 1 hostname     # ブリッジVM上でコマンドを実行
+rdc ops ssh --vm-id 1  # ブリッジVMにSSH接続
+rdc ops ssh --vm-id 1 -c hostname  # ブリッジVM上でコマンドを実行
 rdc ops down               # クラスターを破棄
 ```
 

@@ -4,7 +4,7 @@ description: "创建加密仓库、部署容器化应用、检查容器和清理
 category: "Tutorials"
 order: 3
 language: zh
-sourceHash: ee3455c196ea1479
+sourceHash: "79d2707d0dc632b2"
 ---
 
 # 如何使用 Rediacc 部署和管理仓库
@@ -26,7 +26,7 @@ sourceHash: ee3455c196ea1479
 每个仓库获得自己的 LUKS 加密存储卷。指定机器和存储大小。
 
 ```bash
-rdc repo create test-app -m server-1 --size 2G
+rdc repo create --name test-app -m server-1 --size 2G
 ```
 
 Rediacc 创建一个 2 GB 的加密卷，格式化并自动挂载。仓库已准备好上传文件。
@@ -56,7 +56,7 @@ rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 通过挂载仓库并启动其 Docker 服务来部署应用。
 
 ```bash
-rdc repo up test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1 --mount
 ```
 
 这将挂载仓库（如果尚未挂载），启动隔离的 Docker daemon，并通过 `up()` 启动服务。
@@ -86,9 +86,9 @@ rdc term connect -m server-1 -r test-app -c "docker ps"
 完成后，停止服务、关闭加密卷，并可选择删除仓库。
 
 ```bash
-rdc repo down test-app -m server-1      # 停止服务
-rdc repo unmount test-app -m server-1   # 关闭加密卷
-rdc repo delete test-app -m server-1    # 永久删除仓库
+rdc repo down --name test-app -m server-1  # 停止服务
+rdc repo unmount --name test-app -m server-1  # 关闭加密卷
+rdc repo delete --name test-app -m server-1  # 永久删除仓库
 ```
 
 `down` 停止容器和 Docker daemon。`unmount` 关闭 LUKS 卷。`delete` 永久删除仓库及其加密存储。

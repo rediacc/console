@@ -4,7 +4,7 @@ description: "暗号化されたリポジトリの作成、コンテナ化され
 category: "Tutorials"
 order: 3
 language: ja
-sourceHash: ee3455c196ea1479
+sourceHash: "79d2707d0dc632b2"
 ---
 
 # Rediaccでリポジトリをデプロイ・管理する方法
@@ -26,7 +26,7 @@ sourceHash: ee3455c196ea1479
 各リポジトリは独自のLUKS暗号化ストレージボリュームを取得します。マシンとストレージサイズを指定します。
 
 ```bash
-rdc repo create test-app -m server-1 --size 2G
+rdc repo create --name test-app -m server-1 --size 2G
 ```
 
 Rediaccは2GBの暗号化ボリュームを作成し、フォーマットし、自動的にマウントします。リポジトリはファイルアップロードの準備が整いました。
@@ -56,7 +56,7 @@ rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 リポジトリをマウントしてDockerサービスを起動することでアプリケーションをデプロイします。
 
 ```bash
-rdc repo up test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1 --mount
 ```
 
 リポジトリをマウントし（まだマウントされていない場合）、隔離されたDocker daemonを起動し、`up()`でサービスを開始します。
@@ -86,9 +86,9 @@ rdc term connect -m server-1 -r test-app -c "docker ps"
 完了したら、サービスを停止し、暗号化ボリュームを閉じ、必要に応じてリポジトリを削除します。
 
 ```bash
-rdc repo down test-app -m server-1      # サービスを停止
-rdc repo unmount test-app -m server-1   # 暗号化ボリュームを閉じる
-rdc repo delete test-app -m server-1    # リポジトリを完全に削除
+rdc repo down --name test-app -m server-1  # サービスを停止
+rdc repo unmount --name test-app -m server-1  # 暗号化ボリュームを閉じる
+rdc repo delete --name test-app -m server-1  # リポジトリを完全に削除
 ```
 
 `down`はコンテナとDocker daemonを停止します。`unmount`はLUKSボリュームを閉じます。`delete`はリポジトリとその暗号化ストレージを完全に削除します。

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: ru
-sourceHash: "a555a8192fdb3b7c"
+sourceHash: "4a2050fece1accbb"
 ---
 
 # Сервисы
@@ -176,7 +176,7 @@ services:
 Смонтируйте репозиторий и запустите все сервисы:
 
 ```bash
-rdc repo up my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1 --mount
 ```
 
 | Опция | Описание |
@@ -193,7 +193,7 @@ rdc repo up my-app -m server-1 --mount
 ## Остановка сервисов
 
 ```bash
-rdc repo down my-app -m server-1
+rdc repo down --name my-app -m server-1
 ```
 
 | Опция | Описание |
@@ -242,7 +242,7 @@ rdc repo up -m server-1
 ### Включение
 
 ```bash
-rdc repo autostart enable my-app -m server-1
+rdc repo autostart enable --name my-app -m server-1
 ```
 
 Вам будет предложено ввести парольную фразу репозитория.
@@ -256,7 +256,7 @@ rdc repo autostart enable -m server-1
 ### Отключение
 
 ```bash
-rdc repo autostart disable my-app -m server-1
+rdc repo autostart disable --name my-app -m server-1
 ```
 
 Эта команда удаляет ключевой файл и деактивирует LUKS-слот 1.
@@ -275,16 +275,16 @@ rdc repo autostart list -m server-1
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
-rdc config init production --ssh-key ~/.ssh/id_ed25519
-rdc config machine add prod-1 --ip 203.0.113.50 --user deploy
-rdc config machine setup prod-1
-rdc repo create webapp -m prod-1 --size 10G
+rdc config init --name production --ssh-key ~/.ssh/id_ed25519
+rdc config machine add --name prod-1 --ip 203.0.113.50 --user deploy
+rdc config machine setup --name prod-1
+rdc repo create --name webapp -m prod-1 --size 10G
 ```
 
 ### 2. Монтирование и подготовка
 
 ```bash
-rdc repo mount webapp -m prod-1
+rdc repo mount --name webapp -m prod-1
 ```
 
 ### 3. Создание файлов приложения
@@ -345,11 +345,11 @@ down() {
 ### 4. Запуск
 
 ```bash
-rdc repo up webapp -m prod-1
+rdc repo up --name webapp -m prod-1
 ```
 
 ### 5. Включение автозапуска
 
 ```bash
-rdc repo autostart enable webapp -m prod-1
+rdc repo autostart enable --name webapp -m prod-1
 ```

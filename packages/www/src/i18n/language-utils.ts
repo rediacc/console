@@ -99,3 +99,22 @@ export function getLocale(lang: Language): string {
   };
   return locales[lang];
 }
+
+/**
+ * Get BCP 47 hreflang code matching the sitemap i18n config.
+ * Uses hyphens (de-DE) not underscores (de_DE).
+ */
+export function getHreflang(lang: Language): string {
+  const hreflangs: Record<Language, string> = {
+    en: 'en',
+    de: 'de-DE',
+    es: 'es-ES',
+    fr: 'fr-FR',
+    ja: 'ja-JP',
+    ar: 'ar',
+    ru: 'ru-RU',
+    tr: 'tr-TR',
+    zh: 'zh-CN',
+  };
+  return hreflangs[lang];
+}

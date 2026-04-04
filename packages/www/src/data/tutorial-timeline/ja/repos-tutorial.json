@@ -7,16 +7,107 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "08c2b401bfb77edb9555b80da7ff28453d323d79ddee3072b2b7a3a6ea194068",
+  "transcriptHash": "6a63f43f4a9ee0a83f28e5d4892f72f5f6f2ad41ea606bedd6b162b63835789e",
   "steps": [
     {
       "id": "repos-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.508464,
-      "replayEndSec": 6.646665,
+      "replayStartSec": 12.189423,
+      "replayEndSec": 38.442369,
       "narrationText": "定義されたストレージ サイズで暗号化されたリポジトリを作成します。",
       "audioSrc": "/assets/tutorials/audio/ja/repos-tutorial/repos-tutorial-01.10d129bb.mp3",
-      "audioDurationSec": 4.675918
+      "audioDurationSec": 4.754286,
+      "stepLabel": "Step 1: Create an encrypted repository"
+    },
+    {
+      "id": "repos-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 38.442369,
+      "replayEndSec": 48.791132,
+      "narrationText": "リポジトリが作成されました。マシン上のすべてのリポジトリを一覧表示し、新しい暗号化ボリュームがマウントされて準備完了であることを確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/repos-tutorial/repos-tutorial-02.7fdcd6ed.mp3",
+      "audioDurationSec": 10.44898,
+      "stepLabel": "Step 2: List repositories"
+    },
+    {
+      "id": "repos-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 48.791132,
+      "replayEndSec": 58.851033,
+      "narrationText": "rsync ベースの同期を使用してアプリケーション ファイルをリポジトリにアップロードします -- 高速、差分転送、転送中も暗号化されます。",
+      "audioSrc": "/assets/tutorials/audio/ja/repos-tutorial/repos-tutorial-03.892e4756.mp3",
+      "audioDurationSec": 10.527347,
+      "stepLabel": "Step 3: Upload application files"
+    },
+    {
+      "id": "repos-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 58.851033,
+      "replayEndSec": 70.153823,
+      "narrationText": "リポジトリ内でターミナル セッションを開き、アップロードしたファイルが暗号化ボリューム上の正しい場所にあることを確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/repos-tutorial/repos-tutorial-04.13b9ae35.mp3",
+      "audioDurationSec": 7.706122,
+      "stepLabel": "Step 4: Start services"
+    },
+    {
+      "id": "repos-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 70.153823,
+      "replayEndSec": 89.740567,
+      "narrationText": "ファイルの配置が完了しました。アップロードした compose ファイルを使用してリポジトリの Docker サービスを起動します -- ここでは nginx ウェブサーバーです。",
+      "audioSrc": "/assets/tutorials/audio/ja/repos-tutorial/repos-tutorial-05.52b09d18.mp3",
+      "audioDurationSec": 10.997551,
+      "stepLabel": "Step 5: View running containers"
+    },
+    {
+      "id": "repos-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 89.740567,
+      "replayEndSec": 100.380993,
+      "narrationText": "マシンの実行中コンテナを照会し、ウェブ サービスが稼働中であることを確認します。イメージ、ステータス、メモリ使用量、割り当てられたループバック IP が表示されます。",
+      "audioSrc": "/assets/tutorials/audio/ja/repos-tutorial/repos-tutorial-06.f6e7f5f5.mp3",
+      "audioDurationSec": 12.826122,
+      "stepLabel": "Step 6: Access repo via terminal"
+    },
+    {
+      "id": "repos-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 100.380993,
+      "replayEndSec": 111.920858,
+      "narrationText": "リポジトリの分離された環境に接続して docker ps を実行すると、各リポジトリが独自の専用 Docker デーモンを持っていることがわかります。",
+      "audioSrc": "/assets/tutorials/audio/ja/repos-tutorial/repos-tutorial-07.789ad9b4.mp3",
+      "audioDurationSec": 9.639184,
+      "stepLabel": "Step 7: View container logs"
+    },
+    {
+      "id": "repos-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 111.920858,
+      "replayEndSec": 121.48644,
+      "narrationText": "リポジトリをマウントしたまま実行中のコンテナを停止します -- 暗号化ボリュームに触れずにサービスを適切にシャットダウンします。",
+      "audioSrc": "/assets/tutorials/audio/ja/repos-tutorial/repos-tutorial-08.8d116734.mp3",
+      "audioDurationSec": 8.594286,
+      "stepLabel": "Step 8: Execute command in container"
+    },
+    {
+      "id": "repos-tutorial-09",
+      "markerIndex": 8,
+      "replayStartSec": 121.48644,
+      "replayEndSec": 131.431736,
+      "narrationText": "リポジトリを完全に解体します -- サービスの停止、分離された Docker デーモンのシャットダウン、LUKS 暗号化ボリュームのアンマウントを行います。",
+      "audioSrc": "/assets/tutorials/audio/ja/repos-tutorial/repos-tutorial-09.6e41d7f9.mp3",
+      "audioDurationSec": 11.467755,
+      "stepLabel": "Step 9: Stop and clean up"
+    },
+    {
+      "id": "repos-tutorial-10",
+      "markerIndex": 9,
+      "replayStartSec": 131.431736,
+      "replayEndSec": 141.260339,
+      "narrationText": "最後に、暗号化ボリュームを削除してリポジトリをマシンから完全に消去します。設定エントリは他のマシン用に保持されます。",
+      "audioSrc": "/assets/tutorials/audio/ja/repos-tutorial/repos-tutorial-10.33fca853.mp3",
+      "audioDurationSec": 9.717551,
+      "stepLabel": "Step 10: Verify cleanup"
     }
   ]
 }

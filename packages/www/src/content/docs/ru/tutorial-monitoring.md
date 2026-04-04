@@ -4,7 +4,7 @@ description: "Проверка состояния машины, инспекци
 category: "Tutorials"
 order: 4
 language: ru
-sourceHash: "806137d9c33f4d7f"
+sourceHash: "ac0ee8180fdb7644"
 ---
 
 # Как мониторить и диагностировать инфраструктуру с помощью Rediacc
@@ -59,7 +59,7 @@ rdc machine services server-1
 ### Шаг 5: Обзор состояния хранилища
 
 ```bash
-rdc machine vault-status server-1
+rdc machine vault-status --name server-1
 ```
 
 Предоставляет общий обзор машины: имя хоста, время работы, память, диск, хранилище данных и общее количество репозиториев.
@@ -69,7 +69,7 @@ rdc machine vault-status server-1
 Если машина была переустановлена или её IP изменился, обновите сохранённый SSH-ключ хоста.
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 Получает текущие ключи хоста сервера и обновляет вашу конфигурацию. Это предотвращает ошибки "host key verification failed".

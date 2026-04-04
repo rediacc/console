@@ -26,11 +26,11 @@ run_cmd "rdc ops status"
 pause 2
 
 section "Step 4: Run a command on the bridge VM"
-run_cmd "rdc ops ssh 1 hostname"
+run_cmd "rdc ops ssh --vm-id 1 -c hostname"
 
 pause 1
 
-run_cmd "rdc ops ssh 1 uname -a"
+run_cmd "rdc ops ssh --vm-id 1 -c 'uname -a'"
 
 pause 2
 

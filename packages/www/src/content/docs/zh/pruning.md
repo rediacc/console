@@ -4,7 +4,7 @@ description: "删除孤立备份、过期快照和未使用的仓库镜像以回
 category: "Guides"
 order: 12
 language: zh
-sourceHash: "39df2a50797597f6"
+sourceHash: "a9bfc5eaffb9bca9"
 ---
 
 # 清理
@@ -20,13 +20,13 @@ sourceHash: "39df2a50797597f6"
 
 ```bash
 # Dry-run (default) — shows what would be deleted
-rdc storage prune my-s3 -m server-1
+rdc storage prune --name my-s3 -m server-1
 
 # Actually delete orphaned backups
-rdc storage prune my-s3 -m server-1
+rdc storage prune --name my-s3 -m server-1
 
 # Override grace period (default 7 days)
-rdc storage prune my-s3 -m server-1 --grace-days 14
+rdc storage prune --name my-s3 -m server-1 --grace-days 14
 ```
 
 ### 检查内容
@@ -46,10 +46,10 @@ rdc storage prune my-s3 -m server-1 --grace-days 14
 
 ```bash
 # Dry-run
-rdc machine prune server-1 --dry-run
+rdc machine prune --name server-1 --dry-run
 
 # Execute cleanup
-rdc machine prune server-1
+rdc machine prune --name server-1
 ```
 
 ### 阶段 2：孤立的仓库镜像（可选启用）
@@ -58,13 +58,13 @@ rdc machine prune server-1
 
 ```bash
 # Dry-run (default behavior when is set)
-rdc machine prune server-1
+rdc machine prune --name server-1
 
 # Actually delete orphaned repos
-rdc machine prune server-1
+rdc machine prune --name server-1
 
 # Custom grace period
-rdc machine prune server-1 --grace-days 30
+rdc machine prune --name server-1 --grace-days 30
 ```
 
 ## 安全模型
@@ -91,7 +91,7 @@ rdc machine prune server-1 --grace-days 30
 
 ```bash
 # Set grace period to 14 days in the active config
-rdc config set pruneGraceDays 14
+rdc config set --key pruneGraceDays --value 14
 ```
 
 CLI 标志 `--grace-days` 在提供时会覆盖此值。
@@ -108,5 +108,5 @@ CLI 标志 `--grace-days` 在提供时会覆盖此值。
 - **保持多个配置文件为最新状态。** 清理会检查配置目录中的所有配置。如果配置文件过期或被删除，其仓库将失去保护。请保持配置文件准确。
 - **为生产环境使用较长的宽限期。** 默认的 7 天宽限期适合大多数工作流程。对于维护窗口不频繁的生产环境，建议使用 14 天或 30 天。
 - **在备份运行后安排 storage prune。** 将 `storage prune` 与您的备份计划配对，以在无需手动干预的情况下控制存储成本。
-- **将 machine prune 与 deploy-backup 结合使用。** 在部署备份计划（`rdc machine deploy-backup`）后，添加定期的机器清理以清除过期快照和孤立的数据存储工件。
+- **将 machine prune 与 backup schedule 结合使用。** 在部署备份计划（`rdc machine backup schedule`）后，添加定期的机器清理以清除过期快照和孤立的数据存储工件。
 - **在使用 `--force` 前进行审核。** `--force` 标志会绕过宽限期。仅在您确定没有其他配置引用相关仓库时才使用它。

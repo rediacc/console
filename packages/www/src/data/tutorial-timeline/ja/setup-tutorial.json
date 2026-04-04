@@ -7,61 +7,97 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "2366b04397641c788ca785b2ee9dbed0f5938a3a3685d856064db513fe53e275",
+  "transcriptHash": "10f844205e558de7e6776aece9c8183201477c08a1cf7aa2a2664ff25f9aa064",
   "steps": [
     {
       "id": "setup-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.50986,
-      "replayEndSec": 10.605861,
+      "replayStartSec": 1.509621,
+      "replayEndSec": 11.379114,
       "narrationText": "この環境専用の構成プロファイルを初期化します。",
       "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-01.8877c2db.mp3",
-      "audioDurationSec": 3.709388
+      "audioDurationSec": 3.787755,
+      "stepLabel": "Step 1: Create a new config"
     },
     {
       "id": "setup-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 10.605861,
-      "replayEndSec": 17.961132,
-      "narrationText": "利用可能な構成を確認し、新しいプロファイルが存在することを確認します。",
-      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-02.77d219db.mp3",
-      "audioDurationSec": 6.034286
+      "replayStartSec": 11.379114,
+      "replayEndSec": 19.116458,
+      "narrationText": "プロファイルが作成されました。システム上のすべての構成プロファイルを一覧表示し、既存のプロファイルと並んで新しいプロファイルを確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-02.3c5fe9b1.mp3",
+      "audioDurationSec": 10.03102,
+      "stepLabel": "Step 2: View configs"
     },
     {
       "id": "setup-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 17.961132,
-      "replayEndSec": 31.651331,
-      "narrationText": "ネットワークとユーザーの詳細を含むマシンエントリを登録します。",
-      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-03.a274a84c.mp3",
-      "audioDurationSec": 3.866122
+      "replayStartSec": 19.116458,
+      "replayEndSec": 30.612519,
+      "narrationText": "次にリモート マシンを登録します -- IP アドレスと SSH ユーザーを指定します。ホスト キーは信頼されたアクセスのために自動的にスキャンされます。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-03.c306a17b.mp3",
+      "audioDurationSec": 10.762449,
+      "stepLabel": "Step 3: Add a machine"
     },
     {
       "id": "setup-tutorial-04",
       "markerIndex": 3,
-      "replayStartSec": 31.651331,
-      "replayEndSec": 40.16275,
-      "narrationText": "構成されたマシンのリストを調べて、登録を確認します。",
-      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-04.963d6069.mp3",
-      "audioDurationSec": 4.04898
+      "replayStartSec": 30.612519,
+      "replayEndSec": 39.668059,
+      "narrationText": "このプロファイルに設定されたマシンを一覧表示し、正しい接続情報でワーカーが追加されたことを確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-04.69cdf119.mp3",
+      "audioDurationSec": 7.88898,
+      "stepLabel": "Step 4: View machines"
     },
     {
       "id": "setup-tutorial-05",
       "markerIndex": 4,
-      "replayStartSec": 40.16275,
-      "replayEndSec": 48.29967,
-      "narrationText": "ターゲット フラグの繰り返しを減らすためにデフォルトのマシンを設定します。",
-      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-05.7a498e4c.mp3",
-      "audioDurationSec": 5.067755
+      "replayStartSec": 39.668059,
+      "replayEndSec": 48.511187,
+      "narrationText": "接続テストの時間です。SSH 経由でリモート コマンドを実行し、マシンのホスト名が返されることを確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-05.d30b7e1e.mp3",
+      "audioDurationSec": 8.359184,
+      "stepLabel": "Step 5: Test connectivity"
     },
     {
       "id": "setup-tutorial-06",
       "markerIndex": 5,
-      "replayStartSec": 48.29967,
-      "replayEndSec": 52.258257,
-      "narrationText": "基本的なリモート ホスト チェックを実行して、接続を検証します。",
-      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-06.f06e3ef5.mp3",
-      "audioDurationSec": 4.832653
+      "replayStartSec": 48.511187,
+      "replayEndSec": 59.171133,
+      "narrationText": "もう一つ確認します -- マシンの稼働時間と負荷平均を照会し、応答性と健全性を確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-06.b6a5766b.mp3",
+      "audioDurationSec": 7.000816,
+      "stepLabel": "Step 6: Check uptime"
+    },
+    {
+      "id": "setup-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 59.171133,
+      "replayEndSec": 78.418551,
+      "narrationText": "CLI 環境、renet のインストール状況、構成、サブスクリプション ステータスを一つのコマンドでカバーする完全な診断スキャンを実行します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-07.acda31d9.mp3",
+      "audioDurationSec": 11.885714,
+      "stepLabel": "Step 7: Run diagnostics"
+    },
+    {
+      "id": "setup-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 78.418551,
+      "replayEndSec": 89.493582,
+      "narrationText": "接続が確認できたので、マシンのインフラストラクチャを構成します -- パブリック IP、ルーティング用のベース ドメイン、自動 TLS 用の証明書メール アドレスです。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-08.d5096b35.mp3",
+      "audioDurationSec": 13.714286,
+      "stepLabel": "Step 8: Configure infrastructure"
+    },
+    {
+      "id": "setup-tutorial-09",
+      "markerIndex": 8,
+      "replayStartSec": 89.493582,
+      "replayEndSec": 98.079365,
+      "narrationText": "保存されたインフラストラクチャ構成を表示し、IP、ドメイン、証明書の設定が正しく保存されたことを確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-09.8b8c86ab.mp3",
+      "audioDurationSec": 7.967347,
+      "stepLabel": "Step 9: View infrastructure config"
     }
   ]
 }

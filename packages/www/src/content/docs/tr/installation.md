@@ -4,6 +4,8 @@ description: "Rediacc CLI'yı Linux, macOS veya Windows üzerine yükleyin."
 category: "Guides"
 order: 1
 language: tr
+sourceHash: "f67060ce45e1dc96"
+sourceCommit: "58fce41a73c6abc64260fe5e71afd23d17f56cde"
 ---
 
 # Kurulum
@@ -127,7 +129,7 @@ rdc update --status
 Önceki sürüme geri dönün:
 
 ```bash
-rdc update rollback
+rdc update --rollback
 ```
 
 ## Yayın Kanalları

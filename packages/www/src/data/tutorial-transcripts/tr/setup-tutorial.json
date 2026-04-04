@@ -6,38 +6,56 @@
     {
       "id": "setup-tutorial-01",
       "markerIndex": 0,
-      "at": 1.50986,
+      "at": 1.509621,
       "text": "Bu ortam için özel bir yapılandırma profili başlatın."
     },
     {
       "id": "setup-tutorial-02",
       "markerIndex": 1,
-      "at": 10.605861,
-      "text": "Mevcut yapılandırmaları inceleyin ve yeni profilin mevcut olduğunu onaylayın."
+      "at": 11.379114,
+      "text": "Profil oluşturuldu. Yeni profili mevcut profillerle birlikte görmek için sistemdeki tüm yapılandırma profillerini listeliyoruz."
     },
     {
       "id": "setup-tutorial-03",
       "markerIndex": 2,
-      "at": 17.961132,
-      "text": "Ağ ve kullanıcı ayrıntılarını içeren bir makine girişini kaydedin."
+      "at": 19.116458,
+      "text": "Ardından uzak bir makine kaydediyoruz -- IP adresi ve SSH kullanıcısı belirtiliyor. Güvenilir erişim için ana bilgisayar anahtarları otomatik olarak taranır."
     },
     {
       "id": "setup-tutorial-04",
       "markerIndex": 3,
-      "at": 31.651331,
-      "text": "Kaydı doğrulamak için yapılandırılmış makine listesini inceleyin."
+      "at": 30.612519,
+      "text": "Bu profilde yapılandırılmış makineleri listeleyerek worker'ın doğru bağlantı bilgileriyle eklendiğini doğruluyoruz."
     },
     {
       "id": "setup-tutorial-05",
       "markerIndex": 4,
-      "at": 40.16275,
-      "text": "Tekrarlanan hedefleme işaretlerini azaltmak için varsayılan makineyi ayarlayın."
+      "at": 39.668059,
+      "text": "Bağlantıyı test etme zamanı. SSH üzerinden uzak bir komut çalıştırıp makinenin ana bilgisayar adının döndüğünü doğruluyoruz."
     },
     {
       "id": "setup-tutorial-06",
       "markerIndex": 5,
-      "at": 48.29967,
-      "text": "Bağlantıyı doğrulamak için temel bir uzak ana bilgisayar kontrolü çalıştırın."
+      "at": 48.511187,
+      "text": "Bir kontrol daha -- makinenin çalışma süresini ve yük ortalamasını sorgulayarak yanıt verdiğinden ve sağlıklı olduğundan emin oluyoruz."
+    },
+    {
+      "id": "setup-tutorial-07",
+      "markerIndex": 6,
+      "at": 59.171133,
+      "text": "CLI ortamını, renet kurulumunu, yapılandırmayı ve abonelik durumunu tek bir komutla kapsayan tam bir tanılama taraması çalıştırıyoruz."
+    },
+    {
+      "id": "setup-tutorial-08",
+      "markerIndex": 7,
+      "at": 78.418551,
+      "text": "Bağlantı doğrulandıktan sonra makinenin altyapısını yapılandırıyoruz -- genel IP, yönlendirme için temel alan adı ve otomatik TLS için sertifika e-postası."
+    },
+    {
+      "id": "setup-tutorial-09",
+      "markerIndex": 8,
+      "at": 89.493582,
+      "text": "Kaydedilen altyapı yapılandırmasını görüntüleyerek IP, alan adı ve sertifika ayarlarının doğru şekilde saklandığını onaylıyoruz."
     }
   ]
 }

@@ -4,7 +4,7 @@ description: "Создайте профиль конфигурации, заре
 category: "Tutorials"
 order: 2
 language: ru
-sourceHash: "a7e5e0c30a4bb7d6"
+sourceHash: "3d92b47b323eb53e"
 ---
 
 # Как настроить машину с Rediacc
@@ -26,7 +26,7 @@ sourceHash: "a7e5e0c30a4bb7d6"
 Профиль конфигурации хранит определения машин, учётные данные SSH и настройки инфраструктуры. Создайте один для этого окружения.
 
 ```bash
-rdc config init tutorial-demo --ssh-key ~/.ssh/id_ed25519
+rdc config init --name tutorial-demo --ssh-key ~/.ssh/id_ed25519
 ```
 
 Это создаёт именованный файл конфигурации в `~/.config/rediacc/tutorial-demo.json`.
@@ -46,7 +46,7 @@ rdc config list
 Зарегистрируйте машину с её IP-адресом и пользователем SSH. CLI автоматически получает и сохраняет ключи хоста сервера через `ssh-keyscan`.
 
 ```bash
-rdc config machine add bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
+rdc config machine add --name bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
 ```
 
 ### Шаг 4: Просмотр машин
@@ -64,7 +64,7 @@ rdc config machine list --config tutorial-demo
 Установка машины по умолчанию избавляет от необходимости повторять `-m bridge-vm` в каждой команде.
 
 ```bash
-rdc config set machine bridge-vm --config tutorial-demo
+rdc config set --key machine --value bridge-vm --config tutorial-demo
 ```
 
 ### Шаг 6: Проверка подключения
@@ -91,7 +91,7 @@ rdc doctor
 Для публичных сервисов машине нужна сетевая конфигурация — внешний IP, базовый домен и email сертификата для TLS.
 
 ```bash
-rdc config infra set bridge-vm \
+rdc config infra set -m bridge-vm \
   --public-ipv4 192.168.111.1 \
   --base-domain test.local \
   --cert-email admin@test.local
@@ -100,7 +100,7 @@ rdc config infra set bridge-vm \
 Проверьте конфигурацию:
 
 ```bash
-rdc config infra show bridge-vm
+rdc config infra show -m bridge-vm
 ```
 
 Разверните сгенерированную конфигурацию прокси Traefik на сервере с помощью `rdc config infra push bridge-vm`.

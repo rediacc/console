@@ -4,7 +4,7 @@ description: فهم كيفية تعامل الحساب وrdc وrenet مع فتح
 category: Guides
 order: 7
 language: ar
-sourceHash: "fcc4e06609545bf7"
+sourceHash: "49428ac8fe913194"
 ---
 
 # الاشتراك والترخيص
@@ -181,7 +181,7 @@ rdc subscription refresh -m hostinger
 إجبار تجديد ترخيص مستودع لمستودع موجود:
 
 ```bash
-rdc subscription refresh repo my-app -m hostinger
+rdc subscription refresh repo --name my-app -m hostinger
 ```
 
 عند الاستخدام الأول، يمكن لعملية مستودع أو نسخ احتياطي مرخّصة لا تجد ترخيص مستودع قابلاً للاستخدام أن تُطلق تفويضاً تلقائياً من الحساب. يطبع CLI عنوان URL للتفويض، ويحاول فتح المتصفح في المحطات التفاعلية، ويُعيد المحاولة مرةً واحدة بعد نجاح التفويض والإصدار.

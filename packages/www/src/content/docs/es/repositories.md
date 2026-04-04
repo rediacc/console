@@ -4,7 +4,7 @@ description: 'Cree, gestione y opere repositorios cifrados con LUKS en máquinas
 category: Guides
 order: 4
 language: es
-sourceHash: "f9d64d1323b2952d"
+sourceHash: "a3b38ca25b01b511"
 sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
@@ -18,7 +18,7 @@ Un **repositorio** es una imagen de disco cifrada con LUKS en un servidor remoto
 ## Crear un Repositorio
 
 ```bash
-rdc repo create my-app -m server-1 --size 10G
+rdc repo create --name my-app -m server-1 --size 10G
 ```
 
 | Opción | Requerido | Descripción |
@@ -40,8 +40,8 @@ La salida mostrará tres valores generados automáticamente:
 Montar descifra y hace accesible el sistema de archivos del repositorio. Desmontar cierra el volumen cifrado.
 
 ```bash
-rdc repo mount my-app -m server-1       # Descifrar y montar
-rdc repo unmount my-app -m server-1     # Desmontar y re-cifrar
+rdc repo mount --name my-app -m server-1  # Descifrar y montar
+rdc repo unmount --name my-app -m server-1  # Desmontar y re-cifrar
 ```
 
 | Opción | Descripción |
@@ -52,7 +52,7 @@ rdc repo unmount my-app -m server-1     # Desmontar y re-cifrar
 ## Verificar Estado
 
 ```bash
-rdc repo status my-app -m server-1
+rdc repo status --name my-app -m server-1
 ```
 
 ## Listar Repositorios
@@ -66,8 +66,8 @@ rdc repo list -m server-1
 Establezca el repositorio a un tamaño exacto o expanda una cantidad dada:
 
 ```bash
-rdc repo resize my-app -m server-1 --size 20G    # Establecer tamaño exacto
-rdc repo expand my-app -m server-1 --size 5G      # Agregar 5G al tamaño actual
+rdc repo resize --name my-app -m server-1 --size 20G  # Establecer tamaño exacto
+rdc repo expand --name my-app -m server-1 --size 5G  # Agregar 5G al tamaño actual
 ```
 
 > El repositorio debe estar desmontado antes de redimensionar.
@@ -77,7 +77,7 @@ rdc repo expand my-app -m server-1 --size 5G      # Agregar 5G al tamaño actual
 Cree una copia de un repositorio existente en su estado actual:
 
 ```bash
-rdc repo fork my-app staging -m server-1
+rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
 Las bifurcaciones usan el modelo name:tag: la bifurcación resultante se llama `my-app:staging`. Esto crea una nueva copia cifrada con su propio GUID e ID de red, compartiendo el nombre del repositorio padre. La bifurcación comparte la misma credencial LUKS que el repositorio padre.
@@ -87,7 +87,7 @@ Las bifurcaciones usan el modelo name:tag: la bifurcación resultante se llama `
 Verifique la integridad del sistema de archivos de un repositorio:
 
 ```bash
-rdc repo validate my-app -m server-1
+rdc repo validate --name my-app -m server-1
 ```
 
 ## Propiedad
@@ -95,7 +95,7 @@ rdc repo validate my-app -m server-1
 Establezca la propiedad de archivos dentro de un repositorio al usuario universal (UID 7111). Esto es típicamente necesario después de subir archivos desde su estación de trabajo, que llegan con su UID local.
 
 ```bash
-rdc repo ownership my-app -m server-1
+rdc repo ownership --name my-app -m server-1
 ```
 
 El comando detecta automáticamente los directorios de datos de contenedores Docker (montajes bind de escritura) y los excluye. Esto previene daños en contenedores que gestionan archivos con sus propios UIDs (por ejemplo, MariaDB=999, www-data=33).
@@ -108,7 +108,7 @@ El comando detecta automáticamente los directorios de datos de contenedores Doc
 Para forzar la propiedad en todos los archivos, incluyendo datos de contenedores:
 
 ```bash
-rdc repo ownership my-app -m server-1
+rdc repo ownership --name my-app -m server-1
 ```
 
 
@@ -119,7 +119,7 @@ Consulte la [Guía de Migración](/es/docs/migration) para un recorrido completo
 Aplique una plantilla para inicializar un repositorio con archivos:
 
 ```bash
-rdc repo template apply my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## Eliminar
@@ -127,7 +127,7 @@ rdc repo template apply my-template -m server-1 -r my-app --file ./my-template.t
 Destruya permanentemente un repositorio y todos los datos dentro de él:
 
 ```bash
-rdc repo delete my-app -m server-1
+rdc repo delete --name my-app -m server-1
 ```
 
 > Esto destruye permanentemente la imagen de disco cifrada. Esta acción no se puede deshacer.

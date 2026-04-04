@@ -7,7 +7,7 @@
     "declaration": true,
     "declarationMap": true,
     "stripInternal": true,
-    "lib": ["ESNext"]
+    "lib": ["ESNext", "DOM"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"],
   "exclude": ["node_modules", "dist"]

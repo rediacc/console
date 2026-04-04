@@ -4,7 +4,7 @@ description: "将现有项目迁移到加密的 Rediacc 仓库中。"
 category: "Guides"
 order: 11
 language: zh
-sourceHash: e66f9ad6bbf5930f
+sourceHash: "180b0e1e61b958b8"
 ---
 
 # 迁移指南
@@ -22,7 +22,7 @@ sourceHash: e66f9ad6bbf5930f
 创建一个大小适合您项目的加密仓库。为 Docker 镜像和容器数据预留额外空间。
 
 ```bash
-rdc repo create my-project -m server-1 --size 20G
+rdc repo create --name my-project -m server-1 --size 20G
 ```
 
 > **提示：** 如有需要，您可以稍后使用 `rdc repo resize` 调整大小，但仓库必须先卸载。从一开始就分配足够的空间会更简单。
@@ -42,7 +42,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project
 上传前仓库必须已挂载。如果尚未挂载：
 
 ```bash
-rdc repo mount my-project -m server-1
+rdc repo mount --name my-project -m server-1
 ```
 
 对于后续需要远程目录与本地目录完全匹配的同步：
@@ -58,7 +58,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 上传的文件带有您本地用户的 UID（例如 1000）。Rediacc 使用通用用户（UID 7111），以便 VS Code、终端会话和工具都具有一致的访问权限。运行所有权命令进行转换：
 
 ```bash
-rdc repo ownership my-project -m server-1
+rdc repo ownership --name my-project -m server-1
 ```
 
 ### Docker 感知排除
@@ -83,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 要跳过 Docker 卷检测并更改所有内容的所有权，包括容器数据目录：
 
 ```bash
-rdc repo ownership my-project -m server-1
+rdc repo ownership --name my-project -m server-1
 ```
 
 > **警告：** 这可能会破坏正在运行的容器。如有需要，请先使用 `rdc repo down` 停止容器。
@@ -93,7 +93,7 @@ rdc repo ownership my-project -m server-1
 要设置默认 7111 以外的 UID：
 
 ```bash
-rdc repo ownership my-project -m server-1 --uid 1000
+rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
 
 ## 步骤 4：设置 Rediaccfile
@@ -199,7 +199,7 @@ services:
 挂载仓库（如果尚未挂载）并启动所有服务：
 
 ```bash
-rdc repo up my-project -m server-1 --mount
+rdc repo up --name my-project -m server-1 --mount
 ```
 
 这将：
@@ -219,7 +219,7 @@ rdc machine containers server-1
 默认情况下，服务器重启后需要手动挂载和启动仓库。启用自动启动以使服务自动运行：
 
 ```bash
-rdc repo autostart enable my-project -m server-1
+rdc repo autostart enable --name my-project -m server-1
 ```
 
 系统将提示您输入仓库密码短语。
@@ -274,7 +274,7 @@ my-api/
 文件仍然具有您的本地 UID。运行所有权命令：
 
 ```bash
-rdc repo ownership my-project -m server-1
+rdc repo ownership --name my-project -m server-1
 ```
 
 ### 容器无法启动
@@ -298,7 +298,7 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 如果您运行了 `rdc repo ownership` 并且容器停止工作，则容器的数据文件已被更改。停止容器，删除其数据目录，然后重新启动 — 容器将重新创建它：
 
 ```bash
-rdc repo down my-project -m server-1
+rdc repo down --name my-project -m server-1
 # 删除容器的数据目录（例如 database/data）
-rdc repo up my-project -m server-1
+rdc repo up --name my-project -m server-1
 ```

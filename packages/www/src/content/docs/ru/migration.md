@@ -4,7 +4,7 @@ description: "Миграция существующих проектов в за
 category: "Guides"
 order: 11
 language: ru
-sourceHash: e66f9ad6bbf5930f
+sourceHash: "180b0e1e61b958b8"
 ---
 
 # Руководство по миграции
@@ -22,7 +22,7 @@ sourceHash: e66f9ad6bbf5930f
 Создайте зашифрованный репозиторий достаточного размера для вашего проекта. Выделите дополнительное пространство для Docker-образов и данных контейнеров.
 
 ```bash
-rdc repo create my-project -m server-1 --size 20G
+rdc repo create --name my-project -m server-1 --size 20G
 ```
 
 > **Совет:** Вы можете изменить размер позже с помощью `rdc repo resize`, но репозиторий сначала необходимо отмонтировать. Проще начать с достаточного объёма.
@@ -42,7 +42,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project
 Перед загрузкой репозиторий должен быть смонтирован. Если он ещё не смонтирован:
 
 ```bash
-rdc repo mount my-project -m server-1
+rdc repo mount --name my-project -m server-1
 ```
 
 Для последующих синхронизаций, когда удалённая копия должна точно соответствовать локальному каталогу:
@@ -58,7 +58,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 Загруженные файлы приходят с UID вашего локального пользователя (например, 1000). Rediacc использует универсального пользователя (UID 7111), чтобы VS Code, терминальные сессии и инструменты имели единообразный доступ. Выполните команду изменения владельца:
 
 ```bash
-rdc repo ownership my-project -m server-1
+rdc repo ownership --name my-project -m server-1
 ```
 
 ### Исключения с учётом Docker
@@ -83,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Чтобы пропустить обнаружение Docker-томов и изменить владельца всего, включая каталоги данных контейнеров:
 
 ```bash
-rdc repo ownership my-project -m server-1
+rdc repo ownership --name my-project -m server-1
 ```
 
 > **Предупреждение:** Это может повредить работающие контейнеры. Сначала остановите их с помощью `rdc repo down`, если необходимо.
@@ -93,7 +93,7 @@ rdc repo ownership my-project -m server-1
 Чтобы установить UID, отличный от стандартного 7111:
 
 ```bash
-rdc repo ownership my-project -m server-1 --uid 1000
+rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
 
 ## Шаг 4: Настройка Rediaccfile
@@ -199,7 +199,7 @@ services:
 Смонтируйте репозиторий (если ещё не смонтирован) и запустите все сервисы:
 
 ```bash
-rdc repo up my-project -m server-1 --mount
+rdc repo up --name my-project -m server-1 --mount
 ```
 
 Это выполнит:
@@ -219,7 +219,7 @@ rdc machine containers server-1
 По умолчанию репозитории необходимо монтировать и запускать вручную после перезагрузки сервера. Включите автозапуск, чтобы ваши сервисы запускались автоматически:
 
 ```bash
-rdc repo autostart enable my-project -m server-1
+rdc repo autostart enable --name my-project -m server-1
 ```
 
 Вам будет предложено ввести парольную фразу репозитория.
@@ -274,7 +274,7 @@ my-api/
 Файлы всё ещё имеют ваш локальный UID. Выполните команду изменения владельца:
 
 ```bash
-rdc repo ownership my-project -m server-1
+rdc repo ownership --name my-project -m server-1
 ```
 
 ### Контейнер не запускается
@@ -298,7 +298,7 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 Если вы выполнили `rdc repo ownership` и контейнер перестал работать, файлы данных контейнера были изменены. Остановите контейнер, удалите его каталог данных и перезапустите — контейнер пересоздаст его:
 
 ```bash
-rdc repo down my-project -m server-1
+rdc repo down --name my-project -m server-1
 # Удалить каталог данных контейнера (например, database/data)
-rdc repo up my-project -m server-1
+rdc repo up --name my-project -m server-1
 ```

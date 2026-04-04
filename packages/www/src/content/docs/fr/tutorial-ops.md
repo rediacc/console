@@ -4,7 +4,7 @@ description: "Provisionner un cluster de VM local, exécuter des commandes via S
 category: "Tutorials"
 order: 1
 language: fr
-sourceHash: "c1ba17e9a145c599"
+sourceHash: "741534930d3fbc2a"
 ---
 
 # Comment provisionner des VMs locales avec Rediacc
@@ -52,11 +52,11 @@ Affiche l'état de chaque VM dans le cluster — adresses IP, allocation des res
 ### Étape 4 : Exécuter des commandes sur une VM
 
 ```bash
-rdc ops ssh --vm-id 1 hostname
+rdc ops ssh --vm-id 1 -c hostname
 rdc ops ssh --vm-id 1 -c "uname -a"
 ```
 
-Exécute des commandes sur la VM pont (ID `1`) via SSH. Passez n'importe quelle commande après l'ID de la VM. Pour un shell interactif, omettez la commande : `rdc ops ssh --vm-id 1`.
+Exécute des commandes sur la VM pont (ID `1`) via SSH. Utilisez `-c` pour passer une commande. Pour un shell interactif, omettez `-c` : `rdc ops ssh --vm-id 1`.
 
 ### Étape 5 : Démonter le cluster
 

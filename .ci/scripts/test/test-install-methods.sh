@@ -581,6 +581,28 @@ test_pacman_install() {
 }
 
 # =============================================================================
+# npm Install Tests
+# =============================================================================
+
+test_npm_install() {
+    local distro="$1"
+    local label="$2"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would test npm install on $label"
+        return 0
+    fi
+
+    local npm_url="${RELEASES_BASE_URL}/npm${REPO_CHANNEL_SUFFIX}/rediacc-cli-latest.tgz"
+
+    docker run --rm "$distro" bash -c "
+        set -e
+        npm install -g '${npm_url}'
+        ${PKG_BINARY_NAME} --version
+    "
+}
+
+# =============================================================================
 # Homebrew Tests
 # =============================================================================
 
@@ -798,6 +820,18 @@ if [[ "$METHOD" == "homebrew" || "$METHOD" == "all" ]]; then
         fi
     else
         skip_test "Homebrew Install" "Homebrew not available on Windows"
+    fi
+    echo ""
+fi
+
+# npm install tests
+if [[ "$METHOD" == "npm" || "$METHOD" == "all" ]]; then
+    log_step "npm Install Tests"
+
+    if [[ "$PLATFORM" == "linux" ]]; then
+        run_test "npm Install (Node 22)" test_npm_install "node:22" "Node 22"
+    else
+        skip_test "npm Install" "npm tests require Linux with Docker"
     fi
     echo ""
 fi

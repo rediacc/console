@@ -23,6 +23,9 @@ export TUTORIAL_MACHINE_IP="${TUTORIAL_MACHINE_IP:-192.168.111.11}"
 export TUTORIAL_MACHINE_USER="${TUTORIAL_MACHINE_USER:-$USER}"
 export TUTORIAL_SSH_KEY="${TUTORIAL_SSH_KEY:-$HOME/.renet/staging/.ssh/id_rsa}"
 
+# Skip machine activation -- tutorial VMs don't have a valid subscription license.
+export REDIACC_SKIP_MACHINE_ACTIVATION=1
+
 TUTORIAL_PROMPT="\033[1;32muser@rediacc\033[0m:\033[1;34m~\033[0m\$ "
 TUTORIAL_CHAR_DELAY="${TUTORIAL_CHAR_DELAY:-0.04}"
 
@@ -52,8 +55,13 @@ run_cmd() {
     printf '\n'
     sleep 0.3
 
-    # Execute
+    # Execute and check exit code
     eval "$cmd"
+    local rc=$?
+    if [[ $rc -ne 0 ]]; then
+        echo "FATAL: command failed with exit code $rc: $cmd" >&2
+        exit $rc
+    fi
 
     # Pause after output settles
     sleep 1.5

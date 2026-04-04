@@ -17,7 +17,7 @@ A **repository** is a LUKS-encrypted disk image on a remote server. When mounted
 ## Create a Repository
 
 ```bash
-rdc repo create my-app -m server-1 --size 10G
+rdc repo create --name my-app -m server-1 --size 10G
 ```
 
 | Option | Required | Description |
@@ -39,8 +39,8 @@ The output will show three auto-generated values:
 Mount decrypts and makes the repository filesystem accessible. Unmount closes the encrypted volume.
 
 ```bash
-rdc repo mount my-app -m server-1       # Decrypt and mount
-rdc repo unmount my-app -m server-1     # Unmount and re-encrypt
+rdc repo mount --name my-app -m server-1  # Decrypt and mount
+rdc repo unmount --name my-app -m server-1  # Unmount and re-encrypt
 ```
 
 | Option | Description |
@@ -51,7 +51,7 @@ rdc repo unmount my-app -m server-1     # Unmount and re-encrypt
 ## Check Status
 
 ```bash
-rdc repo status my-app -m server-1
+rdc repo status --name my-app -m server-1
 ```
 
 ## List Repositories
@@ -65,8 +65,8 @@ rdc repo list -m server-1
 Set the repository to an exact size or expand by a given amount:
 
 ```bash
-rdc repo resize my-app -m server-1 --size 20G    # Set to exact size
-rdc repo expand my-app -m server-1 --size 5G      # Add 5G to current size
+rdc repo resize --name my-app -m server-1 --size 20G  # Set to exact size
+rdc repo expand --name my-app -m server-1 --size 5G  # Add 5G to current size
 ```
 
 > The repository must be unmounted before resizing.
@@ -76,7 +76,7 @@ rdc repo expand my-app -m server-1 --size 5G      # Add 5G to current size
 Create a copy of an existing repository at its current state:
 
 ```bash
-rdc repo fork my-app staging -m server-1
+rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
 Forks use the name:tag model: the resulting fork is named `my-app:staging`. This creates a new encrypted copy with its own GUID and network ID, while sharing the parent's name. The fork shares the same LUKS credential as the parent.
@@ -86,7 +86,7 @@ Forks use the name:tag model: the resulting fork is named `my-app:staging`. This
 Check the filesystem integrity of a repository:
 
 ```bash
-rdc repo validate my-app -m server-1
+rdc repo validate --name my-app -m server-1
 ```
 
 ## Ownership
@@ -94,7 +94,7 @@ rdc repo validate my-app -m server-1
 Set file ownership within a repository to the universal user (UID 7111). This is typically needed after uploading files from your workstation, which arrive with your local UID.
 
 ```bash
-rdc repo ownership my-app -m server-1
+rdc repo ownership --name my-app -m server-1
 ```
 
 The command automatically detects Docker container data directories (writable bind mounts) and excludes them. This prevents breaking containers that manage files with their own UIDs (e.g., MariaDB=999, www-data=33).
@@ -107,7 +107,7 @@ The command automatically detects Docker container data directories (writable bi
 To force ownership on all files, including container data:
 
 ```bash
-rdc repo ownership my-app -m server-1
+rdc repo ownership --name my-app -m server-1
 ```
 
 
@@ -118,7 +118,7 @@ See the [Migration Guide](/en/docs/migration) for a complete walkthrough of when
 Apply a template to initialize a repository with files:
 
 ```bash
-rdc repo template apply my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## Delete
@@ -126,7 +126,7 @@ rdc repo template apply my-template -m server-1 -r my-app --file ./my-template.t
 Permanently destroy a repository and all data inside it:
 
 ```bash
-rdc repo delete my-app -m server-1
+rdc repo delete --name my-app -m server-1
 ```
 
 > This permanently destroys the encrypted disk image. This action cannot be undone.
@@ -137,10 +137,10 @@ After deleting repositories or recovering from failed operations, orphaned mount
 
 ```bash
 # Preview what would be removed
-rdc machine prune server-1 --dry-run
+rdc machine prune --name server-1 --dry-run
 
 # Remove orphaned resources
-rdc machine prune server-1
+rdc machine prune --name server-1
 ```
 
 Only resources with no matching repository image are affected. Non-empty mount directories are never removed.

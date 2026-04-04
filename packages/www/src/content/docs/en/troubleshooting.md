@@ -22,7 +22,7 @@ Common issues and their solutions. When in doubt, start with `rdc doctor` to run
 If a server was reinstalled or its SSH keys changed, you'll see "host key verification failed":
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 This fetches fresh host keys and updates your config.

@@ -4,7 +4,7 @@ description: Entender cómo account, rdc y renet gestionan los slots de máquina
 category: Guides
 order: 7
 language: es
-sourceHash: "fcc4e06609545bf7"
+sourceHash: "49428ac8fe913194"
 ---
 
 # Suscripción y licencias
@@ -181,7 +181,7 @@ Los repositorios descubiertos en la máquina pero que faltan en la configuració
 Forzar una renovación de licencia de repositorio para un repositorio existente:
 
 ```bash
-rdc subscription refresh repo my-app -m hostinger
+rdc subscription refresh repo --name my-app -m hostinger
 ```
 
 En el primer uso, una operación de repositorio o copia de seguridad con licencia que no encuentra una licencia de repositorio utilizable puede activar automáticamente una transferencia de autorización de cuenta. El CLI imprime una URL de autorización, intenta abrir el navegador en terminales interactivas y reintenta la operación una vez después de que la autorización y la emisión tengan éxito.

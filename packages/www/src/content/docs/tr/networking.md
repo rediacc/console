@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: tr
-sourceHash: "911dde41922454ec"
+sourceHash: "cc79bbad07c3ef01"
 ---
 
 # Ağ
@@ -111,16 +111,16 @@ Bunlar standart [Traefik v3 etiket sözdizimini](https://doc.traefik.io/traefik/
 
    ```bash
    # Paylaşılan kimlik bilgileri (yapılandırma başına bir kez, tüm makinelere uygulanır)
-   rdc config infra set server-1 \
+   rdc config infra set -m server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # Makineye özel ayarlar
-   rdc config infra set server-1 \
+   rdc config infra set -m server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config infra push server-1
+   rdc config infra push -m server-1
    ```
 
 2. Alan adınızı sunucunun genel IP'sine yönlendiren DNS kayıtları (aşağıdaki [DNS Yapılandırması](#dns-yapılandırması) bölümüne bakın).
@@ -165,7 +165,7 @@ Etiketlerdeki `{name}` rastgele bir tanımlayıcıdır — sadece ilgili router/
 TLS sertifikaları, Cloudflare DNS-01 doğrulaması kullanılarak Let's Encrypt aracılığıyla otomatik olarak alınır. Kimlik bilgileri yapılandırma başına bir kez ayarlanır (tüm makineler arasında paylaşılır):
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
@@ -185,11 +185,11 @@ HTTP dışı protokoller (posta sunucuları, DNS, dışarıya açılan veritaban
 Altyapı yapılandırması sırasında gerekli portları ekleyin:
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config infra push server-1
+rdc config infra push -m server-1
 ```
 
 Bu, `tcp-{port}` ve `udp-{port}` adlı Traefik giriş noktaları oluşturur.
@@ -436,7 +436,7 @@ app.example.com   A   203.0.113.50
 ### Dağıtım
 
 ```bash
-rdc repo up my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1 --mount
 ```
 
 Birkaç saniye içinde route server konteyneri keşfeder, Traefik yönlendirmeyi alır, TLS sertifikası talep eder ve `https://app.example.com` yayında olur.

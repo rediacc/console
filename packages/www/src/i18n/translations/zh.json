@@ -414,9 +414,9 @@
       "category": "类别",
       "featured": "专题文章",
       "meta": {
-        "description": "阅读有关分布式任务执行、基础设施自动化和 DevOps 最佳实践的见解、指南和更新。",
+        "description": "阅读关于分布式任务执行、基础设施自动化和 DevOps 最佳实践的深度技术文章、实用操作指南和最新产品动态，助您全面提升运维效率和团队生产力。",
         "keywords": "基础设施自动化博客、DevOps 指南、分布式系统、任务执行、云基础设施",
-        "title": "博客 | Rediacc - 基础设施自动化见解"
+        "title": "博客 | Rediacc - 基础设施自动化与 DevOps 实践见解和深度分析"
       },
       "published": "已发表",
       "readMore": "阅读更多",
@@ -431,9 +431,9 @@
         "home": "首页"
       },
       "meta": {
-        "description": "关注 Rediacc 的最新版本、改进和错误修复。",
+        "description": "关注 Rediacc 的最新版本发布信息、功能改进详情、性能优化更新和错误修复记录，全面了解产品演进的每一步重要变化。",
         "keywords": "Rediacc更新日志, 发布说明, 更新, 新功能",
-        "title": "更新日志 | Rediacc"
+        "title": "更新日志 - 最新版本发布与功能改进记录 | Rediacc"
       },
       "subscribeDescription": "每次发布新内容时，您将收到简短的更新通知。",
       "subscribeTitle": "获取新版本通知",
@@ -485,7 +485,7 @@
       },
       "hero": {
         "subtitle": "填写表格，我们将在 48 小时内与您联系。",
-        "title": "联系我们"
+        "title": "与 Rediacc 团队取得联系"
       },
       "info": {
         "description": "直接与我们的团队合作。 了解您的备份工作。",
@@ -507,9 +507,9 @@
         "title": "你得到什么"
       },
       "meta": {
-        "description": "与 Rediacc 团队取得联系。",
+        "description": "与 Rediacc 团队取得联系。无论是技术支持问题、产品功能咨询还是商务合作洽谈，我们的专业团队随时准备为您提供全面帮助和支持。",
         "keywords": "Rediacc 联系我们、灾难恢复平台、经过验证的备份",
-        "title": "联系我们 | Rediacc"
+        "title": "联系我们 - 获取技术支持与产品咨询帮助 | Rediacc"
       },
       "notice": {
         "description": "单击提交以打开您的电子邮件。 问题？ 电子邮件",
@@ -524,12 +524,12 @@
       },
       "hero": {
         "effectiveDate": "生效日期：2026年2月1日",
-        "title": "Cookie政策"
+        "title": "我们如何使用 Cookie 技术"
       },
       "meta": {
         "description": "Rediacc的Cookie政策。一个功能性Cookie和无Cookie的Plausible Analytics。",
         "keywords": "Cookie政策, Cookie, Plausible Analytics, GDPR, Rediacc",
-        "title": "Cookie政策 — Rediacc"
+        "title": "Cookie 政策 - Rediacc 网站 Cookie 使用详细说明"
       },
       "related": {
         "title": "相关政策"
@@ -669,9 +669,9 @@
         "title": "简单、透明的定价"
       },
       "meta": {
-        "description": "选择适合您业务的计划。 从免费社区访问到企业级保护。 无隐藏费用。",
+        "description": "选择适合您业务规模的灾难恢复保护计划。从免费社区版到全面企业级保护方案，所有价格公开透明无隐藏费用，让您安心选择。",
         "keywords": "灾难恢复定价, 备份定价, 业务连续性计划, 基础设施保护, 勒索软件恢复",
-        "title": "定价| 简单、透明的基础设施保护"
+        "title": "灾难恢复定价 - 简单透明的基础设施保护方案 | Rediacc"
       },
       "plans": {
         "business": {
@@ -1091,9 +1091,9 @@
       "gettingStarted": "入门",
       "gettingStartedDesc": "Rediacc新手？ 从基础开始并学习基本概念。",
       "meta": {
-        "description": "通过我们全面的文档、指南和 API 参考来了解如何使用 Rediacc 来执行分布式任务。",
+        "description": "通过全面的技术文档、详细操作指南和完整 API 参考，了解如何使用 Rediacc 平台实现分布式任务执行和基础设施自动化管理。",
         "keywords": "文档、API 参考、指南、基础设施自动化、CLI 参考、队列系统",
-        "title": "文档 | Rediacc - 基础设施自动化平台"
+        "title": "文档中心 | Rediacc - 基础设施自动化平台完整技术文档与指南"
       },
       "queueSystem": "排队系统",
       "queueSystemDesc": "了解如何跨机器管理和执行任务。",
@@ -1126,7 +1126,7 @@
       "hero": {
         "released": "发布日期",
         "subtitle": "Rediacc Desktop & CLI",
-        "title": "下载"
+        "title": "获取适用于各平台的 Rediacc 应用程序"
       },
       "installation": {
         "cli": "CLI：下载适用于您平台的二进制文件，将其设为可执行（Linux/macOS上使用chmod +x），然后放入PATH目录中。",
@@ -1137,9 +1137,9 @@
         "windows": "Windows：运行.exe安装程序并按照安装向导操作。应用将安装到Program Files目录。"
       },
       "meta": {
-        "description": "下载适用于Windows、macOS和Linux的Rediacc Desktop和CLI。",
+        "description": "下载适用于 Windows、macOS 和 Linux 平台的 Rediacc Desktop 桌面应用和命令行工具，立即开始高效管理您的基础设施。",
         "keywords": "Rediacc下载, 桌面应用, CLI, Windows应用, macOS应用, Linux应用",
-        "title": "下载 | Rediacc"
+        "title": "下载 Rediacc CLI 和桌面应用 - 支持 Windows macOS Linux"
       },
       "noReleases": "目前没有可用的版本。请稍后再来查看。",
       "platforms": {
@@ -1171,9 +1171,9 @@
         "indicator": "{{current}} / {{total}}"
       },
       "meta": {
-        "description": "利用 Rediacc 的基础设施自动化实现开发转型。 获得即时环境、灾难恢复和人工智能安全操作。",
+        "description": "利用 Rediacc 的基础设施自动化能力实现开发流程转型。获得即时环境克隆、完整灾难恢复方案和 AI 驱动的安全运维能力。",
         "keywords": "基础设施自动化、开发环境、灾难恢复、DevOps 自动化、CI/CD 管道、云基础设施、开发运营、模型上下文协议、AI 安全基础设施",
-        "title": "Rediacc — 克隆生产环境。不破坏任何东西。"
+        "title": "Rediacc - 克隆生产环境，安全测试，实现零风险基础设施部署与管理"
       }
     },
     "install": {
@@ -1193,7 +1193,7 @@
       "meta": {
         "description": "通过APT、DNF、npm或直接下载在Linux、macOS或Windows上安装Rediacc CLI。",
         "keywords": "安装rediacc, apt install, dnf install, npm install, CLI安装",
-        "title": "安装 | Rediacc CLI"
+        "title": "安装 Rediacc CLI - 命令行工具快速入门设置指南 | Rediacc"
       },
       "methods": {
         "apk": {
@@ -1243,9 +1243,9 @@
         "title": "法律信息"
       },
       "meta": {
-        "description": "用于透明披露和商务联系的官方公司信息。",
+        "description": "查看 {{companyName}} 的官方公司注册信息、法律合规披露文件和商务联系方式，确保业务合规运营与信息透明公开。",
         "keywords": "法律信息, 公司信息, 注册, 增值税, 联系方式",
-        "title": "法律信息 - {{companyName}}"
+        "title": "法律信息与合规披露 - {{companyName}} 官方公司信息"
       },
       "sections": {
         "companyDetails": {
@@ -1283,10 +1283,13 @@
         "title": "您将收到"
       },
       "frequency": "每月一次。",
+      "hero": {
+        "title": "订阅我们的电子通讯"
+      },
       "meta": {
-        "description": "订阅 Rediacc 通讯，获取每月产品更新、自托管指南和基础设施技巧。",
+        "description": "订阅 Rediacc 电子通讯，每月获取最新产品更新、自托管部署最佳实践指南、基础设施管理技巧和 DevOps 深度技术见解。",
         "keywords": "Rediacc通讯, 自托管更新, 基础设施技巧, DevOps通讯",
-        "title": "订阅通讯 | Rediacc"
+        "title": "订阅通讯 - 基础设施自动化与 DevOps 月度更新 | Rediacc"
       },
       "privacy": "我们使用 Plausible Analytics，绝不会将您的电子邮件分享给第三方。"
     },
@@ -1306,9 +1309,9 @@
         "title": "需要帮助吗？"
       },
       "meta": {
-        "description": "无法找到您要查找的页面。 浏览我们的基础设施自动化平台或联系我们寻求帮助。",
+        "description": "无法找到您要查找的页面。浏览我们的基础设施自动化平台功能介绍或联系 Rediacc 技术支持团队寻求帮助。",
         "keywords": "404、未找到页面、基础设施自动化、Rediacc",
-        "title": "404 - 页面未找到 | Rediacc"
+        "title": "404 - 页面未找到 | Rediacc 基础设施自动化平台"
       },
       "suggestions": {
         "getInTouchPrefix": "通过以下方式联系我们：",
@@ -1445,7 +1448,7 @@
         "meta": {
           "description": "Rediacc专为AI编程助手打造。CLI优先操作、结构化JSON输出、基于SSH的访问，以及通过rdc agent命令实现完整的Agent发现。",
           "keywords": "AI 智能体, Claude Code, Cursor, Cline, 基础设施自动化, CLI, JSON 输出, 自托管, 智能体原生, MCP",
-          "title": "For AI Agents — CLI-Native Infrastructure Automation | Rediacc"
+          "title": "AI 智能体专属 - CLI 原生基础设施自动化 | Rediacc"
         },
         "problem": {
           "description": "你的AI编程助手可以自主编写、测试和调试代码。但当它需要部署、检查状态或管理基础设施时，就会遇到障碍：仅限GUI的仪表板、OAuth浏览器流程、不稳定的API，以及撑爆上下文窗口的响应。",
@@ -1648,14 +1651,14 @@
           },
           "title": "您能节省多少？",
           "withAnnual": "计算 →",
-          "withoutTag": "当前云成本",
           "withResults": {
             "blockedTime": "降低60%",
             "contextSwitching": "<5分钟",
             "quarterlySlip": "100%归您",
             "sprintCapacity": "最小化"
           },
-          "withTag": "使用 Rediacc"
+          "withTag": "使用 Rediacc",
+          "withoutTag": "当前云成本"
         },
         "hero": {
           "badge": "面向CEO和创始人",
@@ -1665,7 +1668,7 @@
           "title": "可预测的基础设施成本。零厂商锁定。"
         },
         "meta": {
-          "description": "自托管基础设施保护，具有可预测定价、零厂商锁定和完全数据所有权。无需高昂云账单即可保护您的业务。",
+          "description": "自托管基础设施保护方案，具有可预测的定价模式、零厂商锁定和完全数据所有权。无需支付高昂的云计算账单即可全面保护您的业务。",
           "keywords": "CEO, 基础设施成本, 自托管, 数据保护, 厂商锁定, 可预测定价, 业务连续性, 中小企业",
           "title": "面向CEO和创始人 — 可预测成本，零锁定 | Rediacc"
         },
@@ -1869,14 +1872,14 @@
           },
           "title": "您的基础设施真正花费了多少？",
           "withAnnual": "计算 →",
-          "withoutTag": "当前支出",
           "withResults": {
             "blockedTime": "降低60%",
             "contextSwitching": "<5分钟",
             "quarterlySlip": "无",
             "sprintCapacity": "接近零"
           },
-          "withTag": "使用 Rediacc"
+          "withTag": "使用 Rediacc",
+          "withoutTag": "当前支出"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -1922,7 +1925,7 @@
           "title": "降低基础设施TCO 60%。在您的硬件上扩展。"
         },
         "meta": {
-          "description": "自托管基础设施保护，在您的硬件上扩展。降低TCO，消除厂商锁定，几分钟内从任何灾难中恢复。",
+          "description": "自托管基础设施保护方案，在您自己的硬件上灵活扩展。降低总体拥有成本，消除厂商锁定，遇到任何灾难都能在几分钟内完全恢复。",
           "keywords": "CTO, 基础设施TCO, 自托管, 灾难恢复, 厂商锁定, btrfs快照, 合规, 可扩展性",
           "title": "面向CTO — 降低基础设施TCO 60% | Rediacc"
         },
@@ -2623,9 +2626,9 @@
         "title": "简单、透明的定价"
       },
       "meta": {
-        "description": "选择适合您业务的计划。 从免费社区访问到企业级保护。 无隐藏费用。",
+        "description": "选择适合您业务规模的 Rediacc 定价方案。从免费社区版到全面企业级保护，所有价格公开透明无隐藏费用。",
         "keywords": "定价、基础设施自动化、DevOps计划、任务执行",
-        "title": "定价| 简单、透明的基础设施保护"
+        "title": "定价方案 | Rediacc - 简单透明的基础设施保护定价"
       },
       "plans": {
         "business": {
@@ -2949,29 +2952,29 @@
           "business": {
             "floatingLicenses": "20",
             "jobsPerMonth": "20,000",
-            "repositories": "无限制",
             "repoSize": "500 GB",
+            "repositories": "无限制",
             "usersTeams": "无限制"
           },
           "community": {
             "floatingLicenses": "2",
             "jobsPerMonth": "500",
-            "repositories": "无限制",
             "repoSize": "10 GB",
+            "repositories": "无限制",
             "usersTeams": "无限制"
           },
           "enterprise": {
             "floatingLicenses": "50+",
             "jobsPerMonth": "100,000+",
-            "repositories": "无限制",
             "repoSize": "2 TB+",
+            "repositories": "无限制",
             "usersTeams": "无限制"
           },
           "professional": {
             "floatingLicenses": "5",
             "jobsPerMonth": "5,000",
-            "repositories": "无限制",
             "repoSize": "100 GB",
+            "repositories": "无限制",
             "usersTeams": "无限制"
           }
         }
@@ -3073,12 +3076,12 @@
       },
       "hero": {
         "effectiveDate": "生效日期：2026年2月1日",
-        "title": "隐私政策"
+        "title": "我们的隐私保护承诺与数据安全"
       },
       "meta": {
-        "description": "了解Rediacc如何收集、使用和保护您的个人数据。",
+        "description": "了解 Rediacc 如何收集、使用和妥善保护您的个人数据信息。我们承诺以行业最高标准保护所有用户隐私和数据安全。",
         "keywords": "隐私政策, 数据保护, GDPR, Plausible Analytics, Rediacc",
-        "title": "隐私政策 — Rediacc"
+        "title": "隐私政策 - Rediacc 平台用户数据保护与个人隐私安全声明"
       },
       "related": {
         "title": "相关政策"
@@ -3215,9 +3218,9 @@
         "title": "当您最需要时提供专家帮助"
       },
       "meta": {
-        "description": "在您最需要的时候获得专家的帮助。 从标准实施到应急响应，我们的专业服务确保您的成功。",
+        "description": "在您最需要的时候获得专家团队的帮助。从标准实施部署到紧急应急响应，我们的专业技术服务确保您的基础设施项目顺利成功。",
         "keywords": "专业服务、实施支持、基础设施咨询、应急响应、迁移服务、勒索软件恢复",
-        "title": "专业服务| 专家实施与支持"
+        "title": "专业服务 | Rediacc - 专家级实施部署与技术支持服务"
       },
       "packages": {
         "heading": "专业服务包",
@@ -3240,12 +3243,12 @@
       },
       "hero": {
         "effectiveDate": "生效日期：2025年2月1日",
-        "title": "退款政策"
+        "title": "取消订阅与退款处理条款"
       },
       "meta": {
-        "description": "Rediacc平台订阅和专业服务的退款政策。",
+        "description": "Rediacc 平台订阅服务和专业技术服务的退款政策详情，包括取消订阅流程、退款条件和处理时间等信息。",
         "keywords": "退款政策, 取消, 订阅退款, Rediacc",
-        "title": "退款政策 — Rediacc"
+        "title": "退款政策 - Rediacc 基础设施平台订阅取消与退款处理详细说明"
       },
       "related": {
         "title": "相关政策"
@@ -3377,10 +3380,13 @@
       },
       "description": "选择您的企业规模并调整输入参数，即可实时查看 TCO 对比、开发人员生产力提升及投资回收期。",
       "footnote": "估算基于 ITIC、IBM/Ponemon、Sophos、Cortex 和 KPMG 的行业基准研究（2024年）。TCO 包括基础设施、管理、DR 测试和维护。开发人员生产力采用保守的 40% 实现率。DR 节省基于使用 btrfs 写时复制快照的 RTO 改善。存储节省假设 CoW 相对于传统备份链的效率优势。实际结果因工作负载和配置而异。",
+      "hero": {
+        "title": "计算您的基础设施投资回报率"
+      },
       "meta": {
-        "description": "计算切换到 Rediacc 自托管基础设施后的总拥有成本节省、投资回收期和 ROI。",
+        "description": "使用我们的在线计算器，精确计算切换到 Rediacc 自托管基础设施后可实现的总拥有成本节省金额、投资回收期和投资回报率。",
         "keywords": "ROI 计算器, TCO 对比, 基础设施节省, 自托管 ROI, 投资回收期, 备份成本降低",
-        "title": "ROI 计算器 — 量化您的基础设施节省 | Rediacc"
+        "title": "ROI 计算器 - 量化您的基础设施节省金额 | Rediacc"
       },
       "overline": "计算您的 ROI",
       "references": {
@@ -3495,13 +3501,13 @@
           },
           "title": "你的漏洞暴露正在花费多少？",
           "withAnnual": "年度安全成本",
-          "withoutTag": "不使用 REDIACC",
           "withResults": {
             "blindspot": "盲区",
             "exposure": "每个漏洞的暴露时间",
             "pentestCost": "渗透测试成本"
           },
-          "withTag": "使用 REDIACC"
+          "withTag": "使用 REDIACC",
+          "withoutTag": "不使用 REDIACC"
         },
         "explore": {
           "solutions": [
@@ -3641,9 +3647,9 @@
           "title": "一条命令，零风险。"
         },
         "meta": {
-          "description": "创建基础设施的完全副本，运行 AI 驱动的渗透测试——不影响生产环境。",
+          "description": "创建基础设施的完全副本，运行 AI 驱动的自动化渗透测试和全面安全扫描，精准发现潜在安全漏洞，全程不影响生产环境。",
           "keywords": "AI 渗透测试, 渗透测试, 安全测试, 漏洞扫描, 克隆攻击",
-          "title": "AI 渗透测试 — Rediacc"
+          "title": "AI 渗透测试 - 智能自动化安全扫描与漏洞检测 | Rediacc"
         },
         "problem": {
           "description": "对生产系统进行渗透测试是危险的。它可能导致服务崩溃、数据损坏或触发误报。所以大多数团队要么跳过它，要么在不反映现实的过时预发布环境上测试。结果：漏洞数月未修补——或者直到攻击者先发现它们。",
@@ -3905,14 +3911,14 @@
           },
           "title": "审计差距花费你多少钱？",
           "withAnnual": "年度审计风险成本",
-          "withoutTag": "分散的日志",
           "withResults": {
             "compileHours": "每年日志编译小时数",
             "delayCost": "调查延迟成本",
             "gaps": "审计发现风险（差距）",
             "penaltyCost": "不合规罚款风险"
           },
-          "withTag": "使用 REDIACC"
+          "withTag": "使用 REDIACC",
+          "withoutTag": "分散的日志"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -4104,9 +4110,9 @@
           "title": "一条命令，完全可见。"
         },
         "meta": {
-          "description": "全面了解谁在何时做了什么以及为什么。每项操作都有防篡改的审计日志。",
+          "description": "全面了解谁在何时做了什么操作以及原因。每项操作都有防篡改的详细审计日志，确保完全合规性与安全可追溯性。",
           "keywords": "审计追踪, 合规日志, 防篡改日志, SHA-256 签名, 审计报告",
-          "title": "审计追踪 — Rediacc"
+          "title": "审计追踪 - 完整操作活动记录与合规审计日志 | Rediacc"
         },
         "problem": {
           "description": "当出问题时，第一个问题是“发生了什么？”没有完整的日志，你只能猜测。不完整的审计追踪意味着盲区。盲区意味着风险。审计员不接受“我们认为”作为答案。",
@@ -4376,14 +4382,14 @@
           },
           "title": "未验证的备份花费你多少钱？",
           "withAnnual": "$0",
-          "withoutTag": "不进行验证",
           "withResults": {
             "corrupted": "0 个未检测到",
             "dataLoss": "0",
             "recoveryCost": "$0",
             "undetected": "0"
           },
-          "withTag": "使用 Rediacc"
+          "withTag": "使用 Rediacc",
+          "withoutTag": "不进行验证"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -4576,9 +4582,9 @@
           "title": "一条命令，零意外。"
         },
         "meta": {
-          "description": "不要等到灾难发生才发现备份已损坏。Rediacc 在创建时就检查每个备份。",
+          "description": "不要等到灾难发生才发现备份已损坏。Rediacc 在每个备份创建时自动验证其完整性和可恢复性，确保关键数据随时可用。",
           "keywords": "备份验证, 备份测试, 还原验证, 备份完整性, 自动备份检查, btrfs clone, 备份健康检查",
-          "title": "备份验证——每个备份自动验证 | Rediacc"
+          "title": "备份验证 - 每个备份创建时自动完整性检查 | Rediacc"
         },
         "problem": {
           "description": "你以为你受到了保护。你每晚都在运行备份。但它们真的可用吗？大多数团队直到需要恢复时才检查。到那时已经太晚了。损坏的备份给你的是虚假信心——除此之外什么都没有。",
@@ -4888,14 +4894,14 @@
           },
           "title": "一次云故障花费你多少钱？",
           "withAnnual": "$0",
-          "withoutTag": "不使用 Rediacc",
           "withResults": {
             "churn": "$0",
             "labor": "$0",
             "revenue": "$0",
             "sla": "$0"
           },
-          "withTag": "使用 Rediacc"
+          "withTag": "使用 Rediacc",
+          "withoutTag": "不使用 Rediacc"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -5089,9 +5095,9 @@
           "title": "一条命令，始终在线。"
         },
         "meta": {
-          "description": "你的基础设施运行在多个云上。当一个故障时，其他的自动接管。",
+          "description": "您的基础设施部署在多个云平台上。当某个云服务发生故障时，其他平台自动无缝接管，确保业务连续性和服务可用。",
           "keywords": "云故障保护, 多云故障转移, 跨云复制, 灾难恢复, 云冗余, 自动故障转移, btrfs 复制",
-          "title": "云故障保护——AWS 宕机时，你不会 | Rediacc"
+          "title": "云故障保护 - 多云架构部署确保服务持续不中断 | Rediacc"
         },
         "problem": {
           "description": "2024 年关键云故障事件同比增长 18%，持续时间延长 18.7%，其中 68% 由人为错误导致 [2]。当你唯一的云宕机时，一切都宕机了。你的客户、你的收入、你的声誉——全部沦为他人基础设施的人质。",
@@ -5398,13 +5404,13 @@
           },
           "title": "你的暴露窗口正在花费多少？",
           "withAnnual": "年度安全成本",
-          "withoutTag": "年度渗透测试",
           "withResults": {
             "blindspot": "盲区窗口",
             "exposure": "每个漏洞的暴露天数",
             "pentestCost": "年度渗透测试成本"
           },
-          "withTag": "持续测试（REDIACC）"
+          "withTag": "持续测试（REDIACC）",
+          "withoutTag": "年度渗透测试"
         },
         "explore": {
           "solutions": [
@@ -5539,9 +5545,9 @@
           "title": "一条命令，每日覆盖。"
         },
         "meta": {
-          "description": "每天在新鲜的生产克隆上运行安全测试。在漏洞出现时发现它们——而非数月之后。",
+          "description": "每天在新鲜的生产环境克隆上运行全面的安全测试。在安全漏洞出现的第一时间及时发现并修复，而非等到数月之后才得知。",
           "keywords": "持续安全测试, 每日渗透测试, 自动化安全, 漏洞检测",
-          "title": "持续安全测试 — Rediacc"
+          "title": "持续安全测试 - 每日在生产克隆上执行安全扫描 | Rediacc"
         },
         "problem": {
           "description": "你每年运行一次渗透测试。它发现问题。你修复它们。但下周或下个月引入的漏洞怎么办？年度测试意味着年度盲区。攻击者不会等你的安排。两次渗透测试之间的每一天都是基础设施暴露的一天。",
@@ -5786,14 +5792,14 @@
           },
           "title": "弱加密治理花费你多少钱？",
           "withAnnual": "年度合规成本",
-          "withoutTag": "厂商管理密钥",
           "withResults": {
             "exposure": "每年暴露窗口",
             "gaps": "合规差距（密钥访问）",
             "premium": "泄露风险溢价",
             "prepHours": "每年审计准备小时数"
           },
-          "withTag": "使用 REDIACC"
+          "withTag": "使用 REDIACC",
+          "withoutTag": "厂商管理密钥"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -5985,9 +5991,9 @@
           "title": "一条命令，全面掌控。"
         },
         "meta": {
-          "description": "每个备份都用你自己的密钥加密。不是厂商的密钥，不是共享密钥。只有你的。",
+          "description": "每个备份都使用您自己的加密密钥进行保护。不是厂商的密钥，不是共享密钥，只有您自己才能解密和访问数据。",
           "keywords": "加密, 零知识, 客户持有密钥, AES-256, 备份加密",
-          "title": "你掌控的加密 — Rediacc"
+          "title": "您掌控的数据加密 - 完全自主的密钥管理方案 | Rediacc"
         },
         "problem": {
           "description": "大多数备份工具加密你的数据——用他们的密钥。这意味着他们可以访问它。他们的员工可以访问它。他们端的泄露会暴露你的数据。如果你不控制密钥，你就不控制你的数据。",
@@ -6295,14 +6301,14 @@
           },
           "title": "这给你的团队带来了多少成本？",
           "withAnnual": "$0",
-          "withoutTag": "不使用 Rediacc",
           "withResults": {
             "blockedTime": "0 天",
             "contextSwitching": "极少",
             "quarterlySlip": "0 天",
             "sprintCapacity": "0%"
           },
-          "withTag": "使用 Rediacc"
+          "withTag": "使用 Rediacc",
+          "withoutTag": "不使用 Rediacc"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -6494,9 +6500,9 @@
           "title": "一条命令，六十秒完成。"
         },
         "meta": {
-          "description": "快速创建生产环境的精确副本——应用、数据库和配置——用于开发和测试。无需工单，无需等待。",
+          "description": "快速创建生产环境的精确完整副本，包含所有应用、数据库和配置文件，用于开发和测试。无需提交工单审批，无需漫长等待。",
           "keywords": "环境克隆, 生产环境克隆, 开发环境, 即时配置, btrfs clone, copy-on-write, 临时环境",
-          "title": "环境克隆——60 秒克隆生产环境 | Rediacc"
+          "title": "环境克隆 - 60 秒快速克隆完整生产环境 | Rediacc"
         },
         "problem": {
           "description": "你的开发人员需要一个测试环境。他们提交工单。运维团队配置服务器。有人负责配置它。三天后，它仍然与生产环境不一致。与此同时，你的开发人员从周一起就被阻塞了——而每次中断都需要 23 分钟的恢复时间。",
@@ -6793,14 +6799,14 @@
           },
           "title": "未经测试的故障转移花费你多少钱？",
           "withAnnual": "$0",
-          "withoutTag": "不进行测试",
           "withResults": {
             "churn": "$0",
             "compliance": "$0",
             "labor": "$0",
             "revenue": "$0"
           },
-          "withTag": "使用 Rediacc 测试"
+          "withTag": "使用 Rediacc 测试",
+          "withoutTag": "不进行测试"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -6993,7 +6999,7 @@
           "title": "一条命令，完全信心。"
         },
         "meta": {
-          "description": "安全地运行灾难模拟。确认你的恢复方案确实有效。在关键时刻不留意外。",
+          "description": "安全地运行完整的灾难模拟和故障转移测试。确认您的恢复方案确实有效，在真正需要的关键时刻不会留下任何意外。",
           "keywords": "故障转移测试, 灾难恢复测试, DR 模拟, DR 测试自动化, 恢复验证, btrfs clone, RTO RPO 测试",
           "title": "故障转移测试——在需要之前测试你的 DR 计划 | Rediacc"
         },
@@ -7285,14 +7291,14 @@
           },
           "title": "一次勒索软件攻击会花费你多少钱？",
           "withAnnual": "约 $200",
-          "withoutTag": "不使用 Rediacc",
           "withResults": {
             "downtime": "<5 分钟",
             "labor": "约 $200",
             "reputation": "$0",
             "revenue": "~$0"
           },
-          "withTag": "使用 Rediacc"
+          "withTag": "使用 Rediacc",
+          "withoutTag": "不使用 Rediacc"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -7485,9 +7491,9 @@
           "title": "一条命令，全面保护。"
         },
         "meta": {
-          "description": "您的备份从创建之日起即不可更改。没有人能修改它们。黑客不能，甚至你自己也不能。",
+          "description": "您的备份从创建之日起即完全不可更改。没有任何人能修改或删除它们，黑客不能，内部人员不能，甚至您自己也不能。",
           "keywords": "不可变备份, 勒索软件防护, btrfs 快照, 备份验证, 灾难恢复, copy-on-write, 封存备份",
-          "title": "不可变备份——防勒索软件备份 | Rediacc"
+          "title": "不可变备份 - 防勒索软件的安全数据备份方案 | Rediacc"
         },
         "problem": {
           "description": "现代攻击者在加密文件之前会先找到你的备份。如果你的备份可以被修改，它们就会被修改。传统备份工具留下了后门——94% 的勒索软件受害者的备份在攻击期间被针对性攻击。你需要在创建的瞬间就锁定的备份。",
@@ -7816,7 +7822,6 @@
           "title": "闲置环境正在花费你多少钱",
           "withAnnual": "$24,120",
           "withAnnualLabel": "年度节省",
-          "withoutTag": "始终在线",
           "withResultLabels": {
             "idle": "CoW 存储开销"
           },
@@ -7825,7 +7830,8 @@
             "monthly": "$990",
             "waste": "0%"
           },
-          "withTag": "使用 REDIACC"
+          "withTag": "使用 REDIACC",
+          "withoutTag": "始终在线"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -8003,9 +8009,9 @@
           "title": "一条命令，零浪费。"
         },
         "meta": {
-          "description": "按需创建环境。用完即销毁。只为实际使用的资源付费。",
+          "description": "按需创建开发和测试环境，使用完毕即销毁释放资源。只为实际使用的基础设施资源付费，大幅降低运维成本支出。",
           "keywords": "基础设施成本, 闲置环境, 按需环境, 成本优化, btrfs clone, copy-on-write, TTL, 自动销毁",
-          "title": "基础设施成本——停止为闲置环境付费 | Rediacc"
+          "title": "降低基础设施成本 - 停止为闲置环境付费浪费资源 | Rediacc"
         },
         "problem": {
           "description": "你有 15 个全天候运行的开发环境。开发人员每天使用 8 小时，每周 5 天。利用率只有 33%。剩下的 67%——服务器在夜间、周末和假期闲置——你都在为此付费。",
@@ -8275,7 +8281,6 @@
           },
           "title": "缓慢恢复花费你多少钱？",
           "withAnnual": "$868",
-          "withoutTag": "文件级恢复",
           "withResultLabels": {
             "labor": "人员人力（一条命令）"
           },
@@ -8284,7 +8289,8 @@
             "labor": "$17",
             "recoveryTime": "<5 分钟"
           },
-          "withTag": "使用 Rediacc"
+          "withTag": "使用 Rediacc",
+          "withoutTag": "文件级恢复"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -8477,9 +8483,9 @@
           "title": "一条命令，全部恢复。"
         },
         "meta": {
-          "description": "不仅是文件。整个环境——服务器、配置、数据库——在几分钟内恢复并运行。",
+          "description": "不仅是文件恢复，而是整个环境。包括服务器、配置和数据库在内的所有组件，都能在几分钟内完全恢复并正常运行。",
           "keywords": "即时恢复, 全环境还原, btrfs clone, 灾难恢复, 备份还原, 时间点恢复, 健康检查, 单命令恢复",
-          "title": "即时恢复——几分钟内完成全环境恢复 | Rediacc"
+          "title": "即时恢复 - 几分钟内完成全部环境灾难恢复 | Rediacc"
         },
         "problem": {
           "description": "恢复单个文件需要数小时。重建整个环境需要数天。当你的生产服务器宕机时，你不仅需要恢复文件——你需要恢复一切。服务器、配置、数据库、网络设置，全部。",
@@ -8784,13 +8790,13 @@
           },
           "title": "损坏的 CI/CD 正在花费你多少钱",
           "withAnnual": "$0",
-          "withoutTag": "自定义脚本",
           "withResults": {
             "blocked": "0 小时",
             "bugs": "0",
             "debug": "0 小时"
           },
-          "withTag": "使用 REDIACC"
+          "withTag": "使用 REDIACC",
+          "withoutTag": "自定义脚本"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -8946,7 +8952,7 @@
           "title": "一条命令，零脚本。"
         },
         "meta": {
-          "description": "Git 推送触发全新环境。测试在生产克隆上运行。CI/CD 开箱即用——无需自定义脚本。",
+          "description": "Git 推送自动触发创建全新环境。测试在生产克隆上运行。CI/CD 集成完全开箱即用，无需编写任何自定义脚本。",
           "keywords": "CI/CD 集成, GitLab CI, GitHub Actions, webhook, 生产克隆, 测试环境, 流水线自动化",
           "title": "CI/CD 集成——无缝融入您的现有工作流 | Rediacc"
         },
@@ -9241,13 +9247,13 @@
           },
           "title": "迁移风险正在花费你多少钱",
           "withAnnual": "$0",
-          "withoutTag": "不使用 Rediacc",
           "withResults": {
             "labor": "$0",
             "risk": "0 TB",
             "windows": "0 小时"
           },
-          "withTag": "使用 Rediacc"
+          "withTag": "使用 Rediacc",
+          "withoutTag": "不使用 Rediacc"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -9440,9 +9446,9 @@
           "title": "一条命令，零暴露。"
         },
         "meta": {
-          "description": "在服务器、云或供应商之间迁移？您的加密备份安全传输。零暴露，零数据丢失。",
+          "description": "在不同服务器、云平台或供应商之间安全迁移数据。加密备份确保传输全程安全，零数据暴露风险，零数据丢失可能。",
           "keywords": "加密迁移, 零暴露传输, 数据迁移安全, 加密备份传输, btrfs 迁移, 服务器迁移, 云迁移加密",
-          "title": "迁移安全——无风险迁移数据 | Rediacc"
+          "title": "迁移安全 - 零风险实现跨平台安全数据迁移 | Rediacc"
         },
         "problem": {
           "description": "在系统之间移动数据会创建暴露窗口。临时文件、未加密传输、配置不匹配。每次迁移都是一个风险窗口。而大多数工具在迁移时会丢失加密设置——迫使你在另一端从头重新配置一切。",
@@ -9746,13 +9752,13 @@
           },
           "title": "环境不一致正在花费你多少钱",
           "withAnnual": "$0",
-          "withoutTag": "不使用 REDIACC",
           "withResults": {
             "capacity": "0%",
             "debug": "0 小时",
             "incidents": "0"
           },
-          "withTag": "使用 REDIACC"
+          "withTag": "使用 REDIACC",
+          "withoutTag": "不使用 REDIACC"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -9935,7 +9941,7 @@
           "title": "一条命令，完美一致。"
         },
         "meta": {
-          "description": "不再有“在我机器上能跑”的问题。每个开发环境都是生产环境的完全克隆。",
+          "description": "彻底告别\"在我机器上能跑\"的问题。每个开发和测试环境都是生产环境的完全克隆，确保开发与生产环境完全一致。",
           "keywords": "生产一致性, 环境偏差, 开发环境, 完全克隆, btrfs clone, copy-on-write, 配置匹配",
           "title": "生产一致性——与生产环境完全匹配的开发环境 | Rediacc"
         },
@@ -10217,14 +10223,14 @@
           },
           "title": "缓慢恢复花费你多少钱？",
           "withAnnual": "年度停机成本",
-          "withoutTag": "不使用 REDIACC",
           "withResults": {
             "churn": "客户流失成本",
             "labor": "恢复人力",
             "regulatory": "监管/声誉",
             "revLost": "每次事故的收入损失"
           },
-          "withTag": "使用 REDIACC"
+          "withTag": "使用 REDIACC",
+          "withoutTag": "不使用 REDIACC"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -10412,9 +10418,9 @@
           "title": "一条命令，恢复上线。"
         },
         "meta": {
-          "description": "当勒索软件来袭，每分钟都在烧钱。Rediacc 让你在损害扩散之前恢复上线。",
+          "description": "当勒索软件来袭时，每分钟停机都在造成巨大的经济损失。Rediacc 让您在损害进一步扩散之前快速恢复业务上线运行。",
           "keywords": "快速恢复, 勒索软件恢复, 灾难恢复, btrfs 还原, 快速恢复",
-          "title": "快速恢复 — Rediacc"
+          "title": "快速恢复 - 极速灾难响应与业务连续性恢复 | Rediacc"
         },
         "problem": {
           "description": "大多数团队在勒索软件后花数天重建。与此同时，客户无法联系你。收入停止。信任崩塌。攻击持续一小时，恢复花一周。那才是真正的损害——而勒索软件的平均恢复时间是 24 天。",
@@ -10702,14 +10708,14 @@
           },
           "title": "手动合规花费你多少钱？",
           "withAnnual": "$0",
-          "withoutTag": "不使用 Rediacc",
           "withResults": {
             "gaps": "0",
             "labor": "$0",
             "penalty": "$0",
             "prepHours": "4 小时"
           },
-          "withTag": "使用 Rediacc"
+          "withTag": "使用 Rediacc",
+          "withoutTag": "不使用 Rediacc"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -10903,9 +10909,9 @@
           "title": "一条命令，全面合规。"
         },
         "meta": {
-          "description": "可配置的保留策略满足合规要求。HIPAA、SOC2、GDPR——默认覆盖。",
+          "description": "灵活可配置的数据保留策略满足各类合规要求。HIPAA、SOC2、GDPR 等主要法规默认覆盖，确保您的数据存储合规。",
           "keywords": "保留合规, 数据保留, HIPAA 合规, SOC2, GDPR, 备份保留, 审计就绪, 合规自动化",
-          "title": "保留合规——按法律要求保留数据 | Rediacc"
+          "title": "数据保留合规 - 符合法律法规要求的数据保留 | Rediacc"
         },
         "problem": {
           "description": "法规要求你在特定期限内保留数据。未达标就面临罚款、审计和法律纠纷。大多数备份工具将保留作为附属功能。你最终只能用电子表格和运气来管理它。",
@@ -11245,14 +11251,14 @@
           },
           "title": "跳过补丁花费你多少钱？",
           "withAnnual": "$0",
-          "withoutTag": "不使用 Rediacc",
           "withResults": {
             "breach": "极低",
             "downtime": "$0",
             "exposure": "0 天",
             "labor": "$0"
           },
-          "withTag": "使用 Rediacc"
+          "withTag": "使用 Rediacc",
+          "withoutTag": "不使用 Rediacc"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -11445,9 +11451,9 @@
           "title": "一条命令，零风险。"
         },
         "meta": {
-          "description": "克隆你的生产环境。应用补丁。查看哪里出了问题。必要时回滚。所有操作都不触及生产环境。",
+          "description": "克隆您的生产环境，在副本上应用系统补丁和更新，全面检查兼容性问题。必要时一键回滚，所有操作都不触及生产环境。",
           "keywords": "安全 OS 测试, 补丁测试, 操作系统更新测试, btrfs clone, 生产克隆, 零风险补丁, 更新验证",
-          "title": "安全 OS 测试——零风险测试更新 | Rediacc"
+          "title": "安全 OS 测试 - 零风险验证操作系统更新与补丁 | Rediacc"
         },
         "problem": {
           "description": "你需要打补丁。但每次更新都是一场赌博。它会导致故障吗？只有上线后才能知道。大多数团队要么跳过补丁（有风险），要么在与生产环境不匹配的环境中测试（无意义）。两者都不够好。",
@@ -11758,14 +11764,14 @@
           },
           "title": "厂商锁定正在花费你多少钱？",
           "withAnnual": "年度锁定税",
-          "withoutTag": "被锁定",
           "withResults": {
             "egress": "出口数据传输费",
             "leverage": "重新谈判筹码",
             "markup": "厂商高于市场的加价",
             "migrate": "迁移成本"
           },
-          "withTag": "使用 REDIACC"
+          "withTag": "使用 REDIACC",
+          "withoutTag": "被锁定"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -11958,9 +11964,9 @@
           "title": "一条命令，完全自由。"
         },
         "meta": {
-          "description": "随处部署，随时迁移。无锁定合同，无专有格式。你的数据始终属于你。",
+          "description": "随处部署，随时迁移。无锁定合同条款，无专有数据格式限制。您的基础设施和数据始终完全属于您自己，自主可控。",
           "keywords": "厂商锁定, 云迁移, 多云, 可移植性, btrfs 迁移",
-          "title": "摆脱厂商锁定 — Rediacc"
+          "title": "摆脱厂商锁定 - 实现基础设施完全自由迁移 | Rediacc"
         },
         "problem": {
           "description": "你在价格合理时注册了。现在你被困住了。迁移需要数月。你的数据在他们的格式中。你的工具依赖他们的 API。他们知道你走不了。所以价格一直涨。",
@@ -12222,9 +12228,9 @@
           },
           "title": "缓慢打补丁花费你多少钱？",
           "withAnnual": "",
-          "withoutTag": "不使用 Rediacc",
           "withResults": {},
-          "withTag": "使用 Rediacc"
+          "withTag": "使用 Rediacc",
+          "withoutTag": "不使用 Rediacc"
         },
         "explore": {
           "solutions": [
@@ -12365,9 +12371,9 @@
           "title": "一条命令，经过验证的修复。"
         },
         "meta": {
-          "description": "在安全的克隆上发现、测试和修补安全漏洞。满怀信心地将修复部署到生产环境。",
+          "description": "在安全的生产环境克隆上发现、测试和修补安全漏洞。验证修复效果后满怀信心地将安全补丁部署到生产环境中。",
           "keywords": "漏洞管理, 补丁验证, CVE 修复, 基于克隆的补丁, 安全补丁, 安全测试, 漏洞修复验证",
-          "title": "漏洞管理——在攻击者到来之前修复漏洞 | Rediacc"
+          "title": "漏洞管理 - 主动发现、测试与修复安全漏洞 | Rediacc"
         },
         "problem": {
           "description": "你发现了一个漏洞。现在需要修补它。但补丁会破坏什么吗？你无法在生产环境测试。而你的预发布环境已经落后 3 周了。所以你要么匆忙打补丁并祈祷，要么等待并保持暴露。两个选择都不好——而且都要花钱。",
@@ -12605,9 +12611,9 @@
         "title": "幸存的团队建设基础设施"
       },
       "meta": {
-        "description": "认识一下构建防灾基础设施的团队。 工程师致力于确保您的系统能够应对每一个挑战。",
+        "description": "认识 Rediacc 背后的工程师团队。他们致力于构建能够应对任何灾难和技术挑战的可靠基础设施自动化平台。",
         "keywords": "Rediacc 团队、基础设施工程、灾难恢复专家、系统可靠性、DevOps 团队",
-        "title": "我们的团队 | Rediacc - 构建生存的基础设施"
+        "title": "我们的团队 | Rediacc - 构建可靠抗灾基础设施的工程师团队"
       },
       "mission": {
         "belief": "我们相信，每家公司，无论规模或预算如何，都应该获得与财富 500 强公司使用的相同强大的基础设施工具。 这就是我们构建 Rediacc 的原因，旨在提供公平的竞争环境，让企业能够专注于自己最擅长的事情，同时我们处理基础设施的复杂性。",
@@ -12675,12 +12681,12 @@
       },
       "hero": {
         "effectiveDate": "生效日期：2026年2月1日",
-        "title": "遥测策略"
+        "title": "我们的遥测数据收集实践与透明度"
       },
       "meta": {
         "description": "Rediacc产品收集的遥测数据的详细说明，包括收集原因、处理方式以及如何退出。涵盖Web应用程序、CLI、中间件和Bridge。",
         "keywords": "遥测策略, 数据收集, OpenTelemetry, 退出, 隐私, GDPR, Rediacc",
-        "title": "遥测策略 — Rediacc"
+        "title": "遥测策略 - Rediacc 产品遥测数据收集与使用的透明详细说明"
       },
       "related": {
         "title": "相关政策"
@@ -12911,12 +12917,12 @@
       },
       "hero": {
         "effectiveDate": "生效日期：2026年2月1日",
-        "title": "服务条款"
+        "title": "平台服务使用条款与条件"
       },
       "meta": {
-        "description": "管辖Rediacc网站和基础设施自动化平台使用的条款。",
+        "description": "管辖 Rediacc 网站和基础设施自动化平台使用的法律条款和条件，了解您作为用户的权利、义务和平台服务使用规范。",
         "keywords": "服务条款, 使用条款, 用户协议, Rediacc",
-        "title": "服务条款 — Rediacc"
+        "title": "服务条款 - Rediacc 基础设施自动化平台使用法律协议与用户权利"
       },
       "related": {
         "title": "相关政策"

@@ -15,6 +15,7 @@ import {
   getSubscriptionTokenState,
 } from '../services/subscription-auth.js';
 import { resolveChannel } from '../services/updater.js';
+import { getInstallMethod } from '../utils/platform.js';
 import type { OutputFormat } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
 import { isSEA } from '../utils/platform.js';
@@ -83,12 +84,18 @@ function checkToolVersion(
 }
 
 function checkEnvironment(): CheckSection {
+  const isDev = getInstallMethod() === 'dev';
   const checks: CheckResult[] = [
     { name: t('commands.doctor.checks.nodeVersion'), value: process.version, status: 'ok' },
     { name: t('commands.doctor.checks.cliVersion'), value: VERSION, status: 'ok' },
     {
-      name: t('commands.doctor.checks.seaMode'),
-      value: isSEA() ? t('commands.doctor.seaActive') : t('commands.doctor.devMode'),
+      name: 'Install method',
+      value: (() => {
+        const m = getInstallMethod();
+        if (m === 'sea') return 'SEA binary';
+        if (m === 'npm') return 'npm (global)';
+        return 'dev mode';
+      })(),
       status: 'ok',
     },
     { name: 'Update channel', value: resolveChannel(), status: 'ok' },
@@ -99,21 +106,28 @@ function checkEnvironment(): CheckSection {
         return { name: 'Account server', value: 'not configured', status: 'warn' as const };
       }
     })(),
-    checkToolVersion(
-      'go',
-      ['version'],
-      (o) => o.replace(/^go version\s+/, '').split(/\s/)[0],
-      'commands.doctor.checks.goInstalled',
-      'Install Go from https://go.dev/dl/'
-    ),
-    checkToolVersion(
-      'docker',
-      ['--version'],
-      (o) => `Docker ${o.replace(/^Docker version\s+/, '').split(/,/)[0]}`,
-      'commands.doctor.checks.dockerAvailable',
-      'Install Docker from https://docs.docker.com/get-docker/'
-    ),
   ];
+
+  // Go and Docker are only relevant for development (building renet from source)
+  if (isDev) {
+    checks.push(
+      checkToolVersion(
+        'go',
+        ['version'],
+        (o) => o.replace(/^go version\s+/, '').split(/\s/)[0],
+        'commands.doctor.checks.goInstalled',
+        'Install Go from https://go.dev/dl/'
+      ),
+      checkToolVersion(
+        'docker',
+        ['--version'],
+        (o) => `Docker ${o.replace(/^Docker version\s+/, '').split(/,/)[0]}`,
+        'commands.doctor.checks.dockerAvailable',
+        'Install Docker from https://docs.docker.com/get-docker/'
+      )
+    );
+  }
+
   return { title: t('commands.doctor.sections.environment'), checks };
 }
 

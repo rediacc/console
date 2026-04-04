@@ -4,7 +4,7 @@ description: Plantilla lista para copiar y pegar que permite configurar Claude C
 category: Reference
 order: 50
 language: es
-sourceHash: "7cf4d73659b76ee7"
+sourceHash: "5e5c2b0ad2a62967"
 ---
 
 Utilice esta plantilla para configurar asistentes de programación con IA (Claude Code, Cursor, Cline, Windsurf) para la gestión autónoma de infraestructura Rediacc. Copie el bloque siguiente en el archivo `CLAUDE.md`, `.cursorrules` o el archivo de configuración de agente equivalente de su proyecto.
@@ -91,7 +91,7 @@ Reemplace `<machine>` y `<repo>` con los nombres reales de su máquina y reposit
 
 ```bash
 # List configured machines
-rdc machine query <machine-name>
+rdc machine query --name <machine-name>
 
 # List repositories with GUIDs
 rdc config repository list

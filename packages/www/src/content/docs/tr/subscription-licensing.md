@@ -4,7 +4,7 @@ description: account, rdc ve renet'in makine slotlarını, depo lisanslarını v
 category: Guides
 order: 7
 language: tr
-sourceHash: "fcc4e06609545bf7"
+sourceHash: "49428ac8fe913194"
 ---
 
 # Abonelik ve Lisanslama
@@ -181,7 +181,7 @@ Makinede keşfedilen ancak yerel `rdc` yapılandırmasında bulunmayan depolar t
 Mevcut bir depo için depo lisansı yenilemesini zorla:
 
 ```bash
-rdc subscription refresh repo my-app -m hostinger
+rdc subscription refresh repo --name my-app -m hostinger
 ```
 
 İlk kullanımda, kullanılabilir depo lisansı bulamayan lisanslı bir depo veya yedekleme işlemi otomatik olarak hesap yetkilendirme aktarımını tetikleyebilir. CLI bir yetkilendirme URL'si yazdırır, etkileşimli terminallerde tarayıcıyı açmaya çalışır ve yetkilendirme ve düzenleme başarılı olduktan sonra işlemi bir kez yeniden dener.

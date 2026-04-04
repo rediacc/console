@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: de
-sourceHash: "911dde41922454ec"
+sourceHash: "cc79bbad07c3ef01"
 ---
 
 # Netzwerk
@@ -111,16 +111,16 @@ Diese verwenden die Standard-[Traefik v3 Label-Syntax](https://doc.traefik.io/tr
 
    ```bash
    # Gemeinsame Zugangsdaten (einmal pro Konfiguration, gilt für alle Maschinen)
-   rdc config infra set server-1 \
+   rdc config infra set -m server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # Maschinenspezifische Einstellungen
-   rdc config infra set server-1 \
+   rdc config infra set -m server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config infra push server-1
+   rdc config infra push -m server-1
    ```
 
 2. DNS-Einträge, die Ihre Domain auf die öffentliche IP des Servers verweisen (siehe [DNS-Konfiguration](#dns-konfiguration) unten).
@@ -165,7 +165,7 @@ Der `{name}` in den Labels ist ein beliebiger Bezeichner -- er muss nur über zu
 TLS-Zertifikate werden automatisch über Let's Encrypt mittels der Cloudflare DNS-01-Challenge bezogen. Die Zugangsdaten werden einmal pro Konfiguration eingerichtet (gemeinsam für alle Maschinen):
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
@@ -185,11 +185,11 @@ Für Nicht-HTTP-Protokolle (Mailserver, DNS, extern bereitgestellte Datenbanken)
 Fügen Sie die erforderlichen Ports bei der Infrastruktur-Konfiguration hinzu:
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config infra push server-1
+rdc config infra push -m server-1
 ```
 
 Dies erstellt Traefik-Einstiegspunkte namens `tcp-{port}` und `udp-{port}`.
@@ -436,7 +436,7 @@ app.example.com   A   203.0.113.50
 ### Bereitstellung
 
 ```bash
-rdc repo up my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1 --mount
 ```
 
 Innerhalb weniger Sekunden erkennt der Route Server den Container, Traefik übernimmt die Route, fordert ein TLS-Zertifikat an, und `https://app.example.com` ist live.

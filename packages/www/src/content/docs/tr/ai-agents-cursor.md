@@ -4,7 +4,7 @@ description: Cursor IDE'yi .cursorrules ve terminal entegrasyonu kullanarak Redi
 category: Guides
 order: 32
 language: tr
-sourceHash: "ab61340d4a260fdd"
+sourceHash: "f2de270cae1a7ac1"
 ---
 
 Cursor, terminal komutları ve `.cursorrules` yapılandırma dosyası aracılığıyla Rediacc ile entegre olur.
@@ -38,7 +38,7 @@ Cursor'a sorun: *"Üretim sunucumun durumunu kontrol et"*
 
 Cursor terminalde çalıştırır:
 ```bash
-rdc machine query prod-1 -o json
+rdc machine query --name prod-1 -o json
 ```
 
 ### Değişiklikleri Dağıtma
@@ -47,7 +47,7 @@ Cursor'a sorun: *"Güncellenmiş nextcloud yapılandırmasını dağıt"*
 
 Cursor terminalde çalıştırır:
 ```bash
-rdc repo up nextcloud -m prod-1 --yes
+rdc repo up --name nextcloud -m prod-1 --yes
 ```
 
 ### Günlükleri Görüntüleme

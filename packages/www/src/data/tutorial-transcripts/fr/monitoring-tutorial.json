@@ -6,20 +6,50 @@
     {
       "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "at": 1.508759,
+      "at": 6.176639,
       "text": "Exécutez un diagnostic complet de l’environnement pour faire apparaître les problèmes de base."
     },
     {
       "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "at": 9.844365,
+      "at": 25.705613,
       "text": "Vérifiez les indicateurs d’état de la machine à distance."
     },
     {
       "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "at": 18.393678,
+      "at": 37.199979,
       "text": "Répertoriez les conteneurs actifs sur la machine cible."
+    },
+    {
+      "id": "monitoring-tutorial-04",
+      "markerIndex": 3,
+      "at": 47.874153,
+      "text": "Conteneurs vérifiés. Nous interrogeons maintenant les services systemd de la machine pour voir quels daemons d'infrastructure sont actifs et fonctionnels."
+    },
+    {
+      "id": "monitoring-tutorial-05",
+      "markerIndex": 4,
+      "at": 58.417483,
+      "text": "Pour une vue complète, nous exécutons une requête machine sans filtres -- retournant les métriques système, le réseau, les services, les conteneurs et les périphériques bloc en un seul appel."
+    },
+    {
+      "id": "monitoring-tutorial-06",
+      "markerIndex": 5,
+      "at": 68.461906,
+      "text": "Nous actualisons les empreintes des clés SSH stockées dans la configuration pour cette machine, garantissant que les connexions futures puissent vérifier l'identité du serveur."
+    },
+    {
+      "id": "monitoring-tutorial-07",
+      "markerIndex": 6,
+      "at": 78.211059,
+      "text": "Clés d'hôte mises à jour. Nous vérifions la connectivité de bout en bout en exécutant une commande distante via SSH et en confirmant que le nom d'hôte de la machine est retourné."
+    },
+    {
+      "id": "monitoring-tutorial-08",
+      "markerIndex": 7,
+      "at": 86.795419,
+      "text": "Encore une commande distante -- cette fois nous vérifions le temps de fonctionnement et la charge moyenne de la machine, démontrant l'exécution arbitraire de commandes via le tunnel SSH."
     }
   ]
 }

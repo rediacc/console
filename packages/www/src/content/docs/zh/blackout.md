@@ -4,7 +4,7 @@ description: 通过洲际数据镜像在停电期间维持银行运营。
 category: Use Cases
 order: 6
 language: zh
-sourceHash: 51a38f7f8567e63e
+sourceHash: "51a38f7f8567e63e"
 ---
 
 > **当灯熄灭时，您的业务仍在继续。**

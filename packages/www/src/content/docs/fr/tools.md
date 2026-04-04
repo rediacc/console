@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: fr
-sourceHash: "bc5864d869d191be"
+sourceHash: "5577c66ce89c1925"
 ---
 
 # Outils
@@ -119,7 +119,7 @@ Ouvrez une session SSH distante dans VS Code, préconfigurée avec les bons para
 ### Se connecter à un dépôt
 
 ```bash
-rdc vscode connect my-app -m server-1
+rdc vscode connect -r my-app -m server-1
 ```
 
 Cette commande :
@@ -137,7 +137,7 @@ rdc vscode list
 ### Nettoyer les connexions
 
 ```bash
-rdc vscode clean
+rdc vscode cleanup
 ```
 
 Supprime les configurations SSH de VS Code qui ne sont plus nécessaires.
@@ -173,7 +173,7 @@ Les mises à jour sont téléchargées et appliquées sur place. Le CLI sélecti
 ### Restaurer la version précédente
 
 ```bash
-rdc update rollback
+rdc update --rollback
 ```
 
 Revient à la version précédemment installée. Disponible uniquement après l'application d'une mise à jour.
@@ -181,7 +181,7 @@ Revient à la version précédemment installée. Disponible uniquement après l'
 ### État des mises à jour
 
 ```bash
-rdc update status
+rdc update --status
 ```
 
 Affiche la version actuelle, le canal de mise a jour et la configuration de la mise a jour automatique.

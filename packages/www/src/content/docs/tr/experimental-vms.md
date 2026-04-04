@@ -4,7 +4,7 @@ description: "rdc ops ile geliştirme ve test için yerel VM kümeleri oluşturm
 category: "Concepts"
 order: 2
 language: tr
-sourceHash: "fa4069c48c650a79"
+sourceHash: "13bf9b8be113a0ad"
 ---
 
 # Deneysel VM'ler
@@ -89,10 +89,10 @@ rdc ops up --basic
 rdc ops status
 
 # 4. Köprü VM'ye SSH ile bağlan
-rdc ops ssh 1
+rdc ops ssh --vm-id 1
 
 # 4b. Veya doğrudan bir komut çalıştır
-rdc ops ssh 1 hostname
+rdc ops ssh --vm-id 1 -c hostname
 
 # 5. Kapat
 rdc ops down

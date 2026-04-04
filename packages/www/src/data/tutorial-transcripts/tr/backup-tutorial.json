@@ -6,8 +6,56 @@
     {
       "id": "backup-tutorial-01",
       "markerIndex": 0,
-      "at": 1.510362,
+      "at": 6.224951,
       "text": "Şu anda yapılandırılmış yedekleme hedeflerini inceleyin."
+    },
+    {
+      "id": "backup-tutorial-02",
+      "markerIndex": 1,
+      "at": 15.432035,
+      "text": "Depolama alanı içeri aktarıldı. S3 hedefinin kayıtlı ve yedekleme transferlerine hazır olduğunu doğrulamak için tüm yapılandırılmış arka uçları listeliyoruz."
+    },
+    {
+      "id": "backup-tutorial-03",
+      "markerIndex": 2,
+      "at": 24.286068,
+      "text": "Şimdi bir yedekleme stratejisi oluşturuyoruz -- hedefi S3 arka ucumuza ayarlıyor, günlük çalıştırmaları sabah saat ikiye planlıyor ve hemen etkinleştiriyoruz."
+    },
+    {
+      "id": "backup-tutorial-04",
+      "markerIndex": 3,
+      "at": 35.540522,
+      "text": "Strateji kaydedildi. Devam etmeden önce zamanlamayı, hedefi ve etkinleştirme durumunu doğrulamak için tam yapılandırmayı inceliyoruz."
+    },
+    {
+      "id": "backup-tutorial-05",
+      "markerIndex": 4,
+      "at": 44.765645,
+      "text": "Yedeklemeler yapılandırıldıktan sonra makinenin altyapısını kuruyoruz -- genel IP, temel alan adı ve otomatik TLS sağlama için sertifika e-postası."
+    },
+    {
+      "id": "backup-tutorial-06",
+      "markerIndex": 5,
+      "at": 57.747851,
+      "text": "Şimdi makinenin ihtiyaç duyduğu ağ portlarını açıyoruz -- posta protokolleri için TCP portları ve DNS çözümlemesi için bir UDP portu."
+    },
+    {
+      "id": "backup-tutorial-07",
+      "markerIndex": 6,
+      "at": 68.973334,
+      "text": "Makinenin tam altyapı yapılandırmasını gözden geçiriyoruz -- IP adresi, alan adı, sertifika e-postası ve tüm port eşlemeleri tek bir görünümde."
+    },
+    {
+      "id": "backup-tutorial-08",
+      "markerIndex": 7,
+      "at": 78.308748,
+      "text": "Son olarak, yedekleme stratejisini silmeden devre dışı bırakıyoruz. Yapılandırma kayıtlı kalır ve her zaman yeniden etkinleştirilebilir."
+    },
+    {
+      "id": "backup-tutorial-09",
+      "markerIndex": 8,
+      "at": 85.975424,
+      "text": "Onaylandı -- strateji devre dışı bırakıldı ancak hedef ve zamanlama bozulmadan kaldı. Hazır olduğunuzda tek bir bayrakla yeniden etkinleştirin."
     }
   ]
 }

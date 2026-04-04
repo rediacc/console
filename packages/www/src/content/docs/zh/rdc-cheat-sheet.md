@@ -4,5 +4,5 @@ description: 所有 rdc 命令的快速参考 — 配置、仓库、机器、同
 category: Guides
 order: 3
 language: zh
-sourceHash: 9c16f56b1bc4ef6f
+sourceHash: "9c16f56b1bc4ef6f"
 ---

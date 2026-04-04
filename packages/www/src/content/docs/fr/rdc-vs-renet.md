@@ -4,7 +4,7 @@ description: Différences entre rdc et renet, et à quel moment utiliser chacun 
 category: Concepts
 order: 1
 language: fr
-sourceHash: "69cb9c27f7c3afaf"
+sourceHash: "8b7443928e0be27e"
 ---
 
 # rdc vs renet
@@ -36,14 +36,14 @@ Toutes les tâches courantes passent par `rdc` sur votre poste de travail :
 
 ```bash
 # Configurer un nouveau serveur
-rdc config machine setup server-1
+rdc config machine setup --name server-1
 
 # Créer et démarrer un dépôt
-rdc repo create my-app -m server-1 --size 10G
-rdc repo up my-app -m server-1 --mount
+rdc repo create --name my-app -m server-1 --size 10G
+rdc repo up --name my-app -m server-1 --mount
 
 # Arrêter un dépôt
-rdc repo down my-app -m server-1
+rdc repo down --name my-app -m server-1
 
 # Vérifier la santé de la machine
 rdc machine health server-1
@@ -69,8 +69,8 @@ Toutes les commandes `renet` nécessitent les privilèges root (`sudo`). Consult
 rdc ops setup              # Installer les prérequis (KVM ou QEMU)
 rdc ops up --basic         # Démarrer un cluster minimal
 rdc ops status             # Vérifier l'état des VM
-rdc ops ssh 1              # Se connecter en SSH à la VM bridge
-rdc ops ssh 1 hostname     # Exécuter une commande sur la VM bridge
+rdc ops ssh --vm-id 1  # Se connecter en SSH à la VM bridge
+rdc ops ssh --vm-id 1 -c hostname  # Exécuter une commande sur la VM bridge
 rdc ops down               # Détruire le cluster
 ```
 

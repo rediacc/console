@@ -4,7 +4,7 @@ description: Wie KI-Coding-Assistenten wie Claude Code, Cursor und Cline sich mi
 category: Guides
 order: 30
 language: de
-sourceHash: "2d8ab92216666d0e"
+sourceHash: "e96c19a3514c4369"
 ---
 
 KI-Coding-Assistenten können die Rediacc-Infrastruktur über die `rdc` CLI autonom verwalten. Diese Anleitung behandelt die Integrationsansaetze und den Einstieg.
@@ -69,7 +69,7 @@ Der `rdc agent`-Unterbefehl bietet strukturierte Introspektion:
 rdc agent capabilities
 
 # Show detailed schema for a specific command
-rdc agent schema "machine query"
+rdc agent schema --command "machine query"
 
 # Execute a command with JSON stdin
 echo '{"name": "prod-1"}' | rdc agent exec "machine query"

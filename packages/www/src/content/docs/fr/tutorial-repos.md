@@ -4,7 +4,7 @@ description: "Créer un dépôt chiffré, déployer une application conteneuris�
 category: "Tutorials"
 order: 3
 language: fr
-sourceHash: ee3455c196ea1479
+sourceHash: "79d2707d0dc632b2"
 ---
 
 # Comment déployer et gérer des dépôts avec Rediacc
@@ -26,7 +26,7 @@ Les dépôts sont l'unité de déploiement principale dans Rediacc — chacun es
 Chaque dépôt obtient son propre volume de stockage chiffré LUKS. Spécifiez la machine et la taille du stockage.
 
 ```bash
-rdc repo create test-app -m server-1 --size 2G
+rdc repo create --name test-app -m server-1 --size 2G
 ```
 
 Rediacc crée un volume chiffré de 2 Go, le formate et le monte automatiquement. Le dépôt est prêt pour le téléchargement de fichiers.
@@ -56,7 +56,7 @@ Le répertoire de montage est l'emplacement des fichiers d'application — `Redi
 Déployez l'application en montant le dépôt et en démarrant ses services Docker.
 
 ```bash
-rdc repo up test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1 --mount
 ```
 
 Cela monte le dépôt (s'il n'est pas déjà monté), démarre un Docker daemon isolé et démarre les services via `up()`.
@@ -86,9 +86,9 @@ La session terminal définit `DOCKER_HOST` sur le socket Docker isolé du dépô
 Lorsque vous avez terminé, arrêtez les services, fermez le volume chiffré et supprimez optionnellement le dépôt.
 
 ```bash
-rdc repo down test-app -m server-1      # Arrêter les services
-rdc repo unmount test-app -m server-1   # Fermer le volume chiffré
-rdc repo delete test-app -m server-1    # Supprimer le dépôt définitivement
+rdc repo down --name test-app -m server-1  # Arrêter les services
+rdc repo unmount --name test-app -m server-1  # Fermer le volume chiffré
+rdc repo delete --name test-app -m server-1  # Supprimer le dépôt définitivement
 ```
 
 `down` arrête les conteneurs et le Docker daemon. `unmount` ferme le volume LUKS. `delete` supprime définitivement le dépôt et son stockage chiffré.

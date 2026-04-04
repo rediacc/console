@@ -4,7 +4,7 @@ description: "تكوين جداول النسخ الاحتياطي التلقائ
 category: "Tutorials"
 order: 6
 language: ar
-sourceHash: "14244f699c506ce9"
+sourceHash: "0bdff6ce5d24c154"
 ---
 
 # كيفية تكوين النسخ الاحتياطي والشبكات مع Rediacc
@@ -62,7 +62,7 @@ rdc config backup-strategy show
 للخدمات العامة، يحتاج الجهاز إلى عنوان IP الخارجي والنطاق الأساسي وبريد إلكتروني للشهادات من Let's Encrypt TLS.
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com
@@ -75,7 +75,7 @@ rdc config infra set server-1 \
 إذا كانت خدماتك تحتاج منافذ غير HTTP (مثل SMTP، DNS)، قم بتسجيلها كنقاط دخول Traefik.
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 ```
@@ -87,7 +87,7 @@ rdc config infra set server-1 \
 تحقق من تكوين البنية التحتية الكامل.
 
 ```bash
-rdc config infra show server-1
+rdc config infra show -m server-1
 ```
 
 يعرض عناوين IP العامة والنطاق والبريد الإلكتروني للشهادات وجميع المنافذ المسجلة.

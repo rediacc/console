@@ -24,3 +24,49 @@ export function detectRepoContextCommand(command: string): RepoContextPattern | 
   }
   return null;
 }
+
+export interface RenetCommandMatch {
+  renetCommand: string;
+  cliHelpCommand: string;
+}
+
+const RENET_CLI_EQUIVALENTS: { pattern: RegExp; renetCommand: string; cliHelpCommand: string }[] = [
+  {
+    pattern: /\brenet\s+repository\b/,
+    renetCommand: 'renet repository',
+    cliHelpCommand: 'rdc repo --help',
+  },
+  {
+    pattern: /\brenet\s+backup\b/,
+    renetCommand: 'renet backup',
+    cliHelpCommand: 'rdc repo backup --help',
+  },
+  {
+    pattern: /\brenet\s+daemon\b/,
+    renetCommand: 'renet daemon',
+    cliHelpCommand: 'rdc repo --help',
+  },
+  {
+    pattern: /\brenet\s+datastore\b/,
+    renetCommand: 'renet datastore',
+    cliHelpCommand: 'rdc machine --help',
+  },
+  {
+    pattern: /\brenet\s+network\b/,
+    renetCommand: 'renet network',
+    cliHelpCommand: 'rdc machine --help',
+  },
+];
+
+/**
+ * Detects if a command runs a renet subcommand that has a CLI equivalent.
+ * Matches both `renet <cmd>` and `sudo renet <cmd>` patterns.
+ */
+export function detectDirectRenetCommand(command: string): RenetCommandMatch | null {
+  for (const entry of RENET_CLI_EQUIVALENTS) {
+    if (entry.pattern.test(command)) {
+      return { renetCommand: entry.renetCommand, cliHelpCommand: entry.cliHelpCommand };
+    }
+  }
+  return null;
+}

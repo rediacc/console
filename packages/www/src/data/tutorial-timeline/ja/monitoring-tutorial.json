@@ -7,34 +7,87 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "ca541576c068079a59b7b9a8f72a0177ca0794222c27117283a282b6b92f48e4",
+  "transcriptHash": "c8362121e0f682361e8c476fd9c3ff714f00a19878ddfae74b0126bb197a51a3",
   "steps": [
     {
       "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.508759,
-      "replayEndSec": 9.844365,
+      "replayStartSec": 6.176639,
+      "replayEndSec": 25.705613,
       "narrationText": "完全な環境診断を実行して、ベースラインの問題を明らかにします。",
       "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-tutorial-01.3df29037.mp3",
-      "audioDurationSec": 5.067755
+      "audioDurationSec": 4.832653,
+      "stepLabel": "Step 1: Run diagnostics"
     },
     {
       "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 9.844365,
-      "replayEndSec": 18.393678,
+      "replayStartSec": 25.705613,
+      "replayEndSec": 37.199979,
       "narrationText": "リモート マシンの健全性インジケーターを確認します。",
       "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-tutorial-02.737e11d6.mp3",
-      "audioDurationSec": 3.239184
+      "audioDurationSec": 3.552653,
+      "stepLabel": "Step 2: System overview"
     },
     {
       "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 18.393678,
-      "replayEndSec": 22.197305,
+      "replayStartSec": 37.199979,
+      "replayEndSec": 47.874153,
       "narrationText": "ターゲット マシン上のアクティブなコンテナを一覧表示します。",
       "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-tutorial-03.1732a104.mp3",
-      "audioDurationSec": 4.519184
+      "audioDurationSec": 4.284082,
+      "stepLabel": "Step 3: View running containers"
+    },
+    {
+      "id": "monitoring-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 47.874153,
+      "replayEndSec": 58.417483,
+      "narrationText": "コンテナを確認しました。次にマシン上のsystemdサービスを照会し、どのインフラデーモンがアクティブで正常に動作しているかを確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-tutorial-04.1c280da7.mp3",
+      "audioDurationSec": 10.109388,
+      "stepLabel": "Step 4: Check systemd services"
+    },
+    {
+      "id": "monitoring-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 58.417483,
+      "replayEndSec": 68.461906,
+      "narrationText": "全体像を把握するため、フィルターなしでフルマシンクエリを実行します -- システムメトリクス、ネットワーク、サービス、コンテナ、ブロックデバイスを一度の呼び出しで返します。",
+      "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-tutorial-05.a4a64990.mp3",
+      "audioDurationSec": 13.557551,
+      "stepLabel": "Step 5: Full machine status"
+    },
+    {
+      "id": "monitoring-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 68.461906,
+      "replayEndSec": 78.211059,
+      "narrationText": "このマシンの構成に保存されているSSHホストキーのフィンガープリントを更新し、将来の接続でサーバーIDを検証できるようにします。",
+      "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-tutorial-06.5bf633d9.mp3",
+      "audioDurationSec": 10.997551,
+      "stepLabel": "Step 6: Scan host keys"
+    },
+    {
+      "id": "monitoring-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 78.211059,
+      "replayEndSec": 86.795419,
+      "narrationText": "ホストキーを更新しました。SSH経由でリモートコマンドを実行し、マシンのホスト名が返されることを確認して、エンドツーエンドの接続性を検証します。",
+      "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-tutorial-07.2bbe9e08.mp3",
+      "audioDurationSec": 11.546122,
+      "stepLabel": "Step 7: Verify connectivity"
+    },
+    {
+      "id": "monitoring-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 86.795419,
+      "replayEndSec": 95.264993,
+      "narrationText": "もう一つリモートコマンドを実行します -- 今回はマシンの稼働時間とロードアベレージを確認し、SSHトンネルを通じた任意のコマンド実行を実演します。",
+      "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-tutorial-08.cf2b3a0e.mp3",
+      "audioDurationSec": 12.826122,
+      "stepLabel": "Step 8: Check block devices"
     }
   ]
 }

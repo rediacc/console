@@ -6,20 +6,50 @@
     {
       "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "at": 1.508759,
+      "at": 6.176639,
       "text": "运行完整的环境诊断以发现基线问题。"
     },
     {
       "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "at": 9.844365,
+      "at": 25.705613,
       "text": "检查远程机器健康状况指标。"
     },
     {
       "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "at": 18.393678,
+      "at": 37.199979,
       "text": "列出目标机器上的活动容器。"
+    },
+    {
+      "id": "monitoring-tutorial-04",
+      "markerIndex": 3,
+      "at": 47.874153,
+      "text": "容器已检查。现在查询机器上的systemd服务，查看哪些基础设施守护进程处于活动和健康状态。"
+    },
+    {
+      "id": "monitoring-tutorial-05",
+      "markerIndex": 4,
+      "at": 58.417483,
+      "text": "为获取完整视图，我们运行无过滤器的完整机器查询 -- 在一次调用中返回系统指标、网络、服务、容器和块设备。"
+    },
+    {
+      "id": "monitoring-tutorial-06",
+      "markerIndex": 5,
+      "at": 68.461906,
+      "text": "我们刷新配置中存储的此机器SSH主机密钥指纹，确保未来的连接能够验证服务器身份。"
+    },
+    {
+      "id": "monitoring-tutorial-07",
+      "markerIndex": 6,
+      "at": 78.211059,
+      "text": "主机密钥已更新。我们通过SSH执行远程命令并确认返回机器主机名，验证端到端连通性。"
+    },
+    {
+      "id": "monitoring-tutorial-08",
+      "markerIndex": 7,
+      "at": 86.795419,
+      "text": "再执行一个远程命令 -- 这次检查机器的运行时间和平均负载，演示通过SSH隧道执行任意命令。"
     }
   ]
 }

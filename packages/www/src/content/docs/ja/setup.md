@@ -4,7 +4,7 @@ description: "設定の作成、マシンの追加、サーバーのプロビジ
 category: "Guides"
 order: 3
 language: ja
-sourceHash: "7d4756adb17e63d4"
+sourceHash: "9fd8ebf2b98bfcf5"
 ---
 
 # マシンセットアップ
@@ -16,7 +16,7 @@ sourceHash: "7d4756adb17e63d4"
 **Config**は、SSH資格情報、マシン定義、リポジトリマッピングを保存する名前付き設定ファイルです。プロジェクトワークスペースと考えてください。
 
 ```bash
-rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | オプション | 必須 | 説明 |
@@ -33,7 +33,7 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 リモートサーバーを設定内のマシンとして登録します：
 
 ```bash
-rdc config machine add server-1 --ip 203.0.113.50 --user deploy
+rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | オプション | 必須 | デフォルト | 説明 |
@@ -46,7 +46,7 @@ rdc config machine add server-1 --ip 203.0.113.50 --user deploy
 マシンを追加すると、rdcは自動的に`ssh-keyscan`を実行してサーバーのホスト鍵を取得します。手動で実行することもできます：
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 登録済みのすべてのマシンを表示するには：
@@ -60,7 +60,7 @@ rdc config machine list
 リモートサーバーに必要なすべての依存関係をプロビジョニングします：
 
 ```bash
-rdc config machine setup server-1
+rdc config machine setup --name server-1
 ```
 
 このコマンドは以下を実行します：
@@ -82,7 +82,7 @@ rdc config machine setup server-1
 サーバーのSSHホスト鍵が変更された場合（例：再インストール後）、保存されている鍵を更新します：
 
 ```bash
-rdc config machine scan-keys server-1
+rdc config machine scan-keys -m server-1
 ```
 
 これにより、そのマシンの設定内の`knownHosts`フィールドが更新されます。
@@ -112,7 +112,7 @@ rdc doctor
 ### インフラストラクチャの設定
 
 ```bash
-rdc config infra set server-1 \
+rdc config infra set -m server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -134,7 +134,7 @@ Machineスコープのオプションはマシンごとに保存されます。C
 ### インフラストラクチャの表示
 
 ```bash
-rdc config infra show server-1
+rdc config infra show -m server-1
 ```
 
 ### サーバーへのプッシュ
@@ -142,7 +142,7 @@ rdc config infra show server-1
 Traefikリバースプロキシ設定を生成してサーバーにデプロイします：
 
 ```bash
-rdc config infra push server-1
+rdc config infra push -m server-1
 ```
 
 このコマンドは以下を実行します：
@@ -163,13 +163,13 @@ OpenTofu をインストールしてください: [opentofu.org/docs/intro/insta
 SSH設定に公開鍵が含まれていることを確認してください：
 
 ```bash
-rdc config set ssh.privateKeyPath ~/.ssh/id_ed25519
+rdc config set --key ssh.privateKeyPath --value ~/.ssh/id_ed25519
 ```
 
 ### クラウドプロバイダーの追加
 
 ```bash
-rdc config provider add my-linode \
+rdc config provider add --name my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -191,7 +191,7 @@ rdc config provider add my-linode \
 ### マシンのプロビジョニング
 
 ```bash
-rdc machine provision prod-2 --provider my-linode
+rdc machine provision --name prod-2 --provider my-linode
 ```
 
 この単一コマンドで以下を実行します：
@@ -214,7 +214,7 @@ rdc machine provision prod-2 --provider my-linode
 ### マシンのデプロビジョニング
 
 ```bash
-rdc machine deprovision prod-2
+rdc machine deprovision --name prod-2
 ```
 
 OpenTofu経由でVMを破棄し、設定から削除します。`--force` を使用しない限り確認が必要です。`machine provision` で作成されたマシンのみ動作します。
@@ -230,14 +230,14 @@ rdc config provider list
 毎回のコマンドで指定する必要がないように、デフォルト値を設定します：
 
 ```bash
-rdc config set machine server-1    # デフォルトマシン
-rdc config set team my-team        # デフォルトチーム（クラウドアダプター、実験的）
+rdc config set --key machine --value server-1  # デフォルトマシン
+rdc config set --key team --value my-team  # デフォルトチーム（クラウドアダプター、実験的）
 ```
 
 デフォルトマシンを設定した後は、コマンドから`-m server-1`を省略できます：
 
 ```bash
-rdc repo create my-app --size 10G   # デフォルトマシンを使用
+rdc repo create --name my-app -m my-server --size 10G
 ```
 
 ## 複数の設定
@@ -246,8 +246,8 @@ rdc repo create my-app --size 10G   # デフォルトマシンを使用
 
 ```bash
 # 別々の設定を作成
-rdc config init production --ssh-key ~/.ssh/id_prod
-rdc config init staging --ssh-key ~/.ssh/id_staging
+rdc config init --name production --ssh-key ~/.ssh/id_prod
+rdc config init --name staging --ssh-key ~/.ssh/id_staging
 
 # 特定の設定を使用
 rdc repo list -m server-1 --config production

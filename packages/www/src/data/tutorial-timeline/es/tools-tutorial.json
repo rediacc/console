@@ -7,16 +7,87 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "35ced9632c1be790241de8bf8cc41990d53faea6b583367df8d97c2f5df2fa48",
+  "transcriptHash": "4411d51d5e606b7148039cb6e61c4dba7bfa009c8d803f9d365481daceb1eaa0",
   "steps": [
     {
       "id": "tools-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.511459,
-      "replayEndSec": 5.270978,
+      "replayStartSec": 43.70817,
+      "replayEndSec": 52.191236,
       "narrationText": "Abra un comando de shell remoto para verificar la identidad de la máquina de destino.",
       "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-tutorial-01.742020fc.mp3",
-      "audioDurationSec": 5.407347
+      "audioDurationSec": 5.146122,
+      "stepLabel": "Step 1: Connect to a machine"
+    },
+    {
+      "id": "tools-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 52.191236,
+      "replayEndSec": 62.595547,
+      "narrationText": "Verificamos el tiempo de actividad y la carga promedio por SSH para confirmar que la máquina responde y maneja bien su carga de trabajo actual.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-tutorial-02.7bffded8.mp3",
+      "audioDurationSec": 9.482449,
+      "stepLabel": "Step 2: Connect to a repository"
+    },
+    {
+      "id": "tools-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 62.595547,
+      "replayEndSec": 74.148935,
+      "narrationText": "Ahora nos conectamos directamente al entorno aislado de un repositorio. docker ps muestra los contenedores bajo el daemon aislado propio de ese repositorio.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-tutorial-03.0ef40a3f.mp3",
+      "audioDurationSec": 11.650612,
+      "stepLabel": "Step 3: Preview file sync (dry-run)"
+    },
+    {
+      "id": "tools-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 74.148935,
+      "replayEndSec": 86.706562,
+      "narrationText": "Antes de subir archivos, una sincronización de prueba muestra lo que se transferiría sin escribir nada. Aquí todo ya está sincronizado.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-tutorial-04.1e24cbc6.mp3",
+      "audioDurationSec": 9.639184,
+      "stepLabel": "Step 4: Upload files"
+    },
+    {
+      "id": "tools-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 86.706562,
+      "replayEndSec": 98.826776,
+      "narrationText": "La subida real confirma cero archivos transferidos -- el contenido del repositorio ya coincide con el directorio local.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-tutorial-05.390d8827.mp3",
+      "audioDurationSec": 8.907755,
+      "stepLabel": "Step 5: Verify uploaded files"
+    },
+    {
+      "id": "tools-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 98.826776,
+      "replayEndSec": 110.142656,
+      "narrationText": "Listamos los archivos del repositorio para verificar el contenido, mostrando los archivos de la aplicación junto a la configuración interna.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-tutorial-06.abc563ff.mp3",
+      "audioDurationSec": 9.874286,
+      "stepLabel": "Step 6: VS Code integration check"
+    },
+    {
+      "id": "tools-tutorial-07",
+      "markerIndex": 6,
+      "replayStartSec": 110.142656,
+      "replayEndSec": 118.777182,
+      "narrationText": "La verificación de integración con VS Code muestra el estado de instalación, la extensión Remote SSH y todas las conexiones remotas activas gestionadas por la CLI.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-tutorial-07.aa94bdf9.mp3",
+      "audioDurationSec": 12.747755,
+      "stepLabel": "Step 7: Check for CLI updates"
+    },
+    {
+      "id": "tools-tutorial-08",
+      "markerIndex": 7,
+      "replayStartSec": 118.777182,
+      "replayEndSec": 125.456449,
+      "narrationText": "Una comprobación rápida de actualizaciones informa de las versiones de CLI disponibles sin instalar -- útil para mantenerse al día con las últimas novedades.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-tutorial-08.ccab980b.mp3",
+      "audioDurationSec": 12.199184,
+      "stepLabel": "Step 8: Review CLI version info"
     }
   ]
 }

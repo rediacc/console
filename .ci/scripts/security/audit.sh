@@ -155,6 +155,78 @@ main() {
         ci_warn "Allowed dev vulnerabilities: $dev_only_count (see .audit-allowlist)"
     fi
 
+    # ── Pass 3: Check for stale allowlist entries ────────────────
+    # When a suppressed vulnerability gets a fix upstream, flag it so
+    # developers upgrade and remove the allowlist entry.
+    # - Non-breaking fix (fixAvailable: true or isSemVerMajor: false): FAIL
+    # - Major upgrade required (isSemVerMajor: true): WARN only
+    log_info "Checking for stale allowlist entries (fixes now available)"
+
+    local stale_actionable=false
+
+    check_stale_entries() {
+        local allowlist_file="$1"
+        local audit_json="$2"
+        local entries=()
+
+        [[ ! -f "$allowlist_file" ]] && return
+
+        while IFS= read -r line; do
+            line="${line%%#*}"
+            line="${line// /}"
+            [[ -n "$line" ]] && entries+=("$line")
+        done <"$allowlist_file"
+
+        for advisory in "${entries[@]}"; do
+            local fix_info
+            fix_info=$(jq -c --arg id "$advisory" '
+                .vulnerabilities | to_entries[] |
+                select(.value.via[] | objects | select(.source == ($id | tonumber))) |
+                {
+                    pkg: .key,
+                    fixType: (.value.fixAvailable | type),
+                    isMajor: (if (.value.fixAvailable | type) == "object"
+                              then .value.fixAvailable.isSemVerMajor
+                              else null end),
+                    fixVersion: (if (.value.fixAvailable | type) == "object"
+                                 then .value.fixAvailable.version
+                                 else null end)
+                }
+            ' "$audit_json" 2>/dev/null | head -1)
+
+            [[ -z "$fix_info" || "$fix_info" == "null" ]] && continue
+
+            local fix_type is_major fix_version pkg
+            fix_type=$(echo "$fix_info" | jq -r '.fixType')
+            is_major=$(echo "$fix_info" | jq -r '.isMajor // "null"')
+            fix_version=$(echo "$fix_info" | jq -r '.fixVersion // empty')
+            pkg=$(echo "$fix_info" | jq -r '.pkg')
+
+            # fixAvailable forms:
+            #   false          -> no fix, keep suppressed
+            #   true (boolean) -> transitive fix path exists, warn only (may still require blocked upgrades)
+            #   {isSemVerMajor: true}  -> fix via major upgrade, warn only
+            #   {isSemVerMajor: false} -> non-breaking fix available, FAIL CI
+            if [[ "$fix_type" == "object" && "$is_major" == "false" ]]; then
+                ci_error "Advisory $advisory ($pkg) now has a non-breaking fix${fix_version:+ ($fix_version)} -- upgrade and remove from $allowlist_file"
+                stale_actionable=true
+            elif [[ "$fix_type" == "object" && "$is_major" == "true" ]]; then
+                ci_warn "Advisory $advisory ($pkg) has a fix via major upgrade${fix_version:+ to $fix_version} -- review $allowlist_file"
+            elif [[ "$fix_type" == "boolean" ]]; then
+                ci_warn "Advisory $advisory ($pkg) may have a transitive fix available -- review $allowlist_file"
+            fi
+        done
+    }
+
+    check_stale_entries ".audit-prod-allowlist" "audit-prod.json"
+    check_stale_entries ".audit-allowlist" "audit-report.json"
+
+    if [[ "$stale_actionable" == "true" ]]; then
+        log_error "Allowlisted advisories have non-breaking fixes available -- upgrade dependencies and remove stale entries"
+        # Keep audit files for inspection
+        exit 1
+    fi
+
     log_success "Security audit passed"
     rm -f audit-report.json audit-prod.json
 }
