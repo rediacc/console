@@ -31,6 +31,7 @@ const searchIndexIntegration = {
 // https://astro.build/config
 export default defineConfig({
   site: process.env.PUBLIC_SITE_URL || 'https://www.rediacc.com',
+  trailingSlash: 'never',
   integrations: [
     react(),
     sitemap({

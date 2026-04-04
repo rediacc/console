@@ -6,7 +6,7 @@ import NewsletterReturnPopup from '../components/NewsletterReturnPopup';
 import CliReferenceModal from '../components/docs/CliReferenceModal.astro';
 import StructuredData from '../components/StructuredData.astro';
 import { createTranslator } from '../i18n/utils';
-import { getLanguageFromPath, getPathWithoutLanguage, SUPPORTED_LANGUAGES, getLocale } from '../i18n/language-utils';
+import { getLanguageFromPath, getPathWithoutLanguage, SUPPORTED_LANGUAGES, getLocale, getHreflang } from '../i18n/language-utils';
 import type { Language } from '../i18n/types';
 // ViewTransitions is now built-in in Astro 5+ via meta tag
 
@@ -110,7 +110,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
       const langPath = lang === 'en' ? pathWithoutLang : `/${lang}${pathWithoutLang}`;
       const fullUrl = new URL(langPath, baseURL).toString();
       return (
-        <link rel="alternate" hreflang={lang} href={fullUrl} />
+        <link rel="alternate" hreflang={getHreflang(lang)} href={fullUrl} />
       );
     })}
     <!-- Default language fallback (always English) -->

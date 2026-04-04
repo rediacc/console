@@ -421,7 +421,7 @@
       "meta": {
         "description": "Lesen Sie Einblicke, Leitfäden und Updates zur verteilten Aufgabenausführung, Infrastrukturautomatisierung und DevOps-Best Practices.",
         "keywords": "Blog zur Infrastrukturautomatisierung, DevOps-Anleitungen, verteilte Systeme, Aufgabenausführung, Cloud-Infrastruktur",
-        "title": "Blog | Rediacc – Einblicke in die Infrastrukturautomatisierung"
+        "title": "Blog - Infrastrukturautomatisierung | Rediacc"
       },
       "published": "Veröffentlicht",
       "readMore": "Mehr lesen",
@@ -438,7 +438,7 @@
       "meta": {
         "description": "Verfolgen Sie die neuesten Rediacc-Releases, Verbesserungen und Fehlerbehebungen.",
         "keywords": "Rediacc Änderungsprotokoll, Release-Notes, Updates, neue Funktionen",
-        "title": "Änderungsprotokoll | Rediacc"
+        "title": "Änderungsprotokoll - Updates & Releases | Rediacc"
       },
       "subscribeDescription": "Erhalten Sie eine kurze Benachrichtigung, wenn wir etwas Neues veröffentlichen.",
       "subscribeTitle": "Über neue Releases benachrichtigt werden",
@@ -512,9 +512,9 @@
         "title": "Was Sie bekommen"
       },
       "meta": {
-        "description": "Kontaktieren Sie das Rediacc-Team.",
+        "description": "Kontaktieren Sie das Rediacc-Team bei Fragen zu Support, Partnerschaften oder unserer Infrastrukturplattform.",
         "keywords": "Rediacc Kontakt, Disaster-Recovery-Plattform, verifizierte Backups",
-        "title": "Kontakt | Rediacc"
+        "title": "Kontakt - Support & Hilfe erhalten | Rediacc"
       },
       "notice": {
         "description": "Klicken Sie auf „Senden“, um Ihre E-Mail zu öffnen. Fragen? E-Mail",
@@ -529,12 +529,12 @@
       },
       "hero": {
         "effectiveDate": "Gültig ab: 1. Februar 2026",
-        "title": "Cookie-Richtlinie"
+        "title": "So nutzen wir Cookies"
       },
       "meta": {
         "description": "Rediacs Cookie-Richtlinie. Ein funktionaler Cookie für die Spracheinstellung und cookieloses Plausible Analytics.",
         "keywords": "Cookie-Richtlinie, Cookies, Plausible Analytics, DSGVO, Rediacc",
-        "title": "Cookie-Richtlinie — Rediacc"
+        "title": "Cookie-Richtlinie - Cookie-Nutzung | Rediacc"
       },
       "related": {
         "title": "Verwandte Richtlinien"
@@ -1113,7 +1113,7 @@
       "meta": {
         "description": "Erfahren Sie mit unserer umfassenden Dokumentation, Anleitungen und API-Referenz für die verteilte Aufgabenausführung, wie Sie Rediacc verwenden.",
         "keywords": "Dokumentation, API-Referenz, Leitfäden, Infrastrukturautomatisierung, CLI-Referenz, Warteschlangensystem",
-        "title": "Dokumentation | Rediacc – Infrastrukturautomatisierungsplattform"
+        "title": "Dokumentation | Rediacc - Infrastrukturplattform"
       },
       "queueSystem": "Warteschlangensystem",
       "queueSystemDesc": "Verstehen Sie, wie Aufgaben maschinenübergreifend verwaltet und ausgeführt werden.",
@@ -1146,7 +1146,7 @@
       "hero": {
         "released": "Veröffentlicht",
         "subtitle": "Rediacc Desktop & CLI",
-        "title": "Downloads"
+        "title": "Rediacc CLI herunterladen"
       },
       "installation": {
         "cli": "CLI: Laden Sie die Binärdatei für Ihre Plattform herunter, machen Sie sie ausführbar (chmod +x unter Linux/macOS) und legen Sie sie in Ihren PATH.",
@@ -1159,7 +1159,7 @@
       "meta": {
         "description": "Laden Sie Rediacc Desktop und CLI für Windows, macOS und Linux herunter.",
         "keywords": "Rediacc Download, Desktop-Anwendung, CLI, Windows-App, macOS-App, Linux-App",
-        "title": "Downloads | Rediacc"
+        "title": "Rediacc CLI herunterladen - Alle Plattformen | Rediacc"
       },
       "noReleases": "Derzeit keine Versionen verfügbar. Bitte schauen Sie später nochmal vorbei.",
       "platforms": {
@@ -1191,7 +1191,7 @@
         "indicator": "{{current}} / {{total}}"
       },
       "meta": {
-        "description": "Transformieren Sie die Entwicklung mit der Infrastrukturautomatisierung von Rediacc. Erhalten Sie sofortige Umgebungen, Notfallwiederherstellung und KI-sichere Abläufe.",
+        "description": "Produktion in 60 Sekunden klonen. Notfallwiederherstellung in unter 5 Minuten. Self-Hosted, läuft auf Ihrer eigenen Hardware.",
         "keywords": "Infrastrukturautomatisierung, Entwicklungsumgebungen, Disaster Recovery, DevOps-Automatisierung, CI/CD-Pipeline, Cloud-Infrastruktur, Entwicklungsbetrieb, Model Context Protocol, KI-sichere Infrastruktur",
         "title": "Rediacc — Produktion klonen. Nichts kaputt machen."
       }
@@ -1213,7 +1213,7 @@
       "meta": {
         "description": "Installieren Sie die Rediacc CLI auf Linux, macOS oder Windows über APT, DNF, npm oder direkten Download.",
         "keywords": "rediacc installieren, apt install, dnf install, npm install, CLI-Installation",
-        "title": "Installieren | Rediacc CLI"
+        "title": "Rediacc CLI installieren - Schnellstart | Rediacc"
       },
       "methods": {
         "apk": {
@@ -1303,10 +1303,13 @@
         "title": "Was Sie erwartet"
       },
       "frequency": "Einmal im Monat.",
+      "hero": {
+        "title": "Abonnieren Sie unseren Newsletter"
+      },
       "meta": {
         "description": "Abonnieren Sie den Rediacc-Newsletter für monatliche Produkt-Updates, Self-Hosting-Anleitungen und Infrastruktur-Tipps.",
         "keywords": "Rediacc Newsletter, Self-Hosting-Updates, Infrastruktur-Tipps, DevOps-Newsletter",
-        "title": "Newsletter | Rediacc"
+        "title": "Newsletter - Infrastruktur-Updates | Rediacc"
       },
       "privacy": "Wir verwenden Plausible Analytics und geben Ihre E-Mail-Adresse niemals an Dritte weiter."
     },
@@ -1463,9 +1466,9 @@
           "title": "Drei Schritte zur agenten-verwalteten Infrastruktur"
         },
         "meta": {
-          "description": "Rediacc ist für KI-Coding-Assistenten entwickelt. CLI-first-Operationen, strukturierte JSON-Ausgabe, SSH-basierter Zugriff und vollständige Agent-Erkennung über rdc agent Befehle.",
+          "description": "Rediacc ist für KI-Coding-Assistenten gebaut. CLI-first-Operationen, strukturierte JSON-Ausgabe, SSH-Zugriff und Agent-Erkennung über rdc agent.",
           "keywords": "KI-Agenten, Claude Code, Cursor, Cline, Infrastruktur-Automatisierung, CLI, JSON-Ausgabe, selbst gehostet, agentennativ, MCP",
-          "title": "For AI Agents — CLI-Native Infrastructure Automation | Rediacc"
+          "title": "KI-Agenten - CLI-native Automatisierung | Rediacc"
         },
         "problem": {
           "description": "Ihr KI-Coding-Assistent kann autonom Code schreiben, testen und debuggen. Aber wenn er deployen, den Status prüfen oder Infrastruktur verwalten muss, stößt er an eine Wand: reine GUI-Dashboards, OAuth-Browser-Flows, instabile APIs und Antworten, die das Kontextfenster sprengen.",
@@ -1942,7 +1945,7 @@
           "title": "Infrastruktur-TCO um 60% senken. Auf Ihrer Hardware skalieren."
         },
         "meta": {
-          "description": "Self-Hosted-Infrastrukturschutz, der auf Ihrer Hardware skaliert. TCO senken, Vendor Lock-in eliminieren und innerhalb von Minuten nach jeder Katastrophe wiederherstellen.",
+          "description": "Self-Hosted-Infrastrukturschutz auf Ihrer Hardware. TCO um 60% senken, Vendor Lock-in eliminieren und nach jeder Katastrophe in Minuten wiederherstellen.",
           "keywords": "CTO, Infrastruktur-TCO, Self-Hosted, Notfallwiederherstellung, Vendor Lock-in, btrfs-Snapshots, Compliance, Skalierbarkeit",
           "title": "Für CTOs — Infrastruktur-TCO um 60% senken | Rediacc"
         },
@@ -2236,9 +2239,9 @@
           "title": "Ein Befehl. Vollständiger Produktionsklon."
         },
         "meta": {
-          "description": "CLI-first-Infrastruktur, die Produktion in 60 Sekunden klont, in unter fünf Minuten zurücksetzt und auf Ihrer eigenen Hardware läuft. Entwickelt für Ingenieure, die alles automatisieren.",
+          "description": "CLI-first-Infrastruktur: Produktion in 60 Sekunden klonen, in unter fünf Minuten zurücksetzen. Auf eigener Hardware, für Ingenieure gebaut.",
           "keywords": "devops, Infrastrukturautomatisierung, CLI, btrfs-Snapshots, Self-Hosted, Umgebungsklonen, sofortiges Rollback, Produktionsparität",
-          "title": "Für DevOps-Ingenieure — Schneller ausliefern, sofort wiederherstellen | Rediacc"
+          "title": "DevOps - Schneller ausliefern | Rediacc"
         },
         "problem": {
           "description": "Ihre CI/CD-Pipeline deployed in Minuten. Ihre IaC provisioniert in Sekunden. Aber wenn Sie eine Testumgebung mit echten Daten brauchen, erstellen Sie ein Ticket und warten drei Tage. In der Zwischenzeit ist Staging geteilt, instabil und hat nichts mit Produktion zu tun.",
@@ -3104,7 +3107,7 @@
       },
       "hero": {
         "effectiveDate": "Gültig ab: 1. Februar 2026",
-        "title": "Datenschutzrichtlinie"
+        "title": "Unser Datenschutzversprechen"
       },
       "meta": {
         "description": "Erfahren Sie, wie Rediacc Ihre personenbezogenen Daten erhebt, verwendet und schützt.",
@@ -3260,9 +3263,9 @@
         "title": "Kompetente Hilfe, wenn Sie sie am meisten brauchen"
       },
       "meta": {
-        "description": "Holen Sie sich kompetente Hilfe, wenn Sie sie am meisten brauchen. Von der Standardimplementierung bis zur Notfallreaktion sichern unsere professionellen Dienstleistungen Ihren Erfolg.",
+        "description": "Implementierungssupport, Migrationshilfe und Notfallreaktion. 2-Stunden-Reaktionszeit. 100% Migrationserfolgsrate.",
         "keywords": "Professionelle Dienstleistungen, Implementierungsunterstützung, Infrastrukturberatung, Notfallmaßnahmen, Migrationsdienste, Ransomware-Wiederherstellung",
-        "title": "Professionelle Dienstleistungen | Kompetente Implementierung und Support"
+        "title": "Professionelle Services - Experten-Support | Rediacc"
       },
       "packages": {
         "heading": "Professionelle Servicepakete",
@@ -3285,7 +3288,7 @@
       },
       "hero": {
         "effectiveDate": "Gültig ab: 1. Februar 2025",
-        "title": "Erstattungsrichtlinie"
+        "title": "Kündigungs- und Erstattungsrichtlinie"
       },
       "meta": {
         "description": "Rediacs Erstattungsrichtlinie für Plattformabonnements und professionelle Dienstleistungen.",
@@ -3431,10 +3434,13 @@
       },
       "description": "Wählen Sie Ihre Unternehmensgröße und passen Sie die Eingaben an, um einen Echtzeit-TCO-Vergleich, Produktivitätsgewinne für Entwickler und die Amortisationszeit zu sehen.",
       "footnote": "Schätzungen basieren auf Branchenbenchmarks aus ITIC-, IBM/Ponemon-, Sophos-, Cortex- und KPMG-Studien (2024). TCO umfasst Infrastruktur, Administration, DR-Tests und Wartung. Die Entwicklerproduktivität verwendet eine konservative Realisierungsrate von 40 %. DR-Einsparungen basieren auf RTO-Verbesserungen durch btrfs-Copy-on-Write-Snapshots. Speichereinsparungen setzen CoW-Effizienz im Vergleich zu herkömmlichen Backup-Ketten voraus. Tatsächliche Ergebnisse variieren je nach Arbeitslast und Konfiguration.",
+      "hero": {
+        "title": "Berechnen Sie Ihren Infrastruktur-ROI"
+      },
       "meta": {
         "description": "Berechnen Sie die Gesamtbetriebskosteneinsparung, Amortisationszeit und den ROI beim Wechsel zu Rediaccʼs selbst gehosteter Infrastruktur.",
         "keywords": "ROI-Rechner, TCO-Vergleich, Infrastruktureinsparungen, Self-Hosted ROI, Amortisationszeit, Backup-Kostenreduktion",
-        "title": "ROI-Rechner — Beziffern Sie Ihre Infrastruktureinsparungen | Rediacc"
+        "title": "ROI-Rechner - Infrastruktureinsparungen | Rediacc"
       },
       "overline": "BERECHNEN SIE IHREN ROI",
       "references": {
@@ -4160,7 +4166,7 @@
         "meta": {
           "description": "Vollständige Transparenz darüber, wer was wann und warum getan hat. Manipulationssichere Audit-Logs für jede Operation.",
           "keywords": "Audit-Trail, Compliance-Protokollierung, manipulationssichere Protokolle, SHA-256-signiert, Auditbericht",
-          "title": "Audit-Trail — Rediacc"
+          "title": "Audit-Trail - Vollständige Protokollierung | Rediacc"
         },
         "problem": {
           "description": "Wenn etwas schiefgeht, lautet die erste Frage 'was ist passiert?' Ohne vollständige Logs raten Sie. Unvollständige Audit-Trails bedeuten blinde Flecken. Blinde Flecken bedeuten Risiko. Prüfer akzeptieren 'wir glauben' nicht als Antwort.",
@@ -4632,7 +4638,7 @@
         "meta": {
           "description": "Warten Sie nicht auf eine Katastrophe, um herauszufinden, dass Ihr Backup beschädigt ist. Rediacc prüft jedes Backup im Moment seiner Erstellung.",
           "keywords": "Backup-Verifizierung, Backup-Tests, Wiederherstellungsverifizierung, Backup-Integritaet, automatische Backup-Pruefung, btrfs-Klon, Backup-Zustandspruefung",
-          "title": "Backup-Verifizierung — Jedes Backup automatisch verifiziert | Rediacc"
+          "title": "Backup-Verifizierung - Automatisch | Rediacc"
         },
         "problem": {
           "description": "Sie denken, Sie sind geschützt. Sie haben Backups, die jede Nacht laufen. Aber sind sie tatsächlich gut? Die meisten Teams prüfen erst, wenn sie wiederherstellen müssen. Dann ist es zu spät. Ein beschädigtes Backup gibt Ihnen falsches Vertrauen — und sonst nichts.",
@@ -7047,9 +7053,9 @@
           "title": "Ein Befehl. Volles Vertrauen."
         },
         "meta": {
-          "description": "Führen Sie Katastrophensimulationen sicher durch. Wissen Sie, dass Ihre Wiederherstellung tatsächlich funktioniert. Keine Überraschungen, wenn es darauf ankommt.",
+          "description": "Katastrophensimulationen sicher durchführen. Wissen, dass Ihre Wiederherstellung funktioniert. Keine Überraschungen im Ernstfall.",
           "keywords": "Failover-Tests, Disaster-Recovery-Tests, DR-Simulation, DR-Testautomatisierung, Wiederherstellungsverifizierung, btrfs-Klon, RTO-RPO-Tests",
-          "title": "Failover-Tests — Testen Sie Ihren DR-Plan bevor Sie ihn brauchen | Rediacc"
+          "title": "Failover-Tests - DR-Plan validieren | Rediacc"
         },
         "problem": {
           "description": "Sie haben einen Disaster-Recovery-Plan. Aber wann haben Sie ihn zuletzt getestet? Die meisten Teams haben es nicht getan. Sie nehmen an, er funktioniert. Dann trifft die Katastrophe und sie stellen fest, dass es nicht so ist. Ein ungetesteter Plan ist kein Plan. Er ist eine Hoffnung.",
@@ -7541,7 +7547,7 @@
         "meta": {
           "description": "Ihre Backups sind unveränderlich ab dem Moment ihrer Erstellung. Niemand kann sie ändern. Keine Hacker. Nicht einmal Sie.",
           "keywords": "unveraenderliche Backups, Ransomware-Schutz, btrfs-Snapshots, Backup-Verifizierung, Notfallwiederherstellung, Copy-on-Write, versiegelte Backups",
-          "title": "Unveränderliche Backups — Ransomware-sichere Backups | Rediacc"
+          "title": "Immutable Backups - Ransomware-Schutz | Rediacc"
         },
         "problem": {
           "description": "Moderne Angreifer finden Ihre Backups, bevor sie Ihre Dateien verschlüsseln. Wenn Ihre Backups geändert werden können, werden sie es auch. Traditionelle Backup-Tools lassen die Tür offen — und 94 % der Ransomware-Opfer hatten ihre Backups während des Angriffs im Visier. Sie brauchen Backups, die sich im Moment ihrer Erstellung verschließen.",
@@ -8059,7 +8065,7 @@
         "meta": {
           "description": "Erstellen Sie Umgebungen bei Bedarf. Löschen Sie sie, wenn Sie fertig sind. Zahlen Sie nur für das, was Sie tatsächlich nutzen.",
           "keywords": "Infrastrukturkosten, ungenutzte Umgebungen, bedarfsgesteuerte Umgebungen, Kostenoptimierung, btrfs-Klon, Copy-on-Write, TTL, automatische Bereinigung",
-          "title": "Infrastrukturkosten — Hören Sie auf, für ungenutzte Umgebungen zu zahlen | Rediacc"
+          "title": "Infrastrukturkosten senken | Rediacc"
         },
         "problem": {
           "description": "Sie haben 15 Entwicklungsumgebungen, die rund um die Uhr laufen. Entwickler nutzen sie 8 Stunden am Tag, 5 Tage die Woche. Das sind 33 % Auslastung. Sie zahlen für die anderen 67 % — Server, die nachts, an Wochenenden und Feiertagen untätig sind.",
@@ -8533,7 +8539,7 @@
         "meta": {
           "description": "Nicht nur Dateien. Ganze Umgebungen — Server, Konfigurationen, Datenbanken — in Minuten wiederhergestellt und betriebsbereit.",
           "keywords": "sofortige Wiederherstellung, vollstaendige Umgebungswiederherstellung, btrfs-Klon, Notfallwiederherstellung, Backup-Wiederherstellung, Zeitpunktwiederherstellung, Gesundheitspruefungen, Ein-Befehl-Wiederherstellung",
-          "title": "Sofortige Wiederherstellung — Vollständige Umgebungswiederherstellung in Minuten | Rediacc"
+          "title": "Sofortige Wiederherstellung - Vollrestore | Rediacc"
         },
         "problem": {
           "description": "Die Wiederherstellung einzelner Dateien dauert Stunden. Der Neuaufbau ganzer Umgebungen dauert Tage. Wenn Ihr Produktionsserver ausfällt, brauchen Sie nicht nur Dateien zurück — Sie brauchen alles zurück. Den Server, die Konfiguration, die Datenbank, die Netzwerkeinstellungen. Alles.",
@@ -9002,7 +9008,7 @@
         "meta": {
           "description": "Git Push löst eine frische Umgebung aus. Tests laufen auf Produktionsklonen. CI/CD funktioniert einfach — kein Custom-Scripting erforderlich.",
           "keywords": "CI/CD-Integration, GitLab CI, GitHub Actions, Webhook, Produktionsklon, Testumgebung, Pipeline-Automatisierung",
-          "title": "CI/CD-Integrationen — In Ihren bestehenden Workflow einfügen | Rediacc"
+          "title": "CI/CD-Integrationen - Workflow | Rediacc"
         },
         "problem": {
           "description": "Jemand hat ein 200-Zeilen-Bash-Skript geschrieben, um Testumgebungen in Ihrer Pipeline bereitzustellen. Die Person hat das Unternehmen verlassen. Das Skript bricht jeden Monat. Niemand versteht es. Ihre CI/CD-Pipeline wird von Klebeband und Hoffnung zusammengehalten.",
@@ -9991,7 +9997,7 @@
         "meta": {
           "description": "Kein 'es funktioniert auf meinem Rechner' mehr. Jede Entwicklungsumgebung ist ein identischer Klon der Produktion.",
           "keywords": "Produktionsgleichheit, Umgebungsabweichung, Entwicklungsumgebung, identischer Klon, btrfs-Klon, Copy-on-Write, Konfigurationsabgleich",
-          "title": "Produktionsparität — Entwicklungsumgebungen, die exakt der Produktion entsprechen | Rediacc"
+          "title": "Produktionsparität - Exakte Umgebungen | Rediacc"
         },
         "problem": {
           "description": "Ihre Entwicklungsumgebung läuft mit einer anderen OS-Version. Andere Bibliotheksversionen. Andere Konfigurationen. Code besteht jeden Test in der Entwicklung, bricht dann in der Produktion. Diese Fehler sind schwer zu finden und teuer zu beheben. Sie passieren, weil die Entwicklung nicht mit der Produktion übereinstimmt.",
@@ -10959,7 +10965,7 @@
         "meta": {
           "description": "Konfigurierbare Aufbewahrungsrichtlinien, die Compliance-Anforderungen erfüllen. HIPAA, SOC2, DSGVO — standardmäßig abgedeckt.",
           "keywords": "Aufbewahrungskonformitaet, Datenaufbewahrung, HIPAA-Konformitaet, SOC2, DSGVO, Backup-Aufbewahrung, pruefungsbereit, Compliance-Automatisierung",
-          "title": "Aufbewahrungskonformität — Daten so lange aufbewahren, wie das Gesetz es verlangt | Rediacc"
+          "title": "Aufbewahrungskonformität - Datenretention | Rediacc"
         },
         "problem": {
           "description": "Vorschriften verlangen, dass Sie Daten für bestimmte Zeiträume aufbewahren. Verfehlen Sie die Vorgabe und Sie stehen vor Bußgeldern, Audits und rechtlichen Problemen. Die meisten Backup-Tools behandeln Aufbewahrung als Nebensache. Am Ende verwalten Sie es manuell mit Tabellen und Hoffnung.",
@@ -12421,7 +12427,7 @@
         "meta": {
           "description": "Finden, testen und patchen Sie Sicherheitslücken auf sicheren Klonen. Deployen Sie Fixes mit Vertrauen in die Produktion.",
           "keywords": "Schwachstellenmanagement, Patch-Verifizierung, CVE-Behebung, klonbasiertes Patchen, sicheres Patchen, Sicherheitstests, Schwachstellenbehebung",
-          "title": "Schwachstellenmanagement — Schwachstellen beheben, bevor Angreifer kommen | Rediacc"
+          "title": "Schwachstellenmanagement - Proaktiv | Rediacc"
         },
         "problem": {
           "description": "Sie haben eine Schwachstelle gefunden. Jetzt müssen Sie sie patchen. Aber wird der Patch etwas kaputt machen? Sie können nicht in der Produktion testen. Und Ihre Staging-Umgebung ist 3 Wochen veraltet. Also eilen Sie entweder mit dem Patch und hoffen, oder warten und bleiben exponiert. Keine Option ist gut — und beide kosten Geld.",
@@ -12661,7 +12667,7 @@
       "meta": {
         "description": "Lernen Sie die katastrophensichere Teambuilding-Infrastruktur kennen. Ingenieure, die sich dafür einsetzen, dass Ihre Systeme jeder Herausforderung standhalten.",
         "keywords": "Rediacc-Team, Infrastrukturtechnik, Disaster-Recovery-Experten, Systemzuverlässigkeit, DevOps-Team",
-        "title": "Unser Team | Rediacc – Aufbau einer Infrastruktur, die überlebt"
+        "title": "Unser Team | Rediacc - Infrastruktur die lebt"
       },
       "mission": {
         "belief": "Wir glauben, dass jedes Unternehmen, unabhängig von Größe oder Budget, Zugriff auf dieselben leistungsstarken Infrastrukturtools verdient, die Fortune-500-Unternehmen verwenden. Aus diesem Grund haben wir Rediacc entwickelt – um gleiche Wettbewerbsbedingungen zu schaffen und Unternehmen die Möglichkeit zu geben, sich auf das zu konzentrieren, was sie am besten können, während wir die Komplexität der Infrastruktur bewältigen.",
@@ -12729,10 +12735,10 @@
       },
       "hero": {
         "effectiveDate": "Gültig ab: 1. Februar 2026",
-        "title": "Telemetrie-Richtlinie"
+        "title": "Unsere Telemetriepraxis"
       },
       "meta": {
-        "description": "Details darüber, welche Telemetriedaten Rediacc-Produkte erfassen, warum, wie sie verarbeitet werden und wie Sie sich abmelden können. Umfasst Webanwendung, CLI, Middleware und Bridge.",
+        "description": "Welche Telemetriedaten Rediacc erfasst, warum, wie sie verarbeitet werden und wie Sie sich abmelden. Web-App, CLI, Middleware und Bridge.",
         "keywords": "Telemetrie-Richtlinie, Datenerfassung, OpenTelemetry, Abmeldung, Datenschutz, DSGVO, Rediacc",
         "title": "Telemetrie-Richtlinie — Rediacc"
       },
@@ -12969,12 +12975,12 @@
       },
       "hero": {
         "effectiveDate": "Gültig ab: 1. Februar 2026",
-        "title": "Nutzungsbedingungen"
+        "title": "Allgemeine Geschäftsbedingungen"
       },
       "meta": {
         "description": "Bedingungen für die Nutzung der Rediacc-Website und Infrastruktur-Automatisierungsplattform.",
         "keywords": "Nutzungsbedingungen, AGB, Benutzervereinbarung, Rediacc",
-        "title": "Nutzungsbedingungen — Rediacc"
+        "title": "Nutzungsbedingungen - Servicebedingungen | Rediacc"
       },
       "related": {
         "title": "Verwandte Richtlinien"

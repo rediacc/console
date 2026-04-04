@@ -438,7 +438,7 @@
       "meta": {
         "description": "En son Rediacc sürümlerini, iyileştirmelerini ve hata düzeltmelerini takip edin.",
         "keywords": "Rediacc değişiklik günlüğü, sürüm notları, güncellemeler, yeni özellikler",
-        "title": "Değişiklik Günlüğü | Rediacc"
+        "title": "Değişiklik Günlüğü - Son Güncellemeler | Rediacc"
       },
       "subscribeDescription": "Yeni bir şey yayınladığımızda kısa bir güncelleme alın.",
       "subscribeTitle": "Yeni sürümlerden haberdar olun",
@@ -512,9 +512,9 @@
         "title": "Ne Alırsınız"
       },
       "meta": {
-        "description": "Rediacc ekibiyle iletişime geçin.",
+        "description": "Rediacc ekibiyle iletişime geçin. Destek, satış veya teknik sorularınız için bize ulaşın.",
         "keywords": "Rediacc iletişim, felaket kurtarma platformu, doğrulanmış yedeklemeler",
-        "title": "İletişim | Rediacc"
+        "title": "İletişim - Destek ve Yardım Alın | Rediacc"
       },
       "notice": {
         "description": "E-postanızı açmak için gönder'i tıklayın. Sorunuz mu var? E-posta",
@@ -529,12 +529,12 @@
       },
       "hero": {
         "effectiveDate": "Yürürlük Tarihi: 1 Şubat 2026",
-        "title": "Çerez Politikası"
+        "title": "Çerezleri Nasıl Kullanıyoruz"
       },
       "meta": {
         "description": "Rediacc çerez politikası. Bir işlevsel çerez ve çerezsiz Plausible Analytics.",
         "keywords": "çerez politikası, çerezler, Plausible Analytics, GDPR, Rediacc",
-        "title": "Çerez Politikası — Rediacc"
+        "title": "Çerez Politikası - Çerez Kullanımı | Rediacc"
       },
       "related": {
         "title": "İlgili Politikalar"
@@ -1144,7 +1144,7 @@
       "hero": {
         "released": "Yayınlanma",
         "subtitle": "Rediacc Desktop & CLI",
-        "title": "İndirmeler"
+        "title": "Rediacc CLI ve Masaüstü Uygulamasını İndirin"
       },
       "installation": {
         "cli": "CLI: Platformunuz için ikili dosyayı indirin, çalıştırılabilir yapın (Linux/macOS için chmod +x) ve PATH dizinine yerleştirin.",
@@ -1157,7 +1157,7 @@
       "meta": {
         "description": "Windows, macOS ve Linux için Rediacc Desktop ve CLI indirin.",
         "keywords": "Rediacc indirme, masaüstü uygulaması, CLI, Windows uygulaması, macOS uygulaması, Linux uygulaması",
-        "title": "İndirmeler | Rediacc"
+        "title": "Tüm Platformlar İçin Rediacc CLI İndirin | Rediacc"
       },
       "noReleases": "Şu anda mevcut sürüm bulunmuyor. Lütfen daha sonra tekrar kontrol edin.",
       "platforms": {
@@ -1211,7 +1211,7 @@
       "meta": {
         "description": "Rediacc CLI'yi Linux, macOS veya Windows'a APT, DNF, npm veya doğrudan indirme yoluyla yükleyin.",
         "keywords": "rediacc yükle, apt install, dnf install, npm install, CLI kurulumu",
-        "title": "Yükle | Rediacc CLI"
+        "title": "Rediacc CLI Kurulumu - Hızlı Başlangıç Kılavuzu"
       },
       "methods": {
         "apk": {
@@ -1263,7 +1263,7 @@
       "meta": {
         "description": "Şeffaflık ve ticari iletişim için resmi şirket bilgileri.",
         "keywords": "yasal bilgiler, şirket bilgileri, sicil, KDV, iletişim",
-        "title": "Yasal Bilgiler - {{companyName}}"
+        "title": "Yasal Bilgiler ve Uyarılar - {{companyName}}"
       },
       "sections": {
         "companyDetails": {
@@ -1301,10 +1301,13 @@
         "title": "Neler beklenmeli"
       },
       "frequency": "Ayda bir kez.",
+      "hero": {
+        "title": "Bültenimize Abone Olun"
+      },
       "meta": {
         "description": "Aylık ürün güncellemeleri, kendi sunucunuzda barındırma kılavuzları ve altyapı ipuçları için Rediacc bültenine abone olun.",
         "keywords": "Rediacc bülten, kendi sunucunuzda barındırma güncellemeleri, altyapı ipuçları, DevOps bülten",
-        "title": "Bülten | Rediacc"
+        "title": "Bülten - Altyapı Otomasyon Güncellemeleri | Rediacc"
       },
       "privacy": "Plausible Analytics kullanıyoruz ve e-postanızı asla üçüncü taraflarla paylaşmıyoruz."
     },
@@ -1461,9 +1464,9 @@
           "title": "Ajan tarafından yönetilen altyapıya üç adım"
         },
         "meta": {
-          "description": "Rediacc, yapay zeka kodlama asistanları için tasarlanmıştır. CLI öncelikli işlemler, yapılandırılmış JSON çıktısı, SSH tabanlı erişim ve rdc agent komutlarıyla tam ajan keşfi.",
+          "description": "Rediacc, yapay zeka asistanları için tasarlandı. CLI öncelikli işlemler, JSON çıktısı, SSH erişimi ve rdc agent komutlarıyla tam ajan keşfi.",
           "keywords": "Yapay zeka ajanları, Claude Code, Cursor, Cline, altyapı otomasyonu, CLI, JSON çıktısı, kendi sunucunuzda barındırma, ajan-doğal, MCP",
-          "title": "For AI Agents — CLI-Native Infrastructure Automation | Rediacc"
+          "title": "AI Ajanları İçin - CLI-Tabanlı Otomasyon | Rediacc"
         },
         "problem": {
           "description": "Yapay zeka kodlama asistanınız kodu otonom olarak yazabilir, test edebilir ve hata ayıklayabilir. Ancak dağıtım yapması, durum kontrol etmesi veya altyapıyı yönetmesi gerektiğinde bir duvara çarpar: sadece GUI panelleri, OAuth tarayıcı akışları, kararsız API'ler ve bağlam penceresini aşan yanıtlar.",
@@ -1666,14 +1669,14 @@
           },
           "title": "Ne kadar tasarruf edebilirsiniz?",
           "withAnnual": "Hesapla →",
-          "withoutTag": "Mevcut bulut maliyetleri",
           "withResults": {
             "blockedTime": "%60 daha az",
             "contextSwitching": "<5 dakika",
             "quarterlySlip": "%100 sizin",
             "sprintCapacity": "Minimize edildi"
           },
-          "withTag": "Rediacc ile"
+          "withTag": "Rediacc ile",
+          "withoutTag": "Mevcut bulut maliyetleri"
         },
         "hero": {
           "badge": "CEO'LAR VE KURUCULAR İÇİN",
@@ -1685,7 +1688,7 @@
         "meta": {
           "description": "Öngörülebilir fiyatlandırma, sıfır satıcı bağımlılığı ve tam veri sahipliği ile kendi barındırmalı altyapı koruması. İşletmenizi bulut faturası olmadan koruyun.",
           "keywords": "CEO, altyapı maliyetleri, kendi barındırma, veri koruma, satıcı bağımlılığı, öngörülebilir fiyatlandırma, iş sürekliliği, KOBİ",
-          "title": "CEO'lar ve Kurucular İçin — Öngörülebilir Maliyetler, Sıfır Bağımlılık | Rediacc"
+          "title": "CEO'lar İçin - Öngörülebilir Maliyetler | Rediacc"
         },
         "problem": {
           "description": "Ekibiniz küçük bir bulut faturasıyla başladı. Şimdi en büyük üçüncü gideriniz ve yıllık %20 büyüyor. Koltuk başı fiyatlandırma işe alım yaptığınızda sizi cezalandırıyor. Verileriniz başka birinin veri merkezinde, onların tescilli formatında duruyor. Ayrılmak isterseniz, kendi verilerinize erişmek için çıkış ücreti alıyorlar.",
@@ -1887,14 +1890,14 @@
           },
           "title": "Altyapınız gerçekte size ne kadara mal oluyor?",
           "withAnnual": "Hesapla →",
-          "withoutTag": "Mevcut harcama",
           "withResults": {
             "blockedTime": "%60 daha az",
             "contextSwitching": "<5 dakika",
             "quarterlySlip": "Yok",
             "sprintCapacity": "Neredeyse sıfır"
           },
-          "withTag": "Rediacc ile"
+          "withTag": "Rediacc ile",
+          "withoutTag": "Mevcut harcama"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -1940,7 +1943,7 @@
           "title": "Altyapı TCO'sunu %60 azaltın. Kendi donanımınızda ölçekleyin."
         },
         "meta": {
-          "description": "Kendi donanımınızda ölçeklenen, kendi barındırmalı altyapı koruması. TCO'yu azaltın, satıcı bağımlılığını ortadan kaldırın ve herhangi bir felaketten dakikalar içinde kurtulun.",
+          "description": "Kendi donanımınızda ölçeklenen altyapı koruması. TCO'yu azaltın, satıcı bağımlılığını kaldırın ve felaketlerden dakikalar içinde kurtulun.",
           "keywords": "CTO, altyapı TCO, kendi barındırma, felaket kurtarma, satıcı bağımlılığı, btrfs anlık görüntüler, uyumluluk, ölçeklenebilirlik",
           "title": "CTO'lar İçin — Altyapı TCO'sunu %60 Azaltın | Rediacc"
         },
@@ -2234,9 +2237,9 @@
           "title": "Tek komut. Tam üretim klonu."
         },
         "meta": {
-          "description": "Üretimi 60 saniyede klonlayan, beş dakikadan kısa sürede geri alan ve kendi donanımınızda çalışan CLI-öncelikli altyapı. Her şeyi otomatikleştiren mühendisler için tasarlandı.",
+          "description": "Üretimi 60 saniyede klonlayan, beş dakikada geri alan ve kendi donanımınızda çalışan CLI öncelikli altyapı. Otomasyon odaklı mühendisler için.",
           "keywords": "devops, altyapı otomasyonu, CLI, btrfs anlık görüntüler, kendi barındırma, ortam klonlama, anında geri alma, üretim eşdeğerliği",
-          "title": "DevOps Mühendisleri İçin — Daha Hızlı Dağıtın, Anında Kurtarın | Rediacc"
+          "title": "DevOps İçin - Hızlı Dağıtım, Anında Kurtarma | Rediacc"
         },
         "problem": {
           "description": "CI/CD hattınız dakikalar içinde dağıtım yapıyor. IaC'niz saniyeler içinde tedarik ediyor. Ancak gerçek verilerle bir test ortamına ihtiyacınız olduğunda, talep açıp üç gün bekliyorsunuz. Bu sırada paylaşılan hazırlık ortamı kararsız ve üretime hiç benzemiyor.",
@@ -2978,29 +2981,29 @@
           "business": {
             "floatingLicenses": "20",
             "jobsPerMonth": "20,000",
-            "repositories": "Sınırsız",
             "repoSize": "500 GB",
+            "repositories": "Sınırsız",
             "usersTeams": "Sınırsız"
           },
           "community": {
             "floatingLicenses": "2",
             "jobsPerMonth": "500",
-            "repositories": "Sınırsız",
             "repoSize": "10 GB",
+            "repositories": "Sınırsız",
             "usersTeams": "Sınırsız"
           },
           "enterprise": {
             "floatingLicenses": "50+",
             "jobsPerMonth": "100,000+",
-            "repositories": "Sınırsız",
             "repoSize": "2 TB+",
+            "repositories": "Sınırsız",
             "usersTeams": "Sınırsız"
           },
           "professional": {
             "floatingLicenses": "5",
             "jobsPerMonth": "5,000",
-            "repositories": "Sınırsız",
             "repoSize": "100 GB",
+            "repositories": "Sınırsız",
             "usersTeams": "Sınırsız"
           }
         }
@@ -3102,12 +3105,12 @@
       },
       "hero": {
         "effectiveDate": "Yürürlük Tarihi: 1 Şubat 2026",
-        "title": "Gizlilik Politikası"
+        "title": "Gizlilik Taahhüdümüz"
       },
       "meta": {
         "description": "Rediacc'in kişisel verilerinizi nasıl topladığını, kullandığını ve koruduğunu öğrenin.",
         "keywords": "gizlilik politikası, veri koruma, GDPR, Plausible Analytics, Rediacc",
-        "title": "Gizlilik Politikası — Rediacc"
+        "title": "Gizlilik Politikası - Veri Koruma | Rediacc"
       },
       "related": {
         "title": "İlgili Politikalar"
@@ -3279,12 +3282,12 @@
       },
       "hero": {
         "effectiveDate": "Yürürlük Tarihi: 1 Şubat 2025",
-        "title": "İade Politikası"
+        "title": "İptal ve İade Koşulları"
       },
       "meta": {
         "description": "Platform abonelikleri ve profesyonel hizmetler için Rediacc iade politikası.",
         "keywords": "iade politikası, iptal, abonelik iadesi, Rediacc",
-        "title": "İade Politikası — Rediacc"
+        "title": "İade Politikası - İptal ve İadeler | Rediacc"
       },
       "related": {
         "title": "İlgili Politikalar"
@@ -3423,6 +3426,9 @@
       },
       "description": "Şirket büyüklüğünüzü seçin ve parametreleri ayarlayarak gerçek zamanlı TCO karşılaştırmasını, geliştirici verimlilik kazanımlarını ve geri ödeme süresini görün.",
       "footnote": "Tahminler ITIC, IBM/Ponemon, Sophos, Cortex ve KPMG araştırmalarına (2024) dayalı sektör karşılaştırmalarına dayanmaktadır. TCO; altyapı, yönetim, DR testi ve bakımı kapsar. Geliştirici verimliliği, %40 oranında tutucu bir gerçekleşme katsayısı kullanır. DR tasarrufları, btrfs copy-on-write anlık görüntüleri kullanılarak RTO iyileştirmesine dayanır. Depolama tasarrufları, geleneksel yedekleme zincirlerine kıyasla CoW verimliliğini varsayar. Gerçek sonuçlar iş yüküne ve yapılandırmaya göre değişiklik gösterebilir.",
+      "hero": {
+        "title": "Altyapı Yatırım Getirinizi Hesaplayın"
+      },
       "meta": {
         "description": "Rediacc kendi sunucunuzda barındırılan altyapıya geçişin toplam sahip olma maliyeti tasarrufunu, geri ödeme süresini ve ROI değerini hesaplayın.",
         "keywords": "ROI hesaplayıcı, TCO karşılaştırma, altyapı tasarrufu, self-hosted ROI, geri ödeme süresi, yedekleme maliyeti azaltma",
@@ -3541,13 +3547,13 @@
           },
           "title": "Güvenlik açığı maruziyetiniz ne kadara mal oluyor?",
           "withAnnual": "Yıllık güvenlik maliyeti",
-          "withoutTag": "REDİACC OLMADAN",
           "withResults": {
             "blindspot": "Kör nokta",
             "exposure": "Açık başına maruz kalma",
             "pentestCost": "Sızma testi maliyeti"
           },
-          "withTag": "REDİACC İLE"
+          "withTag": "REDİACC İLE",
+          "withoutTag": "REDİACC OLMADAN"
         },
         "explore": {
           "solutions": [
@@ -3689,7 +3695,7 @@
         "meta": {
           "description": "Altyapınızın birebir kopyalarını oluşturun ve AI destekli sızma testleri çalıştırın — üretim ortamını riske atmadan.",
           "keywords": "AI sızma testi, penetrasyon testi, güvenlik testi, güvenlik açığı taraması, klon saldırısı",
-          "title": "AI Sızma Testi — Rediacc"
+          "title": "AI Sızma Testi - Otomatik Güvenlik Taraması | Rediacc"
         },
         "problem": {
           "description": "Canlı sistemlerde sızma testi tehlikelidir. Hizmetleri çökertebilir, verileri bozabilir veya yanlış alarmları tetikleyebilir. Bu yüzden çoğu ekip ya atlar ya da gerçekliği yansıtmayan eski staging ortamlarında test eder. Sonuç: güvenlik açıkları aylarca yamasız kalır — veya bir saldırgan onları ilk bulana kadar.",
@@ -3951,14 +3957,14 @@
           },
           "title": "Denetim açıkları size ne kadara mal oluyor?",
           "withAnnual": "Yıllık denetim risk maliyeti",
-          "withoutTag": "DAĞINIK GÜNLÜKLER",
           "withResults": {
             "compileHours": "Yıllık günlük derleme saatleri",
             "delayCost": "Soruşturma gecikme maliyeti",
             "gaps": "Denetim bulgusu riski (açıklar)",
             "penaltyCost": "Uyumsuzluk ceza riski"
           },
-          "withTag": "REDİACC İLE"
+          "withTag": "REDİACC İLE",
+          "withoutTag": "DAĞINIK GÜNLÜKLER"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -4152,7 +4158,7 @@
         "meta": {
           "description": "Kimin ne yaptığına, ne zaman ve neden yaptığına tam görünürlük. Her işlem için kurcalamaya dayanıklı denetim günlükleri.",
           "keywords": "denetim izi, uyumluluk günlüğü, kurcalamaya dayanıklı günlükler, SHA-256 imzalı, denetim raporu",
-          "title": "Denetim İzi — Rediacc"
+          "title": "Denetim İzi - Tam Aktivite Kaydı | Rediacc"
         },
         "problem": {
           "description": "Bir şeyler ters gittiğinde ilk soru \"ne oldu?\" dur. Eksiksiz günlükler olmadan tahmin yürütüyorsunuz. Eksik denetim izleri kör noktalar demektir. Kör noktalar risk demektir. Denetçiler \"biz sanıyoruz ki\" ifadesini cevap olarak kabul etmez.",
@@ -4422,14 +4428,14 @@
           },
           "title": "Doğrulanmamış yedeklemeler size ne kadara mal oluyor?",
           "withAnnual": "$0",
-          "withoutTag": "Doğrulama Olmadan",
           "withResults": {
             "corrupted": "0 tespit edilmemiş",
             "dataLoss": "0",
             "recoveryCost": "$0",
             "undetected": "0"
           },
-          "withTag": "Rediacc ile"
+          "withTag": "Rediacc ile",
+          "withoutTag": "Doğrulama Olmadan"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -4624,7 +4630,7 @@
         "meta": {
           "description": "Yedeklemenizin bozuk olduğunu öğrenmek için felaket beklemeyin. Rediacc her yedeklemeyi oluşturulduğu anda kontrol eder.",
           "keywords": "yedekleme doğrulaması, yedekleme testi, geri yükleme doğrulaması, yedekleme bütünlüğü, otomatik yedekleme kontrolü, btrfs klonu, yedekleme sağlık kontrolü",
-          "title": "Yedekleme Doğrulaması — Her Yedekleme Otomatik Doğrulanır | Rediacc"
+          "title": "Yedekleme Doğrulaması - Otomatik Kontrol | Rediacc"
         },
         "problem": {
           "description": "Korunduğunuzu düşünüyorsunuz. Her gece yedeklemeler çalışıyor. Ama gerçekten iyi mi? Çoğu ekip geri yükleme gerekene kadar kontrol etmez. O zaman çok geçtir. Bozuk bir yedekleme size yanlış güven verir — başka hiçbir şey değil.",
@@ -4934,14 +4940,14 @@
           },
           "title": "Bir bulut kesintisi size ne kadara mal oluyor?",
           "withAnnual": "$0",
-          "withoutTag": "Rediacc Olmadan",
           "withResults": {
             "churn": "$0",
             "labor": "$0",
             "revenue": "$0",
             "sla": "$0"
           },
-          "withTag": "Rediacc ile"
+          "withTag": "Rediacc ile",
+          "withoutTag": "Rediacc Olmadan"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -5137,7 +5143,7 @@
         "meta": {
           "description": "Altyapınız birden fazla bulutta çalışır. Biri çökünce, diğerleri devralır. Otomatik olarak.",
           "keywords": "bulut kesintisi koruması, çoklu bulut yük devretme, çapraz bulut replikasyonu, felaket kurtarma, bulut yedekliliği, otomatik yük devretme, btrfs replikasyonu",
-          "title": "Bulut Kesintisi Koruması — AWS Çökünce Siz Çökmezsiniz | Rediacc"
+          "title": "Bulut Kesintisi Koruması - Çevrimdışı Kalmayın | Rediacc"
         },
         "problem": {
           "description": "Kritik bulut kesinti olayları 2024'te yıllık bazda %18 arttı, %18,7 daha uzun sürdü ve %68'ine insan hatası neden oldu [2]. Tek bulutunuz çökünce, her şey çöker. Müşterileriniz, geliriniz, itibarınız. Hepsi başkasının altyapısına rehin.",
@@ -5444,13 +5450,13 @@
           },
           "title": "Maruz kalma pencereniz ne kadara mal oluyor?",
           "withAnnual": "Yıllık güvenlik maliyeti",
-          "withoutTag": "YILLIK SIZMA TESTİ",
           "withResults": {
             "blindspot": "Kör nokta penceresi",
             "exposure": "Açık başına maruz gün",
             "pentestCost": "Yıllık sızma testi maliyeti"
           },
-          "withTag": "SÜREKLİ (REDİACC)"
+          "withTag": "SÜREKLİ (REDİACC)",
+          "withoutTag": "YILLIK SIZMA TESTİ"
         },
         "explore": {
           "solutions": [
@@ -5832,14 +5838,14 @@
           },
           "title": "Zayıf şifreleme yönetimi size ne kadara mal oluyor?",
           "withAnnual": "Yıllık uyumluluk maliyeti",
-          "withoutTag": "SAĞLAYICI YÖNETİMLİ ANAHTARLAR",
           "withResults": {
             "exposure": "Yıllık maruz kalma pencereleri",
             "gaps": "Uyumluluk açıkları (anahtar erişimi)",
             "premium": "İhlal riski primi",
             "prepHours": "Yıllık denetim hazırlık saatleri"
           },
-          "withTag": "REDİACC İLE"
+          "withTag": "REDİACC İLE",
+          "withoutTag": "SAĞLAYICI YÖNETİMLİ ANAHTARLAR"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -6341,14 +6347,14 @@
           },
           "title": "Bu ekibinize ne kadara mal oluyor?",
           "withAnnual": "$0",
-          "withoutTag": "Rediacc Olmadan",
           "withResults": {
             "blockedTime": "0 gün",
             "contextSwitching": "Minimum",
             "quarterlySlip": "0 gün",
             "sprintCapacity": "0%"
           },
-          "withTag": "Rediacc ile"
+          "withTag": "Rediacc ile",
+          "withoutTag": "Rediacc Olmadan"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -6542,7 +6548,7 @@
         "meta": {
           "description": "Üretim ortamının birebir kopyalarını oluşturun — uygulama, veritabanı ve yapılandırma — geliştirme ve test için. Talep açmadan. Beklemeden.",
           "keywords": "ortam klonlama, üretim klonu, geliştirme ortamı, anında hazırlama, btrfs klonu, copy-on-write, geçici ortamlar",
-          "title": "Ortam Klonlama — Üretim Ortamını 60 Saniyede Klonlayın | Rediacc"
+          "title": "Ortam Klonlama - Hızlı Üretim Kopyası | Rediacc"
         },
         "problem": {
           "description": "Geliştiricinizin bir test ortamına ihtiyacı var. Talep açıyor. Operasyon ekibi sunucu hazırlıyor. Birisi yapılandırıyor. Üç gün sonra, yine de üretim ortamıyla eşleşmiyor. Bu arada geliştiriciniz Pazartesi'den beri bloke — ve her kesinti 23 dakikalık toparlanma süresine mal oluyor.",
@@ -6839,14 +6845,14 @@
           },
           "title": "Test edilmemiş yük devretme size ne kadara mal oluyor?",
           "withAnnual": "$0",
-          "withoutTag": "Test Olmadan",
           "withResults": {
             "churn": "$0",
             "compliance": "$0",
             "labor": "$0",
             "revenue": "$0"
           },
-          "withTag": "Rediacc Testiyle"
+          "withTag": "Rediacc Testiyle",
+          "withoutTag": "Test Olmadan"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -7041,7 +7047,7 @@
         "meta": {
           "description": "Felaket simülasyonlarını güvenle çalıştırın. Kurtarmanızın gerçekten çalıştığını bilin. En çok ihtiyaç duyduğunuz anda sürpriz yok.",
           "keywords": "yük devretme testi, felaket kurtarma testi, DR simülasyonu, DR test otomasyonu, kurtarma doğrulama, btrfs klonu, RTO RPO testi",
-          "title": "Yük Devretme Testi — Felaket Kurtarma Planınızı İhtiyacınız Olmadan Önce Test Edin | Rediacc"
+          "title": "Yük Devretme Testi - DR Planınızı Doğrulayın | Rediacc"
         },
         "problem": {
           "description": "Bir felaket kurtarma planınız var. Ama en son ne zaman test ettiniz? Çoğu ekip etmemiştir. Çalıştığını varsayarlar. Sonra felaket gelir ve çalışmadığını öğrenirler. Test edilmemiş bir plan, plan değildir. Sadece bir umuttur.",
@@ -7331,14 +7337,14 @@
           },
           "title": "Bir fidye yazılımı saldırısı size ne kadara mal oluyor?",
           "withAnnual": "~$200",
-          "withoutTag": "Rediacc Olmadan",
           "withResults": {
             "downtime": "<5 dk",
             "labor": "~$200",
             "reputation": "$0",
             "revenue": "~$0"
           },
-          "withTag": "Rediacc ile"
+          "withTag": "Rediacc ile",
+          "withoutTag": "Rediacc Olmadan"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -7533,7 +7539,7 @@
         "meta": {
           "description": "Yedeklemeleriniz oluşturuldukları andan itibaren değiştirilemez. Kimse onları değiştiremez. Bilgisayar korsanları da. Siz bile.",
           "keywords": "değiştirilemez yedeklemeler, fidye yazılımı koruması, btrfs anlık görüntüler, yedekleme doğrulama, felaket kurtarma, copy-on-write, mühürlü yedeklemeler",
-          "title": "Değiştirilemez Yedeklemeler — Fidye Yazılımına Dayanıklı Yedeklemeler | Rediacc"
+          "title": "Değiştirilemez Yedekler - Fidye Dayanıklı | Rediacc"
         },
         "problem": {
           "description": "Modern saldırganlar dosyalarınızı şifrelemeden önce yedeklemelerinizi bulur. Yedeklemeleriniz değiştirilebiliyorsa, değiştirilecektir. Geleneksel yedekleme araçları kapıyı açık bırakır — ve fidye yazılımı kurbanlarının %94'ünde saldırı sırasında yedeklemeler hedef alınmıştır. Oluşturuldukları anda kilitlenen yedeklemelere ihtiyacınız var.",
@@ -7862,7 +7868,6 @@
           "title": "Boşta kalan ortamlar size ne kadara mal oluyor",
           "withAnnual": "$24,120",
           "withAnnualLabel": "Yıllık tasarruf",
-          "withoutTag": "HER ZAMAN AÇIK",
           "withResultLabels": {
             "idle": "CoW depolama ek yükü"
           },
@@ -7871,7 +7876,8 @@
             "monthly": "$990",
             "waste": "0%"
           },
-          "withTag": "REDİACC İLE"
+          "withTag": "REDİACC İLE",
+          "withoutTag": "HER ZAMAN AÇIK"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -8051,7 +8057,7 @@
         "meta": {
           "description": "İhtiyaç duyduğunuzda ortam oluşturun. İşiniz bitince yok edin. Yalnızca gerçekten kullandığınız için ödeme yapın.",
           "keywords": "altyapı maliyetleri, boşta ortamlar, isteğe bağlı ortamlar, maliyet optimizasyonu, btrfs klonu, copy-on-write, TTL, otomatik yok etme",
-          "title": "Altyapı Maliyetleri — Boşta Kalan Ortamlar İçin Ödeme Yapmayı Durdurun | Rediacc"
+          "title": "Altyapı Maliyetlerini Azaltın | Rediacc"
         },
         "problem": {
           "description": "7/24 çalışan 15 geliştirme ortamınız var. Geliştiriciler bunları günde 8 saat, haftada 5 gün kullanıyor. Bu %33 kullanım oranı. Geri kalan %67 için ödeme yapıyorsunuz — geceler, hafta sonları ve tatillerde boşta bekleyen sunucular.",
@@ -8321,7 +8327,6 @@
           },
           "title": "Yavaş kurtarma size ne kadara mal oluyor?",
           "withAnnual": "$868",
-          "withoutTag": "Dosya Seviyesinde Kurtarma",
           "withResultLabels": {
             "labor": "Personel işçiliği (tek komut)"
           },
@@ -8330,7 +8335,8 @@
             "labor": "$17",
             "recoveryTime": "<5 dk"
           },
-          "withTag": "Rediacc ile"
+          "withTag": "Rediacc ile",
+          "withoutTag": "Dosya Seviyesinde Kurtarma"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -8525,7 +8531,7 @@
         "meta": {
           "description": "Sadece dosyalar değil. Tüm ortamlar — sunucular, yapılandırmalar, veritabanları — dakikalar içinde geri yüklenir ve çalışır.",
           "keywords": "anında kurtarma, tam ortam geri yükleme, btrfs klonu, felaket kurtarma, yedekleme geri yükleme, belirli zaman noktası kurtarma, sağlık kontrolleri, tek komutla kurtarma",
-          "title": "Anında Kurtarma — Dakikalar İçinde Tam Ortam Kurtarma | Rediacc"
+          "title": "Anında Kurtarma - Tam Ortam Geri Yükleme | Rediacc"
         },
         "problem": {
           "description": "Tek tek dosyaları geri yüklemek saatler alır. Tüm ortamları yeniden oluşturmak günler alır. Üretim sunucunuz çöktüğünde sadece dosyaların geri gelmesine ihtiyacınız yok — her şeyin geri gelmesine ihtiyacınız var. Sunucu, yapılandırma, veritabanı, ağ ayarları. Hepsi.",
@@ -8830,13 +8836,13 @@
           },
           "title": "Bozuk CI/CD size ne kadara mal oluyor",
           "withAnnual": "$0",
-          "withoutTag": "ÖZEL BETİKLER",
           "withResults": {
             "blocked": "0 saat",
             "bugs": "0",
             "debug": "0 saat"
           },
-          "withTag": "REDİACC İLE"
+          "withTag": "REDİACC İLE",
+          "withoutTag": "ÖZEL BETİKLER"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -8994,7 +9000,7 @@
         "meta": {
           "description": "Git push yeni bir ortam tetikler. Testler üretim klonlarında çalışır. CI/CD özel betik gerektirmeden çalışır.",
           "keywords": "CI/CD entegrasyonu, GitLab CI, GitHub Actions, webhook, üretim klonu, test ortamı, pipeline otomasyonu",
-          "title": "CI/CD Entegrasyonları — Mevcut İş Akışınıza Bağlanın | Rediacc"
+          "title": "CI/CD Entegrasyonları - İş Akışınıza Bağlanın | Rediacc"
         },
         "problem": {
           "description": "Birisi pipeline'ınızda test ortamları hazırlamak için 200 satırlık bir bash betiği yazdı. Şirketten ayrıldı. Betik her ay bozuluyor. Kimse anlamıyor. CI/CD pipeline'ınız bant ve umutla ayakta duruyor.",
@@ -9287,13 +9293,13 @@
           },
           "title": "Göç riski size ne kadara mal oluyor",
           "withAnnual": "$0",
-          "withoutTag": "Rediacc Olmadan",
           "withResults": {
             "labor": "$0",
             "risk": "0 TB",
             "windows": "0 saat"
           },
-          "withTag": "Rediacc ile"
+          "withTag": "Rediacc ile",
+          "withoutTag": "Rediacc Olmadan"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -9488,7 +9494,7 @@
         "meta": {
           "description": "Sunucular, bulutlar veya sağlayıcılar arasında geçiş mi yapıyorsunuz? Şifrelenmiş yedeklemeleriniz güvenle taşınır. Maruz kalma yok. Veri kaybı yok.",
           "keywords": "şifreli göç, sıfır maruziyetli transfer, veri göçü güvenliği, şifreli yedekleme transferi, btrfs göçü, sunucu göçü, bulut göçü şifreleme",
-          "title": "Göç Güvenliği — Verilerinizi Riske Atmadan Göç Edin | Rediacc"
+          "title": "Göç Güvenliği - Risksiz Veri Taşıma | Rediacc"
         },
         "problem": {
           "description": "Sistemler arasında veri taşımak maruz kalma oluşturur. Geçici dosyalar, şifrelenmemiş transferler, uyumsuz yapılandırmalar. Her göç bir risk penceresidir. Ve çoğu araç taşıma sırasında şifreleme ayarlarını kaybeder — diğer tarafta her şeyi sıfırdan yeniden yapılandırmanızı gerektirir.",
@@ -9792,13 +9798,13 @@
           },
           "title": "Ortam uyumsuzluğu size ne kadara mal oluyor",
           "withAnnual": "$0",
-          "withoutTag": "REDİACC OLMADAN",
           "withResults": {
             "capacity": "0%",
             "debug": "0 saat",
             "incidents": "0"
           },
-          "withTag": "REDİACC İLE"
+          "withTag": "REDİACC İLE",
+          "withoutTag": "REDİACC OLMADAN"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -9983,7 +9989,7 @@
         "meta": {
           "description": "Artık \"benim makinemde çalışıyor\" yok. Her geliştirme ortamı üretim ortamının birebir klonudur.",
           "keywords": "üretim eşliği, ortam sapması, geliştirme ortamı, birebir klon, btrfs klonu, copy-on-write, yapılandırma eşleşmesi",
-          "title": "Üretim Eşliği — Üretim Ortamıyla Birebir Eşleşen Geliştirme Ortamları | Rediacc"
+          "title": "Üretim Eşliği - Birebir Ortam Eşleşmesi | Rediacc"
         },
         "problem": {
           "description": "Geliştirme ortamınız farklı bir işletim sistemi sürümü çalıştırıyor. Farklı kütüphane sürümleri. Farklı yapılandırmalar. Kod geliştirme ortamında her testi geçiyor, sonra üretimde bozuluyor. Bu hatalar bulunması zor ve düzeltmesi pahalıdır. Geliştirme ortamının üretim ortamıyla eşleşmemesinden kaynaklanır.",
@@ -10263,14 +10269,14 @@
           },
           "title": "Yavaş kurtarma size ne kadara mal oluyor?",
           "withAnnual": "Yıllık kesinti maliyeti",
-          "withoutTag": "REDİACC OLMADAN",
           "withResults": {
             "churn": "Müşteri kaybı maliyeti",
             "labor": "Kurtarma işçiliği",
             "regulatory": "Düzenleyici / itibar",
             "revLost": "Olay başına kaybedilen gelir"
           },
-          "withTag": "REDİACC İLE"
+          "withTag": "REDİACC İLE",
+          "withoutTag": "REDİACC OLMADAN"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -10460,7 +10466,7 @@
         "meta": {
           "description": "Fidye yazılımı saldırdığında her dakika para kaybettirir. Rediacc hasar yayılmadan sizi tekrar çevrimiçi getirir.",
           "keywords": "hızlı kurtarma, fidye yazılımı kurtarma, felaket kurtarma, btrfs geri yükleme, hızlı kurtarma",
-          "title": "Hızlı Kurtarma — Rediacc"
+          "title": "Hızlı Kurtarma - Felaket Müdahalesi | Rediacc"
         },
         "problem": {
           "description": "Çoğu ekip fidye yazılımından sonra günlerce yeniden oluşturmayla geçirir. Bu arada müşteriler size ulaşamaz. Gelir durur. Güven kırılır. Saldırı bir saat sürer. Kurtarma bir hafta alır. Asıl hasar budur — ve ortalama fidye yazılımı kurtarması 24 gün sürer.",
@@ -10748,14 +10754,14 @@
           },
           "title": "Manuel uyumluluk size ne kadara mal oluyor?",
           "withAnnual": "$0",
-          "withoutTag": "Rediacc Olmadan",
           "withResults": {
             "gaps": "0",
             "labor": "$0",
             "penalty": "$0",
             "prepHours": "4 saat"
           },
-          "withTag": "Rediacc ile"
+          "withTag": "Rediacc ile",
+          "withoutTag": "Rediacc Olmadan"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -10951,7 +10957,7 @@
         "meta": {
           "description": "Uyumluluk gereksinimlerini karşılayan yapılandırılabilir saklama politikaları. HIPAA, SOC2, GDPR — varsayılan olarak kapsanır.",
           "keywords": "saklama uyumluluğu, veri saklama, HIPAA uyumluluğu, SOC2, GDPR, yedekleme saklama, denetim hazır, uyumluluk otomasyonu",
-          "title": "Saklama Uyumluluğu — Yasanın Gerektirdiği Sürece Veri Saklayın | Rediacc"
+          "title": "Saklama Uyumluluğu - Yasal Veri Saklama | Rediacc"
         },
         "problem": {
           "description": "Düzenlemeler belirli süreler boyunca veri saklamanızı gerektirir. Hedefi kaçırırsanız para cezaları, denetimler ve hukuki sorunlarla karşılaşırsınız. Çoğu yedekleme aracı saklamayı sonradan düşünür. Sonunda bunu elektronik tablolar ve umutla yönetirsiniz.",
@@ -11291,14 +11297,14 @@
           },
           "title": "Yama atlamak size ne kadara mal oluyor?",
           "withAnnual": "$0",
-          "withoutTag": "Rediacc Olmadan",
           "withResults": {
             "breach": "Minimum",
             "downtime": "$0",
             "exposure": "0 gün",
             "labor": "$0"
           },
-          "withTag": "Rediacc ile"
+          "withTag": "Rediacc ile",
+          "withoutTag": "Rediacc Olmadan"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -11493,7 +11499,7 @@
         "meta": {
           "description": "Üretim ortamınızı klonlayın. Yamayı uygulayın. Neyin bozulduğunu görün. Gerekirse geri alın. Üretim ortamına dokunmadan.",
           "keywords": "güvenli işletim sistemi testi, yama testi, işletim sistemi güncelleme testi, btrfs klonu, üretim klonu, sıfır riskli yamalama, güncelleme doğrulama",
-          "title": "Güvenli İşletim Sistemi Testi — Güncellemeleri Risksiz Test Edin | Rediacc"
+          "title": "Güvenli OS Testi - Risksiz Güncelleme | Rediacc"
         },
         "problem": {
           "description": "Yama yapmanız gerekiyor. Ama her güncelleme bir kumar. Bir şeyi bozacak mı? Canlıya alana kadar bilemezsiniz. Çoğu ekip ya yamaları atlar (riskli) ya da üretim ortamıyla eşleşmeyen ortamlarda test eder (işe yaramaz). İkisi de yeterli değil.",
@@ -11804,14 +11810,14 @@
           },
           "title": "Sağlayıcı bağımlılığı size ne kadara mal oluyor?",
           "withAnnual": "Yıllık bağımlılık vergisi",
-          "withoutTag": "BAĞIMLI",
           "withResults": {
             "egress": "Çıkış veri transfer ücretleri",
             "leverage": "Yeniden müzakere gücü",
             "markup": "Piyasa üzeri sağlayıcı farkı",
             "migrate": "Göç maliyeti"
           },
-          "withTag": "REDİACC İLE"
+          "withTag": "REDİACC İLE",
+          "withoutTag": "BAĞIMLI"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -12268,9 +12274,9 @@
           },
           "title": "Yavaş yamalama size ne kadara mal oluyor?",
           "withAnnual": "",
-          "withoutTag": "Rediacc Olmadan",
           "withResults": {},
-          "withTag": "Rediacc ile"
+          "withTag": "Rediacc ile",
+          "withoutTag": "Rediacc Olmadan"
         },
         "explore": {
           "solutions": [
@@ -12413,7 +12419,7 @@
         "meta": {
           "description": "Güvenli klonlarda güvenlik açıklarını bulun, test edin ve yamalayın. Yamaları güvenle üretime dağıtın.",
           "keywords": "güvenlik açığı yönetimi, yama doğrulaması, CVE iyileştirme, klon tabanlı yamalama, güvenli yamalama, güvenlik testi, güvenlik açığı düzeltme doğrulaması",
-          "title": "Güvenlik Açığı Yönetimi — Saldırganlar Gelmeden Güvenlik Açıklarını Düzeltin | Rediacc"
+          "title": "Güvenlik Açığı Yönetimi - Proaktif Düzeltme | Rediacc"
         },
         "problem": {
           "description": "Bir güvenlik açığı buldunuz. Şimdi yamanız gerekiyor. Ama yama bir şeyi bozacak mı? Üretimde test edemezsiniz. Ve staging ortamınız 3 hafta geride. Ya yamayı aceleyle yapıp umarsınız, ya da bekleyip maruz kalırsınız. İkisi de iyi bir seçenek değil — ve ikisi de para kaybettirir.",
@@ -12721,12 +12727,12 @@
       },
       "hero": {
         "effectiveDate": "Yürürlük Tarihi: 1 Şubat 2026",
-        "title": "Telemetri Politikası"
+        "title": "Telemetri Uygulamalarımız"
       },
       "meta": {
-        "description": "Rediacc ürünlerinin hangi telemetri verilerini topladığı, neden topladığı, nasıl işlendiği ve nasıl devre dışı bırakılacağı hakkında ayrıntılar. Web Uygulaması, CLI, Middleware ve Bridge'i kapsar.",
+        "description": "Rediacc ürünlerinin hangi telemetri verilerini topladığı, neden topladığı ve nasıl devre dışı bırakılacağı hakkında bilgiler.",
         "keywords": "telemetri politikası, veri toplama, OpenTelemetry, devre dışı bırakma, gizlilik, GDPR, Rediacc",
-        "title": "Telemetri Politikası — Rediacc"
+        "title": "Telemetri Politikası - Veri Toplama Bilgileri | Rediacc"
       },
       "related": {
         "title": "İlgili Politikalar"
@@ -12961,12 +12967,12 @@
       },
       "hero": {
         "effectiveDate": "Yürürlük Tarihi: 1 Şubat 2026",
-        "title": "Hizmet Koşulları"
+        "title": "Kullanım Koşulları ve Şartlar"
       },
       "meta": {
         "description": "Rediacc web sitesi ve altyapı otomasyon platformunun kullanımını düzenleyen koşullar.",
         "keywords": "hizmet koşulları, kullanım şartları, kullanıcı sözleşmesi, Rediacc",
-        "title": "Hizmet Koşulları — Rediacc"
+        "title": "Hizmet Koşulları - Yasal Sözleşme | Rediacc"
       },
       "related": {
         "title": "İlgili Politikalar"
