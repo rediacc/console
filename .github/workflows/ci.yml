@@ -159,7 +159,11 @@ jobs:
           sparse-checkout: |
             .ci/scripts
             workers/www
-            private/account/drizzle
+
+      - name: Init account submodule (drizzle migrations only)
+        run: |
+          git submodule update --init --depth 1 private/account
+          cd private/account && git sparse-checkout set drizzle
 
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
