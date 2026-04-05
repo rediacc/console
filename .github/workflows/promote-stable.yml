@@ -245,7 +245,7 @@ jobs:
           echo "  marketing (install.sh): OK"
 
           while read -r domain; do
-            HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" "https://${domain}/health" 2>/dev/null || echo "000")
+            HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" "https://${domain}/account/api/v1/.well-known/server-info" 2>/dev/null || echo "000")
             if [[ "$HTTP_CODE" == "200" ]]; then
               echo "  ${domain} health: OK"
             else
