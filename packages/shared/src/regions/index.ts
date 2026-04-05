@@ -10,9 +10,9 @@ import { importPublicKey, verifySignature } from '../subscription/crypto.js';
 import { SIGNING_KEYS } from '../subscription/signing-keys.js';
 import type { SignedSubscriptionBlob } from '../subscription/types.js';
 
-// Baked-in fallback regions (imported from regions.json at build time).
-// These are always available, even offline or when the marketing site is down.
-import regionsData from '../../../../regions.json';
+// Baked-in fallback regions. This is a copy of the root regions.json
+// kept in sync by the build process. Always available, even offline.
+import regionsData from './data.json';
 
 export interface RegionInfo {
   id: string;

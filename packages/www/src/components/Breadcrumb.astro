@@ -18,13 +18,17 @@ const { items, showStructuredData = true, class: className = '' } = Astro.props;
 const lang = getLanguageFromPath(Astro.url.pathname);
 const { t } = createTranslator(lang);
 
+// Resolve absolute URLs for structured data (Google requires absolute URLs in itemListElement.item)
+const origin = Astro.site?.origin ?? Astro.url.origin;
+const toAbsolute = (url: string) => url.startsWith('http') ? url : `${origin}${url}`;
+
 // Generate structured data for breadcrumbs
 const breadcrumbStructuredData = {
   items: items.map((item, index) => ({
     '@type': 'ListItem',
     position: index + 1,
     name: item.name,
-    item: item.url
+    item: toAbsolute(item.url)
   }))
 };
 
@@ -45,13 +49,16 @@ const lastIndex = items.length - 1;
         itemtype="https://schema.org/ListItem"
       >
         {index === lastIndex ? (
-          <span
-            class="breadcrumb-text"
-            itemprop="name"
-            aria-current="page"
-          >
-            {item.name}
-          </span>
+          <>
+            <span
+              class="breadcrumb-text"
+              itemprop="name"
+              aria-current="page"
+            >
+              {item.name}
+            </span>
+            <link itemprop="item" href={toAbsolute(item.url)} />
+          </>
         ) : (
           <a
             href={item.url}
