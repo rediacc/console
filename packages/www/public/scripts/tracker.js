@@ -15,7 +15,6 @@
  */
 (function () {
   let p = window.plausible;
-  if (!p) return;
 
   const path = function () {
     return location.pathname;
