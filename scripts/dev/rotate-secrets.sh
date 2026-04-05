@@ -416,7 +416,7 @@ sync_worker_secret() {
 worker_region() {
     local worker="$1"
     case "$worker" in
-        rediacc-us | edge-rediacc-us) echo "us" ;;
+        rediacc-account-us | edge-rediacc-account-us) echo "us" ;;
         *) echo "eu" ;;
     esac
 }
@@ -490,7 +490,7 @@ sync_secrets_to_workers() {
     while IFS= read -r name; do
         [[ -z "$name" ]] && continue
         case "$name" in
-            rediacc-www | edge-rediacc-www | rediacc-eu | edge-rediacc-eu | rediacc-us | edge-rediacc-us | pr-*)
+            rediacc-www | edge-rediacc-www | rediacc-account-eu | edge-rediacc-account-eu | rediacc-account-us | edge-rediacc-account-us | pr-*)
                 target_workers+=("$name")
                 ;;
         esac
