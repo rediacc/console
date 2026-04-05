@@ -13223,9 +13223,9 @@
   "regionPicker": {
     "footer": "请选择离您最近的区域，或您的组织要求的区域。注册后无法更改。",
     "locations": {
+      "asia": "Tokyo, Japan",
       "eu": "法兰克福，德国",
-      "us": "弗吉尼亚，美国",
-      "asia": "Tokyo, Japan"
+      "us": "弗吉尼亚，美国"
     },
     "subtitle": "您的账户、账单和配置等所有数据都保存在您选择的区域中，绝不会离开该区域。",
     "title": "您希望将数据存储在哪里？"
@@ -13299,6 +13299,7 @@
     "enableCaptions": "开启字幕",
     "playVideo": "播放视频",
     "toggleFullscreen": "切换全屏",
-    "volume": "音量"
+    "volume": "音量",
+    "youtubeTitle": "Product introduction"
   }
 }
