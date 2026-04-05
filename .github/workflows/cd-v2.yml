@@ -604,7 +604,7 @@ jobs:
   smoke-test:
     name: Smoke Test
     runs-on: ubuntu-slim
-    needs: [init, publish, deploy-edge]
+    needs: [init, publish, deploy-marketing-edge, deploy-account-edge]
     if: >-
       success() &&
       needs.init.outputs.skip_release != 'true'
@@ -682,7 +682,7 @@ jobs:
   housekeeping:
     name: Housekeeping
     runs-on: ubuntu-slim
-    needs: [init, publish, deploy-edge, deploy-production, smoke-test]
+    needs: [init, publish, deploy-marketing-edge, deploy-account-edge, deploy-marketing-production, deploy-account-production, smoke-test]
     if: >-
       always() &&
       needs.publish.result == 'success' &&
