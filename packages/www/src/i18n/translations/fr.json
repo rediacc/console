@@ -13293,9 +13293,9 @@
   "regionPicker": {
     "footer": "Choisissez la région la plus proche de vous ou celle requise par votre organisation. Ce choix ne peut pas être modifié après l'inscription.",
     "locations": {
+      "asia": "Tokyo, Japan",
       "eu": "Francfort, Allemagne",
-      "us": "Virginie, États-Unis",
-      "asia": "Tokyo, Japan"
+      "us": "Virginie, États-Unis"
     },
     "subtitle": "Tout, votre compte, votre facturation et vos configurations, reste dans la région que vous choisissez. Rien n'en sort jamais.",
     "title": "Où souhaitez-vous stocker vos données ?"
@@ -13369,6 +13369,7 @@
     "enableCaptions": "Activer les sous-titres",
     "playVideo": "Lire la vidéo",
     "toggleFullscreen": "Basculer en plein écran",
-    "volume": "Volume"
+    "volume": "Volume",
+    "youtubeTitle": "Product introduction"
   }
 }

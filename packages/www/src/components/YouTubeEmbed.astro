@@ -1,0 +1,115 @@
+---
+interface Props {
+  videoId: string;
+  title: string;
+  class?: string;
+  thumbnailQuality?: 'default' | 'hqdefault' | 'sddefault' | 'maxresdefault';
+  playLabel?: string;
+}
+
+const {
+  videoId,
+  title,
+  class: className,
+  thumbnailQuality = 'maxresdefault',
+  playLabel = 'Play video',
+} = Astro.props;
+
+const thumbUrl = `https://i.ytimg.com/vi/${videoId}/${thumbnailQuality}.jpg`;
+---
+
+<div
+  class:list={['yt-embed', className]}
+  data-yt-id={videoId}
+  data-yt-title={title}
+>
+  <button type="button" class="yt-facade" aria-label={playLabel}>
+    <img
+      src={thumbUrl}
+      alt=""
+      class="yt-poster"
+      loading="lazy"
+      decoding="async"
+    />
+    <span class="yt-play-overlay">
+      <svg class="yt-play-icon" viewBox="0 0 68 48" aria-hidden="true">
+        <path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55C3.97 2.33 2.27 4.81 1.48 7.74.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z" fill="#e11d48"/>
+        <path d="M45 24 27 14v20z" fill="#fff"/>
+      </svg>
+    </span>
+  </button>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.yt-embed').forEach((wrapper) => {
+    const facade = wrapper.querySelector<HTMLButtonElement>('.yt-facade');
+    if (!facade || wrapper.dataset.ytBound) return;
+    wrapper.dataset.ytBound = '1';
+
+    facade.addEventListener('click', () => {
+      const videoId = wrapper.dataset.ytId;
+      const title = wrapper.dataset.ytTitle;
+      if (!videoId) return;
+
+      const iframe = document.createElement('iframe');
+      iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`;
+      iframe.title = title ?? 'YouTube video';
+      iframe.allow =
+        'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      iframe.setAttribute('allowfullscreen', '');
+      iframe.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;';
+      facade.remove();
+      wrapper.appendChild(iframe);
+    });
+  });
+</script>
+
+<style>
+  .yt-embed {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #0a0a0a;
+  }
+
+  .yt-facade {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+    width: 100%;
+    height: 100%;
+  }
+
+  .yt-poster {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .yt-play-overlay {
+    position: relative;
+    z-index: 1;
+  }
+
+  .yt-play-icon {
+    width: 68px;
+    height: 48px;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+    transition: opacity 0.15s ease;
+  }
+
+  .yt-facade:hover .yt-play-icon {
+    opacity: 0.85;
+  }
+
+</style>

@@ -13283,9 +13283,9 @@
   "regionPicker": {
     "footer": "最寄りのリージョン、または組織が求めるリージョンを選択してください。登録後に変更することはできません。",
     "locations": {
+      "asia": "Tokyo, Japan",
       "eu": "フランクフルト、ドイツ",
-      "us": "バージニア、アメリカ",
-      "asia": "Tokyo, Japan"
+      "us": "バージニア、アメリカ"
     },
     "subtitle": "アカウント、請求、設定など、すべてのデータは選択したリージョンに保存されます。そこから外に出ることはありません。",
     "title": "データの保存先はどこにしますか？"
@@ -13359,6 +13359,7 @@
     "enableCaptions": "字幕を有効にする",
     "playVideo": "動画を再生",
     "toggleFullscreen": "フルスクリーン切替",
-    "volume": "音量"
+    "volume": "音量",
+    "youtubeTitle": "Product introduction"
   }
 }

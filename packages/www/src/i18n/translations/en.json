@@ -13348,6 +13348,7 @@
   },
   "video": {
     "playVideo": "Play video",
+    "youtubeTitle": "Product introduction",
     "volume": "Volume",
     "enableCaptions": "Enable captions",
     "disableCaptions": "Disable captions",

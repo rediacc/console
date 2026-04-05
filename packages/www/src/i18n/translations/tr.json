@@ -13279,9 +13279,9 @@
   "regionPicker": {
     "footer": "Size en yakın bölgeyi veya kuruluşunuzun gerektirdiği bölgeyi seçin. Kayıt sonrasında bu değiştirilemez.",
     "locations": {
+      "asia": "Tokyo, Japan",
       "eu": "Frankfurt, Almanya",
-      "us": "Virginia, ABD",
-      "asia": "Tokyo, Japan"
+      "us": "Virginia, ABD"
     },
     "subtitle": "Hesabınız, faturalarınız ve yapılandırmalarınız dahil her şey seçtiğiniz bölgede kalır. Asla oradan ayrılmaz.",
     "title": "Verilerinizi nerede saklayalım?"
@@ -13355,6 +13355,7 @@
     "enableCaptions": "Altyazıları aç",
     "playVideo": "Videoyu oynat",
     "toggleFullscreen": "Tam ekran geçişi",
-    "volume": "Ses"
+    "volume": "Ses",
+    "youtubeTitle": "Product introduction"
   }
 }

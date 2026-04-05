@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 7740,
-    "sourceCommit": "5fb722a0e65b5d56f47349c64cdb7d969fe42586"
+    "keyCount": 7741,
+    "sourceCommit": "d2d7b0bd87090dc5d54dff6f0d6e1c853f269e17"
   },
   "hashes": {
     "announcement.link": "0cc49471",
@@ -7745,6 +7745,7 @@
     "video.enableCaptions": "d2165d60",
     "video.playVideo": "38318154",
     "video.toggleFullscreen": "1641f967",
-    "video.volume": "be36c8e8"
+    "video.volume": "be36c8e8",
+    "video.youtubeTitle": "ffdc8ff5"
   }
 }
