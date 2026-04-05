@@ -9,8 +9,8 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    // Health check + Account API: delegate to Hono app
-    if (url.pathname === '/health' || url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
+    // Account API: delegate to Hono app (handles auth, billing, configs, webhooks, etc.)
+    if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
       return accountApp.fetch(request, env);
     }
 
