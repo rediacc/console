@@ -220,3 +220,33 @@ jobs:
       AWS_SES_ACCESS_KEY_ID_US: ${{ secrets.AWS_SES_ACCESS_KEY_ID_US }}
       AWS_SES_SECRET_ACCESS_KEY_US: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_US }}
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+
+  # Verify production endpoints after deployment
+  verify-production:
+    name: Verify production
+    needs: [promote, deploy-marketing-production, deploy-account-production]
+    if: needs.promote.outputs.promoted == 'true'
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: regions.json
+          sparse-checkout-cone-mode: false
+
+      - name: Verify production endpoints
+        run: |
+          echo "Verifying production deployment..."
+
+          curl -fsSL https://www.rediacc.com/install.sh -o /dev/null
+          echo "  marketing (install.sh): OK"
+
+          while read -r domain; do
+            HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" "https://${domain}/account/api/v1/health" 2>/dev/null || echo "000")
+            if [[ "$HTTP_CODE" == "200" ]]; then
+              echo "  ${domain} health: OK"
+            else
+              echo "::warning::${domain} health check returned HTTP ${HTTP_CODE}"
+            fi
+          done < <(jq -r '.regions[] | .domain' regions.json)
+
+          echo "Production verification complete"
