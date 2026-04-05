@@ -4,7 +4,7 @@ description: "在 Rediacc 平台上构建应用程序的基本规则和约定。
 category: "Guides"
 order: 5
 language: zh
-sourceHash: "17f2cc084c2782cc"
+sourceHash: "9bd7744a0b8bbf3c"
 sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
@@ -14,11 +14,11 @@ sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 
 ## Rediaccfile
 
-- **每个仓库都需要一个 Rediaccfile** — 一个包含生命周期函数的 bash 脚本。
+- **每个仓库都需要一个 Rediaccfile**, 一个包含生命周期函数的 bash 脚本。
 - **生命周期函数**：`up()`、`down()`。可选：`info()`。
 - `up()` 启动您的服务。`down()` 停止它们。
 - `info()` 提供状态信息（容器状态、最近日志、健康状况）。
-- Rediaccfile 由 renet source 加载 — 它可以访问 shell 变量，而不仅仅是环境变量。
+- Rediaccfile 由 renet source 加载, 它可以访问 shell 变量，而不仅仅是环境变量。
 
 ### Rediaccfile 中可用的环境变量
 
@@ -49,12 +49,12 @@ down() {
 
 ## Compose
 
-- **使用 `renet compose`，永远不要使用 `docker compose`** — renet 会注入网络隔离、主机网络、回环 IP 和服务标签。
-- **不要在 compose 文件中设置 `network_mode`** — renet 会对所有服务强制设置 `network_mode: host`。您设置的任何值都会被覆盖。
-- **不要设置 `rediacc.*` 标签** — renet 会自动注入 `rediacc.network_id`、`rediacc.service_ip` 和 `rediacc.service_name`。
+- **使用 `renet compose`，永远不要使用 `docker compose`**, renet 会注入网络隔离、主机网络、回环 IP 和服务标签。
+- **不要在 compose 文件中设置 `network_mode`**, renet 会对所有服务强制设置 `network_mode: host`。您设置的任何值都会被覆盖。
+- **不要设置 `rediacc.*` 标签**, renet 会自动注入 `rediacc.network_id`、`rediacc.service_ip` 和 `rediacc.service_name`。
 - **`ports:` 映射在主机网络模式下被忽略**。使用 `rediacc.service_port` 标签将代理路由到非 80 端口。
-- **重启策略（`restart: always`、`on-failure` 等）可以安全使用** — renet 会自动剥离它们以兼容 CRIU。路由器 watchdog 会根据保存在 `.rediacc.json` 中的原始策略自动恢复已停止的容器。
-- **危险设置默认被阻止** — `privileged: true`、`pid: host`、`ipc: host` 以及对系统路径的绑定挂载会被拒绝。使用 `renet compose --unsafe` 可自行承担风险覆盖此行为。
+- **重启策略（`restart: always`、`on-failure` 等）可以安全使用**, renet 会自动剥离它们以兼容 CRIU。路由器 watchdog 会根据保存在 `.rediacc.json` 中的原始策略自动恢复已停止的容器。
+- **危险设置默认被阻止**, `privileged: true`、`pid: host`、`ipc: host` 以及对系统路径的绑定挂载会被拒绝。使用 `renet compose --unsafe` 可自行承担风险覆盖此行为。
 
 ### 容器内的环境变量
 
@@ -69,17 +69,17 @@ Renet 会自动将以下变量注入每个容器：
 
 - The compose **service name** becomes the auto-route URL prefix.
 - **Grand repos**：`https://{service}.{repo}.{machine}.{baseDomain}`（例如：`https://myapp.marketing.server-1.example.com`）。
-- **Fork repos**: `https://{service}-{tag}.{machine}.{baseDomain}` — uses the machine wildcard cert to avoid Let's Encrypt rate limits.
-- 对于自定义域名，请使用 Traefik 标签（注意：自定义域名不兼容 fork — 域名属于 grand repo）。
+- **Fork repos**: `https://{service}-{tag}.{machine}.{baseDomain}`, uses the machine wildcard cert to avoid Let's Encrypt rate limits.
+- 对于自定义域名，请使用 Traefik 标签（注意：自定义域名不兼容 fork, 域名属于 grand repo）。
 
 ## 网络
 
 - **每个仓库获得自己的 Docker 守护进程**，位于 `/var/run/rediacc/docker-<networkId>.sock`。
 - **每个服务在 /26 子网内获得唯一的回环 IP**（例如 `127.0.24.192/26`）。
-- **绑定到 `SERVICE_IP`** — 每个服务获得唯一的回环 IP。
+- **绑定到 `SERVICE_IP`**, 每个服务获得唯一的回环 IP。
 - **健康检查必须使用 `${SERVICE_IP}`**，而不是 `localhost`。示例：`healthcheck: test: ["CMD", "curl", "-f", "http://${SERVICE_IP}:8080/health"]`
 - **服务间通信**：使用回环 IP 或 `SERVICE_IP` 环境变量。Docker DNS 名称在主机模式下不起作用。
-- **仓库之间不可能发生端口冲突** — 每个仓库都有自己的 Docker 守护进程和 IP 范围。
+- **仓库之间不可能发生端口冲突**, 每个仓库都有自己的 Docker 守护进程和 IP 范围。
 - **TCP/UDP 端口转发**：添加标签以公开非 HTTP 端口：
   ```yaml
   labels:
@@ -89,7 +89,7 @@ Renet 会自动将以下变量注入每个容器：
 
 ## 存储
 
-- **所有 Docker 数据都存储在加密仓库内** — Docker 的 `data-root` 位于 LUKS 卷内的 `{mount}/.rediacc/docker/data`。命名卷、镜像和容器层全部加密、备份，并自动 fork。
+- **所有 Docker 数据都存储在加密仓库内**, Docker 的 `data-root` 位于 LUKS 卷内的 `{mount}/.rediacc/docker/data`。命名卷、镜像和容器层全部加密、备份，并自动 fork。
 - **推荐使用 `${REDIACC_WORKING_DIR}/...` 绑定挂载**以保持清晰，但命名卷也可以安全使用。
   ```yaml
   volumes:
@@ -104,21 +104,21 @@ Renet 会自动将以下变量注入每个容器：
 
 - **通过标签选择性启用**: 为需要创建检查点的容器添加`rediacc.checkpoint=true`。没有此标签的容器（数据库、缓存）将全新启动并通过自身机制（WAL、LDF、AOF）恢复。
 - **`backup push --checkpoint`** 捕获标记容器的运行进程内存状态 + 磁盘状态。
-- **`repo fork --checkpoint`** 在fork前捕获进程状态 — fork在`repo up`时自动恢复。
-- **`repo down --checkpoint`** 在停止前保存进程状态 — 下次`repo up`自动恢复。
+- **`repo fork --checkpoint`** 在fork前捕获进程状态, fork在`repo up`时自动恢复。
+- **`repo down --checkpoint`** 在停止前保存进程状态, 下次`repo up`自动恢复。
 - **`repo up`** 自动检测检查点数据并在找到时恢复。使用`--skip-checkpoint`强制全新启动。
 - **依赖感知恢复**: 使用compose的`depends_on`先启动数据库（等待healthy），然后CRIU恢复应用容器。
-- **TCP连接在恢复后变为过期** — 应用程序必须处理`ECONNRESET`并重新连接。
+- **TCP连接在恢复后变为过期**, 应用程序必须处理`ECONNRESET`并重新连接。
 - **Docker实验模式**在每个仓库的守护进程上自动启用。
 - **CRIU在** `rdc config machine setup` 期间安装。
 - **`/etc/criu/runc.conf`** 配置了`tcp-established`用于TCP连接保持。
-- **容器安全设置为标记容器自动注入** — `renet compose`为带有`rediacc.checkpoint=true`的容器添加以下内容：
+- **容器安全设置为标记容器自动注入**, `renet compose`为带有`rediacc.checkpoint=true`的容器添加以下内容：
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN`（内核5.9+上CRIU的最小集合）
   - `security_opt`: `apparmor=unconfined`（CRIU的AppArmor支持在上游尚不稳定）
   - `userns_mode: host`（CRIU需要init命名空间访问`/proc/pid/map_files`）
 - 没有标签的容器以更干净的安全姿态运行（无额外capabilities）。
-- Docker的默认seccomp配置文件被保留 — CRIU使用`PTRACE_O_SUSPEND_SECCOMP`（内核4.3+）在checkpoint/restore期间临时暂停过滤器。
-- **不要在compose文件中手动设置CRIU capabilities** — renet会根据标签进行处理。
+- Docker的默认seccomp配置文件被保留, CRIU使用`PTRACE_O_SUSPEND_SECCOMP`（内核4.3+）在checkpoint/restore期间临时暂停过滤器。
+- **不要在compose文件中手动设置CRIU capabilities**, renet会根据标签进行处理。
 - 参见 [heartbeat 模板](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) 了解 CRIU 兼容的参考实现。
 
 ### CRIU 兼容的应用模式
@@ -127,7 +127,7 @@ Renet 会自动将以下变量注入每个容器：
 - 使用支持自动重连的连接池库。
 - 添加 `process.on("uncaughtException")` 作为内部库对象产生的陈旧套接字错误的安全网。
 - 重启策略由 renet 自动管理（为 CRIU 剥离，watchdog 处理恢复）。
-- 避免依赖 Docker DNS — 使用回环 IP 进行服务间通信。
+- 避免依赖 Docker DNS, 使用回环 IP 进行服务间通信。
 
 ## 安全
 
@@ -149,11 +149,11 @@ Renet 会自动将以下变量注入每个容器：
 
 ## 常见错误
 
-- 使用 `docker compose` 而不是 `renet compose` — 容器将无法获得网络隔离。
-- 重启策略是安全的 — renet 自动剥离它们，watchdog 处理恢复。
-- 使用 `privileged: true` — 没有必要，renet 会改为注入特定的 CRIU capabilities。
-- 不绑定到 `SERVICE_IP` — 会导致仓库之间的端口冲突。
-- 硬编码 IP — 使用 `SERVICE_IP` 环境变量；IP 按 networkId 动态分配。
-- 在 `backup push` 后首次部署时忘记 `--mount` — LUKS 卷需要显式打开。
-- 使用 `rdc term connect -c` 作为失败命令的变通方法 — 请改为报告 bug。
+- 使用 `docker compose` 而不是 `renet compose`, 容器将无法获得网络隔离。
+- 重启策略是安全的, renet 自动剥离它们，watchdog 处理恢复。
+- 使用 `privileged: true`, 没有必要，renet 会改为注入特定的 CRIU capabilities。
+- 不绑定到 `SERVICE_IP`, 会导致仓库之间的端口冲突。
+- 硬编码 IP, 使用 `SERVICE_IP` 环境变量；IP 按 networkId 动态分配。
+- 在 `backup push` 后首次部署时忘记 `--mount`, LUKS 卷需要显式打开。
+- 使用 `rdc term connect -c` 作为失败命令的变通方法, 请改为报告 bug。
 - `repo delete` 执行完整清理，包括回环 IP 和 systemd 单元。运行 `rdc machine prune <name>` 清理旧版删除操作遗留的残余。

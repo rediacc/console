@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: fr
-sourceHash: "4a2050fece1accbb"
+sourceHash: "f4949653be4a11cd"
 ---
 
 # Services
@@ -57,7 +57,7 @@ Les variables `{SERVICE}_IP` sont auto-générées à partir de `.rediacc.json`.
 
 > **Attention : N'utilisez pas `sudo docker` dans les Rediaccfiles.** La commande `sudo` réinitialise les variables d'environnement, ce qui signifie que `DOCKER_HOST` est perdu et les commandes Docker cibleront le démon système au lieu du démon isolé du dépôt. Cela casse l'isolation des conteneurs et peut causer des conflits de ports.
 >
-> Utilisez `renet compose` dans vos Rediaccfiles — il gère automatiquement `DOCKER_HOST`, injecte les labels réseau pour la découverte des routes et configure le réseau des services. Consultez [Réseau](/fr/docs/networking) pour les détails sur l'exposition des services via le proxy inverse. Si vous appelez Docker directement, utilisez `docker` sans `sudo` — les fonctions du Rediaccfile s'exécutent déjà avec les privilèges suffisants. Si vous devez utiliser sudo, utilisez `sudo -E docker` pour préserver les variables d'environnement.
+> Utilisez `renet compose` dans vos Rediaccfiles, il gère automatiquement `DOCKER_HOST`, injecte les labels réseau pour la découverte des routes et configure le réseau des services. Consultez [Réseau](/fr/docs/networking) pour les détails sur l'exposition des services via le proxy inverse. Si vous appelez Docker directement, utilisez `docker` sans `sudo`, les fonctions du Rediaccfile s'exécutent déjà avec les privilèges suffisants. Si vous devez utiliser sudo, utilisez `sudo -E docker` pour préserver les variables d'environnement.
 
 ### Exemple
 
@@ -167,7 +167,7 @@ services:
       LISTEN_ADDR: ${API_IP}:8080
 ```
 
-> **Note :** N'ajoutez pas `network_mode: host` manuellement — `renet compose` l'injecte automatiquement. Les politiques de redémarrage (p.ex., `restart: always`) sont sûres à utiliser — renet les supprime automatiquement pour la compatibilité CRIU et le watchdog du routeur gère la récupération des conteneurs.
+> **Note :** N'ajoutez pas `network_mode: host` manuellement, `renet compose` l'injecte automatiquement. Les politiques de redémarrage (p.ex., `restart: always`) sont sûres à utiliser, renet les supprime automatiquement pour la compatibilité CRIU et le watchdog du routeur gère la récupération des conteneurs.
 
 > **Note :** Les repos fork obtiennent des auto-routes plates : `{service}-{tag}.{machine}.{baseDomain}`. Les domaines personnalisés sont ignorés pour les forks.
 

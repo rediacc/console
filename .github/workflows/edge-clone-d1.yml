@@ -9,15 +9,35 @@ permissions:
   contents: read
 
 jobs:
-  clone:
-    name: Clone Production D1 to Edge
+  # Read regions.json to build the clone matrix
+  read-regions:
+    name: Read regions
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.regions.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          sparse-checkout: regions.json
+          sparse-checkout-cone-mode: false
+
+      - id: regions
+        run: |
+          echo "matrix=$(jq -c '{include: [.regions[] | {source: .d1.name, target: .edgeD1.name, id}]}' regions.json)" >> "$GITHUB_OUTPUT"
+
+  clone:
+    name: Clone ${{ matrix.id }} D1
+    needs: read-regions
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.read-regions.outputs.matrix) }}
+      fail-fast: false
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           sparse-checkout: |
             .ci/scripts
-            workers/www
+            workers/account
             private/account/drizzle
 
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
@@ -27,8 +47,8 @@ jobs:
       - name: Install wrangler
         run: npm install -g wrangler
 
-      - name: Clone production D1 to edge
+      - name: Clone ${{ matrix.source }} to ${{ matrix.target }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-        run: .ci/scripts/deploy/clone-d1.sh --source account-db --target edge-account-db
+        run: .ci/scripts/deploy/clone-d1.sh --source ${{ matrix.source }} --target ${{ matrix.target }} --sanitize

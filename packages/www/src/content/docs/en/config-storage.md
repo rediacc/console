@@ -9,7 +9,7 @@ sourceHash: "d20655e3e306b85b"
 
 # Config Storage
 
-Config storage provides zero-knowledge encrypted synchronization of your CLI configuration across devices. Your configs are encrypted with keys derived from your passkey — the server never sees plaintext data.
+Config storage provides zero-knowledge encrypted synchronization of your CLI configuration across devices. Your configs are encrypted with keys derived from your passkey, the server never sees plaintext data.
 
 ## Prerequisites
 
@@ -21,10 +21,10 @@ Config storage provides zero-knowledge encrypted synchronization of your CLI con
 
 1. Navigate to **Config Storage** in the sidebar, then click **Set Up Config Storage**
 2. The requirements checklist verifies your browser, 2FA, and session status
-3. Click **Start Setup** — you'll need to touch your security key twice:
+3. Click **Start Setup**, you'll need to touch your security key twice:
    - First touch: registers the passkey
    - Second touch: derives encryption keys via PRF
-4. Setup complete — your passkey secret is stored in your OS keyring
+4. Setup complete, your passkey secret is stored in your OS keyring
 
 After setup, daily CLI operations (push/pull) work without the passkey.
 

@@ -4,7 +4,7 @@ description: Cuándo usar rdc y cuándo usar renet.
 category: Concepts
 order: 1
 language: es
-sourceHash: "8b7443928e0be27e"
+sourceHash: "4f7b74a70b59d9c8"
 ---
 
 # rdc vs renet
@@ -80,6 +80,6 @@ Estos comandos ejecutan `renet` localmente (no mediante SSH). Consulte [VMs Expe
 
 ## Nota sobre el Rediaccfile
 
-Puede ver `renet compose -- ...` dentro de un `Rediaccfile`. Esto es normal — las funciones del Rediaccfile se ejecutan en el servidor donde `renet` está disponible.
+Puede ver `renet compose -- ...` dentro de un `Rediaccfile`. Esto es normal, las funciones del Rediaccfile se ejecutan en el servidor donde `renet` está disponible.
 
 Desde su estación de trabajo, inicie y detenga cargas de trabajo con `rdc repo up` y `rdc repo down`.

@@ -6,12 +6,12 @@ description: >-
 category: Guides
 order: 8
 language: es
-sourceHash: "d20655e3e306b85b"
+sourceHash: "9612a5fecf063eea"
 ---
 
 # Almacenamiento de configuración
 
-El almacenamiento de configuración proporciona sincronización cifrada de conocimiento cero de su configuración CLI entre dispositivos. Sus configuraciones se cifran con claves derivadas de su passkey — el servidor nunca ve datos en texto plano.
+El almacenamiento de configuración proporciona sincronización cifrada de conocimiento cero de su configuración CLI entre dispositivos. Sus configuraciones se cifran con claves derivadas de su passkey, el servidor nunca ve datos en texto plano.
 
 ## Requisitos previos
 
@@ -23,10 +23,10 @@ El almacenamiento de configuración proporciona sincronización cifrada de conoc
 
 1. Navegue a **Almacenamiento de configuración** en la barra lateral, luego haga clic en **Configurar almacenamiento de configuración**
 2. La lista de verificación de requisitos verifica su navegador, 2FA y el estado de la sesión
-3. Haga clic en **Iniciar configuración** — necesitará tocar su clave de seguridad dos veces:
+3. Haga clic en **Iniciar configuración**, necesitará tocar su clave de seguridad dos veces:
    - Primer toque: registra el passkey
    - Segundo toque: deriva las claves de cifrado vía PRF
-4. Configuración completa — su secreto de passkey se almacena en el llavero de su sistema operativo
+4. Configuración completa, su secreto de passkey se almacena en el llavero de su sistema operativo
 
 Después de la configuración, las operaciones diarias del CLI (push/pull) funcionan sin el passkey.
 

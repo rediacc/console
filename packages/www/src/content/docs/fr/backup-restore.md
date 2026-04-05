@@ -6,12 +6,12 @@ description: >-
 category: Guides
 order: 7
 language: fr
-sourceHash: "7f95ad082a023982"
+sourceHash: "137aa1578ca99b8c"
 ---
 
 # Sauvegarde et restauration
 
-Rediacc peut sauvegarder des dépôts chiffrés vers des fournisseurs de stockage externes et les restaurer sur la même machine ou sur une machine différente. Les sauvegardes sont chiffrées — l'identifiant LUKS du dépôt est nécessaire pour la restauration.
+Rediacc peut sauvegarder des dépôts chiffrés vers des fournisseurs de stockage externes et les restaurer sur la même machine ou sur une machine différente. Les sauvegardes sont chiffrées, l'identifiant LUKS du dépôt est nécessaire pour la restauration.
 
 ## Configurer le stockage
 
@@ -154,4 +154,4 @@ rdc storage browse --name my-storage
 - **Planifiez des sauvegardes quotidiennes** vers au moins un fournisseur de stockage
 - **Testez les restaurations** périodiquement pour vérifier l'intégrité des sauvegardes
 - **Utilisez plusieurs fournisseurs de stockage** pour les données critiques (par ex., S3 + B2)
-- **Gardez les identifiants en sécurité** — les sauvegardes sont chiffrées mais l'identifiant LUKS est nécessaire pour la restauration
+- **Gardez les identifiants en sécurité**, les sauvegardes sont chiffrées mais l'identifiant LUKS est nécessaire pour la restauration

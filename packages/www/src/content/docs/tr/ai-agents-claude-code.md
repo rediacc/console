@@ -4,7 +4,7 @@ description: Claude Code'u otonom Rediacc altyapı yönetimi için yapılandırm
 category: Guides
 order: 31
 language: tr
-sourceHash: "8b05c6da1e3fc662"
+sourceHash: "f28f17d2e0d3d395"
 ---
 
 Claude Code, `rdc` CLI aracılığıyla Rediacc ile doğal olarak çalışır. Bu kılavuz kurulumu, izinleri ve yaygın iş akışlarını kapsar.
@@ -43,10 +43,10 @@ Bunu proje kök dizininize yerleştirin. Tam sürüm için [AGENTS.md şablonuna
 
 Claude Code, `rdc` komutlarını çalıştırmak için izin isteyecektir. Claude Code ayarlarınıza ekleyerek yaygın işlemleri önceden yetkilendirebilirsiniz:
 
-- `rdc machine query *` izni verin — salt okunur durum kontrolleri
-- `rdc machine containers *` izni verin — konteyner listeleme
-- `rdc machine health *` izni verin — sağlık kontrolleri
-- `rdc config repository list` izni verin — depo listeleme
+- `rdc machine query *` izni verin, salt okunur durum kontrolleri
+- `rdc machine containers *` izni verin, konteyner listeleme
+- `rdc machine health *` izni verin, sağlık kontrolleri
+- `rdc config repository list` izni verin, depo listeleme
 
 Yıkıcı işlemler (`rdc repo up`, `rdc repo delete`) için, açıkça yetkilendirmediğiniz sürece Claude Code her zaman onay isteyecektir.
 
@@ -96,7 +96,7 @@ Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config
 
 ## İpuçları
 
-- Claude Code TTY olmayan ortamı otomatik algılar ve JSON çıktısına geçer — çoğu durumda `-o json` belirtmenize gerek yoktur
+- Claude Code TTY olmayan ortamı otomatik algılar ve JSON çıktısına geçer, çoğu durumda `-o json` belirtmenize gerek yoktur
 - Claude Code'un tüm mevcut komutları keşfetmesi için `rdc agent capabilities` kullanın
 - Ayrıntılı argüman/seçenek bilgisi için `rdc agent schema "komut adı"` kullanın
 - `--fields` bayrağı, yalnızca belirli verilere ihtiyaç duyduğunuzda bağlam penceresi kullanımını düşük tutmaya yardımcı olur

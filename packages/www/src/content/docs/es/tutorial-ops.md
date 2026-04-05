@@ -4,7 +4,7 @@ description: "Aprovisionar un clúster de VM local, ejecutar comandos por SSH y 
 category: "Tutorials"
 order: 1
 language: es
-sourceHash: "741534930d3fbc2a"
+sourceHash: "044855db82f05b88"
 ---
 
 # Cómo aprovisionar VMs locales con Rediacc
@@ -15,7 +15,7 @@ Probar la infraestructura localmente antes de desplegar en producción ahorra ti
 
 - Una estación de trabajo Linux o macOS con virtualización de hardware habilitada
 - La CLI `rdc` instalada y una configuración inicializada con el adaptador local
-- KVM/libvirt (Linux) o QEMU (macOS) instalado — consulte [VMs experimentales](/es/docs/experimental-vms) para instrucciones de configuración
+- KVM/libvirt (Linux) o QEMU (macOS) instalado, consulte [VMs experimentales](/es/docs/experimental-vms) para instrucciones de configuración
 
 ## Grabación interactiva
 
@@ -47,7 +47,7 @@ Crea un clúster de dos VMs: una VM **puente** (1 CPU, 1024 MB RAM, 8 GB disco) 
 rdc ops status
 ```
 
-Muestra el estado de cada VM en el clúster — direcciones IP, asignación de recursos y estado de ejecución. Ambas VMs deberían aparecer como en ejecución.
+Muestra el estado de cada VM en el clúster, direcciones IP, asignación de recursos y estado de ejecución. Ambas VMs deberían aparecer como en ejecución.
 
 ### Paso 4: Ejecutar comandos en una VM
 
@@ -83,6 +83,6 @@ El clúster básico requiere al menos 6 GB de RAM libre (1 GB puente + 4 GB trab
 
 Aprovisionó un clúster de VM local, ejecutó comandos por SSH y lo eliminó. Para desplegar infraestructura real:
 
-- [VMs experimentales](/es/docs/experimental-vms) — referencia completa para comandos `rdc ops`, configuración de VM y soporte de plataformas
-- [Tutorial: Configuración de máquinas](/es/docs/tutorial-setup) — registrar máquinas remotas y configurar infraestructura
-- [Inicio rápido](/es/docs/quick-start) — desplegar un servicio contenerizado de principio a fin
+- [VMs experimentales](/es/docs/experimental-vms), referencia completa para comandos `rdc ops`, configuración de VM y soporte de plataformas
+- [Tutorial: Configuración de máquinas](/es/docs/tutorial-setup), registrar máquinas remotas y configurar infraestructura
+- [Inicio rápido](/es/docs/quick-start), desplegar un servicio contenerizado de principio a fin

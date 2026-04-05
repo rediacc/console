@@ -42,10 +42,10 @@ Place this at your project root. See the full [AGENTS.md template](/en/docs/agen
 
 Claude Code will request permission to run `rdc` commands. You can pre-authorize common operations by adding to your Claude Code settings:
 
-- Allow `rdc machine query *` — read-only status checks
-- Allow `rdc machine containers *` — container listing
-- Allow `rdc machine health *` — health checks
-- Allow `rdc config repository list` — repository listing
+- Allow `rdc machine query *`, read-only status checks
+- Allow `rdc machine containers *`, container listing
+- Allow `rdc machine health *`, health checks
+- Allow `rdc config repository list`, repository listing
 
 For destructive operations (`rdc repo up`, `rdc repo delete`), Claude Code will always ask for confirmation unless you explicitly authorize them.
 
@@ -95,7 +95,7 @@ Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config
 
 ## Tips
 
-- Claude Code auto-detects non-TTY and switches to JSON output — no need to specify `-o json` in most cases
+- Claude Code auto-detects non-TTY and switches to JSON output, no need to specify `-o json` in most cases
 - Use `rdc agent capabilities` to let Claude Code discover all available commands
 - Use `rdc agent schema "command name"` for detailed argument/option info
 - The `--fields` flag helps keep context window usage low when you only need specific data

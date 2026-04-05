@@ -4,7 +4,7 @@ description: Schritt-für-Schritt-Anleitung zur Konfiguration von Claude Code f�
 category: Guides
 order: 31
 language: de
-sourceHash: "8b05c6da1e3fc662"
+sourceHash: "f28f17d2e0d3d395"
 ---
 
 Claude Code funktioniert nativ mit Rediacc über die `rdc` CLI. Diese Anleitung behandelt Einrichtung, Berechtigungen und gaengige Workflows.
@@ -43,10 +43,10 @@ Platzieren Sie diese Datei in Ihrem Projektstammverzeichnis. Die vollstaendige V
 
 Claude Code fordert die Erlaubnis zum Ausführen von `rdc`-Befehlen an. Sie können gaengige Operationen vorab autorisieren, indem Sie diese zu Ihren Claude Code-Einstellungen hinzufügen:
 
-- Erlauben: `rdc machine query *` — Statusabfragen (nur Lesen)
-- Erlauben: `rdc machine containers *` — Container-Auflistung
-- Erlauben: `rdc machine health *` — Gesundheitspruefungen
-- Erlauben: `rdc config repository list` — Repository-Auflistung
+- Erlauben: `rdc machine query *`, Statusabfragen (nur Lesen)
+- Erlauben: `rdc machine containers *`, Container-Auflistung
+- Erlauben: `rdc machine health *`, Gesundheitspruefungen
+- Erlauben: `rdc config repository list`, Repository-Auflistung
 
 Fuer destruktive Operationen (`rdc repo up`, `rdc repo delete`) fragt Claude Code immer nach Bestaetigung, es sei denn, Sie autorisieren diese ausdruecklich.
 
@@ -96,7 +96,7 @@ Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config
 
 ## Tipps
 
-- Claude Code erkennt automatisch non-TTY-Umgebungen und wechselt zu JSON-Ausgabe — in den meisten Faellen ist `-o json` nicht noetig
+- Claude Code erkennt automatisch non-TTY-Umgebungen und wechselt zu JSON-Ausgabe, in den meisten Faellen ist `-o json` nicht noetig
 - Verwenden Sie `rdc agent capabilities`, damit Claude Code alle verfügbaren Befehle entdecken kann
 - Verwenden Sie `rdc agent schema "command name"` für detaillierte Argument-/Optionsinformationen
 - Das `--fields`-Flag hilft, den Kontextfenster-Verbrauch zu reduzieren, wenn Sie nur bestimmte Daten benoetigen

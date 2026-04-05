@@ -24,6 +24,7 @@ const CATEGORY_KEYS: Record<string, string> = {
   'Concepts': 'documentation.categories.concepts',
   'Reference': 'documentation.categories.reference',
   'Use Cases': 'documentation.categories.useCases',
+  'Legal': 'documentation.categories.legal',
 };
 function categoryLabel(cat: string): string {
   const k = CATEGORY_KEYS[cat];
@@ -54,6 +55,7 @@ const categoryOrder: Record<string, number> = {
   Concepts: 2,
   Reference: 3,
   'Use Cases': 4,
+  'Legal': 5,
 };
 
 const categories = Object.keys(docsByCategory).sort((a, b) => {

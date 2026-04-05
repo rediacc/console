@@ -4,7 +4,7 @@ description: "Créez un profil de configuration, enregistrez une machine distant
 category: "Tutorials"
 order: 2
 language: fr
-sourceHash: "3d92b47b323eb53e"
+sourceHash: "2a32100e76d41bc0"
 ---
 
 # Comment configurer une machine avec Rediacc
@@ -88,7 +88,7 @@ Vérifie votre environnement local : version de la CLI, Docker, binaire renet, �
 
 ### Étape 8 : Configurer l'infrastructure
 
-Pour les services accessibles publiquement, la machine nécessite une configuration réseau — son IP externe, un domaine de base et un email de certificat pour TLS.
+Pour les services accessibles publiquement, la machine nécessite une configuration réseau, son IP externe, un domaine de base et un email de certificat pour TLS.
 
 ```bash
 rdc config infra set -m bridge-vm \
@@ -120,6 +120,6 @@ La clé d'hôte stockée ne correspond pas à la clé actuelle du serveur. Cela 
 
 Vous avez créé un profil de configuration, enregistré une machine, vérifié la connectivité et configuré le réseau d'infrastructure. Pour déployer des applications :
 
-- [Configuration de la machine](/fr/docs/setup) — référence complète pour toutes les commandes de configuration et de setup
-- [Tutoriel : Cycle de vie des dépôts](/fr/docs/tutorial-repos) — créer, déployer et gérer des dépôts
-- [Démarrage rapide](/fr/docs/quick-start) — déployer une application conteneurisée de bout en bout
+- [Configuration de la machine](/fr/docs/setup), référence complète pour toutes les commandes de configuration et de setup
+- [Tutoriel : Cycle de vie des dépôts](/fr/docs/tutorial-repos), créer, déployer et gérer des dépôts
+- [Démarrage rapide](/fr/docs/quick-start), déployer une application conteneurisée de bout en bout

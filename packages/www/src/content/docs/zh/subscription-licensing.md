@@ -4,7 +4,7 @@ description: 了解 account、rdc 和 renet 如何处理机器槽位、仓库许
 category: Guides
 order: 7
 language: zh
-sourceHash: "49428ac8fe913194"
+sourceHash: "a31dc14e6305b4d4"
 ---
 
 # 订阅与许可
@@ -70,10 +70,10 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 用于：
 
-- `rdc repo resize` 和 `rdc repo expand` — 包括到期在内的完整验证
-- `rdc repo up`、`rdc repo down`、`rdc repo delete` — **跳过到期**验证
-- `rdc repo push`、`rdc repo pull`、`rdc repo sync` — **跳过到期**验证
-- 机器重启时的仓库自动启动 — **跳过到期**验证
+- `rdc repo resize` 和 `rdc repo expand`, 包括到期在内的完整验证
+- `rdc repo up`、`rdc repo down`、`rdc repo delete`, **跳过到期**验证
+- `rdc repo push`、`rdc repo pull`、`rdc repo sync`, **跳过到期**验证
+- 机器重启时的仓库自动启动, **跳过到期**验证
 
 仓库许可证绑定到机器和目标仓库，Rediacc 通过仓库身份元数据加强该绑定。对于加密仓库，这包括底层卷的 LUKS 身份。
 
@@ -123,7 +123,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### 机器重启和自动启动
 
-自动启动使用与 `rdc repo up` 相同的规则 — 跳过到期，因此仓库总是可以自由重启。
+自动启动使用与 `rdc repo up` 相同的规则, 跳过到期，因此仓库总是可以自由重启。
 
 仓库许可证使用长期有效性模型：
 
@@ -192,12 +192,12 @@ rdc subscription refresh repo --name my-app -m hostinger
 
 ## 离线行为和到期
 
-许可证验证在机器本地进行 — 不需要与账户服务器的实时连接。
+许可证验证在机器本地进行, 不需要与账户服务器的实时连接。
 
 这意味着：
 
 - 运行中的环境不需要在每个命令上都有账户实时连接
-- 即使许可证过期，所有仓库也可以随时启动、停止和删除 — 用户永远不会被锁定无法操作自己的仓库
+- 即使许可证过期，所有仓库也可以随时启动、停止和删除, 用户永远不会被锁定无法操作自己的仓库
 - 配置操作（`create`、`fork`）需要有效的机器许可证，增长操作（`resize`、`expand`）需要有效的仓库许可证
 - 真正过期的仓库许可证必须在调整/扩展之前通过 `rdc` 刷新
 
@@ -213,7 +213,7 @@ rdc subscription refresh repo --name my-app -m hostinger
 - `repository_mismatch`：快速失败并告诉您明确刷新仓库许可证
 - `sequence_regression`：作为仓库许可证完整性/状态问题快速失败
 - `invalid_signature`：作为仓库许可证完整性/状态问题快速失败
-- `identity_mismatch`：快速失败 — 仓库身份与已安装许可证不匹配
+- `identity_mismatch`：快速失败, 仓库身份与已安装许可证不匹配
 
 这些快速失败情况不会自动消耗账户支持的刷新或发放调用。
 

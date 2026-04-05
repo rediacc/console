@@ -6,7 +6,7 @@ order: 2
 language: ar
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ar/cli.json
-sourceHash: "fa03a4167288a59c"
+sourceHash: "2195ed3cee2a2c3b"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -24,7 +24,7 @@ sourceHash: "fa03a4167288a59c"
 
 ```bash
 # macOS / Linux
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com | sh
 
 # Or use the packaged binary directly
 ./rdc --help

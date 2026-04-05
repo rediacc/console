@@ -4,7 +4,7 @@ description: "Créez une configuration, ajoutez des machines, provisionnez des s
 category: "Guides"
 order: 3
 language: fr
-sourceHash: "9fd8ebf2b98bfcf5"
+sourceHash: "143694525e0fcd9b"
 ---
 
 # Configuration de la machine
@@ -121,15 +121,15 @@ rdc config infra set -m server-1 \
 
 | Option | Portée | Description |
 |--------|--------|-------------|
-| `--public-ipv4 <ip>` | Machine | Public IPv4 address — proxy entrypoints are only created for configured address families |
-| `--public-ipv6 <ip>` | Machine | Public IPv6 address — proxy entrypoints are only created for configured address families |
+| `--public-ipv4 <ip>` | Machine | Public IPv4 address, proxy entrypoints are only created for configured address families |
+| `--public-ipv6 <ip>` | Machine | Public IPv6 address, proxy entrypoints are only created for configured address families |
 | `--base-domain <domain>` | Machine | Domaine de base pour les applications (par ex., `example.com`) |
 | `--cert-email <email>` | Config | Email pour les certificats TLS Let's Encrypt (partagé entre les machines) |
 | `--cf-dns-token <token>` | Config | Jeton API DNS Cloudflare pour les challenges ACME DNS-01 (partagé entre les machines) |
 | `--tcp-ports <ports>` | Machine | Ports TCP supplémentaires à rediriger, séparés par des virgules (par ex., `25,143,465,587,993`) |
 | `--udp-ports <ports>` | Machine | Ports UDP supplémentaires à rediriger, séparés par des virgules (par ex., `53`) |
 
-Les options de portée Machine sont stockées par machine. Les options de portée Config (`--cert-email`, `--cf-dns-token`) sont partagées entre toutes les machines de la configuration — définissez-les une fois et elles s'appliquent partout.
+Les options de portée Machine sont stockées par machine. Les options de portée Config (`--cert-email`, `--cf-dns-token`) sont partagées entre toutes les machines de la configuration, définissez-les une fois et elles s'appliquent partout.
 
 ### Afficher l'infrastructure
 
@@ -150,7 +150,7 @@ Cette commande :
 2. Configure le proxy inverse Traefik, le routeur et les services systemd
 3. Crée les enregistrements DNS Cloudflare pour le sous-domaine de la machine (`server-1.example.com` et `*.server-1.example.com`) si `--cf-dns-token` est défini
 
-L'étape DNS est automatique et idempotente — elle crée les enregistrements manquants, met à jour les enregistrements dont les IPs ont changé et ignore les enregistrements déjà corrects. Si aucun jeton Cloudflare n'est configuré, le DNS est ignoré avec un avertissement. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+L'étape DNS est automatique et idempotente, elle crée les enregistrements manquants, met à jour les enregistrements dont les IPs ont changé et ignore les enregistrements déjà corrects. Si aucun jeton Cloudflare n'est configuré, le DNS est ignoré avec un avertissement. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
 
 ## Provisionnement cloud
 

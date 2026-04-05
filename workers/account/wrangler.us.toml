@@ -1,0 +1,41 @@
+name = "rediacc-account-us"
+main = "src/index.ts"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+
+routes = [
+  { pattern = "us.rediacc.com", custom_domain = true }
+]
+
+[vars]
+REGION = "us"
+WEBAUTHN_RP_ID = "us.rediacc.com"
+WEBAUTHN_ORIGIN = "https://us.rediacc.com"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "404-page"
+run_worker_first = ["/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "account-db-us"
+database_id = "073d69a9-fcac-4991-bde2-ce9139570b1a"
+migrations_dir = "../../private/account/drizzle"
+
+[[r2_buckets]]
+binding = "CONFIG_BUCKET"
+bucket_name = "rediacc-configs-us"

@@ -45,8 +45,8 @@ rdc machine containers server-1
 | Repository | Which repository owns the container |
 
 Options:
-- `--health-check` — Perform active health checks on containers
-- `--output json` — Machine-readable JSON output
+- `--health-check`, Perform active health checks on containers
+- `--output json`, Machine-readable JSON output
 
 JSON output includes full container details (`labels`, `port_mappings`, `image`, `id`) plus `repository` (resolved name), `repository_guid` (original GUID), `domain`, and `autoRoute`.
 
@@ -68,8 +68,8 @@ rdc machine services server-1
 | Repository | Associated repository |
 
 Options:
-- `--stability-check` — Flag unstable services (failed, >3 restarts, auto-restart)
-- `--output json` — Machine-readable JSON output
+- `--stability-check`, Flag unstable services (failed, >3 restarts, auto-restart)
+- `--output json`, Machine-readable JSON output
 
 JSON output includes full service details with `repository` (resolved name) and `repository_guid` (original GUID).
 
@@ -92,8 +92,8 @@ rdc machine repos server-1
 | Modified | Last modification time |
 
 Options:
-- `--search <text>` — Filter by name or mount path
-- `--output json` — Machine-readable JSON output
+- `--search <text>`, Filter by name or mount path
+- `--output json`, Machine-readable JSON output
 
 JSON output includes `name` (resolved) and `guid` (original GUID), and nests each repository's `containers` (with `domain`, `autoRoute`, `repository`/`repository_guid`) and `services` arrays.
 
@@ -131,8 +131,8 @@ Reports:
 - Known hosts entry
 
 Options:
-- `--port <number>` — SSH port (default: 22)
-- `--save -m server-1` — Save verified host key to machine config
+- `--port <number>`, SSH port (default: 22)
+- `--save -m server-1`, Save verified host key to machine config
 
 ## Diagnostics (doctor)
 

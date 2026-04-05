@@ -1588,12 +1588,16 @@
       "login": {
         "browserFailed": "No se pudo abrir el navegador automáticamente. Por favor, visite la URL anterior.",
         "description": "Autenticarse con un token API del portal web",
+        "discoveringRegions": "Descubriendo regiones disponibles...",
         "expired": "La autorización ha expirado. Por favor, inténtelo de nuevo.",
         "initFailed": "No se pudo iniciar la sesión. ¿Está el servidor en ejecución?",
         "machines": "Máquinas: {{active}}/{{max}}",
         "openBrowser": "Visite esta URL para autorizar:",
         "plan": "Suscripción: {{plan}}",
         "polling": "Esperando aprobación (presione Ctrl+C para cancelar)...",
+        "regionPrompt": "Donde se deben almacenar sus datos?",
+        "regionsDiscovered": "Regiones cargadas",
+        "regionSelected": "Region de datos: {{region}} ({{domain}})",
         "success": "Inicio de sesión exitoso",
         "tokenInvalid": "El token debe comenzar con rdt_",
         "tokenPrompt": "Introduzca su token API (del portal web):",
@@ -2112,8 +2116,10 @@
       "machineRequired": "Nombre de máquina requerido. Use --machine <name>",
       "notSupported": "Registro de protocolo no compatible en {{platform}}",
       "parseFailed": "Falló al analizar URL: {{error}}",
+      "regionSelectionRequiresTTY": "La seleccion de region requiere entrada interactiva. Use --server <url> para especificar un servidor directamente.",
       "teamRequired": "Nombre de equipo requerido. Use --team <name>",
-      "tokenRequired": "Token requerido. Use --token <token>"
+      "tokenRequired": "Token requerido. Use --token <token>",
+      "unknownRegion": "Region desconocida: {{region}}"
     },
     "regionRequired": "Nombre de región requerido. Use --region o establezca contexto.",
     "registrationFailed": "Falló el registro",

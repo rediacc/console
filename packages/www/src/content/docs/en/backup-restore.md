@@ -9,7 +9,7 @@ sourceHash: "4cc40d3db5384f5d"
 
 # Backup & Restore
 
-Rediacc can back up encrypted repositories to external storage providers and restore them on the same or different machines. Backups are encrypted — the repository's LUKS credential is required to restore.
+Rediacc can back up encrypted repositories to external storage providers and restore them on the same or different machines. Backups are encrypted, the repository's LUKS credential is required to restore.
 
 ## Configure Storage
 
@@ -152,4 +152,4 @@ rdc storage browse --name my-storage
 - **Schedule daily backups** to at least one storage provider
 - **Test restores** periodically to verify backup integrity
 - **Use multiple storage providers** for critical data (e.g., S3 + B2)
-- **Keep credentials secure** — backups are encrypted but the LUKS credential is required to restore
+- **Keep credentials secure**, backups are encrypted but the LUKS credential is required to restore

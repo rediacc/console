@@ -132,7 +132,11 @@ export interface SignedRepoLicense {
 /**
  * API token scopes for machine licensing.
  */
-export type ApiTokenScope = 'license:read' | 'license:activate' | 'subscription:read';
+export type ApiTokenScope =
+  | 'license:read'
+  | 'license:activate'
+  | 'subscription:read'
+  | 'audit:write';
 
 /**
  * API token for machine authentication.

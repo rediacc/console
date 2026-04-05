@@ -4,12 +4,12 @@ description: "Ein verschlüsseltes Repository erstellen, eine containerisierte A
 category: "Tutorials"
 order: 3
 language: de
-sourceHash: "79d2707d0dc632b2"
+sourceHash: "4d7072927542dfb3"
 ---
 
 # So stellen Sie Repositories mit Rediacc bereit und verwalten sie
 
-Repositories sind die zentrale Bereitstellungseinheit in Rediacc — jedes ist eine isolierte, verschlüsselte Umgebung mit eigenem Docker Daemon und dediziertem Speicher. In diesem Tutorial erstellen Sie ein verschlüsseltes Repository, stellen eine containerisierte Anwendung bereit, inspizieren laufende Container und räumen auf. Am Ende haben Sie einen vollständigen Bereitstellungszyklus abgeschlossen.
+Repositories sind die zentrale Bereitstellungseinheit in Rediacc, jedes ist eine isolierte, verschlüsselte Umgebung mit eigenem Docker Daemon und dediziertem Speicher. In diesem Tutorial erstellen Sie ein verschlüsseltes Repository, stellen eine containerisierte Anwendung bereit, inspizieren laufende Container und räumen auf. Am Ende haben Sie einen vollständigen Bereitstellungszyklus abgeschlossen.
 
 ## Voraussetzungen
 
@@ -49,7 +49,7 @@ Zeigt alle Repositories auf der Maschine mit ihrer Größe, Mount-Status und Ver
 rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
-Das Mount-Verzeichnis ist der Ort, an dem sich die Anwendungsdateien befinden — `Rediaccfile`, `docker-compose.yml` und alle Datenvolumen.
+Das Mount-Verzeichnis ist der Ort, an dem sich die Anwendungsdateien befinden, `Rediaccfile`, `docker-compose.yml` und alle Datenvolumen.
 
 ### Schritt 4: Dienste starten
 
@@ -101,7 +101,7 @@ rdc repo delete --name test-app -m server-1  # Repository dauerhaft löschen
 Das verschlüsselte Volumen benötigt zusammenhängenden freien Speicherplatz auf dem Host. Überprüfen Sie den verfügbaren Speicherplatz mit `df -h` auf dem Server. Erwägen Sie einen kleineren `--size`-Wert oder geben Sie Speicherplatz frei.
 
 **Docker-Image-Pull-Timeout während `repo up`**
-Große Images können bei langsamen Verbindungen das Zeitlimit überschreiten. Wiederholen Sie mit `rdc repo up` — es setzt dort fort, wo es aufgehört hat. Für Air-Gapped-Umgebungen laden Sie Images vorab in den Docker Daemon des Repositories.
+Große Images können bei langsamen Verbindungen das Zeitlimit überschreiten. Wiederholen Sie mit `rdc repo up`, es setzt dort fort, wo es aufgehört hat. Für Air-Gapped-Umgebungen laden Sie Images vorab in den Docker Daemon des Repositories.
 
 **„Mount fehlgeschlagen" oder „LUKS-Öffnung fehlgeschlagen"**
 Die LUKS-Passphrase wird aus der Konfiguration abgeleitet. Überprüfen Sie, dass Sie dieselbe Konfiguration verwenden, mit der das Repository erstellt wurde. Wenn das Volumen bereits von einem anderen Prozess gemountet ist, unmounten Sie es zuerst.
@@ -110,6 +110,6 @@ Die LUKS-Passphrase wird aus der Konfiguration abgeleitet. Überprüfen Sie, das
 
 Sie haben ein verschlüsseltes Repository erstellt, eine Anwendung bereitgestellt, Container inspiziert und aufgeräumt. Um Ihre Bereitstellungen zu überwachen:
 
-- [Dienste](/de/docs/services) — Rediaccfile-Referenz, Service-Netzwerke, Autostart und Multi-Service-Layouts
-- [Tutorial: Überwachung & Diagnose](/de/docs/tutorial-monitoring) — Gesundheitsprüfungen, Container-Inspektion und Diagnose
-- [Tools](/de/docs/tools) — Terminal, Dateisynchronisierung und VS Code-Integration
+- [Dienste](/de/docs/services), Rediaccfile-Referenz, Service-Netzwerke, Autostart und Multi-Service-Layouts
+- [Tutorial: Überwachung & Diagnose](/de/docs/tutorial-monitoring), Gesundheitsprüfungen, Container-Inspektion und Diagnose
+- [Tools](/de/docs/tools), Terminal, Dateisynchronisierung und VS Code-Integration

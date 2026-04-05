@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: "4a2050fece1accbb"
+sourceHash: "f4949653be4a11cd"
 ---
 
 # Servisler
@@ -167,7 +167,7 @@ services:
       LISTEN_ADDR: ${API_IP}:8080
 ```
 
-> **Not:** `network_mode: host` ifadesini manuel olarak eklemeyin — `renet compose` bunu otomatik olarak enjekte eder. Yeniden başlatma politikaları (örn., `restart: always`) güvenle kullanılabilir — renet CRIU uyumluluğu için bunları otomatik olarak kaldırır ve yönlendirici watchdog konteyner kurtarmasını yönetir.
+> **Not:** `network_mode: host` ifadesini manuel olarak eklemeyin, `renet compose` bunu otomatik olarak enjekte eder. Yeniden başlatma politikaları (örn., `restart: always`) güvenle kullanılabilir, renet CRIU uyumluluğu için bunları otomatik olarak kaldırır ve yönlendirici watchdog konteyner kurtarmasını yönetir.
 
 > **Not:** Fork depoları düz otomatik rotalar alır: `{service}-{tag}.{machine}.{baseDomain}`. Fork'lar için özel alan adları atlanır.
 

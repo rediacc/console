@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: ar
-sourceHash: "cc79bbad07c3ef01"
+sourceHash: "c9d086d519625aa8"
 ---
 
 # الشبكات
@@ -36,7 +36,7 @@ Internet → Traefik (ports 80/443/TCP/UDP)
 
 عند إضافة العلامات الصحيحة إلى حاوية وتشغيلها باستخدام `renet compose`، تصبح قابلة للتوجيه تلقائياً -- دون الحاجة لتكوين وكيل يدوي.
 
-> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime — Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime, Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
 
 ## علامات Docker
 
@@ -75,10 +75,10 @@ myapp.marketing.server-1.example.com
 
 ```yaml
 labels:
-  # اسم قصير — يُحل إلى cloud.example.com باستخدام baseDomain الخاص بالجهاز
+  # اسم قصير, يُحل إلى cloud.example.com باستخدام baseDomain الخاص بالجهاز
   - "rediacc.domain=cloud"
 
-  # نطاق كامل — يُستخدم كما هو
+  # نطاق كامل, يُستخدم كما هو
   - "rediacc.domain=cloud.example.com"
 ```
 
@@ -145,7 +145,7 @@ services:
   database:
     image: postgres:17
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
-    # بدون علامات traefik — قاعدة البيانات داخلية فقط
+    # بدون علامات traefik, قاعدة البيانات داخلية فقط
 ```
 
 | العلامة | الغرض |
@@ -233,7 +233,7 @@ services:
       - "traefik.tcp.routers.mail-smtp.service=mail-smtp"
       - "traefik.tcp.services.mail-smtp.loadbalancer.server.port=25"
 
-      # IMAPS (port 993) — TLS passthrough
+      # IMAPS (port 993), TLS passthrough
       - "traefik.tcp.routers.mail-imaps.entrypoints=tcp-993"
       - "traefik.tcp.routers.mail-imaps.rule=HostSNI(`mail.example.com`)"
       - "traefik.tcp.routers.mail-imaps.tls.passthrough=true"
@@ -248,7 +248,7 @@ services:
 
 ### المنافذ المُكوَّنة مسبقاً
 
-المنافذ TCP/UDP التالية لها نقاط دخول افتراضياً (لا حاجة لإضافتها عبر `--tcp-ports`). يتم إنشاء نقاط الدخول فقط لعائلات العناوين المُكوَّنة — نقاط دخول IPv4 تتطلب `--public-ipv4`، ونقاط دخول IPv6 تتطلب `--public-ipv6`:
+المنافذ TCP/UDP التالية لها نقاط دخول افتراضياً (لا حاجة لإضافتها عبر `--tcp-ports`). يتم إنشاء نقاط الدخول فقط لعائلات العناوين المُكوَّنة, نقاط دخول IPv4 تتطلب `--public-ipv4`، ونقاط دخول IPv6 تتطلب `--public-ipv6`:
 
 | المنفذ | البروتوكول | الاستخدام الشائع |
 |--------|-----------|-----------------|
@@ -278,7 +278,7 @@ services:
 
 سجلات مستوى الجهاز تُنشأ بواسطة `push-infra` وتغطي مسارات النطاق المخصص (`rediacc.domain`). سجلات البدل لكل مستودع تُنشأ تلقائياً بواسطة `repo up` وتغطي المسارات التلقائية لذلك المستودع.
 
-هذه العملية متساوية القوة — يتم تحديث السجلات الموجودة إذا تغير عنوان IP، وتُترك دون تغيير إذا كانت صحيحة بالفعل.
+هذه العملية متساوية القوة, يتم تحديث السجلات الموجودة إذا تغير عنوان IP، وتُترك دون تغيير إذا كانت صحيحة بالفعل.
 
 يجب إنشاء سجل البدل للنطاق الأساسي (`*.example.com`) يدوياً إذا كنت تستخدم تسميات نطاق مخصصة مثل `rediacc.domain=erp`.
 
@@ -407,7 +407,7 @@ services:
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-    # بدون علامات traefik — داخلي فقط
+    # بدون علامات traefik, داخلي فقط
 ```
 
 ### Rediaccfile

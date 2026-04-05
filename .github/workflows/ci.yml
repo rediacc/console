@@ -15,7 +15,7 @@ on:
 # Minimal default permissions — jobs that need more declare their own
 permissions:
   contents: read
-  statuses: write   # For quality/submodule-merge-readiness commit status
+  statuses: write
   packages: read    # Most jobs pull from GHCR
 
 # E2E Browser Configuration
@@ -138,6 +138,106 @@ jobs:
           path: ci-tags.txt
           retention-days: 1
 
+  # ============================================================================
+  # MIGRATION TEST
+  # Validates that D1 migrations apply cleanly against a production data clone.
+  # Creates an ephemeral D1 database, clones production, runs migrations, then
+  # deletes the database. No worker is deployed -- CI-only, no public URL.
+  # ============================================================================
+  migration-test:
+    name: Migration Test
+    needs: [initialize]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: >-
+      always() &&
+      needs.initialize.outputs.is_fork != 'true' &&
+      needs.initialize.result == 'success'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: .github/actions
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console,account
+
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Init account submodule
+        run: git submodule update --init --depth 1 private/account
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+
+      - name: Install wrangler
+        run: npm install -g wrangler
+
+      - name: Test migrations against production clone
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+
+          DB_NAME="account-db-migration-test-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+          # Guaranteed cleanup on exit (success, failure, or signal)
+          cleanup() {
+            echo "::group::Cleanup: deleting $DB_NAME"
+            npx wrangler d1 delete "$DB_NAME" --skip-confirmation 2>/dev/null || true
+            echo "::endgroup::"
+          }
+          trap cleanup EXIT
+
+          echo "::group::Create temporary D1: $DB_NAME"
+          npx wrangler d1 create "$DB_NAME" --location eeur
+          echo "::endgroup::"
+
+          # Retrieve UUID for wrangler config
+          DB_UUID="$(npx wrangler d1 info "$DB_NAME" --json 2>/dev/null \
+            | sed -n '/^[[:space:]]*[{[]/,$p' \
+            | jq -r '.uuid // empty')"
+
+          if [[ -z "$DB_UUID" ]]; then
+            echo "::error::Failed to get UUID for $DB_NAME"
+            exit 1
+          fi
+
+          echo "::group::Clone production data"
+          .ci/scripts/deploy/clone-d1.sh --source account-db --target "$DB_NAME"
+          echo "::endgroup::"
+
+          echo "::group::Apply migrations"
+          # Generate temporary wrangler config inside workers/www/ so migrations_dir resolves correctly
+          TMPCONFIG="workers/www/wrangler-migration-test.toml"
+          cat > "$TMPCONFIG" <<TOML
+          name = "migration-test"
+          main = "src/index.ts"
+          compatibility_date = "2026-01-20"
+
+          [[d1_databases]]
+          binding = "DB"
+          database_name = "$DB_NAME"
+          database_id = "$DB_UUID"
+          migrations_dir = "../../private/account/drizzle"
+          TOML
+
+          cd workers/www
+          npx wrangler d1 migrations apply "$DB_NAME" --remote --config wrangler-migration-test.toml
+          rm -f wrangler-migration-test.toml
+          echo "::endgroup::"
+
+          echo "Migrations applied successfully against production data clone"
+          # trap EXIT handles cleanup
+
   cancel-watchdog:
     name: CI Watchdog
     needs: [initialize]
@@ -168,6 +268,7 @@ jobs:
         env:
           WATCHDOG_EXCLUDE_PATTERNS: 'Watchdog,CI Complete'
           WATCHDOG_NO_RETRY_PATTERNS: 'Quality,Review Gate'
+          WATCHDOG_WAIT_PATTERNS: 'Migration Test'
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         with:
@@ -260,7 +361,6 @@ jobs:
       needs.review-gate.result == 'success'
     outputs:
       account_server_url: ${{ steps.deploy.outputs.account_server_url }}
-      stripe_publishable_key: ${{ env.STRIPE_SANDBOX_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -318,8 +418,6 @@ jobs:
         if: always()
         run: bash .ci/scripts/infra/ci-stop.sh
 
-    env:
-      STRIPE_SANDBOX_PUBLISHABLE_KEY: ${{ secrets.STRIPE_SANDBOX_PUBLISHABLE_KEY }}
 
   # ============================================================================
   # COLUMN 3: BUILD & DOCKER
@@ -530,9 +628,9 @@ jobs:
       vm-os-list: '["none", "ubuntu-24.04", "debian-12"]'
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-      AWS_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
-      AWS_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
-      AWS_SES_REGION: ${{ vars.AWS_SES_REGION }}
+      AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
+      AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
+      AWS_SES_REGION_EU: ${{ vars.AWS_SES_REGION_EU }}
 
   # ============================================================================
   # COLUMN 4D: OPS VM TESTS
@@ -648,7 +746,7 @@ jobs:
   # ============================================================================
   deploy-preview:
     name: Deploy Preview
-    needs: [initialize, stage-artifacts, tests, standalone-run-test]
+    needs: [initialize, stage-artifacts, tests, standalone-run-test, migration-test]
     runs-on: ubuntu-latest
     if: >-
       always() &&
@@ -657,7 +755,8 @@ jobs:
       needs.initialize.result == 'success' &&
       needs.stage-artifacts.result == 'success' &&
       needs.tests.result == 'success' &&
-      needs.standalone-run-test.result == 'success'
+      needs.standalone-run-test.result == 'success' &&
+      needs.migration-test.result == 'success'
     environment:
       name: pr-${{ github.event.pull_request.number }}
       url: https://pr-${{ github.event.pull_request.number }}.rediacc.workers.dev
@@ -738,7 +837,7 @@ jobs:
 
       # Deploy single combined pr-N Worker (static assets + embedded account server)
       - name: Deploy preview worker
-        run: .ci/scripts/deploy/deploy-www.sh --name "pr-${PR_NUMBER}" --clone-prod-d1
+        run: .ci/scripts/deploy/deploy-www.sh --name "pr-${PR_NUMBER}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
@@ -756,9 +855,9 @@ jobs:
           SECRET_STRIPE_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
           SECRET_STRIPE_WEBHOOK: ${{ steps.stripe-webhook.outputs.stripe_webhook_secret }}
           SECRET_ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
-          SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
-          SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
-          SECRET_SES_REGION: ${{ vars.AWS_SES_REGION }}
+          SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
+          SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
+          SECRET_SES_REGION: ${{ vars.AWS_SES_REGION_EU }}
           SECRET_TURNSTILE_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
           VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
         run: |
@@ -938,7 +1037,7 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, stage-artifacts, validate-install, validate-promote, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, stage-artifacts, validate-install, validate-promote, tests, standalone-run-test, elite-run-test, ops-tests, migration-test, deploy-preview]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -967,6 +1066,7 @@ jobs:
           [[ "${{ needs.standalone-run-test.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.elite-run-test.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.ops-tests.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.migration-test.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.deploy-preview.result }}" == "failure" ]] && FAILED=true
 
           if [[ "$FAILED" == "true" ]]; then
@@ -987,6 +1087,7 @@ jobs:
             echo "  standalone-run-test: ${{ needs.standalone-run-test.result }}"
             echo "  elite-run-test: ${{ needs.elite-run-test.result }}"
             echo "  ops-tests: ${{ needs.ops-tests.result }}"
+            echo "  migration-test: ${{ needs.migration-test.result }}"
             echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
             exit 1
           fi

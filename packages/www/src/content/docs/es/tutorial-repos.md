@@ -4,12 +4,12 @@ description: "Crear un repositorio cifrado, desplegar una aplicación en contene
 category: "Tutorials"
 order: 3
 language: es
-sourceHash: "79d2707d0dc632b2"
+sourceHash: "4d7072927542dfb3"
 ---
 
 # Cómo desplegar y gestionar repositorios con Rediacc
 
-Los repositorios son la unidad de despliegue principal en Rediacc — cada uno es un entorno aislado y cifrado con su propio Docker daemon y almacenamiento dedicado. En este tutorial, crearás un repositorio cifrado, desplegarás una aplicación en contenedores, inspeccionarás los contenedores en ejecución y limpiarás. Al finalizar, habrás completado un ciclo de despliegue completo.
+Los repositorios son la unidad de despliegue principal en Rediacc, cada uno es un entorno aislado y cifrado con su propio Docker daemon y almacenamiento dedicado. En este tutorial, crearás un repositorio cifrado, desplegarás una aplicación en contenedores, inspeccionarás los contenedores en ejecución y limpiarás. Al finalizar, habrás completado un ciclo de despliegue completo.
 
 ## Requisitos previos
 
@@ -49,7 +49,7 @@ Antes de desplegar, verifica que el almacenamiento del repositorio está montado
 rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
-El directorio de montaje es donde residen los archivos de la aplicación — `Rediaccfile`, `docker-compose.yml` y cualquier volumen de datos.
+El directorio de montaje es donde residen los archivos de la aplicación, `Rediaccfile`, `docker-compose.yml` y cualquier volumen de datos.
 
 ### Paso 4: Iniciar servicios
 
@@ -101,7 +101,7 @@ rdc repo delete --name test-app -m server-1  # Eliminar repositorio permanenteme
 El volumen cifrado necesita espacio libre contiguo en el host. Verifica el espacio disponible con `df -h` en el servidor. Considera un valor `--size` más pequeño o libera espacio en disco.
 
 **Tiempo de espera agotado al descargar imagen Docker durante `repo up`**
-Las imágenes grandes pueden agotar el tiempo de espera en conexiones lentas. Reintenta con `rdc repo up` — reanuda donde se detuvo. Para entornos aislados, precarga las imágenes en el Docker daemon del repositorio.
+Las imágenes grandes pueden agotar el tiempo de espera en conexiones lentas. Reintenta con `rdc repo up`, reanuda donde se detuvo. Para entornos aislados, precarga las imágenes en el Docker daemon del repositorio.
 
 **"Fallo de montaje" o "Fallo al abrir LUKS"**
 La contraseña LUKS se deriva de la configuración. Verifica que estás usando la misma configuración que creó el repositorio. Si el volumen ya está montado por otro proceso, desmóntalo primero.
@@ -110,6 +110,6 @@ La contraseña LUKS se deriva de la configuración. Verifica que estás usando l
 
 Has creado un repositorio cifrado, desplegado una aplicación, inspeccionado contenedores y limpiado. Para monitorear tus despliegues:
 
-- [Servicios](/es/docs/services) — referencia de Rediaccfile, redes de servicios, autoinicio y diseños multi-servicio
-- [Tutorial: Monitoreo y diagnóstico](/es/docs/tutorial-monitoring) — comprobaciones de salud, inspección de contenedores y diagnóstico
-- [Herramientas](/es/docs/tools) — terminal, sincronización de archivos e integración con VS Code
+- [Servicios](/es/docs/services), referencia de Rediaccfile, redes de servicios, autoinicio y diseños multi-servicio
+- [Tutorial: Monitoreo y diagnóstico](/es/docs/tutorial-monitoring), comprobaciones de salud, inspección de contenedores y diagnóstico
+- [Herramientas](/es/docs/tools), terminal, sincronización de archivos e integración con VS Code

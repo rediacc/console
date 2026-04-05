@@ -229,14 +229,6 @@ jobs:
           fi
           echo "Version v${VERSION} is available for publishing."
 
-      # Submodule guard: fail early if any submodule has diverged (skip in retry mode)
-      - name: Check submodule branches
-        if: steps.skip-check.outputs.skip_release != 'true' && steps.skip-check.outputs.retry_mode != 'true'
-        run: .ci/scripts/release/merge-submodule-branches.sh --dry-run
-        env:
-          GITHUB_PAT: ${{ steps.app-token.outputs.token }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-
   # ============================================================================
   # PUBLISH
   # Actually publish to GitHub Release, Docker, Pages
@@ -313,25 +305,18 @@ jobs:
         run: npx tsx scripts/stripe-sync.ts
         working-directory: private/account
         env:
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_EU }}
 
-      - name: Verify Stripe webhook endpoint
+      - name: Verify Stripe webhook endpoints (per-region)
         if: needs.init.outputs.retry_mode != 'true'
-        run: npx tsx scripts/verify-webhook.ts
-        working-directory: private/account
+        run: |
+          jq -r '.regions[] | .domain' regions.json | while read domain; do
+            echo "Verifying webhook for ${domain}..."
+            npx tsx private/account/scripts/verify-webhook.ts --expected-url "https://${domain}/account/api/v1/webhooks/stripe"
+          done
         env:
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_EU }}
 
-      # -----------------------------------------------------------------------
-      # Step 1c: Merge submodule PRs to main
-      # Must run BEFORE bump-submodules.sh which resets submodules to origin/main
-      # -----------------------------------------------------------------------
-      - name: Merge submodule branches
-        if: needs.init.outputs.retry_mode != 'true'
-        run: .ci/scripts/release/merge-submodule-branches.sh
-        env:
-          GITHUB_PAT: ${{ steps.app-token.outputs.token }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       # -----------------------------------------------------------------------
       # Step 2: Bump version & commit (includes all submodules)
@@ -520,15 +505,29 @@ jobs:
   # BEFORE publish, so broken artifacts never reach production.
 
   # ============================================================================
-  # DEPLOY EDGE WORKER - Build pages from source and deploy to edge.rediacc.com
+  # DEPLOY EDGE - Marketing + per-region account workers
   # ============================================================================
-  deploy-edge:
-    name: Deploy edge Worker
+  deploy-marketing-edge:
+    name: Deploy edge Marketing
     needs: [init, publish]
     if: >-
       success() &&
       needs.init.outputs.skip_release != 'true'
-    uses: ./.github/workflows/cd-deploy-worker.yml
+    uses: ./.github/workflows/cd-deploy-marketing.yml
+    with:
+      target: edge
+      ref: ${{ needs.init.outputs.ci_sha }}
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
+
+  deploy-account-edge:
+    name: Deploy edge Account (all regions)
+    needs: [init, publish]
+    if: >-
+      success() &&
+      needs.init.outputs.skip_release != 'true'
+    uses: ./.github/workflows/cd-deploy-account.yml
     with:
       target: edge
       ref: ${{ needs.init.outputs.ci_sha }}
@@ -541,25 +540,47 @@ jobs:
       ACCOUNT_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
       ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
       ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_SECRET_KEY_EU: ${{ secrets.STRIPE_SECRET_KEY_EU }}
+      STRIPE_SECRET_KEY_US: ${{ secrets.STRIPE_SECRET_KEY_US }}
       STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      STRIPE_WEBHOOK_SECRET_EU: ${{ secrets.STRIPE_WEBHOOK_SECRET_EU }}
+      STRIPE_WEBHOOK_SECRET_US: ${{ secrets.STRIPE_WEBHOOK_SECRET_US }}
       STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
-      AWS_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
-      AWS_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
+      AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
+      AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
+      AWS_SES_ACCESS_KEY_ID_US: ${{ secrets.AWS_SES_ACCESS_KEY_ID_US }}
+      AWS_SES_SECRET_ACCESS_KEY_US: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_US }}
+      STRIPE_SECRET_KEY_ASIA: ${{ secrets.STRIPE_SECRET_KEY_ASIA }}
+      STRIPE_WEBHOOK_SECRET_ASIA: ${{ secrets.STRIPE_WEBHOOK_SECRET_ASIA }}
+      AWS_SES_ACCESS_KEY_ID_ASIA: ${{ secrets.AWS_SES_ACCESS_KEY_ID_ASIA }}
+      AWS_SES_SECRET_ACCESS_KEY_ASIA: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_ASIA }}
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
   # ============================================================================
-  # DEPLOY PRODUCTION WORKER (hotfix only) - Deploy to www.rediacc.com
+  # DEPLOY PRODUCTION (hotfix only) - Marketing + per-region account workers
   # ============================================================================
-  deploy-production:
-    name: Deploy production Worker (hotfix)
+  deploy-marketing-production:
+    name: Deploy production Marketing (hotfix)
     needs: [init, publish]
     if: >-
       success() &&
       needs.init.outputs.skip_release != 'true' &&
       inputs.publish_stable == true
-    uses: ./.github/workflows/cd-deploy-worker.yml
+    uses: ./.github/workflows/cd-deploy-marketing.yml
+    with:
+      target: production
+      ref: v${{ needs.init.outputs.next_version }}
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  deploy-account-production:
+    name: Deploy production Account (hotfix, all regions)
+    needs: [init, publish]
+    if: >-
+      success() &&
+      needs.init.outputs.skip_release != 'true' &&
+      inputs.publish_stable == true
+    uses: ./.github/workflows/cd-deploy-account.yml
     with:
       target: production
       ref: v${{ needs.init.outputs.next_version }}
@@ -572,12 +593,20 @@ jobs:
       ACCOUNT_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
       ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
       ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_SECRET_KEY_EU: ${{ secrets.STRIPE_SECRET_KEY_EU }}
+      STRIPE_SECRET_KEY_US: ${{ secrets.STRIPE_SECRET_KEY_US }}
       STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      STRIPE_WEBHOOK_SECRET_EU: ${{ secrets.STRIPE_WEBHOOK_SECRET_EU }}
+      STRIPE_WEBHOOK_SECRET_US: ${{ secrets.STRIPE_WEBHOOK_SECRET_US }}
       STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
-      AWS_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
-      AWS_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
+      AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
+      AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
+      AWS_SES_ACCESS_KEY_ID_US: ${{ secrets.AWS_SES_ACCESS_KEY_ID_US }}
+      AWS_SES_SECRET_ACCESS_KEY_US: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_US }}
+      STRIPE_SECRET_KEY_ASIA: ${{ secrets.STRIPE_SECRET_KEY_ASIA }}
+      STRIPE_WEBHOOK_SECRET_ASIA: ${{ secrets.STRIPE_WEBHOOK_SECRET_ASIA }}
+      AWS_SES_ACCESS_KEY_ID_ASIA: ${{ secrets.AWS_SES_ACCESS_KEY_ID_ASIA }}
+      AWS_SES_SECRET_ACCESS_KEY_ASIA: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_ASIA }}
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
   # ============================================================================
@@ -586,31 +615,50 @@ jobs:
   smoke-test:
     name: Smoke Test
     runs-on: ubuntu-slim
-    needs: [init, publish, deploy-edge]
+    needs: [init, publish, deploy-marketing-edge, deploy-account-edge]
     if: >-
       success() &&
       needs.init.outputs.skip_release != 'true'
     steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: regions.json
+          sparse-checkout-cone-mode: false
+
       - name: Verify edge endpoints
         run: |
           VERSION="${{ needs.init.outputs.next_version }}"
           echo "Verifying edge deployment for v${VERSION}..."
 
-          # Verify install.sh is served
+          # Marketing worker
           curl -fsSL https://edge.rediacc.com/install.sh -o /dev/null
-          echo "  install.sh: OK"
+          echo "  marketing (install.sh): OK"
 
-          # Verify latest.json on R2 is valid and has a version
+          # R2 releases
           EDGE_VERSION=$(curl -fsSL https://releases.rediacc.com/cli/edge/latest.json | jq -re '.version')
           echo "  edge latest.json: v${EDGE_VERSION}"
 
-          # Verify the deployed version matches (skip in retry mode where edge may be ahead)
           if [[ "$EDGE_VERSION" == "$VERSION" ]]; then
             echo "  version match: OK"
           else
             echo "  version mismatch: edge has v${EDGE_VERSION}, expected v${VERSION} (acceptable in retry mode)"
           fi
 
+          # Per-region account health checks (dynamic from regions.json)
+          FAILED=0
+          while read -r domain; do
+            HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" "https://${domain}/account/api/v1/health" 2>/dev/null || echo "000")
+            if [[ "$HTTP_CODE" == "200" ]]; then
+              echo "  ${domain} health: OK"
+            else
+              echo "::error::${domain} health check failed (HTTP ${HTTP_CODE})"
+              FAILED=1
+            fi
+          done < <(jq -r '.regions[] | .edgeDomain' regions.json)
+
+          if [[ "$FAILED" -eq 1 ]]; then
+            exit 1
+          fi
           echo "Smoke test passed"
 
   # ============================================================================
@@ -664,7 +712,7 @@ jobs:
   housekeeping:
     name: Housekeeping
     runs-on: ubuntu-slim
-    needs: [init, publish, deploy-edge, deploy-production, smoke-test]
+    needs: [init, publish, deploy-marketing-edge, deploy-account-edge, deploy-marketing-production, deploy-account-production, smoke-test]
     if: >-
       always() &&
       needs.publish.result == 'success' &&
@@ -737,8 +785,11 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           GH_TOKEN: ${{ github.token }}
 
-      - name: Verify Stripe sandbox webhook endpoint
-        run: npx tsx scripts/verify-webhook.ts --sandbox
-        working-directory: private/account
+      - name: Verify Stripe sandbox webhook endpoints (per-region)
+        run: |
+          jq -r '.regions[] | .edgeDomain' regions.json | while read domain; do
+            echo "Verifying sandbox webhook for ${domain}..."
+            npx tsx private/account/scripts/verify-webhook.ts --sandbox --expected-url "https://${domain}/account/api/v1/webhooks/stripe"
+          done
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}

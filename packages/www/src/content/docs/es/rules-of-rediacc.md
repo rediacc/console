@@ -4,7 +4,7 @@ description: "Información esencial sobre reglas y convenciones para crear aplic
 category: "Guides"
 order: 5
 language: es
-sourceHash: "17f2cc084c2782cc"
+sourceHash: "9bd7744a0b8bbf3c"
 sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
@@ -14,11 +14,11 @@ Cada repositorio de Rediacc se ejecuta dentro de un entorno aislado con su propi
 
 ## Rediaccfile
 
-- **Cada repositorio necesita un Rediaccfile** — un script bash con funciones de ciclo de vida.
+- **Cada repositorio necesita un Rediaccfile**, un script bash con funciones de ciclo de vida.
 - **Funciones del ciclo de vida**: `up()`, `down()`. Opcional: `info()`.
 - `up()` inicia tus servicios. `down()` los detiene.
 - `info()` proporciona información de estado (estado de contenedores, logs recientes, salud).
-- Rediaccfile es cargado (sourced) por renet — tiene acceso a variables de shell, no solo a variables de entorno.
+- Rediaccfile es cargado (sourced) por renet, tiene acceso a variables de shell, no solo a variables de entorno.
 
 ### Variables de entorno disponibles en Rediaccfile
 
@@ -49,12 +49,12 @@ down() {
 
 ## Compose
 
-- **Usa `renet compose`, nunca `docker compose`** — renet inyecta aislamiento de red, red de host, IPs de loopback y etiquetas de servicio.
-- **NO establezcas `network_mode`** en tu archivo compose — renet fuerza `network_mode: host` en todos los servicios. Cualquier valor que establezcas será sobrescrito.
-- **NO establezcas etiquetas `rediacc.*`** — renet auto-inyecta `rediacc.network_id`, `rediacc.service_ip` y `rediacc.service_name`.
+- **Usa `renet compose`, nunca `docker compose`**, renet inyecta aislamiento de red, red de host, IPs de loopback y etiquetas de servicio.
+- **NO establezcas `network_mode`** en tu archivo compose, renet fuerza `network_mode: host` en todos los servicios. Cualquier valor que establezcas será sobrescrito.
+- **NO establezcas etiquetas `rediacc.*`**, renet auto-inyecta `rediacc.network_id`, `rediacc.service_ip` y `rediacc.service_name`.
 - **Los mapeos de `ports:` se ignoran** en modo de red de host. Usa la etiqueta `rediacc.service_port` para enrutar el proxy a puertos que no sean el 80.
-- **Las políticas de reinicio (`restart: always`, `on-failure`, etc.) son seguras de usar** — renet las elimina automáticamente para compatibilidad con CRIU. El watchdog del router recupera automáticamente los contenedores detenidos según la política original guardada en `.rediacc.json`.
-- **Los ajustes peligrosos están bloqueados por defecto** — `privileged: true`, `pid: host`, `ipc: host` y bind mounts a rutas del sistema son rechazados. Usa `renet compose --unsafe` para anularlo bajo tu propio riesgo.
+- **Las políticas de reinicio (`restart: always`, `on-failure`, etc.) son seguras de usar**, renet las elimina automáticamente para compatibilidad con CRIU. El watchdog del router recupera automáticamente los contenedores detenidos según la política original guardada en `.rediacc.json`.
+- **Los ajustes peligrosos están bloqueados por defecto**, `privileged: true`, `pid: host`, `ipc: host` y bind mounts a rutas del sistema son rechazados. Usa `renet compose --unsafe` para anularlo bajo tu propio riesgo.
 
 ### Variables de entorno dentro de los contenedores
 
@@ -69,17 +69,17 @@ Renet auto-inyecta estas en cada contenedor:
 
 - The compose **service name** becomes the auto-route URL prefix.
 - **Grand repos**: `https://{service}.{repo}.{machine}.{baseDomain}` (ej.: `https://myapp.marketing.server-1.example.com`).
-- **Fork repos**: `https://{service}-{tag}.{machine}.{baseDomain}` — uses the machine wildcard cert to avoid Let's Encrypt rate limits.
-- Para dominios personalizados, use etiquetas de Traefik (nota: los dominios personalizados NO son compatibles con fork — el dominio pertenece al grand repo).
+- **Fork repos**: `https://{service}-{tag}.{machine}.{baseDomain}`, uses the machine wildcard cert to avoid Let's Encrypt rate limits.
+- Para dominios personalizados, use etiquetas de Traefik (nota: los dominios personalizados NO son compatibles con fork, el dominio pertenece al grand repo).
 
 ## Redes
 
 - **Cada repositorio tiene su propio daemon Docker** en `/var/run/rediacc/docker-<networkId>.sock`.
 - **Cada servicio recibe una IP de loopback única** dentro de una subred /26 (ej. `127.0.24.192/26`).
-- **Enlázate a `SERVICE_IP`** — cada servicio obtiene una IP de loopback única.
+- **Enlázate a `SERVICE_IP`**, cada servicio obtiene una IP de loopback única.
 - **Los health checks deben usar `${SERVICE_IP}`**, no `localhost`. Ejemplo: `healthcheck: test: ["CMD", "curl", "-f", "http://${SERVICE_IP}:8080/health"]`
 - **Comunicación entre servicios**: Usa IPs de loopback o la variable de entorno `SERVICE_IP`. Los nombres DNS de Docker NO funcionan en modo host.
-- **Los conflictos de puertos son imposibles** entre repositorios — cada uno tiene su propio daemon Docker y rango de IP.
+- **Los conflictos de puertos son imposibles** entre repositorios, cada uno tiene su propio daemon Docker y rango de IP.
 - **Reenvío de puertos TCP/UDP**: Agrega etiquetas para exponer puertos no HTTP:
   ```yaml
   labels:
@@ -89,7 +89,7 @@ Renet auto-inyecta estas en cada contenedor:
 
 ## Almacenamiento
 
-- **Todos los datos Docker se almacenan dentro del repo cifrado** — el `data-root` de Docker está en `{mount}/.rediacc/docker/data` dentro del volumen LUKS. Los volúmenes nombrados, imágenes y capas de contenedores están todos cifrados, respaldados y se forkean automáticamente.
+- **Todos los datos Docker se almacenan dentro del repo cifrado**, el `data-root` de Docker está en `{mount}/.rediacc/docker/data` dentro del volumen LUKS. Los volúmenes nombrados, imágenes y capas de contenedores están todos cifrados, respaldados y se forkean automáticamente.
 - **Los bind mounts a `${REDIACC_WORKING_DIR}/...` se recomiendan** por claridad, pero los volúmenes nombrados también funcionan de forma segura.
   ```yaml
   volumes:
@@ -104,21 +104,21 @@ Renet auto-inyecta estas en cada contenedor:
 
 - **Activación por etiqueta**: Añada `rediacc.checkpoint=true` a los contenedores que desee checkpointear. Los contenedores sin esta etiqueta (bases de datos, cachés) se inician desde cero y se recuperan mediante sus propios mecanismos (WAL, LDF, AOF).
 - **`backup push --checkpoint`** captura el estado de memoria de procesos en ejecución + estado del disco para contenedores etiquetados.
-- **`repo fork --checkpoint`** captura el estado del proceso antes del fork — el fork se restaura automáticamente con `repo up`.
-- **`repo down --checkpoint`** guarda el estado del proceso antes de detenerse — el siguiente `repo up` restaura automáticamente.
+- **`repo fork --checkpoint`** captura el estado del proceso antes del fork, el fork se restaura automáticamente con `repo up`.
+- **`repo down --checkpoint`** guarda el estado del proceso antes de detenerse, el siguiente `repo up` restaura automáticamente.
 - **`repo up`** detecta automáticamente datos de checkpoint y restaura si los encuentra. Use `--skip-checkpoint` para inicio limpio.
 - **Restauración con reconocimiento de dependencias**: Usa `depends_on` de compose para iniciar bases de datos primero (esperar healthy), luego restaurar CRIU de contenedores de aplicación.
-- **Las conexiones TCP se vuelven obsoletas después de la restauración** — las aplicaciones deben manejar `ECONNRESET` y reconectarse.
+- **Las conexiones TCP se vuelven obsoletas después de la restauración**, las aplicaciones deben manejar `ECONNRESET` y reconectarse.
 - **El modo experimental de Docker** se activa automáticamente en los daemons por repositorio.
 - **CRIU se instala** durante `rdc config machine setup`.
 - **`/etc/criu/runc.conf`** se configura con `tcp-established` para preservación de conexiones TCP.
-- **La configuración de seguridad se inyecta automáticamente para contenedores etiquetados** — `renet compose` añade lo siguiente a contenedores con `rediacc.checkpoint=true`:
+- **La configuración de seguridad se inyecta automáticamente para contenedores etiquetados**, `renet compose` añade lo siguiente a contenedores con `rediacc.checkpoint=true`:
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (conjunto mínimo para CRIU en kernel 5.9+)
   - `security_opt`: `apparmor=unconfined` (el soporte de AppArmor en CRIU aún no es estable)
   - `userns_mode: host` (CRIU requiere acceso al namespace init para `/proc/pid/map_files`)
 - Los contenedores sin la etiqueta ejecutan con una postura de seguridad más limpia (sin capabilities extra).
-- El perfil seccomp predeterminado de Docker se mantiene — CRIU usa `PTRACE_O_SUSPEND_SECCOMP` (kernel 4.3+) para suspender temporalmente los filtros durante checkpoint/restore.
-- **NO configure las capabilities de CRIU manualmente** en su archivo compose — renet se encarga según la etiqueta.
+- El perfil seccomp predeterminado de Docker se mantiene, CRIU usa `PTRACE_O_SUSPEND_SECCOMP` (kernel 4.3+) para suspender temporalmente los filtros durante checkpoint/restore.
+- **NO configure las capabilities de CRIU manualmente** en su archivo compose, renet se encarga según la etiqueta.
 - Consulta la [plantilla heartbeat](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) para una implementación de referencia compatible con CRIU.
 
 ### Patrones de aplicación compatibles con CRIU
@@ -127,7 +127,7 @@ Renet auto-inyecta estas en cada contenedor:
 - Usa bibliotecas de pool de conexiones que soporten reconexión automática.
 - Agrega `process.on("uncaughtException")` como red de seguridad para errores de sockets obsoletos de objetos internos de bibliotecas.
 - Las políticas de reinicio son gestionadas automáticamente por renet (eliminadas para CRIU, el watchdog gestiona la recuperación).
-- Evita depender del DNS de Docker — usa IPs de loopback para la comunicación entre servicios.
+- Evita depender del DNS de Docker, usa IPs de loopback para la comunicación entre servicios.
 
 ## Seguridad
 
@@ -149,11 +149,11 @@ Renet auto-inyecta estas en cada contenedor:
 
 ## Errores comunes
 
-- Usar `docker compose` en lugar de `renet compose` — los contenedores no obtendrán aislamiento de red.
-- Las políticas de reinicio son seguras — renet las elimina automáticamente y el watchdog gestiona la recuperación.
-- Usar `privileged: true` — no es necesario, renet inyecta capacidades CRIU específicas en su lugar.
-- No enlazarse a `SERVICE_IP` — causa conflictos de puertos entre repos.
-- Codificar IPs de forma fija — usa la variable de entorno `SERVICE_IP`; las IPs se asignan dinámicamente por networkId.
-- Olvidar `--mount` en el primer despliegue después de `backup push` — el volumen LUKS necesita apertura explícita.
-- Usar `rdc term connect -c` como solución alternativa para comandos fallidos — reporta bugs en su lugar.
+- Usar `docker compose` en lugar de `renet compose`, los contenedores no obtendrán aislamiento de red.
+- Las políticas de reinicio son seguras, renet las elimina automáticamente y el watchdog gestiona la recuperación.
+- Usar `privileged: true`, no es necesario, renet inyecta capacidades CRIU específicas en su lugar.
+- No enlazarse a `SERVICE_IP`, causa conflictos de puertos entre repos.
+- Codificar IPs de forma fija, usa la variable de entorno `SERVICE_IP`; las IPs se asignan dinámicamente por networkId.
+- Olvidar `--mount` en el primer despliegue después de `backup push`, el volumen LUKS necesita apertura explícita.
+- Usar `rdc term connect -c` como solución alternativa para comandos fallidos, reporta bugs en su lugar.
 - `repo delete` realiza una limpieza completa incluyendo IPs de loopback y unidades systemd. Ejecuta `rdc machine prune <name>` para limpiar los restos de eliminaciones antiguas.

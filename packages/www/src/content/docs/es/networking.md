@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: es
-sourceHash: "cc79bbad07c3ef01"
+sourceHash: "c9d086d519625aa8"
 ---
 
 # Red
@@ -36,7 +36,7 @@ Internet → Traefik (puertos 80/443/TCP/UDP)
 
 Cuando agrega las etiquetas correctas a un contenedor y lo inicia con `renet compose`, automáticamente se vuelve enrutable -- no se necesita configuración manual del proxy.
 
-> El binario del servidor de rutas se mantiene sincronizado con la versión de su CLI. Cuando la CLI actualiza el binario renet en una máquina, el servidor de rutas se reinicia automáticamente (~1–2 segundos). Esto no causa tiempo de inactividad — Traefik continúa sirviendo tráfico con su última configuración conocida durante el reinicio y recoge la nueva configuración en la siguiente consulta. Las conexiones de clientes existentes no se ven afectadas. Los contenedores de su aplicación no se tocan.
+> El binario del servidor de rutas se mantiene sincronizado con la versión de su CLI. Cuando la CLI actualiza el binario renet en una máquina, el servidor de rutas se reinicia automáticamente (~1–2 segundos). Esto no causa tiempo de inactividad, Traefik continúa sirviendo tráfico con su última configuración conocida durante el reinicio y recoge la nueva configuración en la siguiente consulta. Las conexiones de clientes existentes no se ven afectadas. Los contenedores de su aplicación no se tocan.
 
 ## Etiquetas Docker
 
@@ -75,10 +75,10 @@ Puede establecer un dominio personalizado para un servicio usando la etiqueta `r
 
 ```yaml
 labels:
-  # Nombre corto — se resuelve a cloud.example.com usando el baseDomain de la máquina
+  # Nombre corto, se resuelve a cloud.example.com usando el baseDomain de la máquina
   - "rediacc.domain=cloud"
 
-  # Dominio completo — se usa tal cual
+  # Dominio completo, se usa tal cual
   - "rediacc.domain=cloud.example.com"
 ```
 
@@ -145,7 +145,7 @@ services:
   database:
     image: postgres:17
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
-    # Sin etiquetas traefik — la base de datos es solo interna
+    # Sin etiquetas traefik, la base de datos es solo interna
 ```
 
 | Etiqueta | Propósito |
@@ -233,7 +233,7 @@ services:
       - "traefik.tcp.routers.mail-smtp.service=mail-smtp"
       - "traefik.tcp.services.mail-smtp.loadbalancer.server.port=25"
 
-      # IMAPS (puerto 993) — paso directo de TLS
+      # IMAPS (puerto 993), paso directo de TLS
       - "traefik.tcp.routers.mail-imaps.entrypoints=tcp-993"
       - "traefik.tcp.routers.mail-imaps.rule=HostSNI(`mail.example.com`)"
       - "traefik.tcp.routers.mail-imaps.tls.passthrough=true"
@@ -248,7 +248,7 @@ Conceptos clave:
 
 ### Puertos Preconfigurados
 
-Los siguientes puertos TCP/UDP tienen puntos de entrada por defecto (no es necesario agregarlos vía `--tcp-ports`). Los puntos de entrada solo se generan para las familias de direcciones configuradas — los puntos de entrada IPv4 requieren `--public-ipv4`, los puntos de entrada IPv6 requieren `--public-ipv6`:
+Los siguientes puertos TCP/UDP tienen puntos de entrada por defecto (no es necesario agregarlos vía `--tcp-ports`). Los puntos de entrada solo se generan para las familias de direcciones configuradas, los puntos de entrada IPv4 requieren `--public-ipv4`, los puntos de entrada IPv6 requieren `--public-ipv6`:
 
 | Puerto | Protocolo | Uso Común |
 |--------|-----------|-----------|
@@ -278,7 +278,7 @@ Cuando `--cf-dns-token` está configurado, `rdc config infra push` crea automát
 
 Los registros a nivel de máquina son creados por `push-infra` y cubren las rutas con dominio personalizado (`rediacc.domain`). Los registros comodín por repositorio son creados automáticamente por `repo up` y cubren las rutas automáticas para ese repositorio.
 
-Esto es idempotente — los registros existentes se actualizan si la IP cambia, y se dejan sin cambios si ya son correctos.
+Esto es idempotente, los registros existentes se actualizan si la IP cambia, y se dejan sin cambios si ya son correctos.
 
 El comodín del dominio base (`*.example.com`) debe crearse manualmente si usa etiquetas de dominio personalizadas como `rediacc.domain=erp`.
 
@@ -407,7 +407,7 @@ services:
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-    # Sin etiquetas traefik — solo interno
+    # Sin etiquetas traefik, solo interno
 ```
 
 ### Rediaccfile

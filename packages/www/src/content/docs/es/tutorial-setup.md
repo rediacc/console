@@ -4,7 +4,7 @@ description: "Cree un perfil de configuración, registre una máquina remota, ve
 category: "Tutorials"
 order: 2
 language: es
-sourceHash: "3d92b47b323eb53e"
+sourceHash: "2a32100e76d41bc0"
 ---
 
 # Cómo configurar una máquina con Rediacc
@@ -88,7 +88,7 @@ Verifica su entorno local: versión de CLI, Docker, binario de renet, estado de 
 
 ### Paso 8: Configurar infraestructura
 
-Para servicios de acceso público, la máquina necesita configuración de red — su IP externa, un dominio base y un correo de certificado para TLS.
+Para servicios de acceso público, la máquina necesita configuración de red, su IP externa, un dominio base y un correo de certificado para TLS.
 
 ```bash
 rdc config infra set -m bridge-vm \
@@ -120,6 +120,6 @@ La clave de host almacenada no coincide con la clave actual del servidor. Esto o
 
 Ha creado un perfil de configuración, registrado una máquina, verificado la conectividad y configurado la red de infraestructura. Para implementar aplicaciones:
 
-- [Configuración de máquina](/es/docs/setup) — referencia completa para todos los comandos de configuración y setup
-- [Tutorial: Ciclo de vida del repositorio](/es/docs/tutorial-repos) — crear, implementar y gestionar repositorios
-- [Inicio rápido](/es/docs/quick-start) — implementar una aplicación contenedorizada de principio a fin
+- [Configuración de máquina](/es/docs/setup), referencia completa para todos los comandos de configuración y setup
+- [Tutorial: Ciclo de vida del repositorio](/es/docs/tutorial-repos), crear, implementar y gestionar repositorios
+- [Inicio rápido](/es/docs/quick-start), implementar una aplicación contenedorizada de principio a fin

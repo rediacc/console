@@ -4,7 +4,7 @@ description: Entender cómo account, rdc y renet gestionan los slots de máquina
 category: Guides
 order: 7
 language: es
-sourceHash: "49428ac8fe913194"
+sourceHash: "a31dc14e6305b4d4"
 ---
 
 # Suscripción y licencias
@@ -70,10 +70,10 @@ Una licencia de repositorio es una licencia firmada para un repositorio en una m
 
 Se usa para:
 
-- `rdc repo resize` y `rdc repo expand` — validación completa incluyendo expiración
-- `rdc repo up`, `rdc repo down`, `rdc repo delete` — validado con **expiración omitida**
-- `rdc repo push`, `rdc repo pull`, `rdc repo sync` — validado con **expiración omitida**
-- autoarranque del repositorio al reiniciar la máquina — validado con **expiración omitida**
+- `rdc repo resize` y `rdc repo expand`, validación completa incluyendo expiración
+- `rdc repo up`, `rdc repo down`, `rdc repo delete`, validado con **expiración omitida**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, validado con **expiración omitida**
+- autoarranque del repositorio al reiniciar la máquina, validado con **expiración omitida**
 
 Las licencias de repositorio están vinculadas a la máquina y al repositorio de destino, y Rediacc refuerza ese vínculo con metadatos de identidad del repositorio. Para repositorios cifrados, eso incluye la identidad LUKS del volumen subyacente.
 
@@ -123,7 +123,7 @@ Esa emisión respaldada por la cuenta cuenta para tu uso mensual de **issuances 
 
 ### Reinicio de máquina y autoarranque
 
-El autoarranque usa las mismas reglas que `rdc repo up` — la expiración se omite, por lo que los repositorios siempre se reinician libremente.
+El autoarranque usa las mismas reglas que `rdc repo up`, la expiración se omite, por lo que los repositorios siempre se reinician libremente.
 
 Las licencias de repositorio usan un modelo de validez de larga duración:
 
@@ -192,12 +192,12 @@ Para la configuración inicial de la máquina, consulta [Configuración de máqu
 
 ## Comportamiento sin conexión y expiración
 
-La validación de licencias ocurre localmente en la máquina — no requiere conectividad en vivo con el servidor de cuentas.
+La validación de licencias ocurre localmente en la máquina, no requiere conectividad en vivo con el servidor de cuentas.
 
 Eso significa:
 
 - un entorno en ejecución no necesita conectividad en vivo con la cuenta en cada comando
-- todos los repositorios siempre pueden iniciarse, detenerse y eliminarse incluso con licencias expiradas — los usuarios nunca quedan bloqueados de operar sus propios repositorios
+- todos los repositorios siempre pueden iniciarse, detenerse y eliminarse incluso con licencias expiradas, los usuarios nunca quedan bloqueados de operar sus propios repositorios
 - las operaciones de aprovisionamiento (`create`, `fork`) requieren una licencia de máquina válida, y las operaciones de crecimiento (`resize`, `expand`) requieren una licencia de repositorio válida
 - las licencias de repositorio verdaderamente expiradas deben actualizarse a través de `rdc` antes de resize/expand
 
@@ -213,7 +213,7 @@ La recuperación automática es intencionalmente estrecha:
 - `repository_mismatch`: falla rápidamente y te indica que actualices las licencias de repositorio explícitamente
 - `sequence_regression`: falla rápidamente como un problema de integridad/estado de la licencia de repositorio
 - `invalid_signature`: falla rápidamente como un problema de integridad/estado de la licencia de repositorio
-- `identity_mismatch`: falla rápidamente — la identidad del repositorio no coincide con la licencia instalada
+- `identity_mismatch`: falla rápidamente, la identidad del repositorio no coincide con la licencia instalada
 
 Estos casos de fallo rápido no consumen automáticamente llamadas de actualización o emisión respaldadas por la cuenta.
 

@@ -22,9 +22,10 @@
 #     Get your Global API Key: https://dash.cloudflare.com/profile/api-tokens
 #
 #   AWS SES:   AWS_SES_ADMIN_KEY_ID + AWS_SES_ADMIN_SECRET
-#     IAM admin/root credentials with permission to manage keys for 'rediacc-ses-worker'.
+#     IAM admin/root credentials with permission to manage keys for rediacc-ses-eu and rediacc-ses-us.
 #     Your own credentials: https://us-east-1.console.aws.amazon.com/iam/home#/security_credentials
-#     SES worker user:      https://us-east-1.console.aws.amazon.com/iam/home#/users/details/rediacc-ses-worker?section=security_credentials
+#     SES EU user:          https://us-east-1.console.aws.amazon.com/iam/home#/users/details/rediacc-ses-eu?section=security_credentials
+#     SES US user:          https://us-east-1.console.aws.amazon.com/iam/home#/users/details/rediacc-ses-us?section=security_credentials
 #
 # Flags:
 #   --dry-run           Show what would be done without making changes
@@ -85,12 +86,20 @@ R2_ACCOUNT_PERMS=(
 # https://developers.cloudflare.com/turnstile/get-started/widget-management/api/
 TURNSTILE_GITHUB_SECRET="TURNSTILE_SECRET_KEY"
 
-# --- AWS SES credential rotation ---
-# SES uses standard IAM access keys. Rotated via aws iam CLI.
-# Auth: AWS_SES_ADMIN_KEY_ID + AWS_SES_ADMIN_SECRET env vars (IAM admin that can manage rediacc-ses-worker keys).
-AWS_IAM_USER="rediacc-ses-worker"
-SES_GITHUB_KEY_SECRET="AWS_SES_ACCESS_KEY_ID"
-SES_GITHUB_SECRET_SECRET="AWS_SES_SECRET_ACCESS_KEY"
+# --- AWS SES credential rotation (multi-region) ---
+# Each region has a dedicated IAM user scoped to its SES region.
+# Auth: AWS_SES_ADMIN_KEY_ID + AWS_SES_ADMIN_SECRET env vars (IAM admin that can manage both users).
+AWS_IAM_USER_EU="rediacc-ses-eu"
+SES_EU_GITHUB_KEY_SECRET="AWS_SES_ACCESS_KEY_ID_EU"
+SES_EU_GITHUB_SECRET_SECRET="AWS_SES_SECRET_ACCESS_KEY_EU"
+
+AWS_IAM_USER_US="rediacc-ses-us"
+SES_US_GITHUB_KEY_SECRET="AWS_SES_ACCESS_KEY_ID_US"
+SES_US_GITHUB_SECRET_SECRET="AWS_SES_SECRET_ACCESS_KEY_US"
+
+AWS_IAM_USER_ASIA="rediacc-ses-asia"
+SES_ASIA_GITHUB_KEY_SECRET="AWS_SES_ACCESS_KEY_ID_ASIA"
+SES_ASIA_GITHUB_SECRET_SECRET="AWS_SES_SECRET_ACCESS_KEY_ASIA"
 
 # TODO: Non-worker secret stores that also need updating after rotation:
 #
@@ -405,34 +414,74 @@ sync_worker_secret() {
 # what was rotated, and only pushes the overlap. No assumptions about which
 # secrets a worker uses -- we check every time.
 # Returns the number of workers that had at least one sync failure.
+# Determine the data region for a given worker name.
+# EU workers get EU SES credentials, US workers get US SES credentials.
+# Returns "eu" or "us".
+worker_region() {
+    local worker="$1"
+    case "$worker" in
+        rediacc-account-us | edge-rediacc-account-us) echo "us" ;;
+        rediacc-account-asia | edge-rediacc-account-asia) echo "asia" ;;
+        *) echo "eu" ;;
+    esac
+}
+
 sync_secrets_to_workers() {
     log_step "=== Syncing rotated secrets to live workers ==="
 
     # Collect rotated secrets that are allowed to be synced to workers.
     # Only runtime secrets go here -- never CI/CD-only tokens (CLOUDFLARE_API_TOKEN, R2_*).
     # An attacker who binds a CI/CD secret name to a worker should not receive the real value.
-    local -a rotated_names=()
-    local -a rotated_values=()
+    #
+    # Global secrets: same value for all workers (e.g., Turnstile).
+    # Regional secrets: same secret NAME on the worker, but different VALUE per region.
+    # Workers use AWS_SES_ACCESS_KEY_ID/AWS_SES_SECRET_ACCESS_KEY regardless of region --
+    # the regional value is injected here based on worker name.
+    local -a global_names=() global_values=()
+    local -a eu_names=() eu_values=()
+    local -a us_names=() us_values=()
 
     if [[ -n "${new_turnstile_secret:-}" ]]; then
-        rotated_names+=("TURNSTILE_SECRET_KEY")
-        rotated_values+=("$new_turnstile_secret")
+        global_names+=("TURNSTILE_SECRET_KEY")
+        global_values+=("$new_turnstile_secret")
     fi
-    if [[ -n "${new_ses_key_id:-}" ]]; then
-        rotated_names+=("AWS_SES_ACCESS_KEY_ID")
-        rotated_values+=("$new_ses_key_id")
+    if [[ -n "${new_ses_key_id_eu:-}" ]]; then
+        eu_names+=("AWS_SES_ACCESS_KEY_ID")
+        eu_values+=("$new_ses_key_id_eu")
     fi
-    if [[ -n "${new_ses_secret:-}" ]]; then
-        rotated_names+=("AWS_SES_SECRET_ACCESS_KEY")
-        rotated_values+=("$new_ses_secret")
+    if [[ -n "${new_ses_secret_eu:-}" ]]; then
+        eu_names+=("AWS_SES_SECRET_ACCESS_KEY")
+        eu_values+=("$new_ses_secret_eu")
+    fi
+    if [[ -n "${new_ses_key_id_us:-}" ]]; then
+        us_names+=("AWS_SES_ACCESS_KEY_ID")
+        us_values+=("$new_ses_key_id_us")
+    fi
+    if [[ -n "${new_ses_secret_us:-}" ]]; then
+        us_names+=("AWS_SES_SECRET_ACCESS_KEY")
+        us_values+=("$new_ses_secret_us")
     fi
 
-    if [[ ${#rotated_names[@]} -eq 0 ]]; then
+    local -a asia_names=() asia_values=()
+    if [[ -n "${new_ses_key_id_asia:-}" ]]; then
+        asia_names+=("AWS_SES_ACCESS_KEY_ID")
+        asia_values+=("$new_ses_key_id_asia")
+    fi
+    if [[ -n "${new_ses_secret_asia:-}" ]]; then
+        asia_names+=("AWS_SES_SECRET_ACCESS_KEY")
+        asia_values+=("$new_ses_secret_asia")
+    fi
+
+    local total=$((${#global_names[@]} + ${#eu_names[@]} + ${#us_names[@]} + ${#asia_names[@]}))
+    if [[ "$total" -eq 0 ]]; then
         log_info "No secrets were rotated, skipping worker sync"
         return 0
     fi
 
-    log_info "Rotated secrets: ${rotated_names[*]}"
+    log_info "Rotated global secrets: ${global_names[*]:-(none)}"
+    log_info "Rotated EU SES secrets: ${eu_names[*]:-(none)}"
+    log_info "Rotated US SES secrets: ${us_names[*]:-(none)}"
+    log_info "Rotated ASIA SES secrets: ${asia_names[*]:-(none)}"
 
     # Discover live workers
     log_step "Listing workers in account..."
@@ -452,19 +501,19 @@ sync_secrets_to_workers() {
         page=$((page + 1))
     done
 
-    # Filter to target workers
+    # Filter to target workers (current + future regional workers)
     local -a target_workers=()
     while IFS= read -r name; do
         [[ -z "$name" ]] && continue
         case "$name" in
-            rediacc-www | edge-rediacc-www | pr-*)
+            rediacc-www | edge-rediacc-www | rediacc-account-eu | edge-rediacc-account-eu | rediacc-account-us | edge-rediacc-account-us | rediacc-account-asia | edge-rediacc-account-asia | pr-*)
                 target_workers+=("$name")
                 ;;
         esac
     done <<<"$all_workers"
 
     if [[ ${#target_workers[@]} -eq 0 ]]; then
-        log_warn "No target workers found (expected rediacc-www, edge-rediacc-www, pr-*)"
+        log_warn "No target workers found"
         return 0
     fi
 
@@ -474,6 +523,28 @@ sync_secrets_to_workers() {
     local failed_workers=0
     for worker in "${target_workers[@]}"; do
         log_step "Checking secrets on worker: $worker"
+
+        local region
+        region=$(worker_region "$worker")
+
+        # Build the effective secret list for this worker: global + regional
+        local -a effective_names=("${global_names[@]}")
+        local -a effective_values=("${global_values[@]}")
+        if [[ "$region" == "us" ]]; then
+            effective_names+=("${us_names[@]}")
+            effective_values+=("${us_values[@]}")
+        elif [[ "$region" == "asia" ]]; then
+            effective_names+=("${asia_names[@]}")
+            effective_values+=("${asia_values[@]}")
+        else
+            effective_names+=("${eu_names[@]}")
+            effective_values+=("${eu_values[@]}")
+        fi
+
+        if [[ ${#effective_names[@]} -eq 0 ]]; then
+            log_info "No rotated secrets applicable to $worker ($region)"
+            continue
+        fi
 
         # Fetch the worker's actual secret names
         local worker_secrets_response
@@ -489,12 +560,12 @@ sync_secrets_to_workers() {
         # Intersect: only push rotated secrets that the worker actually has
         local worker_failed=false
         local synced=0
-        for i in "${!rotated_names[@]}"; do
-            if echo "$worker_secret_names" | grep -qx "${rotated_names[$i]}"; then
+        for i in "${!effective_names[@]}"; do
+            if echo "$worker_secret_names" | grep -qx "${effective_names[$i]}"; then
                 if [[ "$DRY_RUN" == "true" ]]; then
-                    log_warn "[DRY-RUN] Would sync secret '${rotated_names[$i]}' to worker '$worker'"
+                    log_warn "[DRY-RUN] Would sync secret '${effective_names[$i]}' to worker '$worker' ($region)"
                 else
-                    if ! sync_worker_secret "$worker" "${rotated_names[$i]}" "${rotated_values[$i]}"; then
+                    if ! sync_worker_secret "$worker" "${effective_names[$i]}" "${effective_values[$i]}"; then
                         worker_failed=true
                     fi
                 fi
@@ -508,7 +579,7 @@ sync_secrets_to_workers() {
             log_warn "One or more secrets failed to sync to worker: $worker"
             failed_workers=$((failed_workers + 1))
         else
-            log_info "Synced $synced secret(s) to worker: $worker"
+            log_info "Synced $synced secret(s) to worker: $worker ($region)"
         fi
     done
 
@@ -556,34 +627,66 @@ else
     fi
 fi
 
-# ---- 2. AWS SES credentials (runtime) ----
-log_step "=== Rotating AWS SES credentials ==="
+# ---- 2. AWS SES credentials (runtime, multi-region) ----
+log_step "=== Rotating AWS SES credentials (EU + US + ASIA) ==="
 
 # Preflight already verified AWS CLI + profile access
-ses_old_keys=$(aws iam list-access-keys --user-name "$AWS_IAM_USER" \
-    --query 'AccessKeyMetadata[].AccessKeyId' --output text)
 
-if [[ "$DRY_RUN" == "true" ]]; then
-    log_warn "[DRY-RUN] Would rotate keys for IAM user: $AWS_IAM_USER"
-    log_warn "[DRY-RUN] Current keys: $ses_old_keys"
-    new_ses_key_id="<dry-run>"
-    new_ses_secret="<dry-run>"
-else
-    # Create new key
-    log_step "Creating new access key for $AWS_IAM_USER..."
-    new_key_json=$(aws iam create-access-key --user-name "$AWS_IAM_USER")
-    new_ses_key_id=$(echo "$new_key_json" | jq -r '.AccessKey.AccessKeyId')
-    new_ses_secret=$(echo "$new_key_json" | jq -r '.AccessKey.SecretAccessKey')
-    log_info "Created new key: $new_ses_key_id"
+# Helper: rotate SES keys for one IAM user
+rotate_ses_user() {
+    local iam_user="$1" gh_key_secret="$2" gh_secret_secret="$3" label="$4"
 
-    # Update GitHub secrets
-    log_step "Updating GitHub secrets: SES credentials..."
-    set_github_secret "$SES_GITHUB_KEY_SECRET" "$new_ses_key_id"
-    set_github_secret "$SES_GITHUB_SECRET_SECRET" "$new_ses_secret"
-    log_info "Updated $SES_GITHUB_KEY_SECRET, $SES_GITHUB_SECRET_SECRET"
+    local old_keys new_key_json key_id secret
 
-    # Old key deletion is deferred until after worker secret sync (see below)
-fi
+    old_keys=$(aws iam list-access-keys --user-name "$iam_user" \
+        --query 'AccessKeyMetadata[].AccessKeyId' --output text)
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_warn "[DRY-RUN] Would rotate keys for IAM user: $iam_user"
+        log_warn "[DRY-RUN] Current keys: $old_keys"
+        key_id="<dry-run>"
+        secret="<dry-run>"
+    else
+        log_step "Creating new access key for $iam_user..."
+        new_key_json=$(aws iam create-access-key --user-name "$iam_user")
+        key_id=$(echo "$new_key_json" | jq -r '.AccessKey.AccessKeyId')
+        secret=$(echo "$new_key_json" | jq -r '.AccessKey.SecretAccessKey')
+        log_info "Created new key: $key_id"
+
+        log_step "Updating GitHub secrets: SES $label credentials..."
+        set_github_secret "$gh_key_secret" "$key_id"
+        set_github_secret "$gh_secret_secret" "$secret"
+        log_info "Updated $gh_key_secret, $gh_secret_secret"
+    fi
+
+    # Export results via global variables (caller reads these)
+    _ses_old_keys="$old_keys"
+    _ses_new_key_id="$key_id"
+    _ses_new_secret="$secret"
+}
+
+# Rotate EU
+log_step "Rotating EU SES credentials ($AWS_IAM_USER_EU)..."
+rotate_ses_user "$AWS_IAM_USER_EU" "$SES_EU_GITHUB_KEY_SECRET" "$SES_EU_GITHUB_SECRET_SECRET" "EU"
+ses_old_keys_eu="$_ses_old_keys"
+new_ses_key_id_eu="$_ses_new_key_id"
+new_ses_secret_eu="$_ses_new_secret"
+
+# Rotate US
+log_step "Rotating US SES credentials ($AWS_IAM_USER_US)..."
+rotate_ses_user "$AWS_IAM_USER_US" "$SES_US_GITHUB_KEY_SECRET" "$SES_US_GITHUB_SECRET_SECRET" "US"
+ses_old_keys_us="$_ses_old_keys"
+new_ses_key_id_us="$_ses_new_key_id"
+new_ses_secret_us="$_ses_new_secret"
+
+# Rotate ASIA
+log_step "Rotating ASIA SES credentials ($AWS_IAM_USER_ASIA)..."
+rotate_ses_user "$AWS_IAM_USER_ASIA" "$SES_ASIA_GITHUB_KEY_SECRET" "$SES_ASIA_GITHUB_SECRET_SECRET" "ASIA"
+ses_old_keys_asia="$_ses_old_keys"
+new_ses_key_id_asia="$_ses_new_key_id"
+new_ses_secret_asia="$_ses_new_secret"
+
+# Old key deletion is deferred until after worker secret sync (see below)
 
 # ---- 3. Github-CD token (CI/CD only) ----
 log_step "=== Rotating CD token: $CD_TOKEN_NAME ==="
@@ -659,10 +762,11 @@ if [[ -f "$ENV_FILE" ]] && ! is_ci; then
     log_step "Updating local .env"
     [[ -n "${new_turnstile_secret:-}" && "$new_turnstile_secret" != "<dry-run>" ]] &&
         update_env_file "$ENV_FILE" "TURNSTILE_SECRET_KEY" "$new_turnstile_secret"
-    [[ -n "${new_ses_key_id:-}" && "$new_ses_key_id" != "<dry-run>" ]] &&
-        update_env_file "$ENV_FILE" "AWS_SES_ACCESS_KEY_ID" "$new_ses_key_id"
-    [[ -n "${new_ses_secret:-}" && "$new_ses_secret" != "<dry-run>" ]] &&
-        update_env_file "$ENV_FILE" "AWS_SES_SECRET_ACCESS_KEY" "$new_ses_secret"
+    # Local dev uses EU SES credentials (dev runs against eu-central-1)
+    [[ -n "${new_ses_key_id_eu:-}" && "$new_ses_key_id_eu" != "<dry-run>" ]] &&
+        update_env_file "$ENV_FILE" "AWS_SES_ACCESS_KEY_ID" "$new_ses_key_id_eu"
+    [[ -n "${new_ses_secret_eu:-}" && "$new_ses_secret_eu" != "<dry-run>" ]] &&
+        update_env_file "$ENV_FILE" "AWS_SES_SECRET_ACCESS_KEY" "$new_ses_secret_eu"
     # R2 credentials for local testing (promotion simulation, pr publish R2 uploads)
     [[ -n "${r2_access_key:-}" && "$r2_access_key" != "<dry-run>" ]] &&
         update_env_file "$ENV_FILE" "R2_ACCESS_KEY_ID" "$r2_access_key"
@@ -677,26 +781,38 @@ fi
 # ---- Deferred: Delete old AWS SES keys ----
 # Only delete old keys AFTER workers have been updated, so workers are never
 # left with deleted credentials. If any worker sync failed, keep old keys alive.
-if [[ -n "${ses_old_keys:-}" && -n "${new_ses_key_id:-}" ]]; then
+delete_old_ses_keys() {
+    local iam_user="$1" old_keys="$2" new_key_id="$3" label="$4"
+
+    [[ -z "$old_keys" || -z "$new_key_id" ]] && return
+
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_warn "[DRY-RUN] Would delete old AWS SES keys: $ses_old_keys"
-    elif [[ "$worker_sync_failures" -gt 0 ]]; then
-        log_warn "Skipping old AWS SES key deletion: $worker_sync_failures worker(s) failed secret sync"
-        log_warn "Old keys still active: $ses_old_keys"
-        log_warn "Manually delete after fixing worker sync, or re-run this script"
-    else
-        for old_key in $ses_old_keys; do
-            if [[ "$old_key" != "$new_ses_key_id" ]]; then
-                log_step "Deleting old AWS SES key: $old_key"
-                if ! aws iam delete-access-key --user-name "$AWS_IAM_USER" \
-                    --access-key-id "$old_key" 2>&1; then
-                    log_warn "Failed to delete old AWS SES key: $old_key"
-                    log_warn "Manually delete it: aws iam delete-access-key --user-name $AWS_IAM_USER --access-key-id $old_key"
-                fi
-            fi
-        done
-        log_info "Old AWS SES key cleanup done"
+        log_warn "[DRY-RUN] Would delete old $label SES keys: $old_keys"
+        return
     fi
+    if [[ "$worker_sync_failures" -gt 0 ]]; then
+        log_warn "Skipping old $label SES key deletion: $worker_sync_failures worker(s) failed secret sync"
+        log_warn "Old keys still active ($label): $old_keys"
+        return
+    fi
+    for old_key in $old_keys; do
+        if [[ "$old_key" != "$new_key_id" ]]; then
+            log_step "Deleting old $label SES key: $old_key"
+            if ! aws iam delete-access-key --user-name "$iam_user" \
+                --access-key-id "$old_key" 2>&1; then
+                log_warn "Failed to delete old $label SES key: $old_key"
+                log_warn "Manually delete it: aws iam delete-access-key --user-name $iam_user --access-key-id $old_key"
+            fi
+        fi
+    done
+}
+
+delete_old_ses_keys "$AWS_IAM_USER_EU" "${ses_old_keys_eu:-}" "${new_ses_key_id_eu:-}" "EU"
+delete_old_ses_keys "$AWS_IAM_USER_US" "${ses_old_keys_us:-}" "${new_ses_key_id_us:-}" "US"
+delete_old_ses_keys "$AWS_IAM_USER_ASIA" "${ses_old_keys_asia:-}" "${new_ses_key_id_asia:-}" "ASIA"
+
+if [[ "$worker_sync_failures" -eq 0 ]]; then
+    log_info "Old AWS SES key cleanup done"
 fi
 
 # ---- Summary ----
@@ -705,7 +821,9 @@ log_info "  CD token: $CD_TOKEN_NAME -> $CD_GITHUB_SECRET"
 log_info "  R2 token: $R2_TOKEN_NAME -> $R2_GITHUB_KEY_SECRET, $R2_GITHUB_SECRET_SECRET"
 log_info "  R2 endpoint: $R2_ENDPOINT_VALUE"
 log_info "  Turnstile: $TURNSTILE_GITHUB_SECRET"
-log_info "  AWS SES: $SES_GITHUB_KEY_SECRET, $SES_GITHUB_SECRET_SECRET"
+log_info "  AWS SES EU: $SES_EU_GITHUB_KEY_SECRET, $SES_EU_GITHUB_SECRET_SECRET (user: $AWS_IAM_USER_EU)"
+log_info "  AWS SES US: $SES_US_GITHUB_KEY_SECRET, $SES_US_GITHUB_SECRET_SECRET (user: $AWS_IAM_USER_US)"
+log_info "  AWS SES ASIA: $SES_ASIA_GITHUB_KEY_SECRET, $SES_ASIA_GITHUB_SECRET_SECRET (user: $AWS_IAM_USER_ASIA)"
 if [[ "$worker_sync_failures" -gt 0 ]]; then
     log_warn "  Worker sync: $worker_sync_failures worker(s) had failures (old AWS SES keys preserved)"
     exit 1

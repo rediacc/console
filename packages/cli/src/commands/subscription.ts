@@ -20,10 +20,14 @@ import {
   getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,
   getSubscriptionTokenState,
+  isDevelopmentSubscriptionMode,
+  loadServerConfig,
   saveServerConfig,
   saveStoredSubscriptionToken,
 } from '../services/subscription-auth.js';
 import { authorizeSubscriptionViaDeviceCode } from '../services/subscription-device-auth.js';
+import { discoverRegions } from '../services/region-discovery.js';
+import { promptRegionSelection } from '../utils/region-prompt.js';
 import { telemetryService } from '../services/telemetry.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
@@ -70,6 +74,30 @@ export function registerSubscriptionCommands(program: Command): void {
         if (options.server) {
           saveServerConfig({ accountServer: options.server });
         }
+
+        // If no server is configured yet, prompt the user to select a data region.
+        // The region determines which account server the CLI connects to.
+        // Skip in dev mode -- dev uses REDIACC_ACCOUNT_SERVER from .env (localhost).
+        if (
+          !options.server &&
+          !isDevelopmentSubscriptionMode() &&
+          !loadServerConfig()?.accountServer
+        ) {
+          const regions = await withSpinner(
+            t('commands.subscription.login.discoveringRegions'),
+            () => discoverRegions(),
+            t('commands.subscription.login.regionsDiscovered')
+          );
+          const selected = await promptRegionSelection(regions);
+          saveServerConfig({ accountServer: `https://${selected.domain}`, region: selected.id });
+          outputService.info(
+            t('commands.subscription.login.regionSelected', {
+              region: selected.label,
+              domain: selected.domain,
+            })
+          );
+        }
+
         const serverUrl = getSubscriptionServerUrl(options.server);
 
         if (options.token) {

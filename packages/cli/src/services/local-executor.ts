@@ -22,6 +22,7 @@ import { isAgentEnvironment } from '../utils/agent-guard.js';
 import { ValidationError } from '../utils/errors.js';
 import { formatDuration } from '../utils/format.js';
 import { startSpinner, stopSpinner } from '../utils/spinner.js';
+import { auditService } from './audit.js';
 import { configService } from './config-resources.js';
 import {
   refreshMachineActivation,
@@ -897,48 +898,113 @@ class LocalExecutorService {
    * Execute a function on a machine via direct SSH.
    * SSHes to the machine and runs `renet execute --executor local` with vault via stdin.
    */
+  private async loadConfigAndBuildVault(
+    options: LocalExecuteOptions,
+    startTime: number,
+    cliSteps: { name: string; duration_ms: number }[]
+  ) {
+    const config = await configService.getLocalConfig();
+    const machine = await configService.getLocalMachine(options.machineName);
+
+    if (options.debug) {
+      outputService.info(`Executing '${options.functionName}' on ${options.machineName}`);
+    }
+
+    const sshPrivateKey = config.sshPrivateKey ?? (await readSSHKey(config.ssh.privateKeyPath));
+    const sshPublicKey =
+      config.sshPublicKey ?? (await readOptionalSSHKey(config.ssh.publicKeyPath));
+    const sshKnownHosts = await resolveKnownHosts(machine.knownHosts);
+    const storages = await loadContextStorages();
+    const { credentials: repositoryCredentials, configs: repositoryConfigs } =
+      await loadContextRepositories();
+
+    const vault = buildLocalVault({
+      functionName: options.functionName,
+      machineName: options.machineName,
+      machine,
+      sshPrivateKey,
+      sshPublicKey,
+      sshKnownHosts,
+      params: options.params ?? {},
+      extraMachines: options.extraMachines,
+      storages,
+      repositoryCredentials,
+      repositoryConfigs,
+    });
+    cliSteps.push({ name: 'config', duration_ms: Date.now() - startTime });
+    return { config, machine, sshPrivateKey, vault };
+  }
+
+  private async executeSession(
+    sftp: SFTPClient,
+    config: Awaited<ReturnType<typeof configService.getLocalConfig>>,
+    machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+    sshPrivateKey: string,
+    vault: ReturnType<typeof buildLocalVault>,
+    options: LocalExecuteOptions,
+    cliSteps: { name: string; duration_ms: number }[],
+    quiet: boolean,
+    startTime: number
+  ): Promise<LocalExecuteResult> {
+    const { remoteRenetPath } = await this.provisionAndVerify(
+      config,
+      machine,
+      sshPrivateKey,
+      options,
+      sftp,
+      cliSteps,
+      quiet
+    );
+
+    const result = await this.executeWithConnectedSftp(
+      sftp,
+      options,
+      remoteRenetPath,
+      vault,
+      machine,
+      sshPrivateKey,
+      startTime
+    );
+    result.allSteps = [...cliSteps, ...(result.steps ?? [])];
+
+    if (result.success) {
+      outputService.setOperationDuration(result.operationDurationMs ?? result.durationMs);
+    }
+    return result;
+  }
+
+  private recordAudit(
+    options: LocalExecuteOptions,
+    result: Pick<LocalExecuteResult, 'success' | 'exitCode' | 'durationMs' | 'error'>
+  ) {
+    auditService.recordOperation({
+      functionName: options.functionName,
+      machineName: options.machineName,
+      repoName:
+        typeof options.params?.repository === 'string' ? options.params.repository : undefined,
+      success: result.success,
+      exitCode: result.exitCode,
+      durationMs: result.durationMs,
+      error: result.success ? undefined : result.error,
+    });
+  }
+
   async execute(options: LocalExecuteOptions): Promise<LocalExecuteResult> {
     const startTime = Date.now();
     const configSpinner = options.quietSpinners ? null : startSpinner(t('timing.step.loading'));
     const cliSteps: { name: string; duration_ms: number }[] = [];
 
     try {
-      const config = await configService.getLocalConfig();
-      const machine = await configService.getLocalMachine(options.machineName);
-
-      if (options.debug) {
-        outputService.info(`Executing '${options.functionName}' on ${options.machineName}`);
-      }
-
-      const sshPrivateKey = config.sshPrivateKey ?? (await readSSHKey(config.ssh.privateKeyPath));
-      const sshPublicKey =
-        config.sshPublicKey ?? (await readOptionalSSHKey(config.ssh.publicKeyPath));
-      const sshKnownHosts = await resolveKnownHosts(machine.knownHosts);
-      const storages = await loadContextStorages();
-      const { credentials: repositoryCredentials, configs: repositoryConfigs } =
-        await loadContextRepositories();
-
-      const vault = buildLocalVault({
-        functionName: options.functionName,
-        machineName: options.machineName,
-        machine,
-        sshPrivateKey,
-        sshPublicKey,
-        sshKnownHosts,
-        params: options.params ?? {},
-        extraMachines: options.extraMachines,
-        storages,
-        repositoryCredentials,
-        repositoryConfigs,
+      const { config, machine, sshPrivateKey, vault } = await this.loadConfigAndBuildVault(
+        options,
+        startTime,
+        cliSteps
+      );
+      const configText = t('timing.step.configLoaded', {
+        duration: formatDuration(cliSteps[0].duration_ms),
       });
-      const configMs = Date.now() - startTime;
-      cliSteps.push({ name: 'config', duration_ms: configMs });
-      const configText = t('timing.step.configLoaded', { duration: formatDuration(configMs) });
-      if (configSpinner) {
-        stopSpinner(true, configText);
-      } else if (!options.quietSpinners) {
-        outputService.info(configText);
-      }
+      if (configSpinner) stopSpinner(true, configText);
+      else if (!options.quietSpinners) outputService.info(configText);
 
       const quiet = options.quietSpinners ?? false;
       const sshStart = Date.now();
@@ -950,42 +1016,27 @@ class LocalExecutorService {
       cliSteps.push({ name: 'ssh_connect', duration_ms: Date.now() - sshStart });
 
       try {
-        const { remoteRenetPath } = await this.provisionAndVerify(
+        const result = await this.executeSession(
+          sftp,
           config,
           machine,
           sshPrivateKey,
-          options,
-          sftp,
-          cliSteps,
-          quiet
-        );
-
-        const result = await this.executeWithConnectedSftp(
-          sftp,
-          options,
-          remoteRenetPath,
           vault,
-          machine,
-          sshPrivateKey,
+          options,
+          cliSteps,
+          quiet,
           startTime
         );
-        result.allSteps = [...cliSteps, ...(result.steps ?? [])];
-
-        if (result.success) {
-          outputService.setOperationDuration(result.operationDurationMs ?? result.durationMs);
-        }
+        this.recordAudit(options, result);
         return result;
       } finally {
         sftp.close();
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        success: false,
-        exitCode: 1,
-        error: errorMessage,
-        durationMs: Date.now() - startTime,
-      };
+      const durationMs = Date.now() - startTime;
+      this.recordAudit(options, { success: false, exitCode: 1, durationMs, error: errorMessage });
+      return { success: false, exitCode: 1, error: errorMessage, durationMs };
     }
   }
 

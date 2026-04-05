@@ -9,7 +9,7 @@ sourceHash: "feb1fcafc824b4b2"
 
 # Migration Guide
 
-Migrate an existing project — files, Docker services, databases — from a traditional server or local development environment into an encrypted Rediacc repository.
+Migrate an existing project, files, Docker services, databases, from a traditional server or local development environment into an encrypted Rediacc repository.
 
 ## Prerequisites
 
@@ -75,8 +75,8 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 
 ### When to Run
 
-- **After uploading files** — to convert your local UID to 7111
-- **After starting containers** — if you want Docker volume directories to be auto-excluded. If containers haven't been started yet, there are no volumes to exclude and all directories get chowned (which is fine — the containers will recreate their data on first start)
+- **After uploading files**, to convert your local UID to 7111
+- **After starting containers**, if you want Docker volume directories to be auto-excluded. If containers haven't been started yet, there are no volumes to exclude and all directories get chowned (which is fine, the containers will recreate their data on first start)
 
 ### Force Mode
 
@@ -121,7 +121,7 @@ The two lifecycle functions:
 
 > **Important:** Always use `renet compose --` instead of `docker compose` in your Rediaccfile. The `renet compose` wrapper enforces host networking, CRIU checkpoint/restore capabilities, IP allocation, and service discovery required by renet-proxy. Using `docker compose` directly bypasses all of these and will be rejected during validation.
 >
-> Never use `sudo docker` either — `sudo` resets environment variables including `DOCKER_HOST`, which causes containers to be created on the system Docker daemon instead of the repository's isolated daemon. Rediaccfile functions already run with sufficient privileges.
+> Never use `sudo docker` either, `sudo` resets environment variables including `DOCKER_HOST`, which causes containers to be created on the system Docker daemon instead of the repository's isolated daemon. Rediaccfile functions already run with sufficient privileges.
 
 See [Services](/en/docs/services) for full details on Rediaccfiles, multi-service layouts, and execution order.
 
@@ -184,9 +184,9 @@ services:
 
 Key changes:
 
-1. **Remove `ports:` mappings** — `renet compose` uses host networking and strips port mappings automatically
-2. **Remove `network_mode: host`** — `renet compose` adds this for you
-3. **Restart policies are safe to keep** — renet auto-strips them for CRIU compatibility and the router watchdog auto-recovers stopped containers
+1. **Remove `ports:` mappings**, `renet compose` uses host networking and strips port mappings automatically
+2. **Remove `network_mode: host`**, `renet compose` adds this for you
+3. **Restart policies are safe to keep**, renet auto-strips them for CRIU compatibility and the router watchdog auto-recovers stopped containers
 4. **Bind services to `${SERVICE_IP}`** environment variables (auto-injected by Rediacc)
 5. **Reference other services by their IP** instead of Docker DNS names (e.g., `${POSTGRES_IP}` instead of `postgres`)
 
@@ -241,7 +241,7 @@ my-wordpress/
 
 1. Upload your project files
 2. Start services first (`rdc repo up`) so containers create their data directories
-3. Run ownership fix — MariaDB and app data dirs are auto-excluded
+3. Run ownership fix, MariaDB and app data dirs are auto-excluded
 
 ### Node.js / Python with Redis
 
@@ -295,7 +295,7 @@ Each repository gets unique loopback IPs. If you see port conflicts, verify that
 
 ### Ownership Fix Breaks Containers
 
-If you ran `rdc repo ownership` and a container stopped working, the container's data files were chowned. Stop the container, delete its data directory, and restart — the container will recreate it:
+If you ran `rdc repo ownership` and a container stopped working, the container's data files were chowned. Stop the container, delete its data directory, and restart, the container will recreate it:
 
 ```bash
 rdc repo down --name my-project -m server-1

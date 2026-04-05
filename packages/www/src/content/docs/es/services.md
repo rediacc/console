@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: es
-sourceHash: "4a2050fece1accbb"
+sourceHash: "f4949653be4a11cd"
 ---
 
 # Servicios
@@ -167,7 +167,7 @@ services:
       LISTEN_ADDR: ${API_IP}:8080
 ```
 
-> **Nota:** No agregue `network_mode: host` manualmente — `renet compose` lo inyecta automáticamente. Las políticas de reinicio (p.ej., `restart: always`) son seguras de usar — renet las elimina automáticamente para compatibilidad CRIU y el watchdog del router maneja la recuperación de contenedores.
+> **Nota:** No agregue `network_mode: host` manualmente, `renet compose` lo inyecta automáticamente. Las políticas de reinicio (p.ej., `restart: always`) son seguras de usar, renet las elimina automáticamente para compatibilidad CRIU y el watchdog del router maneja la recuperación de contenedores.
 
 > **Nota:** Los repos fork obtienen rutas automáticas planas: `{service}-{tag}.{machine}.{baseDomain}`. Los dominios personalizados se omiten para forks.
 

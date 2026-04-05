@@ -4,12 +4,12 @@ description: "Provisionner des clusters de VM locaux pour le développement et l
 category: "Concepts"
 order: 2
 language: fr
-sourceHash: "13bf9b8be113a0ad"
+sourceHash: "af686ab0f22d58c7"
 ---
 
 # Experimental VMs
 
-Provisionnez des clusters de VM locaux sur votre poste de travail pour le développement et les tests — aucun fournisseur cloud externe requis.
+Provisionnez des clusters de VM locaux sur votre poste de travail pour le développement et les tests, aucun fournisseur cloud externe requis.
 
 ## Prérequis
 
@@ -104,13 +104,13 @@ Par défaut, `rdc ops up` provisionne :
 
 | VM | ID | Rôle |
 |----|-----|------|
-| Bridge | 1 | Nœud principal — exécute le service bridge Rediacc |
+| Bridge | 1 | Nœud principal, exécute le service bridge Rediacc |
 | Worker 1 | 11 | Nœud worker pour les déploiements de dépôts |
 | Worker 2 | 12 | Nœud worker pour les déploiements de dépôts |
 
 Utilisez l'option `--basic` pour ne provisionner que le bridge et le premier worker (IDs 1 et 11).
 
-Utilisez `--skip-orchestration` pour provisionner des VM sans démarrer les services Rediacc — utile pour tester la couche VM de manière isolée.
+Utilisez `--skip-orchestration` pour provisionner des VM sans démarrer les services Rediacc, utile pour tester la couche VM de manière isolée.
 
 ## Configuration
 
@@ -159,7 +159,7 @@ Les variables d'environnement remplacent les ressources des VM workers :
 
 ### Linux (KVM)
 - Utilise libvirt pour la gestion du cycle de vie des VM
-- Mise en réseau bridge — les VM obtiennent des IP sur un réseau virtuel (192.168.111.x)
+- Mise en réseau bridge, les VM obtiennent des IP sur un réseau virtuel (192.168.111.x)
 - SSH direct vers les IP des VM
 - Nécessite `/dev/kvm` et le service libvirtd
 

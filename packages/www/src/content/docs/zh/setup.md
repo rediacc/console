@@ -4,7 +4,7 @@ description: "创建配置、添加机器、配置服务器和设置基础设施
 category: "Guides"
 order: 3
 language: zh
-sourceHash: "9fd8ebf2b98bfcf5"
+sourceHash: "143694525e0fcd9b"
 ---
 
 # 机器设置
@@ -121,15 +121,15 @@ rdc config infra set -m server-1 \
 
 | 选项 | 范围 | 描述 |
 |--------|------|-------------|
-| `--public-ipv4 <ip>` | Machine | Public IPv4 address — proxy entrypoints are only created for configured address families |
-| `--public-ipv6 <ip>` | Machine | Public IPv6 address — proxy entrypoints are only created for configured address families |
+| `--public-ipv4 <ip>` | Machine | Public IPv4 address, proxy entrypoints are only created for configured address families |
+| `--public-ipv6 <ip>` | Machine | Public IPv6 address, proxy entrypoints are only created for configured address families |
 | `--base-domain <domain>` | Machine | 应用的基础域名（例如 `example.com`） |
 | `--cert-email <email>` | Config | 用于 Let's Encrypt TLS 证书的电子邮件（跨机器共享） |
 | `--cf-dns-token <token>` | Config | 用于 ACME DNS-01 挑战的 Cloudflare DNS API 令牌（跨机器共享） |
 | `--tcp-ports <ports>` | Machine | 逗号分隔的额外转发 TCP 端口（例如 `25,143,465,587,993`） |
 | `--udp-ports <ports>` | Machine | 逗号分隔的额外转发 UDP 端口（例如 `53`） |
 
-Machine 范围的选项按机器存储。Config 范围的选项（`--cert-email`、`--cf-dns-token`）在配置中的所有机器间共享 — 设置一次即可全局生效。
+Machine 范围的选项按机器存储。Config 范围的选项（`--cert-email`、`--cf-dns-token`）在配置中的所有机器间共享, 设置一次即可全局生效。
 
 ### 查看基础设施
 
@@ -150,7 +150,7 @@ rdc config infra push -m server-1
 2. 配置 Traefik 反向代理、路由器和 systemd 服务
 3. 如果设置了 `--cf-dns-token`，则为机器子域名创建 Cloudflare DNS 记录（`server-1.example.com` 和 `*.server-1.example.com`）
 
-DNS 步骤是自动且幂等的 — 它会创建缺失的记录、更新 IP 已变更的记录，并跳过已经正确的记录。如果未配置 Cloudflare 令牌，则会跳过 DNS 并显示警告。 Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+DNS 步骤是自动且幂等的, 它会创建缺失的记录、更新 IP 已变更的记录，并跳过已经正确的记录。如果未配置 Cloudflare 令牌，则会跳过 DNS 并显示警告。 Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
 
 ## 云端配置
 

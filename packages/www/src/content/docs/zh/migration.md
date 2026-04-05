@@ -4,7 +4,7 @@ description: "将现有项目迁移到加密的 Rediacc 仓库中。"
 category: "Guides"
 order: 11
 language: zh
-sourceHash: "180b0e1e61b958b8"
+sourceHash: "18199953a84fb77b"
 ---
 
 # 迁移指南
@@ -75,8 +75,8 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 
 ### 何时运行
 
-- **上传文件后** — 将您的本地 UID 转换为 7111
-- **启动容器后** — 如果您希望 Docker 卷目录被自动排除。如果容器尚未启动，则没有需要排除的卷，所有目录都会被更改（这是正常的 — 容器将在首次启动时重新创建其数据）
+- **上传文件后**, 将您的本地 UID 转换为 7111
+- **启动容器后**, 如果您希望 Docker 卷目录被自动排除。如果容器尚未启动，则没有需要排除的卷，所有目录都会被更改（这是正常的, 容器将在首次启动时重新创建其数据）
 
 ### 强制模式
 
@@ -121,7 +121,7 @@ down() {
 
 > **重要：** 在 Rediaccfile 中始终使用 `renet compose --` 而不是 `docker compose`。`renet compose` 包装器会强制执行主机网络、CRIU 检查点/恢复功能、IP 分配以及 renet-proxy 所需的服务发现。直接使用 `docker compose` 会绕过所有这些，并且在验证时会被拒绝。
 >
-> 也不要使用 `sudo docker` — `sudo` 会重置环境变量（包括 `DOCKER_HOST`），导致容器被创建在系统 Docker 守护进程上，而不是仓库的隔离守护进程上。Rediaccfile 函数已经以足够的权限运行。
+> 也不要使用 `sudo docker`, `sudo` 会重置环境变量（包括 `DOCKER_HOST`），导致容器被创建在系统 Docker 守护进程上，而不是仓库的隔离守护进程上。Rediaccfile 函数已经以足够的权限运行。
 
 关于 Rediaccfile、多服务布局和执行顺序的完整详情，请参阅 [服务](/zh/docs/services)。
 
@@ -184,9 +184,9 @@ services:
 
 主要更改：
 
-1. **移除 `ports:` 映射** — `renet compose` 使用主机网络并自动去除端口映射
-2. **移除 `network_mode: host`** — `renet compose` 会自动添加
-3. **移除 `restart: always` 或 `restart: unless-stopped`** — 这些与 CRIU 检查点/恢复冲突（Docker 会在检查点恢复运行之前自动启动容器）。如需重启行为，请使用 `restart: on-failure`，或完全省略 — Rediaccfile 的 `up()`/`down()` 管理容器生命周期
+1. **移除 `ports:` 映射**, `renet compose` 使用主机网络并自动去除端口映射
+2. **移除 `network_mode: host`**, `renet compose` 会自动添加
+3. **移除 `restart: always` 或 `restart: unless-stopped`**, 这些与 CRIU 检查点/恢复冲突（Docker 会在检查点恢复运行之前自动启动容器）。如需重启行为，请使用 `restart: on-failure`，或完全省略, Rediaccfile 的 `up()`/`down()` 管理容器生命周期
 4. **将服务绑定到 `${SERVICE_IP}` 环境变量**（由 Rediacc 自动注入）
 5. **通过 IP 引用其他服务**，而不是 Docker DNS 名称（例如，使用 `${POSTGRES_IP}` 替代 `postgres`）
 
@@ -241,7 +241,7 @@ my-wordpress/
 
 1. 上传项目文件
 2. 先启动服务（`rdc repo up`），让容器创建其数据目录
-3. 运行所有权修复 — MariaDB 和应用数据目录会自动排除
+3. 运行所有权修复, MariaDB 和应用数据目录会自动排除
 
 ### Node.js / Python 与 Redis
 
@@ -295,7 +295,7 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### 所有权修复破坏了容器
 
-如果您运行了 `rdc repo ownership` 并且容器停止工作，则容器的数据文件已被更改。停止容器，删除其数据目录，然后重新启动 — 容器将重新创建它：
+如果您运行了 `rdc repo ownership` 并且容器停止工作，则容器的数据文件已被更改。停止容器，删除其数据目录，然后重新启动, 容器将重新创建它：
 
 ```bash
 rdc repo down --name my-project -m server-1

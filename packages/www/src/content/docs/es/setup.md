@@ -4,7 +4,7 @@ description: "Cree una configuración, agregue máquinas, aprovisione servidores
 category: "Guides"
 order: 3
 language: es
-sourceHash: "9fd8ebf2b98bfcf5"
+sourceHash: "143694525e0fcd9b"
 ---
 
 # Configuración de Máquinas
@@ -121,15 +121,15 @@ rdc config infra set -m server-1 \
 
 | Opción | Alcance | Descripción |
 |--------|---------|-------------|
-| `--public-ipv4 <ip>` | Machine | Public IPv4 address — proxy entrypoints are only created for configured address families |
-| `--public-ipv6 <ip>` | Machine | Public IPv6 address — proxy entrypoints are only created for configured address families |
+| `--public-ipv4 <ip>` | Machine | Public IPv4 address, proxy entrypoints are only created for configured address families |
+| `--public-ipv6 <ip>` | Machine | Public IPv6 address, proxy entrypoints are only created for configured address families |
 | `--base-domain <domain>` | Machine | Dominio base para aplicaciones (por ejemplo, `example.com`) |
 | `--cert-email <email>` | Config | Correo electrónico para certificados TLS de Let's Encrypt (compartido entre máquinas) |
 | `--cf-dns-token <token>` | Config | Token de la API DNS de Cloudflare para desafíos ACME DNS-01 (compartido entre máquinas) |
 | `--tcp-ports <ports>` | Machine | Puertos TCP adicionales separados por comas para redirigir (por ejemplo, `25,143,465,587,993`) |
 | `--udp-ports <ports>` | Machine | Puertos UDP adicionales separados por comas para redirigir (por ejemplo, `53`) |
 
-Las opciones de alcance Machine se almacenan por máquina. Las opciones de alcance Config (`--cert-email`, `--cf-dns-token`) son compartidas entre todas las máquinas en la configuración — configúrelas una vez y se aplican en todas partes.
+Las opciones de alcance Machine se almacenan por máquina. Las opciones de alcance Config (`--cert-email`, `--cf-dns-token`) son compartidas entre todas las máquinas en la configuración, configúrelas una vez y se aplican en todas partes.
 
 ### Ver Infraestructura
 

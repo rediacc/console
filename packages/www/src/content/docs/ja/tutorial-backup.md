@@ -4,7 +4,7 @@ description: "自動バックアップスケジュールの設定、ストレー
 category: "Tutorials"
 order: 6
 language: ja
-sourceHash: "0bdff6ce5d24c154"
+sourceHash: "f68d915af9daf0da"
 ---
 
 # Rediaccでバックアップとネットワークを設定する方法
@@ -28,7 +28,7 @@ sourceHash: "0bdff6ce5d24c154"
 rdc config storage list
 ```
 
-rclone設定からインポートされた全ての設定済みストレージプロバイダーを一覧表示します。空の場合は、まずストレージプロバイダーを追加してください — [バックアップとリストア](/ja/docs/backup-restore)を参照。
+rclone設定からインポートされた全ての設定済みストレージプロバイダーを一覧表示します。空の場合は、まずストレージプロバイダーを追加してください, [バックアップとリストア](/ja/docs/backup-restore)を参照。
 
 ### ステップ2: バックアップスケジュールを設定
 
@@ -118,6 +118,6 @@ cronのフォーマットは`minute hour day month weekday`です。一般的な
 
 自動バックアップの設定、インフラストラクチャネットワークの構築、サービスポートの登録、設定の検証が完了しました。バックアップを管理するには：
 
-- [バックアップとリストア](/ja/docs/backup-restore) — push、pull、list、syncコマンドの完全なリファレンス
-- [ネットワーク](/ja/docs/networking) — Dockerラベル、TLS証明書、DNS、TCP/UDP転送
-- [チュートリアル: マシンセットアップ](/ja/docs/tutorial-setup) — 初期設定とプロビジョニング
+- [バックアップとリストア](/ja/docs/backup-restore), push、pull、list、syncコマンドの完全なリファレンス
+- [ネットワーク](/ja/docs/networking), Dockerラベル、TLS証明書、DNS、TCP/UDP転送
+- [チュートリアル: マシンセットアップ](/ja/docs/tutorial-setup), 初期設定とプロビジョニング

@@ -54,6 +54,7 @@
       "learnMore": "اعرف المزيد",
       "sendMessage": "إرسال رسالة"
     },
+    "close": "إغلاق",
     "contentNotAvailable": "هذا المحتوى غير متوفر بالـ{{language}}. يتم عرض النسخة الإنجليزية.",
     "copied": "تم النسخ!",
     "copyLink": "نسخ رابط هذا القسم",
@@ -120,6 +121,7 @@
     "categories": {
       "concepts": "مفاهيم",
       "guides": "أدلة",
+      "legal": "قانوني",
       "reference": "مرجع",
       "tutorials": "دروس تعليمية",
       "useCases": "حالات الاستخدام"
@@ -1669,14 +1671,14 @@
           },
           "title": "كم يمكنك أن توفر؟",
           "withAnnual": "احسب →",
+          "withoutTag": "تكاليف السحابة الحالية",
           "withResults": {
             "blockedTime": "أقل بنسبة 60%",
             "contextSwitching": "أقل من 5 دقائق",
             "quarterlySlip": "ملكك 100%",
             "sprintCapacity": "مُقلّلة"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "تكاليف السحابة الحالية"
+          "withTag": "مع Rediacc"
         },
         "hero": {
           "badge": "للرؤساء التنفيذيين والمؤسسين",
@@ -1890,14 +1892,14 @@
           },
           "title": "ما التكلفة الحقيقية لبنيتك التحتية؟",
           "withAnnual": "احسب →",
+          "withoutTag": "الإنفاق الحالي",
           "withResults": {
             "blockedTime": "أقل بنسبة 60%",
             "contextSwitching": "أقل من 5 دقائق",
             "quarterlySlip": "لا يوجد",
             "sprintCapacity": "شبه معدومة"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "الإنفاق الحالي"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -2981,29 +2983,29 @@
           "business": {
             "floatingLicenses": "20",
             "jobsPerMonth": "20,000",
-            "repoSize": "500 جيجابايت",
             "repositories": "غير محدود",
+            "repoSize": "500 جيجابايت",
             "usersTeams": "غير محدود"
           },
           "community": {
             "floatingLicenses": "2",
             "jobsPerMonth": "500",
-            "repoSize": "10 جيجابايت",
             "repositories": "غير محدود",
+            "repoSize": "10 جيجابايت",
             "usersTeams": "غير محدود"
           },
           "enterprise": {
             "floatingLicenses": "50+",
             "jobsPerMonth": "100,000+",
-            "repoSize": "2 تيرابايت+",
             "repositories": "غير محدود",
+            "repoSize": "2 تيرابايت+",
             "usersTeams": "غير محدود"
           },
           "professional": {
             "floatingLicenses": "5",
             "jobsPerMonth": "5,000",
-            "repoSize": "100 جيجابايت",
             "repositories": "غير محدود",
+            "repoSize": "100 جيجابايت",
             "usersTeams": "غير محدود"
           }
         }
@@ -3545,13 +3547,13 @@
           },
           "title": "كم يكلفك تعرضك للثغرات؟",
           "withAnnual": "التكلفة الأمنية السنوية",
+          "withoutTag": "بدون Rediacc",
           "withResults": {
             "blindspot": "النقطة العمياء",
             "exposure": "التعريض لكل ثغرة",
             "pentestCost": "تكلفة اختبار الاختراق"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "بدون Rediacc"
+          "withTag": "مع Rediacc"
         },
         "explore": {
           "solutions": [
@@ -3955,14 +3957,14 @@
           },
           "title": "كم تكلفك فجوات التدقيق؟",
           "withAnnual": "تكلفة مخاطر التدقيق السنوية",
+          "withoutTag": "سجلات متفرقة",
           "withResults": {
             "compileHours": "ساعات تجميع السجلات / سنة",
             "delayCost": "تكلفة تأخير التحقيق",
             "gaps": "مخاطر نتائج التدقيق (فجوات)",
             "penaltyCost": "مخاطر عقوبة عدم الامتثال"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "سجلات متفرقة"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -4426,14 +4428,14 @@
           },
           "title": "كم تكلفك النسخ غير المُتحقق منها؟",
           "withAnnual": "$0",
+          "withoutTag": "بدون تحقق",
           "withResults": {
             "corrupted": "0 غير مكتشف",
             "dataLoss": "0",
             "recoveryCost": "$0",
             "undetected": "0"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "بدون تحقق"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -4938,14 +4940,14 @@
           },
           "title": "كم يكلفك انقطاع السحابة؟",
           "withAnnual": "$0",
+          "withoutTag": "بدون Rediacc",
           "withResults": {
             "churn": "$0",
             "labor": "$0",
             "revenue": "$0",
             "sla": "$0"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "بدون Rediacc"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -5448,13 +5450,13 @@
           },
           "title": "كم تكلفك نافذة التعريض؟",
           "withAnnual": "التكلفة الأمنية السنوية",
+          "withoutTag": "اختبار اختراق سنوي",
           "withResults": {
             "blindspot": "نافذة النقطة العمياء",
             "exposure": "أيام التعريض / ثغرة",
             "pentestCost": "تكلفة اختبار الاختراق السنوية"
           },
-          "withTag": "مستمر (Rediacc)",
-          "withoutTag": "اختبار اختراق سنوي"
+          "withTag": "مستمر (Rediacc)"
         },
         "explore": {
           "solutions": [
@@ -5836,14 +5838,14 @@
           },
           "title": "كم يكلفك ضعف حوكمة التشفير؟",
           "withAnnual": "تكلفة الامتثال السنوية",
+          "withoutTag": "مفاتيح مُدارة من المزود",
           "withResults": {
             "exposure": "نوافذ التعريض سنوياً",
             "gaps": "فجوات الامتثال (الوصول للمفاتيح)",
             "premium": "علاوة مخاطر الاختراق",
             "prepHours": "ساعات إعداد التدقيق / سنة"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "مفاتيح مُدارة من المزود"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -6345,14 +6347,14 @@
           },
           "title": "كم يكلف هذا فريقك؟",
           "withAnnual": "$0",
+          "withoutTag": "بدون Rediacc",
           "withResults": {
             "blockedTime": "0 أيام",
             "contextSwitching": "الحد الأدنى",
             "quarterlySlip": "0 أيام",
             "sprintCapacity": "0%"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "بدون Rediacc"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -6843,14 +6845,14 @@
           },
           "title": "كم يكلفك الانتقال غير المُختبر؟",
           "withAnnual": "$0",
+          "withoutTag": "بدون اختبار",
           "withResults": {
             "churn": "$0",
             "compliance": "$0",
             "labor": "$0",
             "revenue": "$0"
           },
-          "withTag": "مع اختبار Rediacc",
-          "withoutTag": "بدون اختبار"
+          "withTag": "مع اختبار Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -7335,14 +7337,14 @@
           },
           "title": "كم يكلفك هجوم برامج الفدية؟",
           "withAnnual": "~$200",
+          "withoutTag": "بدون Rediacc",
           "withResults": {
             "downtime": "<5 دقائق",
             "labor": "~$200",
             "reputation": "$0",
             "revenue": "~$0"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "بدون Rediacc"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -7866,6 +7868,7 @@
           "title": "كم تكلفك البيئات الخاملة",
           "withAnnual": "$24,120",
           "withAnnualLabel": "التوفير السنوي",
+          "withoutTag": "تعمل دائماً",
           "withResultLabels": {
             "idle": "عبء تخزين CoW"
           },
@@ -7874,8 +7877,7 @@
             "monthly": "$990",
             "waste": "0%"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "تعمل دائماً"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -8325,6 +8327,7 @@
           },
           "title": "كم تكلفك الاستعادة البطيئة؟",
           "withAnnual": "$868",
+          "withoutTag": "استعادة على مستوى الملفات",
           "withResultLabels": {
             "labor": "عمالة الموظفين (أمر واحد)"
           },
@@ -8333,8 +8336,7 @@
             "labor": "$17",
             "recoveryTime": "<5 دقائق"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "استعادة على مستوى الملفات"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -8834,13 +8836,13 @@
           },
           "title": "كم يكلفك CI/CD المعطل",
           "withAnnual": "$0",
+          "withoutTag": "سكريبتات مخصصة",
           "withResults": {
             "blocked": "0 ساعات",
             "bugs": "0",
             "debug": "0 ساعات"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "سكريبتات مخصصة"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -9291,13 +9293,13 @@
           },
           "title": "كم تكلفك مخاطر الترحيل",
           "withAnnual": "$0",
+          "withoutTag": "بدون Rediacc",
           "withResults": {
             "labor": "$0",
             "risk": "0 TB",
             "windows": "0 ساعات"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "بدون Rediacc"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -9796,13 +9798,13 @@
           },
           "title": "كم يكلفك عدم تطابق البيئات",
           "withAnnual": "$0",
+          "withoutTag": "بدون Rediacc",
           "withResults": {
             "capacity": "0%",
             "debug": "0 ساعات",
             "incidents": "0"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "بدون Rediacc"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -10267,14 +10269,14 @@
           },
           "title": "كم تكلفك الاستعادة البطيئة؟",
           "withAnnual": "تكلفة التوقف السنوية",
+          "withoutTag": "بدون Rediacc",
           "withResults": {
             "churn": "تكلفة فقدان العملاء",
             "labor": "عمالة الاستعادة",
             "regulatory": "تنظيمي / سمعة",
             "revLost": "الإيرادات المفقودة / حادثة"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "بدون Rediacc"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -10752,14 +10754,14 @@
           },
           "title": "كم يكلفك الامتثال اليدوي؟",
           "withAnnual": "$0",
+          "withoutTag": "بدون Rediacc",
           "withResults": {
             "gaps": "0",
             "labor": "$0",
             "penalty": "$0",
             "prepHours": "4 ساعات"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "بدون Rediacc"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -11295,14 +11297,14 @@
           },
           "title": "كم يكلفك تخطي التصحيحات؟",
           "withAnnual": "$0",
+          "withoutTag": "بدون Rediacc",
           "withResults": {
             "breach": "الحد الأدنى",
             "downtime": "$0",
             "exposure": "0 أيام",
             "labor": "$0"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "بدون Rediacc"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -11808,14 +11810,14 @@
           },
           "title": "كم يكلفك قفل المزود؟",
           "withAnnual": "ضريبة القفل السنوية",
+          "withoutTag": "محبوس",
           "withResults": {
             "egress": "رسوم نقل بيانات الخروج",
             "leverage": "قوة إعادة التفاوض",
             "markup": "هامش ربح المزود فوق السوق",
             "migrate": "تكلفة الترحيل"
           },
-          "withTag": "مع Rediacc",
-          "withoutTag": "محبوس"
+          "withTag": "مع Rediacc"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -12272,9 +12274,9 @@
           },
           "title": "كم يكلفك التصحيح البطيء؟",
           "withAnnual": "",
+          "withoutTag": "بدون Rediacc",
           "withResults": {},
-          "withTag": "مع Rediacc",
-          "withoutTag": "بدون Rediacc"
+          "withTag": "مع Rediacc"
         },
         "explore": {
           "solutions": [
@@ -13269,6 +13271,16 @@
     },
     "subtitle": "عندما تحتوي بيئات الإنتاج على تيرابايت من البيانات ولكن بيئات الاختبار المعزولة تتم مزامنتها شهريًا فقط، تواجه الفرق خيارات مستحيلة تؤدي إلى حلول بديلة خطيرة.",
     "title": "أزمة عدم تطابق السرعة"
+  },
+  "regionPicker": {
+    "footer": "اختر المنطقة الأقرب إليك، أو حيث تتطلب مؤسستك ذلك. لا يمكن تغيير هذا بعد التسجيل.",
+    "locations": {
+      "eu": "فرانكفورت، ألمانيا",
+      "us": "فرجينيا، الولايات المتحدة",
+      "asia": "Tokyo, Japan"
+    },
+    "subtitle": "كل شيء، حسابك وفواتيرك وإعداداتك، يبقى في المنطقة التي تختارها. لا يغادرها أبدًا.",
+    "title": "أين تريد تخزين بياناتك؟"
   },
   "solutions": {
     "categories": {

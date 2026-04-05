@@ -4,7 +4,7 @@ description: Comprendre comment account, rdc et renet gèrent les slots de machi
 category: Guides
 order: 7
 language: fr
-sourceHash: "49428ac8fe913194"
+sourceHash: "a31dc14e6305b4d4"
 ---
 
 # Abonnement et licences
@@ -70,10 +70,10 @@ Une licence de dépôt est une licence signée pour un dépôt sur une machine.
 
 Elle est utilisée pour :
 
-- `rdc repo resize` et `rdc repo expand` — validation complète incluant l'expiration
-- `rdc repo up`, `rdc repo down`, `rdc repo delete` — validé avec **expiration ignorée**
-- `rdc repo push`, `rdc repo pull`, `rdc repo sync` — validé avec **expiration ignorée**
-- démarrage automatique du dépôt au redémarrage de la machine — validé avec **expiration ignorée**
+- `rdc repo resize` et `rdc repo expand`, validation complète incluant l'expiration
+- `rdc repo up`, `rdc repo down`, `rdc repo delete`, validé avec **expiration ignorée**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, validé avec **expiration ignorée**
+- démarrage automatique du dépôt au redémarrage de la machine, validé avec **expiration ignorée**
 
 Les licences de dépôt sont liées à la machine et au dépôt cible, et Rediacc renforce ce lien avec les métadonnées d'identité du dépôt. Pour les dépôts chiffrés, cela inclut l'identité LUKS du volume sous-jacent.
 
@@ -123,7 +123,7 @@ Cette émission soutenue par le compte est comptabilisée dans votre utilisation
 
 ### Redémarrage de machine et démarrage automatique
 
-Le démarrage automatique utilise les mêmes règles que `rdc repo up` — l'expiration est ignorée, de sorte que les dépôts redémarrent toujours librement.
+Le démarrage automatique utilise les mêmes règles que `rdc repo up`, l'expiration est ignorée, de sorte que les dépôts redémarrent toujours librement.
 
 Les licences de dépôt utilisent un modèle de validité longue durée :
 
@@ -192,12 +192,12 @@ Pour la configuration initiale de la machine, consultez [Configuration de machin
 
 ## Comportement hors ligne et expiration
 
-La validation des licences s'effectue localement sur la machine — elle ne nécessite pas de connectivité en temps réel avec le serveur de comptes.
+La validation des licences s'effectue localement sur la machine, elle ne nécessite pas de connectivité en temps réel avec le serveur de comptes.
 
 Cela signifie :
 
 - un environnement en cours d'exécution n'a pas besoin de connectivité en temps réel avec le compte à chaque commande
-- tous les dépôts peuvent toujours démarrer, s'arrêter et être supprimés même avec des licences expirées — les utilisateurs ne sont jamais bloqués dans l'exploitation de leurs propres dépôts
+- tous les dépôts peuvent toujours démarrer, s'arrêter et être supprimés même avec des licences expirées, les utilisateurs ne sont jamais bloqués dans l'exploitation de leurs propres dépôts
 - les opérations d'approvisionnement (`create`, `fork`) nécessitent une licence de machine valide, et les opérations de croissance (`resize`, `expand`) nécessitent une licence de dépôt valide
 - les licences de dépôt véritablement expirées doivent être renouvelées via `rdc` avant resize/expand
 
@@ -213,7 +213,7 @@ La récupération automatique est intentionnellement limitée :
 - `repository_mismatch` : échoue rapidement et vous indique de renouveler les licences de dépôt explicitement
 - `sequence_regression` : échoue rapidement comme un problème d'intégrité/état de licence de dépôt
 - `invalid_signature` : échoue rapidement comme un problème d'intégrité/état de licence de dépôt
-- `identity_mismatch` : échoue rapidement — l'identité du dépôt ne correspond pas à la licence installée
+- `identity_mismatch` : échoue rapidement, l'identité du dépôt ne correspond pas à la licence installée
 
 Ces cas d'échec rapide ne consomment pas automatiquement les appels de renouvellement ou d'émission soutenus par le compte.
 

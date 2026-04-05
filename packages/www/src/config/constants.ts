@@ -44,10 +44,15 @@ export const EXTERNAL_LINKS = {
 } as const;
 
 /**
- * Get the account URL
- * Always returns '/account/' to ensure consistent behavior across all environments
- * and to avoid language prefix interference (e.g., /en/account)
+ * Default account origin for the primary region (EU).
+ * The marketing site links and proxies target this origin.
+ */
+export const DEFAULT_ACCOUNT_ORIGIN = 'https://eu.rediacc.com';
+
+/**
+ * Get the account URL.
+ * Returns the EU account portal URL. Users can switch regions from the portal.
  */
 export function getAccountUrl(_origin?: string): string {
-  return '/account/';
+  return `${DEFAULT_ACCOUNT_ORIGIN}/account/`;
 }

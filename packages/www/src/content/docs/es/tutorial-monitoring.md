@@ -4,7 +4,7 @@ description: "Verificar el estado de la máquina, inspeccionar contenedores, rev
 category: "Tutorials"
 order: 4
 language: es
-sourceHash: "ac0ee8180fdb7644"
+sourceHash: "2efd897e27dca34e"
 ---
 
 # Cómo monitorear y diagnosticar infraestructura con Rediacc
@@ -100,6 +100,6 @@ Los contenedores de despliegues anteriores pueden permanecer si `repo down` no s
 
 Ejecutó diagnósticos, verificó el estado de la máquina, inspeccionó contenedores y servicios, y verificó la conectividad. Para trabajar con sus despliegues:
 
-- [Monitoreo](/es/docs/monitoring) — referencia completa de todos los comandos de monitoreo
-- [Solución de problemas](/es/docs/troubleshooting) — problemas comunes y soluciones
-- [Tutorial: Herramientas](/es/docs/tutorial-tools) — terminal, sincronización de archivos e integración con VS Code
+- [Monitoreo](/es/docs/monitoring), referencia completa de todos los comandos de monitoreo
+- [Solución de problemas](/es/docs/troubleshooting), problemas comunes y soluciones
+- [Tutorial: Herramientas](/es/docs/tutorial-tools), terminal, sincronización de archivos e integración con VS Code

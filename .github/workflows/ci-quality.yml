@@ -207,6 +207,19 @@ jobs:
           path: audit-report.json
           retention-days: 3
 
+  quality-external-links:
+    name: External Links
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: npm run check:ci-external-links
+
   quality-shell:
     name: Shell
     runs-on: ubuntu-slim
@@ -246,6 +259,15 @@ jobs:
       - name: Check E2E test coverage for all renet functions
         run: .ci/scripts/quality/check-e2e-coverage.sh
 
+  quality-audit-coverage:
+    name: Audit Coverage
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - name: Check audit logging coverage for CLI operations
+        run: .ci/scripts/quality/check-audit-coverage.sh
+
   quality-editorconfig:
     name: EditorConfig
     runs-on: ubuntu-slim
@@ -253,6 +275,15 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - run: .ci/scripts/quality/check-editorconfig.sh
+
+  quality-content:
+    name: Content Quality
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - name: Check content for AI slop patterns
+        run: .ci/scripts/quality/check-content-quality.sh
 
   quality-middleware:
     name: Middleware
@@ -517,60 +548,6 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          STATUS_TOKEN: ${{ github.token }}
-          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-
-  # ==============================================================================
-  # SUBMODULE DIVERGENCE CHECK (push to main only)
-  # ==============================================================================
-  # PURPOSE: Catches submodule divergence from origin/main BEFORE CD runs.
-  #          Uses the same dry-run check as cd-v2.yml so CI fails early instead
-  #          of letting CD discover the issue after all builds complete.
-  #
-  # WHEN THIS RUNS: Only on push to main (post-merge). Skipped for PRs since
-  #                 quality-submodule-branches handles PR-time validation.
-  # ==============================================================================
-  quality-submodule-divergence:
-    name: Submodule Divergence
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true' && github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          app-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: ci
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-        with:
-          fetch-depth: 0  # Full history needed for merge-base --is-ancestor
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-      - name: Check submodule divergence from origin/main
-        run: .ci/scripts/release/merge-submodule-branches.sh --dry-run
-        env:
-          GITHUB_PAT: ${{ steps.app-token.outputs.token }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-
-  # Bot PRs skip submodule validation but still need the commit status set to
-  # success so branch protection rules don't block auto-merge.
-  quality-submodule-branches-bot:
-    name: Submodule Branches (Bot)
-    runs-on: ubuntu-slim
-    if: inputs.is_bot == 'true' && github.event_name == 'pull_request'
-    steps:
-      - name: Post success status for bot PR
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh api "repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }}" \
-            -X POST \
-            -f state="success" \
-            -f context="quality/submodule-merge-readiness" \
-            -f description="Bot PR — submodule validation skipped"
 
   # NOTE: Review checks (resolved threads + unreplied comments) are in
   # review-gate job in ci.yml. They run AFTER Gemini posts its review.

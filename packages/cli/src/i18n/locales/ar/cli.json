@@ -1588,12 +1588,16 @@
       "login": {
         "browserFailed": "تعذر فتح المتصفح تلقائياً. يرجى زيارة الرابط أعلاه.",
         "description": "المصادقة باستخدام رمز API من بوابة الويب",
+        "discoveringRegions": "جارٍ اكتشاف المناطق المتاحة...",
         "expired": "انتهت مهلة التفويض. يرجى المحاولة مرة أخرى.",
         "initFailed": "فشل بدء تسجيل الدخول. هل الخادم يعمل؟",
         "machines": "الأجهزة: {{active}}/{{max}}",
         "openBrowser": "قم بزيارة هذا الرابط للتفويض:",
         "plan": "الخطة: {{plan}}",
         "polling": "في انتظار الموافقة (اضغط Ctrl+C للإلغاء)...",
+        "regionPrompt": "أين تريد تخزين بياناتك؟",
+        "regionsDiscovered": "تم تحميل المناطق",
+        "regionSelected": "منطقة البيانات: {{region}} ({{domain}})",
         "success": "تم تسجيل الدخول بنجاح",
         "tokenInvalid": "يجب أن يبدأ الرمز بـ rdt_",
         "tokenPrompt": "أدخل رمز API الخاص بك (من بوابة الويب):",
@@ -2112,8 +2116,10 @@
       "machineRequired": "اسم الآلة مطلوب. استخدم --machine <name>",
       "notSupported": "تسجيل البروتوكول غير مدعوم على {{platform}}",
       "parseFailed": "فشل تحليل عنوان URL: {{error}}",
+      "regionSelectionRequiresTTY": "اختيار المنطقة يتطلب إدخالاً تفاعلياً. استخدم --server <url> لتحديد الخادم مباشرة.",
       "teamRequired": "اسم الفريق مطلوب. استخدم --team <name>",
-      "tokenRequired": "الرمز مطلوب. استخدم --token <token>"
+      "tokenRequired": "الرمز مطلوب. استخدم --token <token>",
+      "unknownRegion": "منطقة غير معروفة: {{region}}"
     },
     "regionRequired": "اسم المنطقة مطلوب. استخدم --region أو اضبط السياق.",
     "registrationFailed": "فشل التسجيل",

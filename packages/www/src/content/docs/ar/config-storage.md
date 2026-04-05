@@ -5,7 +5,7 @@ description: >-
 category: Guides
 order: 8
 language: ar
-sourceHash: "d20655e3e306b85b"
+sourceHash: "9612a5fecf063eea"
 ---
 
 # تخزين الإعدادات

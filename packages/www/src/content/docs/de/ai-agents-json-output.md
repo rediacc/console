@@ -4,7 +4,7 @@ description: Vollständige Referenz für das JSON-Ausgabeformat der rdc CLI, Env
 category: Reference
 order: 51
 language: de
-sourceHash: "a84e20b09aadfd28"
+sourceHash: "29b827cf79cbba6e"
 ---
 
 Alle `rdc`-Befehle unterstützen strukturierte JSON-Ausgabe für die programmatische Nutzung durch KI-Agenten und Skripte.
@@ -95,9 +95,9 @@ Fehlgeschlagene Befehle geben strukturierte Fehler mit Wiederherstellungshinweis
 
 Diese Fehlertypen sind mit `retryable: true` gekennzeichnet:
 
-- **NETWORK_ERROR** — SSH-Verbindungs- oder Netzwerkfehler
-- **RATE_LIMITED** — Zu viele Anfragen, warten und erneut versuchen
-- **API_ERROR** — Vorübergehender Backend-Fehler
+- **NETWORK_ERROR**, SSH-Verbindungs- oder Netzwerkfehler
+- **RATE_LIMITED**, Zu viele Anfragen, warten und erneut versuchen
+- **API_ERROR**, Vorübergehender Backend-Fehler
 
 Nicht wiederholbare Fehler (Authentifizierung, nicht gefunden, ungueltige Argumente) erfordern korrektive Massnahmen vor einem erneuten Versuch.
 

@@ -4,7 +4,7 @@ description: Claude Code、Cursor 和 Cline 等 AI 编程助手如何与 Rediacc
 category: Guides
 order: 30
 language: zh
-sourceHash: "e96c19a3514c4369"
+sourceHash: "c4f31aca01e62a7f"
 ---
 
 AI 编程助手可以通过 `rdc` CLI 自主管理 Rediacc 基础设施。本指南涵盖集成方法以及如何开始。
@@ -13,7 +13,7 @@ AI 编程助手可以通过 `rdc` CLI 自主管理 Rediacc 基础设施。本指
 
 Rediacc 的架构天然适合代理使用：
 
-- **CLI 优先**：每个操作都是一个 `rdc` 命令 — 无需 GUI
+- **CLI 优先**：每个操作都是一个 `rdc` 命令, 无需 GUI
 - **基于 SSH**：代理从训练数据中最熟悉的协议
 - **JSON 输出**：所有命令都支持带一致信封的 `--output json`
 - **Docker 隔离**：每个仓库拥有自己的守护进程和网络命名空间
@@ -87,7 +87,7 @@ echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 
 ## 后续步骤
 
-- [Claude Code 设置指南](/zh/docs/ai-agents-claude-code) — 逐步 Claude Code 配置
-- [Cursor 设置指南](/zh/docs/ai-agents-cursor) — Cursor IDE 集成
-- [JSON 输出参考](/zh/docs/ai-agents-json-output) — 完整的 JSON 输出文档
-- [AGENTS.md 模板](/zh/docs/agents-md-template) — 复制粘贴代理配置模板
+- [Claude Code 设置指南](/zh/docs/ai-agents-claude-code), 逐步 Claude Code 配置
+- [Cursor 设置指南](/zh/docs/ai-agents-cursor), Cursor IDE 集成
+- [JSON 输出参考](/zh/docs/ai-agents-json-output), 完整的 JSON 输出文档
+- [AGENTS.md 模板](/zh/docs/agents-md-template), 复制粘贴代理配置模板

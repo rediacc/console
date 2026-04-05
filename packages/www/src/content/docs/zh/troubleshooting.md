@@ -4,7 +4,7 @@ description: "SSH、设置、仓库、服务和Docker常见问题的解决方案
 category: "Guides"
 order: 10
 language: zh
-sourceHash: "a68982c895a81eef"
+sourceHash: "23754822c67de564"
 ---
 
 # 故障排除
@@ -83,7 +83,7 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 
 `sudo` 会重置环境变量，因此 `DOCKER_HOST` 丢失，Docker默认使用系统套接字（`/var/run/docker.sock`）。Rediacc会自动阻止此行为，但如果您遇到此问题:
 
-- **直接使用 `docker`** — Rediaccfile函数已经以足够的权限运行
+- **直接使用 `docker`**, Rediaccfile函数已经以足够的权限运行
 - 如果必须使用sudo，请使用 `sudo -E docker` 以保留环境变量
 - 检查您的Rediaccfile中是否有 `sudo docker` 命令，并删除 `sudo`
 
