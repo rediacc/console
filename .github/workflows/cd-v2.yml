@@ -550,6 +550,10 @@ jobs:
       AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
       AWS_SES_ACCESS_KEY_ID_US: ${{ secrets.AWS_SES_ACCESS_KEY_ID_US }}
       AWS_SES_SECRET_ACCESS_KEY_US: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_US }}
+      STRIPE_SECRET_KEY_ASIA: ${{ secrets.STRIPE_SECRET_KEY_ASIA }}
+      STRIPE_WEBHOOK_SECRET_ASIA: ${{ secrets.STRIPE_WEBHOOK_SECRET_ASIA }}
+      AWS_SES_ACCESS_KEY_ID_ASIA: ${{ secrets.AWS_SES_ACCESS_KEY_ID_ASIA }}
+      AWS_SES_SECRET_ACCESS_KEY_ASIA: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_ASIA }}
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
   # ============================================================================
@@ -599,6 +603,10 @@ jobs:
       AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
       AWS_SES_ACCESS_KEY_ID_US: ${{ secrets.AWS_SES_ACCESS_KEY_ID_US }}
       AWS_SES_SECRET_ACCESS_KEY_US: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_US }}
+      STRIPE_SECRET_KEY_ASIA: ${{ secrets.STRIPE_SECRET_KEY_ASIA }}
+      STRIPE_WEBHOOK_SECRET_ASIA: ${{ secrets.STRIPE_WEBHOOK_SECRET_ASIA }}
+      AWS_SES_ACCESS_KEY_ID_ASIA: ${{ secrets.AWS_SES_ACCESS_KEY_ID_ASIA }}
+      AWS_SES_SECRET_ACCESS_KEY_ASIA: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_ASIA }}
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
   # ============================================================================

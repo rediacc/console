@@ -44,6 +44,14 @@ export function detectLikelyRegion(regions: RegionInfo[]): RegionInfo {
     if (tz.startsWith('America/')) {
       return regions.find((r) => r.id === 'us') ?? regions[0];
     }
+    if (
+      tz.startsWith('Asia/') ||
+      tz.startsWith('Pacific/') ||
+      tz.startsWith('Australia/') ||
+      tz.startsWith('Indian/')
+    ) {
+      return regions.find((r) => r.id === 'asia') ?? regions[0];
+    }
   } catch {
     // Fallback to default
   }

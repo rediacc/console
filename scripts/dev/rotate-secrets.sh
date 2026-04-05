@@ -97,6 +97,10 @@ AWS_IAM_USER_US="rediacc-ses-us"
 SES_US_GITHUB_KEY_SECRET="AWS_SES_ACCESS_KEY_ID_US"
 SES_US_GITHUB_SECRET_SECRET="AWS_SES_SECRET_ACCESS_KEY_US"
 
+AWS_IAM_USER_ASIA="rediacc-ses-asia"
+SES_ASIA_GITHUB_KEY_SECRET="AWS_SES_ACCESS_KEY_ID_ASIA"
+SES_ASIA_GITHUB_SECRET_SECRET="AWS_SES_SECRET_ACCESS_KEY_ASIA"
+
 # TODO: Non-worker secret stores that also need updating after rotation:
 #
 # 1. Docker containers on machines:
@@ -417,6 +421,7 @@ worker_region() {
     local worker="$1"
     case "$worker" in
         rediacc-account-us | edge-rediacc-account-us) echo "us" ;;
+        rediacc-account-asia | edge-rediacc-account-asia) echo "asia" ;;
         *) echo "eu" ;;
     esac
 }
@@ -457,7 +462,17 @@ sync_secrets_to_workers() {
         us_values+=("$new_ses_secret_us")
     fi
 
-    local total=$((${#global_names[@]} + ${#eu_names[@]} + ${#us_names[@]}))
+    local -a asia_names=() asia_values=()
+    if [[ -n "${new_ses_key_id_asia:-}" ]]; then
+        asia_names+=("AWS_SES_ACCESS_KEY_ID")
+        asia_values+=("$new_ses_key_id_asia")
+    fi
+    if [[ -n "${new_ses_secret_asia:-}" ]]; then
+        asia_names+=("AWS_SES_SECRET_ACCESS_KEY")
+        asia_values+=("$new_ses_secret_asia")
+    fi
+
+    local total=$((${#global_names[@]} + ${#eu_names[@]} + ${#us_names[@]} + ${#asia_names[@]}))
     if [[ "$total" -eq 0 ]]; then
         log_info "No secrets were rotated, skipping worker sync"
         return 0
@@ -466,6 +481,7 @@ sync_secrets_to_workers() {
     log_info "Rotated global secrets: ${global_names[*]:-(none)}"
     log_info "Rotated EU SES secrets: ${eu_names[*]:-(none)}"
     log_info "Rotated US SES secrets: ${us_names[*]:-(none)}"
+    log_info "Rotated ASIA SES secrets: ${asia_names[*]:-(none)}"
 
     # Discover live workers
     log_step "Listing workers in account..."
@@ -490,7 +506,7 @@ sync_secrets_to_workers() {
     while IFS= read -r name; do
         [[ -z "$name" ]] && continue
         case "$name" in
-            rediacc-www | edge-rediacc-www | rediacc-account-eu | edge-rediacc-account-eu | rediacc-account-us | edge-rediacc-account-us | pr-*)
+            rediacc-www | edge-rediacc-www | rediacc-account-eu | edge-rediacc-account-eu | rediacc-account-us | edge-rediacc-account-us | rediacc-account-asia | edge-rediacc-account-asia | pr-*)
                 target_workers+=("$name")
                 ;;
         esac
@@ -517,6 +533,9 @@ sync_secrets_to_workers() {
         if [[ "$region" == "us" ]]; then
             effective_names+=("${us_names[@]}")
             effective_values+=("${us_values[@]}")
+        elif [[ "$region" == "asia" ]]; then
+            effective_names+=("${asia_names[@]}")
+            effective_values+=("${asia_values[@]}")
         else
             effective_names+=("${eu_names[@]}")
             effective_values+=("${eu_values[@]}")
@@ -609,7 +628,7 @@ else
 fi
 
 # ---- 2. AWS SES credentials (runtime, multi-region) ----
-log_step "=== Rotating AWS SES credentials (EU + US) ==="
+log_step "=== Rotating AWS SES credentials (EU + US + ASIA) ==="
 
 # Preflight already verified AWS CLI + profile access
 
@@ -659,6 +678,13 @@ rotate_ses_user "$AWS_IAM_USER_US" "$SES_US_GITHUB_KEY_SECRET" "$SES_US_GITHUB_S
 ses_old_keys_us="$_ses_old_keys"
 new_ses_key_id_us="$_ses_new_key_id"
 new_ses_secret_us="$_ses_new_secret"
+
+# Rotate ASIA
+log_step "Rotating ASIA SES credentials ($AWS_IAM_USER_ASIA)..."
+rotate_ses_user "$AWS_IAM_USER_ASIA" "$SES_ASIA_GITHUB_KEY_SECRET" "$SES_ASIA_GITHUB_SECRET_SECRET" "ASIA"
+ses_old_keys_asia="$_ses_old_keys"
+new_ses_key_id_asia="$_ses_new_key_id"
+new_ses_secret_asia="$_ses_new_secret"
 
 # Old key deletion is deferred until after worker secret sync (see below)
 
@@ -783,6 +809,7 @@ delete_old_ses_keys() {
 
 delete_old_ses_keys "$AWS_IAM_USER_EU" "${ses_old_keys_eu:-}" "${new_ses_key_id_eu:-}" "EU"
 delete_old_ses_keys "$AWS_IAM_USER_US" "${ses_old_keys_us:-}" "${new_ses_key_id_us:-}" "US"
+delete_old_ses_keys "$AWS_IAM_USER_ASIA" "${ses_old_keys_asia:-}" "${new_ses_key_id_asia:-}" "ASIA"
 
 if [[ "$worker_sync_failures" -eq 0 ]]; then
     log_info "Old AWS SES key cleanup done"
@@ -796,6 +823,7 @@ log_info "  R2 endpoint: $R2_ENDPOINT_VALUE"
 log_info "  Turnstile: $TURNSTILE_GITHUB_SECRET"
 log_info "  AWS SES EU: $SES_EU_GITHUB_KEY_SECRET, $SES_EU_GITHUB_SECRET_SECRET (user: $AWS_IAM_USER_EU)"
 log_info "  AWS SES US: $SES_US_GITHUB_KEY_SECRET, $SES_US_GITHUB_SECRET_SECRET (user: $AWS_IAM_USER_US)"
+log_info "  AWS SES ASIA: $SES_ASIA_GITHUB_KEY_SECRET, $SES_ASIA_GITHUB_SECRET_SECRET (user: $AWS_IAM_USER_ASIA)"
 if [[ "$worker_sync_failures" -gt 0 ]]; then
     log_warn "  Worker sync: $worker_sync_failures worker(s) had failures (old AWS SES keys preserved)"
     exit 1

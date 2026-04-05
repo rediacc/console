@@ -52,6 +52,14 @@ on:
         required: true
       AWS_SES_SECRET_ACCESS_KEY_US:
         required: true
+      STRIPE_SECRET_KEY_ASIA:
+        required: true
+      STRIPE_WEBHOOK_SECRET_ASIA:
+        required: true
+      AWS_SES_ACCESS_KEY_ID_ASIA:
+        required: true
+      AWS_SES_SECRET_ACCESS_KEY_ASIA:
+        required: true
       TURNSTILE_SECRET_KEY:
         required: true
 
@@ -197,12 +205,24 @@ jobs:
           SECRET_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
           SECRET_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           SECRET_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-          # Region-aware secrets: select EU or US based on secretSuffix
-          SECRET_STRIPE_KEY: ${{ inputs.target == 'production' && (matrix.secretSuffix == 'EU' && secrets.STRIPE_SECRET_KEY_EU || secrets.STRIPE_SECRET_KEY_US) || secrets.STRIPE_SANDBOX_SECRET_KEY }}
-          SECRET_STRIPE_WEBHOOK: ${{ inputs.target == 'production' && (matrix.secretSuffix == 'EU' && secrets.STRIPE_WEBHOOK_SECRET_EU || secrets.STRIPE_WEBHOOK_SECRET_US) || secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
+          # Region-aware secrets: resolved via bash indirection from SUFFIX
+          STRIPE_KEY_EU: ${{ secrets.STRIPE_SECRET_KEY_EU }}
+          STRIPE_KEY_US: ${{ secrets.STRIPE_SECRET_KEY_US }}
+          STRIPE_KEY_ASIA: ${{ secrets.STRIPE_SECRET_KEY_ASIA }}
+          STRIPE_WH_EU: ${{ secrets.STRIPE_WEBHOOK_SECRET_EU }}
+          STRIPE_WH_US: ${{ secrets.STRIPE_WEBHOOK_SECRET_US }}
+          STRIPE_WH_ASIA: ${{ secrets.STRIPE_WEBHOOK_SECRET_ASIA }}
+          STRIPE_SANDBOX_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+          STRIPE_SANDBOX_WH: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
+          SES_KEY_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
+          SES_KEY_US: ${{ secrets.AWS_SES_ACCESS_KEY_ID_US }}
+          SES_KEY_ASIA: ${{ secrets.AWS_SES_ACCESS_KEY_ID_ASIA }}
+          SES_SECRET_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
+          SES_SECRET_US: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_US }}
+          SES_SECRET_ASIA: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_ASIA }}
+          SUFFIX: ${{ matrix.secretSuffix }}
+          TARGET: ${{ inputs.target }}
           SECRET_ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
-          SECRET_SES_ACCESS_KEY_ID: ${{ matrix.secretSuffix == 'EU' && secrets.AWS_SES_ACCESS_KEY_ID_EU || secrets.AWS_SES_ACCESS_KEY_ID_US }}
-          SECRET_SES_SECRET_ACCESS_KEY: ${{ matrix.secretSuffix == 'EU' && secrets.AWS_SES_SECRET_ACCESS_KEY_EU || secrets.AWS_SES_SECRET_ACCESS_KEY_US }}
           SECRET_SES_REGION: ${{ matrix.sesRegion }}
           SECRET_TURNSTILE_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
           VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
@@ -216,6 +236,17 @@ jobs:
           VAR_SELLER_COUNTRY: ${{ vars.SELLER_COUNTRY }}
           VAR_SELLER_EMAIL: ${{ vars.SELLER_EMAIL }}
         run: |
+          # Resolve region-aware secrets via bash indirection
+          if [[ "$TARGET" == "production" ]]; then
+            STRIPE_VAR="STRIPE_KEY_${SUFFIX}"; SECRET_STRIPE_KEY="${!STRIPE_VAR}"
+            WH_VAR="STRIPE_WH_${SUFFIX}"; SECRET_STRIPE_WEBHOOK="${!WH_VAR}"
+          else
+            SECRET_STRIPE_KEY="$STRIPE_SANDBOX_KEY"
+            SECRET_STRIPE_WEBHOOK="$STRIPE_SANDBOX_WH"
+          fi
+          SES_K="SES_KEY_${SUFFIX}"; SECRET_SES_ACCESS_KEY_ID="${!SES_K}"
+          SES_S="SES_SECRET_${SUFFIX}"; SECRET_SES_SECRET_ACCESS_KEY="${!SES_S}"
+
           jq -n \
             --arg ed25519_priv "$SECRET_ED25519_PRIVATE_KEY" \
             --arg ed25519_pub "$SECRET_ED25519_PUBLIC_KEY" \

@@ -1,0 +1,42 @@
+name = "edge-rediacc-account-asia"
+main = "src/index.ts"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+
+routes = [
+  { pattern = "edge-asia.rediacc.com", custom_domain = true }
+]
+
+[vars]
+REGION = "asia"
+ENVIRONMENT = "edge"
+WEBAUTHN_RP_ID = "edge-asia.rediacc.com"
+WEBAUTHN_ORIGIN = "https://edge-asia.rediacc.com"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "404-page"
+run_worker_first = ["/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "edge-account-db-asia"
+database_id = "1b30005e-8db4-4474-a678-d5160789ac5b"
+migrations_dir = "../../private/account/drizzle"
+
+[[r2_buckets]]
+binding = "CONFIG_BUCKET"
+bucket_name = "edge-rediacc-configs-asia"

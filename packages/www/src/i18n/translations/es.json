@@ -13286,7 +13286,8 @@
     "footer": "Elige la región más cercana a ti o la que requiera tu organización. Esto no se puede cambiar después del registro.",
     "locations": {
       "eu": "Fráncfort, Alemania",
-      "us": "Virginia, EE. UU."
+      "us": "Virginia, EE. UU.",
+      "asia": "Tokyo, Japan"
     },
     "subtitle": "Todo, tu cuenta, facturación y configuraciones, permanece en la región que elijas. Nunca sale de ella.",
     "title": "¿Dónde quieres almacenar tus datos?"

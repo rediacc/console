@@ -7,6 +7,7 @@
 # Usage:
 #   deploy-account.sh --region eu                    # production EU
 #   deploy-account.sh --region us                    # production US
+#   deploy-account.sh --region asia                  # production ASIA
 #   deploy-account.sh --region eu --target edge      # edge EU
 
 set -euo pipefail

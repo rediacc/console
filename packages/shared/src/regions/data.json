@@ -29,6 +29,21 @@
       "sesRegion": "us-east-1",
       "secretSuffix": "US",
       "default": false
+    },
+    {
+      "id": "asia",
+      "label": "Asia Pacific",
+      "domain": "asia.rediacc.com",
+      "edgeDomain": "edge-asia.rediacc.com",
+      "d1": { "name": "account-db-asia", "location": "apac" },
+      "edgeD1": { "name": "edge-account-db-asia" },
+      "r2": { "name": "rediacc-configs-asia" },
+      "edgeR2": { "name": "edge-rediacc-configs-asia" },
+      "workerName": "rediacc-account-asia",
+      "edgeWorkerName": "edge-rediacc-account-asia",
+      "sesRegion": "ap-northeast-1",
+      "secretSuffix": "ASIA",
+      "default": false
     }
   ]
 }

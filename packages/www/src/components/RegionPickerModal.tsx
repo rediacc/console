@@ -41,6 +41,14 @@ function detectLikelyRegion(regions: Region[]): Region {
     if (tz.startsWith('America/')) {
       return regions.find((r) => r.id === 'us') ?? regions[0];
     }
+    if (
+      tz.startsWith('Asia/') ||
+      tz.startsWith('Pacific/') ||
+      tz.startsWith('Australia/') ||
+      tz.startsWith('Indian/')
+    ) {
+      return regions.find((r) => r.id === 'asia') ?? regions[0];
+    }
   } catch {
     // Fallback to default
   }
@@ -50,6 +58,7 @@ function detectLikelyRegion(regions: Region[]): Region {
 const REGION_LOCATIONS: Record<string, string> = {
   eu: 'Frankfurt, Germany',
   us: 'Virginia, USA',
+  asia: 'Tokyo, Japan',
 };
 
 const RegionPickerModal: React.FC = () => {
