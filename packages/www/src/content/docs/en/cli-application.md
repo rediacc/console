@@ -6,7 +6,7 @@ order: 2
 language: en
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/en/cli.json
-sourceHash: "fa03a4167288a59c"
+sourceHash: "2195ed3cee2a2c3b"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
