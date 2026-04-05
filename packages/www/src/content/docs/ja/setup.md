@@ -4,7 +4,7 @@ description: "設定の作成、マシンの追加、サーバーのプロビジ
 category: "Guides"
 order: 3
 language: ja
-sourceHash: "9fd8ebf2b98bfcf5"
+sourceHash: "143694525e0fcd9b"
 ---
 
 # マシンセットアップ
@@ -121,8 +121,8 @@ rdc config infra set -m server-1 \
 
 | オプション | スコープ | 説明 |
 |--------|-------|-------------|
-| `--public-ipv4 <ip>` | Machine | Public IPv4 address — proxy entrypoints are only created for configured address families |
-| `--public-ipv6 <ip>` | Machine | Public IPv6 address — proxy entrypoints are only created for configured address families |
+| `--public-ipv4 <ip>` | Machine | Public IPv4 address, proxy entrypoints are only created for configured address families |
+| `--public-ipv6 <ip>` | Machine | Public IPv6 address, proxy entrypoints are only created for configured address families |
 | `--base-domain <domain>` | Machine | アプリケーション用のベースドメイン（例：`example.com`） |
 | `--cert-email <email>` | Config | Let's Encrypt TLS証明書用のメールアドレス（マシン間で共有） |
 | `--cf-dns-token <token>` | Config | ACME DNS-01チャレンジ用のCloudflare DNS APIトークン（マシン間で共有） |
@@ -150,7 +150,7 @@ rdc config infra push -m server-1
 2. Traefikリバースプロキシ、ルーター、systemdサービスを設定
 3. `--cf-dns-token` が設定されている場合、マシンサブドメイン（`server-1.example.com` および `*.server-1.example.com`）のCloudflare DNSレコードを作成
 
-DNSステップは自動的かつ冪等です — 不足しているレコードを作成し、IPが変更されたレコードを更新し、既に正しいレコードはスキップします。Cloudflareトークンが設定されていない場合、DNSは警告付きでスキップされます。 Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+DNSステップは自動的かつ冪等です, 不足しているレコードを作成し、IPが変更されたレコードを更新し、既に正しいレコードはスキップします。Cloudflareトークンが設定されていない場合、DNSは警告付きでスキップされます。 Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
 
 ## クラウドプロビジョニング
 

@@ -121,42 +121,33 @@ const usesCheckout = checkoutPlans.has(plan.id);
     const buttons = document.querySelectorAll<HTMLButtonElement>('[data-checkout]');
     if (!buttons.length) return;
 
-    const accountServerUrl = `${window.location.origin}/account`;
+    // On regional domains, navigate directly. On www, open region picker.
+    const isRegional = /\b(eu|us)\.(rediacc\.com|localhost)/.test(window.location.origin) ||
+      window.location.hostname === 'localhost';
 
     buttons.forEach((btn) => {
       if (btn.dataset.checkoutBound) return;
       btn.dataset.checkoutBound = 'true';
 
-      const originalText = btn.textContent;
-      btn.addEventListener('click', async () => {
+      btn.addEventListener('click', () => {
         const planId = btn.dataset.checkout!;
         const activeToggle = document.querySelector('.billing-toggle-btn.active') as HTMLElement | null;
         const billingPeriod = activeToggle?.dataset.period === 'annual' ? 'annual' : 'monthly';
 
-        btn.disabled = true;
-        btn.textContent = '...';
-
         window.plausible?.('checkout_start', { props: { plan: planId, period: billingPeriod } });
 
-        try {
-          const response = await fetch(`${accountServerUrl}/api/v1/checkout`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              planCode: planId.toUpperCase(),
-              billingPeriod,
-              successUrl: `${window.location.origin}/${document.documentElement.lang}/checkout/success?plan=${planId}`,
-              cancelUrl: window.location.href,
-            }),
-          });
+        const params = new URLSearchParams({
+          checkout: planId.toUpperCase(),
+          period: billingPeriod,
+          returnUrl: window.location.href,
+        });
+        const targetPath = `/account/?${params}`;
 
-          if (!response.ok) throw new Error('Checkout failed');
-
-          const { url } = await response.json();
-          if (url) window.location.href = url;
-        } catch {
-          btn.disabled = false;
-          btn.textContent = originalText;
+        if (isRegional) {
+          window.location.href = targetPath;
+        } else {
+          // Open region picker -- user selects where their data goes before checkout
+          window.openRegionPicker?.(targetPath);
         }
       });
     });

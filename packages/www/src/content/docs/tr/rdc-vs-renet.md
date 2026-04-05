@@ -4,7 +4,7 @@ description: 'rdc ne zaman, renet ne zaman kullanılır.'
 category: Concepts
 order: 1
 language: tr
-sourceHash: "8b7443928e0be27e"
+sourceHash: "4f7b74a70b59d9c8"
 ---
 
 # rdc vs renet
@@ -80,6 +80,6 @@ Bu komutlar `renet`'i yerel olarak çalıştırır (SSH üzerinden değil). Tam 
 
 ## Rediaccfile Notu
 
-Bir `Rediaccfile` içinde `renet compose -- ...` görebilirsiniz. Bu normaldir — Rediaccfile fonksiyonları `renet`'in mevcut olduğu sunucuda çalışır.
+Bir `Rediaccfile` içinde `renet compose -- ...` görebilirsiniz. Bu normaldir, Rediaccfile fonksiyonları `renet`'in mevcut olduğu sunucuda çalışır.
 
 İş istasyonunuzdan iş yüklerini `rdc repo up` ve `rdc repo down` ile başlatın ve durdurun.

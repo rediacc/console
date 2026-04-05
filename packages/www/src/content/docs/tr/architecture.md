@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: tr
-sourceHash: "70943eacf16dbd21"
+sourceHash: "1ec1b0e490ef470c"
 ---
 
 # Mimari
@@ -32,7 +32,7 @@ Rediacc, SSH üzerinden birlikte çalışan iki ikili dosya kullanır:
 
 Yerel olarak yazdığınız her komut, uzak makinede renet'i çalıştıran bir SSH çağrısına dönüştürülür. Sunuculara manuel olarak SSH bağlantısı yapmanız gerekmez.
 
-Operatör odaklı bir genel kural için [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasına bakın. Ayrıca test için yerel VM kümesi çalıştırmak amacıyla `rdc ops` kullanabilirsiniz — bkz. [Deneysel VM'ler](/tr/docs/experimental-vms).
+Operatör odaklı bir genel kural için [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasına bakın. Ayrıca test için yerel VM kümesi çalıştırmak amacıyla `rdc ops` kullanabilirsiniz, bkz. [Deneysel VM'ler](/tr/docs/experimental-vms).
 
 ## Yapılandırma
 

@@ -40,6 +40,8 @@
 1115551
 1115552
 1115554
+# path-to-regexp backtracking regex (transitive dep via @ant-design/pro-layout, no fix in v2.x)
+1101848
 # path-to-regexp ReDoS via sequential optional groups/wildcards (transitive dep, no fix)
 1115573
 1115582

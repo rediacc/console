@@ -4,7 +4,7 @@ description: Cómo los asistentes de programación con IA como Claude Code, Curs
 category: Guides
 order: 30
 language: es
-sourceHash: "e96c19a3514c4369"
+sourceHash: "c4f31aca01e62a7f"
 ---
 
 Los asistentes de programación con IA pueden gestionar la infraestructura Rediacc de forma autónoma a través del CLI `rdc`. Esta guía cubre los enfoques de integración y cómo empezar.
@@ -13,7 +13,7 @@ Los asistentes de programación con IA pueden gestionar la infraestructura Redia
 
 La arquitectura de Rediacc es naturalmente compatible con agentes:
 
-- **CLI primero**: Cada operación es un comando `rdc` — no se requiere GUI
+- **CLI primero**: Cada operación es un comando `rdc`, no se requiere GUI
 - **Basado en SSH**: El protocolo que los agentes mejor conocen de los datos de entrenamiento
 - **Salida JSON**: Todos los comandos admiten `--output json` con un sobre consistente
 - **Aislamiento Docker**: Cada repositorio tiene su propio daemon y espacio de nombres de red
@@ -87,7 +87,7 @@ echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 
 ## Próximos pasos
 
-- [Guía de configuración de Claude Code](/es/docs/ai-agents-claude-code) — Configuración paso a paso de Claude Code
-- [Guía de configuración de Cursor](/es/docs/ai-agents-cursor) — Integración con el IDE Cursor
-- [Referencia de salida JSON](/es/docs/ai-agents-json-output) — Documentación completa de la salida JSON
-- [Plantilla AGENTS.md](/es/docs/agents-md-template) — Plantilla de configuración de agentes lista para copiar y pegar
+- [Guía de configuración de Claude Code](/es/docs/ai-agents-claude-code), Configuración paso a paso de Claude Code
+- [Guía de configuración de Cursor](/es/docs/ai-agents-cursor), Integración con el IDE Cursor
+- [Referencia de salida JSON](/es/docs/ai-agents-json-output), Documentación completa de la salida JSON
+- [Plantilla AGENTS.md](/es/docs/agents-md-template), Plantilla de configuración de agentes lista para copiar y pegar

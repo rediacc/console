@@ -4,12 +4,12 @@ description: "Migrer des projets existants vers des dépôts chiffrés Rediacc."
 category: "Guides"
 order: 11
 language: fr
-sourceHash: "180b0e1e61b958b8"
+sourceHash: "18199953a84fb77b"
 ---
 
 # Guide de migration
 
-Migrez un projet existant — fichiers, services Docker, bases de données — depuis un serveur traditionnel ou un environnement de développement local vers un dépôt chiffré Rediacc.
+Migrez un projet existant, fichiers, services Docker, bases de données, depuis un serveur traditionnel ou un environnement de développement local vers un dépôt chiffré Rediacc.
 
 ## Prérequis
 
@@ -75,8 +75,8 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 
 ### Quand exécuter
 
-- **Après le téléversement des fichiers** — pour convertir votre UID local en 7111
-- **Après le démarrage des conteneurs** — si vous souhaitez que les répertoires de volumes Docker soient automatiquement exclus. Si les conteneurs n'ont pas encore été démarrés, il n'y a pas de volumes à exclure et tous les répertoires sont modifiés (ce qui est normal — les conteneurs recréeront leurs données au premier démarrage)
+- **Après le téléversement des fichiers**, pour convertir votre UID local en 7111
+- **Après le démarrage des conteneurs**, si vous souhaitez que les répertoires de volumes Docker soient automatiquement exclus. Si les conteneurs n'ont pas encore été démarrés, il n'y a pas de volumes à exclure et tous les répertoires sont modifiés (ce qui est normal, les conteneurs recréeront leurs données au premier démarrage)
 
 ### Mode forcé
 
@@ -121,7 +121,7 @@ Les trois fonctions du cycle de vie :
 
 > **Important :** Utilisez toujours `renet compose --` au lieu de `docker compose` dans votre Rediaccfile. Le wrapper `renet compose` impose le réseau hôte, les capacités de checkpoint/restore CRIU, l'allocation d'IP et la découverte de services requises par renet-proxy. L'utilisation directe de `docker compose` contourne tout cela et sera rejetée lors de la validation.
 >
-> N'utilisez jamais `sudo docker` non plus — `sudo` réinitialise les variables d'environnement, y compris `DOCKER_HOST`, ce qui entraîne la création des conteneurs sur le daemon Docker du système au lieu du daemon isolé du dépôt. Les fonctions du Rediaccfile s'exécutent déjà avec des privilèges suffisants.
+> N'utilisez jamais `sudo docker` non plus, `sudo` réinitialise les variables d'environnement, y compris `DOCKER_HOST`, ce qui entraîne la création des conteneurs sur le daemon Docker du système au lieu du daemon isolé du dépôt. Les fonctions du Rediaccfile s'exécutent déjà avec des privilèges suffisants.
 
 Voir [Services](/fr/docs/services) pour tous les détails sur les Rediaccfiles, les configurations multi-services et l'ordre d'exécution.
 
@@ -184,9 +184,9 @@ services:
 
 Modifications principales :
 
-1. **Supprimer les mappages `ports:`** — `renet compose` utilise le réseau hôte et supprime automatiquement les mappages de ports
-2. **Supprimer `network_mode: host`** — `renet compose` l'ajoute automatiquement
-3. **Supprimer `restart: always` ou `restart: unless-stopped`** — ils entrent en conflit avec CRIU checkpoint/restore (Docker démarre automatiquement les conteneurs avant que le checkpoint restore ne puisse s'exécuter). Utilisez `restart: on-failure` si vous avez besoin d'un comportement de redémarrage, ou omettez-le entièrement — Rediaccfile `up()`/`down()` gère le cycle de vie des conteneurs
+1. **Supprimer les mappages `ports:`**, `renet compose` utilise le réseau hôte et supprime automatiquement les mappages de ports
+2. **Supprimer `network_mode: host`**, `renet compose` l'ajoute automatiquement
+3. **Supprimer `restart: always` ou `restart: unless-stopped`**, ils entrent en conflit avec CRIU checkpoint/restore (Docker démarre automatiquement les conteneurs avant que le checkpoint restore ne puisse s'exécuter). Utilisez `restart: on-failure` si vous avez besoin d'un comportement de redémarrage, ou omettez-le entièrement, Rediaccfile `up()`/`down()` gère le cycle de vie des conteneurs
 4. **Lier les services aux variables d'environnement `${SERVICE_IP}`** (injectées automatiquement par Rediacc)
 5. **Référencer les autres services par leur IP** au lieu des noms DNS Docker (par ex. `${POSTGRES_IP}` au lieu de `postgres`)
 
@@ -241,7 +241,7 @@ my-wordpress/
 
 1. Téléversez les fichiers de votre projet
 2. Démarrez d'abord les services (`rdc repo up`) pour que les conteneurs créent leurs répertoires de données
-3. Exécutez la correction de propriété — les répertoires de données MariaDB et de l'application sont automatiquement exclus
+3. Exécutez la correction de propriété, les répertoires de données MariaDB et de l'application sont automatiquement exclus
 
 ### Node.js / Python avec Redis
 
@@ -295,7 +295,7 @@ Chaque dépôt reçoit des IPs de loopback uniques. Si vous rencontrez des confl
 
 ### La correction de propriété casse les conteneurs
 
-Si vous avez exécuté `rdc repo ownership` et qu'un conteneur a cessé de fonctionner, les fichiers de données du conteneur ont été modifiés. Arrêtez le conteneur, supprimez son répertoire de données et redémarrez — le conteneur le recréera :
+Si vous avez exécuté `rdc repo ownership` et qu'un conteneur a cessé de fonctionner, les fichiers de données du conteneur ont été modifiés. Arrêtez le conteneur, supprimez son répertoire de données et redémarrez, le conteneur le recréera :
 
 ```bash
 rdc repo down --name my-project -m server-1

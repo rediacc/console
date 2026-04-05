@@ -4,7 +4,7 @@ description: "检查机器健康状况、检查容器、查看 systemd 服务、
 category: "Tutorials"
 order: 4
 language: zh
-sourceHash: "ac0ee8180fdb7644"
+sourceHash: "2efd897e27dca34e"
 ---
 
 # 如何使用 Rediacc 监控和诊断基础设施
@@ -100,6 +100,6 @@ Rediacc 服务仅在部署至少一个仓库后才会出现。如果没有仓库
 
 您已运行诊断、检查了机器健康状况、检查了容器和服务并验证了连接。要使用您的部署：
 
-- [监控](/zh/docs/monitoring) — 所有监控命令的完整参考
-- [故障排除](/zh/docs/troubleshooting) — 常见问题和解决方案
-- [教程: 工具](/zh/docs/tutorial-tools) — 终端、文件同步和 VS Code 集成
+- [监控](/zh/docs/monitoring), 所有监控命令的完整参考
+- [故障排除](/zh/docs/troubleshooting), 常见问题和解决方案
+- [教程: 工具](/zh/docs/tutorial-tools), 终端、文件同步和 VS Code 集成

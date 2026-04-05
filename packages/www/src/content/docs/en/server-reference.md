@@ -122,7 +122,7 @@ renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
 - `--run-as`: Drop privileges to target user after setup
 - `--reset-home`: Clear per-repo home overlay for a fresh start
 
-**`sandbox-gateway`** is the SSH ForceCommand handler set via `command=` in `authorized_keys`. Each repo's SSH key triggers the gateway with the repo name baked in — un-fakeable by the client. The gateway builds sandbox-exec arguments and execs via sudo.
+**`sandbox-gateway`** is the SSH ForceCommand handler set via `command=` in `authorized_keys`. Each repo's SSH key triggers the gateway with the repo name baked in, un-fakeable by the client. The gateway builds sandbox-exec arguments and execs via sudo.
 
 ### Proxy & Routing
 
@@ -263,11 +263,11 @@ renet list containers
 
 ## Tips
 
-- Always use `sudo` for `renet compose`, `renet repository`, and `renet docker` commands — they need root for LUKS and Docker operations
+- Always use `sudo` for `renet compose`, `renet repository`, and `renet docker` commands, they need root for LUKS and Docker operations
 - The `--` separator is required before passing arguments to `renet compose` and `renet docker`
 - Run compose from the directory that contains `docker-compose.yml`
-- `.rediacc.json` slot assignments are stable — do not change them after deployment
+- `.rediacc.json` slot assignments are stable, do not change them after deployment
 - Use `/run/rediacc/docker-{id}.sock` paths (systemd may change legacy `/var/run/` paths)
 - Run `renet prune --dry-run` from time to time to find orphaned resources
-- BTRFS snapshots (`renet backup`) are fast and cheap — use them before making risky changes
-- Repositories are LUKS-encrypted — losing the password means losing the data
+- BTRFS snapshots (`renet backup`) are fast and cheap, use them before making risky changes
+- Repositories are LUKS-encrypted, losing the password means losing the data

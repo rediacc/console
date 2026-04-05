@@ -44,6 +44,7 @@ test.describe
     });
 
     test.afterAll(async () => {
+      test.setTimeout(300_000); // 5 min -- 7 sequential cleanup ops need ~260s, global 120s is too tight
       // Best-effort cleanup in reverse dependency order
       if (config.enabled && cephConfigured) {
         const cleanupOps = [

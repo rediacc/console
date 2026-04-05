@@ -101,6 +101,6 @@ Install the extension from the VS Code marketplace: search for "Remote - SSH" by
 
 You ran remote commands, synced files, checked VS Code integration, and verified CLI updates. To protect your data:
 
-- [Tools](/en/docs/tools) — full reference for terminal, sync, VS Code, and update commands
-- [Tutorial: Backup & Networking](/en/docs/tutorial-backup) — backup scheduling and network configuration
-- [Services](/en/docs/services) — Rediaccfile reference and service networking
+- [Tools](/en/docs/tools), full reference for terminal, sync, VS Code, and update commands
+- [Tutorial: Backup & Networking](/en/docs/tutorial-backup), backup scheduling and network configuration
+- [Services](/en/docs/services), Rediaccfile reference and service networking

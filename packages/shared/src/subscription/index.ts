@@ -29,6 +29,9 @@ export {
   PROGRESSIVE_LIMIT_KEYS,
   SUBSCRIPTION_CONFIG,
 } from './constants';
+// Signing keys (Ed25519 public keys for signature verification)
+export { CURRENT_SIGNING_KEY, SIGNING_KEYS } from './signing-keys';
+export type { SigningKey } from './signing-keys';
 // Crypto (Ed25519 signature verification)
 export {
   clearPublicKeys,

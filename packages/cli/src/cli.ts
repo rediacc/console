@@ -30,6 +30,7 @@ import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.j
 import { configService } from './services/config-resources.js';
 import { outputService } from './services/output.js';
 import { getSubscriptionTokenState } from './services/subscription-auth.js';
+import { auditService } from './services/audit.js';
 import { telemetryService } from './services/telemetry.js';
 import type { OutputFormat } from './types/index.js';
 import { isAgentEnvironment } from './utils/agent-guard.js';
@@ -181,6 +182,9 @@ cli
     });
 
     commandContext.delete(commandName);
+
+    // Flush audit events (fire-and-forget, timeout-bounded)
+    await auditService.flush();
   });
 
 // Register all command groups

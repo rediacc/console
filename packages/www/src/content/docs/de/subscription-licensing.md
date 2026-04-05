@@ -4,7 +4,7 @@ description: Erfahren Sie, wie Account, rdc und renet Maschinenplätze, Repo-Liz
 category: Guides
 order: 7
 language: de
-sourceHash: "49428ac8fe913194"
+sourceHash: "a31dc14e6305b4d4"
 ---
 
 # Abonnement & Lizenzierung
@@ -70,10 +70,10 @@ Eine Repo-Lizenz ist eine signierte Lizenz für ein Repository auf einer Maschin
 
 Sie wird verwendet für:
 
-- `rdc repo resize` und `rdc repo expand` — vollständige Validierung einschließlich Ablauf
-- `rdc repo up`, `rdc repo down`, `rdc repo delete` — validiert mit **übersprungener Ablaufprüfung**
-- `rdc repo push`, `rdc repo pull`, `rdc repo sync` — validiert mit **übersprungener Ablaufprüfung**
-- Repo-Autostart beim Maschinenneustart — validiert mit **übersprungener Ablaufprüfung**
+- `rdc repo resize` und `rdc repo expand`, vollständige Validierung einschließlich Ablauf
+- `rdc repo up`, `rdc repo down`, `rdc repo delete`, validiert mit **übersprungener Ablaufprüfung**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, validiert mit **übersprungener Ablaufprüfung**
+- Repo-Autostart beim Maschinenneustart, validiert mit **übersprungener Ablaufprüfung**
 
 Repo-Lizenzen sind an die Maschine und das Ziel-Repository gebunden, und Rediacc verstärkt diese Bindung durch Repository-Identitätsmetadaten. Bei verschlüsselten Repositories umfasst dies die LUKS-Identität des zugrunde liegenden Volumes.
 
@@ -123,7 +123,7 @@ Diese kontogestützte Ausstellung zählt zu Ihrer monatlichen Nutzung der **Repo
 
 ### Maschinenneustart und Autostart
 
-Autostart verwendet dieselben Regeln wie `rdc repo up` — die Ablaufprüfung wird übersprungen, sodass Repositories immer frei neu starten.
+Autostart verwendet dieselben Regeln wie `rdc repo up`, die Ablaufprüfung wird übersprungen, sodass Repositories immer frei neu starten.
 
 Repo-Lizenzen verwenden ein langlebiges Gültigkeitsmodell:
 
@@ -192,12 +192,12 @@ Für die erstmalige Maschineneinrichtung siehe [Maschinen-Setup](/de/docs/setup)
 
 ## Offline-Verhalten und Ablauf
 
-Die Lizenzvalidierung erfolgt lokal auf der Maschine — sie erfordert keine Live-Verbindung zum Account-Server.
+Die Lizenzvalidierung erfolgt lokal auf der Maschine, sie erfordert keine Live-Verbindung zum Account-Server.
 
 Das bedeutet:
 
 - Eine laufende Umgebung benötigt bei jedem Befehl keine Live-Konto-Verbindung
-- Alle Repos können immer gestartet, gestoppt und gelöscht werden, auch mit abgelaufenen Lizenzen — Benutzer werden nie vom Betrieb ihrer eigenen Repositories ausgesperrt
+- Alle Repos können immer gestartet, gestoppt und gelöscht werden, auch mit abgelaufenen Lizenzen, Benutzer werden nie vom Betrieb ihrer eigenen Repositories ausgesperrt
 - Bereitstellungsoperationen (`create`, `fork`) erfordern eine gültige Maschinenlizenz, und Wachstumsoperationen (`resize`, `expand`) erfordern eine gültige Repo-Lizenz
 - Wirklich abgelaufene Repo-Lizenzen müssen vor Resize/Expand über `rdc` aktualisiert werden
 
@@ -213,7 +213,7 @@ Die automatische Wiederherstellung ist bewusst eng gefasst:
 - `repository_mismatch`: schlägt sofort fehl und fordert Sie auf, Repo-Lizenzen explizit zu aktualisieren
 - `sequence_regression`: schlägt sofort fehl als Repo-Lizenz-Integritäts-/Statusproblem
 - `invalid_signature`: schlägt sofort fehl als Repo-Lizenz-Integritäts-/Statusproblem
-- `identity_mismatch`: schlägt sofort fehl — die Repository-Identität stimmt nicht mit der installierten Lizenz überein
+- `identity_mismatch`: schlägt sofort fehl, die Repository-Identität stimmt nicht mit der installierten Lizenz überein
 
 Diese Sofort-Fehlschlag-Fälle verbrauchen nicht automatisch kontogestützte Aktualisierungs- oder Ausstellungsaufrufe.
 

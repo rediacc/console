@@ -27,7 +27,7 @@ Storage providers (S3, B2, Google Drive, etc.) serve as backup destinations. Che
 rdc config storage list
 ```
 
-Lists all configured storage providers imported from rclone configs. If empty, add a storage provider first — see [Backup & Restore](/en/docs/backup-restore).
+Lists all configured storage providers imported from rclone configs. If empty, add a storage provider first, see [Backup & Restore](/en/docs/backup-restore).
 
 ### Step 2: Configure backup schedule
 
@@ -117,6 +117,6 @@ All three fields are required: `--public-ipv4`, `--base-domain`, and `--cert-ema
 
 You configured automated backups, set up infrastructure networking, registered service ports, and verified the configuration. To manage backups:
 
-- [Backup & Restore](/en/docs/backup-restore) — full reference for push, pull, list, and sync commands
-- [Networking](/en/docs/networking) — Docker labels, TLS certificates, DNS, and TCP/UDP forwarding
-- [Tutorial: Machine Setup](/en/docs/tutorial-setup) — initial configuration and provisioning
+- [Backup & Restore](/en/docs/backup-restore), full reference for push, pull, list, and sync commands
+- [Networking](/en/docs/networking), Docker labels, TLS certificates, DNS, and TCP/UDP forwarding
+- [Tutorial: Machine Setup](/en/docs/tutorial-setup), initial configuration and provisioning

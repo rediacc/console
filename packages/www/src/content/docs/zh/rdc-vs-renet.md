@@ -4,7 +4,7 @@ description: 什么时候使用 rdc，什么时候使用 renet。
 category: Concepts
 order: 1
 language: zh
-sourceHash: "8b7443928e0be27e"
+sourceHash: "4f7b74a70b59d9c8"
 ---
 
 # rdc vs renet
@@ -80,6 +80,6 @@ rdc ops down               # Destroy cluster
 
 ## Rediaccfile 说明
 
-您可能会在 `Rediaccfile` 中看到 `renet compose -- ...`。这是正常的 — Rediaccfile 函数在 `renet` 可用的服务器上运行。
+您可能会在 `Rediaccfile` 中看到 `renet compose -- ...`。这是正常的, Rediaccfile 函数在 `renet` 可用的服务器上运行。
 
 从工作站启动和停止工作负载请使用 `rdc repo up` 和 `rdc repo down`。

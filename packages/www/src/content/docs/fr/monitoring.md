@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: fr
-sourceHash: "7b7349277b9d5f85"
+sourceHash: "8332f7d1cb8ee60b"
 sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
@@ -49,8 +49,8 @@ rdc machine containers server-1
 | Repository | Dépôt propriétaire du conteneur |
 
 Options :
-- `--health-check` — Effectuer des vérifications de santé actives sur les conteneurs
-- `--output json` — Sortie JSON lisible par les machines
+- `--health-check`, Effectuer des vérifications de santé actives sur les conteneurs
+- `--output json`, Sortie JSON lisible par les machines
 
 La sortie JSON inclut les détails complets des conteneurs (`labels`, `port_mappings`, `image`, `id`) ainsi que `repository` (nom résolu), `repository_guid` (GUID d'origine), `domain` et `autoRoute`.
 
@@ -72,8 +72,8 @@ rdc machine services server-1
 | Repository | Dépôt associé |
 
 Options :
-- `--stability-check` — Signaler les services instables (en échec, >3 redémarrages, redémarrage automatique)
-- `--output json` — Sortie JSON lisible par les machines
+- `--stability-check`, Signaler les services instables (en échec, >3 redémarrages, redémarrage automatique)
+- `--output json`, Sortie JSON lisible par les machines
 
 La sortie JSON inclut les détails complets des services avec `repository` (nom résolu) et `repository_guid` (GUID d'origine).
 
@@ -96,8 +96,8 @@ rdc machine repos server-1
 | Modified | Date de dernière modification |
 
 Options :
-- `--search <text>` — Filtrer par nom ou chemin de montage
-- `--output json` — Sortie JSON lisible par les machines
+- `--search <text>`, Filtrer par nom ou chemin de montage
+- `--output json`, Sortie JSON lisible par les machines
 
 La sortie JSON inclut `name` (résolu) et `guid` (GUID d'origine), et imbrique pour chaque dépôt les tableaux `containers` (avec `domain`, `autoRoute`, `repository`/`repository_guid`) et `services`.
 
@@ -135,8 +135,8 @@ Ce rapport inclut :
 - Entrée des clés d'hôte connues
 
 Options :
-- `--port <number>` — Port SSH (par défaut : 22)
-- `--save -m server-1` — Enregistrer la clé d'hôte vérifiée dans la configuration de la machine
+- `--port <number>`, Port SSH (par défaut : 22)
+- `--save -m server-1`, Enregistrer la clé d'hôte vérifiée dans la configuration de la machine
 
 ## Diagnostics (doctor)
 

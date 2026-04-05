@@ -4,13 +4,13 @@ description: Connectez des agents IA à l'infrastructure Rediacc en utilisant le
 category: Guides
 order: 33
 language: fr
-sourceHash: "ac1ed364eb890583"
+sourceHash: "ac4f508c3ad2602e"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
 ## Aperçu
 
-La commande `rdc mcp serve` lance un serveur MCP (Model Context Protocol) local que les agents IA peuvent utiliser pour gérer votre infrastructure. Le serveur utilise le transport stdio — l'agent IA le lance en tant que sous-processus et communique via JSON-RPC.
+La commande `rdc mcp serve` lance un serveur MCP (Model Context Protocol) local que les agents IA peuvent utiliser pour gérer votre infrastructure. Le serveur utilise le transport stdio, l'agent IA le lance en tant que sous-processus et communique via JSON-RPC.
 
 **Prérequis :** `rdc` installé et configuré avec au moins une machine.
 
@@ -115,7 +115,7 @@ The MCP server enforces two layers of protection:
 
 ### Fork-only mode (default)
 
-By default, the server runs in **fork-only mode** — write tools (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) can only operate on fork repositories. Grand (original) repositories are protected from agent modifications.
+By default, the server runs in **fork-only mode**, write tools (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) can only operate on fork repositories. Grand (original) repositories are protected from agent modifications.
 
 To allow an agent to modify grand repos, start with `--allow-grand`:
 
@@ -139,7 +139,7 @@ When `term_exec` runs a command on a repository, the command is wrapped with `re
 - **Allowed**: the repository's own mount path, `/tmp`, system binaries (`/usr`, `/bin`, `/etc`), the repo's Docker socket
 - **Blocked**: other repositories' mount paths, home directory writes, arbitrary filesystem access
 
-This prevents lateral movement — even if an agent gains shell access to a fork, it cannot read or modify other repositories on the same machine. Machine-level SSH (without a repository) is not sandboxed.
+This prevents lateral movement, even if an agent gains shell access to a fork, it cannot read or modify other repositories on the same machine. Machine-level SSH (without a repository) is not sandboxed.
 
 ## Architecture
 

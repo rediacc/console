@@ -4,7 +4,7 @@ description: "Создание конфигурации, добавление м
 category: "Guides"
 order: 3
 language: ru
-sourceHash: "9fd8ebf2b98bfcf5"
+sourceHash: "143694525e0fcd9b"
 ---
 
 # Настройка машины
@@ -13,7 +13,7 @@ sourceHash: "9fd8ebf2b98bfcf5"
 
 ## Шаг 1: Создание конфигурации
 
-**Конфигурация** — это именованный файл конфигурации, хранящий ваши SSH-учетные данные, определения машин и привязки репозиториев. Воспринимайте его как рабочее пространство проекта.
+**Конфигурация**, это именованный файл конфигурации, хранящий ваши SSH-учетные данные, определения машин и привязки репозиториев. Воспринимайте его как рабочее пространство проекта.
 
 ```bash
 rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
@@ -121,15 +121,15 @@ rdc config infra set -m server-1 \
 
 | Опция | Область | Описание |
 |-------|---------|----------|
-| `--public-ipv4 <ip>` | Machine | Public IPv4 address — proxy entrypoints are only created for configured address families |
-| `--public-ipv6 <ip>` | Machine | Public IPv6 address — proxy entrypoints are only created for configured address families |
+| `--public-ipv4 <ip>` | Machine | Public IPv4 address, proxy entrypoints are only created for configured address families |
+| `--public-ipv6 <ip>` | Machine | Public IPv6 address, proxy entrypoints are only created for configured address families |
 | `--base-domain <domain>` | Machine | Базовый домен для приложений (например, `example.com`) |
 | `--cert-email <email>` | Config | Email для TLS-сертификатов Let's Encrypt (общий для всех машин) |
 | `--cf-dns-token <token>` | Config | API-токен Cloudflare DNS для ACME DNS-01 проверок (общий для всех машин) |
 | `--tcp-ports <ports>` | Machine | Дополнительные TCP-порты для проброса через запятую (например, `25,143,465,587,993`) |
 | `--udp-ports <ports>` | Machine | Дополнительные UDP-порты для проброса через запятую (например, `53`) |
 
-Опции области Machine хранятся для каждой машины. Опции области Config (`--cert-email`, `--cf-dns-token`) являются общими для всех машин в конфигурации — задайте их один раз, и они применяются повсюду.
+Опции области Machine хранятся для каждой машины. Опции области Config (`--cert-email`, `--cf-dns-token`) являются общими для всех машин в конфигурации, задайте их один раз, и они применяются повсюду.
 
 ### Просмотр инфраструктуры
 
@@ -150,7 +150,7 @@ rdc config infra push -m server-1
 2. Настраивает обратный прокси Traefik, маршрутизатор и службы systemd
 3. Создаёт DNS-записи Cloudflare для поддомена машины (`server-1.example.com` и `*.server-1.example.com`), если задан `--cf-dns-token`
 
-Шаг DNS выполняется автоматически и идемпотентно — создаёт недостающие записи, обновляет записи с изменёнными IP-адресами и пропускает записи, которые уже корректны. Если токен Cloudflare не настроен, DNS пропускается с предупреждением. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+Шаг DNS выполняется автоматически и идемпотентно, создаёт недостающие записи, обновляет записи с изменёнными IP-адресами и пропускает записи, которые уже корректны. Если токен Cloudflare не настроен, DNS пропускается с предупреждением. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
 
 ## Облачное провизионирование
 

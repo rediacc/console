@@ -12,7 +12,7 @@ AI coding assistants can manage Rediacc infrastructure autonomously through the 
 
 Rediacc's architecture is naturally agent-friendly:
 
-- **CLI-first**: Every operation is a `rdc` command — no GUI required
+- **CLI-first**: Every operation is a `rdc` command, no GUI required
 - **SSH-based**: The protocol agents know best from training data
 - **JSON output**: All commands support `--output json` with a consistent envelope
 - **Docker isolation**: Each repository gets its own daemon and network namespace
@@ -86,7 +86,7 @@ echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 
 ## Next Steps
 
-- [Claude Code Setup Guide](/en/docs/ai-agents-claude-code) — Step-by-step Claude Code configuration
-- [Cursor Setup Guide](/en/docs/ai-agents-cursor) — Cursor IDE integration
-- [JSON Output Reference](/en/docs/ai-agents-json-output) — Complete JSON output documentation
-- [AGENTS.md Template](/en/docs/agents-md-template) — Copy-paste agent configuration template
+- [Claude Code Setup Guide](/en/docs/ai-agents-claude-code), Step-by-step Claude Code configuration
+- [Cursor Setup Guide](/en/docs/ai-agents-cursor), Cursor IDE integration
+- [JSON Output Reference](/en/docs/ai-agents-json-output), Complete JSON output documentation
+- [AGENTS.md Template](/en/docs/agents-md-template), Copy-paste agent configuration template

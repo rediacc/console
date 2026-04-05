@@ -321,7 +321,7 @@ export function generate(lang, cliJsonEn, { sourceHash, docType = 'local' } = {}
     lines.push('');
     lines.push('```bash');
     lines.push('# macOS / Linux');
-    lines.push('curl -fsSL https://get.rediacc.com | sh');
+    lines.push('curl -fsSL https://www.rediacc.com | sh');
     lines.push('');
     lines.push('# Or use the packaged binary directly');
     lines.push('./rdc --help');

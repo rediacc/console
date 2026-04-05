@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: "7b7349277b9d5f85"
+sourceHash: "8332f7d1cb8ee60b"
 sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
@@ -49,8 +49,8 @@ rdc machine containers server-1
 | Repository | Konteynerin ait olduğu depo |
 
 Seçenekler:
-- `--health-check` — Konteynerlerde aktif sağlık kontrolleri gerçekleştir
-- `--output json` — Makine tarafından okunabilir JSON çıktısı
+- `--health-check`, Konteynerlerde aktif sağlık kontrolleri gerçekleştir
+- `--output json`, Makine tarafından okunabilir JSON çıktısı
 
 JSON çıktısı tam konteyner ayrıntılarını (`labels`, `port_mappings`, `image`, `id`) ve ayrıca `repository` (çözümlenmiş ad), `repository_guid` (orijinal GUID), `domain` ve `autoRoute` alanlarını içerir.
 
@@ -72,8 +72,8 @@ rdc machine services server-1
 | Repository | İlişkili depo |
 
 Seçenekler:
-- `--stability-check` — Kararsız servisleri işaretle (başarısız, 3'ten fazla yeniden başlatma, otomatik yeniden başlatma)
-- `--output json` — Makine tarafından okunabilir JSON çıktısı
+- `--stability-check`, Kararsız servisleri işaretle (başarısız, 3'ten fazla yeniden başlatma, otomatik yeniden başlatma)
+- `--output json`, Makine tarafından okunabilir JSON çıktısı
 
 JSON çıktısı, `repository` (çözümlenmiş ad) ve `repository_guid` (orijinal GUID) ile birlikte tam servis ayrıntılarını içerir.
 
@@ -96,8 +96,8 @@ rdc machine repos server-1
 | Modified | Son değişiklik zamanı |
 
 Seçenekler:
-- `--search <text>` — Ad veya bağlama yoluna göre filtrele
-- `--output json` — Makine tarafından okunabilir JSON çıktısı
+- `--search <text>`, Ad veya bağlama yoluna göre filtrele
+- `--output json`, Makine tarafından okunabilir JSON çıktısı
 
 JSON çıktısı `name` (çözümlenmiş) ve `guid` (orijinal GUID) alanlarını içerir; ayrıca her depo için `containers` (`domain`, `autoRoute`, `repository`/`repository_guid` ile birlikte) ve `services` dizilerini iç içe verir.
 
@@ -135,8 +135,8 @@ Rapor içeriği:
 - Known hosts kaydı
 
 Seçenekler:
-- `--port <number>` — SSH portu (varsayılan: 22)
-- `--save -m server-1` — Doğrulanmış ana bilgisayar anahtarını makine yapılandırmasına kaydet
+- `--port <number>`, SSH portu (varsayılan: 22)
+- `--save -m server-1`, Doğrulanmış ana bilgisayar anahtarını makine yapılandırmasına kaydet
 
 ## Tanılama (doctor)
 

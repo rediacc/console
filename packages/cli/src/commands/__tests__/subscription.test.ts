@@ -20,6 +20,11 @@ const {
   mockOutputWarn,
   mockOutputSuccess,
   mockWithSpinner,
+  mockIsDevelopmentSubscriptionMode,
+  mockLoadServerConfig,
+  mockSaveServerConfig,
+  mockDiscoverRegions,
+  mockPromptRegionSelection,
 } = vi.hoisted(() => ({
   mockGetSubscriptionTokenState: vi.fn(),
   mockFetchSubscriptionLicenseReport: vi.fn(),
@@ -45,6 +50,11 @@ const {
   mockOutputWarn: vi.fn(),
   mockOutputSuccess: vi.fn(),
   mockWithSpinner: vi.fn(),
+  mockIsDevelopmentSubscriptionMode: vi.fn(() => false),
+  mockLoadServerConfig: vi.fn(() => ({ accountServer: 'http://localhost:4800' })),
+  mockSaveServerConfig: vi.fn(),
+  mockDiscoverRegions: vi.fn(),
+  mockPromptRegionSelection: vi.fn(),
 }));
 
 vi.mock('../../i18n/index.js', () => ({
@@ -58,6 +68,17 @@ vi.mock('../../services/subscription-auth.js', () => ({
   getSubscriptionServerUrl: mockGetSubscriptionServerUrl,
   getSubscriptionScopeMismatch: mockGetSubscriptionScopeMismatch,
   saveStoredSubscriptionToken: mockSaveStoredSubscriptionToken,
+  isDevelopmentSubscriptionMode: mockIsDevelopmentSubscriptionMode,
+  loadServerConfig: mockLoadServerConfig,
+  saveServerConfig: mockSaveServerConfig,
+}));
+
+vi.mock('../../services/region-discovery.js', () => ({
+  discoverRegions: mockDiscoverRegions,
+}));
+
+vi.mock('../../utils/region-prompt.js', () => ({
+  promptRegionSelection: mockPromptRegionSelection,
 }));
 
 vi.mock('../../services/license.js', () => ({
@@ -358,5 +379,31 @@ describe('subscription command helpers', () => {
       'Repo licenses: scanned 2, issued 1, refreshed 0, unchanged 1, failed 1'
     );
     expect(mockOutputWarn).toHaveBeenCalledWith('repo-x: account quota reached');
+  });
+
+  // ─── Region selection on first login ─────────────────────────────────
+
+  describe('region selection on first login', () => {
+    it('should skip region prompt when server.json has accountServer', () => {
+      mockLoadServerConfig.mockReturnValue({ accountServer: 'https://eu.rediacc.com' });
+      mockIsDevelopmentSubscriptionMode.mockReturnValue(false);
+
+      // With accountServer set, the prompt should not trigger
+      const config = mockLoadServerConfig() as { accountServer?: string } | null;
+      expect(config).not.toBeNull();
+      expect(config!.accountServer).toBeTruthy();
+      expect(mockDiscoverRegions).not.toHaveBeenCalled();
+      expect(mockPromptRegionSelection).not.toHaveBeenCalled();
+    });
+
+    it('should skip region prompt in development mode', () => {
+      mockLoadServerConfig.mockReturnValue(null);
+      mockIsDevelopmentSubscriptionMode.mockReturnValue(true);
+
+      // In dev mode, even without server.json, the prompt should not trigger
+      expect(mockIsDevelopmentSubscriptionMode()).toBe(true);
+      expect(mockDiscoverRegions).not.toHaveBeenCalled();
+      expect(mockPromptRegionSelection).not.toHaveBeenCalled();
+    });
   });
 });

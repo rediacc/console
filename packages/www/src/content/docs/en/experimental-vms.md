@@ -8,7 +8,7 @@ language: en
 
 # Experimental VMs
 
-Provision local VM clusters on your workstation for development and testing — no external cloud providers required.
+Provision local VM clusters on your workstation for development and testing, no external cloud providers required.
 
 ## Requirements
 
@@ -103,13 +103,13 @@ By default, `rdc ops up` provisions:
 
 | VM | ID | Role |
 |----|-----|------|
-| Bridge | 1 | Primary node — runs the Rediacc bridge service |
+| Bridge | 1 | Primary node, runs the Rediacc bridge service |
 | Worker 1 | 11 | Worker node for repository deployments |
 | Worker 2 | 12 | Worker node for repository deployments |
 
 Use the `--basic` flag to provision only the bridge and first worker (IDs 1 and 11).
 
-Use `--skip-orchestration` to provision VMs without starting Rediacc services — useful for testing the VM layer in isolation.
+Use `--skip-orchestration` to provision VMs without starting Rediacc services, useful for testing the VM layer in isolation.
 
 ## Configuration
 
@@ -158,7 +158,7 @@ Environment variables override worker VM resources:
 
 ### Linux (KVM)
 - Uses libvirt for VM lifecycle management
-- Bridged networking — VMs get IPs on a virtual network (192.168.111.x)
+- Bridged networking, VMs get IPs on a virtual network (192.168.111.x)
 - Direct SSH to VM IPs
 - Requires `/dev/kvm` and libvirtd service
 

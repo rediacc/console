@@ -4,12 +4,12 @@ description: "Mevcut projeleri şifrelenmiş Rediacc depolarına taşıyın."
 category: "Guides"
 order: 11
 language: tr
-sourceHash: "180b0e1e61b958b8"
+sourceHash: "18199953a84fb77b"
 ---
 
 # Geçiş Rehberi
 
-Mevcut bir projeyi — dosyalar, Docker servisleri, veritabanları — geleneksel bir sunucudan veya yerel geliştirme ortamından şifrelenmiş bir Rediacc deposuna taşıyın.
+Mevcut bir projeyi, dosyalar, Docker servisleri, veritabanları, geleneksel bir sunucudan veya yerel geliştirme ortamından şifrelenmiş bir Rediacc deposuna taşıyın.
 
 ## Ön Koşullar
 
@@ -75,8 +75,8 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 
 ### Ne Zaman Çalıştırılmalı
 
-- **Dosyaları yükledikten sonra** — yerel UID'nizi 7111'e dönüştürmek için
-- **Konteynerleri başlattıktan sonra** — Docker birim dizinlerinin otomatik olarak hariç tutulmasını istiyorsanız. Konteynerler henüz başlatılmadıysa, hariç tutulacak birim yoktur ve tüm dizinler değiştirilir (bu normaldir — konteynerler ilk başlatmada verilerini yeniden oluşturur)
+- **Dosyaları yükledikten sonra**, yerel UID'nizi 7111'e dönüştürmek için
+- **Konteynerleri başlattıktan sonra**, Docker birim dizinlerinin otomatik olarak hariç tutulmasını istiyorsanız. Konteynerler henüz başlatılmadıysa, hariç tutulacak birim yoktur ve tüm dizinler değiştirilir (bu normaldir, konteynerler ilk başlatmada verilerini yeniden oluşturur)
 
 ### Zorunlu Mod
 
@@ -121,7 +121,7 @@ down() {
 
 > **Önemli:** Rediaccfile'ınızda `docker compose` yerine her zaman `renet compose --` kullanın. `renet compose` sarmalayıcısı host ağını, CRIU checkpoint/restore yeteneklerini, IP tahsisini ve renet-proxy tarafından gereken servis keşfini zorunlu kılar. `docker compose`'u doğrudan kullanmak bunların hepsini atlar ve doğrulama sırasında reddedilir.
 >
-> Asla `sudo docker` da kullanmayın — `sudo`, `DOCKER_HOST` dahil ortam değişkenlerini sıfırlar, bu da konteynerlerin deponun izole daemon'u yerine sistem Docker daemon'unda oluşturulmasına neden olur. Rediaccfile fonksiyonları zaten yeterli ayrıcalıklarla çalışır.
+> Asla `sudo docker` da kullanmayın, `sudo`, `DOCKER_HOST` dahil ortam değişkenlerini sıfırlar, bu da konteynerlerin deponun izole daemon'u yerine sistem Docker daemon'unda oluşturulmasına neden olur. Rediaccfile fonksiyonları zaten yeterli ayrıcalıklarla çalışır.
 
 Rediaccfile'lar, çoklu servis düzenleri ve yürütme sırası hakkında tam ayrıntılar için [Servisler](/tr/docs/services) bölümüne bakın.
 
@@ -184,9 +184,9 @@ services:
 
 Temel değişiklikler:
 
-1. **`ports:` eşlemelerini kaldırın** — `renet compose` host ağını kullanır ve port eşlemelerini otomatik olarak kaldırır
-2. **`network_mode: host` kaldırın** — `renet compose` bunu sizin için ekler
-3. **`restart: always` veya `restart: unless-stopped` kaldırın** — bunlar CRIU checkpoint/restore ile çakışır (Docker, checkpoint restore çalışmadan önce konteynerleri otomatik başlatır). Yeniden başlatma davranışına ihtiyacınız varsa `restart: on-failure` kullanın veya tamamen atlayın — Rediaccfile `up()`/`down()` konteyner yaşam döngüsünü yönetir
+1. **`ports:` eşlemelerini kaldırın**, `renet compose` host ağını kullanır ve port eşlemelerini otomatik olarak kaldırır
+2. **`network_mode: host` kaldırın**, `renet compose` bunu sizin için ekler
+3. **`restart: always` veya `restart: unless-stopped` kaldırın**, bunlar CRIU checkpoint/restore ile çakışır (Docker, checkpoint restore çalışmadan önce konteynerleri otomatik başlatır). Yeniden başlatma davranışına ihtiyacınız varsa `restart: on-failure` kullanın veya tamamen atlayın, Rediaccfile `up()`/`down()` konteyner yaşam döngüsünü yönetir
 4. **Servisleri `${SERVICE_IP}` ortam değişkenlerine bağlayın** (Rediacc tarafından otomatik enjekte edilir)
 5. **Diğer servislere Docker DNS adları yerine IP'leriyle başvurun** (örn. `postgres` yerine `${POSTGRES_IP}`)
 
@@ -241,7 +241,7 @@ my-wordpress/
 
 1. Proje dosyalarınızı yükleyin
 2. Önce servisleri başlatın (`rdc repo up`) böylece konteynerler veri dizinlerini oluştursun
-3. Sahiplik düzeltmesini çalıştırın — MariaDB ve uygulama veri dizinleri otomatik olarak hariç tutulur
+3. Sahiplik düzeltmesini çalıştırın, MariaDB ve uygulama veri dizinleri otomatik olarak hariç tutulur
 
 ### Node.js / Python ve Redis
 
@@ -295,7 +295,7 @@ Her depo benzersiz geri döngü IP'leri alır. Port çakışmaları görüyorsan
 
 ### Sahiplik Düzeltmesi Konteynerleri Bozuyor
 
-`rdc repo ownership` çalıştırdıysanız ve bir konteyner çalışmayı durdurduysa, konteynerin veri dosyaları değiştirilmiştir. Konteyneri durdurun, veri dizinini silin ve yeniden başlatın — konteyner onu yeniden oluşturacaktır:
+`rdc repo ownership` çalıştırdıysanız ve bir konteyner çalışmayı durdurduysa, konteynerin veri dosyaları değiştirilmiştir. Konteyneri durdurun, veri dizinini silin ve yeniden başlatın, konteyner onu yeniden oluşturacaktır:
 
 ```bash
 rdc repo down --name my-project -m server-1

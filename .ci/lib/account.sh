@@ -25,6 +25,7 @@ account_cleanup() {
         wait "$pid" 2>/dev/null || true
     done
     ACCOUNT_PIDS=()
+    rm -f "$ACCOUNT_STATE_FILE"
     exit "$exit_code"
 }
 
@@ -369,6 +370,7 @@ account_dev() {
     fi
 
     if [[ ! -d "$ACCOUNT_DIR/web/node_modules" ]] ||
+        [[ ! -d "$ACCOUNT_DIR/web/node_modules/react-router-dom" ]] ||
         [[ "$ACCOUNT_DIR/web/package-lock.json" -nt "$ACCOUNT_DIR/web/node_modules" ]]; then
         log_step "Installing account web dependencies..."
         (cd "$ACCOUNT_DIR/web" && npm install --prefer-offline --no-audit --no-fund 2>&1 | tail -1)

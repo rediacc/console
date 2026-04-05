@@ -4,7 +4,7 @@ description: "Einen lokalen VM-Cluster bereitstellen, Befehle über SSH ausführ
 category: "Tutorials"
 order: 1
 language: de
-sourceHash: "741534930d3fbc2a"
+sourceHash: "044855db82f05b88"
 ---
 
 # So stellen Sie lokale VMs mit Rediacc bereit
@@ -15,7 +15,7 @@ Infrastruktur lokal zu testen, bevor Sie in die Produktion deployen, spart Zeit 
 
 - Eine Linux- oder macOS-Workstation mit aktivierter Hardware-Virtualisierung
 - Die `rdc` CLI installiert und eine Konfiguration mit dem lokalen Adapter initialisiert
-- KVM/libvirt (Linux) oder QEMU (macOS) installiert — siehe [Experimentelle VMs](/de/docs/experimental-vms) für Einrichtungsanweisungen
+- KVM/libvirt (Linux) oder QEMU (macOS) installiert, siehe [Experimentelle VMs](/de/docs/experimental-vms) für Einrichtungsanweisungen
 
 ## Interaktive Aufzeichnung
 
@@ -47,7 +47,7 @@ Erstellt einen Zwei-VM-Cluster: eine **Bridge**-VM (1 CPU, 1024 MB RAM, 8 GB Fes
 rdc ops status
 ```
 
-Zeigt den Status jeder VM im Cluster an — IP-Adressen, Ressourcenzuweisung und Ausführungsstatus. Beide VMs sollten als laufend angezeigt werden.
+Zeigt den Status jeder VM im Cluster an, IP-Adressen, Ressourcenzuweisung und Ausführungsstatus. Beide VMs sollten als laufend angezeigt werden.
 
 ### Schritt 4: Befehle auf einer VM ausführen
 
@@ -83,6 +83,6 @@ Der Basiscluster benötigt mindestens 6 GB freien RAM (1 GB Bridge + 4 GB Worker
 
 Sie haben einen lokalen VM-Cluster bereitgestellt, Befehle über SSH ausgeführt und ihn abgebaut. Um echte Infrastruktur zu deployen:
 
-- [Experimentelle VMs](/de/docs/experimental-vms) — vollständige Referenz für `rdc ops`-Befehle, VM-Konfiguration und Plattformunterstützung
-- [Tutorial: Maschinen-Einrichtung](/de/docs/tutorial-setup) — Remote-Maschinen registrieren und Infrastruktur konfigurieren
-- [Schnellstart](/de/docs/quick-start) — einen containerisierten Service End-to-End deployen
+- [Experimentelle VMs](/de/docs/experimental-vms), vollständige Referenz für `rdc ops`-Befehle, VM-Konfiguration und Plattformunterstützung
+- [Tutorial: Maschinen-Einrichtung](/de/docs/tutorial-setup), Remote-Maschinen registrieren und Infrastruktur konfigurieren
+- [Schnellstart](/de/docs/quick-start), einen containerisierten Service End-to-End deployen

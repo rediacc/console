@@ -6,12 +6,12 @@ description: >-
 category: Guides
 order: 8
 language: tr
-sourceHash: "d20655e3e306b85b"
+sourceHash: "9612a5fecf063eea"
 ---
 
 # Yapılandırma Depolama
 
-Yapılandırma depolama, CLI yapılandırmanızın cihazlar arasında sıfır bilgi şifreli senkronizasyonunu sağlar. Yapılandırmalarınız passkey'inizden türetilen anahtarlarla şifrelenir — sunucu düz metin verileri asla görmez.
+Yapılandırma depolama, CLI yapılandırmanızın cihazlar arasında sıfır bilgi şifreli senkronizasyonunu sağlar. Yapılandırmalarınız passkey'inizden türetilen anahtarlarla şifrelenir, sunucu düz metin verileri asla görmez.
 
 ## Ön Koşullar
 
@@ -23,10 +23,10 @@ Yapılandırma depolama, CLI yapılandırmanızın cihazlar arasında sıfır bi
 
 1. Kenar çubuğunda **Yapılandırma Depolama**'ya gidin, ardından **Yapılandırma Depolamayı Kur**'a tıklayın
 2. Gereksinimler kontrol listesi tarayıcınızı, 2FA'yı ve oturum durumunu doğrular
-3. **Kurulumu Başlat**'a tıklayın — güvenlik anahtarınıza iki kez dokunmanız gerekecek:
+3. **Kurulumu Başlat**'a tıklayın, güvenlik anahtarınıza iki kez dokunmanız gerekecek:
    - İlk dokunuş: passkey'i kaydeder
    - İkinci dokunuş: PRF aracılığıyla şifreleme anahtarlarını türetir
-4. Kurulum tamamlandı — passkey sırrınız işletim sisteminizin anahtar zincirinde saklanır
+4. Kurulum tamamlandı, passkey sırrınız işletim sisteminizin anahtar zincirinde saklanır
 
 Kurulumdan sonra, günlük CLI işlemleri (push/pull) passkey olmadan çalışır.
 

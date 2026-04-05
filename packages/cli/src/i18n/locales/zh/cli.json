@@ -1588,12 +1588,16 @@
       "login": {
         "browserFailed": "无法自动打开浏览器。请访问上方链接。",
         "description": "使用Web门户的API令牌进行认证",
+        "discoveringRegions": "正在发现可用区域...",
         "expired": "授权已超时。请重试。",
         "initFailed": "无法启动登录。服务器是否正在运行？",
         "machines": "机器: {{active}}/{{max}}",
         "openBrowser": "请访问此链接进行授权：",
         "plan": "计划: {{plan}}",
         "polling": "等待批准（按 Ctrl+C 取消）...",
+        "regionPrompt": "您的数据应存储在哪里？",
+        "regionsDiscovered": "区域已加载",
+        "regionSelected": "数据区域: {{region}} ({{domain}})",
         "success": "登录成功",
         "tokenInvalid": "令牌必须以 rdt_ 开头",
         "tokenPrompt": "请输入您的API令牌（来自Web门户）:",
@@ -2112,8 +2116,10 @@
       "machineRequired": "需要机器名称。使用 --machine <name>",
       "notSupported": "{{platform}} 上不支持协议注册",
       "parseFailed": "无法解析 URL：{{error}}",
+      "regionSelectionRequiresTTY": "区域选择需要交互式输入。使用 --server <url> 直接指定服务器。",
       "teamRequired": "需要团队名称。使用 --team <name>",
-      "tokenRequired": "需要令牌。使用 --token <token>"
+      "tokenRequired": "需要令牌。使用 --token <token>",
+      "unknownRegion": "未知区域: {{region}}"
     },
     "regionRequired": "需要区域名称。使用 --region 或设置上下文。",
     "registrationFailed": "注册失败",

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: ru
-sourceHash: "cc79bbad07c3ef01"
+sourceHash: "c9d086d519625aa8"
 ---
 
 # Сетевое взаимодействие
@@ -21,8 +21,8 @@ sourceHash: "cc79bbad07c3ef01"
 
 Rediacc использует двухкомпонентную систему прокси для маршрутизации внешнего трафика к контейнерам:
 
-1. **Сервер маршрутов** — systemd-сервис, который обнаруживает работающие контейнеры во всех Docker-демонах репозиториев. Он проверяет метки контейнеров и генерирует конфигурацию маршрутизации, предоставляемую как YAML-эндпоинт.
-2. **Traefik** — обратный прокси, который опрашивает сервер маршрутов каждые 5 секунд и применяет обнаруженные маршруты. Он обрабатывает HTTP/HTTPS-маршрутизацию, TLS-терминацию и проброс TCP/UDP.
+1. **Сервер маршрутов**, systemd-сервис, который обнаруживает работающие контейнеры во всех Docker-демонах репозиториев. Он проверяет метки контейнеров и генерирует конфигурацию маршрутизации, предоставляемую как YAML-эндпоинт.
+2. **Traefik**, обратный прокси, который опрашивает сервер маршрутов каждые 5 секунд и применяет обнаруженные маршруты. Он обрабатывает HTTP/HTTPS-маршрутизацию, TLS-терминацию и проброс TCP/UDP.
 
 Поток трафика выглядит следующим образом:
 
@@ -36,9 +36,9 @@ Internet → Traefik (ports 80/443/TCP/UDP)
            Containers (bound to 127.x.x.x loopback IPs)
 ```
 
-Когда вы добавляете правильные метки к контейнеру и запускаете его с помощью `renet compose`, он автоматически становится маршрутизируемым — ручная настройка прокси не требуется.
+Когда вы добавляете правильные метки к контейнеру и запускаете его с помощью `renet compose`, он автоматически становится маршрутизируемым, ручная настройка прокси не требуется.
 
-> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime — Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime, Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
 
 ## Docker-метки
 
@@ -77,10 +77,10 @@ myapp.marketing.server-1.example.com
 
 ```yaml
 labels:
-  # Короткое имя — преобразуется в cloud.example.com с использованием baseDomain машины
+  # Короткое имя, преобразуется в cloud.example.com с использованием baseDomain машины
   - "rediacc.domain=cloud"
 
-  # Полный домен — используется как есть
+  # Полный домен, используется как есть
   - "rediacc.domain=cloud.example.com"
 ```
 
@@ -109,7 +109,7 @@ labels:
 
 ### Предварительные требования
 
-1. Настроенная инфраструктура на машине ([Настройка машины — Настройка инфраструктуры](/ru/docs/setup#настройка-инфраструктуры)):
+1. Настроенная инфраструктура на машине ([Настройка машины, Настройка инфраструктуры](/ru/docs/setup#настройка-инфраструктуры)):
 
    ```bash
    # Общие учетные данные (один раз на конфигурацию, применяются ко всем машинам)
@@ -147,18 +147,18 @@ services:
   database:
     image: postgres:17
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
-    # Без меток traefik — база данных только для внутреннего использования
+    # Без меток traefik, база данных только для внутреннего использования
 ```
 
 | Метка | Назначение |
 |-------|-----------|
 | `traefik.enable=true` | Включает пользовательскую маршрутизацию Traefik для этого контейнера |
-| `traefik.http.routers.{name}.rule` | Правило маршрутизации — обычно `Host(\`domain\`)` |
+| `traefik.http.routers.{name}.rule` | Правило маршрутизации, обычно `Host(\`domain\`)` |
 | `traefik.http.routers.{name}.entrypoints` | Точки входа: `websecure` (HTTPS IPv4), `websecure-v6` (HTTPS IPv6) |
-| `traefik.http.routers.{name}.tls.certresolver` | Резолвер сертификатов — используйте `letsencrypt` для автоматического Let's Encrypt |
+| `traefik.http.routers.{name}.tls.certresolver` | Резолвер сертификатов, используйте `letsencrypt` для автоматического Let's Encrypt |
 | `traefik.http.services.{name}.loadbalancer.server.port` | Порт, на котором ваше приложение слушает внутри контейнера |
 
-`{name}` в метках — произвольный идентификатор; он должен быть согласованным во всех связанных метках маршрутизатора/сервиса/middleware.
+`{name}` в метках, произвольный идентификатор; он должен быть согласованным во всех связанных метках маршрутизатора/сервиса/middleware.
 
 > **Примечание:** Метки `rediacc.*` (`rediacc.service_name`, `rediacc.service_ip`, `rediacc.network_id`) внедряются автоматически командой `renet compose`. Вам не нужно добавлять их в ваш compose-файл.
 
@@ -235,7 +235,7 @@ services:
       - "traefik.tcp.routers.mail-smtp.service=mail-smtp"
       - "traefik.tcp.services.mail-smtp.loadbalancer.server.port=25"
 
-      # IMAPS (port 993) — TLS passthrough
+      # IMAPS (port 993), TLS passthrough
       - "traefik.tcp.routers.mail-imaps.entrypoints=tcp-993"
       - "traefik.tcp.routers.mail-imaps.rule=HostSNI(`mail.example.com`)"
       - "traefik.tcp.routers.mail-imaps.tls.passthrough=true"
@@ -245,12 +245,12 @@ services:
 
 Ключевые концепции:
 - **`HostSNI(\`*\`)`** соответствует любому имени хоста (для протоколов, не отправляющих SNI, например, обычный SMTP)
-- **`tls.passthrough=true`** означает, что Traefik пересылает необработанное TLS-соединение без расшифровки — приложение само обрабатывает TLS
+- **`tls.passthrough=true`** означает, что Traefik пересылает необработанное TLS-соединение без расшифровки, приложение само обрабатывает TLS
 - Имена точек входа следуют соглашению `tcp-{port}` или `udp-{port}`
 
 ### Предварительно настроенные порты
 
-Следующие TCP/UDP-порты имеют точки входа по умолчанию (не нужно добавлять через `--tcp-ports`). Точки входа генерируются только для настроенных семейств адресов — точки входа IPv4 требуют `--public-ipv4`, точки входа IPv6 требуют `--public-ipv6`:
+Следующие TCP/UDP-порты имеют точки входа по умолчанию (не нужно добавлять через `--tcp-ports`). Точки входа генерируются только для настроенных семейств адресов, точки входа IPv4 требуют `--public-ipv4`, точки входа IPv6 требуют `--public-ipv6`:
 
 | Порт | Протокол | Типичное использование |
 |------|----------|----------------------|
@@ -280,7 +280,7 @@ services:
 
 Записи уровня машины создаются командой `push-infra` и покрывают маршруты с пользовательскими доменами (`rediacc.domain`). Wildcard-записи для каждого репозитория создаются автоматически командой `repo up` и покрывают автомаршруты этого репозитория.
 
-Это идемпотентно — существующие записи обновляются при изменении IP и остаются без изменений, если уже корректны.
+Это идемпотентно, существующие записи обновляются при изменении IP и остаются без изменений, если уже корректны.
 
 Wildcard базового домена (`*.example.com`) необходимо создать вручную, если вы используете пользовательские метки домена, например `rediacc.domain=erp`.
 
@@ -407,7 +407,7 @@ services:
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-    # Без меток traefik — только для внутреннего использования
+    # Без меток traefik, только для внутреннего использования
 ```
 
 ### Rediaccfile

@@ -383,7 +383,7 @@ export function hasCloudIntent(config: RdcConfig | null | undefined): boolean {
  * this pointer and non-sensitive settings (language, etc.).
  */
 export interface RemoteConfig {
-  /** Account server URL (e.g., 'https://account.rediacc.com') */
+  /** Account server URL (e.g., 'https://eu.rediacc.com/account/api/v1') */
   apiUrl: string;
   /** Config store UUID on the server */
   storeId: string;
@@ -393,6 +393,8 @@ export interface RemoteConfig {
   teamId?: string;
   /** Key for OS secure storage lookup (passkey_secret) */
   storageKeyId: string;
+  /** Data region where this config is stored (informational, from server) */
+  dataRegion?: string;
 }
 
 /**

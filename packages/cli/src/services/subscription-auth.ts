@@ -12,6 +12,7 @@ export interface ServerConfig {
   accountServer: string;
   e2ePublicKey?: string;
   updateChannel?: string;
+  region?: string;
 }
 
 export function getServerConfigFile(): string {

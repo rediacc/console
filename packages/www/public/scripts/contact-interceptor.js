@@ -32,6 +32,6 @@
     }
 
     window.openContactModal(interest ?? undefined);
-    window.plausible?.('contact_modal_open', { props: { source: 'interceptor' } });
+    window.plausible('contact_modal_open', { props: { source: 'interceptor' } });
   });
 })();

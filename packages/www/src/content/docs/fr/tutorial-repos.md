@@ -4,12 +4,12 @@ description: "Créer un dépôt chiffré, déployer une application conteneuris�
 category: "Tutorials"
 order: 3
 language: fr
-sourceHash: "79d2707d0dc632b2"
+sourceHash: "4d7072927542dfb3"
 ---
 
 # Comment déployer et gérer des dépôts avec Rediacc
 
-Les dépôts sont l'unité de déploiement principale dans Rediacc — chacun est un environnement isolé et chiffré avec son propre Docker daemon et un stockage dédié. Dans ce tutoriel, vous créez un dépôt chiffré, déployez une application conteneurisée, inspectez les conteneurs en cours d'exécution et nettoyez. À la fin, vous aurez complété un cycle de déploiement complet.
+Les dépôts sont l'unité de déploiement principale dans Rediacc, chacun est un environnement isolé et chiffré avec son propre Docker daemon et un stockage dédié. Dans ce tutoriel, vous créez un dépôt chiffré, déployez une application conteneurisée, inspectez les conteneurs en cours d'exécution et nettoyez. À la fin, vous aurez complété un cycle de déploiement complet.
 
 ## Prérequis
 
@@ -49,7 +49,7 @@ Avant de déployer, vérifiez que le stockage du dépôt est monté et accessibl
 rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
-Le répertoire de montage est l'emplacement des fichiers d'application — `Rediaccfile`, `docker-compose.yml` et tous les volumes de données.
+Le répertoire de montage est l'emplacement des fichiers d'application, `Rediaccfile`, `docker-compose.yml` et tous les volumes de données.
 
 ### Étape 4 : Démarrer les services
 
@@ -101,7 +101,7 @@ rdc repo delete --name test-app -m server-1  # Supprimer le dépôt définitivem
 Le volume chiffré nécessite de l'espace libre contigu sur l'hôte. Vérifiez l'espace disponible avec `df -h` sur le serveur. Envisagez une valeur `--size` plus petite ou libérez de l'espace disque.
 
 **Délai d'attente du téléchargement d'image Docker pendant `repo up`**
-Les grandes images peuvent dépasser le délai sur les connexions lentes. Réessayez avec `rdc repo up` — il reprend là où il s'est arrêté. Pour les environnements isolés, préchargez les images dans le Docker daemon du dépôt.
+Les grandes images peuvent dépasser le délai sur les connexions lentes. Réessayez avec `rdc repo up`, il reprend là où il s'est arrêté. Pour les environnements isolés, préchargez les images dans le Docker daemon du dépôt.
 
 **« Échec du montage » ou « Échec de l'ouverture LUKS »**
 La phrase de passe LUKS est dérivée de la configuration. Vérifiez que vous utilisez la même configuration qui a créé le dépôt. Si le volume est déjà monté par un autre processus, démontez-le d'abord.
@@ -110,6 +110,6 @@ La phrase de passe LUKS est dérivée de la configuration. Vérifiez que vous ut
 
 Vous avez créé un dépôt chiffré, déployé une application, inspecté les conteneurs et nettoyé. Pour surveiller vos déploiements :
 
-- [Services](/fr/docs/services) — référence Rediaccfile, réseaux de services, démarrage automatique et configurations multi-services
-- [Tutoriel : Surveillance et diagnostic](/fr/docs/tutorial-monitoring) — vérifications de santé, inspection de conteneurs et diagnostic
-- [Outils](/fr/docs/tools) — terminal, synchronisation de fichiers et intégration VS Code
+- [Services](/fr/docs/services), référence Rediaccfile, réseaux de services, démarrage automatique et configurations multi-services
+- [Tutoriel : Surveillance et diagnostic](/fr/docs/tutorial-monitoring), vérifications de santé, inspection de conteneurs et diagnostic
+- [Outils](/fr/docs/tools), terminal, synchronisation de fichiers et intégration VS Code

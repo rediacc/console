@@ -54,6 +54,7 @@
       "learnMore": "Mehr erfahren",
       "sendMessage": "Nachricht senden"
     },
+    "close": "Schließen",
     "contentNotAvailable": "Dieser Inhalt ist nicht auf {{language}} verfügbar. Es wird die englische Version angezeigt.",
     "copied": "Kopiert!",
     "copyLink": "Link zu diesem Abschnitt kopieren",
@@ -120,6 +121,7 @@
     "categories": {
       "concepts": "Konzepte",
       "guides": "Anleitungen",
+      "legal": "Rechtliches",
       "reference": "Referenz",
       "tutorials": "Tutorials",
       "useCases": "Anwendungsfälle"
@@ -13281,6 +13283,16 @@
     },
     "subtitle": "Wenn Produktionsumgebungen über Terabytes an Daten verfügen, Sandbox-Umgebungen jedoch nur monatlich synchronisiert werden, stehen Teams vor unmöglichen Entscheidungen, die zu gefährlichen Problemumgehungen führen.",
     "title": "Die Speed-Mismatch-Krise"
+  },
+  "regionPicker": {
+    "footer": "Wählen Sie die Region, die Ihnen am nächsten liegt oder die Ihre Organisation vorschreibt. Dies kann nach der Registrierung nicht mehr geändert werden.",
+    "locations": {
+      "eu": "Frankfurt, Deutschland",
+      "us": "Virginia, USA",
+      "asia": "Tokyo, Japan"
+    },
+    "subtitle": "Alles, Ihr Konto, Ihre Abrechnung und Ihre Konfigurationen, bleibt in der von Ihnen gewählten Region. Es verlässt sie nie.",
+    "title": "Wo sollen wir Ihre Daten speichern?"
   },
   "solutions": {
     "categories": {

@@ -82,7 +82,7 @@ If your containers appear on the host system's Docker daemon instead of the repo
 
 `sudo` resets environment variables, so `DOCKER_HOST` is lost and Docker defaults to the system socket (`/var/run/docker.sock`). Rediacc blocks this automatically, but if you encounter it:
 
-- **Use `docker` directly** — Rediaccfile functions already run with sufficient privileges
+- **Use `docker` directly**, Rediaccfile functions already run with sufficient privileges
 - If you must use sudo, use `sudo -E docker` to preserve environment variables
 - Check your Rediaccfile for any `sudo docker` commands and remove the `sudo`
 

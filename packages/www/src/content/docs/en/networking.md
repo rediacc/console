@@ -16,8 +16,8 @@ For how services get their loopback IPs and the `.rediacc.json` slot system, see
 
 Rediacc uses a two-component proxy system to route external traffic to containers:
 
-1. **Route server** — a systemd service that discovers running containers across all repository Docker daemons. It inspects container labels and generates routing configuration, served as a YAML endpoint.
-2. **Traefik** — a reverse proxy that polls the route server every 5 seconds and applies the discovered routes. It handles HTTP/HTTPS routing, TLS termination, and TCP/UDP forwarding.
+1. **Route server**, a systemd service that discovers running containers across all repository Docker daemons. It inspects container labels and generates routing configuration, served as a YAML endpoint.
+2. **Traefik**, a reverse proxy that polls the route server every 5 seconds and applies the discovered routes. It handles HTTP/HTTPS routing, TLS termination, and TCP/UDP forwarding.
 
 The flow looks like this:
 
@@ -31,9 +31,9 @@ Internet → Traefik (ports 80/443/TCP/UDP)
            Containers (bound to 127.x.x.x loopback IPs)
 ```
 
-When you add the right labels to a container and start it with `renet compose`, it automatically becomes routable — no manual proxy configuration needed.
+When you add the right labels to a container and start it with `renet compose`, it automatically becomes routable, no manual proxy configuration needed.
 
-> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime — Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime, Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
 
 ## Docker Labels
 
@@ -72,10 +72,10 @@ You can set a custom domain for a service using the `rediacc.domain` label in yo
 
 ```yaml
 labels:
-  # Short name — resolved to cloud.example.com using the machine's baseDomain
+  # Short name, resolved to cloud.example.com using the machine's baseDomain
   - "rediacc.domain=cloud"
 
-  # Full domain — used as-is
+  # Full domain, used as-is
   - "rediacc.domain=cloud.example.com"
 ```
 
@@ -104,7 +104,7 @@ These use standard [Traefik v3 label syntax](https://doc.traefik.io/traefik/rout
 
 ### Prerequisites
 
-1. Infrastructure configured on the machine ([Machine Setup — Infrastructure Configuration](/en/docs/setup#infrastructure-configuration)):
+1. Infrastructure configured on the machine ([Machine Setup, Infrastructure Configuration](/en/docs/setup#infrastructure-configuration)):
 
    ```bash
    # Shared credentials (once per config, applies to all machines)
@@ -142,18 +142,18 @@ services:
   database:
     image: postgres:17
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
-    # No traefik labels — database is internal only
+    # No traefik labels, database is internal only
 ```
 
 | Label | Purpose |
 |-------|---------|
 | `traefik.enable=true` | Enables custom Traefik routing for this container |
-| `traefik.http.routers.{name}.rule` | Routing rule — typically `Host(\`domain\`)` |
+| `traefik.http.routers.{name}.rule` | Routing rule, typically `Host(\`domain\`)` |
 | `traefik.http.routers.{name}.entrypoints` | Which ports to listen on: `websecure` (HTTPS IPv4), `websecure-v6` (HTTPS IPv6) |
-| `traefik.http.routers.{name}.tls.certresolver` | Certificate resolver — use `letsencrypt` for automatic Let's Encrypt |
+| `traefik.http.routers.{name}.tls.certresolver` | Certificate resolver, use `letsencrypt` for automatic Let's Encrypt |
 | `traefik.http.services.{name}.loadbalancer.server.port` | The port your application listens on inside the container |
 
-The `{name}` in labels is an arbitrary identifier — it just needs to be consistent across related router/service/middleware labels.
+The `{name}` in labels is an arbitrary identifier, it just needs to be consistent across related router/service/middleware labels.
 
 > **Note:** The `rediacc.*` labels (`rediacc.service_name`, `rediacc.service_ip`, `rediacc.network_id`) are injected automatically by `renet compose`. You do not need to add them to your compose file.
 
@@ -210,7 +210,7 @@ services:
       - "traefik.tcp.routers.mail-smtp.service=mail-smtp"
       - "traefik.tcp.services.mail-smtp.loadbalancer.server.port=25"
 
-      # IMAPS (port 993) — TLS passthrough
+      # IMAPS (port 993), TLS passthrough
       - "traefik.tcp.routers.mail-imaps.entrypoints=tcp-993"
       - "traefik.tcp.routers.mail-imaps.rule=HostSNI(`mail.example.com`)"
       - "traefik.tcp.routers.mail-imaps.tls.passthrough=true"
@@ -220,7 +220,7 @@ services:
 
 Key concepts:
 - **`HostSNI(\`*\`)`** matches any hostname (for protocols that don't send SNI, like plain SMTP)
-- **`tls.passthrough=true`** means Traefik forwards the raw TLS connection without decrypting — the application handles TLS itself
+- **`tls.passthrough=true`** means Traefik forwards the raw TLS connection without decrypting, the application handles TLS itself
 - Entrypoint names follow the convention `tcp-{port}` or `udp-{port}`
 
 ### Plain TCP Example (Database)
@@ -245,7 +245,7 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 
 ### Pre-Configured Ports
 
-The following TCP/UDP ports have entrypoints by default (no need to add via `--tcp-ports`). Entrypoints are only generated for configured address families — IPv4 entrypoints require `--public-ipv4`, IPv6 entrypoints require `--public-ipv6`:
+The following TCP/UDP ports have entrypoints by default (no need to add via `--tcp-ports`). Entrypoints are only generated for configured address families, IPv4 entrypoints require `--public-ipv4`, IPv6 entrypoints require `--public-ipv6`:
 
 | Port | Protocol | Common Use |
 |------|----------|------------|
@@ -275,7 +275,7 @@ When `--cf-dns-token` is configured, `rdc config infra push` automatically creat
 
 Machine-level records are created by `push-infra` and cover custom domain routes (`rediacc.domain`). Per-repo wildcard records are created automatically by `repo up` and cover auto-routes for that repository.
 
-This is idempotent — existing records are updated if the IP changes, and left unchanged if already correct.
+This is idempotent, existing records are updated if the IP changes, and left unchanged if already correct.
 
 The base domain wildcard (`*.example.com`) must be created manually if you use custom domain labels like `rediacc.domain=erp`.
 
@@ -404,7 +404,7 @@ services:
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-    # No traefik labels — internal only
+    # No traefik labels, internal only
 ```
 
 ### Rediaccfile

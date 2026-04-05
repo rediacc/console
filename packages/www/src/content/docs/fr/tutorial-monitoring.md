@@ -4,7 +4,7 @@ description: "Vérifier l'état de la machine, inspecter les conteneurs, examine
 category: "Tutorials"
 order: 4
 language: fr
-sourceHash: "ac0ee8180fdb7644"
+sourceHash: "2efd897e27dca34e"
 ---
 
 # Comment surveiller et diagnostiquer l'infrastructure avec Rediacc
@@ -100,6 +100,6 @@ Les conteneurs de déploiements précédents peuvent persister si `repo down` n'
 
 Vous avez exécuté les diagnostics, vérifié l'état de la machine, inspecté les conteneurs et services, et vérifié la connectivité. Pour travailler avec vos déploiements :
 
-- [Surveillance](/fr/docs/monitoring) — référence complète pour toutes les commandes de surveillance
-- [Dépannage](/fr/docs/troubleshooting) — problèmes courants et solutions
-- [Tutoriel : Outils](/fr/docs/tutorial-tools) — terminal, synchronisation de fichiers et intégration VS Code
+- [Surveillance](/fr/docs/monitoring), référence complète pour toutes les commandes de surveillance
+- [Dépannage](/fr/docs/troubleshooting), problèmes courants et solutions
+- [Tutoriel : Outils](/fr/docs/tutorial-tools), terminal, synchronisation de fichiers et intégration VS Code

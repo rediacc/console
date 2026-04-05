@@ -4,7 +4,7 @@ description: "Automatische Backup-Zeitpläne konfigurieren, Speicheranbieter ver
 category: "Tutorials"
 order: 6
 language: de
-sourceHash: "0bdff6ce5d24c154"
+sourceHash: "f68d915af9daf0da"
 ---
 
 # So konfigurieren Sie Backups und Netzwerk mit Rediacc
@@ -28,7 +28,7 @@ Speicheranbieter (S3, B2, Google Drive, etc.) dienen als Backup-Ziele. Prüfen S
 rdc config storage list
 ```
 
-Listet alle konfigurierten Speicheranbieter auf, die aus rclone-Konfigurationen importiert wurden. Falls leer, fügen Sie zuerst einen Speicheranbieter hinzu — siehe [Backup & Restore](/de/docs/backup-restore).
+Listet alle konfigurierten Speicheranbieter auf, die aus rclone-Konfigurationen importiert wurden. Falls leer, fügen Sie zuerst einen Speicheranbieter hinzu, siehe [Backup & Restore](/de/docs/backup-restore).
 
 ### Schritt 2: Backup-Zeitplan konfigurieren
 
@@ -118,6 +118,6 @@ Alle drei Felder sind erforderlich: `--public-ipv4`, `--base-domain` und `--cert
 
 Sie haben automatische Backups konfiguriert, Infrastruktur-Netzwerk eingerichtet, Service-Ports registriert und die Konfiguration überprüft. Zur Verwaltung von Backups:
 
-- [Backup & Restore](/de/docs/backup-restore) — Vollständige Referenz für Push-, Pull-, List- und Sync-Befehle
-- [Networking](/de/docs/networking) — Docker-Labels, TLS-Zertifikate, DNS und TCP/UDP-Weiterleitung
-- [Tutorial: Maschine einrichten](/de/docs/tutorial-setup) — Ersteinrichtung und Bereitstellung
+- [Backup & Restore](/de/docs/backup-restore), Vollständige Referenz für Push-, Pull-, List- und Sync-Befehle
+- [Networking](/de/docs/networking), Docker-Labels, TLS-Zertifikate, DNS und TCP/UDP-Weiterleitung
+- [Tutorial: Maschine einrichten](/de/docs/tutorial-setup), Ersteinrichtung und Bereitstellung

@@ -4,13 +4,13 @@ description: 使用模型上下文协议 (MCP) 服务器将 AI 代理连接到 R
 category: Guides
 order: 33
 language: zh
-sourceHash: "ac1ed364eb890583"
+sourceHash: "ac4f508c3ad2602e"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
 ## 概述
 
-`rdc mcp serve` 命令启动一个本地 MCP（模型上下文协议）服务器，AI 代理可以使用该服务器来管理您的基础设施。服务器使用 stdio 传输方式——AI 代理将其作为子进程启动，并通过 JSON-RPC 进行通信。
+`rdc mcp serve` 命令启动一个本地 MCP（模型上下文协议）服务器，AI 代理可以使用该服务器来管理您的基础设施。服务器使用 stdio 传输方式, , AI 代理将其作为子进程启动，并通过 JSON-RPC 进行通信。
 
 **前提条件：** 已安装并配置 `rdc`，且至少配置了一台机器。
 
@@ -115,7 +115,7 @@ The MCP server enforces two layers of protection:
 
 ### Fork-only mode (default)
 
-By default, the server runs in **fork-only mode** — write tools (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) can only operate on fork repositories. Grand (original) repositories are protected from agent modifications.
+By default, the server runs in **fork-only mode**, write tools (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) can only operate on fork repositories. Grand (original) repositories are protected from agent modifications.
 
 To allow an agent to modify grand repos, start with `--allow-grand`:
 
@@ -139,7 +139,7 @@ When `term_exec` runs a command on a repository, the command is wrapped with `re
 - **Allowed**: the repository's own mount path, `/tmp`, system binaries (`/usr`, `/bin`, `/etc`), the repo's Docker socket
 - **Blocked**: other repositories' mount paths, home directory writes, arbitrary filesystem access
 
-This prevents lateral movement — even if an agent gains shell access to a fork, it cannot read or modify other repositories on the same machine. Machine-level SSH (without a repository) is not sandboxed.
+This prevents lateral movement, even if an agent gains shell access to a fork, it cannot read or modify other repositories on the same machine. Machine-level SSH (without a repository) is not sandboxed.
 
 ## 架构
 

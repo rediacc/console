@@ -4,7 +4,7 @@ description: "Lösungen für häufige Probleme mit SSH, Einrichtung, Repositorie
 category: "Guides"
 order: 10
 language: de
-sourceHash: "a68982c895a81eef"
+sourceHash: "23754822c67de564"
 ---
 
 # Fehlerbehebung
@@ -83,7 +83,7 @@ Wenn Ihre Container auf dem Docker-Daemon des Host-Systems statt auf dem isolier
 
 `sudo` setzt Umgebungsvariablen zurück, sodass `DOCKER_HOST` verloren geht und Docker auf den System-Socket (`/var/run/docker.sock`) zurückfällt. Rediacc blockiert dies automatisch, aber falls Sie darauf stoßen:
 
-- **Verwenden Sie `docker` direkt** — Rediaccfile-Funktionen laufen bereits mit ausreichenden Rechten
+- **Verwenden Sie `docker` direkt**, Rediaccfile-Funktionen laufen bereits mit ausreichenden Rechten
 - Falls Sie sudo verwenden müssen, nutzen Sie `sudo -E docker`, um Umgebungsvariablen beizubehalten
 - Überprüfen Sie Ihr Rediaccfile auf `sudo docker`-Befehle und entfernen Sie das `sudo`
 

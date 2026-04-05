@@ -54,6 +54,7 @@
       "learnMore": "了解更多",
       "sendMessage": "发送消息"
     },
+    "close": "关闭",
     "contentNotAvailable": "此内容暂无{{language}}版本，正在显示英文版。",
     "copied": "已复制！",
     "copyLink": "复制此章节的链接",
@@ -120,6 +121,7 @@
     "categories": {
       "concepts": "概念",
       "guides": "指南",
+      "legal": "法律合规",
       "reference": "参考",
       "tutorials": "教程",
       "useCases": "使用场景"
@@ -1651,14 +1653,14 @@
           },
           "title": "您能节省多少？",
           "withAnnual": "计算 →",
+          "withoutTag": "当前云成本",
           "withResults": {
             "blockedTime": "降低60%",
             "contextSwitching": "<5分钟",
             "quarterlySlip": "100%归您",
             "sprintCapacity": "最小化"
           },
-          "withTag": "使用 Rediacc",
-          "withoutTag": "当前云成本"
+          "withTag": "使用 Rediacc"
         },
         "hero": {
           "badge": "面向CEO和创始人",
@@ -1872,14 +1874,14 @@
           },
           "title": "您的基础设施真正花费了多少？",
           "withAnnual": "计算 →",
+          "withoutTag": "当前支出",
           "withResults": {
             "blockedTime": "降低60%",
             "contextSwitching": "<5分钟",
             "quarterlySlip": "无",
             "sprintCapacity": "接近零"
           },
-          "withTag": "使用 Rediacc",
-          "withoutTag": "当前支出"
+          "withTag": "使用 Rediacc"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -2952,29 +2954,29 @@
           "business": {
             "floatingLicenses": "20",
             "jobsPerMonth": "20,000",
-            "repoSize": "500 GB",
             "repositories": "无限制",
+            "repoSize": "500 GB",
             "usersTeams": "无限制"
           },
           "community": {
             "floatingLicenses": "2",
             "jobsPerMonth": "500",
-            "repoSize": "10 GB",
             "repositories": "无限制",
+            "repoSize": "10 GB",
             "usersTeams": "无限制"
           },
           "enterprise": {
             "floatingLicenses": "50+",
             "jobsPerMonth": "100,000+",
-            "repoSize": "2 TB+",
             "repositories": "无限制",
+            "repoSize": "2 TB+",
             "usersTeams": "无限制"
           },
           "professional": {
             "floatingLicenses": "5",
             "jobsPerMonth": "5,000",
-            "repoSize": "100 GB",
             "repositories": "无限制",
+            "repoSize": "100 GB",
             "usersTeams": "无限制"
           }
         }
@@ -3501,13 +3503,13 @@
           },
           "title": "你的漏洞暴露正在花费多少？",
           "withAnnual": "年度安全成本",
+          "withoutTag": "不使用 REDIACC",
           "withResults": {
             "blindspot": "盲区",
             "exposure": "每个漏洞的暴露时间",
             "pentestCost": "渗透测试成本"
           },
-          "withTag": "使用 REDIACC",
-          "withoutTag": "不使用 REDIACC"
+          "withTag": "使用 REDIACC"
         },
         "explore": {
           "solutions": [
@@ -3911,14 +3913,14 @@
           },
           "title": "审计差距花费你多少钱？",
           "withAnnual": "年度审计风险成本",
+          "withoutTag": "分散的日志",
           "withResults": {
             "compileHours": "每年日志编译小时数",
             "delayCost": "调查延迟成本",
             "gaps": "审计发现风险（差距）",
             "penaltyCost": "不合规罚款风险"
           },
-          "withTag": "使用 REDIACC",
-          "withoutTag": "分散的日志"
+          "withTag": "使用 REDIACC"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -4382,14 +4384,14 @@
           },
           "title": "未验证的备份花费你多少钱？",
           "withAnnual": "$0",
+          "withoutTag": "不进行验证",
           "withResults": {
             "corrupted": "0 个未检测到",
             "dataLoss": "0",
             "recoveryCost": "$0",
             "undetected": "0"
           },
-          "withTag": "使用 Rediacc",
-          "withoutTag": "不进行验证"
+          "withTag": "使用 Rediacc"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -4894,14 +4896,14 @@
           },
           "title": "一次云故障花费你多少钱？",
           "withAnnual": "$0",
+          "withoutTag": "不使用 Rediacc",
           "withResults": {
             "churn": "$0",
             "labor": "$0",
             "revenue": "$0",
             "sla": "$0"
           },
-          "withTag": "使用 Rediacc",
-          "withoutTag": "不使用 Rediacc"
+          "withTag": "使用 Rediacc"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -5404,13 +5406,13 @@
           },
           "title": "你的暴露窗口正在花费多少？",
           "withAnnual": "年度安全成本",
+          "withoutTag": "年度渗透测试",
           "withResults": {
             "blindspot": "盲区窗口",
             "exposure": "每个漏洞的暴露天数",
             "pentestCost": "年度渗透测试成本"
           },
-          "withTag": "持续测试（REDIACC）",
-          "withoutTag": "年度渗透测试"
+          "withTag": "持续测试（REDIACC）"
         },
         "explore": {
           "solutions": [
@@ -5792,14 +5794,14 @@
           },
           "title": "弱加密治理花费你多少钱？",
           "withAnnual": "年度合规成本",
+          "withoutTag": "厂商管理密钥",
           "withResults": {
             "exposure": "每年暴露窗口",
             "gaps": "合规差距（密钥访问）",
             "premium": "泄露风险溢价",
             "prepHours": "每年审计准备小时数"
           },
-          "withTag": "使用 REDIACC",
-          "withoutTag": "厂商管理密钥"
+          "withTag": "使用 REDIACC"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -6301,14 +6303,14 @@
           },
           "title": "这给你的团队带来了多少成本？",
           "withAnnual": "$0",
+          "withoutTag": "不使用 Rediacc",
           "withResults": {
             "blockedTime": "0 天",
             "contextSwitching": "极少",
             "quarterlySlip": "0 天",
             "sprintCapacity": "0%"
           },
-          "withTag": "使用 Rediacc",
-          "withoutTag": "不使用 Rediacc"
+          "withTag": "使用 Rediacc"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -6799,14 +6801,14 @@
           },
           "title": "未经测试的故障转移花费你多少钱？",
           "withAnnual": "$0",
+          "withoutTag": "不进行测试",
           "withResults": {
             "churn": "$0",
             "compliance": "$0",
             "labor": "$0",
             "revenue": "$0"
           },
-          "withTag": "使用 Rediacc 测试",
-          "withoutTag": "不进行测试"
+          "withTag": "使用 Rediacc 测试"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -7291,14 +7293,14 @@
           },
           "title": "一次勒索软件攻击会花费你多少钱？",
           "withAnnual": "约 $200",
+          "withoutTag": "不使用 Rediacc",
           "withResults": {
             "downtime": "<5 分钟",
             "labor": "约 $200",
             "reputation": "$0",
             "revenue": "~$0"
           },
-          "withTag": "使用 Rediacc",
-          "withoutTag": "不使用 Rediacc"
+          "withTag": "使用 Rediacc"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -7822,6 +7824,7 @@
           "title": "闲置环境正在花费你多少钱",
           "withAnnual": "$24,120",
           "withAnnualLabel": "年度节省",
+          "withoutTag": "始终在线",
           "withResultLabels": {
             "idle": "CoW 存储开销"
           },
@@ -7830,8 +7833,7 @@
             "monthly": "$990",
             "waste": "0%"
           },
-          "withTag": "使用 REDIACC",
-          "withoutTag": "始终在线"
+          "withTag": "使用 REDIACC"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -8281,6 +8283,7 @@
           },
           "title": "缓慢恢复花费你多少钱？",
           "withAnnual": "$868",
+          "withoutTag": "文件级恢复",
           "withResultLabels": {
             "labor": "人员人力（一条命令）"
           },
@@ -8289,8 +8292,7 @@
             "labor": "$17",
             "recoveryTime": "<5 分钟"
           },
-          "withTag": "使用 Rediacc",
-          "withoutTag": "文件级恢复"
+          "withTag": "使用 Rediacc"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -8790,13 +8792,13 @@
           },
           "title": "损坏的 CI/CD 正在花费你多少钱",
           "withAnnual": "$0",
+          "withoutTag": "自定义脚本",
           "withResults": {
             "blocked": "0 小时",
             "bugs": "0",
             "debug": "0 小时"
           },
-          "withTag": "使用 REDIACC",
-          "withoutTag": "自定义脚本"
+          "withTag": "使用 REDIACC"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -9247,13 +9249,13 @@
           },
           "title": "迁移风险正在花费你多少钱",
           "withAnnual": "$0",
+          "withoutTag": "不使用 Rediacc",
           "withResults": {
             "labor": "$0",
             "risk": "0 TB",
             "windows": "0 小时"
           },
-          "withTag": "使用 Rediacc",
-          "withoutTag": "不使用 Rediacc"
+          "withTag": "使用 Rediacc"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -9752,13 +9754,13 @@
           },
           "title": "环境不一致正在花费你多少钱",
           "withAnnual": "$0",
+          "withoutTag": "不使用 REDIACC",
           "withResults": {
             "capacity": "0%",
             "debug": "0 小时",
             "incidents": "0"
           },
-          "withTag": "使用 REDIACC",
-          "withoutTag": "不使用 REDIACC"
+          "withTag": "使用 REDIACC"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -10223,14 +10225,14 @@
           },
           "title": "缓慢恢复花费你多少钱？",
           "withAnnual": "年度停机成本",
+          "withoutTag": "不使用 REDIACC",
           "withResults": {
             "churn": "客户流失成本",
             "labor": "恢复人力",
             "regulatory": "监管/声誉",
             "revLost": "每次事故的收入损失"
           },
-          "withTag": "使用 REDIACC",
-          "withoutTag": "不使用 REDIACC"
+          "withTag": "使用 REDIACC"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -10708,14 +10710,14 @@
           },
           "title": "手动合规花费你多少钱？",
           "withAnnual": "$0",
+          "withoutTag": "不使用 Rediacc",
           "withResults": {
             "gaps": "0",
             "labor": "$0",
             "penalty": "$0",
             "prepHours": "4 小时"
           },
-          "withTag": "使用 Rediacc",
-          "withoutTag": "不使用 Rediacc"
+          "withTag": "使用 Rediacc"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -11251,14 +11253,14 @@
           },
           "title": "跳过补丁花费你多少钱？",
           "withAnnual": "$0",
+          "withoutTag": "不使用 Rediacc",
           "withResults": {
             "breach": "极低",
             "downtime": "$0",
             "exposure": "0 天",
             "labor": "$0"
           },
-          "withTag": "使用 Rediacc",
-          "withoutTag": "不使用 Rediacc"
+          "withTag": "使用 Rediacc"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -11764,14 +11766,14 @@
           },
           "title": "厂商锁定正在花费你多少钱？",
           "withAnnual": "年度锁定税",
+          "withoutTag": "被锁定",
           "withResults": {
             "egress": "出口数据传输费",
             "leverage": "重新谈判筹码",
             "markup": "厂商高于市场的加价",
             "migrate": "迁移成本"
           },
-          "withTag": "使用 REDIACC",
-          "withoutTag": "被锁定"
+          "withTag": "使用 REDIACC"
         },
         "comparison": {
           "capabilityLabel": "功能",
@@ -12228,9 +12230,9 @@
           },
           "title": "缓慢打补丁花费你多少钱？",
           "withAnnual": "",
+          "withoutTag": "不使用 Rediacc",
           "withResults": {},
-          "withTag": "使用 Rediacc",
-          "withoutTag": "不使用 Rediacc"
+          "withTag": "使用 Rediacc"
         },
         "explore": {
           "solutions": [
@@ -13217,6 +13219,16 @@
     },
     "subtitle": "当生产环境拥有数 TB 的数据但沙箱环境仅每月同步时，团队将面临不可能的选择，从而导致危险的解决方法。",
     "title": "速度不匹配危机"
+  },
+  "regionPicker": {
+    "footer": "请选择离您最近的区域，或您的组织要求的区域。注册后无法更改。",
+    "locations": {
+      "eu": "法兰克福，德国",
+      "us": "弗吉尼亚，美国",
+      "asia": "Tokyo, Japan"
+    },
+    "subtitle": "您的账户、账单和配置等所有数据都保存在您选择的区域中，绝不会离开该区域。",
+    "title": "您希望将数据存储在哪里？"
   },
   "solutions": {
     "categories": {

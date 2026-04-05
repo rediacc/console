@@ -4,7 +4,7 @@ description: كيف تتكامل مساعدات البرمجة الذكية مث
 category: Guides
 order: 30
 language: ar
-sourceHash: "e96c19a3514c4369"
+sourceHash: "c4f31aca01e62a7f"
 ---
 
 يمكن لمساعدات البرمجة الذكية إدارة بنية Rediacc التحتية بشكل مستقل من خلال أداة `rdc` CLI. يغطي هذا الدليل مناهج التكامل وكيفية البدء.
@@ -13,7 +13,7 @@ sourceHash: "e96c19a3514c4369"
 
 بنية Rediacc ملائمة للوكلاء بطبيعتها:
 
-- **CLI أولاً**: كل عملية هي أمر `rdc` — لا حاجة لواجهة رسومية
+- **CLI أولاً**: كل عملية هي أمر `rdc`, لا حاجة لواجهة رسومية
 - **قائم على SSH**: البروتوكول الذي يعرفه الوكلاء جيدًا من بيانات التدريب
 - **مخرجات JSON**: جميع الأوامر تدعم `--output json` مع غلاف موحد
 - **عزل Docker**: كل مستودع يحصل على daemon وفضاء شبكة خاص به
@@ -87,7 +87,7 @@ echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 
 ## الخطوات التالية
 
-- [دليل إعداد Claude Code](/ar/docs/ai-agents-claude-code) — تهيئة Claude Code خطوة بخطوة
-- [دليل إعداد Cursor](/ar/docs/ai-agents-cursor) — تكامل بيئة تطوير Cursor
-- [مرجع مخرجات JSON](/ar/docs/ai-agents-json-output) — توثيق كامل لمخرجات JSON
-- [قالب AGENTS.md](/ar/docs/agents-md-template) — قالب تهيئة وكيل جاهز للنسخ واللصق
+- [دليل إعداد Claude Code](/ar/docs/ai-agents-claude-code), تهيئة Claude Code خطوة بخطوة
+- [دليل إعداد Cursor](/ar/docs/ai-agents-cursor), تكامل بيئة تطوير Cursor
+- [مرجع مخرجات JSON](/ar/docs/ai-agents-json-output), توثيق كامل لمخرجات JSON
+- [قالب AGENTS.md](/ar/docs/agents-md-template), قالب تهيئة وكيل جاهز للنسخ واللصق

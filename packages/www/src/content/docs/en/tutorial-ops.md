@@ -14,7 +14,7 @@ Testing infrastructure locally before deploying to production saves time and pre
 
 - A Linux or macOS workstation with hardware virtualization enabled
 - The `rdc` CLI installed and a config initialized with the local adapter
-- KVM/libvirt (Linux) or QEMU (macOS) installed — see [Experimental VMs](/en/docs/experimental-vms) for setup instructions
+- KVM/libvirt (Linux) or QEMU (macOS) installed, see [Experimental VMs](/en/docs/experimental-vms) for setup instructions
 
 ## Interactive Recording
 
@@ -46,7 +46,7 @@ Creates a two-VM cluster: a **bridge** VM (1 CPU, 1024 MB RAM, 8 GB disk) and a 
 rdc ops status
 ```
 
-Displays the state of each VM in the cluster — IP addresses, resource allocation, and running status. Both VMs should show as running.
+Displays the state of each VM in the cluster, IP addresses, resource allocation, and running status. Both VMs should show as running.
 
 ### Step 4: Run commands on a VM
 
@@ -82,6 +82,6 @@ The basic cluster requires at least 6 GB of free RAM (1 GB bridge + 4 GB worker 
 
 You provisioned a local VM cluster, ran commands over SSH, and tore it down. To deploy real infrastructure:
 
-- [Experimental VMs](/en/docs/experimental-vms) — full reference for `rdc ops` commands, VM configuration, and platform support
-- [Tutorial: Machine Setup](/en/docs/tutorial-setup) — register remote machines and configure infrastructure
-- [Quick Start](/en/docs/quick-start) — deploy a containerized service end-to-end
+- [Experimental VMs](/en/docs/experimental-vms), full reference for `rdc ops` commands, VM configuration, and platform support
+- [Tutorial: Machine Setup](/en/docs/tutorial-setup), register remote machines and configure infrastructure
+- [Quick Start](/en/docs/quick-start), deploy a containerized service end-to-end

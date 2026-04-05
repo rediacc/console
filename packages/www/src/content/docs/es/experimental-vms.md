@@ -4,12 +4,12 @@ description: "Aprovisione clústeres de VMs locales para desarrollo y pruebas co
 category: "Concepts"
 order: 2
 language: es
-sourceHash: "13bf9b8be113a0ad"
+sourceHash: "af686ab0f22d58c7"
 ---
 
 # VMs Experimentales
 
-Aprovisione clústeres de VMs locales en su estación de trabajo para desarrollo y pruebas — no se requieren proveedores de nube externos.
+Aprovisione clústeres de VMs locales en su estación de trabajo para desarrollo y pruebas, no se requieren proveedores de nube externos.
 
 ## Requisitos
 
@@ -104,13 +104,13 @@ Por defecto, `rdc ops up` aprovisiona:
 
 | VM | ID | Rol |
 |----|-----|------|
-| Bridge | 1 | Nodo primario — ejecuta el servicio bridge de Rediacc |
+| Bridge | 1 | Nodo primario, ejecuta el servicio bridge de Rediacc |
 | Worker 1 | 11 | Nodo worker para despliegues de repositorios |
 | Worker 2 | 12 | Nodo worker para despliegues de repositorios |
 
 Use la bandera `--basic` para aprovisionar solo el bridge y el primer worker (IDs 1 y 11).
 
-Use `--skip-orchestration` para aprovisionar VMs sin iniciar los servicios de Rediacc — útil para probar la capa de VM de forma aislada.
+Use `--skip-orchestration` para aprovisionar VMs sin iniciar los servicios de Rediacc, útil para probar la capa de VM de forma aislada.
 
 ## Configuración
 
@@ -159,7 +159,7 @@ Las variables de entorno sobreescriben los recursos de las VMs worker:
 
 ### Linux (KVM)
 - Utiliza libvirt para la gestión del ciclo de vida de las VMs
-- Redes en puente — las VMs obtienen IPs en una red virtual (192.168.111.x)
+- Redes en puente, las VMs obtienen IPs en una red virtual (192.168.111.x)
 - SSH directo a las IPs de las VMs
 - Requiere `/dev/kvm` y el servicio libvirtd
 

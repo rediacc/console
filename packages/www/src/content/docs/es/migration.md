@@ -4,12 +4,12 @@ description: "Migrar proyectos existentes a repositorios cifrados de Rediacc."
 category: "Guides"
 order: 11
 language: es
-sourceHash: "180b0e1e61b958b8"
+sourceHash: "18199953a84fb77b"
 ---
 
 # Guía de migración
 
-Migre un proyecto existente — archivos, servicios Docker, bases de datos — desde un servidor tradicional o un entorno de desarrollo local a un repositorio cifrado de Rediacc.
+Migre un proyecto existente, archivos, servicios Docker, bases de datos, desde un servidor tradicional o un entorno de desarrollo local a un repositorio cifrado de Rediacc.
 
 ## Requisitos previos
 
@@ -75,8 +75,8 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 
 ### Cuándo ejecutar
 
-- **Después de subir archivos** — para convertir su UID local a 7111
-- **Después de iniciar contenedores** — si desea que los directorios de volúmenes Docker se excluyan automáticamente. Si los contenedores aún no se han iniciado, no hay volúmenes que excluir y se cambia la propiedad de todos los directorios (lo cual está bien — los contenedores recrearán sus datos en el primer inicio)
+- **Después de subir archivos**, para convertir su UID local a 7111
+- **Después de iniciar contenedores**, si desea que los directorios de volúmenes Docker se excluyan automáticamente. Si los contenedores aún no se han iniciado, no hay volúmenes que excluir y se cambia la propiedad de todos los directorios (lo cual está bien, los contenedores recrearán sus datos en el primer inicio)
 
 ### Modo forzado
 
@@ -121,7 +121,7 @@ Las tres funciones del ciclo de vida:
 
 > **Importante:** Use siempre `renet compose --` en lugar de `docker compose` en su Rediaccfile. El wrapper `renet compose` impone la red de host, las capacidades de checkpoint/restore de CRIU, la asignación de IP y el descubrimiento de servicios requeridos por renet-proxy. Usar `docker compose` directamente omite todo esto y será rechazado durante la validación.
 >
-> Nunca use `sudo docker` tampoco — `sudo` restablece las variables de entorno, incluyendo `DOCKER_HOST`, lo que causa que los contenedores se creen en el Docker daemon del sistema en lugar del daemon aislado del repositorio. Las funciones del Rediaccfile ya se ejecutan con privilegios suficientes.
+> Nunca use `sudo docker` tampoco, `sudo` restablece las variables de entorno, incluyendo `DOCKER_HOST`, lo que causa que los contenedores se creen en el Docker daemon del sistema en lugar del daemon aislado del repositorio. Las funciones del Rediaccfile ya se ejecutan con privilegios suficientes.
 
 Vea [Servicios](/es/docs/services) para detalles completos sobre Rediaccfiles, diseños multi-servicio y orden de ejecución.
 
@@ -184,9 +184,9 @@ services:
 
 Cambios principales:
 
-1. **Eliminar las asignaciones de `ports:`** — `renet compose` usa red de host y elimina las asignaciones de puertos automáticamente
-2. **Eliminar `network_mode: host`** — `renet compose` lo agrega automáticamente
-3. **Eliminar `restart: always` o `restart: unless-stopped`** — entran en conflicto con CRIU checkpoint/restore (Docker inicia automáticamente los contenedores antes de que checkpoint restore pueda ejecutarse). Use `restart: on-failure` si necesita comportamiento de reinicio, o omítalo completamente — Rediaccfile `up()`/`down()` gestiona el ciclo de vida del contenedor
+1. **Eliminar las asignaciones de `ports:`**, `renet compose` usa red de host y elimina las asignaciones de puertos automáticamente
+2. **Eliminar `network_mode: host`**, `renet compose` lo agrega automáticamente
+3. **Eliminar `restart: always` o `restart: unless-stopped`**, entran en conflicto con CRIU checkpoint/restore (Docker inicia automáticamente los contenedores antes de que checkpoint restore pueda ejecutarse). Use `restart: on-failure` si necesita comportamiento de reinicio, o omítalo completamente, Rediaccfile `up()`/`down()` gestiona el ciclo de vida del contenedor
 4. **Vincular servicios a variables de entorno `${SERVICE_IP}`** (inyectadas automáticamente por Rediacc)
 5. **Referenciar otros servicios por su IP** en lugar de nombres DNS de Docker (por ejemplo, `${POSTGRES_IP}` en lugar de `postgres`)
 
@@ -241,7 +241,7 @@ my-wordpress/
 
 1. Suba los archivos de su proyecto
 2. Inicie los servicios primero (`rdc repo up`) para que los contenedores creen sus directorios de datos
-3. Ejecute la corrección de propiedad — los directorios de datos de MariaDB y la aplicación se excluyen automáticamente
+3. Ejecute la corrección de propiedad, los directorios de datos de MariaDB y la aplicación se excluyen automáticamente
 
 ### Node.js / Python con Redis
 
@@ -295,7 +295,7 @@ Cada repositorio obtiene IPs de loopback únicas. Si ve conflictos de puertos, v
 
 ### La corrección de propiedad rompe contenedores
 
-Si ejecutó `rdc repo ownership` y un contenedor dejó de funcionar, los archivos de datos del contenedor fueron modificados. Detenga el contenedor, elimine su directorio de datos y reinícielo — el contenedor lo recreará:
+Si ejecutó `rdc repo ownership` y un contenedor dejó de funcionar, los archivos de datos del contenedor fueron modificados. Detenga el contenedor, elimine su directorio de datos y reinícielo, el contenedor lo recreará:
 
 ```bash
 rdc repo down --name my-project -m server-1

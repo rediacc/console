@@ -4,7 +4,7 @@ description: دليل خطوة بخطوة لتهيئة Claude Code لإدارة 
 category: Guides
 order: 31
 language: ar
-sourceHash: "8b05c6da1e3fc662"
+sourceHash: "f28f17d2e0d3d395"
 ---
 
 يعمل Claude Code بشكل أصلي مع Rediacc من خلال أداة `rdc` CLI. يغطي هذا الدليل الإعداد والأذونات وسير العمل الشائعة.
@@ -43,10 +43,10 @@ sourceHash: "8b05c6da1e3fc662"
 
 سيطلب Claude Code إذنًا لتشغيل أوامر `rdc`. يمكنك التفويض المسبق للعمليات الشائعة بإضافتها إلى إعدادات Claude Code الخاصة بك:
 
-- السماح بـ `rdc machine query *` — فحوصات الحالة للقراءة فقط
-- السماح بـ `rdc machine containers *` — عرض الحاويات
-- السماح بـ `rdc machine health *` — فحوصات السلامة
-- السماح بـ `rdc config repository list` — عرض المستودعات
+- السماح بـ `rdc machine query *`, فحوصات الحالة للقراءة فقط
+- السماح بـ `rdc machine containers *`, عرض الحاويات
+- السماح بـ `rdc machine health *`, فحوصات السلامة
+- السماح بـ `rdc config repository list`, عرض المستودعات
 
 بالنسبة للعمليات المدمرة (`rdc repo up`، `rdc repo delete`)، سيطلب Claude Code دائمًا التأكيد ما لم تفوضها صراحةً.
 
@@ -96,7 +96,7 @@ Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config
 
 ## نصائح
 
-- يكتشف Claude Code تلقائيًا بيئة non-TTY ويتحول إلى مخرجات JSON — لا حاجة لتحديد `-o json` في معظم الحالات
+- يكتشف Claude Code تلقائيًا بيئة non-TTY ويتحول إلى مخرجات JSON, لا حاجة لتحديد `-o json` في معظم الحالات
 - استخدم `rdc agent capabilities` لتمكين Claude Code من اكتشاف جميع الأوامر المتاحة
 - استخدم `rdc agent schema "command name"` للحصول على معلومات تفصيلية عن الوسائط والخيارات
 - يساعد علم `--fields` في تقليل استخدام نافذة السياق عندما تحتاج فقط إلى بيانات محددة

@@ -54,7 +54,7 @@ The `{SERVICE}_IP` variables are auto-generated from the slot mappings in `.redi
 
 > **Warning: Do not use `sudo docker` in Rediaccfiles.** The `sudo` command resets environment variables, which means `DOCKER_HOST` is lost and Docker commands will target the system daemon instead of the repository's isolated daemon. This breaks container isolation and can cause port conflicts. Rediacc will block execution if it detects `sudo docker` without `-E`.
 >
-> Use `renet compose` in your Rediaccfiles — it automatically handles `DOCKER_HOST`, injects networking labels for route discovery, and configures service networking. See [Networking](/en/docs/networking) for details on how services are exposed via the reverse proxy. If calling Docker directly, use `docker` without `sudo` — Rediaccfile functions already run with sufficient privileges. If you must use sudo, use `sudo -E docker` to preserve environment variables.
+> Use `renet compose` in your Rediaccfiles, it automatically handles `DOCKER_HOST`, injects networking labels for route discovery, and configures service networking. See [Networking](/en/docs/networking) for details on how services are exposed via the reverse proxy. If calling Docker directly, use `docker` without `sudo`, Rediaccfile functions already run with sufficient privileges. If you must use sudo, use `sudo -E docker` to preserve environment variables.
 >
 > `renet` is the remote low-level tool. For normal user workflows from your workstation, prefer `rdc` commands such as `rdc repo up` and `rdc repo down`. See [rdc vs renet](/en/docs/rdc-vs-renet).
 
@@ -166,7 +166,7 @@ services:
       LISTEN_ADDR: ${API_IP}:8080
 ```
 
-> **Note:** Do not add `network_mode: host` manually — `renet compose` injects it automatically. Restart policies (e.g., `restart: always`) are safe to use — renet auto-strips them for CRIU compatibility and the router watchdog handles container recovery.
+> **Note:** Do not add `network_mode: host` manually, `renet compose` injects it automatically. Restart policies (e.g., `restart: always`) are safe to use, renet auto-strips them for CRIU compatibility and the router watchdog handles container recovery.
 
 > **Note:** Fork repos get flat auto-routes: `{service}-{tag}.{machine}.{baseDomain}`. Custom domains are skipped for forks.
 
@@ -275,7 +275,7 @@ Killing LUKS slot 1: /mnt/rediacc/repositories/<guid>
 Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
 ```
 
-This is safe — slot 0 (your passphrase) is never modified. If autostart is not
+This is safe, slot 0 (your passphrase) is never modified. If autostart is not
 enabled, the check is silently skipped. Failures are non-fatal and do not block
 the deploy.
 

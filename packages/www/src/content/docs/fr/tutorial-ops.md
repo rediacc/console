@@ -4,7 +4,7 @@ description: "Provisionner un cluster de VM local, exécuter des commandes via S
 category: "Tutorials"
 order: 1
 language: fr
-sourceHash: "741534930d3fbc2a"
+sourceHash: "044855db82f05b88"
 ---
 
 # Comment provisionner des VMs locales avec Rediacc
@@ -15,7 +15,7 @@ Tester l'infrastructure localement avant de déployer en production fait gagner 
 
 - Un poste de travail Linux ou macOS avec la virtualisation matérielle activée
 - La CLI `rdc` installée et une configuration initialisée avec l'adaptateur local
-- KVM/libvirt (Linux) ou QEMU (macOS) installé — voir [VMs expérimentales](/fr/docs/experimental-vms) pour les instructions d'installation
+- KVM/libvirt (Linux) ou QEMU (macOS) installé, voir [VMs expérimentales](/fr/docs/experimental-vms) pour les instructions d'installation
 
 ## Enregistrement interactif
 
@@ -47,7 +47,7 @@ Crée un cluster de deux VMs : une VM **pont** (1 CPU, 1024 Mo RAM, 8 Go disque)
 rdc ops status
 ```
 
-Affiche l'état de chaque VM dans le cluster — adresses IP, allocation des ressources et statut d'exécution. Les deux VMs devraient apparaître comme en cours d'exécution.
+Affiche l'état de chaque VM dans le cluster, adresses IP, allocation des ressources et statut d'exécution. Les deux VMs devraient apparaître comme en cours d'exécution.
 
 ### Étape 4 : Exécuter des commandes sur une VM
 
@@ -83,6 +83,6 @@ Le cluster de base nécessite au moins 6 Go de RAM libre (1 Go pont + 4 Go worke
 
 Vous avez provisionné un cluster de VM local, exécuté des commandes via SSH et démonté le tout. Pour déployer une infrastructure réelle :
 
-- [VMs expérimentales](/fr/docs/experimental-vms) — référence complète pour les commandes `rdc ops`, la configuration des VMs et le support des plateformes
-- [Tutoriel : Configuration des machines](/fr/docs/tutorial-setup) — enregistrer des machines distantes et configurer l'infrastructure
-- [Démarrage rapide](/fr/docs/quick-start) — déployer un service conteneurisé de bout en bout
+- [VMs expérimentales](/fr/docs/experimental-vms), référence complète pour les commandes `rdc ops`, la configuration des VMs et le support des plateformes
+- [Tutoriel : Configuration des machines](/fr/docs/tutorial-setup), enregistrer des machines distantes et configurer l'infrastructure
+- [Démarrage rapide](/fr/docs/quick-start), déployer un service conteneurisé de bout en bout

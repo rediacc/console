@@ -90,11 +90,6 @@ if [[ -n "${ARG_NAME:-}" ]]; then
     fi
     log_info "Created D1 database $DB_NAME (UUID: $DB_UUID)"
 
-    # Clone production data into fresh PR database
-    log_step "Cloning production D1 into $DB_NAME..."
-    "$SCRIPT_DIR/clone-d1.sh" --source account-db --target "$DB_NAME"
-    log_info "Production D1 cloned into $DB_NAME"
-
     cat >wrangler.preview.toml <<TOML
 name = "$ARG_NAME"
 main = "src/index.ts"

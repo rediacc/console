@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 7732,
-    "sourceCommit": "0ffe0eb576f3833a2968fa73b14d5e99f112c6e2"
+    "keyCount": 7740,
+    "sourceCommit": "5fb722a0e65b5d56f47349c64cdb7d969fe42586"
   },
   "hashes": {
     "announcement.link": "0cc49471",
@@ -43,6 +43,7 @@
     "common.buttons.goToHomepage": "7feb649b",
     "common.buttons.learnMore": "ef55e9e4",
     "common.buttons.sendMessage": "c2082449",
+    "common.close": "d2c0aec0",
     "common.contentNotAvailable": "9bca5a6a",
     "common.copied": "ad35e265",
     "common.copyLink": "6b7a1e43",
@@ -94,6 +95,7 @@
     "contactModal.title": "812a79de",
     "documentation.categories.concepts": "89f4b6c9",
     "documentation.categories.guides": "4adb90d9",
+    "documentation.categories.legal": "22a3ef54",
     "documentation.categories.reference": "2c52cbb0",
     "documentation.categories.tutorials": "40ef7c8b",
     "documentation.categories.useCases": "39c93b02",
@@ -7695,6 +7697,12 @@
     "problem.solution.title": "3406e209",
     "problem.subtitle": "743bee74",
     "problem.title": "a0803d2d",
+    "regionPicker.footer": "7c9c13f9",
+    "regionPicker.locations.asia": "e73d0545",
+    "regionPicker.locations.eu": "463ae1c7",
+    "regionPicker.locations.us": "308ba2c2",
+    "regionPicker.subtitle": "1ce320dd",
+    "regionPicker.title": "e8025de1",
     "solutions.categories.backups": "31ec9c87",
     "solutions.categories.defense": "61bbc74d",
     "solutions.categories.dev-env": "6b520ce0",

@@ -4,7 +4,7 @@ description: Wie KI-Coding-Assistenten wie Claude Code, Cursor und Cline sich mi
 category: Guides
 order: 30
 language: de
-sourceHash: "e96c19a3514c4369"
+sourceHash: "c4f31aca01e62a7f"
 ---
 
 KI-Coding-Assistenten können die Rediacc-Infrastruktur über die `rdc` CLI autonom verwalten. Diese Anleitung behandelt die Integrationsansaetze und den Einstieg.
@@ -13,7 +13,7 @@ KI-Coding-Assistenten können die Rediacc-Infrastruktur über die `rdc` CLI auto
 
 Die Architektur von Rediacc ist von Natur aus agentenfreundlich:
 
-- **CLI-first**: Jede Operation ist ein `rdc`-Befehl — keine GUI erforderlich
+- **CLI-first**: Jede Operation ist ein `rdc`-Befehl, keine GUI erforderlich
 - **SSH-basiert**: Das Protokoll, das Agenten aus Trainingsdaten am besten kennen
 - **JSON-Ausgabe**: Alle Befehle unterstützen `--output json` mit einheitlichem Envelope
 - **Docker-Isolation**: Jedes Repository erhaelt seinen eigenen Daemon und Netzwerk-Namespace
@@ -87,7 +87,7 @@ echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 
 ## Naechste Schritte
 
-- [Claude Code Einrichtungsanleitung](/de/docs/ai-agents-claude-code) — Schritt-für-Schritt Claude Code-Konfiguration
-- [Cursor Einrichtungsanleitung](/de/docs/ai-agents-cursor) — Cursor-IDE-Integration
-- [JSON-Ausgabe-Referenz](/de/docs/ai-agents-json-output) — Vollständige JSON-Ausgabe-Dokumentation
-- [AGENTS.md-Vorlage](/de/docs/agents-md-template) — Kopierfertige Agenten-Konfigurationsvorlage
+- [Claude Code Einrichtungsanleitung](/de/docs/ai-agents-claude-code), Schritt-für-Schritt Claude Code-Konfiguration
+- [Cursor Einrichtungsanleitung](/de/docs/ai-agents-cursor), Cursor-IDE-Integration
+- [JSON-Ausgabe-Referenz](/de/docs/ai-agents-json-output), Vollständige JSON-Ausgabe-Dokumentation
+- [AGENTS.md-Vorlage](/de/docs/agents-md-template), Kopierfertige Agenten-Konfigurationsvorlage

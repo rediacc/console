@@ -28,6 +28,7 @@ import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import { getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
+import { auditService } from '../services/audit.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 
@@ -362,80 +363,122 @@ async function executeSyncWithSftpFallback(
 }
 
 async function syncUpload(options: SyncUploadOptions): Promise<void> {
+  const startTime = Date.now();
   const validated = await validateSyncOptions(options, CMD.REPO_SYNC_UPLOAD);
   const localPath = resolveUploadLocalPath(options.local);
   const ctx = await prepareSyncConnection(validated, options.remote);
 
-  await withTempSshFiles(ctx.details, async (keyFilePath, knownHostsPath) => {
-    const rsyncOptions: RsyncExecutorOptions = {
-      sshOptions: buildSshOptions(knownHostsPath, ctx.details.port, keyFilePath),
-      source: localPath,
-      destination: `${ctx.details.user}@${ctx.details.host}:${ctx.remotePath}`,
-      mirror: options.mirror,
-      verify: options.verify,
-      exclude: options.exclude,
-      universalUser: ctx.details.universalUser,
-      isUpload: true,
-    };
+  let success = true;
+  let error: string | undefined;
+  try {
+    await withTempSshFiles(ctx.details, async (keyFilePath, knownHostsPath) => {
+      const rsyncOptions: RsyncExecutorOptions = {
+        sshOptions: buildSshOptions(knownHostsPath, ctx.details.port, keyFilePath),
+        source: localPath,
+        destination: `${ctx.details.user}@${ctx.details.host}:${ctx.remotePath}`,
+        mirror: options.mirror,
+        verify: options.verify,
+        exclude: options.exclude,
+        universalUser: ctx.details.universalUser,
+        isUpload: true,
+      };
 
-    const shouldContinue = await handleConfirmMode(rsyncOptions, options);
-    if (!shouldContinue) return;
+      const shouldContinue = await handleConfirmMode(rsyncOptions, options);
+      if (!shouldContinue) return;
 
-    if (options.dryRun) {
-      await handleDryRunWithSftpFallback(rsyncOptions, () =>
+      if (options.dryRun) {
+        await handleDryRunWithSftpFallback(rsyncOptions, () =>
+          sftpUploadDirectory(localPath, ctx.sftpRemotePath, ctx.sftpConfig, {
+            exclude: options.exclude,
+            dryRun: true,
+          })
+        );
+        return;
+      }
+
+      await executeSyncWithSftpFallback(rsyncOptions, 'upload', (spinner) =>
         sftpUploadDirectory(localPath, ctx.sftpRemotePath, ctx.sftpConfig, {
           exclude: options.exclude,
-          dryRun: true,
+          onProgress: (file) => {
+            spinner.text = `Uploading: ${file}`;
+          },
         })
       );
-      return;
+    });
+  } catch (err) {
+    success = false;
+    error = err instanceof Error ? err.message : String(err);
+    throw err;
+  } finally {
+    if (!options.dryRun) {
+      auditService.recordOperation({
+        functionName: 'sync_upload',
+        machineName: validated.machine,
+        repoName: validated.repository,
+        success,
+        exitCode: success ? 0 : 1,
+        durationMs: Date.now() - startTime,
+        error,
+      });
     }
-
-    await executeSyncWithSftpFallback(rsyncOptions, 'upload', (spinner) =>
-      sftpUploadDirectory(localPath, ctx.sftpRemotePath, ctx.sftpConfig, {
-        exclude: options.exclude,
-        onProgress: (file) => {
-          spinner.text = `Uploading: ${file}`;
-        },
-      })
-    );
-  });
+  }
 }
 
 async function syncDownload(options: SyncDownloadOptions): Promise<void> {
+  const startTime = Date.now();
   const validated = await validateSyncOptions(options, CMD.REPO_SYNC_DOWNLOAD);
   const localPath = resolve(options.local ?? process.cwd());
   const ctx = await prepareSyncConnection(validated, options.remote);
 
-  await withTempSshFiles(ctx.details, async (keyFilePath, knownHostsPath) => {
-    const rsyncOptions: RsyncExecutorOptions = {
-      sshOptions: buildSshOptions(knownHostsPath, ctx.details.port, keyFilePath),
-      source: `${ctx.details.user}@${ctx.details.host}:${ctx.remotePath}`,
-      destination: localPath,
-      mirror: options.mirror,
-      verify: options.verify,
-      exclude: options.exclude,
-      universalUser: ctx.details.universalUser,
-    };
+  let success = true;
+  let error: string | undefined;
+  try {
+    await withTempSshFiles(ctx.details, async (keyFilePath, knownHostsPath) => {
+      const rsyncOptions: RsyncExecutorOptions = {
+        sshOptions: buildSshOptions(knownHostsPath, ctx.details.port, keyFilePath),
+        source: `${ctx.details.user}@${ctx.details.host}:${ctx.remotePath}`,
+        destination: localPath,
+        mirror: options.mirror,
+        verify: options.verify,
+        exclude: options.exclude,
+        universalUser: ctx.details.universalUser,
+      };
 
-    const shouldContinue = await handleConfirmMode(rsyncOptions, options);
-    if (!shouldContinue) return;
+      const shouldContinue = await handleConfirmMode(rsyncOptions, options);
+      if (!shouldContinue) return;
 
-    if (options.dryRun) {
-      await handleDryRunWithSftpFallback(rsyncOptions, () =>
-        sftpDownloadDirectory(ctx.sftpRemotePath, localPath, ctx.sftpConfig, { dryRun: true })
+      if (options.dryRun) {
+        await handleDryRunWithSftpFallback(rsyncOptions, () =>
+          sftpDownloadDirectory(ctx.sftpRemotePath, localPath, ctx.sftpConfig, { dryRun: true })
+        );
+        return;
+      }
+
+      await executeSyncWithSftpFallback(rsyncOptions, 'download', (spinner) =>
+        sftpDownloadDirectory(ctx.sftpRemotePath, localPath, ctx.sftpConfig, {
+          onProgress: (file) => {
+            spinner.text = `Downloading: ${file}`;
+          },
+        })
       );
-      return;
+    });
+  } catch (err) {
+    success = false;
+    error = err instanceof Error ? err.message : String(err);
+    throw err;
+  } finally {
+    if (!options.dryRun) {
+      auditService.recordOperation({
+        functionName: 'sync_download',
+        machineName: validated.machine,
+        repoName: validated.repository,
+        success,
+        exitCode: success ? 0 : 1,
+        durationMs: Date.now() - startTime,
+        error,
+      });
     }
-
-    await executeSyncWithSftpFallback(rsyncOptions, 'download', (spinner) =>
-      sftpDownloadDirectory(ctx.sftpRemotePath, localPath, ctx.sftpConfig, {
-        onProgress: (file) => {
-          spinner.text = `Downloading: ${file}`;
-        },
-      })
-    );
-  });
+  }
 }
 
 /**

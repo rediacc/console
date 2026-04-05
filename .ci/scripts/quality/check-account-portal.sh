@@ -62,7 +62,7 @@ fi
 log_info "Frontend build succeeded"
 
 # Phase 6: Verify output exists
-OUTPUT_FILE="$REPO_ROOT/workers/www/dist/account/index.html"
+OUTPUT_FILE="$REPO_ROOT/workers/account/dist/account/index.html"
 if [[ ! -f "$OUTPUT_FILE" ]]; then
     log_error "Expected build output not found: $OUTPUT_FILE"
     exit 1

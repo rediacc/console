@@ -4,7 +4,7 @@ description: "Supprimer les sauvegardes orphelines, les snapshots obsolètes et 
 category: "Guides"
 order: 12
 language: fr
-sourceHash: "a9bfc5eaffb9bca9"
+sourceHash: "dfa21ca915423599"
 ---
 
 # Nettoyage
@@ -19,7 +19,7 @@ Le nettoyage supprime les ressources qui ne sont plus référencées par aucun f
 Analyse un fournisseur de stockage et supprime les sauvegardes dont les GUIDs n'apparaissent plus dans aucun fichier de configuration.
 
 ```bash
-# Dry-run (default) — shows what would be deleted
+# Dry-run (default), shows what would be deleted
 rdc storage prune --name my-s3 -m server-1
 
 # Actually delete orphaned backups

@@ -4,7 +4,7 @@ description: "Configurez des planifications de sauvegarde automatisées, gérez 
 category: "Tutorials"
 order: 6
 language: fr
-sourceHash: "0bdff6ce5d24c154"
+sourceHash: "f68d915af9daf0da"
 ---
 
 # Comment configurer les sauvegardes et le réseau avec Rediacc
@@ -28,7 +28,7 @@ Les fournisseurs de stockage (S3, B2, Google Drive, etc.) servent de destination
 rdc config storage list
 ```
 
-Liste tous les fournisseurs de stockage configurés importés depuis les configurations rclone. Si vide, ajoutez d'abord un fournisseur de stockage — voir [Sauvegarde et restauration](/fr/docs/backup-restore).
+Liste tous les fournisseurs de stockage configurés importés depuis les configurations rclone. Si vide, ajoutez d'abord un fournisseur de stockage, voir [Sauvegarde et restauration](/fr/docs/backup-restore).
 
 ### Étape 2 : Configurer la planification de sauvegarde
 
@@ -118,6 +118,6 @@ Les trois champs sont requis : `--public-ipv4`, `--base-domain` et `--cert-email
 
 Vous avez configuré les sauvegardes automatisées, mis en place le réseau d'infrastructure, enregistré les ports de service et vérifié la configuration. Pour gérer les sauvegardes :
 
-- [Sauvegarde et restauration](/fr/docs/backup-restore) — référence complète pour les commandes push, pull, list et sync
-- [Réseau](/fr/docs/networking) — labels Docker, certificats TLS, DNS et redirection TCP/UDP
-- [Tutoriel : Configuration de la machine](/fr/docs/tutorial-setup) — configuration initiale et provisionnement
+- [Sauvegarde et restauration](/fr/docs/backup-restore), référence complète pour les commandes push, pull, list et sync
+- [Réseau](/fr/docs/networking), labels Docker, certificats TLS, DNS et redirection TCP/UDP
+- [Tutoriel : Configuration de la machine](/fr/docs/tutorial-setup), configuration initiale et provisionnement

@@ -4,7 +4,7 @@ description: Claude Code, Cursor ve Cline gibi AI kodlama asistanlarının otono
 category: Guides
 order: 30
 language: tr
-sourceHash: "e96c19a3514c4369"
+sourceHash: "c4f31aca01e62a7f"
 ---
 
 AI kodlama asistanları, `rdc` CLI aracılığıyla Rediacc altyapısını otonom olarak yönetebilir. Bu kılavuz entegrasyon yaklaşımlarını ve nasıl başlayacağınızı kapsar.
@@ -13,7 +13,7 @@ AI kodlama asistanları, `rdc` CLI aracılığıyla Rediacc altyapısını otono
 
 Rediacc'ın mimarisi doğal olarak ajan dostudur:
 
-- **CLI öncelikli**: Her işlem bir `rdc` komutudur — GUI gerekmez
+- **CLI öncelikli**: Her işlem bir `rdc` komutudur, GUI gerekmez
 - **SSH tabanlı**: Ajanların eğitim verilerinden en iyi bildiği protokol
 - **JSON çıktı**: Tüm komutlar tutarlı bir zarfla `--output json` destekler
 - **Docker izolasyonu**: Her depo kendi daemon'ına ve ağ ad alanına sahiptir
@@ -87,7 +87,7 @@ echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 
 ## Sonraki Adımlar
 
-- [Claude Code Kurulum Kılavuzu](/tr/docs/ai-agents-claude-code) — Adım adım Claude Code yapılandırması
-- [Cursor Kurulum Kılavuzu](/tr/docs/ai-agents-cursor) — Cursor IDE entegrasyonu
-- [JSON Çıktı Referansı](/tr/docs/ai-agents-json-output) — Eksiksiz JSON çıktı belgeleri
-- [AGENTS.md Şablonu](/tr/docs/agents-md-template) — Kopyala-yapıştır ajan yapılandırma şablonu
+- [Claude Code Kurulum Kılavuzu](/tr/docs/ai-agents-claude-code), Adım adım Claude Code yapılandırması
+- [Cursor Kurulum Kılavuzu](/tr/docs/ai-agents-cursor), Cursor IDE entegrasyonu
+- [JSON Çıktı Referansı](/tr/docs/ai-agents-json-output), Eksiksiz JSON çıktı belgeleri
+- [AGENTS.md Şablonu](/tr/docs/agents-md-template), Kopyala-yapıştır ajan yapılandırma şablonu

@@ -4,7 +4,7 @@ description: Referencia completa del formato de salida JSON del CLI rdc, esquema
 category: Reference
 order: 51
 language: es
-sourceHash: "a84e20b09aadfd28"
+sourceHash: "29b827cf79cbba6e"
 ---
 
 Todos los comandos `rdc` admiten salida JSON estructurada para consumo programático por agentes de IA y scripts.
@@ -95,9 +95,9 @@ Los comandos fallidos devuelven errores estructurados con sugerencias de recuper
 
 Estos tipos de error se marcan como `retryable: true`:
 
-- **NETWORK_ERROR** — Fallo de conexión SSH o de red
-- **RATE_LIMITED** — Demasiadas solicitudes, espere y reintente
-- **API_ERROR** — Fallo transitorio del backend
+- **NETWORK_ERROR**, Fallo de conexión SSH o de red
+- **RATE_LIMITED**, Demasiadas solicitudes, espere y reintente
+- **API_ERROR**, Fallo transitorio del backend
 
 Los errores no reintentables (autenticación, no encontrado, argumentos inválidos) requieren acción correctiva antes de reintentar.
 

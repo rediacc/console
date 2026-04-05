@@ -1,3 +1,4 @@
+import { findSmartRedirect } from './smart-redirect';
 import { drizzle } from 'drizzle-orm/d1';
 import { createApp } from '../../../private/account/src/app.js';
 import * as schema from '../../../private/account/src/db/schema.js';
@@ -117,9 +118,21 @@ export default {
     }
 
     // All other routes — served from static assets.
-    // In preview, run_worker_first = ["/*"] routes everything through here.
-    // In production, this path is only reached for /account/* (handled above).
+    // run_worker_first = ["/*"] routes everything through here.
     const response = await env.ASSETS.fetch(request);
+
+    // Smart 404 redirect: score-based fuzzy matching against known routes
+    if (response.status === 404) {
+      const redirect = await findSmartRedirect(url.pathname, env.ASSETS);
+      if (redirect) {
+        console.log(JSON.stringify({ event: 'smart-redirect', from: url.pathname, to: redirect.url, score: redirect.score }));
+        return new Response(null, {
+          status: 302,
+          headers: { Location: new URL(redirect.url, url.origin).toString(), 'X-Redirect-Reason': 'smart-404' },
+        });
+      }
+    }
+
     return isPreview ? rewriteOrigin(response, url.origin, channel) : response;
   },
 };

@@ -4,7 +4,7 @@ description: "孤立したバックアップ、古いスナップショット、
 category: "Guides"
 order: 12
 language: ja
-sourceHash: "a9bfc5eaffb9bca9"
+sourceHash: "dfa21ca915423599"
 ---
 
 # プルーニング
@@ -19,7 +19,7 @@ sourceHash: "a9bfc5eaffb9bca9"
 ストレージプロバイダーをスキャンし、GUIDがどの設定ファイルにも存在しなくなったバックアップを削除します。
 
 ```bash
-# Dry-run (default) — shows what would be deleted
+# Dry-run (default), shows what would be deleted
 rdc storage prune --name my-s3 -m server-1
 
 # Actually delete orphaned backups

@@ -4,7 +4,7 @@ description: "Sahipsiz yedekleri, eski anlık görüntüleri ve kullanılmayan d
 category: "Guides"
 order: 12
 language: tr
-sourceHash: "a9bfc5eaffb9bca9"
+sourceHash: "dfa21ca915423599"
 ---
 
 # Temizleme
@@ -19,7 +19,7 @@ Temizleme, herhangi bir yapılandırma dosyası tarafından artık referans veri
 Bir depolama sağlayıcısını tarar ve GUID'leri herhangi bir yapılandırma dosyasında artık görünmeyen yedekleri siler.
 
 ```bash
-# Dry-run (default) — shows what would be deleted
+# Dry-run (default), shows what would be deleted
 rdc storage prune --name my-s3 -m server-1
 
 # Actually delete orphaned backups

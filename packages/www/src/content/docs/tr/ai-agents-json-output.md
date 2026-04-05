@@ -4,7 +4,7 @@ description: rdc CLI JSON çıktı formatı, zarf şeması, hata işleme ve ajan
 category: Reference
 order: 51
 language: tr
-sourceHash: "a84e20b09aadfd28"
+sourceHash: "29b827cf79cbba6e"
 ---
 
 Tüm `rdc` komutları, AI ajanları ve betikler tarafından programatik tüketim için yapılandırılmış JSON çıktısını destekler.
@@ -95,9 +95,9 @@ Başarısız komutlar, kurtarma ipuçlarıyla yapılandırılmış hatalar dönd
 
 Bu hata türleri `retryable: true` olarak işaretlenir:
 
-- **NETWORK_ERROR** — SSH bağlantısı veya ağ hatası
-- **RATE_LIMITED** — Çok fazla istek, bekleyip yeniden deneyin
-- **API_ERROR** — Geçici arka uç hatası
+- **NETWORK_ERROR**, SSH bağlantısı veya ağ hatası
+- **RATE_LIMITED**, Çok fazla istek, bekleyip yeniden deneyin
+- **API_ERROR**, Geçici arka uç hatası
 
 Yeniden denenemez hatalar (kimlik doğrulama, bulunamadı, geçersiz argümanlar) yeniden denemeden önce düzeltici eylem gerektirir.
 

@@ -19,6 +19,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 SOURCE_DB=""
 TARGET_DB=""
 WRANGLER_CONFIG=""
+SANITIZE="false"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -33,6 +34,10 @@ while [[ $# -gt 0 ]]; do
         --wrangler-config)
             WRANGLER_CONFIG="$2"
             shift 2
+            ;;
+        --sanitize)
+            SANITIZE="true"
+            shift
             ;;
         *)
             log_error "Unknown argument: $1"
@@ -63,6 +68,21 @@ log_step "Exporting D1 database: $SOURCE_DB"
 npx wrangler d1 export "$SOURCE_DB" --remote --output="$TMPDIR/export.sql" 2>&1 |
     grep -v 'r2.cloudflarestorage.com\|valid for one hour'
 log_info "Exported $(wc -l <"$TMPDIR/export.sql") lines ($(du -h "$TMPDIR/export.sql" | cut -f1))"
+
+# Step 1.5: Sanitize via local sqlite3 if requested
+if [[ "$SANITIZE" == "true" ]]; then
+    log_step "Sanitizing data via local sqlite3"
+    require_cmd sqlite3
+
+    # Import into local temp DB, run sanitization, re-export.
+    # The target D1 never sees real PII.
+    sqlite3 "$TMPDIR/temp.db" <"$TMPDIR/export.sql"
+    sqlite3 "$TMPDIR/temp.db" <"$SCRIPT_DIR/sanitize-d1.sql"
+    sqlite3 "$TMPDIR/temp.db" .dump >"$TMPDIR/export.sql"
+    rm -f "$TMPDIR/temp.db"
+
+    log_info "Sanitized ($(wc -l <"$TMPDIR/export.sql") lines)"
+fi
 
 # Step 2: Generate DROP statements for all tables in the export
 log_step "Preparing import with FK safety wrapper"

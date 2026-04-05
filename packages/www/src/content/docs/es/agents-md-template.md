@@ -4,7 +4,7 @@ description: Plantilla lista para copiar y pegar que permite configurar Claude C
 category: Reference
 order: 50
 language: es
-sourceHash: "5e5c2b0ad2a62967"
+sourceHash: "aa1cfa017455e64a"
 ---
 
 Utilice esta plantilla para configurar asistentes de programación con IA (Claude Code, Cursor, Cline, Windsurf) para la gestión autónoma de infraestructura Rediacc. Copie el bloque siguiente en el archivo `CLAUDE.md`, `.cursorrules` o el archivo de configuración de agente equivalente de su proyecto.
@@ -21,10 +21,10 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 Install: `curl -fsSL https://www.rediacc.com/install.sh | bash`
 
 ### Key Flags
-- `--output json` (or `-o json`) — machine-readable JSON output
-- `--yes` (or `-y`) — skip interactive confirmations
-- `--quiet` (or `-q`) — suppress informational output
-- `--fields name,status` — limit output fields
+- `--output json` (or `-o json`), machine-readable JSON output
+- `--yes` (or `-y`), skip interactive confirmations
+- `--quiet` (or `-q`), suppress informational output
+- `--fields name,status`, limit output fields
 - Auto-JSON: when piped (non-TTY), output defaults to JSON automatically
 
 ### JSON Envelope
@@ -75,9 +75,9 @@ rdc agent schema "machine query"
 - Two adapters: **local** (default, SSH-based) and **cloud** (experimental, API-based)
 
 ### Rules
-- Use "local adapter" / "cloud adapter" — never say "modes"
+- Use "local adapter" / "cloud adapter", never say "modes"
 - S3 is a resource state backend, not a separate adapter
-- Default config is created automatically on first use — do not tell users to run `rdc config init`
+- Default config is created automatically on first use, do not tell users to run `rdc config init`
 - Always use `--output json` when parsing output programmatically
 - Always use `--yes` to skip confirmations in automated workflows
 - Use `--dry-run` on destructive commands (repo delete, repo up, repo down) to preview before executing

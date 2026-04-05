@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: ar
-sourceHash: "70943eacf16dbd21"
+sourceHash: "1ec1b0e490ef470c"
 ---
 
 # البنية التحتية
@@ -32,7 +32,7 @@ Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), a
 
 كل أمر تكتبه محلياً يُترجم إلى استدعاء SSH ينفّذ renet على الجهاز البعيد. لن تحتاج أبداً إلى الاتصال بالخوادم يدوياً عبر SSH.
 
-للاطلاع على قاعدة إبهام موجهة للمشغّل، راجع [rdc vs renet](/ar/docs/rdc-vs-renet). يمكنك أيضاً استخدام `rdc ops` لتشغيل مجموعة VM محلية للاختبار — راجع [الأجهزة الافتراضية التجريبية](/ar/docs/experimental-vms).
+للاطلاع على قاعدة إبهام موجهة للمشغّل، راجع [rdc vs renet](/ar/docs/rdc-vs-renet). يمكنك أيضاً استخدام `rdc ops` لتشغيل مجموعة VM محلية للاختبار, راجع [الأجهزة الافتراضية التجريبية](/ar/docs/experimental-vms).
 
 ## الإعداد
 

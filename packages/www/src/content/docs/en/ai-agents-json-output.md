@@ -94,9 +94,9 @@ Failed commands return structured errors with recovery hints:
 
 These error types are marked `retryable: true`:
 
-- **NETWORK_ERROR** — SSH connection or network failure
-- **RATE_LIMITED** — Too many requests, wait and retry
-- **API_ERROR** — Transient backend failure
+- **NETWORK_ERROR**, SSH connection or network failure
+- **RATE_LIMITED**, Too many requests, wait and retry
+- **API_ERROR**, Transient backend failure
 
 Non-retryable errors (authentication, not found, invalid arguments) require corrective action before retrying.
 

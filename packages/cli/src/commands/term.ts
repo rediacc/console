@@ -13,6 +13,7 @@ import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh
 import { assertAgentMachineAccess, isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
+import { auditService } from '../services/audit.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { detectDirectRenetCommand, detectRepoContextCommand } from '../utils/repo-context-guard.js';
 import { withSpinner } from '../utils/spinner.js';
@@ -227,6 +228,7 @@ async function executeSSH(
 }
 
 async function connectTerminal(options: TermConnectOptions): Promise<void> {
+  const startTime = Date.now();
   const opts = await configService.applyDefaults(options);
   await enforceTermPolicy(opts);
 
@@ -251,6 +253,8 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
     { port: connectionDetails.port, forceTTY: true }
   );
 
+  let success = true;
+  let error: string | undefined;
   try {
     await sshConnection.setup();
 
@@ -269,8 +273,21 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
       connectionDetails,
       shouldUseExternalTerminal(options)
     );
+  } catch (err) {
+    success = false;
+    error = err instanceof Error ? err.message : String(err);
+    throw err;
   } finally {
     await sshConnection.cleanup();
+    auditService.recordOperation({
+      functionName: 'term_connect',
+      machineName,
+      repoName: repositoryName,
+      success,
+      exitCode: success ? 0 : 1,
+      durationMs: Date.now() - startTime,
+      error,
+    });
   }
 }
 

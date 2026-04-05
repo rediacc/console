@@ -4,12 +4,12 @@ description: "Lokale VM-Cluster für Entwicklung und Tests mit rdc ops bereitste
 category: "Concepts"
 order: 2
 language: de
-sourceHash: "13bf9b8be113a0ad"
+sourceHash: "af686ab0f22d58c7"
 ---
 
 # Experimentelle VMs
 
-Lokale VM-Cluster auf Ihrer Workstation für Entwicklung und Tests bereitstellen — keine externen Cloud-Anbieter erforderlich.
+Lokale VM-Cluster auf Ihrer Workstation für Entwicklung und Tests bereitstellen, keine externen Cloud-Anbieter erforderlich.
 
 ## Voraussetzungen
 
@@ -104,13 +104,13 @@ Standardmäßig stellt `rdc ops up` folgende VMs bereit:
 
 | VM | ID | Rolle |
 |----|-----|-------|
-| Bridge | 1 | Primärknoten — führt den Rediacc-Bridge-Dienst aus |
+| Bridge | 1 | Primärknoten, führt den Rediacc-Bridge-Dienst aus |
 | Worker 1 | 11 | Worker-Knoten für Repository-Deployments |
 | Worker 2 | 12 | Worker-Knoten für Repository-Deployments |
 
 Verwenden Sie das `--basic`-Flag, um nur die Bridge und den ersten Worker bereitzustellen (IDs 1 und 11).
 
-Verwenden Sie `--skip-orchestration`, um VMs ohne Start der Rediacc-Dienste bereitzustellen — nützlich zum Testen der VM-Schicht isoliert.
+Verwenden Sie `--skip-orchestration`, um VMs ohne Start der Rediacc-Dienste bereitzustellen, nützlich zum Testen der VM-Schicht isoliert.
 
 ## Konfiguration
 
@@ -159,7 +159,7 @@ Umgebungsvariablen überschreiben die Worker-VM-Ressourcen:
 
 ### Linux (KVM)
 - Verwendet libvirt für VM-Lifecycle-Management
-- Bridged-Networking — VMs erhalten IPs in einem virtuellen Netzwerk (192.168.111.x)
+- Bridged-Networking, VMs erhalten IPs in einem virtuellen Netzwerk (192.168.111.x)
 - Direktes SSH zu VM-IPs
 - Erfordert `/dev/kvm` und den libvirtd-Dienst
 

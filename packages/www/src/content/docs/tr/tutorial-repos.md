@@ -4,12 +4,12 @@ description: "Şifreli bir depo oluşturun, konteynerleştirilmiş bir uygulama 
 category: "Tutorials"
 order: 3
 language: tr
-sourceHash: "79d2707d0dc632b2"
+sourceHash: "4d7072927542dfb3"
 ---
 
 # Rediacc ile Depoları Dağıtma ve Yönetme
 
-Depolar, Rediacc'ın temel dağıtım birimidir — her biri kendi Docker daemon'ı ve özel depolaması olan izole, şifreli bir ortamdır. Bu öğreticide şifreli bir depo oluşturur, konteynerleştirilmiş bir uygulama dağıtır, çalışan konteynerleri inceler ve temizlersiniz. Bitirdiğinizde tam bir dağıtım yaşam döngüsünü tamamlamış olursunuz.
+Depolar, Rediacc'ın temel dağıtım birimidir, her biri kendi Docker daemon'ı ve özel depolaması olan izole, şifreli bir ortamdır. Bu öğreticide şifreli bir depo oluşturur, konteynerleştirilmiş bir uygulama dağıtır, çalışan konteynerleri inceler ve temizlersiniz. Bitirdiğinizde tam bir dağıtım yaşam döngüsünü tamamlamış olursunuz.
 
 ## Ön Koşullar
 
@@ -49,7 +49,7 @@ Dağıtımdan önce, deponun depolamasının bağlı ve erişilebilir olduğunu 
 rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
-Bağlama dizini, uygulama dosyalarının bulunduğu yerdir — `Rediaccfile`, `docker-compose.yml` ve veri birimleri.
+Bağlama dizini, uygulama dosyalarının bulunduğu yerdir, `Rediaccfile`, `docker-compose.yml` ve veri birimleri.
 
 ### Adım 4: Servisleri başlatın
 
@@ -101,7 +101,7 @@ rdc repo delete --name test-app -m server-1  # Depoyu kalıcı olarak sil
 Şifreli birim, ana makinede bitişik boş alan gerektirir. Sunucuda `df -h` ile kullanılabilir alanı kontrol edin. Daha küçük bir `--size` değeri kullanmayı veya disk alanı boşaltmayı düşünün.
 
 **`repo up` sırasında Docker imaj çekme zaman aşımı**
-Büyük imajlar yavaş bağlantılarda zaman aşımına uğrayabilir. `rdc repo up` ile yeniden deneyin — kaldığı yerden devam eder. Ağdan izole ortamlar için, imajları deponun Docker daemon'ına önceden yükleyin.
+Büyük imajlar yavaş bağlantılarda zaman aşımına uğrayabilir. `rdc repo up` ile yeniden deneyin, kaldığı yerden devam eder. Ağdan izole ortamlar için, imajları deponun Docker daemon'ına önceden yükleyin.
 
 **"Bağlama başarısız" veya "LUKS açma başarısız"**
 LUKS parolası yapılandırmadan türetilir. Depoyu oluşturan aynı yapılandırmayı kullandığınızı doğrulayın. Birim başka bir işlem tarafından zaten bağlıysa, önce bağlantısını kesin.
@@ -110,6 +110,6 @@ LUKS parolası yapılandırmadan türetilir. Depoyu oluşturan aynı yapılandı
 
 Şifreli bir depo oluşturdunuz, bir uygulama dağıttınız, konteynerleri inceleydiniz ve temizlediniz. Dağıtımlarınızı izlemek için:
 
-- [Servisler](/tr/docs/services) — Rediaccfile referansı, servis ağları, otomatik başlatma ve çoklu servis düzenleri
-- [Öğretici: İzleme ve Tanılama](/tr/docs/tutorial-monitoring) — sağlık kontrolleri, konteyner inceleme ve tanılama
-- [Araçlar](/tr/docs/tools) — terminal, dosya senkronizasyonu ve VS Code entegrasyonu
+- [Servisler](/tr/docs/services), Rediaccfile referansı, servis ağları, otomatik başlatma ve çoklu servis düzenleri
+- [Öğretici: İzleme ve Tanılama](/tr/docs/tutorial-monitoring), sağlık kontrolleri, konteyner inceleme ve tanılama
+- [Araçlar](/tr/docs/tools), terminal, dosya senkronizasyonu ve VS Code entegrasyonu

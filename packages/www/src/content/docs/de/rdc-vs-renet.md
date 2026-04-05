@@ -1,10 +1,10 @@
 ---
 title: rdc vs renet
-description: Wann Sie rdc verwenden und wann renet — eine Übersicht.
+description: Wann Sie rdc verwenden und wann renet, eine Übersicht.
 category: Concepts
 order: 1
 language: de
-sourceHash: "8b7443928e0be27e"
+sourceHash: "4f7b74a70b59d9c8"
 ---
 
 # rdc vs renet
@@ -80,6 +80,6 @@ Diese Befehle führen `renet` lokal aus (nicht über SSH). Siehe [Experimentelle
 
 ## Hinweis zum Rediaccfile
 
-In einem `Rediaccfile` können Sie `renet compose -- ...` sehen. Das ist normal — Rediaccfile-Funktionen laufen auf dem Server, wo `renet` verfügbar ist.
+In einem `Rediaccfile` können Sie `renet compose -- ...` sehen. Das ist normal, Rediaccfile-Funktionen laufen auf dem Server, wo `renet` verfügbar ist.
 
 Von Ihrer Workstation aus starten und stoppen Sie Workloads mit `rdc repo up` und `rdc repo down`.

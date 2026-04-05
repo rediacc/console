@@ -4,7 +4,7 @@ description: "CLI kullanarak yerel bir VM kümesi hazırlayın, SSH üzerinden k
 category: "Tutorials"
 order: 1
 language: tr
-sourceHash: "741534930d3fbc2a"
+sourceHash: "044855db82f05b88"
 ---
 
 # Rediacc ile Yerel VM'leri Nasıl Hazırlarsınız
@@ -15,7 +15,7 @@ sourceHash: "741534930d3fbc2a"
 
 - Donanım sanallaştırması etkinleştirilmiş bir Linux veya macOS iş istasyonu
 - `rdc` CLI kurulu ve yerel adaptör ile yapılandırma başlatılmış olmalı
-- KVM/libvirt (Linux) veya QEMU (macOS) kurulu olmalı — kurulum talimatları için [Deneysel VM'ler](/tr/docs/experimental-vms) sayfasına bakın
+- KVM/libvirt (Linux) veya QEMU (macOS) kurulu olmalı, kurulum talimatları için [Deneysel VM'ler](/tr/docs/experimental-vms) sayfasına bakın
 
 ## Etkileşimli Kayıt
 
@@ -47,7 +47,7 @@ rdc ops up --basic --skip-orchestration
 rdc ops status
 ```
 
-Kümedeki her VM'nin durumunu görüntüler — IP adresleri, kaynak tahsisi ve çalışma durumu. Her iki VM de çalışıyor olarak görünmelidir.
+Kümedeki her VM'nin durumunu görüntüler, IP adresleri, kaynak tahsisi ve çalışma durumu. Her iki VM de çalışıyor olarak görünmelidir.
 
 ### Adım 4: VM üzerinde komut çalıştırın
 
@@ -83,6 +83,6 @@ Temel küme en az 6 GB boş RAM gerektirir (1 GB köprü + 4 GB işçi + ek yük
 
 Yerel bir VM kümesi hazırladınız, SSH üzerinden komut çalıştırdınız ve kaldırdınız. Gerçek altyapı dağıtmak için:
 
-- [Deneysel VM'ler](/tr/docs/experimental-vms) — `rdc ops` komutları, VM yapılandırması ve platform desteği için tam referans
-- [Öğretici: Makine Kurulumu](/tr/docs/tutorial-setup) — uzak makineleri kaydedin ve altyapıyı yapılandırın
-- [Hızlı Başlangıç](/tr/docs/quick-start) — konteynerize bir servisi uçtan uca dağıtın
+- [Deneysel VM'ler](/tr/docs/experimental-vms), `rdc ops` komutları, VM yapılandırması ve platform desteği için tam referans
+- [Öğretici: Makine Kurulumu](/tr/docs/tutorial-setup), uzak makineleri kaydedin ve altyapıyı yapılandırın
+- [Hızlı Başlangıç](/tr/docs/quick-start), konteynerize bir servisi uçtan uca dağıtın

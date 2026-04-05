@@ -13,6 +13,7 @@ import { remarkTutorialEmbed } from './src/plugins/remark-tutorial-embed.ts';
 import { remarkVideoEmbed } from './src/plugins/remark-video-embed.ts';
 import { remarkDocsCliLinks } from './src/plugins/remark-docs-cli-links.ts';
 import jsonGeneratorIntegration from './src/integrations/json-generator.ts';
+import routeManifestIntegration from './src/integrations/route-manifest-generator.ts';
 
 // Integration to generate search index before build
 const searchIndexIntegration = {
@@ -128,7 +129,8 @@ export default defineConfig({
       }
     }),
     searchIndexIntegration,
-    jsonGeneratorIntegration()
+    jsonGeneratorIntegration(),
+    routeManifestIntegration()
   ],
   output: 'static',
   build: {

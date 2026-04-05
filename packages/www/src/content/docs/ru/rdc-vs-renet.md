@@ -4,7 +4,7 @@ description: 'Когда использовать rdc, а когда renet.'
 category: Concepts
 order: 1
 language: ru
-sourceHash: "8b7443928e0be27e"
+sourceHash: "4f7b74a70b59d9c8"
 ---
 
 # rdc vs renet
@@ -80,6 +80,6 @@ rdc ops down               # Destroy cluster
 
 ## Примечание о Rediaccfile
 
-Вы можете увидеть `renet compose -- ...` внутри `Rediaccfile`. Это нормально — функции Rediaccfile выполняются на сервере, где доступен `renet`.
+Вы можете увидеть `renet compose -- ...` внутри `Rediaccfile`. Это нормально, функции Rediaccfile выполняются на сервере, где доступен `renet`.
 
 С вашей рабочей станции запускайте и останавливайте рабочие нагрузки командами `rdc repo up` и `rdc repo down`.

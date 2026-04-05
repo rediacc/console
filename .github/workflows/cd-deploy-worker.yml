@@ -32,17 +32,17 @@ on:
         required: true
       ACCOUNT_JWT_SECRET:
         required: true
-      STRIPE_SECRET_KEY:
+      STRIPE_SECRET_KEY_EU:
         required: true
       STRIPE_SANDBOX_SECRET_KEY:
         required: true
-      STRIPE_WEBHOOK_SECRET:
+      STRIPE_WEBHOOK_SECRET_EU:
         required: true
       STRIPE_SANDBOX_WEBHOOK_SECRET:
         required: true
-      AWS_SES_ACCESS_KEY_ID:
+      AWS_SES_ACCESS_KEY_ID_EU:
         required: true
-      AWS_SES_SECRET_ACCESS_KEY:
+      AWS_SES_SECRET_ACCESS_KEY_EU:
         required: true
       TURNSTILE_SECRET_KEY:
         required: true
@@ -150,12 +150,12 @@ jobs:
           SECRET_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
           SECRET_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           SECRET_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-          SECRET_STRIPE_KEY: ${{ inputs.target == 'production' && secrets.STRIPE_SECRET_KEY || secrets.STRIPE_SANDBOX_SECRET_KEY }}
-          SECRET_STRIPE_WEBHOOK: ${{ inputs.target == 'production' && secrets.STRIPE_WEBHOOK_SECRET || secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
+          SECRET_STRIPE_KEY: ${{ inputs.target == 'production' && secrets.STRIPE_SECRET_KEY_EU || secrets.STRIPE_SANDBOX_SECRET_KEY }}
+          SECRET_STRIPE_WEBHOOK: ${{ inputs.target == 'production' && secrets.STRIPE_WEBHOOK_SECRET_EU || secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
           SECRET_ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
-          SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
-          SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
-          SECRET_SES_REGION: ${{ vars.AWS_SES_REGION }}
+          SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
+          SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
+          SECRET_SES_REGION: ${{ vars.AWS_SES_REGION_EU }}
           SECRET_TURNSTILE_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
           VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
           VAR_SELLER_NAME: ${{ vars.SELLER_NAME }}
@@ -222,5 +222,5 @@ jobs:
         run: npx tsx scripts/verify-webhook.ts ${{ steps.target.outputs.sandbox }} --expected-url "https://${{ steps.target.outputs.domain }}/account/api/v1/webhooks/stripe"
         working-directory: private/account
         env:
-          STRIPE_SECRET_KEY: ${{ inputs.target == 'production' && secrets.STRIPE_SECRET_KEY || '' }}
+          STRIPE_SECRET_KEY: ${{ inputs.target == 'production' && secrets.STRIPE_SECRET_KEY_EU || '' }}
           STRIPE_SANDBOX_SECRET_KEY: ${{ inputs.target != 'production' && secrets.STRIPE_SANDBOX_SECRET_KEY || '' }}

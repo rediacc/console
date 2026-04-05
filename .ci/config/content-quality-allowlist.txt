@@ -1,0 +1,23 @@
+# Files excluded from content quality checks
+# One path per line, relative to repo root
+# Use sparingly - prefer inline <!-- slop-ok --> for specific lines
+
+# Auto-generated CLI documentation (contains em dashes as table placeholders)
+packages/www/src/content/docs/en/cli-application.md
+packages/www/src/content/docs/en/cli-application-cloud.md
+packages/www/src/content/docs/ar/cli-application.md
+packages/www/src/content/docs/ar/cli-application-cloud.md
+packages/www/src/content/docs/de/cli-application.md
+packages/www/src/content/docs/de/cli-application-cloud.md
+packages/www/src/content/docs/es/cli-application.md
+packages/www/src/content/docs/es/cli-application-cloud.md
+packages/www/src/content/docs/fr/cli-application.md
+packages/www/src/content/docs/fr/cli-application-cloud.md
+packages/www/src/content/docs/ja/cli-application.md
+packages/www/src/content/docs/ja/cli-application-cloud.md
+packages/www/src/content/docs/ru/cli-application.md
+packages/www/src/content/docs/ru/cli-application-cloud.md
+packages/www/src/content/docs/tr/cli-application.md
+packages/www/src/content/docs/tr/cli-application-cloud.md
+packages/www/src/content/docs/zh/cli-application.md
+packages/www/src/content/docs/zh/cli-application-cloud.md

@@ -4,7 +4,7 @@ description: "Use el acceso de terminal SSH, la sincronización de archivos, la 
 category: "Tutorials"
 order: 5
 language: es
-sourceHash: "8043725fd714ab02"
+sourceHash: "33756ae59957f16e"
 ---
 
 # Cómo usar las herramientas de terminal, sincronización y VS Code con Rediacc
@@ -102,6 +102,6 @@ Instale la extensión desde el marketplace de VS Code: busque "Remote - SSH" de 
 
 Ha ejecutado comandos remotos, sincronizado archivos, verificado la integración de VS Code y comprobado actualizaciones del CLI. Para proteger sus datos:
 
-- [Tools](/es/docs/tools) — referencia completa para comandos de terminal, sincronización, VS Code y actualización
-- [Tutorial: Respaldo y redes](/es/docs/tutorial-backup) — programación de respaldos y configuración de red
-- [Services](/es/docs/services) — referencia de Rediaccfile y redes de servicios
+- [Tools](/es/docs/tools), referencia completa para comandos de terminal, sincronización, VS Code y actualización
+- [Tutorial: Respaldo y redes](/es/docs/tutorial-backup), programación de respaldos y configuración de red
+- [Services](/es/docs/services), referencia de Rediaccfile y redes de servicios

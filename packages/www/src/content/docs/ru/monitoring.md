@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: ru
-sourceHash: "7b7349277b9d5f85"
+sourceHash: "8332f7d1cb8ee60b"
 sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 
@@ -49,8 +49,8 @@ rdc machine containers server-1
 | Repository | Репозиторий, которому принадлежит контейнер |
 
 Параметры:
-- `--health-check` — выполнить активные проверки состояния контейнеров
-- `--output json` — машиночитаемый вывод в формате JSON
+- `--health-check`, выполнить активные проверки состояния контейнеров
+- `--output json`, машиночитаемый вывод в формате JSON
 
 JSON-вывод включает полные сведения о контейнере (`labels`, `port_mappings`, `image`, `id`), а также `repository` (разрешённое имя), `repository_guid` (исходный GUID), `domain` и `autoRoute`.
 
@@ -72,8 +72,8 @@ rdc machine services server-1
 | Repository | Связанный репозиторий |
 
 Параметры:
-- `--stability-check` — пометить нестабильные сервисы (сбой, более 3 перезапусков, автоматический перезапуск)
-- `--output json` — машиночитаемый вывод в формате JSON
+- `--stability-check`, пометить нестабильные сервисы (сбой, более 3 перезапусков, автоматический перезапуск)
+- `--output json`, машиночитаемый вывод в формате JSON
 
 JSON-вывод включает полные сведения о сервисе с `repository` (разрешённое имя) и `repository_guid` (исходный GUID).
 
@@ -96,8 +96,8 @@ rdc machine repos server-1
 | Modified | Время последнего изменения |
 
 Параметры:
-- `--search <text>` — фильтрация по имени или пути монтирования
-- `--output json` — машиночитаемый вывод в формате JSON
+- `--search <text>`, фильтрация по имени или пути монтирования
+- `--output json`, машиночитаемый вывод в формате JSON
 
 JSON-вывод включает `name` (разрешённое) и `guid` (исходный GUID), а также содержит для каждого репозитория вложенные массивы `containers` (с `domain`, `autoRoute`, `repository`/`repository_guid`) и `services`.
 
@@ -135,8 +135,8 @@ rdc machine test-connection --ip 203.0.113.50 --user deploy
 - Запись в Known hosts
 
 Параметры:
-- `--port <number>` — SSH-порт (по умолчанию: 22)
-- `--save -m server-1` — сохранить проверенный ключ хоста в конфигурации машины
+- `--port <number>`, SSH-порт (по умолчанию: 22)
+- `--save -m server-1`, сохранить проверенный ключ хоста в конфигурации машины
 
 ## Диагностика (doctor)
 

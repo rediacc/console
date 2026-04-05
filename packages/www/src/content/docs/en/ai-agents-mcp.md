@@ -8,7 +8,7 @@ language: en
 
 ## Overview
 
-The `rdc mcp serve` command starts a local MCP (Model Context Protocol) server that AI agents can use to manage your infrastructure. The server uses stdio transport — the AI agent spawns it as a subprocess and communicates via JSON-RPC.
+The `rdc mcp serve` command starts a local MCP (Model Context Protocol) server that AI agents can use to manage your infrastructure. The server uses stdio transport, the AI agent spawns it as a subprocess and communicates via JSON-RPC.
 
 **Prerequisites:** `rdc` installed and configured with at least one machine.
 
@@ -113,7 +113,7 @@ The MCP server enforces two layers of protection:
 
 ### Fork-only mode (default)
 
-By default, the server runs in **fork-only mode** — write tools (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) can only operate on fork repositories. Grand (original) repositories are protected from agent modifications.
+By default, the server runs in **fork-only mode**, write tools (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) can only operate on fork repositories. Grand (original) repositories are protected from agent modifications.
 
 To allow an agent to modify grand repos, start with `--allow-grand`:
 
@@ -132,14 +132,14 @@ You can also set the `REDIACC_ALLOW_GRAND_REPO` environment variable to a specif
 
 ### Per-repo SSH keys and server-side sandbox
 
-Each repository has its own SSH key pair. The public key is deployed to `authorized_keys` with a `command=` prefix that forces all SSH sessions through `renet sandbox-gateway <repo-name>` — a server-side ForceCommand that cannot be bypassed by any client, including VS Code.
+Each repository has its own SSH key pair. The public key is deployed to `authorized_keys` with a `command=` prefix that forces all SSH sessions through `renet sandbox-gateway <repo-name>`, a server-side ForceCommand that cannot be bypassed by any client, including VS Code.
 
 **How it works:**
 1. `rdc repo create` or `rdc repo fork` generates a unique ed25519 key pair per repo
 2. The public key is deployed to the remote with `command="renet sandbox-gateway <name>"`
 3. Every SSH connection using that key goes through the gateway, which applies:
-   - **Landlock LSM** — kernel-level filesystem restrictions to the repo's mount path
-   - **OverlayFS home overlay** — writes to `$HOME` captured per-repo, reads fall through to real home
+   - **Landlock LSM**, kernel-level filesystem restrictions to the repo's mount path
+   - **OverlayFS home overlay**, writes to `$HOME` captured per-repo, reads fall through to real home
    - **Per-repo TMPDIR** at `<datastore>/.interim/sandbox/<name>/tmp/`
    - **Docker access** via the repo's isolated Docker socket
    - **Privilege drop** to the universal user (`rediacc`)
@@ -149,9 +149,9 @@ Each repository has its own SSH key pair. The public key is deployed to `authori
 **Allowed RO**: system paths (`/usr`, `/bin`, `/etc`, `/proc`, `/sys`)
 **Blocked**: other repos' mount paths, system files outside allowlist
 
-**VS Code integration**: Each repo gets its own VS Code server installation at `<datastore>/.interim/sandbox/<name>/.vscode-server/`. Multiple repos can be open simultaneously with independent sandboxed environments — no server sharing between repos.
+**VS Code integration**: Each repo gets its own VS Code server installation at `<datastore>/.interim/sandbox/<name>/.vscode-server/`. Multiple repos can be open simultaneously with independent sandboxed environments, no server sharing between repos.
 
-This prevents lateral movement — even if an agent gains shell access to a fork, it cannot read or modify other repositories on the same machine. Machine-level SSH (without a repository) uses the team key and is not sandboxed.
+This prevents lateral movement, even if an agent gains shell access to a fork, it cannot read or modify other repositories on the same machine. Machine-level SSH (without a repository) uses the team key and is not sandboxed.
 
 ## Architecture
 

@@ -6,7 +6,7 @@ description: >-
 category: Use Cases
 order: 10
 language: tr
-sourceHash: "c13b017afc2c8371"
+sourceHash: "d534fc11b7ba4fa7"
 ---
 
 > **Geçici ortamlar. Üretim paritesi. Sıfır DevOps bileti.**

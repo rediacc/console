@@ -8,7 +8,7 @@ language: en
 
 # How To Deploy and Manage Repositories with Rediacc
 
-Repositories are the core deployment unit in Rediacc — each one is an isolated, encrypted environment with its own Docker daemon and dedicated storage. In this tutorial, you create an encrypted repository, deploy a containerized application, inspect running containers, and clean up. When you finish, you have completed a full deployment lifecycle.
+Repositories are the core deployment unit in Rediacc, each one is an isolated, encrypted environment with its own Docker daemon and dedicated storage. In this tutorial, you create an encrypted repository, deploy a containerized application, inspect running containers, and clean up. When you finish, you have completed a full deployment lifecycle.
 
 ## Prerequisites
 
@@ -48,7 +48,7 @@ Before deploying, verify the repository's storage is mounted and accessible.
 rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
-The mount directory is where application files live — `Rediaccfile`, `docker-compose.yml`, and any data volumes.
+The mount directory is where application files live, `Rediaccfile`, `docker-compose.yml`, and any data volumes.
 
 ### Step 4: Start services
 
@@ -102,7 +102,7 @@ rdc repo delete --name test-app -m server-1  # Delete repository permanently
 The encrypted volume needs contiguous free space on the host. Check available space with `df -h` on the server. Consider a smaller `--size` value or freeing disk space.
 
 **Docker image pull timeout during `repo up`**
-Large images may time out on slow connections. Retry with `rdc repo up` — it resumes where it left off. For air-gapped environments, pre-load images into the repository's Docker daemon.
+Large images may time out on slow connections. Retry with `rdc repo up`, it resumes where it left off. For air-gapped environments, pre-load images into the repository's Docker daemon.
 
 **"Mount failed" or "LUKS open failed"**
 The LUKS passphrase is derived from the config. Verify you're using the same config that created the repository. If the volume is already mounted by another process, unmount it first.
@@ -111,6 +111,6 @@ The LUKS passphrase is derived from the config. Verify you're using the same con
 
 You created an encrypted repository, deployed an application, inspected containers, and cleaned up. To monitor your deployments:
 
-- [Services](/en/docs/services) — Rediaccfile reference, service networking, autostart, and multi-service layouts
-- [Tutorial: Monitoring & Diagnostics](/en/docs/tutorial-monitoring) — health checks, container inspection, and diagnostics
-- [Tools](/en/docs/tools) — terminal, file sync, and VS Code integration
+- [Services](/en/docs/services), Rediaccfile reference, service networking, autostart, and multi-service layouts
+- [Tutorial: Monitoring & Diagnostics](/en/docs/tutorial-monitoring), health checks, container inspection, and diagnostics
+- [Tools](/en/docs/tools), terminal, file sync, and VS Code integration

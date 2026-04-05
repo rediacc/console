@@ -6,12 +6,12 @@ description: >-
 category: Guides
 order: 8
 language: fr
-sourceHash: "d20655e3e306b85b"
+sourceHash: "9612a5fecf063eea"
 ---
 
 # Stockage de configuration
 
-Le stockage de configuration fournit une synchronisation chiffrée à connaissance nulle de votre configuration CLI entre appareils. Vos configurations sont chiffrées avec des clés dérivées de votre passkey — le serveur ne voit jamais les données en clair.
+Le stockage de configuration fournit une synchronisation chiffrée à connaissance nulle de votre configuration CLI entre appareils. Vos configurations sont chiffrées avec des clés dérivées de votre passkey, le serveur ne voit jamais les données en clair.
 
 ## Prérequis
 
@@ -23,10 +23,10 @@ Le stockage de configuration fournit une synchronisation chiffrée à connaissan
 
 1. Accédez à **Stockage de configuration** dans la barre latérale, puis cliquez sur **Configurer le stockage de configuration**
 2. La liste de vérification des prérequis vérifie votre navigateur, la 2FA et l'état de la session
-3. Cliquez sur **Démarrer la configuration** — vous devrez toucher votre clé de sécurité deux fois :
+3. Cliquez sur **Démarrer la configuration**, vous devrez toucher votre clé de sécurité deux fois :
    - Premier toucher : enregistre le passkey
    - Second toucher : dérive les clés de chiffrement via PRF
-4. Configuration terminée — votre secret de passkey est stocké dans le trousseau de clés de votre système d'exploitation
+4. Configuration terminée, votre secret de passkey est stocké dans le trousseau de clés de votre système d'exploitation
 
 Après la configuration, les opérations CLI quotidiennes (push/pull) fonctionnent sans le passkey.
 

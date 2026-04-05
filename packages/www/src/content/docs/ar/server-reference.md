@@ -4,7 +4,7 @@ description: "تخطيط المجلدات، وأوامر renet، وخدمات sy
 category: "Concepts"
 order: 3
 language: ar
-sourceHash: "07b8aba408085eab"
+sourceHash: "f27a4135aed54918"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 

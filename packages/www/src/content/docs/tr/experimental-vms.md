@@ -4,12 +4,12 @@ description: "rdc ops ile geliştirme ve test için yerel VM kümeleri oluşturm
 category: "Concepts"
 order: 2
 language: tr
-sourceHash: "13bf9b8be113a0ad"
+sourceHash: "af686ab0f22d58c7"
 ---
 
 # Deneysel VM'ler
 
-İş istasyonunuzda geliştirme ve test için yerel VM kümeleri oluşturun — harici bulut sağlayıcılarına gerek yok.
+İş istasyonunuzda geliştirme ve test için yerel VM kümeleri oluşturun, harici bulut sağlayıcılarına gerek yok.
 
 ## Gereksinimler
 
@@ -104,13 +104,13 @@ Varsayılan olarak `rdc ops up` şunları hazırlar:
 
 | VM | Kimlik | Rol |
 |----|--------|-----|
-| Köprü | 1 | Birincil düğüm — Rediacc köprü servisini çalıştırır |
+| Köprü | 1 | Birincil düğüm, Rediacc köprü servisini çalıştırır |
 | Çalışan 1 | 11 | Depo dağıtımları için çalışan düğüm |
 | Çalışan 2 | 12 | Depo dağıtımları için çalışan düğüm |
 
 Yalnızca köprüyü ve ilk çalışanı hazırlamak için `--basic` bayrağını kullanın (kimlik 1 ve 11).
 
-Rediacc servislerini başlatmadan VM'leri hazırlamak için `--skip-orchestration` kullanın — VM katmanını izole test etmek için kullanışlıdır.
+Rediacc servislerini başlatmadan VM'leri hazırlamak için `--skip-orchestration` kullanın, VM katmanını izole test etmek için kullanışlıdır.
 
 ## Yapılandırma
 
@@ -159,7 +159,7 @@ Ortam değişkenleri çalışan VM kaynaklarını geçersiz kılar:
 
 ### Linux (KVM)
 - VM yaşam döngüsü yönetimi için libvirt kullanır
-- Köprülü ağ — VM'ler sanal ağda IP alır (192.168.111.x)
+- Köprülü ağ, VM'ler sanal ağda IP alır (192.168.111.x)
 - VM IP'lerine doğrudan SSH
 - `/dev/kvm` ve libvirtd servisi gerektirir
 

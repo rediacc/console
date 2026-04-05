@@ -1,0 +1,49 @@
+{
+  "regions": [
+    {
+      "id": "eu",
+      "label": "Europe",
+      "domain": "eu.rediacc.com",
+      "edgeDomain": "edge-eu.rediacc.com",
+      "d1": { "name": "account-db-eu", "location": "eeur" },
+      "edgeD1": { "name": "edge-account-db-eu" },
+      "r2": { "name": "rediacc-configs-eu" },
+      "edgeR2": { "name": "edge-rediacc-configs-eu" },
+      "workerName": "rediacc-account-eu",
+      "edgeWorkerName": "edge-rediacc-account-eu",
+      "sesRegion": "eu-central-1",
+      "secretSuffix": "EU",
+      "default": true
+    },
+    {
+      "id": "us",
+      "label": "United States",
+      "domain": "us.rediacc.com",
+      "edgeDomain": "edge-us.rediacc.com",
+      "d1": { "name": "account-db-us", "location": "enam" },
+      "edgeD1": { "name": "edge-account-db-us" },
+      "r2": { "name": "rediacc-configs-us" },
+      "edgeR2": { "name": "edge-rediacc-configs-us" },
+      "workerName": "rediacc-account-us",
+      "edgeWorkerName": "edge-rediacc-account-us",
+      "sesRegion": "us-east-1",
+      "secretSuffix": "US",
+      "default": false
+    },
+    {
+      "id": "asia",
+      "label": "Asia Pacific",
+      "domain": "asia.rediacc.com",
+      "edgeDomain": "edge-asia.rediacc.com",
+      "d1": { "name": "account-db-asia", "location": "apac" },
+      "edgeD1": { "name": "edge-account-db-asia" },
+      "r2": { "name": "rediacc-configs-asia" },
+      "edgeR2": { "name": "edge-rediacc-configs-asia" },
+      "workerName": "rediacc-account-asia",
+      "edgeWorkerName": "edge-rediacc-account-asia",
+      "sesRegion": "ap-northeast-1",
+      "secretSuffix": "ASIA",
+      "default": false
+    }
+  ]
+}

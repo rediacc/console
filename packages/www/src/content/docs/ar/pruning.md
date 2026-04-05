@@ -4,7 +4,7 @@ description: "إزالة النسخ الاحتياطية المعزولة وال
 category: "Guides"
 order: 12
 language: ar
-sourceHash: "a9bfc5eaffb9bca9"
+sourceHash: "dfa21ca915423599"
 ---
 
 # التنظيف
@@ -19,7 +19,7 @@ sourceHash: "a9bfc5eaffb9bca9"
 يفحص مزود التخزين ويحذف النسخ الاحتياطية التي لم تعد معرّفات GUID الخاصة بها تظهر في أي ملف تكوين.
 
 ```bash
-# Dry-run (default) — shows what would be deleted
+# Dry-run (default), shows what would be deleted
 rdc storage prune --name my-s3 -m server-1
 
 # Actually delete orphaned backups

@@ -38,6 +38,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./regions": {
+      "types": "./dist/regions/index.d.ts",
+      "default": "./dist/regions/index.js"
+    },
     "./subscription": {
       "types": "./dist/subscription/index.d.ts",
       "default": "./dist/subscription/index.js"

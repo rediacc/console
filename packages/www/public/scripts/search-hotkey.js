@@ -25,7 +25,7 @@
       event.preventDefault();
       // Dispatch custom event that React component can listen to
       document.dispatchEvent(new CustomEvent(SEARCH_HOTKEY_EVENT));
-      if (window.plausible) window.plausible('search_open', { props: { source: 'hotkey' } });
+      window.plausible('search_open', { props: { source: 'hotkey' } });
     }
   });
 
