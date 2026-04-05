@@ -361,7 +361,6 @@ jobs:
       needs.review-gate.result == 'success'
     outputs:
       account_server_url: ${{ steps.deploy.outputs.account_server_url }}
-      stripe_publishable_key: ${{ env.STRIPE_SANDBOX_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -419,8 +418,6 @@ jobs:
         if: always()
         run: bash .ci/scripts/infra/ci-stop.sh
 
-    env:
-      STRIPE_SANDBOX_PUBLISHABLE_KEY: ${{ secrets.STRIPE_SANDBOX_PUBLISHABLE_KEY }}
 
   # ============================================================================
   # COLUMN 3: BUILD & DOCKER
