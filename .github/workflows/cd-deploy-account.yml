@@ -134,7 +134,7 @@ jobs:
       - name: Upload account worker artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
-          name: account-worker
+          name: account-worker-${{ inputs.target }}
           path: workers/account/
           retention-days: 1
 
@@ -188,7 +188,7 @@ jobs:
       - name: Download account worker artifact
         uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
-          name: account-worker
+          name: account-worker-${{ inputs.target }}
           path: workers/account/
 
       - name: Install wrangler
