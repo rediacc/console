@@ -341,6 +341,7 @@ cleanup_packages() {
 
 cleanup_deployments() {
     log_step "Phase 4: Cleaning up GitHub deployments"
+    local keep_per_env=2  # Keep last N deployments per environment
 
     for repo in "${DEPLOYMENT_REPOS[@]}"; do
         local full_repo="$GITHUB_ORG/$repo"
@@ -360,41 +361,49 @@ cleanup_deployments() {
         total="$(echo "$deployments" | jq 'length')"
         log_debug "  Found $total deployments"
 
+        # Group by environment, keep last N per environment, delete the rest
+        local environments
+        environments="$(echo "$deployments" | jq -r '[.[].environment] | unique | .[]')"
+
         local deleted=0
-        local index=0
+        for env in $environments; do
+            local env_deps
+            env_deps="$(echo "$deployments" | jq -c "[.[] | select(.environment == \"$env\")]")"
+            local env_count
+            env_count="$(echo "$env_deps" | jq 'length')"
 
-        while IFS= read -r deployment; do
-            local dep_id environment created_at
-            dep_id="$(echo "$deployment" | jq -r '.id')"
-            environment="$(echo "$deployment" | jq -r '.environment')"
-            created_at="$(echo "$deployment" | jq -r '.created_at')"
-
-            if should_retain "$created_at" "$index"; then
-                log_debug "  Keeping deployment: $dep_id ($environment)"
-            else
-                if [[ "$DRY_RUN" == "true" ]]; then
-                    log_warn "  [DRY-RUN] Would delete deployment: $dep_id ($environment, created: $created_at)"
-                else
-                    # Must set deployment to inactive before deletion
-                    if gh api "repos/$full_repo/deployments/$dep_id/statuses" \
-                        -X POST -f state=inactive >/dev/null 2>&1 &&
-                        retry_with_backoff 3 2 gh api -X DELETE "repos/$full_repo/deployments/$dep_id" 2>/dev/null; then
-                        log_debug "  Deleted deployment: $dep_id ($environment)"
-                        deleted=$((deleted + 1))
-                    else
-                        log_warn "  Failed to delete deployment: $dep_id"
-                    fi
-                fi
+            if [[ "$env_count" -le "$keep_per_env" ]]; then
+                log_debug "  $env: $env_count deployment(s), all retained"
+                continue
             fi
 
-            index=$((index + 1))
-        done < <(echo "$deployments" | jq -c '.[]')
+            # Skip the first N (newest), delete the rest
+            local to_delete
+            to_delete="$(echo "$env_deps" | jq -c ".[$keep_per_env:][]")"
 
-        if [[ "$DRY_RUN" == "true" ]]; then
-            log_info "  Deployments ($full_repo): would delete $deleted of $total"
-        else
-            log_info "  Deployments ($full_repo): deleted $deleted of $total"
-        fi
+            while IFS= read -r dep; do
+                [[ -z "$dep" ]] && continue
+                local dep_id created_at
+                dep_id="$(echo "$dep" | jq -r '.id')"
+                created_at="$(echo "$dep" | jq -r '.created_at')"
+
+                if [[ "$DRY_RUN" == "true" ]]; then
+                    log_warn "  [DRY-RUN] Would delete: $dep_id ($env, $created_at)"
+                    deleted=$((deleted + 1))
+                else
+                    # Set inactive then delete (GitHub requires inactive before deletion)
+                    gh api "repos/$full_repo/deployments/$dep_id/statuses" \
+                        -X POST -f state=inactive >/dev/null 2>&1
+                    if retry_with_backoff 3 2 gh api -X DELETE "repos/$full_repo/deployments/$dep_id" 2>/dev/null; then
+                        log_debug "  Deleted: $dep_id ($env)"
+                        deleted=$((deleted + 1))
+                    fi
+                    # Silently skip if delete fails (GitHub protects latest per environment)
+                fi
+            done <<< "$to_delete"
+        done
+
+        log_info "  Deployments ($full_repo): deleted $deleted of $total (keeping $keep_per_env per environment)"
     done
 }
 
