@@ -561,7 +561,7 @@ jobs:
   # ============================================================================
   deploy-marketing-production:
     name: Deploy production Marketing (hotfix)
-    needs: [init, publish]
+    needs: [init, publish, smoke-test]
     if: >-
       success() &&
       needs.init.outputs.skip_release != 'true' &&
@@ -576,7 +576,7 @@ jobs:
 
   deploy-account-production:
     name: Deploy production Account (hotfix, all regions)
-    needs: [init, publish]
+    needs: [init, publish, smoke-test]
     if: >-
       success() &&
       needs.init.outputs.skip_release != 'true' &&
