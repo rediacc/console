@@ -167,10 +167,6 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           token: ${{ steps.app-token.outputs.token }}
-          sparse-checkout: |
-            .ci/scripts
-            regions.json
-          sparse-checkout-cone-mode: false
 
       - name: Init account submodule
         run: git submodule update --init --depth 1 private/account
@@ -178,6 +174,16 @@ jobs:
       - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4
         with:
           node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install account dependencies
+        run: npm install
+        working-directory: private/account
+
+      - name: Build shared packages
+        run: npm run build:packages
 
       - name: Download account worker artifact
         uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
