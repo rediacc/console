@@ -20,6 +20,16 @@
         ]
       }
     ],
-    "PostToolUse": []
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'CMD=$(jq -r \".tool_input.command\" 2>/dev/null); if ! echo \"$CMD\" | grep -qE \"git push\"; then exit 0; fi; BRANCH=$(git -C /home/muhammed/monorepo/console rev-parse --abbrev-ref HEAD 2>/dev/null); if [[ -z \"$BRANCH\" || \"$BRANCH\" == \"main\" ]]; then exit 0; fi; RUNS=$(gh run list --repo rediacc/console --branch \"$BRANCH\" --json databaseId,status --jq \".[] | select(.status == \\\"in_progress\\\" or .status == \\\"queued\\\") | .databaseId\" 2>/dev/null); if [[ -z \"$RUNS\" ]]; then exit 0; fi; COUNT=0; for rid in $RUNS; do gh api repos/rediacc/console/actions/runs/$rid/force-cancel -X POST 2>/dev/null && COUNT=$((COUNT+1)); done; if [[ $COUNT -gt 0 ]]; then echo \"⚡ Auto-cancelled $COUNT old CI run(s) on $BRANCH\"; fi; exit 0'"
+          }
+        ]
+      }
+    ]
   }
 }

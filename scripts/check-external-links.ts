@@ -50,6 +50,8 @@ const SKIP_PATTERNS = [
   /^https:\/\/github\.com\/org\//,
   /^https:\/\/github\.com\/login\/oauth\//,
   /^https:\/\/api\.github\.com\/user$/,
+  // Government/regulatory sites that block CI runners (403/geo-restricted)
+  /^https?:\/\/www\.edpb\.europa\.eu/,
 ];
 
 interface LinkLocation {
