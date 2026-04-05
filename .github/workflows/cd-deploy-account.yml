@@ -169,9 +169,8 @@ jobs:
           name: account-worker
           path: workers/account/
 
-      - name: Install account worker dependencies
-        run: npm install
-        working-directory: workers/account
+      - name: Install wrangler
+        run: npm install -g wrangler
 
       - name: Resolve deploy config
         id: config

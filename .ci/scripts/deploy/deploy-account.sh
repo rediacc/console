@@ -41,8 +41,8 @@ require_var CLOUDFLARE_ACCOUNT_ID
 CLOUDFLARE_API_TOKEN="$(printf '%s' "$CLOUDFLARE_API_TOKEN" | tr -d '\r\n')"
 export CLOUDFLARE_API_TOKEN
 
-# Install deps if not already installed
-if [[ ! -d "node_modules" ]]; then
+# Ensure wrangler is available (installed globally by CD workflow, or locally)
+if ! command -v wrangler &>/dev/null && [[ ! -d "node_modules" ]]; then
     npm install
 fi
 
