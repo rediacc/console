@@ -715,8 +715,7 @@ jobs:
     runs-on: ubuntu-slim
     needs: [init, publish, deploy-marketing-edge, deploy-account-edge, deploy-marketing-production, deploy-account-production, smoke-test]
     if: >-
-      always() &&
-      needs.publish.result == 'success' &&
+      success() &&
       needs.init.outputs.skip_release != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
