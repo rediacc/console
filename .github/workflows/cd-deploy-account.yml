@@ -170,6 +170,7 @@ jobs:
           sparse-checkout: |
             .ci/scripts
             regions.json
+          sparse-checkout-cone-mode: false
 
       - name: Init account submodule
         run: git submodule update --init --depth 1 private/account
