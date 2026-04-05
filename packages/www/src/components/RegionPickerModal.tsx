@@ -55,10 +55,10 @@ function detectLikelyRegion(regions: Region[]): Region {
   return regions.find((r) => r.default) ?? regions[0];
 }
 
-const REGION_LOCATIONS: Record<string, string> = {
-  eu: 'Frankfurt, Germany',
-  us: 'Virginia, USA',
-  asia: 'Tokyo, Japan',
+const REGION_META: Record<string, { flag: string; location: string }> = {
+  eu: { flag: '\u{1F1EA}\u{1F1FA}', location: 'Frankfurt, Germany' },
+  us: { flag: '\u{1F1FA}\u{1F1F8}', location: 'Virginia, USA' },
+  asia: { flag: '\u{1F1EF}\u{1F1F5}', location: 'Tokyo, Japan' },
 };
 
 const RegionPickerModal: React.FC = () => {
@@ -174,9 +174,12 @@ const RegionPickerModal: React.FC = () => {
               data-track="region_select"
               data-track-label={region.id}
             >
+              <div className="region-picker-card-flag">
+                {REGION_META[region.id]?.flag}
+              </div>
               <div className="region-picker-card-label">{region.label}</div>
               <div className="region-picker-card-location">
-                {REGION_LOCATIONS[region.id] ?? region.domain}
+                {REGION_META[region.id]?.location ?? region.domain}
               </div>
             </button>
           ))}
