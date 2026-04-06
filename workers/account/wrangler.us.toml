@@ -36,6 +36,7 @@ database_name = "account-db-us"
 database_id = "073d69a9-fcac-4991-bde2-ce9139570b1a"
 migrations_dir = "../../private/account/drizzle"
 
+# US: location hint ENAM (no US jurisdiction available in R2, data is zero-knowledge encrypted)
 [[r2_buckets]]
 binding = "CONFIG_BUCKET"
 bucket_name = "rediacc-configs-us"

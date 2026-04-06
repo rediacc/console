@@ -37,6 +37,8 @@ database_name = "edge-account-db-eu"
 database_id = "19c793fe-6678-489e-88e2-0db1d59234fb"
 migrations_dir = "../../private/account/drizzle"
 
+# EU jurisdiction: hard guarantee that data stays within the EU (GDPR compliant)
 [[r2_buckets]]
 binding = "CONFIG_BUCKET"
 bucket_name = "edge-rediacc-configs-eu"
+jurisdiction = "eu"
