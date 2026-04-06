@@ -1603,7 +1603,9 @@
         "tokenPrompt": "Entrez votre jeton API (depuis le portail web) :",
         "validated": "Jeton validé",
         "validating": "Validation du jeton...",
-        "waitingApproval": "En attente de l’autorisation du navigateur..."
+        "waitingApproval": "En attente de l’autorisation du navigateur...",
+        "channelSynced": "Canal de mise a jour defini sur {{channel}}.",
+        "serverChanged": "Serveur modifie. Session precedente effacee."
       },
       "logout": {
         "description": "Supprimer le jeton d'abonnement stocké",

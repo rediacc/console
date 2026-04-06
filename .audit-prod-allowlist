@@ -54,3 +54,11 @@
 # lodash / lodash-es Prototype Pollution via array path bypass in _.unset/_.omit (no fix)
 1115809
 1115810
+# vite path traversal in optimized deps .map handling (dev tool, not runtime-exposed)
+1116005
+1116006
+# vite server.fs.deny bypass with queries (dev tool, not runtime-exposed)
+1116008
+# vite arbitrary file read via dev server WebSocket (dev tool, not runtime-exposed)
+1116010
+1116011

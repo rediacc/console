@@ -4481,6 +4481,12 @@
               "descriptionKey": "options.apiUrl",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--server <url>",
+              "descriptionKey": "options.serverUrl",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [],

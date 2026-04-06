@@ -35,8 +35,20 @@ vi.mock('../../subscription/signing-keys.js', () => ({
 }));
 
 const TEST_REGIONS: RegionInfo[] = [
-  { id: 'eu', label: 'Europe', domain: 'eu.rediacc.com', default: true },
-  { id: 'us', label: 'United States', domain: 'us.rediacc.com', default: false },
+  {
+    id: 'eu',
+    label: 'Europe',
+    domain: 'eu.rediacc.com',
+    edgeDomain: 'edge-eu.rediacc.com',
+    default: true,
+  },
+  {
+    id: 'us',
+    label: 'United States',
+    domain: 'us.rediacc.com',
+    edgeDomain: 'edge-us.rediacc.com',
+    default: false,
+  },
 ];
 
 async function signPayload(payload: string): Promise<SignedSubscriptionBlob> {
@@ -60,7 +72,15 @@ describe('Regions', () => {
         expect(region).toHaveProperty('id');
         expect(region).toHaveProperty('label');
         expect(region).toHaveProperty('domain');
+        expect(region).toHaveProperty('edgeDomain');
         expect(typeof region.default).toBe('boolean');
+      }
+    });
+
+    it('should have edgeDomain for each region', () => {
+      for (const region of BAKED_IN_REGIONS) {
+        expect(region.edgeDomain).toBeTruthy();
+        expect(region.edgeDomain).toContain('edge-');
       }
     });
   });

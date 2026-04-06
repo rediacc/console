@@ -4,7 +4,7 @@ description: فهم كيفية تعامل الحساب وrdc وrenet مع فتح
 category: Guides
 order: 7
 language: ar
-sourceHash: "a31dc14e6305b4d4"
+sourceHash: "f999a9d099a9202c"
 ---
 
 # الاشتراك والترخيص

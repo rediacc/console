@@ -80,3 +80,7 @@ Across all jurisdictions, the compliance equation is the same:
 | Third-party processor liability | Yes | No |
 | Encryption control | Provider-managed keys | Your LUKS credentials, locally stored |
 | Cloning/staging data | May cross borders or leave your control | CoW on same machine, same jurisdiction |
+
+## Hosted Service: Regional Data Residency
+
+For users of the hosted Rediacc service (not self-hosted), data residency is enforced through regional infrastructure. Three regions are available: EU (Frankfurt), US (Virginia), and Asia Pacific (Tokyo). Each region runs independent databases, storage, and email endpoints with no cross-region data flows. The EU region uses jurisdictional enforcement on R2 storage. See [Data Regions](/en/docs/data-regions) for the full technical breakdown.

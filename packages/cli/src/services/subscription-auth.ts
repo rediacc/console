@@ -13,6 +13,7 @@ export interface ServerConfig {
   e2ePublicKey?: string;
   updateChannel?: string;
   region?: string;
+  releasesUrl?: string;
 }
 
 export function getServerConfigFile(): string {
@@ -54,11 +55,23 @@ export function isDevelopmentSubscriptionMode(): boolean {
   return process.env.REDIACC_ENVIRONMENT === DEV_ENV && !!process.env[TOKEN_FILE_ENV];
 }
 
-export function getSubscriptionTokenFile(): string {
-  return process.env[TOKEN_FILE_ENV] ?? join(getConfigDir(), 'api-token.json');
+/**
+ * Get the subscription token file path.
+ * When configName is provided, uses per-config token files (api-token-{name}.json).
+ * Falls back to global api-token.json for backward compatibility.
+ */
+export function getSubscriptionTokenFile(configName?: string): string {
+  if (process.env[TOKEN_FILE_ENV]) return process.env[TOKEN_FILE_ENV];
+  if (configName && configName !== 'rediacc') {
+    return join(getConfigDir(), `api-token-${configName}.json`);
+  }
+  return join(getConfigDir(), 'api-token.json');
 }
 
-export function getSubscriptionServerUrl(preferredServerUrl?: string): string {
+export function getSubscriptionServerUrl(
+  preferredServerUrl?: string,
+  configAccountServer?: string
+): string {
   if (isDevelopmentSubscriptionMode()) {
     const serverUrl = process.env.REDIACC_ACCOUNT_SERVER;
     if (!serverUrl) {
@@ -70,6 +83,7 @@ export function getSubscriptionServerUrl(preferredServerUrl?: string): string {
   return normalizeServerUrl(
     preferredServerUrl ??
       process.env.REDIACC_ACCOUNT_SERVER ??
+      configAccountServer ??
       loadServerConfig()?.accountServer ??
       SUBSCRIPTION_DEFAULTS.ACCOUNT_SERVER_URL
   );

@@ -14,7 +14,12 @@ export const SUPPORTED_LANGUAGES = ['de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'z
 const COLLECTIONS = ['docs', 'blog'];
 const SOURCE_PREFIX_RE = /^packages\/www\/src\/content\/(docs|blog)\/en\/.+\.md$/;
 const EXCLUDED_EN_PATHS = {
-  docs: ['packages/www/src/content/docs/en/cli/'],
+  docs: [
+    'packages/www/src/content/docs/en/cli/',
+    'packages/www/src/content/docs/en/release-channels.md',
+    'packages/www/src/content/docs/en/data-regions.md',
+    'packages/www/src/content/docs/en/on-premise.md',
+  ],
   blog: [],
 };
 

@@ -99,6 +99,8 @@ Default paid-plan limits are:
 
 Contract-specific limits can raise or lower these values for a specific customer.
 
+**Edge channel users** receive 2X Community limits at no cost (20 GB repos, 1,000 issuances/month, 4 machines). Paid plans are only available on the Stable channel. See [Release Channels](/en/docs/release-channels) for details.
+
 ## What Happens During Repo Create, Up, Down, and Restart
 
 ### Repo create and fork

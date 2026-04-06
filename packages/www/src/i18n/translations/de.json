@@ -2949,6 +2949,11 @@
           ]
         }
       },
+      "edgeChannel": {
+        "heading": "Edge-Kanal testen",
+        "description": "2x Community-Limits, neueste Funktionen, kostenlos. Keine Kreditkarte erforderlich.",
+        "cta": "Kostenlos starten"
+      },
       "roiCta": {
         "description": "Nutzen Sie unseren interaktiven ROI-Rechner, um zu sehen, wie viel Sie mit Rediacc sparen können.",
         "heading": "Nicht sicher, welcher Plan passt?"
@@ -13285,13 +13290,16 @@
     "title": "Die Speed-Mismatch-Krise"
   },
   "regionPicker": {
+    "edgeNote": "Neueste Funktionen, 2x kostenlose Limits. Keine kostenpflichtigen Plaene. Daten sind dauerhaft.",
     "footer": "Wählen Sie die Region, die Ihnen am nächsten liegt oder die Ihre Organisation vorschreibt. Dies kann nach der Registrierung nicht mehr geändert werden.",
     "locations": {
-      "asia": "Tokyo, Japan",
+      "asia": "Tokio, Japan",
       "eu": "Frankfurt, Deutschland",
-      "us": "Virginia, USA"
+      "us": "Virginia, Vereinigte Staaten"
     },
     "subtitle": "Alles, Ihr Konto, Ihre Abrechnung und Ihre Konfigurationen, bleibt in der von Ihnen gewählten Region. Es verlässt sie nie.",
+    "tabEdge": "Edge",
+    "tabProduction": "Produktion",
     "title": "Wo sollen wir Ihre Daten speichern?"
   },
   "solutions": {

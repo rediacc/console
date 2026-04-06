@@ -4,6 +4,7 @@ export interface Region {
   id: string;
   label: string;
   domain: string;
+  edgeDomain: string;
   default: boolean;
 }
 
@@ -11,6 +12,7 @@ export const REGIONS: Region[] = regionsData.regions.map((r) => ({
   id: r.id,
   label: r.label,
   domain: r.domain,
+  edgeDomain: r.edgeDomain,
   default: r.default,
 }));
 

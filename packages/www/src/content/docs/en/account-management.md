@@ -70,3 +70,11 @@ Only the organization **owner** can manage billing:
 - Create a Stripe checkout session for plan upgrades
 - Access the Stripe billing portal for payment method changes
 - Request self-service refunds (within 14 days, with a 30-day cooldown)
+
+### Data Region
+
+Your account is stored in the data region you selected at sign-up (EU, US, or Asia Pacific). This choice is permanent. The region badge in the portal shows which region your data resides in. See [Data Regions](/en/docs/data-regions) for details.
+
+### Edge Channel
+
+If your account is on the Edge channel, you will see an "Edge" badge in the portal sidebar. Edge accounts have 2X Community limits but no access to paid plans. See [Release Channels](/en/docs/release-channels) for the differences between Edge and Stable.

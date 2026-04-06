@@ -4,7 +4,7 @@ description: account, rdc ve renet'in makine slotlarını, depo lisanslarını v
 category: Guides
 order: 7
 language: tr
-sourceHash: "a31dc14e6305b4d4"
+sourceHash: "f999a9d099a9202c"
 ---
 
 # Abonelik ve Lisanslama

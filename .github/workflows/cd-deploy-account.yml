@@ -266,8 +266,9 @@ jobs:
             STRIPE_VAR="STRIPE_KEY_${SUFFIX}"; SECRET_STRIPE_KEY="${!STRIPE_VAR}"
             WH_VAR="STRIPE_WH_${SUFFIX}"; SECRET_STRIPE_WEBHOOK="${!WH_VAR}"
           else
-            SECRET_STRIPE_KEY="$STRIPE_SANDBOX_KEY"
-            SECRET_STRIPE_WEBHOOK="$STRIPE_SANDBOX_WH"
+            # Edge (beta channel): no Stripe -- billing disabled
+            SECRET_STRIPE_KEY=""
+            SECRET_STRIPE_WEBHOOK=""
           fi
           SES_K="SES_KEY_${SUFFIX}"; SECRET_SES_ACCESS_KEY_ID="${!SES_K}"
           SES_S="SES_SECRET_${SUFFIX}"; SECRET_SES_SECRET_ACCESS_KEY="${!SES_S}"

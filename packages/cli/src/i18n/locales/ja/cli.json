@@ -1603,7 +1603,9 @@
         "tokenPrompt": "APIトークンを入力してください（Webポータルから）:",
         "validated": "トークン検証済み",
         "validating": "トークンを検証中...",
-        "waitingApproval": "ブラウザでの認証を待っています..."
+        "waitingApproval": "ブラウザでの認証を待っています...",
+        "channelSynced": "更新チャンネルを{{channel}}に設定しました。",
+        "serverChanged": "サーバーが変更されました。以前のセッションはクリアされました。"
       },
       "logout": {
         "description": "保存されたサブスクリプショントークンを削除する",

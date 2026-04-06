@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1717,
+    "keyCount": 1719,
     "sourceCommit": "d2d7b0bd87090dc5d54dff6f0d6e1c853f269e17"
   },
   "hashes": {
@@ -1081,6 +1081,7 @@
     "commands.subscription.description": "3e2a6be1",
     "commands.subscription.descriptionShort": "d22519b2",
     "commands.subscription.login.browserFailed": "ce0c171d",
+    "commands.subscription.login.channelSynced": "6bcee7f1",
     "commands.subscription.login.description": "7ce10966",
     "commands.subscription.login.discoveringRegions": "e205214f",
     "commands.subscription.login.expired": "0a38444c",
@@ -1092,6 +1093,7 @@
     "commands.subscription.login.regionPrompt": "a23e9932",
     "commands.subscription.login.regionsDiscovered": "d03b7e20",
     "commands.subscription.login.regionSelected": "37f3d267",
+    "commands.subscription.login.serverChanged": "335714e1",
     "commands.subscription.login.success": "33b15f97",
     "commands.subscription.login.tokenInvalid": "887e82d1",
     "commands.subscription.login.tokenPrompt": "4ba37e07",
