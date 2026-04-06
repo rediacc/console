@@ -212,7 +212,7 @@ jobs:
           fi
 
           echo "::group::Clone production data"
-          .ci/scripts/deploy/clone-d1.sh --source account-db --target "$DB_NAME"
+          .ci/scripts/deploy/clone-d1.sh --source account-db-eu --target "$DB_NAME"
           echo "::endgroup::"
 
           echo "::group::Apply migrations"
