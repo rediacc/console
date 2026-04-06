@@ -84,9 +84,14 @@ if [[ "$SANITIZE" == "true" ]]; then
     log_info "Sanitized ($(wc -l <"$TMPDIR/export.sql") lines)"
 fi
 
-# Step 2: Generate DROP statements for all tables in the export
+# Step 2: Strip transaction statements (D1 rejects raw BEGIN/COMMIT in SQL imports)
+# These come from sqlite3 .dump output during sanitization or from wrangler export.
+sed -i '/^BEGIN TRANSACTION;$/d; /^COMMIT;$/d; /^BEGIN;$/d; /^SAVEPOINT /d; /^RELEASE /d' "$TMPDIR/export.sql"
+
+# Step 3: Generate DROP statements for all tables in the export
 log_step "Preparing import with FK safety wrapper"
 {
+    echo "PRAGMA defer_foreign_keys=ON;"
     echo "PRAGMA foreign_keys=OFF;"
     # Drop existing tables so re-cloning into a non-empty DB works
     # Handles: CREATE TABLE name(, CREATE TABLE `name` (, CREATE TABLE IF NOT EXISTS "name" (
@@ -95,13 +100,13 @@ log_step "Preparing import with FK safety wrapper"
     echo "PRAGMA foreign_keys=ON;"
 } >"$TMPDIR/import.sql"
 
-# Step 3: Import into target database
+# Step 4: Import into target database
 log_step "Importing into D1 database: $TARGET_DB"
 # shellcheck disable=SC2086
 npx wrangler d1 execute "$TARGET_DB" --remote $CONFIG_FLAG --file="$TMPDIR/import.sql"
 log_info "Import complete"
 
-# Step 4: Verify FK integrity
+# Step 5: Verify FK integrity
 log_step "Verifying foreign key integrity"
 # shellcheck disable=SC2086
 FK_RESULT=$(npx wrangler d1 execute "$TARGET_DB" --remote $CONFIG_FLAG --command="PRAGMA foreign_key_check" --json 2>/dev/null || true)
