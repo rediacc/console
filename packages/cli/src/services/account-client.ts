@@ -242,7 +242,12 @@ export async function accountServerFetch<T = unknown>(
   // Handle CLI upgrade required (426)
   if (status === 426) {
     handle426Response(
-      parsed as { error?: string; minVersion?: string; currentVersion?: string; updateChannel?: string },
+      parsed as {
+        error?: string;
+        minVersion?: string;
+        currentVersion?: string;
+        updateChannel?: string;
+      },
       getInstallMethod()
     );
   }

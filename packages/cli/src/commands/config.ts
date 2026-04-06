@@ -121,7 +121,13 @@ function hasInitFlags(options: {
   apiUrl?: string;
   server?: string;
 }): boolean {
-  return !!(options.sshKey ?? options.renetPath ?? options.masterPassword ?? options.apiUrl ?? options.server);
+  return !!(
+    options.sshKey ??
+    options.renetPath ??
+    options.masterPassword ??
+    options.apiUrl ??
+    options.server
+  );
 }
 
 export function registerConfigCommands(program: Command): void {
