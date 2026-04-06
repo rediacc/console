@@ -37,6 +37,7 @@ database_name = "edge-account-db-asia"
 database_id = "1b30005e-8db4-4474-a678-d5160789ac5b"
 migrations_dir = "../../private/account/drizzle"
 
+# APAC: location hint APAC (no APAC jurisdiction available in R2, data is zero-knowledge encrypted)
 [[r2_buckets]]
 binding = "CONFIG_BUCKET"
 bucket_name = "edge-rediacc-configs-asia"

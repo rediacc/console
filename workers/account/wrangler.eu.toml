@@ -36,6 +36,8 @@ database_name = "account-db-eu"
 database_id = "ecf574e2-8cc8-4eb0-a639-1eaffc844aca"
 migrations_dir = "../../private/account/drizzle"
 
+# EU jurisdiction: hard guarantee that data stays within the EU (GDPR compliant)
 [[r2_buckets]]
 binding = "CONFIG_BUCKET"
 bucket_name = "rediacc-configs-eu"
+jurisdiction = "eu"
