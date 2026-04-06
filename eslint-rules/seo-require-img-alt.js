@@ -44,8 +44,10 @@ export const seoRequireImgAlt = {
           return true;
         }
 
-        // aria-hidden="true" or aria-hidden={true}
+        // aria-hidden="true", aria-hidden={true}, or shorthand aria-hidden
         if (name === 'aria-hidden') {
+          // Shorthand: <img aria-hidden /> (value is null)
+          if (attr.value === null) return true;
           if (attr.value?.type === 'Literal' && attr.value.value === 'true')
             return true;
           if (
@@ -54,6 +56,11 @@ export const seoRequireImgAlt = {
             attr.value.expression.value === true
           )
             return true;
+        }
+
+        // role={expression} -- allow dynamic role values
+        if (name === 'role' && attr.value?.type === 'JSXExpressionContainer') {
+          return true;
         }
       }
       return false;
@@ -74,19 +81,28 @@ export const seoRequireImgAlt = {
         return;
       }
 
-      // alt="" (empty string literal)
-      if (altAttr.value?.type === 'Literal' && altAttr.value.value === '') {
+      // alt="" or alt="   " (empty or whitespace-only string literal)
+      if (
+        altAttr.value?.type === 'Literal' &&
+        typeof altAttr.value.value === 'string' &&
+        altAttr.value.value.trim() === ''
+      ) {
         context.report({ node: altAttr, messageId: 'emptyAlt' });
         return;
       }
 
-      // alt={""} (expression container with empty string)
-      if (
-        altAttr.value?.type === 'JSXExpressionContainer' &&
-        altAttr.value.expression?.type === 'Literal' &&
-        altAttr.value.expression.value === ''
-      ) {
-        context.report({ node: altAttr, messageId: 'emptyAlt' });
+      // alt={""}, alt={null}, alt={undefined}
+      if (altAttr.value?.type === 'JSXExpressionContainer') {
+        const expr = altAttr.value.expression;
+        if (
+          expr?.type === 'Literal' &&
+          (expr.value === '' || expr.value === null)
+        ) {
+          context.report({ node: altAttr, messageId: 'emptyAlt' });
+        }
+        if (expr?.type === 'Identifier' && expr.name === 'undefined') {
+          context.report({ node: altAttr, messageId: 'emptyAlt' });
+        }
       }
     }
 

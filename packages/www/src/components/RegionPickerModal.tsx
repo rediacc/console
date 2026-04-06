@@ -174,9 +174,7 @@ const RegionPickerModal: React.FC = () => {
               data-track="region_select"
               data-track-label={region.id}
             >
-              <div className="region-picker-card-flag">
-                {REGION_META[region.id]?.flag}
-              </div>
+              <div className="region-picker-card-flag">{REGION_META[region.id]?.flag}</div>
               <div className="region-picker-card-label">{region.label}</div>
               <div className="region-picker-card-location">
                 {REGION_META[region.id]?.location ?? region.domain}
