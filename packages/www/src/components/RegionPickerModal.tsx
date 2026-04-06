@@ -55,7 +55,7 @@ function detectLikelyRegion(regions: Region[]): Region {
   return regions.find((r) => r.default) ?? regions[0];
 }
 
-const REGION_META: Record<string, { flag: string; location: string }> = {
+const REGION_META: Partial<Record<string, { flag: string; location: string }>> = {
   eu: { flag: '\u{1F1EA}\u{1F1FA}', location: 'Frankfurt, Germany' },
   us: { flag: '\u{1F1FA}\u{1F1F8}', location: 'Virginia, USA' },
   asia: { flag: '\u{1F1EF}\u{1F1F5}', location: 'Tokyo, Japan' },

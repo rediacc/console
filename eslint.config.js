@@ -22,6 +22,9 @@ import { noPositionalArguments } from './eslint-rules/no-positional-arguments.js
 import { e2eTestNamingConvention } from './eslint-rules/e2e-test-naming-convention.js';
 import { requireDataTrack } from './eslint-rules/require-data-track.js';
 import { seoNoVagueAnchorText } from './eslint-rules/seo-no-vague-anchor-text.js';
+import { seoRequireImgAlt } from './eslint-rules/seo-require-img-alt.js';
+import { seoNoHashBreadcrumbUrl } from './eslint-rules/seo-no-hash-breadcrumb-url.js';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
 import { i18nJsonPlugin, i18nSourcePlugin } from './eslint-rules/i18n/index.js';
 
 // =============================================================
@@ -226,6 +229,8 @@ export default tseslint.config(
           'require-data-track': requireDataTrack,
           'no-positional-arguments': noPositionalArguments,
           'seo-no-vague-anchor-text': seoNoVagueAnchorText,
+          'seo-require-img-alt': seoRequireImgAlt,
+          'seo-no-hash-breadcrumb-url': seoNoHashBreadcrumbUrl,
         },
       },
     },
@@ -983,6 +988,9 @@ export default tseslint.config(
   // with different translation patterns and no Ant Design components
   {
     files: ['packages/www/src/**/*.{ts,tsx}'],
+    plugins: {
+      'jsx-a11y': jsxA11y,
+    },
     rules: {
       // Disable web-specific i18n rules (www uses different translation system)
       'custom/require-translation': 'off',
@@ -994,6 +1002,11 @@ export default tseslint.config(
       'no-restricted-imports': 'off',
       // SEO: prevent non-descriptive anchor text
       'custom/seo-no-vague-anchor-text': 'error',
+      // Accessibility: require alt text on images
+      'jsx-a11y/alt-text': 'error',
+      'custom/seo-require-img-alt': 'error',
+      // SEO: prevent hash-fragment URLs in breadcrumbs (GSC rejects them)
+      'custom/seo-no-hash-breadcrumb-url': 'error',
     },
   },
 

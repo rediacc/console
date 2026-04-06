@@ -146,7 +146,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
           >
             <img
               src="/assets/images/icon-rediacc.svg"
-              alt=""
+              alt="Rediacc"
               className="logo-icon"
               loading="eager"
               decoding="async"

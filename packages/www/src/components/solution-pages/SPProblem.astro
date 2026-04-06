@@ -33,10 +33,11 @@ interface Props {
     };
   };
   illustration?: ImageMetadata;
+  illustrationAlt?: string;
   referenceItems?: ReferenceItem[];
 }
 
-const { problem, illustration, referenceItems = [] } = Astro.props;
+const { problem, illustration, illustrationAlt = '', referenceItems = [] } = Astro.props;
 ---
 
 <section class="sp-problem" id="problem">
@@ -47,7 +48,7 @@ const { problem, illustration, referenceItems = [] } = Astro.props;
 
     {illustration && (
       <div class="sp-problem-illustration">
-        <Image src={illustration} alt="" width={800} height={450} loading="lazy" />
+        <Image src={illustration} alt={illustrationAlt || problem.title} width={800} height={450} loading="lazy" />
       </div>
     )}
 
