@@ -180,45 +180,48 @@ jobs:
       - name: Install wrangler
         run: npm install -g wrangler
 
-      - name: Test migrations against production clone
+      - name: Test migrations against all regional production clones
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
 
-          DB_NAME="account-db-migration-test-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          # Test migrations against each regional production database
+          REGIONS=$(jq -r '.regions[] | .d1.name' regions.json)
+          CLEANUP_DBS=()
 
-          # Guaranteed cleanup on exit (success, failure, or signal)
           cleanup() {
-            echo "::group::Cleanup: deleting $DB_NAME"
-            npx wrangler d1 delete "$DB_NAME" --skip-confirmation 2>/dev/null || true
+            echo "::group::Cleanup: deleting test databases"
+            for db in "${CLEANUP_DBS[@]}"; do
+              npx wrangler d1 delete "$db" --skip-confirmation 2>/dev/null || true
+              echo "  Deleted $db"
+            done
             echo "::endgroup::"
           }
           trap cleanup EXIT
 
-          echo "::group::Create temporary D1: $DB_NAME"
-          npx wrangler d1 create "$DB_NAME" --location eeur
-          echo "::endgroup::"
+          for SOURCE_DB in $REGIONS; do
+            REGION_ID="${SOURCE_DB#account-db-}"
+            DB_NAME="migration-test-${REGION_ID}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            CLEANUP_DBS+=("$DB_NAME")
 
-          # Retrieve UUID for wrangler config
-          DB_UUID="$(npx wrangler d1 info "$DB_NAME" --json 2>/dev/null \
-            | sed -n '/^[[:space:]]*[{[]/,$p' \
-            | jq -r '.uuid // empty')"
+            echo "::group::Test migrations against $SOURCE_DB ($REGION_ID)"
 
-          if [[ -z "$DB_UUID" ]]; then
-            echo "::error::Failed to get UUID for $DB_NAME"
-            exit 1
-          fi
+            npx wrangler d1 create "$DB_NAME" --location eeur
+            DB_UUID="$(npx wrangler d1 info "$DB_NAME" --json 2>/dev/null \
+              | sed -n '/^[[:space:]]*[{[]/,$p' \
+              | jq -r '.uuid // empty')"
 
-          echo "::group::Clone production data"
-          .ci/scripts/deploy/clone-d1.sh --source account-db-eu --target "$DB_NAME"
-          echo "::endgroup::"
+            if [[ -z "$DB_UUID" ]]; then
+              echo "::error::Failed to get UUID for $DB_NAME"
+              exit 1
+            fi
 
-          echo "::group::Apply migrations"
-          # Generate temporary wrangler config inside workers/www/ so migrations_dir resolves correctly
-          TMPCONFIG="workers/www/wrangler-migration-test.toml"
-          cat > "$TMPCONFIG" <<TOML
+            .ci/scripts/deploy/clone-d1.sh --source "$SOURCE_DB" --target "$DB_NAME"
+
+            TMPCONFIG="workers/www/wrangler-migration-test.toml"
+            cat > "$TMPCONFIG" <<TOML
           name = "migration-test"
           main = "src/index.ts"
           compatibility_date = "2026-01-20"
@@ -230,13 +233,16 @@ jobs:
           migrations_dir = "../../private/account/drizzle"
           TOML
 
-          cd workers/www
-          npx wrangler d1 migrations apply "$DB_NAME" --remote --config wrangler-migration-test.toml
-          rm -f wrangler-migration-test.toml
-          echo "::endgroup::"
+            cd workers/www
+            npx wrangler d1 migrations apply "$DB_NAME" --remote --config wrangler-migration-test.toml
+            rm -f wrangler-migration-test.toml
+            cd "$GITHUB_WORKSPACE"
 
-          echo "Migrations applied successfully against production data clone"
-          # trap EXIT handles cleanup
+            echo "  $SOURCE_DB: migrations applied successfully"
+            echo "::endgroup::"
+          done
+
+          echo "All regional migration tests passed"
 
   cancel-watchdog:
     name: CI Watchdog
