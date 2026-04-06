@@ -34,7 +34,7 @@ run_worker_first = ["/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "edge-account-db-us"
-database_id = "82d6cd7c-84fc-4ad9-910e-8d2d1eee82db"
+database_id = "cf0c909c-08d0-4125-9029-77dcce9e9a7a"
 migrations_dir = "../../private/account/drizzle"
 
 # US: location hint ENAM (no US jurisdiction available in R2, data is zero-knowledge encrypted)

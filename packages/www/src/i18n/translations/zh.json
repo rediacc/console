@@ -2918,6 +2918,11 @@
           ]
         }
       },
+      "edgeChannel": {
+        "heading": "试用Edge频道",
+        "description": "2倍Community限额，最新功能，免费。无需信用卡。",
+        "cta": "免费开始"
+      },
       "roiCta": {
         "description": "使用我们的互动 ROI 计算器，了解您使用 Rediacc 能节省多少费用。",
         "heading": "不确定哪个方案适合您？"
@@ -13221,13 +13226,16 @@
     "title": "速度不匹配危机"
   },
   "regionPicker": {
+    "edgeNote": "最新功能，2倍免费限额。无付费计划。数据持久保存。",
     "footer": "请选择离您最近的区域，或您的组织要求的区域。注册后无法更改。",
     "locations": {
-      "asia": "Tokyo, Japan",
+      "asia": "东京，日本",
       "eu": "法兰克福，德国",
       "us": "弗吉尼亚，美国"
     },
     "subtitle": "您的账户、账单和配置等所有数据都保存在您选择的区域中，绝不会离开该区域。",
+    "tabEdge": "Edge",
+    "tabProduction": "生产",
     "title": "您希望将数据存储在哪里？"
   },
   "solutions": {

@@ -2947,6 +2947,11 @@
           ]
         }
       },
+      "edgeChannel": {
+        "heading": "Edge kanalini deneyin",
+        "description": "2X Community limitleri, en son ozellikler, ucretsiz. Kredi karti gerekmez.",
+        "cta": "Ucretsiz baslayin"
+      },
       "roiCta": {
         "description": "Rediacc ile ne kadar tasarruf edebileceğinizi görmek için interaktif ROI hesaplayıcımızı kullanın.",
         "heading": "Hangi planın size uygun olduğundan emin değil misiniz?"
@@ -13277,13 +13282,16 @@
     "title": "Hız Uyuşmazlığı Krizi"
   },
   "regionPicker": {
+    "edgeNote": "En son ozellikler, 2 kat ucretsiz limitler. Ucretli plan yok. Veriler kalicidir.",
     "footer": "Size en yakın bölgeyi veya kuruluşunuzun gerektirdiği bölgeyi seçin. Kayıt sonrasında bu değiştirilemez.",
     "locations": {
-      "asia": "Tokyo, Japan",
+      "asia": "Tokyo, Japonya",
       "eu": "Frankfurt, Almanya",
-      "us": "Virginia, ABD"
+      "us": "Virginia, Amerika Birlesik Devletleri"
     },
     "subtitle": "Hesabınız, faturalarınız ve yapılandırmalarınız dahil her şey seçtiğiniz bölgede kalır. Asla oradan ayrılmaz.",
+    "tabEdge": "Edge",
+    "tabProduction": "Uretim",
     "title": "Verilerinizi nerede saklayalım?"
   },
   "solutions": {

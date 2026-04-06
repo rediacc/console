@@ -34,7 +34,7 @@ run_worker_first = ["/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "edge-account-db-asia"
-database_id = "1b30005e-8db4-4474-a678-d5160789ac5b"
+database_id = "3ab16ffb-fd5d-4d9b-80f1-352d8e11cc1b"
 migrations_dir = "../../private/account/drizzle"
 
 # APAC: location hint APAC (no APAC jurisdiction available in R2, data is zero-knowledge encrypted)

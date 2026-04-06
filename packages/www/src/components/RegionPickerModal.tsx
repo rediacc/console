@@ -61,10 +61,13 @@ const REGION_META: Partial<Record<string, { flag: string; location: string }>> =
   asia: { flag: '\u{1F1EF}\u{1F1F5}', location: 'Tokyo, Japan' },
 };
 
+type Channel = 'production' | 'edge';
+
 const RegionPickerModal: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [targetPath, setTargetPath] = useState('/account/');
   const [selected, setSelected] = useState<string | null>(null);
+  const [channel, setChannel] = useState<Channel>('production');
   const currentLang = useLanguage();
   const { t } = useTranslation(currentLang);
 
@@ -75,6 +78,7 @@ const RegionPickerModal: React.FC = () => {
     previousFocusRef.current = document.activeElement as HTMLElement;
     setTargetPath(path ?? DEFAULT_TARGET_PATH);
     setSelected(detectLikelyRegion(REGIONS).id);
+    setChannel('production');
     setIsOpen(true);
     window.plausible('region_picker_open', {
       props: { source: path?.includes('checkout') ? 'checkout' : 'nav' },
@@ -88,10 +92,11 @@ const RegionPickerModal: React.FC = () => {
 
   const handleSelect = useCallback(
     (region: Region) => {
-      window.plausible('region_selected', { props: { region: region.id } });
-      window.location.href = `https://${region.domain}${targetPath}`;
+      const domain = channel === 'edge' ? region.edgeDomain : region.domain;
+      window.plausible('region_selected', { props: { region: region.id, channel } });
+      window.location.href = `https://${domain}${targetPath}`;
     },
-    [targetPath]
+    [targetPath, channel]
   );
 
   // Expose global function
@@ -162,6 +167,40 @@ const RegionPickerModal: React.FC = () => {
           </button>
         </div>
 
+        <div className="region-picker-tabs" role="tablist">
+          <button
+            role="tab"
+            type="button"
+            aria-selected={channel === 'production'}
+            className={`region-picker-tab ${channel === 'production' ? 'region-picker-tab--active' : ''}`}
+            onClick={() => setChannel('production')}
+            data-track="region_picker_channel"
+            data-track-label="production"
+          >
+            {t('regionPicker.tabProduction', 'Production')}
+          </button>
+          <button
+            role="tab"
+            type="button"
+            aria-selected={channel === 'edge'}
+            className={`region-picker-tab ${channel === 'edge' ? 'region-picker-tab--active' : ''}`}
+            onClick={() => setChannel('edge')}
+            data-track="region_picker_channel"
+            data-track-label="edge"
+          >
+            {t('regionPicker.tabEdge', 'Edge')}
+          </button>
+        </div>
+
+        {channel === 'edge' && (
+          <p className="region-picker-edge-note">
+            {t(
+              'regionPicker.edgeNote',
+              'Latest features, 2X free limits. No paid plans. Data is persistent.'
+            )}
+          </p>
+        )}
+
         <div className="region-picker-cards">
           {REGIONS.map((region) => (
             <button
@@ -175,7 +214,10 @@ const RegionPickerModal: React.FC = () => {
               data-track-label={region.id}
             >
               <div className="region-picker-card-flag">{REGION_META[region.id]?.flag}</div>
-              <div className="region-picker-card-label">{region.label}</div>
+              <div className="region-picker-card-label">
+                {region.label}
+                {channel === 'edge' && <span className="region-picker-edge-badge">Edge</span>}
+              </div>
               <div className="region-picker-card-location">
                 {REGION_META[region.id]?.location ?? region.domain}
               </div>

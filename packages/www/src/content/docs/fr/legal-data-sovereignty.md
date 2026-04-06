@@ -4,7 +4,7 @@ description: "Comment l'architecture auto-hébergée de Rediacc satisfait les ex
 category: "Legal"
 order: 7
 language: fr
-sourceHash: "5dcc2bc3e601c128"
+sourceHash: "72bbd6b951067a1d"
 ---
 
 De nombreux pays exigent que les données personnelles de leurs citoyens soient stockées et traitées dans les frontières nationales. L'architecture auto-hébergée de Rediacc satisfait ces exigences par conception : les données restent sur votre machine, dans votre centre de données, dans votre juridiction. Aucune donnée ne quitte la machine pendant le clonage, et aucun SaaS tiers ne traite vos données.

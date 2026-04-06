@@ -20,9 +20,20 @@ import { telemetryService } from './telemetry.js';
 import { loadServerConfig } from './subscription-auth.js';
 import { getStagedBinaryPath, readUpdateState, writeUpdateState } from './update-state.js';
 
-const MANIFEST_BASE_URL = 'https://releases.rediacc.com/cli';
+const DEFAULT_MANIFEST_BASE_URL = 'https://releases.rediacc.com/cli';
 const CHECK_TIMEOUT_MS = 3000;
 const DOWNLOAD_TIMEOUT_MS = 120_000;
+
+/** Resolve the releases base URL from server.json or default. */
+function getReleasesBaseUrl(): string {
+  try {
+    const serverConfig = loadServerConfig();
+    if (serverConfig?.releasesUrl) return `${serverConfig.releasesUrl.replace(/\/+$/, '')}/cli`;
+  } catch {
+    // server.json may not exist
+  }
+  return DEFAULT_MANIFEST_BASE_URL;
+}
 
 /** Resolve the active release channel from env, server.json, or default. */
 export function resolveChannel(): ReleaseChannel {
@@ -44,7 +55,7 @@ export function resolveChannel(): ReleaseChannel {
 /** Get the manifest URL for a given channel. */
 export function getManifestUrl(channel?: ReleaseChannel): string {
   const ch = channel ?? resolveChannel();
-  return `${MANIFEST_BASE_URL}/${ch}/manifest.json`;
+  return `${getReleasesBaseUrl()}/${ch}/manifest.json`;
 }
 
 export interface UpdateCheckResult {

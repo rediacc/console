@@ -6,19 +6,55 @@ const { mockVerifySignedRegions } = vi.hoisted(() => ({
 
 vi.mock('@rediacc/shared/regions', () => ({
   BAKED_IN_REGIONS: [
-    { id: 'eu', label: 'Europe', domain: 'eu.rediacc.com', default: true },
-    { id: 'us', label: 'United States', domain: 'us.rediacc.com', default: false },
+    {
+      id: 'eu',
+      label: 'Europe',
+      domain: 'eu.rediacc.com',
+      edgeDomain: 'edge-eu.rediacc.com',
+      default: true,
+    },
+    {
+      id: 'us',
+      label: 'United States',
+      domain: 'us.rediacc.com',
+      edgeDomain: 'edge-us.rediacc.com',
+      default: false,
+    },
   ],
-  DEFAULT_REGION: { id: 'eu', label: 'Europe', domain: 'eu.rediacc.com', default: true },
+  DEFAULT_REGION: {
+    id: 'eu',
+    label: 'Europe',
+    domain: 'eu.rediacc.com',
+    edgeDomain: 'edge-eu.rediacc.com',
+    default: true,
+  },
   verifySignedRegions: mockVerifySignedRegions,
 }));
 
 import { discoverRegions, detectLikelyRegion } from '../region-discovery.js';
 
 const FETCHED_REGIONS = [
-  { id: 'eu', label: 'Europe', domain: 'eu.rediacc.com', default: true },
-  { id: 'us', label: 'United States', domain: 'us.rediacc.com', default: false },
-  { id: 'asia', label: 'Asia Pacific', domain: 'asia.rediacc.com', default: false },
+  {
+    id: 'eu',
+    label: 'Europe',
+    domain: 'eu.rediacc.com',
+    edgeDomain: 'edge-eu.rediacc.com',
+    default: true,
+  },
+  {
+    id: 'us',
+    label: 'United States',
+    domain: 'us.rediacc.com',
+    edgeDomain: 'edge-us.rediacc.com',
+    default: false,
+  },
+  {
+    id: 'asia',
+    label: 'Asia Pacific',
+    domain: 'asia.rediacc.com',
+    edgeDomain: 'edge-asia.rediacc.com',
+    default: false,
+  },
 ];
 
 describe('discoverRegions', () => {

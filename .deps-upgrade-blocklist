@@ -18,6 +18,9 @@ electron # v40.x breaks native module rebuild with nan library errors
 # ESLint v10 - blocked until typescript-eslint, eslint-plugin-import, eslint-plugin-react support v10
 @eslint/js # v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support
 
+# @astrojs/react - 5.0.3 won't install due to npm lock file + electron-builder conflict
+@astrojs/react # npm workspace lock resolution prevents 5.0.3; clean npm install breaks electron-builder
+
 # Cloudflare workers-types - npm latest tag lags behind wrangler peer dep
 @cloudflare/workers-types # Pinned to match wrangler peerOptional; npm latest tag trails behind
 

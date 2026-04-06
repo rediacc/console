@@ -113,6 +113,23 @@ async function handleApiUrlSetup(options: { apiUrl?: string }): Promise<Partial<
   return { apiUrl: apiClient.normalizeApiUrl(options.apiUrl) };
 }
 
+/** Check whether the user passed any config-init flags beyond --name. */
+function hasInitFlags(options: {
+  sshKey?: string;
+  renetPath?: string;
+  masterPassword?: string;
+  apiUrl?: string;
+  server?: string;
+}): boolean {
+  return !!(
+    options.sshKey ??
+    options.renetPath ??
+    options.masterPassword ??
+    options.apiUrl ??
+    options.server
+  );
+}
+
 export function registerConfigCommands(program: Command): void {
   const config = program
     .command('config')
@@ -138,6 +155,7 @@ ${t('help.examples')}
     .option('--renet-path <path>', t('options.renetPath'))
     .option('--master-password <password>', t('commands.config.init.optionMasterPassword'))
     .option('-u, --api-url <url>', t('options.apiUrl'))
+    .option('--server <url>', t('options.serverUrl'))
     .action(async (options) => {
       try {
         const name = options.name;
@@ -152,13 +170,9 @@ ${t('help.examples')}
         }
 
         // Default config already exists — if no flags, just confirm
-        if (exists && !name) {
-          const hasFlags =
-            options.sshKey ?? options.renetPath ?? options.masterPassword ?? options.apiUrl;
-          if (!hasFlags) {
-            outputService.success(t('commands.config.init.success', { name: configName }));
-            return;
-          }
+        if (exists && !name && !hasInitFlags(options)) {
+          outputService.success(t('commands.config.init.success', { name: configName }));
+          return;
         }
 
         const newConfig = exists
@@ -173,6 +187,10 @@ ${t('help.examples')}
 
         if (options.renetPath) {
           updates.renetPath = options.renetPath;
+        }
+
+        if (options.server) {
+          updates.accountServer = options.server.replace(/\/+$/, '');
         }
 
         Object.assign(updates, await handleMasterPasswordSetup(options));

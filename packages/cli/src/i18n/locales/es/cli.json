@@ -1603,7 +1603,9 @@
         "tokenPrompt": "Introduzca su token API (del portal web):",
         "validated": "Token validado",
         "validating": "Validando token...",
-        "waitingApproval": "Esperando la autorización del navegador..."
+        "waitingApproval": "Esperando la autorización del navegador...",
+        "channelSynced": "Canal de actualizacion establecido en {{channel}}.",
+        "serverChanged": "Servidor cambiado. Sesion anterior eliminada."
       },
       "logout": {
         "description": "Eliminar el token de suscripción almacenado",

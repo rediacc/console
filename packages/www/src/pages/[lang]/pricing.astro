@@ -163,6 +163,21 @@ const faqSchema = faqItems ? {
       </div>
     </section>
 
+    <!-- Edge Channel -->
+    <section class="edge-channel-section section-light">
+      <div class="container">
+        <div class="edge-channel-banner">
+          <div class="edge-channel-text">
+            <h3>{t(`${ns}.edgeChannel.heading`, 'Try the Edge Channel')}</h3>
+            <p>{t(`${ns}.edgeChannel.description`, '2X Community limits, latest features, zero cost. No credit card required.')}</p>
+          </div>
+          <button onclick="window.openRegionPicker?.('/account/')" class="btn btn-secondary" type="button">
+            {t(`${ns}.edgeChannel.cta`, 'Get Started Free')} &rarr;
+          </button>
+        </div>
+      </div>
+    </section>
+
     <!-- No Vendor Lock-In Trust Section -->
     <PricingTrustSection lang={lang} />
 

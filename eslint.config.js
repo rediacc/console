@@ -50,6 +50,7 @@ const UNTRANSLATED_BASE_PATTERNS = [
   '^[a-z][a-z0-9]*(-[a-z0-9]+)+$',
   '^\\d{2,5}$',
   '\\.(json|xml|txt|log|pem|key|crt)$',
+  '^Edge$',
 ];
 
 function i18nLocaleConfigs({

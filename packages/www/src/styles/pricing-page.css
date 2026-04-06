@@ -1364,6 +1364,42 @@
   }
 }
 
+/* Edge Channel Section */
+.edge-channel-section {
+  padding: var(--space-8) 0;
+}
+
+.edge-channel-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-8);
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  background: rgba(217, 119, 6, 0.05);
+}
+
+.edge-channel-text h3 {
+  font-size: var(--font-size-xl);
+  margin: 0 0 var(--space-2) 0;
+  color: var(--color-text-primary);
+}
+
+.edge-channel-text p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+}
+
+@media (max-width: 48rem) {
+  .edge-channel-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: var(--space-6) var(--space-4);
+  }
+}
+
 /* Final CTA Section - Dark Gradient */
 .pricing-cta {
   padding: var(--space-16) var(--space-6);

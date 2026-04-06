@@ -171,6 +171,14 @@ WORKDIR /
 # Copy CLI npm packages
 COPY --from=cli-builder /app/dist/npm /usr/share/nginx/html/npm
 
+# Serve CLI release artifacts for on-premise install script compatibility
+# The install script expects: /releases/cli/{channel}/latest.json and npm tarball
+RUN mkdir -p /usr/share/nginx/html/releases/cli/stable && \
+    cp /usr/share/nginx/html/npm/rediacc-cli-latest.tgz \
+       /usr/share/nginx/html/releases/cli/stable/rediacc-cli-latest.tgz 2>/dev/null || true && \
+    echo "{\"version\":\"${VITE_APP_VERSION}\",\"npm\":true}" > \
+       /usr/share/nginx/html/releases/cli/stable/latest.json
+
 # Copy renet binaries
 COPY --from=renet-builder /renet-linux-amd64 /usr/share/nginx/html/bin/renet-linux-amd64
 COPY --from=renet-builder /renet-linux-arm64 /usr/share/nginx/html/bin/renet-linux-arm64

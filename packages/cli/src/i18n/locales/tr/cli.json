@@ -1603,7 +1603,9 @@
         "tokenPrompt": "API belirtecinizi girin (web portaldan):",
         "validated": "Belirteç doğrulandı",
         "validating": "Belirteç doğrulanıyor...",
-        "waitingApproval": "Tarayıcı yetkilendirmesi bekleniyor..."
+        "waitingApproval": "Tarayıcı yetkilendirmesi bekleniyor...",
+        "channelSynced": "Guncelleme kanali {{channel}} olarak ayarlandi.",
+        "serverChanged": "Sunucu degistirildi. Onceki oturum temizlendi."
       },
       "logout": {
         "description": "Kayıtlı abonelik jetonunu temizle",

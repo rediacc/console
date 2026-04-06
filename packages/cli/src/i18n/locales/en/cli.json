@@ -1619,7 +1619,9 @@
         "discoveringRegions": "Discovering available regions...",
         "regionsDiscovered": "Regions loaded",
         "regionSelected": "Data region: {{region}} ({{domain}})",
-        "regionPrompt": "Where should your data be stored?"
+        "regionPrompt": "Where should your data be stored?",
+        "channelSynced": "Update channel set to {{channel}}.",
+        "serverChanged": "Server changed. Previous session cleared."
       },
       "logout": {
         "description": "Clear stored subscription token",

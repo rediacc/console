@@ -4,7 +4,7 @@ description: Entender cómo account, rdc y renet gestionan los slots de máquina
 category: Guides
 order: 7
 language: es
-sourceHash: "a31dc14e6305b4d4"
+sourceHash: "f999a9d099a9202c"
 ---
 
 # Suscripción y licencias

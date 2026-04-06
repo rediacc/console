@@ -2,26 +2,18 @@ import { SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { accountServerFetch } from '../services/account-client.js';
+import { accountServerFetch, fetchServerInfo } from '../services/account-client.js';
 import { configService } from '../services/config-resources.js';
-import {
-  fetchSubscriptionLicenseReport,
-  type RepoBatchRefreshResult,
-  readMachineActivationStatus,
-  readRuntimeRepoLicenseStatuses,
-  refreshMachineActivation,
-  refreshRepoLicenseIdentity,
-  refreshRepoLicensesBatch,
-} from '../services/license.js';
+import { refreshRepoLicenseIdentity } from '../services/license.js';
 import { outputService } from '../services/output.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
+import { readSSHKey } from '../services/renet-execution.js';
 import {
   deleteStoredSubscriptionToken,
   getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,
-  getSubscriptionTokenState,
   isDevelopmentSubscriptionMode,
   loadServerConfig,
+  normalizeServerUrl,
   saveServerConfig,
   saveStoredSubscriptionToken,
 } from '../services/subscription-auth.js';
@@ -31,12 +23,98 @@ import { promptRegionSelection } from '../utils/region-prompt.js';
 import { telemetryService } from '../services/telemetry.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
+import { outputSubscriptionScope } from './subscription-output.js';
 import {
-  formatRuntimeRepoLicenseStatus,
-  outputSubscriptionScope,
-  renderMachineActivationStatus,
-  renderRepoBatchRefreshSummary,
-} from './subscription-output.js';
+  executeActivationRefresh,
+  executeActivationStatus,
+  executeRepoRefresh,
+  executeRepoStatus,
+  executeSubscriptionRefresh,
+  executeSubscriptionStatus,
+} from './subscription-actions.js';
+
+/** Clear session and notify when the server URL has changed. */
+function handleServerChange(currentServer: string | undefined, newServer: string): void {
+  if (currentServer && normalizeServerUrl(currentServer) !== normalizeServerUrl(newServer)) {
+    deleteStoredSubscriptionToken();
+    outputService.info(t('commands.subscription.login.serverChanged'));
+  }
+}
+
+/** Persist explicit --server flag and detect server changes. */
+function persistExplicitServer(server: string): void {
+  handleServerChange(loadServerConfig()?.accountServer, server);
+  saveServerConfig({ accountServer: server });
+}
+
+/** Prompt user for a data region when no server is configured yet. */
+async function promptRegionIfNeeded(): Promise<void> {
+  if (isDevelopmentSubscriptionMode() || loadServerConfig()?.accountServer) return;
+
+  const regions = await withSpinner(
+    t('commands.subscription.login.discoveringRegions'),
+    () => discoverRegions(),
+    t('commands.subscription.login.regionsDiscovered')
+  );
+  const selection = await promptRegionSelection(regions);
+  const newServer = `https://${selection.domain}`;
+  handleServerChange(loadServerConfig()?.accountServer, newServer);
+  saveServerConfig({ accountServer: newServer, region: selection.region.id });
+  outputService.info(
+    t('commands.subscription.login.regionSelected', {
+      region: selection.region.label,
+      domain: selection.domain,
+    })
+  );
+}
+
+/**
+ * Resolve the account server URL and auto-sync update channel + e2e key from server-info.
+ * Returns the resolved server URL for use in subsequent requests.
+ */
+async function resolveAndSyncServer(options: { server?: string }): Promise<string> {
+  // Resolve server URL: flag > env > config.accountServer > server.json > default
+  let configAccountServer: string | undefined;
+  try {
+    const currentRdcConfig = await configService.getCurrent();
+    configAccountServer = currentRdcConfig?.accountServer;
+  } catch {
+    /* config might not exist yet */
+  }
+  const serverUrl = getSubscriptionServerUrl(options.server, configAccountServer);
+
+  // Save accountServer to active config for per-config isolation
+  try {
+    const configName = configService.getCurrentName();
+    const currentRdcConfig = await configService.getCurrent();
+    if (currentRdcConfig && currentRdcConfig.accountServer !== serverUrl) {
+      await configService.update(configName, { accountServer: serverUrl });
+    }
+  } catch {
+    /* config might not exist yet */
+  }
+
+  // Auto-sync update channel and e2e key from server-info
+  try {
+    const info = await fetchServerInfo(serverUrl);
+    const currentServerConfig = loadServerConfig();
+    saveServerConfig({
+      ...currentServerConfig,
+      accountServer: serverUrl,
+      updateChannel: info.updateChannel ?? currentServerConfig?.updateChannel,
+      e2ePublicKey: info.e2e.keys[0]?.publicKeySpki ?? currentServerConfig?.e2ePublicKey,
+    });
+    if (info.updateChannel) {
+      outputService.info(
+        t('commands.subscription.login.channelSynced', { channel: info.updateChannel })
+      );
+    }
+  } catch {
+    // server-info fetch failed -- non-fatal, continue with existing config
+  }
+
+  return serverUrl;
+}
 
 function setSubscriptionTelemetryContext(input: {
   subscriptionId?: string;
@@ -70,35 +148,13 @@ export function registerSubscriptionCommands(program: Command): void {
     .option('--server <url>', t('options.serverUrl'))
     .action(async (options) => {
       try {
-        // Persist server config when --server is explicitly provided
         if (options.server) {
-          saveServerConfig({ accountServer: options.server });
+          persistExplicitServer(options.server);
+        } else {
+          await promptRegionIfNeeded();
         }
 
-        // If no server is configured yet, prompt the user to select a data region.
-        // The region determines which account server the CLI connects to.
-        // Skip in dev mode -- dev uses REDIACC_ACCOUNT_SERVER from .env (localhost).
-        if (
-          !options.server &&
-          !isDevelopmentSubscriptionMode() &&
-          !loadServerConfig()?.accountServer
-        ) {
-          const regions = await withSpinner(
-            t('commands.subscription.login.discoveringRegions'),
-            () => discoverRegions(),
-            t('commands.subscription.login.regionsDiscovered')
-          );
-          const selected = await promptRegionSelection(regions);
-          saveServerConfig({ accountServer: `https://${selected.domain}`, region: selected.id });
-          outputService.info(
-            t('commands.subscription.login.regionSelected', {
-              region: selected.label,
-              domain: selected.domain,
-            })
-          );
-        }
-
-        const serverUrl = getSubscriptionServerUrl(options.server);
+        const serverUrl = await resolveAndSyncServer(options);
 
         if (options.token) {
           // Direct token mode (fallback)
@@ -331,227 +387,18 @@ export function registerSubscriptionCommands(program: Command): void {
     });
 }
 
-export async function executeSubscriptionStatus(): Promise<void> {
-  const tokenState = getSubscriptionTokenState();
-  if (tokenState.kind !== 'ready') {
-    handleSubscriptionTokenState(tokenState);
-    return;
-  }
-  await assertSubscriptionScopeMatchesConfig(tokenState.token);
-
-  try {
-    const status = await fetchSubscriptionLicenseReport();
-    if (!status) return;
-    outputRemoteStatus(status);
-  } catch {
-    // Remote status is optional
-  }
-}
-
-export function handleSubscriptionTokenState(
-  tokenState: ReturnType<typeof getSubscriptionTokenState>
-): boolean {
-  if (tokenState.kind === 'missing') {
-    outputService.info(t('errors.subscription.notLoggedIn'));
-    return true;
-  }
-  if (tokenState.kind === 'server_mismatch') {
-    outputService.warn(
-      t('commands.subscription.status.serverMismatch', {
-        actualServerUrl: tokenState.actualServerUrl,
-        expectedServerUrl: tokenState.expectedServerUrl,
-      })
-    );
-    return true;
-  }
-  return false;
-}
-
-export function outputRemoteStatus(
-  status: Awaited<ReturnType<typeof fetchSubscriptionLicenseReport>>
-) {
-  if (!status) return;
-  outputService.info(t('commands.subscription.status.remote'));
-  outputSubscriptionScope({
-    orgName: status.orgName,
-    teamName: status.teamName,
-  });
-  outputService.info(t('commands.subscription.status.remotePlan', { plan: status.planCode }));
-  outputService.info(t('commands.subscription.status.remoteStatus', { status: status.status }));
-  outputService.info(
-    t('commands.subscription.status.remoteMachineActivations', {
-      active: status.machineSlots.active,
-      max: status.machineSlots.max,
-    })
-  );
-  outputService.info(
-    t('commands.subscription.status.remoteRepoLicenseIssuances', {
-      used: status.repoLicenseIssuances.used,
-      limit: status.repoLicenseIssuances.limit,
-    })
-  );
-  const issuanceUsage =
-    status.repoLicenseIssuances.limit > 0
-      ? status.repoLicenseIssuances.used / status.repoLicenseIssuances.limit
-      : 0;
-  if (issuanceUsage >= 1) {
-    outputService.warn(t('commands.subscription.status.issuanceLimitReached'));
-  } else if (issuanceUsage >= 0.95) {
-    outputService.warn(t('commands.subscription.status.issuanceUsageHigh95'));
-  } else if (issuanceUsage >= 0.8) {
-    outputService.warn(t('commands.subscription.status.issuanceUsageHigh80'));
-  }
-  outputService.info(
-    t('commands.subscription.status.remoteRepoLicenses', {
-      totalTrackedRepos: status.repoLicenses.totalTrackedRepos,
-      validCount: status.repoLicenses.validCount,
-      refreshRecommendedCount: status.repoLicenses.refreshRecommendedCount,
-      hardExpiredCount: status.repoLicenses.hardExpiredCount,
-    })
-  );
-  for (const machine of status.machineSlots.machines) {
-    outputService.info(
-      t('commands.subscription.status.remoteMachine', {
-        id: machine.machineId.slice(0, 12),
-        lastSeen: machine.lastSeenAt,
-      })
-    );
-  }
-}
-
-export async function executeRepoStatus(machineName: string): Promise<void> {
-  const localConfig = await configService.getLocalConfig();
-  const machine = await configService.getLocalMachine(machineName);
-  const sshPrivateKey =
-    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
-    localConfig,
-    machine,
-    sshPrivateKey,
-    { skipRouterRestart: true }
-  );
-  const entries = await readRuntimeRepoLicenseStatuses(machine, sshPrivateKey, remoteRenetPath);
-
-  outputService.info(t('commands.subscription.repo.status.header', { machineName }));
-  if (entries.length === 0) {
-    outputService.info(t('commands.subscription.repo.status.empty'));
-    return;
-  }
-
-  for (const entry of entries) {
-    const effectiveHardExpiry = entry.hardExpiresAt ?? entry.expiresAt;
-    outputService.info(
-      t('commands.subscription.repo.status.entry', {
-        repositoryGuid: entry.repositoryGuid,
-        freshness: formatRuntimeRepoLicenseStatus(entry),
-        hardExpirySuffix: effectiveHardExpiry
-          ? t('commands.subscription.repo.status.hardExpirySuffix', {
-              effectiveHardExpiry,
-            })
-          : '',
-      })
-    );
-  }
-}
-
-export async function executeActivationStatus(machineName: string): Promise<void> {
-  try {
-    const context = await resolveSubscriptionCommandContext(machineName);
-    const activation = await readMachineActivationStatus(
-      context.machine,
-      context.sshPrivateKey,
-      context.remoteRenetPath
-    );
-    renderMachineActivationStatus(machineName, activation);
-  } catch {
-    outputService.warn(t('commands.subscription.status.parseFailed'));
-  }
-}
-
-interface SubscriptionCommandContext {
-  machine: Awaited<ReturnType<typeof configService.getLocalMachine>>;
-  sshPrivateKey: string;
-  remoteRenetPath: string;
-}
-
-export async function resolveSubscriptionCommandContext(
-  machineName: string
-): Promise<SubscriptionCommandContext> {
-  const tokenState = getSubscriptionTokenState();
-  if (tokenState.kind !== 'ready') {
-    handleSubscriptionTokenState(tokenState);
-    throw new ValidationError(t('errors.subscription.notLoggedIn'));
-  }
-  await assertSubscriptionScopeMatchesConfig(tokenState.token);
-  const localConfig = await configService.getLocalConfig();
-  const machine = await configService.getLocalMachine(machineName);
-  const sshPrivateKey =
-    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
-    localConfig,
-    machine,
-    sshPrivateKey,
-    { skipRouterRestart: true }
-  );
-  return { machine, sshPrivateKey, remoteRenetPath };
-}
-
-export async function runMachineActivationRefresh(
-  context: SubscriptionCommandContext
-): Promise<void> {
-  await withSpinner(
-    t('commands.subscription.refresh.refreshing'),
-    async () => {
-      const issued = await refreshMachineActivation(
-        context.machine,
-        context.sshPrivateKey,
-        context.remoteRenetPath
-      );
-      if (!issued) {
-        throw new ValidationError(t('commands.subscription.refresh.failed'));
-      }
-    },
-    t('commands.subscription.refresh.refreshed')
-  );
-}
-
-async function assertSubscriptionScopeMatchesConfig(tokenState: {
-  teamName?: string;
-}): Promise<void> {
-  const configTeamName = await configService.getTeam();
-  const mismatch = getSubscriptionScopeMismatch(tokenState, configTeamName);
-  if (mismatch) {
-    throw new ValidationError(mismatch);
-  }
-}
-
-export async function runRepoBatchRefresh(
-  context: SubscriptionCommandContext
-): Promise<RepoBatchRefreshResult> {
-  return withSpinner(
-    t('commands.subscription.refresh.repos.refreshing'),
-    () => refreshRepoLicensesBatch(context.machine, context.sshPrivateKey, context.remoteRenetPath),
-    t('commands.subscription.refresh.repos.refreshed')
-  );
-}
-
-export async function executeSubscriptionRefresh(machineName: string): Promise<void> {
-  const context = await resolveSubscriptionCommandContext(machineName);
-  await runMachineActivationRefresh(context);
-  const batchSummary = await runRepoBatchRefresh(context);
-  outputService.success(t('commands.subscription.refresh.success'));
-  renderRepoBatchRefreshSummary(batchSummary);
-}
-
-export async function executeActivationRefresh(machineName: string): Promise<void> {
-  const context = await resolveSubscriptionCommandContext(machineName);
-  await runMachineActivationRefresh(context);
-  outputService.success(t('commands.subscription.refresh.refreshed'));
-}
-
-export async function executeRepoRefresh(machineName: string): Promise<void> {
-  const context = await resolveSubscriptionCommandContext(machineName);
-  const batchSummary = await runRepoBatchRefresh(context);
-  outputService.success(t('commands.subscription.refresh.repos.success'));
-  renderRepoBatchRefreshSummary(batchSummary);
-}
+// Re-export execution functions so existing consumers (tests) continue to work
+export {
+  executeActivationRefresh,
+  executeActivationStatus,
+  executeRepoRefresh,
+  executeRepoStatus,
+  executeSubscriptionRefresh,
+  executeSubscriptionStatus,
+  handleSubscriptionTokenState,
+  outputRemoteStatus,
+  resolveSubscriptionCommandContext,
+  runMachineActivationRefresh,
+  runRepoBatchRefresh,
+  type SubscriptionCommandContext,
+} from './subscription-actions.js';

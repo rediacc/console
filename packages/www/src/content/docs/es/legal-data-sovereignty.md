@@ -4,7 +4,7 @@ description: "Cómo la arquitectura autoalojada de Rediacc satisface los requisi
 category: "Legal"
 order: 7
 language: es
-sourceHash: "5dcc2bc3e601c128"
+sourceHash: "72bbd6b951067a1d"
 ---
 
 Muchos países requieren que los datos personales de sus ciudadanos se almacenen y procesen dentro de las fronteras nacionales. La arquitectura autoalojada de Rediacc satisface estos requisitos por diseño: los datos permanecen en tu máquina, en tu centro de datos, en tu jurisdicción. Ningún dato sale de la máquina durante la clonación, y ningún SaaS de terceros procesa tus datos.

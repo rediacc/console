@@ -288,6 +288,13 @@ export interface RdcConfig {
   bridge?: string;
 
   // ============================================================================
+  // Subscription / Account Server
+  // ============================================================================
+
+  /** Account server URL for this config (overrides global server.json) */
+  accountServer?: string;
+
+  // ============================================================================
   // Self-Hosted (local adapter)
   // ============================================================================
 

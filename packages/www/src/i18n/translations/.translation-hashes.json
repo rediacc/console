@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 7741,
-    "sourceCommit": "d2d7b0bd87090dc5d54dff6f0d6e1c853f269e17"
+    "keyCount": 7747,
+    "sourceCommit": "b3f66e9665fe4881ed39cedb968a2d5217e17f4d"
   },
   "hashes": {
     "announcement.link": "0cc49471",
@@ -1522,6 +1522,9 @@
     "pages.pricing.comparison.categories.support.rows.5.label": "9626da47",
     "pages.pricing.comparison.categories.support.rows.5.professional": "c8d83bf0",
     "pages.pricing.comparison.heading": "0b06232a",
+    "pages.pricing.edgeChannel.cta": "843ecb03",
+    "pages.pricing.edgeChannel.description": "914fa400",
+    "pages.pricing.edgeChannel.heading": "de084a7f",
     "pages.pricing.faq.heading": "c7dc4ec3",
     "pages.pricing.faq.items.0.answer": "2fbf4d06",
     "pages.pricing.faq.items.0.question": "b51432bf",
@@ -7697,11 +7700,14 @@
     "problem.solution.title": "3406e209",
     "problem.subtitle": "743bee74",
     "problem.title": "a0803d2d",
+    "regionPicker.edgeNote": "f74ca881",
     "regionPicker.footer": "7c9c13f9",
     "regionPicker.locations.asia": "e73d0545",
     "regionPicker.locations.eu": "463ae1c7",
     "regionPicker.locations.us": "308ba2c2",
     "regionPicker.subtitle": "1ce320dd",
+    "regionPicker.tabEdge": "d5347c58",
+    "regionPicker.tabProduction": "9cb0b230",
     "regionPicker.title": "e8025de1",
     "solutions.categories.backups": "31ec9c87",
     "solutions.categories.defense": "61bbc74d",

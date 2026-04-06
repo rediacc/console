@@ -4,7 +4,7 @@ description: Понять, как account, rdc и renet обрабатывают
 category: Guides
 order: 7
 language: ru
-sourceHash: "a31dc14e6305b4d4"
+sourceHash: "f999a9d099a9202c"
 ---
 
 # Подписка и лицензирование

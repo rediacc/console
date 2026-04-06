@@ -33,7 +33,7 @@ run_worker_first = ["/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "account-db-asia"
-database_id = "c8e32a4d-9a34-4b56-b119-e1f353d641a9"
+database_id = "83e9d63d-bc47-43fb-a32e-98a70351dcf8"
 migrations_dir = "../../private/account/drizzle"
 
 # APAC: location hint APAC (no APAC jurisdiction available in R2, data is zero-knowledge encrypted)
