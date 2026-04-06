@@ -26,7 +26,12 @@ const COLLECTIONS = ['blog', 'docs'];
 
 // English-only paths (permanently excluded - no translations needed)
 const EXCLUSIONS = {
-  docs: ['cli/'], // CLI API reference docs are English-only
+  docs: [
+    'cli/', // CLI API reference docs are English-only
+    'release-channels.md', // New docs pending translation
+    'data-regions.md',
+    'on-premise.md',
+  ],
 };
 
 // Required frontmatter fields per collection (must match Astro content schema)

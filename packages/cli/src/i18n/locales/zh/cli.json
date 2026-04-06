@@ -1603,7 +1603,9 @@
         "tokenPrompt": "请输入您的API令牌（来自Web门户）:",
         "validated": "令牌已验证",
         "validating": "正在验证令牌...",
-        "waitingApproval": "等待浏览器授权..."
+        "waitingApproval": "等待浏览器授权...",
+        "channelSynced": "更新频道已设置为{{channel}}。",
+        "serverChanged": "服务器已更改。之前的会话已清除。"
       },
       "logout": {
         "description": "清除已存储的订阅令牌",

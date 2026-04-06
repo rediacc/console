@@ -43,6 +43,10 @@ on:
         description: 'Also publish to stable channel (hotfix deployment)'
         type: boolean
         default: false
+      deploy_workers_only:
+        description: 'Deploy Workers only (skip version bump, CLI, Docker, Desktop, GitHub Release)'
+        type: boolean
+        default: false
 
 # Required for release publishing, Docker, and Cloudflare Pages deployment
 permissions:
@@ -77,6 +81,7 @@ jobs:
       channel: ${{ steps.channel.outputs.channel }}
       skip_release: ${{ steps.skip-check.outputs.skip_release }}
       retry_mode: ${{ steps.skip-check.outputs.retry_mode }}
+      workers_only: ${{ steps.skip-check.outputs.workers_only }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -113,6 +118,16 @@ jobs:
             echo "ci_sha=${CI_SHA}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Stale ref check (workers-only)
+        if: inputs.deploy_workers_only == true
+        run: |
+          CI_SHA="${{ steps.resolve.outputs.ci_sha }}"
+          BEHIND=$(git rev-list --count "${CI_SHA}..HEAD" 2>/dev/null || echo "unknown")
+          if [[ "$BEHIND" != "unknown" ]] && [[ "$BEHIND" -gt 10 ]]; then
+            echo "::warning::CI ref is ${BEHIND} commits behind HEAD. Verify you are deploying the intended code."
+          fi
+          echo "::notice::Workers-only deploy from SHA: ${CI_SHA} (${BEHIND} commits behind HEAD)"
+
       # Check if the merged PR has the 'release' label (opt-in to CD pipeline)
       # Without the label, CD is skipped — prevents accidental releases from chore PRs.
       #
@@ -124,6 +139,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Workers-only: skip version bump, release label check, just deploy Workers
+          if [[ "${{ inputs.deploy_workers_only }}" == "true" ]]; then
+            echo "skip_release=false" >> $GITHUB_OUTPUT
+            echo "retry_mode=false" >> $GITHUB_OUTPUT
+            echo "workers_only=true" >> $GITHUB_OUTPUT
+            echo "::notice::Workers-only mode -- deploy Workers without version bump or publish"
+            exit 0
+          fi
+          echo "workers_only=false" >> $GITHUB_OUTPUT
+
           if [[ "${{ github.event_name }}" != "workflow_run" ]]; then
             RELEASE_MODE="${{ inputs.release_mode }}"
             if [[ "$RELEASE_MODE" != "retry" ]]; then
@@ -171,19 +196,22 @@ jobs:
             echo "skip_release=true" >> $GITHUB_OUTPUT
           fi
 
-      # Retry mode: use current version from package.json without bumping
-      - name: Resolve version (retry mode)
-        if: steps.skip-check.outputs.retry_mode == 'true'
+      # Retry/workers-only mode: use current version from latest tag without bumping
+      - name: Resolve version (retry/workers-only mode)
+        if: steps.skip-check.outputs.retry_mode == 'true' || steps.skip-check.outputs.workers_only == 'true'
         id: version
         run: |
           VERSION=$(.ci/scripts/version/resolve-version.sh --current)
           echo "next_version=$VERSION" >> $GITHUB_OUTPUT
           echo "bump_type=none" >> $GITHUB_OUTPUT
-          echo "::notice::Retry mode: using existing version $VERSION (from latest tag)"
+          echo "::notice::Using existing version $VERSION (from latest tag)"
 
       # Normal mode: recalculate version from git state
       - name: Initialize CI
-        if: steps.skip-check.outputs.skip_release != 'true' && steps.skip-check.outputs.retry_mode != 'true'
+        if: >-
+          steps.skip-check.outputs.skip_release != 'true' &&
+          steps.skip-check.outputs.retry_mode != 'true' &&
+          steps.skip-check.outputs.workers_only != 'true'
         id: init
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
@@ -197,7 +225,11 @@ jobs:
       # Manual dispatch: override the auto-detected bump type with release_mode
       - name: Override bump type (manual dispatch)
         id: override
-        if: github.event_name == 'workflow_dispatch' && inputs.release_mode != 'retry' && inputs.release_mode != 'patch'
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          inputs.release_mode != 'retry' &&
+          inputs.release_mode != 'patch' &&
+          inputs.deploy_workers_only != true
         run: |
           BUMP="${{ inputs.release_mode }}"
           NEXT=$(.ci/scripts/version/resolve-version.sh --bump-type "${BUMP}")
@@ -211,9 +243,12 @@ jobs:
         run: |
           echo "channel=edge" >> $GITHUB_OUTPUT
 
-      # Version guard: fail early if this version was already published (skip in retry mode)
+      # Version guard: fail early if this version was already published (skip in retry/workers-only mode)
       - name: Check for existing release
-        if: steps.skip-check.outputs.skip_release != 'true' && steps.skip-check.outputs.retry_mode != 'true'
+        if: >-
+          steps.skip-check.outputs.skip_release != 'true' &&
+          steps.skip-check.outputs.retry_mode != 'true' &&
+          steps.skip-check.outputs.workers_only != 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
@@ -246,8 +281,10 @@ jobs:
       url: https://edge.rediacc.com
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        if: needs.init.outputs.workers_only != 'true'
 
       - uses: ./.github/actions/app-token
+        if: needs.init.outputs.workers_only != 'true'
         id: app-token
         with:
           app-id: ${{ vars.APP_ID }}
@@ -256,11 +293,13 @@ jobs:
           repositories: console,middleware,renet,account,homebrew-tap,elite,sql
 
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        if: needs.init.outputs.workers_only != 'true'
         with:
           fetch-depth: 0
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        if: needs.init.outputs.workers_only != 'true'
         with:
           node-version: '22'
 
@@ -268,6 +307,7 @@ jobs:
       # Step 1: Promote Docker images (channel -> version + latest)
       # -----------------------------------------------------------------------
       - name: Login to GHCR
+        if: needs.init.outputs.workers_only != 'true'
         uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
         with:
           registry: ghcr.io
@@ -275,6 +315,7 @@ jobs:
           password: ${{ github.token }}
 
       - name: Promote Docker images
+        if: needs.init.outputs.workers_only != 'true'
         run: |
           CHANNEL="${{ needs.init.outputs.channel }}"
           VERSION="${{ needs.init.outputs.next_version }}"
@@ -291,24 +332,28 @@ jobs:
       # (account code is embedded in the www worker via direct import)
       # -----------------------------------------------------------------------
       - name: Install dependencies
+        if: needs.init.outputs.workers_only != 'true'
         run: npm ci
 
       - name: Build shared packages
+        if: needs.init.outputs.workers_only != 'true'
         run: npm run build:packages
 
       - name: Install account dependencies
+        if: needs.init.outputs.workers_only != 'true'
         run: npm install
         working-directory: private/account
 
+      # Stripe sync is skipped in workers-only mode. Stripe product changes require a full release.
       - name: Sync Stripe products/prices
-        if: needs.init.outputs.retry_mode != 'true'
+        if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
         run: npx tsx scripts/stripe-sync.ts
         working-directory: private/account
         env:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_EU }}
 
       - name: Verify Stripe webhook endpoints (per-region)
-        if: needs.init.outputs.retry_mode != 'true'
+        if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
         run: |
           jq -r '.regions[] | .domain' regions.json | while read domain; do
             echo "Verifying webhook for ${domain}..."
@@ -322,6 +367,7 @@ jobs:
       # Step 2: Bump version & commit (includes all submodules)
       # -----------------------------------------------------------------------
       - name: Download release artifacts
+        if: needs.init.outputs.workers_only != 'true'
         uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: release-artifacts-${{ needs.init.outputs.ci_sha }}
@@ -330,6 +376,7 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Verify release artifact attestation
+        if: needs.init.outputs.workers_only != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -348,7 +395,7 @@ jobs:
       # Tag-based versioning: create git tag instead of version bump commit.
       # No file changes needed -- version is injected at build time.
       - name: Create version tag
-        if: needs.init.outputs.retry_mode != 'true'
+        if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
         run: |
           VERSION="${{ needs.init.outputs.next_version }}"
           git config user.name "${{ vars.GIT_BOT_NAME }}"
@@ -358,7 +405,7 @@ jobs:
           echo "::notice::Created tag v${VERSION}"
 
       - name: Tag submodules
-        if: needs.init.outputs.retry_mode != 'true'
+        if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
         run: |
           VERSION="${{ needs.init.outputs.next_version }}"
           for sub in private/renet private/middleware; do
@@ -375,7 +422,7 @@ jobs:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
 
       - name: Update Homebrew formula
-        if: needs.init.outputs.retry_mode != 'true'
+        if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
         run: |
           .ci/scripts/release/update-homebrew-tap.sh \
             --version ${{ needs.init.outputs.next_version }} \
@@ -390,7 +437,7 @@ jobs:
       # Step 3: Create GitHub Release (upload packages + binaries)
       # -----------------------------------------------------------------------
       - name: Create Release
-        if: needs.init.outputs.retry_mode != 'true'
+        if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b  # v2
         with:
           tag_name: v${{ needs.init.outputs.next_version }}
@@ -415,7 +462,7 @@ jobs:
       # Hotfix: also promote to stable channel (skips 7-day soak)
       # -----------------------------------------------------------------------
       - name: Promote R2 artifacts to stable (hotfix)
-        if: inputs.publish_stable == true
+        if: needs.init.outputs.workers_only != 'true' && inputs.publish_stable == true
         run: |
           export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
           export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
@@ -445,7 +492,7 @@ jobs:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
 
       - name: Promote Docker to stable (hotfix)
-        if: inputs.publish_stable == true
+        if: needs.init.outputs.workers_only != 'true' && inputs.publish_stable == true
         run: |
           for image in api bridge plugin-terminal plugin-browser web cli; do
             echo "Promoting ${image}: edge -> stable"
@@ -459,6 +506,7 @@ jobs:
       # Step 5: Cleanup channel Docker tags
       # -----------------------------------------------------------------------
       - name: Cleanup channel Docker tags
+        if: needs.init.outputs.workers_only != 'true'
         run: |
           CHANNEL="${{ needs.init.outputs.channel }}"
           echo "## Cleanup Channel Tags" >> $GITHUB_STEP_SUMMARY
@@ -482,6 +530,7 @@ jobs:
       # Final summary
       # -----------------------------------------------------------------------
       - name: Deployment summary
+        if: needs.init.outputs.workers_only != 'true'
         run: |
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
@@ -569,7 +618,7 @@ jobs:
     uses: ./.github/workflows/cd-deploy-marketing.yml
     with:
       target: production
-      ref: v${{ needs.init.outputs.next_version }}
+      ref: ${{ needs.init.outputs.workers_only == 'true' && needs.init.outputs.ci_sha || format('v{0}', needs.init.outputs.next_version) }}
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
@@ -584,7 +633,7 @@ jobs:
     uses: ./.github/workflows/cd-deploy-account.yml
     with:
       target: production
-      ref: v${{ needs.init.outputs.next_version }}
+      ref: ${{ needs.init.outputs.workers_only == 'true' && needs.init.outputs.ci_sha || format('v{0}', needs.init.outputs.next_version) }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -635,14 +684,18 @@ jobs:
           curl -fsSL https://edge.rediacc.com/install.sh -o /dev/null
           echo "  marketing (install.sh): OK"
 
-          # R2 releases
-          EDGE_VERSION=$(curl -fsSL https://releases.rediacc.com/cli/edge/latest.json | jq -re '.version')
-          echo "  edge latest.json: v${EDGE_VERSION}"
+          # R2 releases (skip in workers-only mode -- no new version was published)
+          if [[ "${{ needs.init.outputs.workers_only }}" != "true" ]]; then
+            EDGE_VERSION=$(curl -fsSL https://releases.rediacc.com/cli/edge/latest.json | jq -re '.version')
+            echo "  edge latest.json: v${EDGE_VERSION}"
 
-          if [[ "$EDGE_VERSION" == "$VERSION" ]]; then
-            echo "  version match: OK"
+            if [[ "$EDGE_VERSION" == "$VERSION" ]]; then
+              echo "  version match: OK"
+            else
+              echo "  version mismatch: edge has v${EDGE_VERSION}, expected v${VERSION} (acceptable in retry mode)"
+            fi
           else
-            echo "  version mismatch: edge has v${EDGE_VERSION}, expected v${VERSION} (acceptable in retry mode)"
+            echo "  R2 version check: skipped (workers-only)"
           fi
 
           # Per-region account health checks (dynamic from regions.json)
@@ -786,6 +839,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Verify Stripe sandbox webhook endpoints (per-region)
+        if: needs.init.outputs.workers_only != 'true'
         run: |
           jq -r '.regions[] | .edgeDomain' regions.json | while read domain; do
             echo "Verifying sandbox webhook for ${domain}..."

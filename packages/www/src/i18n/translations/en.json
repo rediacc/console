@@ -427,6 +427,9 @@
     "title": "Where should we store your data?",
     "subtitle": "Everything -- your account, billing, and configurations -- stays in the region you choose. It never leaves.",
     "footer": "Pick the region closest to you, or where your organization requires. This can't be changed after sign-up.",
+    "tabProduction": "Production",
+    "tabEdge": "Edge",
+    "edgeNote": "Latest features, 2X free limits. No paid plans. Data is persistent.",
     "locations": {
       "eu": "Frankfurt, Germany",
       "us": "Virginia, USA",
@@ -996,6 +999,11 @@
             "answer": "Yes. All paid plans include a 14-day money-back guarantee. If Rediacc doesn't meet your needs, we'll issue a full refund — no questions asked."
           }
         ]
+      },
+      "edgeChannel": {
+        "heading": "Try the Edge Channel",
+        "description": "2X Community limits, latest features, zero cost. No credit card required.",
+        "cta": "Get Started Free"
       },
       "roiCta": {
         "heading": "Not sure which plan fits?",

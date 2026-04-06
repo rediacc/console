@@ -23,6 +23,7 @@ import {
   getSubscriptionServerUrl,
   getSubscriptionTokenState,
   loadServerConfig,
+  normalizeServerUrl,
   saveServerConfig,
 } from './subscription-auth.js';
 
@@ -121,6 +122,58 @@ export interface AccountFetchError extends Error {
 }
 
 /**
+ * Fetch server-info from an account server (unauthenticated, no tunnel).
+ * Used during login to auto-sync update channel and discover e2e keys.
+ */
+export interface ServerInfo {
+  e2e: { keys: { keyId: string; publicKeySpki: string }[] };
+  apiVersion: number;
+  minCliVersion: string;
+  warnCliVersion: string | null;
+  environment: string;
+  updateChannel?: string;
+}
+
+export async function fetchServerInfo(serverUrl: string): Promise<ServerInfo> {
+  const url = `${normalizeServerUrl(serverUrl)}/account/api/v1/.well-known/server-info`;
+  const res = await fetch(url, {
+    headers: { 'User-Agent': `rdc/${VERSION}` },
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!res.ok) throw new Error(`server-info returned ${res.status}`);
+  return res.json() as Promise<ServerInfo>;
+}
+
+/** Handle 426 (CLI upgrade required) response from the account server. */
+function handle426Response(
+  parsed: { error?: string; minVersion?: string; currentVersion?: string; updateChannel?: string },
+  method: string
+): never {
+  const currentChannel = resolveChannel();
+  const serverChannel = parsed.updateChannel;
+  const lines = [
+    parsed.error ?? API_VERSION_DEFAULTS.UPGRADE_ERROR_MSG,
+    '',
+    `  Current: ${parsed.currentVersion ?? VERSION}`,
+    `  Required: ${parsed.minVersion ?? API_VERSION_DEFAULTS.UNKNOWN_VERSION}`,
+  ];
+  if (serverChannel && serverChannel !== currentChannel) {
+    lines.push(`  Channel: ${currentChannel} (server recommends: ${serverChannel})`);
+    const updateCmd =
+      method === 'sea'
+        ? `rdc update --channel ${serverChannel}`
+        : getNpmUpdateCommand(serverChannel);
+    lines.push(`  Fix: ${updateCmd}`);
+  } else {
+    const updateCmd = method === 'sea' ? 'rdc update' : getNpmUpdateCommand(currentChannel);
+    lines.push(`  Update: ${updateCmd}`);
+  }
+  const msg = lines.join('\n');
+  process.stderr.write(`\n${msg}\n\n`);
+  throw createAccountError(msg, 426, 'CLI_UPGRADE_REQUIRED');
+}
+
+/**
  * Send an E2E-encrypted request to the account server.
  *
  * All requests go through POST /account/api/v1/tunnel.
@@ -188,18 +241,10 @@ export async function accountServerFetch<T = unknown>(
 
   // Handle CLI upgrade required (426)
   if (status === 426) {
-    const info = parsed as { error?: string; minVersion?: string; currentVersion?: string };
-    const method = getInstallMethod();
-    const updateCmd = method === 'sea' ? 'rdc update' : getNpmUpdateCommand(resolveChannel());
-    const msg = [
-      info.error ?? API_VERSION_DEFAULTS.UPGRADE_ERROR_MSG,
-      '',
-      `  Current: ${info.currentVersion ?? VERSION}`,
-      `  Required: ${info.minVersion ?? API_VERSION_DEFAULTS.UNKNOWN_VERSION}`,
-      `  Update: ${updateCmd}`,
-    ].join('\n');
-    process.stderr.write(`\n${msg}\n\n`);
-    throw createAccountError(msg, 426, 'CLI_UPGRADE_REQUIRED');
+    handle426Response(
+      parsed as { error?: string; minVersion?: string; currentVersion?: string; updateChannel?: string },
+      getInstallMethod()
+    );
   }
 
   // Check the inner HTTP status

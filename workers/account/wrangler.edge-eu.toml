@@ -34,7 +34,7 @@ run_worker_first = ["/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "edge-account-db-eu"
-database_id = "19c793fe-6678-489e-88e2-0db1d59234fb"
+database_id = "42896112-a0dd-4c44-9cc9-42901ff878f7"
 migrations_dir = "../../private/account/drizzle"
 
 # EU jurisdiction: hard guarantee that data stays within the EU (GDPR compliant)

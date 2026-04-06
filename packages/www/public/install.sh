@@ -245,12 +245,20 @@ main() {
     esac
     mkdir -p "$config_dir"
 
-    # Discover E2E public key from server
+    # Discover E2E public key and update channel from server
     local e2e_key=""
     local server_info
     if server_info=$(curl -fsSL -A "Rediacc-Installer/1.0" "${SERVER_URL}/account/api/v1/.well-known/server-info" 2>/dev/null); then
       if command -v jq &>/dev/null; then
         e2e_key=$(echo "$server_info" | jq -r '.e2e.keys[0].publicKeySpki // empty')
+        # Auto-detect channel from server if not explicitly set by user
+        if [[ -z "${REDIACC_CHANNEL:-}" ]]; then
+          local detected_channel
+          detected_channel=$(echo "$server_info" | jq -r '.updateChannel // empty')
+          if [[ -n "$detected_channel" ]]; then
+            CHANNEL="$detected_channel"
+          fi
+        fi
       else
         e2e_key=$(echo "$server_info" | grep -o '"publicKeySpki":"[^"]*"' | head -1 | sed 's/"publicKeySpki":"//;s/"//')
       fi
@@ -260,6 +268,10 @@ main() {
     local server_json="{\"accountServer\":\"$SERVER_URL\",\"updateChannel\":\"$CHANNEL\""
     if [[ -n "$e2e_key" ]]; then
       server_json="$server_json,\"e2ePublicKey\":\"$e2e_key\""
+    fi
+    # Store custom releases URL for on-premise CLI updates
+    if [[ "$RELEASES_URL" != "https://releases.rediacc.com" ]]; then
+      server_json="$server_json,\"releasesUrl\":\"$RELEASES_URL\""
     fi
     server_json="$server_json}"
     echo "$server_json" > "$config_dir/server.json"

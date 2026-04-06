@@ -4,7 +4,7 @@ description: Comprendre comment account, rdc et renet gèrent les slots de machi
 category: Guides
 order: 7
 language: fr
-sourceHash: "a31dc14e6305b4d4"
+sourceHash: "f999a9d099a9202c"
 ---
 
 # Abonnement et licences

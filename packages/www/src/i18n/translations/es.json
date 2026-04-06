@@ -2949,6 +2949,11 @@
           ]
         }
       },
+      "edgeChannel": {
+        "heading": "Prueba el canal Edge",
+        "description": "Limites Community 2X, ultimas funciones, sin costo. No se requiere tarjeta de credito.",
+        "cta": "Comenzar gratis"
+      },
       "roiCta": {
         "description": "Utiliza nuestra calculadora de ROI interactiva para ver cuánto puedes ahorrar con Rediacc.",
         "heading": "¿No estás seguro de qué plan te conviene?"
@@ -13283,13 +13288,16 @@
     "title": "La crisis del desajuste de velocidad"
   },
   "regionPicker": {
+    "edgeNote": "Ultimas funciones, limites gratuitos 2X. Sin planes de pago. Los datos son persistentes.",
     "footer": "Elige la región más cercana a ti o la que requiera tu organización. Esto no se puede cambiar después del registro.",
     "locations": {
-      "asia": "Tokyo, Japan",
+      "asia": "Tokio, Japon",
       "eu": "Fráncfort, Alemania",
-      "us": "Virginia, EE. UU."
+      "us": "Virginia, Estados Unidos"
     },
     "subtitle": "Todo, tu cuenta, facturación y configuraciones, permanece en la región que elijas. Nunca sale de ella.",
+    "tabEdge": "Edge",
+    "tabProduction": "Produccion",
     "title": "¿Dónde quieres almacenar tus datos?"
   },
   "solutions": {

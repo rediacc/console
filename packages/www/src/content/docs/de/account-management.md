@@ -4,7 +4,7 @@ description: Organisationen, Teams, Mitglieder, Rollen und Abonnementübersicht 
 category: Guides
 order: 12
 language: de
-sourceHash: "dddc18692cb1583b"
+sourceHash: "cc3200205666febe"
 sourceCommit: "dabe1a33844b3b7ec8a2c4ab44dc2de6683283c9"
 ---
 

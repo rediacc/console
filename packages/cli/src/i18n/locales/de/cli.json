@@ -1603,7 +1603,9 @@
         "tokenPrompt": "Geben Sie Ihr API-Token ein (aus dem Webportal):",
         "validated": "Token überprüft",
         "validating": "Token wird überprüft...",
-        "waitingApproval": "Warte auf Browser-Autorisierung..."
+        "waitingApproval": "Warte auf Browser-Autorisierung...",
+        "channelSynced": "Update-Kanal auf {{channel}} gesetzt.",
+        "serverChanged": "Server geaendert. Vorherige Sitzung geloescht."
       },
       "logout": {
         "description": "Gespeichertes Abonnement-Token löschen",

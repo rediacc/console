@@ -26,7 +26,7 @@ jobs:
     name: Deploy ${{ inputs.target }} Marketing
     runs-on: ubuntu-latest
     environment:
-      name: ${{ inputs.target }}
+      name: marketing-${{ inputs.target }}
       url: ${{ inputs.target == 'production' && 'https://www.rediacc.com' || 'https://edge.rediacc.com' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
