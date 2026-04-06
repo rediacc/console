@@ -315,7 +315,7 @@ const TeamVideoPlayer: FC<TeamVideoPlayerProps> = ({
         >
           <img
             src={video.poster}
-            alt=""
+            alt={t('video.playVideo')}
             className="tv-poster"
             loading={size === 'compact' ? 'eager' : 'lazy'}
             decoding="async"

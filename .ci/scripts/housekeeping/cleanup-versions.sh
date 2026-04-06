@@ -341,7 +341,7 @@ cleanup_packages() {
 
 cleanup_deployments() {
     log_step "Phase 4: Cleaning up GitHub deployments"
-    local keep_per_env=2  # Keep last N deployments per environment
+    local keep_per_env=2 # Keep last N deployments per environment
 
     for repo in "${DEPLOYMENT_REPOS[@]}"; do
         local full_repo="$GITHUB_ORG/$repo"
@@ -400,7 +400,7 @@ cleanup_deployments() {
                     fi
                     # Silently skip if delete fails (GitHub protects latest per environment)
                 fi
-            done <<< "$to_delete"
+            done <<<"$to_delete"
         done
 
         log_info "  Deployments ($full_repo): deleted $deleted of $total (keeping $keep_per_env per environment)"

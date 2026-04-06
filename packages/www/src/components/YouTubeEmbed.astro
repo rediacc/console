@@ -5,6 +5,7 @@ interface Props {
   class?: string;
   thumbnailQuality?: 'default' | 'hqdefault' | 'sddefault' | 'maxresdefault';
   playLabel?: string;
+  lang?: string;
 }
 
 const {
@@ -13,6 +14,7 @@ const {
   class: className,
   thumbnailQuality = 'maxresdefault',
   playLabel = 'Play video',
+  lang,
 } = Astro.props;
 
 const thumbUrl = `https://i.ytimg.com/vi/${videoId}/${thumbnailQuality}.jpg`;
@@ -22,11 +24,12 @@ const thumbUrl = `https://i.ytimg.com/vi/${videoId}/${thumbnailQuality}.jpg`;
   class:list={['yt-embed', className]}
   data-yt-id={videoId}
   data-yt-title={title}
+  data-yt-lang={lang}
 >
   <button type="button" class="yt-facade" aria-label={playLabel}>
     <img
       src={thumbUrl}
-      alt=""
+      alt={title}
       class="yt-poster"
       loading="lazy"
       decoding="async"
@@ -49,10 +52,15 @@ const thumbUrl = `https://i.ytimg.com/vi/${videoId}/${thumbnailQuality}.jpg`;
     facade.addEventListener('click', () => {
       const videoId = wrapper.dataset.ytId;
       const title = wrapper.dataset.ytTitle;
+      const lang = wrapper.dataset.ytLang;
       if (!videoId) return;
 
+      let src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1`;
+      if (lang) src += `&hl=${lang}&cc_lang_pref=${lang}`;
+      src += `&origin=${encodeURIComponent(window.location.origin)}`;
+
       const iframe = document.createElement('iframe');
-      iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`;
+      iframe.src = src;
       iframe.title = title ?? 'YouTube video';
       iframe.allow =
         'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';

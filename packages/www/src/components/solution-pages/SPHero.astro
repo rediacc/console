@@ -57,7 +57,7 @@ const hasSplit = !!teamVideo || !!youtubeVideoId;
     </div>
     {youtubeVideoId && (
       <div class="sp-hero-video">
-        <YouTubeEmbed videoId={youtubeVideoId} title={t('video.youtubeTitle')} playLabel={t('video.playVideo')} />
+        <YouTubeEmbed videoId={youtubeVideoId} title={t('video.youtubeTitle')} playLabel={t('video.playVideo')} lang={lang} />
       </div>
     )}
     {!youtubeVideoId && teamVideo && (

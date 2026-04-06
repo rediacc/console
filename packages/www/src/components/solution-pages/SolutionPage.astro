@@ -49,7 +49,6 @@ const ctaHref = rawCtaHref === 'CONSULTATION'
 const pageTitle = (content as any).hero?.title ?? slug;
 const breadcrumbItems = [
   { name: t('navigation.home'), url: `/${lang}/` },
-  { name: t('navigation.solutions'), url: `/${lang}/#solutions` },
   { name: pageTitle, url: `/${lang}/solutions/${slug}` },
 ];
 ---
