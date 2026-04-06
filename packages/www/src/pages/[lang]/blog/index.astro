@@ -35,7 +35,7 @@ const postsByCategory = posts.reduce((acc, post) => {
 const categories = Object.keys(postsByCategory).sort();
 ---
 
-<BaseLayout lang={lang} title={t('pages.blog.title')}>
+<BaseLayout lang={lang} title={t('pages.blog.meta.title')} description={t('pages.blog.meta.description')} keywords={t('pages.blog.meta.keywords')}>
   <div class="blog-page">
     <header class="blog-header">
       <h1>{t('pages.blog.title')}</h1>

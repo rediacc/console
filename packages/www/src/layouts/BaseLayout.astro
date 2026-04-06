@@ -107,15 +107,14 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
 
     <!-- Alternate Language Links (hreflang) -->
     {SUPPORTED_LANGUAGES.map((lang) => {
-      // Generate proper language-specific URLs for all languages
-      const langPath = lang === 'en' ? pathWithoutLang : `/${lang}${pathWithoutLang}`;
+      const langPath = `/${lang}${pathWithoutLang}`;
       const fullUrl = new URL(langPath, baseURL).toString();
       return (
         <link rel="alternate" hreflang={getHreflang(lang)} href={fullUrl} />
       );
     })}
     <!-- Default language fallback (always English) -->
-    <link rel="alternate" hreflang="x-default" href={new URL(pathWithoutLang, baseURL).toString()} />
+    <link rel="alternate" hreflang="x-default" href={new URL(`/en${pathWithoutLang}`, baseURL).toString()} />
 
     <!-- Favicon and Icons -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
