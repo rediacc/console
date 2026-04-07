@@ -51,12 +51,17 @@ main() {
     # shellcheck disable=SC2086
     shfmt $SHFMT_OPTS ./run.sh
 
-    # Check scripts/dev directory if it exists
-    if [[ -d "scripts/dev" ]]; then
-        log_info "Checking scripts/dev/**/*.sh"
-        # shellcheck disable=SC2086
-        find scripts/dev -name "*.sh" -type f -exec shfmt $SHFMT_OPTS {} +
-    fi
+    # Check shell scripts under scripts/dev and scripts/docker subdirectories.
+    # The top-level scripts/*.sh files are intentionally excluded — they
+    # predate the formatter and reformatting them is out of scope for any
+    # given change. Add new helper scripts to scripts/dev/ or scripts/docker/.
+    for dir in scripts/dev scripts/docker; do
+        if [[ -d "$dir" ]]; then
+            log_info "Checking $dir/**/*.sh"
+            # shellcheck disable=SC2086
+            find "$dir" -name "*.sh" -type f -exec shfmt $SHFMT_OPTS {} +
+        fi
+    done
 
     log_success "Shell script formatting passed"
 }
