@@ -1587,6 +1587,7 @@
       "descriptionShort": "Gestionar licencias de máquina y suscripción",
       "login": {
         "browserFailed": "No se pudo abrir el navegador automáticamente. Por favor, visite la URL anterior.",
+        "channelSynced": "Canal de actualizacion establecido en {{channel}}.",
         "description": "Autenticarse con un token API del portal web",
         "discoveringRegions": "Descubriendo regiones disponibles...",
         "expired": "La autorización ha expirado. Por favor, inténtelo de nuevo.",
@@ -1598,14 +1599,13 @@
         "regionPrompt": "Donde se deben almacenar sus datos?",
         "regionsDiscovered": "Regiones cargadas",
         "regionSelected": "Region de datos: {{region}} ({{domain}})",
+        "serverChanged": "Servidor cambiado. Sesion anterior eliminada.",
         "success": "Inicio de sesión exitoso",
         "tokenInvalid": "El token debe comenzar con rdt_",
         "tokenPrompt": "Introduzca su token API (del portal web):",
         "validated": "Token validado",
         "validating": "Validando token...",
-        "waitingApproval": "Esperando la autorización del navegador...",
-        "channelSynced": "Canal de actualizacion establecido en {{channel}}.",
-        "serverChanged": "Servidor cambiado. Sesion anterior eliminada."
+        "waitingApproval": "Esperando la autorización del navegador..."
       },
       "logout": {
         "description": "Eliminar el token de suscripción almacenado",

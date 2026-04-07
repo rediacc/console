@@ -47,6 +47,10 @@
         "dedicatedAccount": {
           "type": "boolean",
           "jsonKey": "dedicatedAccount"
+        },
+        "delegationCerts": {
+          "type": "boolean",
+          "jsonKey": "delegationCerts"
         }
       }
     },
@@ -116,6 +120,14 @@
           "type": "number",
           "jsonKey": "activationCount"
         },
+        "sequence": {
+          "type": "number",
+          "jsonKey": "sequence"
+        },
+        "prevChainHash": {
+          "type": "string",
+          "jsonKey": "prevChainHash"
+        },
         "issuedByEmail": {
           "type": "string",
           "jsonKey": "issuedByEmail",
@@ -142,6 +154,11 @@
         "publicKeyId": {
           "type": "string",
           "jsonKey": "publicKeyId"
+        },
+        "chainHash": {
+          "type": "string",
+          "jsonKey": "chainHash",
+          "optional": true
         }
       }
     },
@@ -232,7 +249,8 @@
         "auditLog": false,
         "advancedQueue": false,
         "customBranding": false,
-        "dedicatedAccount": false
+        "dedicatedAccount": false,
+        "delegationCerts": false
       },
       "PROFESSIONAL": {
         "permissionGroups": true,
@@ -243,7 +261,8 @@
         "auditLog": true,
         "advancedQueue": false,
         "customBranding": true,
-        "dedicatedAccount": false
+        "dedicatedAccount": false,
+        "delegationCerts": true
       },
       "BUSINESS": {
         "permissionGroups": true,
@@ -254,7 +273,8 @@
         "auditLog": true,
         "advancedQueue": true,
         "customBranding": true,
-        "dedicatedAccount": false
+        "dedicatedAccount": false,
+        "delegationCerts": true
       },
       "ENTERPRISE": {
         "permissionGroups": true,
@@ -265,7 +285,8 @@
         "auditLog": true,
         "advancedQueue": true,
         "customBranding": true,
-        "dedicatedAccount": true
+        "dedicatedAccount": true,
+        "delegationCerts": true
       }
     }
   }

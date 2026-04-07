@@ -218,6 +218,13 @@ main() {
     # Configure HTTPS if certificates are available
     configure_https || true
 
+    # Default UPSTREAM_PUBLIC_KEY from the build-time bake when caller didn't
+    # supply one. UPSTREAM_PUBLIC_KEY_DEFAULT is set by the onprem target of
+    # the consolidated Dockerfile from the ACCOUNT_ED25519_PUBLIC_KEY build
+    # arg. The cloud target leaves both unset, so this is a no-op there.
+    # Customers can still override at runtime via `docker run -e UPSTREAM_PUBLIC_KEY=...`.
+    export UPSTREAM_PUBLIC_KEY="${UPSTREAM_PUBLIC_KEY:-${UPSTREAM_PUBLIC_KEY_DEFAULT:-}}"
+
     # Start account server (background) if present
     # The server is optional - nginx will serve the SPA even if the API is down
     if [ -f /app/account/bundle.js ]; then

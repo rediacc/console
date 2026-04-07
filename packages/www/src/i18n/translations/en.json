@@ -427,14 +427,14 @@
     "title": "Where should we store your data?",
     "subtitle": "Everything -- your account, billing, and configurations -- stays in the region you choose. It never leaves.",
     "footer": "Pick the region closest to you, or where your organization requires. This can't be changed after sign-up.",
-    "tabProduction": "Production",
     "tabEdge": "Edge",
     "edgeNote": "Latest features, 2X free limits. No paid plans. Data is persistent.",
     "locations": {
       "eu": "Frankfurt, Germany",
       "us": "Virginia, USA",
       "asia": "Tokyo, Japan"
-    }
+    },
+    "tabStable": "Stable"
   },
   "contactModal": {
     "title": "Get in Touch",

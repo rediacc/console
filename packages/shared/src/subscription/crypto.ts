@@ -185,3 +185,20 @@ export async function createSignedSubscription(
   const payload = btoa(JSON.stringify(data));
   return signSubscriptionPayload(payload, privateKey, publicKeyId);
 }
+
+/**
+ * Compute a chain hash for the issuance ledger.
+ * Input: SHA256(prevChainHash + ":" + blobPayload)
+ * Returns: lowercase hex SHA-256 digest.
+ */
+export async function computeChainHash(
+  prevChainHash: string,
+  blobPayload: string
+): Promise<string> {
+  const input = `${prevChainHash}:${blobPayload}`;
+  const data = new TextEncoder().encode(input);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}

@@ -117,11 +117,11 @@ require_cmd go
 
 cd "$RENET_DIR"
 
-# Inject license public key if available (from LICENSE_ED25519_PUBLIC_KEY env var)
+# Inject account server public key if available (from ACCOUNT_ED25519_PUBLIC_KEY env var)
 KEY_LDFLAGS=""
-if [[ -n "${LICENSE_ED25519_PUBLIC_KEY:-}" ]]; then
-    KEY_LDFLAGS="-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=${LICENSE_ED25519_PUBLIC_KEY}"
-    log_info "License public key injected from environment"
+if [[ -n "${ACCOUNT_ED25519_PUBLIC_KEY:-}" ]]; then
+    KEY_LDFLAGS="-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=${ACCOUNT_ED25519_PUBLIC_KEY}"
+    log_info "Account server public key injected from environment"
 fi
 
 # Inject OTLP auth credentials if available

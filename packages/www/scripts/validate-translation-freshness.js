@@ -13,13 +13,13 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 export const SUPPORTED_LANGUAGES = ['de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'];
 const COLLECTIONS = ['docs', 'blog'];
 const SOURCE_PREFIX_RE = /^packages\/www\/src\/content\/(docs|blog)\/en\/.+\.md$/;
+// The cli/ directory is auto-generated from CLI --help output and cannot be
+// translated line-by-line, so it stays excluded. NO other entries belong
+// here: every other English doc must have full translations in all
+// supported languages, enforced by the freshness check below. Adding new
+// entries here is an i18n debt sink and will be rejected in review.
 const EXCLUDED_EN_PATHS = {
-  docs: [
-    'packages/www/src/content/docs/en/cli/',
-    'packages/www/src/content/docs/en/release-channels.md',
-    'packages/www/src/content/docs/en/data-regions.md',
-    'packages/www/src/content/docs/en/on-premise.md',
-  ],
+  docs: ['packages/www/src/content/docs/en/cli/'],
   blog: [],
 };
 

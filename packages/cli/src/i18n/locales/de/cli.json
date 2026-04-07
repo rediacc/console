@@ -1587,6 +1587,7 @@
       "descriptionShort": "Maschinenlizenzierung und Abonnement verwalten",
       "login": {
         "browserFailed": "Browser konnte nicht automatisch geöffnet werden. Bitte besuchen Sie die obige URL.",
+        "channelSynced": "Update-Kanal auf {{channel}} gesetzt.",
         "description": "Mit einem API-Token aus dem Webportal authentifizieren",
         "discoveringRegions": "Verfügbare Regionen werden ermittelt...",
         "expired": "Autorisierung abgelaufen. Bitte versuchen Sie es erneut.",
@@ -1598,14 +1599,13 @@
         "regionPrompt": "Wo sollen Ihre Daten gespeichert werden?",
         "regionsDiscovered": "Regionen geladen",
         "regionSelected": "Datenregion: {{region}} ({{domain}})",
+        "serverChanged": "Server geaendert. Vorherige Sitzung geloescht.",
         "success": "Erfolgreich angemeldet",
         "tokenInvalid": "Token muss mit rdt_ beginnen",
         "tokenPrompt": "Geben Sie Ihr API-Token ein (aus dem Webportal):",
         "validated": "Token überprüft",
         "validating": "Token wird überprüft...",
-        "waitingApproval": "Warte auf Browser-Autorisierung...",
-        "channelSynced": "Update-Kanal auf {{channel}} gesetzt.",
-        "serverChanged": "Server geaendert. Vorherige Sitzung geloescht."
+        "waitingApproval": "Warte auf Browser-Autorisierung..."
       },
       "logout": {
         "description": "Gespeichertes Abonnement-Token löschen",

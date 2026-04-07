@@ -2570,6 +2570,11 @@
         },
         "heading": "详细比较计划"
       },
+      "edgeChannel": {
+        "cta": "免费开始",
+        "description": "2倍Community限额，最新功能，免费。无需信用卡。",
+        "heading": "试用Edge频道"
+      },
       "faq": {
         "heading": "常见问题解答",
         "items": [
@@ -2917,11 +2922,6 @@
             }
           ]
         }
-      },
-      "edgeChannel": {
-        "heading": "试用Edge频道",
-        "description": "2倍Community限额，最新功能，免费。无需信用卡。",
-        "cta": "免费开始"
       },
       "roiCta": {
         "description": "使用我们的互动 ROI 计算器，了解您使用 Rediacc 能节省多少费用。",
@@ -13235,7 +13235,7 @@
     },
     "subtitle": "您的账户、账单和配置等所有数据都保存在您选择的区域中，绝不会离开该区域。",
     "tabEdge": "Edge",
-    "tabProduction": "生产",
+    "tabStable": "稳定版",
     "title": "您希望将数据存储在哪里？"
   },
   "solutions": {

@@ -1587,6 +1587,7 @@
       "descriptionShort": "管理机器许可证和订阅",
       "login": {
         "browserFailed": "无法自动打开浏览器。请访问上方链接。",
+        "channelSynced": "更新频道已设置为{{channel}}。",
         "description": "使用Web门户的API令牌进行认证",
         "discoveringRegions": "正在发现可用区域...",
         "expired": "授权已超时。请重试。",
@@ -1598,14 +1599,13 @@
         "regionPrompt": "您的数据应存储在哪里？",
         "regionsDiscovered": "区域已加载",
         "regionSelected": "数据区域: {{region}} ({{domain}})",
+        "serverChanged": "服务器已更改。之前的会话已清除。",
         "success": "登录成功",
         "tokenInvalid": "令牌必须以 rdt_ 开头",
         "tokenPrompt": "请输入您的API令牌（来自Web门户）:",
         "validated": "令牌已验证",
         "validating": "正在验证令牌...",
-        "waitingApproval": "等待浏览器授权...",
-        "channelSynced": "更新频道已设置为{{channel}}。",
-        "serverChanged": "服务器已更改。之前的会话已清除。"
+        "waitingApproval": "等待浏览器授权..."
       },
       "logout": {
         "description": "清除已存储的订阅令牌",

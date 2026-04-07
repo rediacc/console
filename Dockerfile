@@ -1,220 +1,168 @@
-# Dockerfile for standalone Rediacc Console deployment
-# This is for open-source users who want to run the console independently
+# Consolidated Dockerfile for the Rediacc server image.
 #
-# Multi-stage build:
-# 1. cli-builder: Build web app, account SPA, and pack CLI
-# 2. account-builder: Build account server (Hono API)
-# 3. renet-builder: Cross-compile renet binaries
-# 4. runtime: Node.js + Nginx with all assets
+# Builds two variants from the same source via --target:
+#   --target cloud   -> ghcr.io/rediacc/elite/web    (internal cloud deployment)
+#   --target onprem  -> ghcr.io/rediacc/server       (customer-facing self-hosted)
 #
-# Build: docker build -t rediacc/web:latest .
-# Run: docker run -p 80:80 -p 443:443 rediacc/web:latest
+# The build CONTEXT must contain these pre-staged directories (CI populates
+# them by downloading the matching artifacts from build-web, build-www,
+# build-cli, and build-renet jobs; the local-dev wrapper at
+# scripts/docker/build-server.sh stages them from local source builds):
+#
+#   ./web-assets/         packages/web/dist           (web console SPA)
+#   ./www-assets/         packages/www/dist           (marketing site)
+#   ./account-web-assets/ private/account/web/dist    (account portal SPA)
+#   ./cli-npm/            packages/cli npm tarball    (CLI release artifact)
+#   ./binaries/           renet-linux-{amd64,arm64}   (with embedded CRIU/rsync/rclone
+#                                                      and ACCOUNT_ED25519_PUBLIC_KEY
+#                                                      already baked in)
+#
+# Why renet binaries are pre-built and not built inside this Dockerfile:
+# the renet binary embeds CRIU/rsync/rclone via go:embed assets/*. Those .gz
+# files are extracted from the rediacc/bridge image by build-renet.sh, which
+# requires running on a real Linux host with Docker available -- not possible
+# inside an in-Docker `go build` step. The previous Dockerfiles all silently
+# produced asset-less renet binaries that refused to operate at runtime.
+#
+# Build (CI / local with staged context):
+#   docker buildx build --file Dockerfile --target cloud  --tag ... .
+#   docker buildx build --file Dockerfile --target onprem --tag ... .
+#
+# Build (local with the wrapper):
+#   scripts/docker/build-server.sh cloud
+#   scripts/docker/build-server.sh onprem
 
-# Base image ARGs must be declared before any FROM for multi-stage build
 ARG NODE_IMAGE=node:22-alpine
-ARG GO_IMAGE=golang:1.25-alpine
+ARG ACCOUNT_ENTRY=node                # node | on-premise
 
 # =============================================================================
-# Stage 1: CLI Builder (Node.js)
-# Build web app, account SPA, and create CLI npm package
-# =============================================================================
-FROM ${NODE_IMAGE} AS cli-builder
-ARG NODE_IMAGE
-LABEL com.rediacc.stage="cli-builder"
-LABEL com.rediacc.base-image="${NODE_IMAGE}"
-
-# Set build type (can be overridden at build time)
-ARG REDIACC_BUILD_TYPE=DEBUG
-ARG VITE_APP_VERSION=latest
-
-WORKDIR /app
-
-# Install build dependencies for native modules (node-pty)
-RUN apk add --no-cache python3 make g++
-
-# Copy package files first for better caching
-COPY package*.json ./
-COPY packages ./packages
-
-# Install dependencies (including dev dependencies for build) with npm cache
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci
-
-# Copy source code
-COPY . .
-
-# Set environment variables for build
-ENV REDIACC_BUILD_TYPE=${REDIACC_BUILD_TYPE}
-ENV VITE_APP_VERSION=${VITE_APP_VERSION}
-
-# Build the web application with Vite cache
-RUN --mount=type=cache,target=/app/node_modules/.cache \
-    npm run build
-
-# Build www and generate JSON configuration files
-WORKDIR /app/packages/www
-RUN npm run build
-
-# Build account portal SPA
-WORKDIR /app/private/account
-RUN --mount=type=cache,target=/root/.npm \
-    npm install
-WORKDIR /app/private/account/web
-RUN --mount=type=cache,target=/root/.npm \
-    npm install
-RUN npx vite build --outDir /app/dist/account-web
-
-# Build and pack CLI
-WORKDIR /app/packages/cli
-RUN npm run build && npm run build:bundle
-
-# Create npm package (.tgz)
-RUN mkdir -p /app/dist/npm && npm pack --pack-destination /app/dist/npm
-
-# Create latest symlink (in a way that works in Docker)
-RUN cd /app/dist/npm && \
-    CLI_PKG=$(ls rediacc-cli-*.tgz 2>/dev/null | head -1) && \
-    if [ -n "$CLI_PKG" ]; then \
-        cp "$CLI_PKG" rediacc-cli-latest.tgz; \
-    fi
-
-# =============================================================================
-# Stage 2: Account Server Builder (Node.js)
-# Build the account Hono API server bundle
+# Stage 1: account-builder
+# Build the account server bundle. Variant-specific via ACCOUNT_ENTRY.
+# Bundles EVERYTHING via esbuild (no externals) so the runtime stage doesn't
+# need any node_modules at all -- fully self-contained, fully reproducible.
+# esbuild's tree-shaker eliminates unreached code paths automatically when
+# bundling from the on-premise entry (no Stripe, no admin routes, no SES).
 # =============================================================================
 FROM ${NODE_IMAGE} AS account-builder
-ARG NODE_IMAGE
-LABEL com.rediacc.stage="account-builder"
-LABEL com.rediacc.base-image="${NODE_IMAGE}"
-
-# Build shared package first (account depends on it)
-WORKDIR /
-COPY tsconfig.json /tsconfig.json
-WORKDIR /packages/shared
-COPY packages/shared/package.json packages/shared/tsconfig.json ./
-COPY packages/shared/src ./src
-RUN npm install --ignore-scripts && npm run build
-
-# Build account server
+ARG ACCOUNT_ENTRY
 WORKDIR /app
-COPY private/account/package.json ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm install
-COPY private/account/tsconfig.json ./
-COPY private/account/src/ ./src/
+COPY package*.json ./
+# Root tsconfig.json is needed because packages/shared/tsconfig.json extends
+# ../../tsconfig.json. Without this, tsc silently falls back to defaults
+# (no target, no lib, no paths) and the shared build fails with TS2802
+# (RegExpStringIterator iteration) and TS1501 (regex flag) errors.
+COPY tsconfig.json ./
+COPY packages/shared/package*.json packages/shared/
+COPY private/account/package*.json private/account/
+# Install workspace deps (only packages listed in root workspaces).
+# private/account is NOT a workspace member, so its deps must be installed
+# separately below. --ignore-scripts skips postinstall hooks here to avoid
+# running better-sqlite3 native rebuilds we don't need at this stage.
+RUN npm ci --ignore-scripts
+COPY packages/shared packages/shared
+RUN npm run build -w @rediacc/shared
+COPY private/account private/account
+WORKDIR /app/private/account
+# Install private/account's own deps (zod 3.x, hono, drizzle, etc).
+# Without this, tsc would walk up to /app/node_modules and resolve `zod`
+# to whatever bridge-tests pulled in (zod 4.x), which causes a cascade
+# of TS2307/TS1259 errors in the type-only checks.
+RUN npm install --ignore-scripts
 RUN npm run build
-# Bundle for Node.js ESM compatibility
-RUN npx --yes esbuild dist/entry/node.js --bundle --platform=node --format=esm \
-    --outfile=dist/bundle.js --external:@aws-sdk/* --external:@smithy/*
+# Use `npm exec esbuild` to ensure we run the workspace-pinned esbuild
+# (matching dev/CI bundling behavior) instead of `npx --yes` which would
+# transparently download an arbitrary version from the registry.
+#
+# The createRequire banner is needed because some bundled deps still rely on
+# CJS-style require() at runtime even when the output format is ESM.
+RUN npm exec --prefix /app -- esbuild dist/entry/${ACCOUNT_ENTRY}.js \
+    --bundle --platform=node --format=esm \
+    --outfile=dist/bundle.js \
+    --banner:js="import { createRequire } from 'module'; const require = createRequire(import.meta.url);"
 
 # =============================================================================
-# Stage 3: Renet Builder (Go)
-# Cross-compile renet for linux/amd64 and linux/arm64
+# Stage 2: runtime-base
+# Shared between both final targets. Assembles nginx + the account server
+# bundle + all pre-built static assets + renet binaries into the runtime
+# image. No source compilation here -- purely a stitching layer.
 # =============================================================================
-FROM ${GO_IMAGE} AS renet-builder
-ARG GO_IMAGE
-LABEL com.rediacc.stage="renet-builder"
-LABEL com.rediacc.base-image="${GO_IMAGE}"
+FROM ${NODE_IMAGE} AS runtime-base
 
-ARG VITE_APP_VERSION=latest
-
-WORKDIR /build
-
-# Copy renet source
-COPY private/renet/ .
-
-# Build for linux/amd64 with Go module cache
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags="-s -w -X main.version=${VITE_APP_VERSION}" \
-    -o /renet-linux-amd64 \
-    ./cmd/renet
-
-# Build for linux/arm64 with Go module cache
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
-    -ldflags="-s -w -X main.version=${VITE_APP_VERSION}" \
-    -o /renet-linux-arm64 \
-    ./cmd/renet
-
-# =============================================================================
-# Stage 4: Runtime (Node.js + Nginx)
-# Combine web, account, CLI, and renet into final image
-# =============================================================================
-FROM ${NODE_IMAGE}
-ARG NODE_IMAGE
-LABEL com.rediacc.stage="runtime"
-LABEL com.rediacc.base-image="${NODE_IMAGE}"
-
-# Install nginx and dependencies for entrypoint script
 RUN apk add --no-cache nginx coreutils
 
-# Copy www (public website) to root
-COPY --from=cli-builder /app/packages/www/dist /usr/share/nginx/html
+# Marketing site (root)
+COPY ./www-assets/         /usr/share/nginx/html/
+# Web console SPA (/console/)
+COPY ./web-assets/         /usr/share/nginx/html/console/
+# Account portal SPA (/account/)
+COPY ./account-web-assets/ /usr/share/nginx/html/account/
 
-# Copy web (console app) to /console/ subdirectory
-COPY --from=cli-builder /app/packages/web/dist /usr/share/nginx/html/console
+# Account server bundle (variant-specific, fully self-contained)
+COPY --from=account-builder /app/private/account/dist/bundle.js /app/account/bundle.js
 
-# Copy account portal (SPA) to /account/ subdirectory
-COPY --from=cli-builder /app/dist/account-web /usr/share/nginx/html/account
-
-# Copy account server bundle and production dependencies
-COPY --from=account-builder /app/dist/bundle.js /app/account/bundle.js
-COPY --from=account-builder /app/package.json /app/account/package.json
-WORKDIR /app/account
-RUN --mount=type=cache,target=/root/.npm \
-    npm install --omit=dev
-WORKDIR /
-
-# Copy CLI npm packages
-COPY --from=cli-builder /app/dist/npm /usr/share/nginx/html/npm
-
-# Serve CLI release artifacts for on-premise install script compatibility
-# The install script expects: /releases/cli/{channel}/latest.json and npm tarball
+# CLI npm tarball + release manifest for the install script
+COPY ./cli-npm/ /usr/share/nginx/html/npm/
+ARG VITE_APP_VERSION=latest
 RUN mkdir -p /usr/share/nginx/html/releases/cli/stable && \
     cp /usr/share/nginx/html/npm/rediacc-cli-latest.tgz \
-       /usr/share/nginx/html/releases/cli/stable/rediacc-cli-latest.tgz 2>/dev/null || true && \
+       /usr/share/nginx/html/releases/cli/stable/rediacc-cli-latest.tgz && \
     echo "{\"version\":\"${VITE_APP_VERSION}\",\"npm\":true}" > \
        /usr/share/nginx/html/releases/cli/stable/latest.json
 
-# Copy renet binaries
-COPY --from=renet-builder /renet-linux-amd64 /usr/share/nginx/html/bin/renet-linux-amd64
-COPY --from=renet-builder /renet-linux-arm64 /usr/share/nginx/html/bin/renet-linux-arm64
-
-# Create latest symlinks for renet
+# Renet binaries (pre-built by ci-build-renet.yml with embedded CRIU/rsync/
+# rclone assets and ACCOUNT_ED25519_PUBLIC_KEY baked in via -X main.Version
+# / -X .../keys.ProductionPublicKey ldflags).
+COPY ./binaries/renet-linux-amd64 /usr/share/nginx/html/bin/renet-linux-amd64
+COPY ./binaries/renet-linux-arm64 /usr/share/nginx/html/bin/renet-linux-arm64
 RUN cd /usr/share/nginx/html/bin && \
     cp renet-linux-amd64 renet-linux-amd64-latest && \
     cp renet-linux-arm64 renet-linux-arm64-latest
 
-# Copy nginx configuration
-COPY .ci/docker/web/nginx.conf /etc/nginx/http.d/default.conf
+# nginx + entrypoint
+COPY .ci/docker/web/nginx.conf       /etc/nginx/http.d/default.conf
 COPY .ci/docker/web/nginx-https.conf /etc/nginx/nginx-https.conf
+COPY .ci/docker/web/entrypoint.sh    /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh && mkdir -p /etc/nginx/certs
 
-# Copy entrypoint script
-COPY .ci/docker/web/entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
-
-# Create directory for SSL certificates (mounted at runtime)
-RUN mkdir -p /etc/nginx/certs
-
-# Expose ports (HTTP and HTTPS)
 EXPOSE 80 443
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget -q --spider http://localhost/health || exit 1
-
-# Labels
-ARG VITE_APP_VERSION=latest
-ARG REDIACC_BUILD_TYPE=DEBUG
-LABEL org.opencontainers.image.title="Rediacc Console" \
-      org.opencontainers.image.description="Open-source web console for Rediacc system management" \
-      org.opencontainers.image.vendor="Rediacc" \
-      org.opencontainers.image.source="https://github.com/rediacc/console" \
-      org.opencontainers.image.version="${VITE_APP_VERSION}" \
-      com.rediacc.build-type="${REDIACC_BUILD_TYPE}"
-
-# Set entrypoint
+# The Hono account server exposes /health at the root (see app.ts), and
+# nginx is configured to proxy / to the upstream account server.
+# wget --tries=1 prevents the healthcheck from hanging on cold-start nginx.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD wget --tries=1 --quiet --output-document=/dev/null http://localhost/health || exit 1
 ENTRYPOINT ["/docker-entrypoint.sh"]
+
+# =============================================================================
+# Final target: cloud
+# Internal cloud deployment, published to ghcr.io/rediacc/elite/web.
+# =============================================================================
+FROM runtime-base AS cloud
+LABEL com.rediacc.variant=cloud
+LABEL org.opencontainers.image.title="Rediacc Console (Cloud)"
+LABEL org.opencontainers.image.description="Rediacc cloud console - account API, web console, CLI, and renet distribution"
+LABEL org.opencontainers.image.source="https://github.com/rediacc/console"
+LABEL org.opencontainers.image.version="${VITE_APP_VERSION}"
+
+# =============================================================================
+# Final target: onprem
+# Customer-facing self-hosted deployment, published to ghcr.io/rediacc/server.
+# Bakes the upstream master public key as a runtime default for
+# UPSTREAM_PUBLIC_KEY (used by the on-prem account server to verify
+# customer-uploaded fresh delegation certs).
+# =============================================================================
+FROM runtime-base AS onprem
+LABEL com.rediacc.variant=onprem
+LABEL org.opencontainers.image.title="Rediacc Server (Self-Hosted)"
+LABEL org.opencontainers.image.description="Self-hosted Rediacc server - account API, web console, CLI, and renet binaries"
+LABEL org.opencontainers.image.source="https://github.com/rediacc/console"
+LABEL org.opencontainers.image.version="${VITE_APP_VERSION}"
+
+ENV ON_PREMISE_MODE=true \
+    EMAIL_TRANSPORT=smtp
+
+# UPSTREAM_PUBLIC_KEY_DEFAULT is consumed by entrypoint.sh, which exports it
+# as UPSTREAM_PUBLIC_KEY when the customer didn't supply one. This removes
+# one config variable from the standard install -- the master public key is
+# the same for every customer (single global root of trust).
+ARG ACCOUNT_ED25519_PUBLIC_KEY=
+ENV UPSTREAM_PUBLIC_KEY_DEFAULT=${ACCOUNT_ED25519_PUBLIC_KEY}

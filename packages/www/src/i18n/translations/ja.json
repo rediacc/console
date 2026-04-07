@@ -2590,6 +2590,11 @@
         },
         "heading": "プランを詳しく比較"
       },
+      "edgeChannel": {
+        "cta": "無料で始める",
+        "description": "2倍のCommunity制限、最新機能、無料。クレジットカード不要。",
+        "heading": "Edgeチャンネルを試す"
+      },
       "faq": {
         "heading": "よくある質問",
         "items": [
@@ -2950,11 +2955,6 @@
             }
           ]
         }
-      },
-      "edgeChannel": {
-        "heading": "Edgeチャンネルを試す",
-        "description": "2倍のCommunity制限、最新機能、無料。クレジットカード不要。",
-        "cta": "無料で始める"
       },
       "roiCta": {
         "description": "インタラクティブなROI計算ツールを使って、Rediaccでどれだけ節約できるかを確認してください。",
@@ -13295,7 +13295,7 @@
     },
     "subtitle": "アカウント、請求、設定など、すべてのデータは選択したリージョンに保存されます。そこから外に出ることはありません。",
     "tabEdge": "Edge",
-    "tabProduction": "本番",
+    "tabStable": "安定版",
     "title": "データの保存先はどこにしますか？"
   },
   "solutions": {

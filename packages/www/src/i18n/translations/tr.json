@@ -2588,6 +2588,11 @@
         },
         "heading": "Planları Ayrıntılı Olarak Karşılaştırın"
       },
+      "edgeChannel": {
+        "cta": "Ucretsiz baslayin",
+        "description": "2X Community limitleri, en son ozellikler, ucretsiz. Kredi karti gerekmez.",
+        "heading": "Edge kanalini deneyin"
+      },
       "faq": {
         "heading": "Sıkça Sorulan Sorular",
         "items": [
@@ -2946,11 +2951,6 @@
             }
           ]
         }
-      },
-      "edgeChannel": {
-        "heading": "Edge kanalini deneyin",
-        "description": "2X Community limitleri, en son ozellikler, ucretsiz. Kredi karti gerekmez.",
-        "cta": "Ucretsiz baslayin"
       },
       "roiCta": {
         "description": "Rediacc ile ne kadar tasarruf edebileceğinizi görmek için interaktif ROI hesaplayıcımızı kullanın.",
@@ -13291,7 +13291,7 @@
     },
     "subtitle": "Hesabınız, faturalarınız ve yapılandırmalarınız dahil her şey seçtiğiniz bölgede kalır. Asla oradan ayrılmaz.",
     "tabEdge": "Edge",
-    "tabProduction": "Uretim",
+    "tabStable": "Kararli",
     "title": "Verilerinizi nerede saklayalım?"
   },
   "solutions": {

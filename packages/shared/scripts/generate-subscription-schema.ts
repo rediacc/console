@@ -88,6 +88,7 @@ function generateSchema(): SubscriptionSchema {
           advancedQueue: { type: 'boolean', jsonKey: 'advancedQueue' },
           customBranding: { type: 'boolean', jsonKey: 'customBranding' },
           dedicatedAccount: { type: 'boolean', jsonKey: 'dedicatedAccount' },
+          delegationCerts: { type: 'boolean', jsonKey: 'delegationCerts' },
         },
       },
       SubscriptionData: {
@@ -111,6 +112,8 @@ function generateSchema(): SubscriptionSchema {
           features: { type: 'object', jsonKey: 'features', nestedType: 'FeatureFlags' },
           maxActivations: { type: 'number', jsonKey: 'maxActivations' },
           activationCount: { type: 'number', jsonKey: 'activationCount' },
+          sequence: { type: 'number', jsonKey: 'sequence' },
+          prevChainHash: { type: 'string', jsonKey: 'prevChainHash' },
           issuedByEmail: { type: 'string', jsonKey: 'issuedByEmail', optional: true },
           companyName: { type: 'string', jsonKey: 'companyName', optional: true },
         },
@@ -121,6 +124,7 @@ function generateSchema(): SubscriptionSchema {
           payload: { type: 'string', jsonKey: 'payload' },
           signature: { type: 'string', jsonKey: 'signature' },
           publicKeyId: { type: 'string', jsonKey: 'publicKeyId' },
+          chainHash: { type: 'string', jsonKey: 'chainHash', optional: true },
         },
       },
       CachedSubscriptionData: {

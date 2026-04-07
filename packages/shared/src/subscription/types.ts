@@ -37,6 +37,8 @@ export interface FeatureFlags {
   customBranding: boolean;
   /** Dedicated account manager */
   dedicatedAccount: boolean;
+  /** Self-service delegation cert issuance from the customer portal */
+  delegationCerts: boolean;
 }
 
 /**
@@ -44,8 +46,8 @@ export interface FeatureFlags {
  * This is the data that gets signed by the account server.
  */
 export interface SubscriptionData {
-  /** Schema version for migrations */
-  version: 1;
+  /** Schema version (2 = chain-enabled) */
+  version: 2;
   /** UUID from account server */
   subscriptionId: string;
   /** Middleware organization ID */
@@ -81,6 +83,12 @@ export interface SubscriptionData {
   /** Current activation count */
   activationCount: number;
 
+  // Chain (tamper-evident issuance ledger)
+  /** Global monotonic sequence number per subscription */
+  sequence: number;
+  /** Hash of the previous issuance ledger entry ("genesis" for first) */
+  prevChainHash: string;
+
   // Attribution
   /** Email of the account holder who issued this license */
   issuedByEmail?: string;
@@ -99,12 +107,14 @@ export interface SignedSubscriptionBlob {
   signature: string;
   /** Public key identifier for key rotation support */
   publicKeyId: string;
+  /** Chain hash: SHA256(prevChainHash + ":" + payload). Computed post-signing. */
+  chainHash?: string;
 }
 
 export type RepoLicenseKind = 'grand' | 'fork';
 
 export interface RepoLicense {
-  version: 1;
+  version: 2;
   subscriptionId: string;
   machineId: string;
   clientMachineId: string;
@@ -119,6 +129,10 @@ export interface RepoLicense {
   issuedAt: string;
   refreshRecommendedAt: string;
   hardExpiresAt: string;
+  /** Global monotonic sequence number per subscription */
+  sequence: number;
+  /** Hash of the previous issuance ledger entry */
+  prevChainHash: string;
   issuedByEmail?: string;
   companyName?: string;
 }
@@ -127,6 +141,39 @@ export interface SignedRepoLicense {
   payload: string;
   signature: string;
   publicKeyId: string;
+  /** Chain hash: SHA256(prevChainHash + ":" + payload). Computed post-signing. */
+  chainHash?: string;
+}
+
+/**
+ * Delegation certificate for on-premise license signing.
+ * Signed by the upstream master key. Authorizes a delegated key to sign
+ * licenses within the specified constraints.
+ */
+export interface DelegationCert {
+  version: 1;
+  subscriptionId: string;
+  planCode: PlanCode;
+  maxMachines: number;
+  maxRepositorySizeGb: number;
+  maxRepoLicenseIssuancesPerMonth: number;
+  /** Upper bound on the chain sequence number */
+  maxTotalIssuances: number;
+  /** Base64 SPKI Ed25519 public key of the on-premise server */
+  delegatedPublicKey: string;
+  /** Chain starting point (continuation from previous cert or "genesis") */
+  genesisHash: string;
+  /**
+   * Chain sequence at which this cert was issued. Used by on-premise upload
+   * verification to validate that the new cert's chain anchor still links to
+   * an entry in the local issuance ledger (sequence-advancement during
+   * air-gapped renewal transit). Optional for backward compatibility — older
+   * certs default to 0 when read.
+   */
+  genesisSequence?: number;
+  validFrom: string;
+  validUntil: string;
+  issuedAt: string;
 }
 
 /**
@@ -136,7 +183,8 @@ export type ApiTokenScope =
   | 'license:read'
   | 'license:activate'
   | 'subscription:read'
-  | 'audit:write';
+  | 'audit:write'
+  | 'delegation:renew';
 
 /**
  * API token for machine authentication.

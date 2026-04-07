@@ -1587,6 +1587,7 @@
       "descriptionShort": "Gérer les licences machine et l’abonnement",
       "login": {
         "browserFailed": "Impossible d’ouvrir le navigateur automatiquement. Veuillez visiter l’URL ci-dessus.",
+        "channelSynced": "Canal de mise a jour defini sur {{channel}}.",
         "description": "S’authentifier avec un jeton API du portail web",
         "discoveringRegions": "Recherche des regions disponibles...",
         "expired": "L’autorisation a expiré. Veuillez réessayer.",
@@ -1598,14 +1599,13 @@
         "regionPrompt": "Ou vos donnees doivent-elles etre stockees ?",
         "regionsDiscovered": "Regions chargees",
         "regionSelected": "Region de donnees : {{region}} ({{domain}})",
+        "serverChanged": "Serveur modifie. Session precedente effacee.",
         "success": "Connexion réussie",
         "tokenInvalid": "Le jeton doit commencer par rdt_",
         "tokenPrompt": "Entrez votre jeton API (depuis le portail web) :",
         "validated": "Jeton validé",
         "validating": "Validation du jeton...",
-        "waitingApproval": "En attente de l’autorisation du navigateur...",
-        "channelSynced": "Canal de mise a jour defini sur {{channel}}.",
-        "serverChanged": "Serveur modifie. Session precedente effacee."
+        "waitingApproval": "En attente de l’autorisation du navigateur..."
       },
       "logout": {
         "description": "Supprimer le jeton d'abonnement stocké",

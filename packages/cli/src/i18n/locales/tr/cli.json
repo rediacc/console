@@ -1587,6 +1587,7 @@
       "descriptionShort": "Makine lisanslama ve abonelik yönetimi",
       "login": {
         "browserFailed": "Tarayıcı otomatik olarak açılamadı. Lütfen yukarıdaki URL'yi ziyaret edin.",
+        "channelSynced": "Guncelleme kanali {{channel}} olarak ayarlandi.",
         "description": "Web portaldan alınan API belirteci ile kimlik doğrulama",
         "discoveringRegions": "Kullanılabilir bölgeler keşfediliyor...",
         "expired": "Yetkilendirme zaman aşımına uğradı. Lütfen tekrar deneyin.",
@@ -1598,14 +1599,13 @@
         "regionPrompt": "Verileriniz nerede depolanmalı?",
         "regionsDiscovered": "Bölgeler yüklendi",
         "regionSelected": "Veri bölgesi: {{region}} ({{domain}})",
+        "serverChanged": "Sunucu degistirildi. Onceki oturum temizlendi.",
         "success": "Giriş başarılı",
         "tokenInvalid": "Belirteç rdt_ ile başlamalıdır",
         "tokenPrompt": "API belirtecinizi girin (web portaldan):",
         "validated": "Belirteç doğrulandı",
         "validating": "Belirteç doğrulanıyor...",
-        "waitingApproval": "Tarayıcı yetkilendirmesi bekleniyor...",
-        "channelSynced": "Guncelleme kanali {{channel}} olarak ayarlandi.",
-        "serverChanged": "Sunucu degistirildi. Onceki oturum temizlendi."
+        "waitingApproval": "Tarayıcı yetkilendirmesi bekleniyor..."
       },
       "logout": {
         "description": "Kayıtlı abonelik jetonunu temizle",

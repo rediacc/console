@@ -34,6 +34,14 @@ const LOCALE_CONFIGS: LocaleConfig[] = [
     dir: path.join(__dirname, '../packages/www/src/i18n/translations'),
     flatFiles: true,
   },
+  {
+    name: 'account-web',
+    dir: path.join(__dirname, '../private/account/web/src/i18n/locales'),
+  },
+  {
+    name: 'account-emails',
+    dir: path.join(__dirname, '../private/account/src/i18n/locales'),
+  },
 ];
 
 interface TranslationObject {

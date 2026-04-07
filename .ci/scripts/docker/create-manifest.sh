@@ -6,15 +6,18 @@
 #   create-manifest.sh --image api --tag 20260121-120000              # Create and push manifest
 #   create-manifest.sh --image api --tag 0.5.0 --push-latest          # Also push :latest
 #   create-manifest.sh --dry-run --image api --tag 20260121-120000    # Preview
+#   create-manifest.sh --image-path ghcr.io/rediacc/server --tag 0.5.0  # Full path override
 #
 # Options:
-#   --image NAME      Image name (api, bridge, web, plugin-terminal, plugin-browser)
+#   --image NAME      Image name relative to PUBLISH_DOCKER_REGISTRY (api, bridge, web, ...)
+#   --image-path PATH Full image path, ignores PUBLISH_DOCKER_REGISTRY (e.g.,
+#                     ghcr.io/rediacc/server). Mutually exclusive with --image.
 #   --tag TAG         Tag for the manifest (e.g., 20260121-120000 or 0.5.0)
 #   --push-latest     Also create and push :latest manifest
 #   --dry-run         Preview without creating manifest
 #
 # Environment variables:
-#   PUBLISH_DOCKER_REGISTRY - Target registry (from constants.sh)
+#   PUBLISH_DOCKER_REGISTRY - Target registry (from constants.sh), used by --image
 #   DRY_RUN=true            - Preview mode
 
 set -euo pipefail
@@ -26,6 +29,7 @@ source "$SCRIPT_DIR/../../config/constants.sh"
 # Configuration
 DRY_RUN="${DRY_RUN:-false}"
 IMAGE_NAME=""
+IMAGE_PATH=""
 TAG=""
 PUSH_LATEST=false
 
@@ -37,6 +41,10 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --image)
             IMAGE_NAME="$2"
+            shift 2
+            ;;
+        --image-path)
+            IMAGE_PATH="$2"
             shift 2
             ;;
         --tag)
@@ -52,12 +60,13 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -h | --help)
-            echo "Usage: $0 --image NAME --tag TAG [--push-latest] [--dry-run]"
+            echo "Usage: $0 (--image NAME | --image-path PATH) --tag TAG [--push-latest] [--dry-run]"
             echo ""
             echo "Create multi-arch Docker manifest from architecture-specific images"
             echo ""
             echo "Options:"
-            echo "  --image NAME      Image name (api, bridge, etc.)"
+            echo "  --image NAME      Image name relative to PUBLISH_DOCKER_REGISTRY (api, bridge, ...)"
+            echo "  --image-path PATH Full image path (e.g., ghcr.io/rediacc/server)"
             echo "  --tag TAG         Tag for the manifest"
             echo "  --push-latest     Also create and push :latest manifest"
             echo "  --dry-run         Preview without creating manifest"
@@ -70,9 +79,13 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Validate required arguments
-if [[ -z "$IMAGE_NAME" ]]; then
-    log_error "--image is required"
+# Validate required arguments. Exactly one of --image / --image-path must be set.
+if [[ -n "$IMAGE_NAME" && -n "$IMAGE_PATH" ]]; then
+    log_error "--image and --image-path are mutually exclusive"
+    exit 1
+fi
+if [[ -z "$IMAGE_NAME" && -z "$IMAGE_PATH" ]]; then
+    log_error "--image or --image-path is required"
     exit 1
 fi
 
@@ -81,11 +94,14 @@ if [[ -z "$TAG" ]]; then
     exit 1
 fi
 
-# Build full image paths
-IMAGE_PATH="${PUBLISH_DOCKER_REGISTRY}/${IMAGE_NAME}"
+# Resolve full image path. --image-path bypasses PUBLISH_DOCKER_REGISTRY entirely;
+# --image prepends the registry from constants.sh.
+if [[ -z "$IMAGE_PATH" ]]; then
+    IMAGE_PATH="${PUBLISH_DOCKER_REGISTRY}/${IMAGE_NAME}"
+fi
 MANIFEST_TAG="${IMAGE_PATH}:${TAG}"
 
-log_step "Creating multi-arch manifest for $IMAGE_NAME:$TAG"
+log_step "Creating multi-arch manifest for ${IMAGE_NAME:-$IMAGE_PATH}:$TAG"
 
 # Build source image list
 SOURCE_IMAGES=""

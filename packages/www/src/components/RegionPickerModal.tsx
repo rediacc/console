@@ -177,7 +177,7 @@ const RegionPickerModal: React.FC = () => {
             data-track="region_picker_channel"
             data-track-label="production"
           >
-            {t('regionPicker.tabProduction', 'Production')}
+            {t('regionPicker.tabStable', 'Stable')}
           </button>
           <button
             role="tab"
