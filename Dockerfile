@@ -47,6 +47,11 @@ FROM ${NODE_IMAGE} AS account-builder
 ARG ACCOUNT_ENTRY
 WORKDIR /app
 COPY package*.json ./
+# Root tsconfig.json is needed because packages/shared/tsconfig.json extends
+# ../../tsconfig.json. Without this, tsc silently falls back to defaults
+# (no target, no lib, no paths) and the shared build fails with TS2802
+# (RegExpStringIterator iteration) and TS1501 (regex flag) errors.
+COPY tsconfig.json ./
 COPY packages/shared/package*.json packages/shared/
 COPY private/account/package*.json private/account/
 # Install workspace deps (only packages listed in root workspaces).
