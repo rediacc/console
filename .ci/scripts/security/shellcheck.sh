@@ -55,6 +55,11 @@ main() {
     # shellcheck disable=SC2086
     shellcheck $SHELLCHECK_OPTS ./run.sh
 
+    # Check shell scripts under scripts/ (dev helpers, docker helpers, etc.)
+    log_info "Checking scripts/**/*.sh"
+    # shellcheck disable=SC2086
+    find scripts -name "*.sh" -type f -exec shellcheck $SHELLCHECK_OPTS {} +
+
     # Check for bash 4+ features in build scripts (which run on macOS with bash 3.2)
     # ShellCheck doesn't warn about these since they're valid bash, but macOS
     # uses an old bash version due to GPL licensing.

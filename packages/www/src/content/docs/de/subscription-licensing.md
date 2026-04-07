@@ -1,10 +1,11 @@
 ---
-title: Abonnement & Lizenzierung
-description: Erfahren Sie, wie Account, rdc und renet Maschinenplätze, Repo-Lizenzen und Planlimits verwalten.
-category: Guides
+title: "Abonnement & Lizenzierung"
+description: "Erfahren Sie, wie Account, rdc und renet Maschinenplätze, Repo-Lizenzen und Planlimits verwalten."
+category: "Guides"
 order: 7
 language: de
-sourceHash: "f999a9d099a9202c"
+sourceHash: "986cfba1e8052eb3"
+sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
 ---
 
 # Abonnement & Lizenzierung
@@ -61,7 +62,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 Die Maschinenaktivierung erfüllt eine Doppelrolle:
 
-- **Serverseitig**: Floating-Maschinen-Slot-Buchhaltung, maschinenseitige Aktivierungsprüfungen, Verknüpfung der konto-gestützten Repo-Ausstellung mit einer bestimmten Maschine
+- **Serverseitig**: Floating-Maschinen-Slot-Buchhaltung, maschinenseitige Aktivierungsprüfungen, Verknüpfung der kontogestützten Repo-Ausstellung mit einer bestimmten Maschine
 - **Auf der Festplatte**: `rdc` schreibt während der Aktivierung einen signierten Abonnement-Blob nach `/var/lib/rediacc/license/machine.json`. Dieser Blob wird lokal für Bereitstellungsoperationen (`rdc repo create`, `rdc repo fork`) validiert. Die Maschinenlizenz ist 1 Stunde ab der letzten Aktivierung gültig.
 
 ### Repo-Lizenz
@@ -91,14 +92,16 @@ Die Repository-Größe hängt vom Berechtigungsniveau ab:
 
 Standard-Limits für kostenpflichtige Pläne:
 
-| Plan | Floating-Lizenzen | Repository-Größe | Monatliche Repo-Lizenzausstellungen |
-|------|-------------------|------------------|-------------------------------------|
-| Community | 2 | 10 GB | 500 |
-| Professional | 5 | 100 GB | 5.000 |
-| Business | 20 | 500 GB | 20.000 |
-| Enterprise | 50 | 2048 GB | 100.000 |
+| Plan | Floating-Lizenzen | Repository-Größe | Monatliche Repo-Lizenzausstellungen | Delegierungszert. Standard / Max |
+|------|-------------------|------------------|-------------------------------------|---|
+| Community | 2 | 10 GB | 500 | 15d / 30d |
+| Professional | 5 | 100 GB | 5.000 | 60d / 120d |
+| Business | 20 | 500 GB | 20.000 | 90d / 180d |
+| Enterprise | 50 | 2048 GB | 100.000 | 120d / 365d |
 
-Vertragsspezifische Limits können diese Werte für einen bestimmten Kunden erhöhen oder verringern.
+Vertragsspezifische Limits können diese Werte für einen bestimmten Kunden erhöhen oder verringern. Die Gültigkeit von Delegierungszertifikaten ist zusätzlich durch `subscription.expiresAt + 3 Tage Übergangszeit` begrenzt, sodass monatlich abgerechnete Abonnements natürlicherweise Zertifikate erhalten, die auf ihren Abrechnungszeitraum ausgerichtet sind. Siehe [Lizenzkette & Delegierung - Gültigkeitsrichtlinie](/en/docs/license-chain) für die vollständigen Regeln.
+
+**Edge-Kanal-Benutzer** erhalten kostenlos 2-fache Community-Limits (20 GB Repos, 1.000 Ausstellungen/Monat, 4 Maschinen). Kostenpflichtige Pläne sind nur im Stable-Kanal verfügbar. Siehe [Release-Kanäle](/en/docs/release-channels) für Details.
 
 ## Was bei Repo-Erstellung, -Start, -Stopp und -Neustart passiert
 
@@ -108,10 +111,10 @@ Wenn Sie ein Repository erstellen oder forken:
 
 1. `rdc` stellt sicher, dass Ihr Abonnement-Token verfügbar ist (löst Device-Code-Authentifizierung aus, falls nötig)
 2. `rdc` aktiviert die Maschine und schreibt den signierten Abonnement-Blob auf die entfernte Maschine
-3. Die Maschinenlizenz wird lokal validiert (sie muss innerhalb von 1 Stunde nach Aktivierung sein)
+3. Die Maschinenlizenz wird lokal validiert (sie muss innerhalb von 1 Stunde nach Aktivierung sein), die Maschinenlizenz setzt auch das Größenlimit des Plans durch und blockiert die Erstellung, wenn die angeforderte Größe das Limit überschreitet
 4. Nach erfolgreicher Erstellung stellt `rdc` die Repo-Lizenz für das neue Repository aus
 
-Diese kontogestützte Ausstellung zählt zu Ihrer monatlichen Nutzung der **Repo-Lizenzausstellungen**.
+Diese kontogestützte Ausstellung zählt zu Ihrer monatlichen Nutzung der **Repo-Lizenzausstellungen**. Jede Lizenz enthält die E-Mail-Adresse und den Firmennamen des Kontoinhabers, die protokolliert werden, wenn renet die Lizenz validiert.
 
 ### Repo starten, stoppen und löschen
 
@@ -200,6 +203,7 @@ Das bedeutet:
 - Alle Repos können immer gestartet, gestoppt und gelöscht werden, auch mit abgelaufenen Lizenzen, Benutzer werden nie vom Betrieb ihrer eigenen Repositories ausgesperrt
 - Bereitstellungsoperationen (`create`, `fork`) erfordern eine gültige Maschinenlizenz, und Wachstumsoperationen (`resize`, `expand`) erfordern eine gültige Repo-Lizenz
 - Wirklich abgelaufene Repo-Lizenzen müssen vor Resize/Expand über `rdc` aktualisiert werden
+- Lizenzsignaturen werden gegen einen eingebetteten öffentlichen Schlüssel geprüft, die Signaturprüfung kann nicht deaktiviert werden
 
 Maschinenaktivierung und Repo-Laufzeitlizenzen sind separate Oberflächen. Eine Maschine kann im Account-Status inaktiv sein, während einige Repositories noch gültige installierte Repo-Lizenzen haben. In diesem Fall inspizieren Sie beide Oberflächen separat, anstatt anzunehmen, dass sie dasselbe bedeuten.
 
@@ -216,6 +220,20 @@ Die automatische Wiederherstellung ist bewusst eng gefasst:
 - `identity_mismatch`: schlägt sofort fehl, die Repository-Identität stimmt nicht mit der installierten Lizenz überein
 
 Diese Sofort-Fehlschlag-Fälle verbrauchen nicht automatisch kontogestützte Aktualisierungs- oder Ausstellungsaufrufe.
+
+## Delegierungszertifikate für On-Premise
+
+Für On-Premise- und Air-Gapped-Deployments stellt der Upstream-Account-Server ein **Delegierungszertifikat** aus, das Ihre On-Premise-Installation berechtigt, Lizenzen mit ihrem eigenen Ed25519-Schlüssel zu signieren. Das Zertifikat beschränkt die On-Premise-Installation auf ihre Plan-Limits und erstellt eine manipulationssichere Kette.
+
+Wichtige Punkte für Abonnementinhaber:
+
+- **Ein aktives Zertifikat pro Abonnement.** Jede On-Premise-Installation setzt pro Monat und pro Maschine Quoten gegen ihr eigenes lokales Ledger durch, sodass Mehrfachinstallationen das effektive Kontingent vervielfachen würden, ohne dass eine Abstimmung möglich wäre. Kunden, die Produktion + Staging + DR benötigen, müssen ein Abonnement pro Installation erwerben.
+- **Planbasierte Standard-Gültigkeit** (15d / 60d / 90d / 120d) und Obergrenzen (30d / 120d / 180d / 365d) - siehe die Limits-Tabelle oben.
+- **Self-Service über das Kundenportal.** Org Owner und Admins können Delegierungszertifikate unter `/account/delegation-certs` erstellen, erneuern und widerrufen. Die Seite ist für alle Kunden unabhängig vom Plan sichtbar - nur die Limits unterscheiden sich.
+- **Auto-Erneuerung** wird über einen Ein-Klick-Bootstrap unterstützt, der ein `delegation:renew`-bereichsspezifisches API-Token für die On-Premise-Installation ausstellt, das für Upstream-Erneuerungsaufrufe verwendet wird.
+- **Air-Gapped-Erneuerung** wird über ein signiertes Erneuerungsanfrage-Manifest unterstützt, das der On-Premise-Administrator herunterlädt, offline zum Upstream überträgt und der Upstream verarbeitet, um ein neues Zertifikat auszustellen.
+
+Siehe [On-Premise-Installation - Lizenzierung für Air-Gapped-Deployments](/en/docs/on-premise) für die betriebliche Einrichtung und [Lizenzkette & Delegierung](/en/docs/license-chain) für das kryptografische Design.
 
 ## Monatliche Repo-Lizenzausstellungen
 

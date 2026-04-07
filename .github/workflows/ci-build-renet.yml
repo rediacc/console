@@ -23,7 +23,7 @@ on:
     secrets:
       APP_PRIVATE_KEY:
         required: false
-      LICENSE_ED25519_PUBLIC_KEY:
+      ACCOUNT_ED25519_PUBLIC_KEY:
         required: false
       OTLP_AUTH_TOKEN:
         required: false
@@ -150,7 +150,7 @@ jobs:
 
       - name: Build full renet with embedded assets (release)
         env:
-          LICENSE_ED25519_PUBLIC_KEY: ${{ secrets.LICENSE_ED25519_PUBLIC_KEY }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
           OTLP_AUTH_TOKEN: ${{ secrets.OTLP_AUTH_TOKEN }}
         run: |
           .ci/scripts/build/build-renet.sh \

@@ -2590,6 +2590,11 @@
         },
         "heading": "Pläne im Detail vergleichen"
       },
+      "edgeChannel": {
+        "cta": "Kostenlos starten",
+        "description": "2x Community-Limits, neueste Funktionen, kostenlos. Keine Kreditkarte erforderlich.",
+        "heading": "Edge-Kanal testen"
+      },
       "faq": {
         "heading": "Häufig gestellte Fragen",
         "items": [
@@ -2948,11 +2953,6 @@
             }
           ]
         }
-      },
-      "edgeChannel": {
-        "heading": "Edge-Kanal testen",
-        "description": "2x Community-Limits, neueste Funktionen, kostenlos. Keine Kreditkarte erforderlich.",
-        "cta": "Kostenlos starten"
       },
       "roiCta": {
         "description": "Nutzen Sie unseren interaktiven ROI-Rechner, um zu sehen, wie viel Sie mit Rediacc sparen können.",
@@ -13299,7 +13299,7 @@
     },
     "subtitle": "Alles, Ihr Konto, Ihre Abrechnung und Ihre Konfigurationen, bleibt in der von Ihnen gewählten Region. Es verlässt sie nie.",
     "tabEdge": "Edge",
-    "tabProduction": "Produktion",
+    "tabStable": "Stabil",
     "title": "Wo sollen wir Ihre Daten speichern?"
   },
   "solutions": {

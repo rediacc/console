@@ -90,14 +90,14 @@ Repository size depends on the entitlement level:
 
 Default paid-plan limits are:
 
-| Plan | Floating Licenses | Repository Size | Monthly repo license issuances |
-|------|-------------------|-----------------|-------------------------------|
-| Community | 2 | 10 GB | 500 |
-| Professional | 5 | 100 GB | 5,000 |
-| Business | 20 | 500 GB | 20,000 |
-| Enterprise | 50 | 2048 GB | 100,000 |
+| Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Delegation cert default / max |
+|------|-------------------|-----------------|-------------------------------|---|
+| Community | 2 | 10 GB | 500 | 15d / 30d |
+| Professional | 5 | 100 GB | 5,000 | 60d / 120d |
+| Business | 20 | 500 GB | 20,000 | 90d / 180d |
+| Enterprise | 50 | 2048 GB | 100,000 | 120d / 365d |
 
-Contract-specific limits can raise or lower these values for a specific customer.
+Contract-specific limits can raise or lower these values for a specific customer. Delegation cert validity is also hard-capped at `subscription.expiresAt + 3 day grace`, so monthly-billed subscriptions naturally get certs aligned to their billing cycle. See [License Chain & Delegation - Validity Policy](/en/docs/license-chain) for the full rules.
 
 **Edge channel users** receive 2X Community limits at no cost (20 GB repos, 1,000 issuances/month, 4 machines). Paid plans are only available on the Stable channel. See [Release Channels](/en/docs/release-channels) for details.
 
@@ -218,6 +218,20 @@ Automatic recovery is intentionally narrow:
 - `identity_mismatch`: fails fast, the repository identity does not match the installed license
 
 These fail-fast cases do not automatically consume account-backed refresh or issuance calls.
+
+## Delegation Certificates for On-Premise
+
+For on-premise and air-gapped deployments, the upstream account server issues a **delegation certificate** authorizing your on-premise install to sign licenses with its own Ed25519 key. The cert constrains the on-premise to its plan limits and creates a tamper-evident chain.
+
+Key points for subscription owners:
+
+- **One active cert per subscription.** Each on-premise install enforces per-month and per-machine quotas against its own local ledger, so multi-install would multiply the effective quota with no possible reconciliation. Customers needing production + staging + DR must purchase one subscription per install.
+- **Tier-based default validity** (15d / 60d / 90d / 120d) and ceilings (30d / 120d / 180d / 365d) - see the limits table above.
+- **Self-service from the customer portal.** Org owners and admins can create, renew, and revoke delegation certs at `/account/delegation-certs`. The page is visible to all customers regardless of plan tier - only the limits differ.
+- **Auto-renew** is supported via a one-click bootstrap that mints a `delegation:renew`-scoped api token for the on-premise to use for upstream renewal calls.
+- **Air-gapped renewal** is supported via a signed renewal request manifest that the on-premise admin downloads, transfers offline to the upstream, and the upstream processes to issue a new cert.
+
+See [On-Premise Installation - Licensing for Air-Gapped Deployments](/en/docs/on-premise) for the operational setup, and [License Chain & Delegation](/en/docs/license-chain) for the cryptographic design.
 
 ## Monthly Repo License Issuances
 

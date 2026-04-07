@@ -1,10 +1,11 @@
 ---
-title: Abonnement et licences
-description: Comprendre comment account, rdc et renet gèrent les slots de machine, les licences de dépôt et les limites de plan.
-category: Guides
+title: "Abonnement et licences"
+description: "Comprendre comment account, rdc et renet gèrent les slots de machine, les licences de dépôt et les limites de plan."
+category: "Guides"
 order: 7
 language: fr
-sourceHash: "f999a9d099a9202c"
+sourceHash: "986cfba1e8052eb3"
+sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
 ---
 
 # Abonnement et licences
@@ -91,14 +92,16 @@ La taille du dépôt dépend du niveau de droits :
 
 Limites par défaut des plans payants :
 
-| Plan | Licences flottantes | Taille du dépôt | Émissions mensuelles de licences de dépôt |
-|------|---------------------|-----------------|-------------------------------------------|
-| Community | 2 | 10 Go | 500 |
-| Professional | 5 | 100 Go | 5 000 |
-| Business | 20 | 500 Go | 20 000 |
-| Enterprise | 50 | 2048 Go | 100 000 |
+| Plan | Licences flottantes | Taille du dépôt | Émissions mensuelles de licences de dépôt | Validité cert de délégation par défaut / max |
+|------|---------------------|-----------------|-------------------------------------------|----------------------------------------------|
+| Community | 2 | 10 Go | 500 | 15d / 30d |
+| Professional | 5 | 100 Go | 5 000 | 60d / 120d |
+| Business | 20 | 500 Go | 20 000 | 90d / 180d |
+| Enterprise | 50 | 2048 Go | 100 000 | 120d / 365d |
 
-Les limites spécifiques au contrat peuvent augmenter ou diminuer ces valeurs pour un client particulier.
+Les limites spécifiques au contrat peuvent augmenter ou diminuer ces valeurs pour un client particulier. La validité des certs de délégation est également plafonnée à `subscription.expiresAt + 3 jours de grâce`, de sorte que les abonnements facturés mensuellement obtiennent naturellement des certs alignés sur leur cycle de facturation. Voir [Chaîne de licences et délégation - Politique de validité](/fr/docs/license-chain) pour les règles complètes.
+
+**Les utilisateurs du canal Edge** reçoivent 2X les limites Community sans frais supplémentaires (dépôts de 20 Go, 1 000 émissions/mois, 4 machines). Les plans payants ne sont disponibles que sur le canal Stable. Voir [Canaux de publication](/fr/docs/release-channels) pour plus de détails.
 
 ## Ce qui se passe lors de la création, du démarrage, de l'arrêt et du redémarrage d'un dépôt
 
@@ -108,10 +111,10 @@ Lorsque vous créez ou bifurquez un dépôt :
 
 1. `rdc` s'assure que votre token d'abonnement est disponible (déclenche l'authentification par code d'appareil si nécessaire)
 2. `rdc` active la machine et écrit le blob d'abonnement signé sur la machine distante
-3. La licence de machine est validée localement (elle doit se situer dans l'heure suivant l'activation)
+3. La licence de machine est validée localement (elle doit se situer dans l'heure suivant l'activation) ; la licence de machine applique également la limite de taille de dépôt du plan, bloquant la création si la taille demandée dépasse la limite
 4. Après la création réussie, `rdc` émet la licence de dépôt pour le nouveau dépôt
 
-Cette émission soutenue par le compte est comptabilisée dans votre utilisation mensuelle des **émissions de licences de dépôt**.
+Cette émission soutenue par le compte est comptabilisée dans votre utilisation mensuelle des **émissions de licences de dépôt**. Chaque licence contient l'adresse e-mail et le nom de l'entreprise du titulaire du compte, qui sont enregistrés lors de la validation de la licence par renet.
 
 ### Démarrer, arrêter et supprimer un dépôt
 
@@ -200,6 +203,7 @@ Cela signifie :
 - tous les dépôts peuvent toujours démarrer, s'arrêter et être supprimés même avec des licences expirées, les utilisateurs ne sont jamais bloqués dans l'exploitation de leurs propres dépôts
 - les opérations d'approvisionnement (`create`, `fork`) nécessitent une licence de machine valide, et les opérations de croissance (`resize`, `expand`) nécessitent une licence de dépôt valide
 - les licences de dépôt véritablement expirées doivent être renouvelées via `rdc` avant resize/expand
+- les signatures de licence sont vérifiées contre une clé publique intégrée ; la vérification des signatures ne peut pas être désactivée
 
 L'activation de machine et les licences d'exécution de dépôt sont des surfaces distinctes. Une machine peut être inactive dans l'état du compte tandis que certains dépôts ont encore des licences de dépôt installées valides. Dans ce cas, inspectez les deux surfaces séparément plutôt que de supposer qu'elles signifient la même chose.
 
@@ -216,6 +220,20 @@ La récupération automatique est intentionnellement limitée :
 - `identity_mismatch` : échoue rapidement, l'identité du dépôt ne correspond pas à la licence installée
 
 Ces cas d'échec rapide ne consomment pas automatiquement les appels de renouvellement ou d'émission soutenus par le compte.
+
+## Certificats de délégation pour les déploiements on-premise
+
+Pour les déploiements on-premise et en réseau isolé, le serveur de comptes amont émet un **certificat de délégation** autorisant votre installation on-premise à signer des licences avec sa propre clé Ed25519. Le cert contraint l'installation on-premise à ses limites de plan et crée une chaîne infalsifiable.
+
+Points clés pour les propriétaires d'abonnement :
+
+- **Un cert actif par abonnement.** Chaque installation on-premise applique des quotas mensuels et par machine contre son propre registre local ; plusieurs installations multiplieraient le quota effectif sans possibilité de réconciliation. Les clients ayant besoin de production + préproduction + reprise après sinistre doivent acheter un abonnement par installation.
+- **Validité par défaut basée sur le palier** (15d / 60d / 90d / 120d) et plafonds (30d / 120d / 180d / 365d) - voir le tableau des limites ci-dessus.
+- **Libre-service depuis le portail client.** Les propriétaires et administrateurs d'org peuvent créer, renouveler et révoquer des certs de délégation à `/account/delegation-certs`. La page est visible par tous les clients quel que soit leur plan - seules les limites diffèrent.
+- **Le renouvellement automatique** est pris en charge via un bootstrap en un clic qui émet un token API avec la portée `delegation:renew` pour que l'installation on-premise l'utilise pour les appels de renouvellement vers l'amont.
+- **Le renouvellement en réseau isolé** est pris en charge via un manifeste de demande de renouvellement signé que l'administrateur on-premise télécharge, transfère hors ligne vers l'amont, et que l'amont traite pour émettre un nouveau cert.
+
+Voir [Installation on-premise - Licences pour les déploiements en réseau isolé](/fr/docs/on-premise) pour la configuration opérationnelle, et [Chaîne de licences et délégation](/fr/docs/license-chain) pour la conception cryptographique.
 
 ## Émissions mensuelles de licences de dépôt
 

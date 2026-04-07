@@ -1,10 +1,11 @@
 ---
-title: Suscripción y licencias
-description: Entender cómo account, rdc y renet gestionan los slots de máquina, las licencias de repositorio y los límites del plan.
-category: Guides
+title: "Suscripción y licencias"
+description: "Entender cómo account, rdc y renet gestionan los slots de máquina, las licencias de repositorio y los límites del plan."
+category: "Guides"
 order: 7
 language: es
-sourceHash: "f999a9d099a9202c"
+sourceHash: "986cfba1e8052eb3"
+sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
 ---
 
 # Suscripción y licencias
@@ -55,7 +56,7 @@ export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
 export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 ```
 
-## Licencias de máquina vs. Licencias de repositorio
+## Licencias de máquina vs. licencias de repositorio
 
 ### Activación de máquina
 
@@ -91,14 +92,16 @@ El tamaño del repositorio depende del nivel de derechos:
 
 Límites predeterminados de los planes de pago:
 
-| Plan | Licencias flotantes | Tamaño del repositorio | Issuances mensuales de licencias de repositorio |
-|------|---------------------|------------------------|--------------------------------------------------|
-| Community | 2 | 10 GB | 500 |
-| Professional | 5 | 100 GB | 5.000 |
-| Business | 20 | 500 GB | 20.000 |
-| Enterprise | 50 | 2048 GB | 100.000 |
+| Plan | Licencias flotantes | Tamaño del repositorio | Issuances mensuales de licencias de repositorio | Validez cert. delegación pred. / máx. |
+|------|---------------------|------------------------|--------------------------------------------------|---------------------------------------|
+| Community | 2 | 10 GB | 500 | 15d / 30d |
+| Professional | 5 | 100 GB | 5.000 | 60d / 120d |
+| Business | 20 | 500 GB | 20.000 | 90d / 180d |
+| Enterprise | 50 | 2048 GB | 100.000 | 120d / 365d |
 
-Los límites específicos del contrato pueden aumentar o disminuir estos valores para un cliente específico.
+Los límites específicos del contrato pueden aumentar o disminuir estos valores para un cliente específico. La validez del certificado de delegación también tiene un límite máximo de `subscription.expiresAt + 3 días de gracia`, por lo que las suscripciones de facturación mensual obtienen naturalmente certificados alineados a su ciclo de facturación. Consulta [Cadena de licencias y delegación - Política de validez](/es/docs/license-chain) para las reglas completas.
+
+Los **usuarios del canal Edge** reciben el doble de los límites de Community sin coste (repositorios de 20 GB, 1.000 issuances/mes, 4 máquinas). Los planes de pago solo están disponibles en el canal Stable. Consulta [Canales de lanzamiento](/es/docs/release-channels) para más detalles.
 
 ## Qué ocurre durante la creación, arranque, parada y reinicio del repositorio
 
@@ -108,10 +111,10 @@ Cuando creas o bifurcas un repositorio:
 
 1. `rdc` se asegura de que tu token de suscripción esté disponible (activa la autenticación por código de dispositivo si es necesario)
 2. `rdc` activa la máquina y escribe el blob de suscripción firmado en la máquina remota
-3. La licencia de máquina se valida localmente (debe estar dentro de 1 hora desde la activación)
+3. La licencia de máquina se valida localmente (debe estar dentro de 1 hora desde la activación); la licencia de máquina también aplica el límite de tamaño de repositorio del plan, bloqueando la creación si el tamaño solicitado supera el límite
 4. Después de la creación exitosa, `rdc` emite la licencia de repositorio para el nuevo repositorio
 
-Esa emisión respaldada por la cuenta cuenta para tu uso mensual de **issuances de licencias de repositorio**.
+Esa emisión respaldada por la cuenta cuenta para tu uso mensual de **issuances de licencias de repositorio**. Cada licencia contiene el correo electrónico y el nombre de empresa del titular de la cuenta, que se registra cuando renet valida la licencia.
 
 ### Arrancar, parar y eliminar repositorio
 
@@ -123,14 +126,14 @@ Esa emisión respaldada por la cuenta cuenta para tu uso mensual de **issuances 
 
 ### Reinicio de máquina y autoarranque
 
-El autoarranque usa las mismas reglas que `rdc repo up`, la expiración se omite, por lo que los repositorios siempre se reinician libremente.
+El autoarranque usa las mismas reglas que `rdc repo up`; la expiración se omite, por lo que los repositorios siempre se reinician libremente.
 
 Las licencias de repositorio usan un modelo de validez de larga duración:
 
 - `refreshRecommendedAt` es el punto de actualización suave
 - `hardExpiresAt` es el punto de bloqueo
 
-Si la licencia del repositorio está desactualizada pero todavía antes de la expiración definitiva, el tiempo de ejecución puede continuar. Una vez que alcanza la expiración definitiva, `rdc` debe actualizarla para operaciones de resize/expand.
+Si la licencia del repositorio está desactualizada pero aún antes de la expiración definitiva, el tiempo de ejecución puede continuar. Una vez que alcanza la expiración definitiva, `rdc` debe actualizarla para operaciones de resize/expand.
 
 ### Otras operaciones de repositorio
 
@@ -192,14 +195,15 @@ Para la configuración inicial de la máquina, consulta [Configuración de máqu
 
 ## Comportamiento sin conexión y expiración
 
-La validación de licencias ocurre localmente en la máquina, no requiere conectividad en vivo con el servidor de cuentas.
+La validación de licencias ocurre localmente en la máquina; no requiere conectividad en vivo con el servidor de cuentas.
 
 Eso significa:
 
 - un entorno en ejecución no necesita conectividad en vivo con la cuenta en cada comando
-- todos los repositorios siempre pueden iniciarse, detenerse y eliminarse incluso con licencias expiradas, los usuarios nunca quedan bloqueados de operar sus propios repositorios
+- todos los repositorios siempre pueden iniciarse, detenerse y eliminarse incluso con licencias expiradas; los usuarios nunca quedan bloqueados de operar sus propios repositorios
 - las operaciones de aprovisionamiento (`create`, `fork`) requieren una licencia de máquina válida, y las operaciones de crecimiento (`resize`, `expand`) requieren una licencia de repositorio válida
 - las licencias de repositorio verdaderamente expiradas deben actualizarse a través de `rdc` antes de resize/expand
+- las firmas de licencia se verifican contra una clave pública incrustada; la verificación de firma no se puede deshabilitar
 
 La activación de máquina y las licencias de tiempo de ejecución de repositorio son superficies separadas. Una máquina puede estar inactiva en el estado de cuenta mientras algunos repositorios aún tienen licencias de repositorio instaladas válidas. Cuando eso ocurre, inspecciona ambas superficies por separado en lugar de asumir que significan lo mismo.
 
@@ -213,9 +217,23 @@ La recuperación automática es intencionalmente estrecha:
 - `repository_mismatch`: falla rápidamente y te indica que actualices las licencias de repositorio explícitamente
 - `sequence_regression`: falla rápidamente como un problema de integridad/estado de la licencia de repositorio
 - `invalid_signature`: falla rápidamente como un problema de integridad/estado de la licencia de repositorio
-- `identity_mismatch`: falla rápidamente, la identidad del repositorio no coincide con la licencia instalada
+- `identity_mismatch`: falla rápidamente; la identidad del repositorio no coincide con la licencia instalada
 
 Estos casos de fallo rápido no consumen automáticamente llamadas de actualización o emisión respaldadas por la cuenta.
+
+## Certificados de delegación para on-premise
+
+Para implementaciones on-premise y air-gapped, el servidor de cuentas upstream emite un **certificado de delegación** que autoriza tu instalación on-premise a firmar licencias con su propia clave Ed25519. El certificado restringe la instalación on-premise a los límites de su plan y crea una cadena a prueba de manipulaciones.
+
+Puntos clave para los propietarios de suscripciones:
+
+- **Un certificado activo por suscripción.** Cada instalación on-premise aplica cuotas mensuales y por máquina contra su propio libro de contabilidad local, por lo que múltiples instalaciones multiplicarían la cuota efectiva sin posibilidad de reconciliación. Los clientes que necesiten producción + staging + DR deben adquirir una suscripción por instalación.
+- **Validez predeterminada por nivel** (15d / 60d / 90d / 120d) y techos (30d / 120d / 180d / 365d); consulta la tabla de límites anterior.
+- **Autoservicio desde el portal de cliente.** Los owners y admins de la organización pueden crear, renovar y revocar certificados de delegación en `/account/delegation-certs`. La página es visible para todos los clientes independientemente del nivel de plan; solo difieren los límites.
+- **Auto-renovación** disponible mediante un bootstrap de un clic que emite un token de API con alcance `delegation:renew` para que la instalación on-premise lo use en las llamadas de renovación al upstream.
+- **Renovación air-gapped** disponible mediante un manifiesto de solicitud de renovación firmado que el administrador on-premise descarga, transfiere offline al upstream, y el upstream procesa para emitir un nuevo certificado.
+
+Consulta [Instalación on-premise - Licencias para implementaciones air-gapped](/es/docs/on-premise) para la configuración operativa, y [Cadena de licencias y delegación](/es/docs/license-chain) para el diseño criptográfico.
 
 ## Issuances mensuales de licencias de repositorio
 
