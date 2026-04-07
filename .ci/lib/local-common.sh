@@ -355,7 +355,7 @@ ensure_renet_built() {
             for arch in amd64 arm64; do
                 log_step "Cross-compiling renet for linux/${arch} (remote provisioning)..."
                 (cd "$renet_dir" && CGO_ENABLED=0 GOOS=linux GOARCH=${arch} go build \
-                    -ldflags="-s -w -X main.version=$_xc_version $_xc_key_ldflags" \
+                    -ldflags="-s -w -X main.Version=$_xc_version $_xc_key_ldflags" \
                     -o "bin/renet-linux-${arch}" ./cmd/renet)
             done
         fi

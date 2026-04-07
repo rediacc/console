@@ -127,7 +127,7 @@ COPY private/renet/ .
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags="-s -w -X main.version=${VITE_APP_VERSION}" \
+    -ldflags="-s -w -X main.Version=${VITE_APP_VERSION}" \
     -o /renet-linux-amd64 \
     ./cmd/renet
 
@@ -135,7 +135,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
-    -ldflags="-s -w -X main.version=${VITE_APP_VERSION}" \
+    -ldflags="-s -w -X main.Version=${VITE_APP_VERSION}" \
     -o /renet-linux-arm64 \
     ./cmd/renet
 

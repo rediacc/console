@@ -39,12 +39,12 @@ WORKDIR /build
 COPY private/renet/ .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags="-s -w -X main.version=${VITE_APP_VERSION}" \
+    -ldflags="-s -w -X main.Version=${VITE_APP_VERSION}" \
     -o /renet-linux-amd64 \
     ./cmd/renet
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
-    -ldflags="-s -w -X main.version=${VITE_APP_VERSION}" \
+    -ldflags="-s -w -X main.Version=${VITE_APP_VERSION}" \
     -o /renet-linux-arm64 \
     ./cmd/renet
 
