@@ -256,7 +256,7 @@ export default test.defineConfig({
   webServer: {
     command: `npm run --prefix ../.. dev -w @rediacc/web -- --port ${E2E_PORT}`,
     url: E2E_DEFAULTS.CONSOLE_URL,
-    reuseExistingServer: false,
+    reuseExistingServer: !process.env.CI,
     timeout: 120000, // 2 minutes for Vite to start
     stdout: 'pipe',
     stderr: 'pipe',

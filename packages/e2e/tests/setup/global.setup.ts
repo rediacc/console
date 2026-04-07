@@ -30,7 +30,7 @@ setup('register user for e2e tests', async ({ page }) => {
   page.on('requestfailed', (request) => pendingRequests.delete(request.url()));
 
   const baseURL = process.env.E2E_BASE_URL ?? API_DEFAULTS.CONSOLE_URL;
-  const loginUrl = `${baseURL}login`;
+  const loginUrl = baseURL.endsWith('/') ? `${baseURL}login` : `${baseURL}/login`;
 
   console.warn(`[Setup] Navigating to: ${loginUrl}`);
 
