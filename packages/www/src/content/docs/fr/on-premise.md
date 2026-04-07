@@ -4,7 +4,7 @@ description: "Exécuter le serveur de compte et la distribution de la CLI sur vo
 category: "Guides"
 order: 5
 language: fr
-sourceHash: "787f541cea9060ed"
+sourceHash: "bd53b8bc522532de"
 sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
 ---
 
@@ -15,13 +15,13 @@ Rediacc peut fonctionner entièrement sur votre propre infrastructure. L'image D
 Récupérez l'image autonome :
 
 ```bash
-docker pull ghcr.io/rediacc/elite/web:stable
+docker pull ghcr.io/rediacc/server:stable
 ```
 
 Lancez avec les paramètres par défaut :
 
 ```bash
-docker run -p 80:80 -p 443:443 ghcr.io/rediacc/elite/web:stable
+docker run -p 80:80 -p 443:443 ghcr.io/rediacc/server:stable
 ```
 
 L'image expose :

@@ -4,7 +4,7 @@ description: "Den Account-Server und die CLI-Distribution auf eigener Infrastruk
 category: "Guides"
 order: 5
 language: de
-sourceHash: "787f541cea9060ed"
+sourceHash: "bd53b8bc522532de"
 sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
 ---
 
@@ -15,13 +15,13 @@ Rediacc kann vollständig auf eigener Infrastruktur betrieben werden. Das Standa
 Das Standalone-Image herunterladen:
 
 ```bash
-docker pull ghcr.io/rediacc/elite/web:stable
+docker pull ghcr.io/rediacc/server:stable
 ```
 
 Mit Standardeinstellungen starten:
 
 ```bash
-docker run -p 80:80 -p 443:443 ghcr.io/rediacc/elite/web:stable
+docker run -p 80:80 -p 443:443 ghcr.io/rediacc/server:stable
 ```
 
 Das Image stellt Folgendes bereit:

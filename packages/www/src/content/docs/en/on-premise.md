@@ -13,13 +13,13 @@ Rediacc can run entirely on your own infrastructure. The standalone Docker image
 Pull the standalone image:
 
 ```bash
-docker pull ghcr.io/rediacc/elite/web:stable
+docker pull ghcr.io/rediacc/server:stable
 ```
 
 Run with default settings:
 
 ```bash
-docker run -p 80:80 -p 443:443 ghcr.io/rediacc/elite/web:stable
+docker run -p 80:80 -p 443:443 ghcr.io/rediacc/server:stable
 ```
 
 The image serves:

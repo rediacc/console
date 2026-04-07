@@ -4,7 +4,7 @@ description: "Ejecutar el servidor de cuentas y la distribución del CLI en tu p
 category: "Guides"
 order: 5
 language: es
-sourceHash: "787f541cea9060ed"
+sourceHash: "bd53b8bc522532de"
 sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
 ---
 
@@ -15,13 +15,13 @@ Rediacc puede ejecutarse completamente en tu propia infraestructura. La imagen D
 Descarga la imagen independiente:
 
 ```bash
-docker pull ghcr.io/rediacc/elite/web:stable
+docker pull ghcr.io/rediacc/server:stable
 ```
 
 Ejecuta con la configuración predeterminada:
 
 ```bash
-docker run -p 80:80 -p 443:443 ghcr.io/rediacc/elite/web:stable
+docker run -p 80:80 -p 443:443 ghcr.io/rediacc/server:stable
 ```
 
 La imagen sirve:
