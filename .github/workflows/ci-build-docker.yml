@@ -214,34 +214,29 @@ jobs:
   # bundle is built inside the Dockerfile via esbuild --bundle, with the
   # entry point parameterized by ACCOUNT_ENTRY (node | on-premise).
   #
-  # The matrix runs each (variant, platform) combo on a NATIVE runner. Earlier
-  # revisions used a single job with QEMU emulation for arm64; the cloud arm64
-  # build (npm install + esbuild bundling under qemu) consistently exceeded
-  # 30 minutes and got watchdog-cancelled. Native arm64 runners eliminate the
-  # emulation overhead. Per-arch tags are pushed here, then a follow-up
-  # manifest job stitches them into a single multi-arch tag.
-  build-server-docker:
-    name: Server Docker (${{ matrix.variant }} ${{ matrix.platform }})
-    runs-on: ${{ matrix.runner }}
+  # Builds are split per-arch onto NATIVE runners (ubuntu-latest for amd64,
+  # ubuntu-24.04-arm for arm64). Earlier revisions ran both archs in a single
+  # job with QEMU emulation for arm64; the cloud arm64 build (npm install +
+  # esbuild bundling under qemu) consistently exceeded the 30 minute timeout
+  # and got watchdog-cancelled. Native runners eliminate the emulation tax.
+  # Per-arch tags are pushed by these jobs; build-server-docker-manifest
+  # stitches them into a single multi-arch tag.
+  #
+  # The amd64 and arm64 jobs are duplicated rather than expressed as a matrix
+  # because GitHub Actions does not allow `matrix` context inside a job-level
+  # `if`, so we cannot conditionally skip arm64 in test_images_only mode from
+  # within a unified matrix. Two jobs is the simplest way to gate arm64 on
+  # `!inputs.test_images_only` while keeping amd64 unconditional.
+  build-server-docker-amd64:
+    name: Server Docker (${{ matrix.variant }} amd64)
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: [build-web, build-www, build-cli]
-    if: "inputs.web_exists != 'true' && (matrix.platform == 'amd64' || !inputs.test_images_only)"
+    if: inputs.web_exists != 'true'
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - variant: cloud
-            platform: amd64
-            runner: ubuntu-latest
-          - variant: cloud
-            platform: arm64
-            runner: ubuntu-24.04-arm
-          - variant: onprem
-            platform: amd64
-            runner: ubuntu-latest
-          - variant: onprem
-            platform: arm64
-            runner: ubuntu-24.04-arm
+        variant: [cloud, onprem]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - uses: ./.github/actions/app-token
@@ -309,29 +304,121 @@ jobs:
               ;;
           esac
 
-      - name: Build & push (${{ matrix.platform }})
+      - name: Build & push (amd64)
         env:
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
         run: |
           docker buildx build \
             --file Dockerfile \
             --target ${{ matrix.variant }} \
-            --platform linux/${{ matrix.platform }} \
+            --platform linux/amd64 \
             --build-arg VITE_APP_VERSION=${{ inputs.web_tag }} \
             --build-arg ACCOUNT_ENTRY=${{ steps.resolve.outputs.account_entry }} \
             --build-arg "ACCOUNT_ED25519_PUBLIC_KEY=$ACCOUNT_ED25519_PUBLIC_KEY" \
-            --tag ${{ steps.resolve.outputs.image_path }}:${{ inputs.web_tag }}-${{ matrix.platform }} \
+            --tag ${{ steps.resolve.outputs.image_path }}:${{ inputs.web_tag }}-amd64 \
             --push \
             .
 
-  # Combine the per-arch tags pushed by build-server-docker into a single
-  # multi-arch manifest tag. Skipped in test_images_only mode (only amd64 is
-  # built in fast mode, no manifest needed).
+  build-server-docker-arm64:
+    name: Server Docker (${{ matrix.variant }} arm64)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    needs: [build-web, build-www, build-cli]
+    if: "inputs.web_exists != 'true' && !inputs.test_images_only"
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [cloud, onprem]
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+        with:
+          name: build-web${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
+          path: web-assets/
+
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+        with:
+          name: build-www${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
+          path: www-assets/
+
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+        with:
+          name: cli-npm${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
+          path: cli-npm/
+
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+        with:
+          name: renet-binaries-${{ github.sha }}
+          path: binaries/
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Build account portal SPA
+        run: |
+          npm ci
+          npm run build:packages
+          cd private/account && npm install
+          cd web && npm install && npx vite build --outDir ../../../account-web-assets
+
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
+
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Resolve variant-specific values
+        id: resolve
+        run: |
+          case "${{ matrix.variant }}" in
+            cloud)
+              echo "image_path=ghcr.io/rediacc/elite/web" >> "$GITHUB_OUTPUT"
+              echo "account_entry=node" >> "$GITHUB_OUTPUT"
+              ;;
+            onprem)
+              echo "image_path=ghcr.io/rediacc/server" >> "$GITHUB_OUTPUT"
+              echo "account_entry=on-premise" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Build & push (arm64)
+        env:
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+        run: |
+          docker buildx build \
+            --file Dockerfile \
+            --target ${{ matrix.variant }} \
+            --platform linux/arm64 \
+            --build-arg VITE_APP_VERSION=${{ inputs.web_tag }} \
+            --build-arg ACCOUNT_ENTRY=${{ steps.resolve.outputs.account_entry }} \
+            --build-arg "ACCOUNT_ED25519_PUBLIC_KEY=$ACCOUNT_ED25519_PUBLIC_KEY" \
+            --tag ${{ steps.resolve.outputs.image_path }}:${{ inputs.web_tag }}-arm64 \
+            --push \
+            .
+
+  # Combine the per-arch tags pushed by build-server-docker-{amd64,arm64} into
+  # a single multi-arch manifest tag. Skipped in test_images_only mode (only
+  # amd64 is built in fast mode, no manifest needed).
   build-server-docker-manifest:
     name: Server Docker Manifest (${{ matrix.variant }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [build-server-docker]
+    needs: [build-server-docker-amd64, build-server-docker-arm64]
     if: "inputs.web_exists != 'true' && !inputs.test_images_only"
     strategy:
       fail-fast: false
