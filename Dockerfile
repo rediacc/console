@@ -49,15 +49,20 @@ WORKDIR /app
 COPY package*.json ./
 COPY packages/shared/package*.json packages/shared/
 COPY private/account/package*.json private/account/
-# `npm ci` at the workspace root installs every workspace (including
-# private/account and packages/shared). --ignore-scripts skips postinstall
-# hooks during the install layer to avoid running better-sqlite3 native
-# rebuilds we don't need at this stage.
+# Install workspace deps (only packages listed in root workspaces).
+# private/account is NOT a workspace member, so its deps must be installed
+# separately below. --ignore-scripts skips postinstall hooks here to avoid
+# running better-sqlite3 native rebuilds we don't need at this stage.
 RUN npm ci --ignore-scripts
 COPY packages/shared packages/shared
 RUN npm run build -w @rediacc/shared
 COPY private/account private/account
 WORKDIR /app/private/account
+# Install private/account's own deps (zod 3.x, hono, drizzle, etc).
+# Without this, tsc would walk up to /app/node_modules and resolve `zod`
+# to whatever bridge-tests pulled in (zod 4.x), which causes a cascade
+# of TS2307/TS1259 errors in the type-only checks.
+RUN npm install --ignore-scripts
 RUN npm run build
 # Use `npm exec esbuild` to ensure we run the workspace-pinned esbuild
 # (matching dev/CI bundling behavior) instead of `npx --yes` which would
