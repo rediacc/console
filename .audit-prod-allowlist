@@ -57,8 +57,13 @@
 # vite path traversal in optimized deps .map handling (dev tool, not runtime-exposed)
 1116005
 1116006
+1116123
+1116124
 # vite server.fs.deny bypass with queries (dev tool, not runtime-exposed)
 1116008
+1116126
 # vite arbitrary file read via dev server WebSocket (dev tool, not runtime-exposed)
 1116010
 1116011
+1116099
+1116100

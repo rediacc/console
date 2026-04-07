@@ -1587,6 +1587,7 @@
       "descriptionShort": "マシンライセンスとサブスクリプションの管理",
       "login": {
         "browserFailed": "ブラウザを自動的に開けませんでした。上記のURLにアクセスしてください。",
+        "channelSynced": "更新チャンネルを{{channel}}に設定しました。",
         "description": "WebポータルのAPIトークンで認証",
         "discoveringRegions": "利用可能なリージョンを検出中...",
         "expired": "認証がタイムアウトしました。もう一度お試しください。",
@@ -1598,14 +1599,13 @@
         "regionPrompt": "データをどこに保存しますか？",
         "regionsDiscovered": "リージョンを読み込みました",
         "regionSelected": "データリージョン: {{region}} ({{domain}})",
+        "serverChanged": "サーバーが変更されました。以前のセッションはクリアされました。",
         "success": "ログイン成功",
         "tokenInvalid": "トークンは rdt_ で始まる必要があります",
         "tokenPrompt": "APIトークンを入力してください（Webポータルから）:",
         "validated": "トークン検証済み",
         "validating": "トークンを検証中...",
-        "waitingApproval": "ブラウザでの認証を待っています...",
-        "channelSynced": "更新チャンネルを{{channel}}に設定しました。",
-        "serverChanged": "サーバーが変更されました。以前のセッションはクリアされました。"
+        "waitingApproval": "ブラウザでの認証を待っています..."
       },
       "logout": {
         "description": "保存されたサブスクリプショントークンを削除する",

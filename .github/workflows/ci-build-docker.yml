@@ -43,6 +43,8 @@ on:
     secrets:
       APP_PRIVATE_KEY:
         required: false
+      ACCOUNT_ED25519_PUBLIC_KEY:
+        required: false
 
 permissions:
   contents: read
@@ -200,12 +202,27 @@ jobs:
         if: inputs.plugins_exists == 'true'
         run: echo "::notice::Skipping Docker build - plugins:${{ inputs.plugins_tag }} already exists in registry"
 
-  build-web-docker:
-    name: Web Docker
+  # Server Docker: builds the consolidated Dockerfile in two variants from
+  # one source, matrix-parallel. The cloud variant publishes to the existing
+  # internal ghcr.io/rediacc/elite/web path; the onprem variant publishes to
+  # the customer-facing ghcr.io/rediacc/server path.
+  #
+  # Both consume the same pre-built artifacts: build-web (console SPA),
+  # build-www (marketing site), cli-npm (CLI tarball), and the renet-binaries
+  # artifact from ci-build-renet.yml (which embeds CRIU/rsync/rclone and
+  # bakes ACCOUNT_ED25519_PUBLIC_KEY into the binary). The account server
+  # bundle is built inside the Dockerfile via esbuild --bundle, with the
+  # entry point parameterized by ACCOUNT_ENTRY (node | on-premise).
+  build-server-docker:
+    name: Server Docker (${{ matrix.variant }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [build-web, build-www, build-cli]
     if: inputs.web_exists != 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [cloud, onprem]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - uses: ./.github/actions/app-token
@@ -234,6 +251,11 @@ jobs:
           name: cli-npm${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: cli-npm/
 
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+        with:
+          name: renet-binaries-${{ github.sha }}
+          path: binaries/
+
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
@@ -254,26 +276,48 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Build & push Web image (amd64)
+      - name: Resolve variant-specific values
+        id: resolve
+        run: |
+          case "${{ matrix.variant }}" in
+            cloud)
+              echo "image_path=ghcr.io/rediacc/elite/web" >> "$GITHUB_OUTPUT"
+              echo "account_entry=node" >> "$GITHUB_OUTPUT"
+              ;;
+            onprem)
+              echo "image_path=ghcr.io/rediacc/server" >> "$GITHUB_OUTPUT"
+              echo "account_entry=on-premise" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Build & push (amd64)
+        env:
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
         run: |
           docker buildx build \
-            --file Dockerfile.native \
+            --file Dockerfile \
+            --target ${{ matrix.variant }} \
             --platform linux/amd64 \
             --build-arg VITE_APP_VERSION=${{ inputs.web_tag }} \
-            --build-arg REDIACC_BUILD_TYPE=RELEASE \
-            --tag ghcr.io/rediacc/elite/web:${{ inputs.web_tag }}-amd64 \
+            --build-arg ACCOUNT_ENTRY=${{ steps.resolve.outputs.account_entry }} \
+            --build-arg "ACCOUNT_ED25519_PUBLIC_KEY=$ACCOUNT_ED25519_PUBLIC_KEY" \
+            --tag ${{ steps.resolve.outputs.image_path }}:${{ inputs.web_tag }}-amd64 \
             --push \
             .
 
-      - name: Build & push Web image (arm64)
+      - name: Build & push (arm64)
         if: "!inputs.test_images_only"
+        env:
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
         run: |
           docker buildx build \
-            --file Dockerfile.native \
+            --file Dockerfile \
+            --target ${{ matrix.variant }} \
             --platform linux/arm64 \
             --build-arg VITE_APP_VERSION=${{ inputs.web_tag }} \
-            --build-arg REDIACC_BUILD_TYPE=RELEASE \
-            --tag ghcr.io/rediacc/elite/web:${{ inputs.web_tag }}-arm64 \
+            --build-arg ACCOUNT_ENTRY=${{ steps.resolve.outputs.account_entry }} \
+            --build-arg "ACCOUNT_ED25519_PUBLIC_KEY=$ACCOUNT_ED25519_PUBLIC_KEY" \
+            --tag ${{ steps.resolve.outputs.image_path }}:${{ inputs.web_tag }}-arm64 \
             --push \
             .
 
@@ -281,15 +325,15 @@ jobs:
         if: "!inputs.test_images_only"
         run: |
           .ci/scripts/docker/create-manifest.sh \
-            --image web \
+            --image-path ${{ steps.resolve.outputs.image_path }} \
             --tag "${{ inputs.web_tag }}"
 
-  build-web-docker-skip:
-    name: Web Docker (cached)
+  build-server-docker-skip:
+    name: Server Docker (cached)
     runs-on: ubuntu-latest
     if: inputs.web_exists == 'true'
     steps:
-      - run: echo "::notice::Skipping Docker build - web:${{ inputs.web_tag }} already exists in registry"
+      - run: echo "::notice::Skipping Docker build - server image at tag ${{ inputs.web_tag }} already exists in registry"
 
   # CLI Docker: Build images from pre-built bundle on a single runner
   # CLI bundle is JavaScript (platform-independent), so no per-arch compilation needed

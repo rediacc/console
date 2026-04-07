@@ -2594,6 +2594,11 @@
         },
         "heading": "Comparer les plans en détail"
       },
+      "edgeChannel": {
+        "cta": "Commencer gratuitement",
+        "description": "Limites Community 2X, dernieres fonctionnalites, gratuit. Pas de carte de credit requise.",
+        "heading": "Essayer le canal Edge"
+      },
       "faq": {
         "heading": "Foire aux questions",
         "items": [
@@ -2954,11 +2959,6 @@
             }
           ]
         }
-      },
-      "edgeChannel": {
-        "heading": "Essayer le canal Edge",
-        "description": "Limites Community 2X, dernieres fonctionnalites, gratuit. Pas de carte de credit requise.",
-        "cta": "Commencer gratuitement"
       },
       "roiCta": {
         "description": "Utilisez notre calculateur de ROI interactif pour voir combien vous pouvez économiser avec Rediacc.",
@@ -13305,7 +13305,7 @@
     },
     "subtitle": "Tout, votre compte, votre facturation et vos configurations, reste dans la région que vous choisissez. Rien n'en sort jamais.",
     "tabEdge": "Edge",
-    "tabProduction": "Production",
+    "tabStable": "Stable",
     "title": "Où souhaitez-vous stocker vos données ?"
   },
   "solutions": {

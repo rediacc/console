@@ -23,7 +23,7 @@ import {
 const createValidSubscriptionData = (
   overrides: Partial<SubscriptionData> = {}
 ): SubscriptionData => ({
-  version: 1,
+  version: 2,
   subscriptionId: 'test-subscription-id',
   organizationId: 1,
   customerId: 'test-customer',
@@ -38,6 +38,8 @@ const createValidSubscriptionData = (
   features: PLAN_FEATURES.PROFESSIONAL,
   maxActivations: 5,
   activationCount: 1,
+  sequence: 1,
+  prevChainHash: 'genesis',
   ...overrides,
 });
 

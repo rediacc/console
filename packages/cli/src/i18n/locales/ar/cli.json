@@ -1587,6 +1587,7 @@
       "descriptionShort": "إدارة تراخيص الجهاز والاشتراك",
       "login": {
         "browserFailed": "تعذر فتح المتصفح تلقائياً. يرجى زيارة الرابط أعلاه.",
+        "channelSynced": "تم تعيين قناة التحديث إلى {{channel}}.",
         "description": "المصادقة باستخدام رمز API من بوابة الويب",
         "discoveringRegions": "جارٍ اكتشاف المناطق المتاحة...",
         "expired": "انتهت مهلة التفويض. يرجى المحاولة مرة أخرى.",
@@ -1598,14 +1599,13 @@
         "regionPrompt": "أين تريد تخزين بياناتك؟",
         "regionsDiscovered": "تم تحميل المناطق",
         "regionSelected": "منطقة البيانات: {{region}} ({{domain}})",
+        "serverChanged": "تم تغيير الخادم. تم مسح الجلسة السابقة.",
         "success": "تم تسجيل الدخول بنجاح",
         "tokenInvalid": "يجب أن يبدأ الرمز بـ rdt_",
         "tokenPrompt": "أدخل رمز API الخاص بك (من بوابة الويب):",
         "validated": "تم التحقق من الرمز",
         "validating": "جارٍ التحقق من الرمز...",
-        "waitingApproval": "في انتظار التفويض من المتصفح...",
-        "channelSynced": "تم تعيين قناة التحديث إلى {{channel}}.",
-        "serverChanged": "تم تغيير الخادم. تم مسح الجلسة السابقة."
+        "waitingApproval": "في انتظار التفويض من المتصفح..."
       },
       "logout": {
         "description": "مسح رمز الاشتراك المحفوظ",
