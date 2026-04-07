@@ -44,10 +44,15 @@ WORKDIR /app/packages/cli
 RUN npm run build && npm run build:bundle
 RUN mkdir -p /app/dist/npm && npm pack --pack-destination /app/dist/npm
 WORKDIR /app/dist/npm
-RUN CLI_PKG=$(ls rediacc-cli-*.tgz 2>/dev/null | head -1) && \
-    if [ -n "$CLI_PKG" ]; then \
-        cp "$CLI_PKG" rediacc-cli-latest.tgz; \
-    fi
+# `npm pack` produces exactly one .tgz here. Pick the highest-version match
+# (ls -v sorts naturally) and fail loudly if none exists - silently skipping
+# would produce a runtime image without a CLI release artifact.
+RUN CLI_PKG=$(ls -v rediacc-cli-*.tgz 2>/dev/null | tail -1) && \
+    if [ -z "$CLI_PKG" ]; then \
+        echo "FATAL: npm pack produced no rediacc-cli-*.tgz" >&2; \
+        exit 1; \
+    fi && \
+    cp "$CLI_PKG" rediacc-cli-latest.tgz
 
 # =============================================================================
 # Stage 2: Account Builder (on-premise variant)
@@ -57,15 +62,29 @@ WORKDIR /app
 COPY package*.json ./
 COPY packages/shared/package*.json packages/shared/
 COPY private/account/package*.json private/account/
+# `npm ci` at the root of the workspace already installs every workspace
+# (including private/account and packages/shared), so we do NOT need a
+# second `npm install` inside private/account afterwards. Use `--ignore-scripts`
+# to avoid running postinstall hooks during the install layer.
 RUN npm ci --ignore-scripts
 COPY packages/shared packages/shared
 RUN npm run build -w @rediacc/shared
 COPY private/account private/account
 WORKDIR /app/private/account
-RUN npm install
 RUN npm run build
-RUN npx --yes esbuild dist/entry/on-premise.js --bundle --platform=node --format=esm \
-    --outfile=dist/bundle-onprem.js --external:@aws-sdk/* --external:@smithy/*
+# Use `npm exec esbuild` to ensure we run the workspace-pinned esbuild
+# (matching dev/CI bundling behavior) instead of `npx --yes` which would
+# transparently download an arbitrary version from the registry.
+#
+# Bundle EVERYTHING (including @aws-sdk/* and @smithy/*) so the runtime
+# stage can run the on-premise entry directly without needing to `npm install`
+# at runtime. The previous setup externalized these and ran a non-reproducible
+# `npm install` in the runtime stage, which broke in workspace environments
+# (no lockfile, no workspace symlinks). Bundling everything trades a few
+# extra MB of image size for a fully self-contained, reproducible bundle.
+RUN npm exec --prefix /app -- esbuild dist/entry/on-premise.js --bundle --platform=node --format=esm \
+    --outfile=dist/bundle-onprem.js \
+    --banner:js="import { createRequire } from 'module'; const require = createRequire(import.meta.url);"
 
 # =============================================================================
 # Stage 3: Renet Builder (reused from main Dockerfile)
@@ -76,6 +95,11 @@ COPY private/renet/go.mod private/renet/go.sum ./
 RUN go mod download
 COPY private/renet .
 ARG VERSION=dev
+# LICENSE_ED25519_PUBLIC_KEY must be declared as an ARG here, otherwise the
+# `${LICENSE_ED25519_PUBLIC_KEY:-}` substitutions in the go build commands
+# below silently expand to empty and the renet binaries ship with no
+# embedded production public key (license verification would fail at runtime).
+ARG LICENSE_ED25519_PUBLIC_KEY
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags "-s -w -X main.Version=${VERSION} -X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=${LICENSE_ED25519_PUBLIC_KEY:-}" \
     -o /renet-linux-amd64 ./cmd/renet
@@ -94,12 +118,10 @@ RUN apk add --no-cache nginx
 COPY --from=cli-builder /app/packages/www/dist /usr/share/nginx/html
 # Copy account portal SPA
 COPY --from=cli-builder /app/dist/account-web /usr/share/nginx/html/account
-# Copy account server bundle (on-premise variant)
+# Copy account server bundle (on-premise variant). The bundle is fully
+# self-contained (esbuild --bundle with no externals), so no runtime
+# `npm install` is required - removes a non-reproducible build step.
 COPY --from=account-builder /app/private/account/dist/bundle-onprem.js /app/account/bundle.js
-COPY --from=account-builder /app/private/account/package.json /app/account/package.json
-WORKDIR /app/account
-RUN --mount=type=cache,target=/root/.npm \
-    npm install --omit=dev
 WORKDIR /
 # Copy CLI npm packages
 COPY --from=cli-builder /app/dist/npm /usr/share/nginx/html/npm
@@ -123,5 +145,9 @@ COPY .ci/docker/web/entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 80 443
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -q -O /dev/null http://localhost/health || exit 1
+# The Hono account server exposes /health at the root (see app.ts), and
+# nginx is configured to proxy / to the upstream account server.
+# wget --tries=1 prevents the healthcheck from hanging on cold-start nginx.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD wget --tries=1 --quiet --output-document=/dev/null http://localhost/health || exit 1
 ENTRYPOINT ["/docker-entrypoint.sh"]

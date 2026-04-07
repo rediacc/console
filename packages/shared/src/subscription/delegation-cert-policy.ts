@@ -63,10 +63,35 @@ export interface ComputedValidity {
 }
 
 /**
+ * Thrown by `computeDelegationCertValidity` when the subscription's
+ * expiresAt + grace window is already in the past. Issuing a cert in this
+ * state would silently mint a 1-day cert that outlives the documented
+ * hard cap and bypasses the expiry contract. Callers must handle this
+ * (the account service catches it and returns 403 SUBSCRIPTION_EXPIRED).
+ */
+export class SubscriptionExpiredForDelegationError extends Error {
+  readonly code = 'SUBSCRIPTION_EXPIRED_FOR_DELEGATION';
+  constructor(
+    public readonly subscriptionExpiresAt: string,
+    public readonly capExpiresAt: string
+  ) {
+    super(
+      `Subscription expired beyond grace period. ` +
+        `Subscription expiresAt=${subscriptionExpiresAt}, ` +
+        `cap (expiresAt + ${SUBSCRIPTION_CONFIG.gracePeriodDays}d grace)=${capExpiresAt}. ` +
+        `Cannot issue or renew a delegation cert.`
+    );
+  }
+}
+
+/**
  * Clamp a target validity (in days) to the subscription's expiry + grace
  * window. Returns the original target unchanged when no expiry is set or
- * when the target already fits inside the cap. Returns at minimum 1 day so
- * we never issue a 0-day cert.
+ * when the target already fits inside the cap.
+ *
+ * Throws `SubscriptionExpiredForDelegationError` when the cap is already
+ * in the past - silently clamping to 1 day in that case would let an
+ * expired subscription mint a fresh cert and undermine the hard cap.
  */
 function clampToSubscriptionExpiry(
   now: Date,
@@ -77,6 +102,12 @@ function clampToSubscriptionExpiry(
   const expiryMs = new Date(subscriptionExpiresAt).getTime();
   if (!Number.isFinite(expiryMs)) return { target, clamped: false };
   const capMs = expiryMs + SUBSCRIPTION_CONFIG.gracePeriodDays * 86_400_000;
+  if (capMs <= now.getTime()) {
+    throw new SubscriptionExpiredForDelegationError(
+      subscriptionExpiresAt,
+      new Date(capMs).toISOString()
+    );
+  }
   const targetEndMs = now.getTime() + target * 86_400_000;
   if (targetEndMs <= capMs) return { target, clamped: false };
   const clampedDays = Math.floor((capMs - now.getTime()) / 86_400_000);

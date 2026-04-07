@@ -4,6 +4,7 @@ import {
   computeRenewalThresholdDays,
   PLAN_DELEGATION_CERT_DEFAULT_DAYS,
   PLAN_DELEGATION_CERT_MAX_DAYS,
+  SubscriptionExpiredForDelegationError,
 } from '../index';
 
 const NOW = new Date('2026-04-07T00:00:00.000Z');
@@ -146,16 +147,32 @@ describe('computeDelegationCertValidity', () => {
       expect(result.reason).toBe('subscription_cap_clamp');
     });
 
-    it('floors at 1 day when grace has also expired', () => {
-      const result = computeDelegationCertValidity({
-        planCode: 'PROFESSIONAL',
-        subscriptionOverrideDays: null,
-        subscriptionExpiresAt: daysFromNow(-30), // expired 30 days ago
-        requestedDays: undefined,
-        now: NOW,
-      });
-      expect(result.effectiveDays).toBe(1);
-      expect(result.reason).toBe('subscription_cap_clamp');
+    it('throws SubscriptionExpiredForDelegationError when grace has also expired', () => {
+      // Subscription expired 30 days ago, grace period is 3 days, so the cap
+      // is 27 days in the past. Issuing a fresh 1-day cert here would let an
+      // expired subscription mint a cert that outlives the documented hard
+      // cap. The policy must reject outright.
+      expect(() =>
+        computeDelegationCertValidity({
+          planCode: 'PROFESSIONAL',
+          subscriptionOverrideDays: null,
+          subscriptionExpiresAt: daysFromNow(-30),
+          requestedDays: undefined,
+          now: NOW,
+        })
+      ).toThrow(SubscriptionExpiredForDelegationError);
+    });
+
+    it('throws when expiresAt + grace == now (boundary)', () => {
+      expect(() =>
+        computeDelegationCertValidity({
+          planCode: 'PROFESSIONAL',
+          subscriptionOverrideDays: null,
+          subscriptionExpiresAt: daysFromNow(-3), // exactly grace-period away
+          requestedDays: undefined,
+          now: NOW,
+        })
+      ).toThrow(SubscriptionExpiredForDelegationError);
     });
   });
 

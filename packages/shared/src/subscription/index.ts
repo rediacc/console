@@ -50,6 +50,7 @@ export type {
 export {
   computeDelegationCertValidity,
   computeRenewalThresholdDays,
+  SubscriptionExpiredForDelegationError,
 } from './delegation-cert-policy';
 export type {
   ComputedValidity,
