@@ -391,14 +391,17 @@ cleanup_deployments() {
                     log_warn "  [DRY-RUN] Would delete: $dep_id ($env, $created_at)"
                     deleted=$((deleted + 1))
                 else
-                    # Set inactive then delete (GitHub requires inactive before deletion)
+                    # Set inactive then delete (GitHub requires inactive before deletion).
+                    # Both calls are best-effort -- a failure here (e.g. 403 because the
+                    # token lacks deployments:write, or GitHub protecting the latest per
+                    # environment) must NOT kill the housekeeping job, since the rest of
+                    # the cleanup is independent and was already paid for by the release.
                     gh api "repos/$full_repo/deployments/$dep_id/statuses" \
-                        -X POST -f state=inactive >/dev/null 2>&1
+                        -X POST -f state=inactive >/dev/null 2>&1 || true
                     if retry_with_backoff 3 2 gh api -X DELETE "repos/$full_repo/deployments/$dep_id" 2>/dev/null; then
                         log_debug "  Deleted: $dep_id ($env)"
                         deleted=$((deleted + 1))
                     fi
-                    # Silently skip if delete fails (GitHub protects latest per environment)
                 fi
             done <<<"$to_delete"
         done

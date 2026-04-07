@@ -15,7 +15,7 @@ inputs:
       Permission preset: readonly (contents:read), ci (contents:write +
       pull_requests:read + actions:write), cd (contents:write +
       pull_requests:write + actions:write), housekeeping (contents:write +
-      packages:write + actions:write)
+      packages:write + actions:write + deployments:write)
     required: false
     default: readonly
   repositories:
@@ -56,6 +56,7 @@ runs:
             echo "perm-contents=write" >> "$GITHUB_OUTPUT"
             echo "perm-packages=write" >> "$GITHUB_OUTPUT"
             echo "perm-actions=write" >> "$GITHUB_OUTPUT"
+            echo "perm-deployments=write" >> "$GITHUB_OUTPUT"
             ;;
           *)
             echo "::error::Unknown preset: $preset"
@@ -75,6 +76,7 @@ runs:
         permission-pull-requests: ${{ steps.perms.outputs.perm-pull-requests }}
         permission-actions: ${{ steps.perms.outputs.perm-actions }}
         permission-packages: ${{ steps.perms.outputs.perm-packages }}
+        permission-deployments: ${{ steps.perms.outputs.perm-deployments }}
 
     # Configure global git credentials so submodule fetches can authenticate.
     # actions/checkout uses includeIf.gitdir (local scope) which doesn't apply
