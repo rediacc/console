@@ -192,6 +192,20 @@ const ALLOWED_IDENTICAL = new Set([
   'Priority',
   'Premium',
   'Enterprise',
+  // Universal short UI labels (with and without trailing colon)
+  'Plan:',
+  'Plan: {{planCode}}',
+  'Status:',
+  'Tier default:',
+  '(tier default)',
+  // Cryptography / on-premise technical labels (kept English globally)
+  'Genesis hash:',
+  'Genesis sequence:',
+  // Format strings with placeholder + unit suffix - language-neutral
+  '{{days}}d',
+  '(max {{days}}d).',
+  // File extension labels (kept English)
+  'Download .json',
   'Multi-Cloud',
   'MULTI-CLOUD',
   // Solution page technical terms

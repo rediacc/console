@@ -20,6 +20,10 @@ export {
   getStripeLookupKey,
   hasFeature,
   isValidPlanCode,
+  DELEGATION_CERT_CREATE_RATE_LIMIT,
+  MAX_ACTIVE_DELEGATION_CERTS_PER_SUBSCRIPTION,
+  PLAN_DELEGATION_CERT_DEFAULT_DAYS,
+  PLAN_DELEGATION_CERT_MAX_DAYS,
   PLAN_FEATURES,
   PLAN_LIMITS,
   PLAN_MAX_MACHINES,
@@ -27,14 +31,37 @@ export {
   PLAN_ORDER,
   PLAN_PRICING,
   PROGRESSIVE_LIMIT_KEYS,
+  RENEWAL_MANIFEST_MAX_AGE_MS,
   SUBSCRIPTION_CONFIG,
 } from './constants';
+// Air-gapped renewal manifest
+export {
+  canonicalManifestBytes,
+  isManifestExpired,
+  RENEWAL_MANIFEST_SCHEMA_VERSION,
+  verifyManifestSignature,
+} from './renewal-manifest';
+export type {
+  RenewalRequestManifest,
+  SignedRenewalRequestManifest,
+} from './renewal-manifest';
+// Delegation cert validity policy
+export {
+  computeDelegationCertValidity,
+  computeRenewalThresholdDays,
+} from './delegation-cert-policy';
+export type {
+  ComputedValidity,
+  ComputeValidityInput,
+  ValidityClampReason,
+} from './delegation-cert-policy';
 // Signing keys (Ed25519 public keys for signature verification)
 export { CURRENT_SIGNING_KEY, SIGNING_KEYS } from './signing-keys';
 export type { SigningKey } from './signing-keys';
 // Crypto (Ed25519 signature verification)
 export {
   clearPublicKeys,
+  computeChainHash,
   createSignedSubscription,
   generateKeyPair,
   getPublicKeyIds,
@@ -50,6 +77,7 @@ export type {
   ApiToken,
   ApiTokenScope,
   BillingPeriod,
+  DelegationCert,
   FeatureFlags,
   OrganizationSubscription,
   PlanCode,

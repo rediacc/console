@@ -50,6 +50,7 @@ export const PLAN_FEATURES: Record<PlanCode, FeatureFlags> = {
     advancedQueue: false,
     customBranding: false,
     dedicatedAccount: false,
+    delegationCerts: false,
   },
   PROFESSIONAL: {
     permissionGroups: true,
@@ -61,6 +62,7 @@ export const PLAN_FEATURES: Record<PlanCode, FeatureFlags> = {
     advancedQueue: false,
     customBranding: true,
     dedicatedAccount: false,
+    delegationCerts: true,
   },
   BUSINESS: {
     permissionGroups: true,
@@ -72,6 +74,7 @@ export const PLAN_FEATURES: Record<PlanCode, FeatureFlags> = {
     advancedQueue: true,
     customBranding: true,
     dedicatedAccount: false,
+    delegationCerts: true,
   },
   ENTERPRISE: {
     permissionGroups: true,
@@ -83,6 +86,7 @@ export const PLAN_FEATURES: Record<PlanCode, FeatureFlags> = {
     advancedQueue: true,
     customBranding: true,
     dedicatedAccount: true,
+    delegationCerts: true,
   },
 } as const;
 
@@ -119,6 +123,64 @@ export const PLAN_MAX_MACHINES: Record<PlanCode, number> = {
   BUSINESS: 20,
   ENTERPRISE: 50,
 } as const;
+
+/**
+ * Default delegation cert validity in days, by plan.
+ * Used when neither the request nor a per-subscription override specifies a value.
+ */
+export const PLAN_DELEGATION_CERT_DEFAULT_DAYS: Record<PlanCode, number> = {
+  COMMUNITY: 15,
+  PROFESSIONAL: 60,
+  BUSINESS: 90,
+  ENTERPRISE: 120,
+} as const;
+
+/**
+ * Hard ceiling for delegation cert validity per plan.
+ * Bypassed when a subscription has an explicit `delegationCertDefaultDays` override.
+ */
+export const PLAN_DELEGATION_CERT_MAX_DAYS: Record<PlanCode, number> = {
+  COMMUNITY: 30,
+  PROFESSIONAL: 120,
+  BUSINESS: 180,
+  ENTERPRISE: 365,
+} as const;
+
+/**
+ * Maximum simultaneously-active delegation certs per subscription. Hard cap = 1.
+ *
+ * Each on-premise install enforces `maxRepoLicenseIssuancesPerMonth`,
+ * `maxActivations`, and chain integrity against its OWN local issuance ledger.
+ * If a subscription has multiple active certs (one per install), each install
+ * enforces independently — multiplying the effective quota by the number of
+ * installs with no possible upstream reconciliation.
+ *
+ * Single-active is the only enforceable model. Customers needing multiple
+ * installs (production + staging + DR) must purchase one subscription per
+ * install.
+ */
+export const MAX_ACTIVE_DELEGATION_CERTS_PER_SUBSCRIPTION = 1;
+
+/**
+ * Maximum delegation cert create attempts per subscription per rolling window.
+ *
+ * Even with single-active enforcement, the loop revoke→create→revoke→create
+ * burns one master-key signature per iteration. This rate limit caps the
+ * signing-pipeline abuse rate even when the active count never exceeds 1.
+ * Counts every attempt, including ones rejected by single-active (so a
+ * collision-spam loop is also throttled).
+ */
+export const DELEGATION_CERT_CREATE_RATE_LIMIT = {
+  maxAttempts: 10,
+  windowMs: 24 * 60 * 60 * 1000,
+} as const;
+
+/**
+ * Maximum age of an air-gapped renewal manifest before it is rejected as stale.
+ * 7 days is generous for international physical-media shipping while limiting
+ * replay surface.
+ */
+export const RENEWAL_MANIFEST_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Get maximum machines for a plan code.

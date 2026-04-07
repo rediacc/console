@@ -1,0 +1,127 @@
+# Dockerfile for on-premise Rediacc deployment
+#
+# Feature-reduced variant of the main Dockerfile:
+# - Uses the on-premise entry point (no admin routes, no Stripe)
+# - SMTP email transport (no AWS SES dependency)
+# - Delegation cert for license signing (no master Ed25519 key)
+# - Serves CLI binaries for air-gapped CLI installation
+#
+# Build: docker build -f Dockerfile.onprem -t rediacc/web-onprem:latest .
+# Run:   docker run -p 80:80 -p 443:443 \
+#          -e SMTP_HOST=smtp.company.com \
+#          -e SMTP_FROM=noreply@company.com \
+#          -e EMAIL_TRANSPORT=smtp \
+#          -e ON_PREMISE_MODE=true \
+#          -e DELEGATION_CERT_BASE64=... \
+#          -e ON_PREMISE_PRIVATE_KEY=... \
+#          -e ON_PREMISE_PUBLIC_KEY=... \
+#          rediacc/web-onprem:latest
+
+ARG NODE_IMAGE=node:22-alpine
+ARG GO_IMAGE=golang:1.25-alpine
+
+# =============================================================================
+# Stage 1: CLI Builder (reused from main Dockerfile)
+# =============================================================================
+FROM ${NODE_IMAGE} AS cli-builder
+ARG VITE_APP_VERSION=latest
+WORKDIR /app
+COPY package*.json ./
+COPY packages/shared/package*.json packages/shared/
+COPY packages/cli/package*.json packages/cli/
+COPY packages/www/package*.json packages/www/
+COPY private/account/package*.json private/account/
+COPY private/account/web/package*.json private/account/web/
+RUN npm ci --ignore-scripts
+COPY packages/shared packages/shared
+RUN npm run build -w @rediacc/shared
+COPY packages/www packages/www
+RUN npm run build -w @rediacc/www
+COPY private/account private/account
+WORKDIR /app/private/account/web
+RUN npx vite build --outDir /app/dist/account-web
+WORKDIR /app/packages/cli
+RUN npm run build && npm run build:bundle
+RUN mkdir -p /app/dist/npm && npm pack --pack-destination /app/dist/npm
+WORKDIR /app/dist/npm
+RUN CLI_PKG=$(ls rediacc-cli-*.tgz 2>/dev/null | head -1) && \
+    if [ -n "$CLI_PKG" ]; then \
+        cp "$CLI_PKG" rediacc-cli-latest.tgz; \
+    fi
+
+# =============================================================================
+# Stage 2: Account Builder (on-premise variant)
+# =============================================================================
+FROM ${NODE_IMAGE} AS account-builder
+WORKDIR /app
+COPY package*.json ./
+COPY packages/shared/package*.json packages/shared/
+COPY private/account/package*.json private/account/
+RUN npm ci --ignore-scripts
+COPY packages/shared packages/shared
+RUN npm run build -w @rediacc/shared
+COPY private/account private/account
+WORKDIR /app/private/account
+RUN npm install
+RUN npm run build
+RUN npx --yes esbuild dist/entry/on-premise.js --bundle --platform=node --format=esm \
+    --outfile=dist/bundle-onprem.js --external:@aws-sdk/* --external:@smithy/*
+
+# =============================================================================
+# Stage 3: Renet Builder (reused from main Dockerfile)
+# =============================================================================
+FROM ${GO_IMAGE} AS renet-builder
+WORKDIR /renet
+COPY private/renet/go.mod private/renet/go.sum ./
+RUN go mod download
+COPY private/renet .
+ARG VERSION=dev
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags "-s -w -X main.Version=${VERSION} -X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=${LICENSE_ED25519_PUBLIC_KEY:-}" \
+    -o /renet-linux-amd64 ./cmd/renet
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
+    -ldflags "-s -w -X main.Version=${VERSION} -X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=${LICENSE_ED25519_PUBLIC_KEY:-}" \
+    -o /renet-linux-arm64 ./cmd/renet
+
+# =============================================================================
+# Stage 4: Runtime
+# =============================================================================
+FROM ${NODE_IMAGE} AS runtime
+
+RUN apk add --no-cache nginx
+
+# Copy marketing site
+COPY --from=cli-builder /app/packages/www/dist /usr/share/nginx/html
+# Copy account portal SPA
+COPY --from=cli-builder /app/dist/account-web /usr/share/nginx/html/account
+# Copy account server bundle (on-premise variant)
+COPY --from=account-builder /app/private/account/dist/bundle-onprem.js /app/account/bundle.js
+COPY --from=account-builder /app/private/account/package.json /app/account/package.json
+WORKDIR /app/account
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --omit=dev
+WORKDIR /
+# Copy CLI npm packages
+COPY --from=cli-builder /app/dist/npm /usr/share/nginx/html/npm
+# Serve CLI releases for on-premise install script
+ARG VITE_APP_VERSION=latest
+RUN mkdir -p /usr/share/nginx/html/releases/cli/stable && \
+    cp /usr/share/nginx/html/npm/rediacc-cli-latest.tgz \
+       /usr/share/nginx/html/releases/cli/stable/rediacc-cli-latest.tgz 2>/dev/null || true && \
+    echo "{\"version\":\"${VITE_APP_VERSION}\",\"npm\":true}" > \
+       /usr/share/nginx/html/releases/cli/stable/latest.json
+# Copy renet binaries
+COPY --from=renet-builder /renet-linux-amd64 /usr/share/nginx/html/bin/renet-linux-amd64
+COPY --from=renet-builder /renet-linux-arm64 /usr/share/nginx/html/bin/renet-linux-arm64
+RUN cd /usr/share/nginx/html/bin && \
+    cp renet-linux-amd64 renet-linux-amd64-latest && \
+    cp renet-linux-arm64 renet-linux-arm64-latest
+# Copy nginx configuration and entrypoint
+COPY .ci/docker/web/nginx.conf /etc/nginx/http.d/default.conf
+COPY .ci/docker/web/nginx-https.conf /etc/nginx/nginx-https.conf
+COPY .ci/docker/web/entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+EXPOSE 80 443
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -q -O /dev/null http://localhost/health || exit 1
+ENTRYPOINT ["/docker-entrypoint.sh"]
