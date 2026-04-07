@@ -340,14 +340,14 @@ ensure_renet_built() {
     if [[ "$(uname -s)" != "Linux" ]]; then
         local linux_bin="$renet_dir/bin/renet-linux-amd64"
         if [[ ! -f "$linux_bin" ]] || [[ "$renet_bin" -nt "$linux_bin" ]]; then
-            # Read license public key (same logic as build.sh dev)
-            local _xc_license_key="${LICENSE_ED25519_PUBLIC_KEY:-}"
-            if [[ -z "$_xc_license_key" ]] && [[ -f "$renet_dir/../account/.env" ]]; then
-                _xc_license_key=$(sed -n 's/^ED25519_PUBLIC_KEY=//p' "$renet_dir/../account/.env" | tr -d '\r')
+            # Read account server public key (same logic as build.sh dev)
+            local _xc_account_key="${ACCOUNT_ED25519_PUBLIC_KEY:-}"
+            if [[ -z "$_xc_account_key" ]] && [[ -f "$renet_dir/../account/.env" ]]; then
+                _xc_account_key=$(sed -n 's/^ED25519_PUBLIC_KEY=//p' "$renet_dir/../account/.env" | tr -d '\r')
             fi
             local _xc_key_ldflags=""
-            if [[ -n "$_xc_license_key" ]]; then
-                _xc_key_ldflags="-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=$_xc_license_key"
+            if [[ -n "$_xc_account_key" ]]; then
+                _xc_key_ldflags="-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=$_xc_account_key"
             fi
             local _xc_version
             _xc_version="$(cd "$LOCAL_ROOT_DIR" && git describe --tags --always 2>/dev/null || echo dev)-dev"

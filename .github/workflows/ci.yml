@@ -448,7 +448,7 @@ jobs:
       bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-      LICENSE_ED25519_PUBLIC_KEY: ${{ secrets.LICENSE_ED25519_PUBLIC_KEY }}
+      ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
       OTLP_AUTH_TOKEN: ${{ secrets.OTLP_AUTH_TOKEN }}
 
   build-docker:
