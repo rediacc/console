@@ -225,7 +225,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     needs: [build-web, build-www, build-cli]
-    if: inputs.web_exists != 'true' && (matrix.platform == 'amd64' || !inputs.test_images_only)
+    if: "inputs.web_exists != 'true' && (matrix.platform == 'amd64' || !inputs.test_images_only)"
     strategy:
       fail-fast: false
       matrix:
@@ -332,7 +332,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [build-server-docker]
-    if: inputs.web_exists != 'true' && !inputs.test_images_only
+    if: "inputs.web_exists != 'true' && !inputs.test_images_only"
     strategy:
       fail-fast: false
       matrix:
