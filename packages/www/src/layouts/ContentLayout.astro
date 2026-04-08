@@ -39,19 +39,19 @@ if (currentLang) {
   // Add Home
   breadcrumbItems.push({
     name: t('navigation.home'),
-    url: `/${currentLang}/`
+    url: `/${currentLang}`
   });
 
   // Add collection level (Blog or Docs)
   if (isBlogPost) {
     breadcrumbItems.push({
       name: t('navigation.blog'),
-      url: `/${currentLang}/blog/`
+      url: `/${currentLang}/blog`
     });
   } else if (isDoc) {
     breadcrumbItems.push({
       name: t('navigation.docs'),
-      url: `/${currentLang}/docs/`
+      url: `/${currentLang}/docs`
     });
   }
 

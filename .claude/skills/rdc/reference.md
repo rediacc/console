@@ -771,6 +771,7 @@ Create a new named config file
 - `--renet-path <path>` — Path to renet binary (default: renet in PATH)
 - `--master-password <password>` — Encrypt resources with a master password
 - `-u, --api-url <url>` — API URL
+- `--server <url>` — Account server URL
 
 ### rdc config list
 

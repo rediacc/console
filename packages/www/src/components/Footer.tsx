@@ -24,7 +24,7 @@ const Footer: React.FC = () => {
           {/* Logo Column */}
           <div className="footer-column footer-logo-column">
             <a
-              href={`/${currentLang}/`}
+              href={`/${currentLang}`}
               className="footer-logo-link"
               aria-label={t('common.aria.rediaccHome')}
               data-track="cta_click"
@@ -45,7 +45,7 @@ const Footer: React.FC = () => {
             <ul className="footer-list">
               <li>
                 <a
-                  href={`/${currentLang}/`}
+                  href={`/${currentLang}`}
                   className="footer-link"
                   data-track="cta_click"
                   data-track-label="footer-nav"
@@ -98,7 +98,7 @@ const Footer: React.FC = () => {
             <ul className="footer-list">
               <li>
                 <a
-                  href={`/${currentLang}/#solutions`}
+                  href={`/${currentLang}#solutions`}
                   className="footer-link"
                   data-track="cta_click"
                   data-track-label="footer-product"
@@ -109,7 +109,7 @@ const Footer: React.FC = () => {
               </li>
               <li>
                 <a
-                  href={`/${currentLang}/#problem`}
+                  href={`/${currentLang}#problem`}
                   className="footer-link"
                   data-track="cta_click"
                   data-track-label="footer-product"
@@ -120,7 +120,7 @@ const Footer: React.FC = () => {
               </li>
               <li>
                 <a
-                  href={`/${currentLang}/#pricing`}
+                  href={`/${currentLang}#pricing`}
                   className="footer-link"
                   data-track="cta_click"
                   data-track-label="footer-product"

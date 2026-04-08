@@ -79,7 +79,7 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
         (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
         {};
       const lastSolution = sessionStorage.getItem('__pa_last_solution') ?? undefined;
-      window.plausible('contact_submit', {
+      window.plausible?.('contact_submit', {
         props: {
           subject: selectedSubject,
           source: 'contact-page',
@@ -121,7 +121,7 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
       onFocus={() => {
         if (!hasFiredStart.current) {
           hasFiredStart.current = true;
-          window.plausible('contact_form_start', { props: { source: 'contact-page' } });
+          window.plausible?.('contact_form_start', { props: { source: 'contact-page' } });
         }
       }}
     >

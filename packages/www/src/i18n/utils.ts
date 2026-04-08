@@ -46,21 +46,32 @@ function interpolate(text: string, params?: InterpolationParams): string {
 }
 
 /**
- * Get translation by key with optional interpolation
+ * Get translation by key with optional interpolation or fallback string.
+ *
+ * Second argument can be either an interpolation params object
+ * (e.g. `t('greeting', { name: 'world' })`) or a literal fallback string used
+ * when the translation key is missing (e.g. `t('newKey', 'Default text')`).
+ *
  * @param lang - Language code
  * @param key - Translation key in dot notation (e.g., "hero.title")
- * @param params - Optional parameters for interpolation
- * @returns Translated string or the key if translation not found
+ * @param paramsOrFallback - Interpolation params, or a string fallback used when the key is missing
+ * @returns Translated string, or the fallback / key if not found
  */
-function getTranslation(lang: Language, key: string, params?: InterpolationParams): string {
+function getTranslation(
+  lang: Language,
+  key: string,
+  paramsOrFallback?: InterpolationParams | string
+): string {
   const translation = getNestedValue(translations[lang], key);
 
   if (translation === undefined) {
+    if (typeof paramsOrFallback === 'string') return paramsOrFallback;
     console.warn(`Translation key not found: ${key}`);
     return key;
   }
 
   if (typeof translation === 'string') {
+    const params = typeof paramsOrFallback === 'object' ? paramsOrFallback : undefined;
     return interpolate(translation, params);
   }
 
@@ -91,7 +102,8 @@ function getTranslationArray(lang: Language, key: string): string[] {
  */
 export function createTranslator(lang: Language = 'en') {
   return {
-    t: (key: string, params?: InterpolationParams) => getTranslation(lang, key, params),
+    t: (key: string, paramsOrFallback?: InterpolationParams | string) =>
+      getTranslation(lang, key, paramsOrFallback),
     ta: (key: string) => getTranslationArray(lang, key),
     to: <P extends string>(key: P): PathValue<Translations, P> =>
       getNestedValue(translations[lang], key) as PathValue<Translations, P>,

@@ -24,12 +24,12 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ label = 'Toggle theme' }) => 
     localStorage.setItem('theme', next);
 
     // Update theme-color meta tag for browser chrome
-    const meta = document.querySelector('meta[name="theme-color"][media]');
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"][media]');
     if (meta) {
       meta.content = next === 'dark' ? '#0f0f10' : '#556b2f';
     }
 
-    window.plausible('theme_toggle', { props: { theme: next } });
+    window.plausible?.('theme_toggle', { props: { theme: next } });
   };
 
   return (

@@ -22,7 +22,7 @@ export const GET: APIRoute = async () => {
     zip.file(`${slug}.md`, `${frontmatter}\n\n${doc.body}`);
   }
 
-  const buffer = await zip.generateAsync({ type: 'uint8array' });
+  const buffer = await zip.generateAsync({ type: 'arraybuffer' });
 
   return new Response(buffer, {
     headers: {
