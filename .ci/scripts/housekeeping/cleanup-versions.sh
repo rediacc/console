@@ -28,8 +28,18 @@ GITHUB_ORG="rediacc"
 # Repos to clean tags from
 TAG_REPOS=("console" "renet" "middleware")
 
-# GHCR packages to clean (under ghcr.io/rediacc/elite/*)
-GHCR_PACKAGES=("api" "bridge" "web" "plugin-terminal" "plugin-browser" "cli")
+# GHCR packages to clean. Each entry is the full package path under
+# ghcr.io/rediacc/* (org-relative). Most images live under elite/, but the
+# customer-facing on-prem image is at ghcr.io/rediacc/server (no namespace).
+GHCR_PACKAGES=(
+    "elite/api"
+    "elite/bridge"
+    "elite/web"
+    "elite/plugin-terminal"
+    "elite/plugin-browser"
+    "elite/cli"
+    "server"
+)
 
 # Repos to clean deployments from
 DEPLOYMENT_REPOS=("console")
@@ -257,8 +267,7 @@ cleanup_tags() {
 cleanup_packages() {
     log_step "Phase 3: Cleaning up GHCR package versions"
 
-    for package in "${GHCR_PACKAGES[@]}"; do
-        local package_name="elite/${package}"
+    for package_name in "${GHCR_PACKAGES[@]}"; do
         local encoded_package
         encoded_package="$(echo "$package_name" | sed 's|/|%2F|g')"
 
