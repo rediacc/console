@@ -263,7 +263,10 @@ function checkBuiltHtmlInternalLinks() {
   console.log('Checking built HTML for trailing-slash internal links...');
 
   const htmlFiles = globSync(`${WWW_DIST}/**/*.html`);
-  const linkPattern = /\bhref\s*=\s*(['"])([^'"]*)\1/gi;
+  // Check both `href` (anchors, links) and `action` (forms) so the
+  // trailingSlash: 'never' policy is enforced uniformly across navigation
+  // and form-target attributes.
+  const linkPattern = /\b(?:href|action)\s*=\s*(['"])([^'"]*)\1/gi;
 
   let totalOffenders = 0;
   const fileOffenders = new Map<string, number>();

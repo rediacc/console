@@ -29,10 +29,11 @@ const computeIsActive = (href: string, currentPath: string, currentLang: string)
   return normalizedPath === normalizedHref || normalizedPath.startsWith(`${normalizedHref}/`);
 };
 
+const FOCUSABLE_SELECTOR =
+  'a[href]:not([tabindex="-1"]), button:not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
+
 const handleFocusTrap = (e: KeyboardEvent, sidebar: HTMLElement): void => {
-  const focusableElements = sidebar.querySelectorAll<HTMLElement>(
-    'a[href], button, [tabindex]:not([tabindex="-1"])'
-  );
+  const focusableElements = sidebar.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
   if (focusableElements.length === 0) return;
   const firstEl = focusableElements[0];
   const lastEl = focusableElements[focusableElements.length - 1];
@@ -52,8 +53,10 @@ const useSidebarBodyLock = (isOpen: boolean, sidebarRef: React.RefObject<HTMLEle
       document.body.classList.add('sidebar-active');
       document.body.style.overflow = 'hidden';
       window.plausible?.('sidebar_toggle', { props: { action: 'open' } });
-      const firstLink = sidebarRef.current?.querySelector<HTMLAnchorElement>('.sidebar-link');
-      firstLink?.focus();
+      // Focus the first interactive element in the visual order — usually the
+      // Account CTA at the top of the sidebar, not the first .sidebar-link.
+      const firstTabbable = sidebarRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+      firstTabbable?.focus();
     } else {
       document.body.classList.remove('sidebar-active');
       document.body.style.overflow = '';

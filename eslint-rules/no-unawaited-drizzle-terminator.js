@@ -129,7 +129,16 @@ function isSafelyConsumed(node, ancestors) {
   // be linted by the no-floating-promises chain at the caller). If the
   // enclosing function is NOT async, the Promise still floats — but that's
   // a separate bug class that no-floating-promises catches generically.
-  if (parent.type === 'ReturnStatement' || parent.type === 'ArrowFunctionExpression') {
+  //
+  // NOTE: ArrowFunctionExpression is intentionally NOT in this allow-list.
+  // A concise arrow body like `() => chain.run()` returns the Promise, but
+  // many callers (Array.forEach, Set.forEach, EventEmitter.on, etc.) ignore
+  // the callback's return value. Treating every arrow expression as safely
+  // consumed creates false negatives for exactly the unawaited Drizzle
+  // terminators this rule exists to catch. If the arrow body is the
+  // argument of an awaited Promise.all/.race/.allSettled (Array.map case),
+  // the ArrayExpression branch below already handles it.
+  if (parent.type === 'ReturnStatement') {
     return true;
   }
 

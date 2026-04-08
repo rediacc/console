@@ -133,6 +133,10 @@ _create_management_token() {
         zone_resources_json='{}'
     fi
 
+    # Cloudflare's user/tokens endpoint rejects policies with an empty
+    # `resources` map (400 invalid_request). If the account has no zones,
+    # `$zone_resources_json` is `{}` and the zone-scoped policy must be
+    # omitted entirely instead of sent with an empty map.
     local response
     response=$(curl -s -X POST "${CF_API_BASE}/user/tokens" \
         -H "X-Auth-Key: ${CF_API_KEY}" -H "X-Auth-Email: ${CF_EMAIL}" \
@@ -143,7 +147,7 @@ _create_management_token() {
             --argjson zone_resources "$zone_resources_json" \
             '{
                 name: "auto-rotation-management",
-                policies: [
+                policies: ([
                     {
                         effect: "allow",
                         resources: { ("com.cloudflare.api.account." + $account_id): "*" },
@@ -155,15 +159,15 @@ _create_management_token() {
                             { id: "e086da7e2179491d91ee5f35b3ca210a" },
                             { id: "09b2857d1c31407795e75e3fed8617a1" }
                         ]
-                    },
-                    {
+                    }
+                ] + (if ($zone_resources | length) > 0 then [{
                         effect: "allow",
                         resources: $zone_resources,
                         permission_groups: [
                             { id: "28f4b596e7d643029c524985477ae49a" },
                             { id: "82e64a83756745bbbb1c9c2701bf816b" }
                         ]
-                    },
+                    }] else [] end) + [
                     {
                         effect: "allow",
                         resources: { ("com.cloudflare.api.user." + $user_id): "*" },
@@ -172,7 +176,7 @@ _create_management_token() {
                             { id: "686d18d5ac6c441c867cbf6771e58a0a" }
                         ]
                     }
-                ]
+                ])
             }')")
 
     echo "$response" | jq -r '.result.value // empty'

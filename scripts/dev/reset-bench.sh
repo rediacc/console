@@ -106,9 +106,13 @@ if [[ "$DO_D1" == "true" ]]; then
     log_step "Querying D1 table list ($DB_NAME)"
     # The d1/database/{uuid}/query endpoint runs against the remote D1.
     # Uses CF_AUTH_HEADERS populated by resolve_cf_auth.
+    # Includes d1_migrations: wrangler uses this ledger to decide which
+    # migrations to apply, so leaving it intact would cause `wrangler d1
+    # migrations apply` to no-op after the wipe and skip schema recreation.
+    # _cf_% (Cloudflare-internal) and sqlite_% (SQLite metadata) stay.
     tables_json=$(curl -sS -X POST "$CF_API_BASE/accounts/$ACCOUNT_ID/d1/database/$DB_UUID/query" \
         "${CF_AUTH_HEADERS[@]}" -H "Content-Type: application/json" \
-        -d '{"sql":"SELECT name FROM sqlite_master WHERE type='\''table'\'' AND name NOT LIKE '\''sqlite_%'\'' AND name NOT LIKE '\''_cf_%'\'' AND name NOT LIKE '\''d1_migrations%'\''"}')
+        -d '{"sql":"SELECT name FROM sqlite_master WHERE type='\''table'\'' AND name NOT LIKE '\''sqlite_%'\'' AND name NOT LIKE '\''_cf_%'\''"}')
 
     success=$(echo "$tables_json" | jq -r '.success')
     if [[ "$success" != "true" ]]; then
@@ -155,11 +159,20 @@ if [[ "$DO_R2" == "true" ]]; then
     [[ -d node_modules ]] || npm install
 
     # The R2 bucket-management API doesn't list objects (those go through the
-    # S3-compatible endpoint with R2 access keys). For internal bench use the
-    # bucket should never be huge, so we list+delete via the d1-style API.
-    keys_json=$(curl -sS "$CF_API_BASE/accounts/$ACCOUNT_ID/r2/buckets/$BUCKET/objects?per_page=1000" \
-        "${CF_AUTH_HEADERS[@]}" 2>/dev/null || echo '{"result":[]}')
-    mapfile -t keys < <(echo "$keys_json" | jq -r '.result[]?.key // empty' 2>/dev/null)
+    # S3-compatible endpoint with R2 access keys). Paginate via cursor so a
+    # bucket with >1000 objects doesn't leave orphans behind.
+    keys=()
+    cursor=""
+    while :; do
+        url="$CF_API_BASE/accounts/$ACCOUNT_ID/r2/buckets/$BUCKET/objects?per_page=1000"
+        [[ -n "$cursor" ]] && url="${url}&cursor=${cursor}"
+        keys_json=$(curl -sS "$url" "${CF_AUTH_HEADERS[@]}" 2>/dev/null || echo '{"result":[]}')
+        while IFS= read -r k; do
+            [[ -n "$k" ]] && keys+=("$k")
+        done < <(echo "$keys_json" | jq -r '.result[]?.key // empty' 2>/dev/null)
+        cursor=$(echo "$keys_json" | jq -r '.result_info.cursor // ""' 2>/dev/null)
+        [[ -z "$cursor" || "$cursor" == "null" ]] && break
+    done
 
     if [[ ${#keys[@]} -eq 0 ]]; then
         log_info "Bucket is already empty (or listing API not available — continuing)"
