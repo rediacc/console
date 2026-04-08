@@ -5,10 +5,15 @@
 # Usage:
 #   retag-image.sh --image api --from 20260120-104603 --to 0.5.0
 #   retag-image.sh --all --from 20260120-104603 --to 0.5.0 [--push-latest]
+#   retag-image.sh --image-path ghcr.io/rediacc/server --from 0.5.0-abc --to 0.5.0 [--push-latest]
 #
 # Options:
-#   --image NAME       Re-tag specific image (api, bridge, plugin-terminal, plugin-browser)
-#   --all              Re-tag all images
+#   --image NAME       Re-tag specific image relative to PUBLISH_DOCKER_REGISTRY
+#                      (api, bridge, plugin-terminal, plugin-browser, web, cli).
+#                      Mutually exclusive with --image-path.
+#   --image-path PATH  Full image path, ignores PUBLISH_DOCKER_REGISTRY (e.g.,
+#                      ghcr.io/rediacc/server). Mutually exclusive with --image.
+#   --all              Re-tag all images in PUBLISH_IMAGES
 #   --from TAG         Source CI tag (e.g., 20260120-104603)
 #   --to VERSION       Target semantic version (e.g., 0.5.0)
 #   --push-latest      Also push :latest tag
@@ -22,6 +27,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 source "$SCRIPT_DIR/../../config/constants.sh"
 
 IMAGE_NAME=""
+IMAGE_PATH=""
 RETAG_ALL=false
 FROM_TAG=""
 TO_TAG=""
@@ -34,6 +40,10 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --image)
             IMAGE_NAME="$2"
+            shift 2
+            ;;
+        --image-path)
+            IMAGE_PATH="$2"
             shift 2
             ;;
         --all)
@@ -62,13 +72,15 @@ while [[ $# -gt 0 ]]; do
             ;;
         -h | --help)
             echo "Usage: $0 --image NAME --from CI_TAG --to VERSION [--push-latest]"
+            echo "       $0 --image-path PATH --from CI_TAG --to VERSION [--push-latest]"
             echo "       $0 --all --from CI_TAG --to VERSION [--push-latest]"
             echo ""
             echo "Options:"
-            echo "  --image NAME     Re-tag specific image"
-            echo "  --all            Re-tag all images"
-            echo "  --from TAG       Source CI tag"
-            echo "  --to VERSION     Target semantic version"
+            echo "  --image NAME       Re-tag image relative to PUBLISH_DOCKER_REGISTRY"
+            echo "  --image-path PATH  Re-tag full image path (e.g., ghcr.io/rediacc/server)"
+            echo "  --all              Re-tag all images in PUBLISH_IMAGES"
+            echo "  --from TAG         Source CI tag"
+            echo "  --to VERSION       Target semantic version"
             echo "  --push-latest      Also push :latest tag"
             echo "  --skip-if-exists   Skip if destination exists (idempotent)"
             echo "  --dry-run          Preview without executing"
@@ -92,18 +104,37 @@ done
     log_error "--to is required"
     exit 1
 }
-[[ "$RETAG_ALL" == "false" ]] && [[ -z "$IMAGE_NAME" ]] && {
-    log_error "--image or --all required"
+if [[ -n "$IMAGE_NAME" && -n "$IMAGE_PATH" ]]; then
+    log_error "--image and --image-path are mutually exclusive"
     exit 1
-}
+fi
+if [[ "$RETAG_ALL" == "true" && (-n "$IMAGE_NAME" || -n "$IMAGE_PATH") ]]; then
+    log_error "--all is mutually exclusive with --image / --image-path"
+    exit 1
+fi
+if [[ "$RETAG_ALL" == "false" && -z "$IMAGE_NAME" && -z "$IMAGE_PATH" ]]; then
+    log_error "--image, --image-path, or --all required"
+    exit 1
+fi
 
 retag_image() {
+    # Accepts either a relative name (resolved against PUBLISH_DOCKER_REGISTRY)
+    # or a full image path. The "label" used for log lines and the source image
+    # path differ depending on which mode the caller picked.
     local name="$1"
-    local src="${PUBLISH_DOCKER_REGISTRY}/${name}:${FROM_TAG}"
-    local dst="${PUBLISH_DOCKER_REGISTRY}/${name}:${TO_TAG}"
-    local dst_latest="${PUBLISH_DOCKER_REGISTRY}/${name}:latest"
+    local label image_root
+    if [[ "$name" == *"/"* ]]; then
+        image_root="$name"
+        label="$(basename "$name")"
+    else
+        image_root="${PUBLISH_DOCKER_REGISTRY}/${name}"
+        label="$name"
+    fi
+    local src="${image_root}:${FROM_TAG}"
+    local dst="${image_root}:${TO_TAG}"
+    local dst_latest="${image_root}:latest"
 
-    log_step "Re-tagging $name: $FROM_TAG -> $TO_TAG"
+    log_step "Re-tagging $label: $FROM_TAG -> $TO_TAG"
 
     # Skip if destination exists (for idempotent retries in Phase 2)
     if [[ "$SKIP_IF_EXISTS" == "true" ]]; then
@@ -140,7 +171,7 @@ retag_image() {
         # Note: :stable tag is pushed by promote-stable.yml after 7-day soak
     fi
 
-    log_info "Re-tagged $name successfully"
+    log_info "Re-tagged $label successfully"
 }
 
 # Main logic
@@ -158,7 +189,10 @@ main() {
             fi
         done
     else
-        if retag_image "$IMAGE_NAME"; then
+        # --image takes a relative name; --image-path takes a full path. retag_image
+        # detects which by checking for a "/" in the argument.
+        local target="${IMAGE_NAME:-$IMAGE_PATH}"
+        if retag_image "$target"; then
             ((retagged++)) || true
         else
             ((failed++)) || true

@@ -326,6 +326,9 @@ jobs:
           .ci/scripts/docker/retag-image.sh --image plugin-browser --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
           .ci/scripts/docker/retag-image.sh --image web --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
           .ci/scripts/docker/retag-image.sh --image cli --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          # On-prem server image lives at ghcr.io/rediacc/server (outside elite/),
+          # so PUBLISH_DOCKER_REGISTRY can't reach it. cd-dryrun stages :CHANNEL.
+          .ci/scripts/docker/retag-image.sh --image-path ghcr.io/rediacc/server --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
 
       # -----------------------------------------------------------------------
       # Step 1b: Install dependencies and build shared packages
@@ -500,6 +503,11 @@ jobs:
               -t "ghcr.io/rediacc/elite/${image}:stable" \
               "ghcr.io/rediacc/elite/${image}:edge"
           done
+          # On-prem server image lives at ghcr.io/rediacc/server (outside elite/).
+          echo "Promoting server: edge -> stable"
+          docker buildx imagetools create \
+            -t "ghcr.io/rediacc/server:stable" \
+            "ghcr.io/rediacc/server:edge"
           echo "Docker promoted to stable"
 
       # -----------------------------------------------------------------------
@@ -549,6 +557,7 @@ jobs:
           echo "- ghcr.io/rediacc/elite/plugin-browser:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
           echo "- ghcr.io/rediacc/elite/web:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
           echo "- ghcr.io/rediacc/elite/cli:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/server:${{ needs.init.outputs.next_version }} + :latest (on-prem)" >> $GITHUB_STEP_SUMMARY
 
   # Install validation moved to CI (pre-publish). CI validates on all 6 platforms
   # BEFORE publish, so broken artifacts never reach production.
