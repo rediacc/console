@@ -4,7 +4,12 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { UserPageIDs } from '@/pages/user/UserPageIDs';
 import { createUserViaUI } from '@/test-helpers/user-helpers';
-import { waitForNoModal, filterUsersList, clickListAction, confirmYes } from '@/test-helpers/ui-helpers';
+import {
+  waitForNoModal,
+  filterUsersList,
+  clickListAction,
+  confirmYes,
+} from '@/test-helpers/ui-helpers';
 
 test.describe('User Permission Tests - Activate', () => {
   let dashboardPage: DashboardPage;
@@ -24,7 +29,6 @@ test.describe('User Permission Tests - Activate', () => {
     testReporter,
     testDataManager,
   }) => {
-
     const createdUser = await createUserViaUI(page, testDataManager);
     const newUserEmail = createdUser.email;
 
