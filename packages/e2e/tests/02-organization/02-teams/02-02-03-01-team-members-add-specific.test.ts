@@ -3,8 +3,14 @@ import { NavigationHelper } from '@/helpers/NavigationHelper';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { UserPageIDs } from '@/pages/user/UserPageIDs';
-import { waitForTeamRow } from '@/test-helpers/team-helpers';
-import { dismissDrawerMask } from '@/test-helpers/ui-helpers';
+import {
+  waitForTeamRow,
+  selectUserInAddMemberTab,
+  openTeamMembersDialog,
+  dismissCreateUserModal,
+  waitForTeamsPage,
+  fillResourceSearch,
+} from '@/test-helpers/team-helpers';
 import { createUserViaUI } from '@/test-helpers/user-helpers';
 import type { Page } from '@playwright/test';
 
@@ -12,120 +18,6 @@ test.describe('User Team Assignment Tests - Add Specific User', () => {
   test.describe.configure({ timeout: 60000 });
   let dashboardPage: DashboardPage;
   let loginPage: LoginPage;
-
-  const selectUserInAddMemberTab = async (page: Page, email: string): Promise<void> => {
-    const addMemberPanel = page.getByRole('tabpanel', { name: 'Add Member' });
-    const userCombobox = addMemberPanel.getByRole('combobox');
-    await expect(userCombobox).toBeVisible();
-    await userCombobox.click();
-    await userCombobox.fill(email);
-    await userCombobox.press('Enter');
-
-    const addButton = addMemberPanel.getByRole('button', { name: 'Add Member' });
-    await expect(addButton).toBeVisible();
-    try {
-      await expect(addButton).toBeEnabled({ timeout: 5000 });
-    } catch {
-      await userCombobox.click();
-      await userCombobox.press('ArrowDown');
-      const userOption = page.getByRole('option', { name: email });
-      await expect(userOption).toBeAttached({ timeout: 10000 });
-      await userOption.click({ force: true });
-      await expect(addButton).toBeEnabled({ timeout: 10000 });
-    }
-    await addButton.click();
-  };
-  const openTeamMembersDialog = async (page: Page, teamName: string): Promise<void> => {
-    const teamMembersButton = page.getByTestId(UserPageIDs.systemTeamMembersButton(teamName));
-    if (await teamMembersButton.isVisible().catch(() => false)) {
-      await dismissDrawerMask(page);
-      await teamMembersButton.click();
-      return;
-    }
-
-    const teamRow = await waitForTeamRow(page, teamName);
-    const rowMembersButton = teamRow.getByRole('button', { name: /members/i });
-    try {
-      await expect(rowMembersButton).toBeVisible({ timeout: 3000 });
-      await rowMembersButton.first().click();
-      return;
-    } catch {
-      // Fall through to other strategies.
-    }
-
-    const genericMembersButton = page.getByRole('button', { name: /^members$/i });
-    try {
-      await expect(genericMembersButton).toBeVisible({ timeout: 3000 });
-      await genericMembersButton.first().click();
-      return;
-    } catch {
-      // Fall through to list actions.
-    }
-
-    const actionsButton = teamRow.getByRole('button', { name: /actions/i });
-    await expect(actionsButton).toBeVisible();
-    await dismissDrawerMask(page);
-    await actionsButton.click();
-    const membersMenuItem = page.getByRole('menuitem', { name: /members/i });
-    await expect(membersMenuItem).toBeVisible();
-    await membersMenuItem.click();
-  };
-  const dismissCreateUserModal = async (page: Page): Promise<void> => {
-    const createModal = page.getByTestId('users-create-modal');
-    const createDialog = page.getByRole('dialog', { name: /create user/i });
-    if (
-      (await createModal.isVisible().catch(() => false)) ||
-      (await createDialog.isVisible().catch(() => false))
-    ) {
-      const closeButton = createDialog.getByRole('button', { name: /cancel|close/i }).first();
-      if (await closeButton.isVisible().catch(() => false)) {
-        try {
-          await closeButton.click();
-        } catch {
-          await page.keyboard.press('Escape').catch(() => null);
-        }
-      } else {
-        await page.keyboard.press('Escape').catch(() => null);
-      }
-      await expect(createModal)
-        .toBeHidden({ timeout: 10000 })
-        .catch(() => null);
-      await expect(createDialog)
-        .toBeHidden({ timeout: 10000 })
-        .catch(() => null);
-    }
-  };
-  const waitForTeamsPage = async (page: Page): Promise<void> => {
-    const createButton = page.getByTestId('system-create-team-button');
-    const listContainer = page.getByTestId('resource-list-container');
-    await expect
-      .poll(
-        async () =>
-          (await createButton.isVisible().catch(() => false)) ||
-          (await listContainer.isVisible().catch(() => false)),
-        { timeout: 20000 }
-      )
-      .toBe(true);
-  };
-  const fillResourceSearch = async (page: Page, value: string): Promise<void> => {
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const searchInput = page.getByTestId('resource-list-search');
-      if (!(await searchInput.isVisible().catch(() => false))) {
-        return;
-      }
-      try {
-        await expect(searchInput).toBeVisible({ timeout: 3000 });
-        await expect(searchInput).toBeEditable({ timeout: 3000 });
-        await searchInput.fill(value);
-        await searchInput.press('Enter');
-        return;
-      } catch (error) {
-        if (attempt === 2) {
-          throw error;
-        }
-      }
-    }
-  };
 
   test.beforeEach(async ({ page }) => {
     loginPage = new LoginPage(page);
