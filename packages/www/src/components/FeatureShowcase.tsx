@@ -74,13 +74,13 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({ lang = 'en' }) => {
                   const elapsed = Math.round((Date.now() - tabStartRef.current) / 1000);
                   const prevTab = categories[activeIndex];
                   if (elapsed >= 2) {
-                    window.plausible('feature_tab_dwell', {
+                    window.plausible?.('feature_tab_dwell', {
                       props: { tab: prevTab.key, seconds: String(elapsed) },
                     });
                   }
                   tabStartRef.current = Date.now();
                   setActiveIndex(index);
-                  window.plausible('feature_tab_click', { props: { tab: cat.key } });
+                  window.plausible?.('feature_tab_click', { props: { tab: cat.key } });
                 }}
                 data-track="cta_click"
                 data-track-label="feature-tab"

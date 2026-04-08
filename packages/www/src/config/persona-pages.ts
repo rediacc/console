@@ -38,11 +38,13 @@ export interface PersonaPageConfig {
   teamVideo?: { member: string; videoKey: string };
 }
 
-/** Default CTA destinations by persona. 'CONSULTATION' is resolved to EXTERNAL_LINKS.SCHEDULE_CONSULTATION at render time. */
+/** Default CTA destinations by persona. 'CONSULTATION' is resolved to EXTERNAL_LINKS.SCHEDULE_CONSULTATION at render time.
+ * Anchor-only entries (e.g. `#pricing`) target the home page; the renderer
+ * concatenates them as `/${lang}${rawCtaHref}` → `/en#pricing`. */
 export const PERSONA_CTA_MAP: Record<PersonaType, string> = {
   devops: '/install',
   cto: 'CONSULTATION',
-  ceo: '/#pricing',
+  ceo: '#pricing',
   'ai-agent': '/install',
 };
 

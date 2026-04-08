@@ -53,7 +53,7 @@ const finalOgDescription = ogDescription || finalDescription;
 // Use current origin in development, production site in build
 const baseURL = import.meta.env.DEV ? Astro.url.origin : Astro.site;
 const canonicalURL = canonical ? canonical : new URL(Astro.url.pathname, baseURL);
-const isHomePage = Astro.url.pathname === '/' || Astro.url.pathname === `/${currentLang}/`;
+const isHomePage = Astro.url.pathname === '/' || Astro.url.pathname === `/${currentLang}`;
 
 // Get path without language prefix for generating alternate language links
 const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);

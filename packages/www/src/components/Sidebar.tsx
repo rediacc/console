@@ -8,16 +8,180 @@ import { CATEGORY_ICONS } from './CategoryIcons';
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  accountUrl?: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+const normalizePath = (value: string): string => {
+  const [pathOnly] = value.split('#');
+  if (!pathOnly) return '/';
+  return pathOnly.length > 1 && pathOnly.endsWith('/') ? pathOnly.slice(0, -1) : pathOnly;
+};
+
+const computeIsActive = (href: string, currentPath: string, currentLang: string): boolean => {
+  if (!currentPath) return false;
+  const normalizedHref = normalizePath(href);
+  const normalizedPath = normalizePath(currentPath);
+  // Home should only be active on the exact home route.
+  if (normalizedHref === `/${currentLang}`) return normalizedPath === normalizedHref;
+  // Hash-based links should match exact base path only.
+  if (href.includes('#')) return normalizedPath === normalizedHref;
+  // Mark parent sections active on nested routes, e.g. /en/docs/* keeps Docs active.
+  return normalizedPath === normalizedHref || normalizedPath.startsWith(`${normalizedHref}/`);
+};
+
+const FOCUSABLE_SELECTOR =
+  'a[href]:not([tabindex="-1"]), button:not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
+
+const handleFocusTrap = (e: KeyboardEvent, sidebar: HTMLElement): void => {
+  const focusableElements = sidebar.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+  if (focusableElements.length === 0) return;
+  const firstEl = focusableElements[0];
+  const lastEl = focusableElements[focusableElements.length - 1];
+  if (e.shiftKey && document.activeElement === firstEl) {
+    e.preventDefault();
+    lastEl.focus();
+  } else if (!e.shiftKey && document.activeElement === lastEl) {
+    e.preventDefault();
+    firstEl.focus();
+  }
+};
+
+/** Lock body scroll while the sidebar is open and focus the first link on open. */
+const useSidebarBodyLock = (isOpen: boolean, sidebarRef: React.RefObject<HTMLElement | null>) => {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('sidebar-active');
+      document.body.style.overflow = 'hidden';
+      window.plausible?.('sidebar_toggle', { props: { action: 'open' } });
+      // Focus the first interactive element in the visual order — usually the
+      // Account CTA at the top of the sidebar, not the first .sidebar-link.
+      const firstTabbable = sidebarRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+      firstTabbable?.focus();
+    } else {
+      document.body.classList.remove('sidebar-active');
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.classList.remove('sidebar-active');
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, sidebarRef]);
+};
+
+/** Wire up Escape-to-close and Tab focus trapping while the sidebar is open. */
+const useSidebarKeyboard = (
+  isOpen: boolean,
+  onClose: () => void,
+  sidebarRef: React.RefObject<HTMLElement | null>
+) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key === 'Tab' && sidebarRef.current) {
+        handleFocusTrap(e, sidebarRef.current);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, sidebarRef]);
+};
+
+interface SidebarAccountCtaProps {
+  accountUrl?: string;
+  label: string;
+  ariaLabel: string;
+  tabbable: boolean;
+  onClose: () => void;
+}
+
+/** Account CTA — direct link when accountUrl is known, region-picker button otherwise. */
+const SidebarAccountCta: React.FC<SidebarAccountCtaProps> = ({
+  accountUrl,
+  label,
+  ariaLabel,
+  tabbable,
+  onClose,
+}) => {
+  if (accountUrl) {
+    return (
+      <a
+        href={accountUrl}
+        className="sidebar-account-cta"
+        onClick={onClose}
+        tabIndex={tabbable ? 0 : -1}
+        aria-label={ariaLabel}
+        data-track="cta_click"
+        data-track-label="sidebar-login"
+        data-track-dest="account"
+      >
+        {label}
+      </a>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className="sidebar-account-cta"
+      onClick={() => {
+        onClose();
+        window.openRegionPicker?.('/account/');
+      }}
+      tabIndex={tabbable ? 0 : -1}
+      aria-label={ariaLabel}
+      data-track="cta_click"
+      data-track-label="sidebar-login"
+      data-track-dest="account"
+    >
+      {label}
+    </button>
+  );
+};
+
+interface SidebarNavLinkProps {
+  href: string;
+  label: string;
+  active: boolean;
+  tabbable: boolean;
+  onLinkClick: () => void;
+  className?: string;
+  trackLabel: string;
+}
+
+/** A single nav link with active/aria/tabIndex/data-track wired up. */
+const SidebarNavLink: React.FC<SidebarNavLinkProps> = ({
+  href,
+  label,
+  active,
+  tabbable,
+  onLinkClick,
+  className = 'sidebar-link',
+  trackLabel,
+}) => (
+  <a
+    href={href}
+    className={`${className}${active ? ' active' : ''}`}
+    onClick={onLinkClick}
+    tabIndex={tabbable ? 0 : -1}
+    aria-current={active ? 'page' : undefined}
+    data-track="cta_click"
+    data-track-label={trackLabel}
+  >
+    {label}
+  </a>
+);
+
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, accountUrl }) => {
   const currentLang = useLanguage();
   const { t, to } = useTranslation(currentLang);
   const sidebarRef = useRef<HTMLElement>(null);
   const [currentPath, setCurrentPath] = useState('');
   const [isSolutionsExpanded, setIsSolutionsExpanded] = useState(false);
 
-  const topNavItems = [{ href: `/${currentLang}/`, label: t('navigation.home') }];
+  const topNavItems = [{ href: `/${currentLang}`, label: t('navigation.home') }];
 
   const categories = to('solutions.categories') as Record<string, string>;
   const solutionCategories = React.useMemo(() => {
@@ -69,86 +233,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     });
   }, []);
 
-  const normalizePath = (value: string) => {
-    const [pathOnly] = value.split('#');
-    if (!pathOnly) return '/';
-    return pathOnly.length > 1 && pathOnly.endsWith('/') ? pathOnly.slice(0, -1) : pathOnly;
-  };
-
-  const isActive = (href: string) => {
-    if (!currentPath) return false;
-
-    const normalizedHref = normalizePath(href);
-    const normalizedPath = normalizePath(currentPath);
-
-    // Home should only be active on the exact home route.
-    if (normalizedHref === `/${currentLang}`) {
-      return normalizedPath === normalizedHref;
-    }
-
-    // Hash-based links should match exact base path only.
-    if (href.includes('#')) {
-      return normalizedPath === normalizedHref;
-    }
-
-    // Mark parent sections active on nested routes, e.g. /en/docs/* keeps Docs active.
-    return normalizedPath === normalizedHref || normalizedPath.startsWith(`${normalizedHref}/`);
-  };
+  const isActive = (href: string) => computeIsActive(href, currentPath, currentLang);
 
   const activeSolutionHref = allSolutionItems.find((item) => isActive(item.href))?.href;
 
   const toggleSolutions = () => setIsSolutionsExpanded((prev) => !prev);
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.classList.add('sidebar-active');
-      document.body.style.overflow = 'hidden';
-      window.plausible('sidebar_toggle', { props: { action: 'open' } });
-      // Focus the first link when sidebar opens
-      const firstLink = sidebarRef.current?.querySelector<HTMLAnchorElement>('.sidebar-link');
-      firstLink?.focus();
-    } else {
-      document.body.classList.remove('sidebar-active');
-      document.body.style.overflow = '';
-    }
-
-    return () => {
-      document.body.classList.remove('sidebar-active');
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-        return;
-      }
-
-      // Focus trap
-      if (e.key === 'Tab' && sidebarRef.current) {
-        const focusableElements = sidebarRef.current.querySelectorAll<HTMLElement>(
-          'a[href], button, [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusableElements.length === 0) return;
-        const firstEl = focusableElements[0];
-        const lastEl = focusableElements[focusableElements.length - 1];
-
-        if (e.shiftKey && document.activeElement === firstEl) {
-          e.preventDefault();
-          lastEl.focus();
-        } else if (!e.shiftKey && document.activeElement === lastEl) {
-          e.preventDefault();
-          firstEl.focus();
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  useSidebarBodyLock(isOpen, sidebarRef);
+  useSidebarKeyboard(isOpen, onClose, sidebarRef);
 
   const handleLinkClick = () => {
     onClose();
@@ -198,20 +290,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
         <nav className="sidebar-nav">
+          {/* Account CTA — always visible on mobile so users have a path to /account/ */}
+          <SidebarAccountCta
+            accountUrl={accountUrl}
+            label={t('navigation.account')}
+            ariaLabel={t('navigation.login')}
+            tabbable={isOpen}
+            onClose={onClose}
+          />
           {/* Home */}
           {topNavItems.map((item) => (
-            <a
+            <SidebarNavLink
               key={item.href}
               href={item.href}
-              className={`sidebar-link${isActive(item.href) ? ' active' : ''}`}
-              onClick={handleLinkClick}
-              tabIndex={isOpen ? 0 : -1}
-              aria-current={isActive(item.href) ? 'page' : undefined}
-              data-track="cta_click"
-              data-track-label="sidebar-nav"
-            >
-              {item.label}
-            </a>
+              label={item.label}
+              active={isActive(item.href)}
+              tabbable={isOpen}
+              onLinkClick={handleLinkClick}
+              trackLabel="sidebar-nav"
+            />
           ))}
 
           {/* Solutions Accordion */}
@@ -255,24 +352,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     {group.label}
                   </span>
                   <ul role="list">
-                    {group.items.map((item) => {
-                      const active = isActive(item.href);
-                      return (
-                        <li key={item.href}>
-                          <a
-                            href={item.href}
-                            className={`sidebar-link sidebar-sublink${active ? ' active' : ''}`}
-                            onClick={handleLinkClick}
-                            tabIndex={isOpen && isSolutionsExpanded ? 0 : -1}
-                            aria-current={active ? 'page' : undefined}
-                            data-track="cta_click"
-                            data-track-label="sidebar-solution"
-                          >
-                            {item.label}
-                          </a>
-                        </li>
-                      );
-                    })}
+                    {group.items.map((item) => (
+                      <li key={item.href}>
+                        <SidebarNavLink
+                          href={item.href}
+                          label={item.label}
+                          active={isActive(item.href)}
+                          tabbable={isOpen && isSolutionsExpanded}
+                          onLinkClick={handleLinkClick}
+                          className="sidebar-link sidebar-sublink"
+                          trackLabel="sidebar-solution"
+                        />
+                      </li>
+                    ))}
                   </ul>
                 </li>
               ))}
@@ -283,34 +375,30 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <div className="sidebar-personas-group">
             <span className="sidebar-personas-label">{t('navigation.builtForYourRole')}</span>
             {personaItems.map((item) => (
-              <a
+              <SidebarNavLink
                 key={item.href}
                 href={item.href}
-                className={`sidebar-link sidebar-persona-link${isActive(item.href) ? ' active' : ''}`}
-                onClick={handleLinkClick}
-                tabIndex={isOpen ? 0 : -1}
-                data-track="cta_click"
-                data-track-label="sidebar-persona"
-              >
-                {item.label}
-              </a>
+                label={item.label}
+                active={isActive(item.href)}
+                tabbable={isOpen}
+                onLinkClick={handleLinkClick}
+                className="sidebar-link sidebar-persona-link"
+                trackLabel="sidebar-persona"
+              />
             ))}
           </div>
 
           {/* Blog, Docs, Contact */}
           {bottomNavItems.map((item) => (
-            <a
+            <SidebarNavLink
               key={item.href}
               href={item.href}
-              className={`sidebar-link${isActive(item.href) ? ' active' : ''}`}
-              onClick={handleLinkClick}
-              tabIndex={isOpen ? 0 : -1}
-              aria-current={isActive(item.href) ? 'page' : undefined}
-              data-track="cta_click"
-              data-track-label="sidebar-nav"
-            >
-              {item.label}
-            </a>
+              label={item.label}
+              active={isActive(item.href)}
+              tabbable={isOpen}
+              onLinkClick={handleLinkClick}
+              trackLabel="sidebar-nav"
+            />
           ))}
         </nav>
       </aside>

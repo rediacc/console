@@ -8,7 +8,6 @@ const DEFAULT_TARGET_PATH = '/account/';
 declare global {
   interface Window {
     openRegionPicker?: (targetPath?: string) => void;
-    plausible: (event: string, opts?: { props: Record<string, string> }) => void;
   }
 }
 
@@ -80,7 +79,7 @@ const RegionPickerModal: React.FC = () => {
     setSelected(detectLikelyRegion(REGIONS).id);
     setChannel('production');
     setIsOpen(true);
-    window.plausible('region_picker_open', {
+    window.plausible?.('region_picker_open', {
       props: { source: path?.includes('checkout') ? 'checkout' : 'nav' },
     });
   }, []);
@@ -93,7 +92,7 @@ const RegionPickerModal: React.FC = () => {
   const handleSelect = useCallback(
     (region: Region) => {
       const domain = channel === 'edge' ? region.edgeDomain : region.domain;
-      window.plausible('region_selected', { props: { region: region.id, channel } });
+      window.plausible?.('region_selected', { props: { region: region.id, channel } });
       window.location.href = `https://${domain}${targetPath}`;
     },
     [targetPath, channel]

@@ -550,7 +550,12 @@ a {
   transition: color var(--transition-duration-base) ease;
 }
 
-a:hover {
+/* Use :where() to give this rule zero specificity from the `a` part, so any
+   class-styled anchor (.sp-btn-primary, .btn-primary, .nav-cta-btn, .cf-cta-btn,
+   .sidebar-account-cta, etc.) wins on hover and keeps its own text color.
+   The more-specific `p a:hover` / `li a:hover` rules below still apply for
+   body-text links. */
+:where(a):hover {
   color: var(--color-brand-primary);
 }
 
@@ -849,6 +854,15 @@ a[target='_blank']::after {
   }
 }
 
+/* Hide the "rediacc" wordmark only in the band where the Account button is
+   shown but space is tight (480px-640px). At narrower widths the button is
+   hidden and the wordmark stays. The icon SVG keeps the brand present. */
+@media (min-width: 30rem) and (max-width: 40rem) {
+  .nav-brand {
+    display: none;
+  }
+}
+
 .nav-brand:focus-visible {
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
@@ -964,17 +978,37 @@ a[target='_blank']::after {
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-md);
   white-space: nowrap;
-  transition: opacity var(--transition-duration-base) ease;
+  border: none;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-duration-base) ease,
+    box-shadow var(--transition-duration-base) ease;
 }
 
 .nav-cta-btn:hover {
-  opacity: 0.9;
+  background: var(--color-brand-dark, var(--color-brand-secondary));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-@media (min-width: 64rem) {
+.nav-cta-btn:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+/* Show Account button from 30rem (480px) up — covers most modern phones.
+   Below 30rem the Sidebar provides the only path to /account/. */
+@media (min-width: 30rem) {
   .nav-cta-btn {
     display: flex;
     align-items: center;
+  }
+}
+
+/* Tighten button on small/mid mobile where space is at a premium */
+@media (max-width: 48rem) {
+  .nav-cta-btn {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-size-sm);
   }
 }
 
@@ -999,12 +1033,11 @@ a[target='_blank']::after {
 }
 
 .login-btn:hover {
-  opacity: var(--opacity-70);
   background-color: var(--color-interactive-hover);
+  color: var(--color-text);
 }
 
 .login-btn:active {
-  opacity: var(--opacity-60);
   transform: scale(0.98);
   background-color: var(--color-interactive-active);
 }
@@ -1125,6 +1158,37 @@ a[target='_blank']::after {
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
+}
+
+/* Account CTA at top of sidebar — primary route to /account/ on mobile */
+.sidebar-account-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #fff;
+  background: var(--color-brand-primary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  min-height: var(--touch-target-preferred);
+  width: 100%;
+  transition:
+    background-color var(--transition-duration-base) ease,
+    box-shadow var(--transition-duration-base) ease;
+}
+
+.sidebar-account-cta:hover {
+  background: var(--color-brand-dark);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-account-cta:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
 }
 
 .sidebar-link {
@@ -1574,7 +1638,8 @@ a[target='_blank']::after {
 }
 
 .btn:hover {
-  opacity: var(--opacity-80);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
 .btn:focus-visible {
@@ -1620,6 +1685,12 @@ a[target='_blank']::after {
   background-color: transparent;
   color: var(--color-text);
   border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-interactive-hover);
+  border-color: var(--color-text-secondary);
+  color: var(--color-text);
 }
 
 .hero-dark .btn-secondary {

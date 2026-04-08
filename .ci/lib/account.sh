@@ -2,7 +2,7 @@
 # Account service development functions
 # Sourced lazily by run.sh when 'account' command is invoked
 #
-# Provides: account_dev, account_stop, account_test, account_reset
+# Provides: account_dev, account_stop, account_test, account_reset, account_rotation
 
 # Prevent re-sourcing
 [[ -n "${ACCOUNT_LIB_LOADED:-}" ]] && return 0
@@ -602,4 +602,22 @@ account_reset() {
     log_info "Account reset complete!"
     log_info ""
     log_info "Start dev server with: ./run.sh account dev"
+}
+
+# =============================================================================
+# ROTATION (secret rotation lifecycle for AWS IAM, CF tokens, CF Turnstile)
+# =============================================================================
+# Thin bash wrapper around the TypeScript rotation CLI in
+# private/account/scripts/rotation/. All actual logic — manifest read/write,
+# platform calls, state transitions — lives in TS so it's type-checked,
+# testable, and stays inside the private submodule (the public console repo
+# does not contain rotation orchestration).
+#
+# Invoked from run.sh as: ./run.sh rotation <subcommand> [args]
+#
+# See /home/muhammed/.claude/plans/steady-munching-seal.md for the full design.
+account_rotation() {
+    check_node_version
+    cd "$ACCOUNT_DIR" || exit 1
+    npx tsx scripts/rotation/index.ts "$@"
 }

@@ -12,7 +12,7 @@ const { lang } = Astro.params as { lang: Language };
 const { t } = createTranslator(lang);
 
 const breadcrumbItems = [
-  { name: t('pages.changelog.breadcrumb.home'), url: `/${lang}/` },
+  { name: t('pages.changelog.breadcrumb.home'), url: `/${lang}` },
   { name: t('pages.changelog.breadcrumb.changelog'), url: `/${lang}/changelog` },
 ];
 

@@ -198,7 +198,7 @@ async function refreshActivation(
   _serverUrl: string,
   _token: string,
   machineId: string
-): Promise<{ ok: boolean; signedBlob?: unknown }> {
+): Promise<{ ok: boolean; signedBlob?: unknown; error?: string }> {
   try {
     const body = await accountServerFetch<{ activation?: unknown; signedBlob?: unknown }>(
       '/account/api/v1/licenses/activate',
@@ -207,7 +207,7 @@ async function refreshActivation(
     return { ok: true, signedBlob: body.signedBlob };
   } catch (error) {
     telemetryService.trackError(error, { operation: 'license.refresh_activation' });
-    return { ok: false };
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -244,7 +244,10 @@ export async function refreshMachineActivation(
     if (!machineId) return false;
 
     const result = await refreshActivation(tokenState.serverUrl, tokenState.token.token, machineId);
-    if (!result.ok) return false;
+    if (!result.ok) {
+      if (result.error) throw new Error(result.error);
+      return false;
+    }
 
     // Write the signed subscription blob to the remote machine for renet to validate
     if (result.signedBlob) {

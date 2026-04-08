@@ -138,7 +138,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
             <span className="hamburger-icon" />
           </button>
           <a
-            href={`/${currentLang}/`}
+            href={`/${currentLang}`}
             className="nav-icon-link"
             aria-label={t('common.logoAlt')}
             data-track="cta_click"
@@ -156,7 +156,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
             />
           </a>
           <a
-            href={`/${currentLang}/`}
+            href={`/${currentLang}`}
             className="nav-brand"
             data-track="cta_click"
             data-track-label="nav-brand"
@@ -263,7 +263,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
           </div>
         </div>
       </nav>
-      <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
+      <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} accountUrl={accountUrl} />
       <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
     </>
   );

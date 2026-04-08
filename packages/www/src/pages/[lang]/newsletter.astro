@@ -15,7 +15,7 @@ const confirmed = Astro.url.searchParams.get('confirmed') === 'true';
 const unsubscribed = Astro.url.searchParams.get('unsubscribed') === 'true';
 
 const breadcrumbItems = [
-  { name: t('pages.newsletter.breadcrumb.home'), url: `/${lang}/` },
+  { name: t('pages.newsletter.breadcrumb.home'), url: `/${lang}` },
   { name: t('pages.newsletter.breadcrumb.newsletter'), url: `/${lang}/newsletter` },
 ];
 ---

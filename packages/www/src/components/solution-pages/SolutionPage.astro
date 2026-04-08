@@ -30,7 +30,7 @@ const { lang, slug } = Astro.props;
 const config = SOLUTION_PAGES[slug];
 
 if (!config) {
-  return Astro.redirect(`/${lang}/`, 301);
+  return Astro.redirect(`/${lang}`, 301);
 }
 
 const { t, to } = createTranslator(lang);
@@ -48,7 +48,7 @@ const ctaHref = rawCtaHref === 'CONSULTATION'
 // Breadcrumb items
 const pageTitle = (content as any).hero?.title ?? slug;
 const breadcrumbItems = [
-  { name: t('navigation.home'), url: `/${lang}/` },
+  { name: t('navigation.home'), url: `/${lang}` },
   { name: pageTitle, url: `/${lang}/solutions/${slug}` },
 ];
 ---

@@ -58,7 +58,7 @@ const NewsletterReturnPopup: React.FC = () => {
 
       shownOnceRef.current = true;
       setOpen(true);
-      window.plausible('newsletter_return_popup_shown', {
+      window.plausible?.('newsletter_return_popup_shown', {
         props: {
           source: 'tab-return-popup',
           path: window.location.pathname,
@@ -117,7 +117,7 @@ const NewsletterReturnPopup: React.FC = () => {
           onClick={() => {
             localStorage.setItem(DISMISSED_UNTIL_KEY, String(Date.now() + DISMISS_COOLDOWN_MS));
             setOpen(false);
-            window.plausible('newsletter_return_popup_dismissed', {
+            window.plausible?.('newsletter_return_popup_dismissed', {
               props: {
                 source: 'tab-return-popup',
                 path: window.location.pathname,
@@ -140,7 +140,7 @@ const NewsletterReturnPopup: React.FC = () => {
           onSuccess={() => {
             localStorage.setItem(SUBSCRIBED_KEY, '1');
             setOpen(false);
-            window.plausible('newsletter_return_popup_submitted', {
+            window.plausible?.('newsletter_return_popup_submitted', {
               props: {
                 source: 'tab-return-popup',
                 path: window.location.pathname,

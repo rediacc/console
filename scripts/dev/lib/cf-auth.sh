@@ -1,6 +1,14 @@
 #!/bin/bash
 # Shared Cloudflare + AWS authentication for dev scripts.
 #
+# === LEGACY ===
+# This bash library predates the TypeScript rotation tool at
+# private/account/scripts/rotation/. New rotation logic should NOT live here;
+# extend the TS implementation instead. The only consumer that still depends
+# on this file is scripts/dev/deploy-bench.sh, which will be modernized in a
+# follow-up plan. After deploy-bench is rewritten in TS, this file should be
+# deleted.
+#
 # Source this file after common.sh. It provides:
 #   - resolve_cf_auth:       Sets CF_AUTH_HEADERS array from env vars or interactive prompt
 #   - resolve_aws_auth:      Exports AWS_ACCESS_KEY_ID/SECRET from AWS_SES_ADMIN_* env vars
@@ -94,40 +102,82 @@ _create_management_token() {
         return 1
     fi
 
+    # Discover all zones the account can manage. The deploy-bench (and any
+    # future wrangler-deploy) script needs Workers Routes Write + DNS Read on
+    # the zone hosting its custom domain (rediacc.com). Listing zones lets us
+    # avoid hardcoding zone IDs.
+    local zones_csv
+    zones_csv=$(curl -s -X GET "${CF_API_BASE}/zones?account.id=${account_id}&per_page=50" \
+        -H "X-Auth-Key: ${CF_API_KEY}" -H "X-Auth-Email: ${CF_EMAIL}" \
+        -H "Content-Type: application/json" | jq -r '[.result[].id] | join(",")')
+
     # Account permissions:
-    #   Account API Tokens Read + Write (manage account tokens)
-    #   Turnstile Sites Write (rotate Turnstile secret)
-    #   Workers Scripts Read + Write (list workers, push secrets)
+    #   Account API Tokens Read + Write (manage account tokens) — eb56..., 5bc3...
+    #   Turnstile Sites Write (rotate Turnstile secret)          — 755c...
+    #   Workers Scripts Read + Write (list workers, push secrets) — 1a71..., e086...
+    #   D1 Write (apply migrations / manage D1 from deploy-bench) — 09b2...
+    # Zone permissions (all zones in the account):
+    #   Workers Routes Write (register custom_domain for wrangler deploy) — 28f4...
+    #   DNS Read (wrangler validates custom domain DNS exists)            — 82e6...
     # User permissions:
     #   API Tokens Read + Write (list permission groups, self-destruct)
+    # Build the zone-resource map from the discovered zone IDs. The CF API
+    # uses `com.cloudflare.api.account.zone.<zone_id>` (NOT under account.<id>)
+    # as the resource key. We attach Workers Routes Write + DNS Read to every
+    # managed zone so any wrangler deploy with a custom_domain works.
+    local zone_resources_json
+    if [[ -n "$zones_csv" ]]; then
+        zone_resources_json=$(echo "$zones_csv" | tr ',' '\n' | jq -R . |
+            jq -s 'map({("com.cloudflare.api.account.zone." + .): "*"}) | add')
+    else
+        zone_resources_json='{}'
+    fi
+
+    # Cloudflare's user/tokens endpoint rejects policies with an empty
+    # `resources` map (400 invalid_request). If the account has no zones,
+    # `$zone_resources_json` is `{}` and the zone-scoped policy must be
+    # omitted entirely instead of sent with an empty map.
     local response
     response=$(curl -s -X POST "${CF_API_BASE}/user/tokens" \
         -H "X-Auth-Key: ${CF_API_KEY}" -H "X-Auth-Email: ${CF_EMAIL}" \
         -H "Content-Type: application/json" \
-        -d "$(jq -n --arg account_id "$account_id" --arg user_id "$user_id" '{
-            name: "auto-rotation-management",
-            policies: [
-                {
-                    effect: "allow",
-                    resources: { ("com.cloudflare.api.account." + $account_id): "*" },
-                    permission_groups: [
-                        { id: "eb56a6953c034b9d97dd838155666f06" },
-                        { id: "5bc3f8b21c554832afc660159ab75fa4" },
-                        { id: "755c05aa014b4f9ab263aa80b8167bd8" },
-                        { id: "1a71c399035b4950a1bd1466bbe4f420" },
-                        { id: "e086da7e2179491d91ee5f35b3ca210a" }
-                    ]
-                },
-                {
-                    effect: "allow",
-                    resources: { ("com.cloudflare.api.user." + $user_id): "*" },
-                    permission_groups: [
-                        { id: "0cc3a61731504c89b99ec1be78b77aa0" },
-                        { id: "686d18d5ac6c441c867cbf6771e58a0a" }
-                    ]
-                }
-            ]
-        }')")
+        -d "$(jq -n \
+            --arg account_id "$account_id" \
+            --arg user_id "$user_id" \
+            --argjson zone_resources "$zone_resources_json" \
+            '{
+                name: "auto-rotation-management",
+                policies: ([
+                    {
+                        effect: "allow",
+                        resources: { ("com.cloudflare.api.account." + $account_id): "*" },
+                        permission_groups: [
+                            { id: "eb56a6953c034b9d97dd838155666f06" },
+                            { id: "5bc3f8b21c554832afc660159ab75fa4" },
+                            { id: "755c05aa014b4f9ab263aa80b8167bd8" },
+                            { id: "1a71c399035b4950a1bd1466bbe4f420" },
+                            { id: "e086da7e2179491d91ee5f35b3ca210a" },
+                            { id: "09b2857d1c31407795e75e3fed8617a1" }
+                        ]
+                    }
+                ] + (if ($zone_resources | length) > 0 then [{
+                        effect: "allow",
+                        resources: $zone_resources,
+                        permission_groups: [
+                            { id: "28f4b596e7d643029c524985477ae49a" },
+                            { id: "82e64a83756745bbbb1c9c2701bf816b" }
+                        ]
+                    }] else [] end) + [
+                    {
+                        effect: "allow",
+                        resources: { ("com.cloudflare.api.user." + $user_id): "*" },
+                        permission_groups: [
+                            { id: "0cc3a61731504c89b99ec1be78b77aa0" },
+                            { id: "686d18d5ac6c441c867cbf6771e58a0a" }
+                        ]
+                    }
+                ])
+            }')")
 
     echo "$response" | jq -r '.result.value // empty'
 }

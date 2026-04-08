@@ -75,7 +75,7 @@ const ContactModal: React.FC = () => {
     setState('idle');
     setErrorMsg('');
     hasFiredStart.current = false;
-    window.plausible('contact_modal_open', { props: { source: interest ? 'cta' : 'nav' } });
+    window.plausible?.('contact_modal_open', { props: { source: interest ? 'cta' : 'nav' } });
   }, []);
 
   const close = useCallback(() => {
@@ -148,7 +148,7 @@ const ContactModal: React.FC = () => {
         (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
         {};
       const lastSolution = sessionStorage.getItem('__pa_last_solution') ?? undefined;
-      window.plausible('contact_submit', {
+      window.plausible?.('contact_submit', {
         props: {
           subject: selectedSubject,
           source: 'contact-modal',
@@ -233,7 +233,7 @@ const ContactModal: React.FC = () => {
             onFocus={() => {
               if (!hasFiredStart.current) {
                 hasFiredStart.current = true;
-                window.plausible('contact_form_start', { props: { source: 'contact-modal' } });
+                window.plausible?.('contact_form_start', { props: { source: 'contact-modal' } });
               }
             }}
           >

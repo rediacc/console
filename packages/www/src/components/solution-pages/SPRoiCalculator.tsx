@@ -130,7 +130,7 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
           (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
           {};
         const lastSolution = sessionStorage.getItem('__pa_last_solution') ?? undefined;
-        window.plausible('calculator_email_submit', {
+        window.plausible?.('calculator_email_submit', {
           props: {
             source: 'roi-calculator',
             ...utm,
@@ -149,7 +149,7 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
   useEffect(() => {
     if (!detailsUnlocked && !gateViewedRef.current) {
       gateViewedRef.current = true;
-      window.plausible('roi_gate_viewed', { props: { source: 'roi-calculator' } });
+      window.plausible?.('roi_gate_viewed', { props: { source: 'roi-calculator' } });
     }
   }, [detailsUnlocked]);
 
@@ -223,7 +223,7 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
             className="sp-roi-advanced"
             onToggle={(e) => {
               if ((e.target as HTMLDetailsElement).open) {
-                window.plausible('calculator_advanced_open', {
+                window.plausible?.('calculator_advanced_open', {
                   props: { source: 'roi-calculator' },
                 });
               }
