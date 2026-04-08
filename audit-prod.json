@@ -1,0 +1,317 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@ant-design/pro-components": {
+      "name": "@ant-design/pro-components",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        "@ant-design/pro-layout"
+      ],
+      "effects": [],
+      "range": "<=2.3.59 || 2.5.7 - 2.7.17",
+      "nodes": [
+        "node_modules/@ant-design/pro-components"
+      ],
+      "fixAvailable": {
+        "name": "@ant-design/pro-components",
+        "version": "2.8.10",
+        "isSemVerMajor": false
+      }
+    },
+    "@ant-design/pro-layout": {
+      "name": "@ant-design/pro-layout",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "path-to-regexp"
+      ],
+      "effects": [
+        "@ant-design/pro-components"
+      ],
+      "range": "<=4.3.2 || 4.7.3 - 7.20.0",
+      "nodes": [
+        "node_modules/@ant-design/pro-layout"
+      ],
+      "fixAvailable": {
+        "name": "@ant-design/pro-components",
+        "version": "2.8.10",
+        "isSemVerMajor": false
+      }
+    },
+    "@hono/node-server": {
+      "name": "@hono/node-server",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1116247,
+          "name": "@hono/node-server",
+          "dependency": "@hono/node-server",
+          "title": "@hono/node-server: Middleware bypass via repeated slashes in serveStatic",
+          "url": "https://github.com/advisories/GHSA-92pp-h63x-v22m",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-22"
+          ],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
+          },
+          "range": "<1.19.13"
+        }
+      ],
+      "effects": [],
+      "range": "<1.19.13",
+      "nodes": [
+        "node_modules/@hono/node-server"
+      ],
+      "fixAvailable": true
+    },
+    "hono": {
+      "name": "hono",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1116242,
+          "name": "hono",
+          "dependency": "hono",
+          "title": "Hono: Non-breaking space prefix bypass in cookie name handling in getCookie()",
+          "url": "https://github.com/advisories/GHSA-r5rp-j6wh-rvv4",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-20"
+          ],
+          "cvss": {
+            "score": 4.8,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:N"
+          },
+          "range": "<4.12.12"
+        },
+        {
+          "source": 1116243,
+          "name": "hono",
+          "dependency": "hono",
+          "title": "Hono has incorrect IP matching in ipRestriction() for IPv4-mapped IPv6 addresses",
+          "url": "https://github.com/advisories/GHSA-xpcf-pg52-r92g",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-180"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<4.12.12"
+        },
+        {
+          "source": 1116244,
+          "name": "hono",
+          "dependency": "hono",
+          "title": "Hono missing validation of cookie name on write path in setCookie()",
+          "url": "https://github.com/advisories/GHSA-26pp-8wgv-hjvm",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-113"
+          ],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+          },
+          "range": "<4.12.12"
+        },
+        {
+          "source": 1116245,
+          "name": "hono",
+          "dependency": "hono",
+          "title": "Hono: Path traversal in toSSG() allows writing files outside the output directory",
+          "url": "https://github.com/advisories/GHSA-xf4j-xp2r-rqqx",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-22"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=4.0.0 <=4.12.11"
+        },
+        {
+          "source": 1116246,
+          "name": "hono",
+          "dependency": "hono",
+          "title": "Hono: Middleware bypass via repeated slashes in serveStatic",
+          "url": "https://github.com/advisories/GHSA-wmmm-f939-6g9c",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-22"
+          ],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
+          },
+          "range": "<4.12.12"
+        }
+      ],
+      "effects": [],
+      "range": "<=4.12.11",
+      "nodes": [
+        "node_modules/hono"
+      ],
+      "fixAvailable": true
+    },
+    "path-to-regexp": {
+      "name": "path-to-regexp",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1101848,
+          "name": "path-to-regexp",
+          "dependency": "path-to-regexp",
+          "title": "path-to-regexp outputs backtracking regular expressions",
+          "url": "https://github.com/advisories/GHSA-9wv6-86v2-598j",
+          "severity": "high",
+          "cwe": [
+            "CWE-1333"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=2.0.0 <3.3.0"
+        }
+      ],
+      "effects": [
+        "@ant-design/pro-layout"
+      ],
+      "range": "2.0.0 - 3.2.0",
+      "nodes": [
+        "node_modules/@ant-design/pro-layout/node_modules/path-to-regexp"
+      ],
+      "fixAvailable": {
+        "name": "@ant-design/pro-components",
+        "version": "2.8.10",
+        "isSemVerMajor": false
+      }
+    },
+    "vite": {
+      "name": "vite",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1116229,
+          "name": "vite",
+          "dependency": "vite",
+          "title": "Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling",
+          "url": "https://github.com/advisories/GHSA-4w7w-66w2-5vf9",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-22",
+            "CWE-200"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<=6.4.1"
+        },
+        {
+          "source": 1116230,
+          "name": "vite",
+          "dependency": "vite",
+          "title": "Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling",
+          "url": "https://github.com/advisories/GHSA-4w7w-66w2-5vf9",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-22",
+            "CWE-200"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=7.0.0 <=7.3.1"
+        },
+        {
+          "source": 1116232,
+          "name": "vite",
+          "dependency": "vite",
+          "title": "Vite: `server.fs.deny` bypassed with queries",
+          "url": "https://github.com/advisories/GHSA-v2wj-q39q-566r",
+          "severity": "high",
+          "cwe": [
+            "CWE-180",
+            "CWE-284"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=7.1.0 <=7.3.1"
+        },
+        {
+          "source": 1116234,
+          "name": "vite",
+          "dependency": "vite",
+          "title": "Vite Vulnerable to Arbitrary File Read via Vite Dev Server WebSocket",
+          "url": "https://github.com/advisories/GHSA-p9ff-h696-f583",
+          "severity": "high",
+          "cwe": [
+            "CWE-200",
+            "CWE-306"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=6.0.0 <=6.4.1"
+        },
+        {
+          "source": 1116235,
+          "name": "vite",
+          "dependency": "vite",
+          "title": "Vite Vulnerable to Arbitrary File Read via Vite Dev Server WebSocket",
+          "url": "https://github.com/advisories/GHSA-p9ff-h696-f583",
+          "severity": "high",
+          "cwe": [
+            "CWE-200",
+            "CWE-306"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=7.0.0 <=7.3.1"
+        }
+      ],
+      "effects": [],
+      "range": "<=6.4.1 || 7.0.0 - 7.3.1",
+      "nodes": [
+        "node_modules/vite",
+        "packages/www/node_modules/vite"
+      ],
+      "fixAvailable": true
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 2,
+      "high": 4,
+      "critical": 0,
+      "total": 6
+    },
+    "dependencies": {
+      "prod": 1109,
+      "dev": 756,
+      "optional": 253,
+      "peer": 28,
+      "peerOptional": 0,
+      "total": 2003
+    }
+  }
+}
