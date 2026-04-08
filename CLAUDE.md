@@ -194,10 +194,32 @@ Hotfix (edge + stable): `gh workflow run "Release" -f ci_run_id=<id> -f release_
 
 | Script | Purpose |
 |--------|---------|
-| `rotate-secrets.sh` | Rotate CF tokens, R2, Turnstile, AWS SES keys. Syncs to workers, self-destructs credentials. |
+| `deploy-bench.sh` | Deploy account worker to `bench.rediacc.com` (internal-only D1 testing env) |
+| `reset-bench.sh` | Wipe bench D1 + R2 + worker secrets |
 | `backup-d1.sh` | Export production/edge D1 databases to `.backups/` |
-| `sync-env.sh` | Pull GitHub variables into `private/account/.env` |
-| `lib/cf-auth.sh` | Shared Cloudflare + AWS auth helpers |
+| `lib/cf-auth.sh` | Shared Cloudflare + AWS auth helpers (legacy; only `deploy-bench` still uses it) |
+
+## Secret Rotation (`./run.sh rotation`)
+
+Secret rotation lives in `private/account/scripts/rotation/` (private submodule). The CLI is dispatched via `./run.sh rotation <command>`. State is tracked in a committed manifest at `private/account/rotation-manifest.json` (no secrets — only IDs, timestamps, and states).
+
+| Command | Purpose |
+|---------|---------|
+| `init` | Bootstrap manifest from current AWS/CF state (one-time) |
+| `list` | Show every credential and its current version state |
+| `status` | Show pending grace→inactive and inactive→delete transitions |
+| `check [--for=<consumer>]` | Compare manifest to live platform state; exit 1 on drift |
+| `rotate <slug>` | Mint new credential, push to consumers, mark old as `grace` |
+| `deactivate <slug> [--force]` | `grace → inactive` (AWS: `Status=Inactive`; CF token: delete) |
+| `delete <slug> [--force]` | `inactive → deleted` (permanent) |
+| `sweep` | Run deactivate + delete for everything past its eligibility window |
+| `history [<slug>]` | Audit log of every rotation event |
+
+Slugs: `ses-eu`, `ses-us`, `ses-asia`, `ses-bench`, `cf-cd`, `cf-r2`, `turnstile`.
+
+Auth: `SES_AK_ID`/`SES_AK_SECRET` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or `CF_API_KEY`+`CF_EMAIL`) for Cloudflare, authenticated `gh` CLI for GitHub secrets.
+
+`scripts/dev/deploy-bench.sh` runs `rotation check --for=bench` as a preflight, so a stale `private/account/.env.bench` cannot ship a dead key.
 
 ## Quality Gates (`npm run ci`)
 

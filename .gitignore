@@ -51,6 +51,7 @@ workers/www/staging/
 .env.local
 secrets.env
 .rdc-dev/
+.rdc-bench/
 
 # Logs
 *.log

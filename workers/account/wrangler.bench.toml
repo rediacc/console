@@ -1,0 +1,56 @@
+# bench.rediacc.com — internal-only "real Cloudflare D1" environment for the
+# dev team to validate changes against actual D1/R2 before promoting to edge or
+# production. This environment is intentionally NOT wired into ci.yml or
+# cd-v2.yml — deploys are local-only via scripts/dev/deploy-bench.sh and
+# resets via scripts/dev/reset-bench.sh.
+#
+# Differences from edge-eu:
+#   - Single non-regional environment (no us / asia siblings)
+#   - No EU jurisdiction lock on R2 (this is internal test data, not customer)
+#   - Reuses prod EU SES credentials at deploy time (set by deploy-bench.sh)
+#   - ENVIRONMENT = "bench" (requires schema bump in env.ts)
+
+name = "rediacc-account-bench"
+main = "src/index.ts"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+
+routes = [
+  { pattern = "bench.rediacc.com", custom_domain = true }
+]
+
+[vars]
+REGION = "eu"
+ENVIRONMENT = "bench"
+WEBAUTHN_RP_ID = "bench.rediacc.com"
+WEBAUTHN_ORIGIN = "https://bench.rediacc.com"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "404-page"
+run_worker_first = ["/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "account-db-bench"
+database_id = "ac45c2de-053b-404c-bc47-9ad9cbd2bb15"
+migrations_dir = "../../private/account/drizzle"
+
+# No jurisdiction lock — bench is not bound to GDPR data residency since it
+# only holds test data created by the dev team.
+[[r2_buckets]]
+binding = "CONFIG_BUCKET"
+bucket_name = "rediacc-configs-bench"

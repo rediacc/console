@@ -78,7 +78,7 @@ const NewsletterSignup: React.FC<Props> = ({
       const utm =
         (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
         {};
-      window.plausible('newsletter_signup', { props: { source, variant, ...utm } });
+      window.plausible?.('newsletter_signup', { props: { source, variant, ...utm } });
     } catch (err) {
       setState('error');
       setErrorMsg(err instanceof Error ? err.message : t('newsletter.errorGeneric'));

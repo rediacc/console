@@ -13,7 +13,51 @@ import { globSync } from 'glob';
 
 const WWW_SRC = 'packages/www/src';
 const WWW_ROOT = 'packages/www';
+const WWW_DIST = 'packages/www/dist';
 const PAGES_DIR = path.join(WWW_SRC, 'pages');
+
+// Internal-path prefixes that route to a different system or static asset tree
+// where trailing slashes are intentional or controlled elsewhere.
+// Keep in sync with eslint-rules/seo-no-trailing-slash-internal-link.js.
+const TRAILING_SLASH_EXEMPT_PREFIXES = [
+  '/account/',
+  '/api/',
+  '/releases/',
+  '/bin/',
+  '/var/',
+  '/run/',
+  '/assets/',
+  '/fonts/',
+  '/svg/',
+  '/admin/',
+  '/dev/',
+  '/usr/',
+  '/etc/',
+  '/tmp/',
+];
+
+function stripFragmentAndQuery(value: string): string {
+  let result = value;
+  const hashIdx = result.indexOf('#');
+  if (hashIdx >= 0) result = result.slice(0, hashIdx);
+  const queryIdx = result.indexOf('?');
+  if (queryIdx >= 0) result = result.slice(0, queryIdx);
+  return result;
+}
+
+function isInternalPathWithTrailingSlash(raw: string): boolean {
+  if (raw.includes('://')) return false;
+  if (raw === '/') return false;
+  const path = stripFragmentAndQuery(raw);
+  if (path === '/' || path === '') return false;
+  // Must start with `/` followed by a lowercase letter or template-literal
+  // placeholder marker (we treat `${...}` as opaque).
+  if (!/^\/(?:[a-z$])/.test(path)) return false;
+  for (const prefix of TRAILING_SLASH_EXEMPT_PREFIXES) {
+    if (path.startsWith(prefix)) return false;
+  }
+  return path.endsWith('/');
+}
 
 let errors = 0;
 let warnings = 0;
@@ -45,6 +89,15 @@ function checkRedirects() {
         // Check if it specifies 301
         if (!line.includes('301')) {
           error(file, `line ${i + 1}: Astro.redirect() without explicit 301 status. Use Astro.redirect(url, 301)`);
+        }
+        // Check that the first-arg path doesn't end with `/` (conflicts with
+        // trailingSlash: 'never' — produces an extra redirect hop).
+        const argMatch = line.match(/Astro\.redirect\(\s*(['"`])([^'"`]*)\1/);
+        if (argMatch) {
+          const target = argMatch[2];
+          if (isInternalPathWithTrailingSlash(target)) {
+            error(file, `line ${i + 1}: Astro.redirect() target "${target}" ends with "/". Drop the trailing slash to match trailingSlash: 'never'.`);
+          }
         }
       }
     }
@@ -156,6 +209,94 @@ function checkH1Presence() {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// 6. Internal navigation links must not end with `/` in source files
+// ──────────────────────────────────────────────────────────────────────────────
+// ESLint covers .ts/.tsx/.js/.jsx via custom/seo-no-trailing-slash-internal-link
+// but cannot lint .astro files. This function fills the gap with a regex pass.
+function checkTrailingSlashLinks() {
+  console.log('Checking source files for trailing-slash internal links...');
+
+  const files = [
+    ...globSync(`${WWW_SRC}/**/*.astro`),
+    // .ts/.tsx are also covered by ESLint, but redoing them here as a safety
+    // net adds <100ms and catches any patterns ESLint's AST may miss
+    // (e.g. dynamically constructed strings inside .astro frontmatter).
+    ...globSync(`${WWW_SRC}/**/*.{ts,tsx,js,jsx}`),
+  ];
+
+  // Match either:
+  //   href={`/foo/`}, href="/foo/", href='/foo/'  (and src/to/url/action variants)
+  //   { href: `/foo/` }, { url: '/foo/' }  (object property form)
+  // Captures: attribute/property name, the quote/backtick, the path content
+  const pattern = /(?:\b(?:href|src|to|url|action)\s*[:=]\s*\{?\s*)(['"`])([^'"`]*)\1/g;
+
+  for (const file of files) {
+    const content = fs.readFileSync(file, 'utf-8');
+    const lines = content.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      pattern.lastIndex = 0;
+      let match;
+      while ((match = pattern.exec(line)) !== null) {
+        const value = match[2];
+        if (isInternalPathWithTrailingSlash(value)) {
+          error(file, `line ${i + 1}: internal link "${value}" ends with "/". Drop the trailing slash to match trailingSlash: 'never'.`);
+        }
+      }
+    }
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// 7. Built HTML must not contain trailing-slash internal links
+// ──────────────────────────────────────────────────────────────────────────────
+// Empirical-ground-truth check. Catches links the source-level scanners miss:
+// markdown-expanded links, JSX spread props, computed object keys, etc.
+// Runs only when packages/www/dist exists (i.e. after `astro build`).
+function checkBuiltHtmlInternalLinks() {
+  if (!fs.existsSync(WWW_DIST)) {
+    console.log(`Skipping built-HTML link check (${WWW_DIST} not found — run 'astro build' first).`);
+    return;
+  }
+
+  console.log('Checking built HTML for trailing-slash internal links...');
+
+  const htmlFiles = globSync(`${WWW_DIST}/**/*.html`);
+  // Check both `href` (anchors, links) and `action` (forms) so the
+  // trailingSlash: 'never' policy is enforced uniformly across navigation
+  // and form-target attributes.
+  const linkPattern = /\b(?:href|action)\s*=\s*(['"])([^'"]*)\1/gi;
+
+  let totalOffenders = 0;
+  const fileOffenders = new Map<string, number>();
+
+  for (const file of htmlFiles) {
+    const content = fs.readFileSync(file, 'utf-8');
+    linkPattern.lastIndex = 0;
+    let match;
+    let count = 0;
+    while ((match = linkPattern.exec(content)) !== null) {
+      const value = match[2];
+      if (isInternalPathWithTrailingSlash(value)) {
+        count++;
+      }
+    }
+    if (count > 0) {
+      fileOffenders.set(file, count);
+      totalOffenders += count;
+    }
+  }
+
+  if (totalOffenders > 0) {
+    for (const [file, count] of fileOffenders) {
+      const rel = path.relative(WWW_DIST, file);
+      error(file, `${count} trailing-slash internal link(s) in built HTML (dist/${rel}).`);
+    }
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Run all checks
 // ──────────────────────────────────────────────────────────────────────────────
 console.log('Running SEO validation checks...\n');
@@ -165,6 +306,8 @@ checkMetaRefresh();
 checkTrailingSlash();
 checkHreflangConsistency();
 checkH1Presence();
+checkTrailingSlashLinks();
+checkBuiltHtmlInternalLinks();
 
 console.log(`\nSEO check complete: ${errors} error(s), ${warnings} warning(s)`);
 

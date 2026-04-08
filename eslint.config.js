@@ -24,6 +24,8 @@ import { requireDataTrack } from './eslint-rules/require-data-track.js';
 import { seoNoVagueAnchorText } from './eslint-rules/seo-no-vague-anchor-text.js';
 import { seoRequireImgAlt } from './eslint-rules/seo-require-img-alt.js';
 import { seoNoHashBreadcrumbUrl } from './eslint-rules/seo-no-hash-breadcrumb-url.js';
+import { seoNoTrailingSlashInternalLink } from './eslint-rules/seo-no-trailing-slash-internal-link.js';
+import { noUnawaitedDrizzleTerminator } from './eslint-rules/no-unawaited-drizzle-terminator.js';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import { i18nJsonPlugin, i18nSourcePlugin } from './eslint-rules/i18n/index.js';
 
@@ -154,6 +156,8 @@ export default tseslint.config(
       'private/account/dist/**',
       'private/account/web/dist/**',
       'private/account/e2e/**',
+      // Account worker build artifacts (vite SPA bundles, served as Worker assets)
+      'workers/account/dist/**',
       // Ignore Astro build artifacts
       'packages/www/.astro/**',
       // Ignore CI scripts (shell scripts linted by shellcheck, JS scripts are github-script glue)
@@ -232,6 +236,8 @@ export default tseslint.config(
           'seo-no-vague-anchor-text': seoNoVagueAnchorText,
           'seo-require-img-alt': seoRequireImgAlt,
           'seo-no-hash-breadcrumb-url': seoNoHashBreadcrumbUrl,
+          'seo-no-trailing-slash-internal-link': seoNoTrailingSlashInternalLink,
+          'no-unawaited-drizzle-terminator': noUnawaitedDrizzleTerminator,
         },
       },
     },
@@ -982,6 +988,21 @@ export default tseslint.config(
   // ESLint scope warnings removed to avoid --max-warnings 0 conflicts.
   // D1 transaction restriction is in the general account block above (line 909).
 
+  // Account package: catch unawaited Drizzle terminators (.run/.get/.all/.values).
+  // Defence-in-depth backstop for the production-only D1 async footgun. The
+  // shared Database type is now DrizzleD1Database (async); this rule fires for
+  // any chain that drops the resulting Promise on the floor. db/index.ts is
+  // ignored so the dbRun helper itself can call .run() internally; tests are
+  // ignored so test-helper synchronous .run() calls (better-sqlite3 only) keep
+  // working.
+  {
+    files: ['private/account/src/**/*.ts'],
+    ignores: ['private/account/src/db/index.ts'],
+    rules: {
+      'custom/no-unawaited-drizzle-terminator': 'error',
+    },
+  },
+
   // =============================================================
   // WWW PACKAGE OVERRIDES (Astro marketing site)
   // =============================================================
@@ -1008,6 +1029,10 @@ export default tseslint.config(
       'custom/seo-require-img-alt': 'error',
       // SEO: prevent hash-fragment URLs in breadcrumbs (GSC rejects them)
       'custom/seo-no-hash-breadcrumb-url': 'error',
+      // SEO: prevent trailing slashes on internal links (conflicts with
+      // trailingSlash: "never" in astro.config.mjs — Astro dev overlay errors
+      // and extra redirect hops in production)
+      'custom/seo-no-trailing-slash-internal-link': 'error',
     },
   },
 

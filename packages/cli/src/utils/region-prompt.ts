@@ -42,7 +42,7 @@ export async function promptRegionSelection(regions: RegionInfo[]): Promise<Regi
 
   const { selection } = await prompt([
     {
-      type: 'list',
+      type: 'select',
       name: 'selection',
       message: t('commands.subscription.login.regionPrompt'),
       choices,

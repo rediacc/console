@@ -121,7 +121,11 @@
   font-weight: var(--font-weight-medium);
   text-decoration: none;
   transition: background-color var(--transition-duration-fast) ease;
-  white-space: nowrap;
+  /* Allow long translations (FR, DE, RU) to wrap inside the column instead of
+     overflowing and getting clipped against the panel's right edge. */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: var(--leading-snug, 1.35);
 }
 
 .mega-menu-item:hover {

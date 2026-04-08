@@ -123,11 +123,11 @@
     "eslint-plugin-unicorn": "^64.0.0",
     "globals": "^17.4.0",
     "jsdom": "^29.0.0",
-    "knip": "^6.3.0",
+    "knip": "^6.3.1",
     "syncpack": "^14.3.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.58.0"
+    "typescript-eslint": "^8.58.1"
   },
   "engines": {
     "node": ">=22.12.0"
@@ -146,6 +146,9 @@
     "lodash": ">=4.17.22",
     "svgo": "^4.0.1",
     "devalue": "^5.6.4",
-    "dayjs": "^1.11.20"
+    "dayjs": "^1.11.20",
+    "hono": ">=4.12.12",
+    "@hono/node-server": ">=1.19.13",
+    "vite": ">=6.4.2 <8"
   }
 }

@@ -44,20 +44,39 @@ fi
 # Add renet binary directory to PATH so CLI can find it
 renet_bin_dir="$ROOT_DIR/private/renet/bin"
 export PATH="$renet_bin_dir:$PATH"
-export REDIACC_ENVIRONMENT=development
-export REDIACC_SUBSCRIPTION_TOKEN_FILE="$ROOT_DIR/.rdc-dev/api-token.json"
 
-log_info "Renet available at: $renet_bin_dir/renet"
+# Three modes, mutually exclusive:
+#   default       → local dev gateway on http://localhost:4812 (REDIACC_ENVIRONMENT=development)
+#   RDC_PROD=1    → user's real config in ~/.config/rediacc (production servers)
+#   RDC_BENCH=1   → bench.rediacc.com, our internal real-D1 test environment.
+#                   Uses a separate token file under .rdc-bench/ so it never
+#                   collides with the local-dev or production token state.
+#                   Deploy/reset bench via scripts/dev/{deploy,reset}-bench.sh.
+if [[ "${RDC_BENCH:-0}" == "1" ]]; then
+    export REDIACC_SUBSCRIPTION_TOKEN_FILE="$ROOT_DIR/.rdc-bench/api-token.json"
+    export REDIACC_ACCOUNT_SERVER="https://bench.rediacc.com"
+    mkdir -p "$ROOT_DIR/.rdc-bench"
+    log_info "Renet available at: $renet_bin_dir/renet"
+    log_step "Starting CLI (bench config — bench.rediacc.com)"
+elif [[ "${RDC_PROD:-0}" == "1" ]]; then
+    log_info "Renet available at: $renet_bin_dir/renet"
+    log_step "Starting CLI (prod config)"
+else
+    export REDIACC_ENVIRONMENT=development
+    export REDIACC_SUBSCRIPTION_TOKEN_FILE="$ROOT_DIR/.rdc-dev/api-token.json"
 
-# Load account env if available (provides REDIACC_ACCOUNT_SERVER for subscription commands)
-account_env="$ROOT_DIR/private/account/.env"
-if [[ -f "$account_env" ]]; then
-    set -a
-    source "$account_env"
-    set +a
+    log_info "Renet available at: $renet_bin_dir/renet"
+
+    # Load account env if available (provides REDIACC_ACCOUNT_SERVER for subscription commands)
+    account_env="$ROOT_DIR/private/account/.env"
+    if [[ -f "$account_env" ]]; then
+        set -a
+        source "$account_env"
+        set +a
+    fi
+
+    log_step "Starting CLI (dev mode)"
 fi
-
-log_step "Starting CLI (dev mode)"
 
 # Run the compiled CLI bundle, passing through all arguments
 node "$ROOT_DIR/packages/cli/dist/cli-bundle.cjs" "$@"
