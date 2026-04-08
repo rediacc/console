@@ -68,7 +68,7 @@ export interface SolutionPageConfig {
   /** Category for explore grid color coding */
   category: SolutionCategory;
   /** Which sections to render (in canonical order) */
-  sections: SectionType[];
+  sections: readonly SectionType[];
   /** Calculator compute preset name (required if costCalculator in sections) */
   calculatorPreset?: string;
   /** Competitor column headers for comparison table */

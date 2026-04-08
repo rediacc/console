@@ -232,7 +232,7 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onToggle, onClose }) => {
           </div>
           <div className="mega-menu-footer">
             <a
-              href={`/${currentLang}/#solutions`}
+              href={`/${currentLang}#solutions`}
               className="mega-menu-view-all"
               onClick={onClose}
               data-track="cta_click"

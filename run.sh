@@ -1120,6 +1120,16 @@ ACCOUNT COMMANDS:
   account stop             Stop account Docker containers
   account reset            Reset .env + database and regenerate
 
+ROTATION COMMANDS (private/account/scripts/rotation/):
+  rotation init            Bootstrap manifest from current platform state
+  rotation list            Show every credential and its current state
+  rotation check           Compare manifest to live state (exit 1 on drift)
+  rotation rotate <slug>   Mint new credential; old transitions to grace
+  rotation deactivate <s>  grace → inactive
+  rotation delete <slug>   inactive → deleted (permanent)
+  rotation sweep           Run deactivate + delete for everything eligible
+  rotation history [<s>]   Show audit history
+
 PROVISION COMMANDS:
   provision start            Provision KVM VMs (bridge + workers)
   provision stop             Destroy all VMs
@@ -1318,6 +1328,13 @@ main() {
                     exit 1
                     ;;
             esac
+            ;;
+
+        # Secret rotation (delegates to private/account/scripts/rotation/)
+        rotation)
+            shift
+            source "$ROOT_DIR/.ci/lib/account.sh"
+            account_rotation "$@"
             ;;
 
         # Development

@@ -20,7 +20,9 @@ import { visit } from 'unist-util-visit';
 
 interface RemarkFile {
   data: Record<string, unknown>;
-  value?: string;
+  // VFile.value is `string | Uint8Array` in newer @types/vfile. We only ever
+  // read string content, but the type must accept both for assignability.
+  value?: string | Uint8Array;
   path?: string;
 }
 
