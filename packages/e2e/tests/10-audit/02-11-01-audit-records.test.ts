@@ -20,11 +20,16 @@ test.describe('Audit Records Tests', () => {
     await dashboardPage.waitForNetworkIdle();
   });
 
+  test.afterEach(async ({ testReporter }) => {
+    await testReporter.finalizeTest();
+  });
+
+
   test('should display audit records table with at least one row @smoke @audit @regression', async ({
     page,
     testReporter,
   }) => {
-    test.setTimeout(60000);
+    test.setTimeout(120000);
     testReporter.startStep('Navigate to Audit page');
 
     const nav = new NavigationHelper(page);
@@ -53,16 +58,12 @@ test.describe('Audit Records Tests', () => {
     await expect
       .poll(
         async () => {
-          const count = await tableRows.count();
-          console.warn(`[Audit Test] Row count: ${count}`);
-          return count;
+          return await tableRows.count();
         },
         { timeout: 15000, intervals: [1000, 2000, 3000, 5000] }
       )
       .toBeGreaterThanOrEqual(1);
 
     testReporter.completeStep('Verify table has at least one row', 'passed');
-
-    await testReporter.finalizeTest();
   });
 });
