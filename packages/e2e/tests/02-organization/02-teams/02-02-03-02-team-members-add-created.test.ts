@@ -4,7 +4,6 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { UserPageIDs } from '@/pages/user/UserPageIDs';
 import {
-  waitForTeamRow,
   selectUserInAddMemberTab,
   openTeamMembersDialog,
   dismissCreateUserModal,
