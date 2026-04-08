@@ -24,7 +24,6 @@ test.describe('Audit Records Tests', () => {
     await testReporter.finalizeTest();
   });
 
-
   test('should display audit records table with at least one row @smoke @audit @regression', async ({
     page,
     testReporter,
