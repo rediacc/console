@@ -436,14 +436,7 @@ export const dismissCreateUserModal = async (page: Page): Promise<void> => {
 export const waitForTeamsPage = async (page: Page): Promise<void> => {
   const createButton = page.getByTestId('system-create-team-button');
   const listContainer = page.getByTestId('resource-list-container');
-  await expect
-    .poll(
-      async () =>
-        (await createButton.isVisible().catch(() => false)) ||
-        (await listContainer.isVisible().catch(() => false)),
-      { timeout: 20000 }
-    )
-    .toBe(true);
+  await expect(createButton.or(listContainer)).toBeVisible({ timeout: 20000 });
 };
 
 export const fillResourceSearch = async (page: Page, value: string): Promise<void> => {

@@ -49,14 +49,12 @@ test.describe('User Team Assignment Tests - Add Specific User', () => {
     testDataManager,
   }) => {
     const userToAdd = await createUserViaUI(page, testDataManager);
-    await dismissCreateUserModal(page);
     const teamName = 'Private Team';
 
     await ensureUserActive(page, userToAdd.email);
 
     testReporter.startStep('Navigate to Teams section');
 
-    await dismissCreateUserModal(page);
     const nav = new NavigationHelper(page);
     await nav.goToOrganizationTeams();
     await waitForTeamsPage(page);
@@ -76,9 +74,6 @@ test.describe('User Team Assignment Tests - Add Specific User', () => {
     await addMemberTab.click();
 
     await selectUserInAddMemberTab(page, userToAdd.email);
-
-    // Wait for API response to complete
-    await page.waitForLoadState('networkidle');
 
     testReporter.completeStep(`Add user ${userToAdd.email} to team`, 'passed');
 
