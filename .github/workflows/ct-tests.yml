@@ -83,6 +83,8 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh
 
@@ -167,6 +169,8 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh
 
@@ -697,6 +701,8 @@ jobs:
       - name: Install CLI Globally
         run: .ci/scripts/setup/install-cli-global.sh
 
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
@@ -783,6 +789,8 @@ jobs:
       - name: Install CLI Globally
         run: .ci/scripts/setup/install-cli-global.sh
 
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
@@ -855,6 +863,8 @@ jobs:
       - run: .ci/scripts/setup/build-packages.sh
 
       # Renet setup
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Add renet to PATH
@@ -961,6 +971,8 @@ jobs:
       - run: .ci/scripts/setup/build-packages.sh
 
       # Renet setup
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Add renet to PATH
@@ -1176,6 +1188,8 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh
       - name: Install renet
