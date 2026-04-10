@@ -65,7 +65,7 @@ DB_UUID=$(npx wrangler d1 list --json 2>/dev/null | node -e "
   else { console.error('Database ${DB_NAME} not found'); process.exit(1); }
 ")
 
-cat > /tmp/wrangler-seed.toml <<TOML
+cat >/tmp/wrangler-seed.toml <<TOML
 name = "pr-${PR_NUMBER}"
 main = "src/index.ts"
 compatibility_date = "2026-01-20"
@@ -102,5 +102,5 @@ VALUES ('${TOKEN_ID}', 'Smoke Test Token', '${TOKEN_HASH}', '${SUB_ID}', '${TEAM
 rm -f /tmp/wrangler-seed.toml
 
 # Output the token value for the smoke test to use
-echo "SMOKE_TEST_TOKEN=${TOKEN_VALUE}" >> "$GITHUB_OUTPUT"
+echo "SMOKE_TEST_TOKEN=${TOKEN_VALUE}" >>"$GITHUB_OUTPUT"
 echo "Seed complete."
