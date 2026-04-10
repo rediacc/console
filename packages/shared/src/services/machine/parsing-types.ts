@@ -3,10 +3,7 @@
  * Kept in a separate file to avoid circular imports between those two modules.
  */
 
-import {
-  isListResult,
-  type ListResult,
-} from '../../queue-vault/data/list-types.generated';
+import { isListResult, type ListResult } from '../../queue-vault/data/list-types.generated';
 
 export type { ListResult };
 
