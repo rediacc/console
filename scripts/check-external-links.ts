@@ -32,6 +32,7 @@ const ALLOWLISTED_DOMAINS = new Set([
   'pd.rkn.gov.ru',     // Russia Roskomnadzor - unreachable from most locations
   'sdaia.gov.sa',      // Saudi SDAIA - connection refused from non-Saudi IPs
   'www.pipc.go.kr',    // South Korea PIPC - extremely slow, times out in CI
+  'www.legislation.gov.au', // Australia legislation - intermittent timeouts from CI runners
   // Own infrastructure -- only available after releases, not during CI
   'releases.rediacc.com',
 ]);
