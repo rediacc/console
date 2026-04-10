@@ -190,6 +190,15 @@ jobs:
       - name: Install sqlcmd (go-sqlcmd)
         run: sudo private/middleware/scripts/install-sqlcmd.sh
 
+      - name: Harden runner for debug access
+        if: inputs.enable-debug || inputs.desktop-environment != 'none'
+        run: |
+          # Remove app token from git config (prevents cloning private repos)
+          git config --global --unset-all 'url.https://x-access-token' || true
+
+          # Remove renet source code from disk
+          rm -rf private/renet
+
       - name: Create Debug Session
         if: inputs.enable-debug
         id: tmate
@@ -198,9 +207,10 @@ jobs:
           timeout: 60
           silent-mode: true
 
-      # SECURITY NOTE: tmate debug session is started BEFORE services
-      # This ensures no GITHUB_TOKEN is present in the environment when debug access is available
-      # All required images have been pre-pulled, so no authentication is needed from this point forward
+      # SECURITY NOTE: Debug sessions are hardened before tmate starts:
+      # 1. App token removed from git config (no cloning private repos)
+      # 2. private/renet source removed from disk
+      # 3. GITHUB_TOKEN not present (images pre-pulled, no auth needed from here)
 
       - name: Start Backend Services
         id: backend
