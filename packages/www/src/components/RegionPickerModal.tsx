@@ -246,7 +246,7 @@ const RegionPickerModal: React.FC = () => {
         <div className="region-picker-channel-switch">
           <button
             type="button"
-            className={`region-picker-channel-option ${!useStable ? 'region-picker-channel-option--active' : ''}`}
+            className={`region-picker-channel-option ${useStable ? '' : 'region-picker-channel-option--active'}`}
             onClick={() => setUseStable(false)}
             data-track="region_picker_channel"
             data-track-label="edge"

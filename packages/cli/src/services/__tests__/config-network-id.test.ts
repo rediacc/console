@@ -6,10 +6,10 @@ let mockConfig: Record<string, unknown> = {};
 
 vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: {
-    update: vi.fn(async (_name: string, fn: (cfg: any) => any) => {
+    update: vi.fn((_name: string, fn: (cfg: Record<string, unknown>) => Record<string, unknown>) => {
       mockConfig = fn(mockConfig);
     }),
-    read: vi.fn(async () => mockConfig),
+    read: vi.fn(() => mockConfig),
   },
 }));
 
@@ -19,7 +19,7 @@ vi.mock('../config-base.js', () => ({
     getEffectiveConfigName() {
       return 'test';
     }
-    async requireSelfHosted() {}
+    requireSelfHosted() {}
   },
 }));
 
@@ -82,7 +82,6 @@ describe('allocateNetworkId', () => {
   it('throws when all slots are exhausted', async () => {
     // Build a config where every possible slot is "used"
     const MAX_NETWORK_ID = 16_711_680;
-    const repos: Record<string, { networkId: number }> = {};
     // We can't actually create 261K entries in a test, so let's mock scanUsedNetworkIds behavior
     // by setting nextNetworkId past the limit and having a dense set of used IDs
     // that covers MIN_NETWORK_ID through MAX_NETWORK_ID

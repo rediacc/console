@@ -151,16 +151,19 @@ function getSections(
           status: l.status,
           issued: l.issuedAt ? relativeTime(l.issuedAt) : '-',
           expires: l.hardExpiresAt ? relativeTime(l.hardExpiresAt) : '-',
-          machine_match:
-            !currentMachineId || !l.machineId
-              ? '-'
-              : l.machineId === currentMachineId
-                ? 'Yes'
-                : 'No',
+          machine_match: getMachineMatch(currentMachineId, l.machineId),
         }));
       },
     },
   ];
+}
+
+function getMachineMatch(
+  currentMachineId: string | undefined,
+  licenseMachineId: string | undefined
+): string {
+  if (!currentMachineId || !licenseMachineId) return '-';
+  return licenseMachineId === currentMachineId ? 'Yes' : 'No';
 }
 
 function relativeTime(iso: string): string {

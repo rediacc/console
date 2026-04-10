@@ -231,6 +231,14 @@ const KNOWN_SUBCOMMANDS = new Set([
   'run',
 ]);
 
+/** Returns true if the string contains any character with code point above 127. */
+function containsNonAscii(str: string): boolean {
+  for (let i = 0; i < str.length; i++) {
+    if (str.charCodeAt(i) > 127) return true;
+  }
+  return false;
+}
+
 /**
  * Check if a string looks like a real CLI command (not prose that mentions rdc).
  * Commands start with `rdc <known-subcommand>` and don't contain non-Latin prose.
@@ -244,7 +252,8 @@ function looksLikeCommand(text: string): boolean {
 
   // Skip if the command text contains non-ASCII characters (translated prose)
   // Allow a few specific Unicode chars that might appear in placeholder names
-  if (/[^\x00-\x7F]/.test(text.replace(/<[^>]+>/g, '').replace(/\{\{[^}]+\}\}/g, ''))) {
+  const cleaned = text.replace(/<[^>]+>/g, '').replace(/\{\{[^}]+\}\}/g, '');
+  if (containsNonAscii(cleaned)) {
     return false;
   }
 

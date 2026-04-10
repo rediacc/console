@@ -55,22 +55,24 @@ export async function postRepoUpTasks(repoName: string, machineName: string): Pr
   // We print the pattern rather than specific service names since querying containers
   // is not available here — the user substitutes {service} with their exposed service names.
   if (baseDomain && machineNameShort) {
-    try {
-      const machineDomain = `${machineNameShort}.${baseDomain}`;
-      const isFork = repoName.includes(':');
-      if (isFork) {
-        const [parentName, tag] = repoName.split(':');
-        outputService.info(
-          `Exposed services (rediacc.service_port): https://{service}-fork-${tag}.${parentName}.${machineDomain}`
-        );
-      } else {
-        outputService.info(
-          `Exposed services (rediacc.service_port): https://{service}.${repoName}.${machineDomain}`
-        );
-      }
-    } catch {
-      // Non-fatal
+    printServiceUrlPattern(repoName, `${machineNameShort}.${baseDomain}`);
+  }
+}
+
+function printServiceUrlPattern(repoName: string, machineDomain: string): void {
+  try {
+    if (repoName.includes(':')) {
+      const [parentName, tag] = repoName.split(':');
+      outputService.info(
+        `Exposed services (rediacc.service_port): https://{service}-fork-${tag}.${parentName}.${machineDomain}`
+      );
+    } else {
+      outputService.info(
+        `Exposed services (rediacc.service_port): https://{service}.${repoName}.${machineDomain}`
+      );
     }
+  } catch {
+    // Non-fatal
   }
 }
 
