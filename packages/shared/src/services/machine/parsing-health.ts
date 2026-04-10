@@ -16,7 +16,7 @@ import {
   type ServiceInfo,
   type SystemInfo,
 } from '../../queue-vault/data/list-types.generated';
-import { type MachineWithVaultStatus, parseListResult } from './parsing';
+import { type MachineWithVaultStatus, parseListResult } from './parsing-types';
 
 /**
  * Health check result for CI/CD pipelines.

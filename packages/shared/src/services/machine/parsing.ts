@@ -12,13 +12,20 @@ import {
   getServices,
   getSystemContainers,
   getSystemInfo,
-  isListResult,
-  type ListResult,
   type NetworkInterface,
   type ServiceInfo,
   type SystemInfo,
 } from '../../queue-vault/data/list-types.generated';
 import { isValidGuid } from '../../validation';
+import {
+  isEncryptedVaultData,
+  type ListResult,
+  type MachineWithVaultStatus,
+  parseListResult,
+} from './parsing-types';
+
+export type { MachineWithVaultStatus };
+export { parseListResult };
 
 // Re-export list types for CLI consumers
 export type { BlockDevice, ContainerInfo, ListResult, NetworkInterface, ServiceInfo, SystemInfo };
@@ -71,22 +78,6 @@ export interface RepoInfo {
   repositoryGuid: string;
   repositoryName: string;
   grandGuid?: string | null;
-}
-
-/**
- * Check if vault data appears to be encrypted (base64, not JSON)
- */
-function isEncryptedVaultData(value: string): boolean {
-  const trimmed = value.trim();
-  if (trimmed.length < 40 || trimmed.startsWith('{')) {
-    return false;
-  }
-  try {
-    JSON.parse(trimmed);
-    return false;
-  } catch {
-    return /^[A-Za-z0-9+/]+=*$/.test(trimmed);
-  }
 }
 
 /**
@@ -158,16 +149,6 @@ export function resolveRepositoryNames(
     return repository;
   });
 }
-
-/**
- * Machine information with vault status
- * Uses generic to allow any machine type that has the required properties
- * Note: machineName is nullable to match generated API types
- */
-export type MachineWithVaultStatus = {
-  machineName: string | null;
-  vaultStatus?: string | null;
-};
 
 /**
  * Find deployed repositories across multiple machines
@@ -276,35 +257,6 @@ export function getDeploymentSummary(machine: MachineWithVaultStatus): {
     mountedCount: parsed.repositories.filter((r) => r.mounted).length,
     dockerRunningCount: parsed.repositories.filter((r) => r.docker_running).length,
   };
-}
-
-/**
- * Parse vault status and return the full ListResult data.
- * Returns null if parsing fails or data is encrypted.
- */
-export function parseListResult(vaultStatusJson: string | undefined | null): ListResult | null {
-  if (!vaultStatusJson) {
-    return null;
-  }
-
-  if (isEncryptedVaultData(vaultStatusJson)) {
-    return null;
-  }
-
-  const trimmed = vaultStatusJson.trim();
-  if (!trimmed.startsWith('{')) {
-    return null;
-  }
-
-  try {
-    const data = JSON.parse(vaultStatusJson);
-    if (isListResult(data)) {
-      return data;
-    }
-    return null;
-  } catch {
-    return null;
-  }
 }
 
 /**
