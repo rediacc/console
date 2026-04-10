@@ -6,9 +6,11 @@ let mockConfig: Record<string, unknown> = {};
 
 vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: {
-    update: vi.fn((_name: string, fn: (cfg: Record<string, unknown>) => Record<string, unknown>) => {
-      mockConfig = fn(mockConfig);
-    }),
+    update: vi.fn(
+      (_name: string, fn: (cfg: Record<string, unknown>) => Record<string, unknown>) => {
+        mockConfig = fn(mockConfig);
+      }
+    ),
     read: vi.fn(() => mockConfig),
   },
 }));
