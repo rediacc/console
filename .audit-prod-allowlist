@@ -69,3 +69,5 @@
 1116100
 # axios NO_PROXY hostname normalization bypass leading to SSRF (transitive dep, no fix available)
 1116365
+# axios cloud metadata exfiltration via header injection chain (transitive dep, no fix available)
+1116425
