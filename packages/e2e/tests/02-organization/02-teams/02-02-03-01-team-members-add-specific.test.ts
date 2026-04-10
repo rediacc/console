@@ -6,7 +6,6 @@ import { UserPageIDs } from '@/pages/user/UserPageIDs';
 import {
   selectUserInAddMemberTab,
   openTeamMembersDialog,
-  dismissCreateUserModal,
   waitForTeamsPage,
   fillResourceSearch,
 } from '@/test-helpers/team-helpers';
