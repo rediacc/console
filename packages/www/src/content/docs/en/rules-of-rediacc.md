@@ -67,16 +67,17 @@ Renet auto-injects these into every container:
 
 - The compose **service name** becomes the auto-route URL prefix.
 - **Grand repos**: `https://{service}.{repo}.{machine}.{baseDomain}` (e.g., `https://myapp.marketing.server-1.example.com`).
-- **Fork repos**: `https://{service}-{tag}.{machine}.{baseDomain}`, uses the machine wildcard cert to avoid Let's Encrypt rate limits.
+- **Fork repos**: `https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain}` (e.g., `https://myapp-fork-staging.marketing.server-1.example.com`). The `-fork-` separator prevents URL collisions with grand repo service names. The fork URL always uses the parent repo's existing wildcard certificate, so no new cert is needed.
 - For custom domains, use Traefik labels (but note: custom domains are NOT fork-friendly, the domain belongs to the grand repo).
 
 ## Networking
 
 - **Each repository gets its own Docker daemon** at `/var/run/rediacc/docker-<networkId>.sock`.
 - **Each service gets a unique loopback IP** within a /26 subnet (e.g., `127.0.24.192/26`).
-- **Bind to `SERVICE_IP`**, each service gets a unique loopback IP.
-- **Health checks must use `${SERVICE_IP}`**, not `localhost`. Example: `healthcheck: test: ["CMD", "curl", "-f", "http://${SERVICE_IP}:8080/health"]`
-- **Inter-service communication**: Use loopback IPs or `SERVICE_IP` env var. Docker DNS names do NOT work in host mode.
+- **Binding is automatic**: Services can bind to `0.0.0.0` or `localhost` - the kernel transparently rewrites the address to the service's assigned loopback IP. Explicit `${SERVICE_IP}` binding still works but is no longer required.
+- **Health checks can use `localhost`** or `${SERVICE_IP}`. Example: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`
+- **Cross-repo connections are kernel-blocked**: The kernel blocks connections to loopback IPs outside the repository's `/26` subnet automatically. A service in one repo cannot reach services in another repo.
+- **Inter-service communication**: Use **service names** (e.g. `db`, `redis`) - renet automatically injects every service name as a hostname that resolves to the correct IP. Docker DNS names do NOT work in host mode, but service names via `/etc/hosts` do. Avoid embedding `${DB_IP}` or similar in persistent config files (e.g. connection strings stored in a database) - if forked, the raw IP carries over and points to the wrong repo. Service names always resolve correctly per repo.
 - **Port conflicts are impossible** between repositories, each has its own Docker daemon and IP range.
 - **TCP/UDP port forwarding**: Add labels to expose non-HTTP ports:
   ```yaml
@@ -96,7 +97,7 @@ Renet auto-injects these into every container:
   ```
 - The LUKS volume is mounted at `/mnt/rediacc/mounts/<guid>/`.
 - BTRFS snapshots capture the entire LUKS backing file, including all bind-mounted data.
-- The datastore is a fixed-size BTRFS pool file on the system disk. Use `rdc machine query <name> --system` to see effective free space. Expand with `rdc datastore resize`.
+- The datastore is a fixed-size BTRFS pool file on the system disk. Use `rdc machine query --name <name> --system` to see effective free space. Expand with `rdc datastore resize`.
 
 ## CRIU (Live Migration)
 
@@ -144,14 +145,14 @@ Renet auto-injects these into every container:
 - **Forks** (`rdc repo fork`) create a CoW (copy-on-write) clone with a new GUID and networkId. The fork shares the parent's encryption key.
 - **Takeover** (`rdc repo takeover <fork> -m <machine>`) replaces the grand repo's data with a fork's data. The grand keeps its identity (GUID, networkId, domains, autostart, backup chain). Old production data is preserved as a backup fork. Use for: test upgrade on fork, verify, then takeover to production. Revert with `rdc repo takeover <backup-fork> -m <machine>`.
 - **Proxy routes** take ~3 seconds to become active after deploy. The "Proxy is not running" warning during `repo up` is informational in ops/dev environments.
+- **`rdc repo up` and `rdc repo fork --up` print the URL pattern** for services labelled with `rediacc.service_port` at the end of deploy. Replace `{service}` with your exposed service name to get the exact URL. Services without `rediacc.service_port` (databases, workers) do not get routes and are not shown.
 
 ## Common mistakes
 
 - Using `docker compose` instead of `renet compose`, containers won't get network isolation.
 - Restart policies are safe, renet auto-strips them and the watchdog handles recovery.
 - Using `privileged: true`, not needed, renet injects specific CRIU capabilities instead.
-- Not binding to `SERVICE_IP`, causes port conflicts between repos.
-- Hardcoding IPs, use `SERVICE_IP` env var; IPs are allocated dynamically per networkId.
+- Hardcoding raw IPs in persistent config files - use service names for connections to keep fork isolation intact.
 - Forgetting `--mount` on first deploy after `backup push`, LUKS volume needs explicit opening.
 - Using `rdc term connect -c` as a workaround for failed commands, report bugs instead.
 - `repo delete` performs full cleanup including loopback IPs and systemd units. Run `rdc machine prune <name>` to clean leftovers from legacy deletions.

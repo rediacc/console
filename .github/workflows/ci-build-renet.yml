@@ -148,6 +148,14 @@ jobs:
       - name: List native binaries
         run: ls -la binaries/
 
+      - name: Install clang for BPF compilation
+        run: sudo apt-get install -y clang llvm libbpf-dev linux-headers-generic
+
+      - name: Generate BPF bindings
+        run: |
+          cd private/renet
+          go generate ./pkg/ebpf/...
+
       - name: Build full renet with embedded assets (release)
         env:
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}

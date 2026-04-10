@@ -4,7 +4,7 @@ description: Системные требования и поддерживаем
 category: Guides
 order: 0
 language: ru
-sourceHash: "dd2ac2df883a3d1b"
+sourceHash: "486751d7617ce14c"
 ---
 
 # Требования

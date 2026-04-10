@@ -4,7 +4,7 @@ description: "Kurcalamaya karşı kanıt lisans düzenleme, yerinde yetkilendiri
 category: "Guides"
 order: 8
 language: tr
-sourceHash: "5e6afbdf05c21b67"
+sourceHash: "326c4f4efbd60493"
 ---
 
 # Lisans Zinciri ve Yetkilendirme

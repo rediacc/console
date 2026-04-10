@@ -3012,13 +3012,19 @@
           {
             "description": "许可证槽位仅在创建或 fork 仓库时占用——您的日常操作不会消耗任何槽位。槽位在闲置 1 小时后自动释放，因此 5 个槽位的计划可以服务数十台机器。永远不收取每台机器的费用。",
             "title": "无限机器。按创建付费授权。"
+          },
+          {
+            "description": "每个仓库许可证都绑定到其签发的机器。当您的托管商将虚拟机迁移到不同的硬件时，机器标识会改变，但您的许可证会继续工作40天。下次刷新时会自动重新绑定到新机器。无停机，无需手动操作。",
+            "title": "虚拟机迁移40天宽限期。"
           }
         ],
         "subtitle": "Rediacc 许可证的设计让您永远不会被锁定。以下是这在实际中意味着什么。",
         "svg": {
           "allOperations": "所有操作",
+          "newMachineId": "新机器ID",
           "noLicenseNeeded": "无需许可证",
           "noLicenseRequired": "无需许可证 — 始终可用",
+          "reposKeepRunning": "仓库持续运行。无需手动操作。",
           "requiredOnlyHere": "仅在此处需要",
           "slotsAutoRelease": "插槽在闲置1小时后自动释放",
           "slotsCreateFork": "插槽仅用于创建和分叉 — 日常操作始终免费"
@@ -3059,6 +3065,7 @@
             "secondary": "联系销售人员"
           }
         },
+        "edgeLimitsNote": "显示的是 edge 频道的限制。stable 上减半。",
         "foreverFree": "永远免费",
         "getStarted": "开始使用",
         "guarantees": {
@@ -13226,16 +13233,18 @@
     "title": "速度不匹配危机"
   },
   "regionPicker": {
-    "edgeNote": "最新功能，2倍免费限额。无付费计划。数据持久保存。",
-    "footer": "请选择离您最近的区域，或您的组织要求的区域。注册后无法更改。",
+    "channelEdge": "Edge",
+    "channelStable": "稳定版",
+    "edgeHint": "最新功能，免费额度翻倍。无付费计划。",
+    "footer": "选择离您最近的区域，或您的组织所要求的区域。注册后无法更改。",
     "locations": {
       "asia": "东京，日本",
       "eu": "法兰克福，德国",
       "us": "弗吉尼亚，美国"
     },
-    "subtitle": "您的账户、账单和配置等所有数据都保存在您选择的区域中，绝不会离开该区域。",
-    "tabEdge": "Edge",
-    "tabStable": "稳定版",
+    "regionNote": "注册后无法更改区域。",
+    "stableHint": "可靠版本，从 edge 经过 7 天验证后升级。",
+    "subtitle": "您的账户、账单和配置保留在您选择的区域中，永远不会离开。",
     "title": "您希望将数据存储在哪里？"
   },
   "solutions": {
@@ -13308,6 +13317,6 @@
     "playVideo": "播放视频",
     "toggleFullscreen": "切换全屏",
     "volume": "音量",
-    "youtubeTitle": "Product introduction"
+    "youtubeTitle": "产品介绍"
   }
 }

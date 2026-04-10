@@ -4,7 +4,7 @@ description: Rediaccを実行するためのシステム要件とサポートさ
 category: Guides
 order: 0
 language: ja
-sourceHash: "dd2ac2df883a3d1b"
+sourceHash: "486751d7617ce14c"
 ---
 
 # システム要件

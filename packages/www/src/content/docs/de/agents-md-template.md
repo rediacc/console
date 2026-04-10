@@ -4,7 +4,7 @@ description: Kopierfertige Vorlage zur Konfiguration von Claude Code, Cursor und
 category: Reference
 order: 50
 language: de
-sourceHash: "aa1cfa017455e64a"
+sourceHash: "b1ea9373a19bbedb"
 ---
 
 Verwenden Sie diese Vorlage, um KI-Coding-Assistenten (Claude Code, Cursor, Cline, Windsurf) für die autonome Verwaltung der Rediacc-Infrastruktur zu konfigurieren. Kopieren Sie den folgenden Block in die Datei `CLAUDE.md`, `.cursorrules` oder die entsprechende Agenten-Konfigurationsdatei Ihres Projekts.

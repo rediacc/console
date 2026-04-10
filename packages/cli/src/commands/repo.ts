@@ -315,7 +315,7 @@ export function registerRepoCommands(program: Command): void {
 
   repo.addHelpText(
     'after',
-    `\n${t('help.examples')}\n  $ rdc repo create my-app -m server-1 --size 5G   ${t('help.repo.create')}\n  $ rdc repo up my-app -m server-1 --mount          ${t('help.repo.up')}\n  $ rdc repo down my-app -m server-1                ${t('help.repo.down')}\n  $ rdc repo fork my-app my-app-test -m server-1    ${t('help.repo.fork')}\n`
+    `\n${t('help.examples')}\n  $ rdc repo create --name my-app -m server-1 --size 5G   ${t('help.repo.create')}\n  $ rdc repo up --name my-app -m server-1 --mount          ${t('help.repo.up')}\n  $ rdc repo down --name my-app -m server-1                ${t('help.repo.down')}\n  $ rdc repo fork --parent my-app --tag test -m server-1   ${t('help.repo.fork')}\n`
   );
 
   if (isAgentEnvironment() || process.argv.includes('--help-all')) {

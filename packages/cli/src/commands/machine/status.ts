@@ -4,6 +4,7 @@ import {
   getBlockDevices,
   getContainers,
   getHealthSummary,
+  getLicenseStatuses,
   getNetworkInterfaces,
   getRepositories,
   getServices,
@@ -42,6 +43,7 @@ interface SectionRenderer {
 
 function flattenSystem(sys: SystemInfo): Record<string, unknown> {
   return {
+    machine_id: sys.machine_id ? `${sys.machine_id.slice(0, 16)}...` : '-',
     hostname: sys.hostname,
     os: sys.os_name,
     kernel: sys.kernel,
@@ -140,7 +142,35 @@ function getSections(
           partitions: d.partitions.length,
         })),
     },
+    {
+      title: 'Licenses',
+      getData: (r) => {
+        const currentMachineId = r.system?.machine_id;
+        return getLicenseStatuses(r).map((l) => ({
+          repository: resolve(l.repositoryGuid),
+          status: l.status,
+          issued: l.issuedAt ? relativeTime(l.issuedAt) : '-',
+          expires: l.hardExpiresAt ? relativeTime(l.hardExpiresAt) : '-',
+          machine_match:
+            !currentMachineId || !l.machineId
+              ? '-'
+              : l.machineId === currentMachineId
+                ? 'Yes'
+                : 'No',
+        }));
+      },
+    },
   ];
+}
+
+function relativeTime(iso: string): string {
+  const now = Date.now();
+  const target = new Date(iso).getTime();
+  const diffMs = target - now;
+  const absDays = Math.abs(Math.round(diffMs / (1000 * 60 * 60 * 24)));
+  if (absDays === 0) return 'today';
+  if (diffMs > 0) return `in ${absDays}d`;
+  return `${absDays}d ago`;
 }
 
 function printSummary(result: ListResult): void {
@@ -191,6 +221,7 @@ const SECTION_FLAGS = [
   { flag: 'services', section: 'services' },
   { flag: 'network', section: 'network' },
   { flag: 'blockDevices', section: 'block' },
+  { flag: 'licenses', section: 'licenses' },
 ] as const;
 
 interface QueryOptions {
@@ -201,6 +232,7 @@ interface QueryOptions {
   services?: boolean;
   network?: boolean;
   blockDevices?: boolean;
+  licenses?: boolean;
 }
 
 function printStorageSummary(sys: SystemInfo | undefined): void {
@@ -308,6 +340,7 @@ export function registerQueryCommand(machine: Command, program: Command): void {
     .option('--services', t('options.queryServices'))
     .option('--network', t('options.queryNetwork'))
     .option('--block-devices', t('options.queryBlockDevices'))
+    .option('--licenses', t('options.queryLicenses'))
     .action(async (options: QueryOptions & { name: string }) => {
       try {
         const machineName = options.name;

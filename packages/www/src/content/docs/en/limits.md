@@ -1,0 +1,166 @@
+---
+title: Limits & Quotas
+description: >-
+  Reference for the limits, maximums, and quotas that apply to Rediacc
+  repositories, services, networking, and storage.
+category: Reference
+order: 99
+language: en
+---
+
+# Limits & Quotas
+
+This page documents the hard and soft limits that apply to Rediacc deployments. Understanding these limits helps you plan capacity and avoid unexpected constraints.
+
+---
+
+## Services per Repository
+
+Each repository supports up to **61 services** running simultaneously.
+
+This is a hard limit determined by the network address space allocated to each repository. Every service gets its own dedicated private IP address, and each repository's address block accommodates exactly 61 service slots.
+
+If you are approaching this limit, consolidate smaller services (e.g., move sidecars or monitoring agents into a separate repository with their own isolation boundary) or refactor to reduce the number of independently running processes within a single application.
+
+---
+
+## Repositories per Machine
+
+There is no hard cap enforced by Rediacc. The practical limit depends on your machine's resources:
+
+| Resource | Impact |
+|----------|--------|
+| Disk space | Each repository is an encrypted disk image. A machine with 1 TB of usable storage can hold many repositories, but the total size of all images must fit within the datastore pool. |
+| RAM | Each running repository starts its own Docker daemon and containers. Memory usage depends on your workloads. |
+| CPU | Parallel repository operations (start, backup, fork) add temporary CPU load. |
+
+**Typical deployments** run 10–50 repositories per machine without issue. Machines with 32 GB+ RAM and 500 GB+ storage regularly run 100+ repositories.
+
+### System-wide network ID limit
+
+Each repository is assigned a unique **network ID**, a number used to calculate its private IP address range. This pool is shared across all machines and repositories managed by the same Rediacc config.
+
+| Limit | Value |
+|-------|-------|
+| Total available network IDs | ~261,944 |
+| Scope | Per config (shared across all machines in a config) |
+
+When a repository is deleted, its network ID is freed and becomes available for reuse. Rediacc allocates IDs sequentially and only scans for freed gaps once the forward counter approaches the ceiling. In practice this limit is never reached. It would require creating and tracking hundreds of thousands of repositories over the lifetime of a single config.
+
+---
+
+## Forks
+
+There is no limit on the number of active forks of a repository. Each fork is a full copy-on-write clone with its own encrypted storage, network addresses, and Docker daemon. Forks consume disk space proportional to the data written to them after creation (not the full parent size).
+
+---
+
+## External Ports
+
+### Always-active ports
+
+Ports are only opened once you configure a public IP with `rdc config infra set --public-ipv4`. Until then, no ports are open on the machine. Once configured:
+
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| 80 | TCP | HTTP: handled by Traefik; returns 404 for unconfigured domains, not passed to any service |
+| 443 | TCP | HTTPS: same as above; requests without a matching route are rejected at the proxy layer |
+| 10000–10010 | TCP | Dynamic range for Rediacc-managed TCP forwarding |
+
+HTTP/HTTPS differ from raw TCP ports: even though 80 and 443 are open, every request is validated by the reverse proxy against an explicit routing table. Without a configured service and matching domain, no application code is reached and no data is exposed.
+
+### Opt-in TCP/UDP forwarding
+
+All other ports (databases, caches, message brokers, DNS, mail) are **closed by default** and must be explicitly opened. This keeps the machine's attack surface minimal.
+
+To expose a port from a specific service:
+
+```yaml
+labels:
+  - "rediacc.tcp_ports=5432"   # expose PostgreSQL from this container
+  - "rediacc.udp_ports=53"     # expose DNS from this container
+```
+
+To open a port at the machine level (available to all services):
+
+```bash
+rdc config infra set -m server-1 --tcp-ports 25,587,993   # mail server
+rdc config infra push -m server-1
+```
+
+> Never expose database or cache ports externally unless you have a specific requirement. Use HTTPS auto-routes for web services and keep storage services internal.
+
+---
+
+## Datastore
+
+The datastore is a fixed-size pool created when a machine is first set up. Its size does not grow automatically.
+
+- **Minimum recommended size**: 50 GB
+- **Maximum size**: Limited by your disk. A single pool can span a full disk.
+- **Resize**: Use `rdc datastore resize` to expand an existing pool. Shrinking is not supported.
+- **Filesystem**: Rediacc uses BTRFS internally for copy-on-write snapshots and efficient forking. Requires a machine running **Linux kernel 6.1 or later** for full production stability.
+
+Each repository image has a fixed maximum size set at creation time (default: 10 GB). Use `rdc repo resize` to expand an individual repository. The sum of all repository maximum sizes cannot exceed the datastore pool size.
+
+---
+
+## HTTP Routes
+
+Each service with the `rediacc.service_port` label gets one HTTPS route automatically. There is no limit on the number of services with routes, subject to the 61-service maximum per repository.
+
+Wildcard TLS certificates are provisioned per repository on the first deployment via Let's Encrypt (Cloudflare DNS-01 challenge). Let's Encrypt imposes a limit of **50 certificates per registered domain per week**. Because Rediacc uses one wildcard certificate per repository (not per service), a deployment with 50+ new repositories in a single week may hit this limit.
+
+Forks reuse the parent repository's existing wildcard certificate and do not consume any certificate quota.
+
+---
+
+## Checkpoint / Restore (CRIU)
+
+Live migration via CRIU has the following constraints:
+
+- **Opt-in**: Only containers with the `rediacc.checkpoint=true` label are checkpointed. Databases and stateless services are excluded by default and start fresh on restore.
+- **Kernel requirement**: Linux 6.1+ on both the source and destination machine.
+- **Network mode**: CRIU requires host networking mode. Containers using custom network configurations cannot be checkpointed.
+- **Memory**: The checkpoint data size equals the resident memory of the checkpointed process. Large in-memory datasets (e.g., a Node.js app caching 4 GB of data) produce 4 GB checkpoint files.
+- **TCP connections**: Active TCP connections are preserved across same-machine restore. On cross-machine migration, TCP connections must be re-established by the application after restore.
+
+---
+
+## Backups
+
+| Limit | Value |
+|-------|-------|
+| Backup destinations per repository | Unlimited |
+| Simultaneous backup jobs | 1 per repository (jobs queue if triggered concurrently) |
+| Backup frequency | No minimum interval enforced; limited by your storage bandwidth |
+| Retention | Controlled by your storage provider (S3, Cloudflare R2, etc.). Rediacc does not enforce retention policies. |
+| Cross-machine backup | Supported; destination machine must have sufficient datastore space |
+
+---
+
+## CLI & API
+
+| Limit | Value |
+|-------|-------|
+| Concurrent `rdc` commands against the same machine | Unlimited (each command opens its own SSH connection) |
+| Default parallel repository start concurrency | 3 (adjustable with `--concurrency`) |
+| SSH connection timeout | 30 seconds for initial connection |
+| `rdc` session duration | No timeout; long-running operations keep the connection alive |
+
+---
+
+## Supported OS Versions
+
+Remote machines must run one of the following to meet Rediacc's kernel, filesystem, and network isolation requirements:
+
+| OS | Minimum Version | Default Kernel |
+|----|----------------|----------------|
+| Ubuntu | 24.04 LTS *(recommended)* | 6.8 |
+| Debian | 12 (Bookworm) | 6.1 |
+| Fedora | 43 | 6.12 |
+| openSUSE Leap | 16.0 | 6.4+ |
+
+**Minimum required kernel: 6.1.** Machines running older kernels are rejected at setup time with a clear error message.
+
+> **Why kernel 6.1?** Rediacc uses BTRFS for encrypted repository storage and copy-on-write forking. Linux 6.1 introduced critical BTRFS improvements that significantly reduce mount times for large datastores, improve snapshot deletion performance, and fix data-integrity issues present in earlier kernels. Kernel 6.1 is also required for the kernel-level network isolation hooks that enforce cross-repository isolation, transparently rewriting `bind()` calls and blocking connections between repositories.

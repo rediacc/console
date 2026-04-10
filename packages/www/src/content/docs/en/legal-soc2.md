@@ -27,7 +27,7 @@ Rediacc logs 70+ event types covering:
 - **Authentication**: login, logout, password changes, 2FA enable/disable, session revocation
 - **Authorization**: API token creation/revocation, role changes, team membership
 - **Configuration**: config store push/pull, member management, access failures (IP mismatch, SDK denied)
-- **Licensing**: machine activation, license issuance, subscription changes
+- **Licensing**: repo license issuance, machine slot tracking, subscription changes
 - **Machine operations**: repository create/start/stop/delete, fork, backup push/pull, file sync, terminal sessions
 
 These logs are accessible through the admin dashboard (with filtering by user, team, and date), the portal activity page (with org-scoped type and date filtering for org admins), and the `rdc audit` CLI for programmatic export. Machine operations are also recorded in your system logs for defense in depth.

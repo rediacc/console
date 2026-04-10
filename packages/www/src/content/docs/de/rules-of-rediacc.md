@@ -4,7 +4,7 @@ description: "Wesentliche Regeln und Konventionen für die Entwicklung von Anwen
 category: "Guides"
 order: 5
 language: de
-sourceHash: "9bd7744a0b8bbf3c"
+sourceHash: "f7ad3c123d850d36"
 sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
 ---
 

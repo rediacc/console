@@ -27,9 +27,14 @@ export async function confirmBatch(
 }
 
 export async function postRepoUpTasks(repoName: string, machineName: string): Promise<void> {
+  let baseDomain: string | undefined;
+  let machineNameShort: string | undefined;
+
   try {
     const machineConfig = await configService.getLocalMachine(machineName);
-    if (machineConfig.infra?.baseDomain) {
+    baseDomain = machineConfig.infra?.baseDomain;
+    machineNameShort = machineName;
+    if (baseDomain && machineConfig.infra) {
       const localConfig = await configService.getLocalConfig();
       const { ensureRepoDnsRecords } = await import('../services/infra-provision.js');
       await ensureRepoDnsRecords(machineName, repoName, machineConfig.infra, localConfig);
@@ -43,6 +48,29 @@ export async function postRepoUpTasks(repoName: string, machineName: string): Pr
     await downloadCertCache(machineName, { silent: true });
   } catch {
     // Non-fatal: cert cache failure should not block repo up
+  }
+
+  // Print service URL pattern so users know where their services are accessible
+  // Print URL pattern only for HTTP-exposed services (rediacc.service_port label).
+  // We print the pattern rather than specific service names since querying containers
+  // is not available here — the user substitutes {service} with their exposed service names.
+  if (baseDomain && machineNameShort) {
+    try {
+      const machineDomain = `${machineNameShort}.${baseDomain}`;
+      const isFork = repoName.includes(':');
+      if (isFork) {
+        const [parentName, tag] = repoName.split(':');
+        outputService.info(
+          `Exposed services (rediacc.service_port): https://{service}-fork-${tag}.${parentName}.${machineDomain}`
+        );
+      } else {
+        outputService.info(
+          `Exposed services (rediacc.service_port): https://{service}.${repoName}.${machineDomain}`
+        );
+      }
+    } catch {
+      // Non-fatal
+    }
   }
 }
 

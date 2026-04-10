@@ -25,7 +25,7 @@ import { startSpinner, stopSpinner } from '../utils/spinner.js';
 import { auditService } from './audit.js';
 import { configService } from './config-resources.js';
 import {
-  refreshMachineActivation,
+  issueRepoLicense,
   refreshRepoLicenseIdentity,
   refreshRepoLicensesBatch,
 } from './license.js';
@@ -583,16 +583,26 @@ class LocalExecutorService {
     if (!isLicensedRenetFunction(options.functionName)) {
       return false;
     }
-    // Unified path: machine activation + batch refresh for all licensed functions
-    const machineIssued = await refreshMachineActivation(
-      machine,
-      sshPrivateKey,
-      remoteRenetPath,
-      sftp
-    ).catch((err: unknown) => {
-      telemetryService.trackError(err, { operation: 'executor.refresh_activation' });
-      return false;
-    });
+    // For create/fork, re-issue the pre-provisioning repo license
+    if (
+      options.functionName === 'repository_create' ||
+      options.functionName === 'repository_fork'
+    ) {
+      try {
+        await this.ensureRepoLicenseForProvisioning(
+          options,
+          machine,
+          sshPrivateKey,
+          remoteRenetPath,
+          sftp
+        );
+        return true;
+      } catch (err) {
+        telemetryService.trackError(err, { operation: 'executor.repo_license_recovery' });
+        return false;
+      }
+    }
+    // For all other licensed operations, batch refresh existing repo licenses
     const batchResult = await refreshRepoLicensesBatch(
       machine,
       sshPrivateKey,
@@ -602,7 +612,7 @@ class LocalExecutorService {
       telemetryService.trackError(err, { operation: 'executor.batch_refresh' });
       return null;
     });
-    return machineIssued || Boolean(batchResult && batchResult.valid > 0);
+    return Boolean(batchResult && batchResult.valid > 0);
   }
 
   private async maybeRefreshInvalidSignatures(
@@ -653,9 +663,13 @@ class LocalExecutorService {
   /**
    * Pre-flight for repository_create / repository_fork:
    * Ensure subscription token exists (trigger device-code auth if needed)
-   * and call refreshMachineActivation (which writes the blob to disk).
+   * and pre-issue a repo license (without identity proofs since the repo
+   * doesn't exist yet). The server enforces machine slot limits during
+   * issuance. After creation, maybeRefreshRepoIdentity re-issues the
+   * license with identity proofs.
    */
-  private async ensureMachineActivationForProvisioning(
+  private async ensureRepoLicenseForProvisioning(
+    options: LocalExecuteOptions,
     machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
     sshPrivateKey: string,
     remoteRenetPath: string,
@@ -676,8 +690,30 @@ class LocalExecutorService {
         announceIntro: true,
       });
     }
-    const activated = await refreshMachineActivation(machine, sshPrivateKey, remoteRenetPath, sftp);
-    if (!activated) {
+
+    const repoLicenseCtx = await resolveRepoLicenseContext(
+      options.functionName,
+      options.machineName,
+      options.params ?? {},
+      sftp!
+    );
+    if (!repoLicenseCtx) {
+      throw new Error(t('errors.subscription.activationFailed'));
+    }
+
+    const issued = await issueRepoLicense(
+      machine,
+      sshPrivateKey,
+      {
+        repositoryGuid: repoLicenseCtx.repositoryGuid,
+        grandGuid: repoLicenseCtx.grandGuid,
+        kind: repoLicenseCtx.kind,
+        requestedSizeGb: repoLicenseCtx.requestedSizeGb,
+      },
+      remoteRenetPath,
+      sftp
+    );
+    if (!issued) {
       throw new Error(t('errors.subscription.activationFailed'));
     }
   }
@@ -886,7 +922,13 @@ class LocalExecutorService {
     ) {
       const licStart = Date.now();
       await timedStep(t('timing.step.activating'), 'timing.step.licenseActivated', () =>
-        this.ensureMachineActivationForProvisioning(machine, sshPrivateKey, remoteRenetPath, sftp)
+        this.ensureRepoLicenseForProvisioning(
+          options,
+          machine,
+          sshPrivateKey,
+          remoteRenetPath,
+          sftp
+        )
       );
       cliSteps.push({ name: 'license', duration_ms: Date.now() - licStart });
     }

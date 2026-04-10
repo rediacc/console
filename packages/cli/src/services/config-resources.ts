@@ -486,12 +486,12 @@ class ConfigService extends ConfigServiceBase {
   /**
    * Scan all repositories in a config and return an array of used network IDs.
    */
-  private scanUsedNetworkIds(config: RdcConfig): number[] {
-    const usedIds: number[] = [];
+  private scanUsedNetworkIds(config: RdcConfig): Set<number> {
+    const usedIds = new Set<number>();
     if (config.repositories) {
       for (const repo of Object.values(config.repositories)) {
         if (repo.networkId !== undefined && repo.networkId > 0) {
-          usedIds.push(repo.networkId);
+          usedIds.add(repo.networkId);
         }
       }
     }
@@ -499,15 +499,35 @@ class ConfigService extends ConfigServiceBase {
   }
 
   async allocateNetworkId(): Promise<number> {
+    // Network ID space: 2816 to ~16,777,152, step 64 → ~261,944 possible IDs.
+    // The ID encodes a loopback /26 subnet: 127.{id/65536}.{(id/256)%256}.{id%256}/26.
+    // Max valid ID where the 2nd octet stays ≤ 255: 255 * 65536 = 16,711,680 + headroom.
+    const MAX_NETWORK_ID = 16_711_680; // 255 * 65536 — second octet = 255
+
     const name = this.getEffectiveConfigName();
     let allocated = 0;
     await configFileStorage.update(name, (config) => {
+      const usedIds = this.scanUsedNetworkIds(config);
       let nextId = config.nextNetworkId;
 
       if (nextId === undefined || nextId < MIN_NETWORK_ID) {
-        const usedIds = this.scanUsedNetworkIds(config);
-        nextId =
-          usedIds.length === 0 ? MIN_NETWORK_ID : Math.max(...usedIds) + NETWORK_ID_INCREMENT;
+        nextId = usedIds.size === 0 ? MIN_NETWORK_ID : Math.max(...usedIds) + NETWORK_ID_INCREMENT;
+      }
+
+      // If the forward counter is approaching the limit, scan for freed gaps.
+      // This handles long-running systems where many repos have been created and deleted.
+      if (nextId > MAX_NETWORK_ID) {
+        let candidate = MIN_NETWORK_ID;
+        while (usedIds.has(candidate) && candidate <= MAX_NETWORK_ID) {
+          candidate += NETWORK_ID_INCREMENT;
+        }
+        if (candidate > MAX_NETWORK_ID) {
+          throw new Error(
+            `Network ID space exhausted: all ${Math.floor((MAX_NETWORK_ID - MIN_NETWORK_ID) / NETWORK_ID_INCREMENT + 1)} slots are in use. ` +
+              `Delete unused repositories to free slots.`
+          );
+        }
+        nextId = candidate;
       }
 
       allocated = nextId;

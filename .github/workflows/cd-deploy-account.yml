@@ -272,6 +272,11 @@ jobs:
           fi
           SES_K="SES_KEY_${SUFFIX}"; SECRET_SES_ACCESS_KEY_ID="${!SES_K}"
           SES_S="SES_SECRET_${SUFFIX}"; SECRET_SES_SECRET_ACCESS_KEY="${!SES_S}"
+          # Asia uses EU SES while ap-northeast-1 production access is pending
+          if [[ "$SUFFIX" == "ASIA" ]]; then
+            SECRET_SES_ACCESS_KEY_ID="$SES_KEY_EU"
+            SECRET_SES_SECRET_ACCESS_KEY="$SES_SECRET_EU"
+          fi
 
           jq -n \
             --arg ed25519_priv "$SECRET_ED25519_PRIVATE_KEY" \

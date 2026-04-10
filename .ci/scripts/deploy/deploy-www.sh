@@ -97,6 +97,9 @@ compatibility_date = "2026-01-20"
 compatibility_flags = ["nodejs_compat"]
 upload_source_maps = true
 
+[vars]
+ALLOWED_EMAIL_DOMAINS = "rediacc.com,rediacc.io"
+
 [observability]
 enabled = true
 

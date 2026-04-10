@@ -3041,13 +3041,19 @@
           {
             "description": "Lisans slotu yalnızca bir depo oluşturulurken veya çatallanırken kullanılır — günlük operasyonlarınız hiçbir slot tüketmez. Slotlar 1 saatlik etkisizlikten sonra otomatik olarak serbest bırakılır, böylece 5 slotluk bir plan onlarca makineye hizmet verebilir. Makine başına herhangi bir ücret yoktur, asla.",
             "title": "Sınırsız makine. Oluşturma başına ödeme lisanslaması."
+          },
+          {
+            "description": "Her depo lisansı, verildiği makineye bağlıdır. Hosting sağlayıcınız VM'nizi farklı bir donanıma taşıdığında makine kimliği değişir, ancak lisanslarınız 40 gün boyunca çalışmaya devam eder. Bir sonraki yenileme otomatik olarak yeni makineye bağlanır. Kesinti yok, manuel adım yok.",
+            "title": "VM taşıma için 40 gün geçiş süresi."
           }
         ],
         "subtitle": "Rediacc lisansları, hiçbir zaman kilitli kalmamanız için tasarlanmıştır. Bunun pratikte ne anlama geldiği aşağıdadır.",
         "svg": {
           "allOperations": "Tüm işlemler",
+          "newMachineId": "Yeni makine kimliği",
           "noLicenseNeeded": "Lisans gerekmez",
           "noLicenseRequired": "Lisans gerekmez — her zaman çalışır",
+          "reposKeepRunning": "Depolar çalışmaya devam eder. Manuel adım gerekmez.",
           "requiredOnlyHere": "Yalnızca burada gerekli",
           "slotsAutoRelease": "Slotlar 1 saat hareketsizlik sonrasında otomatik olarak serbest bırakılır",
           "slotsCreateFork": "Slotlar yalnızca oluşturma ve çatallama için kullanılır — günlük işlemler her zaman ücretsizdir"
@@ -3088,6 +3094,7 @@
             "secondary": "Satış Ekibiyle İletişime Geçin"
           }
         },
+        "edgeLimitsNote": "Edge kanalı için gösterilen limitler. Stable'da yarısı.",
         "foreverFree": "Sonsuza kadar ücretsiz",
         "getStarted": "Başlayın",
         "guarantees": {
@@ -13282,16 +13289,18 @@
     "title": "Hız Uyuşmazlığı Krizi"
   },
   "regionPicker": {
-    "edgeNote": "En son ozellikler, 2 kat ucretsiz limitler. Ucretli plan yok. Veriler kalicidir.",
-    "footer": "Size en yakın bölgeyi veya kuruluşunuzun gerektirdiği bölgeyi seçin. Kayıt sonrasında bu değiştirilemez.",
+    "channelEdge": "Edge",
+    "channelStable": "Kararlı",
+    "edgeHint": "En yeni özellikler, 2 kat ücretsiz limitler. Ücretli plan yok.",
+    "footer": "Size en yakın bölgeyi veya kuruluşunuzun gerektirdiği bölgeyi seçin. Kayıt sonrası değiştirilemez.",
     "locations": {
       "asia": "Tokyo, Japonya",
       "eu": "Frankfurt, Almanya",
       "us": "Virginia, Amerika Birlesik Devletleri"
     },
-    "subtitle": "Hesabınız, faturalarınız ve yapılandırmalarınız dahil her şey seçtiğiniz bölgede kalır. Asla oradan ayrılmaz.",
-    "tabEdge": "Edge",
-    "tabStable": "Kararli",
+    "regionNote": "Bölge kayıt sonrası değiştirilemez.",
+    "stableHint": "Güvenilir sürümler, 7 günlük test sürecinden sonra edge'den yükseltilir.",
+    "subtitle": "Hesabınız, faturalandırmanız ve yapılandırmalarınız seçtiğiniz bölgede kalır. Asla oradan ayrılmazlar.",
     "title": "Verilerinizi nerede saklayalım?"
   },
   "solutions": {
@@ -13364,6 +13373,6 @@
     "playVideo": "Videoyu oynat",
     "toggleFullscreen": "Tam ekran geçişi",
     "volume": "Ses",
-    "youtubeTitle": "Product introduction"
+    "youtubeTitle": "Ürün tanıtımı"
   }
 }

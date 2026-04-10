@@ -32,7 +32,7 @@ All machine commands support the global `--output` flag (`json` or `table`).
 
 ```bash
 # Quick overview of everything on a machine
-rdc machine query server-1
+rdc machine query --name server-1
 
 # Check if containers are running after deploy
 rdc machine containers server-1

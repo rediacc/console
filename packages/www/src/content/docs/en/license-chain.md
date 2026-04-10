@@ -20,7 +20,7 @@ Every license issued by an account server is recorded in an append-only ledger. 
 
 ## How a License is Issued
 
-When the CLI requests a machine activation or repo license, the account server:
+When the CLI requests a repo license, the account server:
 
 1. Reads the current chain head (last sequence + hash) for the subscription.
 2. Builds the license payload with the next sequence number and the previous chain hash baked in.

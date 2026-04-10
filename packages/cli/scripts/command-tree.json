@@ -909,6 +909,12 @@
               "descriptionKey": "options.queryBlockDevices",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--licenses",
+              "descriptionKey": "options.queryLicenses",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [],
@@ -6263,7 +6269,7 @@
           "subcommands": [
             {
               "name": "activation",
-              "descriptionKey": "commands.subscription.refresh.activation.description",
+              "descriptionKey": "commands.subscription.refresh.description",
               "options": [
                 {
                   "flags": "-m, --machine <name>",

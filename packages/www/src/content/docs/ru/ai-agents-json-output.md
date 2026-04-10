@@ -4,7 +4,7 @@ description: Полный справочник по формату JSON-выво
 category: Reference
 order: 51
 language: ru
-sourceHash: "29b827cf79cbba6e"
+sourceHash: "11259cd1eeebf361"
 ---
 
 Все команды `rdc` поддерживают структурированный JSON-вывод для программного использования AI-агентами и скриптами.

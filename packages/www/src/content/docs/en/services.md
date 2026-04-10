@@ -148,7 +148,7 @@ Each repository supports up to **61 services** (slots 0 through 60).
 
 ### Using Service IPs in Docker Compose
 
-Since each repository runs an isolated Docker daemon, `renet compose` automatically configures `network_mode: host` for all services. Bind services to their assigned loopback IPs:
+Since each repository runs an isolated Docker daemon, `renet compose` automatically configures `network_mode: host` for all services. The kernel transparently rewrites `bind()` calls to the service's assigned loopback IP, so services can bind to `0.0.0.0` or `localhost` without conflicts. For connections **to other services**, use the **service name** - renet injects every service name as a hostname that always resolves to the correct IP, even in forks:
 
 ```yaml
 services:
@@ -157,18 +157,20 @@ services:
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_PASSWORD: secret
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
+    # No explicit listen_addresses needed - the kernel rewrites bind to the correct loopback IP
 
   api:
     image: my-api:latest
     environment:
-      DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
-      LISTEN_ADDR: ${API_IP}:8080
+      DATABASE_URL: postgresql://postgres:secret@postgres:5432/mydb  # use service name
+      LISTEN_ADDR: 0.0.0.0:8080                                      # kernel rewrites to service IP
 ```
+
+> **Service names for connections:** Use the **service name** (e.g. `postgres`, `redis`) to **connect to** other services - renet automatically maps every service name to its loopback IP via `/etc/hosts`. Embedding `${POSTGRES_IP}` in connection strings stored inside databases or config files will bake in the raw IP, which breaks fork isolation and is a **validation error**. The `${SERVICE_IP}` variables are still available for explicit use, but binding is handled automatically by the kernel.
 
 > **Note:** Do not add `network_mode: host` manually, `renet compose` injects it automatically. Restart policies (e.g., `restart: always`) are safe to use, renet auto-strips them for CRIU compatibility and the router watchdog handles container recovery.
 
-> **Note:** Fork repos get flat auto-routes: `{service}-{tag}.{machine}.{baseDomain}`. Custom domains are skipped for forks.
+> **Note:** Fork repos get auto-routes under the parent's subdomain: `{service}-fork-{tag}.{repo}.{machine}.{baseDomain}`. Custom domains are skipped for forks.
 
 ## Starting Services
 
@@ -321,18 +323,16 @@ services:
       POSTGRES_DB: webapp
       POSTGRES_USER: app
       POSTGRES_PASSWORD: changeme
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
 
   redis:
     image: redis:7-alpine
-    command: redis-server --bind ${REDIS_IP} --port 6379
 
   api:
     image: myregistry/api:latest
     environment:
-      DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
-      REDIS_URL: redis://${REDIS_IP}:6379
-      LISTEN_ADDR: ${API_IP}:8080
+      DATABASE_URL: postgresql://app:changeme@postgres:5432/webapp
+      REDIS_URL: redis://redis:6379
+      LISTEN_ADDR: 0.0.0.0:8080
 ```
 
 **Rediaccfile:**

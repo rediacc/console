@@ -4,7 +4,7 @@ description: "Rediacc'ın şifreleme, erişim yönetimi ve operasyon güvenliği
 category: "Legal"
 order: 5
 language: tr
-sourceHash: "fdea800f46a7d3ec"
+sourceHash: "fa8c17a9c2914241"
 ---
 
 ISO/IEC 27001, Uluslararası Standardizasyon Örgütü (ISO) ve Uluslararası Elektroteknik Komisyonu (IEC) tarafından yayımlanan bilgi güvenliği yönetim sistemleri (BGYS) için uluslararası bir standarttır. Mevcut sürüm ISO/IEC 27001:2022'dir.

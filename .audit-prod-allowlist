@@ -67,3 +67,5 @@
 1116011
 1116099
 1116100
+# axios NO_PROXY hostname normalization bypass leading to SSRF (transitive dep, no fix available)
+1116365

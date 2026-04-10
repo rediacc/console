@@ -23,7 +23,7 @@ When `rdc` runs in a non-TTY environment (piped, subshell, or spawned by an AI a
 
 ```bash
 # These all produce JSON automatically
-result=$(rdc machine query prod-1)
+result=$(rdc machine query --name prod-1)
 echo '{}' | rdc agent exec "machine query"
 ```
 
@@ -191,7 +191,7 @@ Accepts JSON on stdin, maps keys to command arguments and options, and executes 
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine query prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python
@@ -200,7 +200,7 @@ status=$(rdc machine query prod-1 -o json | jq -r '.data.status')
 import subprocess, json
 
 result = subprocess.run(
-    ["rdc", "machine", "query", "prod-1", "-o", "json"],
+    ["rdc", "machine", "query", "--name", "prod-1", "-o", "json"],
     capture_output=True, text=True
 )
 envelope = json.loads(result.stdout)
@@ -222,7 +222,7 @@ else:
 ```javascript
 import { execFileSync } from 'child_process';
 
-const raw = execFileSync('rdc', ['machine', 'query', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
+const raw = execFileSync('rdc', ['machine', 'query', '--name', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
 const { success, data, errors } = JSON.parse(raw);
 
 if (!success) {

@@ -4,7 +4,7 @@ description: "将现有项目迁移到加密的 Rediacc 仓库中。"
 category: "Guides"
 order: 11
 language: zh
-sourceHash: "18199953a84fb77b"
+sourceHash: "96c0254adb792a90"
 ---
 
 # 迁移指南

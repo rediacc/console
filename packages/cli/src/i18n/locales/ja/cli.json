@@ -743,6 +743,8 @@
         "fetching": "マシンの健全性を取得中です...",
         "header": "\n{{name}}の健全性チェック:",
         "issuesSection": "\n問題:",
+        "licensesSection": "\nライセンス:",
+        "licensesSummary": "  {{valid}}/{{total}} 有効, {{expired}} 期限切れ, {{mismatch}} マシン不一致, {{missing}} 不足",
         "noData": "マシンのステータスデータがありません",
         "repositoriesSection": "\nリポジトリ:",
         "repositoriesSummary": "  {{mounted}}/{{total}} マウント済み ({{docker}} Docker使用)",
@@ -1246,7 +1248,7 @@
         "rollback": "\"{{repository}}\" の設定をロールバックしました",
         "starting": "\"{{machine}}\" で \"{{parent}}\" を \"{{repository}}\" としてフォーク中...",
         "tagOption": "フォークのタグ（名前:タグを作成）",
-        "tagRequired": "フォークにはタグが必要です。使用法: rdc repo fork <parent> <tag> -m <machine>",
+        "tagRequired": "フォークにはタグが必要です。使用法: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "upOption": "fork後にマウントしてサービスを開始（fork + mount + upを1コマンドで）"
       },
       "list": {
@@ -1381,7 +1383,7 @@
           "descriptionShort": "リポジトリにテンプレートを適用",
           "notFound": "テンプレート \"{{name}}\" が見つかりません。利用可能: {{available}}"
         },
-        "completed": "テンプレートを適用しました。デプロイ: rdc repo up {{repository}} -m {{machine}}",
+        "completed": "テンプレートを適用しました。デプロイ: rdc repo up --name {{repository}} -m {{machine}}",
         "description": "リポジトリにテンプレートを適用する",
         "descriptionShort": "リポジトリにテンプレートを適用する（docker-compose.yml + Rediaccfile）",
         "failed": "テンプレートの適用に失敗しました",
@@ -2059,16 +2061,16 @@
     "affectedChildClones": "。影響を受ける子クローン: {{clones}}。子クローンを最初に削除するか昇格させてください。",
     "agent": {
       "commandBlocked": "\"{{command}}\" コマンドはエージェントモードでは使用できません。\n\nこのコマンドは安全ガードなしに任意の低レベル関数を実行します。代わりに型付きCLIコマンドまたはMCPツールを使用してください。\n\n代替手段:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 利用可能なすべてのコマンドを表示するには \"rdc agent capabilities\" を実行してください\n\n直接アクセスが必要な場合は、ユーザーにコマンドを直接実行するよう依頼してください。",
-      "createGuard": "エージェントモードでは新しいgrandリポジトリ \"{{name}}\" を作成できません。\n\nエージェントはfork専用モードで動作します。grandリポジトリは本番環境であり、作成後にエージェントがアクセスすることはできません。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nユーザーへ: リポジトリの作成を許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
-      "createGuardOverride": "新しいgrandリポジトリ \"{{name}}\" を作成できません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "createGuardOverrideNonLinux": "新しいgrandリポジトリ \"{{name}}\" を作成できません。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
+      "createGuard": "エージェントモードでは新しいgrandリポジトリ \"{{name}}\" を作成できません。\n\nエージェントはfork専用モードで動作します。grandリポジトリは本番環境であり、作成後にエージェントがアクセスすることはできません。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nユーザーへ: リポジトリの作成を許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
+      "createGuardOverride": "新しいgrandリポジトリ \"{{name}}\" を作成できません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "新しいgrandリポジトリ \"{{name}}\" を作成できません。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
       "forkBlocked": "コマンド \"{{command}}\" はforkリポジトリでは使用できません。\n\nforkリポジトリは一時的なサンドボックス環境です。この操作はgrand（本番）リポジトリにのみ適用されます。ユーザーにこのコマンドを直接実行するよう依頼してください。",
-      "grandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\ngrandリポジトリには本番データが含まれています。代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです。\n\nワークフロー:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する（例: rdc repo up {{name}}:<tag-name> -m <machine> --mount）\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nユーザーへ: 直接アクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
-      "grandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます",
-      "grandGuardOverrideNonLinux": "\"{{name}}\" はgrand（本番）リポジトリです。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nワークフロー:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
-      "machineGuard": "エージェントモードでは \"{{machine}}\" への直接マシンアクセスは許可されていません。\n\nエージェントはサンドボックスアクセスのためにリポジトリコンテキストを通じて接続する必要があります。まずリポジトリのforkを作成し、fork に接続してください。\n\nワークフロー:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nユーザーへ: 直接マシンアクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
-      "machineGuardOverride": "\"{{machine}}\" への直接マシンアクセスは許可されていません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\nまずリポジトリのforkを作成し、forkに接続してください:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
-      "machineGuardOverrideNonLinux": "直接マシンアクセスのオーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nワークフロー:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
+      "grandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\ngrandリポジトリには本番データが含まれています。代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです。\n\nワークフロー:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する（例: rdc repo up {{name}}:<tag-name> -m <machine> --mount）\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nユーザーへ: 直接アクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
+      "grandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" はgrand（本番）リポジトリです。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nワークフロー:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
+      "machineGuard": "エージェントモードでは \"{{machine}}\" への直接マシンアクセスは許可されていません。\n\nエージェントはサンドボックスアクセスのためにリポジトリコンテキストを通じて接続する必要があります。まずリポジトリのforkを作成し、fork に接続してください。\n\nワークフロー:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nユーザーへ: 直接マシンアクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
+      "machineGuardOverride": "\"{{machine}}\" への直接マシンアクセスは許可されていません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\nまずリポジトリのforkを作成し、forkに接続してください:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "直接マシンアクセスのオーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nワークフロー:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
       "mcpGrandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。\n直接アクセスが必要な場合は、ユーザーに --allow-grand を付けてMCPサーバーを再起動するよう依頼してください。",
       "mcpGrandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。",
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" はgrand（本番）リポジトリです。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。",
@@ -2156,7 +2158,7 @@
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
-      "repoContextRequired": "コマンドにはリポジトリコンテキストが必要です。\n\nDOCKER_HOST とリポジトリ環境変数を必要とする \"{{detected}}\" が検出されました。\nこれらはリポジトリが指定されている場合にのみ利用可能です。\n\n次の代わりに:\n  rdc term {{machine}} -c \"{{command}}\"\n\n次を使用してください:\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
+      "repoContextRequired": "コマンドにはリポジトリコンテキストが必要です。\n\nDOCKER_HOST とリポジトリ環境変数を必要とする \"{{detected}}\" が検出されました。\nこれらはリポジトリが指定されている場合にのみ利用可能です。\n\n次の代わりに:\n  rdc term connect -m {{machine}} -c \"{{command}}\"\n\n次を使用してください:\n  rdc term connect -m {{machine}} -r <repository> -c \"{{command}}\"",
       "sshCode1": "一般的なエラー - コマンド構文またはリモート権限を確認してください",
       "sshCode126": "権限がありません - リモートでコマンドを実行できません",
       "sshCode127": "リモートマシンにコマンドが見つかりません",
@@ -2179,7 +2181,7 @@
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
       "notFound": "VS Code が見つかりません。\n\nhttps://code.visualstudio.com/ からインストールしてください\nまたは REDIACC_VSCODE_PATH 環境変数を設定してください。",
-      "repoNotDeployed": "リポジトリ \"{{repository}}\" は {{machine}} にデプロイされていません。\n\n先にデプロイしてください：\n  rdc repo up {{repository}} -m <マシン名>"
+      "repoNotDeployed": "リポジトリ \"{{repository}}\" は {{machine}} にデプロイされていません。\n\n先にデプロイしてください：\n  rdc repo up --name {{repository}} -m <マシン名>"
     }
   },
   "help": {
@@ -2201,7 +2203,7 @@
     "machine": {
       "containers": "実行中のコンテナを一覧表示",
       "health": "CI/CD用ヘルスチェック",
-      "keyConcepts": "\n主要概念:\n\n  クエリフィルター\n    • rdc machine query <name> はデフォルトで全セクションを返します\n    • --system、--repositories、--containers、--services、--network、--block-devices でフィルタリング\n    • JSON 出力はコンテナを拡張: repository (解決済み名)、domain、autoRoute\n\n  監視とヘルス\n    • machine health の終了コード: 0=正常、1=警告、2=エラー — CI/CD ゲートに使用\n    • containers --health-check は異常なコンテナがあれば終了コード 2\n    • services --stability-check は失敗・再起動中・再起動 3 回超のサービスがあれば終了コード 2\n\n  データストア構造 (/mnt/rediacc/)\n    • repositories/ — 暗号化された LUKS イメージ (リポジトリ GUID ごとに 1 つ)\n    • mounts/ — 復号化されたマウントポイント (リポジトリがマウントされている時にアクセス可能)\n    • immovable/ — リポジトリごとの Docker daemon データ\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
+      "keyConcepts": "\n主要概念:\n\n  クエリフィルター\n    • rdc machine query --name <name> はデフォルトで全セクションを返します\n    • --system、--repositories、--containers、--services、--network、--block-devices でフィルタリング\n    • JSON 出力はコンテナを拡張: repository (解決済み名)、domain、autoRoute\n\n  監視とヘルス\n    • machine health の終了コード: 0=正常、1=警告、2=エラー — CI/CD ゲートに使用\n    • containers --health-check は異常なコンテナがあれば終了コード 2\n    • services --stability-check は失敗・再起動中・再起動 3 回超のサービスがあれば終了コード 2\n\n  データストア構造 (/mnt/rediacc/)\n    • repositories/ — 暗号化された LUKS イメージ (リポジトリ GUID ごとに 1 つ)\n    • mounts/ — 復号化されたマウントポイント (リポジトリがマウントされている時にアクセス可能)\n    • immovable/ — リポジトリごとの Docker daemon データ\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
       "query": "マシンの完全な状態を表示"
     },
     "repo": {
@@ -2318,6 +2320,7 @@
     "protocolToken": "認証トークン",
     "queryBlockDevices": "ブロックデバイスのみを含める",
     "queryContainers": "コンテナのみを含める",
+    "queryLicenses": "リポジトリのライセンス状態を含める",
     "queryNetwork": "ネットワークインターフェースのみを含める",
     "queryRepositories": "リポジトリのみを含める",
     "queryServices": "サービスのみを含める",

@@ -47,6 +47,11 @@ RUN apt-get update \
         dbus-x11 \
         netcat-openbsd \
         gnome-keyring \
+        # eBPF: clang + headers for BPF program compilation (go generate ./pkg/ebpf/...)
+        clang \
+        llvm \
+        libbpf-dev \
+        linux-headers-generic \
         # KVM/libvirt for local VM provisioning (Standalone Run)
         qemu-kvm \
         libvirt-daemon-system \

@@ -6,7 +6,7 @@ order: 2
 language: ar
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ar/cli.json
-sourceHash: "998c7fff6f303d02"
+sourceHash: "0408d2283ad965e2"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -973,6 +973,7 @@ rdc machine query [options]
 | `--services` | {{t:cli.options.queryServices}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--network` | {{t:cli.options.queryNetwork}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--block-devices` | {{t:cli.options.queryBlockDevices}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--licenses` | {{t:cli.options.queryLicenses}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-machine-vault-status"></a>

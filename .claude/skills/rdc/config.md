@@ -20,7 +20,7 @@ Updates the SSH key used by the CLI for all remote operations (SFTP, rsync, prov
 
 **For ops VMs**: VMs created with `rdc ops up` trust a staging key. Set it with:
 ```
-rdc config set-ssh --private-key ~/.renet/staging/.ssh/id_rsa --public-key ~/.renet/staging/.ssh/id_rsa.pub
+rdc config ssh set --key ~/.renet/staging/.ssh/id_rsa
 ```
 
 ### Scan host keys
@@ -62,7 +62,7 @@ Pass `--config <name>` to any `rdc` command.
 - Proxy entrypoints are only generated for configured address families (IPv4-only machines get no IPv6 entrypoints, and vice versa).
 
 ### View infra
-Shows base domain, public IPs, TLS email, and port forwarding config. Also visible in `rdc machine query <machine>`.
+Shows base domain, public IPs, TLS email, and port forwarding config. Also visible in `rdc machine query --name <machine>`.
 
 ### Push infra to machine
 Installs Traefik reverse proxy and rediacc-router with `--machine-name`. Also creates Cloudflare DNS records (`{machineName}.{baseDomain}` and `*.{machineName}.{baseDomain}`) if `--cf-dns-token` is set. Required for HTTPS routing. Auto-routes use machine subdomains: `{service}-{id}.{machineName}.{baseDomain}`.
@@ -84,11 +84,11 @@ Destroys a cloud-provisioned VM via OpenTofu and removes from config. Only works
 
 ### Workflow: Cloud-provisioned machine
 ```bash
-rdc config set-ssh --private-key ~/.ssh/id_ed25519 --public-key ~/.ssh/id_ed25519.pub
+rdc config ssh set --key ~/.ssh/id_ed25519
 rdc config provider add my-linode --provider linode/linode --token $TOKEN --region us-east
-rdc machine provision prod-1 --provider my-linode
+rdc machine provision --name prod-1 --provider my-linode
 # baseDomain auto-detected from sibling machines (or pass --base-domain example.com)
-# Now ready for: rdc repo create <name> -m prod-1 --size 5G
+# Now ready for: rdc repo create --name <name> -m prod-1 --size 5G
 ```
 
 ## Backup strategy
@@ -109,17 +109,17 @@ Configures automated backup schedule. Multiple destinations supported.
 ## Workflow: New machine from scratch
 
 ```bash
-rdc config machine add myserver --ip 10.0.0.1 --user deploy
-rdc config set-ssh --private-key ~/.ssh/id_ed25519
-rdc config machine setup myserver
-# Now ready for: rdc repo create <name> -m myserver --size 5G
+rdc config machine add --name myserver --ip 10.0.0.1 --user deploy
+rdc config ssh set --key ~/.ssh/id_ed25519
+rdc config machine setup --name myserver
+# Now ready for: rdc repo create --name <name> -m myserver --size 5G
 ```
 
 ## Workflow: Ops VM
 
 ```bash
 rdc ops up --basic --parallel
-rdc config machine add rediacc11 --ip 192.168.111.11 --user muhammed
-rdc config set-ssh --private-key ~/.renet/staging/.ssh/id_rsa --public-key ~/.renet/staging/.ssh/id_rsa.pub
-rdc config machine setup rediacc11
+rdc config machine add --name rediacc11 --ip 192.168.111.11 --user muhammed
+rdc config ssh set --key ~/.renet/staging/.ssh/id_rsa
+rdc config machine setup --name rediacc11
 ```

@@ -743,6 +743,8 @@
         "fetching": "Makine sağlığı alınıyor...",
         "header": "\n{{name}} için Sağlık Kontrolü:",
         "issuesSection": "\nSorunlar:",
+        "licensesSection": "\nLisanslar:",
+        "licensesSummary": "  {{valid}}/{{total}} geçerli, {{expired}} süresi dolmuş, {{mismatch}} makine uyuşmazlığı, {{missing}} eksik",
         "noData": "Makine için durum verisi mevcut değil",
         "repositoriesSection": "\nDepolar:",
         "repositoriesSummary": "  {{mounted}}/{{total}} bağlı ({{docker}} Docker ile)",
@@ -1246,7 +1248,7 @@
         "rollback": "\"{{repository}}\" yapılandırması geri alındı",
         "starting": "\"{{machine}}\" üzerinde \"{{parent}}\" deposunun \"{{repository}}\" olarak çatallanıyor...",
         "tagOption": "Çatal için etiket (isim:etiket oluşturur)",
-        "tagRequired": "Çatal için etiket gereklidir. Kullanım: rdc repo fork <parent> <tag> -m <machine>",
+        "tagRequired": "Çatal için etiket gereklidir. Kullanım: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "upOption": "Fork sonrası bağlayıp servisleri başlat (fork + mount + up tek komutta)"
       },
       "list": {
@@ -1381,7 +1383,7 @@
           "descriptionShort": "Bir depoya şablon uygula",
           "notFound": "\"{{name}}\" şablonu bulunamadı. Mevcut: {{available}}"
         },
-        "completed": "Şablon uygulandı. Dağıtmak için: rdc repo up {{repository}} -m {{machine}}",
+        "completed": "Şablon uygulandı. Dağıtmak için: rdc repo up --name {{repository}} -m {{machine}}",
         "description": "Depoya şablon uygula",
         "descriptionShort": "Depoya şablon uygula (docker-compose.yml + Rediaccfile)",
         "failed": "Şablon uygulama başarısız",
@@ -2059,16 +2061,16 @@
     "affectedChildClones": ". Etkilenen alt klonlar: {{clones}}. Önce alt klonları silin veya yükseltin.",
     "agent": {
       "commandBlocked": "\"{{command}}\" komutu ajan modunda kullanilabilir degil.\n\nBu komut, guvenlik korumalari olmadan rastgele dusuk seviyeli islevler calistirir. Bunun yerine tipli CLI komutlari veya MCP araclari kullanin.\n\nAlternatifler:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Tum kullanilabilir komutlari gormek icin \"rdc agent capabilities\" calistirin\n\nDogrudan erisime ihtiyaciniz varsa, kullanicidan komutu dogrudan calistirmasini isteyin.",
-      "createGuard": "Ajan modunda yeni bir grand depo \"{{name}}\" oluşturulamaz.\n\nAjanlar yalnızca fork modunda çalışır. Grand depolar, oluşturulduktan sonra ajanların erişemeyeceği üretim ortamlarıdır.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nKullanıcı: depo oluşturmaya izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO=* (veya belirli bir depo adı) ayarlayın.",
-      "createGuardOverride": "Yeni bir grand depo \"{{name}}\" oluşturulamaz. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "createGuardOverrideNonLinux": "Yeni bir grand depo \"{{name}}\" oluşturulamaz. REDIACC_ALLOW_GRAND_REPO geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nGeçersiz kılmayı kullanmak için ajanınızı Linux üzerinde çalıştırın (doğrudan, WSL, Docker veya VM).",
+      "createGuard": "Ajan modunda yeni bir grand depo \"{{name}}\" oluşturulamaz.\n\nAjanlar yalnızca fork modunda çalışır. Grand depolar, oluşturulduktan sonra ajanların erişemeyeceği üretim ortamlarıdır.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nKullanıcı: depo oluşturmaya izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO=* (veya belirli bir depo adı) ayarlayın.",
+      "createGuardOverride": "Yeni bir grand depo \"{{name}}\" oluşturulamaz. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "Yeni bir grand depo \"{{name}}\" oluşturulamaz. REDIACC_ALLOW_GRAND_REPO geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nGeçersiz kılmayı kullanmak için ajanınızı Linux üzerinde çalıştırın (doğrudan, WSL, Docker veya VM).",
       "forkBlocked": "\"{{command}}\" komutu fork depolarında kullanılamaz.\n\nFork depoları geçici sandbox ortamlarıdır. Bu işlem yalnızca grand (üretim) depoları için geçerlidir. Kullanıcıdan bu komutu doğrudan çalıştırmasını isteyin.",
-      "grandGuard": "\"{{name}}\" bir grand (üretim) deposudur. Ajanlar grand depoları doğrudan değiştiremez.\n\nGrand depolar üretim verilerini içerir. Bunun yerine fork kullanın — fork'lar güvenli, izole sandbox kopyalarıdır.\n\nİş akışı:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın (örn: rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. Tamamlandığında, kullanıcı rdc repo takeover ile fork'u yüseltebilir\n\nKullanıcı: doğrudan erişime izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (veya tüm depolar için *) ayarlayın.",
-      "grandGuardOverride": "\"{{name}}\" bir grand (üretim) deposudur. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nBunun yerine fork kullanın — fork'lar güvenli, izole sandbox kopyalarıdır:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın\n  3. Tamamlandığında, kullanıcı rdc repo takeover ile fork'u yüseltebilir",
-      "grandGuardOverrideNonLinux": "\"{{name}}\" bir grand (üretim) deposudur. REDIACC_ALLOW_GRAND_REPO geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nİş akışı:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın\n  3. Tamamlandığında, kullanıcı rdc repo takeover ile fork'u yüseltebilir\n\nGeçersiz kılmayı kullanmak için ajanınızı Linux üzerinde çalıştırın (doğrudan, WSL, Docker veya VM).",
-      "machineGuard": "Ajan modunda \"{{machine}}\" makinesine doğrudan erişim izni verilmez.\n\nAjanlar sandbox erişimi için bir depo bağlamı üzerinden bağlanmalıdır. Önce bir deponun fork'unu oluşturun, ardından fork'a bağlanın.\n\nİş akışı:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nKullanıcı: doğrudan makine erişimine izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO=* (veya belirli bir depo adı) ayarlayın.",
-      "machineGuardOverride": "\"{{machine}}\" makinesine doğrudan erişim izni verilmez. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nÖnce bir deponun fork'unu oluşturun, ardından fork'a bağlanın:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
-      "machineGuardOverrideNonLinux": "Doğrudan makine erişimi geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nİş akışı:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nGeçersiz kılmayı kullanmak için ajanınızı Linux üzerinde çalıştırın (doğrudan, WSL, Docker veya VM).",
+      "grandGuard": "\"{{name}}\" bir grand (üretim) deposudur. Ajanlar grand depoları doğrudan değiştiremez.\n\nGrand depolar üretim verilerini içerir. Bunun yerine fork kullanın — fork'lar güvenli, izole sandbox kopyalarıdır.\n\nİş akışı:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın (örn: rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. Tamamlandığında, kullanıcı rdc repo takeover ile fork'u yüseltebilir\n\nKullanıcı: doğrudan erişime izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (veya tüm depolar için *) ayarlayın.",
+      "grandGuardOverride": "\"{{name}}\" bir grand (üretim) deposudur. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nBunun yerine fork kullanın — fork'lar güvenli, izole sandbox kopyalarıdır:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın\n  3. Tamamlandığında, kullanıcı rdc repo takeover ile fork'u yüseltebilir",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" bir grand (üretim) deposudur. REDIACC_ALLOW_GRAND_REPO geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nİş akışı:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın\n  3. Tamamlandığında, kullanıcı rdc repo takeover ile fork'u yüseltebilir\n\nGeçersiz kılmayı kullanmak için ajanınızı Linux üzerinde çalıştırın (doğrudan, WSL, Docker veya VM).",
+      "machineGuard": "Ajan modunda \"{{machine}}\" makinesine doğrudan erişim izni verilmez.\n\nAjanlar sandbox erişimi için bir depo bağlamı üzerinden bağlanmalıdır. Önce bir deponun fork'unu oluşturun, ardından fork'a bağlanın.\n\nİş akışı:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nKullanıcı: doğrudan makine erişimine izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO=* (veya belirli bir depo adı) ayarlayın.",
+      "machineGuardOverride": "\"{{machine}}\" makinesine doğrudan erişim izni verilmez. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nÖnce bir deponun fork'unu oluşturun, ardından fork'a bağlanın:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "Doğrudan makine erişimi geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nİş akışı:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nGeçersiz kılmayı kullanmak için ajanınızı Linux üzerinde çalıştırın (doğrudan, WSL, Docker veya VM).",
       "mcpGrandGuard": "\"{{name}}\" bir grand (üretim) deposudur. Ajanlar grand depoları doğrudan değiştiremez.\n\nGüvenli, izole bir sandbox kopya oluşturmak için repo_fork kullanın, ardından fork üzerinde çalışın.\nDoğrudan erişime ihtiyacınız varsa, kullanıcıdan MCP sunucusunu --allow-grand ile yeniden başlatmasını isteyin.",
       "mcpGrandGuardOverride": "\"{{name}}\" bir grand (üretim) deposudur. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın.\n\nGüvenli, izole bir sandbox kopya oluşturmak için repo_fork kullanın, ardından fork üzerinde çalışın.",
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" bir grand (üretim) deposudur. REDIACC_ALLOW_GRAND_REPO geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nGüvenli, izole bir sandbox kopya oluşturmak için repo_fork kullanın, ardından fork üzerinde çalışın.",
@@ -2156,7 +2158,7 @@
       "noHostKey": "\"{{machine}}\" makinesinin kasada yapılandırılmış bir ana bilgisayar anahtarı yok",
       "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",
       "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok",
-      "repoContextRequired": "Komut depo bağlamı gerektiriyor.\n\nDOCKER_HOST ve depo ortam değişkenlerini gerektiren \"{{detected}}\" algılandı.\nBunlar yalnızca bir depo belirtildiğinde kullanılabilir.\n\nŞunun yerine:\n  rdc term {{machine}} -c \"{{command}}\"\n\nŞunu kullanın:\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
+      "repoContextRequired": "Komut depo bağlamı gerektiriyor.\n\nDOCKER_HOST ve depo ortam değişkenlerini gerektiren \"{{detected}}\" algılandı.\nBunlar yalnızca bir depo belirtildiğinde kullanılabilir.\n\nŞunun yerine:\n  rdc term connect -m {{machine}} -c \"{{command}}\"\n\nŞunu kullanın:\n  rdc term connect -m {{machine}} -r <repository> -c \"{{command}}\"",
       "sshCode1": "Genel hata - komut söz dizimini veya uzak izinleri kontrol edin",
       "sshCode126": "İzin reddedildi - uzaktan komut yürütülemiyor",
       "sshCode127": "Komut uzak makinede bulunamadı",
@@ -2179,7 +2181,7 @@
       "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",
       "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok",
       "notFound": "VS Code bulunamadı.\n\nLütfen buradan yükleyin: https://code.visualstudio.com/\nVeya REDIACC_VSCODE_PATH ortam değişkenini ayarlayın.",
-      "repoNotDeployed": "Depo \"{{repository}}\" {{machine}} üzerinde dağıtılmamış.\n\nÖnce dağıtın:\n  rdc repo up {{repository}} -m <makine-adı>"
+      "repoNotDeployed": "Depo \"{{repository}}\" {{machine}} üzerinde dağıtılmamış.\n\nÖnce dağıtın:\n  rdc repo up --name {{repository}} -m <makine-adı>"
     }
   },
   "help": {
@@ -2201,7 +2203,7 @@
     "machine": {
       "containers": "Çalışan konteynerleri listele",
       "health": "CI/CD için sağlık kontrolü",
-      "keyConcepts": "\nTemel Kavramlar:\n\n  Sorgu Filtreleri\n    • rdc machine query <name> varsayılan olarak tüm bölümleri döndürür\n    • Filtrelemek için --system, --repositories, --containers, --services, --network, --block-devices kullanın\n    • JSON çıktısı konteynerleri şu bilgilerle zenginleştirir: repository (çözülmüş ad), domain, autoRoute\n\n  Sağlık ve İzleme\n    • machine health çıkış kodları: 0=sağlıklı, 1=uyarı, 2=hata — CI/CD kapıları için kullanın\n    • containers --health-check herhangi bir konteyner sağlıksızsa 2 ile çıkar\n    • services --stability-check herhangi bir hizmet başarısız, yeniden başlatılıyor veya >3 yeniden başlatma varsa 2 ile çıkar\n\n  Veri Deposu Yapısı (/mnt/rediacc/)\n    • repositories/ — şifreli LUKS imajları (depo GUID'si başına bir tane)\n    • mounts/ — şifresi çözülmüş bağlama noktaları (depo bağlıyken erişilebilir)\n    • immovable/ — depo başına Docker daemon verileri\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
+      "keyConcepts": "\nTemel Kavramlar:\n\n  Sorgu Filtreleri\n    • rdc machine query --name <name> varsayılan olarak tüm bölümleri döndürür\n    • Filtrelemek için --system, --repositories, --containers, --services, --network, --block-devices kullanın\n    • JSON çıktısı konteynerleri şu bilgilerle zenginleştirir: repository (çözülmüş ad), domain, autoRoute\n\n  Sağlık ve İzleme\n    • machine health çıkış kodları: 0=sağlıklı, 1=uyarı, 2=hata — CI/CD kapıları için kullanın\n    • containers --health-check herhangi bir konteyner sağlıksızsa 2 ile çıkar\n    • services --stability-check herhangi bir hizmet başarısız, yeniden başlatılıyor veya >3 yeniden başlatma varsa 2 ile çıkar\n\n  Veri Deposu Yapısı (/mnt/rediacc/)\n    • repositories/ — şifreli LUKS imajları (depo GUID'si başına bir tane)\n    • mounts/ — şifresi çözülmüş bağlama noktaları (depo bağlıyken erişilebilir)\n    • immovable/ — depo başına Docker daemon verileri\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
       "query": "Tam makine durumunu göster"
     },
     "repo": {
@@ -2318,6 +2320,7 @@
     "protocolToken": "Kimlik doğrulama token'ı",
     "queryBlockDevices": "Yalnızca blok aygıtları dahil et",
     "queryContainers": "Yalnızca konteynerleri dahil et",
+    "queryLicenses": "Depo lisans durumlarını dahil et",
     "queryNetwork": "Yalnızca ağ arayüzlerini dahil et",
     "queryRepositories": "Yalnızca depoları dahil et",
     "queryServices": "Yalnızca servisleri dahil et",

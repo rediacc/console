@@ -168,29 +168,27 @@ services:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: secret
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
 
   redis:
     image: redis:7-alpine
-    command: redis-server --bind ${REDIS_IP} --port 6379
 
   app:
     image: my-app:latest
     environment:
-      DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
-      REDIS_URL: redis://${REDIS_IP}:6379
-      LISTEN_ADDR: ${APP_IP}:8080
+      DATABASE_URL: postgresql://postgres:secret@postgres:5432/mydb
+      REDIS_URL: redis://redis:6379
+      LISTEN_ADDR: 0.0.0.0:8080
 ```
 
 Key changes:
 
-1. **Remove `ports:` mappings**, `renet compose` uses host networking and strips port mappings automatically
-2. **Remove `network_mode: host`**, `renet compose` adds this for you
-3. **Restart policies are safe to keep**, renet auto-strips them for CRIU compatibility and the router watchdog auto-recovers stopped containers
-4. **Bind services to `${SERVICE_IP}`** environment variables (auto-injected by Rediacc)
-5. **Reference other services by their IP** instead of Docker DNS names (e.g., `${POSTGRES_IP}` instead of `postgres`)
+1. **Remove `ports:` mappings** - `renet compose` uses host networking and strips port mappings automatically
+2. **Remove `network_mode: host`** - `renet compose` adds this for you
+3. **Restart policies are safe to keep** - renet auto-strips them for CRIU compatibility and the router watchdog auto-recovers stopped containers
+4. **Use service names for inter-service connections** (e.g. `postgres`, `redis`) - renet injects every service name as a resolvable hostname. Do not embed raw IPs in connection strings that get stored in databases or config files; use the service name instead to keep fork isolation intact
+5. **Binding is automatic** - the kernel rewrites `bind()` to the correct loopback IP. Services can use `0.0.0.0` or `localhost`
 
-The `{SERVICE}_IP` variables are automatically generated from your compose file's service names. The naming convention: uppercase, hyphens replaced with underscores, suffixed with `_IP`. For example, `listmonk-app` becomes `LISTMONK_APP_IP`.
+The `{SERVICE}_IP` variables are still available if you need them, but explicit binding is no longer required - it is handled automatically. The naming convention: uppercase, hyphens replaced with underscores, suffixed with `_IP`. For example, `listmonk-app` becomes `LISTMONK_APP_IP`.
 
 See [Service Networking](/en/docs/services#service-networking-rediaccjson) for details on IP assignment and `.rediacc.json`.
 
@@ -279,7 +277,7 @@ rdc repo ownership --name my-project -m server-1
 
 ### Container Won't Start
 
-Check that services bind to their assigned IP, not `localhost`:
+Check that services are running and review their logs:
 
 ```bash
 # Check assigned IPs
@@ -291,7 +289,7 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### Port Conflict Between Repositories
 
-Each repository gets unique loopback IPs. If you see port conflicts, verify that your `docker-compose.yml` uses `${SERVICE_IP}` for binding. Services not bound to `SERVICE_IP` listen on all interfaces and will conflict with other repositories.
+Each repository gets unique loopback IPs, and the kernel automatically rewrites `bind()` calls to the correct IP. Port conflicts between repositories should not occur. If you see unexpected behavior, verify that services are started via `renet compose` (not `docker compose`). For connecting **to** other services, use the service name (e.g. `postgres`) rather than raw IPs - service names resolve correctly in every fork.
 
 ### Ownership Fix Breaks Containers
 

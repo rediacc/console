@@ -9,7 +9,7 @@ Backup, restore, transfer, and sync repository images between machines or to/fro
 ## Backup commands
 
 ### Push to another machine
-Copies the encrypted repo image directly to the target machine with the **same GUID**. This is a backup/migration, not a fork. After push, deploy on target with `rdc repo up <repo> -m <target> --mount`.
+Copies the encrypted repo image directly to the target machine with the **same GUID**. This is a backup/migration, not a fork. After push, deploy on target with `rdc repo up --name <repo> -m <target> --mount`.
 
 **Important**: `--mount` is required on first deploy after push — the volume needs to be opened (LUKS decryption). The repo's credential must be in the config. If pushing a fork, use `--grand <parent>` on `repo up` to inherit the parent's credential.
 
@@ -47,10 +47,10 @@ CRIU (Checkpoint/Restore In Userspace) captures running process memory state. Th
 
 ```bash
 # On source: checkpoint labeled containers + push (captures process memory + disk state)
-rdc repo push <repo> -m <source> --to-machine <target> --checkpoint
+rdc repo push --name <repo> -m <source> --to-machine <target> --checkpoint
 
 # On target: restore (auto-detects checkpoint data, restores process state)
-rdc repo up <repo> -m <target> --mount
+rdc repo up --name <repo> -m <target> --mount
 ```
 
 **What's preserved**: Process memory, open file descriptors, in-memory variables, timers. The app continues from the exact instruction where it was checkpointed.
@@ -61,9 +61,9 @@ rdc repo up <repo> -m <target> --mount
 
 ```bash
 # Fork with checkpoint — captures process state, then CoW clones
-rdc repo fork <parent> <tag> -m <machine> --checkpoint
-rdc repo mount <parent>:<tag> -m <machine>
-rdc repo up <parent>:<tag> -m <machine>
+rdc repo fork --parent <parent> --tag <tag> -m <machine> --checkpoint
+rdc repo mount --name <parent>:<tag> -m <machine>
+rdc repo up --name <parent>:<tag> -m <machine>
 # Auto-detects checkpoint → DB starts fresh → app CRIU restores (counter continues)
 ```
 
@@ -71,22 +71,22 @@ rdc repo up <parent>:<tag> -m <machine>
 
 ```bash
 # Fork with checkpoint, then push to target
-rdc repo fork <parent> <tag> -m <source> --checkpoint
-rdc repo push <parent>:<tag> -m <source> --to-machine <target>
-rdc repo up <parent>:<tag> -m <target> --mount --grand <parent>
+rdc repo fork --parent <parent> --tag <tag> -m <source> --checkpoint
+rdc repo push --name <parent>:<tag> -m <source> --to-machine <target>
+rdc repo up --name <parent>:<tag> -m <target> --mount
 ```
 
 ### Save/restore cycle (stop and resume later)
 
 ```bash
-rdc repo down <repo> -m <machine> --checkpoint    # Saves process state, then stops
-rdc repo up <repo> -m <machine>                    # Auto-detects checkpoint, resumes
+rdc repo down --name <repo> -m <machine> --checkpoint    # Saves process state, then stops
+rdc repo up --name <repo> -m <machine>                    # Auto-detects checkpoint, resumes
 ```
 
 ### CRIU troubleshooting
 
-- **Docker experimental is auto-enabled**: Per-repo Docker daemons have `"experimental": true` in their generated daemon.json. System Docker is configured during `rdc config setup-machine`. You don't need to enable this manually.
-- **CRIU must be installed on VMs**: `rdc config setup-machine` installs CRIU from system packages and writes `/etc/criu/runc.conf` with `tcp-established`. If checkpoint fails with "CRIU is not installed", re-run setup-machine.
+- **Docker experimental is auto-enabled**: Per-repo Docker daemons have `"experimental": true` in their generated daemon.json. System Docker is configured during `rdc config machine setup`. You don't need to enable this manually.
+- **CRIU must be installed on VMs**: `rdc config machine setup` installs CRIU from system packages and writes `/etc/criu/runc.conf` with `tcp-established`. If checkpoint fails with "CRIU is not installed", re-run setup-machine.
 - **Host networking is forced by renet**: `renet compose` overwrites all services to `network_mode: host` regardless of what the compose file says. This is required for CRIU compatibility.
 - **CRIU security settings are auto-injected for labeled containers**: `renet compose` adds `cap_add: [CHECKPOINT_RESTORE, SYS_PTRACE, NET_ADMIN]`, `security_opt: [apparmor=unconfined]`, and `userns_mode: host` to containers with `rediacc.checkpoint=true`. Containers without the label run with a cleaner security posture. Docker's default seccomp profile is preserved (CRIU suspends it via `PTRACE_O_SUSPEND_SECCOMP`).
 - **TCP connections break after cross-machine restore**: Apps with persistent connections (database pools, websockets) must handle both `ECONNRESET` (stale socket) and `ECONNREFUSED` (service not yet accepting connections). After restore, dependent services like databases may need a few seconds to become ready even though their containers show as "running". See the [heartbeat template](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) for a CRIU-safe reference implementation.
@@ -136,7 +136,7 @@ File transfer between local machine and remote repositories. See [sync.md](sync.
 |------|---------|--------|
 | **Independent copy** on another machine | `repo fork` then `repo push` fork then `repo up --mount` | New GUID, new networkId, new IPs |
 | **Migrate/backup** same repo to another machine | `repo push --to-machine` then `repo up --mount` | Same GUID, same identity |
-| **Test copy** on same machine | `repo fork <parent> <tag>` then `repo up --mount` | New GUID, shares encryption cred |
+| **Test copy** on same machine | `repo fork --parent <parent> --tag <tag>` then `repo up --mount` | New GUID, shares encryption cred |
 
 ### Cross-machine fork (independent copy)
 
@@ -144,24 +144,24 @@ The fork uses the name:tag model — `<parent>:<tag>` (e.g., `my-app:staging`). 
 
 ```bash
 # 1. Fork locally (creates new identity — runs on source machine)
-rdc repo fork <parent> <tag> -m <source-machine>
+rdc repo fork --parent <parent> --tag <tag> -m <source-machine>
 
 # 2. Push the fork to target
-rdc repo push <parent>:<tag> -m <source-machine> --to-machine <target-machine>
+rdc repo push --name <parent>:<tag> -m <source-machine> --to-machine <target-machine>
 
-# 3. Deploy on target (--mount + --grand to unlock with parent's credential)
-rdc repo up <parent>:<tag> -m <target-machine> --mount --grand <parent>
+# 3. Deploy on target (fork inherits parent's credential automatically)
+rdc repo up --name <parent>:<tag> -m <target-machine> --mount
 ```
 
-**Note**: `--grand <parent>` tells the CLI to use the parent repo's LUKS credential to unlock the fork. This is required because forks inherit the parent's encryption key.
+**Note**: The CLI automatically resolves the parent repo's LUKS credential for forks. This is handled internally because forks inherit the parent's encryption key.
 
 ### Simple migration (same identity)
 ```bash
 # 1. Push directly
-rdc repo push <repo> -m <source-machine> --to-machine <target-machine>
+rdc repo push --name <repo> -m <source-machine> --to-machine <target-machine>
 
 # 2. Deploy on target
-rdc repo up <repo> -m <target-machine> --mount
+rdc repo up --name <repo> -m <target-machine> --mount
 ```
 
 ## Delta transfer for repo push
@@ -193,7 +193,7 @@ Phase 1: clean stale mounts, locks, snapshots. Phase 2 (with `--orphaned-repos`)
 Set a default grace period in config so `--grace-days` is not required each time:
 
 ```bash
-rdc config set pruneGraceDays 14
+rdc config set --key pruneGraceDays --value 14
 ```
 
 Precedence: `--grace-days` flag > `pruneGraceDays` in config > 7-day default.

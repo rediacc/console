@@ -4,7 +4,7 @@ description: "Migrer des projets existants vers des dépôts chiffrés Rediacc."
 category: "Guides"
 order: 11
 language: fr
-sourceHash: "18199953a84fb77b"
+sourceHash: "96c0254adb792a90"
 ---
 
 # Guide de migration

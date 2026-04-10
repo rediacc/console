@@ -153,6 +153,21 @@ export interface RepositoryInfo {
   volume_status: string;
 }
 
+/** Per-repository license validation status */
+export interface LicenseStatusEntry {
+  grandGuid?: string;
+  hardExpiresAt?: string;
+  installed: boolean;
+  issuedAt?: string;
+  kind?: string;
+  machineId?: string;
+  message?: string;
+  refreshRecommendedAt?: string;
+  repositoryGuid: string;
+  runtimeValid: boolean;
+  status: string;
+}
+
 /** Network configuration */
 export interface NetworkInfo {
   default_gateway?: string;
@@ -185,6 +200,7 @@ export interface SystemInfo {
   disk: DiskInfo;
   hostname: string;
   kernel: string;
+  machine_id?: string;
   memory: DiskInfo;
   os_name: string;
   system_time: number;
@@ -197,6 +213,7 @@ export interface SystemInfo {
 export interface ListResult {
   block_devices: BlockDevice[];
   containers?: ContainersResult;
+  license_statuses?: LicenseStatusEntry[];
   network?: NetworkInfo;
   repositories: RepositoryInfo[];
   services?: ServicesResult;
@@ -275,6 +292,13 @@ export function getBlockDevices(result: ListResult): BlockDevice[] {
  */
 export function getNetworkInterfaces(result: ListResult): NetworkInterface[] {
   return result.network?.interfaces ?? [];
+}
+
+/**
+ * Safely extract license statuses from ListResult.
+ */
+export function getLicenseStatuses(result: ListResult): LicenseStatusEntry[] {
+  return result.license_statuses ?? [];
 }
 
 /**

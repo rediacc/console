@@ -64,17 +64,17 @@ If VMs are already running and machine is registered, these 4 commands deploy an
 
 ```bash
 # 1. Create encrypted repo (takes ~25s for LUKS format, leaves volume mounted and ready)
-rdc repo create <app-name> -m <machine> --size 2G
+rdc repo create --name <app-name> -m <machine> --size 2G
 
 # 2. Upload your app files (Rediaccfile + docker-compose.yaml + any app code)
 rdc repo sync upload -m <machine> -r <app-name> --local <path-to-app-dir>/
 
 # 3. Deploy (runs Rediaccfile up, starts containers)
-rdc repo up <app-name> -m <machine>
+rdc repo up --name <app-name> -m <machine>
 
 # 4. Verify (~5s after deploy for first output)
 rdc machine containers <machine>
-rdc term <machine> <app-name> --container <container-name> --container-action logs --log-lines 20
+rdc term connect -m <machine> -r <app-name> --container <container-name> --container-action logs --log-lines 20
 ```
 
 For first-time setup (new VMs), see prerequisites in [ops.md](ops.md) and [config.md](config.md).
@@ -83,39 +83,39 @@ For first-time setup (new VMs), see prerequisites in [ops.md](ops.md) and [confi
 
 ```bash
 # Migration (same identity)
-rdc repo push <repo> -m <source> --to-machine <target>
-rdc repo up <repo> -m <target> --mount
+rdc repo push --name <repo> -m <source> --to-machine <target>
+rdc repo up --name <repo> -m <target> --mount
 
 # Independent fork to another machine (--grand passes parent's encryption key)
-rdc repo fork <repo> <tag> -m <source>
-rdc repo push <repo>:<tag> -m <source> --to-machine <target>
-rdc repo up <repo>:<tag> -m <target> --mount --grand <repo>
+rdc repo fork --parent <repo> --tag <tag> -m <source>
+rdc repo push --name <repo>:<tag> -m <source> --to-machine <target>
+rdc repo up --name <repo>:<tag> -m <target> --mount
 ```
 
 ## Quick-start: Live migration with CRIU
 
 ```bash
 # Checkpoint + push (captures process memory + disk state, source keeps running)
-rdc repo push <repo> -m <source> --to-machine <target> --checkpoint
+rdc repo push --name <repo> -m <source> --to-machine <target> --checkpoint
 
 # Restore on target (auto-detects checkpoint, resumes process state)
-rdc repo up <repo> -m <target> --mount
+rdc repo up --name <repo> -m <target> --mount
 ```
 
 ## Quick-start: Same-machine fork with CRIU
 
 ```bash
 # Fork with live state — app continues from checkpoint, DB starts fresh
-rdc repo fork <repo> <tag> -m <machine> --checkpoint
-rdc repo mount <repo>:<tag> -m <machine>
-rdc repo up <repo>:<tag> -m <machine>
+rdc repo fork --parent <repo> --tag <tag> -m <machine> --checkpoint
+rdc repo mount --name <repo>:<tag> -m <machine>
+rdc repo up --name <repo>:<tag> -m <machine>
 ```
 
 ## Quick-start: Save/restore (stop and resume later)
 
 ```bash
-rdc repo down <repo> -m <machine> --checkpoint    # Saves state, stops
-rdc repo up <repo> -m <machine>                    # Auto-restores
+rdc repo down --name <repo> -m <machine> --checkpoint    # Saves state, stops
+rdc repo up --name <repo> -m <machine>                    # Auto-restores
 ```
 
 Requires `rediacc.checkpoint=true` label on containers to checkpoint. See [backup.md](backup.md) for full CRIU details, label setup, and troubleshooting.
@@ -124,7 +124,7 @@ Requires `rediacc.checkpoint=true` label on containers to checkpoint. See [backu
 
 ```bash
 # 1. Configure Ceph for the source machine (one-time; ops pool is rediacc_rbd_pool)
-rdc config set-ceph -m <machine> --pool rediacc_rbd_pool --image ds-prod
+rdc config machine set-ceph -m <machine> --pool rediacc_rbd_pool --image ds-prod
 
 # 2. Initialize Ceph-backed datastore (one-time; reads image/pool from config)
 rdc datastore init -m <machine> --backend ceph --size 100G --force
@@ -144,10 +144,10 @@ Requires a Ceph cluster (provisioned by `rdc ops up`). See [datastore.md](datast
 
 ```bash
 # Tunnel a container's port to localhost (e.g. database access from local tools)
-rdc repo tunnel <machine> <repo> -c <container> --port 5432
+rdc repo tunnel -m <machine> -r <repo> -c <container> --port 5432
 
 # Auto-detect container and port (when repo has a single running container)
-rdc repo tunnel <machine> <repo>
+rdc repo tunnel -m <machine> -r <repo>
 
 # Map to a different local port
 rdc repo tunnel -m <machine> -r <repo> -c <container> --port 5432 --local 15432
@@ -160,15 +160,15 @@ Keeps the tunnel open until Ctrl+C. Requires the container to have a `rediacc.se
 Before ANY operation on ops-provisioned VMs, the CLI must have the correct SSH key:
 
 ```bash
-rdc config set-ssh --private-key ~/.renet/staging/.ssh/id_rsa --public-key ~/.renet/staging/.ssh/id_rsa.pub
+rdc config ssh set --key ~/.renet/staging/.ssh/id_rsa
 ```
 
 This is required because ops VMs trust a staging key, not your default SSH key. Without this, all remote operations (setup-machine, repo create, repo push, sync, etc.) will fail with "All configured authentication methods failed".
 
 Each target machine must also be registered and set up:
 ```bash
-rdc config add-machine <name> --ip <ip> --user <username>
-rdc config setup-machine <name>
+rdc config machine add --name <name> --ip <ip> --user <username>
+rdc config machine setup --name <name>
 ```
 
 See [config.md](config.md) for full details.
@@ -178,7 +178,7 @@ See [config.md](config.md) for full details.
 - **Fork-only mode** (default): AI agents can only modify fork repositories. Grand (original) repos are protected. To override, set `REDIACC_ALLOW_GRAND_REPO=<repo-name>` or `REDIACC_ALLOW_GRAND_REPO=*` for all repos.
 - **MCP fork-only mode**: The MCP server (`rdc mcp serve`) runs in fork-only mode by default. Use `--allow-grand` flag to enable grand repo access.
 - **Per-repo SSH keys + server-side sandbox**: Each repo has its own SSH key with `command="renet sandbox-gateway <name>"` in `authorized_keys`. Every SSH session (term, VS Code, sync) is sandboxed server-side with Landlock filesystem restrictions, OverlayFS home overlay, and per-repo TMPDIR. Cross-repo access blocked by the kernel. `.envrc` auto-loaded for Docker access.
-- **Machine-level SSH**: Direct machine access (`rdc term <machine>` without a repo) is blocked for agents unless `REDIACC_ALLOW_GRAND_REPO=*` is set.
+- **Machine-level SSH**: Direct machine access (`rdc term connect -m <machine>` without a repo) is blocked for agents unless `REDIACC_ALLOW_GRAND_REPO=*` is set.
 
 ## Operational details
 
@@ -187,8 +187,8 @@ See [config.md](config.md) for full details.
 
 ## Important conventions
 
-- **Never use raw SSH, SCP, or `rdc term -c` as a workaround** — `rdc` has dedicated commands for all remote operations. If a command fails, report it as a bug rather than working around it with `term -c` or raw docker/runc commands.
-- **Never use `rdc term -c` to run docker commands** — use `rdc machine containers`, `rdc run container_logs`, `rdc run container_exec`, etc. See [terminal.md](terminal.md) for the complete list of what NOT to use `term` for.
+- **Never use raw SSH, SCP, or `rdc term connect -c` as a workaround** — `rdc` has dedicated commands for all remote operations. If a command fails, report it as a bug rather than working around it with `term connect -c` or raw docker/runc commands.
+- **Never use `rdc term connect -c` to run docker commands** — use `rdc machine containers`, `rdc run container_logs`, `rdc run container_exec`, etc. See [terminal.md](terminal.md) for the complete list of what NOT to use `term` for.
 - Repositories use `renet compose` (not `docker compose`). Renet injects network isolation, host networking, and per-service loopback IPs.
 - Each repository gets an isolated Docker daemon, encrypted LUKS volume, and dedicated IP range.
 - The "Proxy is not running" warning during `repo up` is informational and does not affect functionality.

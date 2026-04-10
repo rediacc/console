@@ -4,7 +4,7 @@ description: "Cómo el modelo autoalojado de Rediacc cumple con los requisitos d
 category: "Legal"
 order: 4
 language: es
-sourceHash: "50081a040deb3183"
+sourceHash: "8d0fc1ff16c1be28"
 ---
 
 La Ley de Privacidad del Consumidor de California (CCPA) es una ley estatal que otorga a los consumidores de California derechos sobre su información personal, incluyendo el derecho a saber qué datos se recopilan, el derecho a eliminarlos y el derecho a optar por no participar en su venta.

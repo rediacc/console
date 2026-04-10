@@ -4,7 +4,7 @@ description: "データの保存場所とリージョン別データレジデン
 category: "Concepts"
 order: 3
 language: ja
-sourceHash: "613595b3941c6186"
+sourceHash: "107d8ef496686b0e"
 sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
 ---
 

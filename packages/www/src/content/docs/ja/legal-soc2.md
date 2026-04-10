@@ -4,7 +4,7 @@ description: "Rediaccがセキュリティ、可用性、機密性のSOC 2トラ
 category: "Legal"
 order: 2
 language: ja
-sourceHash: "96eff23962051882"
+sourceHash: "a01e8b457d648fdd"
 ---
 
 SOC 2（System and Organization Controls 2）は、米国公認会計士協会（AICPA）がセキュリティ、可用性、処理の完全性、機密性、プライバシーに関する組織の統制を評価するために開発したフレームワークです。

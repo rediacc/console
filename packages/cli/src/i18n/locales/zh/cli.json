@@ -743,6 +743,8 @@
         "fetching": "正在获取机器健康状况...",
         "header": "\n{{name}} 的健康检查：",
         "issuesSection": "\n问题：",
+        "licensesSection": "\n许可证：",
+        "licensesSummary": "  {{valid}}/{{total}} 有效，{{expired}} 已过期，{{mismatch}} 机器不匹配，{{missing}} 缺失",
         "noData": "机器无状态数据可用",
         "repositoriesSection": "\n仓库：",
         "repositoriesSummary": "  {{mounted}}/{{total}} 已挂载（{{docker}} 使用 Docker）",
@@ -1246,7 +1248,7 @@
         "rollback": "已回滚 \"{{repository}}\" 的配置",
         "starting": "正在 \"{{machine}}\" 上将 \"{{parent}}\" 分支为 \"{{repository}}\"...",
         "tagOption": "分支的标签（创建 名称:标签）",
-        "tagRequired": "分支需要标签。用法：rdc repo fork <parent> <tag> -m <machine>",
+        "tagRequired": "分支需要标签。用法：rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "upOption": "fork后挂载并启动服务（fork + mount + up 一条命令完成）"
       },
       "list": {
@@ -1381,7 +1383,7 @@
           "descriptionShort": "将模板应用到仓库",
           "notFound": "模板 \"{{name}}\" 未找到。可用: {{available}}"
         },
-        "completed": "模板已应用。部署命令: rdc repo up {{repository}} -m {{machine}}",
+        "completed": "模板已应用。部署命令: rdc repo up --name {{repository}} -m {{machine}}",
         "description": "将模板应用到仓库",
         "descriptionShort": "将模板应用到仓库（docker-compose.yml + Rediaccfile）",
         "failed": "模板应用失败",
@@ -2059,16 +2061,16 @@
     "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
     "agent": {
       "commandBlocked": "\"{{command}}\" 命令在代理模式下不可用。\n\n此命令在没有安全防护的情况下执行任意低级函数。请改用类型化的 CLI 命令或 MCP 工具。\n\n替代方案：\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 运行 \"rdc agent capabilities\" 查看所有可用命令\n\n如果需要直接访问，请让用户直接运行该命令。",
-      "createGuard": "在代理模式下无法创建新的 grand 仓库 \"{{name}}\"。\n\n代理在仅 fork 模式下运行。Grand 仓库是生产环境，代理在创建后无法访问。\n\n请改为 fork 现有仓库：\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\n用户提示：要允许创建仓库，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
-      "createGuardOverride": "无法创建新的 grand 仓库 \"{{name}}\"。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改为 fork 现有仓库：\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "createGuardOverrideNonLinux": "无法创建新的 grand 仓库 \"{{name}}\"。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n请改为 fork 现有仓库：\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
+      "createGuard": "在代理模式下无法创建新的 grand 仓库 \"{{name}}\"。\n\n代理在仅 fork 模式下运行。Grand 仓库是生产环境，代理在创建后无法访问。\n\n请改为 fork 现有仓库：\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\n用户提示：要允许创建仓库，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
+      "createGuardOverride": "无法创建新的 grand 仓库 \"{{name}}\"。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改为 fork 现有仓库：\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "无法创建新的 grand 仓库 \"{{name}}\"。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n请改为 fork 现有仓库：\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
       "forkBlocked": "命令 \"{{command}}\" 在 fork 仓库上不可用。\n\nFork 仓库是临时沙箱环境。此操作仅适用于 grand（生产）仓库。请要求用户直接运行此命令。",
-      "grandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\nGrand 仓库包含生产数据。请改用 fork — fork 是安全、隔离的沙箱副本。\n\n工作流程：\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作（例如：rdc repo up {{name}}:<tag-name> -m <machine> --mount）\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork\n\n用户提示：要允许直接访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。",
-      "grandGuardOverride": "\"{{name}}\" 是一个 grand（生产）仓库。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改用 fork — fork 是安全、隔离的沙箱副本：\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork",
-      "grandGuardOverrideNonLinux": "\"{{name}}\" 是一个 grand（生产）仓库。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n工作流程：\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
-      "machineGuard": "在代理模式下不允许直接访问机器 \"{{machine}}\"。\n\n代理必须通过仓库上下文连接以获得沙箱访问。请先 fork 一个仓库，然后连接到 fork。\n\n工作流程：\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\n用户提示：要允许直接机器访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
-      "machineGuardOverride": "不允许直接访问机器 \"{{machine}}\"。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请先 fork 一个仓库，然后连接到 fork：\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
-      "machineGuardOverrideNonLinux": "直接机器访问覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n工作流程：\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
+      "grandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\nGrand 仓库包含生产数据。请改用 fork — fork 是安全、隔离的沙箱副本。\n\n工作流程：\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作（例如：rdc repo up {{name}}:<tag-name> -m <machine> --mount）\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork\n\n用户提示：要允许直接访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。",
+      "grandGuardOverride": "\"{{name}}\" 是一个 grand（生产）仓库。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改用 fork — fork 是安全、隔离的沙箱副本：\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" 是一个 grand（生产）仓库。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n工作流程：\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
+      "machineGuard": "在代理模式下不允许直接访问机器 \"{{machine}}\"。\n\n代理必须通过仓库上下文连接以获得沙箱访问。请先 fork 一个仓库，然后连接到 fork。\n\n工作流程：\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\n用户提示：要允许直接机器访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
+      "machineGuardOverride": "不允许直接访问机器 \"{{machine}}\"。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请先 fork 一个仓库，然后连接到 fork：\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "直接机器访问覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n工作流程：\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
       "mcpGrandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。\n如需直接访问，请要求用户使用 --allow-grand 重新启动 MCP 服务器。",
       "mcpGrandGuardOverride": "\"{{name}}\" 是一个 grand（生产）仓库。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。",
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" 是一个 grand（生产）仓库。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。",
@@ -2156,7 +2158,7 @@
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
-      "repoContextRequired": "命令需要仓库上下文。\n\n检测到 \"{{detected}}\"，它需要 DOCKER_HOST 和仓库环境变量。\n这些仅在指定仓库时可用。\n\n不要使用：\n  rdc term {{machine}} -c \"{{command}}\"\n\n请使用：\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
+      "repoContextRequired": "命令需要仓库上下文。\n\n检测到 \"{{detected}}\"，它需要 DOCKER_HOST 和仓库环境变量。\n这些仅在指定仓库时可用。\n\n不要使用：\n  rdc term connect -m {{machine}} -c \"{{command}}\"\n\n请使用：\n  rdc term connect -m {{machine}} -r <repository> -c \"{{command}}\"",
       "sshCode1": "通用错误 - 检查命令语法或远程权限",
       "sshCode126": "权限被拒绝 - 无法在远程执行命令",
       "sshCode127": "在远程机器上找不到命令",
@@ -2179,7 +2181,7 @@
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
       "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。",
-      "repoNotDeployed": "仓库 \"{{repository}}\" 未部署在 {{machine}} 上。\n\n请先部署：\n  rdc repo up {{repository}} -m <机器名>"
+      "repoNotDeployed": "仓库 \"{{repository}}\" 未部署在 {{machine}} 上。\n\n请先部署：\n  rdc repo up --name {{repository}} -m <机器名>"
     }
   },
   "help": {
@@ -2201,7 +2203,7 @@
     "machine": {
       "containers": "列出运行中的容器",
       "health": "CI/CD 健康检查",
-      "keyConcepts": "\n关键概念:\n\n  查询过滤器\n    • rdc machine query <name> 默认返回所有部分\n    • 使用 --system、--repositories、--containers、--services、--network、--block-devices 进行过滤\n    • JSON 输出为容器补充: repository (解析后的名称)、domain、autoRoute\n\n  健康监控\n    • machine health 退出码: 0=健康、1=警告、2=错误 — 用于 CI/CD 门控\n    • containers --health-check 如果任何容器不健康则退出码为 2\n    • services --stability-check 如果任何服务失败、正在重启或重启超过 3 次则退出码为 2\n\n  数据存储结构 (/mnt/rediacc/)\n    • repositories/ — 加密的 LUKS 镜像 (每个仓库 GUID 一个)\n    • mounts/ — 解密的挂载点 (仓库挂载时可访问)\n    • immovable/ — 每个仓库的 Docker daemon 数据\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
+      "keyConcepts": "\n关键概念:\n\n  查询过滤器\n    • rdc machine query --name <name> 默认返回所有部分\n    • 使用 --system、--repositories、--containers、--services、--network、--block-devices 进行过滤\n    • JSON 输出为容器补充: repository (解析后的名称)、domain、autoRoute\n\n  健康监控\n    • machine health 退出码: 0=健康、1=警告、2=错误 — 用于 CI/CD 门控\n    • containers --health-check 如果任何容器不健康则退出码为 2\n    • services --stability-check 如果任何服务失败、正在重启或重启超过 3 次则退出码为 2\n\n  数据存储结构 (/mnt/rediacc/)\n    • repositories/ — 加密的 LUKS 镜像 (每个仓库 GUID 一个)\n    • mounts/ — 解密的挂载点 (仓库挂载时可访问)\n    • immovable/ — 每个仓库的 Docker daemon 数据\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
       "query": "显示完整机器状态"
     },
     "repo": {
@@ -2318,6 +2320,7 @@
     "protocolToken": "身份验证令牌",
     "queryBlockDevices": "仅包含块设备",
     "queryContainers": "仅包含容器",
+    "queryLicenses": "包含仓库许可证状态",
     "queryNetwork": "仅包含网络接口",
     "queryRepositories": "仅包含仓库",
     "queryServices": "仅包含服务",

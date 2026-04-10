@@ -649,9 +649,9 @@ jobs:
       matrix:
         os-image:
           - ubuntu-24.04
-          - debian-12
+          - debian-13
           - fedora-43
-          - opensuse-15.6
+          - opensuse-16.0
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 120000
@@ -1080,6 +1080,12 @@ jobs:
           path: private/renet/test-results.xml
           retention-days: 3
           if-no-files-found: ignore
+
+      # eBPF isolation tests
+      - name: Test eBPF
+        run: |
+          cd private/renet
+          sudo go test ./pkg/ebpf/ -v -timeout 60s
 
       # Integration tests (needs sudo for KVM)
       - name: Run integration tests

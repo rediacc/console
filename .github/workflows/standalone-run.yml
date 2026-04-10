@@ -119,8 +119,9 @@ on:
         options:
           - 'none'
           - 'ubuntu-24.04'
-          - 'debian-12'
-          # TODO: Add fedora-43 and opensuse-15.6 once cloud-init compatibility is resolved
+          - 'debian-13'
+          - 'fedora-43'
+          - 'opensuse-16.0'
 
 permissions:
   contents: read

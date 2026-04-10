@@ -12,6 +12,14 @@ This page explains how services running inside isolated Docker daemons become ac
 
 For how services get their loopback IPs and the `.rediacc.json` slot system, see [Services](/en/docs/services#service-networking-rediaccjson).
 
+## Network Isolation
+
+Each repository is automatically isolated at the kernel level using network hooks. This requires Linux kernel 6.1 or later. No configuration is needed.
+
+- **Automatic bind rewriting**: Services can bind to `0.0.0.0` or `127.0.0.1` as usual. The kernel transparently rewrites the address to the service's assigned loopback IP. No need to explicitly bind to `${SERVICE_IP}`.
+- **Cross-repo connection blocking**: If a service tries to connect to a loopback IP outside its repository's `/26` subnet, the kernel blocks it. A process in repo A cannot reach services in repo B.
+- **No application changes required**: Services use `0.0.0.0` or `localhost` for binding, and the kernel ensures they only listen on their correct loopback IP. Isolation is fully transparent.
+
 ## How It Works
 
 Rediacc uses a two-component proxy system to route external traffic to containers:
@@ -64,7 +72,19 @@ For example, a service named `myapp` in a repository called `marketing` on machi
 myapp.marketing.server-1.example.com
 ```
 
-Each repository gets its own subdomain level, so forks and different repos never collide. When you fork a repo (e.g., `marketing-staging`), the fork automatically gets distinct routes. For services with custom domains, use Tier 2 labels or the `rediacc.domain` label.
+For forks, the service name is combined with the reserved word `fork` and the tag:
+
+```
+{service}-fork-{tag}.{repoName}.{machineName}.{baseDomain}
+```
+
+For example, a fork of `marketing` tagged `staging` gets:
+
+```
+myapp-fork-staging.marketing.server-1.example.com
+```
+
+Each fork URL sits under the parent repo's subdomain and is covered by its existing wildcard certificate, so no new certificate is needed. The `-fork-` separator prevents collisions with any real service names in the production repo. For services with custom domains, use Tier 2 labels or the `rediacc.domain` label.
 
 #### Custom Domain via `rediacc.domain`
 
@@ -131,7 +151,7 @@ services:
   myapp:
     image: myapp:latest
     environment:
-      - LISTEN_ADDR=${MYAPP_IP}:8080
+      - LISTEN_ADDR=0.0.0.0:8080
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.myapp.rule=Host(`app.example.com`)"
@@ -141,7 +161,6 @@ services:
 
   database:
     image: postgres:17
-    command: ["-c", "listen_addresses=${DATABASE_IP}"]
     # No traefik labels, database is internal only
 ```
 
@@ -167,7 +186,9 @@ rdc config infra set -m server-1 \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-Auto-routes use **wildcard certificates** at the repo subdomain level (`*.marketing.server-1.example.com`) instead of per-service certs. This avoids Let's Encrypt rate limits and speeds up startup. Custom domain routes use machine-level wildcards (`*.server-1.example.com`).
+Auto-routes use **wildcard certificates** at the repo subdomain level (`*.marketing.server-1.example.com`) instead of per-service certs. The certificate is provisioned automatically by Traefik on the first `repo up`; no manual step required. Forks reuse the parent repo's existing wildcard, so they never trigger a new certificate request. Custom domain routes use machine-level wildcards (`*.server-1.example.com`).
+
+> **Requires Cloudflare credentials.** Wildcard certs use DNS-01 challenge. Without `--cf-dns-token` (and optionally `--cert-email`), Traefik cannot complete the challenge and HTTPS will not work. HTTP remains functional. Configure credentials with `rdc config infra set` before first deploy.
 
 For Tier 2 routes with `traefik.http.routers.{name}.tls.certresolver=letsencrypt`, wildcard domain SANs are automatically injected based on the route's hostname.
 
@@ -231,7 +252,6 @@ To expose a database externally without TLS passthrough (Traefik forwards raw TC
 services:
   postgres:
     image: postgres:17
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     labels:
       - "traefik.enable=true"
       - "traefik.tcp.routers.mydb.entrypoints=tcp-5432"
@@ -366,7 +386,7 @@ Shows TCP and UDP port mappings for dynamically allocated ports.
 |---------|-------|----------|
 | Service not in routes | Container not running or missing labels | Verify with `docker ps` on the repository's daemon; check labels |
 | Certificate not issued | DNS not pointing to server, or invalid Cloudflare token | Verify DNS resolution; check Cloudflare API token permissions |
-| 502 Bad Gateway | Application not listening on the declared port | Verify the app binds to its `{SERVICE}_IP` and the port matches `loadbalancer.server.port` |
+| 502 Bad Gateway | Application not listening on the declared port | Verify the app is running and the port matches `loadbalancer.server.port` |
 | TCP port not reachable | Port not registered in infrastructure | Run `rdc config infra set --tcp-ports ...` and `push-infra` |
 | Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
 | STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
@@ -382,8 +402,8 @@ services:
   webapp:
     image: myregistry/webapp:latest
     environment:
-      DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
-      LISTEN_ADDR: ${WEBAPP_IP}:3000
+      DATABASE_URL: postgresql://app:changeme@postgres:5432/webapp
+      LISTEN_ADDR: 0.0.0.0:3000
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.webapp.rule=Host(`app.example.com`)"
@@ -401,7 +421,6 @@ services:
       POSTGRES_DB: webapp
       POSTGRES_USER: app
       POSTGRES_PASSWORD: changeme
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     # No traefik labels, internal only

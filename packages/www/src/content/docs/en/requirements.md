@@ -34,10 +34,10 @@ If you are unsure which binary to use, see [rdc vs renet](/en/docs/rdc-vs-renet)
 
 | OS | Version | Architecture |
 |----|---------|-------------|
-| Ubuntu | 24.04+ | x86_64 |
-| Debian | 12+ | x86_64 |
+| Ubuntu | 24.04+ | x86_64 | Kernel 6.8 (recommended) |
+| Debian | 12+ | x86_64 | Kernel 6.1 (minimum supported) |
 | Fedora | 43+ | x86_64 |
-| openSUSE Leap | 15.6+ | x86_64 |
+| openSUSE Leap | 16.0+ | x86_64 |
 | Alpine | 3.19+ | x86_64 (requires gcompat) |
 | Arch Linux | Rolling release | x86_64 |
 

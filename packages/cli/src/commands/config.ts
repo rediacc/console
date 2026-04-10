@@ -141,7 +141,7 @@ export function registerConfigCommands(program: Command): void {
     `
 ${t('help.examples')}
   $ rdc config init --name production --ssh-key ~/.ssh/id_ed25519   ${t('help.config.init')}
-  $ rdc config machine add --name server-1 --ip 10.0.0.1           ${t('help.config.addMachine')}
+  $ rdc config machine add --name server-1 --ip 10.0.0.1 --user deploy  ${t('help.config.addMachine')}
   $ rdc config machine setup --name server-1                        ${t('help.config.setupMachine')}
 `
   );

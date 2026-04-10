@@ -4,7 +4,7 @@ description: "Wie das Self-Hosted-Modell von Rediacc die Anforderungen des Calif
 category: "Legal"
 order: 4
 language: de
-sourceHash: "50081a040deb3183"
+sourceHash: "8d0fc1ff16c1be28"
 ---
 
 Der California Consumer Privacy Act (CCPA) ist ein Landesgesetz, das Verbrauchern in Kalifornien Rechte über ihre persönlichen Daten einräumt, einschließlich des Rechts zu erfahren, welche Daten erhoben werden, des Rechts auf Löschung und des Rechts, dem Verkauf zu widersprechen.

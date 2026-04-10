@@ -34,34 +34,34 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 
 ```bash
 # Full machine status (SSH + renet list all)
-rdc machine query <machine>
+rdc machine query --name <machine>
 
 # Filter by section
-rdc machine query <machine> --system
-rdc machine query <machine> --containers
-rdc machine query <machine> --services
-rdc machine query <machine> --repositories
-rdc machine query <machine> --network
-rdc machine query <machine> --block-devices
+rdc machine query --name <machine> --system
+rdc machine query --name <machine> --containers
+rdc machine query --name <machine> --services
+rdc machine query --name <machine> --repositories
+rdc machine query --name <machine> --network
+rdc machine query --name <machine> --block-devices
 
 # SSH terminal to machine
-rdc term <machine>
+rdc term connect -m <machine>
 
 # SSH terminal to repo (sets DOCKER_HOST, working dir)
-rdc term <machine> <repo>
+rdc term connect -m <machine> -r <repo>
 
 # Run command on machine
-rdc term <machine> -c "command"
+rdc term connect -m <machine> -c "command"
 
 # Deploy/update a repository
-rdc repo up <repo> -m <machine>
+rdc repo up --name <repo> -m <machine>
 
 # File sync
-rdc repo sync upload -m <machine> -r <repo> -l ./local-path
-rdc repo sync download -m <machine> -r <repo> -l ./local-path
+rdc repo sync upload -m <machine> -r <repo> --local ./local-path
+rdc repo sync download -m <machine> -r <repo> --local ./local-path
 
 # VS Code remote
-rdc vscode <machine> [repo]
+rdc vscode connect -m <machine> -r <repo>
 ```
 
 ### Run Functions (escape hatch, debugging only)
@@ -79,9 +79,9 @@ rdc run container_restart -m <machine> --param repository=<repo> --param contain
 
 ```bash
 # Default config (~/.config/rediacc/rediacc.json) is created automatically on first use
-rdc config init production         # Create named config
+rdc config init --name production   # Create named config
 rdc config repository list         # List repos with name -> GUID mapping
-rdc --config production machine query prod-1  # Use specific config
+rdc --config production machine query --name prod-1  # Use specific config
 ```
 
 ### CLI Code Structure

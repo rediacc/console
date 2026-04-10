@@ -41,7 +41,7 @@
       "edgeR2": { "name": "edge-rediacc-configs-asia" },
       "workerName": "rediacc-account-asia",
       "edgeWorkerName": "edge-rediacc-account-asia",
-      "sesRegion": "ap-northeast-1",
+      "sesRegion": "eu-central-1",
       "secretSuffix": "ASIA",
       "default": false
     }

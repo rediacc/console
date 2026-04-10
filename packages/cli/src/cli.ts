@@ -83,7 +83,11 @@ async function setUserAndSubscriptionContext(): Promise<void> {
     const team = await configService.getTeam();
     const tokenState = getSubscriptionTokenState();
 
-    if (isAgentEnvironment() && tokenState.kind !== 'ready') {
+    if (
+      isAgentEnvironment() &&
+      tokenState.kind !== 'ready' &&
+      process.env.REDIACC_ENVIRONMENT !== 'development'
+    ) {
       outputService.warn(t('errors.subscription.tokenWarning'));
     }
     const subscriptionContext =
@@ -232,10 +236,10 @@ cli.addHelpText(
   'after',
   `
 ${t('help.examples')}
-  $ rdc machine query server-1             ${t('help.cli.machineQuery')}
-  $ rdc term server-1 my-app               ${t('help.cli.termRepo')}
-  $ rdc repo up my-app -m server-1         ${t('help.cli.repoUp')}
-  $ rdc repo sync upload -m server-1 -r my-app  ${t('help.cli.syncUpload')}
+  $ rdc machine query --name server-1             ${t('help.cli.machineQuery')}
+  $ rdc term connect -m server-1 -r my-app        ${t('help.cli.termRepo')}
+  $ rdc repo up --name my-app -m server-1          ${t('help.cli.repoUp')}
+  $ rdc repo sync upload -m server-1 -r my-app     ${t('help.cli.syncUpload')}
 `
 );
 

@@ -9,6 +9,7 @@ import {
   getBlockDevices,
   getContainers,
   getHealthSummary as getListHealthSummary,
+  getLicenseStatuses,
   getNetworkInterfaces,
   getServices,
   getSystemContainers,
@@ -428,6 +429,14 @@ export interface MachineHealthResult {
       mounted: number;
       dockerRunning: number;
     };
+    licenses: {
+      total: number;
+      valid: number;
+      expired: number;
+      machineMismatch: number;
+      missing: number;
+      invalidSignature: number;
+    };
   };
   /** Issues found during health check */
   issues: string[];
@@ -477,6 +486,14 @@ function getDefaultHealthDetails(): MachineHealthResult['details'] {
       total: 0,
       mounted: 0,
       dockerRunning: 0,
+    },
+    licenses: {
+      total: 0,
+      valid: 0,
+      expired: 0,
+      machineMismatch: 0,
+      missing: 0,
+      invalidSignature: 0,
     },
   };
 }
@@ -660,6 +677,62 @@ function checkRepositories(
   return repositoryDetails;
 }
 
+/** Check license statuses */
+function checkLicenses(
+  listResult: ListResult,
+  ctx: HealthCheckContext
+): MachineHealthResult['details']['licenses'] {
+  const statuses = getLicenseStatuses(listResult);
+  const details = {
+    total: statuses.length,
+    valid: 0,
+    expired: 0,
+    machineMismatch: 0,
+    missing: 0,
+    invalidSignature: 0,
+  };
+
+  for (const s of statuses) {
+    switch (s.status) {
+      case 'valid':
+        details.valid++;
+        break;
+      case 'expired':
+        details.expired++;
+        break;
+      case 'machine_mismatch':
+        details.machineMismatch++;
+        break;
+      case 'missing':
+        details.missing++;
+        break;
+      case 'invalid_signature':
+      case 'sequence_regression':
+        details.invalidSignature++;
+        break;
+    }
+  }
+
+  if (details.expired > 0) {
+    ctx.issues.push(`${details.expired} repo license(s) expired`);
+    ctx.exitCode = Math.max(ctx.exitCode, 1);
+  }
+  if (details.machineMismatch > 0) {
+    ctx.issues.push(`${details.machineMismatch} repo license(s) have machine ID mismatch`);
+    ctx.exitCode = Math.max(ctx.exitCode, 1);
+  }
+  if (details.invalidSignature > 0) {
+    ctx.issues.push(`${details.invalidSignature} repo license(s) have invalid signatures`);
+    ctx.exitCode = Math.max(ctx.exitCode, 2);
+  }
+  if (details.total > 0 && details.missing === details.total) {
+    ctx.issues.push('All repo licenses are missing');
+    ctx.exitCode = Math.max(ctx.exitCode, 2);
+  }
+
+  return details;
+}
+
 /** Get health message based on exit code */
 function getHealthMessage(exitCode: number): string {
   const messages: Record<number, string> = {
@@ -706,6 +779,7 @@ export function getMachineHealth(machine: MachineWithVaultStatus): MachineHealth
   const serviceDetails = checkServices(services, healthSummary, ctx);
   const storageDetails = checkStorage(blockDevices, ctx);
   const repositoryDetails = checkRepositories(listResult, healthSummary, ctx);
+  const licenseDetails = checkLicenses(listResult, ctx);
 
   return {
     healthy: ctx.exitCode === 0,
@@ -717,6 +791,7 @@ export function getMachineHealth(machine: MachineWithVaultStatus): MachineHealth
       services: serviceDetails,
       storage: storageDetails,
       repositories: repositoryDetails,
+      licenses: licenseDetails,
     },
     issues: ctx.issues,
   };
