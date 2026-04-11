@@ -37,6 +37,7 @@ parse_args "$@"
 declare -A OS_IMAGES=(
     ["ubuntu-24.04"]="https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-amd64.img"
     ["debian-12"]="https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2"
+    ["debian-13"]="https://cloud.debian.org/images/cloud/trixie/latest/debian-13-generic-amd64.qcow2"
     ["fedora-43"]="https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2"
     ["opensuse-15.6"]="https://download.opensuse.org/distribution/leap/15.6/appliances/openSUSE-Leap-15.6-Minimal-VM.x86_64-Cloud.qcow2"
 )
@@ -44,6 +45,7 @@ declare -A OS_IMAGES=(
 declare -A OS_VARIANTS=(
     ["ubuntu-24.04"]="ubuntu24.04"
     ["debian-12"]="debian12"
+    ["debian-13"]="debiantesting"
     ["fedora-43"]="fedora-unknown"
     ["opensuse-15.6"]="opensuse15.5"
 )
