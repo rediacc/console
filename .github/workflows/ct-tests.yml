@@ -87,9 +87,25 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         run: |
-          docker pull debian:bookworm
-          docker pull debian:bookworm-slim
-          docker pull ubuntu:24.04
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh
 
@@ -178,9 +194,25 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         run: |
-          docker pull debian:bookworm
-          docker pull debian:bookworm-slim
-          docker pull ubuntu:24.04
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh
 
@@ -719,9 +751,25 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         run: |
-          docker pull debian:bookworm
-          docker pull debian:bookworm-slim
-          docker pull ubuntu:24.04
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
@@ -814,9 +862,25 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         run: |
-          docker pull debian:bookworm
-          docker pull debian:bookworm-slim
-          docker pull ubuntu:24.04
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
@@ -895,9 +959,25 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         run: |
-          docker pull debian:bookworm
-          docker pull debian:bookworm-slim
-          docker pull ubuntu:24.04
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Add renet to PATH
@@ -1008,9 +1088,25 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         run: |
-          docker pull debian:bookworm
-          docker pull debian:bookworm-slim
-          docker pull ubuntu:24.04
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Add renet to PATH
@@ -1236,9 +1332,25 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         run: |
-          docker pull debian:bookworm
-          docker pull debian:bookworm-slim
-          docker pull ubuntu:24.04
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh
       - name: Install renet
