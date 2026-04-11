@@ -177,7 +177,10 @@ function checkContainers(
   ctx: HealthCheckContext
 ): MachineHealthResult['details']['containers'] {
   const runningContainers = containers.filter((c) => c.state === 'running').length;
-  const maxFailingStreak = Math.max(0, ...containers.map((c) => c.health?.failing_streak ?? 0));
+  const maxFailingStreak = containers.reduce(
+    (max, c) => Math.max(max, c.health?.failing_streak ?? 0),
+    0
+  );
 
   if (healthSummary.containersUnhealthy > 0) {
     ctx.issues.push(`${healthSummary.containersUnhealthy} unhealthy container(s)`);

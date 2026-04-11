@@ -915,7 +915,7 @@ class LocalExecutorService {
     // is opted out — no wasted network round-trip, no credentials in
     // memory to accidentally propagate downstream. `buildRemoteCommand`
     // still injects `REDIACC_TELEMETRY_DISABLED=1` for the remote end.
-    const otlpCreds = isTelemetryDisabled() ? null : await fetchOtlpCredentials().catch(() => null);
+    const otlpCreds = isTelemetryDisabled() ? null : await fetchOtlpCredentials();
     const command = this.buildRemoteCommand(remoteRenetPath, options.eventsMode, otlpCreds);
     let stdout = '';
     let stderr = '';

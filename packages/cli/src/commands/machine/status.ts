@@ -166,11 +166,13 @@ function getMachineMatch(
   return licenseMachineId === currentMachineId ? 'Yes' : 'No';
 }
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
 function relativeTime(iso: string): string {
   const now = Date.now();
   const target = new Date(iso).getTime();
   const diffMs = target - now;
-  const absDays = Math.abs(Math.round(diffMs / (1000 * 60 * 60 * 24)));
+  const absDays = Math.abs(Math.round(diffMs / MS_PER_DAY));
   if (absDays === 0) return 'today';
   if (diffMs > 0) return `in ${absDays}d`;
   return `${absDays}d ago`;

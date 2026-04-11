@@ -516,7 +516,17 @@ class ConfigService extends ConfigServiceBase {
       let nextId = config.nextNetworkId;
 
       if (nextId === undefined || nextId < MIN_NETWORK_ID) {
-        nextId = usedIds.size === 0 ? MIN_NETWORK_ID : Math.max(...usedIds) + NETWORK_ID_INCREMENT;
+        if (usedIds.size === 0) {
+          nextId = MIN_NETWORK_ID;
+        } else {
+          // Avoid `Math.max(...usedIds)`: JS engines cap function arguments
+          // around 65536, and the network ID space allows ~261000 IDs.
+          let maxId = -1;
+          for (const id of usedIds) {
+            if (id > maxId) maxId = id;
+          }
+          nextId = maxId + NETWORK_ID_INCREMENT;
+        }
       }
 
       // If the forward counter is approaching the limit, scan for freed gaps.

@@ -63,7 +63,7 @@ export async function fetchMachineStatus(
   // that shell out to renet. Failures fall through to default-deny; we
   // never block on telemetry resolution.
   const telemetryOff = isTelemetryDisabled();
-  const otlpCreds = telemetryOff ? null : await fetchOtlpCredentials().catch(() => null);
+  const otlpCreds = telemetryOff ? null : await fetchOtlpCredentials();
   const envPrefix = buildRenetEnvPrefix({
     isDevelopment: process.env.NODE_ENV !== 'production',
     telemetryDisabled: telemetryOff,
