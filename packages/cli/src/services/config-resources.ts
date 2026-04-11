@@ -23,6 +23,36 @@ import { hasCloudCredentials } from '../types/index.js';
 import { parseRepoRef } from '../utils/config-schema.js';
 import { ConfigServiceBase } from './config-base.js';
 
+// Find the initial network ID when the forward counter is missing or stale.
+// Avoids `Math.max(...usedIds)` because JS engines cap function arguments
+// around 65536 while the network ID space allows ~261000 IDs — a long-lived
+// shared config can hit that cap before the MAX_NETWORK_ID ceiling.
+function pickInitialNetworkId(usedIds: Set<number>): number {
+  if (usedIds.size === 0) return MIN_NETWORK_ID;
+  let maxId = -1;
+  for (const id of usedIds) {
+    if (id > maxId) maxId = id;
+  }
+  return maxId + NETWORK_ID_INCREMENT;
+}
+
+// Linear scan for the first free slot when the forward counter has walked
+// past the allowed ceiling. Thrown error is caught by the outer allocation
+// path and surfaced to the user.
+function findFreeNetworkIdSlot(usedIds: Set<number>, maxNetworkId: number): number {
+  let candidate = MIN_NETWORK_ID;
+  while (usedIds.has(candidate) && candidate <= maxNetworkId) {
+    candidate += NETWORK_ID_INCREMENT;
+  }
+  if (candidate > maxNetworkId) {
+    const totalSlots = Math.floor((maxNetworkId - MIN_NETWORK_ID) / NETWORK_ID_INCREMENT + 1);
+    throw new Error(
+      `Network ID space exhausted: all ${totalSlots} slots are in use. Delete unused repositories to free slots.`
+    );
+  }
+  return candidate;
+}
+
 class ConfigService extends ConfigServiceBase {
   /**
    * Require the current config to be in a self-hosted mode (local or S3).
@@ -516,33 +546,13 @@ class ConfigService extends ConfigServiceBase {
       let nextId = config.nextNetworkId;
 
       if (nextId === undefined || nextId < MIN_NETWORK_ID) {
-        if (usedIds.size === 0) {
-          nextId = MIN_NETWORK_ID;
-        } else {
-          // Avoid `Math.max(...usedIds)`: JS engines cap function arguments
-          // around 65536, and the network ID space allows ~261000 IDs.
-          let maxId = -1;
-          for (const id of usedIds) {
-            if (id > maxId) maxId = id;
-          }
-          nextId = maxId + NETWORK_ID_INCREMENT;
-        }
+        nextId = pickInitialNetworkId(usedIds);
       }
 
       // If the forward counter is approaching the limit, scan for freed gaps.
       // This handles long-running systems where many repos have been created and deleted.
       if (nextId > MAX_NETWORK_ID) {
-        let candidate = MIN_NETWORK_ID;
-        while (usedIds.has(candidate) && candidate <= MAX_NETWORK_ID) {
-          candidate += NETWORK_ID_INCREMENT;
-        }
-        if (candidate > MAX_NETWORK_ID) {
-          throw new Error(
-            `Network ID space exhausted: all ${Math.floor((MAX_NETWORK_ID - MIN_NETWORK_ID) / NETWORK_ID_INCREMENT + 1)} slots are in use. ` +
-              `Delete unused repositories to free slots.`
-          );
-        }
-        nextId = candidate;
+        nextId = findFreeNetworkIdSlot(usedIds, MAX_NETWORK_ID);
       }
 
       allocated = nextId;
