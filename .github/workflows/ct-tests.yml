@@ -85,6 +85,11 @@ jobs:
           cache-dependency-path: private/renet/go.sum
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          docker pull debian:bookworm
+          docker pull debian:bookworm-slim
+          docker pull ubuntu:24.04
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh
 
@@ -171,6 +176,11 @@ jobs:
           cache-dependency-path: private/renet/go.sum
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          docker pull debian:bookworm
+          docker pull debian:bookworm-slim
+          docker pull ubuntu:24.04
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh
 
@@ -707,6 +717,11 @@ jobs:
 
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          docker pull debian:bookworm
+          docker pull debian:bookworm-slim
+          docker pull ubuntu:24.04
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
@@ -797,6 +812,11 @@ jobs:
 
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          docker pull debian:bookworm
+          docker pull debian:bookworm-slim
+          docker pull ubuntu:24.04
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
@@ -873,6 +893,11 @@ jobs:
       # Renet setup
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          docker pull debian:bookworm
+          docker pull debian:bookworm-slim
+          docker pull ubuntu:24.04
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Add renet to PATH
@@ -981,6 +1006,11 @@ jobs:
       # Renet setup
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          docker pull debian:bookworm
+          docker pull debian:bookworm-slim
+          docker pull ubuntu:24.04
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Add renet to PATH
@@ -1204,6 +1234,11 @@ jobs:
           cache-dependency-path: private/renet/go.sum
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          docker pull debian:bookworm
+          docker pull debian:bookworm-slim
+          docker pull ubuntu:24.04
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh
       - name: Install renet
