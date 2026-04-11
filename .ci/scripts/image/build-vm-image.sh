@@ -40,14 +40,20 @@ declare -A OS_IMAGES=(
     ["debian-13"]="https://cloud.debian.org/images/cloud/trixie/latest/debian-13-generic-amd64.qcow2"
     ["fedora-43"]="https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2"
     ["opensuse-15.6"]="https://download.opensuse.org/distribution/leap/15.6/appliances/openSUSE-Leap-15.6-Minimal-VM.x86_64-Cloud.qcow2"
+    ["opensuse-16.0"]="https://download.opensuse.org/distribution/leap/16.0/appliances/Leap-16.0-Minimal-VM.x86_64-Cloud.qcow2"
 )
 
+# virt-install --os-variant mapping. Fall back to older versions when libosinfo-db
+# on the runner doesn't yet include the target release (opensuse16.0 isn't in
+# older osinfo-db shipments, but Leap 16.0 derives from 15.6/15.5 so the older
+# variant is a safe approximation).
 declare -A OS_VARIANTS=(
     ["ubuntu-24.04"]="ubuntu24.04"
     ["debian-12"]="debian12"
     ["debian-13"]="debiantesting"
     ["fedora-43"]="fedora-unknown"
     ["opensuse-15.6"]="opensuse15.5"
+    ["opensuse-16.0"]="opensuse15.5"
 )
 
 # Configuration
