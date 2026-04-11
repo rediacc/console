@@ -11,6 +11,7 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 ### Key Concepts
 
 - **Repository**: An isolated application deployment (e.g., `mail`, `gitlab`, `nextcloud`). Each repo has its own Docker daemon at `/var/run/rediacc/docker-<networkId>.sock`, loopback IP range (127.0.x.x/26), and mount at `/mnt/rediacc/mounts/<guid>/`.
+- **Fork**: `rdc repo fork --parent <name> --tag <tag> -m <machine>` makes a new repo with a fresh GUID and networkId that shares the parent's data via BTRFS reflink. **Forks are near-instant and constant-time** regardless of repo size: a 100 GB repo and a 1 GB repo fork in the same seconds. Use forks freely as the per-test isolation unit, do NOT assume fork cost scales with repo size.
 - **Renet**: Network orchestrator on the machine. Manages compose files, loopback IPs, Docker daemon lifecycle. CLI: `sudo renet list all --json`, `sudo renet compose -- up -d`.
 - **Rediaccfile**: Bash script with lifecycle functions (`up()`, `down()`, `info()`) sourced by renet during deployment.
 - **Config**: CLI configuration file for connecting to machines. Each config is a flat JSON file (~/.config/rediacc/rediacc.json by default) with a unique ID and version number. Adapter auto-detected: local (default) or cloud (experimental, when apiUrl+token present). Multiple named configs supported (e.g., production.json, staging.json).
@@ -287,3 +288,4 @@ cd /path/to/console && git add -A && git commit -m "fix: ..." && git push
 - **CI workflows** (`ci.yml`, `ci-quality.yml`, `ct-tests.yml`, `standalone-run.yml`): Use **generated throwaway keys** via `ci-env.sh`. Never pass production secrets.
 - **Release workflow** (`cd-v2.yml`): Uses **real org secrets** from GitHub for production deployment.
 - Generated secrets are masked via `::add-mask::` in `ci-env.sh`.
+

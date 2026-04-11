@@ -15,7 +15,11 @@ import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
 import { auditService } from '../services/audit.js';
 import { handleError, ValidationError } from '../utils/errors.js';
-import { detectDirectRenetCommand, detectRepoContextCommand } from '../utils/repo-context-guard.js';
+import {
+  detectDirectRenetCommand,
+  detectDockerComposeCommand,
+  detectRepoContextCommand,
+} from '../utils/repo-context-guard.js';
 import { withSpinner } from '../utils/spinner.js';
 
 interface TermConnectOptions {
@@ -168,6 +172,10 @@ function enforceDirectRenetGuard(command: string): void {
 }
 
 async function enforceTermPolicy(opts: TermConnectOptions): Promise<void> {
+  if (opts.command && detectDockerComposeCommand(opts.command)) {
+    throw new ValidationError(t('errors.term.dockerComposeForbidden'));
+  }
+
   if (opts.command && !opts.repository) {
     const match = detectRepoContextCommand(opts.command);
     if (match) {

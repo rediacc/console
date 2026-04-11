@@ -179,6 +179,7 @@ jq -n \
     --arg ses_region "${AWS_SES_REGION:-eu-central-1}" \
     --arg ses_from "${AWS_SES_FROM:-noreply@notify.rediacc.com}" \
     --arg turnstile "${TURNSTILE_SECRET_KEY:-}" \
+    --arg otlp_creds "${OTLP_CLIENT_CREDENTIALS:-}" \
     --arg seller_name "${SELLER_NAME:-}" \
     --arg seller_vat "${SELLER_VAT_NUMBER:-}" \
     --arg seller_reg "${SELLER_REGISTRATION_NUMBER:-}" \
@@ -203,6 +204,7 @@ jq -n \
         AWS_SES_REGION: $ses_region,
         AWS_SES_FROM: $ses_from,
         TURNSTILE_SECRET_KEY: $turnstile,
+        OTLP_CLIENT_CREDENTIALS: $otlp_creds,
         SELLER_NAME: $seller_name,
         SELLER_VAT_NUMBER: $seller_vat,
         SELLER_REGISTRATION_NUMBER: $seller_reg,

@@ -6,7 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: es
-sourceHash: "045189cf72c43927"
+sourceHash: "52f8d1f2d115489e"
+sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
 ---
 
 # Servicios
@@ -168,6 +169,8 @@ services:
 ```
 
 > **Nota:** No agregue `network_mode: host` manualmente, `renet compose` lo inyecta automáticamente. Las políticas de reinicio (p.ej., `restart: always`) son seguras de usar, renet las elimina automáticamente para compatibilidad CRIU y el watchdog del router maneja la recuperación de contenedores.
+
+> **La red bridge de Docker está deshabilitada en los daemons gestionados por rediacc.** Cada daemon por repositorio se configura con `"bridge": "none"` e `"iptables": false`. Un simple `docker run <imagen>` dentro de la shell de un repositorio seguirá ejecutándose, pero el contenedor solo obtiene una interfaz de loopback y no tiene DNS ni conectividad saliente. Esto es intencional, ya que el aislamiento de loopback entre repos se impone mediante ganchos eBPF de cgroup que un contenedor en bridge evitaría. Los servicios de producción deben usar `renet compose` (que inyecta la red de host por usted); para depuración ad-hoc, pase `--network host` explícitamente: `docker run --rm --network host -it ubuntu bash`.
 
 > **Nota:** Los repos fork obtienen rutas automáticas planas: `{service}-{tag}.{machine}.{baseDomain}`. Los dominios personalizados se omiten para forks.
 

@@ -6,7 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: de
-sourceHash: "045189cf72c43927"
+sourceHash: "52f8d1f2d115489e"
+sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
 ---
 
 # Dienste
@@ -168,6 +169,8 @@ services:
 ```
 
 > **Hinweis:** Fügen Sie `network_mode: host` nicht manuell hinzu, `renet compose` injiziert es automatisch. Restart-Richtlinien (z.B. `restart: always`) sind sicher zu verwenden, renet entfernt sie automatisch für CRIU-Kompatibilität und der Router-Watchdog übernimmt die Container-Wiederherstellung.
+
+> **Docker-Bridge-Networking ist für rediacc-verwaltete Daemons deaktiviert.** Jeder pro-Repo-Daemon ist mit `"bridge": "none"` und `"iptables": false` konfiguriert. Ein einfaches `docker run <image>` innerhalb einer Repository-Shell startet zwar, aber der Container erhält lediglich ein Loopback-Interface und verfügt weder über DNS noch über ausgehende Konnektivität. Dies ist beabsichtigt, da die Loopback-Isolation zwischen Repos durch eBPF-cgroup-Hooks erzwungen wird, die ein Bridged-Container umgehen würde. Produktionsdienste sollten `renet compose` verwenden (das Host-Networking für Sie injiziert); für Ad-hoc-Debugging übergeben Sie `--network host` explizit: `docker run --rm --network host -it ubuntu bash`.
 
 > **Hinweis:** Fork-Repos erhalten flache Auto-Routen: `{service}-{tag}.{machine}.{baseDomain}`. Benutzerdefinierte Domains werden bei Forks übersprungen.
 

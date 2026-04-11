@@ -170,6 +170,8 @@ services:
 
 > **Note:** Do not add `network_mode: host` manually, `renet compose` injects it automatically. Restart policies (e.g., `restart: always`) are safe to use, renet auto-strips them for CRIU compatibility and the router watchdog handles container recovery.
 
+> **Docker bridge networking is disabled for rediacc-managed daemons.** Each per-repo daemon is configured with `"bridge": "none"` and `"iptables": false`. A plain `docker run <image>` inside a repository shell will still launch, but the container gets only a loopback interface and has no DNS or outbound connectivity. This is by design, since loopback isolation between repos is enforced by eBPF cgroup hooks that a bridged container would bypass. Production services should use `renet compose` (which injects host networking for you); for ad-hoc debugging, pass `--network host` explicitly: `docker run --rm --network host -it ubuntu bash`.
+
 > **Note:** Fork repos get auto-routes under the parent's subdomain: `{service}-fork-{tag}.{repo}.{machine}.{baseDomain}`. Custom domains are skipped for forks.
 
 ## Starting Services

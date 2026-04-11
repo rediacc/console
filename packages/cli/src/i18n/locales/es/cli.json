@@ -2154,6 +2154,7 @@
     "teamRequired": "Nombre de equipo requerido. Use --team o establezca contexto.",
     "term": {
       "connectivityFailed": "No se puede alcanzar {{host}}:{{port}}. {{error}}\n\nResolución de problemas:\n  - Verificar si la máquina está encendida y conectada a la red\n  - Verificar que la dirección IP sea correcta en la bóveda de máquina\n  - Asegurarse de que el puerto {{port}} no esté bloqueado por un firewall\n  - Intente hacer ping a la máquina: ping {{host}}",
+      "dockerComposeForbidden": "\"docker compose\" no está permitido en el contexto del repositorio.\n\nUse \"renet compose -- <args>\" en su lugar para que se apliquen las IPs loopback por repositorio, la inyección de red del host, las capacidades CRIU y la validación del compose. Ejecutar \"docker compose\" directamente omite todo esto y corrompe silenciosamente el despliegue.\n\nPara despliegues orquestados, prefiera: rdc repo up --name <repository> -m <machine>",
       "launchFailed": "Falló al lanzar terminal: {{error}}",
       "noHostKey": "Máquina '{{machine}}' no tiene clave de host configurada en la bóveda",
       "noIpAddress": "Máquina '{{machine}}' no tiene dirección IP configurada",

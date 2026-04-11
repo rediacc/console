@@ -4,7 +4,8 @@ description: "SSH、设置、仓库、服务和Docker常见问题的解决方案
 category: "Guides"
 order: 10
 language: zh
-sourceHash: "23754822c67de564"
+sourceHash: "756725b9a8fb168f"
+sourceCommit: "7874d5e2f0ca1262eb80ee7de79f20320d0ae2d7"
 ---
 
 # 故障排除
@@ -76,6 +77,48 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 ```
 
 将 `2816` 替换为您仓库的网络ID（可在 `rediacc.json` 或 `rdc repo status` 中找到）。
+
+## `docker run` 没有网络，`apt update` 失败，`curl` 挂起
+
+在仓库 shell 内运行不带 `--network host` 的容器，你会得到一个隔离的容器，只有 loopback 接口，没有 DNS 和出站连接。像 `apt update`、`pip install`、`curl https://...` 或任何网络获取命令都会立即因 DNS 错误而失败。
+
+这是有意为之的。Rediacc 的网络模型是**每个服务都使用主机网络**，由 `renet compose` 强制执行。默认的带 NAT 的 Docker bridge 会绕过内核级的 loopback 隔离，而这种隔离正是阻止一个仓库访问另一个仓库服务的机制。因此每个仓库的 Docker daemon 都配置了 `"bridge": "none"` 和 `"iptables": false`。对于一个简单的 `docker run` 容器，根本没有可连接的可路由 bridge。
+
+**要在临时容器中获得网络访问，请使用主机网络：**
+
+```bash
+# 在仓库 shell 内 (rdc term connect -m <machine> -r <repo>)
+docker run --rm --network host -it ubuntu bash
+# 现在 apt update、curl、pip install 都能正常工作。
+```
+
+**对于生产服务，请使用带有 `renet compose` 的 Rediaccfile** 而不是原始的 `docker run`。`renet compose` 会自动注入 `network_mode: host`、服务 IP 标签和 Traefik 路由标签。详见 [服务](/zh/docs/services)。
+
+## VS Code 在沙箱文件上 Permission Denied
+
+当使用 `rdc vscode connect -m <machine> -r <repo>` 连接时，你可能在之前的 VS Code 会话之后看到过类似 `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` 的错误。这是因为沙箱目录内存在混合的文件所有权，其中既有你的 SSH 用户写入的文件，也有内部 `rediacc` 用户写入的文件。
+
+较新版本的 renet 通过以下方式修复了这个问题：
+
+- 使用组 `rediacc` 和 set-group-ID 位（模式 `2775`）创建每仓库的沙箱工作区（`/mnt/rediacc/.interim/sandbox/<repo>/`），这样在其下写入的每个文件都会继承正确的组。
+- 在沙箱运行时内应用 umask `002`，使新文件以组可写的方式（`0664`/`0775`）创建。
+- 在启动时规范化现有的 `.vscode-server/` 子树，使修复前遗留的过期文件自动得到修复。
+
+如果你仍然看到权限错误，请从机器上的 shell 使用 `sudo systemctl restart rediacc-docker-<network-id>` 重启仓库的 Docker daemon 一次，以便运行规范化过程，然后重试 `rdc vscode connect`。
+
+## renet 升级后 daemon 无法启动
+
+在每次启动之前，`renet daemon start-foreground` 都会根据当前模板重写仓库配置目录中的 `daemon.json` 和 `containerd.toml`，因此由旧版 renet 生成配置的仓库会自动采用新格式。你不需要运行任何迁移命令，也不需要手动重新生成 systemd 单元。只需重启服务：
+
+```bash
+sudo systemctl restart rediacc-docker-<network-id>
+```
+
+如果单元仍然启动失败，请检查 journal 获取具体错误：
+
+```bash
+sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
+```
 
 ## 容器在错误的Docker daemon上创建
 

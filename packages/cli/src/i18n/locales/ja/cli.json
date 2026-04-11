@@ -2154,6 +2154,7 @@
     "teamRequired": "チーム名が必要です。--team を使用するか、コンテキストを設定してください。",
     "term": {
       "connectivityFailed": "{{host}}:{{port}} に到達できません。{{error}}\n\nトラブルシューティング:\n  - マシンの電源が入っていてネットワークに接続されていることを確認してください\n  - マシンボルトの IP アドレスが正しいことを確認してください\n  - ポート {{port}} がファイアウォールによってブロックされていないことを確認してください\n  - マシンに ping を試してください: ping {{host}}",
+      "dockerComposeForbidden": "リポジトリコンテキストでは \"docker compose\" は許可されていません。\n\n代わりに \"renet compose -- <args>\" を使用してください。これによりリポジトリごとのループバック IP、ホストネットワーク注入、CRIU ケーパビリティ、および compose 検証が適用されます。\"docker compose\" を直接実行するとこれらすべてがバイパスされ、デプロイが静かに破損します。\n\nオーケストレーションされたデプロイには、次を推奨します: rdc repo up --name <repository> -m <machine>",
       "launchFailed": "ターミナルの起動に失敗しました: {{error}}",
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",

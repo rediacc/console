@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1722,
-    "sourceCommit": "a97009927c347f7090e4f4f60f3948997654ae4b"
+    "keyCount": 1723,
+    "sourceCommit": "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -843,8 +843,8 @@
     "commands.repo.fork.alreadyExists": "d33779f8",
     "commands.repo.fork.checkpointOption": "606fc6b9",
     "commands.repo.fork.completed": "68b5090d",
-    "commands.repo.fork.description": "f0c61054",
-    "commands.repo.fork.descriptionShort": "9411b9bf",
+    "commands.repo.fork.description": "5b215771",
+    "commands.repo.fork.descriptionShort": "bed2d483",
     "commands.repo.fork.failed": "b6deb539",
     "commands.repo.fork.registered": "0cf334fb",
     "commands.repo.fork.rollback": "7d15ae3b",
@@ -1485,6 +1485,7 @@
     "errors.sync.pathTraversalBlocked": "b252e3ff",
     "errors.teamRequired": "0bdc6d69",
     "errors.term.connectivityFailed": "f87c9121",
+    "errors.term.dockerComposeForbidden": "e3d3e2d5",
     "errors.term.launchFailed": "b3a29308",
     "errors.term.noHostKey": "0512cdf3",
     "errors.term.noIpAddress": "a4d64fb1",
@@ -1603,7 +1604,7 @@
     "options.opsBasic": "3df1e7d3",
     "options.opsForce": "7ae44d2e",
     "options.opsLite": "c6df654c",
-    "options.opsOS": "d10d08c0",
+    "options.opsOS": "c8163981",
     "options.opsParallel": "51b17395",
     "options.opsSkipOrchestration": "5df7270a",
     "options.opsSSHUser": "9b0c1b45",

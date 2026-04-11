@@ -6,7 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: "045189cf72c43927"
+sourceHash: "52f8d1f2d115489e"
+sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
 ---
 
 # Servisler
@@ -168,6 +169,8 @@ services:
 ```
 
 > **Not:** `network_mode: host` ifadesini manuel olarak eklemeyin, `renet compose` bunu otomatik olarak enjekte eder. Yeniden başlatma politikaları (örn., `restart: always`) güvenle kullanılabilir, renet CRIU uyumluluğu için bunları otomatik olarak kaldırır ve yönlendirici watchdog konteyner kurtarmasını yönetir.
+
+> **Docker bridge ağı, rediacc tarafından yönetilen daemonlarda devre dışıdır.** Her depo başına daemon, `"bridge": "none"` ve `"iptables": false` ile yapılandırılmıştır. Bir depo kabuğunda düz bir `docker run <image>` komutu yine de başlar, ancak konteynere yalnızca bir loopback arayüzü verilir ve DNS ya da dışa doğru bağlantı bulunmaz. Bu tasarım gereğidir, çünkü depolar arası loopback izolasyonu, köprülü bir konteynerin atlayacağı eBPF cgroup kancaları tarafından zorunlu kılınır. Üretim servisleri `renet compose` kullanmalıdır (bu sizin için host ağını enjekte eder); geçici hata ayıklama için `--network host` parametresini açıkça geçin: `docker run --rm --network host -it ubuntu bash`.
 
 > **Not:** Fork depoları düz otomatik rotalar alır: `{service}-{tag}.{machine}.{baseDomain}`. Fork'lar için özel alan adları atlanır.
 

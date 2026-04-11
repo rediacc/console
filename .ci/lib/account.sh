@@ -152,9 +152,6 @@ STRIPE_WEBHOOK_SECRET=whsec_e2e_test_webhook_secret_for_simulation_only
 # Set via GitHub variable ROOT_EMAIL or environment
 ROOT_EMAIL="${ROOT_EMAIL:-}"
 
-# Telemetry auth token (for OTLP basic auth — set via OTLP_AUTH_TOKEN env var or manually)
-# REDIACC_TELEMETRY_AUTH_TOKEN=
-
 # Server port (used by standalone node entry, not the dev gateway)
 PORT=3000
 
@@ -209,14 +206,11 @@ account_ensure_env_keys() {
     account_env_add_if_missing "DATABASE_PATH" "account.db" "SQLite database path" && added=1
     account_env_add_if_missing "STRIPE_WEBHOOK_SECRET" "whsec_e2e_test_webhook_secret_for_simulation_only" "Fixed webhook secret for E2E tests" && added=1
     account_env_add_if_missing "PORT" "3000" "Server port" && added=1
-    # Telemetry: CLI auth token + account server OTel config
+    # Account server's own outbound OTel endpoint (dev-gateway only; CF
+    # Workers use native tracing in prod). The CLI/renet client credentials
+    # are served at runtime from `OTLP_CLIENT_CREDENTIALS`, which the
+    # rotation tool writes here during `./run.sh rotation rotate otlp-<region>`.
     account_env_add_if_missing "OTEL_ENDPOINT" "https://otlp.rediacc.io" "OTel OTLP endpoint" && added=1
-    if [[ -n "${OTLP_AUTH_TOKEN:-}" ]]; then
-        account_env_add_if_missing "REDIACC_TELEMETRY_AUTH_TOKEN" "$OTLP_AUTH_TOKEN" \
-            "Telemetry auth token (for CLI OTLP basic auth)" && added=1
-        account_env_add_if_missing "OTEL_AUTH_TOKEN" "$OTLP_AUTH_TOKEN" \
-            "OTel auth token (for account server OTLP basic auth)" && added=1
-    fi
     # WebAuthn passkey (for config storage setup)
     account_env_add_if_missing "WEBAUTHN_RP_ID" "localhost" "WebAuthn Relying Party ID" && added=1
     account_env_add_if_missing "WEBAUTHN_RP_NAME" "Rediacc" "WebAuthn display name" && added=1

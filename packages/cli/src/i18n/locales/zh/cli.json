@@ -2154,6 +2154,7 @@
     "teamRequired": "需要团队名称。使用 --team 或设置上下文。",
     "term": {
       "connectivityFailed": "无法到达 {{host}}:{{port}}。{{error}}\n\n故障排除：\n  - 检查机器是否已启动并连接到网络\n  - 验证 IP 地址在机器保险箱中是否正确\n  - 确保端口 {{port}} 未被防火墙阻止\n  - 尝试 ping 机器：ping {{host}}",
+      "dockerComposeForbidden": "在仓库上下文中不允许使用 \"docker compose\"。\n\n请改用 \"renet compose -- <args>\"，这样才会应用每个仓库的回环 IP、主机网络注入、CRIU 能力和 compose 验证。直接运行 \"docker compose\" 会绕过所有这些并在不知不觉中破坏部署。\n\n对于编排部署，推荐使用：rdc repo up --name <repository> -m <machine>",
       "launchFailed": "无法启动终端：{{error}}",
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",

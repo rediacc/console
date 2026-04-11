@@ -124,25 +124,17 @@ if [[ -n "${ACCOUNT_ED25519_PUBLIC_KEY:-}" ]]; then
     log_info "Account server public key injected from environment"
 fi
 
-# Inject OTLP auth credentials if available
-OTLP_LDFLAGS=""
-if [[ -n "${OTLP_AUTH_TOKEN:-}" ]]; then
-    OTLP_DECODED=$(echo "$OTLP_AUTH_TOKEN" | base64 -d 2>/dev/null || echo "")
-    OTLP_USER="${OTLP_DECODED%%:*}"
-    OTLP_PASS="${OTLP_DECODED#*:}"
-    if [[ -n "$OTLP_USER" && -n "$OTLP_PASS" ]]; then
-        echo "::add-mask::$OTLP_USER"
-        echo "::add-mask::$OTLP_PASS"
-        OTLP_LDFLAGS="-X github.com/rediacc/renet/pkg/telemetry.otlpUser=${OTLP_USER} -X github.com/rediacc/renet/pkg/telemetry.otlpPass=${OTLP_PASS}"
-        log_info "OTLP auth credentials injected from environment"
-    fi
-fi
+# OTLP credentials are resolved at RUNTIME by the CLI via
+# `GET /telemetry/config` (unauthenticated) — NOT baked in at build time.
+# Go 1.18+ records `-ldflags` in `.go.buildinfo`, which made baked
+# credentials recoverable via `go version -m` or `strings` from any
+# built binary (renet#51).
 
 for os in linux darwin; do
     for arch in amd64 arm64; do
         log_info "Building renet-$os-$arch..."
         CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build \
-            -ldflags="-s -w -X main.Version=$VERSION $KEY_LDFLAGS $OTLP_LDFLAGS" \
+            -ldflags="-s -w -X main.Version=$VERSION $KEY_LDFLAGS" \
             -o "$OUTPUT_DIR/renet-$os-$arch" ./cmd/renet
     done
 done
@@ -151,7 +143,7 @@ done
 for arch in amd64 arm64; do
     log_info "Building renet-windows-$arch..."
     CGO_ENABLED=0 GOOS=windows GOARCH=$arch go build \
-        -ldflags="-s -w -X main.Version=$VERSION $KEY_LDFLAGS $OTLP_LDFLAGS" \
+        -ldflags="-s -w -X main.Version=$VERSION $KEY_LDFLAGS" \
         -o "$OUTPUT_DIR/renet-windows-$arch.exe" ./cmd/renet
 done
 

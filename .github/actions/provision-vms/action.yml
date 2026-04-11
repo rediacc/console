@@ -32,7 +32,7 @@ inputs:
     required: false
     default: ''
   vm-os:
-    description: 'VM OS image (ubuntu-24.04, debian-12, fedora-43, opensuse-15.6)'
+    description: 'VM OS image (ubuntu-24.04, debian-13, fedora-43, opensuse-16.0, oracle-10)'
     required: false
     default: 'ubuntu-24.04'
 

@@ -5,7 +5,8 @@ description: >-
 category: "Reference"
 order: 99
 language: zh
-sourceHash: "44b8fdb73f86c659"
+sourceHash: "fdf074885af49980"
+sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
 ---
 
 # 限制与配额
@@ -123,7 +124,8 @@ rdc config infra push -m server-1
 - **内核要求**：源机器和目标机器都需要 Linux 6.1 或更高版本。
 - **网络模式**：CRIU 要求主机网络模式。使用自定义网络配置的容器无法创建检查点。
 - **内存**：检查点数据大小等于被检查点进程的驻留内存。大型内存数据集（例如，缓存 4 GB 数据的 Node.js 应用程序）会产生 4 GB 的检查点文件。
-- **TCP 连接**：在同一机器上恢复时，活跃的 TCP 连接会被保留。在跨机器迁移时，TCP 连接必须在恢复后由应用程序重新建立。
+- **TCP 连接**：应用程序必须能够容忍恢复过程中的连接丢失。活跃的 TCP 连接**不会**被保留，恢复后的进程会看到套接字处于关闭状态，必须重新连接。这同时适用于同机恢复和跨机恢复两种路径。
+- **不支持同机实时派生**：`rdc repo fork --parent X --tag Y --checkpoint` 可以成功捕获检查点，但若父仓库仍在运行，随后在同一机器上执行的 `rdc repo up` 会以 `criu failed: type RESTORE errno 0` 失败。这是由于 CRIU 上游 bug [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) 和 [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514) 与 `network_mode: host` 交互造成的。若要在同一机器上原地保存进程状态，请改用 `rdc repo down --checkpoint` + `rdc repo up`。若要进行实时迁移，请使用 `rdc repo push --checkpoint` 到另一台机器。
 
 ---
 

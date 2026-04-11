@@ -123,7 +123,8 @@ Live migration via CRIU has the following constraints:
 - **Kernel requirement**: Linux 6.1+ on both the source and destination machine.
 - **Network mode**: CRIU requires host networking mode. Containers using custom network configurations cannot be checkpointed.
 - **Memory**: The checkpoint data size equals the resident memory of the checkpointed process. Large in-memory datasets (e.g., a Node.js app caching 4 GB of data) produce 4 GB checkpoint files.
-- **TCP connections**: Active TCP connections are preserved across same-machine restore. On cross-machine migration, TCP connections must be re-established by the application after restore.
+- **TCP connections**: Applications must tolerate connection loss across restore. Active TCP connections are **not** preserved. The restored process sees sockets as closed and must reconnect. This applies to both same-machine and cross-machine restore paths.
+- **Same-machine live fork is not supported**: `rdc repo fork --parent X --tag Y --checkpoint` succeeds at capturing the checkpoint, but the subsequent `rdc repo up` on the same machine fails with `criu failed: type RESTORE errno 0` when the parent is still running. This is caused by upstream CRIU bugs [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) and [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514) interacting with `network_mode: host`. For in-place process-state preservation on the same machine, use `rdc repo down --checkpoint` + `rdc repo up` instead. For live migration, use `rdc repo push --checkpoint` to a different machine.
 
 ---
 

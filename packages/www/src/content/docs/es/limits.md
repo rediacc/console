@@ -6,7 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: es
-sourceHash: "44b8fdb73f86c659"
+sourceHash: "fdf074885af49980"
+sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
 ---
 
 # Límites y cuotas
@@ -124,7 +125,8 @@ La migración en vivo a través de CRIU tiene las siguientes restricciones:
 - **Requisito de kernel**: Linux 6.1+ tanto en la máquina de origen como en la de destino.
 - **Modo de red**: CRIU requiere el modo de red del host. Los contenedores que usan configuraciones de red personalizadas no pueden ser incluidos en el checkpoint.
 - **Memoria**: El tamaño de los datos del checkpoint equivale a la memoria residente del proceso. Los grandes conjuntos de datos en memoria (por ejemplo, una aplicación Node.js que almacena en caché 4 GB de datos) producen archivos de checkpoint de 4 GB.
-- **Conexiones TCP**: Las conexiones TCP activas se preservan durante la restauración en la misma máquina. En la migración entre máquinas, las conexiones TCP deben ser restablecidas por la aplicación después de la restauración.
+- **Conexiones TCP**: Las aplicaciones deben tolerar la pérdida de conexiones durante la restauración. Las conexiones TCP activas **no** se preservan, el proceso restaurado ve los sockets como cerrados y debe reconectarse. Esto se aplica tanto a restauraciones en la misma máquina como entre máquinas.
+- **La bifurcación en vivo en la misma máquina no está soportada**: `rdc repo fork --parent X --tag Y --checkpoint` captura el checkpoint con éxito, pero el siguiente `rdc repo up` en la misma máquina falla con `criu failed: type RESTORE errno 0` mientras el padre sigue en ejecución. Esto es causado por bugs upstream de CRIU [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) y [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514) que interactúan con `network_mode: host`. Para preservar in situ el estado del proceso en la misma máquina, use `rdc repo down --checkpoint` + `rdc repo up`. Para migración en vivo, use `rdc repo push --checkpoint` a una máquina diferente.
 
 ---
 

@@ -311,8 +311,8 @@ jobs:
           cache: 'npm'
 
       - name: Build CLI
-        env:
-          OTLP_AUTH_TOKEN: ${{ secrets.OTLP_AUTH_TOKEN }}
+        # OTLP credentials are fetched at runtime after `rdc subscription
+        # login` — no longer baked into the bundle (renet#51).
         run: |
           npm ci
           npm run build:packages
@@ -700,6 +700,13 @@ jobs:
           - debian-13
           - fedora-43
           - opensuse-16.0
+          - oracle-10
+          # NOTE: rocky-10 intentionally excluded — Rocky Linux 10 ships a RHEL-
+          # compatible kernel without the btrfs module (`modprobe btrfs` fails
+          # with "Module btrfs not found", and `dnf search btrfs` returns
+          # nothing). Rediacc's storage backend requires btrfs, so Rocky 10
+          # cannot run as a rediacc worker. Oracle Linux 10 works because UEK
+          # (Unbreakable Enterprise Kernel) retains btrfs support.
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 120000

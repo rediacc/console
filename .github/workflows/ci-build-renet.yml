@@ -25,8 +25,9 @@ on:
         required: false
       ACCOUNT_ED25519_PUBLIC_KEY:
         required: false
-      OTLP_AUTH_TOKEN:
-        required: false
+      # OTLP_AUTH_TOKEN is no longer needed: renet resolves credentials at
+      # runtime via `REDIACC_OTLP_USER`/`REDIACC_OTLP_PASS` env vars
+      # injected by the CLI after `rdc subscription login` (renet#51).
 
 permissions:
   contents: read
@@ -159,7 +160,8 @@ jobs:
       - name: Build full renet with embedded assets (release)
         env:
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
-          OTLP_AUTH_TOKEN: ${{ secrets.OTLP_AUTH_TOKEN }}
+          # OTLP credentials are NOT baked at build time any more — renet
+          # resolves them from env vars at runtime (renet#51).
         run: |
           .ci/scripts/build/build-renet.sh \
             --version "${{ inputs.next_version }}" \

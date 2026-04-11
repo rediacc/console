@@ -6,7 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: de
-sourceHash: "44b8fdb73f86c659"
+sourceHash: "fdf074885af49980"
+sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
 ---
 
 # Limits & Kontingente
@@ -124,7 +125,8 @@ Live-Migration über CRIU hat folgende Einschränkungen:
 - **Kernel-Anforderung**: Linux 6.1+ auf sowohl der Quell- als auch der Zielmaschine.
 - **Netzwerkmodus**: CRIU erfordert den Host-Netzwerkmodus. Container mit benutzerdefinierten Netzwerkkonfigurationen können nicht gesichert werden.
 - **Arbeitsspeicher**: Die Größe der Checkpoint-Daten entspricht dem residenten Speicher des gesicherten Prozesses. Große In-Memory-Datensätze (z. B. eine Node.js-App, die 4 GB Daten zwischenspeichert) erzeugen 4 GB Checkpoint-Dateien.
-- **TCP-Verbindungen**: Aktive TCP-Verbindungen bleiben bei der Wiederherstellung auf derselben Maschine erhalten. Bei maschinenübergreifender Migration müssen TCP-Verbindungen von der Anwendung nach der Wiederherstellung neu aufgebaut werden.
+- **TCP-Verbindungen**: Anwendungen müssen Verbindungsverluste bei der Wiederherstellung tolerieren. Aktive TCP-Verbindungen bleiben **nicht** erhalten, der wiederhergestellte Prozess sieht Sockets als geschlossen und muss die Verbindung neu aufbauen. Dies gilt sowohl für Wiederherstellungen auf derselben Maschine als auch für maschinenübergreifende Wiederherstellungen.
+- **Live-Fork auf derselben Maschine wird nicht unterstützt**: `rdc repo fork --parent X --tag Y --checkpoint` erfasst den Checkpoint erfolgreich, aber das anschließende `rdc repo up` auf derselben Maschine schlägt mit `criu failed: type RESTORE errno 0` fehl, solange das Eltern-Repository noch läuft. Dies wird durch Upstream-CRIU-Bugs [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) und [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514) verursacht, die mit `network_mode: host` interagieren. Für die In-Place-Prozesszustandserhaltung auf derselben Maschine verwenden Sie stattdessen `rdc repo down --checkpoint` + `rdc repo up`. Für Live-Migration verwenden Sie `rdc repo push --checkpoint` auf eine andere Maschine.
 
 ---
 

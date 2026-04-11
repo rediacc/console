@@ -4,7 +4,8 @@ description: "Eliminar copias de seguridad huérfanas, snapshots obsoletos e im�
 category: "Guides"
 order: 12
 language: es
-sourceHash: "dfa21ca915423599"
+sourceHash: "9b28efe3bd8ca2dc"
+sourceCommit: "7874d5e2f0ca1262eb80ee7de79f20320d0ae2d7"
 ---
 
 # Limpieza
@@ -42,15 +43,29 @@ Limpia recursos en la máquina en dos fases.
 
 ### Fase 1: Limpieza del almacén de datos (siempre se ejecuta)
 
-Elimina directorios de montaje vacíos, archivos de bloqueo obsoletos y snapshots BTRFS obsoletos.
+Elimina todo tipo de recurso que pueda quedar olvidado cuando se borra un repositorio o cuando una refactorización a nivel de máquina retira una convención de nomenclatura. Cada categoría se escanea de forma independiente y la limpieza es una única pasada idempotente, por lo que ejecutar prune de forma repetida es seguro y converge hacia un almacén de datos limpio.
+
+| Categoría | Qué elimina |
+|-----------|-------------|
+| Directorios de montaje vacíos | Directorios `mounts/<guid>/` sin una imagen de repositorio que los respalde |
+| Directorios inmóviles huérfanos | Directorios `immovable/<guid>/` sin una imagen de repositorio que los respalde |
+| Archivos de bloqueo obsoletos | `repositories/.lock-<guid>` de repos eliminados |
+| Snapshots de respaldo obsoletos | `.snapshot-*` y `.backup-*` dejados por ejecuciones de respaldo interrumpidas |
+| Directorios sandbox de VS Code huérfanos | `.interim/sandbox/<name>` de repos que ya no están activos en la máquina |
+| Cadenas iptables huérfanas | Cadenas `REDIACC_WILDCARD_<N>` y `DOCKER_ISOLATED_NET_<N>` de redes eliminadas |
+| Entradas huérfanas en authorized_keys | Líneas `sandbox-gateway <repo> --guid <uuid>` cuyo `--guid` ya no corresponde a un directorio de montaje activo |
+
+El escaneo de authorized_keys revisa `/home/*/.ssh/authorized_keys` y `/root/.ssh/authorized_keys`. Una entrada se conserva solo si su etiqueta `--guid` se corresponde con el GUID de un directorio de montaje vivo, por lo que los repos actualmente desplegados en la máquina siempre se preservan independientemente de si su nombre aparece en algún lugar del disco. Las entradas heredadas, escritas antes de que renet empezara a añadir la etiqueta `--guid`, no se pueden validar y siempre se reportan como huérfanas.
 
 ```bash
-# Dry-run
+# Dry-run, shows what would be removed (no changes applied)
 rdc machine prune --name server-1 --dry-run
 
 # Execute cleanup
 rdc machine prune --name server-1
 ```
+
+> **Limpieza en cascada.** Algunas categorías dependen de otras anteriores. Por ejemplo, eliminar directorios de montaje vacíos puede dejar expuestos sandbox huérfanos adicionales cuyo montaje de respaldo acaba de desaparecer. Ejecutar `rdc machine prune` una segunda vez captura la cascada y completa la limpieza. El último dry-run termina con `No orphaned resources found. Datastore is clean.` cuando ya no queda nada por hacer.
 
 ### Fase 2: Imágenes de repositorios huérfanos (opcional)
 

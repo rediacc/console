@@ -102,15 +102,15 @@ Renet auto-injects these into every container:
 ## CRIU (Live Migration)
 
 - **Opt-in via label**: Add `rediacc.checkpoint=true` to containers you want to checkpoint. Containers without it (databases, caches) start fresh and recover via their own mechanisms (WAL, LDF, AOF).
-- **`backup push --checkpoint`** captures running process memory + disk state for labeled containers.
-- **`repo fork --checkpoint`** captures process state before forking, the fork auto-restores on `repo up`.
-- **`repo down --checkpoint`** saves process state before stopping, next `repo up` auto-restores.
+- **`repo down --checkpoint`** saves process state before stopping, next `repo up` auto-restores. **This is the primary same-machine flow**, verified working.
+- **`backup push --checkpoint`** captures running process memory + disk state for labeled containers, then transfers the volume to another machine. Restore on the target machine via `repo up --mount`.
+- **`repo fork --checkpoint`** captures process state before forking and CoW-clones the checkpoint with the fork. ⚠️ On the same machine, the subsequent `repo up` on the fork **currently fails** with `criu failed: type RESTORE errno 0` when the parent is still running. Upstream CRIU bugs [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). Use `repo down --checkpoint` for in-place save/restore, or `backup push --checkpoint` for cross-machine migration.
 - **`repo up`** auto-detects checkpoint data and restores if found. Use `--skip-checkpoint` to force fresh start.
 - **Dependency-aware restore**: Uses compose `depends_on` to start databases first (wait for healthy), then CRIU-restore app containers.
-- **TCP connections become stale after restore**, apps must handle `ECONNRESET` and reconnect.
+- **TCP connections become stale after restore**, apps must handle `ECONNRESET` and reconnect. CRIU does not preserve active TCP connection state across restore in any supported flow.
 - **Docker experimental mode** is enabled automatically on per-repo daemons.
 - **CRIU is installed** during `rdc config machine setup`.
-- **`/etc/criu/runc.conf`** is configured with `tcp-established` for TCP connection preservation.
+- **`/etc/criu/runc.conf`** is configured with `tcp-established` by default.
 - **Container security settings are auto-injected for labeled containers**, `renet compose` adds the following to containers with `rediacc.checkpoint=true`:
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (minimal set for CRIU on kernel 5.9+)
   - `security_opt`: `apparmor=unconfined` (CRIU's AppArmor support is not yet stable upstream)
@@ -135,6 +135,8 @@ Renet auto-injects these into every container:
 - **Never commit credentials** to version control. Use `env_file` and generate secrets in `up()`.
 - **Repository isolation**: Each repo's Docker daemon, network, and storage are fully isolated from other repos on the same machine.
 - **Agent isolation**: AI agents operate in fork-only mode by default. Each repo has its own SSH key with server-side sandbox enforcement (`sandbox-gateway` ForceCommand). All connections are sandboxed with Landlock LSM, OverlayFS home overlay, and per-repo TMPDIR. Cross-repo filesystem access is blocked by the kernel.
+- **`sudo` is disabled inside a repository sandbox by design.** Landlock filesystem isolation requires `NoNewPrivs`, which prevents any privilege elevation, so `sudo` will fail with `no new privileges flag is set`. The repo's owner user already has the permissions needed for everything inside the repo's mount and Docker socket. For genuinely privileged operations (installing host packages, kernel tuning), run them outside the sandbox or from a Rediaccfile `up()` function executed by the infrastructure path.
+- **Docker bridge networking is disabled on every per-repo daemon.** Each repo's `daemon.json` carries `"bridge": "none"` and `"iptables": false`, so a plain `docker run <image>` creates a container with only a loopback interface and no outbound connectivity. This is not a bug, it is how cross-repo isolation is enforced: the kernel-level eBPF hooks that block one repo from reaching another repo's loopback IPs only apply to containers that live in the host network namespace. For production services use `renet compose`, which injects `network_mode: host` automatically. For ad-hoc one-off containers in a shell, pass `--network host` explicitly.
 
 ## Deployment
 
@@ -142,7 +144,7 @@ Renet auto-injects these into every container:
 - **`rdc repo up --mount`** opens the LUKS volume first, then runs lifecycle. Required after `backup push` to a new machine.
 - **`rdc repo down`** runs `down()` and stops the Docker daemon.
 - **`rdc repo down --unmount`** also closes the LUKS volume (locks the encrypted storage).
-- **Forks** (`rdc repo fork`) create a CoW (copy-on-write) clone with a new GUID and networkId. The fork shares the parent's encryption key.
+- **Forks** (`rdc repo fork`) create a CoW (copy-on-write) clone with a new GUID and networkId, in **constant time regardless of repo size**. BTRFS reflink duplicates the image metadata, not the data, so a 100 GB repo forks in the same few seconds as a 1 GB repo. The fork shares the parent's encryption key.
 - **Takeover** (`rdc repo takeover <fork> -m <machine>`) replaces the grand repo's data with a fork's data. The grand keeps its identity (GUID, networkId, domains, autostart, backup chain). Old production data is preserved as a backup fork. Use for: test upgrade on fork, verify, then takeover to production. Revert with `rdc repo takeover <backup-fork> -m <machine>`.
 - **Proxy routes** take ~3 seconds to become active after deploy. The "Proxy is not running" warning during `repo up` is informational in ops/dev environments.
 - **`rdc repo up` and `rdc repo fork --up` print the URL pattern** for services labelled with `rediacc.service_port` at the end of deploy. Replace `{service}` with your exposed service name to get the exact URL. Services without `rediacc.service_port` (databases, workers) do not get routes and are not shown.

@@ -4,7 +4,8 @@ description: "Solutions aux problèmes courants avec SSH, la configuration, les 
 category: "Guides"
 order: 10
 language: fr
-sourceHash: "23754822c67de564"
+sourceHash: "756725b9a8fb168f"
+sourceCommit: "7874d5e2f0ca1262eb80ee7de79f20320d0ae2d7"
 ---
 
 # Dépannage
@@ -76,6 +77,48 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 ```
 
 Remplacez `2816` par l'identifiant réseau de votre dépôt (disponible dans `rediacc.json` ou `rdc repo status`).
+
+## `docker run` n'a pas de réseau, `apt update` échoue, `curl` se bloque
+
+À l'intérieur d'un shell de dépôt, lancer un conteneur sans `--network host` vous donne un conteneur isolé avec uniquement une interface de loopback, pas de DNS et aucune connectivité sortante. Des commandes comme `apt update`, `pip install`, `curl https://...`, ou toute récupération réseau échoueront immédiatement avec des erreurs DNS.
+
+C'est intentionnel. Le modèle réseau de Rediacc est **le réseau hôte pour chaque service**, appliqué par `renet compose`. Un bridge Docker par défaut avec NAT contournerait l'isolation de loopback au niveau du noyau qui empêche un dépôt d'atteindre les services d'un autre dépôt, si bien que le daemon Docker par dépôt est configuré avec `"bridge": "none"` et `"iptables": false`. Il n'existe aucun bridge routable auquel un conteneur `docker run` simple pourrait se rattacher.
+
+**Pour obtenir un accès réseau dans un conteneur ad hoc, utilisez le réseau hôte :**
+
+```bash
+# À l'intérieur d'un shell de dépôt (rdc term connect -m <machine> -r <repo>)
+docker run --rm --network host -it ubuntu bash
+# Désormais apt update, curl, pip install fonctionnent tous.
+```
+
+**Pour les services de production, utilisez un Rediaccfile avec `renet compose`** au lieu d'un `docker run` brut. `renet compose` injecte automatiquement `network_mode: host`, les labels d'IP de service et les labels de routage Traefik. Consultez [Services](/fr/docs/services) pour les détails.
+
+## Permission refusée par VS Code sur des fichiers du sandbox
+
+En vous connectant avec `rdc vscode connect -m <machine> -r <repo>`, il se peut que vous ayez vu des erreurs comme `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` après une précédente session VS Code. Cela provenait d'une propriété de fichiers mixte à l'intérieur du répertoire du sandbox, qui contenait des fichiers écrits à la fois par votre utilisateur SSH et par l'utilisateur interne `rediacc`.
+
+Les versions récentes de renet corrigent cela en :
+
+- Créant le workspace de sandbox par dépôt (`/mnt/rediacc/.interim/sandbox/<repo>/`) avec le groupe `rediacc` et le bit set-group-ID (mode `2775`), de sorte que chaque fichier écrit en dessous hérite du bon groupe.
+- Appliquant un umask `002` à l'intérieur du runtime du sandbox pour que les nouveaux fichiers soient créés accessibles en écriture par le groupe (`0664`/`0775`).
+- Normalisant au démarrage une arborescence `.vscode-server/` existante, afin que les fichiers obsolètes antérieurs au correctif soient réparés automatiquement.
+
+Si vous voyez encore des erreurs de permissions, redémarrez une fois le daemon Docker du dépôt avec `sudo systemctl restart rediacc-docker-<network-id>` depuis un shell sur la machine pour que la passe de normalisation s'exécute, puis relancez `rdc vscode connect`.
+
+## Le daemon ne démarre pas après une mise à niveau de renet
+
+Avant chaque démarrage, `renet daemon start-foreground` réécrit `daemon.json` et `containerd.toml` dans le répertoire de configuration du dépôt à partir des modèles actuels, de sorte qu'un dépôt dont la configuration a été générée par une ancienne version de renet reprend automatiquement le nouveau format. Vous n'avez pas besoin d'exécuter une commande de migration, ni de régénérer manuellement l'unité systemd. Redémarrez simplement le service :
+
+```bash
+sudo systemctl restart rediacc-docker-<network-id>
+```
+
+Si l'unité échoue toujours, consultez le journal pour une erreur spécifique :
+
+```bash
+sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
+```
 
 ## Conteneurs créés sur le mauvais Docker daemon
 

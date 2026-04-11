@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { detectRepoContextCommand, REPO_CONTEXT_PATTERNS } from '../repo-context-guard.js';
+import {
+  detectDockerComposeCommand,
+  detectRepoContextCommand,
+  REPO_CONTEXT_PATTERNS,
+} from '../repo-context-guard.js';
 
 describe('detectRepoContextCommand', () => {
   describe('positive cases (should detect)', () => {
@@ -70,5 +74,41 @@ describe('detectRepoContextCommand', () => {
 
   it('has 6 patterns defined', () => {
     expect(REPO_CONTEXT_PATTERNS).toHaveLength(6);
+  });
+});
+
+describe('detectDockerComposeCommand', () => {
+  describe('positive cases (should detect)', () => {
+    it.each([
+      'docker compose up -d',
+      'docker-compose up',
+      'sudo docker compose up -d',
+      'sudo docker-compose down',
+      '/usr/bin/docker compose up',
+      'DOCKER_HOST=/tmp/sock docker compose up',
+      'docker  compose  up',
+      'Docker Compose up',
+      'DOCKER-COMPOSE ps',
+      'bash -c "docker compose up"',
+      'cd /app && docker compose restart',
+      'echo "use docker compose"',
+    ])('%s → detected', (command) => {
+      expect(detectDockerComposeCommand(command)).toBe(true);
+    });
+  });
+
+  describe('negative cases (should NOT detect)', () => {
+    it.each([
+      'docker ps',
+      'docker run -d nginx',
+      'docker exec -it web bash',
+      'docker-composer --version',
+      'renet compose -- up -d',
+      'sudo renet compose -- ps',
+      'uptime',
+      '',
+    ])('%s → no match', (command) => {
+      expect(detectDockerComposeCommand(command)).toBe(false);
+    });
   });
 });

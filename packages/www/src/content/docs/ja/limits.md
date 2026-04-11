@@ -6,7 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: ja
-sourceHash: "44b8fdb73f86c659"
+sourceHash: "fdf074885af49980"
+sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
 ---
 
 # 制限とクォータ
@@ -124,7 +125,8 @@ CRIU によるライブマイグレーションには以下の制約がありま
 - **カーネル要件**: ソースマシンとデスティネーションマシンの両方で Linux 6.1 以上が必要です。
 - **ネットワークモード**: CRIU にはホストネットワーキングモードが必要です。カスタムネットワーク構成を使用するコンテナはチェックポイントできません。
 - **メモリ**: チェックポイントデータのサイズは、チェックポイントされるプロセスのレジデントメモリと同等です。大規模なインメモリデータセット（例: 4 GB のデータをキャッシュする Node.js アプリ）は 4 GB のチェックポイントファイルを生成します。
-- **TCP 接続**: アクティブな TCP 接続は同一マシンでのリストア時に保持されます。マシン間マイグレーションでは、TCP 接続はリストア後にアプリケーションによって再確立される必要があります。
+- **TCP 接続**: アプリケーションは復元時の接続損失を許容する必要があります。アクティブな TCP 接続は保持**されません**。復元されたプロセスはソケットが閉じられたものとして認識し、再接続する必要があります。これは同一マシン復元およびマシン間復元の両方に適用されます。
+- **同一マシンでのライブフォークはサポートされていません**: `rdc repo fork --parent X --tag Y --checkpoint` はチェックポイントの取得には成功しますが、親がまだ実行中の場合、その後に同一マシンで実行する `rdc repo up` は `criu failed: type RESTORE errno 0` で失敗します。これは upstream の CRIU バグ [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) および [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514) が `network_mode: host` と相互作用することが原因です。同一マシンでのインプレースなプロセス状態保存には、代わりに `rdc repo down --checkpoint` + `rdc repo up` を使用してください。ライブマイグレーションには、別のマシンへの `rdc repo push --checkpoint` を使用してください。
 
 ---
 

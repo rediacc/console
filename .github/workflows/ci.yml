@@ -449,7 +449,7 @@ jobs:
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
-      OTLP_AUTH_TOKEN: ${{ secrets.OTLP_AUTH_TOKEN }}
+      # OTLP_AUTH_TOKEN removed: credentials are resolved at runtime (renet#51).
 
   build-docker:
     name: Build (Docker)

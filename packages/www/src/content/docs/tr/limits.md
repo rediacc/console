@@ -6,7 +6,8 @@ description: >-
 category: "Reference"
 order: 99
 language: tr
-sourceHash: "44b8fdb73f86c659"
+sourceHash: "fdf074885af49980"
+sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
 ---
 
 # Limitler ve Kotalar
@@ -124,7 +125,8 @@ CRIU aracılığıyla canlı geçiş aşağıdaki kısıtlamalara sahiptir:
 - **Çekirdek gereksinimi**: Hem kaynak hem de hedef makinede Linux 6.1 veya üzeri.
 - **Ağ modu**: CRIU, ana bilgisayar ağ modunu gerektirir. Özel ağ yapılandırmaları kullanan konteynerlerin kontrol noktası alınamaz.
 - **Bellek**: Kontrol noktası veri boyutu, kontrol noktasına alınan sürecin yerleşik belleğine eşittir. Bellekteki büyük veri kümeleri (örneğin, 4 GB veri önbelleğe alan bir Node.js uygulaması) 4 GB kontrol noktası dosyaları üretir.
-- **TCP bağlantıları**: Aktif TCP bağlantıları aynı makine geri yüklemesinde korunur. Makineler arası geçişte, TCP bağlantılarının geri yüklemeden sonra uygulama tarafından yeniden kurulması gerekir.
+- **TCP bağlantıları**: Uygulamalar, geri yükleme sırasında bağlantı kaybını tolere etmelidir. Aktif TCP bağlantıları **korunmaz**, geri yüklenen süreç soketleri kapalı olarak görür ve yeniden bağlanmalıdır. Bu, hem aynı makine hem de makineler arası geri yükleme yollarına uygulanır.
+- **Aynı makinede canlı fork desteklenmiyor**: `rdc repo fork --parent X --tag Y --checkpoint` komutu checkpoint'i başarıyla yakalar, ancak ebeveyn hâlâ çalışırken aynı makinede çalıştırılan sonraki `rdc repo up` komutu `criu failed: type RESTORE errno 0` hatasıyla başarısız olur. Bu, upstream CRIU hataları [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) ve [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514) ile `network_mode: host` arasındaki etkileşimden kaynaklanır. Aynı makinede yerinde süreç durumunu korumak için bunun yerine `rdc repo down --checkpoint` + `rdc repo up` kullanın. Canlı geçiş için farklı bir makineye `rdc repo push --checkpoint` kullanın.
 
 ---
 

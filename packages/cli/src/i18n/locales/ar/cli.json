@@ -2154,6 +2154,7 @@
     "teamRequired": "اسم الفريق مطلوب. استخدم --team أو اضبط السياق.",
     "term": {
       "connectivityFailed": "لا يمكن الوصول إلى {{host}}:{{port}}. {{error}}\n\nاستكشاف الأخطاء:\n  - تحقق من أن الآلة مشغلة ومتصلة بالشبكة\n  - تحقق من صحة عنوان IP في خزينة الآلة\n  - تأكد من عدم حجب المنفذ {{port}} بواسطة جدار حماية\n  - جرب ping على الآلة: ping {{host}}",
+      "dockerComposeForbidden": "\"docker compose\" غير مسموح به في سياق المستودع.\n\nاستخدم \"renet compose -- <args>\" بدلاً من ذلك حتى يتم تطبيق عناوين IP loopback لكل مستودع، وحقن شبكة المضيف، وقدرات CRIU، والتحقق من ملف compose. تشغيل \"docker compose\" مباشرة يتجاوز كل هذا ويفسد النشر بصمت.\n\nللنشر المنسق، يفضل: rdc repo up --name <repository> -m <machine>",
       "launchFailed": "فشل تشغيل الطرفية: {{error}}",
       "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",

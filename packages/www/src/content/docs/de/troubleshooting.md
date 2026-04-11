@@ -4,7 +4,8 @@ description: "Lösungen für häufige Probleme mit SSH, Einrichtung, Repositorie
 category: "Guides"
 order: 10
 language: de
-sourceHash: "23754822c67de564"
+sourceHash: "756725b9a8fb168f"
+sourceCommit: "7874d5e2f0ca1262eb80ee7de79f20320d0ae2d7"
 ---
 
 # Fehlerbehebung
@@ -76,6 +77,48 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 ```
 
 Ersetzen Sie `2816` durch die Netzwerk-ID Ihres Repositories (zu finden in `rediacc.json` oder `rdc repo status`).
+
+## `docker run` hat kein Netzwerk, `apt update` schlägt fehl, `curl` hängt
+
+Innerhalb einer Repository-Shell erhalten Sie, wenn Sie einen Container ohne `--network host` starten, einen isolierten Container, der nur über ein Loopback-Interface verfügt, kein DNS und keine ausgehende Konnektivität hat. Befehle wie `apt update`, `pip install`, `curl https://...` oder jeder Netzwerk-Abruf schlagen sofort mit DNS-Fehlern fehl.
+
+Dies ist beabsichtigt. Rediaccs Netzwerkmodell ist **Host-Networking für jeden Dienst**, durchgesetzt von `renet compose`. Eine standardmäßige Docker-Bridge mit NAT würde die Loopback-Isolation auf Kernel-Ebene umgehen, die verhindert, dass ein Repo die Dienste eines anderen Repos erreicht, weshalb der pro-Repo-Docker-Daemon mit `"bridge": "none"` und `"iptables": false` konfiguriert ist. Es gibt keine routebare Bridge, an die sich ein einfacher `docker run`-Container anhängen könnte.
+
+**Um in einem Ad-hoc-Container Netzwerkzugriff zu erhalten, verwenden Sie Host-Networking:**
+
+```bash
+# Inside a repository shell (rdc term connect -m <machine> -r <repo>)
+docker run --rm --network host -it ubuntu bash
+# Now apt update, curl, pip install all work.
+```
+
+**Verwenden Sie für Produktionsdienste ein Rediaccfile mit `renet compose`** anstelle von reinem `docker run`. `renet compose` injiziert automatisch `network_mode: host`, Dienst-IP-Labels und Traefik-Routing-Labels. Siehe [Dienste](/de/docs/services) für Details.
+
+## VS Code Permission Denied bei Sandbox-Dateien
+
+Beim Verbinden mit `rdc vscode connect -m <machine> -r <repo>` sind Ihnen nach einer vorherigen VS-Code-Sitzung möglicherweise Fehler wie `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` begegnet. Dies wurde durch gemischte Dateibesitzverhältnisse innerhalb des Sandbox-Verzeichnisses verursacht, das Dateien enthielt, die sowohl von Ihrem SSH-Benutzer als auch vom internen `rediacc`-Benutzer geschrieben wurden.
+
+Moderne Versionen von renet beheben dies wie folgt:
+
+- Der pro-Repo-Sandbox-Workspace (`/mnt/rediacc/.interim/sandbox/<repo>/`) wird mit der Gruppe `rediacc` und gesetztem Set-Group-ID-Bit (Modus `2775`) angelegt, sodass jede darunter geschriebene Datei die korrekte Gruppe erbt.
+- Innerhalb der Sandbox-Laufzeit wird umask `002` angewandt, sodass neue Dateien gruppen-schreibbar (`0664`/`0775`) erstellt werden.
+- Beim Start wird ein vorhandener `.vscode-server/`-Unterbaum normalisiert, sodass veraltete Dateien aus der Zeit vor dem Fix automatisch repariert werden.
+
+Falls weiterhin Berechtigungsfehler auftreten, starten Sie den Docker-Daemon des Repos einmal mit `sudo systemctl restart rediacc-docker-<network-id>` aus einer Shell auf der Maschine neu, damit der Normalisierungsdurchlauf erfolgt, und versuchen Sie dann erneut `rdc vscode connect`.
+
+## Daemon startet nach einem renet-Upgrade nicht
+
+Vor jedem Start schreibt `renet daemon start-foreground` `daemon.json` und `containerd.toml` im Konfigurationsverzeichnis des Repositories anhand der aktuellen Vorlagen neu, sodass ein Repository, dessen Konfiguration von einer älteren renet-Version erzeugt wurde, das neue Format automatisch übernimmt. Sie müssen keinen Migrationsbefehl ausführen und die systemd-Unit nicht manuell neu generieren. Starten Sie einfach den Dienst neu:
+
+```bash
+sudo systemctl restart rediacc-docker-<network-id>
+```
+
+Falls die Unit weiterhin fehlschlägt, prüfen Sie das Journal auf einen konkreten Fehler:
+
+```bash
+sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
+```
 
 ## Container auf falschem Docker-Daemon erstellt
 

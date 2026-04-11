@@ -1,7 +1,15 @@
-// CLI Telemetry Service (OTel → Tempo/Prometheus/Loki via Alloy). Opt-out: REDIACC_TELEMETRY_DISABLED=1
-
-/** Injected at compile time by esbuild (see bundle.mjs). */
-declare const __OTLP_AUTH_TOKEN__: string;
+// CLI Telemetry Service (OTel → Tempo/Prometheus/Loki via Alloy).
+//
+// Credentials are fetched at runtime from the account server's
+// `/telemetry/config` endpoint (unauthenticated), set via
+// `setRuntimeOtlpCredentials()`, and used when constructing the OTel SDK
+// exporter. No credentials are ever baked into the bundle.
+//
+// Opt-out: `REDIACC_TELEMETRY_DISABLED=1` or any truthy `CI` env var.
+// Use `isTelemetryDisabled()` (exported below) to check the state before
+// doing any telemetry-related work — fetching credentials, spawning renet
+// with OTLP env vars, or constructing an exporter. All three should skip
+// when this returns true.
 
 import { metrics as metricsApi, type Span, SpanStatusCode, type Tracer } from '@opentelemetry/api';
 import { type Logger, SeverityNumber } from '@opentelemetry/api-logs';
@@ -28,6 +36,22 @@ import {
 // Package version (will be replaced by bundler or read from package.json)
 const CLI_VERSION = '0.3.6';
 
+/**
+ * Pure env-var check for whether the user has opted out of telemetry.
+ *
+ * Callable before any service initialization — useful for gating
+ * preAction work (credential fetch) and SSH env injection so we never
+ * leak OTLP credentials to renet when the user has disabled telemetry
+ * on their workstation.
+ *
+ * Disabled when:
+ *   - `CI` env var is truthy (auto-disable in CI pipelines)
+ *   - `REDIACC_TELEMETRY_DISABLED` is exactly `'1'` (explicit opt-out)
+ */
+export function isTelemetryDisabled(): boolean {
+  return !!process.env.CI || process.env.REDIACC_TELEMETRY_DISABLED === '1';
+}
+
 interface CliTelemetryConfig extends Partial<TelemetryConfig> {
   /** CLI-specific: telemetry enabled (default: true, opt-out) */
   telemetryEnabled?: boolean;
@@ -49,6 +73,14 @@ class CliTelemetryService implements TelemetryHandler {
   private userContext: Partial<UserContext> = {};
   private readonly activeSpans: Map<string, Span> = new Map();
   private pendingShutdown: Promise<void> | null = null;
+  /**
+   * OTLP basic-auth token (base64-encoded `user:pass`), set by
+   * `setRuntimeOtlpCredentials()` after the CLI fetches credentials from
+   * `/telemetry/config`. Null means "no credentials for this region"
+   * (bench, on-premise, or region with telemetry disabled): telemetry
+   * stays disabled.
+   */
+  private authToken: string | null = null;
 
   // Metrics instruments
   private commandCounter: ReturnType<
@@ -68,33 +100,28 @@ class CliTelemetryService implements TelemetryHandler {
   }
 
   private shouldDisable(config?: CliTelemetryConfig): boolean {
-    // Disable in CI environments to avoid delays in automated pipelines
-    if (process.env.CI) {
-      return true;
-    }
-
-    // Check environment variable
-    if (process.env.REDIACC_TELEMETRY_DISABLED === '1') {
-      return true;
-    }
-
-    // Check config
-    if (config?.telemetryEnabled === false) {
-      return true;
-    }
-
+    // Env-based opt-out (CI, REDIACC_TELEMETRY_DISABLED) is the single
+    // source of truth — see `isTelemetryDisabled()` at module scope. The
+    // in-memory `config.telemetryEnabled` override is an additional layer
+    // used by adapters that want to force-disable for a specific context.
+    if (isTelemetryDisabled()) return true;
+    if (config?.telemetryEnabled === false) return true;
     return false;
   }
 
-  private getAuthToken(): string | null {
-    // Production: embedded at compile time by esbuild define (non-overridable)
-    const embedded = typeof __OTLP_AUTH_TOKEN__ !== 'undefined' && __OTLP_AUTH_TOKEN__;
-    if (embedded) return embedded;
-    // Development: rdc.sh sources account .env which sets this
-    if (this.detectEnvironment() === 'development') {
-      return process.env.REDIACC_TELEMETRY_AUTH_TOKEN ?? null;
+  /**
+   * Provide OTLP credentials fetched from the account server. Must be
+   * called before `initialize()` so the OTel SDK exporter is constructed
+   * with the correct auth header. Passing `null` clears any previously
+   * set credentials; subsequent `initialize()` calls will produce a
+   * no-op collector (default-deny).
+   */
+  setRuntimeOtlpCredentials(creds: { user: string; pass: string } | null): void {
+    if (creds?.user && creds.pass) {
+      this.authToken = Buffer.from(`${creds.user}:${creds.pass}`).toString('base64');
+    } else {
+      this.authToken = null;
     }
-    return null;
   }
 
   private detectEnvironment(): string {
@@ -132,9 +159,8 @@ class CliTelemetryService implements TelemetryHandler {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    const authToken = this.getAuthToken();
-    if (authToken) {
-      headers['Authorization'] = `Basic ${authToken}`;
+    if (this.authToken) {
+      headers['Authorization'] = `Basic ${this.authToken}`;
     }
     return headers;
   }
@@ -145,6 +171,16 @@ class CliTelemetryService implements TelemetryHandler {
     }
 
     if (this.shouldDisable(config)) {
+      this.isEnabled = false;
+      this.isInitialized = true;
+      return;
+    }
+
+    // Default-deny: without credentials we never construct the exporter,
+    // so no requests are sent and no metadata leaks. Matches renet's
+    // default-deny behavior and fixes the unauthenticated-request path
+    // from renet#51.
+    if (!this.authToken) {
       this.isEnabled = false;
       this.isInitialized = true;
       return;

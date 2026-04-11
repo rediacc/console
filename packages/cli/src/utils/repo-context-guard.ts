@@ -25,6 +25,18 @@ export function detectRepoContextCommand(command: string): RepoContextPattern | 
   return null;
 }
 
+const DOCKER_COMPOSE_PATTERN = /\b(docker\s+compose|docker-compose)\b/i;
+
+/**
+ * Detects `docker compose` / `docker-compose` usage. In repository context this
+ * must be blocked because `renet compose` is a preprocessor that injects per-repo
+ * loopback IPs, host network mode, CRIU capabilities, and compose validation —
+ * bypassing it silently corrupts the deployment.
+ */
+export function detectDockerComposeCommand(command: string): boolean {
+  return DOCKER_COMPOSE_PATTERN.test(command);
+}
+
 export interface RenetCommandMatch {
   renetCommand: string;
   cliHelpCommand: string;

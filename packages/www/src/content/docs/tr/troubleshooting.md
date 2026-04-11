@@ -4,7 +4,8 @@ description: "SSH, kurulum, depolar, servisler ve Docker ile ilgili yaygın soru
 category: "Guides"
 order: 10
 language: tr
-sourceHash: "23754822c67de564"
+sourceHash: "756725b9a8fb168f"
+sourceCommit: "7874d5e2f0ca1262eb80ee7de79f20320d0ae2d7"
 ---
 
 # Sorun Giderme
@@ -76,6 +77,48 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 ```
 
 `2816` değerini deponuzun ağ kimliği ile değiştirin (`rediacc.json` veya `rdc repo status` içinde bulunabilir).
+
+## `docker run` ağı yok, `apt update` başarısız, `curl` yanıt vermiyor
+
+Bir depo kabuğu içinde, bir konteyneri `--network host` olmadan çalıştırmak, yalnızca loopback arayüzü olan, DNS içermeyen ve dışa doğru bağlantısı olmayan izole bir konteyner verir. `apt update`, `pip install`, `curl https://...` gibi komutlar ya da herhangi bir ağ isteği DNS hatalarıyla anında başarısız olur.
+
+Bu kasıtlıdır. Rediacc'in ağ modeli, `renet compose` tarafından zorunlu kılınan **her servis için host ağı**dır. NAT'lı varsayılan bir Docker bridge'i, bir deponun başka bir deponun servislerine ulaşmasını engelleyen çekirdek düzeyindeki loopback izolasyonunu atlayacağı için, depo başına Docker daemon'u `"bridge": "none"` ve `"iptables": false` ile yapılandırılır. Düz bir `docker run` konteynerinin bağlanabileceği yönlendirilebilir bir bridge yoktur.
+
+**Geçici bir konteynerde ağ erişimi elde etmek için host ağını kullanın:**
+
+```bash
+# Bir depo kabuğunda (rdc term connect -m <machine> -r <repo>)
+docker run --rm --network host -it ubuntu bash
+# Artık apt update, curl, pip install komutlarının tamamı çalışır.
+```
+
+**Üretim servisleri için ham `docker run` yerine `renet compose` ile bir Rediaccfile kullanın.** `renet compose`, `network_mode: host`, servis IP etiketleri ve Traefik yönlendirme etiketlerini otomatik olarak enjekte eder. Ayrıntılar için [Servisler](/tr/docs/services) sayfasına bakın.
+
+## VS Code sandbox dosyalarında İzin Reddedildi
+
+`rdc vscode connect -m <machine> -r <repo>` ile bağlanırken, önceki bir VS Code oturumundan sonra `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` gibi hatalar görmüş olabilirsiniz. Bu, sandbox dizini içinde hem SSH kullanıcınız hem de dahili `rediacc` kullanıcısı tarafından yazılmış dosyaların karışık sahipliğinden kaynaklanıyordu.
+
+Renet'in modern sürümleri bunu şu şekilde düzeltir:
+
+- Depo başına sandbox çalışma alanını (`/mnt/rediacc/.interim/sandbox/<repo>/`) `rediacc` grubu ve set-group-ID biti (mod `2775`) ile oluşturur, böylece altına yazılan her dosya doğru grubu devralır.
+- Sandbox çalışma zamanı içinde `002` umask'ini uygular, böylece yeni dosyalar grup yazılabilir (`0664`/`0775`) olarak oluşturulur.
+- Başlatmada mevcut bir `.vscode-server/` alt ağacını normalize eder, böylece düzeltmeden önceki eski dosyalar otomatik olarak onarılır.
+
+Yine de izin hatalarıyla karşılaşırsanız, normalize işleminin çalışması için makinedeki bir kabuktan `sudo systemctl restart rediacc-docker-<network-id>` komutuyla deponun Docker daemon'unu bir kez yeniden başlatın, ardından `rdc vscode connect` komutunu tekrar deneyin.
+
+## Renet yükseltmesinden sonra daemon başlatılamıyor
+
+Her başlatmadan önce `renet daemon start-foreground`, deponun yapılandırma dizinindeki `daemon.json` ve `containerd.toml` dosyalarını mevcut şablonlardan yeniden yazar, bu nedenle yapılandırması daha eski bir renet sürümüyle oluşturulmuş bir depo, yeni formatı otomatik olarak alır. Herhangi bir göç komutu çalıştırmanıza gerek yoktur ve systemd birimini manuel olarak yeniden oluşturmanız gerekmez. Yalnızca servisi yeniden başlatın:
+
+```bash
+sudo systemctl restart rediacc-docker-<network-id>
+```
+
+Birim hâlâ başarısız oluyorsa, belirli bir hata için günlüğü kontrol edin:
+
+```bash
+sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
+```
 
 ## Konteynerler Yanlış Docker Daemon'da Oluşturulmuş
 

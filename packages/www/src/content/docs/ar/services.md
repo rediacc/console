@@ -6,7 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: "045189cf72c43927"
+sourceHash: "52f8d1f2d115489e"
+sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
 ---
 
 # الخدمات
@@ -168,6 +169,8 @@ services:
 ```
 
 > **ملاحظة:** لا تضف `network_mode: host` يدوياً, يقوم `renet compose` بحقنه تلقائياً. سياسات إعادة التشغيل (مثل `restart: always`) آمنة للاستخدام, يزيلها renet تلقائياً لتوافق CRIU ويتولى watchdog استعادة الحاويات.
+
+> **شبكات Docker bridge معطّلة لعمليات daemon التي تديرها rediacc.** يتم تكوين كل daemon خاص بمستودع بالقيم `"bridge": "none"` و `"iptables": false`. سيظل أمر `docker run <image>` البسيط داخل شل المستودع يبدأ التشغيل، لكن الحاوية ستحصل فقط على واجهة loopback وبدون DNS أو اتصال خارجي. هذا بالتصميم، لأن عزل الـ loopback بين المستودعات تفرضه خطاطيف cgroup الخاصة بـ eBPF، وهي خطاطيف تتجاوزها الحاويات التي تعمل عبر bridge. يجب أن تستخدم خدمات الإنتاج `renet compose` (الذي يحقن شبكة المضيف تلقائياً)؛ وللتصحيح العابر، مرّر `--network host` بشكل صريح: `docker run --rm --network host -it ubuntu bash`.
 
 > **ملاحظة:** مستودعات fork تحصل على مسارات تلقائية مسطحة: `{service}-{tag}.{machine}.{baseDomain}`. يتم تخطي النطاقات المخصصة لمستودعات fork.
 

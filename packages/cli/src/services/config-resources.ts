@@ -20,6 +20,7 @@ import type {
   StorageConfig,
 } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
+import { parseRepoRef } from '../utils/config-schema.js';
 import { ConfigServiceBase } from './config-base.js';
 
 class ConfigService extends ConfigServiceBase {
@@ -238,7 +239,11 @@ class ConfigService extends ConfigServiceBase {
     const map: Record<string, string> = {};
     for (const [repoName, repoConfig] of Object.entries(repos)) {
       const tag = repoConfig.tag ?? DEFAULTS.REPOSITORY.TAG;
-      map[repoConfig.repositoryGuid] = `${repoName}:${tag}`;
+      // Config keys may be bare ("erpnext") or composite ("demo-stackoverflow:latest").
+      // Extract the bare base name so we always produce a canonical "name:tag"
+      // without double-tagging composite keys.
+      const { name: baseName } = parseRepoRef(repoName);
+      map[repoConfig.repositoryGuid] = `${baseName}:${tag}`;
     }
     return map;
   }

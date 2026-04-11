@@ -2154,6 +2154,7 @@
     "teamRequired": "Takım adı gerekli. --team kullanın veya bağlamı ayarlayın.",
     "term": {
       "connectivityFailed": "{{host}}:{{port}} adresine erişilemiyor. {{error}}\n\nSorun Giderme:\n  - Makineyi kontrol edin ve ağa bağlı olup olmadığını doğrulayın\n  - IP adresinin makine kasasında doğru olduğunu doğrulayın\n  - {{port}} bağlantı noktasının güvenlik duvarı tarafından engellenmediğini doğrulayın\n  - Makineye ping atmayı deneyin: ping {{host}}",
+      "dockerComposeForbidden": "\"docker compose\" depo bağlamında izin verilmiyor.\n\nBunun yerine \"renet compose -- <args>\" kullanın; böylece depoya özel loopback IP'leri, ana bilgisayar ağ enjeksiyonu, CRIU yetenekleri ve compose doğrulaması uygulanır. \"docker compose\" komutunu doğrudan çalıştırmak bunların tümünü atlar ve dağıtımı sessizce bozar.\n\nOrkestrasyonlu dağıtımlar için tercih: rdc repo up --name <repository> -m <machine>",
       "launchFailed": "Terminal başlatılamadı: {{error}}",
       "noHostKey": "\"{{machine}}\" makinesinin kasada yapılandırılmış bir ana bilgisayar anahtarı yok",
       "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",

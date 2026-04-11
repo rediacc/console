@@ -4,7 +4,8 @@ description: "SSH、セットアップ、リポジトリ、サービス、Docker
 category: "Guides"
 order: 10
 language: ja
-sourceHash: "23754822c67de564"
+sourceHash: "756725b9a8fb168f"
+sourceCommit: "7874d5e2f0ca1262eb80ee7de79f20320d0ae2d7"
 ---
 
 # トラブルシューティング
@@ -76,6 +77,48 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 ```
 
 `2816` をリポジトリのネットワークIDに置き換えてください（`rediacc.json` または `rdc repo status` で確認できます）。
+
+## `docker run` にネットワークがない、`apt update` が失敗する、`curl` がハングする
+
+リポジトリシェル内で `--network host` を付けずにコンテナを実行すると、ループバックインターフェースしか持たず、DNS も外向きの接続性もない分離されたコンテナが得られます。`apt update`、`pip install`、`curl https://...` のようなコマンドや、ネットワーク取得を行うあらゆる処理は、DNS エラーで即座に失敗します。
+
+これは意図的な仕様です。Rediacc のネットワーキングモデルは**すべてのサービスでホストネットワーキングを使用する**というものであり、`renet compose` によって強制されています。NAT 付きの標準的な Docker ブリッジは、あるリポジトリが別のリポジトリのサービスに到達することを防ぐカーネルレベルのループバック分離を迂回してしまうため、リポジトリごとの Docker デーモンは `"bridge": "none"` と `"iptables": false` で構成されており、単純な `docker run` コンテナが接続できるルーティング可能なブリッジは存在しません。
+
+**アドホックなコンテナでネットワークアクセスを得るには、ホストネットワーキングを使用してください:**
+
+```bash
+# リポジトリシェル内で（rdc term connect -m <machine> -r <repo>）
+docker run --rm --network host -it ubuntu bash
+# これで apt update、curl、pip install はすべて動作します。
+```
+
+**本番サービスでは、生の `docker run` の代わりに Rediaccfile で `renet compose` を使用してください。** `renet compose` は `network_mode: host`、サービス IP ラベル、Traefik のルーティングラベルを自動的に注入します。詳細は [サービス](/ja/docs/services) を参照してください。
+
+## VS Code でサンドボックスファイルに Permission Denied が出る
+
+`rdc vscode connect -m <machine> -r <repo>` で接続した際、以前の VS Code セッションの後に `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` のようなエラーが出たことがあるかもしれません。これはサンドボックスディレクトリ内のファイル所有権が混在していたことが原因で、SSH ユーザーと内部の `rediacc` ユーザーの両方によって書かれたファイルが含まれていました。
+
+最近のバージョンの renet は、以下の方法でこれを修正しています:
+
+- リポジトリごとのサンドボックスワークスペース（`/mnt/rediacc/.interim/sandbox/<repo>/`）を、グループ `rediacc` と set-group-ID ビット（モード `2775`）付きで作成するため、配下に書かれるすべてのファイルは正しいグループを継承します。
+- サンドボックスランタイム内で umask `002` を適用し、新しいファイルがグループ書き込み可能（`0664`/`0775`）で作成されるようにします。
+- 起動時に既存の `.vscode-server/` サブツリーを正規化するため、修正前からある古いファイルが自動的に修復されます。
+
+それでもパーミッションエラーが発生する場合は、マシン上のシェルから一度 `sudo systemctl restart rediacc-docker-<network-id>` でリポジトリの Docker デーモンを再起動して正規化パスを走らせてから、再度 `rdc vscode connect` を試してください。
+
+## renet のアップグレード後にデーモンが起動しない
+
+`renet daemon start-foreground` は起動のたびに、リポジトリの設定ディレクトリ内の `daemon.json` と `containerd.toml` を現在のテンプレートから書き換えるため、古いバージョンの renet で生成された設定を持つリポジトリも新しいフォーマットを自動的に取り込みます。マイグレーションコマンドを実行する必要はなく、systemd ユニットを手動で再生成する必要もありません。サービスを再起動するだけです:
+
+```bash
+sudo systemctl restart rediacc-docker-<network-id>
+```
+
+それでもユニットが起動に失敗する場合は、ジャーナルで具体的なエラーを確認してください:
+
+```bash
+sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
+```
 
 ## 間違ったDocker daemonにコンテナが作成される
 

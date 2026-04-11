@@ -31,7 +31,8 @@ import { configService } from './services/config-resources.js';
 import { outputService } from './services/output.js';
 import { getSubscriptionTokenState } from './services/subscription-auth.js';
 import { auditService } from './services/audit.js';
-import { telemetryService } from './services/telemetry.js';
+import { fetchOtlpCredentials } from './services/otlp-credentials.js';
+import { isTelemetryDisabled, telemetryService } from './services/telemetry.js';
 import type { OutputFormat } from './types/index.js';
 import { isAgentEnvironment } from './utils/agent-guard.js';
 import { setOutputFormat } from './utils/errors.js';
@@ -46,8 +47,9 @@ const commandContext = new Map<string, { startTime: number }>();
 
 // formatDuration removed — timeline handles all timing display
 
-// Initialize telemetry at startup (non-blocking)
-telemetryService.initialize({ serviceVersion: VERSION });
+// Telemetry is initialized in the preAction hook after `fetchOtlpCredentials()`
+// resolves so the OTel SDK is constructed with the correct per-region auth
+// header from the start. Before that, any telemetry calls are no-ops.
 
 /**
  * Get the full command name including parent commands.
@@ -150,6 +152,24 @@ cli
     }
     // Initialize or update i18n language
     await ensureI18n(opts.lang ?? (await configService.getLanguage()), opts.lang);
+
+    // Resolve per-region OTLP credentials (unauthenticated fetch, cached
+    // per-process). Must complete before `telemetryService.initialize()`
+    // so the OTel SDK gets the right auth header baked into its exporter.
+    //
+    // Skip entirely when the user opted out of telemetry via CI or
+    // `REDIACC_TELEMETRY_DISABLED=1` — no wasted network round-trip, and
+    // no credentials in memory to accidentally leak downstream.
+    if (!isTelemetryDisabled()) {
+      try {
+        const otlpCreds = await fetchOtlpCredentials();
+        telemetryService.setRuntimeOtlpCredentials(otlpCreds);
+      } catch {
+        // Any failure (network, malformed response) leaves the token null
+        // and telemetry disabled. Never blocks the actual command.
+      }
+    }
+    telemetryService.initialize({ serviceVersion: VERSION });
 
     // Start telemetry tracking for the command
     const commandName = getFullCommandName(actionCommand);

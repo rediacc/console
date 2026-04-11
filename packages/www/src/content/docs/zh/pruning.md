@@ -4,7 +4,8 @@ description: "删除孤立备份、过期快照和未使用的仓库镜像以回
 category: "Guides"
 order: 12
 language: zh
-sourceHash: "dfa21ca915423599"
+sourceHash: "9b28efe3bd8ca2dc"
+sourceCommit: "7874d5e2f0ca1262eb80ee7de79f20320d0ae2d7"
 ---
 
 # 清理
@@ -42,15 +43,29 @@ rdc storage prune --name my-s3 -m server-1 --grace-days 14
 
 ### 阶段 1：数据存储清理（始终执行）
 
-移除空的挂载目录、过期的锁文件和过期的 BTRFS 快照。
+移除删除仓库或机器级别重构淘汰命名约定后可能残留的各种资源。每一类别都会独立扫描，并且清理是一次幂等的过程，因此可以安全地重复执行 prune，最终会收敛到干净的数据存储状态。
+
+| 类别 | 清理内容 |
+|------|----------|
+| 空挂载目录 | 没有对应仓库镜像的 `mounts/<guid>/` 目录 |
+| 孤立的 immovable 目录 | 没有对应仓库镜像的 `immovable/<guid>/` 目录 |
+| 过期锁文件 | 已删除仓库的 `repositories/.lock-<guid>` |
+| 过期备份快照 | 被中止的备份运行遗留的 `.snapshot-*` 和 `.backup-*` |
+| 孤立的 VS Code 沙箱目录 | 不再在机器上活跃的仓库对应的 `.interim/sandbox/<name>` |
+| 孤立的 iptables 链 | 已删除网络对应的 `REDIACC_WILDCARD_<N>` 和 `DOCKER_ISOLATED_NET_<N>` 链 |
+| 孤立的 authorized_keys 条目 | `sandbox-gateway <repo> --guid <uuid>` 行，其 `--guid` 不再匹配任何活跃挂载目录 |
+
+authorized_keys 扫描会检查 `/home/*/.ssh/authorized_keys` 和 `/root/.ssh/authorized_keys`。只有当条目的 `--guid` 标签映射到一个存活的挂载目录 GUID 时才会保留，因此当前部署在该机器上的仓库始终会被保留，无论其名称是否恰好出现在磁盘的某个位置。在 renet 开始添加 `--guid` 标签之前写入的旧条目无法被验证，会始终被报告为孤立项。
 
 ```bash
-# Dry-run
+# Dry-run, shows what would be removed (no changes applied)
 rdc machine prune --name server-1 --dry-run
 
 # Execute cleanup
 rdc machine prune --name server-1
 ```
+
+> **级联清理。** 某些类别依赖于更早的类别。例如，删除空挂载目录可能会暴露更多沙箱孤立项，因为它们所依赖的挂载刚刚消失。再次运行 `rdc machine prune` 可以捕获这种级联效应并完成清理。当没有任何内容需要处理时，最后一次 dry-run 会以 `No orphaned resources found. Datastore is clean.` 结尾。
 
 ### 阶段 2：孤立的仓库镜像（可选启用）
 

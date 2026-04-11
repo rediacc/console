@@ -6,7 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: fr
-sourceHash: "44b8fdb73f86c659"
+sourceHash: "fdf074885af49980"
+sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
 ---
 
 # Limites et quotas
@@ -124,7 +125,8 @@ La migration à chaud via CRIU a les contraintes suivantes :
 - **Exigence de kernel** : Linux 6.1+ sur la machine source et la machine de destination.
 - **Mode réseau** : CRIU nécessite le mode réseau host. Les conteneurs utilisant des configurations réseau personnalisées ne peuvent pas être inclus dans le checkpoint.
 - **Mémoire** : La taille des données de checkpoint correspond à la mémoire résidente du processus. Les grands ensembles de données en mémoire (par exemple, une application Node.js mettant en cache 4 Go de données) produisent des fichiers de checkpoint de 4 Go.
-- **Connexions TCP** : Les connexions TCP actives sont préservées lors de la restauration sur la même machine. Lors d'une migration inter-machines, les connexions TCP doivent être rétablies par l'application après la restauration.
+- **Connexions TCP** : Les applications doivent tolérer la perte de connexions lors de la restauration. Les connexions TCP actives **ne sont pas** préservées, le processus restauré voit les sockets comme fermés et doit se reconnecter. Cela s'applique aux restaurations sur la même machine et inter-machines.
+- **Le fork en direct sur la même machine n'est pas pris en charge** : `rdc repo fork --parent X --tag Y --checkpoint` réussit à capturer le checkpoint, mais le `rdc repo up` suivant sur la même machine échoue avec `criu failed: type RESTORE errno 0` tant que le parent est encore en cours d'exécution. Cela est causé par les bugs CRIU upstream [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) et [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514) qui interagissent avec `network_mode: host`. Pour préserver l'état du processus sur place sur la même machine, utilisez plutôt `rdc repo down --checkpoint` + `rdc repo up`. Pour la migration en direct, utilisez `rdc repo push --checkpoint` vers une autre machine.
 
 ---
 

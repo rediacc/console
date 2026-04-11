@@ -1310,8 +1310,8 @@
         "failed": "Repository deletion failed"
       },
       "fork": {
-        "description": "Create a CoW (Copy-on-Write) fork of a repository. Fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) — it is a fully independent copy. Online forking is supported — the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking — the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking — it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically",
-        "descriptionShort": "Create a CoW fork of a repository (new GUID, networkId, IP range)",
+        "description": "Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically.",
+        "descriptionShort": "Near-instant CoW fork of a repository (new GUID, networkId, IP range)",
         "tagOption": "Tag for the fork (creates name:tag)",
         "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
         "upOption": "Mount and start services after forking (fork + mount + up in one command)",
@@ -2070,6 +2070,7 @@
       "sshCode130": "Connection terminated by user (Ctrl+C)",
       "sshCode255": "SSH connection failed - possible causes:\n    - Authentication failed (check SSH key permissions)\n    - Host key verification failed\n    - Network connection dropped\n    - Remote SSH service not running",
       "repoContextRequired": "Command requires repository context.\n\nDetected \"{{detected}}\" which needs DOCKER_HOST and repository environment variables.\nThese are only available when a repository is specified.\n\nInstead of:\n  rdc term connect -m {{machine}} -c \"{{command}}\"\n\nUse:\n  rdc term connect -m {{machine}} -r <repository> -c \"{{command}}\"",
+      "dockerComposeForbidden": "\"docker compose\" is not permitted in repository context.\n\nUse \"renet compose -- <args>\" instead so per-repo loopback IPs, host network injection, CRIU capabilities, and compose validation are applied. Running \"docker compose\" directly bypasses all of this and silently corrupts the deployment.\n\nFor orchestrated deploys, prefer: rdc repo up --name <repository> -m <machine>",
       "sshExitCode": "SSH exited with code {{code}}"
     },
     "vscode": {
@@ -2242,7 +2243,7 @@
     "opsBasic": "Minimal cluster (bridge + 1 worker)",
     "opsLite": "Skip VM provisioning (status only)",
     "opsSkipOrchestration": "Skip cluster orchestration",
-    "opsOS": "VM operating system (e.g., ubuntu-24.04, debian-12)",
+    "opsOS": "VM operating system (e.g., ubuntu-24.04, debian-13)",
     "opsSSHUser": "SSH username for VM connection"
   },
   "prompts": {

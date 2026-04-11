@@ -265,7 +265,7 @@ Provision VM cluster locally
 - `--lite` — Skip VM provisioning (status only)
 - `--skip-orchestration` — Skip cluster orchestration
 - `--backend <backend>` — Virtualization backend (kvm|qemu, auto-detected)
-- `--os <name>` — VM operating system (e.g., ubuntu-24.04, debian-12)
+- `--os <name>` — VM operating system (e.g., ubuntu-24.04, debian-13)
 - `--debug` — Enable debug output
 
 ### rdc ops down
@@ -491,7 +491,7 @@ List repositories on a machine
 
 ### rdc repo fork
 
-Create a CoW (Copy-on-Write) fork of a repository. Fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) — it is a fully independent copy. Online forking is supported — the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking — the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking — it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically
+Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically.
 
 **Options:**
 
@@ -1170,11 +1170,11 @@ Clear stored subscription token
 
 ### rdc subscription status
 
-Show subscription, machine activation, and repo license status
+Show subscription, machine slots, and repo license status
 
 ### rdc subscription activation status
 
-Show machine activation status for one machine
+Show machine slot status for one machine
 
 **Options:**
 
@@ -1190,7 +1190,7 @@ Show installed repo licenses on a machine
 
 ### rdc subscription refresh activation
 
-Refresh machine activation on a remote machine
+Refresh repo licenses on a remote machine
 
 **Options:**
 

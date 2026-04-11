@@ -2154,6 +2154,7 @@
     "teamRequired": "Le nom de l'équipe est requis. Utilisez --team ou définissez un contexte.",
     "term": {
       "connectivityFailed": "Impossible d'atteindre {{host}}:{{port}}. {{error}}\n\nDépannage :\n  - Vérifiez que la machine est allumée et connectée au réseau\n  - Vérifiez que l'adresse IP est correcte dans le coffre de la machine\n  - Assurez-vous que le port {{port}} n'est pas bloqué par un pare-feu\n  - Essayez de faire un ping à la machine : ping {{host}}",
+      "dockerComposeForbidden": "\"docker compose\" n'est pas autorisé dans le contexte du dépôt.\n\nUtilisez plutôt \"renet compose -- <args>\" afin que les IP loopback par dépôt, l'injection réseau de l'hôte, les capacités CRIU et la validation du compose soient appliquées. Exécuter \"docker compose\" directement contourne tout cela et corrompt silencieusement le déploiement.\n\nPour les déploiements orchestrés, préférez : rdc repo up --name <repository> -m <machine>",
       "launchFailed": "Impossible de lancer le terminal : {{error}}",
       "noHostKey": "La machine '{{machine}}' n'a pas de clé d'hôte configurée dans le coffre",
       "noIpAddress": "La machine '{{machine}}' n'a pas d'adresse IP configurée",

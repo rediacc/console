@@ -25,7 +25,6 @@ const result = await esbuild.build({
   plugins: [nativeModulesPlugin],
   logLevel: 'silent',
   define: {
-    '__OTLP_AUTH_TOKEN__': JSON.stringify(process.env.OTLP_AUTH_TOKEN || ''),
     '__CLI_VERSION__': JSON.stringify(process.env.CLI_VERSION || '0.0.0-dev'),
   },
 });
