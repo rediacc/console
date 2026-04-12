@@ -178,7 +178,7 @@ rdc config machine set-ceph -m rediacc11 --pool rediacc_rbd_pool --image ds-prod
 rdc datastore init -m rediacc11 --backend ceph --size 100G --force
 
 # 3. Deploy repos as usual
-rdc repo up --name my-app -m rediacc11 --mount
+rdc repo up --name my-app -m rediacc11
 
 # 4. Instant fork for testing (< 2 seconds, zero data transfer)
 rdc datastore fork -m rediacc11 --to rediacc12

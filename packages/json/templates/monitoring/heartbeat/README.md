@@ -96,7 +96,7 @@ rdc repo up --name heartbeat-app -m source
 rdc repo push --name heartbeat-app -m source --to-machine target --checkpoint
 
 # Restore on target
-rdc repo up --name heartbeat-app -m target --mount
+rdc repo up --name heartbeat-app -m target
 
 # Verify counter continues (not restart from 1)
 rdc term connect -m target -r heartbeat-app -c "docker logs heartbeat_app --tail 10"

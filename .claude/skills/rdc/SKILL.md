@@ -84,12 +84,12 @@ For first-time setup (new VMs), see prerequisites in [ops.md](ops.md) and [confi
 ```bash
 # Migration (same identity)
 rdc repo push --name <repo> -m <source> --to-machine <target>
-rdc repo up --name <repo> -m <target> --mount
+rdc repo up --name <repo> -m <target>
 
 # Independent fork to another machine (--grand passes parent's encryption key)
 rdc repo fork --parent <repo> --tag <tag> -m <source>
 rdc repo push --name <repo>:<tag> -m <source> --to-machine <target>
-rdc repo up --name <repo>:<tag> -m <target> --mount
+rdc repo up --name <repo>:<tag> -m <target>
 ```
 
 ## Quick-start: Live migration with CRIU
@@ -99,7 +99,7 @@ rdc repo up --name <repo>:<tag> -m <target> --mount
 rdc repo push --name <repo> -m <source> --to-machine <target> --checkpoint
 
 # Restore on target (auto-detects checkpoint, resumes process state)
-rdc repo up --name <repo> -m <target> --mount
+rdc repo up --name <repo> -m <target>
 ```
 
 ## Quick-start: Same-machine fork with CRIU

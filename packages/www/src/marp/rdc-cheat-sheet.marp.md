@@ -148,7 +148,7 @@ rdc repo create --name <repo> -m <machine> --size 10G
 
 # Start services (Rediaccfile orchestration)
 rdc repo up -m <machine>
-rdc repo up -m <machine> --mount        # mount first
+rdc repo up -m <machine>
 
 # Stop services
 rdc repo down -m <machine>
@@ -295,7 +295,7 @@ rdc repo pull --name <repo> -m <machine> --from <storage>
 rdc repo backup list -m <machine> --from <storage>
 
 # Configure backup schedule
-rdc config backup-strategy set \
+rdc config backup-strategy set --name primary \
   --cron "0 2 * * *" \
   --destination <storage> \
   --enable

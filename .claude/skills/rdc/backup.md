@@ -50,7 +50,7 @@ CRIU (Checkpoint/Restore In Userspace) captures running process memory state. Th
 rdc repo push --name <repo> -m <source> --to-machine <target> --checkpoint
 
 # On target: restore (auto-detects checkpoint data, restores process state)
-rdc repo up --name <repo> -m <target> --mount
+rdc repo up --name <repo> -m <target>
 ```
 
 **What's preserved**: Process memory, open file descriptors, in-memory variables, timers. The app continues from the exact instruction where it was checkpointed.
@@ -73,7 +73,7 @@ rdc repo up --name <parent>:<tag> -m <machine>
 # Fork with checkpoint, then push to target
 rdc repo fork --parent <parent> --tag <tag> -m <source> --checkpoint
 rdc repo push --name <parent>:<tag> -m <source> --to-machine <target>
-rdc repo up --name <parent>:<tag> -m <target> --mount
+rdc repo up --name <parent>:<tag> -m <target>
 ```
 
 ### Save/restore cycle (stop and resume later)
@@ -112,8 +112,8 @@ rdc repo up --name <repo> -m <machine>                    # Auto-detects checkpo
 ### Configure backup strategy
 Multiple destinations can be configured with different schedules:
 ```bash
-rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
-rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+rdc config backup-strategy set --name daily --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name offsite --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 ### Show backup strategy
@@ -150,7 +150,7 @@ rdc repo fork --parent <parent> --tag <tag> -m <source-machine>
 rdc repo push --name <parent>:<tag> -m <source-machine> --to-machine <target-machine>
 
 # 3. Deploy on target (fork inherits parent's credential automatically)
-rdc repo up --name <parent>:<tag> -m <target-machine> --mount
+rdc repo up --name <parent>:<tag> -m <target-machine>
 ```
 
 **Note**: The CLI automatically resolves the parent repo's LUKS credential for forks. This is handled internally because forks inherit the parent's encryption key.
@@ -161,7 +161,7 @@ rdc repo up --name <parent>:<tag> -m <target-machine> --mount
 rdc repo push --name <repo> -m <source-machine> --to-machine <target-machine>
 
 # 2. Deploy on target
-rdc repo up --name <repo> -m <target-machine> --mount
+rdc repo up --name <repo> -m <target-machine>
 ```
 
 ## Delta transfer for repo push
