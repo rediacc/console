@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1779,
-    "sourceCommit": "847bf3b31b7b393f0c35d9c8208ee9b078ce1246"
+    "keyCount": 1784,
+    "sourceCommit": "5c97ef070ea0c474b03651ceea03433b3f48abcd"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -183,7 +183,10 @@
     "commands.config.backupStrategy.set.optionName": "cf3f47c9",
     "commands.config.backupStrategy.set.optionStorage": "0c84afae",
     "commands.config.backupStrategy.set.saved": "d837b30f",
+    "commands.config.backupStrategy.set.storageRequired": "a283cf12",
     "commands.config.backupStrategy.show.description": "4b9d342d",
+    "commands.config.backupStrategy.show.destinationsHeader": "3836dea0",
+    "commands.config.backupStrategy.show.noDestinations": "90799d3d",
     "commands.config.backupStrategy.show.notConfigured": "a13d88bf",
     "commands.config.backupStrategy.show.notFound": "df870398",
     "commands.config.backupStrategy.show.optionName": "2b8f06fd",
@@ -465,6 +468,7 @@
     "commands.machine.backup.cancel.optionStrategy": "623e261a",
     "commands.machine.backup.description": "d2795485",
     "commands.machine.backup.list.description": "bb9e6f73",
+    "commands.machine.backup.list.noMachines": "debd174c",
     "commands.machine.backup.now.description": "679cb744",
     "commands.machine.backup.now.optionStrategy": "932621cf",
     "commands.machine.backup.schedule.description": "03a33c04",
@@ -1518,6 +1522,7 @@
     "errors.regionRequired": "38dd1ef5",
     "errors.registrationFailed": "0c71b54b",
     "errors.remoteNotFound": "cbf7edd2",
+    "errors.repositoryAlreadyMounted": "21c212d5",
     "errors.repositoryNotFound": "920337ed",
     "errors.repositoryRequired": "bce6f01a",
     "errors.resourceNotFound": "4f504881",

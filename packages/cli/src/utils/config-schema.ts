@@ -39,7 +39,7 @@ function isValidCronField(field: string, min: number, max: number): boolean {
   });
 }
 
-function isValidCron(expr: string): boolean {
+export function isValidCron(expr: string): boolean {
   const parts = expr.trim().split(/\s+/);
   if (parts.length !== 5) return false;
   return parts.every((field, i) => isValidCronField(field, CRON_RANGES[i][0], CRON_RANGES[i][1]));

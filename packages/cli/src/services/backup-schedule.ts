@@ -11,7 +11,7 @@
  * - Hot mode: snapshot while running (default)
  */
 
-import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { BACKUP_DEFAULTS, DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { buildRcloneArgs } from '@rediacc/shared/queue-vault';
 import { isSensitiveKey } from '@rediacc/shared/telemetry';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
@@ -79,7 +79,7 @@ function cronToOnCalendar(cron: string): string {
  * with [REDACTED]. Safe for dry-run output, debug logging, and agent context.
  */
 function sanitizeBackupOutput(content: string): string {
-  return content.replace(
+  return content.replaceAll(
     /--rclone-param '([^=]+)=([^']*)'/g,
     (_match, key: string, _value: string) => {
       if (isSensitiveKey(key)) {
@@ -88,6 +88,53 @@ function sanitizeBackupOutput(content: string): string {
       return _match;
     }
   );
+}
+
+/** Build a single renet backup command for one destination. */
+function buildDestinationCommand(
+  dest: BackupStrategyDestination,
+  rcloneArgs: { remote: string; params: string[] },
+  strategy: BackupStrategyConfig,
+  mode: string,
+  datastore: string,
+  remoteRenetPath: string
+): string | undefined {
+  const backendMatch = /^:([^:]+):(.*)/.exec(rcloneArgs.remote);
+  if (!backendMatch) return undefined;
+  const [, backend, remotePath] = backendMatch;
+
+  const pathParts = remotePath.split('/');
+  const bucket = pathParts[0] ?? '';
+  const folder = pathParts.slice(1).join('/');
+
+  const parts = [
+    `${remoteRenetPath} backup sync push`,
+    `--datastore ${datastore}`,
+    `--rclone-backend ${backend}`,
+    `--mode ${mode}`,
+  ];
+
+  if (bucket) parts.push(`--rclone-bucket ${bucket}`);
+  if (folder) parts.push(`--rclone-folder ${folder}`);
+
+  for (const param of rcloneArgs.params) {
+    const stripped = param.replace(/^--/, '');
+    parts.push(`--rclone-param '${stripped}'`);
+  }
+
+  const bwlimit = dest.bandwidthLimit ?? strategy.bandwidthLimit;
+  if (bwlimit) {
+    parts.push(`--rclone-param 'bwlimit=${bwlimit}'`);
+  }
+
+  if (strategy.include?.length) {
+    parts.push(`--include-repo ${strategy.include.join(',')}`);
+  }
+  if (strategy.exclude?.length) {
+    parts.push(`--exclude-repo ${strategy.exclude.join(',')}`);
+  }
+
+  return parts.join(' ');
 }
 
 /**
@@ -101,49 +148,22 @@ function buildBackupCommands(
   datastore: string,
   remoteRenetPath: string
 ): string[] {
-  const mode = strategy.mode ?? 'hot';
+  const mode = strategy.mode ?? BACKUP_DEFAULTS.MODE;
   const commands: string[] = [];
 
   for (const dest of destinations) {
     const rcloneArgs = rcloneArgsByDest.get(dest.name);
     if (!rcloneArgs) continue;
 
-    const backendMatch = /^:([^:]+):(.*)/.exec(rcloneArgs.remote);
-    if (!backendMatch) continue;
-    const [, backend, remotePath] = backendMatch;
-
-    const pathParts = remotePath.split('/');
-    const bucket = pathParts[0] ?? '';
-    const folder = pathParts.slice(1).join('/');
-
-    const parts = [
-      `${remoteRenetPath} backup sync push`,
-      `--datastore ${datastore}`,
-      `--rclone-backend ${backend}`,
-      `--mode ${mode}`,
-    ];
-
-    if (bucket) parts.push(`--rclone-bucket ${bucket}`);
-    if (folder) parts.push(`--rclone-folder ${folder}`);
-
-    for (const param of rcloneArgs.params) {
-      const stripped = param.replace(/^--/, '');
-      parts.push(`--rclone-param '${stripped}'`);
-    }
-
-    const bwlimit = dest.bandwidthLimit ?? strategy.bandwidthLimit;
-    if (bwlimit) {
-      parts.push(`--rclone-param 'bwlimit=${bwlimit}'`);
-    }
-
-    if (strategy.include?.length) {
-      parts.push(`--include-repo ${strategy.include.join(',')}`);
-    }
-    if (strategy.exclude?.length) {
-      parts.push(`--exclude-repo ${strategy.exclude.join(',')}`);
-    }
-
-    commands.push(parts.join(' '));
+    const cmd = buildDestinationCommand(
+      dest,
+      rcloneArgs,
+      strategy,
+      mode,
+      datastore,
+      remoteRenetPath
+    );
+    if (cmd) commands.push(cmd);
   }
 
   return commands;
@@ -274,7 +294,7 @@ async function deployStrategyUnits(
   if (options.debug) {
     outputService.info(`Strategy: ${strategyName}`);
     outputService.info(`Schedule: ${strategy.schedule} -> OnCalendar=${onCalendar}`);
-    outputService.info(`Mode: ${strategy.mode ?? 'hot'}`);
+    outputService.info(`Mode: ${strategy.mode ?? BACKUP_DEFAULTS.MODE}`);
     outputService.info(`Destinations: ${enabledDests.map((d) => d.name).join(', ')}`);
   }
 
@@ -345,6 +365,77 @@ async function deployStrategyUnits(
   outputService.info(`Deployed ${unitName}.timer (${onCalendar})`);
 }
 
+/** Validate no duplicate destination names across strategies. */
+function assertNoDuplicateDestinations(strategies: { config: BackupStrategyConfig }[]): void {
+  const destNames = new Set<string>();
+  for (const { config } of strategies) {
+    for (const dest of config.destinations) {
+      if (destNames.has(dest.name)) {
+        throw new Error(
+          `Duplicate destination name "${dest.name}" across strategies. Each destination name must be unique.`
+        );
+      }
+      destNames.add(dest.name);
+    }
+  }
+}
+
+/** Load enabled strategies from config and validate them. */
+async function loadAndValidateStrategies(
+  strategyNames: string[]
+): Promise<{ name: string; config: BackupStrategyConfig }[]> {
+  const strategies: { name: string; config: BackupStrategyConfig }[] = [];
+  for (const stratName of strategyNames) {
+    const config = await configService.getBackupStrategy(stratName);
+    if (!config) {
+      throw new Error(`Backup strategy "${stratName}" not found in config`);
+    }
+    if (config.enabled === false) continue;
+    strategies.push({ name: stratName, config });
+  }
+
+  if (strategies.length === 0) {
+    throw new Error('All bound backup strategies are disabled');
+  }
+
+  assertNoDuplicateDestinations(strategies);
+  return strategies;
+}
+
+/** Preview generated systemd units without deploying. */
+async function previewDryRun(
+  strategies: { name: string; config: BackupStrategyConfig }[],
+  datastore: string,
+  machineName: string
+): Promise<void> {
+  outputService.info(
+    `Dry-run: would deploy ${strategies.length} strategy timer(s) to ${machineName}`
+  );
+  for (const { name, config } of strategies) {
+    const enabledDests = config.destinations.filter((d) => d.enabled !== false);
+    const rcloneArgsByDest = new Map<string, { remote: string; params: string[] }>();
+    for (const dest of enabledDests) {
+      const storageCfg = await configService.getStorage(dest.storage);
+      const args = buildRcloneArgs(storageCfg.vaultContent);
+      rcloneArgsByDest.set(dest.name, args);
+    }
+    const onCalendar = cronToOnCalendar(config.schedule);
+    const serviceContent = generateServiceUnit(
+      name,
+      config,
+      enabledDests,
+      rcloneArgsByDest,
+      datastore,
+      REMOTE_RENET_PATH
+    );
+    const timerContent = generateTimerUnit(name, onCalendar);
+    outputService.info(`\n--- rediacc-backup-${name}.service ---`);
+    outputService.info(sanitizeBackupOutput(serviceContent));
+    outputService.info(`--- rediacc-backup-${name}.timer ---`);
+    outputService.info(timerContent);
+  }
+}
+
 /**
  * Push backup schedule to a remote machine.
  *
@@ -369,64 +460,11 @@ export async function pushBackupSchedule(
     );
   }
 
-  // Load and validate all strategies
-  const strategies: { name: string; config: BackupStrategyConfig }[] = [];
-  for (const name of strategyNames) {
-    const config = await configService.getBackupStrategy(name);
-    if (!config) {
-      throw new Error(`Backup strategy "${name}" not found in config`);
-    }
-    if (config.enabled === false) continue;
-    strategies.push({ name, config });
-  }
-
-  if (strategies.length === 0) {
-    throw new Error('All bound backup strategies are disabled');
-  }
-
-  // Validate no duplicate destination names across strategies
-  const destNames = new Set<string>();
-  for (const { name, config } of strategies) {
-    for (const dest of config.destinations) {
-      if (destNames.has(dest.name)) {
-        throw new Error(
-          `Duplicate destination name "${dest.name}" across strategies. Each destination name must be unique.`
-        );
-      }
-      destNames.add(dest.name);
-    }
-  }
-
+  const strategies = await loadAndValidateStrategies(strategyNames);
   const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
 
-  // Dry-run: preview generated units without deploying
   if (options.dryRun) {
-    outputService.info(
-      `Dry-run: would deploy ${strategies.length} strategy timer(s) to ${machineName}`
-    );
-    for (const { name, config } of strategies) {
-      const enabledDests = config.destinations.filter((d) => d.enabled !== false);
-      const rcloneArgsByDest = new Map<string, { remote: string; params: string[] }>();
-      for (const dest of enabledDests) {
-        const storageCfg = await configService.getStorage(dest.storage);
-        const args = buildRcloneArgs(storageCfg.vaultContent);
-        rcloneArgsByDest.set(dest.name, args);
-      }
-      const onCalendar = cronToOnCalendar(config.schedule);
-      const serviceContent = generateServiceUnit(
-        name,
-        config,
-        enabledDests,
-        rcloneArgsByDest,
-        datastore,
-        REMOTE_RENET_PATH
-      );
-      const timerContent = generateTimerUnit(name, onCalendar);
-      outputService.info(`\n--- rediacc-backup-${name}.service ---`);
-      outputService.info(sanitizeBackupOutput(serviceContent));
-      outputService.info(`--- rediacc-backup-${name}.timer ---`);
-      outputService.info(timerContent);
-    }
+    await previewDryRun(strategies, datastore, machineName);
     return;
   }
 

@@ -1,4 +1,4 @@
-import { DEFAULTS } from '@rediacc/shared/config';
+import { BACKUP_DEFAULTS, DEFAULTS } from '@rediacc/shared/config';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
@@ -24,12 +24,51 @@ function resolveEnabledFlag(enable?: boolean, disable?: boolean): boolean | unde
   return undefined;
 }
 
-/**
- * Apply backup-strategy set options.
- * --name is always required (strategy name).
- * Without --destination: sets strategy-level fields (schedule, mode, bwlimit, include/exclude).
- * With --destination: upserts a destination within the strategy.
- */
+/** Upsert a destination within a named backup strategy. */
+async function upsertBackupDestination(
+  strategyName: string,
+  destinationName: string,
+  storage: string | undefined,
+  enabled: boolean | undefined,
+  bwlimit: string | undefined
+): Promise<void> {
+  const existing = await configService.getBackupStrategy(strategyName);
+  const existingDest = existing?.destinations.find((d) => d.name === destinationName);
+  const storageName = storage ?? existingDest?.storage;
+  if (!storageName) {
+    throw new ValidationError(t('commands.config.backupStrategy.set.storageRequired'));
+  }
+  await assertStorageExists(storageName);
+  const dest = parseConfig(
+    BackupDestinationSchema,
+    { name: destinationName, storage: storageName, enabled, bandwidthLimit: bwlimit },
+    'backup destination'
+  );
+  await configService.addBackupDestination(strategyName, dest);
+}
+
+/** Build strategy-level config update from CLI options. */
+function buildStrategyUpdate(
+  opts: { cron?: string; mode?: string; bwlimit?: string; include?: string; exclude?: string },
+  enabled: boolean | undefined
+): Partial<BackupStrategyConfig> {
+  const u: Partial<BackupStrategyConfig> = {};
+  if (opts.cron !== undefined) u.schedule = opts.cron;
+  if (opts.mode !== undefined) u.mode = opts.mode as 'hot' | 'cold';
+  if (enabled !== undefined) u.enabled = enabled;
+  if (opts.bwlimit !== undefined) u.bandwidthLimit = opts.bwlimit;
+  if (opts.include !== undefined) {
+    u.include = opts.include.split(',').map((s) => s.trim());
+    u.exclude = undefined;
+  }
+  if (opts.exclude !== undefined) {
+    u.exclude = opts.exclude.split(',').map((s) => s.trim());
+    u.include = undefined;
+  }
+  return u;
+}
+
+/** Apply backup-strategy set options. With --destination: upserts a destination. Without: sets strategy-level fields. */
 async function applyBackupStrategyOptions(options: {
   name: string;
   destination?: string;
@@ -43,46 +82,22 @@ async function applyBackupStrategyOptions(options: {
   disable?: boolean;
 }): Promise<void> {
   const enabled = resolveEnabledFlag(options.enable, options.disable);
-
   if (options.destination) {
-    // Destination-level: upsert a destination within the named strategy
-    const existing = await configService.getBackupStrategy(options.name);
-    const existingDest = existing?.destinations.find((d) => d.name === options.destination);
-    const storageName = options.storage ?? existingDest?.storage;
-    if (!storageName) {
-      throw new ValidationError(
-        `--storage is required when creating a new destination. Use: --storage <storage-name>`
-      );
-    }
-    await assertStorageExists(storageName);
-    const dest = parseConfig(
-      BackupDestinationSchema,
-      { name: options.destination, storage: storageName, enabled, bandwidthLimit: options.bwlimit },
-      'backup destination'
+    await upsertBackupDestination(
+      options.name,
+      options.destination,
+      options.storage,
+      enabled,
+      options.bwlimit
     );
-    await configService.addBackupDestination(options.name, dest);
   } else {
-    // Strategy-level: set globals (schedule, mode, bwlimit, include/exclude)
-    const update: Partial<BackupStrategyConfig> = {};
-    if (options.cron !== undefined) update.schedule = options.cron;
-    if (options.mode !== undefined) update.mode = options.mode as 'hot' | 'cold';
-    if (enabled !== undefined) update.enabled = enabled;
-    if (options.bwlimit !== undefined) update.bandwidthLimit = options.bwlimit;
-    if (options.include !== undefined) {
-      update.include = options.include.split(',').map((s) => s.trim());
-      update.exclude = undefined; // clear exclude when setting include
-    }
-    if (options.exclude !== undefined) {
-      update.exclude = options.exclude.split(',').map((s) => s.trim());
-      update.include = undefined; // clear include when setting exclude
-    }
-    await configService.setBackupStrategy(options.name, update);
+    await configService.setBackupStrategy(options.name, buildStrategyUpdate(options, enabled));
   }
 }
 
 /** Display a single backup strategy. */
 function displayStrategy(name: string, strategy: BackupStrategyConfig): void {
-  const mode = strategy.mode ?? 'hot';
+  const mode = strategy.mode ?? BACKUP_DEFAULTS.MODE;
   outputService.info(`Strategy: ${name}`);
   outputService.info(`  Schedule: ${strategy.schedule}`);
   outputService.info(`  Mode: ${mode}`);
@@ -97,9 +112,9 @@ function displayStrategy(name: string, strategy: BackupStrategyConfig): void {
     outputService.info(`  Exclude: ${strategy.exclude.join(', ')}`);
   }
   if (strategy.destinations.length === 0) {
-    outputService.info('  Destinations: (none)');
+    outputService.info(t('commands.config.backupStrategy.show.noDestinations'));
   } else {
-    outputService.info('  Destinations:');
+    outputService.info(t('commands.config.backupStrategy.show.destinationsHeader'));
     for (const dest of strategy.destinations) {
       const bwlimit = dest.bandwidthLimit ?? strategy.bandwidthLimit ?? '-';
       const enabled = dest.enabled !== false;
@@ -507,7 +522,7 @@ ${t('help.examples')}
         }
         for (const name of names) {
           const s = strategies[name];
-          const mode = s.mode ?? 'hot';
+          const mode = s.mode ?? BACKUP_DEFAULTS.MODE;
           const destCount = s.destinations.length;
           const enabled = s.enabled !== false;
           outputService.info(

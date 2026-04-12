@@ -307,10 +307,13 @@
           "optionMode": "バックアップモード: \"hot\"（ダウンタイムなし）または \"cold\"（停止、スナップショット、再起動）",
           "optionName": "戦略名（必須）",
           "optionStorage": "ストレージ設定名（rclone資格情報）",
-          "saved": "バックアップ戦略の設定を保存しました"
+          "saved": "バックアップ戦略の設定を保存しました",
+          "storageRequired": "--storage is required when creating a new destination. Use: --storage <storage-name>"
         },
         "show": {
           "description": "バックアップ戦略の詳細を表示",
+          "destinationsHeader": "  Destinations:",
+          "noDestinations": "  Destinations: (none)",
           "notConfigured": "バックアップ戦略が設定されていません",
           "notFound": "バックアップ戦略 \"{{name}}\" が見つかりません",
           "optionName": "戦略名（省略時はすべて表示）"
@@ -715,7 +718,8 @@
         },
         "description": "マシンバックアップ管理",
         "list": {
-          "description": "すべてのマシンに紐づくバックアップ戦略を一覧表示"
+          "description": "すべてのマシンに紐づくバックアップ戦略を一覧表示",
+          "noMachines": "No machines configured"
         },
         "now": {
           "description": "リモートマシンで今すぐバックアップを実行",
@@ -2194,6 +2198,7 @@
     "regionRequired": "リージョン名が必要です。--region を使用するか、コンテキストを設定してください。",
     "registrationFailed": "登録に失敗しました",
     "remoteNotFound": "\"{{name}}\"は既知のマシンまたはストレージではありません。マシン: {{machines}}。ストレージ: {{storages}}",
+    "repositoryAlreadyMounted": "Repository \"{{name}}\" is already mounted on \"{{machine}}\". Migrating over a live repo would corrupt it. Run first: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "リポジトリ \"{{name}}\" が見つかりません",
     "repositoryRequired": "リポジトリ名が必要です。--repository <name> を使用してください。",
     "resourceNotFound": "{{resource}} が見つかりません",

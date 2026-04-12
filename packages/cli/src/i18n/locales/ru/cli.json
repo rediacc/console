@@ -307,10 +307,13 @@
           "optionMode": "Режим резервного копирования: \"hot\" (без простоя) или \"cold\" (остановка, снимок, перезапуск)",
           "optionName": "Имя стратегии (обязательно)",
           "optionStorage": "Имя конфигурации хранилища (учётные данные rclone)",
-          "saved": "Конфигурация стратегии резервного копирования сохранена"
+          "saved": "Конфигурация стратегии резервного копирования сохранена",
+          "storageRequired": "--storage is required when creating a new destination. Use: --storage <storage-name>"
         },
         "show": {
           "description": "Показать детали стратегии резервного копирования",
+          "destinationsHeader": "  Destinations:",
+          "noDestinations": "  Destinations: (none)",
           "notConfigured": "Стратегии резервного копирования не настроены",
           "notFound": "Стратегия резервного копирования \"{{name}}\" не найдена",
           "optionName": "Имя стратегии (показывает все, если не указано)"
@@ -715,7 +718,8 @@
         },
         "description": "Управление резервным копированием машины",
         "list": {
-          "description": "Показать стратегии резервного копирования для всех машин"
+          "description": "Показать стратегии резервного копирования для всех машин",
+          "noMachines": "No machines configured"
         },
         "now": {
           "description": "Немедленно запустить резервное копирование на удалённой машине",
@@ -2194,6 +2198,7 @@
     "regionRequired": "Требуется имя региона. Используйте --region или установите контекст.",
     "registrationFailed": "Регистрация не удалась",
     "remoteNotFound": "\"{{name}}\" не является известной машиной или хранилищем. Машины: {{machines}}. Хранилища: {{storages}}",
+    "repositoryAlreadyMounted": "Repository \"{{name}}\" is already mounted on \"{{machine}}\". Migrating over a live repo would corrupt it. Run first: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "Репозиторий \"{{name}}\" не найден",
     "repositoryRequired": "Требуется имя репозитория. Используйте --repository <name>.",
     "resourceNotFound": "{{resource}} не найден",

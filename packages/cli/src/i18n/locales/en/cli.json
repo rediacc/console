@@ -668,7 +668,8 @@
           "optionExclude": "Exclude these repos from backup (comma-separated names)",
           "optionEnable": "Enable the strategy or destination",
           "optionDisable": "Disable the strategy or destination",
-          "saved": "Backup strategy configuration saved"
+          "saved": "Backup strategy configuration saved",
+          "storageRequired": "--storage is required when creating a new destination. Use: --storage <storage-name>"
         },
         "remove": {
           "description": "Remove a backup strategy or destination",
@@ -681,9 +682,11 @@
         },
         "show": {
           "description": "Show backup strategy details",
-          "optionName": "Strategy name (shows all if omitted)",
+          "destinationsHeader": "  Destinations:",
+          "noDestinations": "  Destinations: (none)",
           "notConfigured": "No backup strategies configured",
-          "notFound": "Backup strategy \"{{name}}\" not found"
+          "notFound": "Backup strategy \"{{name}}\" not found",
+          "optionName": "Strategy name (shows all if omitted)"
         }
       }
     },
@@ -862,7 +865,8 @@
       "backup": {
         "description": "Machine backup management (schedule, trigger, status)",
         "list": {
-          "description": "List backup strategies bound to all machines"
+          "description": "List backup strategies bound to all machines",
+          "noMachines": "No machines configured"
         },
         "schedule": {
           "description": "Deploy backup schedule to a remote machine (systemd timers)",
@@ -2077,6 +2081,7 @@
     "invalidPriorityMin": "Invalid priority-min value. Must be between 1 and 5.",
     "invalidPriorityMax": "Invalid priority-max value. Must be between 1 and 5.",
     "passwordsMismatch": "Passwords do not match",
+    "repositoryAlreadyMounted": "Repository \"{{name}}\" is already mounted on \"{{machine}}\". Migrating over a live repo would corrupt it. Run first: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "Repository \"{{name}}\" not found",
     "cannotDeleteGrandRepo": "Cannot delete grand repository: {{reason}}",
     "affectedChildClones": ". Affected child clones: {{clones}}. Delete or promote child clones first.",

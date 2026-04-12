@@ -10,6 +10,7 @@
  * Optional --provision to auto-create the target machine via cloud provider.
  */
 
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
@@ -74,7 +75,7 @@ async function executePush(
     quietSpinners: true,
   });
   if (!result.success) {
-    throw new Error(`backup_push failed: ${result.error ?? 'unknown error'}`);
+    throw new Error(`backup_push failed: ${result.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`);
   }
 }
 
@@ -95,73 +96,48 @@ async function executeQuiet(
     quietSpinners: true,
   });
   if (!result.success) {
-    throw new Error(`${functionName} failed: ${result.error ?? 'unknown error'}`);
+    throw new Error(`${functionName} failed: ${result.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`);
   }
 }
 
-async function migrateRepo(options: MigrateOptions): Promise<void> {
-  const { name, from, to, provision, bwlimit, checkpoint, skipDns, debug } = options;
-  const migrationStart = Date.now();
-
-  await assertCommandPolicy(CMD.REPO_PUSH, name);
-
-  // Validate repo exists in config
-  const repoConfig = await configService.getRepository(name);
-  if (!repoConfig) {
-    throw new ValidationError(t('errors.repositoryNotFound', { name }));
-  }
-
-  // Phase 0: Provision target if needed
-  if (provision) {
-    await withSpinner(
-      t('commands.repo.migrate.provisioning', { machine: to, provider: provision }),
-      () => autoProvisionTarget(to, provision, from, !!debug),
-      `Target ${to} provisioned`
+/** Check that the repo is not already mounted on the target machine. */
+async function assertNotMountedOnTarget(
+  repoName: string,
+  repoGuid: string,
+  targetMachine: string
+): Promise<void> {
+  const targetCheck = await localExecutorService.execute({
+    functionName: 'repository_list',
+    machineName: targetMachine,
+    params: {},
+    captureOutput: true,
+  });
+  if (!targetCheck.success || !targetCheck.stdout) return;
+  try {
+    const repos = JSON.parse(targetCheck.stdout);
+    const mounted = (repos as { guid: string; mounted: boolean }[]).find(
+      (r) => r.guid === repoGuid && r.mounted
     );
-  }
-
-  // Validate both machines exist
-  const localConfig = await configService.getLocalConfig();
-  const sourceMachine = localConfig.machines[from];
-  const targetMachine = localConfig.machines[to];
-  if (!sourceMachine) {
-    throw new ValidationError(`Source machine "${from}" not found in config`);
-  }
-  if (!targetMachine) {
-    throw new ValidationError(
-      `Target machine "${to}" not found in config. Use --provision to auto-create it`
-    );
-  }
-
-  // Safety: check if the repo is already mounted on the target machine.
-  if (from !== to) {
-    const targetCheck = await localExecutorService.execute({
-      functionName: 'repository_list',
-      machineName: to,
-      params: {},
-      captureOutput: true,
-    });
-    if (targetCheck.success && targetCheck.stdout) {
-      try {
-        const repos = JSON.parse(targetCheck.stdout);
-        const mounted = (repos as { guid: string; mounted: boolean }[]).find(
-          (r) => r.guid === repoConfig.repositoryGuid && r.mounted
-        );
-        if (mounted) {
-          throw new ValidationError(
-            `Repository "${name}" is already mounted on "${to}". ` +
-              `Migrating over a live repo would corrupt it.\n` +
-              `Run first: rdc repo down --name ${name} -m ${to} --unmount`
-          );
-        }
-      } catch (e) {
-        if (e instanceof ValidationError) throw e;
-      }
+    if (mounted) {
+      throw new ValidationError(
+        t('errors.repositoryAlreadyMounted', { name: repoName, machine: targetMachine })
+      );
     }
+  } catch (e) {
+    if (e instanceof ValidationError) throw e;
   }
+}
 
-  // ── Phase 1: Hot pre-copy ─────────────────────────────────────────
-  outputService.info('\nPhase 1: Hot pre-copy (source stays running)');
+/** Execute Phase 1: hot pre-copy (bulk transfer while source stays running). */
+async function executePhase1(
+  name: string,
+  repoConfig: Awaited<ReturnType<typeof configService.getRepository>> & object,
+  from: string,
+  to: string,
+  bwlimit: string | undefined,
+  debug: boolean | undefined
+): Promise<void> {
+  outputService.info(`\n${t('commands.repo.migrate.phase1')}`);
 
   const pushParams = buildPushParams(name, repoConfig.repositoryGuid, 'machine', to, {
     force: true,
@@ -175,18 +151,28 @@ async function migrateRepo(options: MigrateOptions): Promise<void> {
 
   await deployRepoKeyIfNeeded(name, to);
   await withSpinner(
-    'Transferring bulk data...',
+    t('commands.repo.migrate.phase1'),
     () => executePush(name, from, pushParams.params, debug),
-    'Bulk transfer complete'
+    t('commands.repo.migrate.phase1Done')
   );
+}
 
-  // ── Phase 2: Cutover ──────────────────────────────────────────────
-  outputService.info('\nPhase 2: Cutover');
+/** Execute Phase 2: cutover (stop source, delta sync, unmount). */
+async function executePhase2(
+  name: string,
+  repoConfig: Awaited<ReturnType<typeof configService.getRepository>> & object,
+  from: string,
+  to: string,
+  bwlimit: string | undefined,
+  checkpoint: boolean | undefined,
+  debug: boolean | undefined
+): Promise<number> {
+  outputService.info(`\n${t('commands.repo.migrate.phase2')}`);
   const cutoverStart = Date.now();
 
   if (checkpoint) {
     await withSpinner(
-      'CRIU checkpoint + delta sync...',
+      t('commands.repo.migrate.checkpointing'),
       async () => {
         const deltaParams = buildPushParams(name, repoConfig.repositoryGuid, 'machine', to, {
           force: true,
@@ -195,17 +181,17 @@ async function migrateRepo(options: MigrateOptions): Promise<void> {
         if (bwlimit) deltaParams.params.bwlimit = bwlimit;
         await executePush(name, from, deltaParams.params, debug);
       },
-      'Checkpoint + delta synced'
+      t('commands.repo.migrate.deltaDone')
     );
   } else {
     await withSpinner(
-      'Stopping source...',
+      t('commands.repo.migrate.stoppingSource'),
       () => executeQuiet('repository_down', name, from, {}, debug),
-      'Source stopped'
+      t('commands.repo.migrate.sourceStopped')
     );
 
     await withSpinner(
-      'Syncing delta...',
+      t('commands.repo.migrate.deltaSync'),
       async () => {
         const deltaParams = buildPushParams(name, repoConfig.repositoryGuid, 'machine', to, {
           force: true,
@@ -213,38 +199,86 @@ async function migrateRepo(options: MigrateOptions): Promise<void> {
         if (bwlimit) deltaParams.params.bwlimit = bwlimit;
         await executePush(name, from, deltaParams.params, debug);
       },
-      'Delta synced'
+      t('commands.repo.migrate.deltaDone')
     );
   }
 
   await withSpinner(
-    'Unmounting source...',
+    t('commands.repo.migrate.unmountingSource'),
     () => executeQuiet('repository_down', name, from, { unmount: true }, debug),
-    'Source unmounted'
+    t('commands.repo.migrate.sourceUnmounted')
   );
 
-  const downtimeMs = Date.now() - cutoverStart;
+  return Date.now() - cutoverStart;
+}
 
-  // ── Phase 3: Start on target ──────────────────────────────────────
-  outputService.info('\nPhase 3: Starting on target');
+/** Execute Phase 3: start on target + DNS switch. */
+async function executePhase3(
+  name: string,
+  to: string,
+  skipDns: boolean | undefined,
+  debug: boolean | undefined
+): Promise<void> {
+  outputService.info(`\n${t('commands.repo.migrate.phase3')}`);
 
   await withSpinner(
-    'Starting services on target...',
+    t('commands.repo.migrate.startingTarget'),
     async () => {
       await deployRepoKeyIfNeeded(name, to);
       await executeQuiet('repository_up', name, to, {}, debug);
     },
-    'Target running'
+    t('commands.repo.migrate.targetStarted')
   );
 
   if (!skipDns) {
-    await withSpinner('Switching DNS...', () => postRepoUpTasks(name, to), 'DNS updated');
+    await withSpinner(
+      t('commands.repo.migrate.switchingDns'),
+      () => postRepoUpTasks(name, to),
+      t('commands.repo.migrate.switchingDns')
+    );
+  }
+}
+
+async function migrateRepo(options: MigrateOptions): Promise<void> {
+  const { name, from, to, provision, bwlimit, checkpoint, skipDns, debug } = options;
+  const migrationStart = Date.now();
+
+  await assertCommandPolicy(CMD.REPO_PUSH, name);
+
+  const repoConfig = await configService.getRepository(name);
+  if (!repoConfig) {
+    throw new ValidationError(t('errors.repositoryNotFound', { name }));
   }
 
-  // ── Summary ───────────────────────────────────────────────────────
+  if (provision) {
+    await withSpinner(
+      t('commands.repo.migrate.provisioning', { machine: to, provider: provision }),
+      () => autoProvisionTarget(to, provision, from, !!debug),
+      t('commands.repo.migrate.provisioning', { machine: to, provider: provision })
+    );
+  }
+
+  const localConfig = await configService.getLocalConfig();
+  if (!localConfig.machines[from]) {
+    throw new ValidationError(t('errors.machineNotFound', { name: from }));
+  }
+  if (!localConfig.machines[to]) {
+    throw new ValidationError(t('errors.machineNotFound', { name: to }));
+  }
+
+  if (from !== to) {
+    await assertNotMountedOnTarget(name, repoConfig.repositoryGuid, to);
+  }
+
+  await executePhase1(name, repoConfig, from, to, bwlimit, debug);
+  const downtimeMs = await executePhase2(name, repoConfig, from, to, bwlimit, checkpoint, debug);
+  await executePhase3(name, to, skipDns, debug);
+
   const totalMs = Date.now() - migrationStart;
   outputService.info('');
   outputService.success(t('commands.repo.migrate.complete', { name, from, to }));
   outputService.info(`  Total: ${formatStepDuration(totalMs)}`);
-  outputService.info(`  Downtime: ${formatStepDuration(downtimeMs)} (Phase 2)`);
+  outputService.info(
+    `  ${t('commands.repo.migrate.downtime', { duration: formatStepDuration(downtimeMs) })}`
+  );
 }

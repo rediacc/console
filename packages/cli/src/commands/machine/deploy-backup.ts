@@ -1,10 +1,42 @@
-import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { BACKUP_DEFAULTS, DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
 import { provisionRenetToRemote, readSSHKey } from '../../services/renet-execution.js';
 import { handleError } from '../../utils/errors.js';
+
+/** Build backup list rows for a single machine. */
+function buildBackupListRows(
+  machineName: string,
+  backupStrategies: string[],
+  strategies: Record<string, import('../../types/index.js').BackupStrategyConfig>
+): Record<string, string>[] {
+  if (backupStrategies.length === 0) {
+    return [{ machine: machineName, strategy: '-', schedule: '-', mode: '-', destinations: '-' }];
+  }
+  return backupStrategies.map((stratName) => {
+    const strat = strategies[stratName] as
+      | import('../../types/index.js').BackupStrategyConfig
+      | undefined;
+    if (!strat) {
+      return {
+        machine: machineName,
+        strategy: stratName,
+        schedule: '?',
+        mode: '?',
+        destinations: 'missing from config',
+      };
+    }
+    return {
+      machine: machineName,
+      strategy: stratName,
+      schedule: strat.schedule,
+      mode: strat.mode ?? BACKUP_DEFAULTS.MODE,
+      destinations: strat.destinations.map((d: { name: string }) => d.name).join(', '),
+    };
+  });
+}
 
 export function registerDeployBackupCommand(machine: Command): void {
   const backup = machine.command('backup').description(t('commands.machine.backup.description'));
@@ -21,45 +53,15 @@ export function registerDeployBackupCommand(machine: Command): void {
         const machineNames = Object.keys(machines);
 
         if (machineNames.length === 0) {
-          outputService.info('No machines configured');
+          outputService.info(t('commands.machine.backup.list.noMachines'));
           return;
         }
 
         const rows: Record<string, string>[] = [];
         for (const machineName of machineNames) {
-          const machine = machines[machineName];
-          if (!machine) continue;
+          const machine = machines[machineName]!;
           const bound = machine.backupStrategies ?? [];
-          if (bound.length === 0) {
-            rows.push({
-              machine: machineName,
-              strategy: '-',
-              schedule: '-',
-              mode: '-',
-              destinations: '-',
-            });
-            continue;
-          }
-          for (const stratName of bound) {
-            const strat = strategies[stratName];
-            if (!strat) {
-              rows.push({
-                machine: machineName,
-                strategy: stratName,
-                schedule: '?',
-                mode: '?',
-                destinations: 'missing from config',
-              });
-              continue;
-            }
-            rows.push({
-              machine: machineName,
-              strategy: stratName,
-              schedule: strat.schedule,
-              mode: strat.mode ?? 'hot',
-              destinations: strat.destinations.map((d: { name: string }) => d.name).join(', '),
-            });
-          }
+          rows.push(...buildBackupListRows(machineName, bound, strategies));
         }
 
         outputService.print(rows, 'table');
@@ -139,6 +141,92 @@ export function registerDeployBackupCommand(machine: Command): void {
     });
 }
 
+/** Resolve which strategy names to trigger. */
+function resolveStrategyNames(
+  strategyFilter: string | undefined,
+  boundNames: string[],
+  allStrategyNames: string[]
+): string[] {
+  if (strategyFilter) return [strategyFilter];
+  if (boundNames.length > 0) return boundNames;
+  return allStrategyNames;
+}
+
+/** Trigger a deployed systemd backup service. */
+async function triggerDeployedUnit(
+  sftp: InstanceType<typeof import('@rediacc/shared-desktop/sftp').SFTPClient>,
+  serviceName: string,
+  debug?: boolean
+): Promise<void> {
+  outputService.info(`Triggering ${serviceName}...`);
+  const exitCode = await sftp.execStreaming(`sudo systemctl start ${serviceName}`, {
+    onStdout: (data) => {
+      if (debug) process.stdout.write(data);
+    },
+    onStderr: (data) => {
+      process.stderr.write(data);
+    },
+  });
+  if (exitCode === 0) {
+    outputService.success(`Triggered ${serviceName}`);
+  } else {
+    outputService.warn(`Failed to trigger ${serviceName} (exit ${exitCode})`);
+  }
+}
+
+/** Run an ad-hoc backup via systemd-run when no deployed unit exists. */
+async function triggerAdhocBackup(
+  sftp: InstanceType<typeof import('@rediacc/shared-desktop/sftp').SFTPClient>,
+  name: string,
+  config: import('../../types/index.js').BackupStrategyConfig,
+  datastore: string,
+  remoteRenetPath: string,
+  debug?: boolean
+): Promise<void> {
+  outputService.info(`No deployed unit for "${name}", running ad-hoc...`);
+  const { buildRcloneArgs } = await import('@rediacc/shared/queue-vault');
+  const { _testing } = await import('../../services/backup-schedule.js');
+
+  const enabledDests = config.destinations.filter((d) => d.enabled !== false);
+  const rcloneArgsByDest = new Map<string, { remote: string; params: string[] }>();
+  for (const dest of enabledDests) {
+    const storageCfg = await configService.getStorage(dest.storage);
+    rcloneArgsByDest.set(dest.name, buildRcloneArgs(storageCfg.vaultContent));
+  }
+
+  const commands = _testing.buildBackupCommands(
+    config,
+    enabledDests,
+    rcloneArgsByDest,
+    datastore,
+    remoteRenetPath
+  );
+
+  const adhocUnit = `rediacc-backup-${name}-adhoc`;
+  const fullCmd = commands.join(' && ');
+  const systemdRunCmd = `sudo systemd-run --unit=${adhocUnit} --remain-after-exit /bin/bash -c '${fullCmd.replaceAll("'", "'\\''")}'`;
+
+  if (debug) {
+    const { sanitizeBackupOutput } = await import('../../services/backup-schedule.js');
+    outputService.info(`Running: ${sanitizeBackupOutput(systemdRunCmd)}`);
+  }
+
+  const exitCode = await sftp.execStreaming(systemdRunCmd, {
+    onStdout: (data) => {
+      if (debug) process.stdout.write(data);
+    },
+    onStderr: (data) => {
+      process.stderr.write(data);
+    },
+  });
+
+  if (exitCode === 0) {
+    outputService.success(`Ad-hoc backup started: ${adhocUnit}.service`);
+  } else {
+    outputService.warn(`Failed to start ad-hoc backup for "${name}" (exit ${exitCode})`);
+  }
+}
+
 async function triggerBackupNow(
   machineName: string,
   strategyFilter?: string,
@@ -153,11 +241,7 @@ async function triggerBackupNow(
   // Allow triggering strategies bound to the machine OR any strategy in config
   const allStrategies = await configService.listBackupStrategies();
   const boundNames = machine.backupStrategies ?? [];
-  const toTrigger = strategyFilter
-    ? [strategyFilter]
-    : boundNames.length > 0
-      ? boundNames
-      : Object.keys(allStrategies);
+  const toTrigger = resolveStrategyNames(strategyFilter, boundNames, Object.keys(allStrategies));
 
   if (toTrigger.length === 0) {
     throw new Error(
@@ -165,14 +249,14 @@ async function triggerBackupNow(
     );
   }
 
-  // Load strategy configs
+  // Load strategy configs (cast to handle Record index access)
   const strategies: { name: string; config: (typeof allStrategies)[string] }[] = [];
-  for (const name of toTrigger) {
-    const config = allStrategies[name];
+  for (const stratName of toTrigger) {
+    const config = allStrategies[stratName] as (typeof allStrategies)[string] | undefined;
     if (!config) {
-      throw new Error(`Backup strategy "${name}" not found in config`);
+      throw new Error(`Backup strategy "${stratName}" not found in config`);
     }
-    strategies.push({ name, config });
+    strategies.push({ name: stratName, config });
   }
 
   const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
@@ -201,7 +285,6 @@ async function triggerBackupNow(
       const serviceName = `rediacc-backup-${name}.service`;
 
       // Check if the systemd unit is deployed
-      let unitDeployed = false;
       let checkOutput = '';
       await sftp.execStreaming(`systemctl cat ${serviceName} 2>/dev/null`, {
         onStdout: (data) => {
@@ -209,73 +292,40 @@ async function triggerBackupNow(
         },
         onStderr: () => {},
       });
-      unitDeployed = checkOutput.length > 0;
 
-      if (unitDeployed) {
-        // Deployed: trigger via systemctl
-        outputService.info(`Triggering ${serviceName}...`);
-        const exitCode = await sftp.execStreaming(`sudo systemctl start ${serviceName}`, {
-          onStdout: (data) => {
-            if (debug) process.stdout.write(data);
-          },
-          onStderr: (data) => {
-            process.stderr.write(data);
-          },
-        });
-        if (exitCode !== 0) {
-          outputService.warn(`Failed to trigger ${serviceName} (exit ${exitCode})`);
-        } else {
-          outputService.success(`Triggered ${serviceName}`);
-        }
+      if (checkOutput.length > 0) {
+        await triggerDeployedUnit(sftp, serviceName, debug);
       } else {
-        // Not deployed: build command from config and run via systemd-run
-        outputService.info(`No deployed unit for "${name}", running ad-hoc...`);
-        const { buildRcloneArgs } = await import('@rediacc/shared/queue-vault');
-        const { _testing } = await import('../../services/backup-schedule.js');
-
-        const enabledDests = config.destinations.filter((d) => d.enabled !== false);
-        const rcloneArgsByDest = new Map<string, { remote: string; params: string[] }>();
-        for (const dest of enabledDests) {
-          const storageCfg = await configService.getStorage(dest.storage);
-          rcloneArgsByDest.set(dest.name, buildRcloneArgs(storageCfg.vaultContent));
-        }
-
-        const commands = _testing.buildBackupCommands(
-          config,
-          enabledDests,
-          rcloneArgsByDest,
-          datastore,
-          remoteRenetPath
-        );
-
-        const adhocUnit = `rediacc-backup-${name}-adhoc`;
-        const fullCmd = commands.join(' && ');
-        const systemdRunCmd = `sudo systemd-run --unit=${adhocUnit} --remain-after-exit /bin/bash -c '${fullCmd.replace(/'/g, "'\\''")}'`;
-
-        if (debug) {
-          const { sanitizeBackupOutput } = await import('../../services/backup-schedule.js');
-          outputService.info(`Running: ${sanitizeBackupOutput(systemdRunCmd)}`);
-        }
-
-        const exitCode = await sftp.execStreaming(systemdRunCmd, {
-          onStdout: (data) => {
-            if (debug) process.stdout.write(data);
-          },
-          onStderr: (data) => {
-            process.stderr.write(data);
-          },
-        });
-
-        if (exitCode !== 0) {
-          outputService.warn(`Failed to start ad-hoc backup for "${name}" (exit ${exitCode})`);
-        } else {
-          outputService.success(`Ad-hoc backup started: ${adhocUnit}.service`);
-        }
+        await triggerAdhocBackup(sftp, name, config, datastore, remoteRenetPath, debug);
       }
     }
   } finally {
     sftp.close();
   }
+}
+
+/** Try to cancel a single systemd unit if active. Returns true if cancelled. */
+async function tryCancelUnit(
+  sftp: InstanceType<typeof import('@rediacc/shared-desktop/sftp').SFTPClient>,
+  unit: string,
+  debug?: boolean
+): Promise<boolean> {
+  const isActive = await checkServiceActive(sftp, unit);
+  if (!isActive) return false;
+  outputService.info(t('commands.machine.backup.cancel.cancelling', { name: unit }));
+  const exitCode = await sftp.execStreaming(`sudo systemctl stop ${unit}`, {
+    onStdout: (data) => {
+      if (debug) process.stdout.write(data);
+    },
+    onStderr: (data) => {
+      process.stderr.write(data);
+    },
+  });
+  if (exitCode === 0) {
+    outputService.success(t('commands.machine.backup.cancel.cancelled', { name: unit }));
+    return true;
+  }
+  return false;
 }
 
 async function cancelBackup(
@@ -310,43 +360,59 @@ async function cancelBackup(
 
   try {
     for (const name of toCheck) {
-      // Try both scheduled and ad-hoc unit names
-      const units = [`rediacc-backup-${name}.service`, `rediacc-backup-${name}-adhoc.service`];
-
-      let cancelled = false;
-      for (const unit of units) {
-        let isActive = '';
-        await sftp.execStreaming(`systemctl is-active ${unit} 2>/dev/null || true`, {
-          onStdout: (data) => {
-            isActive += data;
-          },
-          onStderr: () => {},
-        });
-
-        if (isActive.trim() === 'active' || isActive.trim() === 'activating') {
-          outputService.info(t('commands.machine.backup.cancel.cancelling', { name: unit }));
-          const exitCode = await sftp.execStreaming(`sudo systemctl stop ${unit}`, {
-            onStdout: (data) => {
-              if (debug) process.stdout.write(data);
-            },
-            onStderr: (data) => {
-              process.stderr.write(data);
-            },
-          });
-          if (exitCode === 0) {
-            outputService.success(t('commands.machine.backup.cancel.cancelled', { name: unit }));
-            cancelled = true;
-          }
-        }
-      }
-
-      if (!cancelled) {
-        outputService.info(t('commands.machine.backup.cancel.notRunning', { name }));
-      }
+      await cancelStrategyUnits(sftp, name, debug);
     }
   } finally {
     sftp.close();
   }
+}
+
+/** Try to cancel both scheduled and ad-hoc units for a strategy. */
+async function cancelStrategyUnits(
+  sftp: InstanceType<typeof import('@rediacc/shared-desktop/sftp').SFTPClient>,
+  name: string,
+  debug?: boolean
+): Promise<void> {
+  const units = [`rediacc-backup-${name}.service`, `rediacc-backup-${name}-adhoc.service`];
+  let cancelled = false;
+  for (const unit of units) {
+    if (await tryCancelUnit(sftp, unit, debug)) cancelled = true;
+  }
+  if (!cancelled) {
+    outputService.info(t('commands.machine.backup.cancel.notRunning', { name }));
+  }
+}
+
+/** Check systemd service active status via SSH. */
+async function checkServiceActive(
+  sftp: InstanceType<typeof import('@rediacc/shared-desktop/sftp').SFTPClient>,
+  serviceName: string
+): Promise<boolean> {
+  let statusText = '';
+  await sftp.execStreaming(`systemctl is-active ${serviceName} 2>/dev/null || true`, {
+    onStdout: (data) => {
+      statusText += data;
+    },
+    onStderr: () => {},
+  });
+  const trimmed = statusText.trim();
+  return trimmed === 'active' || trimmed === 'activating';
+}
+
+/** Build status row for a single backup strategy. */
+async function buildStatusRow(
+  sftp: InstanceType<typeof import('@rediacc/shared-desktop/sftp').SFTPClient>,
+  name: string
+): Promise<Record<string, string>> {
+  const serviceName = `rediacc-backup-${name}.service`;
+  const isActive = await checkServiceActive(sftp, serviceName);
+  const strategy = await configService.getBackupStrategy(name);
+  return {
+    strategy: name,
+    mode: strategy?.mode ?? BACKUP_DEFAULTS.MODE,
+    schedule: strategy?.schedule ?? '-',
+    status: isActive ? 'RUNNING' : 'idle',
+  };
 }
 
 async function showBackupStatus(
@@ -382,26 +448,9 @@ async function showBackupStatus(
     const configuredStrategies = machine.backupStrategies ?? [];
     const namesToCheck = strategyFilter ? [strategyFilter] : configuredStrategies;
 
-    // Build status table
     const rows: Record<string, string>[] = [];
     for (const name of namesToCheck) {
-      const serviceName = `rediacc-backup-${name}.service`;
-      let statusText = '';
-      await sftp.execStreaming(`systemctl is-active ${serviceName} 2>/dev/null || true`, {
-        onStdout: (data) => {
-          statusText += data;
-        },
-        onStderr: () => {},
-      });
-      const isActive = statusText.trim() === 'active' || statusText.trim() === 'activating';
-
-      const strategy = await configService.getBackupStrategy(name);
-      rows.push({
-        strategy: name,
-        mode: strategy?.mode ?? 'hot',
-        schedule: strategy?.schedule ?? '-',
-        status: isActive ? 'RUNNING' : 'idle',
-      });
+      rows.push(await buildStatusRow(sftp, name));
     }
 
     outputService.print(rows, 'table');

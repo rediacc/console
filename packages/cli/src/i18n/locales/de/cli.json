@@ -307,10 +307,13 @@
           "optionMode": "Backup-Modus: \"hot\" (ohne Ausfallzeit) oder \"cold\" (Stoppen, Snapshot, Neustart)",
           "optionName": "Strategiename (erforderlich)",
           "optionStorage": "Speicherkonfigurationsname (rclone-Zugangsdaten)",
-          "saved": "Backup-Strategie-Konfiguration gespeichert"
+          "saved": "Backup-Strategie-Konfiguration gespeichert",
+          "storageRequired": "--storage is required when creating a new destination. Use: --storage <storage-name>"
         },
         "show": {
           "description": "Backup-Strategie-Details anzeigen",
+          "destinationsHeader": "  Destinations:",
+          "noDestinations": "  Destinations: (none)",
           "notConfigured": "Keine Backup-Strategien konfiguriert",
           "notFound": "Backup-Strategie \"{{name}}\" nicht gefunden",
           "optionName": "Strategiename (zeigt alle wenn weggelassen)"
@@ -715,7 +718,8 @@
         },
         "description": "Maschinen-Backup-Verwaltung",
         "list": {
-          "description": "Backup-Strategien aller Maschinen auflisten"
+          "description": "Backup-Strategien aller Maschinen auflisten",
+          "noMachines": "No machines configured"
         },
         "now": {
           "description": "Backup sofort auf einem Remote-Rechner auslösen",
@@ -2194,6 +2198,7 @@
     "regionRequired": "Regionsname erforderlich. Verwenden Sie --region oder stellen Sie den Kontext ein.",
     "registrationFailed": "Registrierung fehlgeschlagen",
     "remoteNotFound": "\"{{name}}\" ist kein bekannter Rechner oder Speicher. Rechner: {{machines}}. Speicher: {{storages}}",
+    "repositoryAlreadyMounted": "Repository \"{{name}}\" is already mounted on \"{{machine}}\". Migrating over a live repo would corrupt it. Run first: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "Repository \"{{name}}\" nicht gefunden",
     "repositoryRequired": "Repository-Name erforderlich. Verwenden Sie --repository <name>.",
     "resourceNotFound": "{{resource}} nicht gefunden",

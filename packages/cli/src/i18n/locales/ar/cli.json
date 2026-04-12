@@ -307,10 +307,13 @@
           "optionMode": "وضع النسخ الاحتياطي: \"hot\" (بدون توقف) أو \"cold\" (إيقاف، لقطة، إعادة تشغيل)",
           "optionName": "اسم الاستراتيجية (مطلوب)",
           "optionStorage": "اسم تكوين التخزين (بيانات اعتماد rclone)",
-          "saved": "تم حفظ تكوين استراتيجية النسخ الاحتياطي"
+          "saved": "تم حفظ تكوين استراتيجية النسخ الاحتياطي",
+          "storageRequired": "--storage is required when creating a new destination. Use: --storage <storage-name>"
         },
         "show": {
           "description": "عرض تفاصيل استراتيجية النسخ الاحتياطي",
+          "destinationsHeader": "  Destinations:",
+          "noDestinations": "  Destinations: (none)",
           "notConfigured": "لم يتم تكوين أي استراتيجيات نسخ احتياطي",
           "notFound": "استراتيجية النسخ الاحتياطي \"{{name}}\" غير موجودة",
           "optionName": "اسم الاستراتيجية (يعرض الكل إذا لم يُحدد)"
@@ -715,7 +718,8 @@
         },
         "description": "إدارة النسخ الاحتياطي للجهاز",
         "list": {
-          "description": "عرض استراتيجيات النسخ الاحتياطي المرتبطة بجميع الأجهزة"
+          "description": "عرض استراتيجيات النسخ الاحتياطي المرتبطة بجميع الأجهزة",
+          "noMachines": "No machines configured"
         },
         "now": {
           "description": "تشغيل نسخة احتياطية فورية على جهاز بعيد",
@@ -2194,6 +2198,7 @@
     "regionRequired": "اسم المنطقة مطلوب. استخدم --region أو اضبط السياق.",
     "registrationFailed": "فشل التسجيل",
     "remoteNotFound": "\"{{name}}\" ليس جهازاً أو تخزيناً معروفاً. الأجهزة: {{machines}}. التخزينات: {{storages}}",
+    "repositoryAlreadyMounted": "Repository \"{{name}}\" is already mounted on \"{{machine}}\". Migrating over a live repo would corrupt it. Run first: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "لم يتم العثور على المستودع \"{{name}}\"",
     "repositoryRequired": "اسم المستودع مطلوب. استخدم --repository <name>.",
     "resourceNotFound": "{{resource}} غير موجود",

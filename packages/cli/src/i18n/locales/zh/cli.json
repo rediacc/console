@@ -307,10 +307,13 @@
           "optionMode": "备份模式：\"hot\"（零停机）或 \"cold\"（停止、快照、重启）",
           "optionName": "策略名称（必填）",
           "optionStorage": "存储配置名称（rclone 凭据）",
-          "saved": "备份策略配置已保存"
+          "saved": "备份策略配置已保存",
+          "storageRequired": "--storage is required when creating a new destination. Use: --storage <storage-name>"
         },
         "show": {
           "description": "显示备份策略详情",
+          "destinationsHeader": "  Destinations:",
+          "noDestinations": "  Destinations: (none)",
           "notConfigured": "未配置备份策略",
           "notFound": "备份策略 \"{{name}}\" 未找到",
           "optionName": "策略名称（省略时显示全部）"
@@ -715,7 +718,8 @@
         },
         "description": "机器备份管理",
         "list": {
-          "description": "列出绑定到所有机器的备份策略"
+          "description": "列出绑定到所有机器的备份策略",
+          "noMachines": "No machines configured"
         },
         "now": {
           "description": "在远程机器上立即触发备份",
@@ -2194,6 +2198,7 @@
     "regionRequired": "需要区域名称。使用 --region 或设置上下文。",
     "registrationFailed": "注册失败",
     "remoteNotFound": "\"{{name}}\"不是已知的机器或存储。机器: {{machines}}。存储: {{storages}}",
+    "repositoryAlreadyMounted": "Repository \"{{name}}\" is already mounted on \"{{machine}}\". Migrating over a live repo would corrupt it. Run first: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "仓库 \"{{name}}\" 未找到",
     "repositoryRequired": "需要仓库名称。使用 --repository <name>。",
     "resourceNotFound": "{{resource}} 未找到",
