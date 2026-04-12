@@ -243,7 +243,7 @@ while [[ $RETRIES -gt 0 ]]; do
         fi
     fi
     ATTEMPT=$((ATTEMPT + 1))
-    if (( ATTEMPT % 6 == 0 )); then
+    if ((ATTEMPT % 6 == 0)); then
         log_info "  still waiting (${ATTEMPT}/${RETRIES_START:-180}) -- domstate=$(sudo virsh domstate "$VM_NAME" 2>/dev/null || echo unknown) ip=${VM_IP:-<none>}"
     fi
     sleep 5
@@ -259,7 +259,7 @@ if [[ -z "$VM_IP" ]] || [[ $RETRIES -eq 0 ]]; then
     log_error "virsh net-dhcp-leases default:"
     sudo virsh net-dhcp-leases default 2>&1 || true
     log_error "Console serial tail (last 100 lines):"
-    sudo virsh console --force "$VM_NAME" <<< $'\x1d' 2>&1 | tail -100 || true
+    sudo virsh console --force "$VM_NAME" <<<$'\x1d' 2>&1 | tail -100 || true
     if [[ -n "$VM_IP" ]]; then
         ssh -o ConnectTimeout=15 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
             -i "$BUILD_KEY" "builder@$VM_IP" "cloud-init status --long" 2>&1 || true
