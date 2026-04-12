@@ -223,10 +223,13 @@ sudo virt-install \
 
 log_info "VM started: $VM_NAME"
 
-# Wait for VM to be ready
+# Wait for VM to be ready. Debian trixie's cloud-init can take 8-10 minutes on
+# the GitHub runner hardware before first SSH, so bump the wait to 15 minutes
+# (180 × 5s) and log progress every 30s so a hang is obvious in the CI log.
 log_info "Waiting for VM to boot and get IP..."
-RETRIES=90
+RETRIES=180
 VM_IP=""
+ATTEMPT=0
 while [[ $RETRIES -gt 0 ]]; do
     if sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; then
         VM_IP=$(sudo virsh domifaddr "$VM_NAME" 2>/dev/null | grep -oE '192\.168\.[0-9]+\.[0-9]+' | head -1 || true)
@@ -239,16 +242,28 @@ while [[ $RETRIES -gt 0 ]]; do
             fi
         fi
     fi
+    ATTEMPT=$((ATTEMPT + 1))
+    if (( ATTEMPT % 6 == 0 )); then
+        log_info "  still waiting (${ATTEMPT}/${RETRIES_START:-180}) -- domstate=$(sudo virsh domstate "$VM_NAME" 2>/dev/null || echo unknown) ip=${VM_IP:-<none>}"
+    fi
     sleep 5
     ((RETRIES--))
 done
 
 if [[ -z "$VM_IP" ]] || [[ $RETRIES -eq 0 ]]; then
-    log_error "Failed to connect to build VM"
-    sudo virsh domifaddr "$VM_NAME" 2>/dev/null || true
-    # Show cloud-init status for debugging
-    ssh -o ConnectTimeout=15 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-        -i "$BUILD_KEY" "builder@$VM_IP" "cloud-init status" 2>&1 || true
+    log_error "Failed to connect to build VM after 15 minutes"
+    log_error "virsh domstate:"
+    sudo virsh domstate "$VM_NAME" 2>&1 || true
+    log_error "virsh domifaddr:"
+    sudo virsh domifaddr "$VM_NAME" 2>&1 || true
+    log_error "virsh net-dhcp-leases default:"
+    sudo virsh net-dhcp-leases default 2>&1 || true
+    log_error "Console serial tail (last 100 lines):"
+    sudo virsh console --force "$VM_NAME" <<< $'\x1d' 2>&1 | tail -100 || true
+    if [[ -n "$VM_IP" ]]; then
+        ssh -o ConnectTimeout=15 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            -i "$BUILD_KEY" "builder@$VM_IP" "cloud-init status --long" 2>&1 || true
+    fi
     exit 1
 fi
 
