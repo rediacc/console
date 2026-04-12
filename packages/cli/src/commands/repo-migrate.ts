@@ -238,11 +238,7 @@ async function migrateRepo(options: MigrateOptions): Promise<void> {
   );
 
   if (!skipDns) {
-    await withSpinner(
-      'Switching DNS...',
-      () => postRepoUpTasks(name, to),
-      'DNS updated'
-    );
+    await withSpinner('Switching DNS...', () => postRepoUpTasks(name, to), 'DNS updated');
   }
 
   // ── Summary ───────────────────────────────────────────────────────

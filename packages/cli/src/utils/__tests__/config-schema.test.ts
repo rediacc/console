@@ -247,15 +247,13 @@ describe('config-schema', () => {
     });
 
     it('rejects empty name', () => {
-      expect(
-        BackupDestinationSchema.safeParse({ name: '', storage: 'microsoft' }).success
-      ).toBe(false);
+      expect(BackupDestinationSchema.safeParse({ name: '', storage: 'microsoft' }).success).toBe(
+        false
+      );
     });
 
     it('rejects empty storage', () => {
-      expect(
-        BackupDestinationSchema.safeParse({ name: 'test', storage: '' }).success
-      ).toBe(false);
+      expect(BackupDestinationSchema.safeParse({ name: 'test', storage: '' }).success).toBe(false);
     });
 
     it('rejects missing name', () => {

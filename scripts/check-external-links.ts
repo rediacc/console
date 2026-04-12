@@ -54,6 +54,8 @@ const SKIP_PATTERNS = [
   // Government/regulatory sites that block CI runners (403/geo-restricted/fetch failed)
   /^https?:\/\/www\.edpb\.europa\.eu/,
   /^https?:\/\/kvkk\.gov\.tr/,
+  // Internal rediacc.io subdomains used in code examples (not reachable from CI)
+  /^https?:\/\/[^/]*\.rediacc\.io/,
 ];
 
 interface LinkLocation {

@@ -467,16 +467,15 @@ class ConfigService extends ConfigServiceBase {
     await this.update(configName, { backupStrategies: strategies });
   }
 
-  async addBackupDestination(
-    strategyName: string,
-    dest: BackupStrategyDestination
-  ): Promise<void> {
+  async addBackupDestination(strategyName: string, dest: BackupStrategyDestination): Promise<void> {
     const configName = this.getEffectiveConfigName();
     const current = await this.requireSelfHosted(configName);
     const strategies = { ...current.backupStrategies };
     const strategy = strategies[strategyName] as (typeof strategies)[string] | undefined;
     if (!strategy) {
-      throw new Error(`Backup strategy "${strategyName}" not found. Create it first with: rdc config backup-strategy set --name ${strategyName} --cron "...""`);
+      throw new Error(
+        `Backup strategy "${strategyName}" not found. Create it first with: rdc config backup-strategy set --name ${strategyName} --cron "...""`
+      );
     }
     const destinations = [...strategy.destinations];
     const idx = destinations.findIndex((d) => d.name === dest.name);

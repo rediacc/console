@@ -83,8 +83,8 @@ describe('generateServiceUnit', () => {
       '/mnt/rediacc',
       '/usr/bin/renet'
     );
-    expect(content).toContain("bwlimit=50M");
-    expect(content).not.toContain("bwlimit=6M");
+    expect(content).toContain('bwlimit=50M');
+    expect(content).not.toContain('bwlimit=6M');
   });
 
   it('includes --include-repo when strategy has include', async () => {

@@ -162,7 +162,11 @@ function generateServiceUnit(
   remoteRenetPath: string
 ): string {
   const commands = buildBackupCommands(
-    strategy, destinations, rcloneArgsByDest, datastore, remoteRenetPath
+    strategy,
+    destinations,
+    rcloneArgsByDest,
+    datastore,
+    remoteRenetPath
   );
   const execLines = commands.map((cmd) => `ExecStart=${cmd}`);
 
@@ -303,7 +307,9 @@ async function deployStrategyUnits(
     }
   );
   if (exitCode !== 0) {
-    throw new Error(`Failed to write service unit for strategy "${strategyName}" (exit ${exitCode})`);
+    throw new Error(
+      `Failed to write service unit for strategy "${strategyName}" (exit ${exitCode})`
+    );
   }
 
   // Write timer unit
@@ -395,7 +401,9 @@ export async function pushBackupSchedule(
 
   // Dry-run: preview generated units without deploying
   if (options.dryRun) {
-    outputService.info(`Dry-run: would deploy ${strategies.length} strategy timer(s) to ${machineName}`);
+    outputService.info(
+      `Dry-run: would deploy ${strategies.length} strategy timer(s) to ${machineName}`
+    );
     for (const { name, config } of strategies) {
       const enabledDests = config.destinations.filter((d) => d.enabled !== false);
       const rcloneArgsByDest = new Map<string, { remote: string; params: string[] }>();
@@ -406,7 +414,12 @@ export async function pushBackupSchedule(
       }
       const onCalendar = cronToOnCalendar(config.schedule);
       const serviceContent = generateServiceUnit(
-        name, config, enabledDests, rcloneArgsByDest, datastore, REMOTE_RENET_PATH
+        name,
+        config,
+        enabledDests,
+        rcloneArgsByDest,
+        datastore,
+        REMOTE_RENET_PATH
       );
       const timerContent = generateTimerUnit(name, onCalendar);
       outputService.info(`\n--- rediacc-backup-${name}.service ---`);
