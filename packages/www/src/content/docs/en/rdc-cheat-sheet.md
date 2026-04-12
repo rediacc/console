@@ -81,7 +81,7 @@ Quick reference for the most common `rdc` commands. Run any command with `--help
 | `rdc machine query --name <machine> --network` | Network info only |
 | `rdc machine query --name <machine> --block-devices` | Block device info only |
 | `rdc machine list` | List all machines in config |
-| `rdc machine setup --name <machine>` | Run initial machine provisioning |
+| `rdc config machine setup <machine>` | Run initial machine provisioning |
 | `rdc machine prune --name <machine>` | Remove unused resources from machine |
 | `rdc machine deprovision --name <machine>` | Fully deprovision a machine |
 | `rdc machine vault-status --name <machine>` | Show LUKS vault status |
