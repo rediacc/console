@@ -854,7 +854,8 @@
         "fetched": "Estado obtenido",
         "fetching": "Obteniendo estado de {{machine}}...",
         "infrastructure": "Infraestructura",
-        "noData": "No hay datos de estado disponibles"
+        "noData": "No hay datos de estado disponibles",
+        "storageHealthHint": "Consejo: Ejecuta con --storage-health para ver la fragmentación de BTRFS y el ahorro de reflink por repo"
       },
       "rename": {
         "description": "Renombrar una máquina"

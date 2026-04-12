@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1784,
+    "keyCount": 1785,
     "sourceCommit": "212d9c75667db95ece0a5db2c80414184811f4d2"
   },
   "hashes": {
@@ -579,6 +579,7 @@
     "commands.machine.query.fetching": "80ef3747",
     "commands.machine.query.infrastructure": "1c4dc948",
     "commands.machine.query.noData": "a0674b1e",
+    "commands.machine.query.storageHealthHint": "9a3dcc0d",
     "commands.machine.rename.description": "a4fc274f",
     "commands.machine.repos.description": "b667158e",
     "commands.machine.repos.descriptionShort": "384370c1",

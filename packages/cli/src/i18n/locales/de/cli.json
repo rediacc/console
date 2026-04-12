@@ -854,7 +854,8 @@
         "fetched": "Status abgerufen",
         "fetching": "Status von {{machine}} wird abgerufen...",
         "infrastructure": "Infrastruktur",
-        "noData": "Keine Statusdaten verfügbar"
+        "noData": "Keine Statusdaten verfügbar",
+        "storageHealthHint": "Tipp: Mit --storage-health ausführen, um BTRFS-Fragmentierung und reflink-Einsparungen pro Repo anzuzeigen"
       },
       "rename": {
         "description": "Eine Maschine umbenennen"

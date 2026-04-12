@@ -854,7 +854,8 @@
         "fetched": "状态已获取",
         "fetching": "正在从 {{machine}} 获取状态...",
         "infrastructure": "基础设施",
-        "noData": "无可用状态数据"
+        "noData": "无可用状态数据",
+        "storageHealthHint": "提示：使用 --storage-health 运行可查看每个仓库的 BTRFS 碎片化情况和 reflink 节省量"
       },
       "rename": {
         "description": "重命名机器"

@@ -854,7 +854,8 @@
         "fetched": "Durum alındı",
         "fetching": "{{machine}} durumu alınıyor...",
         "infrastructure": "Altyapı",
-        "noData": "Durum verisi mevcut değil"
+        "noData": "Durum verisi mevcut değil",
+        "storageHealthHint": "İpucu: BTRFS parçalanmasını ve repo başına reflink tasarrufunu görmek için --storage-health ile çalıştırın"
       },
       "rename": {
         "description": "Bir makineyi yeniden adlandır"

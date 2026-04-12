@@ -854,7 +854,8 @@
         "fetched": "Statut récupéré",
         "fetching": "Récupération du statut de {{machine}}...",
         "infrastructure": "Infrastructure",
-        "noData": "Aucune donnée de statut disponible"
+        "noData": "Aucune donnée de statut disponible",
+        "storageHealthHint": "Astuce : Exécutez avec --storage-health pour voir la fragmentation BTRFS et les économies reflink par repo"
       },
       "rename": {
         "description": "Renommer une machine"

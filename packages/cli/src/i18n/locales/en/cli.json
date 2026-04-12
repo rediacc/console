@@ -778,7 +778,8 @@
         "fetched": "Status fetched",
         "noData": "No status data available",
         "infrastructure": "Infrastructure",
-        "connection": "Connection"
+        "connection": "Connection",
+        "storageHealthHint": "Tip: Run with --storage-health to see BTRFS fragmentation and reflink savings per repo"
       },
       "vaultStatus": {
         "description": "Show parsed vault status for a machine",

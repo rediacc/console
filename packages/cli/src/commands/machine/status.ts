@@ -393,9 +393,7 @@ export function registerQueryCommand(machine: Command, program: Command): void {
 
         // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)
         if (!options.storageHealth) {
-          process.stderr.write(
-            '\nTip: Run with --storage-health to see BTRFS fragmentation and reflink savings per repo\n'
-          );
+          process.stderr.write(`\n${t('commands.machine.query.storageHealthHint')}\n`);
         }
       } catch (error) {
         handleError(error);

@@ -854,7 +854,8 @@
         "fetched": "ステータスを取得しました",
         "fetching": "{{machine}} からステータスを取得中...",
         "infrastructure": "インフラストラクチャ",
-        "noData": "ステータスデータがありません"
+        "noData": "ステータスデータがありません",
+        "storageHealthHint": "ヒント: --storage-health を付けて実行すると、リポジトリごとの BTRFS フラグメンテーションと reflink の節約量を確認できます"
       },
       "rename": {
         "description": "マシンの名前を変更"

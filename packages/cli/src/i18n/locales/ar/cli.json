@@ -854,7 +854,8 @@
         "fetched": "تم جلب الحالة",
         "fetching": "جارٍ جلب الحالة من {{machine}}...",
         "infrastructure": "البنية التحتية",
-        "noData": "لا تتوفر بيانات حالة"
+        "noData": "لا تتوفر بيانات حالة",
+        "storageHealthHint": "تلميح: شغّل مع --storage-health لعرض تجزئة BTRFS وتوفير reflink لكل مستودع"
       },
       "rename": {
         "description": "إعادة تسمية جهاز"
