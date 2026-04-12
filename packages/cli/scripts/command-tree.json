@@ -915,6 +915,12 @@
               "descriptionKey": "options.queryLicenses",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--storage-health",
+              "descriptionKey": "options.queryStorageHealth",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [],
@@ -1015,6 +1021,13 @@
           "arguments": [],
           "subcommands": [
             {
+              "name": "list",
+              "descriptionKey": "commands.machine.backup.list.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
               "name": "schedule",
               "descriptionKey": "commands.machine.backup.schedule.description",
               "options": [
@@ -1022,6 +1035,90 @@
                   "flags": "-m, --machine <name>",
                   "descriptionKey": "options.machine",
                   "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--dry-run",
+                  "descriptionKey": "commands.machine.backup.schedule.optionDryRun",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "now",
+              "descriptionKey": "commands.machine.backup.now.description",
+              "options": [
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "options.machine",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--strategy <name>",
+                  "descriptionKey": "commands.machine.backup.now.optionStrategy",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "status",
+              "descriptionKey": "commands.machine.backup.status.description",
+              "options": [
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "options.machine",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--strategy <name>",
+                  "descriptionKey": "commands.machine.backup.status.optionStrategy",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "cancel",
+              "descriptionKey": "commands.machine.backup.cancel.description",
+              "options": [
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "options.machine",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--strategy <name>",
+                  "descriptionKey": "commands.machine.backup.cancel.optionStrategy",
+                  "mandatory": false,
                   "defaultValue": null
                 },
                 {
@@ -1542,12 +1639,6 @@
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
               "mandatory": true,
-              "defaultValue": null
-            },
-            {
-              "flags": "--mount",
-              "descriptionKey": "commands.repo.up.mountOption",
-              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -2208,6 +2299,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--bwlimit <limit>",
+              "descriptionKey": "commands.repo.push.optionBwlimit",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -2284,6 +2381,12 @@
             {
               "flags": "-y, --yes",
               "descriptionKey": "commands.repo.yesOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--bwlimit <limit>",
+              "descriptionKey": "commands.repo.push.optionBwlimit",
               "mandatory": false,
               "defaultValue": null
             },
@@ -2374,6 +2477,62 @@
               "subcommands": []
             }
           ]
+        },
+        {
+          "name": "migrate",
+          "descriptionKey": "commands.repo.migrate.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--from <machine>",
+              "descriptionKey": "commands.repo.migrate.optionFrom",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--to <machine>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--provision <provider>",
+              "descriptionKey": "commands.repo.migrate.optionProvision",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--bwlimit <limit>",
+              "descriptionKey": "commands.repo.migrate.optionBwlimit",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--checkpoint",
+              "descriptionKey": "commands.repo.migrate.optionCheckpoint",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-dns",
+              "descriptionKey": "commands.repo.migrate.optionSkipDns",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
         },
         {
           "name": "sync",
@@ -4591,14 +4750,50 @@
               "descriptionKey": "commands.config.backupStrategy.set.description",
               "options": [
                 {
-                  "flags": "--destination <storage>",
+                  "flags": "--name <name>",
+                  "descriptionKey": "commands.config.backupStrategy.set.optionName",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--destination <name>",
                   "descriptionKey": "commands.config.backupStrategy.set.optionDestination",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--storage <name>",
+                  "descriptionKey": "commands.config.backupStrategy.set.optionStorage",
                   "mandatory": false,
                   "defaultValue": null
                 },
                 {
                   "flags": "--cron <expression>",
                   "descriptionKey": "commands.config.backupStrategy.set.optionCron",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--mode <mode>",
+                  "descriptionKey": "commands.config.backupStrategy.set.optionMode",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--bwlimit <limit>",
+                  "descriptionKey": "commands.config.backupStrategy.set.optionBwlimit",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--include <repos>",
+                  "descriptionKey": "commands.config.backupStrategy.set.optionInclude",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--exclude <repos>",
+                  "descriptionKey": "commands.config.backupStrategy.set.optionExclude",
                   "mandatory": false,
                   "defaultValue": null
                 },
@@ -4619,9 +4814,43 @@
               "subcommands": []
             },
             {
+              "name": "remove",
+              "descriptionKey": "commands.config.backupStrategy.remove.description",
+              "options": [
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "commands.config.backupStrategy.set.optionName",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--destination <name>",
+                  "descriptionKey": "commands.config.backupStrategy.remove.optionDestination",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "list",
+              "descriptionKey": "commands.config.backupStrategy.list.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
               "name": "show",
               "descriptionKey": "commands.config.backupStrategy.show.description",
-              "options": [],
+              "options": [
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "commands.config.backupStrategy.show.optionName",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
               "arguments": [],
               "subcommands": []
             }

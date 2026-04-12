@@ -6,7 +6,7 @@ order: 2
 language: de
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/de/cli.json
-sourceHash: "0408d2283ad965e2"
+sourceHash: "641e97931b2b0b36"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -705,11 +705,41 @@ rdc config backup-strategy set [options]
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--destination <storage>` | {{t:cli.commands.config.backupStrategy.set.optionDestination}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--name <name>` | {{t:cli.commands.config.backupStrategy.set.optionName}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--destination <name>` | {{t:cli.commands.config.backupStrategy.set.optionDestination}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--storage <name>` | {{t:cli.commands.config.backupStrategy.set.optionStorage}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--cron <expression>` | {{t:cli.commands.config.backupStrategy.set.optionCron}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--mode <mode>` | {{t:cli.commands.config.backupStrategy.set.optionMode}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--bwlimit <limit>` | {{t:cli.commands.config.backupStrategy.set.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--include <repos>` | {{t:cli.commands.config.backupStrategy.set.optionInclude}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--exclude <repos>` | {{t:cli.commands.config.backupStrategy.set.optionExclude}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--enable` | {{t:cli.commands.config.backupStrategy.set.optionEnable}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--disable` | {{t:cli.commands.config.backupStrategy.set.optionDisable}} | {{t:cli.docs.optionLabels.no}} | - |
 
+
+<a id="cli-local-config-backup-strategy-remove"></a>
+#### remove
+
+{{t:cli.commands.config.backupStrategy.remove.description}}
+
+```bash
+rdc config backup-strategy remove [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.commands.config.backupStrategy.set.optionName}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--destination <name>` | {{t:cli.commands.config.backupStrategy.remove.optionDestination}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-config-backup-strategy-list"></a>
+#### list
+
+{{t:cli.commands.config.backupStrategy.list.description}}
+
+```bash
+rdc config backup-strategy list
+```
 
 <a id="cli-local-config-backup-strategy-show"></a>
 #### show
@@ -717,8 +747,13 @@ rdc config backup-strategy set [options]
 {{t:cli.commands.config.backupStrategy.show.description}}
 
 ```bash
-rdc config backup-strategy show
+rdc config backup-strategy show [options]
 ```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.commands.config.backupStrategy.show.optionName}} | {{t:cli.docs.optionLabels.no}} | - |
+
 
 ---
 
@@ -974,6 +1009,7 @@ rdc machine query [options]
 | `--network` | {{t:cli.options.queryNetwork}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--block-devices` | {{t:cli.options.queryBlockDevices}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--licenses` | {{t:cli.options.queryLicenses}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--storage-health` | {{t:cli.options.queryStorageHealth}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-machine-vault-status"></a>
@@ -1073,6 +1109,15 @@ rdc machine deprovision [options]
 
 {{t:cli.commands.machine.backup.description}}
 
+<a id="cli-local-machine-backup-list"></a>
+#### list
+
+{{t:cli.commands.machine.backup.list.description}}
+
+```bash
+rdc machine backup list
+```
+
 <a id="cli-local-machine-backup-schedule"></a>
 #### schedule
 
@@ -1085,6 +1130,55 @@ rdc machine backup schedule [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--dry-run` | {{t:cli.commands.machine.backup.schedule.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-machine-backup-now"></a>
+#### now
+
+{{t:cli.commands.machine.backup.now.description}}
+
+```bash
+rdc machine backup now [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--strategy <name>` | {{t:cli.commands.machine.backup.now.optionStrategy}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-machine-backup-status"></a>
+#### status
+
+{{t:cli.commands.machine.backup.status.description}}
+
+```bash
+rdc machine backup status [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--strategy <name>` | {{t:cli.commands.machine.backup.status.optionStrategy}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-machine-backup-cancel"></a>
+#### cancel
+
+{{t:cli.commands.machine.backup.cancel.description}}
+
+```bash
+rdc machine backup cancel [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--strategy <name>` | {{t:cli.commands.machine.backup.cancel.optionStrategy}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -1528,6 +1622,7 @@ rdc repo push [options]
 | `--parallel` | {{t:cli.commands.repo.upAll.parallelOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--concurrency <n>` | {{t:cli.commands.repo.upAll.concurrencyOption}} | {{t:cli.docs.optionLabels.no}} | `3` |
 | `-y, --yes` | {{t:cli.commands.repo.yesOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--bwlimit <limit>` | {{t:cli.commands.repo.push.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -1553,12 +1648,34 @@ rdc repo pull [options]
 | `--parallel` | {{t:cli.commands.repo.upAll.parallelOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--concurrency <n>` | {{t:cli.commands.repo.upAll.concurrencyOption}} | {{t:cli.docs.optionLabels.no}} | `3` |
 | `-y, --yes` | {{t:cli.commands.repo.yesOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--bwlimit <limit>` | {{t:cli.commands.repo.push.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-repo-migrate"></a>
+### 6.20 migrate
+
+{{t:cli.commands.repo.migrate.description}}
+
+```bash
+rdc repo migrate [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--from <machine>` | {{t:cli.commands.repo.migrate.optionFrom}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--to <machine>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--provision <provider>` | {{t:cli.commands.repo.migrate.optionProvision}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--bwlimit <limit>` | {{t:cli.commands.repo.migrate.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--checkpoint` | {{t:cli.commands.repo.migrate.optionCheckpoint}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-dns` | {{t:cli.commands.repo.migrate.optionSkipDns}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-repo-backup"></a>
-### 6.20 backup
+### 6.21 backup
 
 {{t:cli.commands.repo.backup.description}}
 
@@ -1582,7 +1699,7 @@ rdc repo backup list [options]
 
 
 <a id="cli-local-repo-sync"></a>
-### 6.21 sync
+### 6.22 sync
 
 {{t:cli.commands.repo.sync.description}}
 
@@ -1669,7 +1786,7 @@ rdc repo sync status [options]
 
 
 <a id="cli-local-repo-snapshot"></a>
-### 6.22 snapshot
+### 6.23 snapshot
 
 {{t:cli.commands.repo.snapshot.description}}
 
@@ -1701,7 +1818,7 @@ rdc repo snapshot delete
 ```
 
 <a id="cli-local-repo-tunnel"></a>
-### 6.23 tunnel
+### 6.24 tunnel
 
 {{t:cli.commands.repo.tunnel.description}}
 
