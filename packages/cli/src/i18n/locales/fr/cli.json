@@ -308,12 +308,12 @@
           "optionName": "Nom de la stratégie (requis)",
           "optionStorage": "Nom de la configuration de stockage (identifiants rclone)",
           "saved": "Configuration de la stratégie de sauvegarde enregistrée",
-          "storageRequired": "--storage is required when creating a new destination. Use: --storage <storage-name>"
+          "storageRequired": "--storage est requis lors de la création d'une nouvelle destination. Utilisation : --storage <storage-name>"
         },
         "show": {
           "description": "Afficher les détails de la stratégie de sauvegarde",
-          "destinationsHeader": "  Destinations:",
-          "noDestinations": "  Destinations: (none)",
+          "destinationsHeader": "  Destinations :",
+          "noDestinations": "  Destinations : (aucune)",
           "notConfigured": "Aucune stratégie de sauvegarde configurée",
           "notFound": "Stratégie de sauvegarde \"{{name}}\" introuvable",
           "optionName": "Nom de la stratégie (affiche toutes si omis)"
@@ -719,7 +719,7 @@
         "description": "Gestion des sauvegardes machine",
         "list": {
           "description": "Lister les stratégies de sauvegarde liées à toutes les machines",
-          "noMachines": "No machines configured"
+          "noMachines": "Aucune machine configurée"
         },
         "now": {
           "description": "Déclencher une sauvegarde immédiatement sur une machine distante",
@@ -2198,7 +2198,7 @@
     "regionRequired": "Le nom de la région est requis. Utilisez --region ou définissez un contexte.",
     "registrationFailed": "L'enregistrement a échoué",
     "remoteNotFound": "\"{{name}}\" n'est ni une machine ni un stockage connu. Machines : {{machines}}. Stockages : {{storages}}",
-    "repositoryAlreadyMounted": "Repository \"{{name}}\" is already mounted on \"{{machine}}\". Migrating over a live repo would corrupt it. Run first: rdc repo down --name {{name}} -m {{machine}} --unmount",
+    "repositoryAlreadyMounted": "Le dépôt \"{{name}}\" est déjà monté sur \"{{machine}}\". Migrer par-dessus un dépôt actif le corromprait. Exécutez d'abord : rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "Dépôt \"{{name}}\" non trouvé",
     "repositoryRequired": "Le nom du dépôt est requis. Utilisez --repository <name>.",
     "resourceNotFound": "{{resource}} non trouvé",

@@ -308,12 +308,12 @@
           "optionName": "Имя стратегии (обязательно)",
           "optionStorage": "Имя конфигурации хранилища (учётные данные rclone)",
           "saved": "Конфигурация стратегии резервного копирования сохранена",
-          "storageRequired": "--storage is required when creating a new destination. Use: --storage <storage-name>"
+          "storageRequired": "--storage обязателен при создании нового назначения. Использование: --storage <storage-name>"
         },
         "show": {
           "description": "Показать детали стратегии резервного копирования",
-          "destinationsHeader": "  Destinations:",
-          "noDestinations": "  Destinations: (none)",
+          "destinationsHeader": "  Назначения:",
+          "noDestinations": "  Назначения: (нет)",
           "notConfigured": "Стратегии резервного копирования не настроены",
           "notFound": "Стратегия резервного копирования \"{{name}}\" не найдена",
           "optionName": "Имя стратегии (показывает все, если не указано)"
@@ -719,7 +719,7 @@
         "description": "Управление резервным копированием машины",
         "list": {
           "description": "Показать стратегии резервного копирования для всех машин",
-          "noMachines": "No machines configured"
+          "noMachines": "Нет настроенных машин"
         },
         "now": {
           "description": "Немедленно запустить резервное копирование на удалённой машине",
@@ -2198,7 +2198,7 @@
     "regionRequired": "Требуется имя региона. Используйте --region или установите контекст.",
     "registrationFailed": "Регистрация не удалась",
     "remoteNotFound": "\"{{name}}\" не является известной машиной или хранилищем. Машины: {{machines}}. Хранилища: {{storages}}",
-    "repositoryAlreadyMounted": "Repository \"{{name}}\" is already mounted on \"{{machine}}\". Migrating over a live repo would corrupt it. Run first: rdc repo down --name {{name}} -m {{machine}} --unmount",
+    "repositoryAlreadyMounted": "Репозиторий \"{{name}}\" уже смонтирован на \"{{machine}}\". Миграция поверх активного репозитория приведёт к его повреждению. Сначала выполните: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "Репозиторий \"{{name}}\" не найден",
     "repositoryRequired": "Требуется имя репозитория. Используйте --repository <name>.",
     "resourceNotFound": "{{resource}} не найден",

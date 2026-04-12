@@ -308,12 +308,12 @@
           "optionName": "Strateji adı (zorunlu)",
           "optionStorage": "Depolama yapılandırma adı (rclone kimlik bilgileri)",
           "saved": "Yedekleme stratejisi yapılandırması kaydedildi",
-          "storageRequired": "--storage is required when creating a new destination. Use: --storage <storage-name>"
+          "storageRequired": "Yeni bir hedef oluştururken --storage gereklidir. Kullanım: --storage <storage-name>"
         },
         "show": {
           "description": "Yedekleme stratejisi ayrıntılarını göster",
-          "destinationsHeader": "  Destinations:",
-          "noDestinations": "  Destinations: (none)",
+          "destinationsHeader": "  Hedefler:",
+          "noDestinations": "  Hedefler: (yok)",
           "notConfigured": "Yapılandırılmış yedekleme stratejisi yok",
           "notFound": "Yedekleme stratejisi \"{{name}}\" bulunamadı",
           "optionName": "Strateji adı (belirtilmezse tümü gösterilir)"
@@ -719,7 +719,7 @@
         "description": "Makine yedekleme yönetimi",
         "list": {
           "description": "Tüm makinelere bağlı yedekleme stratejilerini listele",
-          "noMachines": "No machines configured"
+          "noMachines": "Yapılandırılmış makine yok"
         },
         "now": {
           "description": "Uzak makinede hemen bir yedekleme başlat",
@@ -2198,7 +2198,7 @@
     "regionRequired": "Bölge adı gerekli. --region kullanın veya bağlamı ayarlayın.",
     "registrationFailed": "Kayıt başarısız",
     "remoteNotFound": "\"{{name}}\" bilinen bir makine veya depolama değil. Makineler: {{machines}}. Depolamalar: {{storages}}",
-    "repositoryAlreadyMounted": "Repository \"{{name}}\" is already mounted on \"{{machine}}\". Migrating over a live repo would corrupt it. Run first: rdc repo down --name {{name}} -m {{machine}} --unmount",
+    "repositoryAlreadyMounted": "\"{{name}}\" deposu zaten \"{{machine}}\" üzerinde bağlı. Aktif bir depo üzerinde taşıma işlemi veri bozulmasına yol açar. Önce şunu çalıştırın: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "\"{{name}}\" deposu bulunamadı",
     "repositoryRequired": "Depo adı gerekli. --repository <name> kullanın.",
     "resourceNotFound": "{{resource}} bulunamadı",
