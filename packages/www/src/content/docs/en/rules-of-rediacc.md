@@ -140,8 +140,7 @@ Renet auto-injects these into every container:
 
 ## Deployment
 
-- **`rdc repo up`** runs `up()` in all Rediaccfiles.
-- **`rdc repo up --mount`** opens the LUKS volume first, then runs lifecycle. Required after `backup push` to a new machine.
+- **`rdc repo up`** auto-mounts the LUKS volume if unmounted, then runs `up()` in all Rediaccfiles.
 - **`rdc repo down`** runs `down()` and stops the Docker daemon.
 - **`rdc repo down --unmount`** also closes the LUKS volume (locks the encrypted storage).
 - **Forks** (`rdc repo fork`) create a CoW (copy-on-write) clone with a new GUID and networkId, in **constant time regardless of repo size**. BTRFS reflink duplicates the image metadata, not the data, so a 100 GB repo forks in the same few seconds as a 1 GB repo. The fork shares the parent's encryption key.
@@ -155,6 +154,5 @@ Renet auto-injects these into every container:
 - Restart policies are safe, renet auto-strips them and the watchdog handles recovery.
 - Using `privileged: true`, not needed, renet injects specific CRIU capabilities instead.
 - Hardcoding raw IPs in persistent config files - use service names for connections to keep fork isolation intact.
-- Forgetting `--mount` on first deploy after `backup push`, LUKS volume needs explicit opening.
 - Using `rdc term connect -c` as a workaround for failed commands, report bugs instead.
 - `repo delete` performs full cleanup including loopback IPs and systemd units. Run `rdc machine prune <name>` to clean leftovers from legacy deletions.

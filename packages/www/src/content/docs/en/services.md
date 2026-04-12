@@ -179,19 +179,30 @@ services:
 Mount the repository and start all services:
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--mount` | Mount the repository first if not already mounted |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 The execution sequence is:
-1. Mount the LUKS-encrypted repository (if `--mount`)
+1. Mount the LUKS-encrypted repository (auto-mounts if unmounted)
 2. Start the isolated Docker daemon
 3. Auto-generate `.rediacc.json` from compose files
 4. Run `up()` in all Rediaccfiles (A-Z order)
+
+After deployment, the output shows a **PROXY ROUTES** section with the actual URLs for each service. Services with custom Traefik labels (e.g. `traefik.http.routers.myapp.rule=Host(...)`) show their custom domains as primary URLs:
+
+```
+HTTP services (accessible via proxy after ~3s):
+  gitlab-server:
+    HTTPS: https://gitlab.rediacc.io  (custom)
+    Auto:  https://gitlab-server.gitlab.hostinger.rediacc.io
+    IP:    127.0.11.130
+```
+
+Services without custom Traefik labels show only the auto-generated route. Use these URLs (not the generic pattern printed by the CLI) for browser access, API calls, and cross-service configuration.
 
 ## Stopping Services
 

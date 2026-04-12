@@ -285,23 +285,35 @@
     },
     "config": {
       "backupStrategy": {
-        "description": "Gérer la stratégie de sauvegarde multi-destination",
+        "description": "Gérer les stratégies de sauvegarde nommées (modes chaud/froid, destinations, planification)",
+        "list": {
+          "description": "Lister toutes les stratégies de sauvegarde"
+        },
+        "remove": {
+          "description": "Supprimer une stratégie de sauvegarde ou une destination",
+          "optionDestination": "Supprimer uniquement cette destination (conserve les autres destinations)",
+          "optionName": "Nom de la stratégie (requis)",
+          "removed": "Stratégie de sauvegarde supprimée"
+        },
         "set": {
-          "description": "Configurer les paramètres de planification des sauvegardes",
-          "noOptions": "Spécifiez au moins une option : --destination, --cron, --enable ou --disable",
-          "optionCron": "Expression cron pour la planification des sauvegardes (ex. \"0 2 * * *\")",
-          "optionDestination": "Nom de destination de stockage par défaut",
-          "optionDisable": "Désactiver les sauvegardes planifiées",
-          "optionEnable": "Activer les sauvegardes planifiées",
-          "saved": "Configuration de planification des sauvegardes enregistrée"
+          "description": "Créer ou mettre à jour une stratégie de sauvegarde",
+          "optionBwlimit": "Limite de bande passante rclone (ex. \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")",
+          "optionCron": "Planification cron (ex. \"0 * * * *\" pour toutes les heures)",
+          "optionDestination": "Nom de la destination au sein de la stratégie",
+          "optionDisable": "Désactiver la stratégie ou la destination",
+          "optionEnable": "Activer la stratégie ou la destination",
+          "optionExclude": "Exclure ces repos de la sauvegarde (noms séparés par des virgules)",
+          "optionInclude": "Sauvegarder uniquement ces repos (noms séparés par des virgules)",
+          "optionMode": "Mode de sauvegarde : \"hot\" (sans interruption) ou \"cold\" (arrêt, instantané, redémarrage)",
+          "optionName": "Nom de la stratégie (requis)",
+          "optionStorage": "Nom de la configuration de stockage (identifiants rclone)",
+          "saved": "Configuration de la stratégie de sauvegarde enregistrée"
         },
         "show": {
-          "description": "Afficher la configuration actuelle de planification des sauvegardes",
-          "destinations": "Destinations :",
-          "enabled": "Activé : {{enabled}}",
-          "noDestinations": "Aucune destination de sauvegarde configurée",
-          "notConfigured": "Aucune planification de sauvegarde configurée",
-          "schedule": "Planification : {{schedule}}"
+          "description": "Afficher les détails de la stratégie de sauvegarde",
+          "notConfigured": "Aucune stratégie de sauvegarde configurée",
+          "notFound": "Stratégie de sauvegarde \"{{name}}\" introuvable",
+          "optionName": "Nom de la stratégie (affiche toutes si omis)"
         }
       },
       "certCache": {
@@ -647,8 +659,8 @@
         "authStatus": "Statut",
         "cliVersion": "Version CLI",
         "contextMode": "Mode de contexte",
-        "dockerAvailable": "Docker",
-        "goInstalled": "Go",
+        "dockerAvailable": "Docker disponible",
+        "goInstalled": "Go installé",
         "machines": "Nombre de machines",
         "nodeVersion": "Version de Node.js",
         "opsPrereqs": "Prérequis OPS",
@@ -660,7 +672,7 @@
         "sshKey": "Clé SSH",
         "subscriptionMachineSlots": "Emplacements de machines",
         "subscriptionRepoLicenses": "Licences de dépôts",
-        "subscriptionStatus": "Status",
+        "subscriptionStatus": "Statut de l'abonnement",
         "subscriptionToken": "Jeton d'accès"
       },
       "description": "Diagnostiquer l'environnement CLI et l'intégration renet",
@@ -694,10 +706,29 @@
     },
     "machine": {
       "backup": {
+        "cancel": {
+          "cancelled": "{{name}} annulé",
+          "cancelling": "Arrêt de {{name}}...",
+          "description": "Annuler une sauvegarde en cours sur une machine distante",
+          "notRunning": "Aucune sauvegarde en cours pour la stratégie \"{{name}}\"",
+          "optionStrategy": "Nom de la stratégie (annule toutes si omis)"
+        },
         "description": "Gestion des sauvegardes machine",
+        "list": {
+          "description": "Lister les stratégies de sauvegarde liées à toutes les machines"
+        },
+        "now": {
+          "description": "Déclencher une sauvegarde immédiatement sur une machine distante",
+          "optionStrategy": "Nom de la stratégie (déclenche toutes si omis)"
+        },
         "schedule": {
-          "description": "Envoyer la planification de sauvegarde vers une machine distante (minuteur systemd)",
+          "description": "Déployer la planification de sauvegarde sur une machine distante (minuteries systemd)",
+          "optionDryRun": "Prévisualiser les unités générées sans déployer",
           "success": "Planification de sauvegarde déployée sur {{machine}}"
+        },
+        "status": {
+          "description": "Afficher l'état de sauvegarde et l'état du minuteur sur une machine distante",
+          "optionStrategy": "Afficher les détails d'une stratégie spécifique"
         }
       },
       "containers": {
@@ -1258,6 +1289,39 @@
         "starting": "Listage des dépôts sur \"{{machine}}\"..."
       },
       "machineOption": "Nom de la machine cible",
+      "migrate": {
+        "checkpointing": "Création du checkpoint CRIU...",
+        "complete": "Migration terminée : {{name}} déplacé de {{from}} vers {{to}}",
+        "deltaDone": "Synchronisation delta terminée",
+        "deltaFailed": "Synchronisation delta échouée",
+        "deltaSync": "Synchronisation du delta...",
+        "description": "Migration en direct d'un dépôt d'une machine à une autre avec un temps d'arrêt minimal. rsync en deux phases : transfert en masse pendant l'exécution, puis arrêt bref pour la synchronisation delta. Prend en charge le checkpoint CRIU pour la migration de la mémoire des processus et le provisionnement automatique des machines cibles",
+        "descriptionShort": "Migration en direct d'un dépôt entre machines",
+        "dnsSkipped": "Changement DNS ignoré (pas de baseDomain ou de configuration Cloudflare)",
+        "downtime": "Temps d'arrêt : {{duration}}",
+        "optionBwlimit": "Limite de bande passante pour le transfert rsync (ex : 10M)",
+        "optionCheckpoint": "Migration en direct CRIU : capturer et restaurer l'état de la mémoire des processus",
+        "optionFrom": "Nom de la machine source",
+        "optionProvision": "Provisionnement automatique de la cible via un fournisseur cloud (ex : hetzner, linode)",
+        "optionSkipDns": "Ignorer le changement des enregistrements DNS après la migration",
+        "optionTo": "Nom de la machine cible",
+        "phase1": "Phase 1 : Transfert des données en masse (la source reste en fonctionnement)...",
+        "phase1Done": "Transfert en masse terminé",
+        "phase1Failed": "Transfert en masse échoué",
+        "phase2": "Phase 2 : Basculement (bref temps d'arrêt)...",
+        "phase3": "Phase 3 : Démarrage sur la cible...",
+        "provisioning": "Provisionnement de la machine cible {{machine}} via {{provider}}...",
+        "sourceStopped": "Services source arrêtés",
+        "sourceUnmounted": "Source démontée",
+        "startFailed": "Impossible de démarrer sur la cible",
+        "startingTarget": "Démarrage des services sur la cible...",
+        "stopFailed": "Impossible d'arrêter les services source",
+        "stoppingSource": "Arrêt des services source...",
+        "switchingDns": "Changement des enregistrements DNS...",
+        "targetStarted": "Services cible démarrés",
+        "unmountFailed": "Impossible de démonter la source",
+        "unmountingSource": "Démontage de la source..."
+      },
       "mount": {
         "checkpointOption": "Restaurer depuis un point de contrôle après le montage",
         "completed": "Montage terminé",
@@ -1282,6 +1346,7 @@
         "deploying": "Déploiement de \"{{repo}}\" sur {{machine}}...",
         "description": "Tirer un dépôt depuis un distant (machine ou stockage). Omettre le nom pour tirer tous les dépôts. Le type de source est détecté automatiquement depuis la configuration. Utilisez --up pour déployer après le pull",
         "descriptionShort": "Tirer un dépôt depuis un distant (machine ou stockage)",
+        "optionBwlimit": "Limite de bande passante pour le transfert rsync (ex : \"6M\", \"10M\")",
         "optionForce": "Forcer l'écrasement du dépôt existant",
         "optionFrom": "Nom de la machine ou du stockage source (détecté automatiquement depuis la configuration)",
         "optionUp": "Après le pull, monter et déployer le dépôt sur cette machine",
@@ -1295,6 +1360,7 @@
         "description": "Pousser un dépôt vers un distant (machine ou stockage). Omettre le nom pour pousser tous les dépôts. Le type de cible est détecté automatiquement depuis la configuration. Pour un transfert machine-à-machine, l'image chiffrée du dépôt est copiée avec le MÊME GUID — c'est une sauvegarde/migration, pas un fork. Pour créer un fork indépendant, utilisez d'abord 'repo fork', puis push. Utilisez --up pour déployer après le push",
         "descriptionShort": "Pousser un dépôt vers un distant (machine ou stockage)",
         "destRequired": "Spécifiez --to <remote> (nom de machine ou stockage depuis la configuration)",
+        "optionBwlimit": "Limite de bande passante pour le transfert rsync (ex : \"6M\", \"10M\")",
         "optionCheckpoint": "Créer un checkpoint CRIU avant la sauvegarde (capture l'état de la mémoire des processus pour la migration à chaud)",
         "optionForce": "Forcer l'écrasement de la sauvegarde existante",
         "optionProvision": "Provisionner automatiquement la machine cible via le fournisseur cloud si elle n'existe pas",
@@ -2155,6 +2221,7 @@
     "term": {
       "connectivityFailed": "Impossible d'atteindre {{host}}:{{port}}. {{error}}\n\nDépannage :\n  - Vérifiez que la machine est allumée et connectée au réseau\n  - Vérifiez que l'adresse IP est correcte dans le coffre de la machine\n  - Assurez-vous que le port {{port}} n'est pas bloqué par un pare-feu\n  - Essayez de faire un ping à la machine : ping {{host}}",
       "dockerComposeForbidden": "\"docker compose\" n'est pas autorisé dans le contexte du dépôt.\n\nUtilisez plutôt \"renet compose -- <args>\" afin que les IP loopback par dépôt, l'injection réseau de l'hôte, les capacités CRIU et la validation du compose soient appliquées. Exécuter \"docker compose\" directement contourne tout cela et corrompt silencieusement le déploiement.\n\nPour les déploiements orchestrés, préférez : rdc repo up --name <repository> -m <machine>",
+      "fileWriteDetected": "Écriture de fichier détectée ({{detected}}). Utilisez rdc repo sync à la place :\n  rdc repo sync upload -m MACHINE -r REPO --local FILE --remote PATH\n\nrsync transfère les fichiers avec compression delta, sommes de contrôle et permissions correctes.",
       "launchFailed": "Impossible de lancer le terminal : {{error}}",
       "noHostKey": "La machine '{{machine}}' n'a pas de clé d'hôte configurée dans le coffre",
       "noIpAddress": "La machine '{{machine}}' n'a pas d'adresse IP configurée",
@@ -2190,6 +2257,7 @@
     "cli": {
       "machineQuery": "Afficher l'état de la machine",
       "repoUp": "Déployer les services du dépôt",
+      "syncDownload": "Télécharger des fichiers depuis le dépôt",
       "syncUpload": "Téléverser des fichiers vers le dépôt",
       "termRepo": "SSH vers le dépôt"
     },
@@ -2231,7 +2299,8 @@
     "term": {
       "command": "Exécuter une commande sans shell interactif",
       "machine": "SSH vers la machine",
-      "repo": "SSH vers le dépôt (DOCKER_HOST automatique)"
+      "repo": "SSH vers le dépôt (DOCKER_HOST automatique)",
+      "syncHint": "Pour le transfert de fichiers, utilisez : rdc repo sync upload/download"
     },
     "useHelpAll": "Utilisez --help-all pour les descriptions détaillées",
     "vscode": {
@@ -2325,6 +2394,7 @@
     "queryNetwork": "Inclure uniquement les interfaces réseau",
     "queryRepositories": "Inclure uniquement les dépôts",
     "queryServices": "Inclure uniquement les services",
+    "queryStorageHealth": "Afficher la fragmentation BTRFS et les économies reflink par dépôt",
     "querySystem": "Inclure uniquement les informations système",
     "quiet": "Supprimer la sortie informative",
     "rawVault": "JSON du coffre brut (pour scripts/CI)",

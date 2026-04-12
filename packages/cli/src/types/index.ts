@@ -24,6 +24,8 @@ export interface MachineConfig {
   infra?: InfraConfig;
   /** Ceph RBD datastore configuration */
   ceph?: CephConfig;
+  /** Backup strategies bound to this machine (references backupStrategies by name) */
+  backupStrategies?: string[];
 }
 
 /**
@@ -207,30 +209,43 @@ export interface SSHConfig {
 }
 
 /**
- * A single backup destination within the backup strategy.
- * Each destination targets a named storage and can override the global schedule.
+ * A single backup destination within a strategy.
+ * References a storage config (rclone credentials) by name.
  */
 export interface BackupStrategyDestination {
-  /** Storage name (e.g., "my-s3") */
+  /** Unique destination name (used for logging and identification) */
+  name: string;
+  /** Storage config name (references rclone credentials in config.storages) */
   storage: string;
-  /** Per-destination cron override (falls back to global schedule) */
-  schedule?: string;
-  /** Per-destination enable/disable (falls back to global enabled) */
+  /** Per-destination enable/disable (falls back to strategy enabled) */
   enabled?: boolean;
+  /** Per-destination rclone bandwidth limit (e.g., "6M", "08:00,3M;22:00,10M") */
+  bandwidthLimit?: string;
 }
 
 /**
- * Backup strategy configuration for a config.
- * Defines one or more storage destinations and cron schedules for automated backups.
- * Used by `rdc config backup-strategy set|show` and `rdc machine deploy-backup` to configure systemd timers on remote machines.
+ * Named backup strategy configuration.
+ * Each strategy has a single schedule and mode, with one or more storage destinations.
+ * Strategies are bound to machines via MachineConfig.backupStrategies.
+ *
+ * - hot mode: BTRFS snapshot while services run (crash-consistent, zero downtime)
+ * - cold mode: stop services, snapshot, restart, then upload (application-consistent, brief downtime)
  */
 export interface BackupStrategyConfig {
-  /** Backup destinations */
+  /** Backup destinations (upload to all from the same snapshot) */
   destinations: BackupStrategyDestination[];
-  /** Global default cron expression (e.g., "0 2 * * *") */
-  schedule?: string;
-  /** Global enable/disable (default: true) */
+  /** Cron schedule (e.g., "0 * * * *" for hourly, "0 3 * * *" for nightly at 3 AM) */
+  schedule: string;
+  /** Backup mode: "hot" (default) or "cold" */
+  mode?: 'hot' | 'cold';
+  /** Enable/disable this strategy (default: true) */
   enabled?: boolean;
+  /** Default rclone bandwidth limit for all destinations (e.g., "6M") */
+  bandwidthLimit?: string;
+  /** Only back up these repos by name (mutually exclusive with exclude) */
+  include?: string[];
+  /** Back up all repos except these by name (mutually exclusive with include) */
+  exclude?: string[];
 }
 
 /**
@@ -312,8 +327,8 @@ export interface RdcConfig {
   sshContent?: SSHContent;
   /** Path to renet binary (default: 'renet' in PATH) */
   renetPath?: string;
-  /** Backup strategy configuration */
-  backupStrategy?: BackupStrategyConfig;
+  /** Named backup strategies (name -> config). Bound to machines via MachineConfig.backupStrategies */
+  backupStrategies?: Record<string, BackupStrategyConfig>;
   /** Cloudflare DNS API token for ACME DNS-01 challenge (shared across machines) */
   cfDnsApiToken?: string;
   /** Cached Cloudflare DNS zone ID (auto-resolved from baseDomain) */

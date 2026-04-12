@@ -459,11 +459,6 @@
       "region": "us-east",
       "type": "g6-standard-4"
     },
-    "firewall": {
-      "linkAttr": "linodes",
-      "linkRef": "${linode_instance.machine.id}",
-      "resource": "linode_firewall"
-    },
     "imageAttr": "image",
     "ipv4Output": "ip_address",
     "ipv6Output": "ipv6",

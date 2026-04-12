@@ -41,7 +41,6 @@ For the high-level architecture, see [Architecture](/es/docs/architecture). For 
 └── traefik/dynamic/                   # Dynamic route files
 
 /run/rediacc/docker-{id}.sock          # Per-network Docker sockets
-/var/lib/rediacc/docker-{id}/          # Per-network daemon data
 /var/lib/rediacc/router/               # Router state (port allocations)
 ```
 

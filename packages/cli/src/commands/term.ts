@@ -18,6 +18,7 @@ import { handleError, ValidationError } from '../utils/errors.js';
 import {
   detectDirectRenetCommand,
   detectDockerComposeCommand,
+  detectFileWriteCommand,
   detectRepoContextCommand,
 } from '../utils/repo-context-guard.js';
 import { withSpinner } from '../utils/spinner.js';
@@ -171,6 +172,18 @@ function enforceDirectRenetGuard(command: string): void {
   );
 }
 
+function enforceFileWriteGuard(command: string): void {
+  const match = detectFileWriteCommand(command);
+  if (!match) return;
+  if (isAgentEnvironment()) {
+    throw new ValidationError(t('errors.term.fileWriteDetected', { detected: match.label }));
+  }
+  process.stderr.write(
+    `\x1b[33mHint:\x1b[0m Detected file write pattern (${match.label}). ` +
+      `For file transfer, consider: rdc repo sync upload -m MACHINE -r REPO --local FILE --remote PATH\n`
+  );
+}
+
 async function enforceTermPolicy(opts: TermConnectOptions): Promise<void> {
   if (opts.command && detectDockerComposeCommand(opts.command)) {
     throw new ValidationError(t('errors.term.dockerComposeForbidden'));
@@ -191,6 +204,7 @@ async function enforceTermPolicy(opts: TermConnectOptions): Promise<void> {
 
   if (opts.command) {
     enforceDirectRenetGuard(opts.command);
+    enforceFileWriteGuard(opts.command);
   }
 
   if (opts.repository) {
@@ -404,6 +418,8 @@ ${t('help.examples')}
   $ rdc term connect -m server-1                  ${t('help.term.machine')}
   $ rdc term connect -m server-1 -r my-app        ${t('help.term.repo')}
   $ rdc term connect -m server-1 -c "uptime"      ${t('help.term.command')}
+
+  ${t('help.term.syncHint')}
 `
   );
 

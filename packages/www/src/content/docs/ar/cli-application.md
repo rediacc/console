@@ -1193,7 +1193,6 @@ rdc repo up [options]
 |------|-------------|----------|---------|
 | `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--mount` | {{t:cli.commands.repo.up.mountOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-checkpoint` | {{t:cli.commands.repo.up.skipCheckpointOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--tls` | {{t:cli.commands.repo.up.tlsOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--include-forks` | {{t:cli.commands.repo.upAll.includeForksOption}} | {{t:cli.docs.optionLabels.no}} | - |

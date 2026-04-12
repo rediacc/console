@@ -97,6 +97,80 @@ Options:
 
 JSON output includes `name` (resolved) and `guid` (original GUID), and nests each repository's `containers` (with `domain`, `autoRoute`, `repository`/`repository_guid`) and `services` arrays.
 
+## Storage Health
+
+Inspect BTRFS fragmentation and reflink sharing across all repositories on a machine:
+
+```bash
+rdc machine query --name server-1 --storage-health
+```
+
+| Column | Description |
+|--------|-------------|
+| Size | LUKS image file size (what the repo looks like) |
+| Unique | Actual unique data owned only by this repo |
+| Shared | Data blocks reused across repos via BTRFS reflinks (free copies) |
+| Extents | Number of file extents (higher = more fragmented) |
+| Frag | Fragmentation level: low, moderate, or high |
+
+The summary shows total savings from BTRFS reflinks:
+
+```
+14 repos, 224.3 GB virtual size
+Unique data: 323.7 MB | Shared: 224.0 GB | Efficiency: 99.9%
+```
+
+- **Virtual size** is the sum of all repo image sizes. This is what the repos look like, but it double-counts blocks shared via reflinks.
+- **Unique data** is the actual storage consumed by repo data that exists in only one repo. This is what you would free by deleting a repo.
+- **Shared** is data reused across repos via BTRFS reflinks. Forking a repo creates reflink copies that share blocks until either side writes new data, at which point blocks diverge.
+- **Efficiency** is the percentage of data reused via reflinks. Higher is better. A machine with many forks from the same parent will show near-100% efficiency.
+
+Repos with high fragmentation and zero shared blocks can be safely defragmented with `btrfs filesystem defragment`. Repos with shared blocks should NOT be defragmented because defrag replaces shared blocks with unique copies, increasing disk usage.
+
+The scan runs in parallel and takes 5-15 seconds depending on the number and size of repos. When `--storage-health` is not specified, a one-line hint appears after the query output as a reminder.
+
+## BTRFS Scrub
+
+Rediacc automatically schedules a weekly BTRFS scrub on every machine. The scrub reads every data block on the datastore, verifies checksums, and reports any corruption. This catches silent data corruption (bitrot) before it propagates to backups and forks.
+
+The scrub runs every Sunday at 02:00 local time (machine timezone) with a randomized delay of up to 1 hour. It runs at the lowest I/O priority (`ionice idle`, `nice 19`) so it does not interfere with running services. On SSD-backed machines, expect roughly 8 minutes per 100 GB of datastore.
+
+The scrub timer is installed automatically on the first daemon start after a renet upgrade. When the scrub policy changes in a future renet version, it updates itself on the next daemon start with no user action needed.
+
+### Scrub status
+
+The result of the last scrub is saved outside the BTRFS volume (at `/var/lib/rediacc/scrub-last-result.json`) so it remains readable even if the volume has issues. The `rdc machine query --system` output includes a `scrub_status` field:
+
+```json
+"scrub_status": {
+  "last_run_human": "3 days ago",
+  "status": "ok",
+  "total_errors": 0,
+  "uncorrectable": 0,
+  "duration_seconds": 312
+}
+```
+
+| Status | Meaning |
+|--------|---------|
+| `ok` | Last scrub completed with no errors |
+| `never_run` | Scrub has not run yet (timer was just installed) |
+| `overdue` | Last scrub was more than 14 days ago |
+| `errors_found` | Scrub found checksum mismatches (check the `total_errors` and `uncorrectable` counts) |
+| `failed` | Scrub process exited with a non-zero code |
+
+If `uncorrectable` is greater than zero, the affected blocks cannot be repaired automatically (single-disk BTRFS has no redundant copy). Restore the affected repository from the most recent backup.
+
+### Manual scrub
+
+To run a scrub immediately (e.g. after a power failure or disk migration):
+
+```bash
+rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
+```
+
+The result is saved to the same JSON file and immediately visible in the next `rdc machine query --system`.
+
 ## Vault Status
 
 Get a complete overview of a machine including deployment information:

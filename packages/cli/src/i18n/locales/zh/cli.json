@@ -285,23 +285,35 @@
     },
     "config": {
       "backupStrategy": {
-        "description": "管理多目标备份策略",
+        "description": "管理命名备份策略（热/冷模式、目标、调度）",
+        "list": {
+          "description": "列出所有备份策略"
+        },
+        "remove": {
+          "description": "删除备份策略或目标",
+          "optionDestination": "仅删除此目标（保留其他目标）",
+          "optionName": "策略名称（必填）",
+          "removed": "备份策略已删除"
+        },
         "set": {
-          "description": "配置备份计划设置",
-          "noOptions": "至少指定一个选项: --destination、--cron、--enable 或 --disable",
-          "optionCron": "备份计划的 cron 表达式（例如 \"0 2 * * *\"）",
-          "optionDestination": "默认存储目标名称",
-          "optionDisable": "禁用计划备份",
-          "optionEnable": "启用计划备份",
-          "saved": "备份计划配置已保存"
+          "description": "创建或更新备份策略",
+          "optionBwlimit": "Rclone 带宽限制（例如 \"6M\"、\"10M:off\"、\"08:00,3M;22:00,10M\"）",
+          "optionCron": "Cron 调度（例如 \"0 * * * *\" 表示每小时）",
+          "optionDestination": "策略内的目标名称",
+          "optionDisable": "禁用策略或目标",
+          "optionEnable": "启用策略或目标",
+          "optionExclude": "从备份中排除这些仓库（逗号分隔的名称）",
+          "optionInclude": "仅备份这些仓库（逗号分隔的名称）",
+          "optionMode": "备份模式：\"hot\"（零停机）或 \"cold\"（停止、快照、重启）",
+          "optionName": "策略名称（必填）",
+          "optionStorage": "存储配置名称（rclone 凭据）",
+          "saved": "备份策略配置已保存"
         },
         "show": {
-          "description": "显示当前备份计划配置",
-          "destinations": "目的地：",
-          "enabled": "已启用: {{enabled}}",
-          "noDestinations": "未配置备份目的地",
-          "notConfigured": "未配置备份计划",
-          "schedule": "计划: {{schedule}}"
+          "description": "显示备份策略详情",
+          "notConfigured": "未配置备份策略",
+          "notFound": "备份策略 \"{{name}}\" 未找到",
+          "optionName": "策略名称（省略时显示全部）"
         }
       },
       "certCache": {
@@ -660,7 +672,7 @@
         "sshKey": "SSH密钥",
         "subscriptionMachineSlots": "机器槽位",
         "subscriptionRepoLicenses": "仓库许可证",
-        "subscriptionStatus": "Status",
+        "subscriptionStatus": "状态",
         "subscriptionToken": "访问令牌"
       },
       "description": "诊断CLI环境和renet集成",
@@ -694,10 +706,29 @@
     },
     "machine": {
       "backup": {
+        "cancel": {
+          "cancelled": "已取消 {{name}}",
+          "cancelling": "正在停止 {{name}}...",
+          "description": "取消远程机器上正在运行的备份",
+          "notRunning": "策略 \"{{name}}\" 没有正在运行的备份",
+          "optionStrategy": "策略名称（省略时取消全部）"
+        },
         "description": "机器备份管理",
+        "list": {
+          "description": "列出绑定到所有机器的备份策略"
+        },
+        "now": {
+          "description": "在远程机器上立即触发备份",
+          "optionStrategy": "策略名称（省略时触发全部）"
+        },
         "schedule": {
-          "description": "将备份计划推送到远程机器（systemd 定时器）",
+          "description": "将备份计划部署到远程机器（systemd 定时器）",
+          "optionDryRun": "预览生成的单元而不部署",
           "success": "已将备份计划部署到 {{machine}}"
+        },
+        "status": {
+          "description": "显示远程机器上的备份状态和定时器状态",
+          "optionStrategy": "显示特定策略的详细信息"
         }
       },
       "containers": {
@@ -1258,6 +1289,39 @@
         "starting": "正在列出 \"{{machine}}\" 上的仓库..."
       },
       "machineOption": "目标机器名称",
+      "migrate": {
+        "checkpointing": "正在创建 CRIU 检查点...",
+        "complete": "迁移完成：{{name}} 已从 {{from}} 移动到 {{to}}",
+        "deltaDone": "差异同步完成",
+        "deltaFailed": "差异同步失败",
+        "deltaSync": "正在同步差异数据...",
+        "description": "以最小停机时间将仓库从一台机器实时迁移到另一台。两阶段 rsync：运行时批量传输，然后短暂停止进行差异同步。支持 CRIU 检查点用于进程内存迁移和目标机器自动配置",
+        "descriptionShort": "在机器之间实时迁移仓库",
+        "dnsSkipped": "已跳过 DNS 切换（无 baseDomain 或 Cloudflare 配置）",
+        "downtime": "停机时间：{{duration}}",
+        "optionBwlimit": "rsync 传输带宽限制（例如 10M）",
+        "optionCheckpoint": "CRIU 实时迁移：捕获和恢复进程内存状态",
+        "optionFrom": "源机器名称",
+        "optionProvision": "通过云服务商自动配置目标机器（例如 hetzner、linode）",
+        "optionSkipDns": "迁移后跳过 DNS 记录切换",
+        "optionTo": "目标机器名称",
+        "phase1": "阶段 1：批量传输数据（源继续运行）...",
+        "phase1Done": "批量传输完成",
+        "phase1Failed": "批量传输失败",
+        "phase2": "阶段 2：切换（短暂停机）...",
+        "phase3": "阶段 3：在目标上启动...",
+        "provisioning": "正在通过 {{provider}} 配置目标机器 {{machine}}...",
+        "sourceStopped": "源服务已停止",
+        "sourceUnmounted": "源已卸载",
+        "startFailed": "在目标上启动失败",
+        "startingTarget": "正在目标上启动服务...",
+        "stopFailed": "停止源服务失败",
+        "stoppingSource": "正在停止源服务...",
+        "switchingDns": "正在切换 DNS 记录...",
+        "targetStarted": "目标服务已启动",
+        "unmountFailed": "卸载源失败",
+        "unmountingSource": "正在卸载源..."
+      },
       "mount": {
         "checkpointOption": "挂载后从检查点恢复",
         "completed": "挂载完成",
@@ -1282,6 +1346,7 @@
         "deploying": "正在将\"{{repo}}\"部署到{{machine}}...",
         "description": "从远程（机器或存储）拉取仓库。省略名称以拉取所有仓库。源类型从配置中自动检测。使用--up在pull后部署",
         "descriptionShort": "从远程（机器或存储）拉取仓库",
+        "optionBwlimit": "rsync 传输带宽限制（例如 \"6M\"、\"10M\"）",
         "optionForce": "强制覆盖现有仓库",
         "optionFrom": "源机器或存储名称（从配置中自动检测）",
         "optionUp": "pull后，在此机器上挂载并部署仓库",
@@ -1295,6 +1360,7 @@
         "description": "将仓库推送到远程（机器或存储）。省略名称以推送所有仓库。目标类型从配置中自动检测。机器间传输时，加密的仓库映像使用相同的GUID复制 — 这是备份/迁移，不是fork。要创建独立的fork，请先使用'repo fork'，然后push。使用--up在push后部署",
         "descriptionShort": "将仓库推送到远程（机器或存储）",
         "destRequired": "请指定 --to <remote>（配置中的机器或存储名称）",
+        "optionBwlimit": "rsync 传输带宽限制（例如 \"6M\"、\"10M\"）",
         "optionCheckpoint": "备份前创建CRIU检查点（捕获进程内存状态用于实时迁移）",
         "optionForce": "强制覆盖现有备份",
         "optionProvision": "如果目标机器不存在，通过云提供商自动配置",
@@ -2155,6 +2221,7 @@
     "term": {
       "connectivityFailed": "无法到达 {{host}}:{{port}}。{{error}}\n\n故障排除：\n  - 检查机器是否已启动并连接到网络\n  - 验证 IP 地址在机器保险箱中是否正确\n  - 确保端口 {{port}} 未被防火墙阻止\n  - 尝试 ping 机器：ping {{host}}",
       "dockerComposeForbidden": "在仓库上下文中不允许使用 \"docker compose\"。\n\n请改用 \"renet compose -- <args>\"，这样才会应用每个仓库的回环 IP、主机网络注入、CRIU 能力和 compose 验证。直接运行 \"docker compose\" 会绕过所有这些并在不知不觉中破坏部署。\n\n对于编排部署，推荐使用：rdc repo up --name <repository> -m <machine>",
+      "fileWriteDetected": "检测到文件写入 ({{detected}})。请改用 rdc repo sync：\n  rdc repo sync upload -m MACHINE -r REPO --local FILE --remote PATH\n\nrsync 使用增量压缩、校验和和正确的权限传输文件。",
       "launchFailed": "无法启动终端：{{error}}",
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
@@ -2190,6 +2257,7 @@
     "cli": {
       "machineQuery": "显示机器状态",
       "repoUp": "部署仓库服务",
+      "syncDownload": "从仓库下载文件",
       "syncUpload": "上传文件到仓库",
       "termRepo": "SSH 连接到仓库"
     },
@@ -2231,7 +2299,8 @@
     "term": {
       "command": "无交互式 shell 执行命令",
       "machine": "SSH 连接到机器",
-      "repo": "SSH 连接到仓库（自动设置 DOCKER_HOST）"
+      "repo": "SSH 连接到仓库（自动设置 DOCKER_HOST）",
+      "syncHint": "文件传输请使用：rdc repo sync upload/download"
     },
     "useHelpAll": "使用 --help-all 查看详细说明",
     "vscode": {
@@ -2325,6 +2394,7 @@
     "queryNetwork": "仅包含网络接口",
     "queryRepositories": "仅包含仓库",
     "queryServices": "仅包含服务",
+    "queryStorageHealth": "显示每个仓库的 BTRFS 碎片化和 reflink 节省量",
     "querySystem": "仅包含系统信息",
     "quiet": "抑制信息性输出",
     "rawVault": "原始保险箱 JSON（用于脚本/CI）",

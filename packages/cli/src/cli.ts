@@ -260,6 +260,7 @@ ${t('help.examples')}
   $ rdc term connect -m server-1 -r my-app        ${t('help.cli.termRepo')}
   $ rdc repo up --name my-app -m server-1          ${t('help.cli.repoUp')}
   $ rdc repo sync upload -m server-1 -r my-app     ${t('help.cli.syncUpload')}
+  $ rdc repo sync download -m server-1 -r my-app   ${t('help.cli.syncDownload')}
 `
 );
 

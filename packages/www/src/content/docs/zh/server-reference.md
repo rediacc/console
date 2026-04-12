@@ -41,7 +41,6 @@ sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 └── traefik/dynamic/                   # Dynamic route files
 
 /run/rediacc/docker-{id}.sock          # Per-network Docker sockets
-/var/lib/rediacc/docker-{id}/          # Per-network daemon data
 /var/lib/rediacc/router/               # Router state (port allocations)
 ```
 

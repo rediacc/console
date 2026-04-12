@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 7754,
+    "keyCount": 7764,
     "sourceCommit": "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
   },
   "hashes": {
@@ -611,6 +611,11 @@
     "pages.disasterRecovery.professionalServices.serviceTypes.services.6.name": "46d1f133",
     "pages.disasterRecovery.professionalServices.serviceTypes.services.6.priority": "2b2b2f1f",
     "pages.disasterRecovery.professionalServices.serviceTypes.services.6.standard": "d2efdd82",
+    "pages.disasterRecovery.professionalServices.serviceTypes.services.7.emergency": "6e3ed927",
+    "pages.disasterRecovery.professionalServices.serviceTypes.services.7.id": "0a436ba3",
+    "pages.disasterRecovery.professionalServices.serviceTypes.services.7.name": "53ef504a",
+    "pages.disasterRecovery.professionalServices.serviceTypes.services.7.priority": "6e2babd7",
+    "pages.disasterRecovery.professionalServices.serviceTypes.services.7.standard": "ca96c911",
     "pages.disasterRecovery.psTeaser.heading": "fbd6baf1",
     "pages.disasterRecovery.psTeaser.packages.emergency.name": "a42c93be",
     "pages.disasterRecovery.psTeaser.packages.emergency.price": "d3c2758b",
@@ -1736,6 +1741,11 @@
     "pages.pricing.professionalServices.serviceTypes.services.6.name": "46d1f133",
     "pages.pricing.professionalServices.serviceTypes.services.6.priority": "2b2b2f1f",
     "pages.pricing.professionalServices.serviceTypes.services.6.standard": "d2efdd82",
+    "pages.pricing.professionalServices.serviceTypes.services.7.emergency": "6e3ed927",
+    "pages.pricing.professionalServices.serviceTypes.services.7.id": "0a436ba3",
+    "pages.pricing.professionalServices.serviceTypes.services.7.name": "53ef504a",
+    "pages.pricing.professionalServices.serviceTypes.services.7.priority": "6e2babd7",
+    "pages.pricing.professionalServices.serviceTypes.services.7.standard": "ca96c911",
     "pages.pricing.roiCta.description": "7e517791",
     "pages.pricing.roiCta.heading": "9d3283ed",
     "pages.pricing.technicalSummary.description": "7475f1f4",

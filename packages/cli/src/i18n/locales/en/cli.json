@@ -655,23 +655,35 @@
         }
       },
       "backupStrategy": {
-        "description": "Manage multi-destination backup strategy",
+        "description": "Manage named backup strategies (hot/cold modes, destinations, scheduling)",
         "set": {
-          "description": "Configure backup strategy settings",
-          "optionDestination": "Storage destination name",
-          "optionCron": "Cron expression for backup schedule (e.g., \"0 2 * * *\")",
-          "optionEnable": "Enable scheduled backups",
-          "optionDisable": "Disable scheduled backups",
-          "noOptions": "Specify at least one option: --destination, --cron, --enable, or --disable",
+          "description": "Create or update a backup strategy",
+          "optionName": "Strategy name (required)",
+          "optionDestination": "Destination name within the strategy",
+          "optionStorage": "Storage config name (rclone credentials)",
+          "optionCron": "Cron schedule (e.g., \"0 * * * *\" for hourly)",
+          "optionMode": "Backup mode: \"hot\" (zero downtime) or \"cold\" (stop, snapshot, restart)",
+          "optionBwlimit": "Rclone bandwidth limit (e.g., \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")",
+          "optionInclude": "Only back up these repos (comma-separated names)",
+          "optionExclude": "Exclude these repos from backup (comma-separated names)",
+          "optionEnable": "Enable the strategy or destination",
+          "optionDisable": "Disable the strategy or destination",
           "saved": "Backup strategy configuration saved"
         },
+        "remove": {
+          "description": "Remove a backup strategy or destination",
+          "optionName": "Strategy name (required)",
+          "optionDestination": "Remove only this destination (keeps other destinations)",
+          "removed": "Backup strategy removed"
+        },
+        "list": {
+          "description": "List all backup strategies"
+        },
         "show": {
-          "description": "Show current backup strategy configuration",
-          "notConfigured": "No backup strategy configured",
-          "schedule": "Schedule: {{schedule}}",
-          "enabled": "Enabled: {{enabled}}",
-          "noDestinations": "No backup destinations configured",
-          "destinations": "Destinations:"
+          "description": "Show backup strategy details",
+          "optionName": "Strategy name (shows all if omitted)",
+          "notConfigured": "No backup strategies configured",
+          "notFound": "Backup strategy \"{{name}}\" not found"
         }
       }
     },
@@ -848,10 +860,29 @@
         "dnsCleanedUp": "Removed {{count}} DNS record(s)"
       },
       "backup": {
-        "description": "Machine backup management",
+        "description": "Machine backup management (schedule, trigger, status)",
+        "list": {
+          "description": "List backup strategies bound to all machines"
+        },
         "schedule": {
-          "description": "Push backup schedule to a remote machine (systemd timer)",
+          "description": "Deploy backup schedule to a remote machine (systemd timers)",
+          "optionDryRun": "Preview generated units without deploying",
           "success": "Backup schedule deployed to {{machine}}"
+        },
+        "now": {
+          "description": "Trigger a backup immediately on a remote machine",
+          "optionStrategy": "Strategy name (triggers all if omitted)"
+        },
+        "status": {
+          "description": "Show backup status and timer state on a remote machine",
+          "optionStrategy": "Show details for a specific strategy"
+        },
+        "cancel": {
+          "description": "Cancel a running backup on a remote machine",
+          "optionStrategy": "Strategy name (cancels all if omitted)",
+          "cancelling": "Stopping {{name}}...",
+          "cancelled": "Cancelled {{name}}",
+          "notRunning": "No backup running for strategy \"{{name}}\""
         }
       },
       "prune": {
@@ -1427,6 +1458,7 @@
         "optionUp": "After push, mount and deploy repository on target machine",
         "deploying": "Deploying \"{{repo}}\" on {{machine}}...",
         "deployed": "Repository \"{{repo}}\" deployed on {{machine}}",
+        "optionBwlimit": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")",
         "deployFailed": "Failed to deploy \"{{repo}}\" after push"
       },
       "pull": {
@@ -1434,12 +1466,46 @@
         "descriptionShort": "Pull repository from a remote (machine or storage)",
         "optionFrom": "Source machine or storage name (auto-detected from config)",
         "optionForce": "Force overwrite existing repository",
+        "optionBwlimit": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")",
         "optionUp": "After pull, mount and deploy repository on this machine",
         "sourceRequired": "Specify --from <remote> (machine or storage name from config)",
         "pulling": "Pulling backup of \"{{repo}}\"...",
         "deploying": "Deploying \"{{repo}}\" on {{machine}}...",
         "deployed": "Repository \"{{repo}}\" deployed on {{machine}}",
         "deployFailed": "Failed to deploy \"{{repo}}\" after pull"
+      },
+      "migrate": {
+        "description": "Live-migrate a repository from one machine to another with minimal downtime. Two-phase rsync: bulk transfer while running, then brief stop for delta sync. Supports CRIU checkpoint for process memory migration and auto-provisioning of target machines",
+        "descriptionShort": "Live-migrate a repository between machines",
+        "optionFrom": "Source machine name",
+        "optionTo": "Target machine name",
+        "optionProvision": "Auto-provision target via cloud provider (e.g., hetzner, linode)",
+        "optionBwlimit": "Bandwidth limit for rsync transfer (e.g., 10M)",
+        "optionCheckpoint": "CRIU live migration: capture and restore process memory state",
+        "optionSkipDns": "Skip DNS record switching after migration",
+        "provisioning": "Provisioning target machine {{machine}} via {{provider}}...",
+        "phase1": "Phase 1: Transferring bulk data (source stays running)...",
+        "phase1Done": "Bulk transfer complete",
+        "phase1Failed": "Bulk transfer failed",
+        "phase2": "Phase 2: Cutover (brief downtime)...",
+        "checkpointing": "Creating CRIU checkpoint...",
+        "stoppingSource": "Stopping source services...",
+        "sourceStopped": "Source services stopped",
+        "stopFailed": "Failed to stop source services",
+        "deltaSync": "Syncing delta...",
+        "deltaDone": "Delta sync complete",
+        "deltaFailed": "Delta sync failed",
+        "unmountingSource": "Unmounting source...",
+        "sourceUnmounted": "Source unmounted",
+        "unmountFailed": "Failed to unmount source",
+        "phase3": "Phase 3: Starting on target...",
+        "startingTarget": "Starting services on target...",
+        "targetStarted": "Target services started",
+        "startFailed": "Failed to start on target",
+        "switchingDns": "Switching DNS records...",
+        "dnsSkipped": "DNS switching skipped (no baseDomain or Cloudflare config)",
+        "complete": "Migration complete: {{name}} moved from {{from}} to {{to}}",
+        "downtime": "Downtime: {{duration}}"
       },
       "backup": {
         "description": "Manage repository backups",
@@ -1937,7 +2003,8 @@
       "machineQuery": "Show machine status",
       "termRepo": "SSH into repository",
       "repoUp": "Deploy repository services",
-      "syncUpload": "Upload files to repository"
+      "syncUpload": "Upload files to repository",
+      "syncDownload": "Download files from repository"
     },
     "machine": {
       "query": "Show full machine status",
@@ -1964,7 +2031,8 @@
     "term": {
       "machine": "SSH into machine",
       "repo": "SSH into repo (DOCKER_HOST auto-set)",
-      "command": "Run command without interactive shell"
+      "command": "Run command without interactive shell",
+      "syncHint": "For file transfer, use: rdc repo sync upload/download"
     },
     "vscode": {
       "machine": "Open machine in VS Code",
@@ -2071,6 +2139,7 @@
       "sshCode255": "SSH connection failed - possible causes:\n    - Authentication failed (check SSH key permissions)\n    - Host key verification failed\n    - Network connection dropped\n    - Remote SSH service not running",
       "repoContextRequired": "Command requires repository context.\n\nDetected \"{{detected}}\" which needs DOCKER_HOST and repository environment variables.\nThese are only available when a repository is specified.\n\nInstead of:\n  rdc term connect -m {{machine}} -c \"{{command}}\"\n\nUse:\n  rdc term connect -m {{machine}} -r <repository> -c \"{{command}}\"",
       "dockerComposeForbidden": "\"docker compose\" is not permitted in repository context.\n\nUse \"renet compose -- <args>\" instead so per-repo loopback IPs, host network injection, CRIU capabilities, and compose validation are applied. Running \"docker compose\" directly bypasses all of this and silently corrupts the deployment.\n\nFor orchestrated deploys, prefer: rdc repo up --name <repository> -m <machine>",
+      "fileWriteDetected": "File write detected ({{detected}}). Use rdc repo sync instead:\n  rdc repo sync upload -m MACHINE -r REPO --local FILE --remote PATH\n\nrsync transfers files with delta compression, checksums, and proper permissions.",
       "sshExitCode": "SSH exited with code {{code}}"
     },
     "vscode": {
@@ -2185,6 +2254,7 @@
     "queryNetwork": "Include network interfaces only",
     "queryBlockDevices": "Include block devices only",
     "queryLicenses": "Include repository license statuses",
+    "queryStorageHealth": "Show BTRFS fragmentation and reflink savings per repository",
     "extraMachine": "Extra machine for multi-machine ops (name:ip:user)",
     "pollInterval": "Poll interval in milliseconds",
     "folder": "Remote folder path to open",

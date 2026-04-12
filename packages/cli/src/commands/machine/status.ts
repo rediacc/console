@@ -227,6 +227,7 @@ const SECTION_FLAGS = [
   { flag: 'network', section: 'network' },
   { flag: 'blockDevices', section: 'block' },
   { flag: 'licenses', section: 'licenses' },
+  { flag: 'storageHealth', section: 'storage-health' },
 ] as const;
 
 interface QueryOptions {
@@ -238,6 +239,7 @@ interface QueryOptions {
   network?: boolean;
   blockDevices?: boolean;
   licenses?: boolean;
+  storageHealth?: boolean;
 }
 
 function printStorageSummary(sys: SystemInfo | undefined): void {
@@ -346,6 +348,7 @@ export function registerQueryCommand(machine: Command, program: Command): void {
     .option('--network', t('options.queryNetwork'))
     .option('--block-devices', t('options.queryBlockDevices'))
     .option('--licenses', t('options.queryLicenses'))
+    .option('--storage-health', t('options.queryStorageHealth'))
     .action(async (options: QueryOptions & { name: string }) => {
       try {
         const machineName = options.name;
@@ -384,10 +387,16 @@ export function registerQueryCommand(machine: Command, program: Command): void {
             machineName
           );
           outputService.print(enriched, format);
-          return;
+        } else {
+          renderTableMode(listResult, machineConfig, infra, resolve, machineName);
         }
 
-        renderTableMode(listResult, machineConfig, infra, resolve, machineName);
+        // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)
+        if (!options.storageHealth) {
+          process.stderr.write(
+            '\nTip: Run with --storage-health to see BTRFS fragmentation and reflink savings per repo\n'
+          );
+        }
       } catch (error) {
         handleError(error);
       }

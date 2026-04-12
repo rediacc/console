@@ -856,6 +856,13 @@
               "priority": "Core integration functional + essential features live within 48h",
               "emergency": "Critical connection established same-day + basic data flow working + full dev begins",
               "id": "custom-integration"
+            },
+            {
+              "name": "Storage Hardening",
+              "standard": "Full BTRFS redundant storage setup with self-healing scrub, live data migration from single-disk, reflink verification, and monitoring integration. RAID1 (2 SSDs, mirrored) for standard deployments or RAID10 (4+ SSDs, striped mirrors) for high-throughput production workloads. Scrub auto-repairs corruption from the redundant copy instead of just detecting it. Includes capacity planning and backup strategy review.",
+              "priority": "BTRFS RAID1 or RAID10 configured + live balance migration started + scrub timer active within 48h",
+              "emergency": "Disks attached + RAID conversion initiated same-day + critical repos verified + full hardening begins",
+              "id": "storage-hardening"
             }
           ]
         },
@@ -2712,6 +2719,13 @@
               "priority": "Core integration functional + essential features live within 48h",
               "emergency": "Critical connection established same-day + basic data flow working + full dev begins",
               "id": "custom-integration"
+            },
+            {
+              "name": "Storage Hardening",
+              "standard": "Full BTRFS redundant storage setup with self-healing scrub, live data migration from single-disk, reflink verification, and monitoring integration. RAID1 (2 SSDs, mirrored) for standard deployments or RAID10 (4+ SSDs, striped mirrors) for high-throughput production workloads. Scrub auto-repairs corruption from the redundant copy instead of just detecting it. Includes capacity planning and backup strategy review.",
+              "priority": "BTRFS RAID1 or RAID10 configured + live balance migration started + scrub timer active within 48h",
+              "emergency": "Disks attached + RAID conversion initiated same-day + critical repos verified + full hardening begins",
+              "id": "storage-hardening"
             }
           ]
         },

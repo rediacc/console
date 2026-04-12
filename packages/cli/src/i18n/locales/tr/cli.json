@@ -285,23 +285,35 @@
     },
     "config": {
       "backupStrategy": {
-        "description": "Çoklu hedef yedekleme stratejisini yönet",
+        "description": "Adlandırılmış yedekleme stratejilerini yönet (sıcak/soğuk modlar, hedefler, zamanlama)",
+        "list": {
+          "description": "Tüm yedekleme stratejilerini listele"
+        },
+        "remove": {
+          "description": "Yedekleme stratejisini veya hedefi kaldır",
+          "optionDestination": "Yalnızca bu hedefi kaldır (diğer hedefler korunur)",
+          "optionName": "Strateji adı (zorunlu)",
+          "removed": "Yedekleme stratejisi kaldırıldı"
+        },
         "set": {
-          "description": "Yedekleme zamanlama ayarlarını yapılandır",
-          "noOptions": "En az bir seçenek belirtin: --destination, --cron, --enable veya --disable",
-          "optionCron": "Yedekleme zamanlaması için cron ifadesi (ör. \"0 2 * * *\")",
-          "optionDestination": "Varsayılan depolama hedef adı",
-          "optionDisable": "Zamanlanmış yedeklemeleri devre dışı bırak",
-          "optionEnable": "Zamanlanmış yedeklemeleri etkinleştir",
-          "saved": "Yedekleme zamanlama yapılandırması kaydedildi"
+          "description": "Yedekleme stratejisi oluştur veya güncelle",
+          "optionBwlimit": "Rclone bant genişliği sınırı (ör. \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")",
+          "optionCron": "Cron zamanlaması (ör. \"0 * * * *\" saatlik için)",
+          "optionDestination": "Strateji içindeki hedef adı",
+          "optionDisable": "Stratejiyi veya hedefi devre dışı bırak",
+          "optionEnable": "Stratejiyi veya hedefi etkinleştir",
+          "optionExclude": "Bu depoları yedeklemeden hariç tut (virgülle ayrılmış adlar)",
+          "optionInclude": "Yalnızca bu depoları yedekle (virgülle ayrılmış adlar)",
+          "optionMode": "Yedekleme modu: \"hot\" (kesintisiz) veya \"cold\" (durdur, anlık görüntü, yeniden başlat)",
+          "optionName": "Strateji adı (zorunlu)",
+          "optionStorage": "Depolama yapılandırma adı (rclone kimlik bilgileri)",
+          "saved": "Yedekleme stratejisi yapılandırması kaydedildi"
         },
         "show": {
-          "description": "Mevcut yedekleme zamanlama yapılandırmasını göster",
-          "destinations": "Hedefler:",
-          "enabled": "Etkin: {{enabled}}",
-          "noDestinations": "Yedekleme hedefleri yapılandırılmamış",
-          "notConfigured": "Yedekleme zamanlaması yapılandırılmamış",
-          "schedule": "Zamanlama: {{schedule}}"
+          "description": "Yedekleme stratejisi ayrıntılarını göster",
+          "notConfigured": "Yapılandırılmış yedekleme stratejisi yok",
+          "notFound": "Yedekleme stratejisi \"{{name}}\" bulunamadı",
+          "optionName": "Strateji adı (belirtilmezse tümü gösterilir)"
         }
       },
       "certCache": {
@@ -660,7 +672,7 @@
         "sshKey": "SSH anahtarı",
         "subscriptionMachineSlots": "Makine yuvaları",
         "subscriptionRepoLicenses": "Depo lisansları",
-        "subscriptionStatus": "Status",
+        "subscriptionStatus": "Durum",
         "subscriptionToken": "Erişim jetonu"
       },
       "description": "CLI ortamını ve renet entegrasyonunu tanıla",
@@ -694,10 +706,29 @@
     },
     "machine": {
       "backup": {
+        "cancel": {
+          "cancelled": "{{name}} iptal edildi",
+          "cancelling": "{{name}} durduruluyor...",
+          "description": "Uzak makinede çalışan bir yedeklemeyi iptal et",
+          "notRunning": "\"{{name}}\" stratejisi için çalışan yedekleme yok",
+          "optionStrategy": "Strateji adı (belirtilmezse tümünü iptal eder)"
+        },
         "description": "Makine yedekleme yönetimi",
+        "list": {
+          "description": "Tüm makinelere bağlı yedekleme stratejilerini listele"
+        },
+        "now": {
+          "description": "Uzak makinede hemen bir yedekleme başlat",
+          "optionStrategy": "Strateji adı (belirtilmezse tümünü başlatır)"
+        },
         "schedule": {
-          "description": "Uzak makineye yedekleme zamanlaması gönder (systemd zamanlayıcı)",
+          "description": "Uzak makineye yedekleme zamanlaması dağıt (systemd zamanlayıcıları)",
+          "optionDryRun": "Dağıtmadan oluşturulan birimleri önizle",
           "success": "Yedekleme zamanlaması {{machine}} makinesine dağıtıldı"
+        },
+        "status": {
+          "description": "Uzak makinede yedekleme durumunu ve zamanlayıcı durumunu göster",
+          "optionStrategy": "Belirli bir strateji için ayrıntıları göster"
         }
       },
       "containers": {
@@ -1258,6 +1289,39 @@
         "starting": "\"{{machine}}\" üzerindeki depolar listeleniyor..."
       },
       "machineOption": "Hedef makine adı",
+      "migrate": {
+        "checkpointing": "CRIU kontrol noktası oluşturuluyor...",
+        "complete": "Taşıma tamamlandı: {{name}}, {{from}} konumundan {{to}} konumuna taşındı",
+        "deltaDone": "Delta senkronizasyonu tamamlandı",
+        "deltaFailed": "Delta senkronizasyonu başarısız",
+        "deltaSync": "Delta senkronize ediliyor...",
+        "description": "Bir depoyu minimum kesinti ile başka bir makineye canlı taşıma. İki aşamalı rsync: çalışırken toplu aktarım, ardından delta senkronizasyonu için kısa duraklama. CRIU kontrol noktası ile süreç belleği taşıma ve hedef makinelerin otomatik oluşturulmasını destekler",
+        "descriptionShort": "Makineler arası depo canlı taşıma",
+        "dnsSkipped": "DNS geçişi atlandı (baseDomain veya Cloudflare yapılandırması yok)",
+        "downtime": "Kesinti süresi: {{duration}}",
+        "optionBwlimit": "rsync aktarımı için bant genişliği sınırı (ör. 10M)",
+        "optionCheckpoint": "CRIU canlı taşıma: süreç belleği durumunu yakala ve geri yükle",
+        "optionFrom": "Kaynak makine adı",
+        "optionProvision": "Bulut sağlayıcı aracılığıyla hedefi otomatik oluştur (ör. hetzner, linode)",
+        "optionSkipDns": "Taşıma sonrası DNS kaydı geçişini atla",
+        "optionTo": "Hedef makine adı",
+        "phase1": "Aşama 1: Toplu veri aktarılıyor (kaynak çalışmaya devam ediyor)...",
+        "phase1Done": "Toplu aktarım tamamlandı",
+        "phase1Failed": "Toplu aktarım başarısız",
+        "phase2": "Aşama 2: Geçiş (kısa kesinti)...",
+        "phase3": "Aşama 3: Hedefte başlatılıyor...",
+        "provisioning": "{{provider}} aracılığıyla hedef makine {{machine}} hazırlanıyor...",
+        "sourceStopped": "Kaynak servisleri durduruldu",
+        "sourceUnmounted": "Kaynak bağlantısı kaldırıldı",
+        "startFailed": "Hedefte başlatma başarısız",
+        "startingTarget": "Hedefte servisler başlatılıyor...",
+        "stopFailed": "Kaynak servisleri durdurulamadı",
+        "stoppingSource": "Kaynak servisleri durduruluyor...",
+        "switchingDns": "DNS kayıtları değiştiriliyor...",
+        "targetStarted": "Hedef servisler başlatıldı",
+        "unmountFailed": "Kaynağın bağlantısı kaldırılamadı",
+        "unmountingSource": "Kaynağın bağlantısı kaldırılıyor..."
+      },
       "mount": {
         "checkpointOption": "Bağlamadan sonra kontrol noktasından geri yükle",
         "completed": "Bağlama tamamlandı",
@@ -1282,6 +1346,7 @@
         "deploying": "\"{{repo}}\" {{machine}} üzerinde dağıtılıyor...",
         "description": "Depoyu uzak kaynaktan (makine veya depolama) çek. Tüm depoları çekmek için adı atlayın. Kaynak türü yapılandırmadan otomatik algılanır. Pull sonrası dağıtım için --up kullanın",
         "descriptionShort": "Depoyu uzak kaynaktan (makine veya depolama) çek",
+        "optionBwlimit": "rsync aktarımı için bant genişliği sınırı (ör. \"6M\", \"10M\")",
         "optionForce": "Mevcut deponun üzerine yazmaya zorla",
         "optionFrom": "Kaynak makine veya depolama adı (yapılandırmadan otomatik algılanır)",
         "optionUp": "Pull sonrası bu makinede depoyu bağla ve dağıt",
@@ -1295,6 +1360,7 @@
         "description": "Depoyu uzak hedefe (makine veya depolama) gönder. Tüm depoları göndermek için adı atlayın. Hedef türü yapılandırmadan otomatik algılanır. Makineler arası transferde şifrelenmiş depo görüntüsü aynı GUID ile kopyalanır — bu yedekleme/taşımadır, fork değildir. Bağımsız fork oluşturmak için önce 'repo fork' kullanın, sonra push yapın. Push sonrası dağıtım için --up kullanın",
         "descriptionShort": "Depoyu uzak hedefe (makine veya depolama) gönder",
         "destRequired": "--to <remote> belirtin (yapılandırmadaki makine veya depolama adı)",
+        "optionBwlimit": "rsync aktarımı için bant genişliği sınırı (ör. \"6M\", \"10M\")",
         "optionCheckpoint": "Yedekleme öncesi CRIU checkpoint oluştur (canlı taşıma için işlem bellek durumunu yakalar)",
         "optionForce": "Mevcut yedeğin üzerine yazmaya zorla",
         "optionProvision": "Hedef makine yoksa bulut sağlayıcısı üzerinden otomatik olarak oluştur",
@@ -2155,6 +2221,7 @@
     "term": {
       "connectivityFailed": "{{host}}:{{port}} adresine erişilemiyor. {{error}}\n\nSorun Giderme:\n  - Makineyi kontrol edin ve ağa bağlı olup olmadığını doğrulayın\n  - IP adresinin makine kasasında doğru olduğunu doğrulayın\n  - {{port}} bağlantı noktasının güvenlik duvarı tarafından engellenmediğini doğrulayın\n  - Makineye ping atmayı deneyin: ping {{host}}",
       "dockerComposeForbidden": "\"docker compose\" depo bağlamında izin verilmiyor.\n\nBunun yerine \"renet compose -- <args>\" kullanın; böylece depoya özel loopback IP'leri, ana bilgisayar ağ enjeksiyonu, CRIU yetenekleri ve compose doğrulaması uygulanır. \"docker compose\" komutunu doğrudan çalıştırmak bunların tümünü atlar ve dağıtımı sessizce bozar.\n\nOrkestrasyonlu dağıtımlar için tercih: rdc repo up --name <repository> -m <machine>",
+      "fileWriteDetected": "Dosya yazma algılandı ({{detected}}). Bunun yerine rdc repo sync kullanın:\n  rdc repo sync upload -m MACHINE -r REPO --local FILE --remote PATH\n\nrsync dosyaları delta sıkıştırma, sağlama toplamları ve doğru izinlerle aktarır.",
       "launchFailed": "Terminal başlatılamadı: {{error}}",
       "noHostKey": "\"{{machine}}\" makinesinin kasada yapılandırılmış bir ana bilgisayar anahtarı yok",
       "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",
@@ -2190,6 +2257,7 @@
     "cli": {
       "machineQuery": "Makine durumunu göster",
       "repoUp": "Depo servislerini dağıt",
+      "syncDownload": "Depodan dosyaları indir",
       "syncUpload": "Depoya dosya yükle",
       "termRepo": "Depoya SSH bağlantısı"
     },
@@ -2231,7 +2299,8 @@
     "term": {
       "command": "Etkileşimli kabuk olmadan komut çalıştır",
       "machine": "Makineye SSH bağlantısı",
-      "repo": "Depoya SSH bağlantısı (DOCKER_HOST otomatik)"
+      "repo": "Depoya SSH bağlantısı (DOCKER_HOST otomatik)",
+      "syncHint": "Dosya aktarımı için: rdc repo sync upload/download"
     },
     "useHelpAll": "Genişletilmiş açıklamalar için --help-all kullanın",
     "vscode": {
@@ -2325,6 +2394,7 @@
     "queryNetwork": "Yalnızca ağ arayüzlerini dahil et",
     "queryRepositories": "Yalnızca depoları dahil et",
     "queryServices": "Yalnızca servisleri dahil et",
+    "queryStorageHealth": "Depo başına BTRFS parçalanma ve reflink tasarruflarını göster",
     "querySystem": "Yalnızca sistem bilgilerini dahil et",
     "quiet": "Bilgilendirme çıkışını bastır",
     "rawVault": "Ham kasa JSON'u (komut dosyaları/CI için)",

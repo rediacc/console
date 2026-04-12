@@ -437,50 +437,70 @@ class ConfigService extends ConfigServiceBase {
   // Backup Strategy
   // ============================================================================
 
-  async setBackupStrategy(config: Partial<BackupStrategyConfig>): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    const current = await this.requireSelfHosted(name);
-    const backupStrategy: BackupStrategyConfig = {
-      destinations: [],
-      ...current.backupStrategy,
-      ...config,
-    };
-    await this.update(name, { backupStrategy });
-  }
-
-  async getBackupStrategy(): Promise<BackupStrategyConfig | undefined> {
+  async getBackupStrategy(strategyName: string): Promise<BackupStrategyConfig | undefined> {
     const config = await this.requireSelfHosted();
-    return config.backupStrategy;
+    return config.backupStrategies?.[strategyName];
   }
 
-  async addBackupDestination(dest: BackupStrategyDestination): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    const current = await this.requireSelfHosted(name);
-    const backupStrategy: BackupStrategyConfig = {
-      destinations: [],
-      ...current.backupStrategy,
-    };
-    const idx = backupStrategy.destinations.findIndex((d) => d.storage === dest.storage);
-    if (idx >= 0) {
-      backupStrategy.destinations[idx] = { ...backupStrategy.destinations[idx], ...dest };
-    } else {
-      backupStrategy.destinations.push(dest);
+  async listBackupStrategies(): Promise<Record<string, BackupStrategyConfig>> {
+    const config = await this.requireSelfHosted();
+    return config.backupStrategies ?? {};
+  }
+
+  async setBackupStrategy(
+    strategyName: string,
+    update: Partial<BackupStrategyConfig>
+  ): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    const current = await this.requireSelfHosted(configName);
+    const strategies = { ...current.backupStrategies };
+    const existing = strategies[strategyName] ?? { destinations: [], schedule: '' };
+    strategies[strategyName] = { ...existing, ...update };
+    await this.update(configName, { backupStrategies: strategies });
+  }
+
+  async removeBackupStrategy(strategyName: string): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    const current = await this.requireSelfHosted(configName);
+    const strategies = { ...current.backupStrategies };
+    delete strategies[strategyName];
+    await this.update(configName, { backupStrategies: strategies });
+  }
+
+  async addBackupDestination(
+    strategyName: string,
+    dest: BackupStrategyDestination
+  ): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    const current = await this.requireSelfHosted(configName);
+    const strategies = { ...current.backupStrategies };
+    const strategy = strategies[strategyName] as (typeof strategies)[string] | undefined;
+    if (!strategy) {
+      throw new Error(`Backup strategy "${strategyName}" not found. Create it first with: rdc config backup-strategy set --name ${strategyName} --cron "...""`);
     }
-    backupStrategy.destinations.sort((a, b) => a.storage.localeCompare(b.storage));
-    await this.update(name, { backupStrategy });
+    const destinations = [...strategy.destinations];
+    const idx = destinations.findIndex((d) => d.name === dest.name);
+    if (idx >= 0) {
+      destinations[idx] = { ...destinations[idx], ...dest };
+    } else {
+      destinations.push(dest);
+    }
+    destinations.sort((a, b) => a.name.localeCompare(b.name));
+    strategies[strategyName] = { ...strategy, destinations };
+    await this.update(configName, { backupStrategies: strategies });
   }
 
-  async removeBackupDestination(storageName: string): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    const current = await this.requireSelfHosted(name);
-    const backupStrategy: BackupStrategyConfig = {
-      destinations: [],
-      ...current.backupStrategy,
+  async removeBackupDestination(strategyName: string, destName: string): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    const current = await this.requireSelfHosted(configName);
+    const strategies = { ...current.backupStrategies };
+    const strategy = strategies[strategyName] as (typeof strategies)[string] | undefined;
+    if (!strategy) return;
+    strategies[strategyName] = {
+      ...strategy,
+      destinations: strategy.destinations.filter((d) => d.name !== destName),
     };
-    backupStrategy.destinations = backupStrategy.destinations.filter(
-      (d) => d.storage !== storageName
-    );
-    await this.update(name, { backupStrategy });
+    await this.update(configName, { backupStrategies: strategies });
   }
 
   // ============================================================================

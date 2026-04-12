@@ -452,7 +452,7 @@ app.example.com   A   203.0.113.50
 ### Deploy
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 Within a few seconds, the route server discovers the container, Traefik picks up the route, requests a TLS certificate, and `https://app.example.com` is live.

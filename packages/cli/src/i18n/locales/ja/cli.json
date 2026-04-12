@@ -285,23 +285,35 @@
     },
     "config": {
       "backupStrategy": {
-        "description": "マルチ宛先バックアップ戦略を管理",
+        "description": "名前付きバックアップ戦略を管理（ホット/コールドモード、宛先、スケジュール）",
+        "list": {
+          "description": "すべてのバックアップ戦略を一覧表示"
+        },
+        "remove": {
+          "description": "バックアップ戦略または宛先を削除",
+          "optionDestination": "この宛先のみ削除（他の宛先は保持）",
+          "optionName": "戦略名（必須）",
+          "removed": "バックアップ戦略を削除しました"
+        },
         "set": {
-          "description": "バックアップスケジュール設定を構成する",
-          "noOptions": "少なくとも1つのオプションを指定してください: --destination、--cron、--enable、または --disable",
-          "optionCron": "バックアップスケジュールのcron式（例: \"0 2 * * *\"）",
-          "optionDestination": "デフォルトのストレージ宛先名",
-          "optionDisable": "スケジュールバックアップを無効にする",
-          "optionEnable": "スケジュールバックアップを有効にする",
-          "saved": "バックアップスケジュール設定を保存しました"
+          "description": "バックアップ戦略を作成または更新",
+          "optionBwlimit": "rclone帯域幅制限（例: \"6M\"、\"10M:off\"、\"08:00,3M;22:00,10M\"）",
+          "optionCron": "cronスケジュール（例: \"0 * * * *\" で毎時実行）",
+          "optionDestination": "戦略内の宛先名",
+          "optionDisable": "戦略または宛先を無効にする",
+          "optionEnable": "戦略または宛先を有効にする",
+          "optionExclude": "これらのリポジトリをバックアップから除外（カンマ区切りの名前）",
+          "optionInclude": "これらのリポジトリのみバックアップ（カンマ区切りの名前）",
+          "optionMode": "バックアップモード: \"hot\"（ダウンタイムなし）または \"cold\"（停止、スナップショット、再起動）",
+          "optionName": "戦略名（必須）",
+          "optionStorage": "ストレージ設定名（rclone資格情報）",
+          "saved": "バックアップ戦略の設定を保存しました"
         },
         "show": {
-          "description": "現在のバックアップスケジュール設定を表示する",
-          "destinations": "宛先:",
-          "enabled": "有効: {{enabled}}",
-          "noDestinations": "バックアップ先が設定されていません",
-          "notConfigured": "バックアップスケジュールが設定されていません",
-          "schedule": "スケジュール: {{schedule}}"
+          "description": "バックアップ戦略の詳細を表示",
+          "notConfigured": "バックアップ戦略が設定されていません",
+          "notFound": "バックアップ戦略 \"{{name}}\" が見つかりません",
+          "optionName": "戦略名（省略時はすべて表示）"
         }
       },
       "certCache": {
@@ -660,7 +672,7 @@
         "sshKey": "SSHキー",
         "subscriptionMachineSlots": "マシンスロット",
         "subscriptionRepoLicenses": "リポジトリライセンス",
-        "subscriptionStatus": "Status",
+        "subscriptionStatus": "ステータス",
         "subscriptionToken": "トークン"
       },
       "description": "CLI環境とrenet統合を診断",
@@ -694,10 +706,29 @@
     },
     "machine": {
       "backup": {
+        "cancel": {
+          "cancelled": "{{name}} をキャンセルしました",
+          "cancelling": "{{name}} を停止中...",
+          "description": "リモートマシン上の実行中バックアップをキャンセル",
+          "notRunning": "戦略 \"{{name}}\" に実行中のバックアップはありません",
+          "optionStrategy": "戦略名（省略時はすべてキャンセル）"
+        },
         "description": "マシンバックアップ管理",
+        "list": {
+          "description": "すべてのマシンに紐づくバックアップ戦略を一覧表示"
+        },
+        "now": {
+          "description": "リモートマシンで今すぐバックアップを実行",
+          "optionStrategy": "戦略名（省略時はすべて実行）"
+        },
         "schedule": {
-          "description": "リモートマシンにバックアップスケジュールをプッシュする（systemd タイマー）",
+          "description": "リモートマシンにバックアップスケジュールをデプロイ（systemd タイマー）",
+          "optionDryRun": "デプロイせずに生成されるユニットをプレビュー",
           "success": "バックアップスケジュールを {{machine}} にデプロイしました"
+        },
+        "status": {
+          "description": "リモートマシンのバックアップ状態とタイマー状態を表示",
+          "optionStrategy": "特定の戦略の詳細を表示"
         }
       },
       "containers": {
@@ -1258,6 +1289,39 @@
         "starting": "\"{{machine}}\" のリポジトリをリスト表示中..."
       },
       "machineOption": "対象マシン名",
+      "migrate": {
+        "checkpointing": "CRIUチェックポイントを作成中...",
+        "complete": "移行完了: {{name}} を {{from}} から {{to}} に移動しました",
+        "deltaDone": "差分同期完了",
+        "deltaFailed": "差分同期に失敗しました",
+        "deltaSync": "差分を同期中...",
+        "description": "最小限のダウンタイムでリポジトリを別のマシンにライブマイグレーション。2フェーズrsync: 実行中にバルク転送、その後短時間停止して差分同期。CRIUチェックポイントによるプロセスメモリ移行とターゲットマシンの自動プロビジョニングに対応",
+        "descriptionShort": "マシン間でリポジトリをライブマイグレーション",
+        "dnsSkipped": "DNS切り替えをスキップしました（baseDomainまたはCloudflare設定なし）",
+        "downtime": "ダウンタイム: {{duration}}",
+        "optionBwlimit": "rsync転送の帯域幅制限（例: 10M）",
+        "optionCheckpoint": "CRIUライブマイグレーション: プロセスメモリ状態のキャプチャと復元",
+        "optionFrom": "移行元マシン名",
+        "optionProvision": "クラウドプロバイダー経由でターゲットを自動プロビジョニング（例: hetzner, linode）",
+        "optionSkipDns": "移行後のDNSレコード切り替えをスキップ",
+        "optionTo": "移行先マシン名",
+        "phase1": "フェーズ1: バルクデータを転送中（ソースは実行中）...",
+        "phase1Done": "バルク転送完了",
+        "phase1Failed": "バルク転送に失敗しました",
+        "phase2": "フェーズ2: 切り替え（短時間のダウンタイム）...",
+        "phase3": "フェーズ3: ターゲットで起動中...",
+        "provisioning": "{{provider}} 経由でターゲットマシン {{machine}} をプロビジョニング中...",
+        "sourceStopped": "ソースサービスを停止しました",
+        "sourceUnmounted": "ソースをアンマウントしました",
+        "startFailed": "ターゲットでの起動に失敗しました",
+        "startingTarget": "ターゲットでサービスを起動中...",
+        "stopFailed": "ソースサービスの停止に失敗しました",
+        "stoppingSource": "ソースサービスを停止中...",
+        "switchingDns": "DNSレコードを切り替え中...",
+        "targetStarted": "ターゲットサービスが起動しました",
+        "unmountFailed": "ソースのアンマウントに失敗しました",
+        "unmountingSource": "ソースをアンマウント中..."
+      },
       "mount": {
         "checkpointOption": "マウント後にチェックポイントから復元する",
         "completed": "マウントが完了しました",
@@ -1282,6 +1346,7 @@
         "deploying": "\"{{repo}}\"を{{machine}}にデプロイ中...",
         "description": "リモート（マシンまたはストレージ）からリポジトリをプル。名前を省略するとすべてのリポジトリをプル。ソースタイプは設定から自動検出。pull後にデプロイするには--upを使用",
         "descriptionShort": "リモート（マシンまたはストレージ）からリポジトリをプル",
+        "optionBwlimit": "rsync転送の帯域幅制限（例: \"6M\", \"10M\"）",
         "optionForce": "既存のリポジトリを強制的に上書きする",
         "optionFrom": "ソースマシンまたはストレージ名（設定から自動検出）",
         "optionUp": "pull後、このマシンでリポジトリをマウントしてデプロイ",
@@ -1295,6 +1360,7 @@
         "description": "リポジトリをリモート（マシンまたはストレージ）にプッシュ。名前を省略するとすべてのリポジトリをプッシュ。ターゲットタイプは設定から自動検出。マシン間転送では、暗号化されたリポジトリイメージが同じGUIDでコピーされます — これはバックアップ/移行であり、forkではありません。独立したforkを作成するには、まず'repo fork'を使用してからpush。push後にデプロイするには--upを使用",
         "descriptionShort": "リポジトリをリモート（マシンまたはストレージ）にプッシュ",
         "destRequired": "--to <remote> を指定してください（設定からのマシンまたはストレージ名）",
+        "optionBwlimit": "rsync転送の帯域幅制限（例: \"6M\", \"10M\"）",
         "optionCheckpoint": "バックアップ前にCRIUチェックポイントを作成（ライブマイグレーション用にプロセスメモリ状態をキャプチャ）",
         "optionForce": "既存のバックアップを強制的に上書きする",
         "optionProvision": "ターゲットマシンが存在しない場合、クラウドプロバイダー経由で自動プロビジョニング",
@@ -2155,6 +2221,7 @@
     "term": {
       "connectivityFailed": "{{host}}:{{port}} に到達できません。{{error}}\n\nトラブルシューティング:\n  - マシンの電源が入っていてネットワークに接続されていることを確認してください\n  - マシンボルトの IP アドレスが正しいことを確認してください\n  - ポート {{port}} がファイアウォールによってブロックされていないことを確認してください\n  - マシンに ping を試してください: ping {{host}}",
       "dockerComposeForbidden": "リポジトリコンテキストでは \"docker compose\" は許可されていません。\n\n代わりに \"renet compose -- <args>\" を使用してください。これによりリポジトリごとのループバック IP、ホストネットワーク注入、CRIU ケーパビリティ、および compose 検証が適用されます。\"docker compose\" を直接実行するとこれらすべてがバイパスされ、デプロイが静かに破損します。\n\nオーケストレーションされたデプロイには、次を推奨します: rdc repo up --name <repository> -m <machine>",
+      "fileWriteDetected": "ファイル書き込みを検出しました ({{detected}})。代わりに rdc repo sync を使用してください:\n  rdc repo sync upload -m MACHINE -r REPO --local FILE --remote PATH\n\nrsyncはデルタ圧縮、チェックサム、適切なパーミッションでファイルを転送します。",
       "launchFailed": "ターミナルの起動に失敗しました: {{error}}",
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
@@ -2190,6 +2257,7 @@
     "cli": {
       "machineQuery": "マシンの状態を表示",
       "repoUp": "リポジトリサービスをデプロイ",
+      "syncDownload": "リポジトリからファイルをダウンロード",
       "syncUpload": "リポジトリにファイルをアップロード",
       "termRepo": "リポジトリにSSH接続"
     },
@@ -2231,7 +2299,8 @@
     "term": {
       "command": "対話シェルなしでコマンドを実行",
       "machine": "マシンにSSH接続",
-      "repo": "リポジトリにSSH接続（DOCKER_HOST自動設定）"
+      "repo": "リポジトリにSSH接続（DOCKER_HOST自動設定）",
+      "syncHint": "ファイル転送には rdc repo sync upload/download を使用してください"
     },
     "useHelpAll": "拡張説明を表示するには --help-all を使用してください",
     "vscode": {
@@ -2325,6 +2394,7 @@
     "queryNetwork": "ネットワークインターフェースのみを含める",
     "queryRepositories": "リポジトリのみを含める",
     "queryServices": "サービスのみを含める",
+    "queryStorageHealth": "リポジトリごとのBTRFSフラグメンテーションとreflink節約量を表示",
     "querySystem": "システム情報のみを含める",
     "quiet": "情報出力を抑制する",
     "rawVault": "未加工ボルト JSON (スクリプト/CI 用)",

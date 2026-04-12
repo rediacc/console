@@ -55,7 +55,7 @@ The mount directory is where application files live, `Rediaccfile`, `docker-comp
 Deploy the application by mounting the repository and starting its Docker services.
 
 ```bash
-rdc repo up --name test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1
 ```
 
 This mounts the repository (if not already mounted), starts an isolated Docker daemon, and starts services via `up()`.

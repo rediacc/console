@@ -100,6 +100,7 @@ Show full machine status (infra, system, repos with name/guid, containers with r
 - `--network` — Include network interfaces only
 - `--block-devices` — Include block devices only
 - `--licenses` — Include repository license statuses
+- `--storage-health` — Show BTRFS fragmentation and reflink savings per repository
 
 > MCP tool
 
@@ -133,13 +134,48 @@ Destroy a cloud-provisioned machine and remove from config
 
 > MCP tool
 
+### rdc machine backup list
+
+List backup strategies bound to all machines
+
 ### rdc machine backup schedule
 
-Push backup schedule to a remote machine (systemd timer)
+Deploy backup schedule to a remote machine (systemd timers)
 
 **Options:**
 
 - `-m, --machine <name>` — Machine name
+- `--dry-run` — Preview generated units without deploying
+- `--debug` — Enable debug output
+
+### rdc machine backup now
+
+Trigger a backup immediately on a remote machine
+
+**Options:**
+
+- `-m, --machine <name>` — Machine name
+- `--strategy <name>` — Strategy name (triggers all if omitted)
+- `--debug` — Enable debug output
+
+### rdc machine backup status
+
+Show backup status and timer state on a remote machine
+
+**Options:**
+
+- `-m, --machine <name>` — Machine name
+- `--strategy <name>` — Show details for a specific strategy
+- `--debug` — Enable debug output
+
+### rdc machine backup cancel
+
+Cancel a running backup on a remote machine
+
+**Options:**
+
+- `-m, --machine <name>` — Machine name
+- `--strategy <name>` — Strategy name (cancels all if omitted)
 - `--debug` — Enable debug output
 
 ### rdc machine prune
@@ -433,7 +469,6 @@ Deploy or update a repository (mount, run Rediaccfile up which calls renet compo
 
 - `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
-- `--mount` — Mount repository first (required for forked repos on first deploy)
 - `--skip-checkpoint` — Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)
 - `--tls` — Request dedicated TLS cert for this repo (forks use shared machine cert by default)
 - `--include-forks` — Also mount/start forked repositories
@@ -647,6 +682,7 @@ Push repository to a remote (machine or storage). Omit name to push all repos. T
 - `--parallel` — Start repositories concurrently
 - `--concurrency <n>` — Max concurrent repositories (default: 3) (default: 3)
 - `-y, --yes` — Skip confirmation for batch operations
+- `--bwlimit <limit>` — Bandwidth limit for rsync transfer (e.g., "6M", "10M")
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
@@ -668,6 +704,7 @@ Pull repository from a remote (machine or storage). Omit name to pull all repos.
 - `--parallel` — Start repositories concurrently
 - `--concurrency <n>` — Max concurrent repositories (default: 3) (default: 3)
 - `-y, --yes` — Skip confirmation for batch operations
+- `--bwlimit <limit>` — Bandwidth limit for rsync transfer (e.g., "6M", "10M")
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
@@ -693,6 +730,21 @@ Deploy backup schedules to remote machines
 **Options:**
 
 - `-m, --machine <name>` — Machine name
+- `--debug` — Enable debug output
+
+### rdc repo migrate
+
+Live-migrate a repository from one machine to another with minimal downtime. Two-phase rsync: bulk transfer while running, then brief stop for delta sync. Supports CRIU checkpoint for process memory migration and auto-provisioning of target machines
+
+**Options:**
+
+- `--name <name>` — Resource name
+- `--from <machine>` — Source machine name
+- `--to <machine>` — Target machine name
+- `--provision <provider>` — Auto-provision target via cloud provider (e.g., hetzner, linode)
+- `--bwlimit <limit>` — Bandwidth limit for rsync transfer (e.g., 10M)
+- `--checkpoint` — CRIU live migration: capture and restore process memory state
+- `--skip-dns` — Skip DNS record switching after migration
 - `--debug` — Enable debug output
 
 ### rdc repo sync upload
@@ -822,18 +874,41 @@ Restore config from backup (.bak) file
 
 ### rdc config backup-strategy set
 
-Configure backup strategy settings
+Create or update a backup strategy
 
 **Options:**
 
-- `--destination <storage>` — Storage destination name
-- `--cron <expression>` — Cron expression for backup schedule (e.g., "0 2 * * *")
-- `--enable` — Enable scheduled backups
-- `--disable` — Disable scheduled backups
+- `--name <name>` — Strategy name (required)
+- `--destination <name>` — Destination name within the strategy
+- `--storage <name>` — Storage config name (rclone credentials)
+- `--cron <expression>` — Cron schedule (e.g., "0 * * * *" for hourly)
+- `--mode <mode>` — Backup mode: "hot" (zero downtime) or "cold" (stop, snapshot, restart)
+- `--bwlimit <limit>` — Rclone bandwidth limit (e.g., "6M", "10M:off", "08:00,3M;22:00,10M")
+- `--include <repos>` — Only back up these repos (comma-separated names)
+- `--exclude <repos>` — Exclude these repos from backup (comma-separated names)
+- `--enable` — Enable the strategy or destination
+- `--disable` — Disable the strategy or destination
+
+### rdc config backup-strategy remove
+
+Remove a backup strategy or destination
+
+**Options:**
+
+- `--name <name>` — Strategy name (required)
+- `--destination <name>` — Remove only this destination (keeps other destinations)
+
+### rdc config backup-strategy list
+
+List all backup strategies
 
 ### rdc config backup-strategy show
 
-Show current backup strategy configuration
+Show backup strategy details
+
+**Options:**
+
+- `--name <name>` — Strategy name (shows all if omitted)
 
 ### rdc config machine add
 

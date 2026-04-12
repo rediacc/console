@@ -97,6 +97,29 @@ This means:
 
 Rediaccfile functions automatically have `DOCKER_HOST` set to the correct socket.
 
+### Daemon Path Layout
+
+Docker data and configuration are stored inside the repository's mount, keeping each daemon fully isolated from the host and from other repositories.
+
+**Per-repo layout:**
+```
+{datastore}/mounts/{guid}/.rediacc/docker/data/    # Docker data root
+{datastore}/mounts/{guid}/.rediacc/docker/config/  # Docker config
+```
+
+**Standalone layout** (daemons not attached to a repository mount):
+```
+{datastore}/standalone/{N}/.rediacc/docker/data/
+{datastore}/standalone/{N}/.rediacc/docker/config/
+```
+
+**Shared runtime path** (unchanged):
+```
+/run/rediacc/docker-{N}.sock
+```
+
+This unified layout eliminates read-only/read-write mount collisions that occurred when daemon paths were split across the host filesystem and the encrypted volume. Both per-repo and standalone daemons follow the same directory structure, so tooling and diagnostics work identically in both cases.
+
 ## LUKS Encryption
 
 Repositories are LUKS-encrypted disk images stored on the server's datastore (default: `/mnt/rediacc`). Each repository:

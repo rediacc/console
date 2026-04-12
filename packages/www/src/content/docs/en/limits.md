@@ -134,7 +134,7 @@ Live migration via CRIU has the following constraints:
 |-------|-------|
 | Backup destinations per repository | Unlimited |
 | Simultaneous backup jobs | 1 per repository (jobs queue if triggered concurrently) |
-| Backup frequency | No minimum interval enforced; limited by your storage bandwidth |
+| Backup frequency | No minimum interval enforced; limited by your storage bandwidth. Use `rdc config backup-strategy set --bwlimit "6M"` to cap upload speed (rclone `--bwlimit` syntax: simple `6M`, directional `6M:off`, or timetable `08:00,3M;22:00,10M`) |
 | Retention | Controlled by your storage provider (S3, Cloudflare R2, etc.). Rediacc does not enforce retention policies. |
 | Cross-machine backup | Supported; destination machine must have sufficient datastore space |
 

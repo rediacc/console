@@ -197,7 +197,7 @@ See [Service Networking](/en/docs/services#service-networking-rediaccjson) for d
 Mount the repository (if not already mounted) and start all services:
 
 ```bash
-rdc repo up --name my-project -m server-1 --mount
+rdc repo up --name my-project -m server-1
 ```
 
 This will:

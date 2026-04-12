@@ -285,23 +285,35 @@
     },
     "config": {
       "backupStrategy": {
-        "description": "Multi-Ziel-Backup-Strategie verwalten",
+        "description": "Benannte Backup-Strategien verwalten (Hot/Cold-Modi, Ziele, Zeitplanung)",
+        "list": {
+          "description": "Alle Backup-Strategien auflisten"
+        },
+        "remove": {
+          "description": "Backup-Strategie oder Ziel entfernen",
+          "optionDestination": "Nur dieses Ziel entfernen (andere Ziele bleiben erhalten)",
+          "optionName": "Strategiename (erforderlich)",
+          "removed": "Backup-Strategie entfernt"
+        },
         "set": {
-          "description": "Backup-Zeitplan-Einstellungen konfigurieren",
-          "noOptions": "Geben Sie mindestens eine Option an: --destination, --cron, --enable oder --disable",
-          "optionCron": "Cron-Ausdruck für den Backup-Zeitplan (z.B. \"0 2 * * *\")",
-          "optionDestination": "Standard-Speicherzielname",
-          "optionDisable": "Geplante Backups deaktivieren",
-          "optionEnable": "Geplante Backups aktivieren",
-          "saved": "Backup-Zeitplan-Konfiguration gespeichert"
+          "description": "Backup-Strategie erstellen oder aktualisieren",
+          "optionBwlimit": "Rclone-Bandbreitenlimit (z.B. \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")",
+          "optionCron": "Cron-Zeitplan (z.B. \"0 * * * *\" für stündlich)",
+          "optionDestination": "Zielname innerhalb der Strategie",
+          "optionDisable": "Strategie oder Ziel deaktivieren",
+          "optionEnable": "Strategie oder Ziel aktivieren",
+          "optionExclude": "Diese Repos vom Backup ausschließen (kommagetrennte Namen)",
+          "optionInclude": "Nur diese Repos sichern (kommagetrennte Namen)",
+          "optionMode": "Backup-Modus: \"hot\" (ohne Ausfallzeit) oder \"cold\" (Stoppen, Snapshot, Neustart)",
+          "optionName": "Strategiename (erforderlich)",
+          "optionStorage": "Speicherkonfigurationsname (rclone-Zugangsdaten)",
+          "saved": "Backup-Strategie-Konfiguration gespeichert"
         },
         "show": {
-          "description": "Aktuelle Backup-Zeitplan-Konfiguration anzeigen",
-          "destinations": "Ziele:",
-          "enabled": "Aktiviert: {{enabled}}",
-          "noDestinations": "Keine Backup-Ziele konfiguriert",
-          "notConfigured": "Kein Backup-Zeitplan konfiguriert",
-          "schedule": "Zeitplan: {{schedule}}"
+          "description": "Backup-Strategie-Details anzeigen",
+          "notConfigured": "Keine Backup-Strategien konfiguriert",
+          "notFound": "Backup-Strategie \"{{name}}\" nicht gefunden",
+          "optionName": "Strategiename (zeigt alle wenn weggelassen)"
         }
       },
       "certCache": {
@@ -647,8 +659,8 @@
         "authStatus": "Authentifizierungsstatus",
         "cliVersion": "CLI-Version",
         "contextMode": "Kontextmodus",
-        "dockerAvailable": "Docker",
-        "goInstalled": "Go",
+        "dockerAvailable": "Docker verfügbar",
+        "goInstalled": "Go installiert",
         "machines": "Maschinen",
         "nodeVersion": "Node.js-Version",
         "opsPrereqs": "OPS-Voraussetzungen",
@@ -660,7 +672,7 @@
         "sshKey": "SSH-Schlüssel",
         "subscriptionMachineSlots": "Maschinen-Slots",
         "subscriptionRepoLicenses": "Repository-Lizenzen",
-        "subscriptionStatus": "Status",
+        "subscriptionStatus": "Abonnementstatus",
         "subscriptionToken": "Zugangstoken"
       },
       "description": "CLI-Umgebung und Renet-Integration diagnostizieren",
@@ -694,10 +706,29 @@
     },
     "machine": {
       "backup": {
+        "cancel": {
+          "cancelled": "{{name}} abgebrochen",
+          "cancelling": "{{name}} wird gestoppt...",
+          "description": "Laufendes Backup auf einem Remote-Rechner abbrechen",
+          "notRunning": "Kein laufendes Backup für Strategie \"{{name}}\"",
+          "optionStrategy": "Strategiename (bricht alle ab wenn weggelassen)"
+        },
         "description": "Maschinen-Backup-Verwaltung",
+        "list": {
+          "description": "Backup-Strategien aller Maschinen auflisten"
+        },
+        "now": {
+          "description": "Backup sofort auf einem Remote-Rechner auslösen",
+          "optionStrategy": "Strategiename (löst alle aus wenn weggelassen)"
+        },
         "schedule": {
-          "description": "Backup-Zeitplan auf Remote-Maschine übertragen (systemd-Timer)",
-          "success": "Backup-Zeitplan auf {{machine}} bereitgestellt"
+          "description": "Backup-Zeitplan auf einem Remote-Rechner deployen (systemd-Timer)",
+          "optionDryRun": "Generierte Units anzeigen ohne zu deployen",
+          "success": "Backup-Zeitplan auf {{machine}} deployed"
+        },
+        "status": {
+          "description": "Backup-Status und Timer-Zustand auf einem Remote-Rechner anzeigen",
+          "optionStrategy": "Details für eine bestimmte Strategie anzeigen"
         }
       },
       "containers": {
@@ -1258,6 +1289,39 @@
         "starting": "Repositories auf \"{{machine}}\" werden aufgelistet..."
       },
       "machineOption": "Name der Zielmaschine",
+      "migrate": {
+        "checkpointing": "CRIU-Checkpoint wird erstellt...",
+        "complete": "Migration abgeschlossen: {{name}} von {{from}} nach {{to}} verschoben",
+        "deltaDone": "Delta-Sync abgeschlossen",
+        "deltaFailed": "Delta-Sync fehlgeschlagen",
+        "deltaSync": "Delta wird synchronisiert...",
+        "description": "Live-Migration eines Repositorys von einer Maschine zur anderen mit minimaler Ausfallzeit. Zwei-Phasen-rsync: Massentransfer im Betrieb, dann kurzer Stopp für Delta-Sync. Unterstützt CRIU-Checkpoint für Prozessspeicher-Migration und automatische Bereitstellung von Zielmaschinen",
+        "descriptionShort": "Live-Migration eines Repositorys zwischen Maschinen",
+        "dnsSkipped": "DNS-Umschaltung übersprungen (keine baseDomain oder Cloudflare-Konfiguration)",
+        "downtime": "Ausfallzeit: {{duration}}",
+        "optionBwlimit": "Bandbreitenlimit für rsync-Transfer (z.B. 10M)",
+        "optionCheckpoint": "CRIU-Live-Migration: Prozessspeicherzustand erfassen und wiederherstellen",
+        "optionFrom": "Name der Quellmaschine",
+        "optionProvision": "Automatische Bereitstellung über Cloud-Anbieter (z.B. hetzner, linode)",
+        "optionSkipDns": "DNS-Umschaltung nach Migration überspringen",
+        "optionTo": "Name der Zielmaschine",
+        "phase1": "Phase 1: Massendaten übertragen (Quelle läuft weiter)...",
+        "phase1Done": "Massentransfer abgeschlossen",
+        "phase1Failed": "Massentransfer fehlgeschlagen",
+        "phase2": "Phase 2: Umschaltung (kurze Ausfallzeit)...",
+        "phase3": "Phase 3: Start auf dem Ziel...",
+        "provisioning": "Zielmaschine {{machine}} wird über {{provider}} bereitgestellt...",
+        "sourceStopped": "Quelldienste gestoppt",
+        "sourceUnmounted": "Quelle ausgehängt",
+        "startFailed": "Start auf dem Ziel fehlgeschlagen",
+        "startingTarget": "Dienste auf dem Ziel werden gestartet...",
+        "stopFailed": "Quelldienste konnten nicht gestoppt werden",
+        "stoppingSource": "Quelldienste werden gestoppt...",
+        "switchingDns": "DNS-Einträge werden umgeschaltet...",
+        "targetStarted": "Zieldienste gestartet",
+        "unmountFailed": "Quelle konnte nicht ausgehängt werden",
+        "unmountingSource": "Quelle wird ausgehängt..."
+      },
       "mount": {
         "checkpointOption": "Nach dem Mounten von Checkpoint wiederherstellen",
         "completed": "Mounten abgeschlossen",
@@ -1282,6 +1346,7 @@
         "deploying": "\"{{repo}}\" wird auf {{machine}} bereitgestellt...",
         "description": "Repository von einem Remote (Rechner oder Speicher) pullen. Namen weglassen, um alle Repos zu pullen. Der Quelltyp wird automatisch aus der Konfiguration erkannt. Verwenden Sie --up zum Bereitstellen nach dem Pull",
         "descriptionShort": "Repository von einem Remote (Rechner oder Speicher) pullen",
+        "optionBwlimit": "Bandbreitenlimit für rsync-Transfer (z.B. \"6M\", \"10M\")",
         "optionForce": "Vorhandenes Repository überschreiben erzwingen",
         "optionFrom": "Name des Quellrechners oder Speichers (wird automatisch aus der Konfiguration erkannt)",
         "optionUp": "Nach dem Pull das Repository auf diesem Rechner mounten und bereitstellen",
@@ -1295,6 +1360,7 @@
         "description": "Repository an ein Remote (Rechner oder Speicher) pushen. Namen weglassen, um alle Repos zu pushen. Der Zieltyp wird automatisch aus der Konfiguration erkannt. Bei Rechner-zu-Rechner-Transfer wird das verschlüsselte Repo-Image mit derselben GUID kopiert — dies ist ein Backup/Migration, kein Fork. Für einen unabhängigen Fork verwenden Sie zuerst 'repo fork', dann push. Verwenden Sie --up zum Bereitstellen nach dem Push",
         "descriptionShort": "Repository an ein Remote (Rechner oder Speicher) pushen",
         "destRequired": "Geben Sie --to <remote> an (Rechner- oder Speichername aus der Konfiguration)",
+        "optionBwlimit": "Bandbreitenlimit für rsync-Transfer (z.B. \"6M\", \"10M\")",
         "optionCheckpoint": "CRIU-Checkpoint vor Backup erstellen (erfasst Prozessspeicherstatus für Live-Migration)",
         "optionForce": "Vorhandenes Backup überschreiben erzwingen",
         "optionProvision": "Zielrechner automatisch über Cloud-Anbieter bereitstellen, wenn nicht vorhanden",
@@ -2155,6 +2221,7 @@
     "term": {
       "connectivityFailed": "Kann {{host}}:{{port}} nicht erreichen. {{error}}\n\nFehlerbehebung:\n  - Überprüfen Sie, ob die Machine eingeschaltet ist und mit dem Netzwerk verbunden ist\n  - Überprüfen Sie, ob die IP-Adresse im Machine-Vault korrekt ist\n  - Stellen Sie sicher, dass Port {{port}} nicht durch eine Firewall blockiert ist\n  - Versuchen Sie, die Machine zu pingen: ping {{host}}",
       "dockerComposeForbidden": "\"docker compose\" ist im Repository-Kontext nicht erlaubt.\n\nVerwenden Sie stattdessen \"renet compose -- <args>\", damit repo-spezifische Loopback-IPs, Host-Netzwerk-Injection, CRIU-Capabilities und Compose-Validierung angewendet werden. \"docker compose\" direkt auszuführen umgeht all dies und beschädigt das Deployment unbemerkt.\n\nFür orchestrierte Deployments empfohlen: rdc repo up --name <repository> -m <machine>",
+      "fileWriteDetected": "Dateischreibvorgang erkannt ({{detected}}). Verwenden Sie stattdessen rdc repo sync:\n  rdc repo sync upload -m MACHINE -r REPO --local FILE --remote PATH\n\nrsync überträgt Dateien mit Delta-Komprimierung, Prüfsummen und korrekten Berechtigungen.",
       "launchFailed": "Terminal konnte nicht gestartet werden: {{error}}",
       "noHostKey": "Machine '{{machine}}' hat keinen Host-Schlüssel im Vault konfiguriert",
       "noIpAddress": "Machine '{{machine}}' hat keine IP-Adresse konfiguriert",
@@ -2190,6 +2257,7 @@
     "cli": {
       "machineQuery": "Maschinenstatus anzeigen",
       "repoUp": "Repository-Dienste bereitstellen",
+      "syncDownload": "Dateien vom Repository herunterladen",
       "syncUpload": "Dateien ins Repository hochladen",
       "termRepo": "SSH in Repository"
     },
@@ -2231,7 +2299,8 @@
     "term": {
       "command": "Befehl ohne interaktive Shell ausführen",
       "machine": "SSH zur Maschine",
-      "repo": "SSH ins Repository (DOCKER_HOST automatisch)"
+      "repo": "SSH ins Repository (DOCKER_HOST automatisch)",
+      "syncHint": "Für Dateitransfer verwenden: rdc repo sync upload/download"
     },
     "useHelpAll": "Verwenden Sie --help-all für erweiterte Beschreibungen",
     "vscode": {
@@ -2325,6 +2394,7 @@
     "queryNetwork": "Nur Netzwerkschnittstellen einbeziehen",
     "queryRepositories": "Nur Repositories einbeziehen",
     "queryServices": "Nur Dienste einbeziehen",
+    "queryStorageHealth": "BTRFS-Fragmentierung und reflink-Einsparungen pro Repository anzeigen",
     "querySystem": "Nur Systeminformationen einbeziehen",
     "quiet": "Informationsausgabe unterdrücken",
     "rawVault": "Raw Vault JSON (für Scripts/CI)",

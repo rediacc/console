@@ -123,7 +123,7 @@
     "eslint-plugin-regexp": "^3.1.0",
     "eslint-plugin-sonarjs": "^4.0.2",
     "eslint-plugin-unicorn": "^64.0.0",
-    "globals": "^17.4.0",
+    "globals": "^17.5.0",
     "jsdom": "^29.0.0",
     "knip": "^6.4.0",
     "syncpack": "^14.3.0",
