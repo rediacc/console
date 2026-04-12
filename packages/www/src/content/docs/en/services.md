@@ -197,8 +197,8 @@ After deployment, the output shows a **PROXY ROUTES** section with the actual UR
 ```
 HTTP services (accessible via proxy after ~3s):
   gitlab-server:
-    HTTPS: https://gitlab.rediacc.io  (custom)
-    Auto:  https://gitlab-server.gitlab.hostinger.rediacc.io
+    HTTPS: https://gitlab.example.com  (custom)
+    Auto:  https://gitlab-server.gitlab.server-1.example.com
     IP:    127.0.11.130
 ```
 

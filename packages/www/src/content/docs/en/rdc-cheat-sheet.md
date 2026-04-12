@@ -81,10 +81,10 @@ Quick reference for the most common `rdc` commands. Run any command with `--help
 | `rdc machine query --name <machine> --network` | Network info only |
 | `rdc machine query --name <machine> --block-devices` | Block device info only |
 | `rdc machine list` | List all machines in config |
-| `rdc machine setup -m <machine>` | Run initial machine provisioning |
-| `rdc machine prune -m <machine>` | Remove unused resources from machine |
-| `rdc machine deprovision -m <machine>` | Fully deprovision a machine |
-| `rdc machine vault-status -m <machine>` | Show LUKS vault status |
+| `rdc machine setup --name <machine>` | Run initial machine provisioning |
+| `rdc machine prune --name <machine>` | Remove unused resources from machine |
+| `rdc machine deprovision --name <machine>` | Fully deprovision a machine |
+| `rdc machine vault-status --name <machine>` | Show LUKS vault status |
 
 ## Terminal and Sync
 
@@ -112,7 +112,7 @@ Quick reference for the most common `rdc` commands. Run any command with `--help
 
 | Command | Description |
 |---------|-------------|
-| `rdc run container_list -m <machine> --param repository=<repo>` | List containers in a repository |
-| `rdc run container_logs -m <machine> --param repository=<repo> --param container=<name>` | Fetch container logs |
-| `rdc run container_exec -m <machine> --param repository=<repo> --param container=<name> --param command="<cmd>"` | Execute command in container |
-| `rdc run container_restart -m <machine> --param repository=<repo> --param container=<name>` | Restart a container |
+| `rdc term connect -m <machine> -r <repo> -c "docker ps"` | List containers in a repository |
+| `rdc term connect -m <machine> -r <repo> -c "docker logs <name>"` | Fetch container logs |
+| `rdc term connect -m <machine> -r <repo> -c "docker exec <name> <cmd>"` | Execute command in container |
+| `rdc term connect -m <machine> -r <repo> -c "docker restart <name>"` | Restart a container |
