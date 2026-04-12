@@ -105,7 +105,7 @@ Renet auto-injecte celles-ci dans chaque conteneur :
 
 - **Activation par label** : Ajoutez `rediacc.checkpoint=true` aux conteneurs que vous souhaitez checkpointer. Les conteneurs sans ce label (bases de données, caches) démarrent à froid et récupèrent via leurs propres mécanismes (WAL, LDF, AOF).
 - **`repo down --checkpoint`** sauvegarde l'état du processus avant l'arrêt, le prochain `repo up` restaure automatiquement. **C'est le flux principal sur la même machine**, vérifié fonctionnel.
-- **`backup push --checkpoint`** capture la mémoire des processus en cours ainsi que l'état du disque pour les conteneurs labellisés, puis transfère le volume vers une autre machine. Restauration sur la machine cible via `repo up --mount`.
+- **`backup push --checkpoint`** capture la mémoire des processus en cours ainsi que l'état du disque pour les conteneurs labellisés, puis transfère le volume vers une autre machine. Restauration sur la machine cible via `repo up`.
 - **`repo fork --checkpoint`** capture l'état du processus avant le fork et CoW-clone le checkpoint avec le fork. ⚠️ Sur la même machine, le `repo up` suivant sur le fork **échoue actuellement** avec `criu failed: type RESTORE errno 0` tant que le parent est encore en cours d'exécution. Bugs CRIU upstream [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). Utilisez `repo down --checkpoint` pour la sauvegarde/restauration sur place, ou `backup push --checkpoint` pour la migration inter-machines.
 - **`repo up`** détecte automatiquement les données de checkpoint et restaure si trouvé. Utilisez `--skip-checkpoint` pour forcer un démarrage à froid.
 - **Restauration tenant compte des dépendances** : Utilise `depends_on` de compose pour démarrer les bases de données d'abord (attendre healthy), puis restaurer CRIU des conteneurs applicatifs.
@@ -142,8 +142,7 @@ Renet auto-injecte celles-ci dans chaque conteneur :
 
 ## Déploiement
 
-- **`rdc repo up`** exécute `up()` dans tous les Rediaccfiles.
-- **`rdc repo up --mount`** ouvre d'abord le volume LUKS, puis exécute le cycle de vie. Requis après `backup push` vers une nouvelle machine.
+- **`rdc repo up`** monte automatiquement le volume LUKS s'il n'est pas monté, puis exécute `up()` dans tous les Rediaccfiles.
 - **`rdc repo down`** exécute `down()` et arrête le daemon Docker.
 - **`rdc repo down --unmount`** ferme également le volume LUKS (verrouille le stockage chiffré).
 - **Forks** (`rdc repo fork`) créent un clone CoW (copy-on-write) avec un nouveau GUID et networkId, en **temps constant quelle que soit la taille du dépôt**. Le reflink BTRFS duplique les métadonnées de l'image, pas les données, si bien qu'un dépôt de 100 Go se fork en autant de secondes qu'un dépôt de 1 Go. Le fork partage la clé de chiffrement du parent.
@@ -157,6 +156,5 @@ Renet auto-injecte celles-ci dans chaque conteneur :
 - Les politiques de redémarrage sont sûres, renet les supprime automatiquement et le watchdog gère la récupération.
 - Utiliser `privileged: true`, inutile, renet injecte des capabilities CRIU spécifiques à la place.
 - Coder en dur des IPs brutes dans des fichiers de configuration persistants - utilisez les noms de service pour les connexions afin de préserver l'isolation du fork.
-- Oublier `--mount` lors du premier déploiement après `backup push`, le volume LUKS nécessite une ouverture explicite.
 - Utiliser `rdc term connect -c` comme contournement pour les commandes échouées, signalez les bugs à la place.
 - `repo delete` effectue un nettoyage complet incluant les IPs de loopback et les unités systemd. Exécutez `rdc machine prune <name>` pour nettoyer les restes des suppressions anciennes.

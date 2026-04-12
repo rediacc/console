@@ -199,7 +199,7 @@ services:
 Смонтируйте репозиторий (если ещё не смонтирован) и запустите все сервисы:
 
 ```bash
-rdc repo up --name my-project -m server-1 --mount
+rdc repo up --name my-project -m server-1
 ```
 
 Это выполнит:

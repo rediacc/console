@@ -35,14 +35,14 @@ rclone yapılandırmalarından içe aktarılmış tüm yapılandırılmış depo
 Bir cron zamanlamasına göre çalışan otomatik yedeklemeler kurun.
 
 ```bash
-rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name daily --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
 Farklı zamanlamalarla birden fazla hedef yapılandırabilirsiniz:
 
 ```bash
-rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
-rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+rdc config backup-strategy set --name daily-s3 --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name daily-azure --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 Bu, sabah 2'de `my-s3`'e ve sabah 6'da `azure-backup`'a günlük yedeklemeler zamanlar. Her hedef kendi zamanlamasına sahiptir. Zamanlamalar yapılandırmanızda saklanır ve makinelere systemd zamanlayıcıları olarak dağıtılabilir.
@@ -97,7 +97,7 @@ Genel IP'leri, alan adını, sertifika e-postasını ve tüm kayıtlı portları
 Yapılandırmayı silmeden otomatik yedeklemeleri durdurmak için:
 
 ```bash
-rdc config backup-strategy set --disable
+rdc config backup-strategy set --name daily --disable
 rdc config backup-strategy show
 ```
 

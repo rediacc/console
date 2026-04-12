@@ -110,14 +110,14 @@ Automatice los respaldos con un cronograma cron que se ejecuta como un temporiza
 ### Configurar Cronograma
 
 ```bash
-rdc config backup-strategy set --destination my-storage --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name nightly --destination my-storage --cron "0 2 * * *" --enable
 ```
 
 Puede configurar múltiples destinos con diferentes cronogramas:
 
 ```bash
-rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
-rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+rdc config backup-strategy set --name nightly-s3 --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name morning-azure --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 | Opción | Descripción |

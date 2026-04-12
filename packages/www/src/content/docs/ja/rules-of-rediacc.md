@@ -105,7 +105,7 @@ Renetはすべてのコンテナに以下を自動注入します:
 
 - **ラベルによるオプトイン**: チェックポイントしたいコンテナに`rediacc.checkpoint=true`を追加します。このラベルのないコンテナ（データベース、キャッシュ）はフレッシュスタートし、独自のメカニズム（WAL、LDF、AOF）で回復します。
 - **`repo down --checkpoint`** は停止前にプロセス状態を保存し、次の `repo up` で自動復元します。**これが同一マシン上の主要なフローであり**、動作検証済みです。
-- **`backup push --checkpoint`** はラベル付きコンテナの実行中プロセスメモリ + ディスク状態をキャプチャし、ボリュームを別のマシンに転送します。ターゲットマシンでは `repo up --mount` で復元します。
+- **`backup push --checkpoint`** はラベル付きコンテナの実行中プロセスメモリ + ディスク状態をキャプチャし、ボリュームを別のマシンに転送します。ターゲットマシンでは `repo up` で復元します。
 - **`repo fork --checkpoint`** は fork 前にプロセス状態をキャプチャし、チェックポイントを fork と一緒に CoW クローンします。⚠️ 同一マシン上では、親がまだ実行中の場合、fork に対する後続の `repo up` は現在 `criu failed: type RESTORE errno 0` で**失敗します**。これは upstream CRIU のバグ [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514) によるものです。インプレースな保存/復元には `repo down --checkpoint` を、マシン間マイグレーションには `backup push --checkpoint` を使用してください。
 - **`repo up`** はチェックポイントデータを自動検出し、見つかった場合は復元します。フレッシュスタートには`--skip-checkpoint`を使用してください。
 - **依存関係を考慮した復元**: composeの`depends_on`を使用してデータベースを先に起動（healthyを待機）し、その後アプリコンテナをCRIU復元します。
@@ -142,8 +142,7 @@ Renetはすべてのコンテナに以下を自動注入します:
 
 ## デプロイ
 
-- **`rdc repo up`** はすべてのRediaccfileで`up()`を実行します。
-- **`rdc repo up --mount`** はまずLUKSボリュームを開き、次にライフサイクルを実行します。新しいマシンへの`backup push`後に必要です。
+- **`rdc repo up`** はLUKSボリュームが未マウントの場合は自動マウントし、すべてのRediaccfileで`up()`を実行します。
 - **`rdc repo down`** は`down()`を実行してDockerデーモンを停止します。
 - **`rdc repo down --unmount`** はLUKSボリュームも閉じます（暗号化ストレージをロックします）。
 - **フォーク**（`rdc repo fork`）は新しいGUIDとnetworkIdを持つCoW（コピーオンライト）クローンを、**リポジトリのサイズに関係なく一定時間で**作成します。BTRFS reflink はイメージのメタデータを複製するだけでデータは複製しないため、100 GB のリポジトリも 1 GB のリポジトリも同じ数秒でフォークされます。フォークは親の暗号化キーを共有します。
@@ -157,6 +156,5 @@ Renetはすべてのコンテナに以下を自動注入します:
 - 再起動ポリシーは安全です, renetが自動的に削除し、ウォッチドッグが回復を処理します。
 - `privileged: true` を使用する, 不要です。renetが代わりに特定のCRIUケーパビリティを注入します。
 - 生の IP を永続的な設定ファイルにハードコードする - 接続にはサービス名を使用して fork の分離性を保ってください。
-- `backup push`後の初回デプロイで`--mount`を忘れる, LUKSボリュームは明示的に開く必要があります。
 - 失敗したコマンドの回避策として`rdc term connect -c`を使用する, 代わりにバグを報告してください。
 - `repo delete`はループバックIPとsystemdユニットを含む完全なクリーンアップを実行します。古い削除の残骸をクリーンアップするには`rdc machine prune <name>`を実行してください。

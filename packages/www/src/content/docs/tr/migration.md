@@ -199,7 +199,7 @@ IP ataması ve `.rediacc.json` hakkında ayrıntılar için [Servis Ağı](/tr/d
 Depoyu bağlayın (henüz bağlı değilse) ve tüm servisleri başlatın:
 
 ```bash
-rdc repo up --name my-project -m server-1 --mount
+rdc repo up --name my-project -m server-1
 ```
 
 Bu işlem:

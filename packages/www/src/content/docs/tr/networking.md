@@ -436,7 +436,7 @@ app.example.com   A   203.0.113.50
 ### Dağıtım
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 Birkaç saniye içinde route server konteyneri keşfeder, Traefik yönlendirmeyi alır, TLS sertifikası talep eder ve `https://app.example.com` yayında olur.

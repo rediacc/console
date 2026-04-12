@@ -56,7 +56,7 @@ rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 通过挂载仓库并启动其 Docker 服务来部署应用。
 
 ```bash
-rdc repo up --name test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1
 ```
 
 这将挂载仓库（如果尚未挂载），启动隔离的 Docker daemon，并通过 `up()` 启动服务。

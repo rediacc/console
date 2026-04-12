@@ -177,16 +177,15 @@ services:
 挂载仓库并启动所有服务：
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 | 选项 | 描述 |
 |------|------|
-| `--mount` | 如果尚未挂载，则先挂载仓库 |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 执行顺序为：
-1. 挂载 LUKS 加密仓库（如果指定了 `--mount`）
+1. 挂载 LUKS 加密仓库（未挂载时自动挂载）
 2. 为此仓库启动隔离的 Docker 守护进程
 3. 从 compose 文件自动生成 `.rediacc.json`
 4. 按 A-Z 顺序在所有 Rediaccfile 中运行 `up()`

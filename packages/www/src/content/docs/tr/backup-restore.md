@@ -110,14 +110,14 @@ Uzak makinede systemd zamanlayıcısı olarak çalışan bir cron zamanlamasıyl
 ### Zamanlama Ayarlama
 
 ```bash
-rdc config backup-strategy set --destination my-storage --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name nightly --destination my-storage --cron "0 2 * * *" --enable
 ```
 
 Farklı zamanlamalarla birden fazla hedef yapılandırabilirsiniz:
 
 ```bash
-rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
-rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+rdc config backup-strategy set --name nightly-s3 --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name morning-azure --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 | Seçenek | Açıklama |

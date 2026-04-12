@@ -110,14 +110,14 @@ Automatisez les sauvegardes avec une planification cron qui s'exécute comme un 
 ### Définir la planification
 
 ```bash
-rdc config backup-strategy set --destination my-storage --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name nightly --destination my-storage --cron "0 2 * * *" --enable
 ```
 
 Vous pouvez configurer plusieurs destinations avec des planifications différentes :
 
 ```bash
-rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
-rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+rdc config backup-strategy set --name nightly-s3 --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name morning-azure --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 | Option | Description |

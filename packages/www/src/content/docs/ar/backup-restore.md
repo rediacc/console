@@ -110,14 +110,14 @@ rdc repo pull --from my-storage -m server-1
 ### تعيين الجدول
 
 ```bash
-rdc config backup-strategy set --destination my-storage --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name nightly --destination my-storage --cron "0 2 * * *" --enable
 ```
 
 يمكنك تكوين وجهات متعددة بجداول مختلفة:
 
 ```bash
-rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
-rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+rdc config backup-strategy set --name nightly-s3 --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name morning-azure --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 | الخيار | الوصف |

@@ -40,7 +40,7 @@ rdc config machine setup --name server-1
 
 # Depo oluştur ve başlat
 rdc repo create --name my-app -m server-1 --size 10G
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 
 # Depoyu durdur
 rdc repo down --name my-app -m server-1

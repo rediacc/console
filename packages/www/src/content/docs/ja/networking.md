@@ -434,7 +434,7 @@ app.example.com   A   203.0.113.50
 ### デプロイ
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 数秒以内にルートサーバーがコンテナを検出し、Traefikがルートを取得してTLS証明書をリクエストし、`https://app.example.com`が公開されます。

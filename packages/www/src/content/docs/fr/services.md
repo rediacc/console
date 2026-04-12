@@ -179,16 +179,15 @@ services:
 Montez le dépôt et démarrez tous les services :
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--mount` | Monter le dépôt au préalable s'il n'est pas déjà monté |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 La séquence d'exécution est :
-1. Monter le dépôt chiffré LUKS (si `--mount`)
+1. Monter le dépôt chiffré LUKS (montage automatique si non monté)
 2. Démarrer le démon Docker isolé
 3. Générer automatiquement `.rediacc.json` à partir des fichiers compose
 4. Exécuter `up()` dans tous les Rediaccfiles (ordre A-Z)

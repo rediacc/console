@@ -179,16 +179,15 @@ services:
 Depoyu bağlayın ve tüm servisleri başlatın:
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--mount` | Henüz bağlanmamışsa önce depoyu bağla |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Çalıştırma sırası:
-1. LUKS ile şifrelenmiş depoyu bağla (`--mount` belirtilmişse)
+1. LUKS ile şifrelenmiş depoyu bağla (bağlı değilse otomatik bağlanır)
 2. İzole Docker daemon'unu başlat
 3. Compose dosyalarından `.rediacc.json` dosyasını otomatik oluştur
 4. Tüm Rediaccfile'larda `up()` çalıştır (A-Z sırası)

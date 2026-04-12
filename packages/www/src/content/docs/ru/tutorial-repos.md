@@ -56,7 +56,7 @@ rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 Разверните приложение, смонтировав репозиторий и запустив его Docker-сервисы.
 
 ```bash
-rdc repo up --name test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1
 ```
 
 Это монтирует репозиторий (если он ещё не смонтирован), запускает изолированный Docker daemon и запускает сервисы через `up()`.

@@ -436,7 +436,7 @@ app.example.com   A   203.0.113.50
 ### Déployer
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 En quelques secondes, le serveur de routes découvre le conteneur, Traefik récupère la route, demande un certificat TLS, et `https://app.example.com` est en ligne.

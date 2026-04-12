@@ -436,7 +436,7 @@ app.example.com   A   203.0.113.50
 ### Развертывание
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 Через несколько секунд сервер маршрутов обнаружит контейнер, Traefik подхватит маршрут, запросит TLS-сертификат, и `https://app.example.com` станет доступен.

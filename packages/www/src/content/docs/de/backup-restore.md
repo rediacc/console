@@ -110,14 +110,14 @@ Automatisieren Sie Backups mit einem Cron-Zeitplan, der als systemd-Timer auf de
 ### Zeitplan festlegen
 
 ```bash
-rdc config backup-strategy set --destination my-storage --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name nightly --destination my-storage --cron "0 2 * * *" --enable
 ```
 
 Sie können mehrere Ziele mit verschiedenen Zeitplänen konfigurieren:
 
 ```bash
-rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
-rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+rdc config backup-strategy set --name nightly-s3 --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name morning-azure --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 | Option | Beschreibung |

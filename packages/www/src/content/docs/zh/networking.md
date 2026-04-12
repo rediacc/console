@@ -434,7 +434,7 @@ app.example.com   A   203.0.113.50
 ### 部署
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 几秒钟内，路由服务器发现容器，Traefik 获取路由，请求 TLS 证书，`https://app.example.com` 即可上线访问。

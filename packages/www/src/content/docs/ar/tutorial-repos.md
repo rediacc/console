@@ -56,7 +56,7 @@ rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 انشر التطبيق عن طريق توصيل المستودع وبدء خدمات Docker الخاصة به.
 
 ```bash
-rdc repo up --name test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1
 ```
 
 يقوم هذا بتوصيل المستودع (إذا لم يكن موصّلاً بالفعل)، وبدء Docker daemon معزول، وبدء الخدمات عبر `up()`.

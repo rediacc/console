@@ -56,7 +56,7 @@ El directorio de montaje es donde residen los archivos de la aplicación, `Redia
 Despliega la aplicación montando el repositorio e iniciando sus servicios Docker.
 
 ```bash
-rdc repo up --name test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1
 ```
 
 Esto monta el repositorio (si no está ya montado), inicia un Docker daemon aislado e inicia servicios mediante `up()`.

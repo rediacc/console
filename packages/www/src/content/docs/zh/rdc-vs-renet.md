@@ -40,7 +40,7 @@ rdc config machine setup --name server-1
 
 # Create and start a repository
 rdc repo create --name my-app -m server-1 --size 10G
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 
 # Stop a repository
 rdc repo down --name my-app -m server-1

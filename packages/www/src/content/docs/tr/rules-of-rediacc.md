@@ -105,7 +105,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 
 - **Etiketle etkinleştirme**: Checkpoint almak istediğiniz konteynerlere `rediacc.checkpoint=true` ekleyin. Bu etiketi olmayan konteynerler (veritabanları, önbellekler) temiz başlar ve kendi mekanizmalarıyla (WAL, LDF, AOF) kurtarılır.
 - **`repo down --checkpoint`** durdurmadan önce süreç durumunu kaydeder, sonraki `repo up` otomatik geri yükler. **Bu, aynı makinedeki birincil akıştır** ve çalıştığı doğrulanmıştır.
-- **`backup push --checkpoint`** etiketli konteynerler için çalışan süreçlerin bellek durumunu + disk durumunu yakalar, ardından birimi başka bir makineye aktarır. Hedef makinede `repo up --mount` ile geri yüklenir.
+- **`backup push --checkpoint`** etiketli konteynerler için çalışan süreçlerin bellek durumunu + disk durumunu yakalar, ardından birimi başka bir makineye aktarır. Hedef makinede `repo up` ile geri yüklenir.
 - **`repo fork --checkpoint`** fork öncesi süreç durumunu yakalar ve checkpoint'i fork ile birlikte CoW-klonlar. ⚠️ Aynı makinede, ebeveyn hâlâ çalışırken fork üzerindeki sonraki `repo up` **şu anda** `criu failed: type RESTORE errno 0` ile **başarısız olur**. Upstream CRIU hataları [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). Yerinde kayıt/geri yükleme için `repo down --checkpoint`, makineler arası geçiş için `backup push --checkpoint` kullanın.
 - **`repo up`** checkpoint verilerini otomatik algılar ve bulunursa geri yükler. Temiz başlatma için `--skip-checkpoint` kullanın.
 - **Bağımlılık farkındalıklı geri yükleme**: Compose `depends_on` kullanarak veritabanlarını önce başlatır (healthy bekler), ardından uygulama konteynerlerini CRIU ile geri yükler.
@@ -142,8 +142,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 
 ## Dağıtım
 
-- **`rdc repo up`** tüm Rediaccfile'larda `up()` çalıştırır.
-- **`rdc repo up --mount`** önce LUKS birimini açar, sonra yaşam döngüsünü çalıştırır. Yeni bir makineye `backup push` sonrasında gereklidir.
+- **`rdc repo up`** LUKS birimi bağlı değilse otomatik olarak bağlar, ardından tüm Rediaccfile'larda `up()` çalıştırır.
 - **`rdc repo down`** `down()` çalıştırır ve Docker daemon'ını durdurur.
 - **`rdc repo down --unmount`** ayrıca LUKS birimini kapatır (şifreli depolamayı kilitler).
 - **Fork'lar** (`rdc repo fork`) yeni GUID ve networkId ile bir CoW (copy-on-write) klon oluşturur ve bunu **depo boyutundan bağımsız olarak sabit sürede** yapar. BTRFS reflink veriyi değil görüntü meta verilerini çoğaltır, bu nedenle 100 GB'lık bir depo 1 GB'lık bir depo ile aynı birkaç saniyede fork edilir. Fork, üst öğenin şifreleme anahtarını paylaşır.
@@ -157,6 +156,5 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 - Yeniden başlatma politikaları güvenlidir, renet bunları otomatik olarak kaldırır ve watchdog kurtarmayı üstlenir.
 - `privileged: true` kullanmak, gerekli değildir, renet bunun yerine belirli CRIU capability'lerini enjekte eder.
 - Ham IP'leri kalıcı yapılandırma dosyalarına sabit kodlamak - fork izolasyonunu sağlam tutmak için bağlantılarda servis adlarını kullanın.
-- `backup push` sonrası ilk dağıtımda `--mount`'u unutmak, LUKS birimi açık bir şekilde açılmalıdır.
 - Başarısız komutlar için geçici çözüm olarak `rdc term connect -c` kullanmak, bunun yerine hataları bildirin.
 - `repo delete` loopback IP'leri ve systemd birimlerini de dahil ederek tam temizlik yapar. Eski silmelerden kalan artıkları temizlemek için `rdc machine prune <name>` çalıştırın.

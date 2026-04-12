@@ -103,7 +103,7 @@ Renet auto-injects these into every container:
 
 - **Opt-in via label**: Add `rediacc.checkpoint=true` to containers you want to checkpoint. Containers without it (databases, caches) start fresh and recover via their own mechanisms (WAL, LDF, AOF).
 - **`repo down --checkpoint`** saves process state before stopping, next `repo up` auto-restores. **This is the primary same-machine flow**, verified working.
-- **`backup push --checkpoint`** captures running process memory + disk state for labeled containers, then transfers the volume to another machine. Restore on the target machine via `repo up --mount`.
+- **`backup push --checkpoint`** captures running process memory + disk state for labeled containers, then transfers the volume to another machine. Restore on the target machine via `repo up`.
 - **`repo fork --checkpoint`** captures process state before forking and CoW-clones the checkpoint with the fork. ⚠️ On the same machine, the subsequent `repo up` on the fork **currently fails** with `criu failed: type RESTORE errno 0` when the parent is still running. Upstream CRIU bugs [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). Use `repo down --checkpoint` for in-place save/restore, or `backup push --checkpoint` for cross-machine migration.
 - **`repo up`** auto-detects checkpoint data and restores if found. Use `--skip-checkpoint` to force fresh start.
 - **Dependency-aware restore**: Uses compose `depends_on` to start databases first (wait for healthy), then CRIU-restore app containers.

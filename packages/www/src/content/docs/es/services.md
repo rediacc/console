@@ -179,16 +179,15 @@ services:
 Monte el repositorio e inicie todos los servicios:
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 | Opción | Descripción |
 |--------|-------------|
-| `--mount` | Montar el repositorio primero si no está montado |
 | `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
 La secuencia de ejecución es:
-1. Montar el repositorio cifrado con LUKS (si se especifica `--mount`)
+1. Montar el repositorio cifrado con LUKS (montaje automático si no está montado)
 2. Iniciar el daemon Docker aislado
 3. Generar automáticamente `.rediacc.json` a partir de archivos compose
 4. Ejecutar `up()` en todos los Rediaccfiles (orden A-Z)

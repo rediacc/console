@@ -56,7 +56,7 @@ Le répertoire de montage est l'emplacement des fichiers d'application, `Rediacc
 Déployez l'application en montant le dépôt et en démarrant ses services Docker.
 
 ```bash
-rdc repo up --name test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1
 ```
 
 Cela monte le dépôt (s'il n'est pas déjà monté), démarre un Docker daemon isolé et démarre les services via `up()`.

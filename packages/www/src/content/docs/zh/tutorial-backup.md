@@ -35,14 +35,14 @@ rdc config storage list
 设置按 cron 计划运行的自动备份。
 
 ```bash
-rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name daily --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
 您可以为不同的计划配置多个目标：
 
 ```bash
-rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
-rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+rdc config backup-strategy set --name daily-s3 --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name daily-azure --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 这会安排每天凌晨 2 点备份到 `my-s3`，凌晨 6 点备份到 `azure-backup`。每个目标都有自己的计划。计划保存在您的配置中，可以作为 systemd 定时器部署到机器上。
@@ -97,7 +97,7 @@ rdc config infra show -m server-1
 要在不删除配置的情况下停止自动备份：
 
 ```bash
-rdc config backup-strategy set --disable
+rdc config backup-strategy set --name daily --disable
 rdc config backup-strategy show
 ```
 

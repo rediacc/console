@@ -179,16 +179,15 @@ services:
 قم بتحميل المستودع وتشغيل جميع الخدمات:
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 | الخيار | الوصف |
 |--------|-------|
-| `--mount` | تحميل المستودع أولاً إن لم يكن محمّلاً بالفعل |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 تسلسل التنفيذ هو:
-1. تحميل المستودع المشفر بـ LUKS (إذا تم تحديد `--mount`)
+1. تحميل المستودع المشفر بـ LUKS (تحميل تلقائي إذا لم يكن محمّلاً)
 2. تشغيل عملية Docker المعزولة
 3. إنشاء `.rediacc.json` تلقائياً من ملفات compose
 4. تشغيل `up()` في جميع ملفات Rediaccfile (بترتيب A-Z)

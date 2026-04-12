@@ -35,14 +35,14 @@ Liste tous les fournisseurs de stockage configurés importés depuis les configu
 Mettez en place des sauvegardes automatisées qui s'exécutent selon un calendrier cron.
 
 ```bash
-rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name daily --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
 Vous pouvez configurer plusieurs destinations avec des planifications différentes :
 
 ```bash
-rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
-rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+rdc config backup-strategy set --name daily-s3 --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name daily-azure --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 Ceci planifie des sauvegardes quotidiennes à 2h du matin vers `my-s3` et à 6h du matin vers `azure-backup`. Chaque destination a sa propre planification. Les planifications sont stockées dans votre configuration et peuvent être déployées sur les machines en tant que minuteurs systemd.
@@ -97,7 +97,7 @@ Affiche les IPs publiques, le domaine, l'e-mail de certificat et tous les ports 
 Pour arrêter les sauvegardes automatisées sans supprimer la configuration :
 
 ```bash
-rdc config backup-strategy set --disable
+rdc config backup-strategy set --name daily --disable
 rdc config backup-strategy show
 ```
 

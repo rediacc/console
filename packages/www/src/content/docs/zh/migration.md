@@ -199,7 +199,7 @@ services:
 挂载仓库（如果尚未挂载）并启动所有服务：
 
 ```bash
-rdc repo up --name my-project -m server-1 --mount
+rdc repo up --name my-project -m server-1
 ```
 
 这将：

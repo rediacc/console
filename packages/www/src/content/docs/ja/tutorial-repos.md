@@ -56,7 +56,7 @@ rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 リポジトリをマウントしてDockerサービスを起動することでアプリケーションをデプロイします。
 
 ```bash
-rdc repo up --name test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1
 ```
 
 リポジトリをマウントし（まだマウントされていない場合）、隔離されたDocker daemonを起動し、`up()`でサービスを開始します。

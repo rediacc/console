@@ -436,7 +436,7 @@ app.example.com   A   203.0.113.50
 ### Bereitstellung
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 Innerhalb weniger Sekunden erkennt der Route Server den Container, Traefik übernimmt die Route, fordert ein TLS-Zertifikat an, und `https://app.example.com` ist live.

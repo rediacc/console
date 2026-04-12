@@ -56,7 +56,7 @@ Das Mount-Verzeichnis ist der Ort, an dem sich die Anwendungsdateien befinden, `
 Stellen Sie die Anwendung bereit, indem Sie das Repository mounten und seine Docker-Dienste starten.
 
 ```bash
-rdc repo up --name test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1
 ```
 
 Dies mountet das Repository (falls nicht bereits gemountet), startet einen isolierten Docker Daemon und startet Dienste über `up()`.

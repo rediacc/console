@@ -105,7 +105,7 @@ Renet 会自动将以下变量注入每个容器：
 
 - **通过标签选择性启用**：为需要创建检查点的容器添加 `rediacc.checkpoint=true`。没有此标签的容器（数据库、缓存）将全新启动并通过自身机制（WAL、LDF、AOF）恢复。
 - **`repo down --checkpoint`** 在停止前保存进程状态，下次 `repo up` 自动恢复。**这是同机上的主要流程**，已验证可用。
-- **`backup push --checkpoint`** 捕获已标记容器的运行进程内存 + 磁盘状态，然后将卷传输到另一台机器。在目标机器上通过 `repo up --mount` 恢复。
+- **`backup push --checkpoint`** 捕获已标记容器的运行进程内存 + 磁盘状态，然后将卷传输到另一台机器。在目标机器上通过 `repo up` 恢复。
 - **`repo fork --checkpoint`** 在 fork 前捕获进程状态，并将检查点与 fork 一起 CoW 克隆。⚠️ 在同一台机器上，当父仓库仍在运行时，随后对 fork 执行的 `repo up` **目前会失败**，提示 `criu failed: type RESTORE errno 0`。上游 CRIU bug [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514)。原地保存/恢复请使用 `repo down --checkpoint`，跨机迁移请使用 `backup push --checkpoint`。
 - **`repo up`** 自动检测检查点数据并在找到时恢复。使用 `--skip-checkpoint` 强制全新启动。
 - **依赖感知恢复**：使用 compose 的 `depends_on` 先启动数据库（等待 healthy），然后再通过 CRIU 恢复应用容器。
@@ -142,8 +142,7 @@ Renet 会自动将以下变量注入每个容器：
 
 ## 部署
 
-- **`rdc repo up`** 在所有Rediaccfile中执行 `up()`。
-- **`rdc repo up --mount`** 先打开 LUKS 卷，然后执行生命周期。在 `backup push` 到新机器后需要此选项。
+- **`rdc repo up`** 如果 LUKS 卷未挂载则自动挂载，然后在所有 Rediaccfile 中执行 `up()`。
 - **`rdc repo down`** 执行 `down()` 并停止 Docker 守护进程。
 - **`rdc repo down --unmount`** 还会关闭 LUKS 卷（锁定加密存储）。
 - **Fork**（`rdc repo fork`）创建具有新 GUID 和 networkId 的 CoW（写时复制）克隆，**耗时与仓库大小无关，是常数时间**。BTRFS reflink 只复制镜像元数据而非数据，因此 100 GB 的仓库 fork 和 1 GB 的仓库 fork 一样只需几秒钟。Fork 共享父级的加密密钥。
@@ -157,6 +156,5 @@ Renet 会自动将以下变量注入每个容器：
 - 重启策略是安全的, renet 自动剥离它们，watchdog 处理恢复。
 - 使用 `privileged: true`, 没有必要，renet 会改为注入特定的 CRIU capabilities。
 - 在持久配置文件中硬编码原始 IP - 连接请使用服务名以保持 fork 隔离的完整性。
-- 在 `backup push` 后首次部署时忘记 `--mount`, LUKS 卷需要显式打开。
 - 使用 `rdc term connect -c` 作为失败命令的变通方法, 请改为报告 bug。
 - `repo delete` 执行完整清理，包括回环 IP 和 systemd 单元。运行 `rdc machine prune <name>` 清理旧版删除操作遗留的残余。

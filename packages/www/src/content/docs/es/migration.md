@@ -199,7 +199,7 @@ Vea [Red de servicios](/es/docs/services#service-networking-rediaccjson) para de
 Monte el repositorio (si no está montado ya) e inicie todos los servicios:
 
 ```bash
-rdc repo up --name my-project -m server-1 --mount
+rdc repo up --name my-project -m server-1
 ```
 
 Esto hará:

@@ -199,7 +199,7 @@ Voir [Réseau des services](/fr/docs/services#service-networking-rediaccjson) po
 Montez le dépôt (s'il n'est pas déjà monté) et démarrez tous les services :
 
 ```bash
-rdc repo up --name my-project -m server-1 --mount
+rdc repo up --name my-project -m server-1
 ```
 
 Cela va :

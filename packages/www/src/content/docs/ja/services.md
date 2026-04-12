@@ -177,16 +177,15 @@ services:
 リポジトリをマウントし、すべてのサービスを開始します：
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 | オプション | 説明 |
 |--------|-------------|
-| `--mount` | まだマウントされていない場合、先にリポジトリをマウント |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 実行シーケンスは以下の通りです：
-1. LUKS暗号化リポジトリをマウント（`--mount`の場合）
+1. LUKS暗号化リポジトリをマウント（未マウントの場合は自動マウント）
 2. 隔離Dockerデーモンを起動
 3. composeファイルから`.rediacc.json`を自動生成
 4. すべてのRediaccfileで`up()`を実行（A-Z順）

@@ -40,7 +40,7 @@ rdc config machine setup --name server-1
 
 # リポジトリを作成して起動
 rdc repo create --name my-app -m server-1 --size 10G
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 
 # リポジトリを停止
 rdc repo down --name my-app -m server-1

@@ -56,7 +56,7 @@ Bağlama dizini, uygulama dosyalarının bulunduğu yerdir, `Rediaccfile`, `dock
 Depoyu bağlayarak ve Docker servislerini başlatarak uygulamayı dağıtın.
 
 ```bash
-rdc repo up --name test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1
 ```
 
 Bu, depoyu bağlar (zaten bağlı değilse), izole bir Docker daemon başlatır ve `up()` ile servisleri başlatır.

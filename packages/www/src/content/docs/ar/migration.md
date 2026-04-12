@@ -199,7 +199,7 @@ services:
 قم بتحميل المستودع (إذا لم يكن محمّلاً بالفعل) وابدأ جميع الخدمات:
 
 ```bash
-rdc repo up --name my-project -m server-1 --mount
+rdc repo up --name my-project -m server-1
 ```
 
 سيقوم هذا بما يلي:

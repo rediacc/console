@@ -436,7 +436,7 @@ app.example.com   A   203.0.113.50
 ### النشر
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 في غضون ثوانٍ قليلة، يكتشف خادم التوجيه الحاوية، ويلتقط Traefik المسار، ويطلب شهادة TLS، ويصبح `https://app.example.com` مباشراً.

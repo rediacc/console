@@ -179,16 +179,15 @@ services:
 Repository einbinden und alle Dienste starten:
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 | Option | Beschreibung |
 |--------|-------------|
-| `--mount` | Repository zuerst einbinden, falls noch nicht eingebunden |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Die Ausführungssequenz ist:
-1. Das LUKS-verschlüsselte Repository einbinden (wenn `--mount`)
+1. Das LUKS-verschlüsselte Repository einbinden (automatisch, wenn nicht eingebunden)
 2. Den isolierten Docker-Daemon starten
 3. `.rediacc.json` automatisch aus Compose-Dateien generieren
 4. `up()` in allen Rediaccfiles ausführen (A-Z-Reihenfolge)
