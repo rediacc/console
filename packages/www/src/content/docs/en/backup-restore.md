@@ -181,12 +181,6 @@ In your config, bind one or more strategy names to a machine:
 }
 ```
 
-Or use the CLI:
-
-```bash
-rdc config machine set hostinger --backup-strategies hourly-hot,nightly-cold
-```
-
 ## Backup Operations
 
 ### Deploy Schedule to Machine
