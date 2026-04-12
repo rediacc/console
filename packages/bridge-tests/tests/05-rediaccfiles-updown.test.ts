@@ -60,7 +60,7 @@ test.describe('Rediaccfile Up/Down Functions @bridge', () => {
     );
     // Expect failure (repo doesn't exist, auto-mount fails) but no bash syntax errors
     expect(result.exitCode).toBeDefined();
-    expect(result.stderr ?? '').not.toContain('syntax error');
+    expect(result.stderr).not.toContain('syntax error');
   });
 
   test('down function should not have shell syntax errors', async () => {
