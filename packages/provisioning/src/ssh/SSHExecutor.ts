@@ -109,7 +109,7 @@ export class SSHExecutor {
    */
   getInnerSSHOptions(config?: SSHConfig): string {
     const fullOpts = this.getSSHOptions(config);
-    return fullOpts.replace(/\s*-i\s+"[^"]*"/g, '').replace(/\s*-i\s+\S+/g, '');
+    return fullOpts.replaceAll(/\s*-i\s+"[^"]*"/g, '').replaceAll(/\s*-i\s+\S+/g, '');
   }
 
   /**
@@ -137,7 +137,7 @@ export class SSHExecutor {
    */
   getInnerSCPOptions(config?: SSHConfig): string {
     const fullOpts = this.getSCPOptions(config);
-    return fullOpts.replace(/\s*-i\s+"[^"]*"/g, '').replace(/\s*-i\s+\S+/g, '');
+    return fullOpts.replaceAll(/\s*-i\s+"[^"]*"/g, '').replaceAll(/\s*-i\s+\S+/g, '');
   }
 
   /**
