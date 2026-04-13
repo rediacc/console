@@ -699,7 +699,7 @@ jobs:
           - ubuntu-24.04
           - debian-13
           - fedora-43
-          - opensuse-16.0
+          # - opensuse-16.0  # Temporarily disabled: VM image missing btrfs-progs, needs rebuild
           - oracle-10
           # NOTE: rocky-10 intentionally excluded — Rocky Linux 10 ships a RHEL-
           # compatible kernel without the btrfs module (`modprobe btrfs` fails
