@@ -94,6 +94,25 @@ export class SSHExecutor {
   }
 
   /**
+   * Get SSH options for the *inner* hop of a two-hop SSH command.
+   *
+   * The inner `ssh` runs on the bridge VM, so the host's identity file
+   * path (e.g. `/tmp/renet/staging/.ssh/id_rsa` or `~/.renet/...`) is not
+   * valid — on the bridge the private key lands at `~/.ssh/id_rsa` via
+   * renet's mesh distribution. Passing `-i <host-path>` in the inner
+   * command fails with "Identity file ... not accessible: Not a directory"
+   * whenever the host path is a file (e.g. `/tmp/renet` is the renet
+   * binary, not a directory) or missing entirely.
+   *
+   * Return the same options minus `-i <path>` so the inner ssh falls
+   * back to the bridge VM's default `~/.ssh/id_rsa`.
+   */
+  getInnerSSHOptions(config?: SSHConfig): string {
+    const fullOpts = this.getSSHOptions(config);
+    return fullOpts.replace(/\s*-i\s+"[^"]*"/g, '').replace(/\s*-i\s+\S+/g, '');
+  }
+
+  /**
    * Get SCP options string for file copy commands.
    *
    * @param config - Optional SSH configuration overrides
@@ -109,6 +128,16 @@ export class SSHExecutor {
     }
 
     return opts;
+  }
+
+  /**
+   * Get SCP options for commands run on the bridge VM (inner hop).
+   * Mirrors getInnerSSHOptions — strips the host-side `-i` so scp uses
+   * the bridge VM's default key at ~/.ssh/id_rsa.
+   */
+  getInnerSCPOptions(config?: SSHConfig): string {
+    const fullOpts = this.getSCPOptions(config);
+    return fullOpts.replace(/\s*-i\s+"[^"]*"/g, '').replace(/\s*-i\s+\S+/g, '');
   }
 
   /**
@@ -148,13 +177,16 @@ export class SSHExecutor {
   ): Promise<SSHResult> {
     const user = this.getUser();
     const timeout = config?.execTimeout ?? SSH_DEFAULTS.EXEC_TIMEOUT;
-    const sshOpts = this.getSSHOptions(config);
+    const outerOpts = this.getSSHOptions(config);
+    const innerOpts = this.getInnerSSHOptions(config);
 
     // Escape for nested SSH (double escaping needed)
     const escapedForTarget = this.escapeForNestedSSH(command);
 
-    // Two-hop SSH command: Host -> Bridge -> Target
-    const sshCmd = `ssh ${sshOpts} ${user}@${bridge} "ssh ${sshOpts} ${user}@${target} \\"${escapedForTarget}\\""`;
+    // Two-hop SSH command: Host -> Bridge -> Target.
+    // Inner ssh runs on the bridge VM where `-i <host-path>` is invalid
+    // (see getInnerSSHOptions doc comment). Drop `-i` for the inner hop.
+    const sshCmd = `ssh ${outerOpts} ${user}@${bridge} "ssh ${innerOpts} ${user}@${target} \\"${escapedForTarget}\\""`;
 
     return this.executeCommand(sshCmd, timeout);
   }

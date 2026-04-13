@@ -479,10 +479,14 @@ export class InfrastructureManager {
   ): Promise<boolean> {
     console.warn(`  ${ip}: Copying CRIU from bridge...`);
 
-    // Get SSH options for the nested commands (from bridge to worker)
-    // These are used inside the command executed on bridgeIP
-    const nestedOpts = this.sshExecutor.getSSHOptions({ connectTimeout: 10, batchMode: true });
-    const scpOpts = this.sshExecutor.getSCPOptions({ quiet: true });
+    // Get SSH/SCP options for the nested commands (from bridge to worker).
+    // These run on the bridge VM, so drop `-i` (host path) — the bridge
+    // has its own key at ~/.ssh/id_rsa from renet's mesh distribution.
+    const nestedOpts = this.sshExecutor.getInnerSSHOptions({
+      connectTimeout: 10,
+      batchMode: true,
+    });
+    const scpOpts = this.sshExecutor.getInnerSCPOptions({ quiet: true });
 
     const copyResult = await this.opsManager.executeOnVM(
       bridgeIP,
