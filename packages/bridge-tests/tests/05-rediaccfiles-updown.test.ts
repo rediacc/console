@@ -59,7 +59,7 @@ test.describe('Rediaccfile Up/Down Functions @bridge', () => {
       DEFAULT_NETWORK_ID
     );
     // Expect failure (repo doesn't exist, auto-mount fails) but no bash syntax errors
-    expect(result.exitCode).toBeDefined();
+    expect(result.code).toBeDefined();
     expect(result.stderr).not.toContain('syntax error');
   });
 
@@ -175,7 +175,7 @@ test.describe('Rediaccfile Edge Cases @bridge', () => {
       DEFAULT_DATASTORE_PATH,
       DEFAULT_NETWORK_ID
     );
-    expect(result.exitCode).not.toBe(0);
+    expect(result.code).not.toBe(0);
   });
 
   test('down on nonexistent repository should handle gracefully', async () => {
@@ -190,7 +190,7 @@ test.describe('Rediaccfile Edge Cases @bridge', () => {
       DEFAULT_DATASTORE_PATH,
       DEFAULT_NETWORK_ID
     );
-    expect(result.exitCode).not.toBe(0);
+    expect(result.code).not.toBe(0);
   });
 
   test('down on repository without running services should handle gracefully', async () => {
@@ -219,7 +219,7 @@ test.describe('Rediaccfile Multiple Runs @bridge', () => {
 
     // Up with auto-mount fails on nonexistent repo (mount attempt fails)
     const upResult = await runner.repositoryUp(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
-    expect(upResult.exitCode).not.toBe(0);
+    expect(upResult.code).not.toBe(0);
 
     // Down should still succeed (graceful handling of nonexistent repo)
     const downResult = await runner.repositoryDown(repositoryName, datastorePath);
@@ -247,7 +247,7 @@ test.describe('Rediaccfile with Daemons @bridge', () => {
       DEFAULT_DATASTORE_PATH,
       DEFAULT_NETWORK_ID
     );
-    expect(result.exitCode).not.toBe(0);
+    expect(result.code).not.toBe(0);
   });
 
   test('daemon_status after up should work', async () => {
