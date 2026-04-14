@@ -93,6 +93,13 @@ test.describe('Credential Management', () => {
 
     await page.getByTestId('resource-modal-ok-button').click();
 
+    // Wait for the rename to be reflected in the list before tracing. Otherwise
+    // the row's onTrace callback captures the stale pre-rename name and the
+    // audit endpoint (keyed by name, not GUID) returns "Entity not found".
+    await expect(
+      page.getByTestId(`resource-list-item-${guid}`).getByText(newValue, { exact: true })
+    ).toBeVisible({ timeout: 15000 });
+
     const traceButton = page.getByTestId(`resources-repository-trace-${guid}`);
     await expect(traceButton).toBeVisible({ timeout: 15000 });
     await traceButton.click();
