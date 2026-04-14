@@ -336,7 +336,7 @@
           "noAcmeJson": "Keine acme.json auf {{machine}} gefunden",
           "optionNoPrune": "Bereinigung veralteter Netzwerk-ID-Zertifikate überspringen",
           "pruned": "{{count}} veraltete(s) Zertifikat(e) bereinigt",
-          "prunedExpired": "Pruned {{count}} expired certificate(s)"
+          "prunedExpired": "{{count}} abgelaufene Zertifikat(e) entfernt"
         },
         "push": {
           "description": "Zwischengespeicherte TLS-Zertifikate auf eine Maschine hochladen",
@@ -857,7 +857,7 @@
         "infrastructure": "Infrastruktur",
         "noData": "Keine Statusdaten verfügbar",
         "storageHealthHint": "Tipp: Mit --storage-health ausführen, um BTRFS-Fragmentierung und reflink-Einsparungen pro Repo anzuzeigen",
-        "syncCertsFailed": "Cert cache sync failed: {{error}}"
+        "syncCertsFailed": "Zertifikats-Cache-Sync fehlgeschlagen: {{error}}"
       },
       "rename": {
         "description": "Eine Maschine umbenennen"
@@ -1230,7 +1230,7 @@
       "batchResult": "{{action}} abgeschlossen: {{succeeded}}/{{total}} erfolgreich",
       "batchStarting": "{{action}}: «{{repo}}»...",
       "certSync": {
-        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+        "updated": "ACME-Zertifikats-Cache von {{machine}} aktualisiert ({{count}} Zertifikate)"
       },
       "create": {
         "alreadyExists": "Repository \"{{name}}\" existiert bereits im Kontext",

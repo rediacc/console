@@ -336,7 +336,7 @@
           "noAcmeJson": "No se encontró acme.json en {{machine}}",
           "optionNoPrune": "Omitir limpieza de certificados de ID de red obsoletos",
           "pruned": "{{count}} certificado(s) obsoleto(s) limpiado(s)",
-          "prunedExpired": "Pruned {{count}} expired certificate(s)"
+          "prunedExpired": "Se eliminaron {{count}} certificado(s) caducado(s)"
         },
         "push": {
           "description": "Subir certificados TLS en caché a una máquina",
@@ -857,7 +857,7 @@
         "infrastructure": "Infraestructura",
         "noData": "No hay datos de estado disponibles",
         "storageHealthHint": "Consejo: Ejecuta con --storage-health para ver la fragmentación de BTRFS y el ahorro de reflink por repo",
-        "syncCertsFailed": "Cert cache sync failed: {{error}}"
+        "syncCertsFailed": "Falló la sincronización de la caché de certificados: {{error}}"
       },
       "rename": {
         "description": "Renombrar una máquina"
@@ -1230,7 +1230,7 @@
       "batchResult": "{{action}} completado: {{succeeded}}/{{total}} exitosos",
       "batchStarting": "{{action}}: «{{repo}}»...",
       "certSync": {
-        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+        "updated": "Caché de certificados ACME actualizada desde {{machine}} ({{count}} certificados)"
       },
       "create": {
         "alreadyExists": "El repositorio \"{{name}}\" ya existe en el contexto",

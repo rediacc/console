@@ -336,7 +336,7 @@
           "noAcmeJson": "{{machine}} に acme.json が見つかりません",
           "optionNoPrune": "古いネットワークID証明書の整理をスキップ",
           "pruned": "古い証明書を {{count}} 件整理しました",
-          "prunedExpired": "Pruned {{count}} expired certificate(s)"
+          "prunedExpired": "期限切れの証明書を {{count}} 件削除しました"
         },
         "push": {
           "description": "キャッシュされたTLS証明書をマシンにアップロード",
@@ -857,7 +857,7 @@
         "infrastructure": "インフラストラクチャ",
         "noData": "ステータスデータがありません",
         "storageHealthHint": "ヒント: --storage-health を付けて実行すると、リポジトリごとの BTRFS フラグメンテーションと reflink の節約量を確認できます",
-        "syncCertsFailed": "Cert cache sync failed: {{error}}"
+        "syncCertsFailed": "証明書キャッシュの同期に失敗しました: {{error}}"
       },
       "rename": {
         "description": "マシンの名前を変更"
@@ -1230,7 +1230,7 @@
       "batchResult": "{{action}}完了: {{succeeded}}/{{total}} 成功",
       "batchStarting": "{{action}}：「{{repo}}」...",
       "certSync": {
-        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+        "updated": "{{machine}} から ACME 証明書キャッシュを更新しました ({{count}} 件)"
       },
       "create": {
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",

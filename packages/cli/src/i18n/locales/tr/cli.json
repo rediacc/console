@@ -336,7 +336,7 @@
           "noAcmeJson": "{{machine}} üzerinde acme.json bulunamadı",
           "optionNoPrune": "Eski ağ kimliği sertifikalarının temizliğini atla",
           "pruned": "{{count}} eski sertifika temizlendi",
-          "prunedExpired": "Pruned {{count}} expired certificate(s)"
+          "prunedExpired": "{{count}} süresi dolmuş sertifika temizlendi"
         },
         "push": {
           "description": "Önbelleğe alınmış TLS sertifikalarını bir makineye yükle",
@@ -857,7 +857,7 @@
         "infrastructure": "Altyapı",
         "noData": "Durum verisi mevcut değil",
         "storageHealthHint": "İpucu: BTRFS parçalanmasını ve repo başına reflink tasarrufunu görmek için --storage-health ile çalıştırın",
-        "syncCertsFailed": "Cert cache sync failed: {{error}}"
+        "syncCertsFailed": "Sertifika önbelleği senkronizasyonu başarısız: {{error}}"
       },
       "rename": {
         "description": "Bir makineyi yeniden adlandır"
@@ -1230,7 +1230,7 @@
       "batchResult": "{{action}} tamamlandı: {{succeeded}}/{{total}} başarılı",
       "batchStarting": "{{action}}: «{{repo}}»...",
       "certSync": {
-        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+        "updated": "{{machine}} makinesinden ACME sertifika önbelleği güncellendi ({{count}} sertifika)"
       },
       "create": {
         "alreadyExists": "\"{{name}}\" deposu bağlamda zaten mevcut",

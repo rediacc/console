@@ -336,7 +336,7 @@
           "noAcmeJson": "Aucun acme.json trouvé sur {{machine}}",
           "optionNoPrune": "Ne pas nettoyer les certificats d'ID réseau obsolètes",
           "pruned": "{{count}} certificat(s) obsolète(s) nettoyé(s)",
-          "prunedExpired": "Pruned {{count}} expired certificate(s)"
+          "prunedExpired": "{{count}} certificat(s) expiré(s) supprimé(s)"
         },
         "push": {
           "description": "Envoyer les certificats TLS en cache vers une machine",
@@ -857,7 +857,7 @@
         "infrastructure": "Infrastructure",
         "noData": "Aucune donnée de statut disponible",
         "storageHealthHint": "Astuce : Exécutez avec --storage-health pour voir la fragmentation BTRFS et les économies reflink par repo",
-        "syncCertsFailed": "Cert cache sync failed: {{error}}"
+        "syncCertsFailed": "Échec de la synchronisation du cache de certificats : {{error}}"
       },
       "rename": {
         "description": "Renommer une machine"
@@ -1230,7 +1230,7 @@
       "batchResult": "{{action}} terminé : {{succeeded}}/{{total}} réussis",
       "batchStarting": "{{action}} : «{{repo}}»...",
       "certSync": {
-        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+        "updated": "Cache de certificats ACME mis à jour depuis {{machine}} ({{count}} certificats)"
       },
       "create": {
         "alreadyExists": "Le dépôt \"{{name}}\" existe déjà dans le contexte",

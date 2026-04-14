@@ -336,7 +336,7 @@
           "noAcmeJson": "在 {{machine}} 上未找到 acme.json",
           "optionNoPrune": "跳过清理过期的网络 ID 证书",
           "pruned": "已清理 {{count}} 个过期证书",
-          "prunedExpired": "Pruned {{count}} expired certificate(s)"
+          "prunedExpired": "已清除 {{count}} 个过期证书"
         },
         "push": {
           "description": "将缓存的 TLS 证书上传到机器",
@@ -857,7 +857,7 @@
         "infrastructure": "基础设施",
         "noData": "无可用状态数据",
         "storageHealthHint": "提示：使用 --storage-health 运行可查看每个仓库的 BTRFS 碎片化情况和 reflink 节省量",
-        "syncCertsFailed": "Cert cache sync failed: {{error}}"
+        "syncCertsFailed": "证书缓存同步失败：{{error}}"
       },
       "rename": {
         "description": "重命名机器"
@@ -1230,7 +1230,7 @@
       "batchResult": "{{action}} 完成：{{succeeded}}/{{total}} 成功",
       "batchStarting": "{{action}}：\"{{repo}}\"...",
       "certSync": {
-        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+        "updated": "已从 {{machine}} 更新 ACME 证书缓存（{{count}} 个证书）"
       },
       "create": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",

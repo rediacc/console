@@ -336,7 +336,7 @@
           "noAcmeJson": "Файл acme.json не найден на {{machine}}",
           "optionNoPrune": "Пропустить очистку устаревших сертификатов сетевых ID",
           "pruned": "Очищено {{count}} устаревших сертификатов",
-          "prunedExpired": "Pruned {{count}} expired certificate(s)"
+          "prunedExpired": "Удалено {{count}} просроченных сертификатов"
         },
         "push": {
           "description": "Загрузить кэшированные TLS-сертификаты на машину",
@@ -857,7 +857,7 @@
         "infrastructure": "Инфраструктура",
         "noData": "Данные о статусе недоступны",
         "storageHealthHint": "Совет: Запустите с --storage-health, чтобы увидеть фрагментацию BTRFS и экономию reflink для каждого репозитория",
-        "syncCertsFailed": "Cert cache sync failed: {{error}}"
+        "syncCertsFailed": "Ошибка синхронизации кэша сертификатов: {{error}}"
       },
       "rename": {
         "description": "Переименовать машину"
@@ -1230,7 +1230,7 @@
       "batchResult": "{{action}} завершено: {{succeeded}}/{{total}} успешно",
       "batchStarting": "{{action}}: «{{repo}}»...",
       "certSync": {
-        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+        "updated": "Кэш сертификатов ACME обновлён с {{machine}} ({{count}} сертификатов)"
       },
       "create": {
         "alreadyExists": "Репозиторий \"{{name}}\" уже существует в контексте",
