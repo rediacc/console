@@ -292,7 +292,16 @@ if [[ -z "$VM_IP" ]] || [[ $RETRIES -eq 0 ]]; then
     sudo virsh domifaddr "$VM_NAME" 2>&1 || true
     log_error "virsh net-dhcp-leases default:"
     sudo virsh net-dhcp-leases default 2>&1 || true
-    log_error "Console serial tail (last 100 lines):"
+    log_error "libvirt QEMU log tail (last 200 lines, /var/log/libvirt/qemu/${VM_NAME}.log):"
+    sudo tail -200 "/var/log/libvirt/qemu/${VM_NAME}.log" 2>&1 || true
+    log_error "virsh dumpxml (<os> + <serial> + <interface> + <metadata>):"
+    sudo virsh dumpxml "$VM_NAME" 2>&1 | grep -A 3 -E "<os>|<serial|<interface|<metadata" | head -40 || true
+    log_error "Console pty dump (2s non-blocking, no TTY):"
+    PTY_DEV=$(sudo virsh dumpxml "$VM_NAME" 2>/dev/null | grep -oE "tty='[^']+'" | head -1 | cut -d"'" -f2)
+    if [[ -n "$PTY_DEV" ]]; then
+        sudo timeout 2 cat "$PTY_DEV" </dev/null 2>&1 | tail -80 || true
+    fi
+    log_error "Console serial tail via virsh console (last 100 lines, may fail without TTY):"
     sudo virsh console --force "$VM_NAME" <<<$'\x1d' 2>&1 | tail -100 || true
     if [[ -n "$VM_IP" ]]; then
         ssh -o ConnectTimeout=15 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
