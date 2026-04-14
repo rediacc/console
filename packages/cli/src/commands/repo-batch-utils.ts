@@ -26,36 +26,64 @@ export async function confirmBatch(
   });
 }
 
-export async function postRepoUpTasks(repoName: string, machineName: string): Promise<void> {
-  let baseDomain: string | undefined;
-  let machineNameShort: string | undefined;
-
+async function ensureDns(repoName: string, machineName: string): Promise<string | undefined> {
   try {
     const machineConfig = await configService.getLocalMachine(machineName);
-    baseDomain = machineConfig.infra?.baseDomain;
-    machineNameShort = machineName;
+    const baseDomain = machineConfig.infra?.baseDomain;
     if (baseDomain && machineConfig.infra) {
       const localConfig = await configService.getLocalConfig();
       const { ensureRepoDnsRecords } = await import('../services/infra-provision.js');
       await ensureRepoDnsRecords(machineName, repoName, machineConfig.infra, localConfig);
     }
+    return baseDomain;
   } catch {
     // Non-fatal: DNS record creation failure should not block repo up
+    return undefined;
   }
+}
 
+// Auto-sync the acme cert cache from the machine.
+//
+// Skipped if the cached entry for this baseDomain was updated within the last
+// AUTO_SYNC_MIN_INTERVAL_HOURS window — this prevents a series of back-to-back
+// `repo up` calls from SSH-thrashing the host for a file that Traefik refreshes
+// only on renewal. When sync runs and actually changes something, we emit an
+// info-level log so the behavior is visible; silent failures are swallowed as
+// before because cert cache is advisory.
+async function maybeSyncCertCache(baseDomain: string, machineName: string): Promise<void> {
   try {
-    const { downloadCertCache } = await import('../services/cert-cache.js');
-    await downloadCertCache(machineName, { silent: true });
+    const { isCertCacheStale, downloadCertCache } = await import('../services/cert-cache.js');
+    const current = await configService.getCurrent().catch(() => undefined);
+    const entry = current?.acmeCertCache?.[baseDomain];
+    if (!isCertCacheStale(entry?.updatedAt)) return;
+    const before = entry?.certCount ?? 0;
+    const result = await downloadCertCache(machineName, { silent: true });
+    if (result && result.certCount !== before) {
+      outputService.info(
+        t('commands.repo.certSync.updated', {
+          count: result.certCount,
+          machine: machineName,
+        })
+      );
+    }
   } catch {
     // Non-fatal: cert cache failure should not block repo up
   }
+}
 
-  // Print service URL pattern so users know where their services are accessible
-  // Print URL pattern only for HTTP-exposed services (rediacc.service_port label).
-  // We print the pattern rather than specific service names since querying containers
-  // is not available here — the user substitutes {service} with their exposed service names.
-  if (baseDomain && machineNameShort) {
-    printServiceUrlPattern(repoName, `${machineNameShort}.${baseDomain}`);
+export async function postRepoUpTasks(repoName: string, machineName: string): Promise<void> {
+  const baseDomain = await ensureDns(repoName, machineName);
+
+  if (baseDomain) {
+    await maybeSyncCertCache(baseDomain, machineName);
+  }
+
+  // Print service URL pattern so users know where their services are accessible.
+  // We print the pattern rather than specific service names since querying
+  // containers is not available here — the user substitutes {service} with
+  // their exposed service names.
+  if (baseDomain) {
+    printServiceUrlPattern(repoName, `${machineName}.${baseDomain}`);
   }
 }
 

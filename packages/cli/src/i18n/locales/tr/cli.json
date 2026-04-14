@@ -335,7 +335,8 @@
           "merged": "Yerel önbellekten daha uzun süreli {{count}} sertifika korundu",
           "noAcmeJson": "{{machine}} üzerinde acme.json bulunamadı",
           "optionNoPrune": "Eski ağ kimliği sertifikalarının temizliğini atla",
-          "pruned": "{{count}} eski sertifika temizlendi"
+          "pruned": "{{count}} eski sertifika temizlendi",
+          "prunedExpired": "Pruned {{count}} expired certificate(s)"
         },
         "push": {
           "description": "Önbelleğe alınmış TLS sertifikalarını bir makineye yükle",
@@ -855,7 +856,8 @@
         "fetching": "{{machine}} durumu alınıyor...",
         "infrastructure": "Altyapı",
         "noData": "Durum verisi mevcut değil",
-        "storageHealthHint": "İpucu: BTRFS parçalanmasını ve repo başına reflink tasarrufunu görmek için --storage-health ile çalıştırın"
+        "storageHealthHint": "İpucu: BTRFS parçalanmasını ve repo başına reflink tasarrufunu görmek için --storage-health ile çalıştırın",
+        "syncCertsFailed": "Cert cache sync failed: {{error}}"
       },
       "rename": {
         "description": "Bir makineyi yeniden adlandır"
@@ -1227,6 +1229,9 @@
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "{{action}} tamamlandı: {{succeeded}}/{{total}} başarılı",
       "batchStarting": "{{action}}: «{{repo}}»...",
+      "certSync": {
+        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+      },
       "create": {
         "alreadyExists": "\"{{name}}\" deposu bağlamda zaten mevcut",
         "completed": "Depo oluşturuldu",
@@ -2401,6 +2406,7 @@
     "queryRepositories": "Yalnızca depoları dahil et",
     "queryServices": "Yalnızca servisleri dahil et",
     "queryStorageHealth": "Depo başına BTRFS parçalanma ve reflink tasarruflarını göster",
+    "querySyncCerts": "Sorgu sonrasında makineden ACME sertifika önbelleğini de çek",
     "querySystem": "Yalnızca sistem bilgilerini dahil et",
     "quiet": "Bilgilendirme çıkışını bastır",
     "rawVault": "Ham kasa JSON'u (komut dosyaları/CI için)",

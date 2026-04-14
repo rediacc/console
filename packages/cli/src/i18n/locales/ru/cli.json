@@ -335,7 +335,8 @@
           "merged": "Сохранено {{count}} сертификатов из локального кэша с более длительным сроком действия",
           "noAcmeJson": "Файл acme.json не найден на {{machine}}",
           "optionNoPrune": "Пропустить очистку устаревших сертификатов сетевых ID",
-          "pruned": "Очищено {{count}} устаревших сертификатов"
+          "pruned": "Очищено {{count}} устаревших сертификатов",
+          "prunedExpired": "Pruned {{count}} expired certificate(s)"
         },
         "push": {
           "description": "Загрузить кэшированные TLS-сертификаты на машину",
@@ -855,7 +856,8 @@
         "fetching": "Получение статуса с {{machine}}...",
         "infrastructure": "Инфраструктура",
         "noData": "Данные о статусе недоступны",
-        "storageHealthHint": "Совет: Запустите с --storage-health, чтобы увидеть фрагментацию BTRFS и экономию reflink для каждого репозитория"
+        "storageHealthHint": "Совет: Запустите с --storage-health, чтобы увидеть фрагментацию BTRFS и экономию reflink для каждого репозитория",
+        "syncCertsFailed": "Cert cache sync failed: {{error}}"
       },
       "rename": {
         "description": "Переименовать машину"
@@ -1227,6 +1229,9 @@
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "{{action}} завершено: {{succeeded}}/{{total}} успешно",
       "batchStarting": "{{action}}: «{{repo}}»...",
+      "certSync": {
+        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+      },
       "create": {
         "alreadyExists": "Репозиторий \"{{name}}\" уже существует в контексте",
         "completed": "Репозиторий создан",
@@ -2401,6 +2406,7 @@
     "queryRepositories": "Включить только репозитории",
     "queryServices": "Включить только сервисы",
     "queryStorageHealth": "Показать фрагментацию BTRFS и экономию reflink по репозиториям",
+    "querySyncCerts": "Также получить кэш сертификатов ACME с машины после запроса",
     "querySystem": "Включить только информацию о системе",
     "quiet": "Подавить информационный вывод",
     "rawVault": "Необработанный JSON хранилища (для скриптов/CI)",

@@ -335,7 +335,8 @@
           "merged": "تم الاحتفاظ بـ {{count}} شهادة(شهادات) من الذاكرة المؤقتة المحلية بفترة صلاحية أطول",
           "noAcmeJson": "لم يتم العثور على acme.json في {{machine}}",
           "optionNoPrune": "تخطي تنظيف شهادات معرّف الشبكة القديمة",
-          "pruned": "تم تنظيف {{count}} شهادة(شهادات) قديمة"
+          "pruned": "تم تنظيف {{count}} شهادة(شهادات) قديمة",
+          "prunedExpired": "Pruned {{count}} expired certificate(s)"
         },
         "push": {
           "description": "رفع شهادات TLS المخزنة مؤقتاً إلى جهاز",
@@ -855,7 +856,8 @@
         "fetching": "جارٍ جلب الحالة من {{machine}}...",
         "infrastructure": "البنية التحتية",
         "noData": "لا تتوفر بيانات حالة",
-        "storageHealthHint": "تلميح: شغّل مع --storage-health لعرض تجزئة BTRFS وتوفير reflink لكل مستودع"
+        "storageHealthHint": "تلميح: شغّل مع --storage-health لعرض تجزئة BTRFS وتوفير reflink لكل مستودع",
+        "syncCertsFailed": "Cert cache sync failed: {{error}}"
       },
       "rename": {
         "description": "إعادة تسمية جهاز"
@@ -1227,6 +1229,9 @@
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "اكتمل {{action}}: {{succeeded}}/{{total}} نجح",
       "batchStarting": "{{action}}: «{{repo}}»...",
+      "certSync": {
+        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+      },
       "create": {
         "alreadyExists": "المستودع \"{{name}}\" موجود بالفعل في السياق",
         "completed": "تم إنشاء المستودع",
@@ -2401,6 +2406,7 @@
     "queryRepositories": "تضمين المستودعات فقط",
     "queryServices": "تضمين الخدمات فقط",
     "queryStorageHealth": "عرض تجزئة BTRFS ووفورات reflink لكل مستودع",
+    "querySyncCerts": "اسحب أيضًا ذاكرة التخزين المؤقت لشهادات ACME من الجهاز بعد الاستعلام",
     "querySystem": "تضمين معلومات النظام فقط",
     "quiet": "إخفاء المخرجات المعلوماتية",
     "rawVault": "خزينة JSON أولية (للنصوص البرمجية/CI)",

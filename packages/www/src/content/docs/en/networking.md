@@ -194,6 +194,32 @@ For Tier 2 routes with `traefik.http.routers.{name}.tls.certresolver=letsencrypt
 
 The Cloudflare DNS API token needs `Zone:DNS:Edit` permission for the domains you want to secure.
 
+### TLS Certificate Lifecycle
+
+The full path a Let's Encrypt cert takes from issuance to each repo's containers:
+
+1. **Issuance on the host.** A machine-level Traefik container (`rediacc-proxy`, deployed to `/opt/rediacc/proxy/`) owns ACME renewal. It stores all state in `/opt/rediacc/proxy/letsencrypt/acme.json` on the host. Renewal triggers automatically ~30 days before expiry; no operator action needed as long as `--cf-dns-token` is configured.
+
+2. **Per-repo dumping (optional).** Services that need cert files inside their own container (for example, a mail server that reads a `.pem` directly) deploy a small `traefik-certs-dumper` container alongside themselves. The dumper bind-mounts `/opt/rediacc/proxy/letsencrypt` read-only and writes the extracted cert + key into the repo's data volume as `cert.pem` / `key.pem`. For this to work, the per-repo Docker daemon must have `/opt/rediacc/proxy` in its mount-namespace allowlist — this is already included by default.
+
+3. **Client-side cache (`rediacc.json`).** The CLI caches a compressed copy of `acme.json` under `acmeCertCache` in your config file, keyed by `baseDomain`. This lets multiple machines share certs (via `rdc config cert-cache push <machine>`) and acts as an offline inventory.
+
+**Sync triggers for the client cache:**
+
+- Automatically after `rdc repo up` — but only if the local cache for the machine's `baseDomain` is older than 6 hours. Fresh caches are left alone so back-to-back deploys don't thrash SSH.
+- On demand: `rdc config cert-cache pull -m <machine>` (force pull) or `rdc machine query --name <machine> --sync-certs` (pull as a side effect of a status query).
+- On `rdc config infra push`, the cache is pushed up to the machine (local certs with longer expiry win over remote).
+
+**Cache maintenance:**
+
+- Stale auto-route entries (old network-ID tagged domains like `service-3200.rediacc.io`) are pruned during every pull.
+- Certs whose `notAfter` is more than 7 days in the past are removed outright — they're inert and only bloat the cache.
+- `rdc config cert-cache clear` wipes everything; `rdc config cert-cache status` shows the inventory.
+
+**Troubleshooting:** if `traefik-certs-dumper` crashloops with `/traefik/acme.json: no such file or directory`, the per-repo daemon cannot see the host's letsencrypt store. Verify (a) `/opt/rediacc/proxy/letsencrypt/acme.json` exists on the host (this is the responsibility of the host-level `rediacc-proxy`), and (b) the per-repo daemon was started with a recent enough renet that allowlists `/opt/rediacc/proxy`. Redeploy the repo with `rdc repo up` after upgrading renet to apply.
+
+> **Experimental:** The auto-sync cadence and expiry-based pruning shipped in renet 0.9+. Older CLI/renet versions use purely manual sync via `rdc config cert-cache pull`.
+
 ## TCP/UDP Port Forwarding
 
 For non-HTTP protocols (mail servers, DNS, databases exposed externally), use TCP/UDP port forwarding.

@@ -335,7 +335,8 @@
           "merged": "ローカルキャッシュからより長い有効期限の証明書を {{count}} 件保持しました",
           "noAcmeJson": "{{machine}} に acme.json が見つかりません",
           "optionNoPrune": "古いネットワークID証明書の整理をスキップ",
-          "pruned": "古い証明書を {{count}} 件整理しました"
+          "pruned": "古い証明書を {{count}} 件整理しました",
+          "prunedExpired": "Pruned {{count}} expired certificate(s)"
         },
         "push": {
           "description": "キャッシュされたTLS証明書をマシンにアップロード",
@@ -855,7 +856,8 @@
         "fetching": "{{machine}} からステータスを取得中...",
         "infrastructure": "インフラストラクチャ",
         "noData": "ステータスデータがありません",
-        "storageHealthHint": "ヒント: --storage-health を付けて実行すると、リポジトリごとの BTRFS フラグメンテーションと reflink の節約量を確認できます"
+        "storageHealthHint": "ヒント: --storage-health を付けて実行すると、リポジトリごとの BTRFS フラグメンテーションと reflink の節約量を確認できます",
+        "syncCertsFailed": "Cert cache sync failed: {{error}}"
       },
       "rename": {
         "description": "マシンの名前を変更"
@@ -1227,6 +1229,9 @@
       "batchIterating": "{{action}} {{current}}/{{total}}：「{{repo}}」...",
       "batchResult": "{{action}}完了: {{succeeded}}/{{total}} 成功",
       "batchStarting": "{{action}}：「{{repo}}」...",
+      "certSync": {
+        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+      },
       "create": {
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
         "completed": "リポジトリを作成しました",
@@ -2401,6 +2406,7 @@
     "queryRepositories": "リポジトリのみを含める",
     "queryServices": "サービスのみを含める",
     "queryStorageHealth": "リポジトリごとのBTRFSフラグメンテーションとreflink節約量を表示",
+    "querySyncCerts": "クエリ後にマシンから ACME 証明書キャッシュも取得します",
     "querySystem": "システム情報のみを含める",
     "quiet": "情報出力を抑制する",
     "rawVault": "未加工ボルト JSON (スクリプト/CI 用)",

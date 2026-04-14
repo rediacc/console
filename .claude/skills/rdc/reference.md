@@ -101,6 +101,7 @@ Show full machine status (infra, system, repos with name/guid, containers with r
 - `--block-devices` — Include block devices only
 - `--licenses` — Include repository license statuses
 - `--storage-health` — Show BTRFS fragmentation and reflink savings per repository
+- `--sync-certs` — Also pull the ACME cert cache from the machine after querying
 
 > MCP tool
 

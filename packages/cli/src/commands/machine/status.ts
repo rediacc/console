@@ -349,7 +349,8 @@ export function registerQueryCommand(machine: Command, program: Command): void {
     .option('--block-devices', t('options.queryBlockDevices'))
     .option('--licenses', t('options.queryLicenses'))
     .option('--storage-health', t('options.queryStorageHealth'))
-    .action(async (options: QueryOptions & { name: string }) => {
+    .option('--sync-certs', t('options.querySyncCerts'))
+    .action(async (options: QueryOptions & { name: string; syncCerts?: boolean }) => {
       try {
         const machineName = options.name;
         if (!machineName) {
@@ -395,8 +396,28 @@ export function registerQueryCommand(machine: Command, program: Command): void {
         if (!options.storageHealth) {
           process.stderr.write(`\n${t('commands.machine.query.storageHealthHint')}\n`);
         }
+
+        if (options.syncCerts) {
+          await runOptInCertSync(machineName);
+        }
       } catch (error) {
         handleError(error);
       }
     });
+}
+
+// Opt-in cert-cache sync after `rdc machine query --sync-certs`. Opt-in
+// because this is a read-only query command today and a network-touching
+// side effect would surprise operators who don't expect it.
+async function runOptInCertSync(machineName: string): Promise<void> {
+  try {
+    const { downloadCertCache } = await import('../../services/cert-cache.js');
+    await downloadCertCache(machineName, { silent: false });
+  } catch (err) {
+    outputService.warn(
+      t('commands.machine.query.syncCertsFailed', {
+        error: err instanceof Error ? err.message : String(err),
+      })
+    );
+  }
 }

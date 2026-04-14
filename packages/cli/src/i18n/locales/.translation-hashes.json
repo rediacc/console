@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1785,
-    "sourceCommit": "212d9c75667db95ece0a5db2c80414184811f4d2"
+    "keyCount": 1789,
+    "sourceCommit": "da1d66c4e4e08eebc1b8f2e29007c0992ab101b8"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -203,6 +203,7 @@
     "commands.config.certCache.pull.noAcmeJson": "66dc2dbe",
     "commands.config.certCache.pull.optionNoPrune": "22623370",
     "commands.config.certCache.pull.pruned": "8fd04521",
+    "commands.config.certCache.pull.prunedExpired": "88630577",
     "commands.config.certCache.push.description": "d58cf941",
     "commands.config.certCache.push.merged": "7176bce9",
     "commands.config.certCache.push.noCache": "f89a3105",
@@ -580,6 +581,7 @@
     "commands.machine.query.infrastructure": "1c4dc948",
     "commands.machine.query.noData": "a0674b1e",
     "commands.machine.query.storageHealthHint": "9a3dcc0d",
+    "commands.machine.query.syncCertsFailed": "7f2dfa5a",
     "commands.machine.rename.description": "a4fc274f",
     "commands.machine.repos.description": "b667158e",
     "commands.machine.repos.descriptionShort": "384370c1",
@@ -826,6 +828,7 @@
     "commands.repo.batchIterating": "8243b5a5",
     "commands.repo.batchResult": "a36da490",
     "commands.repo.batchStarting": "a3f15902",
+    "commands.repo.certSync.updated": "ccbcee05",
     "commands.repo.create.alreadyExists": "d33779f8",
     "commands.repo.create.completed": "3be9b2b5",
     "commands.repo.create.description": "60ae21c7",
@@ -1695,6 +1698,7 @@
     "options.queryRepositories": "cd24c5c2",
     "options.queryServices": "db782e15",
     "options.queryStorageHealth": "9ef915bb",
+    "options.querySyncCerts": "785a8c1b",
     "options.querySystem": "72cab8d1",
     "options.quiet": "403afde7",
     "options.rawVault": "b571bf40",

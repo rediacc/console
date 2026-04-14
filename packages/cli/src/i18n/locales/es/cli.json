@@ -335,7 +335,8 @@
           "merged": "Se conservaron {{count}} certificado(s) de la caché local con mayor vigencia",
           "noAcmeJson": "No se encontró acme.json en {{machine}}",
           "optionNoPrune": "Omitir limpieza de certificados de ID de red obsoletos",
-          "pruned": "{{count}} certificado(s) obsoleto(s) limpiado(s)"
+          "pruned": "{{count}} certificado(s) obsoleto(s) limpiado(s)",
+          "prunedExpired": "Pruned {{count}} expired certificate(s)"
         },
         "push": {
           "description": "Subir certificados TLS en caché a una máquina",
@@ -855,7 +856,8 @@
         "fetching": "Obteniendo estado de {{machine}}...",
         "infrastructure": "Infraestructura",
         "noData": "No hay datos de estado disponibles",
-        "storageHealthHint": "Consejo: Ejecuta con --storage-health para ver la fragmentación de BTRFS y el ahorro de reflink por repo"
+        "storageHealthHint": "Consejo: Ejecuta con --storage-health para ver la fragmentación de BTRFS y el ahorro de reflink por repo",
+        "syncCertsFailed": "Cert cache sync failed: {{error}}"
       },
       "rename": {
         "description": "Renombrar una máquina"
@@ -1227,6 +1229,9 @@
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "{{action}} completado: {{succeeded}}/{{total}} exitosos",
       "batchStarting": "{{action}}: «{{repo}}»...",
+      "certSync": {
+        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+      },
       "create": {
         "alreadyExists": "El repositorio \"{{name}}\" ya existe en el contexto",
         "completed": "Repositorio creado",
@@ -2401,6 +2406,7 @@
     "queryRepositories": "Incluir solo repositorios",
     "queryServices": "Incluir solo servicios",
     "queryStorageHealth": "Mostrar fragmentación BTRFS y ahorro reflink por repositorio",
+    "querySyncCerts": "También descargar la caché de certificados ACME de la máquina tras consultar",
     "querySystem": "Incluir solo información del sistema",
     "quiet": "Suprimir salida informativa",
     "rawVault": "JSON de bóveda sin procesar (para scripts/CI)",

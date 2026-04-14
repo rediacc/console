@@ -335,7 +335,8 @@
           "merged": "从本地缓存保留了 {{count}} 个有效期更长的证书",
           "noAcmeJson": "在 {{machine}} 上未找到 acme.json",
           "optionNoPrune": "跳过清理过期的网络 ID 证书",
-          "pruned": "已清理 {{count}} 个过期证书"
+          "pruned": "已清理 {{count}} 个过期证书",
+          "prunedExpired": "Pruned {{count}} expired certificate(s)"
         },
         "push": {
           "description": "将缓存的 TLS 证书上传到机器",
@@ -855,7 +856,8 @@
         "fetching": "正在从 {{machine}} 获取状态...",
         "infrastructure": "基础设施",
         "noData": "无可用状态数据",
-        "storageHealthHint": "提示：使用 --storage-health 运行可查看每个仓库的 BTRFS 碎片化情况和 reflink 节省量"
+        "storageHealthHint": "提示：使用 --storage-health 运行可查看每个仓库的 BTRFS 碎片化情况和 reflink 节省量",
+        "syncCertsFailed": "Cert cache sync failed: {{error}}"
       },
       "rename": {
         "description": "重命名机器"
@@ -1227,6 +1229,9 @@
       "batchIterating": "{{action}} {{current}}/{{total}}：\"{{repo}}\"...",
       "batchResult": "{{action}} 完成：{{succeeded}}/{{total}} 成功",
       "batchStarting": "{{action}}：\"{{repo}}\"...",
+      "certSync": {
+        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+      },
       "create": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
         "completed": "仓库已创建",
@@ -2401,6 +2406,7 @@
     "queryRepositories": "仅包含仓库",
     "queryServices": "仅包含服务",
     "queryStorageHealth": "显示每个仓库的 BTRFS 碎片化和 reflink 节省量",
+    "querySyncCerts": "查询后也从机器拉取 ACME 证书缓存",
     "querySystem": "仅包含系统信息",
     "quiet": "抑制信息性输出",
     "rawVault": "原始保险箱 JSON（用于脚本/CI）",

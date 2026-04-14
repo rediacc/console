@@ -629,6 +629,7 @@
           "optionNoPrune": "Skip pruning stale network-ID certificates",
           "downloading": "Downloading certificates from {{machine}}...",
           "pruned": "Pruned {{count}} stale certificate(s)",
+          "prunedExpired": "Pruned {{count}} expired certificate(s)",
           "cached": "Cached {{count}} certificate(s) ({{size}})",
           "merged": "Kept {{count}} certificate(s) from local cache with longer expiry",
           "noAcmeJson": "No acme.json found on {{machine}}"
@@ -779,7 +780,8 @@
         "noData": "No status data available",
         "infrastructure": "Infrastructure",
         "connection": "Connection",
-        "storageHealthHint": "Tip: Run with --storage-health to see BTRFS fragmentation and reflink savings per repo"
+        "storageHealthHint": "Tip: Run with --storage-health to see BTRFS fragmentation and reflink savings per repo",
+        "syncCertsFailed": "Cert cache sync failed: {{error}}"
       },
       "vaultStatus": {
         "description": "Show parsed vault status for a machine",
@@ -1257,6 +1259,9 @@
       "batchResult": "{{action}} complete: {{succeeded}}/{{total}} succeeded",
       "batchFailed": "{{action}} failed for \"{{repo}}\": {{error}}",
       "noCredential": "Warning: Repository \"{{name}}\" has no credential set. Operations on encrypted repos may fail.",
+      "certSync": {
+        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+      },
       "mount": {
         "description": "Mount a repository (decrypt and open the LUKS container, making the filesystem accessible). Needed on first deploy, after 'repo push' to a new machine, or after 'repo unmount'. Can also be done via 'repo up --mount'. The volume stays mounted until explicitly unmounted. Omit name to mount all repos on the machine",
         "descriptionShort": "Mount a repository (decrypt and open LUKS container)",
@@ -2261,6 +2266,7 @@
     "queryBlockDevices": "Include block devices only",
     "queryLicenses": "Include repository license statuses",
     "queryStorageHealth": "Show BTRFS fragmentation and reflink savings per repository",
+    "querySyncCerts": "Also pull the ACME cert cache from the machine after querying",
     "extraMachine": "Extra machine for multi-machine ops (name:ip:user)",
     "pollInterval": "Poll interval in milliseconds",
     "folder": "Remote folder path to open",

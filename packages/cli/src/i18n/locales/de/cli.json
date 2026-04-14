@@ -335,7 +335,8 @@
           "merged": "{{count}} Zertifikat(e) aus lokalem Cache mit längerer Gültigkeit beibehalten",
           "noAcmeJson": "Keine acme.json auf {{machine}} gefunden",
           "optionNoPrune": "Bereinigung veralteter Netzwerk-ID-Zertifikate überspringen",
-          "pruned": "{{count}} veraltete(s) Zertifikat(e) bereinigt"
+          "pruned": "{{count}} veraltete(s) Zertifikat(e) bereinigt",
+          "prunedExpired": "Pruned {{count}} expired certificate(s)"
         },
         "push": {
           "description": "Zwischengespeicherte TLS-Zertifikate auf eine Maschine hochladen",
@@ -855,7 +856,8 @@
         "fetching": "Status von {{machine}} wird abgerufen...",
         "infrastructure": "Infrastruktur",
         "noData": "Keine Statusdaten verfügbar",
-        "storageHealthHint": "Tipp: Mit --storage-health ausführen, um BTRFS-Fragmentierung und reflink-Einsparungen pro Repo anzuzeigen"
+        "storageHealthHint": "Tipp: Mit --storage-health ausführen, um BTRFS-Fragmentierung und reflink-Einsparungen pro Repo anzuzeigen",
+        "syncCertsFailed": "Cert cache sync failed: {{error}}"
       },
       "rename": {
         "description": "Eine Maschine umbenennen"
@@ -1227,6 +1229,9 @@
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "{{action}} abgeschlossen: {{succeeded}}/{{total}} erfolgreich",
       "batchStarting": "{{action}}: «{{repo}}»...",
+      "certSync": {
+        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+      },
       "create": {
         "alreadyExists": "Repository \"{{name}}\" existiert bereits im Kontext",
         "completed": "Repository erstellt",
@@ -2401,6 +2406,7 @@
     "queryRepositories": "Nur Repositories einbeziehen",
     "queryServices": "Nur Dienste einbeziehen",
     "queryStorageHealth": "BTRFS-Fragmentierung und reflink-Einsparungen pro Repository anzeigen",
+    "querySyncCerts": "Auch den ACME-Zertifikats-Cache nach einer Abfrage von der Maschine abrufen",
     "querySystem": "Nur Systeminformationen einbeziehen",
     "quiet": "Informationsausgabe unterdrücken",
     "rawVault": "Raw Vault JSON (für Scripts/CI)",

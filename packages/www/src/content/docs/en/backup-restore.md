@@ -120,6 +120,31 @@ Rediacc uses named backup strategies. Each strategy defines a schedule, backup m
 
 Use `hot` for services that tolerate crash-consistent snapshots. Use `cold` when you need guaranteed consistency and can accept a brief restart.
 
+### Cold Backup Semantics
+
+A cold backup runs in three phases per included repo: **stop → snapshot → start**. Understanding where guarantees end helps operators notice partial failures early.
+
+**What cold backup guarantees:**
+
+- Before the snapshot, every running container in each included repo is gracefully stopped via its Rediaccfile `down()` hook and the per-repo Docker daemon is quiesced. The snapshot is therefore application-consistent, not merely crash-consistent.
+- The set of container IDs that were running pre-snapshot is persisted to a sidecar at `/var/run/rediacc/cold-backup-<guid>.running.json`. This is the source of truth for "what should be back up when we're done."
+- After the snapshot, the repo's Rediaccfile `up()` hook is invoked to restore the full compose stack.
+- A per-run status sidecar at `/var/run/rediacc/cold-backup-<guid>.status.json` records each attempt's phase, result, and any error.
+
+**What cold backup does NOT guarantee:**
+
+- `up()` is best-effort. It can fail for reasons outside cold backup's control — a `depends_on: service_healthy` condition still waiting, a compose-file syntax error, a transient network failure pulling an image. When it fails, cold backup logs the error at error level, writes the status sidecar, and moves on to the next repo.
+- When `up()` fails, a **fallback direct restart** kicks in: the running-sidecar is read and each recorded container ID is restarted via direct Docker API (no compose). This gets services back up even if the compose flow has a snag, though without re-running any Rediaccfile hooks.
+- If even the fallback fails for some container IDs (for instance, the Docker daemon itself is down), the sidecar is **left in place** so the router watchdog can keep retrying on each tick.
+
+**Watchdog recovery:** on every tick, the watchdog checks for a running-sidecar. Any container ID listed there that is currently stopped gets restarted, *regardless of the container's saved `restart_policy`*. This means services with `restart: on-failure` — which Docker would NOT restart after a clean stop — still come back after a cold backup. Once every listed container is running, the sidecar is deleted.
+
+**How operators detect failures:**
+
+- `rdc machine query --name <machine> --containers` shows running state. Compare against the expected set.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` on the machine — inspect via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` with a stale `startedAt` means the last backup didn't complete cleanly.
+- Logs from the renet backup run (`journalctl -u renet-*` or the direct `rdc machine deploy-backup` invocation) emit a final summary line of the form `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` — a non-empty `failed_repos` is the grep target.
+
 ### Define a Strategy
 
 ```bash

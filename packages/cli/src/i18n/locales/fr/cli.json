@@ -335,7 +335,8 @@
           "merged": "{{count}} certificat(s) du cache local conservé(s) avec une expiration plus longue",
           "noAcmeJson": "Aucun acme.json trouvé sur {{machine}}",
           "optionNoPrune": "Ne pas nettoyer les certificats d'ID réseau obsolètes",
-          "pruned": "{{count}} certificat(s) obsolète(s) nettoyé(s)"
+          "pruned": "{{count}} certificat(s) obsolète(s) nettoyé(s)",
+          "prunedExpired": "Pruned {{count}} expired certificate(s)"
         },
         "push": {
           "description": "Envoyer les certificats TLS en cache vers une machine",
@@ -855,7 +856,8 @@
         "fetching": "Récupération du statut de {{machine}}...",
         "infrastructure": "Infrastructure",
         "noData": "Aucune donnée de statut disponible",
-        "storageHealthHint": "Astuce : Exécutez avec --storage-health pour voir la fragmentation BTRFS et les économies reflink par repo"
+        "storageHealthHint": "Astuce : Exécutez avec --storage-health pour voir la fragmentation BTRFS et les économies reflink par repo",
+        "syncCertsFailed": "Cert cache sync failed: {{error}}"
       },
       "rename": {
         "description": "Renommer une machine"
@@ -1227,6 +1229,9 @@
       "batchIterating": "{{action}} {{current}}/{{total}} : \"{{repo}}\"...",
       "batchResult": "{{action}} terminé : {{succeeded}}/{{total}} réussis",
       "batchStarting": "{{action}} : «{{repo}}»...",
+      "certSync": {
+        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+      },
       "create": {
         "alreadyExists": "Le dépôt \"{{name}}\" existe déjà dans le contexte",
         "completed": "Dépôt créé",
@@ -2401,6 +2406,7 @@
     "queryRepositories": "Inclure uniquement les dépôts",
     "queryServices": "Inclure uniquement les services",
     "queryStorageHealth": "Afficher la fragmentation BTRFS et les économies reflink par dépôt",
+    "querySyncCerts": "Récupère aussi le cache de certificats ACME de la machine après la requête",
     "querySystem": "Inclure uniquement les informations système",
     "quiet": "Supprimer la sortie informative",
     "rawVault": "JSON du coffre brut (pour scripts/CI)",

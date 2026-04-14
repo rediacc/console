@@ -170,6 +170,30 @@ services:
 
 > **Note:** Do not add `network_mode: host` manually, `renet compose` injects it automatically. Restart policies (e.g., `restart: always`) are safe to use, renet auto-strips them for CRIU compatibility and the router watchdog handles container recovery.
 
+### Container Recovery & Restart Policy
+
+renet and Docker disagree, on purpose, about how to handle container restarts. Understanding the split is important when debugging why a container did or didn't come back.
+
+**Restart policy translation.** When you write `restart: always` (or `unless-stopped`, or `on-failure`) in your compose file, renet **strips it** when synthesizing the actual compose deployment and replaces it with `restart: no`. The original value is saved into the repo's `.rediacc.json` under `services.<name>.restart_policy`. This prevents Docker's daemon-level auto-restart from interfering with CRIU checkpoint/restore (a daemon-driven restart would resume from a stale pre-checkpoint state).
+
+**Watchdog enforcement.** The router watchdog runs periodically on every machine. Every tick:
+
+1. It reads `.rediacc.json` for each repo and finds services with a recoverable `restart_policy`.
+2. It lists all containers for that repo's daemon, identifies stopped ones, and restarts them per the saved policy. A 30-second grace period prevents fighting an operator who just ran `docker stop`.
+3. The same loop also processes `/var/run/rediacc/cold-backup-<guid>.running.json` (see [Cold Backup Semantics](backup-restore.md#cold-backup-semantics)) — listed containers get restarted regardless of saved policy, because the sidecar means "renet stopped these on purpose and owes the operator a restart."
+
+**Why `on-failure` can look broken.** Docker's `on-failure` policy only restarts when the container exits with a non-zero code. A graceful stop (exit 0) from `docker stop` or a daemon shutdown is not a "failure" and does NOT trigger a restart — neither by Docker's native logic nor the watchdog's saved-policy path. The cold-backup sidecar is the safety net: any container we stopped on purpose gets restarted regardless of its policy.
+
+**How to interpret the runtime state:**
+
+- `docker inspect <container>` → `RestartPolicy.Name`: will always be `no` for renet-managed containers. Don't rely on this for the semantic policy.
+- `.rediacc.json` at the repo mount root → `services.<name>.restart_policy`: the real intent.
+- `docker ps --format '{{.Status}}'`: runtime state.
+
+**How to fix a drift.** If a container's `.rediacc.json` saved policy is wrong (for example, because you edited compose but never recreated the container), re-run `rdc repo up --name <repo> -m <machine>` — the container is recreated with the updated policy recorded.
+
+> **Experimental:** Cold-backup sidecar-based recovery and the `--sync-certs` flag on `rdc machine query` shipped in renet 0.9+. Older versions rely purely on saved `restart_policy` for watchdog recovery, which can leave `on-failure` containers stranded after a cold backup.
+
 > **Docker bridge networking is disabled for rediacc-managed daemons.** Each per-repo daemon is configured with `"bridge": "none"` and `"iptables": false`. A plain `docker run <image>` inside a repository shell will still launch, but the container gets only a loopback interface and has no DNS or outbound connectivity. This is by design, since loopback isolation between repos is enforced by eBPF cgroup hooks that a bridged container would bypass. Production services should use `renet compose` (which injects host networking for you); for ad-hoc debugging, pass `--network host` explicitly: `docker run --rm --network host -it ubuntu bash`.
 
 > **Note:** Fork repos get auto-routes under the parent's subdomain: `{service}-fork-{tag}.{repo}.{machine}.{baseDomain}`. Custom domains are skipped for forks.
