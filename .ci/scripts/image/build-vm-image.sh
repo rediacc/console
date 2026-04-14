@@ -187,6 +187,18 @@ chpasswd:
 
 ssh_pwauth: true
 
+# DHCP fallback. The network-config below (netplan v2) works fine on
+# Ubuntu 24.04 minimal cloudimg but on Debian 13 trixie generic cloudimg
+# the rendered config isn't applied before the 15-minute boot deadline
+# in CI (same root cause appeared pre-Fix-A: VM boots to
+# domstate=running but virsh domifaddr / net-dhcp-leases stay empty).
+# bootcmd runs before any other cloud-init module, so dhclient fires as
+# soon as the kernel brings up NICs — independent of renderer. The
+# 'cloud-init-per once' guard makes this first-boot-only. The log file
+# is for post-mortem if the image still fails to SSH.
+bootcmd:
+  - [ cloud-init-per, once, dhclient_all, sh, -c, 'for iface in \$(ls /sys/class/net 2>/dev/null | grep -v lo); do ip link set "\$iface" up 2>/dev/null || true; dhclient -v "\$iface" >> /var/log/cloud-init-dhclient.log 2>&1 || true; done' ]
+
 EOF
 
 cat >"$META_DATA" <<EOF
