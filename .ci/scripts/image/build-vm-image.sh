@@ -152,6 +152,34 @@ log_info "Working image resized to $(qemu-img info "$WORK_IMAGE" | grep 'virtual
 chmod 755 "$BUILD_DIR"
 chmod 666 "$WORK_IMAGE"
 
+# Ensure GRUB auto-boots without waiting for console input and that the
+# kernel has a serial console. Debian 13 trixie generic cloudimg defaults
+# to GRUB_CMDLINE_LINUX_DEFAULT="quiet" (no console=ttyS0) and a
+# graphical-oriented GRUB timeout that doesn't tick without a connected
+# TTY; the CI's pty-only console (`--graphics none`, no real TTY attached)
+# then sits on "Booting \`Debian GNU/Linux'" forever, the VM never runs
+# the kernel, cloud-init never fires, and we hit the 15-minute wait. The
+# Ubuntu minimal cloudimg already has console=ttyS0 + GRUB_TIMEOUT=0 so
+# it auto-boots — this step is a no-op there but necessary for Debian.
+# virt-customize handles each variant's grub toolset (update-grub on
+# Debian/Ubuntu; grub2-mkconfig on Fedora/openSUSE).
+log_info "Patching VM image GRUB for headless serial boot..."
+if ! sudo virt-customize -a "$WORK_IMAGE" \
+    --run-command 'set -e
+        if [ -f /etc/default/grub ]; then
+            sed -i "s/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/" /etc/default/grub
+            sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"quiet console=ttyS0,115200 console=tty1\"|" /etc/default/grub
+            grep -q "^GRUB_TERMINAL" /etc/default/grub || echo "GRUB_TERMINAL=\"console serial\"" >> /etc/default/grub
+            grep -q "^GRUB_SERIAL_COMMAND" /etc/default/grub || echo "GRUB_SERIAL_COMMAND=\"serial --unit=0 --speed=115200\"" >> /etc/default/grub
+        fi
+        if command -v update-grub >/dev/null 2>&1; then
+            update-grub
+        elif command -v grub2-mkconfig >/dev/null 2>&1; then
+            grub2-mkconfig -o /boot/grub2/grub.cfg || grub2-mkconfig -o /boot/grub/grub.cfg
+        fi'; then
+    log_info "virt-customize grub patch failed or unavailable; continuing (Ubuntu path already has serial console)"
+fi
+
 # =============================================================================
 # STEP 3: Generate SSH key for build
 # =============================================================================
