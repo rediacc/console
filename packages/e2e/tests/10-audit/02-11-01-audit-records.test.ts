@@ -74,19 +74,15 @@ test.describe('2.11.1 Audit Records', () => {
     testReporter.startStep('Click Export button');
     const exportButton = page.getByTestId('audit-export-button');
 
-    // The export button might be disabled if there's no data in the range
-    if (await exportButton.isEnabled()) {
-      await exportButton.click();
+    await expect(exportButton).toBeEnabled();
+    await exportButton.click();
 
-      // Select CSV option from the dropdown
-      const csvOption = page.getByTestId('audit-export-csv');
-      await csvOption.waitFor({ state: 'visible' });
-      await csvOption.click();
+    // Select CSV option from the dropdown
+    const csvOption = page.getByTestId('audit-export-csv');
+    await csvOption.waitFor({ state: 'visible' });
+    await csvOption.click();
 
-      testReporter.completeStep('Click Export button', 'passed');
-    } else {
-      testReporter.completeStep('Click Export button', 'skipped');
-    }
+    testReporter.completeStep('Click Export button', 'passed');
 
     await testReporter.finalizeTest();
   });
