@@ -115,8 +115,12 @@ jobs:
       - name: Build VM Image
         id: build
         run: |
-          .ci/scripts/image/build-vm-image.sh --output "$RUNNER_TEMP/vm-image"
-          IMAGE_PATH=$(ls $RUNNER_TEMP/vm-image/*.img | head -1)
+          mkdir -p "$RUNNER_TEMP/vm-image"
+          sudo $RENET_BINARY ops image build \
+            --os ubuntu-24.04 \
+            --output "$RUNNER_TEMP/vm-image" \
+            --renet-binary "$RENET_BINARY"
+          IMAGE_PATH=$(ls $RUNNER_TEMP/vm-image/*.img $RUNNER_TEMP/vm-image/*.qcow2 2>/dev/null | head -1)
           IMAGE_NAME=$(basename "$IMAGE_PATH")
           echo "image-name=$IMAGE_NAME" >> $GITHUB_OUTPUT
           echo "Built image: $IMAGE_NAME ($(du -h "$IMAGE_PATH" | cut -f1))"
@@ -125,7 +129,9 @@ jobs:
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: vm-disk-image
-          path: ${{ runner.temp }}/vm-image/*.img
+          path: |
+            ${{ runner.temp }}/vm-image/*.img
+            ${{ runner.temp }}/vm-image/*.qcow2
           retention-days: 1
           compression-level: 0  # Already compressed qcow2
 
