@@ -18,10 +18,10 @@ test.describe('2.10.1 Queue Operations', () => {
     await expect(modeToggle).toBeVisible();
 
     // Ant Design Segmented: Expert mode is the second item
-    await modeToggle.locator('.ant-segmented-item').last().click();
+    await modeToggle.locator('.ant-segmented-item', { hasText: 'Expert' }).click();
 
     // Close user menu by clicking outside
-    await page.mouse.click(0, 0);
+    await page.keyboard.press('Escape');
 
     const nav = new NavigationHelper(page);
     await nav.goToQueue();
@@ -36,7 +36,7 @@ test.describe('2.10.1 Queue Operations', () => {
     const teamSelect = page.getByTestId('queue-filter-team');
     await teamSelect.click();
     // Wait for dropdown to be visible and click an option
-    const teamOption = page.locator('.ant-select-dropdown:visible .ant-select-item-option').first();
+    const teamOption = page.getByRole('option').first();
     await teamOption.waitFor({ state: 'visible' });
     await teamOption.click();
     // Ensure dropdown is closed before next select to avoid locator conflicts
@@ -46,7 +46,7 @@ test.describe('2.10.1 Queue Operations', () => {
     testReporter.startStep('Select Region filter');
     const regionSelect = page.getByTestId('queue-filter-region');
     await regionSelect.click();
-    const regionOption = page.locator('.ant-select-dropdown:visible .ant-select-item-option').first();
+    const regionOption = page.getByRole('option').first();
     await regionOption.waitFor({ state: 'visible' });
     await regionOption.click();
     await expect(page.locator('.ant-select-dropdown:visible')).toHaveCount(0);
@@ -56,9 +56,8 @@ test.describe('2.10.1 Queue Operations', () => {
     const datePicker = page.getByTestId('queue-filter-date').first();
     await datePicker.click();
     // Select a range in the picker (click two cells in the visible calendar)
-    const calendarCell = page.locator('.ant-picker-panel:visible .ant-picker-cell-inner');
-    await calendarCell.first().click();
-    await calendarCell.last().click();
+    await page.getByRole('gridcell', { name: '10' }).first().click();
+    await page.getByRole('gridcell', { name: '20' }).first().click();
     // Wait for picker to close
     await expect(page.locator('.ant-picker-panel:visible')).toHaveCount(0);
     testReporter.completeStep('Select Date Range filter', 'passed');
@@ -70,7 +69,7 @@ test.describe('2.10.1 Queue Operations', () => {
       const tabLocator = page.getByTestId(`queue-tab-${tab}`);
       await tabLocator.click();
 
-      // Verify tab is active - Ant Design Tabs use internal state, 
+      // Verify tab is active - Ant Design Tabs use internal state,
       // we check if our label is within the active tab container
       const activeTabContainer = page.locator('.ant-tabs-tab-active');
       await expect(activeTabContainer.getByTestId(`queue-tab-${tab}`)).toBeVisible();
