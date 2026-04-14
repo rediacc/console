@@ -194,8 +194,33 @@ instance-id: renet-image-builder
 local-hostname: renet-builder
 EOF
 
-# Create seed ISO for cloud-init
-cloud-localds "$SEED_ISO" "$USER_DATA" "$META_DATA"
+# Generate VM name + MAC early — network-config references $MAC_ADDR so they
+# must exist before cloud-localds seals the seed ISO.
+VM_NAME="renet-image-builder-$$"
+MAC_ADDR="52:54:00:$(openssl rand -hex 3 | sed 's/\(..\)/\1:/g; s/:$//')"
+
+# Netplan v2 network-config keyed by MAC. Portable across netplan
+# (Ubuntu/Debian), NetworkManager (Fedora/Rocky/Oracle), and wicked
+# (openSUSE). `match: name:` globs are silently dropped on RHEL-family
+# (cloud-init LP#1912844), so MAC matching is the only rule honored
+# everywhere — mirrors what renet's KVM driver does (driver.go:714).
+# Debian 13 trixie cloud-init does NOT auto-DHCP without an explicit
+# network-config; Ubuntu 24.04 minimal cloudimg works either way.
+# libvirt's `default` network runs dnsmasq DHCP on 192.168.122.0/24,
+# so dhcp4:true (not a static address) is all we need.
+NETWORK_CONFIG="$BUILD_DIR/network-config"
+cat >"$NETWORK_CONFIG" <<EOF
+version: 2
+ethernets:
+  primary:
+    match:
+      macaddress: "$MAC_ADDR"
+    dhcp4: true
+    dhcp6: false
+EOF
+
+# Create seed ISO for cloud-init (include network-config so Debian boots)
+cloud-localds -N "$NETWORK_CONFIG" "$SEED_ISO" "$USER_DATA" "$META_DATA"
 chmod 644 "$SEED_ISO"
 log_info "Cloud-init ISO created"
 
@@ -203,9 +228,6 @@ log_info "Cloud-init ISO created"
 # STEP 5: Boot VM
 # =============================================================================
 log_step "Step 5/8: Booting build VM..."
-
-VM_NAME="renet-image-builder-$$"
-MAC_ADDR="52:54:00:$(openssl rand -hex 3 | sed 's/\(..\)/\1:/g; s/:$//')"
 
 # Start VM
 sudo virt-install \
