@@ -180,9 +180,9 @@ renet and Docker disagree, on purpose, about how to handle container restarts. U
 
 1. It reads `.rediacc.json` for each repo and finds services with a recoverable `restart_policy`.
 2. It lists all containers for that repo's daemon, identifies stopped ones, and restarts them per the saved policy. A 30-second grace period prevents fighting an operator who just ran `docker stop`.
-3. The same loop also processes `/var/run/rediacc/cold-backup-<guid>.running.json` (see [Cold Backup Semantics](backup-restore.md#cold-backup-semantics)) — listed containers get restarted regardless of saved policy, because the sidecar means "renet stopped these on purpose and owes the operator a restart."
+3. The same loop also processes `/var/run/rediacc/cold-backup-<guid>.running.json` (see [Cold Backup Semantics](backup-restore.md#cold-backup-semantics)). Listed containers get restarted regardless of saved policy, because the sidecar means "renet stopped these on purpose and owes the operator a restart."
 
-**Why `on-failure` can look broken.** Docker's `on-failure` policy only restarts when the container exits with a non-zero code. A graceful stop (exit 0) from `docker stop` or a daemon shutdown is not a "failure" and does NOT trigger a restart — neither by Docker's native logic nor the watchdog's saved-policy path. The cold-backup sidecar is the safety net: any container we stopped on purpose gets restarted regardless of its policy.
+**Why `on-failure` can look broken.** Docker's `on-failure` policy only restarts when the container exits with a non-zero code. A graceful stop (exit 0) from `docker stop` or a daemon shutdown is not a "failure" and does NOT trigger a restart, neither by Docker's native logic nor the watchdog's saved-policy path. The cold-backup sidecar is the safety net: any container we stopped on purpose gets restarted regardless of its policy.
 
 **How to interpret the runtime state:**
 
@@ -190,7 +190,7 @@ renet and Docker disagree, on purpose, about how to handle container restarts. U
 - `.rediacc.json` at the repo mount root → `services.<name>.restart_policy`: the real intent.
 - `docker ps --format '{{.Status}}'`: runtime state.
 
-**How to fix a drift.** If a container's `.rediacc.json` saved policy is wrong (for example, because you edited compose but never recreated the container), re-run `rdc repo up --name <repo> -m <machine>` — the container is recreated with the updated policy recorded.
+**How to fix a drift.** If a container's `.rediacc.json` saved policy is wrong (for example, because you edited compose but never recreated the container), re-run `rdc repo up --name <repo> -m <machine>`. The container is recreated with the updated policy recorded.
 
 > **Experimental:** Cold-backup sidecar-based recovery and the `--sync-certs` flag on `rdc machine query` shipped in renet 0.9+. Older versions rely purely on saved `restart_policy` for watchdog recovery, which can leave `on-failure` containers stranded after a cold backup.
 
