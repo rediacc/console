@@ -81,12 +81,15 @@ function cronToOnCalendar(cron: string): string {
 }
 
 /**
- * Sanitize a systemd unit or shell command by redacting sensitive rclone param values.
- * Replaces values of --rclone-param keys that match SENSITIVE_KEYS (token, secret, key, etc.)
- * with [REDACTED]. Safe for dry-run output, debug logging, and agent context.
+ * Sanitize a systemd unit or shell command by redacting sensitive values.
+ * Covers both legacy `--rclone-param key=value` argv form AND the hardened
+ * `--setenv=RCLONE_KEY=value` form used by `systemd-run` for ad-hoc backups.
+ * Keys matched against SENSITIVE_KEYS (token, secret, key, password, etc.)
+ * are replaced with [REDACTED]. Safe for dry-run output, debug logging,
+ * and agent context.
  */
 function sanitizeBackupOutput(content: string): string {
-  return content.replaceAll(
+  let out = content.replaceAll(
     /--rclone-param '([^=]+)=([^']*)'/g,
     (_match, key: string, _value: string) => {
       if (isSensitiveKey(key)) {
@@ -95,6 +98,21 @@ function sanitizeBackupOutput(content: string): string {
       return _match;
     }
   );
+  // systemd-run --setenv=RCLONE_<KEY>='<value>' (quoted) and --setenv=KEY=value (bare).
+  // Check the rclone-stripped key against the sensitivity list so RCLONE_ONEDRIVE_TOKEN
+  // is redacted but RCLONE_BWLIMIT is not. Preserve the original quoting.
+  const rcloneKey = (envName: string): string =>
+    envName.startsWith('RCLONE_') ? envName.slice('RCLONE_'.length).toLowerCase() : envName;
+  out = out.replaceAll(
+    /--setenv=([A-Z0-9_]+)=(?:'([^']*)'|(\S+))/g,
+    (_m, key: string, quoted: string | undefined, bare: string | undefined) => {
+      if (!isSensitiveKey(rcloneKey(key))) return _m;
+      return quoted !== undefined
+        ? `--setenv=${key}='[REDACTED]'`
+        : `--setenv=${key}=[REDACTED]`;
+    }
+  );
+  return out;
 }
 
 interface DestinationBuild {
@@ -143,9 +161,13 @@ function buildDestinationCommand(
     envVars[rcloneEnvName(key)] = value;
   }
 
+  // bwlimit is per-destination and non-sensitive, so it stays on argv.
+  // Putting it in shared envVars would collide in mergeEnvVars when two
+  // destinations in the same strategy set different rates — a legitimate
+  // config that backup-schedule must support.
   const bwlimit = dest.bandwidthLimit ?? strategy.bandwidthLimit;
   if (bwlimit) {
-    envVars[rcloneEnvName('bwlimit')] = bwlimit;
+    parts.push(`--rclone-param bwlimit=${bwlimit}`);
   }
 
   if (strategy.include?.length) {

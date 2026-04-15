@@ -59,7 +59,9 @@ vi.mock('../output.js', () => ({
 }));
 
 describe('generateServiceUnit', () => {
-  it('puts bwlimit in envVars (not ExecStart) and emits EnvironmentFile=', async () => {
+  it('keeps bwlimit on argv (per-destination) and emits EnvironmentFile=', async () => {
+    // bwlimit is NOT a credential, and two destinations may legitimately
+    // set different rates — so it lives on argv, not in the shared env file.
     const { _testing } = await import('../backup-schedule.js');
     const { serviceContent, envVars } = _testing.generateServiceUnit(
       'hourly-hot',
@@ -70,12 +72,13 @@ describe('generateServiceUnit', () => {
       '/usr/bin/renet'
     );
     expect(serviceContent).toContain('--mode hot');
-    expect(serviceContent).not.toContain('--rclone-param');
-    expect(serviceContent).toContain('EnvironmentFile=/etc/rediacc/backup-hourly-hot.env');
-    expect(envVars).toMatchObject({ RCLONE_BWLIMIT: '6M' });
+    expect(serviceContent).toContain('--rclone-param bwlimit=6M');
+    // No credentials in this test -> no EnvironmentFile= directive emitted.
+    expect(serviceContent).not.toContain('EnvironmentFile=');
+    expect(envVars.RCLONE_BWLIMIT).toBeUndefined();
   });
 
-  it('per-dest bwlimit overrides strategy bwlimit in envVars', async () => {
+  it('per-dest bwlimit overrides strategy bwlimit on argv', async () => {
     const { _testing } = await import('../backup-schedule.js');
     const { serviceContent, envVars } = _testing.generateServiceUnit(
       'test',
@@ -85,8 +88,31 @@ describe('generateServiceUnit', () => {
       '/mnt/rediacc',
       '/usr/bin/renet'
     );
-    expect(envVars.RCLONE_BWLIMIT).toBe('50M');
-    expect(serviceContent).not.toContain('bwlimit');
+    expect(serviceContent).toContain('--rclone-param bwlimit=50M');
+    expect(serviceContent).not.toContain('bwlimit=6M');
+    expect(envVars.RCLONE_BWLIMIT).toBeUndefined();
+  });
+
+  it('allows two destinations with different bwlimits in one strategy', async () => {
+    // Regression: moving bwlimit to envVars caused mergeEnvVars to throw on
+    // conflicting per-destination rates, breaking a legitimate config.
+    const { _testing } = await import('../backup-schedule.js');
+    const { serviceContent } = _testing.generateServiceUnit(
+      'mixed-rates',
+      { schedule: '0 * * * *', destinations: [] },
+      [
+        { name: 'slow', storage: 'microsoft', bandwidthLimit: '1M' },
+        { name: 'fast', storage: 'microsoft', bandwidthLimit: '100M' },
+      ],
+      new Map([
+        ['slow', { remote: ':onedrive:slow', params: [] }],
+        ['fast', { remote: ':onedrive:fast', params: [] }],
+      ]),
+      '/mnt/rediacc',
+      '/usr/bin/renet'
+    );
+    expect(serviceContent).toContain('--rclone-param bwlimit=1M');
+    expect(serviceContent).toContain('--rclone-param bwlimit=100M');
   });
 
   it('includes --include-repo when strategy has include', async () => {
@@ -242,6 +268,32 @@ describe('generateServiceUnit', () => {
         '/usr/bin/renet'
       );
     expect(call).toThrow(/Conflicting env var "RCLONE_ONEDRIVE_TOKEN"/);
+  });
+});
+
+describe('sanitizeBackupOutput', () => {
+  it('redacts --rclone-param values for sensitive keys', async () => {
+    const { sanitizeBackupOutput } = await import('../backup-schedule.js');
+    const input = "backup sync push --rclone-param 'onedrive-token={\"access_token\":\"x\"}' --rclone-param 'bwlimit=6M'";
+    const out = sanitizeBackupOutput(input);
+    expect(out).toContain("onedrive-token=[REDACTED]");
+    expect(out).toContain("bwlimit=6M");
+  });
+
+  it('redacts --setenv values for sensitive RCLONE_ keys (quoted form)', async () => {
+    const { sanitizeBackupOutput } = await import('../backup-schedule.js');
+    const input = "systemd-run --unit=u --setenv=RCLONE_ONEDRIVE_TOKEN='{\"access_token\":\"abc\"}' --setenv=RCLONE_BWLIMIT='6M' --remain-after-exit";
+    const out = sanitizeBackupOutput(input);
+    expect(out).toContain("--setenv=RCLONE_ONEDRIVE_TOKEN='[REDACTED]'");
+    expect(out).toContain("--setenv=RCLONE_BWLIMIT='6M'");
+  });
+
+  it('redacts --setenv values for sensitive RCLONE_ keys (bare form)', async () => {
+    const { sanitizeBackupOutput } = await import('../backup-schedule.js');
+    const input = 'systemd-run --setenv=RCLONE_S3_SECRET_ACCESS_KEY=deadbeef --setenv=RCLONE_BWLIMIT=6M';
+    const out = sanitizeBackupOutput(input);
+    expect(out).toContain('--setenv=RCLONE_S3_SECRET_ACCESS_KEY=[REDACTED]');
+    expect(out).toContain('--setenv=RCLONE_BWLIMIT=6M');
   });
 });
 
