@@ -4,8 +4,8 @@ description: 使用模型上下文协议 (MCP) 服务器将 AI 代理连接到 R
 category: Guides
 order: 33
 language: zh
-sourceHash: "ac4f508c3ad2602e"
-sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
+sourceHash: "db970e1793f0b024"
+sourceCommit: "5bffc959d9ddd689bfe8e7815270d800d9dca662"
 ---
 
 ## 概述
@@ -130,7 +130,7 @@ To allow an agent to modify grand repos, start with `--allow-grand`:
 }
 ```
 
-你也可以将环境变量 `REDIACC_ALLOW_GRAND_REPO` 设置为某个特定仓库名称，或设置为适用于所有仓库的 `*`。
+你也可以将环境变量 `REDIACC_ALLOW_GRAND_REPO` 设置为单个仓库名称、以逗号分隔的仓库名称列表（例如 `repo1,repo2,repo3`），或者设置为适用于所有仓库的 `*`。各条目周围的空白会被忽略，因此 `repo1, repo2` 也可以使用。机器级访问（例如不指定仓库的 `term connect -m <machine>`）仍然需要 `*`；仓库名称列表无法解锁该权限。
 
 ### Kernel-level filesystem sandbox (Landlock)
 

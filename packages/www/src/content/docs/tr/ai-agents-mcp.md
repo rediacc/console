@@ -4,8 +4,8 @@ description: Model Context Protocol (MCP) sunucusunu kullanarak yapay zeka ajanl
 category: Guides
 order: 33
 language: tr
-sourceHash: "ac4f508c3ad2602e"
-sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
+sourceHash: "db970e1793f0b024"
+sourceCommit: "5bffc959d9ddd689bfe8e7815270d800d9dca662"
 ---
 
 ## Genel Bakış
@@ -130,7 +130,7 @@ To allow an agent to modify grand repos, start with `--allow-grand`:
 }
 ```
 
-`REDIACC_ALLOW_GRAND_REPO` ortam değişkenini belirli bir repo adına ya da tüm repolar için `*` değerine de ayarlayabilirsiniz.
+`REDIACC_ALLOW_GRAND_REPO` ortam değişkenini tek bir repo adına, virgülle ayrılmış bir repo adı listesine (örneğin `repo1,repo2,repo3`) ya da tüm repolar için `*` değerine de ayarlayabilirsiniz. Girişlerin etrafındaki boşluklar yoksayıldığı için `repo1, repo2` de çalışır. Makine düzeyinde erişim (örneğin repo belirtmeden `term connect -m <machine>`) hâlâ `*` gerektirir; repo adlarından oluşan bir liste bu erişimi açmaz.
 
 ### Kernel-level filesystem sandbox (Landlock)
 
