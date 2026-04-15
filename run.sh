@@ -920,6 +920,7 @@ pr_publish() {
             --arg ses_secret "$(_env AWS_SES_SECRET_ACCESS_KEY)" \
             --arg ses_region "$(_env AWS_SES_REGION)" \
             --arg ses_from "$(_env AWS_SES_FROM)" \
+            --arg ses_cs "$(_env AWS_SES_CONFIGURATION_SET)" \
             --arg turnstile "$(_env TURNSTILE_SECRET_KEY)" \
             '{
               ED25519_PRIVATE_KEY: $ed25519_priv,
@@ -935,6 +936,7 @@ pr_publish() {
               AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
               AWS_SES_REGION: $ses_region,
               AWS_SES_FROM: $ses_from,
+              AWS_SES_CONFIGURATION_SET: $ses_cs,
               TURNSTILE_SECRET_KEY: $turnstile
             } | with_entries(select(.value != ""))' | npx wrangler secret bulk --name "$worker_name"
 

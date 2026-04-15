@@ -868,6 +868,7 @@ jobs:
           SECRET_SES_REGION: ${{ vars.AWS_SES_REGION_EU }}
           SECRET_TURNSTILE_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
           VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
+          VAR_SES_CONFIGURATION_SET: ${{ vars.AWS_SES_CONFIGURATION_SET }}
         run: |
           # Use secret:bulk to set all secrets in a single API call.
           # Individual secret put commands each trigger a new worker version,
@@ -887,6 +888,7 @@ jobs:
             --arg ses_secret "$SECRET_SES_SECRET_ACCESS_KEY" \
             --arg ses_region "$SECRET_SES_REGION" \
             --arg ses_from "$VAR_SES_FROM" \
+            --arg ses_cs "$VAR_SES_CONFIGURATION_SET" \
             --arg turnstile "$SECRET_TURNSTILE_KEY" \
             '{
               ED25519_PRIVATE_KEY: $ed25519_priv,
@@ -902,6 +904,7 @@ jobs:
               AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
               AWS_SES_REGION: $ses_region,
               AWS_SES_FROM: $ses_from,
+              AWS_SES_CONFIGURATION_SET: $ses_cs,
               TURNSTILE_SECRET_KEY: $turnstile
             }' | npx wrangler secret bulk --name "$WORKER"
 

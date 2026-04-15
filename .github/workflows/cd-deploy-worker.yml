@@ -158,6 +158,7 @@ jobs:
           SECRET_SES_REGION: ${{ vars.AWS_SES_REGION_EU }}
           SECRET_TURNSTILE_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
           VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
+          VAR_SES_CONFIGURATION_SET: ${{ vars.AWS_SES_CONFIGURATION_SET }}
           VAR_SELLER_NAME: ${{ vars.SELLER_NAME }}
           VAR_SELLER_VAT_NUMBER: ${{ vars.SELLER_VAT_NUMBER }}
           VAR_SELLER_REGISTRATION_NUMBER: ${{ vars.SELLER_REGISTRATION_NUMBER }}
@@ -182,6 +183,7 @@ jobs:
             --arg ses_secret "$SECRET_SES_SECRET_ACCESS_KEY" \
             --arg ses_region "$SECRET_SES_REGION" \
             --arg ses_from "$VAR_SES_FROM" \
+            --arg ses_cs "$VAR_SES_CONFIGURATION_SET" \
             --arg turnstile "$SECRET_TURNSTILE_KEY" \
             --arg seller_name "$VAR_SELLER_NAME" \
             --arg seller_vat "$VAR_SELLER_VAT_NUMBER" \
@@ -206,6 +208,7 @@ jobs:
               AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
               AWS_SES_REGION: $ses_region,
               AWS_SES_FROM: $ses_from,
+              AWS_SES_CONFIGURATION_SET: $ses_cs,
               TURNSTILE_SECRET_KEY: $turnstile,
               SELLER_NAME: $seller_name,
               SELLER_VAT_NUMBER: $seller_vat,

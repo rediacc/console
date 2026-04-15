@@ -178,6 +178,7 @@ jq -n \
     --arg ses_secret "${AWS_SES_SECRET_ACCESS_KEY:-}" \
     --arg ses_region "${AWS_SES_REGION:-eu-central-1}" \
     --arg ses_from "${AWS_SES_FROM:-noreply@notify.rediacc.com}" \
+    --arg ses_cs "${AWS_SES_CONFIGURATION_SET:-}" \
     --arg turnstile "${TURNSTILE_SECRET_KEY:-}" \
     --arg otlp_creds "${OTLP_CLIENT_CREDENTIALS:-}" \
     --arg seller_name "${SELLER_NAME:-}" \
@@ -203,6 +204,7 @@ jq -n \
         AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
         AWS_SES_REGION: $ses_region,
         AWS_SES_FROM: $ses_from,
+        AWS_SES_CONFIGURATION_SET: $ses_cs,
         TURNSTILE_SECRET_KEY: $turnstile,
         OTLP_CLIENT_CREDENTIALS: $otlp_creds,
         SELLER_NAME: $seller_name,
