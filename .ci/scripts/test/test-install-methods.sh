@@ -488,8 +488,21 @@ test_apt_install() {
         # Add sources list
         echo 'deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${REPO_URL}/apt${REPO_CHANNEL_SUFFIX} stable main' > /etc/apt/sources.list.d/rediacc.list
 
-        # Install
-        apt-get update -qq
+        # Install — retry \`apt-get update\` because the Rediacc APT repo
+        # is fronted by Cloudflare and edge caches can lag behind the
+        # staging artifact upload by up to a minute. The 'File has
+        # unexpected size' error typically clears on the next attempt.
+        for attempt in 1 2 3 4 5; do
+            if apt-get update -qq -o Acquire::Retries=0; then
+                break
+            fi
+            if [[ \$attempt -eq 5 ]]; then
+                echo 'apt-get update failed after 5 attempts' >&2
+                exit 1
+            fi
+            echo \"apt-get update attempt \$attempt failed, retrying in 15s...\" >&2
+            sleep 15
+        done
         apt-get install -y -qq ${PKG_NAME} >/dev/null 2>&1
 
         # Verify

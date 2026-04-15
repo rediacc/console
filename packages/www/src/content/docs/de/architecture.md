@@ -6,20 +6,21 @@ description: >-
 category: Concepts
 order: 0
 language: de
-sourceHash: "1ec1b0e490ef470c"
+sourceHash: "2c2d289c280e2a7f"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # Architektur
 
 Diese Seite erklärt, wie Rediacc unter der Haube funktioniert: die Zwei-Tool-Architektur, Adapter-Erkennung, das Sicherheitsmodell und die Konfigurationsstruktur.
 
-## Full Stack Overview
+## Gesamtstack-Überblick
 
-Traffic flows from the internet through a reverse proxy, into isolated Docker daemons, each backed by encrypted storage:
+Der Traffic fließt vom Internet durch einen Reverse-Proxy in isolierte Docker-Daemons, die jeweils durch verschlüsselten Speicher abgesichert sind:
 
-![Full Stack Architecture](/img/arch-full-stack.svg)
+![Gesamtstack-Architektur](/img/arch-full-stack.svg)
 
-Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), and LUKS-encrypted BTRFS volume. The route server discovers running containers across all daemons and feeds routing configuration to Traefik.
+Jedes Repository erhält seinen eigenen Docker-Daemon, ein Loopback-IP-Subnetz (/26 = 64 IPs) und ein LUKS-verschlüsseltes BTRFS-Volume. Der Route-Server erkennt laufende Container über alle Daemons hinweg und speist die Routing-Konfiguration in Traefik ein.
 
 ## Zwei-Tool-Architektur
 
@@ -32,7 +33,7 @@ Rediacc verwendet zwei Binaries, die über SSH zusammenarbeiten:
 
 Jeder Befehl, den Sie lokal eingeben, wird in einen SSH-Aufruf übersetzt, der renet auf dem entfernten Rechner ausführt. Sie müssen sich nie manuell per SSH auf den Servern anmelden.
 
-Für eine operatorfokussierte Faustregel, siehe [rdc vs renet](/de/docs/rdc-vs-renet). Sie können auch `rdc ops` verwenden, um einen lokalen VM-Cluster zum Testen zu starten, siehe [Experimentelle VMs](/de/docs/experimental-vms).
+Für eine operatorfokussierte Faustregel, siehe [rdc vs renet](/en/docs/rdc-vs-renet). Sie können auch `rdc ops` verwenden, um einen lokalen VM-Cluster zum Testen zu starten, siehe [Experimentelle VMs](/en/docs/experimental-vms).
 
 ## Konfiguration
 
@@ -97,6 +98,29 @@ Das bedeutet:
 - Der Docker-Daemon des Hosts (falls vorhanden) ist vollständig getrennt
 
 Rediaccfile-Funktionen haben automatisch `DOCKER_HOST` auf den korrekten Socket gesetzt.
+
+### Daemon-Pfadstruktur
+
+Docker-Daten und -Konfiguration werden innerhalb des Repository-Einhängepunkts gespeichert, wodurch jeder Daemon vollständig vom Host und von anderen Repositories isoliert bleibt.
+
+**Pro-Repository-Struktur:**
+```
+{datastore}/mounts/{guid}/.rediacc/docker/data/    # Docker-Datenwurzel
+{datastore}/mounts/{guid}/.rediacc/docker/config/  # Docker-Konfiguration
+```
+
+**Standalone-Struktur** (Daemons ohne angehängten Repository-Einhängepunkt):
+```
+{datastore}/standalone/{N}/.rediacc/docker/data/
+{datastore}/standalone/{N}/.rediacc/docker/config/
+```
+
+**Gemeinsamer Laufzeitpfad** (unverändert):
+```
+/run/rediacc/docker-{N}.sock
+```
+
+Diese einheitliche Struktur beseitigt Konflikte zwischen schreibgeschützten und schreibbaren Einhängepunkten, die auftraten, wenn Daemon-Pfade zwischen dem Host-Dateisystem und dem verschlüsselten Volume aufgeteilt waren. Sowohl Pro-Repository- als auch Standalone-Daemons folgen derselben Verzeichnisstruktur, sodass Werkzeuge und Diagnosen in beiden Fällen identisch funktionieren.
 
 ## LUKS-Verschlüsselung
 

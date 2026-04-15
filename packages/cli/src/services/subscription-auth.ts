@@ -37,6 +37,20 @@ export function saveServerConfig(config: ServerConfig): void {
   writeFileSync(configFile, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
 }
 
+/**
+ * Remove the persisted server config (server.json). Used by `subscription
+ * logout` to ensure the next login starts from a clean slate and shows the
+ * region picker again. Without this, the saved `accountServer` would cause
+ * `promptRegionIfNeeded()` to skip the picker on the next login, silently
+ * pinning the user to whatever region they were on before.
+ */
+export function deleteServerConfig(): void {
+  const configFile = getServerConfigFile();
+  if (existsSync(configFile)) {
+    unlinkSync(configFile);
+  }
+}
+
 export interface StoredSubscriptionToken {
   token: string;
   serverUrl: string;
@@ -80,11 +94,24 @@ export function getSubscriptionServerUrl(
     return normalizeServerUrl(serverUrl);
   }
 
+  // Precedence (highest first):
+  //   1. preferredServerUrl   — runtime override (--server flag)
+  //   2. REDIACC_ACCOUNT_SERVER — env override
+  //   3. server.json          — most recent explicit choice from the region
+  //                             picker. Wins over rediacc.json because the
+  //                             picker writes here on every login, while
+  //                             rediacc.json's accountServer is a stale
+  //                             snapshot from whenever the user last set it.
+  //   4. configAccountServer  — older accountServer field in rediacc.json
+  //                             (kept as a fallback so configs that were
+  //                             pinned via `rdc config set --key accountServer`
+  //                             still work when server.json is absent)
+  //   5. SUBSCRIPTION_DEFAULTS.ACCOUNT_SERVER_URL — hardcoded default
   return normalizeServerUrl(
     preferredServerUrl ??
       process.env.REDIACC_ACCOUNT_SERVER ??
-      configAccountServer ??
       loadServerConfig()?.accountServer ??
+      configAccountServer ??
       SUBSCRIPTION_DEFAULTS.ACCOUNT_SERVER_URL
   );
 }

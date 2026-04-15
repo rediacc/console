@@ -285,6 +285,25 @@ export class InfrastructureManager {
         throw new Error(`Move/chmod failed: ${moveResult.stderr}`);
       }
 
+      // Diagnostic probe: verify /usr/bin/renet symlink is visible via a
+      // non-login SSH shell (same shape the bridge harness uses for
+      // check_rediacc_cli, which just runs `which renet`). On openSUSE Leap
+      // 16.0 Minimal Cloud that test fails at 0.7s even though /usr/bin is
+      // writable — this line puts ls/readlink/which/PATH output in the CI
+      // log so we can tell whether the symlink truly exists, where it
+      // resolves, and what PATH the shell sees. Never fails the deploy —
+      // diagnostic only.
+      const verifyResult = await this.sshExecutor.execute(
+        ip,
+        'ls -la /usr/bin/renet 2>&1; readlink -f /usr/bin/renet 2>&1; which renet 2>&1; echo "PATH=$PATH"',
+        { execTimeout: 5000 }
+      );
+      if (!verifyResult.success || !verifyResult.stdout.includes('/usr/bin/renet')) {
+        console.warn(
+          `[InfrastructureManager] renet symlink verification warning for ${ip}: stdout=${verifyResult.stdout} stderr=${verifyResult.stderr}`
+        );
+      }
+
       // Verify the deployment by checking MD5
       const newRemoteMD5 = await this.getRemoteRenetMD5(ip);
       if (newRemoteMD5 !== localMD5) {
@@ -479,10 +498,14 @@ export class InfrastructureManager {
   ): Promise<boolean> {
     console.warn(`  ${ip}: Copying CRIU from bridge...`);
 
-    // Get SSH options for the nested commands (from bridge to worker)
-    // These are used inside the command executed on bridgeIP
-    const nestedOpts = this.sshExecutor.getSSHOptions({ connectTimeout: 10, batchMode: true });
-    const scpOpts = this.sshExecutor.getSCPOptions({ quiet: true });
+    // Get SSH/SCP options for the nested commands (from bridge to worker).
+    // These run on the bridge VM, so drop `-i` (host path) — the bridge
+    // has its own key at ~/.ssh/id_rsa from renet's mesh distribution.
+    const nestedOpts = this.sshExecutor.getInnerSSHOptions({
+      connectTimeout: 10,
+      batchMode: true,
+    });
+    const scpOpts = this.sshExecutor.getInnerSCPOptions({ quiet: true });
 
     const copyResult = await this.opsManager.executeOnVM(
       bridgeIP,

@@ -4,7 +4,7 @@ description: "Émission de licences inviolable, signature déléguée pour l'on-
 category: "Guides"
 order: 8
 language: fr
-sourceHash: "5e6afbdf05c21b67"
+sourceHash: "326c4f4efbd60493"
 ---
 
 # Chaîne de licence et délégation

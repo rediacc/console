@@ -26,6 +26,9 @@ const REMOTE_INSTALL_ROOT = '/usr/lib/rediacc/renet';
 const REMOTE_CURRENT_DIR = `${REMOTE_INSTALL_ROOT}/current`;
 const REMOTE_CURRENT_PATH = `${REMOTE_CURRENT_DIR}/renet`;
 
+/** Default renet binary path on remote machines (for systemd units, dry-run output). */
+export const REMOTE_RENET_PATH = REMOTE_CURRENT_PATH;
+
 const REMOTE_INSTALL_PATH = `${REMOTE_INSTALL_ROOT}/${VERSION}/renet`;
 
 /** Prefix for per-attempt staging uploads (no sudo needed for /tmp) */

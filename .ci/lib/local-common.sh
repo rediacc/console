@@ -325,7 +325,7 @@ ensure_renet_built() {
 
     check_go_installed
     local build_flags=""
-    if [[ "${RENET_NOLICENSE:-true}" == "true" ]]; then
+    if [[ "${RDC_BENCH:-0}" != "1" ]]; then
         build_flags="--nolicense"
     fi
     (cd "$renet_dir" && ./build.sh dev $build_flags)

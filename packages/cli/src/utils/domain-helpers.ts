@@ -29,9 +29,17 @@ export function extractAutoRoute(
   if (!labels) return '-';
   const repoName = labels['rediacc.repo_name'];
   const serviceName = labels['rediacc.service_name'];
+  const isFork = labels['rediacc.is_fork'] === 'true';
+  const forkTag = labels['rediacc.fork_tag'];
   if (serviceName && repoName && baseDomain) {
-    const domain = machineName ? `${machineName}.${baseDomain}` : baseDomain;
-    return `${serviceName}.${repoName}.${domain}`;
+    const machineDomain = machineName ? `${machineName}.${baseDomain}` : baseDomain;
+    // Strip :tag suffix from repoName to get the parent repo name
+    const parentName = repoName.includes(':') ? repoName.split(':')[0] : repoName;
+    const repoDomain = `${parentName}.${machineDomain}`;
+    if (isFork && forkTag) {
+      return `${serviceName}-fork-${forkTag}.${repoDomain}`;
+    }
+    return `${serviceName}.${repoDomain}`;
   }
   return '-';
 }

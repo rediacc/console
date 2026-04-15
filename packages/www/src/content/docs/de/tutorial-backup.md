@@ -4,7 +4,8 @@ description: "Automatische Backup-Zeitpläne konfigurieren, Speicheranbieter ver
 category: "Tutorials"
 order: 6
 language: de
-sourceHash: "f68d915af9daf0da"
+sourceHash: "3af2b8e2e6105e29"
+sourceCommit: "2223eabccb947ee9da79f1afcef075e163797d13"
 ---
 
 # So konfigurieren Sie Backups und Netzwerk mit Rediacc
@@ -35,14 +36,14 @@ Listet alle konfigurierten Speicheranbieter auf, die aus rclone-Konfigurationen 
 Richten Sie automatische Backups ein, die nach einem Cron-Zeitplan ausgeführt werden.
 
 ```bash
-rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name daily --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
 Sie können mehrere Ziele mit verschiedenen Zeitplänen konfigurieren:
 
 ```bash
-rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
-rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+rdc config backup-strategy set --name daily-s3 --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --name daily-azure --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 Dies plant tägliche Backups um 2 Uhr morgens zu `my-s3` und um 6 Uhr morgens zu `azure-backup`. Jedes Ziel erhält seinen eigenen Zeitplan. Die Zeitpläne werden in Ihrer Konfiguration gespeichert und können als systemd-Timer auf Maschinen bereitgestellt werden.
@@ -97,7 +98,7 @@ Zeigt öffentliche IPs, Domain, Zertifikats-E-Mail und alle registrierten Ports 
 Um automatische Backups zu stoppen, ohne die Konfiguration zu entfernen:
 
 ```bash
-rdc config backup-strategy set --disable
+rdc config backup-strategy set --name daily --disable
 rdc config backup-strategy show
 ```
 

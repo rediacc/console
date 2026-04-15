@@ -4,8 +4,8 @@ description: "Установите CLI Rediacc на Linux, macOS или Windows.
 category: "Guides"
 order: 1
 language: ru
-sourceHash: "f67060ce45e1dc96"
-sourceCommit: "58fce41a73c6abc64260fe5e71afd23d17f56cde"
+sourceHash: "2651baa400d94f8c"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # Установка
@@ -48,12 +48,24 @@ echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.c
 sudo apt-get update && sudo apt-get install rediacc-cli
 ```
 
-### DNF (Fedora / RHEL)
+### DNF (Fedora / совместимые с RHEL)
 
 ```bash
 sudo curl -fsSL https://releases.rediacc.com/rpm/stable/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
 sudo dnf install rediacc-cli
 ```
+
+Oracle Linux, AlmaLinux и Rocky Linux используют один и тот же поток DNF; любой совместимый с RHEL дистрибутив с `dnf` может подключить указанный репозиторий. Примечание: **Oracle Linux 10 является единственным дистрибутивом семейства RHEL, официально поддерживаемым в качестве целевой серверной платформы Rediacc** (см. [Требования](/en/docs/requirements)). В Rocky/Alma 10 отсутствует модуль ядра btrfs, необходимый для плоскости данных renet, хотя CLI `rdc` устанавливается на них без проблем.
+
+### Zypper (openSUSE Leap)
+
+```bash
+sudo zypper addrepo https://releases.rediacc.com/rpm/stable/rediacc.repo
+sudo zypper --gpg-auto-import-keys refresh
+sudo zypper install rediacc-cli
+```
+
+Протестировано на openSUSE Leap 16.0+.
 
 ### APK (Alpine Linux)
 

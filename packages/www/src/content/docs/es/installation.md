@@ -4,8 +4,8 @@ description: "Instale la CLI de Rediacc en Linux, macOS o Windows."
 category: "Guides"
 order: 1
 language: es
-sourceHash: "f67060ce45e1dc96"
-sourceCommit: "58fce41a73c6abc64260fe5e71afd23d17f56cde"
+sourceHash: "2651baa400d94f8c"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # Instalación
@@ -48,12 +48,24 @@ echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.c
 sudo apt-get update && sudo apt-get install rediacc-cli
 ```
 
-### DNF (Fedora / RHEL)
+### DNF (Fedora / compatible con RHEL)
 
 ```bash
 sudo curl -fsSL https://releases.rediacc.com/rpm/stable/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
 sudo dnf install rediacc-cli
 ```
+
+Oracle Linux, AlmaLinux y Rocky Linux utilizan el mismo flujo DNF; cualquier distribución compatible con RHEL que tenga `dnf` puede añadir el repositorio anterior. Nota: **Oracle Linux 10 es la única distribución de la familia RHEL oficialmente compatible como destino de servidor Rediacc** (consulte [Requisitos](/en/docs/requirements)). Rocky/Alma 10 carecen del módulo de kernel btrfs necesario para el plano de datos de renet, aunque la CLI `rdc` se instala en ellas correctamente.
+
+### Zypper (openSUSE Leap)
+
+```bash
+sudo zypper addrepo https://releases.rediacc.com/rpm/stable/rediacc.repo
+sudo zypper --gpg-auto-import-keys refresh
+sudo zypper install rediacc-cli
+```
+
+Probado en openSUSE Leap 16.0+.
 
 ### APK (Alpine Linux)
 

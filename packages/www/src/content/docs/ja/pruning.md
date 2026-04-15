@@ -4,7 +4,8 @@ description: "孤立したバックアップ、古いスナップショット、
 category: "Guides"
 order: 12
 language: ja
-sourceHash: "dfa21ca915423599"
+sourceHash: "9b28efe3bd8ca2dc"
+sourceCommit: "7874d5e2f0ca1262eb80ee7de79f20320d0ae2d7"
 ---
 
 # プルーニング
@@ -42,15 +43,29 @@ rdc storage prune --name my-s3 -m server-1 --grace-days 14
 
 ### フェーズ1：データストアのクリーンアップ（常に実行）
 
-空のマウントディレクトリ、古いロックファイル、古いBTRFSスナップショットを削除します。
+リポジトリが削除されたときや、マシンレベルのリファクタリングで命名規則が廃止されたときに残りうる、あらゆる種類のリソースを削除します。各カテゴリは独立してスキャンされ、クリーンアップは1回の冪等なパスで行われるため、prune を繰り返し実行しても安全で、クリーンなデータストアへ収束します。
+
+| カテゴリ | 削除対象 |
+|---------|-----------------|
+| 空のマウントディレクトリ | 裏付けとなるリポジトリイメージがない `mounts/<guid>/` ディレクトリ |
+| 孤立した immovable ディレクトリ | 裏付けとなるリポジトリイメージがない `immovable/<guid>/` ディレクトリ |
+| 古いロックファイル | 削除済みリポジトリの `repositories/.lock-<guid>` |
+| 古いバックアップスナップショット | 強制終了されたバックアップ実行によって残された `.snapshot-*` と `.backup-*` |
+| 孤立した VS Code サンドボックスディレクトリ | マシン上でもはやアクティブではないリポジトリの `.interim/sandbox/<name>` |
+| 孤立した iptables チェーン | 削除済みネットワークの `REDIACC_WILDCARD_<N>` および `DOCKER_ISOLATED_NET_<N>` チェーン |
+| 孤立した authorized_keys エントリ | `--guid` がもはやアクティブなマウントディレクトリに一致しない `sandbox-gateway <repo> --guid <uuid>` 行 |
+
+authorized_keys のスキャンは `/home/*/.ssh/authorized_keys` と `/root/.ssh/authorized_keys` を対象とします。エントリは、その `--guid` タグがライブのマウントディレクトリ GUID に一致する場合にのみ保持されます。したがって、マシン上に現在デプロイされているリポジトリは、その名前がディスク上のどこに現れていようとも常に保持されます。renet が `--guid` タグを付加し始める前に書かれた古いエントリは検証できないため、常に孤立として報告されます。
 
 ```bash
-# Dry-run
+# Dry-run, shows what would be removed (no changes applied)
 rdc machine prune --name server-1 --dry-run
 
 # Execute cleanup
 rdc machine prune --name server-1
 ```
+
+> **連鎖的なクリーンアップ。** 一部のカテゴリは、より前のカテゴリに依存しています。例えば、空のマウントディレクトリを削除すると、その裏付けとなるマウントがなくなったために新たに孤立したサンドボックスが現れることがあります。`rdc machine prune` をもう一度実行すると、その連鎖を捕捉してクリーンアップを完了できます。最後の dry-run は、やるべきことが何も残っていないときに `No orphaned resources found. Datastore is clean.` で終わります。
 
 ### フェーズ2：孤立したリポジトリイメージ（オプトイン）
 

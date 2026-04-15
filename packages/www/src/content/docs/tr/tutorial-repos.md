@@ -4,7 +4,8 @@ description: "Şifreli bir depo oluşturun, konteynerleştirilmiş bir uygulama 
 category: "Tutorials"
 order: 3
 language: tr
-sourceHash: "4d7072927542dfb3"
+sourceHash: "fecc09a324a1fa65"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # Rediacc ile Depoları Dağıtma ve Yönetme
@@ -14,7 +15,7 @@ Depolar, Rediacc'ın temel dağıtım birimidir, her biri kendi Docker daemon'ı
 ## Ön Koşullar
 
 - Yapılandırması başlatılmış `rdc` CLI'nin kurulu olması
-- Hazırlanmış bir makine (bkz. [Öğretici: Makine Kurulumu](/tr/docs/tutorial-setup))
+- Hazırlanmış bir makine (bkz. [Öğretici: Makine Kurulumu](/en/docs/tutorial-setup))
 - `Rediaccfile` ve `docker-compose.yml` içeren basit bir uygulama
 
 ## Etkileşimli Kayıt
@@ -49,14 +50,14 @@ Dağıtımdan önce, deponun depolamasının bağlı ve erişilebilir olduğunu 
 rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
-Bağlama dizini, uygulama dosyalarının bulunduğu yerdir, `Rediaccfile`, `docker-compose.yml` ve veri birimleri.
+Bağlama dizini, uygulama dosyalarının bulunduğu yerdir. `Rediaccfile`, `docker-compose.yml` ve veri birimleri burada yer alır.
 
 ### Adım 4: Servisleri başlatın
 
 Depoyu bağlayarak ve Docker servislerini başlatarak uygulamayı dağıtın.
 
 ```bash
-rdc repo up --name test-app -m server-1 --mount
+rdc repo up --name test-app -m server-1
 ```
 
 Bu, depoyu bağlar (zaten bağlı değilse), izole bir Docker daemon başlatır ve `up()` ile servisleri başlatır.
@@ -95,6 +96,8 @@ rdc repo delete --name test-app -m server-1  # Depoyu kalıcı olarak sil
 
 > **Uyarı:** `repo delete` geri alınamaz. Depodaki tüm veriler yok edilir. Gerekiyorsa önce bir yedek oluşturun.
 
+> **Not:** Silme işleminin ardından yapılandırma girişi korunur (depo başka makinelerde mevcut olabilir). Kaldırmak için `rdc config repository remove <name>` komutunu kullanın ya da kurtarma amacıyla kimlik bilgilerini korumak için `--archive-config` seçeneğini kullanın.
+
 ## Sorun Giderme
 
 **Depo oluşturma sırasında "Yetersiz disk alanı"**
@@ -110,6 +113,6 @@ LUKS parolası yapılandırmadan türetilir. Depoyu oluşturan aynı yapılandı
 
 Şifreli bir depo oluşturdunuz, bir uygulama dağıttınız, konteynerleri inceleydiniz ve temizlediniz. Dağıtımlarınızı izlemek için:
 
-- [Servisler](/tr/docs/services), Rediaccfile referansı, servis ağları, otomatik başlatma ve çoklu servis düzenleri
-- [Öğretici: İzleme ve Tanılama](/tr/docs/tutorial-monitoring), sağlık kontrolleri, konteyner inceleme ve tanılama
-- [Araçlar](/tr/docs/tools), terminal, dosya senkronizasyonu ve VS Code entegrasyonu
+- [Servisler](/en/docs/services), Rediaccfile referansı, servis ağları, otomatik başlatma ve çoklu servis düzenleri
+- [Öğretici: İzleme ve Tanılama](/en/docs/tutorial-monitoring), sağlık kontrolleri, konteyner inceleme ve tanılama
+- [Araçlar](/en/docs/tools), terminal, dosya senkronizasyonu ve VS Code entegrasyonu

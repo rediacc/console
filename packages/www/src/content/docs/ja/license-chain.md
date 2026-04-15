@@ -4,7 +4,7 @@ description: "改ざん検知可能なライセンス発行、オンプレミス
 category: "Guides"
 order: 8
 language: ja
-sourceHash: "5e6afbdf05c21b67"
+sourceHash: "326c4f4efbd60493"
 ---
 
 # ライセンスチェーンと委任

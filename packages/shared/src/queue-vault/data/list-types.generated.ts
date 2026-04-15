@@ -153,6 +153,21 @@ export interface RepositoryInfo {
   volume_status: string;
 }
 
+/** Per-repository license validation status */
+export interface LicenseStatusEntry {
+  grandGuid?: string;
+  hardExpiresAt?: string;
+  installed: boolean;
+  issuedAt?: string;
+  kind?: string;
+  machineId?: string;
+  message?: string;
+  refreshRecommendedAt?: string;
+  repositoryGuid: string;
+  runtimeValid: boolean;
+  status: string;
+}
+
 /** Network configuration */
 export interface NetworkInfo {
   default_gateway?: string;
@@ -185,21 +200,62 @@ export interface SystemInfo {
   disk: DiskInfo;
   hostname: string;
   kernel: string;
+  machine_id?: string;
   memory: DiskInfo;
   os_name: string;
+  scrub_status?: ScrubInfo;
   system_time: number;
   system_time_human: string;
   timezone: string;
   uptime: string;
 }
 
+/** BTRFS storage health for one repository */
+export interface RepositoryStorageHealth {
+  divergence_percent: number;
+  exclusive: number;
+  exclusive_human: string;
+  extents: number;
+  fragmentation: string;
+  guid: string;
+  name: string;
+  shared: number;
+  shared_human: string;
+  size: number;
+  size_human: string;
+}
+
+/** BTRFS storage health summary across all repositories */
+export interface StorageHealthResult {
+  repositories: RepositoryStorageHealth[];
+  savings_bytes: number;
+  savings_human: string;
+  scan_duration_ms: number;
+  total_exclusive: number;
+  total_repos: number;
+  total_shared: number;
+  total_size: number;
+}
+
+/** Last BTRFS scrub result (ok, errors_found, failed, never_run, overdue) */
+export interface ScrubInfo {
+  duration_seconds: number;
+  last_run: string;
+  last_run_human: string;
+  status: string;
+  total_errors: number;
+  uncorrectable: number;
+}
+
 /** Complete machine status from 'renet list all --json' */
 export interface ListResult {
   block_devices: BlockDevice[];
   containers?: ContainersResult;
+  license_statuses?: LicenseStatusEntry[];
   network?: NetworkInfo;
   repositories: RepositoryInfo[];
   services?: ServicesResult;
+  storage_health?: StorageHealthResult;
   system?: SystemInfo;
   system_containers?: ContainersResult;
 }
@@ -275,6 +331,13 @@ export function getBlockDevices(result: ListResult): BlockDevice[] {
  */
 export function getNetworkInterfaces(result: ListResult): NetworkInterface[] {
   return result.network?.interfaces ?? [];
+}
+
+/**
+ * Safely extract license statuses from ListResult.
+ */
+export function getLicenseStatuses(result: ListResult): LicenseStatusEntry[] {
+  return result.license_statuses ?? [];
 }
 
 /**

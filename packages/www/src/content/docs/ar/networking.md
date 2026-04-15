@@ -6,7 +6,8 @@ description: >-
 category: Guides
 order: 6
 language: ar
-sourceHash: "c9d086d519625aa8"
+sourceHash: "536db0c93646cad6"
+sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
 ---
 
 # الشبكات
@@ -15,12 +16,20 @@ sourceHash: "c9d086d519625aa8"
 
 لمعرفة كيف تحصل الخدمات على عناوين IP الاسترجاعية ونظام الفتحات `.rediacc.json`، راجع [الخدمات](/ar/docs/services#شبكات-الخدمات-rediaccjson).
 
+## عزل الشبكة
+
+يتم عزل كل مستودع تلقائياً على مستوى النواة باستخدام خطافات الشبكة. يتطلب ذلك Linux kernel 6.1 أو أحدث. لا يلزم أي تكوين.
+
+- **إعادة كتابة الربط التلقائية**: يمكن للخدمات الربط بـ `0.0.0.0` أو `127.0.0.1` كالمعتاد. تعيد النواة كتابة العنوان بشفافية إلى عنوان IP الاسترجاعي المُعيَّن للخدمة. لا حاجة للربط الصريح بـ `${SERVICE_IP}`.
+- **حجب الاتصالات بين المستودعات**: إذا حاولت خدمة الاتصال بعنوان IP استرجاعي خارج نطاق `/26` الخاص بمستودعها، تقوم النواة بحجبه. لا يمكن لعملية في المستودع (أ) الوصول إلى خدمات في المستودع (ب).
+- **لا تغييرات على التطبيق مطلوبة**: تستخدم الخدمات `0.0.0.0` أو `localhost` للربط، وتضمن النواة استماعها فقط على عنوان IP الاسترجاعي الصحيح. العزل شفاف تماماً.
+
 ## كيف يعمل
 
 يستخدم Rediacc نظام وكيل من مكوّنين لتوجيه حركة المرور الخارجية إلى الحاويات:
 
-1. **خادم التوجيه** -- خدمة systemd تكتشف الحاويات العاملة عبر جميع Docker daemons الخاصة بالمستودعات. يفحص علامات الحاويات ويُنشئ تكوين التوجيه المقدَّم كنقطة نهاية YAML.
-2. **Traefik** -- وكيل عكسي يستعلم خادم التوجيه كل 5 ثوانٍ ويُطبّق المسارات المكتشفة. يتعامل مع توجيه HTTP/HTTPS، وإنهاء TLS، وتوجيه TCP/UDP.
+1. **خادم التوجيه**، خدمة systemd تكتشف الحاويات العاملة عبر جميع Docker daemons الخاصة بالمستودعات. يفحص علامات الحاويات ويُنشئ تكوين التوجيه المقدَّم كنقطة نهاية YAML.
+2. **Traefik**، وكيل عكسي يستعلم خادم التوجيه كل 5 ثوانٍ ويُطبّق المسارات المكتشفة. يتعامل مع توجيه HTTP/HTTPS، وإنهاء TLS، وتوجيه TCP/UDP.
 
 يبدو التدفق كالتالي:
 
@@ -34,9 +43,9 @@ Internet → Traefik (ports 80/443/TCP/UDP)
            Containers (bound to 127.x.x.x loopback IPs)
 ```
 
-عند إضافة العلامات الصحيحة إلى حاوية وتشغيلها باستخدام `renet compose`، تصبح قابلة للتوجيه تلقائياً -- دون الحاجة لتكوين وكيل يدوي.
+عند إضافة العلامات الصحيحة إلى حاوية وتشغيلها باستخدام `renet compose`، تصبح قابلة للتوجيه تلقائياً، دون الحاجة لتكوين وكيل يدوي.
 
-> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime, Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+> يُحافظ على مزامنة ملف خادم التوجيه الثنائي مع إصدار CLI الخاص بك. عند تحديث CLI لملف renet الثنائي على جهاز، يُعاد تشغيل خادم التوجيه تلقائياً (حوالي 1-2 ثانية). لا يتسبب ذلك في أي توقف، حيث يواصل Traefik خدمة حركة المرور بآخر تكوين معروف له أثناء إعادة التشغيل ويلتقط التكوين الجديد في الاستعلام التالي. اتصالات العملاء الحالية لا تتأثر. حاويات تطبيقك لا تُمس.
 
 ## علامات Docker
 
@@ -51,9 +60,9 @@ Internet → Traefik (ports 80/443/TCP/UDP)
 | `rediacc.service_name` | هوية الخدمة | `myapp` |
 | `rediacc.service_ip` | عنوان IP الاسترجاعي المُعيَّن | `127.0.11.2` |
 | `rediacc.network_id` | معرّف Docker daemon الخاص بالمستودع | `2816` |
-| `rediacc.repo_name` | Repository name | `marketing` |
-| `rediacc.tcp_ports` | TCP ports the service listens on | `8080,8443` |
-| `rediacc.udp_ports` | UDP ports the service listens on | `53` |
+| `rediacc.repo_name` | اسم المستودع | `marketing` |
+| `rediacc.tcp_ports` | منافذ TCP التي تستمع عليها الخدمة | `8080,8443` |
+| `rediacc.udp_ports` | منافذ UDP التي تستمع عليها الخدمة | `53` |
 
 عندما تحتوي حاوية على علامات `rediacc.*` فقط (بدون `traefik.enable=true`)، يُنشئ خادم التوجيه **مساراً تلقائياً** باستخدام اسم المستودع والنطاق الفرعي للجهاز:
 
@@ -67,7 +76,19 @@ Internet → Traefik (ports 80/443/TCP/UDP)
 myapp.marketing.server-1.example.com
 ```
 
-لكل مستودع مستوى نطاق فرعي خاص به، لذا لا تتعارض الفروع والمستودعات المختلفة أبداً. عند إنشاء نسخة من مستودع (مثل `marketing-staging`)، تحصل النسخة تلقائياً على مسارات مميزة. لخدمات ذات النطاقات المخصصة، استخدم علامات المستوى 2 أو علامة `rediacc.domain`.
+بالنسبة للفروع، يُدمج اسم الخدمة مع الكلمة المحجوزة `fork` والوسم:
+
+```
+{service}-fork-{tag}.{repoName}.{machineName}.{baseDomain}
+```
+
+على سبيل المثال، فرع `marketing` الموسوم بـ `staging` يحصل على:
+
+```
+myapp-fork-staging.marketing.server-1.example.com
+```
+
+يقع كل عنوان URL للفرع تحت النطاق الفرعي للمستودع الأصل ويُغطى بشهادة البدل الموجودة، لذا لا تحتاج لشهادة جديدة. الفاصل `-fork-` يمنع التعارض مع أي أسماء خدمات حقيقية في المستودع الأصلي. للخدمات ذات النطاقات المخصصة، استخدم علامات المستوى 2 أو علامة `rediacc.domain`.
 
 #### نطاق مخصص عبر `rediacc.domain`
 
@@ -107,7 +128,7 @@ labels:
 
 ### المتطلبات المسبقة
 
-1. البنية التحتية مُكوَّنة على الجهاز ([إعداد الجهاز -- تكوين البنية التحتية](/ar/docs/setup#تكوين-البنية-التحتية)):
+1. البنية التحتية مُكوَّنة على الجهاز ([إعداد الجهاز، تكوين البنية التحتية](/ar/docs/setup#تكوين-البنية-التحتية)):
 
    ```bash
    # بيانات اعتماد مشتركة (مرة واحدة لكل إعداد، تُطبّق على جميع الأجهزة)
@@ -134,7 +155,7 @@ services:
   myapp:
     image: myapp:latest
     environment:
-      - LISTEN_ADDR=${MYAPP_IP}:8080
+      - LISTEN_ADDR=0.0.0.0:8080
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.myapp.rule=Host(`app.example.com`)"
@@ -144,19 +165,18 @@ services:
 
   database:
     image: postgres:17
-    command: ["-c", "listen_addresses=${DATABASE_IP}"]
     # بدون علامات traefik, قاعدة البيانات داخلية فقط
 ```
 
 | العلامة | الغرض |
 |---------|-------|
 | `traefik.enable=true` | تفعيل توجيه Traefik المخصص لهذه الحاوية |
-| `traefik.http.routers.{name}.rule` | قاعدة التوجيه -- عادةً `Host(\`domain\`)` |
+| `traefik.http.routers.{name}.rule` | قاعدة التوجيه، عادةً `Host(\`domain\`)` |
 | `traefik.http.routers.{name}.entrypoints` | المنافذ المُستمع عليها: `websecure` (HTTPS IPv4)، `websecure-v6` (HTTPS IPv6) |
-| `traefik.http.routers.{name}.tls.certresolver` | محلل الشهادات -- استخدم `letsencrypt` لشهادات Let's Encrypt التلقائية |
+| `traefik.http.routers.{name}.tls.certresolver` | محلل الشهادات، استخدم `letsencrypt` لشهادات Let's Encrypt التلقائية |
 | `traefik.http.services.{name}.loadbalancer.server.port` | المنفذ الذي يستمع عليه تطبيقك داخل الحاوية |
 
-`{name}` في العلامات هو معرّف عشوائي -- يجب فقط أن يكون متسقاً عبر علامات الموجّه/الخدمة/الوسيط المرتبطة.
+`{name}` في العلامات هو معرّف عشوائي، يجب فقط أن يكون متسقاً عبر علامات الموجّه/الخدمة/الوسيط المرتبطة.
 
 > **ملاحظة:** علامات `rediacc.*` (`rediacc.service_name`، `rediacc.service_ip`، `rediacc.network_id`) تُضاف تلقائياً بواسطة `renet compose`. لا تحتاج لإضافتها إلى ملف compose الخاص بك.
 
@@ -170,11 +190,39 @@ rdc config infra set -m server-1 \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-تستخدم المسارات التلقائية **شهادات بدل** على مستوى النطاق الفرعي للمستودع (`*.marketing.server-1.example.com`) بدلاً من شهادات لكل خدمة. هذا يتجنب حدود معدل Let's Encrypt ويُسرّع بدء التشغيل. مسارات النطاق المخصص تستخدم شهادات بدل على مستوى الجهاز (`*.server-1.example.com`).
+تستخدم المسارات التلقائية **شهادات بدل** على مستوى النطاق الفرعي للمستودع (`*.marketing.server-1.example.com`) بدلاً من شهادات لكل خدمة. تُوفَّر الشهادة تلقائياً بواسطة Traefik عند أول `repo up`، لا خطوة يدوية مطلوبة. تُعيد الفروع استخدام شهادة البدل الموجودة للمستودع الأصل، لذا لا تُطلق طلب شهادة جديدة. مسارات النطاق المخصص تستخدم شهادات بدل على مستوى الجهاز (`*.server-1.example.com`).
+
+> **يتطلب بيانات اعتماد Cloudflare.** تستخدم شهادات البدل تحدي DNS-01. بدون `--cf-dns-token` (واختياريًا `--cert-email`)، لا يستطيع Traefik إكمال التحدي ولن يعمل HTTPS. يبقى HTTP وظيفياً. كوِّن بيانات الاعتماد باستخدام `rdc config infra set` قبل أول نشر.
 
 لمسارات المستوى 2 مع `traefik.http.routers.{name}.tls.certresolver=letsencrypt`، يتم حقن أسماء نطاقات البدل SAN تلقائياً بناءً على اسم المضيف للمسار.
 
 يحتاج رمز Cloudflare DNS API إلى إذن `Zone:DNS:Edit` للنطاقات التي تريد تأمينها.
+
+### دورة حياة شهادة TLS
+
+المسار الكامل الذي تسلكه شهادة Let's Encrypt من الإصدار حتى حاويات كل مستودع:
+
+1. **الإصدار على المضيف.** حاوية Traefik على مستوى الجهاز (`rediacc-proxy`، منشورة في `/opt/rediacc/proxy/`) تمتلك تجديد ACME. تُخزّن كل الحالة في `/opt/rediacc/proxy/letsencrypt/acme.json` على المضيف. يُطلق التجديد تلقائياً قبل انتهاء الصلاحية بحوالي 30 يوماً، لا يلزم أي إجراء من المشغّل طالما تم تكوين `--cf-dns-token`.
+
+2. **التفريغ لكل مستودع (اختياري).** الخدمات التي تحتاج إلى ملفات شهادات داخل حاويتها الخاصة (مثل خادم بريد يقرأ `.pem` مباشرة) تنشر حاوية `traefik-certs-dumper` صغيرة بجانبها. يقوم المفرِّغ بتثبيت `/opt/rediacc/proxy/letsencrypt` للقراءة فقط ويكتب الشهادة والمفتاح المُستخرجَين في مجلد بيانات المستودع كـ `cert.pem` / `key.pem`. لهذا أن يعمل، يجب أن يكون Docker daemon الخاص بالمستودع قد أُضيف `/opt/rediacc/proxy` إلى قائمة السماح بمساحة الاسم. هذا مُضمَّن افتراضياً.
+
+3. **ذاكرة التخزين المؤقت من جانب العميل (`rediacc.json`).** يُخزّن CLI نسخة مضغوطة من `acme.json` تحت `acmeCertCache` في ملف تكوينك، مفهرسة بـ `baseDomain`. يتيح ذلك لأجهزة متعددة مشاركة الشهادات (عبر `rdc config cert-cache push <machine>`) ويعمل كسجل غير متصل بالشبكة.
+
+**محفزات المزامنة لذاكرة التخزين المؤقت للعميل:**
+
+- تلقائياً بعد `rdc repo up`، لكن فقط إذا كانت ذاكرة التخزين المؤقت المحلية لـ `baseDomain` الجهاز أقدم من 6 ساعات. تُترك ذاكرات التخزين المؤقت الحديثة كما هي حتى لا تُرهق SSH بعمليات النشر المتتالية.
+- عند الطلب: `rdc config cert-cache pull -m <machine>` (سحب قسري) أو `rdc machine query --name <machine> --sync-certs` (سحب كأثر جانبي لاستعلام الحالة).
+- عند `rdc config infra push`، تُدفع ذاكرة التخزين المؤقت إلى الجهاز (الشهادات المحلية ذات انتهاء الصلاحية الأطول تفوز على الشهادات البعيدة).
+
+**صيانة ذاكرة التخزين المؤقت:**
+
+- إدخالات المسارات التلقائية القديمة (النطاقات القديمة الموسومة بمعرف الشبكة مثل `service-3200.rediacc.io`) تُحذف خلال كل عملية سحب.
+- الشهادات التي انتهت صلاحيتها `notAfter` بأكثر من 7 أيام تُزال تماماً. إنها خاملة وتُضخّم ذاكرة التخزين المؤقت فقط.
+- `rdc config cert-cache clear` يمسح كل شيء؛ `rdc config cert-cache status` يُظهر السجل.
+
+**استكشاف الأخطاء:** إذا انهار `traefik-certs-dumper` مع `/traefik/acme.json: no such file or directory`، فإن daemon المستودع لا يستطيع رؤية مخزن letsencrypt الخاص بالمضيف. تحقق من (أ) وجود `/opt/rediacc/proxy/letsencrypt/acme.json` على المضيف (هذه مسؤولية `rediacc-proxy` على مستوى المضيف)، و(ب) بدء تشغيل daemon المستودع بإصدار renet حديث بما يكفي يُدرج `/opt/rediacc/proxy` في قائمة السماح. أعد نشر المستودع باستخدام `rdc repo up` بعد ترقية renet للتطبيق.
+
+> **تجريبي:** شُحنت وتيرة المزامنة التلقائية والحذف القائم على انتهاء الصلاحية في renet 0.9+. إصدارات CLI/renet الأقدم تستخدم مزامنة يدوية بحتة عبر `rdc config cert-cache pull`.
 
 ## توجيه منافذ TCP/UDP
 
@@ -193,26 +241,6 @@ rdc config infra push -m server-1
 ```
 
 ينشئ هذا نقاط دخول Traefik باسم `tcp-{port}` و`udp-{port}`.
-
-### Plain TCP Example (Database)
-
-To expose a database externally without TLS passthrough (Traefik forwards raw TCP):
-
-```yaml
-services:
-  postgres:
-    image: postgres:17
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
-    labels:
-      - "traefik.enable=true"
-      - "traefik.tcp.routers.mydb.entrypoints=tcp-5432"
-      - "traefik.tcp.routers.mydb.rule=HostSNI(`*`)"
-      - "traefik.tcp.services.mydb.loadbalancer.server.port=5432"
-```
-
-Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
-
-> **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
 > بعد إضافة أو إزالة المنافذ، قم دائماً بتشغيل `rdc config infra push` لتحديث تكوين الوكيل.
 
@@ -243,12 +271,31 @@ services:
 
 المفاهيم الأساسية:
 - **`HostSNI(\`*\`)`** يطابق أي اسم مضيف (للبروتوكولات التي لا ترسل SNI، مثل SMTP العادي)
-- **`tls.passthrough=true`** يعني أن Traefik يُمرر اتصال TLS الخام دون فك التشفير -- التطبيق يتعامل مع TLS بنفسه
+- **`tls.passthrough=true`** يعني أن Traefik يُمرر اتصال TLS الخام دون فك التشفير، التطبيق يتعامل مع TLS بنفسه
 - أسماء نقاط الدخول تتبع الاصطلاح `tcp-{port}` أو `udp-{port}`
+
+### مثال TCP بسيط (قاعدة البيانات)
+
+لكشف قاعدة بيانات خارجياً بدون TLS passthrough (Traefik يُمرر TCP الخام):
+
+```yaml
+services:
+  postgres:
+    image: postgres:17
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.mydb.entrypoints=tcp-5432"
+      - "traefik.tcp.routers.mydb.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.mydb.loadbalancer.server.port=5432"
+```
+
+المنفذ 5432 مُكوَّن مسبقاً (انظر أدناه)، لذا لا يلزم إعداد `--tcp-ports`.
+
+> **ملاحظة أمنية:** كشف قاعدة بيانات للإنترنت يُشكّل خطراً. استخدم هذا فقط عندما يحتاج العملاء البعيدون إلى وصول مباشر. في معظم الإعدادات، احتفظ بقاعدة البيانات داخلية واتصل عبر تطبيقك.
 
 ### المنافذ المُكوَّنة مسبقاً
 
-المنافذ TCP/UDP التالية لها نقاط دخول افتراضياً (لا حاجة لإضافتها عبر `--tcp-ports`). يتم إنشاء نقاط الدخول فقط لعائلات العناوين المُكوَّنة, نقاط دخول IPv4 تتطلب `--public-ipv4`، ونقاط دخول IPv6 تتطلب `--public-ipv6`:
+المنافذ TCP/UDP التالية لها نقاط دخول افتراضياً (لا حاجة لإضافتها عبر `--tcp-ports`). يتم إنشاء نقاط الدخول فقط لعائلات العناوين المُكوَّنة، نقاط دخول IPv4 تتطلب `--public-ipv4`، ونقاط دخول IPv6 تتطلب `--public-ipv6`:
 
 | المنفذ | البروتوكول | الاستخدام الشائع |
 |--------|-----------|-----------------|
@@ -262,7 +309,7 @@ services:
 | 5672 | TCP | RabbitMQ |
 | 9092 | TCP | Kafka |
 | 53 | UDP | DNS |
-| 10000–10010 | TCP | النطاق الديناميكي (تخصيص تلقائي) |
+| 10000-10010 | TCP | النطاق الديناميكي (تخصيص تلقائي) |
 
 ## تكوين DNS
 
@@ -278,7 +325,7 @@ services:
 
 سجلات مستوى الجهاز تُنشأ بواسطة `push-infra` وتغطي مسارات النطاق المخصص (`rediacc.domain`). سجلات البدل لكل مستودع تُنشأ تلقائياً بواسطة `repo up` وتغطي المسارات التلقائية لذلك المستودع.
 
-هذه العملية متساوية القوة, يتم تحديث السجلات الموجودة إذا تغير عنوان IP، وتُترك دون تغيير إذا كانت صحيحة بالفعل.
+هذه العملية متساوية القوة، يتم تحديث السجلات الموجودة إذا تغير عنوان IP، وتُترك دون تغيير إذا كانت صحيحة بالفعل.
 
 يجب إنشاء سجل البدل للنطاق الأساسي (`*.example.com`) يدوياً إذا كنت تستخدم تسميات نطاق مخصصة مثل `rediacc.domain=erp`.
 
@@ -369,10 +416,10 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 |---------|-------|------|
 | الخدمة غير موجودة في المسارات | الحاوية لا تعمل أو العلامات مفقودة | تحقق بـ `docker ps` على daemon المستودع؛ تحقق من العلامات |
 | الشهادة لم تُصدر | DNS لا يشير إلى الخادم، أو رمز Cloudflare غير صالح | تحقق من حل DNS؛ تحقق من أذونات رمز Cloudflare API |
-| 502 Bad Gateway | التطبيق لا يستمع على المنفذ المُعلن | تحقق من أن التطبيق مرتبط بـ `{SERVICE}_IP` وأن المنفذ يتطابق مع `loadbalancer.server.port` |
+| 502 Bad Gateway | التطبيق لا يستمع على المنفذ المُعلن | تحقق من أن التطبيق يعمل وأن المنفذ يتطابق مع `loadbalancer.server.port` |
 | منفذ TCP غير قابل للوصول | المنفذ غير مسجل في البنية التحتية | شغّل `rdc config infra set --tcp-ports ...` و`push-infra` |
-| Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
-| STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
+| خادم التوجيه يعمل بإصدار قديم | تم تحديث الملف الثنائي لكن الخدمة لم تُعد تشغيلها | يحدث تلقائياً عند التوفير؛ يدوياً: `sudo systemctl restart rediacc-router` |
+| ترحيل STUN/TURN غير قابل للوصول | عناوين الترحيل مُخزنة عند بدء التشغيل | أعد إنشاء الخدمة بعد تغييرات DNS أو IP حتى تلتقط تكوين الشبكة الجديد |
 
 ## مثال كامل
 
@@ -385,8 +432,8 @@ services:
   webapp:
     image: myregistry/webapp:latest
     environment:
-      DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
-      LISTEN_ADDR: ${WEBAPP_IP}:3000
+      DATABASE_URL: postgresql://app:changeme@postgres:5432/webapp
+      LISTEN_ADDR: 0.0.0.0:3000
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.webapp.rule=Host(`app.example.com`)"
@@ -404,7 +451,6 @@ services:
       POSTGRES_DB: webapp
       POSTGRES_USER: app
       POSTGRES_PASSWORD: changeme
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     # بدون علامات traefik, داخلي فقط
@@ -436,7 +482,7 @@ app.example.com   A   203.0.113.50
 ### النشر
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 في غضون ثوانٍ قليلة، يكتشف خادم التوجيه الحاوية، ويلتقط Traefik المسار، ويطلب شهادة TLS، ويصبح `https://app.example.com` مباشراً.

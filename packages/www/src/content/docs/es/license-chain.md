@@ -4,7 +4,7 @@ description: "Emisión de licencias con evidencia de manipulación, firma delega
 category: "Guides"
 order: 8
 language: es
-sourceHash: "5e6afbdf05c21b67"
+sourceHash: "326c4f4efbd60493"
 ---
 
 # Cadena de Licencias y Delegación

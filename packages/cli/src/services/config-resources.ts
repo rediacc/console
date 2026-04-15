@@ -20,7 +20,38 @@ import type {
   StorageConfig,
 } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
+import { parseRepoRef } from '../utils/config-schema.js';
 import { ConfigServiceBase } from './config-base.js';
+
+// Find the initial network ID when the forward counter is missing or stale.
+// Avoids `Math.max(...usedIds)` because JS engines cap function arguments
+// around 65536 while the network ID space allows ~261000 IDs — a long-lived
+// shared config can hit that cap before the MAX_NETWORK_ID ceiling.
+function pickInitialNetworkId(usedIds: Set<number>): number {
+  if (usedIds.size === 0) return MIN_NETWORK_ID;
+  let maxId = -1;
+  for (const id of usedIds) {
+    if (id > maxId) maxId = id;
+  }
+  return maxId + NETWORK_ID_INCREMENT;
+}
+
+// Linear scan for the first free slot when the forward counter has walked
+// past the allowed ceiling. Thrown error is caught by the outer allocation
+// path and surfaced to the user.
+function findFreeNetworkIdSlot(usedIds: Set<number>, maxNetworkId: number): number {
+  let candidate = MIN_NETWORK_ID;
+  while (usedIds.has(candidate) && candidate <= maxNetworkId) {
+    candidate += NETWORK_ID_INCREMENT;
+  }
+  if (candidate > maxNetworkId) {
+    const totalSlots = Math.floor((maxNetworkId - MIN_NETWORK_ID) / NETWORK_ID_INCREMENT + 1);
+    throw new Error(
+      `Network ID space exhausted: all ${totalSlots} slots are in use. Delete unused repositories to free slots.`
+    );
+  }
+  return candidate;
+}
 
 class ConfigService extends ConfigServiceBase {
   /**
@@ -238,7 +269,11 @@ class ConfigService extends ConfigServiceBase {
     const map: Record<string, string> = {};
     for (const [repoName, repoConfig] of Object.entries(repos)) {
       const tag = repoConfig.tag ?? DEFAULTS.REPOSITORY.TAG;
-      map[repoConfig.repositoryGuid] = `${repoName}:${tag}`;
+      // Config keys may be bare ("erpnext") or composite ("demo-stackoverflow:latest").
+      // Extract the bare base name so we always produce a canonical "name:tag"
+      // without double-tagging composite keys.
+      const { name: baseName } = parseRepoRef(repoName);
+      map[repoConfig.repositoryGuid] = `${baseName}:${tag}`;
     }
     return map;
   }
@@ -402,50 +437,69 @@ class ConfigService extends ConfigServiceBase {
   // Backup Strategy
   // ============================================================================
 
-  async setBackupStrategy(config: Partial<BackupStrategyConfig>): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    const current = await this.requireSelfHosted(name);
-    const backupStrategy: BackupStrategyConfig = {
-      destinations: [],
-      ...current.backupStrategy,
-      ...config,
-    };
-    await this.update(name, { backupStrategy });
-  }
-
-  async getBackupStrategy(): Promise<BackupStrategyConfig | undefined> {
+  async getBackupStrategy(strategyName: string): Promise<BackupStrategyConfig | undefined> {
     const config = await this.requireSelfHosted();
-    return config.backupStrategy;
+    return config.backupStrategies?.[strategyName];
   }
 
-  async addBackupDestination(dest: BackupStrategyDestination): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    const current = await this.requireSelfHosted(name);
-    const backupStrategy: BackupStrategyConfig = {
-      destinations: [],
-      ...current.backupStrategy,
-    };
-    const idx = backupStrategy.destinations.findIndex((d) => d.storage === dest.storage);
-    if (idx >= 0) {
-      backupStrategy.destinations[idx] = { ...backupStrategy.destinations[idx], ...dest };
-    } else {
-      backupStrategy.destinations.push(dest);
+  async listBackupStrategies(): Promise<Record<string, BackupStrategyConfig>> {
+    const config = await this.requireSelfHosted();
+    return config.backupStrategies ?? {};
+  }
+
+  async setBackupStrategy(
+    strategyName: string,
+    update: Partial<BackupStrategyConfig>
+  ): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    const current = await this.requireSelfHosted(configName);
+    const strategies = { ...current.backupStrategies };
+    const existing = strategies[strategyName] ?? { destinations: [], schedule: '' };
+    strategies[strategyName] = { ...existing, ...update };
+    await this.update(configName, { backupStrategies: strategies });
+  }
+
+  async removeBackupStrategy(strategyName: string): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    const current = await this.requireSelfHosted(configName);
+    const strategies = { ...current.backupStrategies };
+    delete strategies[strategyName];
+    await this.update(configName, { backupStrategies: strategies });
+  }
+
+  async addBackupDestination(strategyName: string, dest: BackupStrategyDestination): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    const current = await this.requireSelfHosted(configName);
+    const strategies = { ...current.backupStrategies };
+    const strategy = strategies[strategyName] as (typeof strategies)[string] | undefined;
+    if (!strategy) {
+      throw new Error(
+        `Backup strategy "${strategyName}" not found. Create it first with: rdc config backup-strategy set --name ${strategyName} --cron "...""`
+      );
     }
-    backupStrategy.destinations.sort((a, b) => a.storage.localeCompare(b.storage));
-    await this.update(name, { backupStrategy });
+    const destinations = [...strategy.destinations];
+    const idx = destinations.findIndex((d) => d.name === dest.name);
+    if (idx >= 0) {
+      destinations[idx] = { ...destinations[idx], ...dest };
+    } else {
+      destinations.push(dest);
+    }
+    destinations.sort((a, b) => a.name.localeCompare(b.name));
+    strategies[strategyName] = { ...strategy, destinations };
+    await this.update(configName, { backupStrategies: strategies });
   }
 
-  async removeBackupDestination(storageName: string): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    const current = await this.requireSelfHosted(name);
-    const backupStrategy: BackupStrategyConfig = {
-      destinations: [],
-      ...current.backupStrategy,
+  async removeBackupDestination(strategyName: string, destName: string): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    const current = await this.requireSelfHosted(configName);
+    const strategies = { ...current.backupStrategies };
+    const strategy = strategies[strategyName] as (typeof strategies)[string] | undefined;
+    if (!strategy) return;
+    strategies[strategyName] = {
+      ...strategy,
+      destinations: strategy.destinations.filter((d) => d.name !== destName),
     };
-    backupStrategy.destinations = backupStrategy.destinations.filter(
-      (d) => d.storage !== storageName
-    );
-    await this.update(name, { backupStrategy });
+    await this.update(configName, { backupStrategies: strategies });
   }
 
   // ============================================================================
@@ -486,12 +540,12 @@ class ConfigService extends ConfigServiceBase {
   /**
    * Scan all repositories in a config and return an array of used network IDs.
    */
-  private scanUsedNetworkIds(config: RdcConfig): number[] {
-    const usedIds: number[] = [];
+  private scanUsedNetworkIds(config: RdcConfig): Set<number> {
+    const usedIds = new Set<number>();
     if (config.repositories) {
       for (const repo of Object.values(config.repositories)) {
         if (repo.networkId !== undefined && repo.networkId > 0) {
-          usedIds.push(repo.networkId);
+          usedIds.add(repo.networkId);
         }
       }
     }
@@ -499,15 +553,25 @@ class ConfigService extends ConfigServiceBase {
   }
 
   async allocateNetworkId(): Promise<number> {
+    // Network ID space: 2816 to ~16,777,152, step 64 → ~261,944 possible IDs.
+    // The ID encodes a loopback /26 subnet: 127.{id/65536}.{(id/256)%256}.{id%256}/26.
+    // Max valid ID where the 2nd octet stays ≤ 255: 255 * 65536 = 16,711,680 + headroom.
+    const MAX_NETWORK_ID = 16_711_680; // 255 * 65536 — second octet = 255
+
     const name = this.getEffectiveConfigName();
     let allocated = 0;
     await configFileStorage.update(name, (config) => {
+      const usedIds = this.scanUsedNetworkIds(config);
       let nextId = config.nextNetworkId;
 
       if (nextId === undefined || nextId < MIN_NETWORK_ID) {
-        const usedIds = this.scanUsedNetworkIds(config);
-        nextId =
-          usedIds.length === 0 ? MIN_NETWORK_ID : Math.max(...usedIds) + NETWORK_ID_INCREMENT;
+        nextId = pickInitialNetworkId(usedIds);
+      }
+
+      // If the forward counter is approaching the limit, scan for freed gaps.
+      // This handles long-running systems where many repos have been created and deleted.
+      if (nextId > MAX_NETWORK_ID) {
+        nextId = findFreeNetworkIdSlot(usedIds, MAX_NETWORK_ID);
       }
 
       allocated = nextId;

@@ -4,8 +4,8 @@ description: "قم بتثبيت واجهة سطر أوامر Rediacc على Linu
 category: "Guides"
 order: 1
 language: ar
-sourceHash: "f67060ce45e1dc96"
-sourceCommit: "58fce41a73c6abc64260fe5e71afd23d17f56cde"
+sourceHash: "2651baa400d94f8c"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # التثبيت
@@ -48,12 +48,24 @@ echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.c
 sudo apt-get update && sudo apt-get install rediacc-cli
 ```
 
-### DNF (Fedora / RHEL)
+### DNF (Fedora / متوافق مع RHEL)
 
 ```bash
 sudo curl -fsSL https://releases.rediacc.com/rpm/stable/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
 sudo dnf install rediacc-cli
 ```
+
+تستخدم Oracle Linux وAlmaLinux وRocky Linux نفس مسار DNF؛ يمكن لأي توزيعة متوافقة مع RHEL تحتوي على `dnf` سحب المستودع أعلاه. ملاحظة: **Oracle Linux 10 هي التوزيعة الوحيدة من عائلة RHEL المدعومة رسميًا كهدف خادم Rediacc** (انظر [المتطلبات](/en/docs/requirements)). تفتقر Rocky/Alma 10 إلى وحدة نواة btrfs اللازمة لمستوى بيانات renet، وإن كان `rdc` CLI يُثبَّت عليها بشكل سليم.
+
+### Zypper (openSUSE Leap)
+
+```bash
+sudo zypper addrepo https://releases.rediacc.com/rpm/stable/rediacc.repo
+sudo zypper --gpg-auto-import-keys refresh
+sudo zypper install rediacc-cli
+```
+
+تم الاختبار على openSUSE Leap 16.0 وما فوق.
 
 ### APK (Alpine Linux)
 

@@ -6,7 +6,8 @@ description: >-
 category: Guides
 order: 6
 language: tr
-sourceHash: "c9d086d519625aa8"
+sourceHash: "536db0c93646cad6"
+sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
 ---
 
 # Ağ
@@ -14,6 +15,14 @@ sourceHash: "c9d086d519625aa8"
 Bu sayfa, izole Docker daemon'larında çalışan servislerin internetten nasıl erişilebilir hale geldiğini açıklar. Ters proxy sistemi, yönlendirme için Docker etiketleri, TLS sertifikaları, DNS ve TCP/UDP port yönlendirmeyi kapsar.
 
 Servislerin geri döngü IP'lerini nasıl aldığı ve `.rediacc.json` slot sistemi hakkında bilgi için [Servisler](/tr/docs/services#service-networking-rediaccjson) bölümüne bakın.
+
+## Ağ Yalıtımı
+
+Her depo, ağ kancaları kullanılarak çekirdek düzeyinde otomatik olarak yalıtılır. Bu, Linux kernel 6.1 veya üzerini gerektirir. Herhangi bir yapılandırma gerekmez.
+
+- **Otomatik bind yeniden yazma**: Servisler her zamanki gibi `0.0.0.0` veya `127.0.0.1`'e bağlanabilir. Çekirdek, adresi servisin atanmış geri döngü IP'sine şeffaf olarak yeniden yazar. `${SERVICE_IP}`'ye açıkça bağlanmaya gerek yoktur.
+- **Depolar arası bağlantı engelleme**: Bir servis, deposunun `/26` alt ağı dışındaki bir geri döngü IP'sine bağlanmaya çalışırsa, çekirdek bunu engeller. Depo A'daki bir işlem, Depo B'deki servislere erişemez.
+- **Uygulama değişikliği gerekmez**: Servisler bağlama için `0.0.0.0` veya `localhost` kullanır ve çekirdek, yalnızca doğru geri döngü IP'lerinde dinlemelerini sağlar. Yalıtım tamamen şeffaftır.
 
 ## Nasıl Çalışır
 
@@ -36,7 +45,7 @@ Akış şu şekildedir:
 
 Bir konteynere doğru etiketleri ekleyip `renet compose` ile başlattığınızda, otomatik olarak yönlendirilebilir hale gelir, manuel proxy yapılandırması gerekmez.
 
-> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime, Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+> Route server binary'si CLI sürümünüzle senkronize tutulur. CLI bir makinede renet binary'sini güncellediğinde, route server otomatik olarak yeniden başlatılır (~1-2 saniye). Bu herhangi bir kesintiye neden olmaz, Traefik yeniden başlatma sırasında son bilinen yapılandırmasıyla trafik sunmaya devam eder ve sonraki sorguda yeni yapılandırmayı alır. Mevcut istemci bağlantıları etkilenmez. Uygulama konteynerlerinize dokunulmaz.
 
 ## Docker Etiketleri
 
@@ -51,9 +60,9 @@ Bu etiketler, servisler başlatılırken `renet compose` tarafından **otomatik 
 | `rediacc.service_name` | Servis kimliği | `myapp` |
 | `rediacc.service_ip` | Atanmış geri döngü IP'si | `127.0.11.2` |
 | `rediacc.network_id` | Deponun daemon ID'si | `2816` |
-| `rediacc.repo_name` | Repository name | `marketing` |
-| `rediacc.tcp_ports` | TCP ports the service listens on | `8080,8443` |
-| `rediacc.udp_ports` | UDP ports the service listens on | `53` |
+| `rediacc.repo_name` | Depo adı | `marketing` |
+| `rediacc.tcp_ports` | Servisin dinlediği TCP portları | `8080,8443` |
+| `rediacc.udp_ports` | Servisin dinlediği UDP portları | `53` |
 
 Bir konteyner yalnızca `rediacc.*` etiketlerine sahipken (`traefik.enable=true` yokken), route server depo adını ve makinenin alt alan adını kullanarak bir **otomatik yönlendirme** oluşturur:
 
@@ -67,7 +76,19 @@ Bir konteyner yalnızca `rediacc.*` etiketlerine sahipken (`traefik.enable=true`
 myapp.marketing.server-1.example.com
 ```
 
-Her deponun kendi alt alan adı seviyesi vardır, bu nedenle çatallamalar ve farklı depolar asla çakışmaz. Bir depoyu çatalladığınızda (ör. `marketing-staging`), çatal otomatik olarak farklı yönlendirmeler alır. Özel alan adlarına sahip servisler için Seviye 2 etiketlerini veya `rediacc.domain` etiketini kullanın.
+Çatalmalar için, servis adı `fork` ayrılmış kelimesi ve etiketle birleştirilir:
+
+```
+{service}-fork-{tag}.{repoName}.{machineName}.{baseDomain}
+```
+
+Örneğin, `staging` etiketli `marketing` çatallaması şunu alır:
+
+```
+myapp-fork-staging.marketing.server-1.example.com
+```
+
+Her çatallanma URL'si üst deponun alt alan adının altında yer alır ve mevcut joker sertifika tarafından kapsanır, dolayısıyla yeni bir sertifikaya gerek yoktur. `-fork-` ayırıcısı, üretim deposundaki gerçek servis adlarıyla çakışmaları önler. Özel alan adlarına sahip servisler için Seviye 2 etiketlerini veya `rediacc.domain` etiketini kullanın.
 
 #### `rediacc.domain` ile Özel Alan Adı
 
@@ -134,7 +155,7 @@ services:
   myapp:
     image: myapp:latest
     environment:
-      - LISTEN_ADDR=${MYAPP_IP}:8080
+      - LISTEN_ADDR=0.0.0.0:8080
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.myapp.rule=Host(`app.example.com`)"
@@ -144,7 +165,6 @@ services:
 
   database:
     image: postgres:17
-    command: ["-c", "listen_addresses=${DATABASE_IP}"]
     # Traefik etiketi yok, veritabanı yalnızca dahili
 ```
 
@@ -170,11 +190,39 @@ rdc config infra set -m server-1 \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-Otomatik yönlendirmeler, servis başına sertifika yerine depo alt alan adı seviyesinde **joker sertifikalar** (`*.marketing.server-1.example.com`) kullanır. Bu, Let's Encrypt hız sınırlarını önler ve başlatmayı hızlandırır. Özel alan adlı yönlendirmeler makine seviyesi joker sertifikalar (`*.server-1.example.com`) kullanır.
+Otomatik yönlendirmeler, servis başına sertifika yerine depo alt alan adı seviyesinde **joker sertifikalar** (`*.marketing.server-1.example.com`) kullanır. Sertifika, ilk `repo up` sırasında Traefik tarafından otomatik olarak sağlanır; manuel adım gerekmez. Çatallanmalar üst deponun mevcut jokerini yeniden kullanır, bu nedenle asla yeni bir sertifika isteği tetiklemez. Özel alan adlı yönlendirmeler makine seviyesi joker sertifikalar (`*.server-1.example.com`) kullanır.
+
+> **Cloudflare kimlik bilgileri gereklidir.** Joker sertifikalar DNS-01 doğrulaması kullanır. `--cf-dns-token` (ve isteğe bağlı `--cert-email`) olmadan, Traefik doğrulamayı tamamlayamaz ve HTTPS çalışmaz. HTTP işlevsel kalır. İlk dağıtımdan önce `rdc config infra set` ile kimlik bilgilerini yapılandırın.
 
 `traefik.http.routers.{name}.tls.certresolver=letsencrypt` içeren Seviye 2 yönlendirmeler için, joker alan adı SAN'ları yönlendirmenin ana bilgisayar adına göre otomatik olarak enjekte edilir.
 
 Cloudflare DNS API token'ının, güvence altına almak istediğiniz alan adları için `Zone:DNS:Edit` iznine sahip olması gerekir.
+
+### TLS Sertifikası Yaşam Döngüsü
+
+Let's Encrypt sertifikasının verilmesinden her deponun konteynerlerine ulaşmasına kadar geçen tam yol:
+
+1. **Konakta verilme.** Makine seviyesinde bir Traefik konteyneri (`rediacc-proxy`, `/opt/rediacc/proxy/`'ye dağıtılmış) ACME yenilemeye sahiptir. Tüm durumu konaktaki `/opt/rediacc/proxy/letsencrypt/acme.json`'da saklar. Yenileme, sona ermeden yaklaşık 30 gün önce otomatik olarak tetiklenir; `--cf-dns-token` yapılandırıldığı sürece operatör eylemi gerekmez.
+
+2. **Depo başına dökme (isteğe bağlı).** Kendi konteyneri içinde sertifika dosyalarına ihtiyaç duyan servisler (örneğin, doğrudan bir `.pem` okuyan bir posta sunucusu), yanlarına küçük bir `traefik-certs-dumper` konteyneri dağıtır. Dökücü `/opt/rediacc/proxy/letsencrypt`'i salt okunur olarak bağlar ve çıkarılan sertifika ile anahtarı deponun veri birimine `cert.pem` / `key.pem` olarak yazar. Bunun çalışması için, depo başına Docker daemon'ının bağlama ad alanı izin listesinde `/opt/rediacc/proxy` bulunmalıdır. Bu varsayılan olarak zaten dahildir.
+
+3. **İstemci tarafı önbellek (`rediacc.json`).** CLI, yapılandırma dosyanızda `acmeCertCache` altında `acme.json`'ın sıkıştırılmış bir kopyasını `baseDomain`'e göre anahtarlanmış olarak önbelleğe alır. Bu, birden fazla makinenin sertifikaları paylaşmasına olanak tanır (`rdc config cert-cache push <machine>` aracılığıyla) ve çevrimdışı envanter olarak işlev görür.
+
+**İstemci önbelleği için eşitleme tetikleyicileri:**
+
+- `rdc repo up` sonrasında otomatik olarak, ancak yalnızca makinenin `baseDomain`'i için yerel önbellek 6 saatten eskiyse. Taze önbellekler, arka arkaya dağıtımların SSH'yi zorlamamaması için olduğu gibi bırakılır.
+- İsteğe bağlı: `rdc config cert-cache pull -m <machine>` (zorla çekme) veya `rdc machine query --name <machine> --sync-certs` (durum sorgusunun yan etkisi olarak çekme).
+- `rdc config infra push` sırasında önbellek makineye itilir (daha uzun son kullanma tarihine sahip yerel sertifikalar uzak olanları geçer).
+
+**Önbellek bakımı:**
+
+- Eski otomatik yönlendirme girdileri (`service-3200.rediacc.io` gibi eski ağ ID'li etiketli alanlar) her çekmede temizlenir.
+- `notAfter`'ı 7 günden fazla geçmişte olan sertifikalar tamamen kaldırılır. Bunlar etkisizdir ve yalnızca önbelleği şişirir.
+- `rdc config cert-cache clear` her şeyi siler; `rdc config cert-cache status` envanteri gösterir.
+
+**Sorun giderme:** `traefik-certs-dumper` `/traefik/acme.json: no such file or directory` ile çöküyor ise, depo başına daemon konağın letsencrypt deposunu göremiyordur. (a) `/opt/rediacc/proxy/letsencrypt/acme.json`'ın konakta mevcut olduğunu doğrulayın (bu, konak seviyesindeki `rediacc-proxy`'nin sorumluluğudur), ve (b) depo başına daemon'ın `/opt/rediacc/proxy`'yi izin listesine alan yeterince yeni bir renet ile başlatıldığını doğrulayın. renet'i yükselttikten sonra uygulamak için `rdc repo up` ile depoyu yeniden dağıtın.
+
+> **Deneysel:** Otomatik eşitleme sıklığı ve son kullanma tarihine dayalı temizlik renet 0.9+'da gelmiştir. Eski CLI/renet sürümleri yalnızca `rdc config cert-cache pull` aracılığıyla manuel eşitleme kullanır.
 
 ## TCP/UDP Port Yönlendirme
 
@@ -193,26 +241,6 @@ rdc config infra push -m server-1
 ```
 
 Bu, `tcp-{port}` ve `udp-{port}` adlı Traefik giriş noktaları oluşturur.
-
-### Plain TCP Example (Database)
-
-To expose a database externally without TLS passthrough (Traefik forwards raw TCP):
-
-```yaml
-services:
-  postgres:
-    image: postgres:17
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
-    labels:
-      - "traefik.enable=true"
-      - "traefik.tcp.routers.mydb.entrypoints=tcp-5432"
-      - "traefik.tcp.routers.mydb.rule=HostSNI(`*`)"
-      - "traefik.tcp.services.mydb.loadbalancer.server.port=5432"
-```
-
-Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
-
-> **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
 > Port ekledikten veya kaldırdıktan sonra, proxy yapılandırmasını güncellemek için her zaman `rdc config infra push` komutunu yeniden çalıştırın.
 
@@ -246,6 +274,25 @@ Temel kavramlar:
 - **`tls.passthrough=true`** Traefik'in ham TLS bağlantısını şifresini çözmeden ilettiği anlamına gelir, uygulama TLS'yi kendisi yönetir
 - Giriş noktası adları `tcp-{port}` veya `udp-{port}` kuralını takip eder
 
+### Sade TCP Örneği (Veritabanı)
+
+TLS geçişi olmadan bir veritabanını dışarıya açmak için (Traefik ham TCP'yi iletir):
+
+```yaml
+services:
+  postgres:
+    image: postgres:17
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.mydb.entrypoints=tcp-5432"
+      - "traefik.tcp.routers.mydb.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.mydb.loadbalancer.server.port=5432"
+```
+
+Port 5432 önceden yapılandırılmıştır (aşağıya bakın), bu nedenle `--tcp-ports` kurulumu gerekmez.
+
+> **Güvenlik notu:** Bir veritabanını internete açmak risk teşkil eder. Bunu yalnızca uzak istemcilerin doğrudan erişime ihtiyaç duyduğu durumlarda kullanın. Çoğu kurulumda veritabanını dahili tutun ve uygulamanız aracılığıyla bağlanın.
+
 ### Önceden Yapılandırılmış Portlar
 
 Aşağıdaki TCP/UDP portları varsayılan olarak giriş noktalarına sahiptir (`--tcp-ports` ile eklemeye gerek yoktur). Giriş noktaları yalnızca yapılandırılmış adres aileleri için oluşturulur, IPv4 giriş noktaları `--public-ipv4`, IPv6 giriş noktaları `--public-ipv6` gerektirir:
@@ -262,7 +309,7 @@ Aşağıdaki TCP/UDP portları varsayılan olarak giriş noktalarına sahiptir (
 | 5672 | TCP | RabbitMQ |
 | 9092 | TCP | Kafka |
 | 53 | UDP | DNS |
-| 10000–10010 | TCP | Dinamik aralık (otomatik atama) |
+| 10000-10010 | TCP | Dinamik aralık (otomatik atama) |
 
 ## DNS Yapılandırması
 
@@ -369,10 +416,10 @@ Dinamik olarak atanan portlar için TCP ve UDP port eşlemelerini gösterir.
 |-------|-------|-------|
 | Servis yönlendirmelerde yok | Konteyner çalışmıyor veya etiketler eksik | Deponun daemon'unda `docker ps` ile doğrulayın; etiketleri kontrol edin |
 | Sertifika verilmedi | DNS sunucuya yönlenmiyor veya geçersiz Cloudflare token'ı | DNS çözümlemesini doğrulayın; Cloudflare API token izinlerini kontrol edin |
-| 502 Bad Gateway | Uygulama belirtilen portta dinlemiyor | Uygulamanın `{SERVICE}_IP`'sine bağlı olduğunu ve portun `loadbalancer.server.port` ile eşleştiğini doğrulayın |
+| 502 Bad Gateway | Uygulama belirtilen portta dinlemiyor | Uygulamanın çalıştığını ve portun `loadbalancer.server.port` ile eşleştiğini doğrulayın |
 | TCP portu erişilemiyor | Port altyapıda kayıtlı değil | `rdc config infra set --tcp-ports ...` ve `push-infra` çalıştırın |
-| Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
-| STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
+| Route server eski sürümde çalışıyor | Binary güncellendi ancak servis yeniden başlatılmadı | Sağlama sırasında otomatik olarak gerçekleşir; manuel: `sudo systemctl restart rediacc-router` |
+| STUN/TURN relay erişilemiyor | Relay adresleri başlangıçta önbelleğe alındı | DNS veya IP değişikliklerinden sonra yeni ağ yapılandırmasını alması için servisi yeniden oluşturun |
 
 ## Tam Örnek
 
@@ -385,8 +432,8 @@ services:
   webapp:
     image: myregistry/webapp:latest
     environment:
-      DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
-      LISTEN_ADDR: ${WEBAPP_IP}:3000
+      DATABASE_URL: postgresql://app:changeme@postgres:5432/webapp
+      LISTEN_ADDR: 0.0.0.0:3000
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.webapp.rule=Host(`app.example.com`)"
@@ -404,7 +451,6 @@ services:
       POSTGRES_DB: webapp
       POSTGRES_USER: app
       POSTGRES_PASSWORD: changeme
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     # Traefik etiketi yok, yalnızca dahili
@@ -436,7 +482,7 @@ app.example.com   A   203.0.113.50
 ### Dağıtım
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 Birkaç saniye içinde route server konteyneri keşfeder, Traefik yönlendirmeyi alır, TLS sertifikası talep eder ve `https://app.example.com` yayında olur.

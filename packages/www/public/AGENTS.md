@@ -54,16 +54,16 @@ All JSON output uses a consistent envelope:
 ## Common Commands
 
 ```bash
-rdc machine query <machine> -o json       # Machine status and resources
-rdc machine containers <machine> -o json  # List Docker containers
-rdc machine services <machine> -o json    # List systemd services
-rdc machine repos <machine> -o json       # List deployed repositories
-rdc machine health <machine> -o json      # Health check
-rdc repo up <repo> -m <machine> --yes     # Deploy a repository
-rdc repo down <repo> -m <machine> --yes   # Stop a repository
-rdc term <machine> -c "command"           # Run command via SSH
-rdc sync upload -m <machine> -r <repo>    # Upload files
-rdc sync download -m <machine> -r <repo>  # Download files
+rdc machine query --name <machine> -o json       # Machine status and resources
+rdc machine containers <machine> -o json         # List Docker containers
+rdc machine services <machine> -o json           # List systemd services
+rdc machine repos <machine> -o json              # List deployed repositories
+rdc machine health <machine> -o json             # Health check
+rdc repo up --name <repo> -m <machine> --yes     # Deploy a repository
+rdc repo down --name <repo> -m <machine> --yes   # Stop a repository
+rdc term connect -m <machine> -c "command"       # Run command via SSH
+rdc repo sync upload -m <machine> -r <repo>    # Upload files
+rdc repo sync download -m <machine> -r <repo>  # Download files
 rdc agent capabilities                    # List all commands (for discovery)
 ```
 

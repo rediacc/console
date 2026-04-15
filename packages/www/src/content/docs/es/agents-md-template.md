@@ -4,7 +4,7 @@ description: Plantilla lista para copiar y pegar que permite configurar Claude C
 category: Reference
 order: 50
 language: es
-sourceHash: "aa1cfa017455e64a"
+sourceHash: "b1ea9373a19bbedb"
 ---
 
 Utilice esta plantilla para configurar asistentes de programación con IA (Claude Code, Cursor, Cline, Windsurf) para la gestión autónoma de infraestructura Rediacc. Copie el bloque siguiente en el archivo `CLAUDE.md`, `.cursorrules` o el archivo de configuración de agente equivalente de su proyecto.

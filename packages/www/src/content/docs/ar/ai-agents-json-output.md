@@ -4,7 +4,7 @@ description: مرجع كامل لتنسيق مخرجات JSON لأداة rdc CLI
 category: Reference
 order: 51
 language: ar
-sourceHash: "29b827cf79cbba6e"
+sourceHash: "11259cd1eeebf361"
 ---
 
 تدعم جميع أوامر `rdc` مخرجات JSON المنظمة للاستهلاك البرمجي بواسطة وكلاء الذكاء الاصطناعي والنصوص البرمجية.

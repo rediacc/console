@@ -1,10 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MachineConfig } from '../../types/index.js';
-import {
-  fetchSubscriptionLicenseReport,
-  readMachineActivationStatus,
-  refreshMachineActivation,
-} from '../license.js';
+import { fetchSubscriptionLicenseReport, readMachineActivationStatus } from '../license.js';
 
 const mockExec = vi.fn();
 const mockExecStreaming = vi.fn();
@@ -40,7 +36,7 @@ vi.mock('../telemetry.js', () => ({
   },
 }));
 
-describe('refreshMachineActivation machine-id resolution', () => {
+describe('license machine-id resolution', () => {
   const machine: MachineConfig = {
     machineName: 'hostinger',
     ip: '127.0.0.1',
@@ -50,29 +46,6 @@ describe('refreshMachineActivation machine-id resolution', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it('fails when remote machine-id is not renet fingerprint format', async () => {
-    mockExec.mockResolvedValueOnce('e3911b6fa57d4f48ab14418acd119706\n');
-
-    await expect(refreshMachineActivation(machine, 'dummy-key')).rejects.toThrow(
-      'Failed to resolve remote renet machine ID'
-    );
-    expect(mockAccountServerFetch).not.toHaveBeenCalled();
-  });
-
-  it('refreshes activation when remote machine-id is a 64-char fingerprint', async () => {
-    mockExec.mockResolvedValueOnce(
-      '3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b\n'
-    );
-    mockAccountServerFetch.mockResolvedValueOnce({
-      activation: { machineId: 'x' },
-    });
-
-    const result = await refreshMachineActivation(machine, 'dummy-key', '/usr/bin/renet');
-    expect(result).toBe(true);
-    expect(mockAccountServerFetch).toHaveBeenCalledTimes(1);
-    expect(mockExecStreaming).not.toHaveBeenCalled();
   });
 
   it('fetches the subscription report when token state is ready', async () => {

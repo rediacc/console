@@ -108,11 +108,13 @@ function validateCodeFences(content, file, errors) {
     if (!line || line.startsWith('#') || !line.startsWith('rdc')) continue;
 
     const merged = mergeContinuationLines(lines, i);
-    const commandText = merged.command;
+    let commandText = merged.command;
     i = merged.endIndex;
 
-    // Skip syntax templates with angle-bracket placeholders (e.g. rdc repo create <name>)
-    if (/<[^>]+>/.test(commandText)) continue;
+    // Normalise placeholders to dummy values so they're validated as real commands
+    // instead of silently skipped. This catches wrong flag/positional syntax even
+    // when the example uses <placeholder> tokens.
+    commandText = commandText.replace(/<([a-zA-Z][\w-]*)>/g, 'PLACEHOLDER');
 
     const parsed = parseRdcCommand(commandText);
     if (!parsed.ok && parsed.reason !== 'not-rdc') {

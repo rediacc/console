@@ -1,38 +1,32 @@
 import http from 'node:http';
 
 const PORT = 3000;
-let host = process.env.SERVICE_IP || '0.0.0.0';
+// eBPF bind rewriting handles IP isolation transparently.
+// Apps can bind to 0.0.0.0 and the kernel rewrites it to the
+// correct loopback IP for this repository's network namespace.
+const HOST = '0.0.0.0';
 
-let server = createServer();
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({
+    status: 'ok',
+    host: HOST,
+    pid: process.pid,
+    uptime: Math.floor(process.uptime()),
+  }) + '\n');
+});
 
-// CRIU restore awareness: after checkpoint/restore the assigned SERVICE_IP
-// may have changed (e.g. repo was pushed to another machine). Poll for
-// changes and rebind the server to the new IP when detected.
-setInterval(() => {
-  const currentIP = process.env.SERVICE_IP;
-  if (currentIP && currentIP !== host) {
-    console.log(`SERVICE_IP changed: ${host} -> ${currentIP}, rebinding...`);
-    server.close(() => {
-      host = currentIP;
-      server = createServer();
-    });
+// CRIU: after checkpoint/restore, stale TCP sockets may trigger
+// ECONNRESET before the new connection is established.
+process.on('uncaughtException', (err) => {
+  if (err.code === 'ECONNRESET') {
+    console.warn('ECONNRESET (stale socket after CRIU restore), ignoring');
+    return;
   }
-}, 5000);
+  console.error('Uncaught exception:', err);
+  process.exit(1);
+});
 
-function createServer() {
-  const s = http.createServer((req, res) => {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      status: 'ok',
-      host,
-      pid: process.pid,
-      uptime: Math.floor(process.uptime()),
-    }) + '\n');
-  });
-
-  s.listen(PORT, host, () => {
-    console.log(`Server listening on ${host}:${PORT}`);
-  });
-
-  return s;
-}
+server.listen(PORT, HOST, () => {
+  console.log(`Server listening on ${HOST}:${PORT}`);
+});

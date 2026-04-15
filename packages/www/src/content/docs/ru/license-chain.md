@@ -4,7 +4,7 @@ description: "Защищённая от подделки выдача лицен
 category: "Guides"
 order: 8
 language: ru
-sourceHash: "5e6afbdf05c21b67"
+sourceHash: "326c4f4efbd60493"
 ---
 
 # Цепочка лицензий и делегирование

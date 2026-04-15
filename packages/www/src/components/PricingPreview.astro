@@ -28,6 +28,8 @@ const badgeConfig: Record<string, { isPopular?: boolean; badgeLabel?: string; ba
   },
 };
 
+const startingAtPlans = new Set(['enterprise']);
+
 const plans = PLAN_ORDER.map((code) => {
   const id = code.toLowerCase();
   const monthly = PLAN_PRICING[code].monthlyPriceCents / 100;
@@ -39,6 +41,7 @@ const plans = PLAN_ORDER.map((code) => {
     isPopular: badge?.isPopular ?? false,
     badgeLabel: badge?.badgeLabel,
     badgeVariant: badge?.badgeVariant,
+    startingAt: startingAtPlans.has(id),
   };
 });
 

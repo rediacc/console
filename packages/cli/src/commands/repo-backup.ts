@@ -27,7 +27,7 @@ interface BackupRunOptions {
 }
 
 /** Resolve extra machines needed for multi-machine operations (e.g., backup push --to-machine). */
-async function resolveExtraMachines(
+export async function resolveExtraMachines(
   params: Record<string, unknown>
 ): Promise<
   Record<string, { ip: string; port?: number; user: string; datastore?: string }> | undefined
@@ -123,7 +123,7 @@ function applyPushFlags(
 }
 
 /** Build params for a backup push (unified for machine and storage targets). */
-function buildPushParams(
+export function buildPushParams(
   repo: string,
   repositoryGuid: string,
   resolvedType: 'machine' | 'storage',
@@ -144,7 +144,7 @@ function buildPushParams(
 /**
  * Auto-provision target machine if it doesn't exist and --provider is given.
  */
-async function autoProvisionTarget(
+export async function autoProvisionTarget(
   targetName: string,
   providerName: string,
   sourceMachineName?: string,
@@ -205,7 +205,7 @@ async function postPushDeploy(
 }
 
 /** Attach CoW seed lineage to params if available. */
-function attachSeedLineage(
+export function attachSeedLineage(
   params: Record<string, unknown>,
   repoConfig: { parentGuid?: string; grandGuid?: string }
 ): void {
@@ -254,6 +254,7 @@ async function pushSingleRepo(
   );
 
   attachSeedLineage(params, repoConfig);
+  if (options.bwlimit) params.bwlimit = options.bwlimit;
 
   outputService.info(t('commands.repo.push.pushing', { repo, dest }));
   await executeFunction('backup_push', params, options as BackupRunOptions, repoCommand);
@@ -313,6 +314,7 @@ async function pullSingleRepo(
   params.sourceType = resolvedType;
   params.from = sourceName;
   if (options.force) params.force = true;
+  if (options.bwlimit) params.bwlimit = options.bwlimit;
 
   const repoConfig = await configService.getRepository(repo);
   if (repoConfig) {
@@ -357,6 +359,7 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('--parallel', t('commands.repo.upAll.parallelOption'))
     .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
     .option('-y, --yes', t('commands.repo.yesOption'))
+    .option('--bwlimit <limit>', t('commands.repo.push.optionBwlimit'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (options) => {
@@ -393,6 +396,7 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('--parallel', t('commands.repo.upAll.parallelOption'))
     .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
     .option('-y, --yes', t('commands.repo.yesOption'))
+    .option('--bwlimit <limit>', t('commands.repo.pull.optionBwlimit'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (options) => {

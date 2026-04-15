@@ -4,7 +4,7 @@ description: "إصدار تراخيص مقاوم للتلاعب، والتوقي
 category: "Guides"
 order: 8
 language: ar
-sourceHash: "5e6afbdf05c21b67"
+sourceHash: "326c4f4efbd60493"
 ---
 
 # سلسلة التراخيص والتفويض

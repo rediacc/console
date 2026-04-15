@@ -4,7 +4,7 @@ description: "Wie Rediacc den SOC 2 Trust Service Criteria für Sicherheit, Verf
 category: "Legal"
 order: 2
 language: de
-sourceHash: "96eff23962051882"
+sourceHash: "a01e8b457d648fdd"
 ---
 
 SOC 2 (System and Organization Controls 2) ist ein Framework des American Institute of Certified Public Accountants (AICPA) zur Bewertung der Kontrollen einer Organisation in Bezug auf Sicherheit, Verfügbarkeit, Verarbeitungsintegrität, Vertraulichkeit und Datenschutz.

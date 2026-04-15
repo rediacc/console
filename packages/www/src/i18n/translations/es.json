@@ -978,6 +978,13 @@
               "name": "Integración personalizada",
               "priority": "Integración principal funcional + funciones esenciales disponibles en 48 horas",
               "standard": "Integración completa con pruebas y documentación."
+            },
+            {
+              "emergency": "Discos conectados + conversión RAID iniciada el mismo día + repositorios críticos verificados + comienza el endurecimiento completo",
+              "id": "storage-hardening",
+              "name": "Endurecimiento de almacenamiento",
+              "priority": "BTRFS RAID1 o RAID10 configurado + migración de balance en vivo iniciada + temporizador de scrub activo en 48 horas",
+              "standard": "Configuración completa de almacenamiento redundante BTRFS con scrub de autorreparación, migración de datos en vivo desde disco único, verificación de reflink e integración de monitoreo. RAID1 (2 SSDs, espejo) para despliegues estándar o RAID10 (4+ SSDs, espejos distribuidos) para cargas de trabajo de producción de alto rendimiento. El scrub repara automáticamente la corrupción desde la copia redundante en lugar de solo detectarla. Incluye planificación de capacidad y revisión de la estrategia de respaldo."
             }
           ]
         }
@@ -2950,6 +2957,13 @@
               "name": "Integración personalizada",
               "priority": "Integración principal funcional + funciones esenciales disponibles en 48 horas",
               "standard": "Integración completa con pruebas y documentación."
+            },
+            {
+              "emergency": "Discos conectados + conversión RAID iniciada el mismo día + repositorios críticos verificados + comienza el endurecimiento completo",
+              "id": "storage-hardening",
+              "name": "Endurecimiento de almacenamiento",
+              "priority": "BTRFS RAID1 o RAID10 configurado + migración de balance en vivo iniciada + temporizador de scrub activo en 48 horas",
+              "standard": "Configuración completa de almacenamiento redundante BTRFS con scrub de autorreparación, migración de datos en vivo desde disco único, verificación de reflink e integración de monitoreo. RAID1 (2 SSDs, espejo) para despliegues estándar o RAID10 (4+ SSDs, espejos distribuidos) para cargas de trabajo de producción de alto rendimiento. El scrub repara automáticamente la corrupción desde la copia redundante en lugar de solo detectarla. Incluye planificación de capacidad y revisión de la estrategia de respaldo."
             }
           ]
         }
@@ -3043,13 +3057,19 @@
           {
             "description": "Un slot de licencia solo se ocupa mientras se crea o se hace fork de un repositorio — tus operaciones diarias nunca consumen uno. Los slots se liberan automáticamente tras 1 hora de inactividad, por lo que un plan de 5 slots puede atender docenas de máquinas. Sin tarifas por máquina, nunca.",
             "title": "Máquinas ilimitadas. Licencia de pago por creación."
+          },
+          {
+            "description": "Cada licencia de repositorio está vinculada a la máquina para la que fue emitida. Cuando su proveedor de hosting migra su VM a otro hardware, la identidad de la máquina cambia, pero sus licencias siguen funcionando durante 40 días. La siguiente actualización se vincula automáticamente a la nueva máquina. Sin tiempo de inactividad, sin pasos manuales.",
+            "title": "40 días de gracia para migración de VM."
           }
         ],
         "subtitle": "Las licencias de Rediacc están diseñadas para que nunca estés atrapado. Esto es lo que significa en la práctica.",
         "svg": {
           "allOperations": "Todas las operaciones",
+          "newMachineId": "Nuevo ID de máquina",
           "noLicenseNeeded": "No se necesita licencia",
           "noLicenseRequired": "No se requiere licencia — funciona siempre",
+          "reposKeepRunning": "Los repositorios siguen funcionando. No se necesitan pasos manuales.",
           "requiredOnlyHere": "Solo se requiere aquí",
           "slotsAutoRelease": "Los slots se liberan automáticamente después de 1 hora de inactividad",
           "slotsCreateFork": "Los slots solo se usan para crear y bifurcar — las operaciones diarias son siempre gratuitas"
@@ -3090,6 +3110,7 @@
             "secondary": "Contacto Ventas"
           }
         },
+        "edgeLimitsNote": "Límites mostrados para el canal edge. La mitad en stable.",
         "foreverFree": "libre para siempre",
         "getStarted": "Empezar",
         "guarantees": {
@@ -13288,16 +13309,18 @@
     "title": "La crisis del desajuste de velocidad"
   },
   "regionPicker": {
-    "edgeNote": "Ultimas funciones, limites gratuitos 2X. Sin planes de pago. Los datos son persistentes.",
-    "footer": "Elige la región más cercana a ti o la que requiera tu organización. Esto no se puede cambiar después del registro.",
+    "channelEdge": "Edge",
+    "channelStable": "Estable",
+    "edgeHint": "Últimas funciones, el doble de límites gratuitos. Sin planes de pago.",
+    "footer": "Elige la región más cercana a ti o la que requiera tu organización. No se puede cambiar después del registro.",
     "locations": {
       "asia": "Tokio, Japon",
       "eu": "Fráncfort, Alemania",
       "us": "Virginia, Estados Unidos"
     },
-    "subtitle": "Todo, tu cuenta, facturación y configuraciones, permanece en la región que elijas. Nunca sale de ella.",
-    "tabEdge": "Edge",
-    "tabStable": "Estable",
+    "regionNote": "La región no se puede cambiar después del registro.",
+    "stableHint": "Versiones fiables, promovidas desde edge tras 7 días de prueba.",
+    "subtitle": "Tu cuenta, facturación y configuraciones permanecen en la región que elijas. Nunca la abandonan.",
     "title": "¿Dónde quieres almacenar tus datos?"
   },
   "solutions": {
@@ -13370,6 +13393,6 @@
     "playVideo": "Reproducir video",
     "toggleFullscreen": "Alternar pantalla completa",
     "volume": "Volumen",
-    "youtubeTitle": "Product introduction"
+    "youtubeTitle": "Presentación del producto"
   }
 }

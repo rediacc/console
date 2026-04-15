@@ -46,7 +46,7 @@ else
     VM_CEPH_NODES="${ARG_VM_CEPH_NODES:-}"
 fi
 
-# VM image (e.g., "ubuntu-24.04", "debian-12")
+# VM image (e.g., "ubuntu-24.04", "debian-13")
 VM_IMAGE_VALUE="${ARG_VM_IMAGE:-${VM_IMAGE:-ubuntu-24.04}}"
 
 # Validate required arguments

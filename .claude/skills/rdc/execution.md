@@ -4,16 +4,16 @@ For full command syntax and options, see [reference.md](reference.md).
 
 ## High-level container commands (PREFERRED)
 
-Use `rdc term <machine> <repo> --container <name> --container-action <action>` for container operations. The repo context is required to target the correct isolated Docker daemon.
+Use `rdc term connect -m <machine> -r <repo> --container <name> --container-action <action>` for container operations. The repo context is required to target the correct isolated Docker daemon.
 
 ## Command reference: what to use for each task
 
 | Task | Preferred | Alternative (`rdc run`) |
 |------|-----------|------------------------|
-| View container logs | `rdc term <m> <repo> --container <c> --container-action logs` | `rdc run container_logs -m <m> --param repository=<repo> --param container=<c> --param lines=<n>` |
-| Exec into container | `rdc term <m> <repo> --container <c> --container-action exec` | `rdc run container_exec -m <m> --param repository=<repo> --param container=<c> --param command="..."` |
+| View container logs | `rdc term connect -m <m> -r <repo> --container <c> --container-action logs` | `rdc run container_logs -m <m> --param repository=<repo> --param container=<c> --param lines=<n>` |
+| Exec into container | `rdc term connect -m <m> -r <repo> --container <c> --container-action exec` | `rdc run container_exec -m <m> --param repository=<repo> --param container=<c> --param command="..."` |
 | List containers | `rdc machine containers <m>` | `rdc run container_list -m <m> --param repository=<repo>` |
-| Container stats | `rdc term <m> <repo> --container <c> --container-action stats` | `rdc run container_stats -m <m> --param repository=<repo>` |
+| Container stats | `rdc term connect -m <m> -r <repo> --container <c> --container-action stats` | `rdc run container_stats -m <m> --param repository=<repo>` |
 | Deploy a repo | `rdc repo up` | — |
 | Stop a repo | `rdc repo down` | — |
 | Check repo status | `rdc repo status` | — |

@@ -192,74 +192,6 @@ async function readRepoSizeGb(
   return Math.max(1, Math.ceil((Number.isFinite(bytes) ? bytes : 0) / (1024 * 1024 * 1024)));
 }
 
-const MACHINE_LICENSE_PATH = `${LICENSE_DIR}/machine.json`;
-
-async function refreshActivation(
-  _serverUrl: string,
-  _token: string,
-  machineId: string
-): Promise<{ ok: boolean; signedBlob?: unknown; error?: string }> {
-  try {
-    const body = await accountServerFetch<{ activation?: unknown; signedBlob?: unknown }>(
-      '/account/api/v1/licenses/activate',
-      { method: 'POST', body: { machineId } }
-    );
-    return { ok: true, signedBlob: body.signedBlob };
-  } catch (error) {
-    telemetryService.trackError(error, { operation: 'license.refresh_activation' });
-    return { ok: false, error: error instanceof Error ? error.message : String(error) };
-  }
-}
-
-async function writeMachineLicense(sftp: SFTPClient, signedBlob: unknown): Promise<void> {
-  await sftp.exec(`sudo mkdir -p ${LICENSE_DIR}`);
-  await sftp.execStreaming(`sudo tee ${MACHINE_LICENSE_PATH} > /dev/null`, {
-    stdin: JSON.stringify(signedBlob, null, 2),
-  });
-  await sftp.exec(`sudo chmod 640 ${MACHINE_LICENSE_PATH}`);
-}
-
-export async function refreshMachineActivation(
-  machine: MachineConfig,
-  sshPrivateKey: string,
-  remoteRenetPath?: string,
-  sharedSftp?: SFTPClient
-): Promise<boolean> {
-  const tokenState = getSubscriptionTokenState();
-  if (tokenState.kind !== 'ready') return false;
-
-  const sftp =
-    sharedSftp ??
-    new SFTPClient({
-      host: machine.ip,
-      port: machine.port ?? DEFAULTS.SSH.PORT,
-      username: machine.user,
-      privateKey: sshPrivateKey,
-    });
-  const ownsConnection = !sharedSftp;
-
-  try {
-    if (ownsConnection) await sftp.connect();
-    const machineId = await readRemoteMachineId(sftp, remoteRenetPath);
-    if (!machineId) return false;
-
-    const result = await refreshActivation(tokenState.serverUrl, tokenState.token.token, machineId);
-    if (!result.ok) {
-      if (result.error) throw new Error(result.error);
-      return false;
-    }
-
-    // Write the signed subscription blob to the remote machine for renet to validate
-    if (result.signedBlob) {
-      await writeMachineLicense(sftp, result.signedBlob);
-    }
-
-    return true;
-  } finally {
-    if (ownsConnection) sftp.close();
-  }
-}
-
 export async function readMachineActivationStatus(
   machine: MachineConfig,
   sshPrivateKey: string,
@@ -336,7 +268,7 @@ export async function readRuntimeRepoLicenseStatuses(
   }
 }
 
-async function issueRepoLicense(
+export async function issueRepoLicense(
   machine: MachineConfig,
   sshPrivateKey: string,
   params: {
@@ -347,20 +279,24 @@ async function issueRepoLicense(
     luksUuid?: string;
     storageFingerprint?: string;
   },
-  remoteRenetPath?: string
+  remoteRenetPath?: string,
+  sharedSftp?: SFTPClient
 ): Promise<boolean> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') return false;
 
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
+  const sftp =
+    sharedSftp ??
+    new SFTPClient({
+      host: machine.ip,
+      port: machine.port ?? DEFAULTS.SSH.PORT,
+      username: machine.user,
+      privateKey: sshPrivateKey,
+    });
+  const ownsConnection = !sharedSftp;
 
   try {
-    await sftp.connect();
+    if (ownsConnection) await sftp.connect();
     const [machineId, clientMachineId] = await Promise.all([
       readRemoteMachineId(sftp, remoteRenetPath),
       readLocalMachineId(),
@@ -383,15 +319,10 @@ async function issueRepoLicense(
         },
       }
     );
-    await sftp.exec(`sudo mkdir -p ${REPO_LICENSE_DIR}`);
-    const repoLicenseFile = `${REPO_LICENSE_DIR}/${params.repositoryGuid}.json`;
-    await sftp.execStreaming(`sudo tee ${repoLicenseFile} > /dev/null`, {
-      stdin: JSON.stringify(license, null, 2),
-    });
-    await sftp.exec(`sudo chmod 640 ${repoLicenseFile}`);
+    await writeRepoLicense(sftp, params.repositoryGuid, license);
     return true;
   } finally {
-    sftp.close();
+    if (ownsConnection) sftp.close();
   }
 }
 

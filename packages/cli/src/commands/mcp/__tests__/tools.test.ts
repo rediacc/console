@@ -126,19 +126,6 @@ describe('MCP tool definitions', () => {
       expect(argv).toContain('prod');
     });
 
-    it('repo_up includes --mount when set', () => {
-      const tool = TOOLS.find((t) => t.name === 'repo_up')!;
-      const argv = tool.command({ name: 'gitlab', machine: 'prod', mount: true });
-      expect(argv).toContain('--mount');
-      expect(argv).toContain('prod');
-    });
-
-    it('repo_up excludes --mount when false', () => {
-      const tool = TOOLS.find((t) => t.name === 'repo_up')!;
-      const argv = tool.command({ name: 'gitlab', machine: 'prod', mount: false });
-      expect(argv).not.toContain('--mount');
-    });
-
     it('repo_down builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_down')!;
       const argv = tool.command({ name: 'gitlab', machine: 'prod' });

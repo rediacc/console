@@ -4,7 +4,7 @@ description: "Wie Rediacc den Informationssicherheitskontrollen von ISO 27001 f�
 category: "Legal"
 order: 5
 language: de
-sourceHash: "fdea800f46a7d3ec"
+sourceHash: "fa8c17a9c2914241"
 ---
 
 ISO/IEC 27001 ist ein internationaler Standard für Informationssicherheits-Managementsysteme (ISMS), veröffentlicht von der Internationalen Organisation für Normung (ISO) und der Internationalen Elektrotechnischen Kommission (IEC). Die aktuelle Version ist ISO/IEC 27001:2022.

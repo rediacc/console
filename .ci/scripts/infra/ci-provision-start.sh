@@ -94,9 +94,11 @@ fi
 # =============================================================================
 if [[ "$FORCE_REBUILD" == "true" ]] || [[ ! -d "$VM_IMAGE_DIR" ]]; then
     log_step "Building VM image (OS: $VM_OS)..."
-    "$CONSOLE_ROOT/.ci/scripts/image/build-vm-image.sh" \
+    mkdir -p "$VM_IMAGE_DIR"
+    sudo "$RENET_BIN" ops image build \
+        --os "$VM_OS" \
         --output "$VM_IMAGE_DIR" \
-        --os "$VM_OS"
+        --renet-binary "$RENET_BIN"
     log_info "VM image built at: $VM_IMAGE_DIR"
 else
     log_info "Using cached VM image: $VM_IMAGE_DIR"

@@ -4,7 +4,8 @@ description: 'rdc ne zaman, renet ne zaman kullanılır.'
 category: Concepts
 order: 1
 language: tr
-sourceHash: "4f7b74a70b59d9c8"
+sourceHash: "86bc5f8593d408de"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # rdc vs renet
@@ -40,7 +41,7 @@ rdc config machine setup --name server-1
 
 # Depo oluştur ve başlat
 rdc repo create --name my-app -m server-1 --size 10G
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 
 # Depoyu durdur
 rdc repo down --name my-app -m server-1

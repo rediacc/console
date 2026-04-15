@@ -10,8 +10,9 @@ import type { MachineConfig } from '../types/index.js';
 import { debugLog } from '../utils/debug.js';
 import { configService } from './config-resources.js';
 import { readSSHKey } from './renet-execution.js';
+import { REMOTE_RENET_PATH } from './renet-provisioner.js';
 
-const GATEWAY_BIN = '/usr/lib/rediacc/renet/current/renet';
+const GATEWAY_BIN = REMOTE_RENET_PATH;
 
 /**
  * Deploy a repo's SSH public key to a machine's authorized_keys.

@@ -6,20 +6,21 @@ description: >-
 category: Concepts
 order: 0
 language: tr
-sourceHash: "1ec1b0e490ef470c"
+sourceHash: "2c2d289c280e2a7f"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # Mimari
 
 Bu sayfa, Rediacc'ın altyapısını açıklar: iki araçlı mimari, adaptör algılama, güvenlik modeli ve yapılandırma yapısı.
 
-## Full Stack Overview
+## Tam Yığın Genel Bakış
 
-Traffic flows from the internet through a reverse proxy, into isolated Docker daemons, each backed by encrypted storage:
+Trafik internetten ters proxy aracılığıyla, her biri şifreli depolama ile desteklenen izole Docker daemon'larına akar:
 
-![Full Stack Architecture](/img/arch-full-stack.svg)
+![Tam Yığın Mimarisi](/img/arch-full-stack.svg)
 
-Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), and LUKS-encrypted BTRFS volume. The route server discovers running containers across all daemons and feeds routing configuration to Traefik.
+Her depo kendi Docker daemon'una, geri döngü IP alt ağına (/26 = 64 IP) ve LUKS ile şifrelenmiş BTRFS birimine sahip olur. Rota sunucusu tüm daemon'lardaki çalışan konteynerleri keşfeder ve yönlendirme yapılandırmasını Traefik'e aktarır.
 
 ## İki Araçlı Mimari
 
@@ -32,7 +33,7 @@ Rediacc, SSH üzerinden birlikte çalışan iki ikili dosya kullanır:
 
 Yerel olarak yazdığınız her komut, uzak makinede renet'i çalıştıran bir SSH çağrısına dönüştürülür. Sunuculara manuel olarak SSH bağlantısı yapmanız gerekmez.
 
-Operatör odaklı bir genel kural için [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasına bakın. Ayrıca test için yerel VM kümesi çalıştırmak amacıyla `rdc ops` kullanabilirsiniz, bkz. [Deneysel VM'ler](/tr/docs/experimental-vms).
+Operatör odaklı bir genel kural için [rdc vs renet](/en/docs/rdc-vs-renet) sayfasına bakın. Ayrıca test için yerel VM kümesi çalıştırmak amacıyla `rdc ops` kullanabilirsiniz, bkz. [Deneysel VM'ler](/en/docs/experimental-vms).
 
 ## Yapılandırma
 
@@ -45,7 +46,7 @@ Kendi sunucunuzda barındırma için varsayılandır. Tüm durum bilgisi iş ist
 - Makinelere doğrudan SSH bağlantısı
 - Harici servis gerekmez
 - Tek kullanıcı, tek iş istasyonu
-- Varsayılan yapılandırma ilk CLI kullanımında otomatik oluşturulur. Adlandırılmış yapılandırmalar `rdc config init <ad>` ile oluşturulur
+- Varsayılan yapılandırma ilk CLI kullanımında otomatik oluşturulur. Adlandırılmış yapılandırmalar `rdc config init <name>` ile oluşturulur
 
 ### Bulut Adaptörü (Deneysel)
 
@@ -97,6 +98,29 @@ Bu şu anlama gelir:
 - Ana bilgisayarın Docker daemon'u (varsa) tamamen ayrıdır
 
 Rediaccfile fonksiyonlarında `DOCKER_HOST` otomatik olarak doğru sokete ayarlanır.
+
+### Daemon Yol Düzeni
+
+Docker verileri ve yapılandırması, deponun bağlama noktasının içinde saklanır; bu sayede her daemon, ana bilgisayardan ve diğer depolardan tamamen izole kalır.
+
+**Depo başına düzen:**
+```
+{datastore}/mounts/{guid}/.rediacc/docker/data/    # Docker veri kökü
+{datastore}/mounts/{guid}/.rediacc/docker/config/  # Docker yapılandırması
+```
+
+**Bağımsız düzen** (depo bağlama noktasına bağlı olmayan daemon'lar):
+```
+{datastore}/standalone/{N}/.rediacc/docker/data/
+{datastore}/standalone/{N}/.rediacc/docker/config/
+```
+
+**Paylaşılan çalışma zamanı yolu** (değişmez):
+```
+/run/rediacc/docker-{N}.sock
+```
+
+Bu birleşik düzen, daemon yolları ana bilgisayar dosya sistemi ile şifreli birim arasında bölündüğünde oluşan salt okunur ve okuma-yazma bağlama çakışmalarını ortadan kaldırır. Hem depo başına hem de bağımsız daemon'lar aynı dizin yapısını izler; bu nedenle araçlar ve tanılamalar her iki durumda da aynı şekilde çalışır.
 
 ## LUKS Şifreleme
 

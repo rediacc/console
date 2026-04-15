@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: es
-sourceHash: "8332f7d1cb8ee60b"
-sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
+sourceHash: "1b60f9a60324f737"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # Monitoreo
@@ -101,6 +101,80 @@ Opciones:
 
 La salida JSON incluye `name` (resuelto) y `guid` (GUID original), y anida para cada repositorio los arreglos `containers` (con `domain`, `autoRoute`, `repository`/`repository_guid`) y `services`.
 
+## Salud del Almacenamiento
+
+Inspeccione la fragmentación de BTRFS y el uso compartido de reflinks en todos los repositorios de una máquina:
+
+```bash
+rdc machine query --name server-1 --storage-health
+```
+
+| Columna | Descripción |
+|---------|-------------|
+| Size | Tamaño del archivo de imagen LUKS (cómo se ve el repositorio) |
+| Unique | Datos únicos reales que pertenecen solo a este repositorio |
+| Shared | Bloques de datos reutilizados entre repositorios mediante reflinks de BTRFS (copias gratuitas) |
+| Extents | Número de extents de archivos (mayor = más fragmentado) |
+| Frag | Nivel de fragmentación: bajo, moderado o alto |
+
+El resumen muestra el ahorro total de los reflinks de BTRFS:
+
+```
+14 repos, 224.3 GB virtual size
+Unique data: 323.7 MB | Shared: 224.0 GB | Efficiency: 99.9%
+```
+
+- **Tamaño virtual** es la suma de todos los tamaños de imagen de repositorio. Esto es lo que parecen los repositorios, pero cuenta doble los bloques compartidos mediante reflinks.
+- **Datos únicos** es el almacenamiento real consumido por datos de repositorio que existen en un solo repositorio. Esto es lo que liberaría al eliminar un repositorio.
+- **Compartido** son datos reutilizados entre repositorios mediante reflinks de BTRFS. Bifurcar un repositorio crea copias reflink que comparten bloques hasta que cualquiera de los lados escribe nuevos datos, momento en que los bloques divergen.
+- **Eficiencia** es el porcentaje de datos reutilizados mediante reflinks. Mayor es mejor. Una máquina con muchas bifurcaciones del mismo repositorio padre mostrará eficiencia cercana al 100%.
+
+Los repositorios con alta fragmentación y cero bloques compartidos pueden defragmentarse de forma segura con `btrfs filesystem defragment`. Los repositorios con bloques compartidos NO deben defragmentarse porque la defragmentación reemplaza los bloques compartidos con copias únicas, aumentando el uso del disco.
+
+El escaneo se ejecuta en paralelo y tarda entre 5 y 15 segundos según el número y tamaño de los repositorios. Cuando no se especifica `--storage-health`, aparece una sugerencia de una línea después de la salida de la consulta como recordatorio.
+
+## Scrub de BTRFS
+
+Rediacc programa automáticamente un scrub semanal de BTRFS en cada máquina. El scrub lee cada bloque de datos en el datastore, verifica los checksums y reporta cualquier corrupción. Esto detecta la corrupción silenciosa de datos (bitrot) antes de que se propague a los respaldos y bifurcaciones.
+
+El scrub se ejecuta todos los domingos a las 02:00 hora local (zona horaria de la máquina) con un retraso aleatorio de hasta 1 hora. Se ejecuta con la prioridad de E/S más baja (`ionice idle`, `nice 19`) para no interferir con los servicios en ejecución. En máquinas respaldadas por SSD, espere aproximadamente 8 minutos por cada 100 GB de datastore.
+
+El temporizador del scrub se instala automáticamente en el primer inicio del daemon después de una actualización de renet. Cuando la política de scrub cambia en una versión futura de renet, se actualiza sola en el siguiente inicio del daemon sin ninguna acción del usuario.
+
+### Estado del scrub
+
+El resultado del último scrub se guarda fuera del volumen BTRFS (en `/var/lib/rediacc/scrub-last-result.json`) para que permanezca legible incluso si el volumen tiene problemas. La salida de `rdc machine query --system` incluye un campo `scrub_status`:
+
+```json
+"scrub_status": {
+  "last_run_human": "3 days ago",
+  "status": "ok",
+  "total_errors": 0,
+  "uncorrectable": 0,
+  "duration_seconds": 312
+}
+```
+
+| Estado | Significado |
+|--------|-------------|
+| `ok` | El último scrub se completó sin errores |
+| `never_run` | El scrub aún no se ha ejecutado (el temporizador acaba de instalarse) |
+| `overdue` | El último scrub fue hace más de 14 días |
+| `errors_found` | El scrub encontró discrepancias de checksum (revise los conteos `total_errors` y `uncorrectable`) |
+| `failed` | El proceso de scrub salió con un código distinto de cero |
+
+Si `uncorrectable` es mayor que cero, los bloques afectados no se pueden reparar automáticamente (BTRFS de un solo disco no tiene copia redundante). Restaure el repositorio afectado desde el respaldo más reciente.
+
+### Scrub manual
+
+Para ejecutar un scrub inmediatamente (por ejemplo, después de un corte de energía o una migración de disco):
+
+```bash
+rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
+```
+
+El resultado se guarda en el mismo archivo JSON y es visible de inmediato en el siguiente `rdc machine query --system`.
+
 ## Estado del Vault
 
 Obtenga una visión general completa de una máquina incluyendo información de despliegue:
@@ -119,7 +193,7 @@ Use `--output json` para salida legible por máquinas.
 
 ## Probar Conexión
 
-> **Solo adaptador cloud.** En modo local, use `rdc term connect -m server-1 -c "hostname"` para verificar la conectividad.
+> **Solo adaptador cloud.** Con el adaptador local, use `rdc term connect -m server-1 -c "hostname"` para verificar la conectividad.
 
 Verifique la conectividad SSH a una máquina:
 

@@ -11,6 +11,7 @@ interface Props {
     isPopular?: boolean;
     badgeLabel?: string;
     badgeVariant?: string;
+    startingAt?: boolean;
   };
   metrics: Array<{ label: string; tooltip?: string; value: string }>;
   lang: Language;
@@ -53,6 +54,9 @@ const usesCheckout = checkoutPlans.has(plan.id);
       </>
     ) : (
       <>
+        {plan.startingAt && (
+          <div class="cf-starting-at">{t(`${ctaNamespace}.ui.startingAt`)}</div>
+        )}
         <div class="cf-price-line">
           <span class="cf-price" data-monthly={formatPrice(plan.monthly)} data-annual={formatPrice(plan.annual)}>{formatPrice(plan.monthly)}</span>
           <span class="cf-price-period" data-monthly="/mo" data-annual="/yr">/mo</span>
@@ -78,6 +82,9 @@ const usesCheckout = checkoutPlans.has(plan.id);
       </li>
     ))}
   </ul>
+  {plan.monthly === 0 && (
+    <p class="cf-edge-note">{t('pages.pricing.ui.edgeLimitsNote', 'Limits shown for edge channel. Half on stable.')}</p>
+  )}
   {plan.monthly === 0 ? (
     <a
       href={`/${lang}/install`}

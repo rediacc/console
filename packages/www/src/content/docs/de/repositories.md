@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 4
 language: de
-sourceHash: "a3b38ca25b01b511"
-sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
+sourceHash: "83f2c9fa5ae53864"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # Repositories
@@ -25,9 +25,9 @@ rdc repo create --name my-app -m server-1 --size 10G
 
 | Option | Erforderlich | Beschreibung |
 |--------|-------------|--------------|
-| `-m, --machine <name>` | Ja | Zielmaschine, auf der das Repository erstellt wird. |
-| `--size <size>` | Ja | Größe des verschlüsselten Disk-Images (z. B. `5G`, `10G`, `50G`). |
-| `--skip-router-restart` | No | Skip restarting the route server after the operation |
+| `-m, --machine <name>` | Ja | Zielmaschine, auf der das Repository erstellt wird |
+| `--size <size>` | Ja | Größe des verschlüsselten Disk-Images (z. B. `5G`, `10G`, `50G`) |
+| `--skip-router-restart` | Nein | Neustart des Route-Servers nach der Operation überspringen |
 
 Die Ausgabe zeigt drei automatisch generierte Werte:
 
@@ -48,8 +48,8 @@ rdc repo unmount --name my-app -m server-1  # Aushängen und wieder verschlüsse
 
 | Option | Beschreibung |
 |--------|-------------|
-| `--checkpoint` | Einen Checkpoint vor dem Einbinden/Aushängen erstellen |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--checkpoint` | Einen CRIU-Checkpoint vor dem Einbinden/Aushängen erstellen (für Container mit dem Label `rediacc.checkpoint=true`) |
+| `--skip-router-restart` | Neustart des Route-Servers nach der Operation überspringen |
 
 ## Status prüfen
 
@@ -82,7 +82,7 @@ Eine Kopie eines vorhandenen Repositories in seinem aktuellen Zustand erstellen:
 rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
-Forks verwenden das Name:Tag-Modell: Der resultierende Fork heisst `my-app:staging`. Dies erstellt eine neue verschlüsselte Kopie mit eigener GUID und Netzwerk-ID, wobei der Name des übergeordneten Repositories geteilt wird. Der Fork teilt sich das gleiche LUKS-Credential wie das übergeordnete Repository.
+Forks verwenden das Name:Tag-Modell: Der resultierende Fork heißt `my-app:staging`. Dies erstellt eine neue verschlüsselte Kopie mit eigener GUID und Netzwerk-ID, wobei der Name des übergeordneten Repositories geteilt wird. Der Fork teilt sich das gleiche LUKS-Credential wie das übergeordnete Repository.
 
 ## Validieren
 
@@ -105,7 +105,7 @@ Der Befehl erkennt automatisch Docker-Container-Datenverzeichnisse (beschreibbar
 | Option | Beschreibung |
 |--------|-------------|
 | `--uid <uid>` | Eine benutzerdefinierte UID anstelle von 7111 setzen |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--skip-router-restart` | Neustart des Route-Servers nach der Operation überspringen |
 
 Um die Eigentümerschaft aller Dateien zu erzwingen, einschließlich Container-Daten:
 
@@ -114,7 +114,7 @@ rdc repo ownership --name my-app -m server-1
 ```
 
 
-Siehe den [Migrationsleitfaden](/de/docs/migration) für eine vollständige Anleitung, wann und wie die Eigentümerschaft bei der Projektmigration verwendet wird.
+Siehe den [Migrationsleitfaden](/en/docs/migration) für eine vollständige Anleitung, wann und wie die Eigentümerschaft bei der Projektmigration verwendet wird.
 
 ## Vorlage
 
@@ -133,3 +133,50 @@ rdc repo delete --name my-app -m server-1
 ```
 
 > Dies zerstört dauerhaft das verschlüsselte Disk-Image. Diese Aktion kann nicht rückgängig gemacht werden.
+
+## Repository migrieren
+
+Ein Repository mit minimaler Ausfallzeit live von einer Maschine auf eine andere migrieren.
+
+```bash
+rdc repo migrate --name my-app --from server-1 --to server-2
+```
+
+| Option | Beschreibung |
+|--------|-------------|
+| `--provision` | Das Repository auf der Zielmaschine vor der Migration bereitstellen (erstellt LUKS-Image und registriert Konfiguration) |
+| `--checkpoint` | Einen CRIU-Checkpoint laufender Container vor der Umschaltung erstellen |
+| `--bwlimit <kbps>` | rsync-Bandbreite in Kilobytes pro Sekunde begrenzen |
+| `--skip-dns` | DNS-Einträge nach der Umschaltung nicht aktualisieren |
+
+**Drei-Phasen-Ablauf:**
+
+1. **Heißes Pre-Copy** - rsync überträgt Daten, während das Repository auf der Quelle weiterläuft. Große Dateien werden vor jeder Ausfallzeit übertragen.
+2. **Umschaltung** - Das Repository wird auf der Quelle gestoppt, ein abschließender rsync-Durchlauf synchronisiert verbleibende Änderungen, und das Repository startet auf dem Ziel.
+3. **Start auf dem Ziel** - renet bindet das Repository ein und startet es auf der Zielmaschine. DNS wird aktualisiert, sofern nicht `--skip-dns` angegeben wurde.
+
+![Repository-Live-Migration](/img/repo-migrate-flow.svg)
+
+**Push vs. Migrieren:**
+
+| | `repo push` | `repo migrate` |
+|--|-------------|----------------|
+| Operation | Kopieren | Verschieben |
+| Quelle danach | Unverändert | Gestoppt |
+| Ausfallzeit | Keine (nur Kopie) | Kurzes Umschaltfenster |
+| DNS-Aktualisierung | Nein | Ja (außer mit `--skip-dns`) |
+| Anwendungsfall | Backup, Staging-Klon | Maschinenaustausch, Server-Umzug |
+
+## Bereinigen
+
+Nach dem Löschen von Repositories oder der Wiederherstellung nach fehlgeschlagenen Operationen können verwaiste Mount-Verzeichnisse, Lock-Dateien und unveränderliche Markierungen zurückbleiben. Die Bereinigung entfernt diese sicher:
+
+```bash
+# Vorschau der zu entfernenden Elemente
+rdc machine prune --name server-1 --dry-run
+
+# Verwaiste Ressourcen entfernen
+rdc machine prune --name server-1
+```
+
+Nur Ressourcen ohne zugehöriges Repository-Image sind betroffen. Nicht leere Mount-Verzeichnisse werden nie entfernt.

@@ -35,6 +35,7 @@ async function cleanupDeletedRepoSSH(machineName: string, repoName: string): Pro
 }
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { registerRepoSyncCommands } from './repo-sync.js';
+import { registerRepoMigrateCommand } from './repo-migrate.js';
 import { registerRepoTunnelCommand } from './repo-tunnel.js';
 import { registerRepoVolumeCommands } from './repo-volume.js';
 
@@ -225,7 +226,6 @@ async function handleSingleRepoUp(
   name: string,
   options: {
     machine: string;
-    mount?: boolean;
     skipCheckpoint?: boolean;
     tls?: boolean;
     dryRun?: boolean;
@@ -236,7 +236,6 @@ async function handleSingleRepoUp(
   await assertCommandPolicy(CMD.REPO_UP, name);
 
   const params: Record<string, unknown> = {};
-  if (options.mount) params.mount = true;
   if (options.skipCheckpoint) params.skip_checkpoint = true;
   if (options.tls) params.tls = true;
 
@@ -315,7 +314,7 @@ export function registerRepoCommands(program: Command): void {
 
   repo.addHelpText(
     'after',
-    `\n${t('help.examples')}\n  $ rdc repo create my-app -m server-1 --size 5G   ${t('help.repo.create')}\n  $ rdc repo up my-app -m server-1 --mount          ${t('help.repo.up')}\n  $ rdc repo down my-app -m server-1                ${t('help.repo.down')}\n  $ rdc repo fork my-app my-app-test -m server-1    ${t('help.repo.fork')}\n`
+    `\n${t('help.examples')}\n  $ rdc repo create --name my-app -m server-1 --size 5G   ${t('help.repo.create')}\n  $ rdc repo up --name my-app -m server-1                   ${t('help.repo.up')}\n  $ rdc repo down --name my-app -m server-1                ${t('help.repo.down')}\n  $ rdc repo fork --parent my-app --tag test -m server-1   ${t('help.repo.fork')}\n`
   );
 
   if (isAgentEnvironment() || process.argv.includes('--help-all')) {
@@ -362,7 +361,6 @@ export function registerRepoCommands(program: Command): void {
     .description(t('commands.repo.up.description'))
     .option('--name <name>', t('options.name'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--mount', t('commands.repo.up.mountOption'))
     .option('--skip-checkpoint', t('commands.repo.up.skipCheckpointOption'))
     .option('--tls', t('commands.repo.up.tlsOption'))
     .option('--include-forks', t('commands.repo.upAll.includeForksOption'))
@@ -509,6 +507,7 @@ export function registerRepoCommands(program: Command): void {
     .action(handleRepoList);
   registerExtendedRepoCommands(repo);
   registerRepoBackupCommands(repo);
+  registerRepoMigrateCommand(repo);
   registerRepoSyncCommands(repo);
   registerRepoTunnelCommand(repo);
 }

@@ -1711,6 +1711,16 @@
   color: var(--color-text);
 }
 
+.cf-starting-at {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1;
+  height: 0;
+  overflow: visible;
+  transform: translateY(-1.1rem);
+}
+
 .cf-price-line {
   display: flex;
   align-items: baseline;
@@ -1750,6 +1760,15 @@
 
 .cf-features li strong {
   color: var(--color-text);
+}
+
+.cf-edge-note {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.4;
+  text-align: center;
+  opacity: 0.7;
 }
 
 .cf-feature-info {
@@ -1798,6 +1817,7 @@
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
+  margin-top: auto;
   font-weight: var(--font-weight-semibold);
   text-decoration: none;
   border: 1px solid var(--color-border);

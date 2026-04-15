@@ -6,7 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: "f4949653be4a11cd"
+sourceHash: "e7e428eeb609dc5e"
+sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
 ---
 
 # Servisler
@@ -149,7 +150,7 @@ Her depo en fazla **61 servisi** destekler (slot 0'dan 60'a kadar).
 
 ### Docker Compose'da Servis IP'lerini Kullanma
 
-Her depo izole bir Docker daemon'u çalıştırdığından, `renet compose` tüm servisler için otomatik olarak `network_mode: host` yapılandırır. Servisleri atanan loopback IP'lerine bağlayın:
+Her depo izole bir Docker daemon'u çalıştırdığından, `renet compose` tüm servisler için otomatik olarak `network_mode: host` yapılandırır. Çekirdek, `bind()` çağrılarını servisin atanan loopback IP'sine şeffaf biçimde yeniden yazar; bu nedenle servisler çakışma olmadan `0.0.0.0` veya `localhost`'a bağlanabilir. **Diğer servislere bağlantı** için **servis adını** kullanın -- renet her servis adını fork'larda da her zaman doğru IP'ye çözümlenen bir hostname olarak enjekte eder:
 
 ```yaml
 services:
@@ -158,37 +159,74 @@ services:
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_PASSWORD: secret
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
+    # Açık listen_addresses gerekmez -- çekirdek bind'i doğru loopback IP'ye yeniden yazar
 
   api:
     image: my-api:latest
     environment:
-      DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
-      LISTEN_ADDR: ${API_IP}:8080
+      DATABASE_URL: postgresql://postgres:secret@postgres:5432/mydb  # servis adını kullan
+      LISTEN_ADDR: 0.0.0.0:8080                                      # çekirdek servis IP'sine yeniden yazar
 ```
+
+> **Bağlantılar için servis adları:** Diğer servislere **bağlanmak** için **servis adını** (örn. `postgres`, `redis`) kullanın -- renet, `/etc/hosts` aracılığıyla her servis adını otomatik olarak loopback IP'sine eşler. Veritabanlarında veya yapılandırma dosyalarında saklanan bağlantı dizelerine `${POSTGRES_IP}` gömülmesi ham IP'yi sabitler, bu fork izolasyonunu bozar ve bir **doğrulama hatasıdır**. `${SERVICE_IP}` değişkenleri açık kullanım için hâlâ mevcuttur, ancak bağlama çekirdek tarafından otomatik olarak yönetilir.
 
 > **Not:** `network_mode: host` ifadesini manuel olarak eklemeyin, `renet compose` bunu otomatik olarak enjekte eder. Yeniden başlatma politikaları (örn., `restart: always`) güvenle kullanılabilir, renet CRIU uyumluluğu için bunları otomatik olarak kaldırır ve yönlendirici watchdog konteyner kurtarmasını yönetir.
 
-> **Not:** Fork depoları düz otomatik rotalar alır: `{service}-{tag}.{machine}.{baseDomain}`. Fork'lar için özel alan adları atlanır.
+### Konteyner Kurtarma ve Yeniden Başlatma Politikası
+
+renet ve Docker, konteyner yeniden başlatmalarının nasıl ele alınacağı konusunda kasıtlı olarak farklı görüştedir. Bu ayrımı anlamak, bir konteynerin neden geri geldiğini veya gelmediğini araştırırken önemlidir.
+
+**Yeniden başlatma politikasının çevirisi.** Compose dosyanıza `restart: always` (veya `unless-stopped`, ya da `on-failure`) yazdığınızda, renet gerçek compose dağıtımını sentezlerken bunu **siler** ve `restart: no` ile değiştirir. Orijinal değer, deponun `.rediacc.json` dosyasında `services.<name>.restart_policy` altına kaydedilir. Bu, Docker daemon seviyesindeki otomatik yeniden başlatmanın CRIU checkpoint/restore işlemine müdahale etmesini önler (daemon güdümlü bir yeniden başlatma, eski bir checkpoint öncesi durumdan devam ederdi).
+
+**Watchdog uygulaması.** Yönlendirici watchdog her makinede periyodik olarak çalışır. Her döngüde:
+
+1. Her depo için `.rediacc.json` dosyasını okur ve kurtarılabilir `restart_policy`'ye sahip servisleri bulur.
+2. O deponun daemon'u için tüm konteynerleri listeler, durmuş olanları tespit eder ve kaydedilen politikaya göre yeniden başlatır. 30 saniyelik bir tolerans süresi, `docker stop` komutunu az önce çalıştırmış bir operatörle çakışmayı önler.
+3. Aynı döngü aynı zamanda `/var/run/rediacc/cold-backup-<guid>.running.json` dosyasını da işler (bkz. [Soğuk Yedek Semantiği](backup-restore.md#cold-backup-semantics)). Listelenen konteynerler kaydedilen politikadan bağımsız olarak yeniden başlatılır; çünkü sidecar şu anlama gelir: "renet bunları kasıtlı olarak durdurdu ve operatöre yeniden başlatmayı borçludur."
+
+**`on-failure` politikasının neden bozuk görünebileceği.** Docker'ın `on-failure` politikası yalnızca konteyner sıfır dışı bir kodla çıktığında yeniden başlatır. `docker stop` komutundan veya daemon kapatmasından kaynaklanan düzgün bir durdurma (exit 0) "başarısızlık" değildir ve Docker'ın yerel mantığında da watchdog'un kaydedilmiş politika yolunda da yeniden başlatmayı TETIKLEMEZ. Soğuk yedek sidecar güvenlik ağıdır: kasıtlı olarak durdurduğumuz herhangi bir konteyner, politikasından bağımsız olarak yeniden başlatılır.
+
+**Çalışma zamanı durumunu yorumlama:**
+
+- `docker inspect <container>` → `RestartPolicy.Name`: renet tarafından yönetilen konteynerler için her zaman `no` olur. Semantik politika için buna güvenmeyin.
+- Depo bağlama kökündeki `.rediacc.json` → `services.<name>.restart_policy`: gerçek niyet.
+- `docker ps --format '{{.Status}}'`: çalışma zamanı durumu.
+
+**Sapmanın düzeltilmesi.** Bir konteynerin `.rediacc.json` dosyasındaki kaydedilmiş politika yanlışsa (örneğin compose düzenlendi ama konteyner hiç yeniden oluşturulmadı), `rdc repo up --name <repo> -m <machine>` komutunu yeniden çalıştırın. Konteyner, güncellenen politika kaydedilerek yeniden oluşturulur.
+
+> **Deneysel:** Soğuk yedek sidecar tabanlı kurtarma ve `rdc machine query` komutundaki `--sync-certs` bayrağı renet 0.9+ ile sunuldu. Eski sürümler watchdog kurtarması için yalnızca kaydedilmiş `restart_policy`'ye güvenir; bu da soğuk yedekten sonra `on-failure` konteynerlerini mahsur bırakabilir.
+
+> **Docker bridge ağı, rediacc tarafından yönetilen daemonlarda devre dışıdır.** Her depo başına daemon, `"bridge": "none"` ve `"iptables": false` ile yapılandırılmıştır. Bir depo kabuğunda düz bir `docker run <image>` komutu yine de başlar, ancak konteynere yalnızca bir loopback arayüzü verilir ve DNS ya da dışa doğru bağlantı bulunmaz. Bu tasarım gereğidir, çünkü depolar arası loopback izolasyonu, köprülü bir konteynerin atlayacağı eBPF cgroup kancaları tarafından zorunlu kılınır. Üretim servisleri `renet compose` kullanmalıdır (bu sizin için host ağını enjekte eder); geçici hata ayıklama için `--network host` parametresini açıkça geçin: `docker run --rm --network host -it ubuntu bash`.
+
+> **Not:** Fork depoları üst dominin alt etki alanı altında otomatik rotalar alır: `{service}-fork-{tag}.{repo}.{machine}.{baseDomain}`. Fork'lar için özel alan adları atlanır.
 
 ## Servisleri Başlatma
 
 Depoyu bağlayın ve tüm servisleri başlatın:
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--mount` | Henüz bağlanmamışsa önce depoyu bağla |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--skip-router-restart` | İşlem sonrasında rota sunucusunun yeniden başlatılmasını atla |
 
 Çalıştırma sırası:
-1. LUKS ile şifrelenmiş depoyu bağla (`--mount` belirtilmişse)
+1. LUKS ile şifrelenmiş depoyu bağla (bağlı değilse otomatik bağlanır)
 2. İzole Docker daemon'unu başlat
 3. Compose dosyalarından `.rediacc.json` dosyasını otomatik oluştur
 4. Tüm Rediaccfile'larda `up()` çalıştır (A-Z sırası)
+
+Dağıtım sonrasında çıktıda her servisin gerçek URL'lerini gösteren bir **PROXY ROUTES** bölümü yer alır. Özel Traefik etiketlerine sahip servisler özel etki alanlarını birincil URL olarak gösterir:
+
+```
+HTTP services (accessible via proxy after ~3s):
+  gitlab-server:
+    HTTPS: https://gitlab.example.com  (custom)
+    Auto:  https://gitlab-server.gitlab.server-1.example.com
+    IP:    127.0.11.130
+```
 
 ## Servisleri Durdurma
 
@@ -199,7 +237,7 @@ rdc repo down --name my-app -m server-1
 | Seçenek | Açıklama |
 |---------|----------|
 | `--unmount` | Durdurduktan sonra şifrelenmiş depoyu ayır. Bu etkili olmazsa, `rdc repo unmount` komutunu ayrıca kullanın. |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--skip-router-restart` | İşlem sonrasında rota sunucusunun yeniden başlatılmasını atla |
 
 Çalıştırma sırası:
 1. Tüm Rediaccfile'larda `down()` çalıştır (Z-A ters sıra, en iyi çaba)
@@ -221,7 +259,7 @@ rdc repo up -m server-1
 | `--dry-run` | Ne yapılacağını göster |
 | `--parallel` | İşlemleri paralel çalıştır |
 | `--concurrency <n>` | Maksimum eşzamanlı işlem sayısı (varsayılan: 3) |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--skip-router-restart` | İşlem sonrasında rota sunucusunun yeniden başlatılmasını atla |
 
 ## Önyükleme Sırasında Otomatik Başlatma
 
@@ -237,7 +275,7 @@ Bir depo için otomatik başlatmayı etkinleştirdiğinizde:
 
 Sistem kapatma veya yeniden başlatma sırasında, servis tüm servisleri düzgün bir şekilde durdurur (Rediaccfile `down()`), Docker daemon'larını kapatır ve LUKS birimlerini kapatır.
 
-> **Güvenlik notu:** Otomatik başlatmayı etkinleştirmek, sunucu diskinde bir LUKS anahtar dosyası saklar. Sunucuya root erişimi olan herkes, parola girmeden depoyu bağlayabilir. Bu, kolaylık (otomatik açılış) ve güvenlik (manuel parola girişi gerektirme) arasında bir ödünleşimdir. Bunu kendi tehdit modelinize göre değerlendirin.
+> **Güvenlik notu:** Otomatik başlatmayı etkinleştirmek, sunucu diskinde bir LUKS anahtar dosyası saklar. Sunucuya root erişimi olan herkes, parola girmeden depoyu bağlayabilir. Bunu kendi tehdit modelinize göre değerlendirin.
 
 ### Etkinleştirme
 
@@ -260,6 +298,24 @@ rdc repo autostart disable --name my-app -m server-1
 ```
 
 Bu, anahtar dosyasını kaldırır ve LUKS slot 1'i siler.
+
+### Dağıtımda Anahtar Dosyası Yenileme
+
+Otomatik başlatma etkinleştirildiğinde, `rdc repo up` komutu LUKS slot 1 anahtar dosyasını doğrular.
+Diskteki anahtar dosyası hâlâ LUKS slotu ile eşleşiyorsa herhangi bir değişiklik yapılmaz.
+
+`repo push` / `repo pull` aracılığıyla depo makineler arasında aktarıldıktan sonra
+yeni makinedeki anahtar dosyası eşleşmeyecektir. Bu durumda `repo up` otomatik olarak
+anahtar dosyasını yeniden oluşturur ve LUKS slot 1'i günceller. Şu günlük mesajlarını görürsünüz:
+
+```
+Refreshing keyfile credential for <guid>
+Killing LUKS slot 1: /mnt/rediacc/repositories/<guid>
+Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
+```
+
+Bu güvenlidir; slot 0 (parolanız) hiçbir zaman değiştirilmez. Otomatik başlatma etkin değilse,
+kontrol sessizce atlanır. Hatalar kritik değildir ve dağıtımı engellemez.
 
 ### Durumu Listeleme
 
@@ -303,18 +359,16 @@ services:
       POSTGRES_DB: webapp
       POSTGRES_USER: app
       POSTGRES_PASSWORD: changeme
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
 
   redis:
     image: redis:7-alpine
-    command: redis-server --bind ${REDIS_IP} --port 6379
 
   api:
     image: myregistry/api:latest
     environment:
-      DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
-      REDIS_URL: redis://${REDIS_IP}:6379
-      LISTEN_ADDR: ${API_IP}:8080
+      DATABASE_URL: postgresql://app:changeme@postgres:5432/webapp
+      REDIS_URL: redis://redis:6379
+      LISTEN_ADDR: 0.0.0.0:8080
 ```
 
 **Rediaccfile:**

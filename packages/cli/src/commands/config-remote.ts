@@ -155,7 +155,7 @@ const REMOTE_STRIPPED_FIELDS = [
   'apiUrl',
   'userEmail',
   'cloudProviders',
-  'backupStrategy',
+  'backupStrategies',
   'deletedRepositories',
   'cfDnsApiToken',
   'cfDnsZoneId',

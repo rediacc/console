@@ -4,6 +4,7 @@ import {
   getBlockDevices,
   getContainers,
   getHealthSummary,
+  getLicenseStatuses,
   getNetworkInterfaces,
   getRepositories,
   getServices,
@@ -42,6 +43,7 @@ interface SectionRenderer {
 
 function flattenSystem(sys: SystemInfo): Record<string, unknown> {
   return {
+    machine_id: sys.machine_id ? `${sys.machine_id.slice(0, 16)}...` : '-',
     hostname: sys.hostname,
     os: sys.os_name,
     kernel: sys.kernel,
@@ -140,7 +142,40 @@ function getSections(
           partitions: d.partitions.length,
         })),
     },
+    {
+      title: 'Licenses',
+      getData: (r) => {
+        const currentMachineId = r.system?.machine_id;
+        return getLicenseStatuses(r).map((l) => ({
+          repository: resolve(l.repositoryGuid),
+          status: l.status,
+          issued: l.issuedAt ? relativeTime(l.issuedAt) : '-',
+          expires: l.hardExpiresAt ? relativeTime(l.hardExpiresAt) : '-',
+          machine_match: getMachineMatch(currentMachineId, l.machineId),
+        }));
+      },
+    },
   ];
+}
+
+function getMachineMatch(
+  currentMachineId: string | undefined,
+  licenseMachineId: string | undefined
+): string {
+  if (!currentMachineId || !licenseMachineId) return '-';
+  return licenseMachineId === currentMachineId ? 'Yes' : 'No';
+}
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+function relativeTime(iso: string): string {
+  const now = Date.now();
+  const target = new Date(iso).getTime();
+  const diffMs = target - now;
+  const absDays = Math.abs(Math.round(diffMs / MS_PER_DAY));
+  if (absDays === 0) return 'today';
+  if (diffMs > 0) return `in ${absDays}d`;
+  return `${absDays}d ago`;
 }
 
 function printSummary(result: ListResult): void {
@@ -191,6 +226,8 @@ const SECTION_FLAGS = [
   { flag: 'services', section: 'services' },
   { flag: 'network', section: 'network' },
   { flag: 'blockDevices', section: 'block' },
+  { flag: 'licenses', section: 'licenses' },
+  { flag: 'storageHealth', section: 'storage-health' },
 ] as const;
 
 interface QueryOptions {
@@ -201,6 +238,8 @@ interface QueryOptions {
   services?: boolean;
   network?: boolean;
   blockDevices?: boolean;
+  licenses?: boolean;
+  storageHealth?: boolean;
 }
 
 function printStorageSummary(sys: SystemInfo | undefined): void {
@@ -308,7 +347,10 @@ export function registerQueryCommand(machine: Command, program: Command): void {
     .option('--services', t('options.queryServices'))
     .option('--network', t('options.queryNetwork'))
     .option('--block-devices', t('options.queryBlockDevices'))
-    .action(async (options: QueryOptions & { name: string }) => {
+    .option('--licenses', t('options.queryLicenses'))
+    .option('--storage-health', t('options.queryStorageHealth'))
+    .option('--sync-certs', t('options.querySyncCerts'))
+    .action(async (options: QueryOptions & { name: string; syncCerts?: boolean }) => {
       try {
         const machineName = options.name;
         if (!machineName) {
@@ -346,12 +388,36 @@ export function registerQueryCommand(machine: Command, program: Command): void {
             machineName
           );
           outputService.print(enriched, format);
-          return;
+        } else {
+          renderTableMode(listResult, machineConfig, infra, resolve, machineName);
         }
 
-        renderTableMode(listResult, machineConfig, infra, resolve, machineName);
+        // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)
+        if (!options.storageHealth) {
+          process.stderr.write(`\n${t('commands.machine.query.storageHealthHint')}\n`);
+        }
+
+        if (options.syncCerts) {
+          await runOptInCertSync(machineName);
+        }
       } catch (error) {
         handleError(error);
       }
     });
+}
+
+// Opt-in cert-cache sync after `rdc machine query --sync-certs`. Opt-in
+// because this is a read-only query command today and a network-touching
+// side effect would surprise operators who don't expect it.
+async function runOptInCertSync(machineName: string): Promise<void> {
+  try {
+    const { downloadCertCache } = await import('../../services/cert-cache.js');
+    await downloadCertCache(machineName, { silent: false });
+  } catch (err) {
+    outputService.warn(
+      t('commands.machine.query.syncCertsFailed', {
+        error: err instanceof Error ? err.message : String(err),
+      })
+    );
+  }
 }

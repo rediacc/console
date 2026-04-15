@@ -4,7 +4,8 @@ description: 'Когда использовать rdc, а когда renet.'
 category: Concepts
 order: 1
 language: ru
-sourceHash: "4f7b74a70b59d9c8"
+sourceHash: "86bc5f8593d408de"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # rdc vs renet
@@ -35,17 +36,17 @@ sourceHash: "4f7b74a70b59d9c8"
 Все стандартные задачи выполняются через `rdc` на вашей рабочей станции:
 
 ```bash
-# Set up a new server
+# Настроить новый сервер
 rdc config machine setup --name server-1
 
-# Create and start a repository
+# Создать и запустить репозиторий
 rdc repo create --name my-app -m server-1 --size 10G
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 
-# Stop a repository
+# Остановить репозиторий
 rdc repo down --name my-app -m server-1
 
-# Check machine health
+# Проверить состояние машины
 rdc machine health server-1
 ```
 
@@ -61,17 +62,17 @@ rdc machine health server-1
 
 Все команды `renet` требуют привилегий root (`sudo`). Полный список команд `renet` см. в разделе [Справочник по серверу](/ru/docs/server-reference).
 
-## Экспериментальный режим: `rdc ops` (локальные VM)
+## Экспериментальная функция: `rdc ops` (локальные VM)
 
 `rdc ops` является обёрткой для `renet ops` и позволяет управлять локальными кластерами VM на вашей рабочей станции:
 
 ```bash
-rdc ops setup              # Install prerequisites (KVM or QEMU)
-rdc ops up --basic         # Start a minimal cluster
-rdc ops status             # Check VM status
-rdc ops ssh --vm-id 1  # SSH into bridge VM
-rdc ops ssh --vm-id 1 -c hostname  # Run a command on bridge VM
-rdc ops down               # Destroy cluster
+rdc ops setup              # Установить необходимые компоненты (KVM или QEMU)
+rdc ops up --basic         # Запустить минимальный кластер
+rdc ops status             # Проверить состояние VM
+rdc ops ssh --vm-id 1  # Подключиться по SSH к bridge VM
+rdc ops ssh --vm-id 1 -c hostname  # Выполнить команду на bridge VM
+rdc ops down               # Уничтожить кластер
 ```
 
 > Требуется локальный адаптер. Недоступен с облачным адаптером.

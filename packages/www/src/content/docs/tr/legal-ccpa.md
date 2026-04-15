@@ -4,7 +4,7 @@ description: "Rediacc'ın kendi sunucunuzda barındırma modeli, tüketici veril
 category: "Legal"
 order: 4
 language: tr
-sourceHash: "50081a040deb3183"
+sourceHash: "8d0fc1ff16c1be28"
 ---
 
 Kaliforniya Tüketici Gizlilik Yasası (CCPA), Kaliforniya'daki tüketicilere kişisel bilgileri üzerinde haklar tanıyan bir eyalet yasasıdır. Bu haklar arasında hangi verilerin toplandığını bilme hakkı, silme hakkı ve satışını reddetme hakkı yer alır.

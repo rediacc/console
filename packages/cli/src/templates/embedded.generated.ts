@@ -15,7 +15,10 @@ export const TEMPLATES: Record<string, EmbeddedTemplate> = {
       'app/server.mjs': `import http from 'node:http';
 
 const PORT = 3000;
-const HOST = process.env.SERVICE_IP || '0.0.0.0';
+// eBPF bind rewriting handles IP isolation transparently.
+// Apps can bind to 0.0.0.0 and the kernel rewrites it to the
+// correct loopback IP for this repository's network namespace.
+const HOST = '0.0.0.0';
 
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -55,13 +58,13 @@ server.listen(PORT, HOST, () => {
   db:
     image: postgres:16-alpine
     container_name: db
-    command: -c listen_addresses=\${DB_IP}
+    command: -c listen_addresses=*
     env_file: .env
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $\${POSTGRES_USER} -d $\${POSTGRES_DB} -h \${DB_IP}"]
+      test: ["CMD-SHELL", "pg_isready -U $\${POSTGRES_USER} -d $\${POSTGRES_DB} -h localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -106,41 +109,35 @@ info() {
       'app/server.mjs': `import http from 'node:http';
 
 const PORT = 3000;
-let host = process.env.SERVICE_IP || '0.0.0.0';
+// eBPF bind rewriting handles IP isolation transparently.
+// Apps can bind to 0.0.0.0 and the kernel rewrites it to the
+// correct loopback IP for this repository's network namespace.
+const HOST = '0.0.0.0';
 
-let server = createServer();
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({
+    status: 'ok',
+    host: HOST,
+    pid: process.pid,
+    uptime: Math.floor(process.uptime()),
+  }) + '\\n');
+});
 
-// CRIU restore awareness: after checkpoint/restore the assigned SERVICE_IP
-// may have changed (e.g. repo was pushed to another machine). Poll for
-// changes and rebind the server to the new IP when detected.
-setInterval(() => {
-  const currentIP = process.env.SERVICE_IP;
-  if (currentIP && currentIP !== host) {
-    console.log(\`SERVICE_IP changed: \${host} -> \${currentIP}, rebinding...\`);
-    server.close(() => {
-      host = currentIP;
-      server = createServer();
-    });
+// CRIU: after checkpoint/restore, stale TCP sockets may trigger
+// ECONNRESET before the new connection is established.
+process.on('uncaughtException', (err) => {
+  if (err.code === 'ECONNRESET') {
+    console.warn('ECONNRESET (stale socket after CRIU restore), ignoring');
+    return;
   }
-}, 5000);
+  console.error('Uncaught exception:', err);
+  process.exit(1);
+});
 
-function createServer() {
-  const s = http.createServer((req, res) => {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      status: 'ok',
-      host,
-      pid: process.pid,
-      uptime: Math.floor(process.uptime()),
-    }) + '\\n');
-  });
-
-  s.listen(PORT, host, () => {
-    console.log(\`Server listening on \${host}:\${PORT}\`);
-  });
-
-  return s;
-}
+server.listen(PORT, HOST, () => {
+  console.log(\`Server listening on \${HOST}:\${PORT}\`);
+});
 `,
       'docker-compose.yml': `services:
   app:
@@ -163,19 +160,19 @@ function createServer() {
       # Example: rdc repo create myrepo -m server-1 → https://app.myrepo.server-1.example.com
       - "rediacc.service_port=3000"
       # CRIU: enables checkpoint/restore for live migration.
-      # The app must handle SERVICE_IP changes after restore (see server.mjs).
+      # eBPF handles bind rewriting, so apps do not need to track IP changes.
       - "rediacc.checkpoint=true"
 
   db:
     image: postgres:16-alpine
     container_name: db
-    command: -c listen_addresses=\${DB_IP}
+    command: -c listen_addresses=*
     env_file: .env
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $\${POSTGRES_USER} -d $\${POSTGRES_DB} -h \${DB_IP}"]
+      test: ["CMD-SHELL", "pg_isready -U $\${POSTGRES_USER} -d $\${POSTGRES_DB} -h localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -241,7 +238,7 @@ info() {
   project-a-db:
     image: postgres:16-alpine
     container_name: project-a-db
-    command: -c listen_addresses=\${PROJECT_A_DB_IP}
+    command: -c listen_addresses=*
     environment:
       - POSTGRES_USER=\${POSTGRES_USER}
       - POSTGRES_DB=\${POSTGRES_DB}
@@ -250,7 +247,7 @@ info() {
       - /etc/localtime:/etc/localtime:ro
       - ./db/data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \${POSTGRES_USER} -d \${POSTGRES_DB} -h \${PROJECT_A_DB_IP}"]
+      test: ["CMD-SHELL", "pg_isready -U \${POSTGRES_USER} -d \${POSTGRES_DB} -h localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -286,12 +283,12 @@ down() {
   project-b-app:
     image: redis:7-alpine
     container_name: project-b-app
-    command: redis-server --bind \${PROJECT_B_APP_IP} --requirepass \${ADMIN_PASSWORD}
+    command: redis-server --bind 0.0.0.0 --requirepass \${ADMIN_PASSWORD}
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./data:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -h \${PROJECT_B_APP_IP} -a $\${ADMIN_PASSWORD} ping | grep -q PONG"]
+      test: ["CMD-SHELL", "redis-cli -h localhost -a $\${ADMIN_PASSWORD} ping | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -335,7 +332,7 @@ down() {
       - ./config:/etc/nginx/conf.d:ro
       - ./data:/usr/share/nginx/html:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://\${APP_IP}:80/ || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:80/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

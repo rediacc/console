@@ -6,7 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: es
-sourceHash: "1ec1b0e490ef470c"
+sourceHash: "2c2d289c280e2a7f"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # Arquitectura
@@ -15,7 +16,7 @@ Esta página explica cómo funciona Rediacc internamente: la arquitectura de dos
 
 ## Visión General del Stack Completo
 
-El tráfico fluye desde internet a través de un proxy inverso, hacia daemons Docker aislados, cada uno respaldado por almacenamiento cifrado:
+El tráfico fluye desde internet a través de un proxy inverso hacia daemons Docker aislados, cada uno respaldado por almacenamiento cifrado:
 
 ![Arquitectura del Stack Completo](/img/arch-full-stack.svg)
 
@@ -32,7 +33,7 @@ Rediacc utiliza dos binarios que trabajan juntos a través de SSH:
 
 Cada comando que escribe localmente se traduce en una llamada SSH que ejecuta renet en la máquina remota. Nunca necesitará conectarse manualmente a los servidores por SSH.
 
-Para una regla práctica orientada al operador, consulte [rdc vs renet](/es/docs/rdc-vs-renet). También puede usar `rdc ops` para ejecutar un clúster de VMs local para pruebas, consulte [VMs Experimentales](/es/docs/experimental-vms).
+Para una regla práctica orientada al operador, consulte [rdc vs renet](/en/docs/rdc-vs-renet). También puede usar `rdc ops` para ejecutar un clúster de VMs local para pruebas, consulte [VMs Experimentales](/en/docs/experimental-vms).
 
 ## Config
 
@@ -97,6 +98,29 @@ Esto significa:
 - El daemon Docker del host (si existe) está completamente separado
 
 Las funciones del Rediaccfile tienen automáticamente `DOCKER_HOST` configurado al socket correcto.
+
+### Estructura de Rutas del Daemon
+
+Los datos y la configuración de Docker se almacenan dentro del punto de montaje del repositorio, manteniendo cada daemon completamente aislado del host y de otros repositorios.
+
+**Estructura por repositorio:**
+```
+{datastore}/mounts/{guid}/.rediacc/docker/data/    # Raíz de datos de Docker
+{datastore}/mounts/{guid}/.rediacc/docker/config/  # Configuración de Docker
+```
+
+**Estructura independiente** (daemons no vinculados a un punto de montaje de repositorio):
+```
+{datastore}/standalone/{N}/.rediacc/docker/data/
+{datastore}/standalone/{N}/.rediacc/docker/config/
+```
+
+**Ruta de tiempo de ejecución compartida** (sin cambios):
+```
+/run/rediacc/docker-{N}.sock
+```
+
+Esta estructura unificada elimina las colisiones de montaje de solo lectura y lectura-escritura que ocurrían cuando las rutas del daemon estaban divididas entre el sistema de archivos del host y el volumen cifrado. Tanto los daemons por repositorio como los independientes siguen la misma estructura de directorios, por lo que las herramientas y los diagnósticos funcionan de forma idéntica en ambos casos.
 
 ## Cifrado LUKS
 

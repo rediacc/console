@@ -4,7 +4,7 @@ description: "Cómo Rediacc se ajusta a los controles de seguridad de la informa
 category: "Legal"
 order: 5
 language: es
-sourceHash: "fdea800f46a7d3ec"
+sourceHash: "fa8c17a9c2914241"
 ---
 
 ISO/IEC 27001 es un estándar internacional para sistemas de gestión de seguridad de la información (SGSI), publicado por la Organización Internacional de Normalización (ISO) y la Comisión Electrotécnica Internacional (IEC). La versión actual es ISO/IEC 27001:2022.

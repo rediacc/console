@@ -20,14 +20,14 @@ With Ceph, forking a 100GB datastore to another machine takes **< 2 seconds** (C
 ### Configure Ceph for a machine (one-time)
 
 ```
-rdc config set-ceph -m <machine> --pool <pool> --image <image> [--cluster <name>]
+rdc config machine set-ceph -m <machine> --pool <pool> --image <image> [--cluster <name>]
 ```
 
 Stores Ceph RBD configuration (pool, image name) in the machine's config. Required before `datastore init --backend ceph` or `datastore fork`. The `init` and `fork` commands read pool and image from this config automatically.
 
 ```bash
 # Example: configure source machine (use the pool name from ops provisioner)
-rdc config set-ceph -m rediacc11 --pool rediacc_rbd_pool --image ds-prod
+rdc config machine set-ceph -m rediacc11 --pool rediacc_rbd_pool --image ds-prod
 ```
 
 On success, outputs: `Ceph config set for "rediacc11": pool=rediacc_rbd_pool, image=ds-prod`. The `--cluster` flag defaults to `ceph` and is rarely needed.
@@ -42,10 +42,10 @@ rdc datastore init -m <machine> --backend ceph --size <size> [--image <name>] [-
 
 Creates an RBD image, formats it as BTRFS, mounts at `/mnt/rediacc`, creates the directory structure, and installs a systemd unit for boot persistence.
 
-When `--image` and `--pool` are omitted, they are read from the machine's ceph config (set via `config set-ceph`).
+When `--image` and `--pool` are omitted, they are read from the machine's ceph config (set via `config machine set-ceph`).
 
 ```bash
-# If set-ceph was already called, just specify backend and size:
+# If config machine set-ceph was already called, just specify backend and size:
 rdc datastore init -m rediacc11 --backend ceph --size 100G --force
 
 # Or override image/pool explicitly:
@@ -172,13 +172,13 @@ Only the **source machine** needs ceph config. The `--to` machine name is used f
 
 ```bash
 # 1. Configure Ceph on the source machine (one-time)
-rdc config set-ceph -m rediacc11 --pool rediacc_rbd_pool --image ds-prod
+rdc config machine set-ceph -m rediacc11 --pool rediacc_rbd_pool --image ds-prod
 
 # 2. Initialize Ceph datastore (one-time, reads image/pool from config)
 rdc datastore init -m rediacc11 --backend ceph --size 100G --force
 
 # 3. Deploy repos as usual
-rdc repo up my-app -m rediacc11 --mount
+rdc repo up --name my-app -m rediacc11
 
 # 4. Instant fork for testing (< 2 seconds, zero data transfer)
 rdc datastore fork -m rediacc11 --to rediacc12
@@ -250,7 +250,7 @@ Source RBD image (read-write, production)
 ## Troubleshooting
 
 ### "No such image" on fork
-The source image name in `config set-ceph` must match the actual RBD image created by `datastore init`. Verify with `rdc datastore status -m <machine>` — the `rbd_image` field shows the `pool/image`.
+The source image name in `config machine set-ceph` must match the actual RBD image created by `datastore init`. Verify with `rdc datastore status -m <machine>` — the `rbd_image` field shows the `pool/image`.
 
 ### Unfork fails with "Device or resource busy"
 The clone image still has the fork mounted. Ensure the COW mount is unmounted before removing the clone. Use `--force` to continue past errors. If a previous unfork failed partway, re-run with `--force` to clean up remaining resources.
@@ -276,7 +276,7 @@ Measured on ops VMs with a single Ceph node (rediacc21). CLI bootstrap overhead 
 
 | Command | Operation time | Wall time (dev) | Notes |
 |---------|---------------|-----------------|-------|
-| `config set-ceph` | instant | ~2s | Config-only, no remote call |
+| `config machine set-ceph` | instant | ~2s | Config-only, no remote call |
 | `datastore init --backend ceph` | ~1.8s | ~4.4s | Creates RBD image, formats BTRFS, mounts, installs systemd unit |
 | `datastore status` | ~150ms | ~2.6s | Single SSH command (Ceph backend reads sysfs for RBD info) |
 | `datastore fork` | ~1.9s | ~4.3s | Snapshot + protect + clone + COW mount |

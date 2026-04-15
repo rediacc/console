@@ -4,7 +4,7 @@ description: Guía paso a paso para configurar Claude Code para la gestión aut�
 category: Guides
 order: 31
 language: es
-sourceHash: "f28f17d2e0d3d395"
+sourceHash: "1a9f31b2430273f9"
 ---
 
 Claude Code funciona de forma nativa con Rediacc a través del CLI `rdc`. Esta guía cubre la configuración, los permisos y los flujos de trabajo habituales.

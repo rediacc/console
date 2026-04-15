@@ -4,7 +4,7 @@ description: rdc CLI JSON çıktı formatı, zarf şeması, hata işleme ve ajan
 category: Reference
 order: 51
 language: tr
-sourceHash: "29b827cf79cbba6e"
+sourceHash: "11259cd1eeebf361"
 ---
 
 Tüm `rdc` komutları, AI ajanları ve betikler tarafından programatik tüketim için yapılandırılmış JSON çıktısını destekler.

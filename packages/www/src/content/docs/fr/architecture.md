@@ -6,20 +6,21 @@ description: >-
 category: Concepts
 order: 0
 language: fr
-sourceHash: "1ec1b0e490ef470c"
+sourceHash: "2c2d289c280e2a7f"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # Architecture
 
 Cette page explique le fonctionnement interne de Rediacc : l'architecture à deux outils, la détection d'adaptateur, le modèle de sécurité et la structure de configuration.
 
-## Full Stack Overview
+## Vue d'ensemble du stack complet
 
-Traffic flows from the internet through a reverse proxy, into isolated Docker daemons, each backed by encrypted storage:
+Le trafic transite depuis internet via un proxy inverse vers des démons Docker isolés, chacun adossé à un stockage chiffré :
 
-![Full Stack Architecture](/img/arch-full-stack.svg)
+![Architecture du stack complet](/img/arch-full-stack.svg)
 
-Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), and LUKS-encrypted BTRFS volume. The route server discovers running containers across all daemons and feeds routing configuration to Traefik.
+Chaque dépôt dispose de son propre démon Docker, d'un sous-réseau IP loopback (/26 = 64 IPs) et d'un volume BTRFS chiffré LUKS. Le serveur de routes découvre les conteneurs en cours d'exécution sur tous les démons et transmet la configuration de routage à Traefik.
 
 ## Architecture à deux outils
 
@@ -32,7 +33,7 @@ Rediacc utilise deux binaires qui fonctionnent ensemble via SSH :
 
 Chaque commande que vous tapez localement se traduit par un appel SSH qui exécute renet sur la machine distante. Vous n'avez jamais besoin de vous connecter manuellement aux serveurs en SSH.
 
-Pour un guide pratique orienté opérateur, consultez [rdc vs renet](/fr/docs/rdc-vs-renet). Vous pouvez aussi utiliser `rdc ops` pour lancer un cluster de VM locales, voir [VM expérimentales](/fr/docs/experimental-vms).
+Pour un guide pratique orienté opérateur, consultez [rdc vs renet](/en/docs/rdc-vs-renet). Vous pouvez aussi utiliser `rdc ops` pour lancer un cluster de VM locales pour les tests, voir [VM expérimentales](/en/docs/experimental-vms).
 
 ## Config
 
@@ -68,7 +69,7 @@ Lorsque vous exécutez `rdc config machine setup`, renet crée un utilisateur sy
 - **Shell** : `/sbin/nologin` (ne peut pas se connecter via SSH)
 - **Objectif** : Propriétaire des fichiers du dépôt et exécuteur des fonctions du Rediaccfile
 
-L'utilisateur `rediacc` n'est pas accessible directement via SSH. À la place, rdc se connecte avec l'utilisateur SSH que vous avez configuré (par ex., `deploy`), et renet exécute les opérations sur les dépôts via `sudo -u rediacc /bin/sh -c '...'`. Cela signifie :
+L'utilisateur `rediacc` n'est pas accessible directement via SSH. A la place, rdc se connecte avec l'utilisateur SSH que vous avez configuré (par ex., `deploy`), et renet exécute les opérations sur les dépôts via `sudo -u rediacc /bin/sh -c '...'`. Cela signifie :
 
 1. Votre utilisateur SSH a besoin de privilèges `sudo`
 2. Toutes les données des dépôts appartiennent à `rediacc`, pas à votre utilisateur SSH
@@ -98,11 +99,34 @@ Cela signifie :
 
 Les fonctions du Rediaccfile ont automatiquement `DOCKER_HOST` configuré avec le socket correct.
 
+### Structure des chemins du daemon
+
+Les données et la configuration Docker sont stockées dans le point de montage du dépôt, ce qui maintient chaque daemon complètement isolé de l'hôte et des autres dépôts.
+
+**Structure par dépôt :**
+```
+{datastore}/mounts/{guid}/.rediacc/docker/data/    # Racine des données Docker
+{datastore}/mounts/{guid}/.rediacc/docker/config/  # Configuration Docker
+```
+
+**Structure autonome** (daemons non rattachés à un point de montage de dépôt) :
+```
+{datastore}/standalone/{N}/.rediacc/docker/data/
+{datastore}/standalone/{N}/.rediacc/docker/config/
+```
+
+**Chemin d'exécution partagé** (inchangé) :
+```
+/run/rediacc/docker-{N}.sock
+```
+
+Cette structure unifiée élimine les collisions de montage en lecture seule et lecture-écriture qui survenaient lorsque les chemins du daemon étaient répartis entre le système de fichiers de l'hôte et le volume chiffré. Les daemons par dépôt et les daemons autonomes suivent la même structure de répertoires, de sorte que les outils et les diagnostics fonctionnent de manière identique dans les deux cas.
+
 ## Chiffrement LUKS
 
 Les dépôts sont des images disque chiffrées LUKS stockées dans le datastore du serveur (par défaut : `/mnt/rediacc`). Chaque dépôt :
 
-1. Possède une phrase secrète de chiffrement générée aléatoirement (l'« identifiant »)
+1. Possède une phrase secrète de chiffrement générée aléatoirement (l'identifiant)
 2. Est stocké sous forme de fichier : `{datastore}/repos/{guid}.img`
 3. Est monté via `cryptsetup` lors de l'accès
 

@@ -34,9 +34,9 @@ export function registerMachineCommands(program: Command): void {
     'after',
     `
 ${t('help.examples')}
-  $ rdc machine query server-1                          ${t('help.machine.query')}
-  $ rdc machine query server-1 --containers             ${t('help.machine.containers')}
-  $ rdc machine query server-1 --system --output json   ${t('help.machine.health')}
+  $ rdc machine query --name server-1                          ${t('help.machine.query')}
+  $ rdc machine query --name server-1 --containers             ${t('help.machine.containers')}
+  $ rdc machine query --name server-1 --system --output json   ${t('help.machine.health')}
 `
   );
 

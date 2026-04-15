@@ -8,6 +8,7 @@ import { refreshRepoLicenseIdentity } from '../services/license.js';
 import { outputService } from '../services/output.js';
 import { readSSHKey } from '../services/renet-execution.js';
 import {
+  deleteServerConfig,
   deleteStoredSubscriptionToken,
   getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,
@@ -73,7 +74,9 @@ async function promptRegionIfNeeded(): Promise<void> {
  * Returns the resolved server URL for use in subsequent requests.
  */
 async function resolveAndSyncServer(options: { server?: string }): Promise<string> {
-  // Resolve server URL: flag > env > config.accountServer > server.json > default
+  // Resolve server URL. See getSubscriptionServerUrl() for the precedence
+  // order — server.json wins over rediacc.json so the region picker's most
+  // recent choice takes effect on the next login.
   let configAccountServer: string | undefined;
   try {
     const currentRdcConfig = await configService.getCurrent();
@@ -256,6 +259,11 @@ export function registerSubscriptionCommands(program: Command): void {
     .action(() => {
       try {
         deleteStoredSubscriptionToken();
+        // Also clear the saved server config so the next `login` shows the
+        // region picker again. Without this, a user who logged in once would
+        // be permanently pinned to that region with no way to switch short
+        // of manually deleting ~/.config/rediacc/server.json.
+        deleteServerConfig();
         outputService.success(t('commands.subscription.logout.success'));
       } catch (error) {
         handleError(error);
@@ -398,7 +406,6 @@ export {
   handleSubscriptionTokenState,
   outputRemoteStatus,
   resolveSubscriptionCommandContext,
-  runMachineActivationRefresh,
   runRepoBatchRefresh,
   type SubscriptionCommandContext,
 } from './subscription-actions.js';

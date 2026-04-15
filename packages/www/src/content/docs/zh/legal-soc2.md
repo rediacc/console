@@ -4,7 +4,7 @@ description: "Rediacc 如何满足 SOC 2 安全性、可用性和机密性的信
 category: "Legal"
 order: 2
 language: zh
-sourceHash: "96eff23962051882"
+sourceHash: "a01e8b457d648fdd"
 ---
 
 SOC 2（系统和组织控制 2）是由美国注册会计师协会 (AICPA) 开发的框架，用于评估组织在安全性、可用性、处理完整性、机密性和隐私方面的控制。

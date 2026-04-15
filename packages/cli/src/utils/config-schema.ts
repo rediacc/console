@@ -39,7 +39,7 @@ function isValidCronField(field: string, min: number, max: number): boolean {
   });
 }
 
-function isValidCron(expr: string): boolean {
+export function isValidCron(expr: string): boolean {
   const parts = expr.trim().split(/\s+/);
   if (parts.length !== 5) return false;
   return parts.every((field, i) => isValidCronField(field, CRON_RANGES[i][0], CRON_RANGES[i][1]));
@@ -65,8 +65,6 @@ const ipOrHostname = z
   );
 
 const absolutePath = z.string().refine((v) => v.startsWith('/'), 'Must be an absolute path');
-
-const cronExpr = z.string().refine(isValidCron, 'Must be a valid 5-field cron expression');
 
 const domain = z
   .string()
@@ -135,14 +133,10 @@ export const InfraConfigSchema = z.object({
 });
 
 export const BackupDestinationSchema = z.object({
+  name: z.string().min(1, 'Destination name cannot be empty'),
   storage: z.string().min(1, 'Storage name cannot be empty'),
-  schedule: cronExpr.optional(),
   enabled: z.boolean().optional(),
-});
-
-export const BackupScheduleSchema = z.object({
-  schedule: cronExpr.optional(),
-  enabled: z.boolean().optional(),
+  bandwidthLimit: z.string().optional(),
 });
 
 export const CertEmailSchema = z.email('Must be a valid email address');

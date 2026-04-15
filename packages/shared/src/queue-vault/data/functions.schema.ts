@@ -35,6 +35,7 @@ export const BackupPullParamsSchema = z.object({
     .describe('Source type: machine (SSH) or storage (rclone)'),
   from: z.string().min(1).describe('Source machine or storage name'),
   seed: z.string().optional().describe('Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)'),
+  bwlimit: z.string().optional().describe('Bandwidth limit for rsync transfer (e.g., 6M, 10M)'),
 });
 
 /** Push repository to remote destination (machine or storage) */
@@ -52,6 +53,7 @@ export const BackupPushParamsSchema = z.object({
   checkpoint: z.boolean().default(false).optional().describe('CRIU hot backup (zero-downtime)'),
   override: z.boolean().optional().describe('Overwrite existing backup'),
   seed: z.string().optional().describe('Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)'),
+  bwlimit: z.string().optional().describe('Bandwidth limit for rsync transfer (e.g., 6M, 10M)'),
 });
 
 /** Mount RBD image on client */

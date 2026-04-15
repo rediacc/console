@@ -4,7 +4,8 @@ description: "SSH、セットアップ、リポジトリ、サービス、Docker
 category: "Guides"
 order: 10
 language: ja
-sourceHash: "23754822c67de564"
+sourceHash: "ee8fe3ee7166cfe4"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # トラブルシューティング
@@ -33,6 +34,51 @@ rdc config machine scan-keys -m server-1
 - SSHユーザーがパスワードなしのsudoアクセスを持っているか確認するか、必要なコマンドに `NOPASSWD` を設定してください
 - サーバーの空きディスク容量を確認してください
 - `--debug` を付けて詳細な出力を取得してください: `rdc config machine setup server-1 --debug`
+
+## ディストリビューション固有のセットアップ問題
+
+公式サポートされている5つのサーバーOS（Ubuntu 24.04、Debian 13、Fedora 43、openSUSE Leap 16.0、Oracle Linux 10）はそれぞれ異なるセキュリティポリシーとパッケージマネージャーを持っています。ほとんどのセットアップは問題なく動作します。以下は動作しないケースを扱っています。
+
+### SELinuxの拒否 (Fedora 43、Oracle Linux 10)
+
+どちらもSELinuxをenforcing（強制）モードで実行します。rdc setupはカスタムSELinuxポリシーをインストールしません。リポジトリごとのdocker daemonは標準の `container_t` コンテキストで動作します。AVC拒否によりセットアップが失敗した場合は、auditログを確認してドメインを特定してください:
+
+```bash
+sudo ausearch -m AVC -ts recent | head -40
+# または:
+sudo tail -f /var/log/audit/audit.log | grep AVC
+```
+
+拒否がrenetバイナリや特定のファイルパスを指している場合、SELinuxを無効化するのではなく、ラベルの再設定（`restorecon -v /path`）で解決できることがほとんどです。調査中の一時的な回避策として、`sudo setenforce 0` でシステムをpermissive（許容）モードにできます。ラベルの再設定が定着したことを確認したら `sudo setenforce 1` で再度有効にしてください。
+
+### AppArmorの拒否 (Ubuntu 24.04、openSUSE Leap 16.0)
+
+どちらもデフォルトでAppArmorを使用しています。リポジトリごとのdocker daemonはデフォルトのコンテナプロファイルを使用します。リポジトリ内のコンテナがブロックされている場合:
+
+```bash
+dmesg | grep -i apparmor
+sudo aa-status
+```
+
+CRIUがAppArmorに引っかかる既知のケースです。Renetは `rediacc.checkpoint=true` とラベル付けされたコンテナに対して自動的に `security_opt: apparmor=unconfined` を設定します。それ以外についてはAppArmorプロファイルを手動で設定する必要はないはずです。CRIUに関する注意事項は [Rediaccのルール](/en/docs/rules-of-rediacc) を参照してください。
+
+### パッケージマネージャーのエラーシグネチャ
+
+| OS | パッケージマネージャー | 典型的なエラー | 解決策 |
+|---|---|---|---|
+| Ubuntu / Debian | apt-get | `File has unexpected size (N != M). Mirror sync in progress?` | オリジンの後ろにあるCloudflareエッジキャッシュの問題です。~15秒後に `apt-get update` を再試行してください。次のポーリングで整合性チェックが通過します。 |
+| Fedora / Oracle | dnf | `Problem: nothing provides rediacc-cli` | ディスクにキャッシュされているRPMリポジトリのメタデータが古くなっています。`sudo dnf clean all && sudo dnf makecache` を実行してください。 |
+| openSUSE | zypper | `Repository 'rediacc' needs to be refreshed.` | `sudo zypper refresh rediacc` を一度実行してください。それ以降のインストールは成功するはずです。 |
+
+### btrfsモジュールが見つからない (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
+
+`rdc config machine setup` または `renet system check-btrfs` が次のエラーで失敗する場合:
+
+```
+Module btrfs not found
+```
+
+...サーバーはRHEL 10の標準カーネルで動作しており、これにはツリー内のbtrfsモジュールが含まれていません。これはRediaccのバグではありません。RHEL 10はbtrfsを意図的に削除しました。解決策は **代わりにOracle Linux 10を使用すること** です。Oracle 10はデフォルトでUnbreakable Enterprise Kernel（UEK）を使用しており、btrfsが維持されています。詳細については [要件 - なぜUEKなのか?](/en/docs/requirements) を参照してください。
 
 ## リポジトリの作成失敗
 
@@ -76,6 +122,48 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 ```
 
 `2816` をリポジトリのネットワークIDに置き換えてください（`rediacc.json` または `rdc repo status` で確認できます）。
+
+## `docker run` にネットワークがない、`apt update` が失敗する、`curl` がハングする
+
+リポジトリシェル内で `--network host` を付けずにコンテナを実行すると、ループバックインターフェースしか持たず、DNS も外向きの接続性もない分離されたコンテナが得られます。`apt update`、`pip install`、`curl https://...` のようなコマンドや、ネットワーク取得を行うあらゆる処理は、DNS エラーで即座に失敗します。
+
+これは意図的な仕様です。Rediacc のネットワーキングモデルは**すべてのサービスでホストネットワーキングを使用する**というものであり、`renet compose` によって強制されています。NAT 付きの標準的な Docker ブリッジは、あるリポジトリが別のリポジトリのサービスに到達することを防ぐカーネルレベルのループバック分離を迂回してしまうため、リポジトリごとの Docker デーモンは `"bridge": "none"` と `"iptables": false` で構成されており、単純な `docker run` コンテナが接続できるルーティング可能なブリッジは存在しません。
+
+**アドホックなコンテナでネットワークアクセスを得るには、ホストネットワーキングを使用してください:**
+
+```bash
+# リポジトリシェル内で（rdc term connect -m <machine> -r <repo>）
+docker run --rm --network host -it ubuntu bash
+# これで apt update、curl、pip install はすべて動作します。
+```
+
+**本番サービスでは、生の `docker run` の代わりに Rediaccfile で `renet compose` を使用してください。** `renet compose` は `network_mode: host`、サービス IP ラベル、Traefik のルーティングラベルを自動的に注入します。詳細は [サービス](/ja/docs/services) を参照してください。
+
+## VS Code でサンドボックスファイルに Permission Denied が出る
+
+`rdc vscode connect -m <machine> -r <repo>` で接続した際、以前の VS Code セッションの後に `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` のようなエラーが出たことがあるかもしれません。これはサンドボックスディレクトリ内のファイル所有権が混在していたことが原因で、SSH ユーザーと内部の `rediacc` ユーザーの両方によって書かれたファイルが含まれていました。
+
+最近のバージョンの renet は、以下の方法でこれを修正しています:
+
+- リポジトリごとのサンドボックスワークスペース（`/mnt/rediacc/.interim/sandbox/<repo>/`）を、グループ `rediacc` と set-group-ID ビット（モード `2775`）付きで作成するため、配下に書かれるすべてのファイルは正しいグループを継承します。
+- サンドボックスランタイム内で umask `002` を適用し、新しいファイルがグループ書き込み可能（`0664`/`0775`）で作成されるようにします。
+- 起動時に既存の `.vscode-server/` サブツリーを正規化するため、修正前からある古いファイルが自動的に修復されます。
+
+それでもパーミッションエラーが発生する場合は、マシン上のシェルから一度 `sudo systemctl restart rediacc-docker-<network-id>` でリポジトリの Docker デーモンを再起動して正規化パスを走らせてから、再度 `rdc vscode connect` を試してください。
+
+## renet のアップグレード後にデーモンが起動しない
+
+`renet daemon start-foreground` は起動のたびに、リポジトリの設定ディレクトリ内の `daemon.json` と `containerd.toml` を現在のテンプレートから書き換えるため、古いバージョンの renet で生成された設定を持つリポジトリも新しいフォーマットを自動的に取り込みます。マイグレーションコマンドを実行する必要はなく、systemd ユニットを手動で再生成する必要もありません。サービスを再起動するだけです:
+
+```bash
+sudo systemctl restart rediacc-docker-<network-id>
+```
+
+それでもユニットが起動に失敗する場合は、ジャーナルで具体的なエラーを確認してください:
+
+```bash
+sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
+```
 
 ## 間違ったDocker daemonにコンテナが作成される
 

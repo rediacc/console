@@ -415,6 +415,14 @@ export const SORT_DEFAULTS = {
 } as const;
 
 /**
+ * Backup strategy defaults
+ */
+export const BACKUP_DEFAULTS = {
+  /** Default backup mode (hot = zero-downtime snapshot while running) */
+  MODE: 'hot' as const,
+} as const;
+
+/**
  * Aggregated defaults object for convenient access
  */
 export const BATCH_DEFAULTS = {
@@ -424,6 +432,7 @@ export const BATCH_DEFAULTS = {
 
 export const DEFAULTS = {
   SSH: SSH_DEFAULTS,
+  BACKUP: BACKUP_DEFAULTS,
   BATCH: BATCH_DEFAULTS,
   REPOSITORY: REPOSITORY_DEFAULTS,
   DOCKER: DOCKER_DEFAULTS,

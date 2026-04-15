@@ -5,7 +5,6 @@ const {
   mockFetchSubscriptionLicenseReport,
   mockReadMachineActivationStatus,
   mockReadRuntimeRepoLicenseStatuses,
-  mockRefreshMachineActivation,
   mockRefreshRepoLicensesBatch,
   mockAuthorizeSubscriptionViaDeviceCode,
   mockGetLocalConfig,
@@ -30,7 +29,6 @@ const {
   mockFetchSubscriptionLicenseReport: vi.fn(),
   mockReadMachineActivationStatus: vi.fn(),
   mockReadRuntimeRepoLicenseStatuses: vi.fn(),
-  mockRefreshMachineActivation: vi.fn(),
   mockRefreshRepoLicensesBatch: vi.fn(),
   mockAuthorizeSubscriptionViaDeviceCode: vi.fn(),
   mockGetLocalConfig: vi.fn(),
@@ -85,7 +83,6 @@ vi.mock('../../services/license.js', () => ({
   fetchSubscriptionLicenseReport: mockFetchSubscriptionLicenseReport,
   readMachineActivationStatus: mockReadMachineActivationStatus,
   readRuntimeRepoLicenseStatuses: mockReadRuntimeRepoLicenseStatuses,
-  refreshMachineActivation: mockRefreshMachineActivation,
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
 }));
 
@@ -173,7 +170,6 @@ describe('subscription command helpers', () => {
         teamName: 'Platform',
       },
     });
-    mockRefreshMachineActivation.mockResolvedValue(true);
     mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([]);
     mockRefreshRepoLicensesBatch.mockResolvedValue({
       scanned: 3,
@@ -327,41 +323,26 @@ describe('subscription command helpers', () => {
     );
   });
 
-  it('refresh runs activation refresh before repo batch refresh and prints combined summary', async () => {
+  it('refresh runs repo batch refresh and prints combined summary', async () => {
     await executeSubscriptionRefresh('hostinger');
 
-    expect(mockRefreshMachineActivation).toHaveBeenCalledTimes(1);
     expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
-    expect(mockRefreshMachineActivation.mock.invocationCallOrder[0]).toBeLessThan(
-      mockRefreshRepoLicensesBatch.mock.invocationCallOrder[0]
-    );
     expect(mockOutputSuccess).toHaveBeenCalledWith('commands.subscription.refresh.success');
     expect(mockOutputWarn).toHaveBeenCalledWith('repo-bad: quota reached');
   });
 
-  it('refresh-activation only refreshes machine activation', async () => {
+  it('refresh-activation runs repo batch refresh', async () => {
     await executeActivationRefresh('hostinger');
 
-    expect(mockRefreshMachineActivation).toHaveBeenCalledTimes(1);
-    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+    expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
     expect(mockOutputSuccess).toHaveBeenCalledWith('commands.subscription.refresh.refreshed');
   });
 
   it('refresh-repos only performs repo batch refresh', async () => {
     await executeRepoRefresh('hostinger');
 
-    expect(mockRefreshMachineActivation).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
     expect(mockOutputSuccess).toHaveBeenCalledWith('commands.subscription.refresh.repos.success');
-  });
-
-  it('refresh fails when machine activation refresh is rejected', async () => {
-    mockRefreshMachineActivation.mockResolvedValueOnce(false);
-
-    await expect(executeSubscriptionRefresh('hostinger')).rejects.toThrow(
-      'commands.subscription.refresh.failed'
-    );
-    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
   });
 
   it('renders repo batch summary including failures', () => {

@@ -5,6 +5,7 @@
  * All requests are E2E encrypted via X25519 ECDH + AES-256-GCM tunnel.
  */
 
+import { API_VERSION_DEFAULTS } from '@rediacc/shared/config/defaults';
 import {
   CURRENT_SERVER_E2E_KEY,
   E2E_CONTENT_TYPE,
@@ -13,11 +14,9 @@ import {
   openResponse,
   sealRequest,
 } from '@rediacc/shared/e2e';
-import { API_VERSION_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { t } from '../i18n/index.js';
-import { getInstallMethod, getNpmUpdateCommand } from '../utils/platform.js';
-import { resolveChannel } from './updater.js';
 import { ValidationError } from '../utils/errors.js';
+import { getInstallMethod, getNpmUpdateCommand } from '../utils/platform.js';
 import { VERSION } from '../version.js';
 import {
   getSubscriptionServerUrl,
@@ -26,6 +25,7 @@ import {
   normalizeServerUrl,
   saveServerConfig,
 } from './subscription-auth.js';
+import { resolveChannel } from './updater.js';
 
 /** Cached server key material (imported once per process). */
 let serverKeyCache: {
@@ -239,8 +239,18 @@ export async function accountServerFetch<T = unknown>(
   // Parse the decrypted response
   const parsed: T & { error?: string; code?: string } = body ? JSON.parse(body) : {};
 
-  // Handle CLI upgrade required (426)
+  // Handle CLI upgrade required (426).
+  // Pre-release builds (e.g. "0.0.0-dev") are developer artifacts — their
+  // channel governs suitability, not the server's numeric min-version gate.
+  // Swallow the 426 silently so callers treat it as a no-op instead of
+  // printing a nonsensical "upgrade your dev build" banner.
   if (status === 426) {
+    if (VERSION.includes('-')) {
+      // Dev build: synthesize an empty result. `Object.create(null)` returns
+      // `any` so it's assignable to an arbitrary generic T without an object
+      // literal assertion. Callers' `.catch(() => null)` paths don't run.
+      return Object.create(null);
+    }
     handle426Response(
       parsed as {
         error?: string;

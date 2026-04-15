@@ -2181,6 +2181,7 @@ a[target='_blank']::after {
 @media (max-width: 48rem) {
   .feature-tabs {
     grid-template-columns: 1fr;
+    padding: 0;
   }
   .feature-tab-list {
     flex-direction: row;
@@ -2193,6 +2194,9 @@ a[target='_blank']::after {
     min-width: max-content;
     padding: var(--space-3) var(--space-4);
     font-size: var(--font-size-sm);
+  }
+  .feature-tab-panel {
+    padding: var(--space-4);
   }
 }
 
@@ -2488,6 +2492,10 @@ a[target='_blank']::after {
 }
 
 @media (max-width: 900px) {
+  .terminal-tutorial-player-inner {
+    min-height: 180px;
+  }
+
   .terminal-player-audio-volume-wrap:hover .terminal-player-audio-slider-wrap,
   .terminal-player-audio-volume-wrap:focus-within .terminal-player-audio-slider-wrap {
     width: 4.1rem;

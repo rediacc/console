@@ -9,7 +9,7 @@ const {
   mockGetLocalMachine,
   mockListStorages,
   mockListRepositories,
-  mockRefreshMachineActivation,
+  mockIssueRepoLicense,
   mockRefreshRepoLicensesBatch,
   mockAuthorizeSubscriptionViaDeviceCode,
   mockGetSubscriptionTokenState,
@@ -27,7 +27,7 @@ const {
   mockGetLocalMachine: vi.fn(),
   mockListStorages: vi.fn(),
   mockListRepositories: vi.fn(),
-  mockRefreshMachineActivation: vi.fn(),
+  mockIssueRepoLicense: vi.fn(),
   mockRefreshRepoLicensesBatch: vi.fn(),
   mockAuthorizeSubscriptionViaDeviceCode: vi.fn(),
   mockGetSubscriptionTokenState: vi.fn(),
@@ -57,9 +57,8 @@ vi.mock('../config-resources.js', () => ({
 }));
 
 vi.mock('../license.js', () => ({
-  refreshMachineActivation: mockRefreshMachineActivation,
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
-  issueRepoLicense: vi.fn(),
+  issueRepoLicense: mockIssueRepoLicense,
   refreshRepoLicenseIdentity: vi.fn(),
 }));
 
@@ -87,8 +86,11 @@ vi.mock('../renet-execution.js', () => ({
 const { localExecutorService } = await import('../local-executor.js');
 
 describe('localExecutorService first-use onboarding', () => {
+  const savedSkipActivation = process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
     mockGetLocalConfig.mockResolvedValue({
       sshPrivateKey: 'PRIVATE_KEY',
       sshPublicKey: 'PUBLIC_KEY',
@@ -105,14 +107,15 @@ describe('localExecutorService first-use onboarding', () => {
     });
     mockListStorages.mockResolvedValue([]);
     mockListRepositories.mockResolvedValue([]);
-    mockRefreshMachineActivation.mockResolvedValue(true);
+    mockIssueRepoLicense.mockResolvedValue(true);
     mockRefreshRepoLicensesBatch.mockResolvedValue({
-      scanned: 0,
-      issued: 0,
+      scanned: 1,
+      issued: 1,
       refreshed: 0,
       unchanged: 0,
       failed: 0,
-      valid: 0,
+      valid: 1,
+      invalidSignatureDetected: 0,
       failures: [],
     });
     mockAuthorizeSubscriptionViaDeviceCode.mockResolvedValue({
@@ -125,13 +128,19 @@ describe('localExecutorService first-use onboarding', () => {
     mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
   });
 
+  afterEach(() => {
+    if (savedSkipActivation !== undefined) {
+      process.env.REDIACC_SKIP_MACHINE_ACTIVATION = savedSkipActivation;
+    }
+  });
+
   it('authorizes and retries once on first-use missing-license failures', async () => {
     mockExecStreaming
       .mockImplementationOnce((_cmd: string, handlers: { onStderr?: (chunk: string) => void }) => {
         handlers.onStderr?.(
           '{"code":"LICENSE_REQUIRED","reason":"missing","message":"repo license required"}\n'
         );
-        return 10;
+        return Promise.resolve(10);
       })
       .mockImplementationOnce(() => Promise.resolve(0));
 
@@ -142,7 +151,7 @@ describe('localExecutorService first-use onboarding', () => {
     });
 
     expect(mockAuthorizeSubscriptionViaDeviceCode).toHaveBeenCalledTimes(1);
-    expect(mockRefreshMachineActivation).toHaveBeenCalledTimes(1);
+    expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
     expect(mockExecStreaming).toHaveBeenCalledTimes(2);
     expect(result.success).toBe(true);
   });
@@ -153,7 +162,7 @@ describe('localExecutorService first-use onboarding', () => {
         handlers.onStderr?.(
           '{"code":"LICENSE_REQUIRED","reason":"expired","message":"repo license required"}\n'
         );
-        return 10;
+        return Promise.resolve(10);
       })
       .mockImplementationOnce(() => Promise.resolve(0));
 
@@ -164,7 +173,7 @@ describe('localExecutorService first-use onboarding', () => {
     });
 
     expect(mockAuthorizeSubscriptionViaDeviceCode).not.toHaveBeenCalled();
-    expect(mockRefreshMachineActivation).toHaveBeenCalledTimes(1);
+    expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
     expect(mockExecStreaming).toHaveBeenCalledTimes(2);
     expect(result.success).toBe(true);
   });
@@ -175,7 +184,7 @@ describe('localExecutorService first-use onboarding', () => {
         handlers.onStderr?.(
           '{"code":"LICENSE_REQUIRED","reason":"machine_mismatch","message":"repo license required"}\n'
         );
-        return 10;
+        return Promise.resolve(10);
       }
     );
 
@@ -186,7 +195,7 @@ describe('localExecutorService first-use onboarding', () => {
     });
 
     expect(mockAuthorizeSubscriptionViaDeviceCode).not.toHaveBeenCalled();
-    expect(mockRefreshMachineActivation).not.toHaveBeenCalled();
+    expect(mockIssueRepoLicense).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
     expect(mockExecStreaming).toHaveBeenCalledTimes(1);
     expect(result.success).toBe(false);
@@ -200,7 +209,7 @@ describe('localExecutorService first-use onboarding', () => {
         handlers.onStderr?.(
           '{"code":"LICENSE_REQUIRED","reason":"repository_mismatch","message":"repo license required"}\n'
         );
-        return 10;
+        return Promise.resolve(10);
       }
     );
 
@@ -210,7 +219,7 @@ describe('localExecutorService first-use onboarding', () => {
       captureOutput: true,
     });
 
-    expect(mockRefreshMachineActivation).not.toHaveBeenCalled();
+    expect(mockIssueRepoLicense).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
     expect(result.success).toBe(false);
     expect(result.errorCode).toBe('REPO_LICENSE_REPOSITORY_MISMATCH');
@@ -223,7 +232,7 @@ describe('localExecutorService first-use onboarding', () => {
         handlers.onStderr?.(
           '{"code":"LICENSE_REQUIRED","reason":"sequence_regression","message":"repo license required"}\n'
         );
-        return 10;
+        return Promise.resolve(10);
       }
     );
 
@@ -233,7 +242,7 @@ describe('localExecutorService first-use onboarding', () => {
       captureOutput: true,
     });
 
-    expect(mockRefreshMachineActivation).not.toHaveBeenCalled();
+    expect(mockIssueRepoLicense).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
     expect(result.success).toBe(false);
     expect(result.errorCode).toBe('REPO_LICENSE_INTEGRITY_ERROR');
@@ -246,7 +255,7 @@ describe('localExecutorService first-use onboarding', () => {
         handlers.onStderr?.(
           '{"code":"LICENSE_REQUIRED","reason":"invalid_signature","message":"repo license required"}\n'
         );
-        return 10;
+        return Promise.resolve(10);
       }
     );
 
@@ -256,7 +265,7 @@ describe('localExecutorService first-use onboarding', () => {
       captureOutput: true,
     });
 
-    expect(mockRefreshMachineActivation).not.toHaveBeenCalled();
+    expect(mockIssueRepoLicense).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
     expect(result.success).toBe(false);
     expect(result.errorCode).toBe('REPO_LICENSE_INTEGRITY_ERROR');
@@ -269,7 +278,7 @@ describe('localExecutorService first-use onboarding', () => {
         handlers.onStderr?.(
           '{"code":"LICENSE_REQUIRED","reason":"identity_mismatch","message":"repo identity mismatch"}\n'
         );
-        return 10;
+        return Promise.resolve(10);
       }
     );
 
@@ -279,7 +288,7 @@ describe('localExecutorService first-use onboarding', () => {
       captureOutput: true,
     });
 
-    expect(mockRefreshMachineActivation).not.toHaveBeenCalled();
+    expect(mockIssueRepoLicense).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
     expect(result.success).toBe(false);
     expect(result.errorCode).toBe('REPO_LICENSE_IDENTITY_MISMATCH');

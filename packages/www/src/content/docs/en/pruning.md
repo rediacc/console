@@ -41,15 +41,29 @@ Cleans up on-machine resources in two phases.
 
 ### Phase 1: Datastore cleanup (always runs)
 
-Removes empty mount directories, stale lock files, and stale BTRFS snapshots.
+Removes every kind of resource that can be left behind when a repository is deleted or when a machine-level refactor retires a naming convention. Each category is scanned independently, and the cleanup is a single idempotent pass, so running prune repeatedly is safe and converges on a clean datastore.
+
+| Category | What it removes |
+|---------|-----------------|
+| Empty mount directories | `mounts/<guid>/` dirs with no backing repository image |
+| Orphan immovable directories | `immovable/<guid>/` dirs with no backing repository image |
+| Stale lock files | `repositories/.lock-<guid>` for deleted repos |
+| Stale backup snapshots | `.snapshot-*` and `.backup-*` left behind by killed backup runs |
+| Orphan VS Code sandbox directories | `.interim/sandbox/<name>` for repos no longer active on the machine |
+| Orphan iptables chains | `REDIACC_WILDCARD_<N>` and `DOCKER_ISOLATED_NET_<N>` chains for deleted networks |
+| Orphan authorized_keys entries | `sandbox-gateway <repo> --guid <uuid>` lines whose `--guid` no longer matches an active mount dir |
+
+The authorized_keys scan looks at `/home/*/.ssh/authorized_keys` and `/root/.ssh/authorized_keys`. An entry is kept only if its `--guid` tag maps to a live mount dir GUID, so repos currently deployed on the machine are always preserved regardless of whether their name happens to appear anywhere on disk. Legacy entries written before renet started adding the `--guid` tag cannot be validated and are always reported as orphans.
 
 ```bash
-# Dry-run
+# Dry-run, shows what would be removed (no changes applied)
 rdc machine prune --name server-1 --dry-run
 
 # Execute cleanup
 rdc machine prune --name server-1
 ```
+
+> **Cascading cleanup.** Some categories depend on earlier ones. For example, deleting empty mount directories may expose additional sandbox orphans whose backing mount just went away. Running `rdc machine prune` a second time catches the cascade and finishes the cleanup. The final dry-run ends with `No orphaned resources found. Datastore is clean.` when nothing is left to do.
 
 ### Phase 2: Orphaned repository images (opt-in)
 

@@ -4,7 +4,7 @@ description: دليل خطوة بخطوة لتهيئة Claude Code لإدارة 
 category: Guides
 order: 31
 language: ar
-sourceHash: "f28f17d2e0d3d395"
+sourceHash: "1a9f31b2430273f9"
 ---
 
 يعمل Claude Code بشكل أصلي مع Rediacc من خلال أداة `rdc` CLI. يغطي هذا الدليل الإعداد والأذونات وسير العمل الشائعة.

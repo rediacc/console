@@ -1,0 +1,142 @@
+<svg viewBox="0 0 800 500" width="800" height="500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="serverGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2d2d2d"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </linearGradient>
+    <filter id="ds" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="800" height="500" fill="#f5f5f5"/>
+
+  <!-- Title -->
+  <text x="400" y="32" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#1a1a1a">Repository Live Migration</text>
+
+  <!-- Phase labels -->
+  <text x="140" y="60" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#556b2f">Phase 1: Bulk Transfer</text>
+  <text x="400" y="60" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#cc3333">Phase 2: Cutover</text>
+  <text x="660" y="60" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#556b2f">Phase 3: Complete</text>
+
+  <!-- Separator lines -->
+  <line x1="267" y1="50" x2="267" y2="340" stroke="#e0e0e0" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="533" y1="50" x2="533" y2="340" stroke="#e0e0e0" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- PHASE 1 -->
+  <!-- Source server -->
+  <g filter="url(#ds)">
+    <rect x="40" y="80" width="100" height="130" rx="8" fill="#ffffff" stroke="#3d3d3d" stroke-width="1.5"/>
+  </g>
+  <rect x="65" y="86" width="50" height="16" rx="3" fill="url(#serverGrad)"/>
+  <circle cx="108" cy="94" r="2" fill="#556b2f"/>
+  <text x="90" y="118" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">Source</text>
+  <rect x="52" y="128" width="36" height="18" rx="4" fill="#556b2f"/>
+  <rect x="92" y="128" width="36" height="18" rx="4" fill="#6f8243"/>
+  <text x="70" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#fff">app</text>
+  <text x="110" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#fff">db</text>
+  <!-- Running badge -->
+  <rect x="55" y="158" width="70" height="18" rx="9" fill="#556b2f"/>
+  <text x="90" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" font-weight="700" fill="#fff">RUNNING</text>
+
+  <!-- Target server (faint) -->
+  <g filter="url(#ds)">
+    <rect x="160" y="80" width="100" height="130" rx="8" fill="#ffffff" stroke="#e0e0e0" stroke-width="1.5"/>
+  </g>
+  <rect x="185" y="86" width="50" height="16" rx="3" fill="#e0e0e0"/>
+  <text x="210" y="118" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#999">Target</text>
+  <rect x="175" y="128" width="70" height="18" rx="4" fill="#f0f0f0" stroke="#e0e0e0"/>
+  <text x="210" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">receiving...</text>
+
+  <!-- rsync arrow -->
+  <line x1="90" y1="220" x2="210" y2="220" stroke="#556b2f" stroke-width="2"/>
+  <polygon points="206,216 214,220 206,224" fill="#556b2f"/>
+  <text x="150" y="238" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#556b2f">rsync bulk (no downtime)</text>
+  <text x="150" y="254" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#999">With backup seed: ~30s</text>
+  <text x="150" y="266" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#999">Fresh transfer: ~17 min</text>
+
+  <!-- PHASE 2 -->
+  <!-- Source (stopped) -->
+  <g filter="url(#ds)">
+    <rect x="300" y="80" width="100" height="130" rx="8" fill="#ffffff" stroke="#cc3333" stroke-width="1.5"/>
+  </g>
+  <rect x="325" y="86" width="50" height="16" rx="3" fill="#e0e0e0"/>
+  <text x="350" y="118" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#999">Source</text>
+  <rect x="312" y="128" width="36" height="18" rx="4" fill="#e0e0e0"/>
+  <rect x="352" y="128" width="36" height="18" rx="4" fill="#e0e0e0"/>
+  <text x="330" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">app</text>
+  <text x="370" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">db</text>
+  <!-- Stopped badge -->
+  <rect x="315" y="158" width="70" height="18" rx="9" fill="#cc3333"/>
+  <text x="350" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" font-weight="700" fill="#fff">STOPPED</text>
+
+  <!-- Target (receiving delta) -->
+  <g filter="url(#ds)">
+    <rect x="430" y="80" width="100" height="130" rx="8" fill="#ffffff" stroke="#3d3d3d" stroke-width="1.5"/>
+  </g>
+  <rect x="455" y="86" width="50" height="16" rx="3" fill="url(#serverGrad)"/>
+  <circle cx="498" cy="94" r="2" fill="#556b2f"/>
+  <text x="480" y="118" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">Target</text>
+  <rect x="445" y="128" width="70" height="18" rx="4" fill="#f0f0f0" stroke="#e0e0e0"/>
+  <text x="480" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">receiving...</text>
+
+  <!-- Delta arrow -->
+  <line x1="350" y1="220" x2="480" y2="220" stroke="#cc3333" stroke-width="2" stroke-dasharray="6,3"/>
+  <polygon points="476,216 484,220 476,224" fill="#cc3333"/>
+  <text x="415" y="238" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#cc3333">delta only (brief downtime)</text>
+  <text x="415" y="254" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#999">~5s (only changes since Phase 1)</text>
+
+  <!-- PHASE 3 -->
+  <!-- Target (running) -->
+  <g filter="url(#ds)">
+    <rect x="580" y="80" width="100" height="130" rx="8" fill="#ffffff" stroke="#556b2f" stroke-width="2"/>
+  </g>
+  <rect x="605" y="86" width="50" height="16" rx="3" fill="url(#serverGrad)"/>
+  <circle cx="648" cy="94" r="2" fill="#556b2f"/>
+  <text x="630" y="118" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">Target</text>
+  <rect x="592" y="128" width="36" height="18" rx="4" fill="#556b2f"/>
+  <rect x="632" y="128" width="36" height="18" rx="4" fill="#6f8243"/>
+  <text x="610" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#fff">app</text>
+  <text x="650" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#fff">db</text>
+  <!-- Running badge -->
+  <rect x="595" y="158" width="70" height="18" rx="9" fill="#556b2f"/>
+  <text x="630" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" font-weight="700" fill="#fff">RUNNING</text>
+
+  <!-- Source (unmounted) -->
+  <g filter="url(#ds)">
+    <rect x="700" y="80" width="80" height="130" rx="8" fill="#fafafa" stroke="#e0e0e0" stroke-width="1"/>
+  </g>
+  <text x="740" y="118" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#999">Source</text>
+  <rect x="710" y="132" width="60" height="16" rx="4" fill="#f0f0f0"/>
+  <text x="740" y="143" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">unmounted</text>
+
+  <!-- DNS label -->
+  <text x="660" y="238" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#556b2f">DNS switched to target</text>
+  <text x="660" y="254" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#999">~15s (Docker + services start)</text>
+
+  <!-- Timeline bar -->
+  <g filter="url(#ds)">
+    <rect x="40" y="280" width="720" height="50" rx="8" fill="#ffffff" stroke="#e0e0e0" stroke-width="1"/>
+  </g>
+  <rect x="55" y="295" width="180" height="20" rx="4" fill="#556b2f" opacity="0.15"/>
+  <text x="145" y="309" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#556b2f">Bulk: ~30s or ~17min</text>
+  <rect x="245" y="295" width="220" height="20" rx="4" fill="#cc3333" opacity="0.15"/>
+  <text x="355" y="309" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#cc3333">Downtime: ~5s</text>
+  <rect x="475" y="295" width="270" height="20" rx="4" fill="#556b2f" opacity="0.15"/>
+  <text x="610" y="309" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#556b2f">Start: ~15s</text>
+
+  <!-- Assumption note -->
+  <text x="400" y="345" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#999">Example: 100 GB repo at 1 Gbps. Backup seed = data already on target from scheduled strategy.</text>
+
+  <!-- Decorative corner circles -->
+  <circle cx="42" cy="462" r="28" fill="#e0e0e0"/>
+  <circle cx="758" cy="462" r="28" fill="#e0e0e0"/>
+
+  <!-- Bottom badge -->
+  <g filter="url(#ds)">
+    <rect x="80" y="360" width="640" height="46" rx="23" fill="#556b2f"/>
+    <text x="400" y="388" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#ffffff">
+      Two-Phase rsync | Minimal Downtime | Auto-Provision + CRIU Support
+    </text>
+  </g>
+</svg>

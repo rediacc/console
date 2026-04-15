@@ -285,23 +285,38 @@
     },
     "config": {
       "backupStrategy": {
-        "description": "Gestionar estrategia de respaldo multi-destino",
+        "description": "Gestionar estrategias de respaldo con nombre (modos caliente/frío, destinos, programación)",
+        "list": {
+          "description": "Listar todas las estrategias de respaldo"
+        },
+        "remove": {
+          "description": "Eliminar una estrategia de respaldo o destino",
+          "optionDestination": "Eliminar solo este destino (conserva los demás destinos)",
+          "optionName": "Nombre de la estrategia (requerido)",
+          "removed": "Estrategia de respaldo eliminada"
+        },
         "set": {
-          "description": "Configurar ajustes de programación de respaldos",
-          "noOptions": "Especifique al menos una opción: --destination, --cron, --enable o --disable",
-          "optionCron": "Expresión cron para la programación de respaldos (ej. \"0 2 * * *\")",
-          "optionDestination": "Nombre del destino de almacenamiento predeterminado",
-          "optionDisable": "Deshabilitar respaldos programados",
-          "optionEnable": "Habilitar respaldos programados",
-          "saved": "Configuración de programación de respaldos guardada"
+          "description": "Crear o actualizar una estrategia de respaldo",
+          "optionBwlimit": "Límite de ancho de banda de rclone (ej. \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")",
+          "optionCron": "Programación cron (ej. \"0 * * * *\" para cada hora)",
+          "optionDestination": "Nombre del destino dentro de la estrategia",
+          "optionDisable": "Deshabilitar la estrategia o destino",
+          "optionEnable": "Habilitar la estrategia o destino",
+          "optionExclude": "Excluir estos repos del respaldo (nombres separados por comas)",
+          "optionInclude": "Respaldar solo estos repos (nombres separados por comas)",
+          "optionMode": "Modo de respaldo: \"hot\" (sin tiempo de inactividad) o \"cold\" (detener, instantánea, reiniciar)",
+          "optionName": "Nombre de la estrategia (requerido)",
+          "optionStorage": "Nombre de la configuración de almacenamiento (credenciales rclone)",
+          "saved": "Configuración de estrategia de respaldo guardada",
+          "storageRequired": "--storage es obligatorio al crear un nuevo destino. Uso: --storage <storage-name>"
         },
         "show": {
-          "description": "Mostrar la configuración actual de programación de respaldos",
-          "destinations": "Destinos:",
-          "enabled": "Habilitado: {{enabled}}",
-          "noDestinations": "No hay destinos de respaldo configurados",
-          "notConfigured": "No hay programación de respaldos configurada",
-          "schedule": "Programación: {{schedule}}"
+          "description": "Mostrar detalles de la estrategia de respaldo",
+          "destinationsHeader": "  Destinos:",
+          "noDestinations": "  Destinos: (ninguno)",
+          "notConfigured": "No hay estrategias de respaldo configuradas",
+          "notFound": "Estrategia de respaldo \"{{name}}\" no encontrada",
+          "optionName": "Nombre de la estrategia (muestra todas si se omite)"
         }
       },
       "certCache": {
@@ -320,7 +335,8 @@
           "merged": "Se conservaron {{count}} certificado(s) de la caché local con mayor vigencia",
           "noAcmeJson": "No se encontró acme.json en {{machine}}",
           "optionNoPrune": "Omitir limpieza de certificados de ID de red obsoletos",
-          "pruned": "{{count}} certificado(s) obsoleto(s) limpiado(s)"
+          "pruned": "{{count}} certificado(s) obsoleto(s) limpiado(s)",
+          "prunedExpired": "Se eliminaron {{count}} certificado(s) caducado(s)"
         },
         "push": {
           "description": "Subir certificados TLS en caché a una máquina",
@@ -647,8 +663,8 @@
         "authStatus": "Estado",
         "cliVersion": "Versión de CLI",
         "contextMode": "Modo de contexto",
-        "dockerAvailable": "Docker",
-        "goInstalled": "Go",
+        "dockerAvailable": "Docker disponible",
+        "goInstalled": "Go instalado",
         "machines": "Máquinas",
         "nodeVersion": "Versión de Node.js",
         "opsPrereqs": "Requisitos de OPS",
@@ -660,7 +676,7 @@
         "sshKey": "Clave SSH",
         "subscriptionMachineSlots": "Ranuras de máquinas",
         "subscriptionRepoLicenses": "Licencias de repositorios",
-        "subscriptionStatus": "Status",
+        "subscriptionStatus": "Estado de suscripción",
         "subscriptionToken": "Token de acceso"
       },
       "description": "Diagnosticar el entorno CLI y la integración de renet",
@@ -694,10 +710,30 @@
     },
     "machine": {
       "backup": {
+        "cancel": {
+          "cancelled": "{{name}} cancelado",
+          "cancelling": "Deteniendo {{name}}...",
+          "description": "Cancelar un respaldo en ejecución en una máquina remota",
+          "notRunning": "No hay respaldo en ejecución para la estrategia \"{{name}}\"",
+          "optionStrategy": "Nombre de estrategia (cancela todas si se omite)"
+        },
         "description": "Gestión de respaldos de máquina",
+        "list": {
+          "description": "Listar estrategias de respaldo vinculadas a todas las máquinas",
+          "noMachines": "No hay máquinas configuradas"
+        },
+        "now": {
+          "description": "Ejecutar un respaldo inmediatamente en una máquina remota",
+          "optionStrategy": "Nombre de estrategia (ejecuta todas si se omite)"
+        },
         "schedule": {
-          "description": "Enviar programación de respaldo a una máquina remota (temporizador systemd)",
-          "success": "Programación de respaldo desplegada en {{machine}}"
+          "description": "Desplegar programación de respaldos en una máquina remota (temporizadores systemd)",
+          "optionDryRun": "Previsualizar unidades generadas sin desplegar",
+          "success": "Programación de respaldos desplegada en {{machine}}"
+        },
+        "status": {
+          "description": "Mostrar estado de respaldo y estado del temporizador en una máquina remota",
+          "optionStrategy": "Mostrar detalles de una estrategia específica"
         }
       },
       "containers": {
@@ -743,6 +779,8 @@
         "fetching": "Obteniendo salud de la máquina...",
         "header": "\nVerificación de Salud para {{name}}:",
         "issuesSection": "\nProblemas:",
+        "licensesSection": "\nLicencias:",
+        "licensesSummary": "  {{valid}}/{{total}} válidas, {{expired}} vencidas, {{mismatch}} discrepancia de máquina, {{missing}} faltantes",
         "noData": "No hay datos de estado disponibles para la máquina",
         "repositoriesSection": "\nRepositorios:",
         "repositoriesSummary": "  {{mounted}}/{{total}} montados ({{docker}} con Docker)",
@@ -817,7 +855,9 @@
         "fetched": "Estado obtenido",
         "fetching": "Obteniendo estado de {{machine}}...",
         "infrastructure": "Infraestructura",
-        "noData": "No hay datos de estado disponibles"
+        "noData": "No hay datos de estado disponibles",
+        "storageHealthHint": "Consejo: Ejecuta con --storage-health para ver la fragmentación de BTRFS y el ahorro de reflink por repo",
+        "syncCertsFailed": "Falló la sincronización de la caché de certificados: {{error}}"
       },
       "rename": {
         "description": "Renombrar una máquina"
@@ -1189,6 +1229,9 @@
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "{{action}} completado: {{succeeded}}/{{total}} exitosos",
       "batchStarting": "{{action}}: «{{repo}}»...",
+      "certSync": {
+        "updated": "Caché de certificados ACME actualizada desde {{machine}} ({{count}} certificados)"
+      },
       "create": {
         "alreadyExists": "El repositorio \"{{name}}\" ya existe en el contexto",
         "completed": "Repositorio creado",
@@ -1246,7 +1289,7 @@
         "rollback": "Configuración revertida para \"{{repository}}\"",
         "starting": "Creando fork de \"{{parent}}\" como \"{{repository}}\" en \"{{machine}}\"...",
         "tagOption": "Etiqueta para el fork (crea nombre:etiqueta)",
-        "tagRequired": "La etiqueta es obligatoria para fork. Uso: rdc repo fork <parent> <tag> -m <machine>",
+        "tagRequired": "La etiqueta es obligatoria para fork. Uso: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "upOption": "Montar e iniciar servicios después de fork (fork + mount + up en un solo comando)"
       },
       "list": {
@@ -1256,6 +1299,39 @@
         "starting": "Listando repositorios en \"{{machine}}\"..."
       },
       "machineOption": "Nombre de la máquina de destino",
+      "migrate": {
+        "checkpointing": "Creando checkpoint CRIU...",
+        "complete": "Migración completada: {{name}} movido de {{from}} a {{to}}",
+        "deltaDone": "Sincronización delta completada",
+        "deltaFailed": "Sincronización delta fallida",
+        "deltaSync": "Sincronizando delta...",
+        "description": "Migración en vivo de un repositorio de una máquina a otra con tiempo de inactividad mínimo. rsync en dos fases: transferencia masiva en ejecución, luego parada breve para sincronización delta. Soporta checkpoint CRIU para migración de memoria de procesos y aprovisionamiento automático de máquinas destino",
+        "descriptionShort": "Migración en vivo de un repositorio entre máquinas",
+        "dnsSkipped": "Cambio de DNS omitido (sin baseDomain o configuración de Cloudflare)",
+        "downtime": "Tiempo de inactividad: {{duration}}",
+        "optionBwlimit": "Límite de ancho de banda para transferencia rsync (ej: 10M)",
+        "optionCheckpoint": "Migración en vivo CRIU: capturar y restaurar estado de memoria de procesos",
+        "optionFrom": "Nombre de la máquina origen",
+        "optionProvision": "Aprovisionamiento automático del destino vía proveedor cloud (ej: hetzner, linode)",
+        "optionSkipDns": "Omitir cambio de registros DNS después de la migración",
+        "optionTo": "Nombre de la máquina destino",
+        "phase1": "Fase 1: Transfiriendo datos masivos (el origen sigue en ejecución)...",
+        "phase1Done": "Transferencia masiva completada",
+        "phase1Failed": "Transferencia masiva fallida",
+        "phase2": "Fase 2: Corte (breve inactividad)...",
+        "phase3": "Fase 3: Iniciando en el destino...",
+        "provisioning": "Aprovisionando máquina destino {{machine}} vía {{provider}}...",
+        "sourceStopped": "Servicios del origen detenidos",
+        "sourceUnmounted": "Origen desmontado",
+        "startFailed": "Error al iniciar en el destino",
+        "startingTarget": "Iniciando servicios en el destino...",
+        "stopFailed": "Error al detener servicios del origen",
+        "stoppingSource": "Deteniendo servicios del origen...",
+        "switchingDns": "Cambiando registros DNS...",
+        "targetStarted": "Servicios del destino iniciados",
+        "unmountFailed": "Error al desmontar origen",
+        "unmountingSource": "Desmontando origen..."
+      },
       "mount": {
         "checkpointOption": "Restaurar desde checkpoint después de montar",
         "completed": "Montaje completado",
@@ -1280,6 +1356,7 @@
         "deploying": "Desplegando \"{{repo}}\" en {{machine}}...",
         "description": "Obtener repositorio de un remoto (máquina o almacenamiento). Omitir el nombre para obtener todos los repos. El tipo de origen se detecta automáticamente desde la configuración. Use --up para desplegar después del pull",
         "descriptionShort": "Obtener repositorio de un remoto (máquina o almacenamiento)",
+        "optionBwlimit": "Límite de ancho de banda para transferencia rsync (ej: \"6M\", \"10M\")",
         "optionForce": "Forzar sobrescritura del repositorio existente",
         "optionFrom": "Nombre de la máquina o almacenamiento de origen (detectado automáticamente desde la configuración)",
         "optionUp": "Después de pull, montar y desplegar el repositorio en esta máquina",
@@ -1293,6 +1370,7 @@
         "description": "Enviar repositorio a un remoto (máquina o almacenamiento). Omitir el nombre para enviar todos los repos. El tipo de destino se detecta automáticamente desde la configuración. Para transferencia entre máquinas, la imagen cifrada del repo se copia con el MISMO GUID — esto es un respaldo/migración, no un fork. Para crear un fork independiente, use 'repo fork' primero, luego push. Use --up para desplegar después del push",
         "descriptionShort": "Enviar repositorio a un remoto (máquina o almacenamiento)",
         "destRequired": "Especifique --to <remote> (nombre de máquina o almacenamiento de la configuración)",
+        "optionBwlimit": "Límite de ancho de banda para transferencia rsync (ej: \"6M\", \"10M\")",
         "optionCheckpoint": "Crear checkpoint CRIU antes del respaldo (captura el estado de memoria del proceso para migración en vivo)",
         "optionForce": "Forzar sobrescritura del respaldo existente",
         "optionProvision": "Aprovisionar automáticamente la máquina destino a través del proveedor de nube si no existe",
@@ -1381,7 +1459,7 @@
           "descriptionShort": "Aplicar una plantilla a un repositorio",
           "notFound": "Plantilla \"{{name}}\" no encontrada. Disponibles: {{available}}"
         },
-        "completed": "Plantilla aplicada. Desplegar con: rdc repo up {{repository}} -m {{machine}}",
+        "completed": "Plantilla aplicada. Desplegar con: rdc repo up --name {{repository}} -m {{machine}}",
         "description": "Aplicar una plantilla a un repositorio",
         "descriptionShort": "Aplicar una plantilla a un repositorio (docker-compose.yml + Rediaccfile)",
         "failed": "Error al aplicar la plantilla",
@@ -2059,16 +2137,16 @@
     "affectedChildClones": ". Clones secundarios afectados: {{clones}}. Primero elimine o promueva clones secundarios.",
     "agent": {
       "commandBlocked": "El comando \"{{command}}\" no esta disponible en modo agente.\n\nEste comando ejecuta funciones arbitrarias de bajo nivel sin protecciones de seguridad. Use comandos CLI tipados o herramientas MCP en su lugar.\n\nAlternativas:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Ejecute \"rdc agent capabilities\" para ver todos los comandos disponibles\n\nSi necesita acceso directo, pida al usuario que ejecute el comando directamente.",
-      "createGuard": "No se puede crear un nuevo repositorio grand \"{{name}}\" en modo agente.\n\nLos agentes operan en modo solo-fork. Los repositorios grand son entornos de producción a los que los agentes no pueden acceder después de la creación.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nUsuario: para permitir la creación de repositorios, establezca REDIACC_ALLOW_GRAND_REPO=* (o un nombre de repositorio específico) en su terminal antes de iniciar la sesión del agente.",
-      "createGuardOverride": "No se puede crear un nuevo repositorio grand \"{{name}}\". No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "createGuardOverrideNonLinux": "No se puede crear un nuevo repositorio grand \"{{name}}\". La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
+      "createGuard": "No se puede crear un nuevo repositorio grand \"{{name}}\" en modo agente.\n\nLos agentes operan en modo solo-fork. Los repositorios grand son entornos de producción a los que los agentes no pueden acceder después de la creación.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nUsuario: para permitir la creación de repositorios, establezca REDIACC_ALLOW_GRAND_REPO=* (o un nombre de repositorio específico) en su terminal antes de iniciar la sesión del agente.",
+      "createGuardOverride": "No se puede crear un nuevo repositorio grand \"{{name}}\". No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "No se puede crear un nuevo repositorio grand \"{{name}}\". La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
       "forkBlocked": "El comando \"{{command}}\" no está disponible en repositorios fork.\n\nLos repos fork son entornos sandbox temporales. Esta operación solo se aplica a repositorios grand (producción). Pida al usuario que ejecute este comando directamente.",
-      "grandGuard": "\"{{name}}\" es un repositorio grand (producción). Los agentes no pueden modificar repositorios grand directamente.\n\nLos repositorios grand contienen datos de producción. Use un fork en su lugar — los forks son copias sandbox seguras y aisladas.\n\nFlujo de trabajo:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork (ej: rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover\n\nUsuario: para permitir acceso directo, establezca REDIACC_ALLOW_GRAND_REPO={{name}} (o * para todos los repos) en su terminal antes de iniciar la sesión del agente.",
-      "grandGuardOverride": "\"{{name}}\" es un repositorio grand (producción). No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nUse un fork en su lugar — los forks son copias sandbox seguras y aisladas:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover",
-      "grandGuardOverrideNonLinux": "\"{{name}}\" es un repositorio grand (producción). La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nFlujo de trabajo:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
-      "machineGuard": "El acceso directo a la máquina \"{{machine}}\" no está permitido en modo agente.\n\nLos agentes deben conectarse a través de un contexto de repositorio para acceso sandbox. Cree un fork del repositorio primero, luego conéctese al fork.\n\nFlujo de trabajo:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nUsuario: para permitir acceso directo a la máquina, establezca REDIACC_ALLOW_GRAND_REPO=* (o un nombre de repositorio específico) en su terminal antes de iniciar la sesión del agente.",
-      "machineGuardOverride": "El acceso directo a la máquina \"{{machine}}\" no está permitido. No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nCree un fork del repositorio primero, luego conéctese al fork:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
-      "machineGuardOverrideNonLinux": "La anulación de acceso directo a la máquina no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nFlujo de trabajo:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
+      "grandGuard": "\"{{name}}\" es un repositorio grand (producción). Los agentes no pueden modificar repositorios grand directamente.\n\nLos repositorios grand contienen datos de producción. Use un fork en su lugar — los forks son copias sandbox seguras y aisladas.\n\nFlujo de trabajo:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork (ej: rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover\n\nUsuario: para permitir acceso directo, establezca REDIACC_ALLOW_GRAND_REPO={{name}} (o * para todos los repos) en su terminal antes de iniciar la sesión del agente.",
+      "grandGuardOverride": "\"{{name}}\" es un repositorio grand (producción). No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nUse un fork en su lugar — los forks son copias sandbox seguras y aisladas:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" es un repositorio grand (producción). La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nFlujo de trabajo:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
+      "machineGuard": "El acceso directo a la máquina \"{{machine}}\" no está permitido en modo agente.\n\nLos agentes deben conectarse a través de un contexto de repositorio para acceso sandbox. Cree un fork del repositorio primero, luego conéctese al fork.\n\nFlujo de trabajo:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nUsuario: para permitir acceso directo a la máquina, establezca REDIACC_ALLOW_GRAND_REPO=* (o un nombre de repositorio específico) en su terminal antes de iniciar la sesión del agente.",
+      "machineGuardOverride": "El acceso directo a la máquina \"{{machine}}\" no está permitido. No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nCree un fork del repositorio primero, luego conéctese al fork:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "La anulación de acceso directo a la máquina no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nFlujo de trabajo:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
       "mcpGrandGuard": "\"{{name}}\" es un repositorio grand (producción). Los agentes no pueden modificar repositorios grand directamente.\n\nUse repo_fork para crear una copia sandbox segura y aislada, luego opere en el fork.\nSi necesita acceso directo, pida al usuario que reinicie el servidor MCP con --allow-grand.",
       "mcpGrandGuardOverride": "\"{{name}}\" es un repositorio grand (producción). No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork para crear una copia sandbox segura y aislada, luego opere en el fork.",
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" es un repositorio grand (producción). La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nUse repo_fork para crear una copia sandbox segura y aislada, luego opere en el fork.",
@@ -2126,6 +2204,7 @@
     "regionRequired": "Nombre de región requerido. Use --region o establezca contexto.",
     "registrationFailed": "Falló el registro",
     "remoteNotFound": "\"{{name}}\" no es una máquina o almacenamiento conocido. Máquinas: {{machines}}. Almacenamientos: {{storages}}",
+    "repositoryAlreadyMounted": "El repositorio \"{{name}}\" ya está montado en \"{{machine}}\". Migrar sobre un repositorio activo lo corrompería. Ejecute primero: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "Repositorio \"{{name}}\" no encontrado",
     "repositoryRequired": "Nombre de repositorio requerido. Use --repository <name>.",
     "resourceNotFound": "{{resource}} no encontrado",
@@ -2152,11 +2231,13 @@
     "teamRequired": "Nombre de equipo requerido. Use --team o establezca contexto.",
     "term": {
       "connectivityFailed": "No se puede alcanzar {{host}}:{{port}}. {{error}}\n\nResolución de problemas:\n  - Verificar si la máquina está encendida y conectada a la red\n  - Verificar que la dirección IP sea correcta en la bóveda de máquina\n  - Asegurarse de que el puerto {{port}} no esté bloqueado por un firewall\n  - Intente hacer ping a la máquina: ping {{host}}",
+      "dockerComposeForbidden": "\"docker compose\" no está permitido en el contexto del repositorio.\n\nUse \"renet compose -- <args>\" en su lugar para que se apliquen las IPs loopback por repositorio, la inyección de red del host, las capacidades CRIU y la validación del compose. Ejecutar \"docker compose\" directamente omite todo esto y corrompe silenciosamente el despliegue.\n\nPara despliegues orquestados, prefiera: rdc repo up --name <repository> -m <machine>",
+      "fileWriteDetected": "Escritura de archivo detectada ({{detected}}). Use rdc repo sync en su lugar:\n  rdc repo sync upload -m MACHINE -r REPO --local FILE --remote PATH\n\nrsync transfiere archivos con compresión delta, sumas de verificación y permisos correctos.",
       "launchFailed": "Falló al lanzar terminal: {{error}}",
       "noHostKey": "Máquina '{{machine}}' no tiene clave de host configurada en la bóveda",
       "noIpAddress": "Máquina '{{machine}}' no tiene dirección IP configurada",
       "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada",
-      "repoContextRequired": "El comando requiere contexto de repositorio.\n\nSe detectó \"{{detected}}\" que necesita DOCKER_HOST y variables de entorno del repositorio.\nEstas solo están disponibles cuando se especifica un repositorio.\n\nEn lugar de:\n  rdc term {{machine}} -c \"{{command}}\"\n\nUse:\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
+      "repoContextRequired": "El comando requiere contexto de repositorio.\n\nSe detectó \"{{detected}}\" que necesita DOCKER_HOST y variables de entorno del repositorio.\nEstas solo están disponibles cuando se especifica un repositorio.\n\nEn lugar de:\n  rdc term connect -m {{machine}} -c \"{{command}}\"\n\nUse:\n  rdc term connect -m {{machine}} -r <repository> -c \"{{command}}\"",
       "sshCode1": "Error genérico - verificar sintaxis de comando o permisos remotos",
       "sshCode126": "Permiso denegado - no se puede ejecutar comando en remoto",
       "sshCode127": "Comando no encontrado en máquina remota",
@@ -2179,7 +2260,7 @@
       "noIpAddress": "Máquina '{{machine}}' no tiene dirección IP configurada",
       "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada",
       "notFound": "VS Code no encontrado.\n\nInstale desde: https://code.visualstudio.com/\nO establezca la variable de entorno REDIACC_VSCODE_PATH.",
-      "repoNotDeployed": "El repositorio \"{{repository}}\" no está desplegado en {{machine}}.\n\nDespliéguelo primero:\n  rdc repo up {{repository}} -m <nombre-máquina>"
+      "repoNotDeployed": "El repositorio \"{{repository}}\" no está desplegado en {{machine}}.\n\nDespliéguelo primero:\n  rdc repo up --name {{repository}} -m <nombre-máquina>"
     }
   },
   "help": {
@@ -2187,6 +2268,7 @@
     "cli": {
       "machineQuery": "Mostrar estado de la máquina",
       "repoUp": "Desplegar servicios del repositorio",
+      "syncDownload": "Descargar archivos del repositorio",
       "syncUpload": "Subir archivos al repositorio",
       "termRepo": "SSH al repositorio"
     },
@@ -2201,7 +2283,7 @@
     "machine": {
       "containers": "Listar contenedores en ejecución",
       "health": "Verificación de salud para CI/CD",
-      "keyConcepts": "\nConceptos Clave:\n\n  Filtros de Consulta\n    • rdc machine query <name> devuelve todas las secciones por defecto\n    • Use --system, --repositories, --containers, --services, --network, --block-devices para filtrar\n    • La salida JSON enriquece los contenedores con: repository (nombre resuelto), domain, autoRoute\n\n  Monitoreo y Salud\n    • machine health sale con: 0=saludable, 1=advertencia, 2=error — úselo para puertas CI/CD\n    • containers --health-check sale con 2 si algún contenedor no está saludable\n    • services --stability-check sale con 2 si algún servicio está fallando, reiniciando o tiene >3 reinicios\n\n  Estructura del Almacén de Datos (/mnt/rediacc/)\n    • repositories/ — imágenes LUKS cifradas (una por GUID de repositorio)\n    • mounts/ — puntos de montaje descifrados (accesibles cuando el repositorio está montado)\n    • immovable/ — datos del Docker daemon por repositorio\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
+      "keyConcepts": "\nConceptos Clave:\n\n  Filtros de Consulta\n    • rdc machine query --name <name> devuelve todas las secciones por defecto\n    • Use --system, --repositories, --containers, --services, --network, --block-devices para filtrar\n    • La salida JSON enriquece los contenedores con: repository (nombre resuelto), domain, autoRoute\n\n  Monitoreo y Salud\n    • machine health sale con: 0=saludable, 1=advertencia, 2=error — úselo para puertas CI/CD\n    • containers --health-check sale con 2 si algún contenedor no está saludable\n    • services --stability-check sale con 2 si algún servicio está fallando, reiniciando o tiene >3 reinicios\n\n  Estructura del Almacén de Datos (/mnt/rediacc/)\n    • repositories/ — imágenes LUKS cifradas (una por GUID de repositorio)\n    • mounts/ — puntos de montaje descifrados (accesibles cuando el repositorio está montado)\n    • immovable/ — datos del Docker daemon por repositorio\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
       "query": "Mostrar estado completo de la máquina"
     },
     "repo": {
@@ -2228,7 +2310,8 @@
     "term": {
       "command": "Ejecutar comando sin shell interactivo",
       "machine": "SSH a la máquina",
-      "repo": "SSH al repositorio (DOCKER_HOST automático)"
+      "repo": "SSH al repositorio (DOCKER_HOST automático)",
+      "syncHint": "Para transferencia de archivos, use: rdc repo sync upload/download"
     },
     "useHelpAll": "Use --help-all para descripciones extendidas",
     "vscode": {
@@ -2318,9 +2401,12 @@
     "protocolToken": "Token de autenticación",
     "queryBlockDevices": "Incluir solo dispositivos de bloque",
     "queryContainers": "Incluir solo contenedores",
+    "queryLicenses": "Incluir estados de licencias de repositorios",
     "queryNetwork": "Incluir solo interfaces de red",
     "queryRepositories": "Incluir solo repositorios",
     "queryServices": "Incluir solo servicios",
+    "queryStorageHealth": "Mostrar fragmentación BTRFS y ahorro reflink por repositorio",
+    "querySyncCerts": "También descargar la caché de certificados ACME de la máquina tras consultar",
     "querySystem": "Incluir solo información del sistema",
     "quiet": "Suprimir salida informativa",
     "rawVault": "JSON de bóveda sin procesar (para scripts/CI)",

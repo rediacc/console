@@ -30,6 +30,8 @@ export interface BackupPullParams {
   from: string;
   /** Comma-separated repository GUIDs for CoW pre-seeding (closest relative first) */
   seed?: string;
+  /** Bandwidth limit for rsync transfer (e.g., 6M, 10M) */
+  bwlimit?: string;
 }
 
 /** Push repository to remote destination (machine or storage) */
@@ -54,6 +56,8 @@ export interface BackupPushParams {
   override?: boolean;
   /** Comma-separated repository GUIDs for CoW pre-seeding (closest relative first) */
   seed?: string;
+  /** Bandwidth limit for rsync transfer (e.g., 6M, 10M) */
+  bwlimit?: string;
 }
 
 /** Mount RBD image on client */
@@ -1086,6 +1090,10 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
         type: 'string',
         help: 'Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)',
       },
+      bwlimit: {
+        type: 'string',
+        help: 'Bandwidth limit for rsync transfer (e.g., 6M, 10M)',
+      },
     },
   },
   'backup_push': {
@@ -1153,6 +1161,10 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
       seed: {
         type: 'string',
         help: 'Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)',
+      },
+      bwlimit: {
+        type: 'string',
+        help: 'Bandwidth limit for rsync transfer (e.g., 6M, 10M)',
       },
     },
   },

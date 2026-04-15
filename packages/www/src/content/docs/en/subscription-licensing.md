@@ -27,7 +27,7 @@ These are related, but they are not the same artifact.
 
 ## How Licensing Works
 
-`account` is the source of truth for plans, contract overrides, machine activation state, and monthly repo license issuances.
+`account` is the source of truth for plans, contract overrides, machine slot state, and monthly repo license issuances.
 
 `rdc` runs on your workstation. It logs you into the account server, requests the licenses it needs, and installs them on remote machines over SSH. When you run a repository command, `rdc` ensures the required licenses are in place and validates them on the machine at runtime.
 
@@ -54,32 +54,29 @@ export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
 export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 ```
 
-## Machine Licenses vs Repo Licenses
+## Machine Slots and Repo Licenses
 
-### Machine activation
+### Machine slots (server-side)
 
-Machine activation serves a dual role:
+Machine slot tracking is enforced server-side. When the CLI issues a repo license, the account server checks the subscription's machine slot quota (e.g., 2 machines for Community, 5 for Professional). A slot is held for 1 hour from the last repo license issuance on that machine and auto-releases after inactivity. This means a 5-slot plan can serve dozens of machines over time -- slots are only held while actively provisioning.
 
-- **Server-side**: floating machine-slot accounting, machine-level activation checks, bridging account-backed repo issuance to a specific machine
-- **On-disk**: `rdc` writes a signed subscription blob to `/var/lib/rediacc/license/machine.json` during activation. This blob is validated locally for provisioning operations (`rdc repo create`, `rdc repo fork`). The machine license is valid for 1 hour from the last activation.
+No machine license file is stored on the machine. Slot enforcement happens at issuance time on the server.
 
 ### Repo license
 
-A repo license is a signed license for one repository on one machine.
+A repo license is a signed license for one repository on one machine. It is the only license file stored on the machine (`/var/lib/rediacc/license/repos/{guid}.json`).
 
 It is used for:
 
+- `rdc repo create` and `rdc repo fork`, validated before provisioning (pre-issued without identity proofs, then re-issued with identity proofs after creation)
 - `rdc repo resize` and `rdc repo expand`, full validation including expiry
 - `rdc repo up`, `rdc repo down`, `rdc repo delete`, validated with **expiry skipped**
 - `rdc repo push`, `rdc repo pull`, `rdc repo sync`, validated with **expiry skipped**
 - repo autostart on machine restart, validated with **expiry skipped**
 
-Repo licenses are bound to the machine and the target repository, and Rediacc hardens that binding with repository identity metadata. For encrypted repositories, that includes the LUKS identity of the underlying volume.
+Repo licenses are bound to the machine and the target repository. Each license contains the machine ID, repository GUID, subscription ID, plan limits, and expiry. For encrypted repositories, Rediacc also verifies the LUKS identity of the underlying volume.
 
-In practice:
-
-- machine activation answers: "can this machine provision new repositories?"
-- repo license answers: "can this specific repo run on this specific machine?"
+Multiple subscriptions can coexist on the same machine -- each repository carries its own license with its own subscription context.
 
 ## Default Limits
 
@@ -99,6 +96,18 @@ Default paid-plan limits are:
 
 Contract-specific limits can raise or lower these values for a specific customer. Delegation cert validity is also hard-capped at `subscription.expiresAt + 3 day grace`, so monthly-billed subscriptions naturally get certs aligned to their billing cycle. See [License Chain & Delegation - Validity Policy](/en/docs/license-chain) for the full rules.
 
+## VM Migration Grace Period
+
+When a hosting provider migrates a VM to different physical hardware, the machine ID changes (it's derived from hardware identifiers like DMI UUID, `/etc/machine-id`, and NIC MAC addresses). Repo licenses are bound to the machine ID, so a migration would normally invalidate all licenses.
+
+To handle this transparently, repo licenses include a **40-day machine ID grace period**. If the machine ID doesn't match but the license was issued less than 40 days ago, the license is still accepted. Since licenses refresh every 30 days, the next refresh automatically binds to the new machine ID.
+
+In practice:
+- VM migrated, machine ID changes: repos keep running (within 40-day window)
+- Next `rdc` operation refreshes the license with the new machine ID
+- No manual intervention required
+- Check machine ID and license status with `rdc machine query --system --licenses --name <machine>`
+
 **Edge channel users** receive 2X Community limits at no cost (20 GB repos, 1,000 issuances/month, 4 machines). Paid plans are only available on the Stable channel. See [Release Channels](/en/docs/release-channels) for details.
 
 ## What Happens During Repo Create, Up, Down, and Restart
@@ -108,9 +117,9 @@ Contract-specific limits can raise or lower these values for a specific customer
 When you create or fork a repository:
 
 1. `rdc` ensures your subscription token is available (triggers device-code auth if needed)
-2. `rdc` activates the machine and writes the signed subscription blob to the remote machine
-3. The machine license is validated locally (it must be within 1 hour of activation), the machine license also enforces the plan's repository size limit, blocking creation if the requested size exceeds the limit
-4. After successful creation, `rdc` issues the repo license for the new repository
+2. `rdc` pre-issues a repo license from the account server (the server checks machine slot quota and monthly issuance limits at this point)
+3. The pre-issued repo license is written to the machine and validated locally (signature, machine ID, repo GUID, expiry, and size limit)
+4. After successful creation, `rdc` re-issues the repo license with repository identity proofs (LUKS UUID or storage fingerprint)
 
 That account-backed issuance counts toward your monthly **repo license issuances** usage. Each license contains the account holder's email and company name, which is logged when renet validates the license.
 
@@ -171,7 +180,7 @@ Show installed repo-license details on one machine:
 rdc subscription repo status -m hostinger
 ```
 
-Refresh machine activation and batch-refresh repo licenses:
+Batch-refresh repo licenses on a machine:
 
 ```bash
 rdc subscription refresh -m hostinger
@@ -199,11 +208,9 @@ That means:
 
 - a running environment does not need live account connectivity on every command
 - all repos can always start, stop, and be deleted even with expired licenses, users are never locked out of operating their own repositories
-- provisioning operations (`create`, `fork`) require a valid machine license, and growth operations (`resize`, `expand`) require a valid repo license
+- provisioning operations (`create`, `fork`) require a pre-issued repo license, and growth operations (`resize`, `expand`) require a valid repo license
 - truly expired repo licenses must be refreshed through `rdc` before resize/expand
 - license signatures are verified against an embedded public key, signature verification cannot be disabled
-
-Machine activation and repo runtime licenses are separate surfaces. A machine can be inactive in account state while some repositories still have valid installed repo licenses. When that happens, inspect both surfaces separately instead of assuming they mean the same thing.
 
 ## Recovery Behavior
 

@@ -6,20 +6,21 @@ description: >-
 category: Concepts
 order: 0
 language: ar
-sourceHash: "1ec1b0e490ef470c"
+sourceHash: "2c2d289c280e2a7f"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # البنية التحتية
 
 تشرح هذه الصفحة كيف يعمل Rediacc من الداخل: بنية الأداتين، اكتشاف المحوّلات، نموذج الأمان، وهيكل الإعدادات.
 
-## Full Stack Overview
+## نظرة عامة على المكدس الكامل
 
-Traffic flows from the internet through a reverse proxy, into isolated Docker daemons, each backed by encrypted storage:
+يتدفق حركة المرور من الإنترنت عبر وكيل عكسي إلى عمليات Docker المعزولة، يدعم كل منها تخزين مشفر:
 
-![Full Stack Architecture](/img/arch-full-stack.svg)
+![بنية المكدس الكامل](/img/arch-full-stack.svg)
 
-Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), and LUKS-encrypted BTRFS volume. The route server discovers running containers across all daemons and feeds routing configuration to Traefik.
+يحصل كل مستودع على عملية Docker خاصة به، وشبكة فرعية للعنوان المحلي (/26 = 64 عنوان IP)، وحجم BTRFS مشفر بـ LUKS. يكتشف خادم التوجيه الحاويات قيد التشغيل عبر جميع العمليات ويغذّي إعدادات التوجيه إلى Traefik.
 
 ## بنية الأداتين
 
@@ -32,7 +33,7 @@ Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), a
 
 كل أمر تكتبه محلياً يُترجم إلى استدعاء SSH ينفّذ renet على الجهاز البعيد. لن تحتاج أبداً إلى الاتصال بالخوادم يدوياً عبر SSH.
 
-للاطلاع على قاعدة إبهام موجهة للمشغّل، راجع [rdc vs renet](/ar/docs/rdc-vs-renet). يمكنك أيضاً استخدام `rdc ops` لتشغيل مجموعة VM محلية للاختبار, راجع [الأجهزة الافتراضية التجريبية](/ar/docs/experimental-vms).
+للاطلاع على قاعدة إبهام موجهة للمشغّل، راجع [rdc vs renet](/en/docs/rdc-vs-renet). يمكنك أيضاً استخدام `rdc ops` لتشغيل مجموعة VM محلية للاختبار، راجع [الأجهزة الافتراضية التجريبية](/en/docs/experimental-vms).
 
 ## الإعداد
 
@@ -97,6 +98,29 @@ Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), a
 - عملية Docker المضيفة (إن وُجدت) منفصلة تماماً
 
 تُعيّن متغير البيئة `DOCKER_HOST` تلقائياً للمقبس الصحيح في دوال Rediaccfile.
+
+### تخطيط مسار العملية
+
+تُخزَّن بيانات Docker وإعداداتها داخل نقطة تحميل المستودع، مما يبقي كل عملية معزولة تماماً عن المضيف وعن المستودعات الأخرى.
+
+**التخطيط لكل مستودع:**
+```
+{datastore}/mounts/{guid}/.rediacc/docker/data/    # جذر بيانات Docker
+{datastore}/mounts/{guid}/.rediacc/docker/config/  # إعداد Docker
+```
+
+**التخطيط المستقل** (عمليات غير مرتبطة بنقطة تحميل مستودع):
+```
+{datastore}/standalone/{N}/.rediacc/docker/data/
+{datastore}/standalone/{N}/.rediacc/docker/config/
+```
+
+**مسار وقت التشغيل المشترك** (غير متغيّر):
+```
+/run/rediacc/docker-{N}.sock
+```
+
+يُزيل هذا التخطيط الموحّد تعارضات التحميل للقراءة فقط والقراءة-الكتابة التي كانت تحدث عندما كانت مسارات العمليات مقسّمة بين نظام ملفات المضيف والحجم المشفر. تتبع عمليات المستودعات والعمليات المستقلة نفس هيكل الدليل، لذا تعمل الأدوات والتشخيصات بشكل متطابق في كلتا الحالتين.
 
 ## تشفير LUKS
 

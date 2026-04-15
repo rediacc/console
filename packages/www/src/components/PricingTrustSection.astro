@@ -74,15 +74,15 @@ const rows = ta(ns + '.rows') as Array<{ title: string; description: string }>;
           <circle cx="74" cy="44" r="4" fill="currentColor" opacity="0.2"/>
           <circle cx="88" cy="44" r="4" fill="currentColor" opacity="0.2"/>
           <!-- Terminal lines (TierNone — no license at all) -->
-          <text x="60" y="78" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc term prod-1</text>
+          <text x="60" y="78" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc term connect -m prod-1</text>
           <text x="310" y="78" font-size="11" fill="#7fa03f" font-family="monospace">✓</text>
-          <text x="60" y="100" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc vscode prod-1 mail</text>
+          <text x="60" y="100" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc vscode connect -m prod-1 -r mail</text>
           <text x="310" y="100" font-size="11" fill="#7fa03f" font-family="monospace">✓</text>
-          <text x="60" y="122" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc sync download mail</text>
+          <text x="60" y="122" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc repo sync download -m prod-1 -r mail</text>
           <text x="310" y="122" font-size="11" fill="#7fa03f" font-family="monospace">✓</text>
           <text x="60" y="144" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc machine health prod-1</text>
           <text x="310" y="144" font-size="11" fill="#7fa03f" font-family="monospace">✓</text>
-          <text x="60" y="166" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc backup list prod-1</text>
+          <text x="60" y="166" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc repo backup list -m prod-1</text>
           <text x="310" y="166" font-size="11" fill="#7fa03f" font-family="monospace">✓</text>
           <text x="60" y="188" font-size="11" fill="currentColor" opacity="0.5" font-family="monospace">$ rdc doctor</text>
           <text x="310" y="188" font-size="11" fill="#7fa03f" font-family="monospace">✓</text>
@@ -213,6 +213,59 @@ const rows = ta(ns + '.rows') as Array<{ title: string; description: string }>;
           <text x="104" y="214" font-size="10" fill="currentColor" opacity="0.5" font-family="sans-serif">{t(`${ns}.svg.slotsAutoRelease`)}</text>
           <!-- Unlimited machines note -->
           <text x="40" y="252" font-size="9" fill="#7fa03f" opacity="0.7" font-family="sans-serif">{t(`${ns}.svg.slotsCreateFork`)}</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Row 6: 40-day VM migration grace (SVG left, text right) -->
+    <div class="trust-row trust-row-reverse">
+      <div class="trust-row-text">
+        <h3>{rows[5].title}</h3>
+        <p>{rows[5].description}</p>
+      </div>
+      <div class="trust-row-visual">
+        <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Source machine -->
+          <rect x="30" y="60" width="100" height="70" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.5"/>
+          <rect x="42" y="72" width="76" height="14" rx="3" stroke="currentColor" stroke-width="1" opacity="0.4"/>
+          <rect x="42" y="92" width="76" height="14" rx="3" stroke="currentColor" stroke-width="1" opacity="0.4"/>
+          <circle cx="52" cy="79" r="3" fill="#7fa03f"/>
+          <circle cx="52" cy="99" r="3" fill="#7fa03f"/>
+          <text x="62" y="83" font-size="8" fill="currentColor" opacity="0.6" font-family="monospace">mail</text>
+          <text x="62" y="103" font-size="8" fill="currentColor" opacity="0.6" font-family="monospace">gitlab</text>
+          <text x="42" y="56" font-size="9" fill="currentColor" opacity="0.4" font-family="sans-serif">Machine A</text>
+          <!-- Migration arrow -->
+          <line x1="145" y1="95" x2="215" y2="95" stroke="currentColor" stroke-width="1.5" opacity="0.3" stroke-dasharray="4 3"/>
+          <polygon points="215,90 225,95 215,100" fill="currentColor" opacity="0.3"/>
+          <text x="150" y="85" font-size="8" fill="currentColor" opacity="0.35" font-family="sans-serif">VM migrated</text>
+          <!-- Destination machine -->
+          <rect x="230" y="60" width="100" height="70" rx="6" stroke="#7fa03f" stroke-width="1.5" opacity="0.6"/>
+          <rect x="242" y="72" width="76" height="14" rx="3" stroke="#7fa03f" stroke-width="1" opacity="0.4"/>
+          <rect x="242" y="92" width="76" height="14" rx="3" stroke="#7fa03f" stroke-width="1" opacity="0.4"/>
+          <circle cx="252" cy="79" r="3" fill="#7fa03f"/>
+          <circle cx="252" cy="99" r="3" fill="#7fa03f"/>
+          <text x="262" y="83" font-size="8" fill="currentColor" opacity="0.6" font-family="monospace">mail</text>
+          <text x="262" y="103" font-size="8" fill="currentColor" opacity="0.6" font-family="monospace">gitlab</text>
+          <text x="242" y="56" font-size="9" fill="#7fa03f" opacity="0.6" font-family="sans-serif">Machine B</text>
+          <!-- Checkmark on destination -->
+          <path d="M340 72 L346 78 L356 68" stroke="#7fa03f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Grace timeline below -->
+          <line x1="60" y1="180" x2="340" y2="180" stroke="currentColor" stroke-width="1.5" opacity="0.2"/>
+          <!-- 40-day grace bar -->
+          <rect x="60" y="170" width="200" height="20" rx="4" fill="#7fa03f" opacity="0.1"/>
+          <line x1="60" y1="180" x2="260" y2="180" stroke="#7fa03f" stroke-width="2.5"/>
+          <text x="120" y="165" font-size="10" fill="#7fa03f" opacity="0.7" font-family="sans-serif">40-day grace</text>
+          <!-- Migration event marker -->
+          <circle cx="60" cy="180" r="5" fill="currentColor" opacity="0.4"/>
+          <text x="36" y="200" font-size="8" fill="currentColor" opacity="0.4" font-family="sans-serif">Migration</text>
+          <!-- Auto-refresh marker -->
+          <circle cx="260" cy="180" r="5" fill="#7fa03f"/>
+          <text x="230" y="200" font-size="8" fill="#7fa03f" opacity="0.6" font-family="sans-serif">Auto-refresh</text>
+          <!-- After refresh -->
+          <line x1="260" y1="180" x2="340" y2="180" stroke="#7fa03f" stroke-width="2.5"/>
+          <text x="270" y="165" font-size="9" fill="#7fa03f" opacity="0.5" font-family="sans-serif">{t(`${ns}.svg.newMachineId`)}</text>
+          <!-- Bottom label -->
+          <text x="60" y="240" font-size="9" fill="currentColor" opacity="0.4" font-family="sans-serif">{t(`${ns}.svg.reposKeepRunning`)}</text>
         </svg>
       </div>
     </div>

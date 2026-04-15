@@ -978,6 +978,13 @@
               "name": "Benutzerdefinierte Integration",
               "priority": "Kernintegrationsfunktionen und wesentliche Funktionen sind innerhalb von 48 Stunden verfügbar",
               "standard": "Vollständige Integration mit Tests und Dokumentation"
+            },
+            {
+              "emergency": "Festplatten angeschlossen + RAID-Konvertierung am selben Tag eingeleitet + kritische Repos verifiziert + vollständige Härtung beginnt",
+              "id": "storage-hardening",
+              "name": "Speicherhärtung",
+              "priority": "BTRFS RAID1 oder RAID10 konfiguriert + Live-Balance-Migration gestartet + Scrub-Timer innerhalb von 48 Stunden aktiv",
+              "standard": "Vollständige redundante BTRFS-Speichereinrichtung mit selbstheilendem Scrub, Live-Datenmigration von Einzelfestplatte, Reflink-Verifizierung und Monitoring-Integration. RAID1 (2 SSDs, gespiegelt) für Standardbereitstellungen oder RAID10 (4+ SSDs, gestreifte Spiegel) für Hochdurchsatz-Produktionsworkloads. Scrub repariert Beschädigungen automatisch aus der redundanten Kopie, anstatt sie nur zu erkennen. Beinhaltet Kapazitätsplanung und Überprüfung der Backup-Strategie."
             }
           ]
         }
@@ -2950,6 +2957,13 @@
               "name": "Benutzerdefinierte Integration",
               "priority": "Kernintegrationsfunktionen und wesentliche Funktionen sind innerhalb von 48 Stunden verfügbar",
               "standard": "Vollständige Integration mit Tests und Dokumentation"
+            },
+            {
+              "emergency": "Festplatten angeschlossen + RAID-Konvertierung am selben Tag eingeleitet + kritische Repos verifiziert + vollständige Härtung beginnt",
+              "id": "storage-hardening",
+              "name": "Speicherhärtung",
+              "priority": "BTRFS RAID1 oder RAID10 konfiguriert + Live-Balance-Migration gestartet + Scrub-Timer innerhalb von 48 Stunden aktiv",
+              "standard": "Vollständige redundante BTRFS-Speichereinrichtung mit selbstheilendem Scrub, Live-Datenmigration von Einzelfestplatte, Reflink-Verifizierung und Monitoring-Integration. RAID1 (2 SSDs, gespiegelt) für Standardbereitstellungen oder RAID10 (4+ SSDs, gestreifte Spiegel) für Hochdurchsatz-Produktionsworkloads. Scrub repariert Beschädigungen automatisch aus der redundanten Kopie, anstatt sie nur zu erkennen. Beinhaltet Kapazitätsplanung und Überprüfung der Backup-Strategie."
             }
           ]
         }
@@ -3043,13 +3057,19 @@
           {
             "description": "Ein Lizenz-Slot wird nur während der Erstellung oder dem Forken eines Repositorys belegt — deine täglichen Operationen verbrauchen keinen. Slots werden nach 1 Stunde Inaktivität automatisch freigegeben, sodass ein Plan mit 5 Slots Dutzende von Maschinen bedienen kann. Keine Gebühren pro Maschine, niemals.",
             "title": "Unbegrenzte Maschinen. Pay-per-Create-Lizenzierung."
+          },
+          {
+            "description": "Jede Repository-Lizenz ist an die Maschine gebunden, für die sie ausgestellt wurde. Wenn Ihr Hosting-Anbieter Ihre VM auf andere Hardware migriert, ändert sich die Maschinenidentität, aber Ihre Lizenzen funktionieren 40 Tage lang weiter. Die nächste Aktualisierung bindet automatisch an die neue Maschine. Keine Ausfallzeit, keine manuellen Schritte.",
+            "title": "40 Tage Übergangsfrist bei VM-Migration."
           }
         ],
         "subtitle": "Rediacc-Lizenzen sind so gestaltet, dass du niemals eingesperrt bist. Das bedeutet das in der Praxis.",
         "svg": {
           "allOperations": "Alle Operationen",
+          "newMachineId": "Neue Maschinen-ID",
           "noLicenseNeeded": "Keine Lizenz nötig",
           "noLicenseRequired": "Keine Lizenz erforderlich — funktioniert immer",
+          "reposKeepRunning": "Repos laufen durchgehend weiter. Keine manuellen Schritte nötig.",
           "requiredOnlyHere": "Nur hier erforderlich",
           "slotsAutoRelease": "Slots werden nach 1 Stunde Inaktivität automatisch freigegeben",
           "slotsCreateFork": "Slots werden nur für Erstellen & Forken benötigt — tägliche Operationen sind immer kostenlos"
@@ -3090,6 +3110,7 @@
             "secondary": "Kontaktieren Sie den Vertrieb"
           }
         },
+        "edgeLimitsNote": "Angezeigte Limits gelten für den Edge-Kanal. Hälfte bei Stable.",
         "foreverFree": "Für immer frei",
         "getStarted": "Legen Sie los",
         "guarantees": {
@@ -13290,16 +13311,18 @@
     "title": "Die Speed-Mismatch-Krise"
   },
   "regionPicker": {
-    "edgeNote": "Neueste Funktionen, 2x kostenlose Limits. Keine kostenpflichtigen Plaene. Daten sind dauerhaft.",
-    "footer": "Wählen Sie die Region, die Ihnen am nächsten liegt oder die Ihre Organisation vorschreibt. Dies kann nach der Registrierung nicht mehr geändert werden.",
+    "channelEdge": "Edge",
+    "channelStable": "Stabil",
+    "edgeHint": "Neueste Funktionen, doppelte kostenlose Limits. Keine kostenpflichtigen Pläne.",
+    "footer": "Wählen Sie die Region, die Ihnen am nächsten liegt, oder die Ihre Organisation erfordert. Dies kann nach der Registrierung nicht mehr geändert werden.",
     "locations": {
       "asia": "Tokio, Japan",
       "eu": "Frankfurt, Deutschland",
       "us": "Virginia, Vereinigte Staaten"
     },
-    "subtitle": "Alles, Ihr Konto, Ihre Abrechnung und Ihre Konfigurationen, bleibt in der von Ihnen gewählten Region. Es verlässt sie nie.",
-    "tabEdge": "Edge",
-    "tabStable": "Stabil",
+    "regionNote": "Die Region kann nach der Registrierung nicht mehr geändert werden.",
+    "stableHint": "Zuverlässige Releases, nach 7-tägiger Testphase von Edge übernommen.",
+    "subtitle": "Ihr Konto, Ihre Abrechnung und Konfigurationen bleiben in der von Ihnen gewählten Region. Sie verlassen diese niemals.",
     "title": "Wo sollen wir Ihre Daten speichern?"
   },
   "solutions": {
@@ -13372,6 +13395,6 @@
     "playVideo": "Video abspielen",
     "toggleFullscreen": "Vollbild umschalten",
     "volume": "Lautstärke",
-    "youtubeTitle": "Product introduction"
+    "youtubeTitle": "Produktvorstellung"
   }
 }

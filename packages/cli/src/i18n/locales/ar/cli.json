@@ -285,23 +285,38 @@
     },
     "config": {
       "backupStrategy": {
-        "description": "إدارة استراتيجية النسخ الاحتياطي متعددة الوجهات",
+        "description": "إدارة استراتيجيات النسخ الاحتياطي المسماة (أوضاع ساخنة/باردة، وجهات، جدولة)",
+        "list": {
+          "description": "عرض قائمة جميع استراتيجيات النسخ الاحتياطي"
+        },
+        "remove": {
+          "description": "إزالة استراتيجية نسخ احتياطي أو وجهة",
+          "optionDestination": "إزالة هذه الوجهة فقط (الاحتفاظ بالوجهات الأخرى)",
+          "optionName": "اسم الاستراتيجية (مطلوب)",
+          "removed": "تمت إزالة استراتيجية النسخ الاحتياطي"
+        },
         "set": {
-          "description": "تكوين إعدادات جدولة النسخ الاحتياطي",
-          "noOptions": "حدد خياراً واحداً على الأقل: --destination، --cron، --enable، أو --disable",
-          "optionCron": "تعبير cron لجدولة النسخ الاحتياطي (مثلاً \"0 2 * * *\")",
-          "optionDestination": "اسم وجهة التخزين الافتراضي",
-          "optionDisable": "تعطيل النسخ الاحتياطي المجدول",
-          "optionEnable": "تفعيل النسخ الاحتياطي المجدول",
-          "saved": "تم حفظ تكوين جدولة النسخ الاحتياطي"
+          "description": "إنشاء أو تحديث استراتيجية نسخ احتياطي",
+          "optionBwlimit": "حد عرض النطاق الترددي لـ rclone (مثلاً \"6M\"، \"10M:off\"، \"08:00,3M;22:00,10M\")",
+          "optionCron": "جدول cron (مثلاً \"0 * * * *\" للتشغيل كل ساعة)",
+          "optionDestination": "اسم الوجهة ضمن الاستراتيجية",
+          "optionDisable": "تعطيل الاستراتيجية أو الوجهة",
+          "optionEnable": "تفعيل الاستراتيجية أو الوجهة",
+          "optionExclude": "استبعاد هذه المستودعات من النسخ الاحتياطي (أسماء مفصولة بفواصل)",
+          "optionInclude": "نسخ هذه المستودعات فقط (أسماء مفصولة بفواصل)",
+          "optionMode": "وضع النسخ الاحتياطي: \"hot\" (بدون توقف) أو \"cold\" (إيقاف، لقطة، إعادة تشغيل)",
+          "optionName": "اسم الاستراتيجية (مطلوب)",
+          "optionStorage": "اسم تكوين التخزين (بيانات اعتماد rclone)",
+          "saved": "تم حفظ تكوين استراتيجية النسخ الاحتياطي",
+          "storageRequired": "--storage مطلوب عند إنشاء وجهة جديدة. استخدم: --storage <storage-name>"
         },
         "show": {
-          "description": "عرض تكوين جدولة النسخ الاحتياطي الحالي",
-          "destinations": "الوجهات:",
-          "enabled": "مفعّل: {{enabled}}",
-          "noDestinations": "لم يتم تكوين وجهات النسخ الاحتياطي",
-          "notConfigured": "لم يتم تكوين جدولة النسخ الاحتياطي",
-          "schedule": "الجدول: {{schedule}}"
+          "description": "عرض تفاصيل استراتيجية النسخ الاحتياطي",
+          "destinationsHeader": "  الوجهات:",
+          "noDestinations": "  الوجهات: (لا يوجد)",
+          "notConfigured": "لم يتم تكوين أي استراتيجيات نسخ احتياطي",
+          "notFound": "استراتيجية النسخ الاحتياطي \"{{name}}\" غير موجودة",
+          "optionName": "اسم الاستراتيجية (يعرض الكل إذا لم يُحدد)"
         }
       },
       "certCache": {
@@ -320,7 +335,8 @@
           "merged": "تم الاحتفاظ بـ {{count}} شهادة(شهادات) من الذاكرة المؤقتة المحلية بفترة صلاحية أطول",
           "noAcmeJson": "لم يتم العثور على acme.json في {{machine}}",
           "optionNoPrune": "تخطي تنظيف شهادات معرّف الشبكة القديمة",
-          "pruned": "تم تنظيف {{count}} شهادة(شهادات) قديمة"
+          "pruned": "تم تنظيف {{count}} شهادة(شهادات) قديمة",
+          "prunedExpired": "تم حذف {{count}} شهادة منتهية الصلاحية"
         },
         "push": {
           "description": "رفع شهادات TLS المخزنة مؤقتاً إلى جهاز",
@@ -647,8 +663,8 @@
         "authStatus": "الحالة",
         "cliVersion": "إصدار CLI",
         "contextMode": "وضع السياق",
-        "dockerAvailable": "Docker",
-        "goInstalled": "Go",
+        "dockerAvailable": "Docker متاح",
+        "goInstalled": "Go مثبّت",
         "machines": "الأجهزة",
         "nodeVersion": "إصدار Node.js",
         "opsPrereqs": "متطلبات OPS",
@@ -660,7 +676,7 @@
         "sshKey": "مفتاح SSH",
         "subscriptionMachineSlots": "فتحات الأجهزة",
         "subscriptionRepoLicenses": "تراخيص المستودعات",
-        "subscriptionStatus": "Status",
+        "subscriptionStatus": "حالة الاشتراك",
         "subscriptionToken": "الرمز المميز"
       },
       "description": "تشخيص بيئة CLI وتكامل renet",
@@ -694,10 +710,30 @@
     },
     "machine": {
       "backup": {
+        "cancel": {
+          "cancelled": "تم إلغاء {{name}}",
+          "cancelling": "جاري إيقاف {{name}}...",
+          "description": "إلغاء نسخة احتياطية قيد التشغيل على جهاز بعيد",
+          "notRunning": "لا يوجد نسخ احتياطي قيد التشغيل للاستراتيجية \"{{name}}\"",
+          "optionStrategy": "اسم الاستراتيجية (يلغي الكل إذا لم يُحدَّد)"
+        },
         "description": "إدارة النسخ الاحتياطي للجهاز",
+        "list": {
+          "description": "عرض استراتيجيات النسخ الاحتياطي المرتبطة بجميع الأجهزة",
+          "noMachines": "لا توجد أجهزة مُعدَّة"
+        },
+        "now": {
+          "description": "تشغيل نسخة احتياطية فورية على جهاز بعيد",
+          "optionStrategy": "اسم الاستراتيجية (يشغّل الكل إذا لم يُحدَّد)"
+        },
         "schedule": {
-          "description": "دفع جدول النسخ الاحتياطي إلى جهاز بعيد (مؤقت systemd)",
-          "success": "تم نشر جدول النسخ الاحتياطي إلى {{machine}}"
+          "description": "نشر جدول النسخ الاحتياطي على جهاز بعيد (مؤقتات systemd)",
+          "optionDryRun": "معاينة الوحدات المُولَّدة دون نشرها",
+          "success": "تم نشر جدول النسخ الاحتياطي على {{machine}}"
+        },
+        "status": {
+          "description": "عرض حالة النسخ الاحتياطي وحالة المؤقت على جهاز بعيد",
+          "optionStrategy": "عرض التفاصيل لاستراتيجية محددة"
         }
       },
       "containers": {
@@ -743,6 +779,8 @@
         "fetching": "جاري جلب صحة الآلة...",
         "header": "\nفحص الصحة لـ {{name}}:",
         "issuesSection": "\nالمشاكل:",
+        "licensesSection": "\nالتراخيص:",
+        "licensesSummary": "  {{valid}}/{{total}} صالح, {{expired}} منتهي الصلاحية, {{mismatch}} عدم تطابق مع الآلة, {{missing}} مفقود",
         "noData": "لا توجد بيانات حالة متاحة للآلة",
         "repositoriesSection": "\nالمستودعات:",
         "repositoriesSummary": "  {{mounted}}/{{total}} مثبتة ({{docker}} مع Docker)",
@@ -817,7 +855,9 @@
         "fetched": "تم جلب الحالة",
         "fetching": "جارٍ جلب الحالة من {{machine}}...",
         "infrastructure": "البنية التحتية",
-        "noData": "لا تتوفر بيانات حالة"
+        "noData": "لا تتوفر بيانات حالة",
+        "storageHealthHint": "تلميح: شغّل مع --storage-health لعرض تجزئة BTRFS وتوفير reflink لكل مستودع",
+        "syncCertsFailed": "فشلت مزامنة ذاكرة التخزين المؤقت للشهادات: {{error}}"
       },
       "rename": {
         "description": "إعادة تسمية جهاز"
@@ -1189,6 +1229,9 @@
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "اكتمل {{action}}: {{succeeded}}/{{total}} نجح",
       "batchStarting": "{{action}}: «{{repo}}»...",
+      "certSync": {
+        "updated": "تم تحديث ذاكرة التخزين المؤقت لشهادات ACME من {{machine}} ({{count}} شهادة)"
+      },
       "create": {
         "alreadyExists": "المستودع \"{{name}}\" موجود بالفعل في السياق",
         "completed": "تم إنشاء المستودع",
@@ -1246,7 +1289,7 @@
         "rollback": "تم التراجع عن تكوين \"{{repository}}\"",
         "starting": "جارٍ إنشاء نسخة من \"{{parent}}\" باسم \"{{repository}}\" على \"{{machine}}\"...",
         "tagOption": "وسم النسخة (ينشئ اسم:وسم)",
-        "tagRequired": "الوسم مطلوب للنسخة. الاستخدام: rdc repo fork <parent> <tag> -m <machine>",
+        "tagRequired": "الوسم مطلوب للنسخة. الاستخدام: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "upOption": "تركيب وبدء الخدمات بعد التفريع (fork + mount + up في أمر واحد)"
       },
       "list": {
@@ -1256,6 +1299,39 @@
         "starting": "جارٍ عرض المستودعات على \"{{machine}}\"..."
       },
       "machineOption": "اسم الجهاز المستهدف",
+      "migrate": {
+        "checkpointing": "جاري إنشاء نقطة فحص CRIU...",
+        "complete": "اكتمل الترحيل: {{name}} نُقل من {{from}} إلى {{to}}",
+        "deltaDone": "اكتملت مزامنة الفرق",
+        "deltaFailed": "فشلت مزامنة الفرق",
+        "deltaSync": "جاري مزامنة الفرق...",
+        "description": "ترحيل مباشر لمستودع من جهاز إلى آخر مع أقل وقت توقف. rsync على مرحلتين: نقل بالجملة أثناء التشغيل، ثم توقف قصير لمزامنة الفرق. يدعم نقطة فحص CRIU لترحيل ذاكرة العمليات والتوفير التلقائي للأجهزة الهدف",
+        "descriptionShort": "ترحيل مباشر لمستودع بين الأجهزة",
+        "dnsSkipped": "تم تخطي تبديل DNS (لا يوجد baseDomain أو إعدادات Cloudflare)",
+        "downtime": "وقت التوقف: {{duration}}",
+        "optionBwlimit": "حد عرض النطاق لنقل rsync (مثال: 10M)",
+        "optionCheckpoint": "ترحيل مباشر عبر CRIU: التقاط واستعادة حالة ذاكرة العمليات",
+        "optionFrom": "اسم الجهاز المصدر",
+        "optionProvision": "توفير تلقائي للهدف عبر مزود السحابة (مثال: hetzner، linode)",
+        "optionSkipDns": "تخطي تبديل سجلات DNS بعد الترحيل",
+        "optionTo": "اسم الجهاز الهدف",
+        "phase1": "المرحلة 1: نقل البيانات بالجملة (المصدر يبقى يعمل)...",
+        "phase1Done": "اكتمل النقل بالجملة",
+        "phase1Failed": "فشل النقل بالجملة",
+        "phase2": "المرحلة 2: التحويل (توقف قصير)...",
+        "phase3": "المرحلة 3: البدء على الهدف...",
+        "provisioning": "جاري توفير الجهاز الهدف {{machine}} عبر {{provider}}...",
+        "sourceStopped": "تم إيقاف خدمات المصدر",
+        "sourceUnmounted": "تم فك تحميل المصدر",
+        "startFailed": "فشل البدء على الهدف",
+        "startingTarget": "جاري بدء الخدمات على الهدف...",
+        "stopFailed": "فشل إيقاف خدمات المصدر",
+        "stoppingSource": "جاري إيقاف خدمات المصدر...",
+        "switchingDns": "جاري تبديل سجلات DNS...",
+        "targetStarted": "بدأت خدمات الهدف",
+        "unmountFailed": "فشل فك تحميل المصدر",
+        "unmountingSource": "جاري فك تحميل المصدر..."
+      },
       "mount": {
         "checkpointOption": "الاستعادة من نقطة تفتيش بعد التثبيت",
         "completed": "اكتمل التثبيت",
@@ -1280,6 +1356,7 @@
         "deploying": "جارٍ نشر \"{{repo}}\" على {{machine}}...",
         "description": "سحب مستودع من جهاز بعيد (جهاز أو تخزين). احذف الاسم لسحب جميع المستودعات. يتم الكشف عن نوع المصدر تلقائياً من الإعدادات. استخدم --up للنشر بعد السحب",
         "descriptionShort": "سحب مستودع من جهاز بعيد (جهاز أو تخزين)",
+        "optionBwlimit": "حد عرض النطاق لنقل rsync (مثال: \"6M\"، \"10M\")",
         "optionForce": "فرض الكتابة فوق المستودع الموجود",
         "optionFrom": "اسم الجهاز أو التخزين المصدر (يتم الكشف تلقائياً من الإعدادات)",
         "optionUp": "بعد السحب، قم بتركيب ونشر المستودع على هذا الجهاز",
@@ -1293,6 +1370,7 @@
         "description": "دفع مستودع إلى جهاز بعيد (جهاز أو تخزين). احذف الاسم لدفع جميع المستودعات. يتم الكشف عن نوع الهدف تلقائياً من الإعدادات. للنقل بين الأجهزة، يتم نسخ صورة المستودع المشفرة بنفس GUID — هذا نسخ احتياطي/ترحيل، وليس fork. لإنشاء fork مستقل، استخدم 'repo fork' أولاً، ثم ادفع. استخدم --up للنشر بعد الدفع",
         "descriptionShort": "دفع مستودع إلى جهاز بعيد (جهاز أو تخزين)",
         "destRequired": "حدد --to <remote> (اسم جهاز أو تخزين من الإعدادات)",
+        "optionBwlimit": "حد عرض النطاق لنقل rsync (مثال: \"6M\"، \"10M\")",
         "optionCheckpoint": "إنشاء نقطة فحص CRIU قبل النسخ الاحتياطي (التقاط حالة ذاكرة العمليات للترحيل المباشر)",
         "optionForce": "فرض الكتابة فوق النسخة الاحتياطية الموجودة",
         "optionProvision": "تزويد الجهاز الهدف تلقائياً عبر مزود السحابة إذا لم يكن موجوداً",
@@ -1381,7 +1459,7 @@
           "descriptionShort": "تطبيق قالب على مستودع",
           "notFound": "القالب \"{{name}}\" غير موجود. المتاح: {{available}}"
         },
-        "completed": "تم تطبيق القالب. للنشر: rdc repo up {{repository}} -m {{machine}}",
+        "completed": "تم تطبيق القالب. للنشر: rdc repo up --name {{repository}} -m {{machine}}",
         "description": "تطبيق قالب على مستودع",
         "descriptionShort": "تطبيق قالب على مستودع (docker-compose.yml + Rediaccfile)",
         "failed": "فشل تطبيق القالب",
@@ -2059,16 +2137,16 @@
     "affectedChildClones": ". النسخ المتأثرة: {{clones}}. احذف أو ارقِ النسخ الفرعية أولاً.",
     "agent": {
       "commandBlocked": "الامر \"{{command}}\" غير متاح في وضع الوكيل.\n\nهذا الامر ينفذ وظائف منخفضة المستوى بشكل اعتباطي دون ضمانات السلامة. استخدم اوامر CLI المكتوبة او ادوات MCP بدلا من ذلك.\n\nالبدائل:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - نفذ \"rdc agent capabilities\" لعرض جميع الاوامر المتاحة\n\nاذا كنت بحاجة الى وصول مباشر، اطلب من المستخدم تشغيل الامر مباشرة.",
-      "createGuard": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\" في وضع الوكيل.\n\nالوكلاء يعملون في وضع fork فقط. المستودعات الرئيسية هي بيئات إنتاجية لا يمكن للوكلاء الوصول إليها بعد الإنشاء.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nللمستخدم: للسماح بإنشاء المستودع، عيّن REDIACC_ALLOW_GRAND_REPO=* (أو اسم مستودع محدد) في الطرفية قبل بدء جلسة الوكيل.",
-      "createGuardOverride": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\". لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
-      "createGuardOverrideNonLinux": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\". تجاوز REDIACC_ALLOW_GRAND_REPO غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nلاستخدام التجاوز، شغّل الوكيل على Linux (مباشرةً، أو WSL، أو Docker، أو VM).",
+      "createGuard": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\" في وضع الوكيل.\n\nالوكلاء يعملون في وضع fork فقط. المستودعات الرئيسية هي بيئات إنتاجية لا يمكن للوكلاء الوصول إليها بعد الإنشاء.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nللمستخدم: للسماح بإنشاء المستودع، عيّن REDIACC_ALLOW_GRAND_REPO=* (أو اسم مستودع محدد) في الطرفية قبل بدء جلسة الوكيل.",
+      "createGuardOverride": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\". لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\". تجاوز REDIACC_ALLOW_GRAND_REPO غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nلاستخدام التجاوز، شغّل الوكيل على Linux (مباشرةً، أو WSL، أو Docker، أو VM).",
       "forkBlocked": "الأمر \"{{command}}\" غير متاح في مستودعات fork.\n\nمستودعات fork هي بيئات معزولة مؤقتة. هذه العملية تنطبق فقط على المستودعات الرئيسية (الإنتاجية). اطلب من المستخدم تشغيل هذا الأمر مباشرةً.",
-      "grandGuard": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يمكن للوكلاء تعديل المستودعات الرئيسية مباشرةً.\n\nتحتوي المستودعات الرئيسية على بيانات الإنتاج. استخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة.\n\nسير العمل:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork (مثال: rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover\n\nللمستخدم: للسماح بالوصول المباشر، عيّن REDIACC_ALLOW_GRAND_REPO={{name}} (أو * لجميع المستودعات) في الطرفية قبل بدء جلسة الوكيل.",
-      "grandGuardOverride": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nاستخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover",
-      "grandGuardOverrideNonLinux": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). تجاوز REDIACC_ALLOW_GRAND_REPO غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nسير العمل:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover\n\nلاستخدام التجاوز، شغّل الوكيل على Linux (مباشرةً، أو WSL، أو Docker، أو VM).",
-      "machineGuard": "الوصول المباشر إلى الآلة \"{{machine}}\" غير مسموح في وضع الوكيل.\n\nيجب على الوكلاء الاتصال من خلال سياق مستودع للوصول المعزول. أنشئ fork للمستودع أولاً، ثم اتصل بالـ fork.\n\nسير العمل:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nللمستخدم: للسماح بالوصول المباشر للآلة، عيّن REDIACC_ALLOW_GRAND_REPO=* (أو اسم مستودع محدد) في الطرفية قبل بدء جلسة الوكيل.",
-      "machineGuardOverride": "الوصول المباشر إلى الآلة \"{{machine}}\" غير مسموح. لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nأنشئ fork للمستودع أولاً، ثم اتصل بالـ fork:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
-      "machineGuardOverrideNonLinux": "تجاوز الوصول المباشر إلى الآلة غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nسير العمل:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nلاستخدام التجاوز، شغّل الوكيل على Linux (مباشرةً، أو WSL، أو Docker، أو VM).",
+      "grandGuard": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يمكن للوكلاء تعديل المستودعات الرئيسية مباشرةً.\n\nتحتوي المستودعات الرئيسية على بيانات الإنتاج. استخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة.\n\nسير العمل:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork (مثال: rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover\n\nللمستخدم: للسماح بالوصول المباشر، عيّن REDIACC_ALLOW_GRAND_REPO={{name}} (أو * لجميع المستودعات) في الطرفية قبل بدء جلسة الوكيل.",
+      "grandGuardOverride": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nاستخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). تجاوز REDIACC_ALLOW_GRAND_REPO غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nسير العمل:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover\n\nلاستخدام التجاوز، شغّل الوكيل على Linux (مباشرةً، أو WSL، أو Docker، أو VM).",
+      "machineGuard": "الوصول المباشر إلى الآلة \"{{machine}}\" غير مسموح في وضع الوكيل.\n\nيجب على الوكلاء الاتصال من خلال سياق مستودع للوصول المعزول. أنشئ fork للمستودع أولاً، ثم اتصل بالـ fork.\n\nسير العمل:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nللمستخدم: للسماح بالوصول المباشر للآلة، عيّن REDIACC_ALLOW_GRAND_REPO=* (أو اسم مستودع محدد) في الطرفية قبل بدء جلسة الوكيل.",
+      "machineGuardOverride": "الوصول المباشر إلى الآلة \"{{machine}}\" غير مسموح. لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nأنشئ fork للمستودع أولاً، ثم اتصل بالـ fork:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "تجاوز الوصول المباشر إلى الآلة غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nسير العمل:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nلاستخدام التجاوز، شغّل الوكيل على Linux (مباشرةً، أو WSL، أو Docker، أو VM).",
       "mcpGrandGuard": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يمكن للوكلاء تعديل المستودعات الرئيسية مباشرةً.\n\nاستخدم repo_fork لإنشاء نسخة معزولة وآمنة، ثم اعمل على الـ fork.\nإذا كنت بحاجة إلى وصول مباشر، اطلب من المستخدم إعادة تشغيل خادم MCP مع --allow-grand.",
       "mcpGrandGuardOverride": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO.\n\nاستخدم repo_fork لإنشاء نسخة معزولة وآمنة، ثم اعمل على الـ fork.",
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). تجاوز REDIACC_ALLOW_GRAND_REPO غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nاستخدم repo_fork لإنشاء نسخة معزولة وآمنة، ثم اعمل على الـ fork.",
@@ -2126,6 +2204,7 @@
     "regionRequired": "اسم المنطقة مطلوب. استخدم --region أو اضبط السياق.",
     "registrationFailed": "فشل التسجيل",
     "remoteNotFound": "\"{{name}}\" ليس جهازاً أو تخزيناً معروفاً. الأجهزة: {{machines}}. التخزينات: {{storages}}",
+    "repositoryAlreadyMounted": "المستودع \"{{name}}\" مُركَّب بالفعل على \"{{machine}}\". ترحيل مستودع نشط سيؤدي إلى تلفه. نفّذ أولاً: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "لم يتم العثور على المستودع \"{{name}}\"",
     "repositoryRequired": "اسم المستودع مطلوب. استخدم --repository <name>.",
     "resourceNotFound": "{{resource}} غير موجود",
@@ -2152,11 +2231,13 @@
     "teamRequired": "اسم الفريق مطلوب. استخدم --team أو اضبط السياق.",
     "term": {
       "connectivityFailed": "لا يمكن الوصول إلى {{host}}:{{port}}. {{error}}\n\nاستكشاف الأخطاء:\n  - تحقق من أن الآلة مشغلة ومتصلة بالشبكة\n  - تحقق من صحة عنوان IP في خزينة الآلة\n  - تأكد من عدم حجب المنفذ {{port}} بواسطة جدار حماية\n  - جرب ping على الآلة: ping {{host}}",
+      "dockerComposeForbidden": "\"docker compose\" غير مسموح به في سياق المستودع.\n\nاستخدم \"renet compose -- <args>\" بدلاً من ذلك حتى يتم تطبيق عناوين IP loopback لكل مستودع، وحقن شبكة المضيف، وقدرات CRIU، والتحقق من ملف compose. تشغيل \"docker compose\" مباشرة يتجاوز كل هذا ويفسد النشر بصمت.\n\nللنشر المنسق، يفضل: rdc repo up --name <repository> -m <machine>",
+      "fileWriteDetected": "تم اكتشاف كتابة ملف ({{detected}}). استخدم rdc repo sync بدلا من ذلك:\n  rdc repo sync upload -m MACHINE -r REPO --local FILE --remote PATH\n\nrsync ينقل الملفات بضغط الفرق والتحقق من المجاميع والصلاحيات الصحيحة.",
       "launchFailed": "فشل تشغيل الطرفية: {{error}}",
       "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
       "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
-      "repoContextRequired": "الأمر يتطلب سياق مستودع.\n\nتم اكتشاف \"{{detected}}\" الذي يحتاج إلى DOCKER_HOST ومتغيرات بيئة المستودع.\nهذه متاحة فقط عند تحديد مستودع.\n\nبدلاً من:\n  rdc term {{machine}} -c \"{{command}}\"\n\nاستخدم:\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
+      "repoContextRequired": "الأمر يتطلب سياق مستودع.\n\nتم اكتشاف \"{{detected}}\" الذي يحتاج إلى DOCKER_HOST ومتغيرات بيئة المستودع.\nهذه متاحة فقط عند تحديد مستودع.\n\nبدلاً من:\n  rdc term connect -m {{machine}} -c \"{{command}}\"\n\nاستخدم:\n  rdc term connect -m {{machine}} -r <repository> -c \"{{command}}\"",
       "sshCode1": "خطأ عام - تحقق من صيغة الأمر أو أذونات البعيد",
       "sshCode126": "تم رفض الإذن - لا يمكن تنفيذ الأمر على البعيد",
       "sshCode127": "الأمر غير موجود على الآلة البعيدة",
@@ -2179,7 +2260,7 @@
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
       "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
       "notFound": "لم يتم العثور على VS Code.\n\nالرجاء التثبيت من: https://code.visualstudio.com/\nأو قم بتعيين متغير البيئة REDIACC_VSCODE_PATH.",
-      "repoNotDeployed": "المستودع \"{{repository}}\" غير منشور على {{machine}}.\n\nانشره أولاً:\n  rdc repo up {{repository}} -m <اسم-الجهاز>"
+      "repoNotDeployed": "المستودع \"{{repository}}\" غير منشور على {{machine}}.\n\nانشره أولاً:\n  rdc repo up --name {{repository}} -m <اسم-الجهاز>"
     }
   },
   "help": {
@@ -2187,6 +2268,7 @@
     "cli": {
       "machineQuery": "عرض حالة الجهاز",
       "repoUp": "نشر خدمات المستودع",
+      "syncDownload": "تنزيل الملفات من المستودع",
       "syncUpload": "رفع الملفات إلى المستودع",
       "termRepo": "SSH إلى المستودع"
     },
@@ -2201,7 +2283,7 @@
     "machine": {
       "containers": "عرض الحاويات قيد التشغيل",
       "health": "فحص صحة الجهاز لـ CI/CD",
-      "keyConcepts": "\nالمفاهيم الأساسية:\n\n  فلاتر الاستعلام\n    • rdc machine query <name> يعرض جميع الأقسام افتراضيًا\n    • استخدم --system أو --repositories أو --containers أو --services أو --network أو --block-devices للتصفية\n    • مخرجات JSON تُثري الحاويات بـ: repository (الاسم المُحلل) و domain و autoRoute\n\n  المراقبة والصحة\n    • machine health يخرج بـ: 0=سليم، 1=تحذير، 2=خطأ — استخدمه لبوابات CI/CD\n    • containers --health-check يخرج بـ 2 إذا كانت أي حاوية غير سليمة\n    • services --stability-check يخرج بـ 2 إذا كانت أي خدمة فاشلة أو تُعيد التشغيل أو لديها أكثر من 3 إعادات تشغيل\n\n  هيكل مخزن البيانات (/mnt/rediacc/)\n    • repositories/ — صور LUKS مشفرة (واحدة لكل GUID مستودع)\n    • mounts/ — نقاط تثبيت مفكوكة التشفير (متاحة عند تثبيت المستودع)\n    • immovable/ — بيانات Docker daemon لكل مستودع\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
+      "keyConcepts": "\nالمفاهيم الأساسية:\n\n  فلاتر الاستعلام\n    • rdc machine query --name <name> يعرض جميع الأقسام افتراضيًا\n    • استخدم --system أو --repositories أو --containers أو --services أو --network أو --block-devices للتصفية\n    • مخرجات JSON تُثري الحاويات بـ: repository (الاسم المُحلل) و domain و autoRoute\n\n  المراقبة والصحة\n    • machine health يخرج بـ: 0=سليم، 1=تحذير، 2=خطأ — استخدمه لبوابات CI/CD\n    • containers --health-check يخرج بـ 2 إذا كانت أي حاوية غير سليمة\n    • services --stability-check يخرج بـ 2 إذا كانت أي خدمة فاشلة أو تُعيد التشغيل أو لديها أكثر من 3 إعادات تشغيل\n\n  هيكل مخزن البيانات (/mnt/rediacc/)\n    • repositories/ — صور LUKS مشفرة (واحدة لكل GUID مستودع)\n    • mounts/ — نقاط تثبيت مفكوكة التشفير (متاحة عند تثبيت المستودع)\n    • immovable/ — بيانات Docker daemon لكل مستودع\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
       "query": "عرض حالة الجهاز الكاملة"
     },
     "repo": {
@@ -2228,7 +2310,8 @@
     "term": {
       "command": "تنفيذ أمر بدون shell تفاعلي",
       "machine": "SSH إلى الجهاز",
-      "repo": "SSH إلى المستودع (DOCKER_HOST تلقائي)"
+      "repo": "SSH إلى المستودع (DOCKER_HOST تلقائي)",
+      "syncHint": "لنقل الملفات، استخدم: rdc repo sync upload/download"
     },
     "useHelpAll": "استخدم --help-all لعرض الأوصاف الموسعة",
     "vscode": {
@@ -2318,9 +2401,12 @@
     "protocolToken": "رمز المصادقة",
     "queryBlockDevices": "تضمين أجهزة التخزين فقط",
     "queryContainers": "تضمين الحاويات فقط",
+    "queryLicenses": "تضمين حالات تراخيص المستودعات",
     "queryNetwork": "تضمين واجهات الشبكة فقط",
     "queryRepositories": "تضمين المستودعات فقط",
     "queryServices": "تضمين الخدمات فقط",
+    "queryStorageHealth": "عرض تجزئة BTRFS ووفورات reflink لكل مستودع",
+    "querySyncCerts": "اسحب أيضًا ذاكرة التخزين المؤقت لشهادات ACME من الجهاز بعد الاستعلام",
     "querySystem": "تضمين معلومات النظام فقط",
     "quiet": "إخفاء المخرجات المعلوماتية",
     "rawVault": "خزينة JSON أولية (للنصوص البرمجية/CI)",

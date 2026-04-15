@@ -4,8 +4,8 @@ description: 'Cree, gestione y opere repositorios cifrados con LUKS en máquinas
 category: Guides
 order: 4
 language: es
-sourceHash: "a3b38ca25b01b511"
-sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
+sourceHash: "83f2c9fa5ae53864"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # Repositorios
@@ -23,8 +23,8 @@ rdc repo create --name my-app -m server-1 --size 10G
 
 | Opción | Requerido | Descripción |
 |--------|-----------|-------------|
-| `-m, --machine <name>` | Sí | Máquina destino donde se creará el repositorio. |
-| `--size <size>` | Sí | Tamaño de la imagen de disco cifrada (por ejemplo, `5G`, `10G`, `50G`). |
+| `-m, --machine <name>` | Sí | Máquina destino donde se creará el repositorio |
+| `--size <size>` | Sí | Tamaño de la imagen de disco cifrada (por ejemplo, `5G`, `10G`, `50G`) |
 | `--skip-router-restart` | No | Omitir el reinicio del servidor de rutas después de la operación |
 
 La salida mostrará tres valores generados automáticamente:
@@ -112,7 +112,7 @@ rdc repo ownership --name my-app -m server-1
 ```
 
 
-Consulte la [Guía de Migración](/es/docs/migration) para un recorrido completo de cuándo y cómo usar la propiedad durante la migración de proyectos.
+Consulte la [Guía de Migración](/en/docs/migration) para un recorrido completo de cuándo y cómo usar la propiedad durante la migración de proyectos.
 
 ## Plantilla
 
@@ -131,3 +131,50 @@ rdc repo delete --name my-app -m server-1
 ```
 
 > Esto destruye permanentemente la imagen de disco cifrada. Esta acción no se puede deshacer.
+
+## Migrar Repositorio
+
+Migre en vivo un repositorio de una máquina a otra con un tiempo de inactividad mínimo.
+
+```bash
+rdc repo migrate --name my-app --from server-1 --to server-2
+```
+
+| Opción | Descripción |
+|--------|-------------|
+| `--provision` | Aprovisionar el repositorio en la máquina destino antes de migrar (crea imagen LUKS y registra configuración) |
+| `--checkpoint` | Crear un checkpoint CRIU de los contenedores en ejecución antes del corte |
+| `--bwlimit <kbps>` | Limitar el ancho de banda de rsync en kilobytes por segundo |
+| `--skip-dns` | Omitir la actualización de registros DNS tras el corte |
+
+**Flujo en tres fases:**
+
+1. **Pre-copia en caliente** - rsync transfiere datos mientras el repositorio sigue ejecutándose en el origen. Los archivos grandes se transfieren antes de cualquier tiempo de inactividad.
+2. **Corte** - el repositorio se detiene en el origen, un pase final de rsync sincroniza los cambios restantes, y el repositorio arranca en el destino.
+3. **Inicio en el destino** - renet monta e inicia el repositorio en la máquina destino. El DNS se actualiza a menos que se pase `--skip-dns`.
+
+![Migración en Vivo de Repositorio](/img/repo-migrate-flow.svg)
+
+**Push vs. migrar:**
+
+| | `repo push` | `repo migrate` |
+|--|-------------|----------------|
+| Operación | Copiar | Mover |
+| Origen tras operación | Sin cambios | Detenido |
+| Tiempo de inactividad | Ninguno (solo copia) | Breve ventana de corte |
+| Actualización DNS | No | Sí (excepto con `--skip-dns`) |
+| Caso de uso | Copia de seguridad, clon de staging | Reemplazo de máquina, traslado de servidor |
+
+## Limpiar
+
+Después de eliminar repositorios o recuperarse de operaciones fallidas, pueden quedar directorios de montaje huérfanos, archivos de bloqueo y marcadores inamovibles. La limpieza los elimina de forma segura:
+
+```bash
+# Vista previa de lo que se eliminaría
+rdc machine prune --name server-1 --dry-run
+
+# Eliminar recursos huérfanos
+rdc machine prune --name server-1
+```
+
+Solo se ven afectados los recursos sin imagen de repositorio correspondiente. Los directorios de montaje no vacíos nunca se eliminan.

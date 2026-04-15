@@ -4,8 +4,8 @@ description: 'Créez, gérez et opérez des dépôts chiffrés LUKS sur des mach
 category: Guides
 order: 4
 language: fr
-sourceHash: "a3b38ca25b01b511"
-sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
+sourceHash: "83f2c9fa5ae53864"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # Dépôts
@@ -25,7 +25,7 @@ rdc repo create --name my-app -m server-1 --size 10G
 |--------|--------|-------------|
 | `-m, --machine <name>` | Oui | Machine cible où le dépôt sera créé |
 | `--size <size>` | Oui | Taille de l'image disque chiffrée (par ex., `5G`, `10G`, `50G`) |
-| `--skip-router-restart` | No | Skip restarting the route server after the operation |
+| `--skip-router-restart` | Non | Ne pas redémarrer le serveur de routage après l'opération |
 
 La sortie affichera trois valeurs générées automatiquement :
 
@@ -47,7 +47,7 @@ rdc repo unmount --name my-app -m server-1  # Démonter et re-chiffrer
 | Option | Description |
 |--------|-------------|
 | `--checkpoint` | Créer un checkpoint CRIU avant le montage/démontage (pour les conteneurs avec le label `rediacc.checkpoint=true`) |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--skip-router-restart` | Ne pas redémarrer le serveur de routage après l'opération |
 
 ## Vérifier le statut
 
@@ -103,7 +103,7 @@ La commande détecte automatiquement les répertoires de données des conteneurs
 | Option | Description |
 |--------|-------------|
 | `--uid <uid>` | Définir un UID personnalisé au lieu de 7111 |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--skip-router-restart` | Ne pas redémarrer le serveur de routage après l'opération |
 
 Pour forcer la propriété sur tous les fichiers, y compris les données des conteneurs :
 
@@ -112,7 +112,7 @@ rdc repo ownership --name my-app -m server-1
 ```
 
 
-Consultez le [Guide de migration](/fr/docs/migration) pour un guide complet sur quand et comment utiliser la propriété lors de la migration de projets.
+Consultez le [Guide de migration](/en/docs/migration) pour un guide complet sur quand et comment utiliser la propriété lors de la migration de projets.
 
 ## Modèle (template)
 
@@ -131,3 +131,50 @@ rdc repo delete --name my-app -m server-1
 ```
 
 > Ceci détruit définitivement l'image disque chiffrée. Cette action est irréversible.
+
+## Migrer un dépôt
+
+Migrez en direct un dépôt d'une machine à une autre avec un temps d'arrêt minimal.
+
+```bash
+rdc repo migrate --name my-app --from server-1 --to server-2
+```
+
+| Option | Description |
+|--------|-------------|
+| `--provision` | Provisionner le dépôt sur la machine cible avant la migration (crée l'image LUKS et enregistre la configuration) |
+| `--checkpoint` | Créer un checkpoint CRIU des conteneurs en cours d'exécution avant le basculement |
+| `--bwlimit <kbps>` | Limiter la bande passante rsync en kilooctets par seconde |
+| `--skip-dns` | Ne pas mettre à jour les enregistrements DNS après le basculement |
+
+**Flux en trois phases :**
+
+1. **Pré-copie à chaud** - rsync transfère les données pendant que le dépôt continue de fonctionner sur la source. Les fichiers volumineux sont transférés avant tout temps d'arrêt.
+2. **Basculement** - le dépôt est arrêté sur la source, un dernier passage rsync synchronise les modifications restantes, et le dépôt démarre sur la cible.
+3. **Démarrage sur la cible** - renet monte et démarre le dépôt sur la machine cible. Le DNS est mis à jour sauf si `--skip-dns` est passé.
+
+![Migration en direct du dépôt](/img/repo-migrate-flow.svg)
+
+**Push vs. migration :**
+
+| | `repo push` | `repo migrate` |
+|--|-------------|----------------|
+| Opération | Copie | Déplacement |
+| Source après | Inchangée | Arrêtée |
+| Temps d'arrêt | Aucun (copie uniquement) | Brève fenêtre de basculement |
+| Mise à jour DNS | Non | Oui (sauf avec `--skip-dns`) |
+| Cas d'usage | Sauvegarde, clone de staging | Remplacement de machine, déménagement serveur |
+
+## Nettoyer
+
+Après la suppression de dépôts ou la récupération d'opérations échouées, des répertoires de montage orphelins, des fichiers de verrou et des marqueurs inamovibles peuvent subsister. Le nettoyage les supprime en toute sécurité :
+
+```bash
+# Aperçu de ce qui serait supprimé
+rdc machine prune --name server-1 --dry-run
+
+# Supprimer les ressources orphelines
+rdc machine prune --name server-1
+```
+
+Seules les ressources sans image de dépôt correspondante sont affectées. Les répertoires de montage non vides ne sont jamais supprimés.

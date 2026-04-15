@@ -156,6 +156,12 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           token: ${{ steps.app-token.outputs.token }}
+          # validate:translation-freshness computes `git diff origin/main...HEAD`
+          # to detect which English docs changed in this PR. A shallow clone
+          # with a branch that's many commits ahead of main silently produces
+          # an empty diff, so the script becomes a no-op. Full history is
+          # required for the freshness gate to actually fire.
+          fetch-depth: 0
       - name: Initialize account submodule
         run: git submodule update --init --depth 1 private/account
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -285,6 +291,30 @@ jobs:
       - name: Check content for AI slop patterns
         run: .ci/scripts/quality/check-content-quality.sh
 
+  quality-cli-examples:
+    name: CLI Examples
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console,renet,account,middleware,elite,sql,homebrew-tap
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: npm run check:cli-examples
+
   quality-middleware:
     name: Middleware
     runs-on: ubuntu-latest
@@ -315,6 +345,44 @@ jobs:
 
       - name: Run middleware quality
         run: .ci/scripts/private/run-middleware.sh quality
+
+  quality-ebpf:
+    name: eBPF Objects
+    runs-on: ubuntu-latest
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - name: Install clang
+        run: sudo apt-get install -y clang llvm libbpf-dev linux-headers-generic
+      - name: Verify BPF objects are up-to-date
+        run: |
+          cd private/renet
+          go generate ./pkg/ebpf/...
+          git diff --exit-code pkg/ebpf/
+      - name: Verify BPF verifier accepts program
+        run: |
+          cd private/renet
+          go test ./pkg/ebpf/ -run TestBPFVerifier -v
+      - name: Run eBPF unit tests
+        run: |
+          cd private/renet
+          go test ./pkg/ebpf/ -v
 
   quality-renet:
     name: Renet

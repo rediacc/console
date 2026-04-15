@@ -9,7 +9,6 @@ import {
   type RepoBatchRefreshResult,
   readMachineActivationStatus,
   readRuntimeRepoLicenseStatuses,
-  refreshMachineActivation,
   refreshRepoLicensesBatch,
 } from '../services/license.js';
 import { outputService } from '../services/output.js';
@@ -203,25 +202,6 @@ export async function executeActivationStatus(machineName: string): Promise<void
   }
 }
 
-export async function runMachineActivationRefresh(
-  context: SubscriptionCommandContext
-): Promise<void> {
-  await withSpinner(
-    t('commands.subscription.refresh.refreshing'),
-    async () => {
-      const issued = await refreshMachineActivation(
-        context.machine,
-        context.sshPrivateKey,
-        context.remoteRenetPath
-      );
-      if (!issued) {
-        throw new ValidationError(t('commands.subscription.refresh.failed'));
-      }
-    },
-    t('commands.subscription.refresh.refreshed')
-  );
-}
-
 export async function runRepoBatchRefresh(
   context: SubscriptionCommandContext
 ): Promise<RepoBatchRefreshResult> {
@@ -234,7 +214,6 @@ export async function runRepoBatchRefresh(
 
 export async function executeSubscriptionRefresh(machineName: string): Promise<void> {
   const context = await resolveSubscriptionCommandContext(machineName);
-  await runMachineActivationRefresh(context);
   const batchSummary = await runRepoBatchRefresh(context);
   outputService.success(t('commands.subscription.refresh.success'));
   renderRepoBatchRefreshSummary(batchSummary);
@@ -242,7 +221,7 @@ export async function executeSubscriptionRefresh(machineName: string): Promise<v
 
 export async function executeActivationRefresh(machineName: string): Promise<void> {
   const context = await resolveSubscriptionCommandContext(machineName);
-  await runMachineActivationRefresh(context);
+  await runRepoBatchRefresh(context);
   outputService.success(t('commands.subscription.refresh.refreshed'));
 }
 
