@@ -156,6 +156,12 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           token: ${{ steps.app-token.outputs.token }}
+          # validate:translation-freshness computes `git diff origin/main...HEAD`
+          # to detect which English docs changed in this PR. A shallow clone
+          # with a branch that's many commits ahead of main silently produces
+          # an empty diff, so the script becomes a no-op. Full history is
+          # required for the freshness gate to actually fire.
+          fetch-depth: 0
       - name: Initialize account submodule
         run: git submodule update --init --depth 1 private/account
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
