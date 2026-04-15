@@ -940,6 +940,7 @@ jobs:
             packages/shared
             packages/shared-desktop
             packages/provisioning
+            workers/www
             package.json
             package-lock.json
             tsconfig.json
