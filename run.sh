@@ -36,9 +36,13 @@ fi
 _grand_env_is_wildcard() {
     local raw="${REDIACC_ALLOW_GRAND_REPO:-}"
     [[ -z "$raw" ]] && return 1
+    local -a entries
     local IFS=','
+    # read -ra splits on IFS without performing pathname expansion (critical:
+    # a bare `*` in a for-loop would otherwise glob against the cwd).
+    read -ra entries <<<"$raw"
     local entry
-    for entry in $raw; do
+    for entry in "${entries[@]}"; do
         entry="${entry#"${entry%%[![:space:]]*}"}"
         entry="${entry%"${entry##*[![:space:]]}"}"
         [[ "$entry" == "*" ]] && return 0

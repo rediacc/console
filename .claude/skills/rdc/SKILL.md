@@ -175,10 +175,10 @@ See [config.md](config.md) for full details.
 
 ## Security — Agent guards
 
-- **Fork-only mode** (default): AI agents can only modify fork repositories. Grand (original) repos are protected. To override, set `REDIACC_ALLOW_GRAND_REPO=<repo-name>` or `REDIACC_ALLOW_GRAND_REPO=*` for all repos.
+- **Fork-only mode** (default): AI agents can only modify fork repositories. Grand (original) repos are protected. To override, set `REDIACC_ALLOW_GRAND_REPO=<repo-name>`, a comma-separated list (`repo1,repo2`), or `REDIACC_ALLOW_GRAND_REPO=*` for all repos.
 - **MCP fork-only mode**: The MCP server (`rdc mcp serve`) runs in fork-only mode by default. Use `--allow-grand` flag to enable grand repo access.
 - **Per-repo SSH keys + server-side sandbox**: Each repo has its own SSH key with `command="renet sandbox-gateway <name>"` in `authorized_keys`. Every SSH session (term, VS Code, sync) is sandboxed server-side with Landlock filesystem restrictions, OverlayFS home overlay, and per-repo TMPDIR. Cross-repo access blocked by the kernel. `.envrc` auto-loaded for Docker access.
-- **Machine-level SSH**: Direct machine access (`rdc term connect -m <machine>` without a repo) is blocked for agents unless `REDIACC_ALLOW_GRAND_REPO=*` is set.
+- **Machine-level SSH**: Direct machine access (`rdc term connect -m <machine>` without a repo) is blocked for agents unless `REDIACC_ALLOW_GRAND_REPO=*` is set. A comma-separated repo list does not unlock machine-level access, only `*` does (including `*` appearing inside a list such as `repo1,*,repo2`).
 
 ## Operational details
 
