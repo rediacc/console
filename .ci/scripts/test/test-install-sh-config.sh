@@ -111,6 +111,23 @@ run_case() {
 
 echo "install.sh write_install_config matrix:"
 
+# Boot a tiny mock server-info endpoint so we can exercise the auto-detect
+# override path. Shutdown on exit.
+mock_port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
+mock_dir=$(mktemp -d)
+mkdir -p "$mock_dir/account/api/v1/.well-known"
+printf '%s\n' '{"updateChannel":"stable","e2e":{"keys":[{"publicKeySpki":"MOCK"}]}}' \
+    >"$mock_dir/account/api/v1/.well-known/server-info"
+(cd "$mock_dir" && python3 -m http.server "$mock_port" >/dev/null 2>&1) &
+mock_pid=$!
+trap 'kill $mock_pid 2>/dev/null; rm -rf "$mock_dir"' EXIT
+# Wait up to 3s for the server to come up.
+for _ in 1 2 3 4 5 6; do
+    curl -fsS "http://127.0.0.1:${mock_port}/account/api/v1/.well-known/server-info" >/dev/null 2>&1 && break
+    sleep 0.5
+done
+MOCK_URL="http://127.0.0.1:${mock_port}"
+
 # worker_full: both rewrites landed — ideal case
 run_case "worker_full" \
     "edge" "https://edge.rediacc.com" \
@@ -135,6 +152,15 @@ run_case "worker_none" \
 run_case "worker_server_only" \
     "stable" "https://unreachable-server.invalid" \
     "yes" "stable" "https://unreachable-server.invalid"
+
+# worker_full_with_server_info: both baked + a real server-info responding
+# with `updateChannel: stable`. The baked edge channel must NOT be
+# overridden — the user picked edge by choosing the edge host, and a
+# preview-cloned backend pointing at a production channel is exactly the
+# scenario that produced the bug this regression test guards against.
+run_case "worker_full_with_server_info" \
+    "edge" "$MOCK_URL" \
+    "yes" "edge" "$MOCK_URL"
 
 echo ""
 echo "Passed: $PASS"

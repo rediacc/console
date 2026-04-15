@@ -129,8 +129,12 @@ write_install_config() {
     if server_info=$(curl -fsSL -A "Rediacc-Installer/1.0" "${SERVER_URL}/account/api/v1/.well-known/server-info" 2>/dev/null); then
       if command -v jq &>/dev/null; then
         e2e_key=$(echo "$server_info" | jq -r '.e2e.keys[0].publicKeySpki // empty')
-        # Auto-detect channel from server if not explicitly set by user
-        if [[ -z "${REDIACC_CHANNEL:-}" ]]; then
+        # Auto-detect channel from server ONLY when the script is still on
+        # the default channel. A channel baked by the worker rewrite (e.g.
+        # :-pr-443 on a preview host) or set explicitly via REDIACC_CHANNEL
+        # env var must NOT be overwritten by server-info — the user asked
+        # for a specific channel by picking that host or setting the env.
+        if [[ -z "${REDIACC_CHANNEL:-}" && "$CHANNEL" == "$default_channel" ]]; then
           local detected_channel
           detected_channel=$(echo "$server_info" | jq -r '.updateChannel // empty')
           if [[ -n "$detected_channel" ]]; then
