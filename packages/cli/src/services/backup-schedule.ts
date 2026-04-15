@@ -16,6 +16,13 @@ import { buildRcloneArgs } from '@rediacc/shared/queue-vault';
 import { isSensitiveKey } from '@rediacc/shared/telemetry';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../types/index.js';
+import {
+  envFilePath,
+  generateEnvFile,
+  mergeEnvVars,
+  rcloneEnvName,
+  writeEnvFile,
+} from './backup-env-file.js';
 import { configService } from './config-resources.js';
 import { refreshRepoLicensesBatch } from './license.js';
 import { outputService } from './output.js';
@@ -90,7 +97,16 @@ function sanitizeBackupOutput(content: string): string {
   );
 }
 
-/** Build a single renet backup command for one destination. */
+interface DestinationBuild {
+  command: string;
+  envVars: Record<string, string>;
+}
+
+/**
+ * Credential params move to `envVars` (so they can land in a 0600
+ * EnvironmentFile=) rather than onto argv where the systemd unit file would
+ * expose them to any local user.
+ */
 function buildDestinationCommand(
   dest: BackupStrategyDestination,
   rcloneArgs: { remote: string; params: string[] },
@@ -98,7 +114,7 @@ function buildDestinationCommand(
   mode: string,
   datastore: string,
   remoteRenetPath: string
-): string | undefined {
+): DestinationBuild | undefined {
   const backendMatch = /^:([^:]+):(.*)/.exec(rcloneArgs.remote);
   if (!backendMatch) return undefined;
   const [, backend, remotePath] = backendMatch;
@@ -117,14 +133,19 @@ function buildDestinationCommand(
   if (bucket) parts.push(`--rclone-bucket ${bucket}`);
   if (folder) parts.push(`--rclone-folder ${folder}`);
 
+  const envVars: Record<string, string> = {};
   for (const param of rcloneArgs.params) {
     const stripped = param.replace(/^--/, '');
-    parts.push(`--rclone-param '${stripped}'`);
+    const eq = stripped.indexOf('=');
+    if (eq <= 0) continue;
+    const key = stripped.slice(0, eq);
+    const value = stripped.slice(eq + 1);
+    envVars[rcloneEnvName(key)] = value;
   }
 
   const bwlimit = dest.bandwidthLimit ?? strategy.bandwidthLimit;
   if (bwlimit) {
-    parts.push(`--rclone-param 'bwlimit=${bwlimit}'`);
+    envVars[rcloneEnvName('bwlimit')] = bwlimit;
   }
 
   if (strategy.include?.length) {
@@ -134,28 +155,31 @@ function buildDestinationCommand(
     parts.push(`--exclude-repo ${strategy.exclude.join(',')}`);
   }
 
-  return parts.join(' ');
+  return { command: parts.join(' '), envVars };
 }
 
-/**
- * Build shell commands for a backup strategy (one per destination).
- * Reused by generateServiceUnit (systemd) and triggerBackupNow (ad-hoc).
- */
+interface BackupBuild {
+  commands: string[];
+  envVars: Record<string, string>;
+}
+
+/** One command per destination + merged RCLONE_* env-vars for the whole unit. */
 function buildBackupCommands(
   strategy: BackupStrategyConfig,
   destinations: BackupStrategyDestination[],
   rcloneArgsByDest: Map<string, { remote: string; params: string[] }>,
   datastore: string,
   remoteRenetPath: string
-): string[] {
+): BackupBuild {
   const mode = strategy.mode ?? BACKUP_DEFAULTS.MODE;
   const commands: string[] = [];
+  const envVars: Record<string, string> = {};
 
   for (const dest of destinations) {
     const rcloneArgs = rcloneArgsByDest.get(dest.name);
     if (!rcloneArgs) continue;
 
-    const cmd = buildDestinationCommand(
+    const built = buildDestinationCommand(
       dest,
       rcloneArgs,
       strategy,
@@ -163,15 +187,25 @@ function buildBackupCommands(
       datastore,
       remoteRenetPath
     );
-    if (cmd) commands.push(cmd);
+    if (!built) continue;
+    commands.push(built.command);
+    mergeEnvVars(envVars, built.envVars);
   }
 
-  return commands;
+  return { commands, envVars };
+}
+
+interface ServiceUnitBuild {
+  /** Full systemd .service file content. */
+  serviceContent: string;
+  /** RCLONE_* env vars to write to a 0600 EnvironmentFile= sidecar. */
+  envVars: Record<string, string>;
 }
 
 /**
- * Generate systemd service unit for a backup strategy.
- * One service per strategy -- uploads to all destinations from the same snapshot.
+ * Generate systemd service unit for a backup strategy. Credentials are
+ * returned separately so the caller can write them to the EnvironmentFile=
+ * sidecar rather than embedding them in the world-readable unit.
  */
 function generateServiceUnit(
   strategyName: string,
@@ -180,8 +214,8 @@ function generateServiceUnit(
   rcloneArgsByDest: Map<string, { remote: string; params: string[] }>,
   datastore: string,
   remoteRenetPath: string
-): string {
-  const commands = buildBackupCommands(
+): ServiceUnitBuild {
+  const { commands, envVars } = buildBackupCommands(
     strategy,
     destinations,
     rcloneArgsByDest,
@@ -189,18 +223,27 @@ function generateServiceUnit(
     remoteRenetPath
   );
   const execLines = commands.map((cmd) => `ExecStart=${cmd}`);
+  const envFileLine =
+    Object.keys(envVars).length > 0 ? `EnvironmentFile=${envFilePath(strategyName)}\n` : '';
 
-  return `[Unit]
+  // TimeoutStartSec=infinity: backups can legitimately take > 24 h for a
+  // first full seed of a large repo. Any finite cap eventually bites. Rely
+  // on operators / external monitoring to spot a truly hung rclone, since
+  // systemd won't kill it automatically here.
+  const serviceContent = `[Unit]
 Description=Rediacc Scheduled Backup (${strategyName})
 After=network-online.target
 
 [Service]
 Type=oneshot
-${execLines.join('\n')}
+TimeoutStartSec=infinity
+${envFileLine}${execLines.join('\n')}
 
 [Install]
 WantedBy=multi-user.target
 `;
+
+  return { serviceContent, envVars };
 }
 
 /**
@@ -248,6 +291,7 @@ async function cleanupExistingBackupUnits(
     `/etc/systemd/system/${SYSTEMD_BACKUP_UNIT_GLOB}.service`,
     `/etc/systemd/system/${SYSTEMD_BACKUP_UNIT_GLOB}.timer`,
     `/etc/systemd/system/timers.target.wants/${SYSTEMD_BACKUP_UNIT_GLOB}.timer`,
+    '/etc/rediacc/backup-*.env',
   ].join(' ');
 
   await runRemoteCommand(sftp, cleanupCmd, options, 'Failed to remove existing backup units');
@@ -298,7 +342,7 @@ async function deployStrategyUnits(
     outputService.info(`Destinations: ${enabledDests.map((d) => d.name).join(', ')}`);
   }
 
-  const serviceContent = generateServiceUnit(
+  const { serviceContent, envVars } = generateServiceUnit(
     strategyName,
     strategy,
     enabledDests,
@@ -307,10 +351,22 @@ async function deployStrategyUnits(
     remoteRenetPath
   );
   const timerContent = generateTimerUnit(strategyName, onCalendar);
+  const envFileContent = generateEnvFile(envVars);
 
   if (options.debug) {
     process.stderr.write(`--- ${unitName}.service ---\n${sanitizeBackupOutput(serviceContent)}\n`);
+    if (envFileContent) {
+      process.stderr.write(
+        `--- ${envFilePath(strategyName)} ---\n<0600 env-file; values redacted>\n`
+      );
+    }
     process.stderr.write(`--- ${unitName}.timer ---\n${timerContent}\n`);
+  }
+
+  // Credentials env-file must land before the .service file so the unit is
+  // never on-disk referencing a missing EnvironmentFile=.
+  if (envFileContent) {
+    await writeEnvFile(sftp, strategyName, envFileContent, options);
   }
 
   // Write service unit
@@ -420,7 +476,7 @@ async function previewDryRun(
       rcloneArgsByDest.set(dest.name, args);
     }
     const onCalendar = cronToOnCalendar(config.schedule);
-    const serviceContent = generateServiceUnit(
+    const { serviceContent, envVars } = generateServiceUnit(
       name,
       config,
       enabledDests,
@@ -431,6 +487,15 @@ async function previewDryRun(
     const timerContent = generateTimerUnit(name, onCalendar);
     outputService.info(`\n--- rediacc-backup-${name}.service ---`);
     outputService.info(sanitizeBackupOutput(serviceContent));
+    if (Object.keys(envVars).length > 0) {
+      outputService.info(`--- ${envFilePath(name)} (mode 0600, values redacted) ---`);
+      outputService.info(
+        Object.keys(envVars)
+          .sort()
+          .map((k) => `${k}=[REDACTED]`)
+          .join('\n')
+      );
+    }
     outputService.info(`--- rediacc-backup-${name}.timer ---`);
     outputService.info(timerContent);
   }
@@ -522,5 +587,12 @@ export async function pushBackupSchedule(
 }
 
 /** @internal Exported for unit tests and ad-hoc backup execution. */
-export const _testing = { generateServiceUnit, cronToOnCalendar, buildBackupCommands };
+export const _testing = {
+  generateServiceUnit,
+  cronToOnCalendar,
+  buildBackupCommands,
+  buildDestinationCommand,
+  generateEnvFile,
+  envFilePath,
+};
 export { sanitizeBackupOutput };

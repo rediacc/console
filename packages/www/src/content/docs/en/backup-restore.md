@@ -4,7 +4,7 @@ description: "Back up encrypted repositories to external storage, restore from b
 category: "Guides"
 order: 7
 language: en
-sourceHash: "4cc40d3db5384f5d"
+sourceHash: "d5556f7b71c7c3df"
 ---
 
 # Backup & Restore
@@ -116,7 +116,7 @@ Rediacc uses named backup strategies. Each strategy defines a schedule, backup m
 | Mode | Behavior | Downtime |
 |------|----------|----------|
 | `hot` | BTRFS snapshot taken while services are running (crash-consistent) | None |
-| `cold` | Services stopped, snapshot taken, services restarted, snapshot uploaded (app-consistent) | Brief |
+| `cold` | Services stopped, snapshot taken, services restarted, snapshot uploaded (app-consistent) | Per-repo stop+start window, parallelised across repos. See "Estimating Cold Backup Downtime" below. |
 
 Use `hot` for services that tolerate crash-consistent snapshots. Use `cold` when you need guaranteed consistency and can accept a brief restart.
 
@@ -144,6 +144,36 @@ A cold backup runs in three phases per included repo: **stop → snapshot → st
 - `rdc machine query --name <machine> --containers` shows running state. Compare against the expected set.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` on the machine. Inspect via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` with a stale `startedAt` means the last backup didn't complete cleanly.
 - Logs from the renet backup run (`journalctl -u renet-*` or the direct `rdc machine deploy-backup` invocation) emit a final summary line of the form `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. A non-empty `failed_repos` is the grep target.
+
+### Estimating Cold Backup Downtime
+
+Each repo is down only for its own `down()` + `up()` window. On a warm host these are typically:
+
+| Repo shape | Typical stop+start |
+|------------|--------------------|
+| Small (1-2 containers, no DB) | 5-15 s |
+| Medium (web app + cache) | 20-45 s |
+| Heavy (DB + queues + mail) | 60-120 s |
+
+The snapshot step (`btrfs subvolume snapshot -r`) is O(1) regardless of repo size: 0.1-1 s. A repo is not kept down for other repos' snapshots. The uploader then runs against a read-only snapshot while every repo is already back up.
+
+**Total wall-clock for the whole run** is governed by how many repos restart concurrently. Renet derives this from the host:
+
+```text
+concurrency = min(repoCount, max(2, NumCPU/2), 8)
+```
+
+Examples:
+
+| Host | Repos | Concurrency | Wall-clock restart |
+|------|-------|-------------|--------------------|
+| 4 CPU VM | 5 repos, avg 30 s each | 2 | ~75 s |
+| 16 CPU server | 10 repos, avg 40 s each | 8 | ~80 s |
+| 64 CPU fleet node | 50 repos, avg 40 s each | 8 | ~4 min |
+
+**Override via env:** set `REDIACC_COLD_BACKUP_CONCURRENCY=N` in the backup service's environment (a systemd drop-in is the usual route) to pin a specific value. `=1` forces strictly-serial restarts, useful when debugging a crashloop in one repo's `up()` hook.
+
+If you run a latency-sensitive repo (public web app, mail), its downtime is bounded by its own stop+start (typically 30-90 s), not by the whole run length. Repos are scheduled into concurrency slots in the order they were discovered; there is no priority queue. Split heavy repos into their own `--exclude`-scoped strategies if you need finer-grained scheduling.
 
 ### Define a Strategy
 

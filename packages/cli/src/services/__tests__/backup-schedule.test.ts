@@ -59,9 +59,9 @@ vi.mock('../output.js', () => ({
 }));
 
 describe('generateServiceUnit', () => {
-  it('includes mode and bwlimit in ExecStart', async () => {
+  it('puts bwlimit in envVars (not ExecStart) and emits EnvironmentFile=', async () => {
     const { _testing } = await import('../backup-schedule.js');
-    const content = _testing.generateServiceUnit(
+    const { serviceContent, envVars } = _testing.generateServiceUnit(
       'hourly-hot',
       { schedule: '0 * * * *', mode: 'hot', bandwidthLimit: '6M', destinations: [] },
       [{ name: 'onedrive', storage: 'microsoft' }],
@@ -69,13 +69,15 @@ describe('generateServiceUnit', () => {
       '/mnt/rediacc',
       '/usr/bin/renet'
     );
-    expect(content).toContain('--mode hot');
-    expect(content).toContain("--rclone-param 'bwlimit=6M'");
+    expect(serviceContent).toContain('--mode hot');
+    expect(serviceContent).not.toContain('--rclone-param');
+    expect(serviceContent).toContain('EnvironmentFile=/etc/rediacc/backup-hourly-hot.env');
+    expect(envVars).toMatchObject({ RCLONE_BWLIMIT: '6M' });
   });
 
-  it('per-dest bwlimit overrides strategy bwlimit', async () => {
+  it('per-dest bwlimit overrides strategy bwlimit in envVars', async () => {
     const { _testing } = await import('../backup-schedule.js');
-    const content = _testing.generateServiceUnit(
+    const { serviceContent, envVars } = _testing.generateServiceUnit(
       'test',
       { schedule: '0 * * * *', bandwidthLimit: '6M', destinations: [] },
       [{ name: 'fast-dest', storage: 'microsoft', bandwidthLimit: '50M' }],
@@ -83,13 +85,13 @@ describe('generateServiceUnit', () => {
       '/mnt/rediacc',
       '/usr/bin/renet'
     );
-    expect(content).toContain('bwlimit=50M');
-    expect(content).not.toContain('bwlimit=6M');
+    expect(envVars.RCLONE_BWLIMIT).toBe('50M');
+    expect(serviceContent).not.toContain('bwlimit');
   });
 
   it('includes --include-repo when strategy has include', async () => {
     const { _testing } = await import('../backup-schedule.js');
-    const content = _testing.generateServiceUnit(
+    const { serviceContent } = _testing.generateServiceUnit(
       'critical',
       { schedule: '0 * * * *', include: ['mail', 'nextcloud'], destinations: [] },
       [{ name: 'dest', storage: 'microsoft' }],
@@ -97,13 +99,13 @@ describe('generateServiceUnit', () => {
       '/mnt/rediacc',
       '/usr/bin/renet'
     );
-    expect(content).toContain('--include-repo mail,nextcloud');
-    expect(content).not.toContain('--exclude-repo');
+    expect(serviceContent).toContain('--include-repo mail,nextcloud');
+    expect(serviceContent).not.toContain('--exclude-repo');
   });
 
   it('includes --exclude-repo when strategy has exclude', async () => {
     const { _testing } = await import('../backup-schedule.js');
-    const content = _testing.generateServiceUnit(
+    const { serviceContent } = _testing.generateServiceUnit(
       'nightly',
       { schedule: '0 3 * * *', mode: 'cold', exclude: ['gitlab'], destinations: [] },
       [{ name: 'dest', storage: 'microsoft' }],
@@ -111,13 +113,13 @@ describe('generateServiceUnit', () => {
       '/mnt/rediacc',
       '/usr/bin/renet'
     );
-    expect(content).toContain('--exclude-repo gitlab');
-    expect(content).toContain('--mode cold');
+    expect(serviceContent).toContain('--exclude-repo gitlab');
+    expect(serviceContent).toContain('--mode cold');
   });
 
   it('omits mode flag when mode is undefined (defaults to hot)', async () => {
     const { _testing } = await import('../backup-schedule.js');
-    const content = _testing.generateServiceUnit(
+    const { serviceContent } = _testing.generateServiceUnit(
       'default',
       { schedule: '0 * * * *', destinations: [] },
       [{ name: 'dest', storage: 'microsoft' }],
@@ -125,12 +127,12 @@ describe('generateServiceUnit', () => {
       '/mnt/rediacc',
       '/usr/bin/renet'
     );
-    expect(content).toContain('--mode hot');
+    expect(serviceContent).toContain('--mode hot');
   });
 
   it('generates multiple ExecStart lines for multiple destinations', async () => {
     const { _testing } = await import('../backup-schedule.js');
-    const content = _testing.generateServiceUnit(
+    const { serviceContent } = _testing.generateServiceUnit(
       'multi',
       { schedule: '0 3 * * *', destinations: [] },
       [
@@ -144,10 +146,133 @@ describe('generateServiceUnit', () => {
       '/mnt/rediacc',
       '/usr/bin/renet'
     );
-    const execStartCount = (content.match(/ExecStart=/g) ?? []).length;
+    const execStartCount = (serviceContent.match(/ExecStart=/g) ?? []).length;
     expect(execStartCount).toBe(2);
-    expect(content).toContain('--rclone-backend onedrive');
-    expect(content).toContain('--rclone-backend s3');
+    expect(serviceContent).toContain('--rclone-backend onedrive');
+    expect(serviceContent).toContain('--rclone-backend s3');
+  });
+
+  it('emits TimeoutStartSec=infinity so long uploads are never killed by systemd', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const { serviceContent } = _testing.generateServiceUnit(
+      'nightly-cold',
+      { schedule: '0 3 * * *', mode: 'cold', destinations: [] },
+      [{ name: 'dest', storage: 'microsoft' }],
+      new Map([['dest', { remote: ':onedrive:hostinger', params: [] }]]),
+      '/mnt/rediacc',
+      '/usr/bin/renet'
+    );
+    expect(serviceContent).toContain('TimeoutStartSec=infinity');
+    // TimeoutStartSec= must sit between Type=oneshot and the first ExecStart=
+    // so systemd applies it to the actual run.
+    const typeIdx = serviceContent.indexOf('Type=oneshot');
+    const timeoutIdx = serviceContent.indexOf('TimeoutStartSec=infinity');
+    const execIdx = serviceContent.indexOf('ExecStart=');
+    expect(typeIdx).toBeGreaterThanOrEqual(0);
+    expect(timeoutIdx).toBeGreaterThan(typeIdx);
+    expect(execIdx).toBeGreaterThan(timeoutIdx);
+  });
+
+  it('omits EnvironmentFile= when no credentials are present', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const { serviceContent, envVars } = _testing.generateServiceUnit(
+      'no-creds',
+      { schedule: '0 * * * *', destinations: [] },
+      [{ name: 'dest', storage: 'microsoft' }],
+      new Map([['dest', { remote: ':onedrive:hostinger', params: [] }]]),
+      '/mnt/rediacc',
+      '/usr/bin/renet'
+    );
+    expect(envVars).toEqual({});
+    expect(serviceContent).not.toContain('EnvironmentFile=');
+  });
+
+  it('moves rclone credential params to envVars as RCLONE_<KEY> and keeps them out of ExecStart', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const tokenJson = '{"access_token":"abc","refresh_token":"xyz"}';
+    const { serviceContent, envVars } = _testing.generateServiceUnit(
+      'nightly-cold',
+      { schedule: '0 3 * * *', mode: 'cold', destinations: [] },
+      [{ name: 'dest', storage: 'microsoft' }],
+      new Map([
+        [
+          'dest',
+          {
+            remote: ':onedrive:hostinger',
+            params: [
+              `--onedrive-token=${tokenJson}`,
+              '--onedrive-drive-id=4D895B49A06E9E5C',
+              '--onedrive-drive-type=personal',
+            ],
+          },
+        ],
+      ]),
+      '/mnt/rediacc',
+      '/usr/bin/renet'
+    );
+
+    expect(envVars).toEqual({
+      RCLONE_ONEDRIVE_TOKEN: tokenJson,
+      RCLONE_ONEDRIVE_DRIVE_ID: '4D895B49A06E9E5C',
+      RCLONE_ONEDRIVE_DRIVE_TYPE: 'personal',
+    });
+    // No access/refresh token or param flag should appear in the argv.
+    expect(serviceContent).not.toContain('onedrive-token');
+    expect(serviceContent).not.toContain('access_token');
+    expect(serviceContent).not.toContain('refresh_token');
+    expect(serviceContent).not.toContain('--rclone-param');
+    expect(serviceContent).toContain('EnvironmentFile=/etc/rediacc/backup-nightly-cold.env');
+  });
+
+  it('throws on conflicting env vars across destinations', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const call = () =>
+      _testing.generateServiceUnit(
+        'mixed',
+        { schedule: '0 * * * *', destinations: [] },
+        [
+          { name: 'dest1', storage: 'm1' },
+          { name: 'dest2', storage: 'm2' },
+        ],
+        new Map([
+          ['dest1', { remote: ':onedrive:a', params: ['--onedrive-token=aaa'] }],
+          ['dest2', { remote: ':onedrive:b', params: ['--onedrive-token=bbb'] }],
+        ]),
+        '/mnt/rediacc',
+        '/usr/bin/renet'
+      );
+    expect(call).toThrow(/Conflicting env var "RCLONE_ONEDRIVE_TOKEN"/);
+  });
+});
+
+describe('generateEnvFile', () => {
+  it('quotes values and escapes backslashes and double quotes', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const tokenJson = '{"access_token":"ab\\c","refresh_token":"x\\"y"}';
+    const content = _testing.generateEnvFile({ RCLONE_ONEDRIVE_TOKEN: tokenJson });
+    // Every value must be double-quoted; embedded " and \ escaped.
+    expect(content).toBe(
+      `RCLONE_ONEDRIVE_TOKEN="{\\"access_token\\":\\"ab\\\\c\\",\\"refresh_token\\":\\"x\\\\\\"y\\"}"\n`
+    );
+  });
+
+  it('returns empty string for an empty map', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    expect(_testing.generateEnvFile({})).toBe('');
+  });
+
+  it('emits one line per key', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const content = _testing.generateEnvFile({
+      RCLONE_ONEDRIVE_TOKEN: 'tok',
+      RCLONE_ONEDRIVE_DRIVE_ID: 'id',
+      RCLONE_BWLIMIT: '6M',
+    });
+    const lines = content.trimEnd().split('\n');
+    expect(lines).toHaveLength(3);
+    expect(lines).toContain('RCLONE_ONEDRIVE_TOKEN="tok"');
+    expect(lines).toContain('RCLONE_ONEDRIVE_DRIVE_ID="id"');
+    expect(lines).toContain('RCLONE_BWLIMIT="6M"');
   });
 });
 
@@ -220,6 +345,53 @@ describe('pushBackupSchedule', () => {
 
     const { pushBackupSchedule } = await import('../backup-schedule.js');
     await expect(pushBackupSchedule('hostinger')).rejects.toThrow('No backup strategies bound');
+  });
+
+  it('writes env file with umask 077 before writing the service unit', async () => {
+    mockBuildRcloneArgs.mockReturnValue({
+      remote: ':onedrive:hostinger',
+      params: ['--onedrive-token={"access_token":"a"}'],
+    });
+
+    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    await pushBackupSchedule('hostinger');
+
+    const commands = mockExecStreaming.mock.calls.map(([cmd]) => cmd as string);
+
+    const envFileIdx = commands.findIndex((c) =>
+      c.includes(`umask 077 && cat > /etc/rediacc/backup-hourly-hot.env`)
+    );
+    const serviceIdx = commands.findIndex((c) =>
+      c.includes('tee /etc/systemd/system/rediacc-backup-hourly-hot.service')
+    );
+    const mkdirIdx = commands.findIndex((c) =>
+      c.includes('install -d -m 0755 -o root -g root /etc/rediacc')
+    );
+
+    expect(mkdirIdx).toBeGreaterThanOrEqual(0);
+    expect(envFileIdx).toBeGreaterThan(mkdirIdx);
+    expect(serviceIdx).toBeGreaterThan(envFileIdx);
+
+    // Stdin for the env-file write must carry the token, not the service unit.
+    const envStdin = mockExecStreaming.mock.calls[envFileIdx][1].stdin as string;
+    expect(envStdin).toContain('RCLONE_ONEDRIVE_TOKEN=');
+    expect(envStdin).toContain('access_token');
+
+    // The service unit written to disk must NOT contain the token.
+    const serviceStdin = mockExecStreaming.mock.calls[serviceIdx][1].stdin as string;
+    expect(serviceStdin).not.toContain('access_token');
+    expect(serviceStdin).not.toContain('--rclone-param');
+    expect(serviceStdin).toContain('EnvironmentFile=/etc/rediacc/backup-hourly-hot.env');
+  });
+
+  it('cleanup removes stale env files alongside units', async () => {
+    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    await pushBackupSchedule('hostinger');
+
+    const commands = mockExecStreaming.mock.calls.map(([cmd]) => cmd as string);
+    const cleanupCmd = commands.find((c) => c.startsWith('sudo rm -f'));
+    expect(cleanupCmd).toBeDefined();
+    expect(cleanupCmd).toContain('/etc/rediacc/backup-*.env');
   });
 
   it('aborts when no valid repo licenses', async () => {

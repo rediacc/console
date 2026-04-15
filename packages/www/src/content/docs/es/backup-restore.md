@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: es
-sourceHash: "0c7ebc3efb8877c5"
-sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
+sourceHash: "d5556f7b71c7c3df"
+sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
 ---
 
 # Respaldo y Restauración
@@ -119,7 +119,7 @@ Rediacc utiliza estrategias de respaldo con nombre. Cada estrategia define un cr
 | Modo | Comportamiento | Tiempo de inactividad |
 |------|---------------|----------------------|
 | `hot` | Snapshot de BTRFS tomado mientras los servicios están en ejecución (consistente ante fallos) | Ninguno |
-| `cold` | Servicios detenidos, snapshot tomado, servicios reiniciados, snapshot cargado (consistente a nivel de aplicación) | Breve |
+| `cold` | Servicios detenidos, snapshot tomado, servicios reiniciados, snapshot cargado (consistente a nivel de aplicación) | Ventana de stop+start por repositorio, paralelizada entre repositorios. Véase "Estimación del tiempo de inactividad del respaldo en frío" abajo. |
 
 Use `hot` para servicios que toleran snapshots consistentes ante fallos. Use `cold` cuando necesite consistencia garantizada y pueda aceptar un breve reinicio.
 
@@ -147,6 +147,36 @@ Un respaldo frio ejecuta tres fases por repositorio incluido: **detener -- snaps
 - `rdc machine query --name <machine> --containers` muestra el estado de ejecucion. Compare con el conjunto esperado.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` en la maquina. Inspeccione via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa que el ultimo respaldo no se completo correctamente.
 - Los registros del respaldo de renet (`journalctl -u renet-*` o la invocacion directa `rdc machine deploy-backup`) emiten una linea de resumen final de la forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` no vacio es el objetivo de grep.
+
+### Estimación del tiempo de inactividad del respaldo en frío
+
+Cada repositorio solo está inactivo durante su propia ventana `down()` + `up()`. En un host en caliente estos son típicamente:
+
+| Forma del repositorio | Stop+start típico |
+|-----------------------|-------------------|
+| Pequeño (1-2 contenedores, sin DB) | 5-15 s |
+| Mediano (aplicación web + caché) | 20-45 s |
+| Pesado (DB + colas + correo) | 60-120 s |
+
+El paso de snapshot (`btrfs subvolume snapshot -r`) es O(1) independientemente del tamaño del repositorio: 0,1-1 s. Un repositorio no se mantiene detenido mientras se toman snapshots de otros repositorios. El cargador luego se ejecuta contra un snapshot de solo lectura mientras todos los repositorios ya están de vuelta.
+
+**El tiempo total de reloj para toda la ejecución** está gobernado por cuántos repositorios reinician simultáneamente. Renet deriva este valor del host:
+
+```text
+concurrency = min(repoCount, max(2, NumCPU/2), 8)
+```
+
+Ejemplos:
+
+| Host | Repos | Concurrencia | Reinicio en reloj |
+|------|-------|--------------|-------------------|
+| VM de 4 CPU | 5 repos, promedio 30 s cada uno | 2 | ~75 s |
+| Servidor de 16 CPU | 10 repos, promedio 40 s cada uno | 8 | ~80 s |
+| Nodo de flota de 64 CPU | 50 repos, promedio 40 s cada uno | 8 | ~4 min |
+
+**Anulación vía variable de entorno:** establezca `REDIACC_COLD_BACKUP_CONCURRENCY=N` en el entorno del servicio de respaldo (normalmente mediante un drop-in de systemd) para fijar un valor específico. `=1` fuerza reinicios estrictamente seriales, útil al depurar un bucle de fallos en el hook `up()` de algún repositorio.
+
+Si ejecuta un repositorio sensible a la latencia (aplicación web pública, correo), su tiempo de inactividad está limitado por su propio stop+start (típicamente 30-90 s), no por la duración total de la ejecución. Los repositorios se programan en slots de concurrencia en el orden en que fueron descubiertos; no hay cola de prioridad. Divida los repositorios pesados en sus propias estrategias con `--exclude` si necesita una planificación más fina.
 
 ### Definir una Estrategia
 

@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "0c7ebc3efb8877c5"
-sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
+sourceHash: "d5556f7b71c7c3df"
+sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -119,7 +119,7 @@ Rediacc, adlandırılmış yedekleme stratejileri kullanır. Her strateji bir za
 | Mod | Davranış | Kesinti Süresi |
 |-----|----------|----------------|
 | `hot` | Servisler çalışırken BTRFS anlık görüntüsü alınır (kilitlenme tutarlı) | Yok |
-| `cold` | Servisler durdurulur, anlık görüntü alınır, servisler yeniden başlatılır, anlık görüntü yüklenir (uygulama tutarlı) | Kısa |
+| `cold` | Servisler durdurulur, anlık görüntü alınır, servisler yeniden başlatılır, anlık görüntü yüklenir (uygulama tutarlı) | Depo başına durdur+başlat penceresi, depolar arasında paralelleştirilmiş. Aşağıdaki "Soğuk Yedekleme Kesinti Süresini Tahmin Etme" bölümüne bakın. |
 
 Kilitlenme tutarlı anlık görüntülere izin veren servisler için `hot` kullanın. Garantili tutarlılığa ihtiyaç duyduğunuzda ve kısa yeniden başlatmayı kabul edebildiğinizde `cold` kullanın.
 
@@ -147,6 +147,36 @@ Soğuk yedekleme, dahil edilen her depo için üç aşamada çalışır: **durdu
 - `rdc machine query --name <machine> --containers` çalışma durumunu gösterir. Beklenen kümeyle karşılaştırın.
 - Makinedeki `/var/run/rediacc/cold-backup-<guid>.status.json` dosyasını kontrol edin. `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"` ile inceleyebilirsiniz. Eski bir `startedAt` ile birlikte `success: false`, son yedeklemenin temiz tamamlanmadığı anlamına gelir.
 - renet yedekleme çalıştırmasından gelen günlükler (`journalctl -u renet-*` veya doğrudan `rdc machine deploy-backup` çağrısı) `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` biçiminde bir son özet satırı yayar. Boş olmayan `failed_repos` grep hedefidir.
+
+### Soğuk Yedekleme Kesinti Süresini Tahmin Etme
+
+Her depo yalnızca kendi `down()` + `up()` penceresi boyunca kapalı kalır. Sıcak durumdaki bir makinede bu süreler tipik olarak:
+
+| Depo şekli | Tipik durdur+başlat |
+|------------|---------------------|
+| Küçük (1-2 konteyner, DB yok) | 5-15 s |
+| Orta (web uygulaması + önbellek) | 20-45 s |
+| Ağır (DB + kuyruklar + posta) | 60-120 s |
+
+Anlık görüntü adımı (`btrfs subvolume snapshot -r`) depo boyutundan bağımsız olarak O(1)'dir: 0,1-1 s. Bir depo, diğer depoların anlık görüntüleri için kapalı tutulmaz. Yükleyici daha sonra salt okunur bir anlık görüntüye karşı çalışır ve bu sırada tüm depolar zaten yeniden çalışır durumdadır.
+
+**Tüm çalıştırmanın toplam süresi**, kaç deponun eşzamanlı olarak yeniden başlatıldığına göre belirlenir. renet bu değeri makineden türetir:
+
+```text
+concurrency = min(repoCount, max(2, NumCPU/2), 8)
+```
+
+Örnekler:
+
+| Makine | Depolar | Eşzamanlılık | Yeniden başlatma süresi |
+|--------|---------|--------------|-------------------------|
+| 4 CPU VM | 5 depo, ortalama 30 s | 2 | ~75 s |
+| 16 CPU sunucu | 10 depo, ortalama 40 s | 8 | ~80 s |
+| 64 CPU filo düğümü | 50 depo, ortalama 40 s | 8 | ~4 dk |
+
+**Ortam değişkeniyle geçersiz kılma:** Belirli bir değere sabitlemek için yedekleme servisinin ortamında (genellikle bir systemd drop-in ile) `REDIACC_COLD_BACKUP_CONCURRENCY=N` ayarlayın. `=1` kesinlikle seri yeniden başlatmayı zorlar; bir deponun `up()` kancasındaki bir çökme döngüsünü hata ayıklarken faydalıdır.
+
+Gecikmeye duyarlı bir depo çalıştırıyorsanız (genel web uygulaması, posta), kesinti süresi tüm çalıştırma uzunluğuyla değil, kendi durdur+başlat süresiyle (tipik olarak 30-90 s) sınırlıdır. Depolar, keşfedildikleri sırayla eşzamanlılık slotlarına yerleştirilir; öncelik sırası yoktur. Daha ince zamanlama gerekiyorsa ağır depoları kendi `--exclude` kapsamlı stratejilerine ayırın.
 
 ### Strateji Tanımlama
 

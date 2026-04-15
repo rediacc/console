@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: "0c7ebc3efb8877c5"
-sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
+sourceHash: "d5556f7b71c7c3df"
+sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
 ---
 
 # Backup & Wiederherstellung
@@ -119,7 +119,7 @@ Rediacc verwendet benannte Backup-Strategien. Jede Strategie definiert einen Zei
 | Modus | Verhalten | Ausfallzeit |
 |-------|-----------|-------------|
 | `hot` | BTRFS-Snapshot wird bei laufenden Diensten erstellt (absturzkonsistent) | Keine |
-| `cold` | Dienste gestoppt, Snapshot erstellt, Dienste neu gestartet, Snapshot hochgeladen (anwendungskonsistent) | Kurz |
+| `cold` | Dienste gestoppt, Snapshot erstellt, Dienste neu gestartet, Snapshot hochgeladen (anwendungskonsistent) | Stop+Start-Fenster pro Repo, parallel über alle Repos. Siehe "Abschätzung der Cold-Backup-Ausfallzeit" unten. |
 
 Verwenden Sie `hot` für Dienste, die absturzkonsistente Snapshots tolerieren. Verwenden Sie `cold`, wenn Sie garantierte Konsistenz benötigen und einen kurzen Neustart akzeptieren können.
 
@@ -147,6 +147,36 @@ Ein Cold-Backup läuft in drei Phasen pro enthaltenem Repository: **Stopp -- Sna
 - `rdc machine query --name <machine> --containers` zeigt den Laufzustand. Vergleichen Sie mit der erwarteten Menge.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` auf der Maschine. Prüfen Sie via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` mit einem veralteten `startedAt` bedeutet, dass das letzte Backup nicht sauber abgeschlossen wurde.
 - Protokolle des renet-Backup-Laufs (`journalctl -u renet-*` oder der direkte `rdc machine deploy-backup`-Aufruf) geben eine abschließende Zusammenfassungszeile der Form `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` aus. Ein nicht leeres `failed_repos` ist das grep-Ziel.
+
+### Abschätzung der Cold-Backup-Ausfallzeit
+
+Jedes Repository ist nur während seines eigenen `down()` + `up()`-Fensters ausgefallen. Auf einem warmen Host sind das typischerweise:
+
+| Repository-Form | Typisches Stop+Start |
+|-----------------|----------------------|
+| Klein (1-2 Container, keine DB) | 5-15 s |
+| Mittel (Webanwendung + Cache) | 20-45 s |
+| Schwer (DB + Queues + Mail) | 60-120 s |
+
+Der Snapshot-Schritt (`btrfs subvolume snapshot -r`) ist O(1), unabhängig von der Repository-Größe: 0,1-1 s. Ein Repository wird nicht für die Snapshots anderer Repositories heruntergefahren gehalten. Der Uploader läuft dann gegen einen schreibgeschützten Snapshot, während alle Repositories bereits wieder oben sind.
+
+**Die Gesamt-Wall-Clock für den gesamten Lauf** wird davon bestimmt, wie viele Repositories gleichzeitig neu starten. Renet leitet diesen Wert vom Host ab:
+
+```text
+concurrency = min(repoCount, max(2, NumCPU/2), 8)
+```
+
+Beispiele:
+
+| Host | Repositories | Parallelität | Wall-Clock-Neustart |
+|------|--------------|-------------|---------------------|
+| 4-CPU-VM | 5 Repos, ø 30 s je | 2 | ~75 s |
+| 16-CPU-Server | 10 Repos, ø 40 s je | 8 | ~80 s |
+| 64-CPU-Fleet-Knoten | 50 Repos, ø 40 s je | 8 | ~4 Min |
+
+**Override per Umgebungsvariable:** Setzen Sie `REDIACC_COLD_BACKUP_CONCURRENCY=N` in der Umgebung des Backup-Dienstes (meist über ein systemd-Drop-in), um einen bestimmten Wert festzulegen. `=1` erzwingt streng serielle Neustarts, nützlich beim Debuggen eines Crashloops im `up()`-Hook eines Repositories.
+
+Wenn Sie ein latenzempfindliches Repository betreiben (öffentliche Webanwendung, Mail), ist dessen Ausfallzeit durch sein eigenes Stop+Start begrenzt (typischerweise 30-90 s), nicht durch die Gesamtlaufzeit. Repositories werden in der Reihenfolge ihrer Erkennung in Parallelitäts-Slots eingeplant; es gibt keine Prioritätswarteschlange. Teilen Sie schwere Repositories in eigene, mit `--exclude` begrenzte Strategien auf, wenn Sie eine feinere Zeitplanung benötigen.
 
 ### Strategie definieren
 
