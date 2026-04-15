@@ -19,23 +19,23 @@ Quick reference for all rdc commands — contexts, repos, machines, sync, contai
 
 ```bash
 # Full machine status (system, repos, containers, services)
-rdc machine info <machine>
+rdc machine query --name <machine>
 
 # Interactive SSH shell on a machine
-rdc term <machine>
+rdc term connect -m <machine>
 
 # SSH into a repo (DOCKER_HOST + mount dir pre-set)
-rdc term <machine> <repo>
+rdc term connect -m <machine> -r <repo>
 
 # Start repository services
-rdc repo up <repo> -m <machine>
+rdc repo up -m <machine>
 
 # Upload local files into a repo mount
-rdc repo sync upload -m <machine> -r <repo> -l ./local-path
+rdc repo sync upload -m <machine> -r <repo> --local ./local-path
 
 # Set defaults so -m / -t flags are optional
-rdc config set machine <alias>
-rdc config set team <name>
+rdc config set --key machine --value <alias>
+rdc config set --key team --value <name>
 ```
 
 ---
@@ -44,30 +44,29 @@ rdc config set team <name>
 <h2><a href="setup">Context Setup</a></h2>
 
 ```bash
-# Create a local context (no cloud API)
-rdc config create-local <name> --ssh-key ~/.ssh/id_ed25519
+# Create a named config (no cloud API)
+rdc config init --name <name> --ssh-key ~/.ssh/id_ed25519
 
-# Create an S3/R2 context (remote state)
-rdc config create-s3 <name> --endpoint <url> \
-  --bucket <bucket> --access-key-id <id>
+# Import object storage config from rclone.conf
+rdc config storage import --file rclone.conf --name <name>
 
-# Add a machine to the active context
-rdc config add-machine <alias> --ip <ip> --user <user>
+# Add a machine to the active config
+rdc config machine add --name <alias> --ip <ip> --user <user>
 
-# Scan SSH host keys for all context machines
-rdc config scan-keys
+# Scan SSH host keys for all config machines
+rdc config machine scan-keys -m <machine>
 
 # Set defaults (avoids repeating -m / -t on every command)
-rdc config set machine <alias>
-rdc config set team <name>
+rdc config set --key machine --value <alias>
+rdc config set --key team --value <name>
 
 # Provision a bare server (installs btrfs, Docker, renet)
-rdc config setup-machine <alias>
+rdc config machine setup --name <alias>
 
-# List contexts / machines / repo GUID mappings
+# List configs / machines / repo GUID mappings
 rdc config list
-rdc config machines
-rdc config repositories
+rdc config machine list
+rdc config repository list
 ```
 
 ---
@@ -77,7 +76,7 @@ rdc config repositories
 
 ```bash
 # Full status: system info, repos, containers, services
-rdc machine info <machine>
+rdc machine query --name <machine>
 
 # List all Docker containers across all repos
 rdc machine containers <machine>
@@ -92,10 +91,7 @@ rdc machine repos <machine>
 rdc machine health <machine>
 
 # Vault / LUKS encryption status
-rdc machine vault-status <machine>
-
-# Test SSH connection and capture host key
-rdc machine test-connection <machine>
+rdc machine vault-status --name <machine>
 ```
 
 `--output table|json|yaml|csv` — change output format
@@ -110,35 +106,35 @@ rdc machine test-connection <machine>
 
 ```bash
 # Interactive shell on a machine
-rdc term <machine>
+rdc term connect -m <machine>
 
 # Repo shell (DOCKER_HOST + repo mount dir pre-set)
-rdc term <machine> <repo>
+rdc term connect -m <machine> -r <repo>
 
 # Run a one-off remote command
-rdc term <machine> -c "df -h /mnt/rediacc/mounts/"
+rdc term connect -m <machine> -c "df -h /mnt/rediacc/mounts/"
 
 # Attach to an interactive container terminal
-rdc term <machine> <repo> \
+rdc term connect -m <machine> -r <repo> \
   --container <name> --container-action terminal
 
 # Stream container logs (follow mode)
-rdc term <machine> <repo> \
+rdc term connect -m <machine> -r <repo> \
   --container <name> --container-action logs \
   --log-lines 200 --follow
 
 # Exec a command inside a container
-rdc term <machine> <repo> \
+rdc term connect -m <machine> -r <repo> \
   --container <name> --container-action exec \
   -c "bash"
 
 # View container resource stats
-rdc term <machine> <repo> \
+rdc term connect -m <machine> -r <repo> \
   --container <name> --container-action stats
 
 # SSH tunnel to a container port (e.g. database)
-rdc repo tunnel <machine> <repo> -c <container> --port 5432
-rdc repo tunnel <machine> <repo>                 # auto-detect
+rdc repo tunnel -m <machine> -r <repo> -c <container> --port 5432
+rdc repo tunnel -m <machine> -r <repo>           # auto-detect
 ```
 
 ---
@@ -148,35 +144,35 @@ rdc repo tunnel <machine> <repo>                 # auto-detect
 
 ```bash
 # Create a new encrypted repository
-rdc repo create <repo> -m <machine> --size 10G
+rdc repo create --name <repo> -m <machine> --size 10G
 
 # Start services (Rediaccfile orchestration)
-rdc repo up <repo> -m <machine>
-rdc repo up <repo> -m <machine> --mount        # mount first
+rdc repo up -m <machine>
+rdc repo up -m <machine>
 
 # Stop services
-rdc repo down <repo> -m <machine>
-rdc repo down <repo> -m <machine> --unmount    # unmount after
+rdc repo down -m <machine>
+rdc repo down -m <machine> --unmount    # unmount after
 
-# Start all repos on a machine
-rdc repo up-all -m <machine>
-rdc repo up-all -m <machine> --parallel        # concurrent start
+# Start all repos on a machine (omit --name to up all)
+rdc repo up -m <machine>
+rdc repo up -m <machine> --parallel            # concurrent start
 
 # Mount / unmount LUKS container only
-rdc repo mount <repo> -m <machine>
-rdc repo unmount <repo> -m <machine>
+rdc repo mount --name <repo> -m <machine>
+rdc repo unmount --name <repo> -m <machine>
 
 # CoW fork (Copy-on-Write), offline resize, online expand
-rdc repo fork <parent> <tag> -m <machine>
-rdc repo resize <repo> -m <machine> --size 20G
-rdc repo expand <repo> -m <machine> --size 20G
+rdc repo fork --parent <parent> --tag <tag> -m <machine>
+rdc repo resize --name <repo> -m <machine> --size 20G
+rdc repo expand --name <repo> -m <machine> --size 20G
 
 # Validate filesystem integrity
-rdc repo validate <repo> -m <machine>
+rdc repo validate --name <repo> -m <machine>
 
 # Autostart management (starts repo on machine boot)
-rdc repo autostart enable <repo> -m <machine>
-rdc repo autostart disable <repo> -m <machine>
+rdc repo autostart enable --name <repo> -m <machine>
+rdc repo autostart disable --name <repo> -m <machine>
 rdc repo autostart list -m <machine>
 ```
 
@@ -189,20 +185,20 @@ rdc repo autostart list -m <machine>
 # Upload local directory to repo mount (rsync over SSH)
 rdc repo sync upload \
   -m <machine> -r <repo> \
-  -l ./local-path
+  --local ./local-path
 
 # Download from repo mount to local directory
 rdc repo sync download \
   -m <machine> -r <repo> \
-  -l ./local-path
+  --local ./local-path
 
 # Preview changes without transferring (dry run)
 rdc repo sync upload -m <machine> -r <repo> \
-  -l ./local-path --dry-run
+  --local ./local-path --dry-run
 
 # Interactive confirm before syncing
 rdc repo sync upload -m <machine> -r <repo> \
-  -l ./local-path --confirm
+  --local ./local-path --confirm
 
 # Compare local vs remote without syncing
 rdc repo sync status -m <machine> -r <repo>
@@ -253,19 +249,19 @@ rdc run container_restart \
 
 ```bash
 # Open VS Code connected to a machine
-rdc vscode <machine>
+rdc vscode connect -m <machine>
 
 # Open VS Code in a repo environment
-rdc vscode <machine> <repo>
+rdc vscode connect -m <machine> -r <repo>
 
 # Open to a specific remote folder
-rdc vscode <machine> <repo> --folder /custom/path
+rdc vscode connect -m <machine> -r <repo> --folder /custom/path
 
 # Open in a new VS Code window
-rdc vscode <machine> --new-window
+rdc vscode connect -m <machine> --new-window
 
 # Print the vscode:// URI without launching
-rdc vscode <machine> <repo> --url-only
+rdc vscode connect -m <machine> -r <repo> --url-only
 
 # List SSH configs created by vscode
 rdc vscode list
@@ -283,32 +279,32 @@ rdc vscode cleanup --all
 
 ```bash
 # Push repo backup to S3/R2 storage
-rdc repo push <repo> -m <machine> --to <storage>
+rdc repo push --name <repo> -m <machine> --to <storage>
 
 # Hot backup with container checkpoint (no downtime)
-rdc repo push <repo> -m <machine> \
+rdc repo push --name <repo> -m <machine> \
   --to <storage> --checkpoint
 
 # Fork with live state (CRIU checkpoint + CoW clone)
-rdc repo fork <parent> <tag> -m <machine> --checkpoint
+rdc repo fork --parent <parent> --tag <tag> -m <machine> --checkpoint
 
 # Pull backup from storage to a machine
-rdc repo pull <repo> -m <machine> --from <storage>
+rdc repo pull --name <repo> -m <machine> --from <storage>
 
 # List available backups on storage
-rdc repo list-backups -m <machine> --from <storage>
+rdc repo backup list -m <machine> --from <storage>
 
 # Configure backup schedule
-rdc config backup-strategy set \
+rdc config backup-strategy set --name primary \
   --cron "0 2 * * *" \
   --destination <storage> \
   --enable
 
 # Push schedule to machine as a systemd timer
-rdc machine deploy-backup <machine>
+rdc machine backup schedule -m <machine>
 
-# Bulk push all repos to storage
-rdc repo sync push-all -m <machine> --to <storage>
+# Push all repos to storage (omit --name to push all)
+rdc repo push -m <machine> --to <storage>
 ```
 
 ---
@@ -318,17 +314,17 @@ rdc repo sync push-all -m <machine> --to <storage>
 
 ```bash
 # Create a BTRFS snapshot of a repository
-rdc repo snapshot create <repo> -m <machine>
+rdc repo snapshot create --name <repo> -m <machine>
 
 # Create with an explicit snapshot name
-rdc repo snapshot create <repo> -m <machine> \
+rdc repo snapshot create --name <repo> -m <machine> \
   --snapshot-name <name>
 
 # List all snapshots on a machine
 rdc repo snapshot list -m <machine>
 
 # Delete a snapshot
-rdc repo snapshot delete <snapshot-name> -m <machine>
+rdc repo snapshot delete --name <snapshot-name> -m <machine>
 ```
 
 > Snapshots are instant BTRFS subvolume snapshots of the repository mount directory — space-efficient and suitable for quick rollbacks.
@@ -342,10 +338,10 @@ rdc repo snapshot delete <snapshot-name> -m <machine>
 |------|-----------|---------|
 | `-m, --machine <name>` | most commands | Target machine alias |
 | `-r, --repository <name>` | sync, term | Repository name |
-| `-t, --team <name>` | cloud mode | Team name |
+| `-t, --team <name>` | cloud adapter | Team name |
 | `-l, --local <path>` | sync | Local directory path |
 | `--output <fmt>` | list / get | `table` `json` `yaml` `csv` |
-| `--dry-run` | sync, repo up-all | Preview without changes |
+| `--dry-run` | sync, repo up | Preview without changes |
 | `--param key=value` | run | Bridge function parameter |
 | `--debug` | repo, run | Verbose debug output (local mode) |
 | `--force` / `-y` | delete, backup | Skip confirmation prompts |

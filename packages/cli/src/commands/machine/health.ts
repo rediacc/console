@@ -101,6 +101,21 @@ function displayRepositoriesSection(
   );
 }
 
+function displayLicensesSection(lic: MachineHealthResult['details']['licenses']): void {
+  if (lic.total === 0) return;
+
+  outputService.info(t('commands.machine.health.licensesSection'));
+  outputService.info(
+    t('commands.machine.health.licensesSummary', {
+      valid: lic.valid,
+      total: lic.total,
+      expired: lic.expired,
+      mismatch: lic.machineMismatch,
+      missing: lic.missing,
+    })
+  );
+}
+
 function displayIssuesSection(issues: string[]): void {
   if (issues.length === 0) return;
 
@@ -118,6 +133,7 @@ function displayHealthReport(health: MachineHealthResult, name: string): void {
   displayServicesSection(health.details.services);
   displayStorageSection(health.details.storage);
   displayRepositoriesSection(health.details.repositories);
+  displayLicensesSection(health.details.licenses);
   displayIssuesSection(health.issues);
   outputService.info(t('commands.machine.health.exitCode', { code: health.exitCode }));
 }

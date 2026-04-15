@@ -245,6 +245,9 @@ jobs:
           SES_SECRET_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
           SES_SECRET_US: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_US }}
           SES_SECRET_ASIA: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_ASIA }}
+          OTLP_CRED_EU: ${{ secrets.OTLP_CLIENT_CREDENTIALS_EU }}
+          OTLP_CRED_US: ${{ secrets.OTLP_CLIENT_CREDENTIALS_US }}
+          OTLP_CRED_ASIA: ${{ secrets.OTLP_CLIENT_CREDENTIALS_ASIA }}
           SUFFIX: ${{ matrix.secretSuffix }}
           TARGET: ${{ inputs.target }}
           SECRET_ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
@@ -272,6 +275,12 @@ jobs:
           fi
           SES_K="SES_KEY_${SUFFIX}"; SECRET_SES_ACCESS_KEY_ID="${!SES_K}"
           SES_S="SES_SECRET_${SUFFIX}"; SECRET_SES_SECRET_ACCESS_KEY="${!SES_S}"
+          # Asia uses EU SES while ap-northeast-1 production access is pending
+          if [[ "$SUFFIX" == "ASIA" ]]; then
+            SECRET_SES_ACCESS_KEY_ID="$SES_KEY_EU"
+            SECRET_SES_SECRET_ACCESS_KEY="$SES_SECRET_EU"
+          fi
+          OTLP_VAR="OTLP_CRED_${SUFFIX}"; SECRET_OTLP_CREDS="${!OTLP_VAR}"
 
           jq -n \
             --arg ed25519_priv "$SECRET_ED25519_PRIVATE_KEY" \
@@ -288,6 +297,7 @@ jobs:
             --arg ses_region "$SECRET_SES_REGION" \
             --arg ses_from "$VAR_SES_FROM" \
             --arg turnstile "$SECRET_TURNSTILE_KEY" \
+            --arg otlp_creds "$SECRET_OTLP_CREDS" \
             --arg seller_name "$VAR_SELLER_NAME" \
             --arg seller_vat "$VAR_SELLER_VAT_NUMBER" \
             --arg seller_reg "$VAR_SELLER_REGISTRATION_NUMBER" \
@@ -312,6 +322,7 @@ jobs:
               AWS_SES_REGION: $ses_region,
               AWS_SES_FROM: $ses_from,
               TURNSTILE_SECRET_KEY: $turnstile,
+              OTLP_CLIENT_CREDENTIALS: $otlp_creds,
               SELLER_NAME: $seller_name,
               SELLER_VAT_NUMBER: $seller_vat,
               SELLER_REGISTRATION_NUMBER: $seller_reg,

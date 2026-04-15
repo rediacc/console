@@ -1,14 +1,13 @@
-import { DEFAULTS } from '@rediacc/shared/config';
+import { BACKUP_DEFAULTS, DEFAULTS } from '@rediacc/shared/config';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
-import type { OutputFormat, RdcConfig } from '../types/index.js';
+import type { BackupStrategyConfig, OutputFormat, RdcConfig } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
 import {
   assertStorageExists,
   BackupDestinationSchema,
-  BackupScheduleSchema,
   parseConfig,
 } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
@@ -25,33 +24,104 @@ function resolveEnabledFlag(enable?: boolean, disable?: boolean): boolean | unde
   return undefined;
 }
 
-/**
- * Apply backup-strategy set options: either upsert a destination or update global settings.
- */
+/** Upsert a destination within a named backup strategy. */
+async function upsertBackupDestination(
+  strategyName: string,
+  destinationName: string,
+  storage: string | undefined,
+  enabled: boolean | undefined,
+  bwlimit: string | undefined
+): Promise<void> {
+  const existing = await configService.getBackupStrategy(strategyName);
+  const existingDest = existing?.destinations.find((d) => d.name === destinationName);
+  const storageName = storage ?? existingDest?.storage;
+  if (!storageName) {
+    throw new ValidationError(t('commands.config.backupStrategy.set.storageRequired'));
+  }
+  await assertStorageExists(storageName);
+  const dest = parseConfig(
+    BackupDestinationSchema,
+    { name: destinationName, storage: storageName, enabled, bandwidthLimit: bwlimit },
+    'backup destination'
+  );
+  await configService.addBackupDestination(strategyName, dest);
+}
+
+/** Build strategy-level config update from CLI options. */
+function buildStrategyUpdate(
+  opts: { cron?: string; mode?: string; bwlimit?: string; include?: string; exclude?: string },
+  enabled: boolean | undefined
+): Partial<BackupStrategyConfig> {
+  const u: Partial<BackupStrategyConfig> = {};
+  if (opts.cron !== undefined) u.schedule = opts.cron;
+  if (opts.mode !== undefined) u.mode = opts.mode as 'hot' | 'cold';
+  if (enabled !== undefined) u.enabled = enabled;
+  if (opts.bwlimit !== undefined) u.bandwidthLimit = opts.bwlimit;
+  if (opts.include !== undefined) {
+    u.include = opts.include.split(',').map((s) => s.trim());
+    u.exclude = undefined;
+  }
+  if (opts.exclude !== undefined) {
+    u.exclude = opts.exclude.split(',').map((s) => s.trim());
+    u.include = undefined;
+  }
+  return u;
+}
+
+/** Apply backup-strategy set options. With --destination: upserts a destination. Without: sets strategy-level fields. */
 async function applyBackupStrategyOptions(options: {
+  name: string;
   destination?: string;
+  storage?: string;
   cron?: string;
+  mode?: string;
+  bwlimit?: string;
+  include?: string;
+  exclude?: string;
   enable?: boolean;
   disable?: boolean;
 }): Promise<void> {
-  const hasAnyOption = options.destination ?? options.cron ?? options.enable ?? options.disable;
-  if (!hasAnyOption) {
-    throw new ValidationError(t('commands.config.backupStrategy.set.noOptions'));
-  }
-
   const enabled = resolveEnabledFlag(options.enable, options.disable);
-
   if (options.destination) {
-    await assertStorageExists(options.destination);
-    const dest = parseConfig(
-      BackupDestinationSchema,
-      { storage: options.destination, schedule: options.cron, enabled },
-      'backup destination'
+    await upsertBackupDestination(
+      options.name,
+      options.destination,
+      options.storage,
+      enabled,
+      options.bwlimit
     );
-    await configService.addBackupDestination(dest);
   } else {
-    parseConfig(BackupScheduleSchema, { schedule: options.cron, enabled }, 'backup schedule');
-    await configService.setBackupStrategy({ schedule: options.cron, enabled });
+    await configService.setBackupStrategy(options.name, buildStrategyUpdate(options, enabled));
+  }
+}
+
+/** Display a single backup strategy. */
+function displayStrategy(name: string, strategy: BackupStrategyConfig): void {
+  const mode = strategy.mode ?? BACKUP_DEFAULTS.MODE;
+  outputService.info(`Strategy: ${name}`);
+  outputService.info(`  Schedule: ${strategy.schedule}`);
+  outputService.info(`  Mode: ${mode}`);
+  outputService.info(`  Enabled: ${strategy.enabled !== false}`);
+  if (strategy.bandwidthLimit) {
+    outputService.info(`  Bandwidth limit: ${strategy.bandwidthLimit}`);
+  }
+  if (strategy.include) {
+    outputService.info(`  Include: ${strategy.include.join(', ')}`);
+  }
+  if (strategy.exclude) {
+    outputService.info(`  Exclude: ${strategy.exclude.join(', ')}`);
+  }
+  if (strategy.destinations.length === 0) {
+    outputService.info(t('commands.config.backupStrategy.show.noDestinations'));
+  } else {
+    outputService.info(t('commands.config.backupStrategy.show.destinationsHeader'));
+    for (const dest of strategy.destinations) {
+      const bwlimit = dest.bandwidthLimit ?? strategy.bandwidthLimit ?? '-';
+      const enabled = dest.enabled !== false;
+      outputService.info(
+        `    ${dest.name}  storage=${dest.storage}  bwlimit=${bwlimit}  enabled=${enabled}`
+      );
+    }
   }
 }
 
@@ -141,7 +211,7 @@ export function registerConfigCommands(program: Command): void {
     `
 ${t('help.examples')}
   $ rdc config init --name production --ssh-key ~/.ssh/id_ed25519   ${t('help.config.init')}
-  $ rdc config machine add --name server-1 --ip 10.0.0.1           ${t('help.config.addMachine')}
+  $ rdc config machine add --name server-1 --ip 10.0.0.1 --user deploy  ${t('help.config.addMachine')}
   $ rdc config machine setup --name server-1                        ${t('help.config.setupMachine')}
 `
   );
@@ -400,8 +470,14 @@ ${t('help.examples')}
   backupStrategy
     .command('set')
     .description(t('commands.config.backupStrategy.set.description'))
-    .option('--destination <storage>', t('commands.config.backupStrategy.set.optionDestination'))
+    .requiredOption('--name <name>', t('commands.config.backupStrategy.set.optionName'))
+    .option('--destination <name>', t('commands.config.backupStrategy.set.optionDestination'))
+    .option('--storage <name>', t('commands.config.backupStrategy.set.optionStorage'))
     .option('--cron <expression>', t('commands.config.backupStrategy.set.optionCron'))
+    .option('--mode <mode>', t('commands.config.backupStrategy.set.optionMode'))
+    .option('--bwlimit <limit>', t('commands.config.backupStrategy.set.optionBwlimit'))
+    .option('--include <repos>', t('commands.config.backupStrategy.set.optionInclude'))
+    .option('--exclude <repos>', t('commands.config.backupStrategy.set.optionExclude'))
     .option('--enable', t('commands.config.backupStrategy.set.optionEnable'))
     .option('--disable', t('commands.config.backupStrategy.set.optionDisable'))
     .action(async (options) => {
@@ -413,37 +489,77 @@ ${t('help.examples')}
       }
     });
 
+  // backup-strategy remove
+  backupStrategy
+    .command('remove')
+    .description(t('commands.config.backupStrategy.remove.description'))
+    .requiredOption('--name <name>', t('commands.config.backupStrategy.remove.optionName'))
+    .option('--destination <name>', t('commands.config.backupStrategy.remove.optionDestination'))
+    .action(async (options) => {
+      try {
+        if (options.destination) {
+          await configService.removeBackupDestination(options.name, options.destination);
+        } else {
+          await configService.removeBackupStrategy(options.name);
+        }
+        outputService.success(t('commands.config.backupStrategy.remove.removed'));
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // backup-strategy list
+  backupStrategy
+    .command('list')
+    .description(t('commands.config.backupStrategy.list.description'))
+    .action(async () => {
+      try {
+        const strategies = await configService.listBackupStrategies();
+        const names = Object.keys(strategies);
+        if (names.length === 0) {
+          outputService.info(t('commands.config.backupStrategy.show.notConfigured'));
+          return;
+        }
+        for (const name of names) {
+          const s = strategies[name];
+          const mode = s.mode ?? BACKUP_DEFAULTS.MODE;
+          const destCount = s.destinations.length;
+          const enabled = s.enabled !== false;
+          outputService.info(
+            `  ${name}  schedule=${s.schedule}  mode=${mode}  destinations=${destCount}  enabled=${enabled}`
+          );
+        }
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
   // backup-strategy show
   backupStrategy
     .command('show')
     .description(t('commands.config.backupStrategy.show.description'))
-    .action(async () => {
+    .option('--name <name>', t('commands.config.backupStrategy.show.optionName'))
+    .action(async (options) => {
       try {
-        const strategy = await configService.getBackupStrategy();
-        if (!strategy) {
-          outputService.info(t('commands.config.backupStrategy.show.notConfigured'));
-          return;
-        }
-
-        if (strategy.schedule) {
-          outputService.info(
-            t('commands.config.backupStrategy.show.schedule', { schedule: strategy.schedule })
-          );
-        }
-        outputService.info(
-          t('commands.config.backupStrategy.show.enabled', {
-            enabled: String(strategy.enabled !== false),
-          })
-        );
-
-        if (strategy.destinations.length === 0) {
-          outputService.info(t('commands.config.backupStrategy.show.noDestinations'));
+        if (options.name) {
+          const strategy = await configService.getBackupStrategy(options.name);
+          if (!strategy) {
+            outputService.info(
+              t('commands.config.backupStrategy.show.notFound', { name: options.name })
+            );
+            return;
+          }
+          displayStrategy(options.name, strategy);
         } else {
-          outputService.info(t('commands.config.backupStrategy.show.destinations'));
-          for (const dest of strategy.destinations) {
-            const schedule = dest.schedule ?? strategy.schedule ?? '-';
-            const enabled = dest.enabled !== false && strategy.enabled !== false;
-            outputService.info(`  ${dest.storage}  schedule=${schedule}  enabled=${enabled}`);
+          const strategies = await configService.listBackupStrategies();
+          const names = Object.keys(strategies);
+          if (names.length === 0) {
+            outputService.info(t('commands.config.backupStrategy.show.notConfigured'));
+            return;
+          }
+          for (const name of names) {
+            displayStrategy(name, strategies[name]);
+            outputService.info('');
           }
         }
       } catch (error) {

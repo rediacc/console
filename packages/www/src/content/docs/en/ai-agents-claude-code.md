@@ -26,11 +26,11 @@ Place this at your project root. See the full [AGENTS.md template](/en/docs/agen
 ## CLI Tool: rdc
 
 ### Common Operations
-- Status: rdc machine query <machine> -o json
-- Deploy: rdc repo up <repo> -m <machine> --yes
+- Status: rdc machine query --name <machine> -o json
+- Deploy: rdc repo up --name <repo> -m <machine> --yes
 - Containers: rdc machine containers <machine> -o json
 - Health: rdc machine health <machine> -o json
-- SSH: rdc term <machine> [repo]
+- SSH: rdc term connect -m <machine> [-r <repo>]
 
 ### Rules
 - Always use --output json when parsing output
@@ -56,7 +56,7 @@ For destructive operations (`rdc repo up`, `rdc repo delete`), Claude Code will 
 ```
 You: "What's the status of prod-1?"
 
-Claude Code runs: rdc machine query prod-1 -o json
+Claude Code runs: rdc machine query --name prod-1 -o json
 → Shows machine status, repositories, containers, services
 ```
 
@@ -65,9 +65,9 @@ Claude Code runs: rdc machine query prod-1 -o json
 ```
 You: "Deploy the mail repo to prod-1"
 
-Claude Code runs: rdc repo up mail -m prod-1 --dry-run -o json
+Claude Code runs: rdc repo up --name mail -m prod-1 --dry-run -o json
 → Shows what would happen
-Claude Code runs: rdc repo up mail -m prod-1 --yes
+Claude Code runs: rdc repo up --name mail -m prod-1 --yes
 → Deploys the repository
 ```
 
@@ -78,7 +78,7 @@ You: "Why is the nextcloud container unhealthy?"
 
 Claude Code runs: rdc machine containers prod-1 -o json --fields name,status,repository
 → Lists container states
-Claude Code runs: rdc term prod-1 -c "docker logs nextcloud-app --tail 50"
+Claude Code runs: rdc term connect -m prod-1 -c "docker logs nextcloud-app --tail 50"
 → Checks recent logs
 ```
 

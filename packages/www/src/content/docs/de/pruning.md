@@ -4,7 +4,8 @@ description: "Verwaiste Sicherungskopien, überholte Snapshots und ungenützte R
 category: "Guides"
 order: 12
 language: de
-sourceHash: "dfa21ca915423599"
+sourceHash: "9b28efe3bd8ca2dc"
+sourceCommit: "7874d5e2f0ca1262eb80ee7de79f20320d0ae2d7"
 ---
 
 # Bereinigung
@@ -42,15 +43,29 @@ Bereinigt Ressourcen auf der Maschine in zwei Phasen.
 
 ### Phase 1: Datastore-Bereinigung (wird immer ausgeführt)
 
-Entfernt leere Mount-Verzeichnisse, veraltete Lock-Dateien und veraltete BTRFS-Snapshots.
+Entfernt jede Art von Ressource, die zurückbleiben kann, wenn ein Repository gelöscht wird oder wenn ein Refactoring auf Maschinenebene eine Namenskonvention ablöst. Jede Kategorie wird unabhängig gescannt, und die Bereinigung erfolgt in einem einzigen idempotenten Durchlauf, sodass wiederholtes Ausführen von Prune sicher ist und gegen einen sauberen Datastore konvergiert.
+
+| Kategorie | Was entfernt wird |
+|-----------|-------------------|
+| Leere Mount-Verzeichnisse | `mounts/<guid>/`-Verzeichnisse ohne zugehöriges Repository-Image |
+| Verwaiste immovable-Verzeichnisse | `immovable/<guid>/`-Verzeichnisse ohne zugehöriges Repository-Image |
+| Veraltete Lock-Dateien | `repositories/.lock-<guid>` für gelöschte Repos |
+| Veraltete Backup-Snapshots | `.snapshot-*` und `.backup-*`, die von abgebrochenen Backup-Läufen zurückgelassen wurden |
+| Verwaiste VS-Code-Sandbox-Verzeichnisse | `.interim/sandbox/<name>` für Repos, die auf der Maschine nicht mehr aktiv sind |
+| Verwaiste iptables-Chains | `REDIACC_WILDCARD_<N>`- und `DOCKER_ISOLATED_NET_<N>`-Chains für gelöschte Netzwerke |
+| Verwaiste authorized_keys-Einträge | `sandbox-gateway <repo> --guid <uuid>`-Zeilen, deren `--guid` keinem aktiven Mount-Verzeichnis mehr entspricht |
+
+Der authorized_keys-Scan betrachtet `/home/*/.ssh/authorized_keys` und `/root/.ssh/authorized_keys`. Ein Eintrag wird nur dann behalten, wenn sein `--guid`-Tag einer GUID eines aktiven Mount-Verzeichnisses entspricht, sodass Repos, die aktuell auf der Maschine bereitgestellt sind, stets erhalten bleiben, unabhängig davon, ob ihr Name zufällig irgendwo auf der Festplatte auftaucht. Altlasten-Einträge, die geschrieben wurden, bevor renet das `--guid`-Tag hinzuzufügen begann, können nicht validiert werden und werden stets als verwaist gemeldet.
 
 ```bash
-# Dry-run
+# Dry-run, shows what would be removed (no changes applied)
 rdc machine prune --name server-1 --dry-run
 
 # Execute cleanup
 rdc machine prune --name server-1
 ```
+
+> **Kaskadierende Bereinigung.** Einige Kategorien hängen von früheren ab. Beispielsweise kann das Löschen leerer Mount-Verzeichnisse zusätzliche verwaiste Sandbox-Einträge freilegen, deren zugehöriger Mount gerade verschwunden ist. Ein zweiter Aufruf von `rdc machine prune` erfasst die Kaskade und schließt die Bereinigung ab. Der abschließende Dry-Run endet mit `No orphaned resources found. Datastore is clean.`, wenn nichts mehr zu tun ist.
 
 ### Phase 2: Verwaiste Repository-Images (optional)
 

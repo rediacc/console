@@ -4,7 +4,7 @@ description: "可验证防篡改的许可证颁发、本地部署的委托签名
 category: "Guides"
 order: 8
 language: zh
-sourceHash: "5e6afbdf05c21b67"
+sourceHash: "326c4f4efbd60493"
 ---
 
 # 许可证链与委托

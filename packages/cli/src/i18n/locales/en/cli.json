@@ -629,6 +629,7 @@
           "optionNoPrune": "Skip pruning stale network-ID certificates",
           "downloading": "Downloading certificates from {{machine}}...",
           "pruned": "Pruned {{count}} stale certificate(s)",
+          "prunedExpired": "Pruned {{count}} expired certificate(s)",
           "cached": "Cached {{count}} certificate(s) ({{size}})",
           "merged": "Kept {{count}} certificate(s) from local cache with longer expiry",
           "noAcmeJson": "No acme.json found on {{machine}}"
@@ -655,23 +656,38 @@
         }
       },
       "backupStrategy": {
-        "description": "Manage multi-destination backup strategy",
+        "description": "Manage named backup strategies (hot/cold modes, destinations, scheduling)",
         "set": {
-          "description": "Configure backup strategy settings",
-          "optionDestination": "Storage destination name",
-          "optionCron": "Cron expression for backup schedule (e.g., \"0 2 * * *\")",
-          "optionEnable": "Enable scheduled backups",
-          "optionDisable": "Disable scheduled backups",
-          "noOptions": "Specify at least one option: --destination, --cron, --enable, or --disable",
-          "saved": "Backup strategy configuration saved"
+          "description": "Create or update a backup strategy",
+          "optionName": "Strategy name (required)",
+          "optionDestination": "Destination name within the strategy",
+          "optionStorage": "Storage config name (rclone credentials)",
+          "optionCron": "Cron schedule (e.g., \"0 * * * *\" for hourly)",
+          "optionMode": "Backup mode: \"hot\" (zero downtime) or \"cold\" (stop, snapshot, restart)",
+          "optionBwlimit": "Rclone bandwidth limit (e.g., \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")",
+          "optionInclude": "Only back up these repos (comma-separated names)",
+          "optionExclude": "Exclude these repos from backup (comma-separated names)",
+          "optionEnable": "Enable the strategy or destination",
+          "optionDisable": "Disable the strategy or destination",
+          "saved": "Backup strategy configuration saved",
+          "storageRequired": "--storage is required when creating a new destination. Use: --storage <storage-name>"
+        },
+        "remove": {
+          "description": "Remove a backup strategy or destination",
+          "optionName": "Strategy name (required)",
+          "optionDestination": "Remove only this destination (keeps other destinations)",
+          "removed": "Backup strategy removed"
+        },
+        "list": {
+          "description": "List all backup strategies"
         },
         "show": {
-          "description": "Show current backup strategy configuration",
-          "notConfigured": "No backup strategy configured",
-          "schedule": "Schedule: {{schedule}}",
-          "enabled": "Enabled: {{enabled}}",
-          "noDestinations": "No backup destinations configured",
-          "destinations": "Destinations:"
+          "description": "Show backup strategy details",
+          "destinationsHeader": "  Destinations:",
+          "noDestinations": "  Destinations: (none)",
+          "notConfigured": "No backup strategies configured",
+          "notFound": "Backup strategy \"{{name}}\" not found",
+          "optionName": "Strategy name (shows all if omitted)"
         }
       }
     },
@@ -731,6 +747,8 @@
         "storageTemp": "  Max Temperature: {{temp}}°C",
         "repositoriesSection": "\nRepositories:",
         "repositoriesSummary": "  {{mounted}}/{{total}} mounted ({{docker}} with Docker)",
+        "licensesSection": "\nLicenses:",
+        "licensesSummary": "  {{valid}}/{{total}} valid, {{expired}} expired, {{mismatch}} machine mismatch, {{missing}} missing",
         "issuesSection": "\nIssues:",
         "exitCode": "\nExit Code: {{code}}"
       },
@@ -761,7 +779,9 @@
         "fetched": "Status fetched",
         "noData": "No status data available",
         "infrastructure": "Infrastructure",
-        "connection": "Connection"
+        "connection": "Connection",
+        "storageHealthHint": "Tip: Run with --storage-health to see BTRFS fragmentation and reflink savings per repo",
+        "syncCertsFailed": "Cert cache sync failed: {{error}}"
       },
       "vaultStatus": {
         "description": "Show parsed vault status for a machine",
@@ -846,10 +866,30 @@
         "dnsCleanedUp": "Removed {{count}} DNS record(s)"
       },
       "backup": {
-        "description": "Machine backup management",
+        "description": "Machine backup management (schedule, trigger, status)",
+        "list": {
+          "description": "List backup strategies bound to all machines",
+          "noMachines": "No machines configured"
+        },
         "schedule": {
-          "description": "Push backup schedule to a remote machine (systemd timer)",
+          "description": "Deploy backup schedule to a remote machine (systemd timers)",
+          "optionDryRun": "Preview generated units without deploying",
           "success": "Backup schedule deployed to {{machine}}"
+        },
+        "now": {
+          "description": "Trigger a backup immediately on a remote machine",
+          "optionStrategy": "Strategy name (triggers all if omitted)"
+        },
+        "status": {
+          "description": "Show backup status and timer state on a remote machine",
+          "optionStrategy": "Show details for a specific strategy"
+        },
+        "cancel": {
+          "description": "Cancel a running backup on a remote machine",
+          "optionStrategy": "Strategy name (cancels all if omitted)",
+          "cancelling": "Stopping {{name}}...",
+          "cancelled": "Cancelled {{name}}",
+          "notRunning": "No backup running for strategy \"{{name}}\""
         }
       },
       "prune": {
@@ -1219,6 +1259,9 @@
       "batchResult": "{{action}} complete: {{succeeded}}/{{total}} succeeded",
       "batchFailed": "{{action}} failed for \"{{repo}}\": {{error}}",
       "noCredential": "Warning: Repository \"{{name}}\" has no credential set. Operations on encrypted repos may fail.",
+      "certSync": {
+        "updated": "ACME cert cache updated from {{machine}} ({{count}} certs)"
+      },
       "mount": {
         "description": "Mount a repository (decrypt and open the LUKS container, making the filesystem accessible). Needed on first deploy, after 'repo push' to a new machine, or after 'repo unmount'. Can also be done via 'repo up --mount'. The volume stays mounted until explicitly unmounted. Omit name to mount all repos on the machine",
         "descriptionShort": "Mount a repository (decrypt and open LUKS container)",
@@ -1237,7 +1280,7 @@
         "failed": "Unmount failed"
       },
       "up": {
-        "description": "Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). Proxy routes take ~3s to become active after deploy. Use --mount for first deploy or forked repos. CRIU checkpoint restore is auto-detected — use --skip-checkpoint to force fresh start. Omit name to deploy all repos on the machine",
+        "description": "Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). Proxy routes take ~3s to become active after deploy. Prints the URL pattern for HTTP-exposed services (rediacc.service_port label) on completion. Use --mount for first deploy or forked repos. CRIU checkpoint restore is auto-detected — use --skip-checkpoint to force fresh start. Omit name to deploy all repos on the machine",
         "descriptionShort": "Deploy or update a repository on a machine",
         "mountOption": "Mount repository first (required for forked repos on first deploy)",
         "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)",
@@ -1308,12 +1351,12 @@
         "failed": "Repository deletion failed"
       },
       "fork": {
-        "description": "Create a CoW (Copy-on-Write) fork of a repository. Fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}.{forkName}.{machine}.{baseDomain}) — it is a fully independent copy. Online forking is supported — the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking — the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking — it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically",
-        "descriptionShort": "Create a CoW fork of a repository (new GUID, networkId, IP range)",
+        "description": "Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically.",
+        "descriptionShort": "Near-instant CoW fork of a repository (new GUID, networkId, IP range)",
         "tagOption": "Tag for the fork (creates name:tag)",
         "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
         "upOption": "Mount and start services after forking (fork + mount + up in one command)",
-        "tagRequired": "Tag is required for fork. Usage: rdc repo fork <parent> <tag> -m <machine>",
+        "tagRequired": "Tag is required for fork. Usage: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "starting": "Forking \"{{parent}}\" as \"{{repository}}\" on \"{{machine}}\"...",
         "registered": "Registered fork \"{{repository}}\" ({{guid}}, network {{networkId}})",
         "completed": "Fork created. Deploy locally: repo up {{repository}} -m {{machine}} --mount. To migrate fork to another machine: repo push {{repository}} -m {{machine}} --to <target> --up",
@@ -1401,7 +1444,7 @@
           "empty": "No templates available"
         },
         "apply": {
-          "description": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose' — 'docker compose' is rejected. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. APP_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REDIACC_NETWORK_ID env vars. Use SERVICE_IP in your app code to bind to the correct loopback IP. Containers MUST bind to SERVICE_IP:<port> (not 0.0.0.0) since network_mode:host is injected and ports: are ignored. STORAGE: Both ${REDIACC_WORKING_DIR}/... bind mounts and Docker named volumes are safe — Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe — renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). Multi-project: place each sub-project in its own subdirectory with its own Rediaccfile — renet auto-discovers and runs them in order. HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53",
+          "description": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose' — 'docker compose' is rejected. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. APP_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REDIACC_NETWORK_ID env vars. eBPF bind rewriting handles IP isolation transparently, so apps can bind to 0.0.0.0 and the kernel rewrites it to the correct loopback IP. Health checks can use localhost. network_mode:host is injected and ports: are ignored. STORAGE: Both ${REDIACC_WORKING_DIR}/... bind mounts and Docker named volumes are safe — Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe — renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). Multi-project: place each sub-project in its own subdirectory with its own Rediaccfile — renet auto-discovers and runs them in order. HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53",
           "descriptionShort": "Apply a template to a repository",
           "notFound": "Template \"{{name}}\" not found. Available: {{available}}"
         },
@@ -1409,7 +1452,7 @@
         "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "fileNotFound": "Template file not found: {{path}}",
         "starting": "Applying template to \"{{repository}}\" on \"{{machine}}\"...",
-        "completed": "Template applied. Deploy with: rdc repo up {{repository}} -m {{machine}}",
+        "completed": "Template applied. Deploy with: rdc repo up --name {{repository}} -m {{machine}}",
         "failed": "Template application failed"
       },
       "push": {
@@ -1425,6 +1468,7 @@
         "optionUp": "After push, mount and deploy repository on target machine",
         "deploying": "Deploying \"{{repo}}\" on {{machine}}...",
         "deployed": "Repository \"{{repo}}\" deployed on {{machine}}",
+        "optionBwlimit": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")",
         "deployFailed": "Failed to deploy \"{{repo}}\" after push"
       },
       "pull": {
@@ -1432,12 +1476,46 @@
         "descriptionShort": "Pull repository from a remote (machine or storage)",
         "optionFrom": "Source machine or storage name (auto-detected from config)",
         "optionForce": "Force overwrite existing repository",
+        "optionBwlimit": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")",
         "optionUp": "After pull, mount and deploy repository on this machine",
         "sourceRequired": "Specify --from <remote> (machine or storage name from config)",
         "pulling": "Pulling backup of \"{{repo}}\"...",
         "deploying": "Deploying \"{{repo}}\" on {{machine}}...",
         "deployed": "Repository \"{{repo}}\" deployed on {{machine}}",
         "deployFailed": "Failed to deploy \"{{repo}}\" after pull"
+      },
+      "migrate": {
+        "description": "Live-migrate a repository from one machine to another with minimal downtime. Two-phase rsync: bulk transfer while running, then brief stop for delta sync. Supports CRIU checkpoint for process memory migration and auto-provisioning of target machines",
+        "descriptionShort": "Live-migrate a repository between machines",
+        "optionFrom": "Source machine name",
+        "optionTo": "Target machine name",
+        "optionProvision": "Auto-provision target via cloud provider (e.g., hetzner, linode)",
+        "optionBwlimit": "Bandwidth limit for rsync transfer (e.g., 10M)",
+        "optionCheckpoint": "CRIU live migration: capture and restore process memory state",
+        "optionSkipDns": "Skip DNS record switching after migration",
+        "provisioning": "Provisioning target machine {{machine}} via {{provider}}...",
+        "phase1": "Phase 1: Transferring bulk data (source stays running)...",
+        "phase1Done": "Bulk transfer complete",
+        "phase1Failed": "Bulk transfer failed",
+        "phase2": "Phase 2: Cutover (brief downtime)...",
+        "checkpointing": "Creating CRIU checkpoint...",
+        "stoppingSource": "Stopping source services...",
+        "sourceStopped": "Source services stopped",
+        "stopFailed": "Failed to stop source services",
+        "deltaSync": "Syncing delta...",
+        "deltaDone": "Delta sync complete",
+        "deltaFailed": "Delta sync failed",
+        "unmountingSource": "Unmounting source...",
+        "sourceUnmounted": "Source unmounted",
+        "unmountFailed": "Failed to unmount source",
+        "phase3": "Phase 3: Starting on target...",
+        "startingTarget": "Starting services on target...",
+        "targetStarted": "Target services started",
+        "startFailed": "Failed to start on target",
+        "switchingDns": "Switching DNS records...",
+        "dnsSkipped": "DNS switching skipped (no baseDomain or Cloudflare config)",
+        "complete": "Migration complete: {{name}} moved from {{from}} to {{to}}",
+        "downtime": "Downtime: {{duration}}"
       },
       "backup": {
         "description": "Manage repository backups",
@@ -1600,7 +1678,7 @@
     },
     "subscription": {
       "descriptionShort": "Manage machine licensing and subscription",
-      "description": "Manage machine activation, licensing, and subscription tokens. Key subcommands: login (authenticate with subscription portal), status (show current license state), activation (activate/deactivate machines), repo (manage per-repo licenses).",
+      "description": "Manage licensing and subscription tokens. Key subcommands: login (authenticate with subscription portal), status (show current license state), activation (machine slot status), repo (manage per-repo licenses).",
       "login": {
         "description": "Authenticate via browser or API token",
         "tokenPrompt": "Enter your API token (from web portal):",
@@ -1628,7 +1706,7 @@
         "success": "Subscription token removed"
       },
       "status": {
-        "description": "Show subscription, machine activation, and repo license status",
+        "description": "Show subscription, machine slots, and repo license status",
         "plan": "  Plan:     {{plan}}",
         "statusLabel": "  Status:   {{status}}",
         "machine": "  Machine:  {{machineId}}",
@@ -1646,7 +1724,7 @@
         "remoteMachines": "  Machines: {{active}}/{{max}}",
         "remoteMachine": "    - {{id}}... (last seen: {{lastSeen}})",
         "serverMismatch": "Dev token belongs to {{actualServerUrl}}, but this worktree is using {{expectedServerUrl}}. Run `rdc subscription login` again.",
-        "remoteMachineActivations": "  Machine activations: {{active}}/{{max}}",
+        "remoteMachineActivations": "  Machine slots: {{active}}/{{max}}",
         "remoteRepoLicenseIssuances": "  Monthly repo license issuances: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Repo licenses: {{totalTrackedRepos}} tracked, {{validCount}} valid, {{refreshRecommendedCount}} refresh recommended, {{hardExpiredCount}} hard expired",
         "issuanceLimitReached": "Monthly repo license issuance limit reached for the current UTC calendar month.",
@@ -1654,10 +1732,10 @@
         "issuanceUsageHigh80": "Monthly repo license issuances are above 80% of the current UTC limit."
       },
       "activation": {
-        "description": "Machine activation management",
+        "description": "Machine slot management",
         "status": {
-          "description": "Show machine activation status for one machine",
-          "header": "\nMachine activation ({{machineName}})",
+          "description": "Show machine slot status for one machine",
+          "header": "\nMachine slot ({{machineName}})",
           "unavailable": "  Activation: could not query account state",
           "machineId": "  Machine ID: {{machineId}}",
           "activations": "  Activations: {{active}}/{{max}}",
@@ -1682,13 +1760,13 @@
         }
       },
       "refresh": {
-        "description": "Refresh machine activation and repo licenses on a remote machine",
-        "refreshing": "Refreshing machine activation...",
-        "refreshed": "Machine activation refreshed",
-        "success": "Machine activation refreshed and repo licenses processed",
-        "failed": "Failed to refresh machine activation",
+        "description": "Refresh repo licenses on a remote machine",
+        "refreshing": "Refreshing repo licenses...",
+        "refreshed": "Repo licenses refreshed",
+        "success": "Repo licenses processed",
+        "failed": "Failed to refresh repo licenses",
         "activation": {
-          "description": "Refresh machine activation on a remote machine"
+          "description": "Refresh repo licenses on a remote machine"
         },
         "repos": {
           "description": "Batch-refresh repo licenses on a remote machine",
@@ -1928,14 +2006,15 @@
     }
   },
   "help": {
-    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REDIACC_WORKING_DIR}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n    • HTTPS: automatic Let's Encrypt certs via Cloudflare DNS-01. Grand repos get dedicated wildcard certs\n    • Forks share the machine wildcard cert by default (zero cert consumption). Use --tls on repo up for dedicated cert\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REDIACC_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
+    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REDIACC_WORKING_DIR}/... — never Docker named volumes (excluded from forks/backups)\n    • eBPF bind rewriting handles IP isolation: apps bind to 0.0.0.0 and the kernel rewrites to the correct loopback IP\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n    • HTTPS: automatic Let's Encrypt wildcard certs via Cloudflare DNS-01 — requires --cf-dns-token configured via 'rdc config infra set'. Without it, HTTP works but HTTPS certs are not provisioned\n    • Grand repos get *.{repo}.{machine}.{baseDomain} — provisioned automatically by Traefik on first repo up\n    • Forks reuse the parent repo's wildcard cert (already provisioned, zero rate limit impact)\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REDIACC_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
     "agentMode": "\n  Agent Mode\n    • Fork-only: create a fork before making changes to any repository\n    • Grand (non-fork) repositories are read-only for agents\n    • Workflow: repo fork <parent> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n    • JSON output is automatic — all commands return { success, data, errors, metrics }\n    • Always parse full JSON — never use tail/head/grep on JSON output\n    • Use filter flags (e.g., --repositories, --containers) to reduce response size\n    • Discover command schema: rdc agent schema \"<command>\"\n",
     "examples": "Examples:",
     "cli": {
       "machineQuery": "Show machine status",
       "termRepo": "SSH into repository",
       "repoUp": "Deploy repository services",
-      "syncUpload": "Upload files to repository"
+      "syncUpload": "Upload files to repository",
+      "syncDownload": "Download files from repository"
     },
     "machine": {
       "query": "Show full machine status",
@@ -1945,7 +2024,7 @@
     },
     "repo": {
       "create": "Create encrypted repo",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing\n    • Grand repo auto-route: https://{service}.{repo}.{machine}.{baseDomain} (dedicated wildcard cert)\n    • Fork auto-route: https://{service}-{tag}.{machine}.{baseDomain} (shared machine cert, zero rate limit impact)\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • Use --tls on repo up to request a dedicated cert for a fork (50 certs/week limit per domain)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Custom domains (rediacc.domain label) are ignored on forks — the domain belongs to the grand repo\n\n  Lifecycle\n    • repo delete fully cleans up: storage, Docker daemon, loopback IPs, systemd units\n    • repo down stops containers but keeps Docker daemon and IPs (quick restart with repo up)\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n    • Scheduled backups skip fork repos automatically. Use rdc repo push for manual fork backup\n    • repo takeover <fork> -m <machine> — replace production data with fork data (preserves identity). Revert with: repo takeover <backup-fork>\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. eBPF bind rewriting handles isolation transparently, so apps can bind to 0.0.0.0\n    • To connect to sibling services use their service name (e.g. \"db\", \"redis\") — renet injects all service names as hostnames. Never embed ${DB_IP} in connection strings stored inside databases — it bakes the IP and breaks fork isolation (validation error)\n    • Health checks can use localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing\n    • Grand repo auto-route: https://{service}.{repo}.{machine}.{baseDomain} (wildcard cert *.{repo}.{machine}.{baseDomain} auto-provisioned by Traefik on first repo up)\n    • Fork auto-route: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (uses parent repo's wildcard cert, zero rate limit impact)\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Custom domains (rediacc.domain label) are ignored on forks — the domain belongs to the grand repo\n\n  Lifecycle\n    • repo delete fully cleans up: storage, Docker daemon, loopback IPs, systemd units\n    • repo down stops containers but keeps Docker daemon and IPs (quick restart with repo up)\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n    • Scheduled backups skip fork repos automatically. Use rdc repo push for manual fork backup\n    • repo takeover <fork> -m <machine> — replace production data with fork data (preserves identity). Revert with: repo takeover <backup-fork>\n",
       "up": "Deploy with auto-mount",
       "down": "Stop services",
       "fork": "CoW fork for testing",
@@ -1962,7 +2041,8 @@
     "term": {
       "machine": "SSH into machine",
       "repo": "SSH into repo (DOCKER_HOST auto-set)",
-      "command": "Run command without interactive shell"
+      "command": "Run command without interactive shell",
+      "syncHint": "For file transfer, use: rdc repo sync upload/download"
     },
     "vscode": {
       "machine": "Open machine in VS Code",
@@ -2007,6 +2087,7 @@
     "invalidPriorityMin": "Invalid priority-min value. Must be between 1 and 5.",
     "invalidPriorityMax": "Invalid priority-max value. Must be between 1 and 5.",
     "passwordsMismatch": "Passwords do not match",
+    "repositoryAlreadyMounted": "Repository \"{{name}}\" is already mounted on \"{{machine}}\". Migrating over a live repo would corrupt it. Run first: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "Repository \"{{name}}\" not found",
     "cannotDeleteGrandRepo": "Cannot delete grand repository: {{reason}}",
     "affectedChildClones": ". Affected child clones: {{clones}}. Delete or promote child clones first.",
@@ -2052,7 +2133,7 @@
     "subscription": {
       "notLoggedIn": "Not logged in. Humans should run `rdc subscription login`. Automation should run `rdc subscription login --token <token>` or set `REDIACC_SUBSCRIPTION_TOKEN`.",
       "tokenRequired": "Subscription token required. Either set REDIACC_SUBSCRIPTION_TOKEN env var, or run `rdc subscription login` in your terminal.",
-      "activationFailed": "Machine activation failed. Ensure your subscription is active and the machine slot is available.",
+      "activationFailed": "License issuance failed. Ensure your subscription is active and a machine slot is available.",
       "tokenWarning": "No subscription token found. License-required commands (repo create, repo fork) will fail. Set REDIACC_SUBSCRIPTION_TOKEN env var or run `rdc subscription login` in your terminal."
     },
     "teamRequired": "Team name required. Use --team or set default with: rdc config set --key team --value <name>",
@@ -2067,7 +2148,9 @@
       "sshCode127": "Command not found on remote machine",
       "sshCode130": "Connection terminated by user (Ctrl+C)",
       "sshCode255": "SSH connection failed - possible causes:\n    - Authentication failed (check SSH key permissions)\n    - Host key verification failed\n    - Network connection dropped\n    - Remote SSH service not running",
-      "repoContextRequired": "Command requires repository context.\n\nDetected \"{{detected}}\" which needs DOCKER_HOST and repository environment variables.\nThese are only available when a repository is specified.\n\nInstead of:\n  rdc term {{machine}} -c \"{{command}}\"\n\nUse:\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
+      "repoContextRequired": "Command requires repository context.\n\nDetected \"{{detected}}\" which needs DOCKER_HOST and repository environment variables.\nThese are only available when a repository is specified.\n\nInstead of:\n  rdc term connect -m {{machine}} -c \"{{command}}\"\n\nUse:\n  rdc term connect -m {{machine}} -r <repository> -c \"{{command}}\"",
+      "dockerComposeForbidden": "\"docker compose\" is not permitted in repository context.\n\nUse \"renet compose -- <args>\" instead so per-repo loopback IPs, host network injection, CRIU capabilities, and compose validation are applied. Running \"docker compose\" directly bypasses all of this and silently corrupts the deployment.\n\nFor orchestrated deploys, prefer: rdc repo up --name <repository> -m <machine>",
+      "fileWriteDetected": "File write detected ({{detected}}). Use rdc repo sync instead:\n  rdc repo sync upload -m MACHINE -r REPO --local FILE --remote PATH\n\nrsync transfers files with delta compression, checksums, and proper permissions.",
       "sshExitCode": "SSH exited with code {{code}}"
     },
     "vscode": {
@@ -2077,7 +2160,7 @@
       "noIpAddress": "Machine '{{machine}}' does not have an IP address configured",
       "noPrivateKey": "Team '{{team}}' does not have an SSH private key configured",
       "notFound": "VS Code not found.\n\nPlease install from: https://code.visualstudio.com/\nOr set REDIACC_VSCODE_PATH environment variable.",
-      "repoNotDeployed": "Repository \"{{repository}}\" is not deployed on {{machine}}.\n\nDeploy it first:\n  rdc repo up {{repository}} -m <machine-name>"
+      "repoNotDeployed": "Repository \"{{repository}}\" is not deployed on {{machine}}.\n\nDeploy it first:\n  rdc repo up --name {{repository}} -m <machine-name>"
     },
     "tokenExpired": "Token expired. Please login again.",
     "unexpectedError": "Unexpected error: {{message}}",
@@ -2090,15 +2173,15 @@
       "mcpGrandGuard": "\"{{name}}\" is a grand (production) repository. Agents cannot modify grand repositories directly.\n\nUse repo_fork to create a safe, isolated sandbox copy, then operate on the fork.\nIf you need direct access, ask the user to restart the MCP server with --allow-grand.",
       "mcpGrandGuardOverride": "\"{{name}}\" is a grand (production) repository. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork to create a safe, isolated sandbox copy, then operate on the fork.",
       "machineGuard": "Direct machine access to \"{{machine}}\" is not allowed in agent mode.\n\nAgents must connect through a repository context for sandboxed access. Fork a repository first, then connect to the fork.\n\nWorkflow:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nUser: to allow direct machine access, set REDIACC_ALLOW_GRAND_REPO=* (or a specific repo name) in your terminal before starting the agent session.",
-      "machineGuardOverride": "Direct machine access to \"{{machine}}\" is not allowed. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.\n\nFork a repository first, then connect to the fork:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverride": "Direct machine access to \"{{machine}}\" is not allowed. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.\n\nFork a repository first, then connect to the fork:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"",
       "mcpMachineGuard": "Direct machine access is not allowed in fork-only mode.\n\nAgents must connect through a repository context. Use repo_fork to create a fork, then connect to it.\nIf you need direct access, ask the user to restart the MCP server with --allow-grand.",
       "mcpMachineGuardOverride": "Direct machine access is not allowed. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork to create a fork, then connect to it.",
       "forkBlocked": "Command \"{{command}}\" is not available on fork repositories.\n\nFork repos are interim sandbox environments. This operation only applies to grand (production) repositories. Ask the user to run this command directly.",
-      "createGuard": "Cannot create a new grand repository \"{{name}}\" in agent mode.\n\nAgents operate in fork-only mode. Grand repositories are production environments that agents cannot access after creation.\n\nInstead, fork an existing repository:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nUser: to allow repository creation, set REDIACC_ALLOW_GRAND_REPO=* (or a specific repo name) in your terminal before starting the agent session.",
-      "createGuardOverride": "Cannot create a new grand repository \"{{name}}\". Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.\n\nInstead, fork an existing repository:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
+      "createGuard": "Cannot create a new grand repository \"{{name}}\" in agent mode.\n\nAgents operate in fork-only mode. Grand repositories are production environments that agents cannot access after creation.\n\nInstead, fork an existing repository:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nUser: to allow repository creation, set REDIACC_ALLOW_GRAND_REPO=* (or a specific repo name) in your terminal before starting the agent session.",
+      "createGuardOverride": "Cannot create a new grand repository \"{{name}}\". Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.\n\nInstead, fork an existing repository:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "grandGuardOverrideNonLinux": "\"{{name}}\" is a grand (production) repository. The REDIACC_ALLOW_GRAND_REPO override is not supported on {{platform}}.\n\nThis override only works on Linux. On Windows and macOS, agents must use the fork-first workflow.\n\nWorkflow:\n  1. rdc repo fork {{name}} -m <machine> --tag <tag-name>\n  2. Operate on the fork\n  3. When done, the user can promote the fork with rdc repo takeover\n\nTo use the override, run your agent on Linux (directly, WSL, Docker, or a VM).",
-      "machineGuardOverrideNonLinux": "Direct machine access override is not supported on {{platform}}.\n\nThis override only works on Linux. On Windows and macOS, agents must use the fork-first workflow.\n\nWorkflow:\n  1. rdc repo fork <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nTo use the override, run your agent on Linux (directly, WSL, Docker, or a VM).",
-      "createGuardOverrideNonLinux": "Cannot create a new grand repository \"{{name}}\". The REDIACC_ALLOW_GRAND_REPO override is not supported on {{platform}}.\n\nThis override only works on Linux. On Windows and macOS, agents must use the fork-first workflow.\n\nInstead, fork an existing repository:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nTo use the override, run your agent on Linux (directly, WSL, Docker, or a VM).",
+      "machineGuardOverrideNonLinux": "Direct machine access override is not supported on {{platform}}.\n\nThis override only works on Linux. On Windows and macOS, agents must use the fork-first workflow.\n\nWorkflow:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nTo use the override, run your agent on Linux (directly, WSL, Docker, or a VM).",
+      "createGuardOverrideNonLinux": "Cannot create a new grand repository \"{{name}}\". The REDIACC_ALLOW_GRAND_REPO override is not supported on {{platform}}.\n\nThis override only works on Linux. On Windows and macOS, agents must use the fork-first workflow.\n\nInstead, fork an existing repository:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nTo use the override, run your agent on Linux (directly, WSL, Docker, or a VM).",
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" is a grand (production) repository. The REDIACC_ALLOW_GRAND_REPO override is not supported on {{platform}}.\n\nThis override only works on Linux. On Windows and macOS, agents must use the fork-first workflow.\n\nUse repo_fork to create a safe, isolated sandbox copy, then operate on the fork.",
       "mcpMachineGuardOverrideNonLinux": "Direct machine access override is not supported on {{platform}}.\n\nThis override only works on Linux. On Windows and macOS, agents must use the fork-first workflow.\n\nUse repo_fork to create a fork, then connect to it.",
       "commandBlocked": "The \"{{command}}\" command is not available in agent mode.\n\nThis command executes arbitrary low-level functions without safety guards. Use typed CLI commands or MCP tools instead.\n\nAlternatives:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Run \"rdc agent capabilities\" to see all available commands\n\nIf you need raw access, ask the user to run the command directly."
@@ -2181,6 +2264,9 @@
     "queryServices": "Include services only",
     "queryNetwork": "Include network interfaces only",
     "queryBlockDevices": "Include block devices only",
+    "queryLicenses": "Include repository license statuses",
+    "queryStorageHealth": "Show BTRFS fragmentation and reflink savings per repository",
+    "querySyncCerts": "Also pull the ACME cert cache from the machine after querying",
     "extraMachine": "Extra machine for multi-machine ops (name:ip:user)",
     "pollInterval": "Poll interval in milliseconds",
     "folder": "Remote folder path to open",
@@ -2239,7 +2325,7 @@
     "opsBasic": "Minimal cluster (bridge + 1 worker)",
     "opsLite": "Skip VM provisioning (status only)",
     "opsSkipOrchestration": "Skip cluster orchestration",
-    "opsOS": "VM operating system (e.g., ubuntu-24.04, debian-12)",
+    "opsOS": "VM operating system (e.g., ubuntu-24.04, debian-13)",
     "opsSSHUser": "SSH username for VM connection"
   },
   "prompts": {

@@ -99,6 +99,9 @@ Show full machine status (infra, system, repos with name/guid, containers with r
 - `--services` — Include services only
 - `--network` — Include network interfaces only
 - `--block-devices` — Include block devices only
+- `--licenses` — Include repository license statuses
+- `--storage-health` — Show BTRFS fragmentation and reflink savings per repository
+- `--sync-certs` — Also pull the ACME cert cache from the machine after querying
 
 > MCP tool
 
@@ -132,13 +135,48 @@ Destroy a cloud-provisioned machine and remove from config
 
 > MCP tool
 
+### rdc machine backup list
+
+List backup strategies bound to all machines
+
 ### rdc machine backup schedule
 
-Push backup schedule to a remote machine (systemd timer)
+Deploy backup schedule to a remote machine (systemd timers)
 
 **Options:**
 
 - `-m, --machine <name>` — Machine name
+- `--dry-run` — Preview generated units without deploying
+- `--debug` — Enable debug output
+
+### rdc machine backup now
+
+Trigger a backup immediately on a remote machine
+
+**Options:**
+
+- `-m, --machine <name>` — Machine name
+- `--strategy <name>` — Strategy name (triggers all if omitted)
+- `--debug` — Enable debug output
+
+### rdc machine backup status
+
+Show backup status and timer state on a remote machine
+
+**Options:**
+
+- `-m, --machine <name>` — Machine name
+- `--strategy <name>` — Show details for a specific strategy
+- `--debug` — Enable debug output
+
+### rdc machine backup cancel
+
+Cancel a running backup on a remote machine
+
+**Options:**
+
+- `-m, --machine <name>` — Machine name
+- `--strategy <name>` — Strategy name (cancels all if omitted)
 - `--debug` — Enable debug output
 
 ### rdc machine prune
@@ -264,7 +302,7 @@ Provision VM cluster locally
 - `--lite` — Skip VM provisioning (status only)
 - `--skip-orchestration` — Skip cluster orchestration
 - `--backend <backend>` — Virtualization backend (kvm|qemu, auto-detected)
-- `--os <name>` — VM operating system (e.g., ubuntu-24.04, debian-12)
+- `--os <name>` — VM operating system (e.g., ubuntu-24.04, debian-13)
 - `--debug` — Enable debug output
 
 ### rdc ops down
@@ -426,13 +464,12 @@ Unmount a repository (close the LUKS container, detaching the encrypted filesyst
 
 ### rdc repo up
 
-Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). Proxy routes take ~3s to become active after deploy. Use --mount for first deploy or forked repos. CRIU checkpoint restore is auto-detected — use --skip-checkpoint to force fresh start. Omit name to deploy all repos on the machine
+Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). Proxy routes take ~3s to become active after deploy. Prints the URL pattern for HTTP-exposed services (rediacc.service_port label) on completion. Use --mount for first deploy or forked repos. CRIU checkpoint restore is auto-detected — use --skip-checkpoint to force fresh start. Omit name to deploy all repos on the machine
 
 **Options:**
 
 - `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
-- `--mount` — Mount repository first (required for forked repos on first deploy)
 - `--skip-checkpoint` — Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)
 - `--tls` — Request dedicated TLS cert for this repo (forks use shared machine cert by default)
 - `--include-forks` — Also mount/start forked repositories
@@ -490,7 +527,7 @@ List repositories on a machine
 
 ### rdc repo fork
 
-Create a CoW (Copy-on-Write) fork of a repository. Fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}.{forkName}.{machine}.{baseDomain}) — it is a fully independent copy. Online forking is supported — the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking — the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking — it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically
+Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically.
 
 **Options:**
 
@@ -615,7 +652,7 @@ List all embedded deployment templates shipped with the CLI
 
 ### rdc repo template apply
 
-Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose' — 'docker compose' is rejected. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. APP_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REDIACC_NETWORK_ID env vars. Use SERVICE_IP in your app code to bind to the correct loopback IP. Containers MUST bind to SERVICE_IP:<port> (not 0.0.0.0) since network_mode:host is injected and ports: are ignored. STORAGE: Both ${REDIACC_WORKING_DIR}/... bind mounts and Docker named volumes are safe — Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe — renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). Multi-project: place each sub-project in its own subdirectory with its own Rediaccfile — renet auto-discovers and runs them in order. HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53
+Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose' — 'docker compose' is rejected. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. APP_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REDIACC_NETWORK_ID env vars. eBPF bind rewriting handles IP isolation transparently, so apps can bind to 0.0.0.0 and the kernel rewrites it to the correct loopback IP. Health checks can use localhost. network_mode:host is injected and ports: are ignored. STORAGE: Both ${REDIACC_WORKING_DIR}/... bind mounts and Docker named volumes are safe — Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe — renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). Multi-project: place each sub-project in its own subdirectory with its own Rediaccfile — renet auto-discovers and runs them in order. HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53
 
 **Options:**
 
@@ -646,6 +683,7 @@ Push repository to a remote (machine or storage). Omit name to push all repos. T
 - `--parallel` — Start repositories concurrently
 - `--concurrency <n>` — Max concurrent repositories (default: 3) (default: 3)
 - `-y, --yes` — Skip confirmation for batch operations
+- `--bwlimit <limit>` — Bandwidth limit for rsync transfer (e.g., "6M", "10M")
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
@@ -667,6 +705,7 @@ Pull repository from a remote (machine or storage). Omit name to pull all repos.
 - `--parallel` — Start repositories concurrently
 - `--concurrency <n>` — Max concurrent repositories (default: 3) (default: 3)
 - `-y, --yes` — Skip confirmation for batch operations
+- `--bwlimit <limit>` — Bandwidth limit for rsync transfer (e.g., "6M", "10M")
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
@@ -692,6 +731,21 @@ Deploy backup schedules to remote machines
 **Options:**
 
 - `-m, --machine <name>` — Machine name
+- `--debug` — Enable debug output
+
+### rdc repo migrate
+
+Live-migrate a repository from one machine to another with minimal downtime. Two-phase rsync: bulk transfer while running, then brief stop for delta sync. Supports CRIU checkpoint for process memory migration and auto-provisioning of target machines
+
+**Options:**
+
+- `--name <name>` — Resource name
+- `--from <machine>` — Source machine name
+- `--to <machine>` — Target machine name
+- `--provision <provider>` — Auto-provision target via cloud provider (e.g., hetzner, linode)
+- `--bwlimit <limit>` — Bandwidth limit for rsync transfer (e.g., 10M)
+- `--checkpoint` — CRIU live migration: capture and restore process memory state
+- `--skip-dns` — Skip DNS record switching after migration
 - `--debug` — Enable debug output
 
 ### rdc repo sync upload
@@ -821,18 +875,41 @@ Restore config from backup (.bak) file
 
 ### rdc config backup-strategy set
 
-Configure backup strategy settings
+Create or update a backup strategy
 
 **Options:**
 
-- `--destination <storage>` — Storage destination name
-- `--cron <expression>` — Cron expression for backup schedule (e.g., "0 2 * * *")
-- `--enable` — Enable scheduled backups
-- `--disable` — Disable scheduled backups
+- `--name <name>` — Strategy name (required)
+- `--destination <name>` — Destination name within the strategy
+- `--storage <name>` — Storage config name (rclone credentials)
+- `--cron <expression>` — Cron schedule (e.g., "0 * * * *" for hourly)
+- `--mode <mode>` — Backup mode: "hot" (zero downtime) or "cold" (stop, snapshot, restart)
+- `--bwlimit <limit>` — Rclone bandwidth limit (e.g., "6M", "10M:off", "08:00,3M;22:00,10M")
+- `--include <repos>` — Only back up these repos (comma-separated names)
+- `--exclude <repos>` — Exclude these repos from backup (comma-separated names)
+- `--enable` — Enable the strategy or destination
+- `--disable` — Disable the strategy or destination
+
+### rdc config backup-strategy remove
+
+Remove a backup strategy or destination
+
+**Options:**
+
+- `--name <name>` — Strategy name (required)
+- `--destination <name>` — Remove only this destination (keeps other destinations)
+
+### rdc config backup-strategy list
+
+List all backup strategies
 
 ### rdc config backup-strategy show
 
-Show current backup strategy configuration
+Show backup strategy details
+
+**Options:**
+
+- `--name <name>` — Strategy name (shows all if omitted)
 
 ### rdc config machine add
 
@@ -1169,11 +1246,11 @@ Clear stored subscription token
 
 ### rdc subscription status
 
-Show subscription, machine activation, and repo license status
+Show subscription, machine slots, and repo license status
 
 ### rdc subscription activation status
 
-Show machine activation status for one machine
+Show machine slot status for one machine
 
 **Options:**
 
@@ -1189,7 +1266,7 @@ Show installed repo licenses on a machine
 
 ### rdc subscription refresh activation
 
-Refresh machine activation on a remote machine
+Refresh repo licenses on a remote machine
 
 **Options:**
 

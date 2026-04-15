@@ -4,7 +4,8 @@ description: "Migrer des projets existants vers des dépôts chiffrés Rediacc."
 category: "Guides"
 order: 11
 language: fr
-sourceHash: "18199953a84fb77b"
+sourceHash: "5e13e363e9dce55f"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # Guide de migration
@@ -17,7 +18,7 @@ Migrez un projet existant, fichiers, services Docker, bases de données, depuis 
 - Une machine ajoutée et provisionnée ([Configuration](/fr/docs/setup))
 - Suffisamment d'espace disque sur le serveur pour votre projet (vérifiez avec `rdc machine status`)
 
-## Étape 1 : Créer un dépôt
+## Etape 1 : Créer un dépôt
 
 Créez un dépôt chiffré dimensionné pour votre projet. Prévoyez de l'espace supplémentaire pour les images Docker et les données des conteneurs.
 
@@ -27,7 +28,7 @@ rdc repo create --name my-project -m server-1 --size 20G
 
 > **Astuce :** Vous pouvez redimensionner plus tard avec `rdc repo resize` si nécessaire, mais le dépôt doit d'abord être démonté. Il est plus simple de commencer avec suffisamment d'espace.
 
-## Étape 2 : Téléverser vos fichiers
+## Etape 2 : Téléverser vos fichiers
 
 Utilisez `rdc repo sync upload` pour transférer les fichiers de votre projet dans le dépôt.
 
@@ -53,7 +54,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 
 > L'option `--mirror` supprime les fichiers sur le serveur distant qui n'existent pas en local. Utilisez d'abord `--dry-run` pour vérifier.
 
-## Étape 3 : Corriger la propriété des fichiers
+## Etape 3 : Corriger la propriété des fichiers
 
 Les fichiers téléversés arrivent avec l'UID de votre utilisateur local (par ex. 1000). Rediacc utilise un utilisateur universel (UID 7111) afin que VS Code, les sessions terminal et les outils aient un accès cohérent. Exécutez la commande de propriété pour convertir :
 
@@ -96,7 +97,7 @@ Pour définir un UID autre que l'UID par défaut 7111 :
 rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
 
-## Étape 4 : Configurer votre Rediaccfile
+## Etape 4 : Configurer votre Rediaccfile
 
 Créez un `Rediaccfile` à la racine de votre projet. Ce script Bash définit comment vos services sont démarrés et arrêtés.
 
@@ -112,7 +113,7 @@ down() {
 }
 ```
 
-Les trois fonctions du cycle de vie :
+Les deux fonctions du cycle de vie :
 
 | Fonction | Objectif | Comportement en cas d'erreur |
 |----------|----------|------------------------------|
@@ -125,7 +126,7 @@ Les trois fonctions du cycle de vie :
 
 Voir [Services](/fr/docs/services) pour tous les détails sur les Rediaccfiles, les configurations multi-services et l'ordre d'exécution.
 
-## Étape 5 : Configurer le réseau des services
+## Etape 5 : Configurer le réseau des services
 
 Rediacc exécute un daemon Docker isolé par dépôt. Les services utilisent `network_mode: host` et se lient à des IPs de loopback uniques afin de pouvoir utiliser les ports standard sans conflits entre les dépôts.
 
@@ -168,45 +169,43 @@ services:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: secret
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
 
   redis:
     image: redis:7-alpine
-    command: redis-server --bind ${REDIS_IP} --port 6379
 
   app:
     image: my-app:latest
     environment:
-      DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
-      REDIS_URL: redis://${REDIS_IP}:6379
-      LISTEN_ADDR: ${APP_IP}:8080
+      DATABASE_URL: postgresql://postgres:secret@postgres:5432/mydb
+      REDIS_URL: redis://redis:6379
+      LISTEN_ADDR: 0.0.0.0:8080
 ```
 
 Modifications principales :
 
-1. **Supprimer les mappages `ports:`**, `renet compose` utilise le réseau hôte et supprime automatiquement les mappages de ports
-2. **Supprimer `network_mode: host`**, `renet compose` l'ajoute automatiquement
-3. **Supprimer `restart: always` ou `restart: unless-stopped`**, ils entrent en conflit avec CRIU checkpoint/restore (Docker démarre automatiquement les conteneurs avant que le checkpoint restore ne puisse s'exécuter). Utilisez `restart: on-failure` si vous avez besoin d'un comportement de redémarrage, ou omettez-le entièrement, Rediaccfile `up()`/`down()` gère le cycle de vie des conteneurs
-4. **Lier les services aux variables d'environnement `${SERVICE_IP}`** (injectées automatiquement par Rediacc)
-5. **Référencer les autres services par leur IP** au lieu des noms DNS Docker (par ex. `${POSTGRES_IP}` au lieu de `postgres`)
+1. **Supprimer les mappages `ports:`** - `renet compose` utilise le réseau hôte et supprime automatiquement les mappages de ports
+2. **Supprimer `network_mode: host`** - `renet compose` l'ajoute automatiquement
+3. **Les politiques de redémarrage peuvent être conservées** - renet les supprime automatiquement pour la compatibilité CRIU et le watchdog du routeur récupère automatiquement les conteneurs arrêtés
+4. **Utiliser les noms de service pour les connexions inter-services** (p. ex. `postgres`, `redis`) - renet injecte chaque nom de service comme nom d'hôte résolvable. Ne pas intégrer d'IPs brutes dans les chaînes de connexion stockées dans les bases de données ou les fichiers de configuration ; utilisez le nom du service pour conserver l'isolation des forks
+5. **La liaison est automatique** - le noyau réécrit `bind()` vers la bonne IP de loopback. Les services peuvent utiliser `0.0.0.0` ou `localhost`
 
-Les variables `{SERVICE}_IP` sont automatiquement générées à partir des noms de services de votre fichier compose. Convention de nommage : majuscules, tirets remplacés par des underscores, suffixe `_IP`. Par exemple, `listmonk-app` devient `LISTMONK_APP_IP`.
+Les variables `{SERVICE}_IP` sont toujours disponibles si vous en avez besoin, mais la liaison explicite n'est plus requise. Convention de nommage : majuscules, tirets remplacés par des underscores, suffixe `_IP`. Par exemple, `listmonk-app` devient `LISTMONK_APP_IP`.
 
 Voir [Réseau des services](/fr/docs/services#service-networking-rediaccjson) pour les détails sur l'attribution des IP et `.rediacc.json`.
 
-## Étape 6 : Démarrer les services
+## Etape 6 : Démarrer les services
 
 Montez le dépôt (s'il n'est pas déjà monté) et démarrez tous les services :
 
 ```bash
-rdc repo up --name my-project -m server-1 --mount
+rdc repo up --name my-project -m server-1
 ```
 
 Cela va :
 1. Monter le dépôt chiffré
 2. Démarrer le daemon Docker isolé
 3. Générer automatiquement `.rediacc.json` avec les attributions d'IP des services
-5. Exécuter `up()` de tous les Rediaccfiles
+4. Exécuter `up()` de tous les Rediaccfiles
 
 Vérifiez que vos conteneurs sont en cours d'exécution :
 
@@ -214,7 +213,7 @@ Vérifiez que vos conteneurs sont en cours d'exécution :
 rdc machine containers server-1
 ```
 
-## Étape 7 : Activer le démarrage automatique (Optionnel)
+## Etape 7 : Activer le démarrage automatique (Optionnel)
 
 Par défaut, les dépôts doivent être montés et démarrés manuellement après un redémarrage du serveur. Activez le démarrage automatique pour que vos services se lancent automatiquement :
 
@@ -262,7 +261,7 @@ my-api/
 Pour tout projet avec des services Docker :
 
 1. Téléverser les fichiers du projet
-2. Adapter `docker-compose.yml` (voir Étape 5)
+2. Adapter `docker-compose.yml` (voir Etape 5)
 3. Créer un `Rediaccfile` avec les fonctions du cycle de vie
 4. Exécuter la correction de propriété
 5. Démarrer les services
@@ -279,7 +278,7 @@ rdc repo ownership --name my-project -m server-1
 
 ### Le conteneur ne démarre pas
 
-Vérifiez que les services se lient à leur IP attribuée, pas à `0.0.0.0` ou `localhost` :
+Vérifiez que les services sont en cours d'exécution et consultez leurs journaux :
 
 ```bash
 # Vérifier les IPs attribuées
@@ -291,7 +290,7 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### Conflit de ports entre les dépôts
 
-Chaque dépôt reçoit des IPs de loopback uniques. Si vous rencontrez des conflits de ports, vérifiez que votre `docker-compose.yml` utilise `${SERVICE_IP}` pour la liaison au lieu de `0.0.0.0`. Les services liés à `0.0.0.0` écoutent sur toutes les interfaces et entreront en conflit avec d'autres dépôts.
+Chaque dépôt reçoit des IPs de loopback uniques et le noyau réécrit automatiquement les appels `bind()` vers la bonne IP. Les conflits de ports entre dépôts ne devraient pas se produire. Si vous observez un comportement inattendu, vérifiez que les services sont démarrés via `renet compose` (pas `docker compose`). Pour se connecter à d'autres services, utilisez le nom du service (p. ex. `postgres`) plutôt que des IPs brutes ; les noms de service se résolvent correctement dans chaque fork.
 
 ### La correction de propriété casse les conteneurs
 

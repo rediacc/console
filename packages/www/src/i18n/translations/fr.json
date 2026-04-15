@@ -982,6 +982,13 @@
               "name": "Intégration personnalisée",
               "priority": "Intégration de base fonctionnelle + fonctionnalités essentielles disponibles sous 48h",
               "standard": "Intégration complète avec tests et documentation"
+            },
+            {
+              "emergency": "Disques connectes + conversion RAID lancee le jour meme + depots critiques verifies + debut du renforcement complet",
+              "id": "storage-hardening",
+              "name": "Renforcement du stockage",
+              "priority": "BTRFS RAID1 ou RAID10 configure + migration de balance en direct lancee + minuteur de scrub actif sous 48h",
+              "standard": "Configuration complete de stockage redondant BTRFS avec scrub auto-reparateur, migration de donnees en direct depuis un disque unique, verification des reflinks et integration de la surveillance. RAID1 (2 SSDs, miroir) pour les deploiements standards ou RAID10 (4+ SSDs, miroirs distribues) pour les charges de travail de production a haut debit. Le scrub repare automatiquement la corruption a partir de la copie redondante au lieu de simplement la detecter. Comprend la planification de capacite et la revision de la strategie de sauvegarde."
             }
           ]
         }
@@ -2956,6 +2963,13 @@
               "name": "Intégration personnalisée",
               "priority": "Intégration de base fonctionnelle + fonctionnalités essentielles disponibles sous 48h",
               "standard": "Intégration complète avec tests et documentation"
+            },
+            {
+              "emergency": "Disques connectes + conversion RAID lancee le jour meme + depots critiques verifies + debut du renforcement complet",
+              "id": "storage-hardening",
+              "name": "Renforcement du stockage",
+              "priority": "BTRFS RAID1 ou RAID10 configure + migration de balance en direct lancee + minuteur de scrub actif sous 48h",
+              "standard": "Configuration complete de stockage redondant BTRFS avec scrub auto-reparateur, migration de donnees en direct depuis un disque unique, verification des reflinks et integration de la surveillance. RAID1 (2 SSDs, miroir) pour les deploiements standards ou RAID10 (4+ SSDs, miroirs distribues) pour les charges de travail de production a haut debit. Le scrub repare automatiquement la corruption a partir de la copie redondante au lieu de simplement la detecter. Comprend la planification de capacite et la revision de la strategie de sauvegarde."
             }
           ]
         }
@@ -3049,13 +3063,19 @@
           {
             "description": "Un slot de licence n’est occupé que pendant la création ou le fork d’un dépôt — vos opérations quotidiennes n’en consomment jamais. Les slots se libèrent automatiquement après 1 heure d’inactivité, ainsi un plan à 5 slots peut desservir des dizaines de machines. Aucun frais par machine, jamais.",
             "title": "Machines illimitées. Licence au paiement par création."
+          },
+          {
+            "description": "Chaque licence de dépôt est liée à la machine pour laquelle elle a été émise. Lorsque votre hébergeur migre votre VM vers un autre matériel, l'identité de la machine change, mais vos licences continuent de fonctionner pendant 40 jours. Le prochain rafraîchissement se lie automatiquement à la nouvelle machine. Aucun temps d'arrêt, aucune étape manuelle.",
+            "title": "40 jours de grâce pour migration de VM."
           }
         ],
         "subtitle": "Les licences Rediacc sont conçues pour que vous ne soyez jamais enfermé. Voici ce que cela signifie concrètement.",
         "svg": {
           "allOperations": "Toutes les opérations",
+          "newMachineId": "Nouvel ID machine",
           "noLicenseNeeded": "Aucune licence nécessaire",
           "noLicenseRequired": "Aucune licence requise — fonctionne toujours",
+          "reposKeepRunning": "Les dépôts continuent de fonctionner. Aucune étape manuelle nécessaire.",
           "requiredOnlyHere": "Requis uniquement ici",
           "slotsAutoRelease": "Les slots se libèrent automatiquement après 1 heure d'inactivité",
           "slotsCreateFork": "Les slots ne sont utilisés que pour créer et forker — les opérations quotidiennes sont toujours gratuites"
@@ -3096,6 +3116,7 @@
             "secondary": "Contacter le service commercial"
           }
         },
+        "edgeLimitsNote": "Limites affichées pour le canal edge. Moitié sur stable.",
         "foreverFree": "Gratuit pour toujours",
         "getStarted": "Commencer",
         "guarantees": {
@@ -13296,16 +13317,18 @@
     "title": "La crise du décalage de vitesse"
   },
   "regionPicker": {
-    "edgeNote": "Dernieres fonctionnalites, limites gratuites 2X. Pas de forfaits payants. Les donnees sont persistantes.",
-    "footer": "Choisissez la région la plus proche de vous ou celle requise par votre organisation. Ce choix ne peut pas être modifié après l'inscription.",
+    "channelEdge": "Edge",
+    "channelStable": "Stable",
+    "edgeHint": "Dernières fonctionnalités, limites gratuites doublées. Pas de plans payants.",
+    "footer": "Choisissez la région la plus proche de vous ou celle exigée par votre organisation. Ce choix ne peut pas être modifié après l'inscription.",
     "locations": {
       "asia": "Tokyo, Japon",
       "eu": "Francfort, Allemagne",
       "us": "Virginie, Etats-Unis"
     },
-    "subtitle": "Tout, votre compte, votre facturation et vos configurations, reste dans la région que vous choisissez. Rien n'en sort jamais.",
-    "tabEdge": "Edge",
-    "tabStable": "Stable",
+    "regionNote": "La région ne peut pas être modifiée après l'inscription.",
+    "stableHint": "Versions fiables, promues depuis edge après 7 jours de test.",
+    "subtitle": "Votre compte, facturation et configurations restent dans la région que vous choisissez. Ils ne la quittent jamais.",
     "title": "Où souhaitez-vous stocker vos données ?"
   },
   "solutions": {
@@ -13378,6 +13401,6 @@
     "playVideo": "Lire la vidéo",
     "toggleFullscreen": "Basculer en plein écran",
     "volume": "Volume",
-    "youtubeTitle": "Product introduction"
+    "youtubeTitle": "Présentation du produit"
   }
 }

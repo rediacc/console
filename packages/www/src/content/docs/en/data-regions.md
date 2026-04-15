@@ -41,7 +41,7 @@ These are not region-specific:
 |---|---|---|---|
 | Database (D1) | Eastern Europe (EEUR) | Eastern North America (ENAM) | Asia Pacific (APAC) |
 | Config storage (R2) | EU jurisdiction | US | Asia Pacific |
-| Email (SES) | Frankfurt (eu-central-1) | Virginia (us-east-1) | Tokyo (ap-northeast-1) |
+| Email (SES) | Frankfurt (eu-central-1) | Virginia (us-east-1) | Frankfurt (eu-central-1) |
 
 Each region runs independent infrastructure. There are no cross-region queries or data flows between regions.
 
@@ -76,7 +76,7 @@ Technical properties of the regional architecture:
 
 - **Separate databases per region**: each region has its own Cloudflare D1 database. No cross-region queries.
 - **Separate storage per region**: each region has its own R2 bucket. EU uses jurisdictional enforcement.
-- **Separate email endpoints per region**: transactional emails are sent from regional AWS SES endpoints.
+- **Email delivery via AWS SES**: transactional emails are sent via AWS SES. EU and US use dedicated regional endpoints; Asia Pacific routes through the EU endpoint (eu-central-1).
 - **One user, one region**: a user account exists in exactly one region. It cannot span multiple regions.
 - **Webhook isolation**: Stripe webhook events are received by all regional workers but only processed by the region that owns the customer record.
 - **Zero-knowledge config encryption**: the server cannot read configuration data. Encryption keys never leave the client device.

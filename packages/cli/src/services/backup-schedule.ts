@@ -2,33 +2,35 @@
  * Backup Schedule Service
  *
  * Pushes backup schedule configuration to remote machines via SSH.
- * Generates per-destination systemd service + timer units that run `renet backup sync`
- * on a schedule defined in the config's backup strategy.
+ * Generates per-strategy systemd service + timer units that run `renet backup sync push`.
+ *
+ * Architecture:
+ * - One systemd timer per strategy (not per destination)
+ * - A strategy may have multiple destinations (upload to all from the same snapshot)
+ * - Cold mode: stop services, snapshot, restart, then upload
+ * - Hot mode: snapshot while running (default)
  */
 
-import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { BACKUP_DEFAULTS, DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { buildRcloneArgs } from '@rediacc/shared/queue-vault';
+import { isSensitiveKey } from '@rediacc/shared/telemetry';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
-import type { BackupStrategyDestination } from '../types/index.js';
+import type { BackupStrategyConfig, BackupStrategyDestination } from '../types/index.js';
 import { configService } from './config-resources.js';
 import { refreshRepoLicensesBatch } from './license.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
+import { REMOTE_RENET_PATH } from './renet-provisioner.js';
 
 interface PushScheduleOptions {
   debug?: boolean;
+  dryRun?: boolean;
 }
 
 const SYSTEMD_BACKUP_UNIT_GLOB = 'rediacc-backup*';
 
 /**
  * Convert a 5-field cron expression to systemd OnCalendar format.
- *
- * Handles common cases:
- *   "0 2 * * *"   → "*-*-* 02:00:00"      (daily at 2 AM)
- *   "0 * /6 * * *" → "*-*-* 00/6:00:00"    (every 6 hours)
- *   "0 2 * * 0"   → "Sun *-*-* 02:00:00"   (weekly Sunday 2 AM)
- *   "30 3 1 * *"  → "*-*-01 03:30:00"      (1st of month at 3:30)
  */
 function cronToOnCalendar(cron: string): string {
   const parts = cron.trim().split(/\s+/);
@@ -38,7 +40,6 @@ function cronToOnCalendar(cron: string): string {
 
   const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
 
-  // Day of week mapping
   const dowMap: Record<string, string> = {
     '0': 'Sun',
     '1': 'Mon',
@@ -50,12 +51,10 @@ function cronToOnCalendar(cron: string): string {
     '7': 'Sun',
   };
 
-  // Build date part
   const monthPart = month === '*' ? '*' : month.padStart(2, '0');
   const dayPart = dayOfMonth === '*' ? '*' : dayOfMonth.padStart(2, '0');
   const datePart = `*-${monthPart}-${dayPart}`;
 
-  // Build time part — handle wildcards and */N intervals
   function toTimerField(value: string): string {
     if (value === '*') return '*';
     if (value.startsWith('*/')) return `00/${value.slice(2)}`;
@@ -65,7 +64,6 @@ function cronToOnCalendar(cron: string): string {
   const minStr = toTimerField(minute);
   const timePart = `${hourStr}:${minStr}:00`;
 
-  // Build day-of-week prefix
   let dowPrefix = '';
   if (dayOfWeek !== '*') {
     const days = dayOfWeek.split(',').map((d) => dowMap[d] ?? d);
@@ -76,55 +74,129 @@ function cronToOnCalendar(cron: string): string {
 }
 
 /**
- * Generate systemd service unit content for renet backup sync.
+ * Sanitize a systemd unit or shell command by redacting sensitive rclone param values.
+ * Replaces values of --rclone-param keys that match SENSITIVE_KEYS (token, secret, key, etc.)
+ * with [REDACTED]. Safe for dry-run output, debug logging, and agent context.
  */
-function generateServiceUnit(
-  destinationName: string,
-  rcloneRemote: string,
-  rcloneParams: string[],
+function sanitizeBackupOutput(content: string): string {
+  return content.replaceAll(
+    /--rclone-param '([^=]+)=([^']*)'/g,
+    (_match, key: string, _value: string) => {
+      if (isSensitiveKey(key)) {
+        return `--rclone-param '${key}=[REDACTED]'`;
+      }
+      return _match;
+    }
+  );
+}
+
+/** Build a single renet backup command for one destination. */
+function buildDestinationCommand(
+  dest: BackupStrategyDestination,
+  rcloneArgs: { remote: string; params: string[] },
+  strategy: BackupStrategyConfig,
+  mode: string,
   datastore: string,
   remoteRenetPath: string
-): string {
-  // Parse backend from remote string ":backend:path"
-  const backendMatch = /^:([^:]+):(.*)/.exec(rcloneRemote);
-  if (!backendMatch) {
-    throw new Error(`Invalid rclone remote format: ${rcloneRemote}`);
-  }
+): string | undefined {
+  const backendMatch = /^:([^:]+):(.*)/.exec(rcloneArgs.remote);
+  if (!backendMatch) return undefined;
   const [, backend, remotePath] = backendMatch;
 
-  // Split remote path into bucket/folder
   const pathParts = remotePath.split('/');
   const bucket = pathParts[0] ?? '';
   const folder = pathParts.slice(1).join('/');
 
-  // Build ExecStart command
-  const execParts = [
+  const parts = [
     `${remoteRenetPath} backup sync push`,
     `--datastore ${datastore}`,
     `--rclone-backend ${backend}`,
+    `--mode ${mode}`,
   ];
 
-  if (bucket) {
-    execParts.push(`--rclone-bucket ${bucket}`);
-  }
-  if (folder) {
-    execParts.push(`--rclone-folder ${folder}`);
+  if (bucket) parts.push(`--rclone-bucket ${bucket}`);
+  if (folder) parts.push(`--rclone-folder ${folder}`);
+
+  for (const param of rcloneArgs.params) {
+    const stripped = param.replace(/^--/, '');
+    parts.push(`--rclone-param '${stripped}'`);
   }
 
-  // Convert --backend-key=value to --rclone-param backend-key=value
-  for (const param of rcloneParams) {
-    // param is like "--s3-access-key-id=AKIA..."
-    const stripped = param.replace(/^--/, '');
-    execParts.push(`--rclone-param '${stripped}'`);
+  const bwlimit = dest.bandwidthLimit ?? strategy.bandwidthLimit;
+  if (bwlimit) {
+    parts.push(`--rclone-param 'bwlimit=${bwlimit}'`);
   }
+
+  if (strategy.include?.length) {
+    parts.push(`--include-repo ${strategy.include.join(',')}`);
+  }
+  if (strategy.exclude?.length) {
+    parts.push(`--exclude-repo ${strategy.exclude.join(',')}`);
+  }
+
+  return parts.join(' ');
+}
+
+/**
+ * Build shell commands for a backup strategy (one per destination).
+ * Reused by generateServiceUnit (systemd) and triggerBackupNow (ad-hoc).
+ */
+function buildBackupCommands(
+  strategy: BackupStrategyConfig,
+  destinations: BackupStrategyDestination[],
+  rcloneArgsByDest: Map<string, { remote: string; params: string[] }>,
+  datastore: string,
+  remoteRenetPath: string
+): string[] {
+  const mode = strategy.mode ?? BACKUP_DEFAULTS.MODE;
+  const commands: string[] = [];
+
+  for (const dest of destinations) {
+    const rcloneArgs = rcloneArgsByDest.get(dest.name);
+    if (!rcloneArgs) continue;
+
+    const cmd = buildDestinationCommand(
+      dest,
+      rcloneArgs,
+      strategy,
+      mode,
+      datastore,
+      remoteRenetPath
+    );
+    if (cmd) commands.push(cmd);
+  }
+
+  return commands;
+}
+
+/**
+ * Generate systemd service unit for a backup strategy.
+ * One service per strategy -- uploads to all destinations from the same snapshot.
+ */
+function generateServiceUnit(
+  strategyName: string,
+  strategy: BackupStrategyConfig,
+  destinations: BackupStrategyDestination[],
+  rcloneArgsByDest: Map<string, { remote: string; params: string[] }>,
+  datastore: string,
+  remoteRenetPath: string
+): string {
+  const commands = buildBackupCommands(
+    strategy,
+    destinations,
+    rcloneArgsByDest,
+    datastore,
+    remoteRenetPath
+  );
+  const execLines = commands.map((cmd) => `ExecStart=${cmd}`);
 
   return `[Unit]
-Description=Rediacc Scheduled Backup (${destinationName})
+Description=Rediacc Scheduled Backup (${strategyName})
 After=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=${execParts.join(' \\\n    ')}
+${execLines.join('\n')}
 
 [Install]
 WantedBy=multi-user.target
@@ -132,11 +204,11 @@ WantedBy=multi-user.target
 }
 
 /**
- * Generate systemd timer unit content.
+ * Generate systemd timer unit for a backup strategy.
  */
-function generateTimerUnit(destinationName: string, onCalendar: string): string {
+function generateTimerUnit(strategyName: string, onCalendar: string): string {
   return `[Unit]
-Description=Rediacc Backup Timer (${destinationName})
+Description=Rediacc Backup Timer (${strategyName})
 
 [Timer]
 OnCalendar=${onCalendar}
@@ -145,96 +217,6 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 `;
-}
-
-/** Deploy a single destination's systemd units to a remote machine via SFTP. */
-async function deployDestinationUnits(
-  sftp: SFTPClient,
-  dest: BackupStrategyDestination,
-  globalSchedule: string | undefined,
-  datastore: string,
-  remoteRenetPath: string,
-  options: PushScheduleOptions
-): Promise<void> {
-  const storageCfg = await configService.getStorage(dest.storage);
-  const { remote, params: rcloneParams } = buildRcloneArgs(storageCfg.vaultContent);
-  const effectiveSchedule = dest.schedule ?? globalSchedule;
-
-  if (!effectiveSchedule) {
-    outputService.warn(
-      `Skipping destination "${dest.storage}": no schedule (set per-destination or global cron)`
-    );
-    return;
-  }
-
-  const onCalendar = cronToOnCalendar(effectiveSchedule);
-  const unitName = `rediacc-backup-${dest.storage}`;
-
-  if (options.debug) {
-    outputService.info(`Destination: ${dest.storage}`);
-    outputService.info(`Schedule: ${effectiveSchedule} → OnCalendar=${onCalendar}`);
-    outputService.info(`Rclone remote: ${remote}`);
-  }
-
-  const serviceContent = generateServiceUnit(
-    dest.storage,
-    remote,
-    rcloneParams,
-    datastore,
-    remoteRenetPath
-  );
-  const timerContent = generateTimerUnit(dest.storage, onCalendar);
-
-  if (options.debug) {
-    process.stderr.write(`--- ${unitName}.service ---\n${serviceContent}\n`);
-    process.stderr.write(`--- ${unitName}.timer ---\n${timerContent}\n`);
-  }
-
-  // Write service unit
-  const serviceCmd = `sudo tee /etc/systemd/system/${unitName}.service > /dev/null`;
-  let exitCode = await sftp.execStreaming(serviceCmd, {
-    stdin: serviceContent,
-    onStdout: (data) => {
-      if (options.debug) process.stdout.write(data);
-    },
-    onStderr: (data) => {
-      process.stderr.write(data);
-    },
-  });
-  if (exitCode !== 0) {
-    throw new Error(`Failed to write service unit for "${dest.storage}" (exit ${exitCode})`);
-  }
-
-  // Write timer unit
-  const timerCmd = `sudo tee /etc/systemd/system/${unitName}.timer > /dev/null`;
-  exitCode = await sftp.execStreaming(timerCmd, {
-    stdin: timerContent,
-    onStdout: (data) => {
-      if (options.debug) process.stdout.write(data);
-    },
-    onStderr: (data) => {
-      process.stderr.write(data);
-    },
-  });
-  if (exitCode !== 0) {
-    throw new Error(`Failed to write timer unit for "${dest.storage}" (exit ${exitCode})`);
-  }
-
-  // Enable timer
-  const enableCmd = `sudo systemctl enable --now ${unitName}.timer`;
-  exitCode = await sftp.execStreaming(enableCmd, {
-    onStdout: (data) => {
-      if (options.debug) process.stdout.write(data);
-    },
-    onStderr: (data) => {
-      process.stderr.write(data);
-    },
-  });
-  if (exitCode !== 0) {
-    throw new Error(`Failed to enable timer for "${dest.storage}" (exit ${exitCode})`);
-  }
-
-  outputService.info(`Deployed ${unitName}.timer (${onCalendar})`);
 }
 
 async function runRemoteCommand(
@@ -283,39 +265,187 @@ async function cleanupExistingBackupUnits(
   );
 }
 
+/** Deploy systemd units for a single strategy. */
+async function deployStrategyUnits(
+  sftp: SFTPClient,
+  strategyName: string,
+  strategy: BackupStrategyConfig,
+  datastore: string,
+  remoteRenetPath: string,
+  options: PushScheduleOptions
+): Promise<void> {
+  const enabledDests = strategy.destinations.filter((d) => d.enabled !== false);
+  if (enabledDests.length === 0) {
+    outputService.warn(`Skipping strategy "${strategyName}": no enabled destinations`);
+    return;
+  }
+
+  // Resolve rclone args for each destination
+  const rcloneArgsByDest = new Map<string, { remote: string; params: string[] }>();
+  for (const dest of enabledDests) {
+    const storageCfg = await configService.getStorage(dest.storage);
+    const args = buildRcloneArgs(storageCfg.vaultContent);
+    rcloneArgsByDest.set(dest.name, args);
+  }
+
+  const onCalendar = cronToOnCalendar(strategy.schedule);
+  const unitName = `rediacc-backup-${strategyName}`;
+
+  if (options.debug) {
+    outputService.info(`Strategy: ${strategyName}`);
+    outputService.info(`Schedule: ${strategy.schedule} -> OnCalendar=${onCalendar}`);
+    outputService.info(`Mode: ${strategy.mode ?? BACKUP_DEFAULTS.MODE}`);
+    outputService.info(`Destinations: ${enabledDests.map((d) => d.name).join(', ')}`);
+  }
+
+  const serviceContent = generateServiceUnit(
+    strategyName,
+    strategy,
+    enabledDests,
+    rcloneArgsByDest,
+    datastore,
+    remoteRenetPath
+  );
+  const timerContent = generateTimerUnit(strategyName, onCalendar);
+
+  if (options.debug) {
+    process.stderr.write(`--- ${unitName}.service ---\n${sanitizeBackupOutput(serviceContent)}\n`);
+    process.stderr.write(`--- ${unitName}.timer ---\n${timerContent}\n`);
+  }
+
+  // Write service unit
+  let exitCode = await sftp.execStreaming(
+    `sudo tee /etc/systemd/system/${unitName}.service > /dev/null`,
+    {
+      stdin: serviceContent,
+      onStdout: (data) => {
+        if (options.debug) process.stdout.write(data);
+      },
+      onStderr: (data) => {
+        process.stderr.write(data);
+      },
+    }
+  );
+  if (exitCode !== 0) {
+    throw new Error(
+      `Failed to write service unit for strategy "${strategyName}" (exit ${exitCode})`
+    );
+  }
+
+  // Write timer unit
+  exitCode = await sftp.execStreaming(
+    `sudo tee /etc/systemd/system/${unitName}.timer > /dev/null`,
+    {
+      stdin: timerContent,
+      onStdout: (data) => {
+        if (options.debug) process.stdout.write(data);
+      },
+      onStderr: (data) => {
+        process.stderr.write(data);
+      },
+    }
+  );
+  if (exitCode !== 0) {
+    throw new Error(`Failed to write timer unit for strategy "${strategyName}" (exit ${exitCode})`);
+  }
+
+  // Enable timer
+  exitCode = await sftp.execStreaming(`sudo systemctl enable --now ${unitName}.timer`, {
+    onStdout: (data) => {
+      if (options.debug) process.stdout.write(data);
+    },
+    onStderr: (data) => {
+      process.stderr.write(data);
+    },
+  });
+  if (exitCode !== 0) {
+    throw new Error(`Failed to enable timer for strategy "${strategyName}" (exit ${exitCode})`);
+  }
+
+  outputService.info(`Deployed ${unitName}.timer (${onCalendar})`);
+}
+
+/** Validate no duplicate destination names across strategies. */
+function assertNoDuplicateDestinations(strategies: { config: BackupStrategyConfig }[]): void {
+  const destNames = new Set<string>();
+  for (const { config } of strategies) {
+    for (const dest of config.destinations) {
+      if (destNames.has(dest.name)) {
+        throw new Error(
+          `Duplicate destination name "${dest.name}" across strategies. Each destination name must be unique.`
+        );
+      }
+      destNames.add(dest.name);
+    }
+  }
+}
+
+/** Load enabled strategies from config and validate them. */
+async function loadAndValidateStrategies(
+  strategyNames: string[]
+): Promise<{ name: string; config: BackupStrategyConfig }[]> {
+  const strategies: { name: string; config: BackupStrategyConfig }[] = [];
+  for (const stratName of strategyNames) {
+    const config = await configService.getBackupStrategy(stratName);
+    if (!config) {
+      throw new Error(`Backup strategy "${stratName}" not found in config`);
+    }
+    if (config.enabled === false) continue;
+    strategies.push({ name: stratName, config });
+  }
+
+  if (strategies.length === 0) {
+    throw new Error('All bound backup strategies are disabled');
+  }
+
+  assertNoDuplicateDestinations(strategies);
+  return strategies;
+}
+
+/** Preview generated systemd units without deploying. */
+async function previewDryRun(
+  strategies: { name: string; config: BackupStrategyConfig }[],
+  datastore: string,
+  machineName: string
+): Promise<void> {
+  outputService.info(
+    `Dry-run: would deploy ${strategies.length} strategy timer(s) to ${machineName}`
+  );
+  for (const { name, config } of strategies) {
+    const enabledDests = config.destinations.filter((d) => d.enabled !== false);
+    const rcloneArgsByDest = new Map<string, { remote: string; params: string[] }>();
+    for (const dest of enabledDests) {
+      const storageCfg = await configService.getStorage(dest.storage);
+      const args = buildRcloneArgs(storageCfg.vaultContent);
+      rcloneArgsByDest.set(dest.name, args);
+    }
+    const onCalendar = cronToOnCalendar(config.schedule);
+    const serviceContent = generateServiceUnit(
+      name,
+      config,
+      enabledDests,
+      rcloneArgsByDest,
+      datastore,
+      REMOTE_RENET_PATH
+    );
+    const timerContent = generateTimerUnit(name, onCalendar);
+    outputService.info(`\n--- rediacc-backup-${name}.service ---`);
+    outputService.info(sanitizeBackupOutput(serviceContent));
+    outputService.info(`--- rediacc-backup-${name}.timer ---`);
+    outputService.info(timerContent);
+  }
+}
+
 /**
- * Push backup schedule to a remote machine as per-destination systemd service + timer units.
+ * Push backup schedule to a remote machine.
  *
- * Flow:
- * 1. Load backup strategy from config
- * 2. Filter to enabled destinations
- * 3. Provision renet binary to remote
- * 4. Delete all existing Rediacc backup units/symlinks on the machine
- * 5. For each destination: deploy service + timer units
- * 6. Daemon-reload after all units are written
+ * Reads machine.backupStrategies[] to determine which strategies to deploy.
+ * Each strategy becomes one systemd service + timer pair.
  */
 export async function pushBackupSchedule(
   machineName: string,
   options: PushScheduleOptions = {}
 ): Promise<void> {
-  const strategy = await configService.getBackupStrategy();
-  if (!strategy || strategy.destinations.length === 0) {
-    throw new Error(
-      'No backup destinations configured. Add one with: rdc config backup-strategy set --destination <storage> --cron "0 2 * * *"'
-    );
-  }
-
-  // Filter to enabled destinations
-  const enabledDests = strategy.destinations.filter(
-    (d) => d.enabled !== false && strategy.enabled !== false
-  );
-  if (enabledDests.length === 0) {
-    throw new Error(
-      'All backup destinations are disabled. Enable one with: rdc config backup-strategy set --destination <storage> --enable'
-    );
-  }
-
-  // Load machine config
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
@@ -323,7 +453,21 @@ export async function pushBackupSchedule(
     throw new Error(`Machine "${machineName}" not found. Available: ${available}`);
   }
 
+  const strategyNames = machine.backupStrategies ?? [];
+  if (strategyNames.length === 0) {
+    throw new Error(
+      `No backup strategies bound to machine "${machineName}". Bind with: rdc config machine set --name ${machineName} --backup-strategy <name>`
+    );
+  }
+
+  const strategies = await loadAndValidateStrategies(strategyNames);
   const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+
+  if (options.dryRun) {
+    await previewDryRun(strategies, datastore, machineName);
+    return;
+  }
+
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
@@ -333,9 +477,7 @@ export async function pushBackupSchedule(
     { renetPath: localConfig.renetPath },
     machine,
     sshPrivateKey,
-    {
-      debug: options.debug,
-    }
+    { debug: options.debug }
   );
 
   const repoRefresh = await refreshRepoLicensesBatch(machine, sshPrivateKey, remoteRenetPath);
@@ -362,16 +504,8 @@ export async function pushBackupSchedule(
   try {
     await cleanupExistingBackupUnits(sftp, options);
 
-    // Deploy units for each enabled destination
-    for (const dest of enabledDests) {
-      await deployDestinationUnits(
-        sftp,
-        dest,
-        strategy.schedule,
-        datastore,
-        remoteRenetPath,
-        options
-      );
+    for (const { name, config } of strategies) {
+      await deployStrategyUnits(sftp, name, config, datastore, remoteRenetPath, options);
     }
 
     await runRemoteCommand(
@@ -383,4 +517,10 @@ export async function pushBackupSchedule(
   } finally {
     sftp.close();
   }
+
+  outputService.info(`Backup schedule deployed to ${machineName}`);
 }
+
+/** @internal Exported for unit tests and ad-hoc backup execution. */
+export const _testing = { generateServiceUnit, cronToOnCalendar, buildBackupCommands };
+export { sanitizeBackupOutput };

@@ -4,7 +4,7 @@ description: 配置 Claude Code 进行自主 Rediacc 基础设施管理的分步
 category: Guides
 order: 31
 language: zh
-sourceHash: "f28f17d2e0d3d395"
+sourceHash: "1a9f31b2430273f9"
 ---
 
 Claude Code 通过 `rdc` CLI 与 Rediacc 原生集成。本指南涵盖设置、权限和常见工作流程。

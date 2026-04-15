@@ -4,7 +4,7 @@ description: Claude Code、Cursor、その他のAIコーディングアシスタ
 category: Reference
 order: 50
 language: ja
-sourceHash: "aa1cfa017455e64a"
+sourceHash: "b1ea9373a19bbedb"
 ---
 
 このテンプレートを使用して、AIコーディングアシスタント（Claude Code、Cursor、Cline、Windsurf）をRediaccインフラストラクチャの自律管理用に設定します。以下のブロックをプロジェクトの `CLAUDE.md`、`.cursorrules`、または同等のエージェント設定ファイルにコピーしてください。

@@ -4,7 +4,7 @@ description: "Rediacc'ın güvenlik, kullanılabilirlik ve gizlilik için SOC 2 
 category: "Legal"
 order: 2
 language: tr
-sourceHash: "96eff23962051882"
+sourceHash: "a01e8b457d648fdd"
 ---
 
 SOC 2 (System and Organization Controls 2), Amerikan Yeminli Mali Müşavirler Enstitüsü (AICPA) tarafından bir kuruluşun güvenlik, kullanılabilirlik, işleme bütünlüğü, gizlilik ve mahremiyet ile ilgili kontrollerini değerlendirmek için geliştirilen bir çerçevedir.

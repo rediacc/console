@@ -343,15 +343,17 @@ export class BridgeTestRunner {
         const cmdTimeout = timeout ?? this.defaultTimeout;
         const escapedForBridge = this.sshExecutor.escapeForNestedSSH(command);
         // Get SSH options fresh each time (never cache - keys may be created after instantiation)
-        const sshOpts = this.sshExecutor.getSSHOptions({ connectTimeout: 10, batchMode: true });
+        const outerOpts = this.sshExecutor.getSSHOptions({ connectTimeout: 10, batchMode: true });
+        const innerOpts = this.sshExecutor.getInnerSSHOptions({ connectTimeout: 10, batchMode: true });
         const user = process.env.USER;
         if (!user) {
             throw new Error('USER environment variable is not set');
         }
         // Two-hop SSH command: Host → Bridge → Target
-        // Uses identity file from {RENET_DATA_DIR}/staging/.ssh/id_rsa if available
-        // Always use user@host format for consistency
-        const sshCmd = `ssh ${sshOpts} ${user}@${this.bridgeVM} "ssh ${sshOpts} ${user}@${this.targetVM} \\"${escapedForBridge}\\""`;
+        // Outer hop uses host identity file. Inner hop runs on bridge where
+        // that host path is invalid — drop `-i` so ssh falls back to the
+        // bridge VM's ~/.ssh/id_rsa (populated by renet mesh distribution).
+        const sshCmd = `ssh ${outerOpts} ${user}@${this.bridgeVM} "ssh ${innerOpts} ${user}@${this.targetVM} \\"${escapedForBridge}\\""`;
         // Log the command being executed
         // eslint-disable-next-line no-console
         console.log(`\n[SSH ${this.bridgeVM} → ${this.targetVM}] ${command}`);

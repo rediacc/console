@@ -425,16 +425,18 @@
   "captchaRequired": "Please complete the captcha verification.",
   "regionPicker": {
     "title": "Where should we store your data?",
-    "subtitle": "Everything -- your account, billing, and configurations -- stays in the region you choose. It never leaves.",
+    "subtitle": "Your account, billing, and configurations stay in the region you choose. They never leave.",
     "footer": "Pick the region closest to you, or where your organization requires. This can't be changed after sign-up.",
-    "tabEdge": "Edge",
-    "edgeNote": "Latest features, 2X free limits. No paid plans. Data is persistent.",
     "locations": {
       "eu": "Frankfurt, Germany",
       "us": "Virginia, USA",
       "asia": "Tokyo, Japan"
     },
-    "tabStable": "Stable"
+    "channelEdge": "Edge",
+    "channelStable": "Stable",
+    "edgeHint": "Latest features, 2X free limits. No paid plans.",
+    "stableHint": "Reliable releases, promoted from edge after 7-day soak.",
+    "regionNote": "Region can't be changed after sign-up."
   },
   "contactModal": {
     "title": "Get in Touch",
@@ -854,6 +856,13 @@
               "priority": "Core integration functional + essential features live within 48h",
               "emergency": "Critical connection established same-day + basic data flow working + full dev begins",
               "id": "custom-integration"
+            },
+            {
+              "name": "Storage Hardening",
+              "standard": "Full BTRFS redundant storage setup with self-healing scrub, live data migration from single-disk, reflink verification, and monitoring integration. RAID1 (2 SSDs, mirrored) for standard deployments or RAID10 (4+ SSDs, striped mirrors) for high-throughput production workloads. Scrub auto-repairs corruption from the redundant copy instead of just detecting it. Includes capacity planning and backup strategy review.",
+              "priority": "BTRFS RAID1 or RAID10 configured + live balance migration started + scrub timer active within 48h",
+              "emergency": "Disks attached + RAID conversion initiated same-day + critical repos verified + full hardening begins",
+              "id": "storage-hardening"
             }
           ]
         },
@@ -1044,6 +1053,10 @@
           {
             "title": "Unlimited machines. Pay-per-create licensing.",
             "description": "A license slot is only held while creating or forking a repository — your daily operations never consume one. Slots auto-release after 1 hour of inactivity, so a 5-slot plan can serve dozens of machines. No per-machine fees, ever."
+          },
+          {
+            "title": "40-day VM migration grace.",
+            "description": "Every repo license is bound to the machine it was issued for. When your hosting provider migrates your VM to different hardware, the machine identity changes -- but your licenses keep working for 40 days. The next refresh automatically rebinds to the new machine. No downtime, no manual steps."
           }
         ],
         "svg": {
@@ -1052,7 +1065,9 @@
           "requiredOnlyHere": "Required only here",
           "allOperations": "All operations",
           "slotsAutoRelease": "Slots auto-release after 1 hour of inactivity",
-          "slotsCreateFork": "Slots used only for create & fork — daily ops are always free"
+          "slotsCreateFork": "Slots used only for create & fork — daily ops are always free",
+          "newMachineId": "New machine ID",
+          "reposKeepRunning": "Repos keep running throughout. No manual steps needed."
         }
       },
       "ui": {
@@ -1068,6 +1083,7 @@
         "keyBenefits": "Key Benefits",
         "monthOrYear": "per month or {{price}} per year",
         "foreverFree": "Forever free",
+        "edgeLimitsNote": "Limits shown for edge channel. Half on stable.",
         "taxDisclaimer": "All prices are in USD and exclude applicable taxes, levies, and duties.",
         "cta": {
           "community": {
@@ -1136,10 +1152,10 @@
         ],
         "values": {
           "community": {
-            "jobsPerMonth": "500",
-            "repoSize": "10 GB",
+            "jobsPerMonth": "1,000",
+            "repoSize": "20 GB",
             "repositories": "Unlimited",
-            "floatingLicenses": "2",
+            "floatingLicenses": "4",
             "usersTeams": "Unlimited"
           },
           "professional": {
@@ -1174,21 +1190,21 @@
             "rows": [
               {
                 "label": "Floating Licenses (Machines)",
-                "community": "2",
+                "community": "4",
                 "professional": "5",
                 "business": "20",
                 "enterprise": "50+"
               },
               {
                 "label": "Floating license requests",
-                "community": "500",
+                "community": "1,000",
                 "professional": "5,000",
                 "business": "20,000",
                 "enterprise": "100,000+"
               },
               {
                 "label": "Repository size",
-                "community": "10 GB",
+                "community": "20 GB",
                 "professional": "100 GB",
                 "business": "500 GB",
                 "enterprise": "2 TB+"
@@ -2703,6 +2719,13 @@
               "priority": "Core integration functional + essential features live within 48h",
               "emergency": "Critical connection established same-day + basic data flow working + full dev begins",
               "id": "custom-integration"
+            },
+            {
+              "name": "Storage Hardening",
+              "standard": "Full BTRFS redundant storage setup with self-healing scrub, live data migration from single-disk, reflink verification, and monitoring integration. RAID1 (2 SSDs, mirrored) for standard deployments or RAID10 (4+ SSDs, striped mirrors) for high-throughput production workloads. Scrub auto-repairs corruption from the redundant copy instead of just detecting it. Includes capacity planning and backup strategy review.",
+              "priority": "BTRFS RAID1 or RAID10 configured + live balance migration started + scrub timer active within 48h",
+              "emergency": "Disks attached + RAID conversion initiated same-day + critical repos verified + full hardening begins",
+              "id": "storage-hardening"
             }
           ]
         },

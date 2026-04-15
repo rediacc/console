@@ -21,7 +21,6 @@ import {
   assertResourceName,
   assertStorageExists,
   BackupDestinationSchema,
-  BackupScheduleSchema,
   CertEmailSchema,
   InfraConfigSchema,
   MachineConfigSchema,
@@ -227,84 +226,38 @@ describe('config-schema', () => {
   });
 
   describe('BackupDestinationSchema', () => {
-    it('accepts valid destination with cron', () => {
+    it('accepts valid destination', () => {
       expect(
         BackupDestinationSchema.safeParse({
+          name: 'onedrive-hourly',
           storage: 'microsoft',
-          schedule: '0 2 * * *',
           enabled: true,
         }).success
       ).toBe(true);
     });
 
-    it('accepts destination without optional fields', () => {
-      expect(BackupDestinationSchema.safeParse({ storage: 'microsoft' }).success).toBe(true);
-    });
-
-    it('rejects empty storage name', () => {
-      expect(BackupDestinationSchema.safeParse({ storage: '' }).success).toBe(false);
-    });
-
-    it('accepts every-15-min cron', () => {
+    it('accepts destination with bandwidthLimit', () => {
       expect(
-        BackupDestinationSchema.safeParse({ storage: 'test', schedule: '*/15 * * * *' }).success
+        BackupDestinationSchema.safeParse({
+          name: 'fast',
+          storage: 'r2',
+          bandwidthLimit: '50M',
+        }).success
       ).toBe(true);
     });
 
-    it('accepts weekly Sunday cron', () => {
-      expect(
-        BackupDestinationSchema.safeParse({ storage: 'test', schedule: '0 2 * * 0' }).success
-      ).toBe(true);
-    });
-
-    it('rejects 6-field cron', () => {
-      expect(
-        BackupDestinationSchema.safeParse({ storage: 'test', schedule: '0 0 2 * * *' }).success
-      ).toBe(false);
-    });
-
-    it('rejects minute out of range', () => {
-      expect(
-        BackupDestinationSchema.safeParse({ storage: 'test', schedule: '60 2 * * *' }).success
-      ).toBe(false);
-    });
-
-    it('rejects hour out of range', () => {
-      expect(
-        BackupDestinationSchema.safeParse({ storage: 'test', schedule: '0 25 * * *' }).success
-      ).toBe(false);
-    });
-
-    it('rejects nonsense cron', () => {
-      expect(BackupDestinationSchema.safeParse({ storage: 'test', schedule: 'bad' }).success).toBe(
+    it('rejects empty name', () => {
+      expect(BackupDestinationSchema.safeParse({ name: '', storage: 'microsoft' }).success).toBe(
         false
       );
     });
 
-    it('accepts range cron expression', () => {
-      expect(
-        BackupDestinationSchema.safeParse({ storage: 'test', schedule: '0 1-5 * * *' }).success
-      ).toBe(true);
+    it('rejects empty storage', () => {
+      expect(BackupDestinationSchema.safeParse({ name: 'test', storage: '' }).success).toBe(false);
     });
 
-    it('accepts comma-separated cron values', () => {
-      expect(
-        BackupDestinationSchema.safeParse({ storage: 'test', schedule: '0 2 * * 1,3,5' }).success
-      ).toBe(true);
-    });
-  });
-
-  describe('BackupScheduleSchema', () => {
-    it('accepts valid cron', () => {
-      expect(BackupScheduleSchema.safeParse({ schedule: '0 2 * * *' }).success).toBe(true);
-    });
-
-    it('rejects invalid cron', () => {
-      expect(BackupScheduleSchema.safeParse({ schedule: 'bad' }).success).toBe(false);
-    });
-
-    it('accepts without schedule', () => {
-      expect(BackupScheduleSchema.safeParse({ enabled: true }).success).toBe(true);
+    it('rejects missing name', () => {
+      expect(BackupDestinationSchema.safeParse({ storage: 'microsoft' }).success).toBe(false);
     });
   });
 

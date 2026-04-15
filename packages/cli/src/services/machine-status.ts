@@ -10,8 +10,11 @@ import type { ListResult } from '@rediacc/shared/queue-vault/data/list-types.gen
 import { isListResult } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { configService } from './config-resources.js';
+import { buildRenetEnvPrefix } from './local-executor.js';
+import { fetchOtlpCredentials } from './otlp-credentials.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
+import { isTelemetryDisabled } from './telemetry.js';
 
 interface FetchStatusOptions {
   debug?: boolean;
@@ -54,13 +57,24 @@ export async function fetchMachineStatus(
       debug: options.debug,
     }
   );
-  // Build command
+  // Build command. Fetch OTLP creds the same way `rdc run` / `repo up` do
+  // via local-executor, so the spawned renet sends its own telemetry to
+  // otlp.rediacc.io — keeping `machine query` consistent with other paths
+  // that shell out to renet. Failures fall through to default-deny; we
+  // never block on telemetry resolution.
+  const telemetryOff = isTelemetryDisabled();
+  const otlpCreds = telemetryOff ? null : await fetchOtlpCredentials();
+  const envPrefix = buildRenetEnvPrefix({
+    isDevelopment: process.env.NODE_ENV !== 'production',
+    telemetryDisabled: telemetryOff,
+    otlpCreds,
+  });
   const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
   const sectionsFlag =
     options.sections && options.sections.length > 0
       ? ` --sections ${options.sections.join(',')}`
       : '';
-  const cmd = `sudo ${remoteRenetPath} list all --datastore ${datastore} --json${sectionsFlag}`;
+  const cmd = `sudo ${envPrefix}${remoteRenetPath} list all --datastore ${datastore} --json${sectionsFlag}`;
 
   if (options.debug) {
     outputService.info(`[status] Running: ${cmd}`);

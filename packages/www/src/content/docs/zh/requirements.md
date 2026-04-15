@@ -4,12 +4,11 @@ description: 运行 Rediacc 的系统要求和支持的平台。
 category: Guides
 order: 0
 language: zh
-sourceHash: "dd2ac2df883a3d1b"
+sourceHash: "eb237c7beb1bb942"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # 系统要求
-
-如果你不确定该使用哪个工具，请参考 [rdc vs renet](/zh/docs/rdc-vs-renet)。
 
 在使用 Rediacc 进行部署之前，请确保您的工作站和远程服务器满足以下要求。
 
@@ -31,18 +30,41 @@ sourceHash: "dd2ac2df883a3d1b"
 
 `renet` 二进制文件以 root 权限运行在远程服务器上。它管理加密磁盘映像、隔离的 Docker 守护进程和服务编排。
 
+如果您不确定该使用哪个工具，请参考 [rdc vs renet](/en/docs/rdc-vs-renet)。简而言之：正常操作使用 `rdc`，仅在高级服务器端任务时才直接使用 `renet`。
+
 ### 支持的操作系统
 
-| 操作系统 | 版本 | 架构 |
-|----------|------|------|
-| Ubuntu | 24.04+ | x86_64 |
-| Debian | 12+ | x86_64 |
-| Fedora | 43+ | x86_64 |
-| openSUSE Leap | 15.6+ | x86_64 |
-| Alpine | 3.19+ | x86_64（需要 gcompat） |
-| Arch Linux | 滚动发布 | x86_64 |
+远程服务器运行 `renet` 二进制文件，并托管每个仓库专属的加密隔离 Docker 守护进程。以下五个发行版在每次拉取请求时都会由 CI 中的 Bridge Workers 矩阵进行测试，是唯一获得官方支持的系统：
 
-以上是在 CI 中测试过的发行版。其他具有 systemd、Docker 支持和 cryptsetup 的 Linux 发行版可能可以工作，但未获得官方支持。
+| 操作系统 | 版本 | 默认内核 | 备注 |
+|----------|------|----------|------|
+| Ubuntu | 24.04 LTS | 6.8 | 推荐。AppArmor 默认启用。 |
+| Debian | 13 (Trixie) | 6.12 | Debian 12 也可用（内核最低 6.1）。 |
+| Fedora | 43 | 6.12 | SELinux 默认处于 enforcing 模式。 |
+| openSUSE Leap | 16.0 | 6.4+ | AppArmor 默认启用。 |
+| Oracle Linux | 10 | UEK 7+ | 使用保留了 btrfs 模块的 UEK。SELinux 默认处于 enforcing 模式。请参阅下方"为什么选择 UEK？"。 |
+
+所有行均为 `x86_64`。`arm64` 已构建但未针对每个服务器 OS 持续测试；如果您需要在特定发行版上使用，请提交 issue。其他具有 systemd、Docker 支持和 cryptsetup 的 Linux 发行版可能可以工作，但未获得官方支持，升级时可能在未通知的情况下停止工作。
+
+#### 为什么选择 UEK？（以及为什么 Rocky 10 / 原生 RHEL 10 不受支持）
+
+Rediacc 的加密存储后端需要树内 `btrfs` 内核模块。**RHEL 10 的原生内核不包含该模块**：`modprobe btrfs` 会提示 "Module btrfs not found"，`dnf search btrfs` 也不返回任何结果。Rocky Linux 10 和 AlmaLinux 10 继承了相同的内核，因此无法作为 Rediacc 服务器运行。
+
+Oracle Linux 10 默认使用 **Unbreakable Enterprise Kernel (UEK)**，该内核保留了内置的 btrfs。这是支持列表中唯一兼容 RHEL 的目标。如果必须运行 RHEL 系列服务器，请使用带有 UEK 的 Oracle Linux 10。（此决策的真实依据位于 `.github/workflows/ct-tests.yml` 中，作为 CI Bridge Workers 矩阵。）
+
+#### 仅限工作站（CLI 安装目标）
+
+`rdc` CLI 还可以在 Alpine 3.19+（带有自动安装的 `gcompat` 兼容层的 APK）和 Arch Linux（滚动版，通过 pacman）上干净安装。这些是仅限客户端的安装路径（参见[安装](/en/docs/installation)），不支持作为 `renet` 服务器目标。
+
+### 各操作系统的安全策略
+
+每个仓库的 Docker 守护进程和仓库容器本身在所有受支持的操作系统上均以**默认容器标签**运行。`rdc config machine setup` 不安装自定义 SELinux 策略或 AppArmor 配置文件。各操作系统的行为如下：
+
+- **Ubuntu 24.04、openSUSE Leap 16.0**：AppArmor 默认启用。应用默认的 docker-container 配置文件，无需额外设置。
+- **Fedora 43、Oracle Linux 10**：SELinux 处于 enforcing 状态运行。每个仓库的守护进程使用标准 `container_t` 上下文为容器打标签。不需要自定义 SELinux 策略。
+- **CRIU**（checkpoint/restore）是唯一使用 `apparmor=unconfined` 绕过 AppArmor 配置文件的情况，因为上游 CRIU 的 AppArmor 支持尚未稳定。请参阅 [Rediacc 规则](/en/docs/rules-of-rediacc) 中的 CRIU 说明。
+
+如果某个设置步骤因 SELinux AVC 拒绝或 AppArmor 拒绝而失败，请参阅[故障排除](/en/docs/troubleshooting)中的"特定发行版设置问题"部分。
 
 ### 服务器前提条件
 
@@ -61,6 +83,6 @@ sourceHash: "dd2ac2df883a3d1b"
 
 您无需手动安装这些组件。
 
-## Local Virtual Machines (Optional)
+## 本地虚拟机（可选）
 
-If you want to test deployments locally using `rdc ops`, your workstation needs virtualization support: KVM on Linux or QEMU on macOS. See the [Experimental VMs](/zh/docs/experimental-vms) guide for setup steps and platform details.
+如果您希望使用 `rdc ops` 在本地测试部署，您的工作站需要虚拟化支持：Linux 上的 KVM 或 macOS 上的 QEMU。有关设置步骤和平台详情，请参阅[实验性虚拟机](/en/docs/experimental-vms)指南。

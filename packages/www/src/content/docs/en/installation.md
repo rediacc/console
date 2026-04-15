@@ -46,12 +46,24 @@ echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.c
 sudo apt-get update && sudo apt-get install rediacc-cli
 ```
 
-### DNF (Fedora / RHEL)
+### DNF (Fedora / RHEL-compatible)
 
 ```bash
 sudo curl -fsSL https://releases.rediacc.com/rpm/stable/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
 sudo dnf install rediacc-cli
 ```
+
+Oracle Linux, AlmaLinux, and Rocky Linux all use the same DNF flow; any RHEL-compatible distribution with `dnf` can pull the repo above. Note: **Oracle Linux 10 is the only RHEL-family distribution officially supported as a Rediacc server target** (see [Requirements](/en/docs/requirements)). Rocky/Alma 10 lack the btrfs kernel module needed by the renet data plane, though the `rdc` CLI installs on them fine.
+
+### Zypper (openSUSE Leap)
+
+```bash
+sudo zypper addrepo https://releases.rediacc.com/rpm/stable/rediacc.repo
+sudo zypper --gpg-auto-import-keys refresh
+sudo zypper install rediacc-cli
+```
+
+Tested on openSUSE Leap 16.0+.
 
 ### APK (Alpine Linux)
 

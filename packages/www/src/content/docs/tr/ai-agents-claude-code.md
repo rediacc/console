@@ -4,7 +4,7 @@ description: Claude Code'u otonom Rediacc altyapı yönetimi için yapılandırm
 category: Guides
 order: 31
 language: tr
-sourceHash: "f28f17d2e0d3d395"
+sourceHash: "1a9f31b2430273f9"
 ---
 
 Claude Code, `rdc` CLI aracılığıyla Rediacc ile doğal olarak çalışır. Bu kılavuz kurulumu, izinleri ve yaygın iş akışlarını kapsar.

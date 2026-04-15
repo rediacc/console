@@ -2,12 +2,12 @@ services:
   project-b-app:
     image: redis:7-alpine
     container_name: project-b-app
-    command: redis-server --bind ${PROJECT_B_APP_IP} --requirepass ${ADMIN_PASSWORD}
+    command: redis-server --bind 0.0.0.0 --requirepass ${ADMIN_PASSWORD}
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./data:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -h ${PROJECT_B_APP_IP} -a $${ADMIN_PASSWORD} ping | grep -q PONG"]
+      test: ["CMD-SHELL", "redis-cli -h localhost -a $${ADMIN_PASSWORD} ping | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 5

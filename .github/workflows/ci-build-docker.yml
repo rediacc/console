@@ -67,7 +67,8 @@ jobs:
       - run: .ci/scripts/setup/build-packages.sh
       - run: .ci/scripts/build/build-cli.sh
         env:
-          OTLP_AUTH_TOKEN: ${{ secrets.OTLP_AUTH_TOKEN }}
+          # OTLP credentials are fetched at runtime after `rdc subscription
+          # login` — no longer baked into the bundle (renet#51).
           CLI_VERSION: ${{ inputs.next_version || '0.0.0-dev' }}
 
       - name: Prepare CLI bundle artifact

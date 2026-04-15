@@ -83,6 +83,29 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh
 
@@ -92,8 +115,12 @@ jobs:
       - name: Build VM Image
         id: build
         run: |
-          .ci/scripts/image/build-vm-image.sh --output "$RUNNER_TEMP/vm-image"
-          IMAGE_PATH=$(ls $RUNNER_TEMP/vm-image/*.img | head -1)
+          mkdir -p "$RUNNER_TEMP/vm-image"
+          sudo $RENET_BINARY ops image build \
+            --os ubuntu-24.04 \
+            --output "$RUNNER_TEMP/vm-image" \
+            --renet-binary "$RENET_BINARY"
+          IMAGE_PATH=$(ls $RUNNER_TEMP/vm-image/*.img $RUNNER_TEMP/vm-image/*.qcow2 2>/dev/null | head -1)
           IMAGE_NAME=$(basename "$IMAGE_PATH")
           echo "image-name=$IMAGE_NAME" >> $GITHUB_OUTPUT
           echo "Built image: $IMAGE_NAME ($(du -h "$IMAGE_PATH" | cut -f1))"
@@ -102,7 +129,9 @@ jobs:
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: vm-disk-image
-          path: ${{ runner.temp }}/vm-image/*.img
+          path: |
+            ${{ runner.temp }}/vm-image/*.img
+            ${{ runner.temp }}/vm-image/*.qcow2
           retention-days: 1
           compression-level: 0  # Already compressed qcow2
 
@@ -167,6 +196,29 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh
 
@@ -265,8 +317,8 @@ jobs:
           cache: 'npm'
 
       - name: Build CLI
-        env:
-          OTLP_AUTH_TOKEN: ${{ secrets.OTLP_AUTH_TOKEN }}
+        # OTLP credentials are fetched at runtime after `rdc subscription
+        # login` — no longer baked into the bundle (renet#51).
         run: |
           npm ci
           npm run build:packages
@@ -282,6 +334,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
 
       # VM Provisioning (conditional - only when provision_vms is true)
       # Download pre-built VM image (built in build-disk-image job)
@@ -649,9 +703,17 @@ jobs:
       matrix:
         os-image:
           - ubuntu-24.04
-          - debian-12
+          - debian-13
           - fedora-43
-          - opensuse-15.6
+          - opensuse-16.0
+          - oracle-10
+          # NOTE: rocky-10 intentionally excluded. RHEL 10's stock kernel
+          # ships without the btrfs module and Rediacc's storage backend
+          # requires btrfs; Oracle Linux 10 works because UEK retains btrfs.
+          # Full explanation and operator guidance:
+          #   packages/www/src/content/docs/en/requirements.md (Why UEK?)
+          #   packages/www/src/content/docs/en/limits.md (Why not Rocky 10?)
+          #   packages/www/src/content/docs/en/troubleshooting.md (btrfs module missing)
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 120000
@@ -682,6 +744,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
       - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
         with:
           go-version: 'stable'
@@ -697,6 +761,29 @@ jobs:
       - name: Install CLI Globally
         run: .ci/scripts/setup/install-cli-global.sh
 
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
@@ -768,6 +855,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
       - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
         with:
           go-version: 'stable'
@@ -783,6 +872,29 @@ jobs:
       - name: Install CLI Globally
         run: .ci/scripts/setup/install-cli-global.sh
 
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
@@ -842,6 +954,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
       - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
         with:
           go-version: 'stable'
@@ -855,6 +969,29 @@ jobs:
       - run: .ci/scripts/setup/build-packages.sh
 
       # Renet setup
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Add renet to PATH
@@ -961,6 +1098,29 @@ jobs:
       - run: .ci/scripts/setup/build-packages.sh
 
       # Renet setup
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Add renet to PATH
@@ -1060,6 +1220,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
 
       # Unit tests
       - name: Run renet tests
@@ -1080,6 +1242,12 @@ jobs:
           path: private/renet/test-results.xml
           retention-days: 3
           if-no-files-found: ignore
+
+      # eBPF isolation tests
+      - name: Test eBPF
+        run: |
+          cd private/renet
+          sudo go test ./pkg/ebpf/ -v -timeout 60s
 
       # Integration tests (needs sudo for KVM)
       - name: Run integration tests
@@ -1119,6 +1287,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
 
       - name: Run SQL standalone test
         run: .ci/scripts/private/run-sql.sh test-standalone
@@ -1163,6 +1333,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
 
       # Build renet for VM provisioning
       - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
@@ -1170,6 +1342,29 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh
       - name: Install renet

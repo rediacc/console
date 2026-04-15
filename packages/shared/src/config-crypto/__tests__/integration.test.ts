@@ -147,9 +147,11 @@ describe('SDK', () => {
   });
 
   it('sdkGetEpoch returns consistent values within same window', () => {
-    const now = Math.floor(Date.now() / 1000);
-    const e1 = sdkGetEpoch(300, now);
-    const e2 = sdkGetEpoch(300, now + 1);
+    // Use a fixed mid-window timestamp, not wall-clock, so the test can't
+    // straddle a window boundary when CI hits (now mod 300) === 299.
+    const windowStart = 300 * 5_000_000;
+    const e1 = sdkGetEpoch(300, windowStart + 50);
+    const e2 = sdkGetEpoch(300, windowStart + 51);
     expect(e1).toBe(e2);
   });
 

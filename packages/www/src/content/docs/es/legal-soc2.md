@@ -4,7 +4,7 @@ description: "Cómo Rediacc se ajusta a los Criterios de Servicio de Confianza d
 category: "Legal"
 order: 2
 language: es
-sourceHash: "96eff23962051882"
+sourceHash: "a01e8b457d648fdd"
 ---
 
 SOC 2 (Controles de Sistema y Organización 2) es un marco desarrollado por el Instituto Americano de Contadores Públicos Certificados (AICPA) para evaluar los controles de una organización relacionados con seguridad, disponibilidad, integridad del procesamiento, confidencialidad y privacidad.

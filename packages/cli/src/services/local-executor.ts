@@ -25,12 +25,13 @@ import { startSpinner, stopSpinner } from '../utils/spinner.js';
 import { auditService } from './audit.js';
 import { configService } from './config-resources.js';
 import {
-  refreshMachineActivation,
+  issueRepoLicense,
   refreshRepoLicenseIdentity,
   refreshRepoLicensesBatch,
 } from './license.js';
+import { fetchOtlpCredentials } from './otlp-credentials.js';
 import { outputService } from './output.js';
-import { telemetryService } from './telemetry.js';
+import { isTelemetryDisabled, telemetryService } from './telemetry.js';
 import { getActiveLabel, getDoneLabel, formatStepDuration } from '../utils/timeline.js';
 import {
   buildLocalVault,
@@ -454,6 +455,75 @@ function createStdoutHandler(options: LocalExecuteOptions): StdoutHandler {
   return handleStepDetectionStdout();
 }
 
+/**
+ * POSIX single-quote a string for safe use as an argument inside a remote
+ * shell command. Wraps in `'...'` and escapes embedded single quotes. Used
+ * by `buildRemoteCommand` to inject OTLP credentials as env vars.
+ */
+function shellQuote(s: string): string {
+  return `'${s.replaceAll("'", `'\\''`)}'`;
+}
+
+/**
+ * Build the `env K=V K=V ` prefix that carries telemetry state into a
+ * renet subprocess launched over SSH. Shared by the `renet execute`
+ * path (buildRemoteRenetCommand) and the `renet list all` path
+ * (machine-status.ts) so both invocations get the same telemetry
+ * handling — emit spans/metrics/logs when OTLP creds were fetched, or
+ * go default-deny when the user opted out via CI / REDIACC_TELEMETRY_DISABLED.
+ *
+ * Returns a trailing-space string ready to splice into the command, or
+ * an empty string when nothing needs to be injected.
+ */
+export function buildRenetEnvPrefix(params: {
+  isDevelopment: boolean;
+  telemetryDisabled: boolean;
+  otlpCreds?: { user: string; pass: string } | null;
+}): string {
+  const { isDevelopment, telemetryDisabled, otlpCreds } = params;
+  const envParts: string[] = [];
+  if (isDevelopment) {
+    envParts.push('REDIACC_ENVIRONMENT=development');
+  }
+  if (telemetryDisabled) {
+    // Propagate the opt-out to renet. When set, renet skips its OTel SDK
+    // setup entirely (see pkg/telemetry/telemetry.go:disabled). We
+    // deliberately do NOT pass OTLP creds in this branch — even if the
+    // caller passed `otlpCreds`, ignoring them here matches the user's
+    // intent to send zero telemetry from any process.
+    envParts.push('REDIACC_TELEMETRY_DISABLED=1');
+  } else if (otlpCreds) {
+    envParts.push(`REDIACC_OTLP_USER=${shellQuote(otlpCreds.user)}`);
+    envParts.push(`REDIACC_OTLP_PASS=${shellQuote(otlpCreds.pass)}`);
+  }
+  return envParts.length > 0 ? `env ${envParts.join(' ')} ` : '';
+}
+
+/**
+ * Build the `sudo env ... renet execute ...` command string that the CLI
+ * executes over SSH on the target machine.
+ *
+ * Exported as a pure function so unit tests can exercise all combinations
+ * of (telemetry disabled, OTLP creds present, events mode, dev environment)
+ * without constructing a full LocalExecutorService with SFTP mocks.
+ *
+ * When `telemetryDisabled` is true, `REDIACC_TELEMETRY_DISABLED=1` is
+ * injected INSTEAD OF OTLP credentials — the user's opt-out takes
+ * precedence over any credentials the caller may have pre-fetched.
+ */
+export function buildRemoteRenetCommand(params: {
+  remoteRenetPath: string;
+  eventsMode?: boolean;
+  isDevelopment: boolean;
+  telemetryDisabled: boolean;
+  otlpCreds?: { user: string; pass: string } | null;
+}): string {
+  const { remoteRenetPath, eventsMode, ...envParams } = params;
+  const eventsFlag = eventsMode ? ' --events' : '';
+  const envPrefix = buildRenetEnvPrefix(envParams);
+  return `sudo ${envPrefix}${remoteRenetPath} execute --executor local${eventsFlag}`;
+}
+
 class LocalExecutorService {
   private async resolveLicenseFailure(
     result: LocalExecuteResult,
@@ -583,16 +653,26 @@ class LocalExecutorService {
     if (!isLicensedRenetFunction(options.functionName)) {
       return false;
     }
-    // Unified path: machine activation + batch refresh for all licensed functions
-    const machineIssued = await refreshMachineActivation(
-      machine,
-      sshPrivateKey,
-      remoteRenetPath,
-      sftp
-    ).catch((err: unknown) => {
-      telemetryService.trackError(err, { operation: 'executor.refresh_activation' });
-      return false;
-    });
+    // For create/fork, re-issue the pre-provisioning repo license
+    if (
+      options.functionName === 'repository_create' ||
+      options.functionName === 'repository_fork'
+    ) {
+      try {
+        await this.ensureRepoLicenseForProvisioning(
+          options,
+          machine,
+          sshPrivateKey,
+          remoteRenetPath,
+          sftp
+        );
+        return true;
+      } catch (err) {
+        telemetryService.trackError(err, { operation: 'executor.repo_license_recovery' });
+        return false;
+      }
+    }
+    // For all other licensed operations, batch refresh existing repo licenses
     const batchResult = await refreshRepoLicensesBatch(
       machine,
       sshPrivateKey,
@@ -602,7 +682,7 @@ class LocalExecutorService {
       telemetryService.trackError(err, { operation: 'executor.batch_refresh' });
       return null;
     });
-    return machineIssued || Boolean(batchResult && batchResult.valid > 0);
+    return Boolean(batchResult && batchResult.valid > 0);
   }
 
   private async maybeRefreshInvalidSignatures(
@@ -653,9 +733,13 @@ class LocalExecutorService {
   /**
    * Pre-flight for repository_create / repository_fork:
    * Ensure subscription token exists (trigger device-code auth if needed)
-   * and call refreshMachineActivation (which writes the blob to disk).
+   * and pre-issue a repo license (without identity proofs since the repo
+   * doesn't exist yet). The server enforces machine slot limits during
+   * issuance. After creation, maybeRefreshRepoIdentity re-issues the
+   * license with identity proofs.
    */
-  private async ensureMachineActivationForProvisioning(
+  private async ensureRepoLicenseForProvisioning(
+    options: LocalExecuteOptions,
     machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
     sshPrivateKey: string,
     remoteRenetPath: string,
@@ -676,8 +760,30 @@ class LocalExecutorService {
         announceIntro: true,
       });
     }
-    const activated = await refreshMachineActivation(machine, sshPrivateKey, remoteRenetPath, sftp);
-    if (!activated) {
+
+    const repoLicenseCtx = await resolveRepoLicenseContext(
+      options.functionName,
+      options.machineName,
+      options.params ?? {},
+      sftp!
+    );
+    if (!repoLicenseCtx) {
+      throw new Error(t('errors.subscription.activationFailed'));
+    }
+
+    const issued = await issueRepoLicense(
+      machine,
+      sshPrivateKey,
+      {
+        repositoryGuid: repoLicenseCtx.repositoryGuid,
+        grandGuid: repoLicenseCtx.grandGuid,
+        kind: repoLicenseCtx.kind,
+        requestedSizeGb: repoLicenseCtx.requestedSizeGb,
+      },
+      remoteRenetPath,
+      sftp
+    );
+    if (!issued) {
       throw new Error(t('errors.subscription.activationFailed'));
     }
   }
@@ -779,13 +885,23 @@ class LocalExecutorService {
   }
 
   /**
-   * Build the remote renet command string.
+   * Thin wrapper around `buildRemoteRenetCommand` that pulls the
+   * environment-detection logic from the service instance. Kept as a
+   * class method so call sites don't need to recompute `isDevelopment`
+   * / `isTelemetryDisabled` themselves.
    */
-  private buildRemoteCommand(remoteRenetPath: string, eventsMode?: boolean): string {
-    const eventsFlag = eventsMode ? ' --events' : '';
-    return this.detectEnvironment() === 'development'
-      ? `sudo env REDIACC_ENVIRONMENT=development ${remoteRenetPath} execute --executor local${eventsFlag}`
-      : `sudo ${remoteRenetPath} execute --executor local${eventsFlag}`;
+  private buildRemoteCommand(
+    remoteRenetPath: string,
+    eventsMode?: boolean,
+    otlpCreds?: { user: string; pass: string } | null
+  ): string {
+    return buildRemoteRenetCommand({
+      remoteRenetPath,
+      eventsMode,
+      isDevelopment: this.detectEnvironment() === 'development',
+      telemetryDisabled: isTelemetryDisabled(),
+      otlpCreds,
+    });
   }
 
   private async runRemoteExecution(
@@ -794,7 +910,13 @@ class LocalExecutorService {
     vault: string,
     options: LocalExecuteOptions
   ): Promise<LocalExecuteResult> {
-    const command = this.buildRemoteCommand(remoteRenetPath, options.eventsMode);
+    // Fetch OTLP credentials so renet inherits them as env vars and its
+    // telemetry init picks them up. Skip the fetch entirely when telemetry
+    // is opted out — no wasted network round-trip, no credentials in
+    // memory to accidentally propagate downstream. `buildRemoteCommand`
+    // still injects `REDIACC_TELEMETRY_DISABLED=1` for the remote end.
+    const otlpCreds = isTelemetryDisabled() ? null : await fetchOtlpCredentials();
+    const command = this.buildRemoteCommand(remoteRenetPath, options.eventsMode, otlpCreds);
     let stdout = '';
     let stderr = '';
     const stdoutHandler = createStdoutHandler(options);
@@ -886,7 +1008,13 @@ class LocalExecutorService {
     ) {
       const licStart = Date.now();
       await timedStep(t('timing.step.activating'), 'timing.step.licenseActivated', () =>
-        this.ensureMachineActivationForProvisioning(machine, sshPrivateKey, remoteRenetPath, sftp)
+        this.ensureRepoLicenseForProvisioning(
+          options,
+          machine,
+          sshPrivateKey,
+          remoteRenetPath,
+          sftp
+        )
       );
       cliSteps.push({ name: 'license', duration_ms: Date.now() - licStart });
     }

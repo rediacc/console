@@ -29,6 +29,38 @@ const CHUNK_SIZE = 48 * 1024;
 /** Regex matching old network-ID-based auto-route domains (e.g., plausible-db-3200.rediacc.io). */
 const STALE_CERT_PATTERN = /^.+-\d{4,5}\./;
 
+/** Default grace window for expiry-based pruning, in days. Certs whose notAfter
+ *  is older than `now - DEFAULT_EXPIRY_GRACE_DAYS` are considered useless and
+ *  removed. Grace exists because a cert that expired N minutes ago is still
+ *  likely to be replaced by the next sync — we don't want to thrash. */
+const DEFAULT_EXPIRY_GRACE_DAYS = 7;
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const MS_PER_HOUR = 60 * 60 * 1000;
+
+/** Minimum hours between auto-sync attempts for a given baseDomain.
+ *  Keeps `rdc repo up` fast when run repeatedly and prevents redundant SSH
+ *  round-trips. Operators can force a sync with `rdc config cert-cache pull`
+ *  or `rdc machine query --sync-certs`. */
+const AUTO_SYNC_MIN_INTERVAL_HOURS = 6;
+
+/**
+ * Returns true if the local cert cache's updatedAt is stale enough to
+ * warrant a refresh. Pure function — pass `now` for deterministic tests.
+ * Absent / unparseable `updatedAt` counts as stale.
+ */
+export function isCertCacheStale(
+  updatedAt: string | undefined,
+  now: Date = new Date(),
+  minIntervalHours: number = AUTO_SYNC_MIN_INTERVAL_HOURS
+): boolean {
+  if (!updatedAt) return true;
+  const ts = Date.parse(updatedAt);
+  if (Number.isNaN(ts)) return true;
+  const ageHours = (now.getTime() - ts) / MS_PER_HOUR;
+  return ageHours >= minIntervalHours;
+}
+
 // ============================================================================
 // Traefik acme.json types
 // ============================================================================
@@ -235,6 +267,53 @@ export function pruneStaleAcmeCerts(acme: AcmeJson): { cleaned: AcmeJson; remove
   return { cleaned: acme, removedCount };
 }
 
+/**
+ * Remove certificates whose `notAfter` expiry is older than
+ * `now - graceDays`. The grace window avoids churn on just-expired certs
+ * that will be replaced on the next sync. Certs whose expiry cannot be
+ * parsed are kept (unknown state is safer than wrong state).
+ *
+ * Pure function — does not mutate the input beyond per-resolver Certificates.
+ * Pass `now` to make tests deterministic; defaults to current time.
+ */
+/**
+ * Returns true if a parsed expiry places the cert past the prune cutoff.
+ * Unparseable expiries return false (unknown is safer than wrong).
+ */
+function isCertPastCutoff(expiryIso: string | undefined, cutoffMs: number): boolean {
+  if (!expiryIso) return false;
+  const expiryMs = Date.parse(expiryIso);
+  if (Number.isNaN(expiryMs)) return false;
+  return expiryMs < cutoffMs;
+}
+
+export function pruneExpiredCerts(
+  acme: AcmeJson,
+  graceDays: number = DEFAULT_EXPIRY_GRACE_DAYS,
+  now: Date = new Date(),
+  /** Override the expiry parser in tests — defaults to the real X509 parser. */
+  parseExpiry: (certPem: string) => string | undefined = parseCertExpiry
+): { cleaned: AcmeJson; removedCount: number } {
+  const cutoffMs = now.getTime() - graceDays * MS_PER_DAY;
+  let removedCount = 0;
+
+  for (const resolver of Object.values(acme)) {
+    if (!resolver.Certificates) continue;
+
+    const kept: AcmeCertEntry[] = [];
+    for (const cert of resolver.Certificates) {
+      if (isCertPastCutoff(parseExpiry(cert.certificate), cutoffMs)) {
+        removedCount++;
+      } else {
+        kept.push(cert);
+      }
+    }
+    resolver.Certificates = kept;
+  }
+
+  return { cleaned: acme, removedCount };
+}
+
 // ============================================================================
 // SSH Operations
 // ============================================================================
@@ -368,15 +447,22 @@ async function mergeWithLocalCache(
 }
 
 /**
- * Parse raw acme.json string and optionally prune stale certs.
+ * Parse raw acme.json string and optionally prune stale + expired certs.
  */
 function pruneAndParse(raw: string, options: DownloadCertCacheOptions): AcmeJson {
   let acme: AcmeJson = JSON.parse(raw);
   if (!options.noPrune) {
-    const { cleaned, removedCount } = pruneStaleAcmeCerts(acme);
-    acme = cleaned;
-    if (removedCount > 0 && !options.silent) {
-      outputService.info(t('commands.config.certCache.pull.pruned', { count: removedCount }));
+    const stale = pruneStaleAcmeCerts(acme);
+    acme = stale.cleaned;
+    if (stale.removedCount > 0 && !options.silent) {
+      outputService.info(t('commands.config.certCache.pull.pruned', { count: stale.removedCount }));
+    }
+    const expired = pruneExpiredCerts(acme);
+    acme = expired.cleaned;
+    if (expired.removedCount > 0 && !options.silent) {
+      outputService.info(
+        t('commands.config.certCache.pull.prunedExpired', { count: expired.removedCount })
+      );
     }
   }
   return acme;

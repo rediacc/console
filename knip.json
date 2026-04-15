@@ -114,7 +114,7 @@
         "src/components/Footer.tsx",
         "src/components/Sidebar.tsx"
       ],
-      "project": ["src/**/*.{ts,tsx,astro}", "scripts/**/*.{js,cjs}"],
+      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{js,cjs}"],
       "ignore": [
         "scripts/check-translation-hashes.js",
         "scripts/generate-favicons.js",

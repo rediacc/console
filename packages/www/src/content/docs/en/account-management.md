@@ -62,7 +62,7 @@ Rediacc offers four plans:
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 
-All plans start with a 3-day grace period. Machine activations are tracked per-team and auto-release after inactivity. See [Subscription & Licensing](/en/docs/subscription-licensing) for the full machine vs repo license model.
+All plans start with a 3-day grace period. Machine slots are tracked per-team and auto-release after 1 hour of inactivity. See [Subscription & Licensing](/en/docs/subscription-licensing) for details.
 
 ### Billing
 

@@ -67,3 +67,12 @@
 1116011
 1116099
 1116100
+# axios NO_PROXY hostname normalization bypass leading to SSRF (transitive dep, no fix available)
+1116365
+# axios cloud metadata exfiltration via header injection chain (transitive dep, no fix available)
+1116425
+1116473
+# follow-redirects leaks Custom Authentication Headers to Cross-Domain Redirect Targets
+# (GHSA-r4q5-vmmm-2653, <=1.15.11 — 1.15.11 is latest, no upstream fix yet; transitive
+# via axios in packages/cli/, not runtime-exposed for CLI-only auth flows)
+1116560

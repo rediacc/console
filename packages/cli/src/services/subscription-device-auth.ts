@@ -63,7 +63,6 @@ export async function authorizeSubscriptionViaDeviceCode(
     throw new ValidationError(t('errors.subscription.notLoggedIn'));
   }
 
-  await tryOpenBrowser(verificationUrl);
   outputService.info(t('commands.subscription.login.polling'));
 
   const token = await pollForDeviceCodeToken(serverUrl, deviceCode, interval, expiresIn);
@@ -133,14 +132,4 @@ async function fetchLicenseStatus(
     token,
     serverUrl,
   });
-}
-
-async function tryOpenBrowser(url: string): Promise<void> {
-  try {
-    const { execFile } = await import('node:child_process');
-    const cmd = process.platform === 'darwin' ? 'open' : 'xdg-open';
-    execFile(cmd, [url]);
-  } catch {
-    outputService.info(t('commands.subscription.login.browserFailed'));
-  }
 }

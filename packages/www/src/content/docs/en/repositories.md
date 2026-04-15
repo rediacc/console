@@ -131,6 +131,39 @@ rdc repo delete --name my-app -m server-1
 
 > This permanently destroys the encrypted disk image. This action cannot be undone.
 
+## Migrate Repository
+
+Live-migrate a repository from one machine to another with minimal downtime.
+
+```bash
+rdc repo migrate --name my-app --from server-1 --to server-2
+```
+
+| Option | Description |
+|--------|-------------|
+| `--provision` | Provision the repository on the target machine before migrating (creates LUKS image and registers config) |
+| `--checkpoint` | Create a CRIU checkpoint of running containers before cutover |
+| `--bwlimit <kbps>` | Limit rsync bandwidth in kilobytes per second |
+| `--skip-dns` | Skip updating DNS records after cutover |
+
+**Three-phase flow:**
+
+1. **Hot pre-copy** - rsync transfers data while the repository stays running on the source. Large files are transferred before any downtime.
+2. **Cutover** - the repository is stopped on the source, a final rsync pass syncs remaining changes, and the repository starts on the target.
+3. **Start on target** - renet mounts and starts the repository on the target machine. DNS is updated unless `--skip-dns` is passed.
+
+![Repository Live Migration](/img/repo-migrate-flow.svg)
+
+**Push vs migrate:**
+
+| | `repo push` | `repo migrate` |
+|--|-------------|----------------|
+| Operation | Copy | Move |
+| Source after | Unchanged | Stopped |
+| Downtime | None (copy only) | Brief cutover window |
+| DNS update | No | Yes (unless `--skip-dns`) |
+| Use case | Backup, staging clone | Machine replacement, server move |
+
 ## Prune
 
 After deleting repositories or recovering from failed operations, orphaned mount directories, lock files, and immovable markers may remain. Prune removes these safely:

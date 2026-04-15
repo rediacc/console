@@ -4,7 +4,8 @@ description: Différences entre rdc et renet, et à quel moment utiliser chacun 
 category: Concepts
 order: 1
 language: fr
-sourceHash: "4f7b74a70b59d9c8"
+sourceHash: "86bc5f8593d408de"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # rdc vs renet
@@ -40,7 +41,7 @@ rdc config machine setup --name server-1
 
 # Créer et démarrer un dépôt
 rdc repo create --name my-app -m server-1 --size 10G
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 
 # Arrêter un dépôt
 rdc repo down --name my-app -m server-1

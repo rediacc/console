@@ -449,7 +449,7 @@ jobs:
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
-      OTLP_AUTH_TOKEN: ${{ secrets.OTLP_AUTH_TOKEN }}
+      # OTLP_AUTH_TOKEN removed: credentials are resolved at runtime (renet#51).
 
   build-docker:
     name: Build (Docker)
@@ -633,7 +633,7 @@ jobs:
       web-tag: ${{ needs.initialize.outputs.web_tag }}-amd64
       bridge-tag: ${{ needs.initialize.outputs.bridge_tag }}-amd64
       ci-mode: true
-      vm-os-list: '["none", "ubuntu-24.04", "debian-12"]'
+      vm-os-list: '["none", "ubuntu-24.04", "debian-13"]'
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
@@ -914,8 +914,84 @@ jobs:
           echo "**Account API:** https://pr-${PR_NUMBER}.rediacc.workers.dev/account/api/v1/health" >> $GITHUB_STEP_SUMMARY
           echo "**PR:** #${PR_NUMBER}" >> $GITHUB_STEP_SUMMARY
 
-  # test-preview-install removed: validate-install now handles all install testing
-  # for both PRs (R2 staging/pr-N/) and push-to-main (R2 staging/{sha}/).
+  # ============================================================================
+  # COLUMN 5b: SMOKE TEST PREVIEW
+  # Validates the licensing chain end-to-end against the live preview Worker.
+  # Seeds test data into preview D1, then issues a repo license via the E2E
+  # encrypted tunnel and verifies the Ed25519 signature.
+  # ============================================================================
+  smoke-test-preview:
+    name: Smoke Test Preview
+    needs: [initialize, deploy-preview]
+    runs-on: ubuntu-latest
+    if: >-
+      always() &&
+      needs.initialize.outputs.is_fork != 'true' &&
+      github.event_name == 'pull_request' &&
+      needs.deploy-preview.result == 'success'
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: |
+            .github/actions
+            .ci/scripts
+            packages/shared
+            packages/shared-desktop
+            packages/provisioning
+            workers/www
+            package.json
+            package-lock.json
+            tsconfig.json
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - name: Seed test data into preview D1
+        id: seed
+        run: .ci/scripts/test/seed-smoke-test.sh
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
+
+      - name: Wait for preview worker
+        run: |
+          PREVIEW_URL="https://pr-${PR_NUMBER}.rediacc.workers.dev"
+          for i in $(seq 1 30); do
+            if curl -fsSL "${PREVIEW_URL}/account/api/v1/health" -o /dev/null 2>/dev/null; then
+              echo "Preview worker is ready"
+              exit 0
+            fi
+            echo "Waiting for preview worker... (attempt $i/30)"
+            sleep 2
+          done
+          echo "Preview worker did not become ready"
+          exit 1
+
+      - name: Run license smoke test
+        run: npx tsx .ci/scripts/test/smoke-test-preview.ts
+        env:
+          PREVIEW_URL: https://pr-${{ env.PR_NUMBER }}.rediacc.workers.dev
+          SMOKE_TEST_TOKEN: ${{ steps.seed.outputs.SMOKE_TEST_TOKEN }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
 
   # ============================================================================
   # VALIDATE INSTALL METHODS - Full pre-publish validation on all 6 platforms
@@ -1045,7 +1121,7 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, stage-artifacts, validate-install, validate-promote, tests, standalone-run-test, elite-run-test, ops-tests, migration-test, deploy-preview]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, stage-artifacts, validate-install, validate-promote, tests, standalone-run-test, elite-run-test, ops-tests, migration-test, deploy-preview, smoke-test-preview]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -1076,6 +1152,7 @@ jobs:
           [[ "${{ needs.ops-tests.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.migration-test.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.deploy-preview.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.smoke-test-preview.result }}" == "failure" ]] && FAILED=true
 
           if [[ "$FAILED" == "true" ]]; then
             echo "One or more jobs failed:"
@@ -1097,6 +1174,7 @@ jobs:
             echo "  ops-tests: ${{ needs.ops-tests.result }}"
             echo "  migration-test: ${{ needs.migration-test.result }}"
             echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
+            echo "  smoke-test-preview: ${{ needs.smoke-test-preview.result }}"
             exit 1
           fi
           echo "All CI jobs passed successfully!"

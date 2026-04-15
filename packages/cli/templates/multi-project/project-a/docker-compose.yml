@@ -22,7 +22,7 @@ services:
   project-a-db:
     image: postgres:16-alpine
     container_name: project-a-db
-    command: -c listen_addresses=${PROJECT_A_DB_IP}
+    command: -c listen_addresses=*
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_DB=${POSTGRES_DB}
@@ -31,7 +31,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ./db/data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h ${PROJECT_A_DB_IP}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h localhost"]
       interval: 10s
       timeout: 5s
       retries: 5

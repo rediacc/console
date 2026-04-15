@@ -96,17 +96,17 @@ In containers: `SERVICE_IP`, `REDIACC_NETWORK_ID` (auto-injected by renet).
 
 ## Takeover workflow (fork to production)
 
-1. Fork: `rdc repo fork jfrog --tag upgrade-test -m hostinger`
-2. Deploy fork: `rdc repo up jfrog:upgrade-test -m hostinger --mount`
+1. Fork: `rdc repo fork --parent jfrog --tag upgrade-test -m hostinger`
+2. Deploy fork: `rdc repo up --name jfrog:upgrade-test -m hostinger --mount`
 3. Test upgrade in fork (SSH, apply changes, verify)
-4. Takeover: `rdc repo takeover jfrog:upgrade-test -m hostinger`
+4. Takeover: `rdc repo takeover --name jfrog:upgrade-test -m hostinger`
 5. Production now has upgraded data. Old data preserved as backup fork.
-6. To revert: `rdc repo takeover jfrog:pre-takeover-20260317 -m hostinger`
+6. To revert: `rdc repo takeover --name jfrog:pre-takeover-20260317 -m hostinger`
 
 ## Storage architecture
 
 - The datastore is a BTRFS pool file hosted on the system disk (`/mnt/rediacc.pool`)
-- `rdc machine query <name> --system` shows both disk and datastore stats plus effective free space
+- `rdc machine query --name <name> --system` shows both disk and datastore stats plus effective free space
 - Effective free = min(disk free, datastore free) — the actual limit for new repos
 - Expand with: `rdc datastore resize <machine>`
 
@@ -119,8 +119,8 @@ In containers: `SERVICE_IP`, `REDIACC_NETWORK_ID` (auto-injected by renet).
 ## Typical deployment workflow
 
 ```bash
-rdc repo create my-app -m server-1 --size 5G
+rdc repo create --name my-app -m server-1 --size 5G
 rdc repo sync upload -m server-1 -r my-app --local ./my-app/
-rdc repo up my-app -m server-1
+rdc repo up --name my-app -m server-1
 rdc machine containers server-1    # verify
 ```

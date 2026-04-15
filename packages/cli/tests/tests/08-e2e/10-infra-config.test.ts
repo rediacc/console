@@ -209,20 +209,50 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
       // Should have IP-bound entrypoints
       expect(content).toContain(`${config.vm1Ip}:80`);
       expect(content).toContain(`${config.vm1Ip}:443`);
-      // Should have ACME config
-      expect(content).toContain('letsencrypt');
-      expect(content).toContain('test@test.com');
       // Should have machine-specific TCP ports bound to IP
       expect(content).toContain(`${config.vm1Ip}:8025`);
       expect(content).toContain(`${config.vm1Ip}:8143`);
       // Should have encoded character flags
       expect(content).toContain('allowEncodedSlash=true');
       expect(content).toContain('allowEncodedQuestionMark=true');
+      // ACME certresolver (letsencrypt) is omitted when cfDnsApiToken is
+      // not set. renet/pkg/proxy/infra.go only writes the letsencrypt
+      // certresolver when a Cloudflare DNS API token is configured, so the
+      // E2E flow that does not set one must not assert on "letsencrypt" or
+      // the cert-email appearing in the generated file.
     });
 
     test('should be idempotent', async () => {
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(300_000);
+
+      // Make this test self-contained. The describe-level beforeAll only
+      // creates a config context; it does not set infra config. Earlier
+      // tests in this describe block (should push infra config) do a set
+      // + push, but Playwright retries this test individually on flake and
+      // the retry runs against a freshly-created (empty) context. Set +
+      // initial push here so the retry path produces deterministic state.
+      await runner.run([
+        'config',
+        'infra',
+        'set',
+        '-m',
+        'vm1',
+        '--public-ipv4',
+        config.vm1Ip,
+        '--base-domain',
+        'test.rediacc.local',
+        '--cert-email',
+        'test@test.com',
+        '--tcp-ports',
+        '8025,8143',
+        '--udp-ports',
+        '53',
+      ]);
+      const firstPush = await runner.run(['config', 'infra', 'push', '-m', 'vm1'], {
+        timeout: 300_000,
+      });
+      expect(firstPush.success, `first push failed: ${firstPush.stderr}`).toBe(true);
 
       // Get checksums before second push
       const before = await ssh.exec(
@@ -233,7 +263,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
       const result = await runner.run(['config', 'infra', 'push', '-m', 'vm1'], {
         timeout: 300_000,
       });
-      expect(result.success).toBe(true);
+      expect(result.success, `second push failed: ${result.stderr}`).toBe(true);
 
       // Get checksums after second push
       const after = await ssh.exec(

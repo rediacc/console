@@ -4,7 +4,8 @@ description: "Supprimer les sauvegardes orphelines, les snapshots obsolètes et 
 category: "Guides"
 order: 12
 language: fr
-sourceHash: "dfa21ca915423599"
+sourceHash: "9b28efe3bd8ca2dc"
+sourceCommit: "7874d5e2f0ca1262eb80ee7de79f20320d0ae2d7"
 ---
 
 # Nettoyage
@@ -42,15 +43,29 @@ Nettoie les ressources sur la machine en deux phases.
 
 ### Phase 1 : Nettoyage du datastore (s'exécute toujours)
 
-Supprime les répertoires de montage vides, les fichiers de verrouillage obsolètes et les snapshots BTRFS obsolètes.
+Supprime toute catégorie de ressource pouvant subsister lorsqu'un dépôt est supprimé ou lorsqu'un refactoring au niveau de la machine met à la retraite une convention de nommage. Chaque catégorie est analysée indépendamment, et le nettoyage est une passe idempotente unique, de sorte qu'exécuter prune plusieurs fois est sûr et converge vers un datastore propre.
+
+| Catégorie | Ce qui est supprimé |
+|---------|-----------------|
+| Répertoires de montage vides | Répertoires `mounts/<guid>/` sans image de dépôt associée |
+| Répertoires immovable orphelins | Répertoires `immovable/<guid>/` sans image de dépôt associée |
+| Fichiers de verrouillage obsolètes | `repositories/.lock-<guid>` pour des dépôts supprimés |
+| Snapshots de sauvegarde obsolètes | `.snapshot-*` et `.backup-*` laissés par des exécutions de sauvegarde interrompues |
+| Répertoires de sandbox VS Code orphelins | `.interim/sandbox/<name>` pour des dépôts qui ne sont plus actifs sur la machine |
+| Chaînes iptables orphelines | Chaînes `REDIACC_WILDCARD_<N>` et `DOCKER_ISOLATED_NET_<N>` pour des réseaux supprimés |
+| Entrées authorized_keys orphelines | Lignes `sandbox-gateway <repo> --guid <uuid>` dont le `--guid` ne correspond plus à un répertoire de montage actif |
+
+L'analyse de `authorized_keys` parcourt `/home/*/.ssh/authorized_keys` et `/root/.ssh/authorized_keys`. Une entrée n'est conservée que si son marqueur `--guid` correspond au GUID d'un répertoire de montage vivant, de sorte que les dépôts actuellement déployés sur la machine sont toujours préservés, indépendamment du fait que leur nom apparaisse ou non ailleurs sur le disque. Les entrées héritées écrites avant que renet ne commence à ajouter le marqueur `--guid` ne peuvent pas être validées et sont toujours signalées comme orphelines.
 
 ```bash
-# Dry-run
+# Dry-run, shows what would be removed (no changes applied)
 rdc machine prune --name server-1 --dry-run
 
 # Execute cleanup
 rdc machine prune --name server-1
 ```
+
+> **Nettoyage en cascade.** Certaines catégories dépendent des précédentes. Par exemple, la suppression de répertoires de montage vides peut faire apparaître des sandboxes orphelines supplémentaires dont le montage associé vient de disparaître. Réexécuter `rdc machine prune` une seconde fois rattrape la cascade et termine le nettoyage. Le dry-run final se conclut par `No orphaned resources found. Datastore is clean.` lorsqu'il ne reste plus rien à faire.
 
 ### Phase 2 : Images de dépôts orphelins (optionnel)
 

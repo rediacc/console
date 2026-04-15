@@ -4,19 +4,19 @@ description: "Organización de directorios, comandos de renet, servicios systemd
 category: "Concepts"
 order: 3
 language: es
-sourceHash: "f27a4135aed54918"
-sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
+sourceHash: "ce8786bdc5c1543f"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
-# Server Reference
+# Referencia del Servidor
 
-This page covers what you find when you SSH into a Rediacc server: the directory layout, `renet` commands, systemd services, and common workflows.
+Esta página describe lo que encontrarás al conectarte por SSH a un servidor Rediacc: la organización de directorios, los comandos `renet`, los servicios systemd y los flujos de trabajo habituales.
 
-Most users manage servers through `rdc` from their workstation and never need this page. It is here for advanced debugging or when you need to work directly on the server.
+La mayoría de los usuarios gestionan los servidores desde su estación de trabajo mediante `rdc` y nunca necesitan esta página. Está aquí para depuración avanzada o cuando necesitas trabajar directamente en el servidor.
 
-For the high-level architecture, see [Architecture](/es/docs/architecture). For the difference between `rdc` and `renet`, see [rdc vs renet](/es/docs/rdc-vs-renet).
+Para la arquitectura de alto nivel, consulta [Arquitectura](/es/docs/architecture). Para conocer la diferencia entre `rdc` y `renet`, consulta [rdc vs renet](/es/docs/rdc-vs-renet).
 
-## Directory Layout
+## Organización de directorios
 
 ```
 /mnt/rediacc/                          # Main datastore
@@ -41,15 +41,14 @@ For the high-level architecture, see [Architecture](/es/docs/architecture). For 
 └── traefik/dynamic/                   # Dynamic route files
 
 /run/rediacc/docker-{id}.sock          # Per-network Docker sockets
-/var/lib/rediacc/docker-{id}/          # Per-network daemon data
 /var/lib/rediacc/router/               # Router state (port allocations)
 ```
 
-## renet Commands
+## Comandos renet
 
-`renet` is the server-side binary. All commands need root privileges (`sudo`).
+`renet` es el binario del lado del servidor. Todos los comandos necesitan privilegios de root (`sudo`).
 
-### Repository Lifecycle
+### Ciclo de vida de un repositorio
 
 ```bash
 # List all repositories
@@ -79,7 +78,7 @@ renet repository delete --name {uuid} --network-id {id}
 
 ### Docker Compose
 
-Run compose commands against a specific repository's Docker daemon:
+Ejecutar comandos compose contra el daemon de Docker de un repositorio concreto:
 
 ```bash
 sudo renet compose -- up -d
@@ -88,7 +87,7 @@ sudo renet compose -- logs -f
 sudo renet compose -- config
 ```
 
-Run docker commands directly:
+Ejecutar comandos Docker directamente:
 
 ```bash
 sudo renet docker --network-id {id} -- ps
@@ -102,7 +101,7 @@ También puedes usar el socket de Docker directamente:
 DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
 ```
 
-> Always run compose from the directory that contains `docker-compose.yml`, or Docker will not find the file.
+> Ejecuta siempre compose desde el directorio que contiene `docker-compose.yml`, o Docker no encontrará el archivo.
 
 ### Sandbox del sistema de archivos
 
@@ -110,13 +109,23 @@ DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
 # Comprobar compatibilidad con Landlock
 renet sandbox-exec --detect
 
-# Ejecutar un comando dentro de un sandbox Landlock (usado internamente por renet)
+# Ejecutar un comando dentro de un sandbox Landlock (usado internamente)
 renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
 ```
 
-`sandbox-exec` aplica restricciones de sistema de archivos de Landlock LSM a un comando. El proceso aislado solo puede acceder a las rutas permitidas explícitamente; cualquier otro acceso al sistema de archivos es bloqueado por el kernel. renet lo usa internamente para aislar la ejecución de Rediaccfile, las operaciones de compose y los comandos SSH al punto de montaje de su repositorio.
+`sandbox-exec` aplica restricciones de sistema de archivos de Landlock LSM y luego ejecuta el comando indicado. Es invocado automáticamente por `sandbox-gateway` (el manejador SSH ForceCommand) para todas las conexiones a nivel de repositorio.
 
-### Proxy & Routing
+**Flags:**
+- `--allow-rw`, `--allow-ro`, `--allow-exec`: reglas de ruta de Landlock
+- `--home-overlay`: monta OverlayFS sobre el directorio home para aislar la escritura por repositorio
+- `--sandbox-dir`: espacio de trabajo por repositorio (`<datastore>/.interim/sandbox/<name>/`)
+- `--work-dir`: establece el directorio de trabajo y carga `.envrc` para el entorno del repositorio
+- `--run-as`: elimina privilegios al usuario objetivo tras la configuración
+- `--reset-home`: borra el overlay home por repositorio para empezar desde cero
+
+**`sandbox-gateway`** es el manejador SSH ForceCommand configurado mediante `command=` en `authorized_keys`. La clave SSH de cada repositorio activa el gateway con el nombre del repositorio incorporado, que el cliente no puede falsificar. El gateway construye los argumentos de sandbox-exec y los ejecuta mediante sudo.
+
+### Proxy y enrutamiento
 
 ```bash
 renet proxy status          # Check Traefik + router health
@@ -126,9 +135,9 @@ renet proxy up / down       # Start/stop Traefik
 renet proxy logs            # View proxy logs
 ```
 
-Routes are discovered automatically from container labels. See [Networking](/es/docs/networking) for how to configure Traefik labels.
+Las rutas se descubren automáticamente a partir de las etiquetas de los contenedores. Consulta [Redes](/es/docs/networking) para saber cómo configurar las etiquetas de Traefik.
 
-### System Status
+### Estado del sistema
 
 ```bash
 renet ps                    # Overall system status
@@ -139,7 +148,7 @@ renet list system           # CPU, memory, disk, network
 renet ips --network-id {id} # IP allocations for a network
 ```
 
-### Daemon Management
+### Gestión de daemons
 
 Cada repositorio ejecuta su propio daemon de Docker. Puedes gestionarlos individualmente:
 
@@ -150,9 +159,9 @@ renet daemon stop   --network-id {id}    # Stop daemon
 renet daemon logs   --network-id {id}    # Daemon logs
 ```
 
-### Backup & Restore
+### Copia de seguridad y restauración
 
-Push backups to another machine or to cloud storage:
+Enviar copias de seguridad a otra máquina o al almacenamiento en la nube:
 
 ```bash
 # Push to remote machine (SSH + rsync)
@@ -171,11 +180,11 @@ renet backup pull --name {uuid} --network-id {id} --source machine \
 renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc
 ```
 
-> Most users should use `rdc repo push/pull` instead. The `rdc` commands handle credentials and machine resolution automatically.
+> La mayoría de los usuarios debería usar `rdc repo push/pull` en su lugar. Los comandos `rdc` gestionan automáticamente las credenciales y la resolución de máquinas.
 
-### Checkpointing (CRIU)
+### Puntos de control (CRIU)
 
-Checkpoint saves the state of running containers so they can be restored later:
+Los puntos de control guardan el estado de los contenedores en ejecución para poder restaurarlos después:
 
 ```bash
 renet checkpoint create    --network-id {id}   # Save running container state
@@ -183,7 +192,7 @@ renet checkpoint restore   --network-id {id}   # Restore from checkpoint
 renet checkpoint validate  --network-id {id}   # Check checkpoint integrity
 ```
 
-### Maintenance
+### Mantenimiento
 
 ```bash
 renet prune --dry-run       # Preview orphaned networks and IPs
@@ -193,44 +202,44 @@ renet datastore validate    # Filesystem integrity check
 renet datastore expand      # Expand the datastore online
 ```
 
-## Systemd Services
+## Servicios systemd
 
-Each repository creates these systemd units:
+Cada repositorio crea estas unidades systemd:
 
-| Unit | Purpose |
-|------|---------|
-| `rediacc-docker-{id}.service` | Isolated Docker daemon |
-| `rediacc-docker-{id}.socket` | Docker API socket activation |
-| `rediacc-loopback-{id}.service` | Loopback IP alias setup |
+| Unidad | Propósito |
+|--------|-----------|
+| `rediacc-docker-{id}.service` | Daemon de Docker aislado |
+| `rediacc-docker-{id}.socket` | Activación del socket de la API de Docker |
+| `rediacc-loopback-{id}.service` | Configuración del alias de IP de loopback |
 
-Global services shared across all repositories:
+Servicios globales compartidos por todos los repositorios:
 
-| Unit | Purpose |
-|------|---------|
-| `rediacc-router.service` | Route discovery (port 7111) |
-| `rediacc-autostart.service` | Boot-time repository mounting |
+| Unidad | Propósito |
+|--------|-----------|
+| `rediacc-router.service` | Descubrimiento de rutas (puerto 7111) |
+| `rediacc-autostart.service` | Montaje de repositorios en el arranque |
 
-## Common Workflows
+## Flujos de trabajo habituales
 
-### Deploy a New Service
+### Desplegar un nuevo servicio
 
-1. Create an encrypted repository:
+1. Crear un repositorio cifrado:
    ```bash
    renet repository create --name {uuid} --network-id {id} --size 2G --encrypted
    ```
-2. Mount it and add your `docker-compose.yml`, `Rediaccfile`, and `.rediacc.json` files.
-3. Start it:
+2. Montarlo y añadir los archivos `docker-compose.yml`, `Rediaccfile` y `.rediacc.json`.
+3. Iniciarlo:
    ```bash
    renet repository up --name {uuid} --network-id {id} --password-stdin
    ```
 
-### Access a Running Container
+### Acceder a un contenedor en ejecución
 
 ```bash
 sudo renet docker --network-id {id} -- exec -it {container} bash
 ```
 
-### Find Which Docker Socket Runs a Container
+### Encontrar qué socket de Docker ejecuta un contenedor
 
 ```bash
 for sock in /run/rediacc/docker-*.sock; do
@@ -239,27 +248,27 @@ for sock in /run/rediacc/docker-*.sock; do
 done
 ```
 
-### Recreate a Service After Config Changes
+### Recrear un servicio tras cambios de configuración
 
 ```bash
 sudo renet compose -- up -d
 ```
 
-Run this from the directory with `docker-compose.yml`. Changed containers are automatically recreated.
+Ejecuta esto desde el directorio con `docker-compose.yml`. Los contenedores modificados se recrean automáticamente.
 
-### Check All Containers Across All Daemons
+### Comprobar todos los contenedores en todos los daemons
 
 ```bash
 renet list containers
 ```
 
-## Tips
+## Consejos
 
-- Always use `sudo` for `renet compose`, `renet repository`, and `renet docker` commands, they need root for LUKS and Docker operations
-- The `--` separator is required before passing arguments to `renet compose` and `renet docker`
-- Run compose from the directory that contains `docker-compose.yml`
-- `.rediacc.json` slot assignments are stable, do not change them after deployment
-- Use `/run/rediacc/docker-{id}.sock` paths (systemd may change legacy `/var/run/` paths)
-- Run `renet prune --dry-run` from time to time to find orphaned resources
-- BTRFS snapshots (`renet backup`) are fast and cheap, use them before making risky changes
-- Repositories are LUKS-encrypted, losing the password means losing the data
+- Usa siempre `sudo` para los comandos `renet compose`, `renet repository` y `renet docker`, necesitan root para las operaciones de LUKS y Docker
+- El separador `--` es obligatorio antes de pasar argumentos a `renet compose` y `renet docker`
+- Ejecuta compose desde el directorio que contiene `docker-compose.yml`
+- Las asignaciones de slots en `.rediacc.json` son estables, no las cambies tras el despliegue
+- Usa las rutas `/run/rediacc/docker-{id}.sock` (systemd puede cambiar las rutas antiguas de `/var/run/`)
+- Ejecuta `renet prune --dry-run` de vez en cuando para encontrar recursos huerfanos
+- Las instantáneas BTRFS (`renet backup`) son rápidas y baratas, úsalas antes de hacer cambios arriesgados
+- Los repositorios están cifrados con LUKS, perder la contraseña significa perder los datos

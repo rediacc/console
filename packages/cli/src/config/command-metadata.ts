@@ -165,7 +165,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       idempotent: false,
       timeout: 'write',
       descriptionOverride:
-        'Create a CoW fork of a repository with a NEW GUID and networkId (fully independent copy). Fork shares the parent name with a different tag (name:tag model, like Docker images). Online forking supported (parent can stay running). Fork gets new auto-route domain. After fork, deploy with repo_up (use --mount). Fork-of-fork allowed (same base name, different tag). CROSS-MACHINE: fork locally first, then use repo_push to transfer fork to target machine, then repo_up on target',
+        'Create a near-instant CoW fork of a repository with a NEW GUID and networkId (fully independent copy). FORK IS CONSTANT-TIME regardless of repo size: BTRFS reflink clones the image so 100 GB and 1 GB repos fork in the same ~seconds, never proportional to repo size. Fork shares the parent name with a different tag (name:tag model, like Docker images). Online forking supported (parent can stay running). Fork gets new auto-route domain. After fork, deploy with repo_up (use --mount). Fork-of-fork allowed (same base name, different tag). CROSS-MACHINE: fork locally first, then use repo_push to transfer fork to target machine, then repo_up on target.',
       excludeOptions: ['debug', 'skip-router-restart'],
     },
   },

@@ -5,7 +5,7 @@
 set -euo pipefail
 
 # Root directory (portable: works on Linux, macOS, and Windows/Git Bash)
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+ROOT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)"
 
 # Source configuration and utilities
 source "$ROOT_DIR/.ci/config/constants.sh"
@@ -13,7 +13,17 @@ source "$ROOT_DIR/.ci/lib/local-common.sh"
 
 check_node_version "$NODE_VERSION_MIN"
 
-log_step "Preparing CLI development environment"
+if [[ "$REDIACC_SKIP_MACHINE_ACTIVATION" == "1" ]]; then
+    # Self-register as 'rdc' in ~/.local/bin so it's accessible from any terminal
+    _local_bin="$HOME/.local/bin"
+    mkdir -p "$_local_bin"
+    if [[ "$(readlink "$_local_bin/rdc" 2>/dev/null)" != "$ROOT_DIR/rdc.sh" ]]; then
+        ln -sf "$ROOT_DIR/rdc.sh" "$_local_bin/rdc"
+    fi
+    unset _local_bin
+else
+    log_step "Preparing CLI development environment"
+fi
 
 # Ensure npm dependencies are installed
 ensure_deps
@@ -55,6 +65,7 @@ export PATH="$renet_bin_dir:$PATH"
 if [[ "${RDC_BENCH:-0}" == "1" ]]; then
     export REDIACC_SUBSCRIPTION_TOKEN_FILE="$ROOT_DIR/.rdc-bench/api-token.json"
     export REDIACC_ACCOUNT_SERVER="https://bench.rediacc.com"
+    unset REDIACC_SKIP_MACHINE_ACTIVATION
     mkdir -p "$ROOT_DIR/.rdc-bench"
     log_info "Renet available at: $renet_bin_dir/renet"
     log_step "Starting CLI (bench config — bench.rediacc.com)"
@@ -65,7 +76,9 @@ else
     export REDIACC_ENVIRONMENT=development
     export REDIACC_SUBSCRIPTION_TOKEN_FILE="$ROOT_DIR/.rdc-dev/api-token.json"
 
-    log_info "Renet available at: $renet_bin_dir/renet"
+    if [[ "$REDIACC_SKIP_MACHINE_ACTIVATION" != "1" ]]; then
+        log_info "Renet available at: $renet_bin_dir/renet"
+    fi
 
     # Load account env if available (provides REDIACC_ACCOUNT_SERVER for subscription commands)
     account_env="$ROOT_DIR/private/account/.env"
@@ -75,7 +88,9 @@ else
         set +a
     fi
 
-    log_step "Starting CLI (dev mode)"
+    if [[ "$REDIACC_SKIP_MACHINE_ACTIVATION" != "1" ]]; then
+        log_step "Starting CLI (dev mode)"
+    fi
 fi
 
 # Run the compiled CLI bundle, passing through all arguments

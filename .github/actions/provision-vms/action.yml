@@ -32,7 +32,7 @@ inputs:
     required: false
     default: ''
   vm-os:
-    description: 'VM OS image (ubuntu-24.04, debian-12, fedora-43, opensuse-15.6)'
+    description: 'VM OS image (ubuntu-24.04, debian-13, fedora-43, opensuse-16.0, oracle-10)'
     required: false
     default: 'ubuntu-24.04'
 
@@ -88,6 +88,12 @@ runs:
           --vm-net-offset "$VM_NET_OFFSET" \
           --vm-bridge "$VM_BRIDGE" \
           --vm-workers "$VM_WORKERS"
+
+    # Step 3.5: Install BPF compilation tools (renet eBPF requires clang/llvm/libbpf)
+    - name: Install clang for BPF compilation
+      if: steps.kvm-check.outputs.kvm_available == 'true'
+      shell: bash
+      run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
 
     # Step 4: Provision VMs (setup host, build image, run ops up)
     - name: Provision VMs

@@ -12,6 +12,7 @@ import {
 } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
+import { postRepoUpTasks } from './repo-batch-utils.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
@@ -99,6 +100,8 @@ async function chainForkUp(
   if (allSteps.length > 0) {
     renderTimelineTotal(allSteps);
   }
+
+  await postRepoUpTasks(forkKey, options.machine);
 }
 
 /** Rollback a fork registration if it exists. */

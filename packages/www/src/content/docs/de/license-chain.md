@@ -4,7 +4,7 @@ description: "Manipulationssichere Lizenzausstellung, delegiertes Signieren für
 category: "Guides"
 order: 8
 language: de
-sourceHash: "5e6afbdf05c21b67"
+sourceHash: "326c4f4efbd60493"
 ---
 
 # Lizenz-Chain & Delegation

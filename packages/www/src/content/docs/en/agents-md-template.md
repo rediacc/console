@@ -35,7 +35,7 @@ On error: {"success": false, "command": "...", "data": null, "errors": [{"code":
 ### Common Operations
 
 # Machine status
-rdc machine query <machine> -o json
+rdc machine query --name <machine> -o json
 
 # List containers on a machine
 rdc machine containers <machine> -o json
@@ -44,19 +44,19 @@ rdc machine containers <machine> -o json
 rdc machine health <machine> -o json
 
 # Deploy a repository
-rdc repo up <repo> -m <machine> --yes
+rdc repo up --name <repo> -m <machine> --yes
 
 # Stop a repository
-rdc repo down <repo> -m <machine> --yes
+rdc repo down --name <repo> -m <machine> --yes
 
 # SSH terminal to machine
-rdc term <machine>
+rdc term connect -m <machine>
 
 # SSH terminal to specific repo (sets DOCKER_HOST)
-rdc term <machine> <repo>
+rdc term connect -m <machine> -r <repo>
 
 # Run command on machine
-rdc term <machine> -c "command"
+rdc term connect -m <machine> -c "command"
 
 # File sync
 rdc repo sync upload -m <machine> -r <repo> -l ./local-path

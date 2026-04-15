@@ -73,12 +73,14 @@ jobs:
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/setup/build-packages.sh
 
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
 
       - name: Build CLI
-        env:
-          OTLP_AUTH_TOKEN: ${{ secrets.OTLP_AUTH_TOKEN }}
+        # OTLP credentials are fetched at runtime after `rdc subscription
+        # login` — no longer baked into the bundle (renet#51).
         run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
 
       - name: Configure local config

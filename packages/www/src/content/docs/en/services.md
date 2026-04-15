@@ -148,7 +148,7 @@ Each repository supports up to **61 services** (slots 0 through 60).
 
 ### Using Service IPs in Docker Compose
 
-Since each repository runs an isolated Docker daemon, `renet compose` automatically configures `network_mode: host` for all services. Bind services to their assigned loopback IPs:
+Since each repository runs an isolated Docker daemon, `renet compose` automatically configures `network_mode: host` for all services. The kernel transparently rewrites `bind()` calls to the service's assigned loopback IP, so services can bind to `0.0.0.0` or `localhost` without conflicts. For connections **to other services**, use the **service name** - renet injects every service name as a hostname that always resolves to the correct IP, even in forks:
 
 ```yaml
 services:
@@ -157,37 +157,76 @@ services:
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_PASSWORD: secret
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
+    # No explicit listen_addresses needed - the kernel rewrites bind to the correct loopback IP
 
   api:
     image: my-api:latest
     environment:
-      DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
-      LISTEN_ADDR: ${API_IP}:8080
+      DATABASE_URL: postgresql://postgres:secret@postgres:5432/mydb  # use service name
+      LISTEN_ADDR: 0.0.0.0:8080                                      # kernel rewrites to service IP
 ```
+
+> **Service names for connections:** Use the **service name** (e.g. `postgres`, `redis`) to **connect to** other services - renet automatically maps every service name to its loopback IP via `/etc/hosts`. Embedding `${POSTGRES_IP}` in connection strings stored inside databases or config files will bake in the raw IP, which breaks fork isolation and is a **validation error**. The `${SERVICE_IP}` variables are still available for explicit use, but binding is handled automatically by the kernel.
 
 > **Note:** Do not add `network_mode: host` manually, `renet compose` injects it automatically. Restart policies (e.g., `restart: always`) are safe to use, renet auto-strips them for CRIU compatibility and the router watchdog handles container recovery.
 
-> **Note:** Fork repos get flat auto-routes: `{service}-{tag}.{machine}.{baseDomain}`. Custom domains are skipped for forks.
+### Container Recovery & Restart Policy
+
+renet and Docker disagree, on purpose, about how to handle container restarts. Understanding the split is important when debugging why a container did or didn't come back.
+
+**Restart policy translation.** When you write `restart: always` (or `unless-stopped`, or `on-failure`) in your compose file, renet **strips it** when synthesizing the actual compose deployment and replaces it with `restart: no`. The original value is saved into the repo's `.rediacc.json` under `services.<name>.restart_policy`. This prevents Docker's daemon-level auto-restart from interfering with CRIU checkpoint/restore (a daemon-driven restart would resume from a stale pre-checkpoint state).
+
+**Watchdog enforcement.** The router watchdog runs periodically on every machine. Every tick:
+
+1. It reads `.rediacc.json` for each repo and finds services with a recoverable `restart_policy`.
+2. It lists all containers for that repo's daemon, identifies stopped ones, and restarts them per the saved policy. A 30-second grace period prevents fighting an operator who just ran `docker stop`.
+3. The same loop also processes `/var/run/rediacc/cold-backup-<guid>.running.json` (see [Cold Backup Semantics](backup-restore.md#cold-backup-semantics)). Listed containers get restarted regardless of saved policy, because the sidecar means "renet stopped these on purpose and owes the operator a restart."
+
+**Why `on-failure` can look broken.** Docker's `on-failure` policy only restarts when the container exits with a non-zero code. A graceful stop (exit 0) from `docker stop` or a daemon shutdown is not a "failure" and does NOT trigger a restart, neither by Docker's native logic nor the watchdog's saved-policy path. The cold-backup sidecar is the safety net: any container we stopped on purpose gets restarted regardless of its policy.
+
+**How to interpret the runtime state:**
+
+- `docker inspect <container>` → `RestartPolicy.Name`: will always be `no` for renet-managed containers. Don't rely on this for the semantic policy.
+- `.rediacc.json` at the repo mount root → `services.<name>.restart_policy`: the real intent.
+- `docker ps --format '{{.Status}}'`: runtime state.
+
+**How to fix a drift.** If a container's `.rediacc.json` saved policy is wrong (for example, because you edited compose but never recreated the container), re-run `rdc repo up --name <repo> -m <machine>`. The container is recreated with the updated policy recorded.
+
+> **Experimental:** Cold-backup sidecar-based recovery and the `--sync-certs` flag on `rdc machine query` shipped in renet 0.9+. Older versions rely purely on saved `restart_policy` for watchdog recovery, which can leave `on-failure` containers stranded after a cold backup.
+
+> **Docker bridge networking is disabled for rediacc-managed daemons.** Each per-repo daemon is configured with `"bridge": "none"` and `"iptables": false`. A plain `docker run <image>` inside a repository shell will still launch, but the container gets only a loopback interface and has no DNS or outbound connectivity. This is by design, since loopback isolation between repos is enforced by eBPF cgroup hooks that a bridged container would bypass. Production services should use `renet compose` (which injects host networking for you); for ad-hoc debugging, pass `--network host` explicitly: `docker run --rm --network host -it ubuntu bash`.
+
+> **Note:** Fork repos get auto-routes under the parent's subdomain: `{service}-fork-{tag}.{repo}.{machine}.{baseDomain}`. Custom domains are skipped for forks.
 
 ## Starting Services
 
 Mount the repository and start all services:
 
 ```bash
-rdc repo up --name my-app -m server-1 --mount
+rdc repo up --name my-app -m server-1
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--mount` | Mount the repository first if not already mounted |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 The execution sequence is:
-1. Mount the LUKS-encrypted repository (if `--mount`)
+1. Mount the LUKS-encrypted repository (auto-mounts if unmounted)
 2. Start the isolated Docker daemon
 3. Auto-generate `.rediacc.json` from compose files
 4. Run `up()` in all Rediaccfiles (A-Z order)
+
+After deployment, the output shows a **PROXY ROUTES** section with the actual URLs for each service. Services with custom Traefik labels (e.g. `traefik.http.routers.myapp.rule=Host(...)`) show their custom domains as primary URLs:
+
+```
+HTTP services (accessible via proxy after ~3s):
+  gitlab-server:
+    HTTPS: https://gitlab.example.com  (custom)
+    Auto:  https://gitlab-server.gitlab.server-1.example.com
+    IP:    127.0.11.130
+```
+
+Services without custom Traefik labels show only the auto-generated route. Use these URLs (not the generic pattern printed by the CLI) for browser access, API calls, and cross-service configuration.
 
 ## Stopping Services
 
@@ -321,18 +360,16 @@ services:
       POSTGRES_DB: webapp
       POSTGRES_USER: app
       POSTGRES_PASSWORD: changeme
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
 
   redis:
     image: redis:7-alpine
-    command: redis-server --bind ${REDIS_IP} --port 6379
 
   api:
     image: myregistry/api:latest
     environment:
-      DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
-      REDIS_URL: redis://${REDIS_IP}:6379
-      LISTEN_ADDR: ${API_IP}:8080
+      DATABASE_URL: postgresql://app:changeme@postgres:5432/webapp
+      REDIS_URL: redis://redis:6379
+      LISTEN_ADDR: 0.0.0.0:8080
 ```
 
 **Rediaccfile:**

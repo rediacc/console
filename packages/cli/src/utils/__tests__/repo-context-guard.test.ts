@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { detectRepoContextCommand, REPO_CONTEXT_PATTERNS } from '../repo-context-guard.js';
+import { afterEach, describe, expect, it } from 'vitest';
+import {
+  detectDockerComposeCommand,
+  detectFileWriteCommand,
+  detectRepoContextCommand,
+  FILE_WRITE_PATTERNS,
+  REPO_CONTEXT_PATTERNS,
+} from '../repo-context-guard.js';
 
 describe('detectRepoContextCommand', () => {
   describe('positive cases (should detect)', () => {
@@ -70,5 +76,96 @@ describe('detectRepoContextCommand', () => {
 
   it('has 6 patterns defined', () => {
     expect(REPO_CONTEXT_PATTERNS).toHaveLength(6);
+  });
+});
+
+describe('detectFileWriteCommand', () => {
+  afterEach(() => {
+    delete process.env.REDIACC_SKIP_FILE_WRITE_GUARD;
+  });
+
+  describe('positive cases (should detect)', () => {
+    it.each([
+      ['tee /tmp/out', 'tee'],
+      ['tee somefile.txt', 'tee'],
+      ['sudo tee /etc/config', 'tee'],
+      ['cat > file.txt', 'redirect'],
+      ['cat>file', 'redirect'],
+      ['echo "x" > out.txt', 'redirect'],
+      ['echo hi >> log.txt', 'redirect'],
+      ['printf "%s" > /tmp/f', 'redirect'],
+      ['base64 -d > /tmp/decoded', 'redirect'],
+      ["printf '%s' 'data' > file.new && mv file.new file", 'redirect'],
+    ])('%s -> detects "%s"', (command, expectedLabel) => {
+      const result = detectFileWriteCommand(command);
+      expect(result).not.toBeNull();
+      expect(result!.label).toBe(expectedLabel);
+    });
+  });
+
+  describe('negative cases (should NOT detect)', () => {
+    it.each([
+      'tee --help',
+      'tee -a --append',
+      'tee /dev/null',
+      'cat /etc/hostname',
+      'cat somefile | grep pattern',
+      'echo hello',
+      'echo hello | grep x',
+      'echo test 2>&1',
+      'cat file 2>/dev/null',
+      'grep foo > /dev/null',
+      'ls -la',
+      'uptime',
+      '',
+    ])('%s -> no match', (command) => {
+      expect(detectFileWriteCommand(command)).toBeNull();
+    });
+  });
+
+  it('respects REDIACC_SKIP_FILE_WRITE_GUARD=1', () => {
+    process.env.REDIACC_SKIP_FILE_WRITE_GUARD = '1';
+    expect(detectFileWriteCommand('tee /tmp/out')).toBeNull();
+    expect(detectFileWriteCommand('cat > file.txt')).toBeNull();
+  });
+
+  it('has 2 patterns defined', () => {
+    expect(FILE_WRITE_PATTERNS).toHaveLength(2);
+  });
+});
+
+describe('detectDockerComposeCommand', () => {
+  describe('positive cases (should detect)', () => {
+    it.each([
+      'docker compose up -d',
+      'docker-compose up',
+      'sudo docker compose up -d',
+      'sudo docker-compose down',
+      '/usr/bin/docker compose up',
+      'DOCKER_HOST=/tmp/sock docker compose up',
+      'docker  compose  up',
+      'Docker Compose up',
+      'DOCKER-COMPOSE ps',
+      'bash -c "docker compose up"',
+      'cd /app && docker compose restart',
+      'echo "use docker compose"',
+    ])('%s → detected', (command) => {
+      expect(detectDockerComposeCommand(command)).toBe(true);
+    });
+  });
+
+  describe('negative cases (should NOT detect)', () => {
+    it.each([
+      'docker ps',
+      'docker run -d nginx',
+      'docker exec -it web bash',
+      'docker-composer --version',
+      'renet compose -- up -d',
+      'sudo renet compose -- ps',
+      'uptime',
+      '',
+    ])('%s → no match', (command) => {
+      expect(detectDockerComposeCommand(command)).toBe(false);
+    });
   });
 });

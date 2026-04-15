@@ -4,8 +4,8 @@ description: "Wesentliche Regeln und Konventionen für die Entwicklung von Anwen
 category: "Guides"
 order: 5
 language: de
-sourceHash: "9bd7744a0b8bbf3c"
-sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
+sourceHash: "fd0fa925e9b76434"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # Regeln von Rediacc
@@ -52,7 +52,7 @@ down() {
 - **Verwenden Sie `renet compose`, niemals `docker compose`**, renet injiziert Netzwerkisolation, Host-Networking, Loopback-IPs und Service-Labels.
 - **Setzen Sie KEIN `network_mode`** in Ihrer Compose-Datei, renet erzwingt `network_mode: host` für alle Dienste. Jeder von Ihnen gesetzte Wert wird überschrieben.
 - **Setzen Sie KEINE `rediacc.*`-Labels**, renet injiziert automatisch `rediacc.network_id`, `rediacc.service_ip` und `rediacc.service_name`.
-- **`ports:`-Mappings werden ignoriert** im Host-Networking-Modus. Verwenden Sie das Label `rediacc.service_port` für Proxy-Routing zu Nicht-80-Ports.
+- **`ports:`-Mappings werden ignoriert** im Host-Networking-Modus. Fügen Sie das Label `rediacc.service_port` für HTTP-Routing hinzu (Dienste ohne dieses Label erhalten keine HTTP-Routen). Verwenden Sie `rediacc.tcp_ports`/`rediacc.udp_ports`-Labels für TCP/UDP-Weiterleitung.
 - **Restart-Richtlinien (`restart: always`, `on-failure` usw.) sind sicher zu verwenden**, renet entfernt sie automatisch für CRIU-Kompatibilität. Der Router-Watchdog stellt gestoppte Container automatisch wieder her, basierend auf der in `.rediacc.json` gespeicherten ursprünglichen Richtlinie.
 - **Gefährliche Einstellungen sind standardmäßig blockiert**, `privileged: true`, `pid: host`, `ipc: host` und Bind-Mounts zu System-Pfaden werden abgelehnt. Verwenden Sie `renet compose --unsafe`, um dies auf eigenes Risiko zu überschreiben.
 
@@ -67,18 +67,19 @@ Renet injiziert diese automatisch in jeden Container:
 
 ### Dienstnamen und Routing
 
-- The compose **service name** becomes the auto-route URL prefix.
-- **Grand repos**: `https://{service}.{repo}.{machine}.{baseDomain}` (z. B. `https://myapp.marketing.server-1.example.com`).
-- **Fork repos**: `https://{service}-{tag}.{machine}.{baseDomain}`, uses the machine wildcard cert to avoid Let's Encrypt rate limits.
-- Für benutzerdefinierte Domains verwenden Sie Traefik-Labels (Hinweis: Benutzerdefinierte Domains sind NICHT fork-kompatibel, die Domain gehört zum grand repo).
+- Der Compose-**Dienstname** wird zum Auto-Route-URL-Präfix.
+- **Grand-Repos**: `https://{service}.{repo}.{machine}.{baseDomain}` (z. B. `https://myapp.marketing.server-1.example.com`).
+- **Fork-Repos**: `https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain}` (z. B. `https://myapp-fork-staging.marketing.server-1.example.com`). Der `-fork-`-Trenner verhindert URL-Kollisionen mit Grand-Repo-Dienstnamen. Die Fork-URL verwendet stets das vorhandene Wildcard-Zertifikat des Eltern-Repos, sodass kein neues Zertifikat benötigt wird.
+- Für benutzerdefinierte Domains verwenden Sie Traefik-Labels (Hinweis: Benutzerdefinierte Domains sind NICHT fork-kompatibel, die Domain gehört zum Grand-Repo).
 
 ## Netzwerk
 
 - **Jedes Repository erhält seinen eigenen Docker-Daemon** unter `/var/run/rediacc/docker-<networkId>.sock`.
 - **Jeder Dienst erhält eine eindeutige Loopback-IP** innerhalb eines /26-Subnetzes (z.B. `127.0.24.192/26`).
-- **Binden Sie an `SERVICE_IP`**, jeder Dienst erhält eine eindeutige Loopback-IP.
-- **Health Checks müssen `${SERVICE_IP}` verwenden**, nicht `localhost`. Beispiel: `healthcheck: test: ["CMD", "curl", "-f", "http://${SERVICE_IP}:8080/health"]`
-- **Inter-Service-Kommunikation**: Verwenden Sie Loopback-IPs oder die Umgebungsvariable `SERVICE_IP`. Docker-DNS-Namen funktionieren im Host-Modus NICHT.
+- **Binden ist automatisch**: Dienste können an `0.0.0.0` oder `localhost` binden, der Kernel schreibt die Adresse transparent auf die dem Dienst zugewiesene Loopback-IP um. Explizites Binden an `${SERVICE_IP}` funktioniert weiterhin, ist aber nicht mehr erforderlich.
+- **Health Checks können `localhost`** oder `${SERVICE_IP}` verwenden. Beispiel: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`
+- **Cross-Repo-Verbindungen werden vom Kernel blockiert**: Der Kernel blockiert automatisch Verbindungen zu Loopback-IPs außerhalb des `/26`-Subnetzes des Repositorys. Ein Dienst in einem Repo kann keine Dienste in einem anderen Repo erreichen.
+- **Inter-Service-Kommunikation**: Verwenden Sie **Dienstnamen** (z. B. `db`, `redis`), renet injiziert automatisch jeden Dienstnamen als Hostnamen, der auf die korrekte IP auflöst. Docker-DNS-Namen funktionieren im Host-Modus NICHT, aber Dienstnamen über `/etc/hosts` schon. Vermeiden Sie es, `${DB_IP}` oder Ähnliches in persistente Konfigurationsdateien (z. B. Verbindungszeichenfolgen in einer Datenbank) einzubetten, bei Forks wird die rohe IP mitgenommen und zeigt auf das falsche Repo. Dienstnamen werden immer korrekt pro Repo aufgelöst.
 - **Portkonflikte sind unmöglich** zwischen Repositories, jedes hat seinen eigenen Docker-Daemon und IP-Bereich.
 - **TCP/UDP-Portweiterleitung**: Fügen Sie Labels hinzu, um Nicht-HTTP-Ports freizugeben:
   ```yaml
@@ -98,20 +99,20 @@ Renet injiziert diese automatisch in jeden Container:
   ```
 - Das LUKS-Volume wird unter `/mnt/rediacc/mounts/<guid>/` gemountet.
 - BTRFS-Snapshots erfassen die gesamte LUKS-Backing-Datei, einschließlich aller bind-gemounteten Daten.
-- Der Datenspeicher ist eine fest dimensionierte BTRFS-Pool-Datei auf der Systemfestplatte. Verwenden Sie `rdc machine query <name> --system`, um den effektiven freien Speicher zu sehen. Erweitern Sie mit `rdc datastore resize`.
+- Der Datenspeicher ist eine fest dimensionierte BTRFS-Pool-Datei auf der Systemfestplatte. Verwenden Sie `rdc machine query --name <name> --system`, um den effektiven freien Speicher zu sehen. Erweitern Sie mit `rdc datastore resize`.
 
 ## CRIU (Live-Migration)
 
 - **Opt-in per Label**: Fügen Sie `rediacc.checkpoint=true` zu Containern hinzu, die Sie checkpointen möchten. Container ohne dieses Label (Datenbanken, Caches) starten frisch und erholen sich über eigene Mechanismen (WAL, LDF, AOF).
-- **`backup push --checkpoint`** erfasst den Arbeitsspeicher laufender Prozesse + Festplattenzustand für markierte Container.
-- **`repo fork --checkpoint`** erfasst den Prozesszustand vor dem Forken, der Fork stellt automatisch bei `repo up` wieder her.
-- **`repo down --checkpoint`** speichert den Prozesszustand vor dem Stoppen, beim nächsten `repo up` wird automatisch wiederhergestellt.
+- **`repo down --checkpoint`** speichert den Prozesszustand vor dem Stoppen, beim nächsten `repo up` wird automatisch wiederhergestellt. **Dies ist der primäre Flow auf derselben Maschine**, verifiziert funktionsfähig.
+- **`backup push --checkpoint`** erfasst den Arbeitsspeicher laufender Prozesse + Festplattenzustand für markierte Container und überträgt das Volume anschließend auf eine andere Maschine. Wiederherstellung auf der Zielmaschine über `repo up`.
+- **`repo fork --checkpoint`** erfasst den Prozesszustand vor dem Forken und CoW-klont den Checkpoint zusammen mit dem Fork. ⚠️ Auf derselben Maschine schlägt das darauf folgende `repo up` auf dem Fork **derzeit fehl** mit `criu failed: type RESTORE errno 0`, solange das Eltern-Repository noch läuft. Upstream-CRIU-Bugs [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). Verwenden Sie `repo down --checkpoint` für In-Place-Speichern/Wiederherstellen oder `backup push --checkpoint` für maschinenübergreifende Migration.
 - **`repo up`** erkennt Checkpoint-Daten automatisch und stellt wieder her, wenn vorhanden. Verwenden Sie `--skip-checkpoint` für einen Neustart.
 - **Abhängigkeitsbewusste Wiederherstellung**: Nutzt compose `depends_on`, um Datenbanken zuerst zu starten (auf healthy warten), dann CRIU-Wiederherstellung der App-Container.
-- **TCP-Verbindungen werden nach der Wiederherstellung ungültig**, Anwendungen müssen `ECONNRESET` behandeln und sich neu verbinden.
+- **TCP-Verbindungen werden nach der Wiederherstellung ungültig**, Anwendungen müssen `ECONNRESET` behandeln und sich neu verbinden. CRIU bewahrt aktive TCP-Verbindungszustände bei der Wiederherstellung in keinem unterstützten Flow.
 - **Docker Experimental Mode** wird automatisch auf den pro-Repository-Daemons aktiviert.
 - **CRIU wird installiert** während `rdc config machine setup`.
-- **`/etc/criu/runc.conf`** wird mit `tcp-established` für TCP-Verbindungserhaltung konfiguriert.
+- **`/etc/criu/runc.conf`** wird standardmäßig mit `tcp-established` konfiguriert.
 - **Container-Sicherheitseinstellungen werden automatisch für markierte Container injiziert**, `renet compose` fügt Folgendes zu Containern mit `rediacc.checkpoint=true` hinzu:
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (Minimalsatz für CRIU auf Kernel 5.9+)
   - `security_opt`: `apparmor=unconfined` (CRIUs AppArmor-Unterstützung ist upstream noch nicht stabil)
@@ -129,6 +130,16 @@ Renet injiziert diese automatisch in jeden Container:
 - Restart-Richtlinien werden automatisch von renet verwaltet (für CRIU entfernt, Watchdog übernimmt die Wiederherstellung).
 - Verlassen Sie sich nicht auf Docker-DNS, verwenden Sie Loopback-IPs für die Inter-Service-Kommunikation.
 
+### Host-Sicherheitsrichtlinien nach Betriebssystem
+
+Auf allen fünf offiziell unterstützten Server-Betriebssystemen (siehe [Anforderungen](/en/docs/requirements)) verwendet der pro-Repo-Docker-Daemon und die darin laufenden Container **Standard-Container-Labels**. `rdc config machine setup` installiert keine eigene SELinux-Richtlinie und kein eigenes AppArmor-Profil.
+
+- **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor ist standardmäßig aktiviert. Container laufen unter dem Standard-Docker-Container-Profil. Die einzige Ausnahme ist CRIU (`apparmor=unconfined` für Container mit `rediacc.checkpoint=true`, wie oben beschrieben).
+- **Fedora 43 / Oracle Linux 10**: SELinux läuft standardmäßig im Enforcing-Modus. Container erhalten den Standard-`container_t`-Kontext. Es ist keine zusätzliche Richtlinieninstallation erforderlich. Wenn ein Setup-Schritt mit AVC-Verweigerungen fehlschlägt, lesen Sie [Fehlerbehebung: SELinux-Verweigerungen](/en/docs/troubleshooting).
+- **Debian 13**: AppArmor ist verfügbar, wird aber nicht standardmäßig auf allen Domains durchgesetzt. Container verwenden weiterhin das Docker-Container-Profil.
+
+Es ist kein betriebssystemspezifisches Sicherheitspositions-Flag erforderlich; `rdc` und `renet` erkennen die laufende Umgebung und liefern auf allen fünf Distributionen dieselbe pro-Repo-Isolation.
+
 ## Sicherheit
 
 - **LUKS-Verschlüsselung** ist für Standard-Repositories obligatorisch. Jedes Repo hat seinen eigenen Verschlüsselungsschlüssel.
@@ -136,24 +147,24 @@ Renet injiziert diese automatisch in jeden Container:
 - **Committen Sie niemals Anmeldeinformationen** in die Versionskontrolle. Verwenden Sie `env_file` und generieren Sie Secrets in `up()`.
 - **Repository-Isolation**: Docker-Daemon, Netzwerk und Speicher jedes Repos sind vollständig von anderen Repos auf derselben Maschine isoliert.
 - **Agenten-Isolation**: KI-Agenten arbeiten standardmäßig im fork-only-Modus. Jedes Repo hat seinen eigenen SSH-Schlüssel mit serverseitiger Sandbox-Durchsetzung (`sandbox-gateway` ForceCommand). Alle Verbindungen werden mit Landlock LSM, OverlayFS Home-Overlay und repo-eigenem TMPDIR sandboxed. Dateisystemzugriff zwischen Repos wird durch den Kernel blockiert.
+- **`sudo` ist innerhalb einer Repository-Sandbox bewusst deaktiviert.** Die Landlock-Dateisystemisolation erfordert `NoNewPrivs`, was jede Rechteerhöhung unterbindet, sodass `sudo` mit `no new privileges flag is set` fehlschlägt. Der Eigentümer-Benutzer des Repos besitzt bereits alle Berechtigungen, die für sämtliche Vorgänge innerhalb des Repo-Mounts und des Docker-Sockets erforderlich sind. Für echt privilegierte Operationen (Installation von Host-Paketen, Kernel-Tuning) führen Sie diese außerhalb der Sandbox aus oder über eine Rediaccfile-`up()`-Funktion, die vom Infrastruktur-Pfad ausgeführt wird.
+- **Docker-Bridge-Networking ist auf jedem pro-Repo-Daemon deaktiviert.** Die `daemon.json` jedes Repos enthält `"bridge": "none"` und `"iptables": false`, sodass ein einfaches `docker run <image>` einen Container nur mit Loopback-Interface und ohne ausgehende Konnektivität erzeugt. Dies ist kein Bug, sondern die Art und Weise, wie die Cross-Repo-Isolation durchgesetzt wird: Die eBPF-Kernel-Hooks, die verhindern, dass ein Repo die Loopback-IPs eines anderen Repos erreicht, greifen nur bei Containern, die im Host-Netzwerk-Namespace laufen. Verwenden Sie für Produktionsdienste `renet compose`, das automatisch `network_mode: host` injiziert. Für ad-hoc einmalige Container in einer Shell übergeben Sie `--network host` explizit.
 
 ## Deployment
 
-- **`rdc repo up`** führt `up()` in allen Rediaccfiles aus.
-- **`rdc repo up --mount`** öffnet zuerst das LUKS-Volume und führt dann den Lifecycle aus. Erforderlich nach `backup push` auf eine neue Maschine.
+- **`rdc repo up`** hängt das LUKS-Volume automatisch ein, falls es nicht eingehängt ist, und führt dann `up()` in allen Rediaccfiles aus.
 - **`rdc repo down`** führt `down()` aus und stoppt den Docker-Daemon.
 - **`rdc repo down --unmount`** schließt zusätzlich das LUKS-Volume (sperrt den verschlüsselten Speicher).
-- **Forks** (`rdc repo fork`) erstellen einen CoW-Klon (Copy-on-Write) mit neuer GUID und networkId. Der Fork teilt den Verschlüsselungsschlüssel des Elternteils.
+- **Forks** (`rdc repo fork`) erstellen einen CoW-Klon (Copy-on-Write) mit neuer GUID und networkId, in **konstanter Zeit, unabhängig von der Repo-Größe**. BTRFS-Reflink dupliziert die Image-Metadaten, nicht die Daten, sodass ein 100-GB-Repo in denselben wenigen Sekunden geforkt wird wie ein 1-GB-Repo. Der Fork teilt den Verschlüsselungsschlüssel des Elternteils.
 - **Takeover** (`rdc repo takeover <fork> -m <machine>`) ersetzt die Daten des grand Repos durch die Daten eines Forks. Das grand Repo behält seine Identität (GUID, networkId, Domains, Autostart, Backup-Kette). Alte Produktionsdaten werden als Backup-Fork gesichert. Verwendung: Upgrade auf Fork testen, verifizieren, dann Takeover zur Produktion. Rückgängig machen mit `rdc repo takeover <backup-fork> -m <machine>`.
 - **Proxy-Routen** werden ca. 3 Sekunden nach dem Deploy aktiv. Die Warnung „Proxy is not running" während `repo up` ist informativ in Ops/Dev-Umgebungen.
+- **`rdc repo up` und `rdc repo fork --up` geben das URL-Muster** am Ende des Deploys für Dienste mit dem Label `rediacc.service_port` aus. Ersetzen Sie `{service}` durch Ihren freigegebenen Dienstnamen, um die exakte URL zu erhalten. Dienste ohne `rediacc.service_port` (Datenbanken, Worker) erhalten keine Routen und werden nicht angezeigt.
 
 ## Häufige Fehler
 
 - `docker compose` statt `renet compose` verwenden, Container erhalten keine Netzwerkisolation.
 - Restart-Richtlinien sind sicher, renet entfernt sie automatisch und der Watchdog übernimmt die Wiederherstellung.
 - `privileged: true` verwenden, nicht nötig, renet injiziert stattdessen spezifische CRIU-Capabilities.
-- Nicht an `SERVICE_IP` binden, verursacht Portkonflikte zwischen Repos.
-- IPs hardcoden, verwenden Sie die Umgebungsvariable `SERVICE_IP`; IPs werden dynamisch pro networkId zugewiesen.
-- `--mount` beim ersten Deploy nach `backup push` vergessen, das LUKS-Volume muss explizit geöffnet werden.
+- Rohe IPs in persistenten Konfigurationsdateien hartkodieren - verwenden Sie Dienstnamen für Verbindungen, um die Fork-Isolation intakt zu halten.
 - `rdc term connect -c` als Workaround für fehlgeschlagene Befehle verwenden, melden Sie stattdessen Bugs.
 - `repo delete` führt eine vollständige Bereinigung durch, einschließlich Loopback-IPs und systemd-Units. Führen Sie `rdc machine prune <name>` aus, um Überreste aus alten Löschvorgängen zu bereinigen.

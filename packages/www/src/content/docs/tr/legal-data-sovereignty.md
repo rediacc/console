@@ -4,7 +4,7 @@ description: "Rediacc'ın kendi sunucunuzda barındırma mimarisi küresel yetki
 category: "Legal"
 order: 7
 language: tr
-sourceHash: "72bbd6b951067a1d"
+sourceHash: "dba51d5d6dcf8197"
 ---
 
 Birçok ülke, vatandaşlarının kişisel verilerinin ulusal sınırlar içinde depolanmasını ve işlenmesini gerektirir. Rediacc'ın kendi sunucunuzda barındırma mimarisi bu gereksinimleri tasarım gereği karşılar: veriler makinenizde, veri merkezinizde, yetki alanınızda kalır. Klonlama sırasında hiçbir veri makineyi terk etmez ve hiçbir üçüncü taraf SaaS verilerinizi işlemez.

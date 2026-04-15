@@ -4,7 +4,7 @@ description: "您的数据存储位置及区域数据驻留的工作原理。"
 category: "Concepts"
 order: 3
 language: zh
-sourceHash: "613595b3941c6186"
+sourceHash: "107d8ef496686b0e"
 sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
 ---
 
