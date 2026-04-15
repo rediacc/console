@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: fr
-sourceHash: "d5556f7b71c7c3df"
+sourceHash: "f5222efa9505ab5e"
 sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
 ---
 
@@ -177,6 +177,27 @@ Exemples :
 **Surcharge via variable d'environnement :** définissez `REDIACC_COLD_BACKUP_CONCURRENCY=N` dans l'environnement du service de sauvegarde (généralement via un drop-in systemd) pour fixer une valeur précise. `=1` force des redémarrages strictement séquentiels, utile pour déboguer une boucle de crash dans le hook `up()` d'un dépôt.
 
 Si vous exploitez un dépôt sensible à la latence (application web publique, mail), son temps d'arrêt est borné par son propre stop+start (typiquement 30-90 s), pas par la durée totale du run. Les dépôts sont planifiés dans les slots de concurrence selon leur ordre de découverte ; il n'existe pas de file de priorité. Séparez les dépôts lourds dans leurs propres stratégies délimitées par `--exclude` si vous avez besoin d'une planification plus fine.
+
+### Sauvegardes longues et calendriers qui se chevauchent
+
+Une sauvegarde froide qui dure plus longtemps que son propre intervalle de calendrier (par exemple, un premier seeding d'un dépôt de 500 Go sur un lien modeste peut légitimement nécessiter plus de 24 h, pendant lesquelles le minuteur nocturne se déclenche à nouveau) ne met en file d'attente ni ne lance une seconde exécution. L'unité systemd `Type=oneshot` est une instance unique : lorsque le minuteur se déclenche et que le service est déjà `activating`, systemd fusionne le démarrage dans la tâche existante. Aucun nouveau processus ne démarre, aucune exécution n'est mise en file d'attente pour plus tard.
+
+Concrètement, une exécution qui démarre le lundi à 03:00 UTC et se termine le jeudi midi :
+
+| Jour | Déclenchement à 03:00 UTC | Résultat |
+|------|--------------------------|----------|
+| Lundi | Premier déclenchement | L'exécution commence |
+| Mardi | Deuxième déclenchement | Abandonné silencieusement (l'exécution précédente est toujours active) |
+| Mercredi | Troisième déclenchement | Abandonné silencieusement (l'exécution précédente est toujours active) |
+| Jeudi | L'exécution se termine à midi | Pas de rattrapage ; la prochaine exécution est le vendredi 03:00 UTC |
+
+La directive `Persistent=true` du minuteur ne sauve **pas** ces déclenchements. `Persistent=true` rejoue les déclenchements qui ont été manqués parce que le minuteur lui-même était inactif (système éteint, minuteur désactivé). Les déclenchements abandonnés parce que le service était occupé sont perdus.
+
+Ce comportement par défaut est délibéré. Exécuter deux sauvegardes froides en parallèle sur le même datastore entrerait en conflit sur le chemin du snapshot BTRFS, le remote rclone et les sidecars par dépôt à `/var/run/rediacc/cold-backup-<guid>.status.json`. La sérialisation derrière une instance de longue durée est le résultat sûr.
+
+**Implication pour la surveillance.** Une sauvegarde bloquée (par exemple, rclone coincé sur un trou noir réseau) abandonne silencieusement chaque déclenchement de minuteur suivant. Le planificateur n'émet aucune alarme. Surveillez `systemctl show <unit> -p ActiveEnterTimestamp` : si le service est `activating` depuis plus longtemps que votre durée d'exécution attendue (par exemple, plus de 48 h sur un minuteur nocturne), investiguez.
+
+**Si vous avez besoin que chaque déclenchement planifié s'exécute**, passez le minuteur de `OnCalendar=<cron>` à `OnUnitInactiveSec=<intervalle>`. Cela déclenche N heures après la fin de l'exécution précédente plutôt que sur un calendrier mural fixe, donc les exécutions longues ne causent pas d'abandons. Elles repoussent simplement l'exécution suivante. Le compromis est la dérive de calendrier : votre nocturne à 03:00 devient « 24 h après la fin du dernier ».
 
 ### Définir une stratégie
 

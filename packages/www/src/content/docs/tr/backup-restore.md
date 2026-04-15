@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "d5556f7b71c7c3df"
+sourceHash: "f5222efa9505ab5e"
 sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
 ---
 
@@ -177,6 +177,27 @@ concurrency = min(repoCount, max(2, NumCPU/2), 8)
 **Ortam değişkeniyle geçersiz kılma:** Belirli bir değere sabitlemek için yedekleme servisinin ortamında (genellikle bir systemd drop-in ile) `REDIACC_COLD_BACKUP_CONCURRENCY=N` ayarlayın. `=1` kesinlikle seri yeniden başlatmayı zorlar; bir deponun `up()` kancasındaki bir çökme döngüsünü hata ayıklarken faydalıdır.
 
 Gecikmeye duyarlı bir depo çalıştırıyorsanız (genel web uygulaması, posta), kesinti süresi tüm çalıştırma uzunluğuyla değil, kendi durdur+başlat süresiyle (tipik olarak 30-90 s) sınırlıdır. Depolar, keşfedildikleri sırayla eşzamanlılık slotlarına yerleştirilir; öncelik sırası yoktur. Daha ince zamanlama gerekiyorsa ağır depoları kendi `--exclude` kapsamlı stratejilerine ayırın.
+
+### Uzun Süren Yedeklemeler ve Çakışan Zamanlamalar
+
+Kendi zamanlama aralığından daha uzun süren bir soğuk yedekleme (örneğin, 500 GB'lık bir deponun ilk tohumlanması mütevazı bir bağlantıda meşru olarak 24 saatten fazla sürebilir ve bu sırada gecelik zamanlayıcı tekrar tetiklenir), ikinci bir çalıştırmayı kuyruğa almaz veya başlatmaz. systemd `Type=oneshot` birimi tek bir örnektir: zamanlayıcı tetiklendiğinde ve servis zaten `activating` durumundayken, systemd başlatmayı mevcut işe birleştirir. Hiçbir yeni süreç başlatılmaz, hiçbir çalıştırma sonraya ertelenmez.
+
+Somut olarak, Pazartesi 03:00 UTC'de başlayan ve Perşembe öğle saatlerinde biten bir çalıştırma:
+
+| Gün | 03:00 UTC tetiklemesi | Sonuç |
+|-----|----------------------|-------|
+| Pazartesi | İlk tetikleme | Çalıştırma başlar |
+| Salı | İkinci tetikleme | Sessizce bırakıldı (önceki çalıştırma hâlâ aktif) |
+| Çarşamba | Üçüncü tetikleme | Sessizce bırakıldı (önceki çalıştırma hâlâ aktif) |
+| Perşembe | Çalıştırma öğlen biter | Yakalama yok; sonraki çalıştırma Cuma 03:00 UTC |
+
+Zamanlayıcının `Persistent=true` direktifi bu tetiklemeleri **kurtarmaz**. `Persistent=true`, zamanlayıcının kendisi inaktif olduğu için (sistem kapalı, zamanlayıcı devre dışı) kaçırılan tetiklemeleri yeniden oynatır. Servis meşgul olduğu için bırakılan tetiklemeler kaybolur.
+
+Bu varsayılan davranış kasıtlıdır. Aynı datastore'a karşı iki soğuk yedeklemeyi paralel olarak çalıştırmak, BTRFS anlık görüntü yolu, rclone uzak bağlantısı ve `/var/run/rediacc/cold-backup-<guid>.status.json` konumundaki depo başına sidecar'lar için çekişmeye yol açacaktır. Uzun süren bir örneğin arkasına serileştirmek güvenli sonuçtur.
+
+**İzleme sonucu.** Takılı bir yedekleme (örneğin, bir ağ kara deliğine takılan rclone) sonraki her zamanlayıcı tetiklemesini sessizce bırakır. Zamanlayıcı hiçbir alarm vermez. `systemctl show <unit> -p ActiveEnterTimestamp` izleyin: servis beklenen çalışma süresinden daha uzun süre `activating` durumundaysa (örneğin, gecelik zamanlayıcıda 48 saatten fazla), araştırın.
+
+**Her zamanlanmış tetiklemenin çalışmasını istiyorsanız**, zamanlayıcıyı `OnCalendar=<cron>` yerine `OnUnitInactiveSec=<aralık>` olarak değiştirin. Bu, sabit bir duvar saati zamanlaması yerine önceki çalıştırmanın tamamlanmasından N saat sonra tetiklenir, böylece uzun süren çalıştırmalar düşüşlere neden olmaz. Yalnızca bir sonraki çalıştırmayı ileriye iter. Takas zamanlama sapmasıdır: 03:00 gecelik «sonuncusunun bittiği saatten 24 saat sonra» olur.
 
 ### Strateji Tanımlama
 

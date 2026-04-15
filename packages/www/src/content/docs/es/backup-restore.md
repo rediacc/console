@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: es
-sourceHash: "d5556f7b71c7c3df"
+sourceHash: "f5222efa9505ab5e"
 sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
 ---
 
@@ -177,6 +177,27 @@ Ejemplos:
 **Anulación vía variable de entorno:** establezca `REDIACC_COLD_BACKUP_CONCURRENCY=N` en el entorno del servicio de respaldo (normalmente mediante un drop-in de systemd) para fijar un valor específico. `=1` fuerza reinicios estrictamente seriales, útil al depurar un bucle de fallos en el hook `up()` de algún repositorio.
 
 Si ejecuta un repositorio sensible a la latencia (aplicación web pública, correo), su tiempo de inactividad está limitado por su propio stop+start (típicamente 30-90 s), no por la duración total de la ejecución. Los repositorios se programan en slots de concurrencia en el orden en que fueron descubiertos; no hay cola de prioridad. Divida los repositorios pesados en sus propias estrategias con `--exclude` si necesita una planificación más fina.
+
+### Respaldos de Larga Duración y Cronogramas Superpuestos
+
+Un respaldo en frío que dura más que su propio intervalo de cronograma (por ejemplo, una primera siembra de un repositorio de 500 GB sobre un enlace modesto puede necesitar legítimamente más de 24 h, durante las cuales el temporizador nocturno dispara de nuevo) no encola ni lanza una segunda ejecución. La unidad systemd `Type=oneshot` es una sola instancia: cuando el temporizador dispara y el servicio ya está `activating`, systemd fusiona el inicio en el trabajo existente. No se lanza ningún proceso nuevo, no se encola ninguna ejecución para más tarde.
+
+Concretamente, una ejecución que comienza el lunes a las 03:00 UTC y termina el jueves al mediodía:
+
+| Día | Disparo de 03:00 UTC | Resultado |
+|-----|---------------------|-----------|
+| Lunes | Primer disparo | Comienza la ejecución |
+| Martes | Segundo disparo | Descartado silenciosamente (la ejecución previa sigue activa) |
+| Miércoles | Tercer disparo | Descartado silenciosamente (la ejecución previa sigue activa) |
+| Jueves | La ejecución termina al mediodía | Sin recuperación; la siguiente ejecución es el viernes 03:00 UTC |
+
+La directiva `Persistent=true` del temporizador **no** rescata estos disparos. `Persistent=true` repite disparos que se perdieron porque el temporizador mismo estaba inactivo (sistema apagado, temporizador deshabilitado). Los disparos descartados porque el servicio estaba ocupado se pierden.
+
+Este comportamiento predeterminado es deliberado. Ejecutar dos respaldos en frío en paralelo contra el mismo datastore contendería por la ruta del snapshot BTRFS, el remote de rclone y los sidecars por repositorio en `/var/run/rediacc/cold-backup-<guid>.status.json`. Serializar detrás de una instancia de larga duración es el resultado seguro.
+
+**Implicación de monitoreo.** Un respaldo colgado (por ejemplo, rclone atascado en un agujero negro de red) descarta silenciosamente cada disparo posterior del temporizador. El planificador no emite alarma. Observe `systemctl show <unit> -p ActiveEnterTimestamp`: si el servicio ha estado `activating` por más tiempo del esperado (por ejemplo, más de 48 h en un temporizador nocturno), investigue.
+
+**Si necesita que cada disparo programado se ejecute**, cambie el temporizador de `OnCalendar=<cron>` a `OnUnitInactiveSec=<intervalo>`. Eso dispara N horas después de la finalización de la ejecución previa en lugar de en un cronograma de reloj de pared fijo, así las ejecuciones largas no causan descartes. Solo empujan la siguiente ejecución más tarde. La contrapartida es la deriva del cronograma: su nocturno de 03:00 se convierte en "24 h después del término del último."
 
 ### Definir una Estrategia
 

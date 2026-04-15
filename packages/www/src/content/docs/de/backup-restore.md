@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: "d5556f7b71c7c3df"
+sourceHash: "f5222efa9505ab5e"
 sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
 ---
 
@@ -177,6 +177,27 @@ Beispiele:
 **Override per Umgebungsvariable:** Setzen Sie `REDIACC_COLD_BACKUP_CONCURRENCY=N` in der Umgebung des Backup-Dienstes (meist über ein systemd-Drop-in), um einen bestimmten Wert festzulegen. `=1` erzwingt streng serielle Neustarts, nützlich beim Debuggen eines Crashloops im `up()`-Hook eines Repositories.
 
 Wenn Sie ein latenzempfindliches Repository betreiben (öffentliche Webanwendung, Mail), ist dessen Ausfallzeit durch sein eigenes Stop+Start begrenzt (typischerweise 30-90 s), nicht durch die Gesamtlaufzeit. Repositories werden in der Reihenfolge ihrer Erkennung in Parallelitäts-Slots eingeplant; es gibt keine Prioritätswarteschlange. Teilen Sie schwere Repositories in eigene, mit `--exclude` begrenzte Strategien auf, wenn Sie eine feinere Zeitplanung benötigen.
+
+### Lange Läufe und überlappende Zeitpläne
+
+Ein Cold-Backup, das länger als sein eigenes Zeitplan-Intervall dauert (zum Beispiel eine erste Vollsicherung eines 500 GB-Repositories über eine moderate Leitung kann legitim mehr als 24 h benötigen, während der nächtliche Timer erneut feuert), löst weder einen zweiten Lauf aus noch stellt er einen in die Warteschlange. Die systemd-`Type=oneshot`-Unit ist eine Einzelinstanz: Wenn der Timer feuert und der Dienst bereits `activating` ist, fasst systemd den Start in den laufenden Job zusammen. Kein neuer Prozess wird gestartet, kein Lauf für später gespeichert.
+
+Konkret: Ein Lauf, der am Montag um 03:00 UTC startet und am Donnerstag Mittag endet:
+
+| Tag | 03:00 UTC feuert | Ergebnis |
+|------|-----------------|----------|
+| Montag | Erstes Feuern | Lauf beginnt |
+| Dienstag | Zweites Feuern | Still verworfen (vorheriger Lauf ist noch aktiv) |
+| Mittwoch | Drittes Feuern | Still verworfen (vorheriger Lauf ist noch aktiv) |
+| Donnerstag | Lauf endet mittags | Kein Nachholen; nächster Lauf ist Freitag 03:00 UTC |
+
+Die `Persistent=true`-Direktive des Timers rettet diese Feuer **nicht**. `Persistent=true` wiederholt Feuer, die verpasst wurden, weil der Timer selbst inaktiv war (System aus, Timer deaktiviert). Feuer, die verworfen wurden, weil der Dienst beschäftigt war, sind weg.
+
+Dieses Verhalten ist bewusst gewählt. Zwei parallele Cold-Backups gegen denselben Datastore würden um den BTRFS-Snapshot-Pfad, das rclone-Remote und die Per-Repo-Sidecars unter `/var/run/rediacc/cold-backup-<guid>.status.json` konkurrieren. Die Serialisierung hinter einem langen Lauf ist das sichere Ergebnis.
+
+**Monitoring-Konsequenz.** Ein hängendes Backup (zum Beispiel rclone, das an einem Netzwerk-Blackhole hängenbleibt) verwirft still jedes nachfolgende Timer-Feuern. Der Scheduler gibt keinen Alarm aus. Beobachten Sie `systemctl show <unit> -p ActiveEnterTimestamp`: Wenn der Dienst länger als erwartet `activating` ist (zum Beispiel mehr als 48 h bei einem nächtlichen Timer), untersuchen Sie dies.
+
+**Wenn Sie möchten, dass jedes geplante Feuer läuft**, wechseln Sie den Timer von `OnCalendar=<cron>` zu `OnUnitInactiveSec=<Intervall>`. Das feuert N Stunden nach Abschluss des vorherigen Laufs statt nach einem festen Wall-Clock-Zeitplan, sodass lange Läufe keine Verluste verursachen. Sie schieben nur den nächsten Lauf nach hinten. Der Kompromiss ist Zeitplan-Drift: Ihr nächtliches 03:00 wird zu "24 h nach Abschluss des letzten Laufs."
 
 ### Strategie definieren
 

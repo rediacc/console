@@ -4,7 +4,7 @@ description: "Back up encrypted repositories to external storage, restore from b
 category: "Guides"
 order: 7
 language: en
-sourceHash: "d5556f7b71c7c3df"
+sourceHash: "f5222efa9505ab5e"
 ---
 
 # Backup & Restore
@@ -174,6 +174,27 @@ Examples:
 **Override via env:** set `REDIACC_COLD_BACKUP_CONCURRENCY=N` in the backup service's environment (a systemd drop-in is the usual route) to pin a specific value. `=1` forces strictly-serial restarts, useful when debugging a crashloop in one repo's `up()` hook.
 
 If you run a latency-sensitive repo (public web app, mail), its downtime is bounded by its own stop+start (typically 30-90 s), not by the whole run length. Repos are scheduled into concurrency slots in the order they were discovered; there is no priority queue. Split heavy repos into their own `--exclude`-scoped strategies if you need finer-grained scheduling.
+
+### Long-Running Backups and Overlapping Schedules
+
+A cold backup that takes longer than its own schedule interval (for example, a first-seed of a 500 GB repo on a modest link can legitimately need more than 24 h, during which the nightly timer fires again) does not queue or launch a second run. The systemd `Type=oneshot` unit is a single instance: when the timer fires and the service is already `activating`, systemd coalesces the start into the existing job. No new process starts, no run is queued for later.
+
+Concretely, a run that starts Monday 03:00 UTC and finishes Thursday at noon:
+
+| Day | 03:00 UTC fire | Result |
+|------|---------------|--------|
+| Monday | First fire | Run begins |
+| Tuesday | Second fire | Dropped silently (previous run is still active) |
+| Wednesday | Third fire | Dropped silently (previous run is still active) |
+| Thursday | Run ends at midday | No catch-up; next run is Friday 03:00 UTC |
+
+The timer's `Persistent=true` directive does **not** rescue these fires. `Persistent=true` replays fires that were missed because the timer itself was inactive (system off, timer disabled). Fires dropped because the service was busy are gone.
+
+This default is deliberate. Running two cold backups in parallel against the same datastore would contend on the BTRFS snapshot path, the rclone remote, and the per-repo sidecars at `/var/run/rediacc/cold-backup-<guid>.status.json`. Serialising behind a long-running instance is the safe outcome.
+
+**Monitoring implication.** A hung backup (for instance, rclone wedged on a network blackhole) silently drops every subsequent timer fire. The scheduler emits no alarm. Watch `systemctl show <unit> -p ActiveEnterTimestamp`: if the service has been `activating` for longer than your expected run length (for example, more than 48 h on a nightly timer), investigate.
+
+**If you need every scheduled fire to run**, switch the timer from `OnCalendar=<cron>` to `OnUnitInactiveSec=<interval>`. That fires N hours after the previous run's completion rather than on a fixed wall-clock schedule, so long runs do not cause drops. They just push the next run later. The trade-off is schedule drift: your 03:00 nightly becomes "24 h after the last one ended."
 
 ### Define a Strategy
 
