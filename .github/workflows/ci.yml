@@ -938,6 +938,8 @@ jobs:
             .github/actions
             .ci/scripts
             packages/shared
+            packages/shared-desktop
+            packages/provisioning
             package.json
             package-lock.json
             tsconfig.json
