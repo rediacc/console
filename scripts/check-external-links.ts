@@ -113,9 +113,8 @@ function isAllowlisted(url: string): boolean {
 }
 
 /**
- * Build request headers. For GitHub URLs, attach GITHUB_TOKEN (when available
- * in CI) so anonymous rate-limiting and anti-bot blocks don't flap the check.
- * GitHub issue pages frequently 401 unauthenticated HEAD/GET from CI IP ranges.
+ * Build request headers. For api.github.com URLs attach GITHUB_TOKEN so
+ * anonymous rate-limiting doesn't flap the check.
  */
 function buildHeaders(url: string): Record<string, string> {
   const headers: Record<string, string> = {
@@ -123,13 +122,50 @@ function buildHeaders(url: string): Record<string, string> {
     'Accept': 'text/html,application/xhtml+xml,*/*',
   };
   const token = process.env.GITHUB_TOKEN;
-  if (token && /^https:\/\/(api\.)?github\.com\//.test(url)) {
+  if (token && /^https:\/\/api\.github\.com\//.test(url)) {
     headers['Authorization'] = `Bearer ${token}`;
+    headers['Accept'] = 'application/vnd.github+json';
   }
   return headers;
 }
 
+/**
+ * github.com HTML pages (issues, PRs, trees, blobs) frequently 401 from CI
+ * runner IP ranges behind Cloudflare anti-bot, even with a Bearer token —
+ * the HTML layer doesn't accept Authorization. Rewrite supported paths to
+ * the api.github.com equivalent so auth actually applies; the API returns
+ * 200 for existing resources and 404 for deleted ones.
+ */
+function toApiUrl(url: string): string | null {
+  const m = url.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(issues|pull|tree|blob)\/(.+?)(?:[?#].*)?$/);
+  if (!m) return null;
+  const [, owner, repo, kind, rest] = m;
+  if (kind === 'issues' || kind === 'pull') {
+    const num = rest.split('/')[0];
+    if (!/^\d+$/.test(num)) return null;
+    // The issues endpoint returns both issues and PRs (PRs are issues with
+    // a pull_request field), so a single lookup works for either form.
+    return `https://api.github.com/repos/${owner}/${repo}/issues/${num}`;
+  }
+  // tree and blob: check that the ref + path exists via the contents endpoint.
+  // rest is <ref>/<path...>; collapse into contents/<path>?ref=<ref>.
+  const slash = rest.indexOf('/');
+  if (slash === -1) {
+    // /tree/<branch> with no path — verify the branch exists.
+    return `https://api.github.com/repos/${owner}/${repo}/branches/${rest}`;
+  }
+  const ref = rest.slice(0, slash);
+  const path = rest.slice(slash + 1);
+  return `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`;
+}
+
 async function checkUrl(url: string, retries = 0): Promise<{ ok: boolean; status: number | string }> {
+  // Rewrite github.com HTML URLs to api.github.com so GITHUB_TOKEN actually
+  // authorises the request. Only used when GITHUB_TOKEN is available.
+  if (process.env.GITHUB_TOKEN) {
+    const api = toApiUrl(url);
+    if (api) url = api;
+  }
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
