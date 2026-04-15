@@ -12,6 +12,16 @@ FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
 ARG NODE_VERSION=22
 ARG GO_VERSION=1.24.12
 
+# Align the vscode user with the Rediacc universal UID/GID (7111). This matches
+# common.RediaccUID in renet and the host-side ownership of /mnt/rediacc/...
+# mounts, so files created inside the container have the same UID as everything
+# else on the platform. Without this, a container running as vscode cannot
+# access paths owned by the universal user. Must happen before any later
+# `USER vscode` block so subsequent layers inherit the new UID.
+RUN groupmod -g 7111 vscode \
+    && usermod -u 7111 -g 7111 vscode \
+    && find / -xdev \( -uid 1000 -o -gid 1000 \) -exec chown -h 7111:7111 {} + 2>/dev/null || true
+
 # =============================================================================
 # System packages + GitHub CLI + Python 3 + XFCE Desktop + VNC stack
 # =============================================================================
