@@ -100,7 +100,27 @@ describe('rewriteOrigin', () => {
     const body = 'canonical: https://www.rediacc.com/docs';
     const htmlUrl = new URL('https://pr-420.rediacc.workers.dev/docs');
     const out = await rewriteOrigin(makeResponse(body, 'text/html'), htmlUrl, channel);
-    expect(await out.text()).toContain('https://pr-420.rediacc.workers.dev/docs');
+    const text = await out.text();
+    expect(text).toContain('https://pr-420.rediacc.workers.dev/docs');
+    expect(text).not.toContain('https://www.rediacc.com/docs');
+  });
+
+  it('rewrites multiple occurrences of the production origin', async () => {
+    // replaceAll guards against the historical bug where only the first
+    // occurrence got rewritten and stale references leaked into rendered
+    // sitemaps / canonical tags below the fold.
+    const body = [
+      'canonical: https://www.rediacc.com/a',
+      'og:url: https://www.rediacc.com/b',
+      'link: https://www.rediacc.com/c',
+    ].join('\n');
+    const htmlUrl = new URL('https://pr-420.rediacc.workers.dev/x');
+    const out = await rewriteOrigin(makeResponse(body, 'text/html'), htmlUrl, channel);
+    const text = await out.text();
+    expect(text).not.toContain('https://www.rediacc.com');
+    for (const path of ['/a', '/b', '/c']) {
+      expect(text).toContain(`https://pr-420.rediacc.workers.dev${path}`);
+    }
   });
 
   it('returns the response unchanged when path and content-type are not rewritable', async () => {
