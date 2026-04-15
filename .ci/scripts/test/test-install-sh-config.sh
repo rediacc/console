@@ -2,16 +2,16 @@
 #
 # Unit test for install.sh's write_install_config function.
 #
-# Covers the four failure modes the worker rewrite can land us in when a user
+# Covers the five scenarios the worker rewrite can land us in when a user
 # runs `curl -fsSL https://<preview>.rediacc.com/install.sh | bash`:
 #
-#   worker_full         — both CHANNEL and SERVER_URL rewritten → full server.json
-#   worker_channel_only — only CHANNEL rewritten → minimal server.json
-#                         with accountServer=https://www.rediacc.com (fail-safe
-#                         recovery path; rdc update still picks up edge)
-#   worker_server_only  — only SERVER_URL rewritten; install.sh's server-info
-#                         lookup auto-detects channel (mocked via python)
-#   worker_none         — neither rewritten → no server.json written at all
+#   worker_full                    both rewritten, server unreachable
+#   worker_channel_only            only CHANNEL rewritten (fail-safe path)
+#   worker_server_only             only SERVER_URL rewritten
+#   worker_none                    neither rewritten; no server.json written
+#   worker_full_with_server_info   both rewritten + reachable server-info
+#                                  returning a different updateChannel
+#                                  (regression guard: baked channel must win)
 #
 # The test sources install.sh with REDIACC_INSTALL_SH_SOURCE_ONLY=1 so that
 # `main` does not execute, then calls write_install_config with a fake $HOME
