@@ -153,15 +153,30 @@ Live migration via CRIU has the following constraints:
 
 ## Supported OS Versions
 
-Remote machines must run one of the following to meet Rediacc's kernel, filesystem, and network isolation requirements:
+Remote machines must run one of the following to meet Rediacc's kernel, filesystem, and network isolation requirements. This list is the authoritative CI-tested set (Bridge Workers matrix) and must stay in sync with [Requirements](/en/docs/requirements):
 
-| OS | Minimum Version | Default Kernel |
-|----|----------------|----------------|
-| Ubuntu | 24.04 LTS *(recommended)* | 6.8 |
-| Debian | 12 (Bookworm) | 6.1 |
-| Fedora | 43 | 6.12 |
-| openSUSE Leap | 16.0 | 6.4+ |
+| OS | Minimum Version | Default Kernel | Notes |
+|----|-----------------|----------------|-------|
+| Ubuntu | 24.04 LTS *(recommended)* | 6.8 | AppArmor default. |
+| Debian | 13 (Trixie); 12 Bookworm also works | 6.12 (6.1 on Debian 12) | |
+| Fedora | 43 | 6.12 | SELinux enforcing default. |
+| openSUSE Leap | 16.0 | 6.4+ | AppArmor default. |
+| Oracle Linux | 10 (UEK) | UEK 7+ | UEK retains btrfs; SELinux enforcing default. |
 
 **Minimum required kernel: 6.1.** Machines running older kernels are rejected at setup time with a clear error message.
 
 > **Why kernel 6.1?** Rediacc uses BTRFS for encrypted repository storage and copy-on-write forking. Linux 6.1 introduced critical BTRFS improvements that significantly reduce mount times for large datastores, improve snapshot deletion performance, and fix data-integrity issues present in earlier kernels. Kernel 6.1 is also required for the kernel-level network isolation hooks that enforce cross-repository isolation, transparently rewriting `bind()` calls and blocking connections between repositories.
+
+> **Why not Rocky Linux 10 / RHEL 10 stock kernel?** RHEL 10's stock kernel ships without the `btrfs` module (`modprobe btrfs` fails with "Module btrfs not found"). Rediacc's encrypted storage backend cannot run without btrfs. **Oracle Linux 10 is the only RHEL-compatible target on the supported list** because it defaults to the Unbreakable Enterprise Kernel (UEK), which retains btrfs. See [Requirements → Why UEK?](/en/docs/requirements) for the full explanation.
+
+### Kernel feature matrix
+
+Operators can read this as a single glance at what each CI-tested OS provides out of the box. All five satisfy every requirement; the matrix is an operator-facing reference, not a gating criterion.
+
+| OS | btrfs module | cgroups v2 | Landlock (ABI ≥ 1) | eBPF cgroup hooks |
+|----|--------------|------------|--------------------|-------------------|
+| Ubuntu 24.04 | in-tree | unified hierarchy | yes (5.13+) | yes |
+| Debian 13 | in-tree | unified hierarchy | yes | yes |
+| Fedora 43 | in-tree | unified hierarchy | yes | yes |
+| openSUSE Leap 16.0 | in-tree | unified hierarchy | yes | yes |
+| Oracle Linux 10 (UEK) | in-tree (via UEK) | unified hierarchy | yes | yes |

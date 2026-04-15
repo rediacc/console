@@ -128,6 +128,16 @@ Renet auto-injects these into every container:
 - Restart policies are auto-managed by renet (stripped for CRIU, watchdog handles recovery).
 - Avoid relying on Docker DNS, use loopback IPs for inter-service communication.
 
+### Host security policies by OS
+
+Across the five officially supported server OSes (see [Requirements](/en/docs/requirements)), the per-repo docker daemon and the containers it runs use **default container labels**. `rdc config machine setup` does not install a custom SELinux policy or AppArmor profile.
+
+- **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor is enabled by default. Containers run under the default docker-container profile. The only carve-out is CRIU (`apparmor=unconfined` for `rediacc.checkpoint=true` containers, per the note above).
+- **Fedora 43 / Oracle Linux 10**: SELinux runs enforcing by default. Containers get the standard `container_t` context. No extra policy installation is needed. If a setup step fails with AVC denials, see [Troubleshooting → SELinux denials](/en/docs/troubleshooting).
+- **Debian 13**: AppArmor is available but not enforced by default on all domains. Containers still use the docker-container profile.
+
+No per-OS security posture flag is required; `rdc` and `renet` detect what is running and produce the same per-repo isolation on all five distributions.
+
 ## Security
 
 - **LUKS encryption** is mandatory for standard repositories. Each repo has its own encryption key.

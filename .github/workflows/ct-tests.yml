@@ -707,12 +707,13 @@ jobs:
           - fedora-43
           - opensuse-16.0
           - oracle-10
-          # NOTE: rocky-10 intentionally excluded — Rocky Linux 10 ships a RHEL-
-          # compatible kernel without the btrfs module (`modprobe btrfs` fails
-          # with "Module btrfs not found", and `dnf search btrfs` returns
-          # nothing). Rediacc's storage backend requires btrfs, so Rocky 10
-          # cannot run as a rediacc worker. Oracle Linux 10 works because UEK
-          # (Unbreakable Enterprise Kernel) retains btrfs support.
+          # NOTE: rocky-10 intentionally excluded. RHEL 10's stock kernel
+          # ships without the btrfs module and Rediacc's storage backend
+          # requires btrfs; Oracle Linux 10 works because UEK retains btrfs.
+          # Full explanation and operator guidance:
+          #   packages/www/src/content/docs/en/requirements.md (Why UEK?)
+          #   packages/www/src/content/docs/en/limits.md (Why not Rocky 10?)
+          #   packages/www/src/content/docs/en/troubleshooting.md (btrfs module missing)
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 120000

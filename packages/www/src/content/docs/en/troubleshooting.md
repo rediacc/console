@@ -33,6 +33,51 @@ This fetches fresh host keys and updates your config.
 - Check available disk space on the server
 - Run with `--debug` for verbose output: `rdc config machine setup server-1 --debug`
 
+## Distribution-Specific Setup Issues
+
+The five officially supported server OSes (Ubuntu 24.04, Debian 13, Fedora 43, openSUSE Leap 16.0, Oracle Linux 10) ship with different security policies and package managers. Most setups "just work"; the cases below cover the ones that don't.
+
+### SELinux denials (Fedora 43, Oracle Linux 10)
+
+Both run SELinux in enforcing mode. rdc setup does not install a custom SELinux policy; the per-repo docker daemon runs under the standard `container_t` context. If setup fails with AVC denials, check the audit log and identify the domain:
+
+```bash
+sudo ausearch -m AVC -ts recent | head -40
+# Or:
+sudo tail -f /var/log/audit/audit.log | grep AVC
+```
+
+If a denial points at the renet binary or a specific file path, the fix is almost always to relabel (`restorecon -v /path`) rather than to disable SELinux. As a temporary workaround while you investigate, `sudo setenforce 0` moves the system to permissive. Re-enable with `sudo setenforce 1` once you confirm the relabel sticks.
+
+### AppArmor denials (Ubuntu 24.04, openSUSE Leap 16.0)
+
+Both run AppArmor by default; the per-repo docker daemon uses the default container profile. If a container inside a repo is being blocked:
+
+```bash
+dmesg | grep -i apparmor
+sudo aa-status
+```
+
+CRIU is the known case that hits AppArmor. Renet auto-sets `security_opt: apparmor=unconfined` on containers labeled `rediacc.checkpoint=true`. You should not need to configure AppArmor profiles yourself for anything else. See the CRIU notes in [Rules of Rediacc](/en/docs/rules-of-rediacc).
+
+### Package manager error signatures
+
+| OS | Package manager | Typical error | Resolution |
+|----|-----------------|---------------|------------|
+| Ubuntu / Debian | apt-get | `File has unexpected size (N != M). Mirror sync in progress?` | Cloudflare edge cache behind origin. Retry `apt-get update` after ~15s; the integrity check passes on the next poll. |
+| Fedora / Oracle | dnf | `Problem: nothing provides rediacc-cli` | The RPM repo metadata cached on disk is stale. Run `sudo dnf clean all && sudo dnf makecache`. |
+| openSUSE | zypper | `Repository 'rediacc' needs to be refreshed.` | Run `sudo zypper refresh rediacc` once; subsequent installs should succeed. |
+
+### btrfs module missing (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
+
+If `rdc config machine setup` or `renet system check-btrfs` fails with:
+
+```
+Module btrfs not found
+```
+
+...the server is running RHEL 10's stock kernel, which ships without the in-tree btrfs module. This is not a Rediacc bug; RHEL 10 dropped btrfs intentionally. The resolution is to run **Oracle Linux 10 instead**. Oracle 10 defaults to the Unbreakable Enterprise Kernel (UEK), which retains btrfs. See [Requirements → Why UEK?](/en/docs/requirements) for the full story.
+
 ## Repository Create Fails
 
 - Verify setup was completed: the datastore directory must exist
