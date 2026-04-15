@@ -274,15 +274,17 @@ describe('generateServiceUnit', () => {
 describe('sanitizeBackupOutput', () => {
   it('redacts --rclone-param values for sensitive keys', async () => {
     const { sanitizeBackupOutput } = await import('../backup-schedule.js');
-    const input = "backup sync push --rclone-param 'onedrive-token={\"access_token\":\"x\"}' --rclone-param 'bwlimit=6M'";
+    const input =
+      'backup sync push --rclone-param \'onedrive-token={"access_token":"x"}\' --rclone-param \'bwlimit=6M\'';
     const out = sanitizeBackupOutput(input);
-    expect(out).toContain("onedrive-token=[REDACTED]");
-    expect(out).toContain("bwlimit=6M");
+    expect(out).toContain('onedrive-token=[REDACTED]');
+    expect(out).toContain('bwlimit=6M');
   });
 
   it('redacts --setenv values for sensitive RCLONE_ keys (quoted form)', async () => {
     const { sanitizeBackupOutput } = await import('../backup-schedule.js');
-    const input = "systemd-run --unit=u --setenv=RCLONE_ONEDRIVE_TOKEN='{\"access_token\":\"abc\"}' --setenv=RCLONE_BWLIMIT='6M' --remain-after-exit";
+    const input =
+      'systemd-run --unit=u --setenv=RCLONE_ONEDRIVE_TOKEN=\'{"access_token":"abc"}\' --setenv=RCLONE_BWLIMIT=\'6M\' --remain-after-exit';
     const out = sanitizeBackupOutput(input);
     expect(out).toContain("--setenv=RCLONE_ONEDRIVE_TOKEN='[REDACTED]'");
     expect(out).toContain("--setenv=RCLONE_BWLIMIT='6M'");
@@ -290,7 +292,8 @@ describe('sanitizeBackupOutput', () => {
 
   it('redacts --setenv values for sensitive RCLONE_ keys (bare form)', async () => {
     const { sanitizeBackupOutput } = await import('../backup-schedule.js');
-    const input = 'systemd-run --setenv=RCLONE_S3_SECRET_ACCESS_KEY=deadbeef --setenv=RCLONE_BWLIMIT=6M';
+    const input =
+      'systemd-run --setenv=RCLONE_S3_SECRET_ACCESS_KEY=deadbeef --setenv=RCLONE_BWLIMIT=6M';
     const out = sanitizeBackupOutput(input);
     expect(out).toContain('--setenv=RCLONE_S3_SECRET_ACCESS_KEY=[REDACTED]');
     expect(out).toContain('--setenv=RCLONE_BWLIMIT=6M');

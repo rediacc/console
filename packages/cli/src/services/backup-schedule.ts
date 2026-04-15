@@ -107,9 +107,7 @@ function sanitizeBackupOutput(content: string): string {
     /--setenv=([A-Z0-9_]+)=(?:'([^']*)'|(\S+))/g,
     (_m, key: string, quoted: string | undefined, bare: string | undefined) => {
       if (!isSensitiveKey(rcloneKey(key))) return _m;
-      return quoted !== undefined
-        ? `--setenv=${key}='[REDACTED]'`
-        : `--setenv=${key}=[REDACTED]`;
+      return quoted !== undefined ? `--setenv=${key}='[REDACTED]'` : `--setenv=${key}=[REDACTED]`;
     }
   );
   return out;
