@@ -10,6 +10,7 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { isAgentEnvironment } from './agent-guard.js';
 import { ValidationError } from './errors.js';
+import { isRepoAllowedByGrandEnv } from './grand-env.js';
 import { isOverrideLegitimate } from './process-ancestry.js';
 
 export interface CommandPolicy {
@@ -92,9 +93,7 @@ export const COMMAND_POLICIES: ReadonlyMap<CommandPath, CommandPolicy> = buildPo
 type OverrideResult = 'allowed' | 'not-set' | 'agent-injected';
 
 function checkGrandOverride(repoName: string): OverrideResult {
-  const override = process.env.REDIACC_ALLOW_GRAND_REPO;
-  if (!override) return 'not-set';
-  if (override !== '*' && override !== repoName) return 'not-set';
+  if (!isRepoAllowedByGrandEnv(repoName)) return 'not-set';
 
   // Verify override was set by user, not injected by agent
   return isOverrideLegitimate() ? 'allowed' : 'agent-injected';

@@ -225,6 +225,8 @@ jobs:
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
       - run: npm run check:ci-external-links
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
   quality-shell:
     name: Shell

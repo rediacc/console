@@ -112,6 +112,23 @@ function isAllowlisted(url: string): boolean {
   }
 }
 
+/**
+ * Build request headers. For GitHub URLs, attach GITHUB_TOKEN (when available
+ * in CI) so anonymous rate-limiting and anti-bot blocks don't flap the check.
+ * GitHub issue pages frequently 401 unauthenticated HEAD/GET from CI IP ranges.
+ */
+function buildHeaders(url: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,*/*',
+  };
+  const token = process.env.GITHUB_TOKEN;
+  if (token && /^https:\/\/(api\.)?github\.com\//.test(url)) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 async function checkUrl(url: string, retries = 0): Promise<{ ok: boolean; status: number | string }> {
   try {
     const controller = new AbortController();
@@ -121,17 +138,14 @@ async function checkUrl(url: string, retries = 0): Promise<{ ok: boolean; status
       method: 'HEAD',
       signal: controller.signal,
       redirect: 'follow',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,*/*',
-      },
+      headers: buildHeaders(url),
     });
 
     clearTimeout(timeout);
 
     // Some servers don't support HEAD, retry with GET. 401/403/429 are also
     // common from GitHub/Cloudflare anti-bot on HEAD — the same URL answers
-    // 200 to a plain GET with a browser UA.
+    // 200 to a plain GET with a browser UA and/or auth token.
     if (
       response.status === 405 ||
       response.status === 404 ||
@@ -146,10 +160,7 @@ async function checkUrl(url: string, retries = 0): Promise<{ ok: boolean; status
         method: 'GET',
         signal: controller2.signal,
         redirect: 'follow',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,*/*',
-        },
+        headers: buildHeaders(url),
       });
 
       clearTimeout(timeout2);

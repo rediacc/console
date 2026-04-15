@@ -29,6 +29,23 @@ fi
 # HELPER FUNCTIONS
 # =============================================================================
 
+# True if REDIACC_ALLOW_GRAND_REPO contains a `*` entry (machine-level wildcard).
+# Accepts a single `*`, a comma-separated list, or a list with `*` mixed in
+# (e.g. `repo1,*,repo2`). Whitespace around each entry is trimmed.
+# Mirrors isGrandEnvWildcard() in packages/cli/src/utils/grand-env.ts.
+_grand_env_is_wildcard() {
+    local raw="${REDIACC_ALLOW_GRAND_REPO:-}"
+    [[ -z "$raw" ]] && return 1
+    local IFS=','
+    local entry
+    for entry in $raw; do
+        entry="${entry#"${entry%%[![:space:]]*}"}"
+        entry="${entry%"${entry##*[![:space:]]}"}"
+        [[ "$entry" == "*" ]] && return 0
+    done
+    return 1
+}
+
 # Check if Docker is running
 check_docker() {
     if ! command -v docker &>/dev/null; then
@@ -230,7 +247,7 @@ www_tutorials_record() {
     # In AI agent sessions, the user must pre-set REDIACC_ALLOW_GRAND_REPO=* before
     # starting the agent so the CLI accepts the override as legitimate.
     if [[ "${CLAUDECODE:-}" == "1" || "${GEMINI_CLI:-}" == "1" || "${COPILOT_CLI:-}" == "1" || "${REDIACC_AGENT:-}" == "1" || -n "${CURSOR_TRACE_ID:-}" ]]; then
-        if [[ "${REDIACC_ALLOW_GRAND_REPO:-}" != "*" ]]; then
+        if ! _grand_env_is_wildcard; then
             log_error "Tutorial recording requires direct machine access, which is blocked in agent mode."
             log_error ""
             log_error "Set REDIACC_ALLOW_GRAND_REPO=* in your terminal BEFORE starting the agent session:"

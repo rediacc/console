@@ -1,5 +1,6 @@
 import { t } from '../i18n/index.js';
 import { ValidationError } from './errors.js';
+import { isGrandEnvWildcard } from './grand-env.js';
 import { isAgentByAncestry, isOverrideLegitimate } from './process-ancestry.js';
 
 const AGENT_ENV_VARS = ['REDIACC_AGENT', 'CLAUDECODE', 'GEMINI_CLI', 'COPILOT_CLI'] as const;
@@ -54,7 +55,7 @@ function isOverrideAllowed(): boolean {
  */
 export function assertAgentMachineAccess(machineName: string): void {
   if (!isAgentEnvironment()) return;
-  if (process.env.REDIACC_ALLOW_GRAND_REPO === '*') {
+  if (isGrandEnvWildcard()) {
     if (isOverrideAllowed()) return;
     const errorKey =
       process.platform === 'linux'
@@ -73,7 +74,7 @@ export function assertAgentMachineAccess(machineName: string): void {
  */
 export function assertAgentRepoCreate(repoName: string): void {
   if (!isAgentEnvironment()) return;
-  if (process.env.REDIACC_ALLOW_GRAND_REPO === '*') {
+  if (isGrandEnvWildcard()) {
     if (isOverrideAllowed()) return;
     const errorKey =
       process.platform === 'linux'
