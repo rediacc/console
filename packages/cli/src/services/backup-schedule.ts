@@ -105,9 +105,11 @@ function sanitizeBackupOutput(content: string): string {
     envName.startsWith('RCLONE_') ? envName.slice('RCLONE_'.length).toLowerCase() : envName;
   out = out.replaceAll(
     /--setenv=([A-Z0-9_]+)=(?:'([^']*)'|(\S+))/g,
-    (_m, key: string, quoted: string | undefined, bare: string | undefined) => {
-      if (!isSensitiveKey(rcloneKey(key))) return _m;
-      return quoted !== undefined ? `--setenv=${key}='[REDACTED]'` : `--setenv=${key}=[REDACTED]`;
+    (_m, key: string, quoted: string | undefined, _bare: string | undefined) => {
+      if (isSensitiveKey(rcloneKey(key))) {
+        return quoted === undefined ? `--setenv=${key}=[REDACTED]` : `--setenv=${key}='[REDACTED]'`;
+      }
+      return _m;
     }
   );
   return out;
