@@ -129,8 +129,16 @@ async function checkUrl(url: string, retries = 0): Promise<{ ok: boolean; status
 
     clearTimeout(timeout);
 
-    // Some servers don't support HEAD, retry with GET
-    if (response.status === 405 || response.status === 404) {
+    // Some servers don't support HEAD, retry with GET. 401/403/429 are also
+    // common from GitHub/Cloudflare anti-bot on HEAD — the same URL answers
+    // 200 to a plain GET with a browser UA.
+    if (
+      response.status === 405 ||
+      response.status === 404 ||
+      response.status === 401 ||
+      response.status === 403 ||
+      response.status === 429
+    ) {
       const controller2 = new AbortController();
       const timeout2 = setTimeout(() => controller2.abort(), TIMEOUT_MS);
 
