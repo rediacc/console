@@ -4,8 +4,8 @@ description: "在 Rediacc 平台上构建应用程序的基本规则和约定。
 category: "Guides"
 order: 5
 language: zh
-sourceHash: "4a544ede5461d3a6"
-sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
+sourceHash: "fd0fa925e9b76434"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # Rediacc 规则
@@ -129,6 +129,16 @@ Renet 会自动将以下变量注入每个容器：
 - 添加 `process.on("uncaughtException")` 作为内部库对象产生的陈旧套接字错误的安全网。
 - 重启策略由 renet 自动管理（为 CRIU 剥离，watchdog 处理恢复）。
 - 避免依赖 Docker DNS, 使用回环 IP 进行服务间通信。
+
+### 按操作系统划分的主机安全策略
+
+在五个官方支持的服务器操作系统（参见[系统要求](/en/docs/requirements)）上，每个仓库的 Docker 守护进程及其运行的容器均使用**默认容器标签**。`rdc config machine setup` 不会安装自定义 SELinux 策略或 AppArmor 配置文件。
+
+- **Ubuntu 24.04 / openSUSE Leap 16.0**：AppArmor 默认启用。容器在默认的 docker-container 配置文件下运行。唯一的例外是 CRIU（对带有 `rediacc.checkpoint=true` 的容器添加 `apparmor=unconfined`，详见上方说明）。
+- **Fedora 43 / Oracle Linux 10**：SELinux 默认以 enforcing 模式运行。容器获得标准的 `container_t` 上下文。无需安装额外的策略。如果某个设置步骤因 AVC 拒绝而失败，请参阅[故障排除: SELinux 拒绝](/en/docs/troubleshooting)。
+- **Debian 13**：AppArmor 可用，但默认不对所有域强制执行。容器仍使用 docker-container 配置文件。
+
+无需针对操作系统指定安全姿态标志；`rdc` 和 `renet` 会自动检测运行环境，在所有五个发行版上提供相同的仓库级隔离。
 
 ## 安全
 

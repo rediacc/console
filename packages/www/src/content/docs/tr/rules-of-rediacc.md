@@ -4,8 +4,8 @@ description: "Rediacc platformunda uygulama geliştirmek için temel kurallar ve
 category: "Guides"
 order: 5
 language: tr
-sourceHash: "4a544ede5461d3a6"
-sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
+sourceHash: "fd0fa925e9b76434"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # Rediacc Kuralları
@@ -76,7 +76,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 
 - **Her depo kendi Docker daemon'ını alır**, `/var/run/rediacc/docker-<networkId>.sock` konumunda.
 - **Her servis bir /26 alt ağ içinde benzersiz bir loopback IP alır** (örn. `127.0.24.192/26`).
-- **Bağlama otomatiktir**: Servisler `0.0.0.0` veya `localhost`'a bağlanabilir, çekirdek adresi şeffaf olarak servisin atanmış loopback IP'sine yeniden yazar. `${SERVICE_IP}`'ye açık bağlama hâlâ çalışır ancak artık gerekli değildir.
+- **Bağlama otomatiktir**: Servisler `0.0.0.0` veya `localhost`'a bağlanabilir, çekirdek adresi şeffaf olarak servisin atanmış loopback IP'sine yeniden yazar. `${SERVICE_IP}`'ye açık bağlama hala çalışır ancak artık gerekli değildir.
 - **Health check'ler `localhost`** veya `${SERVICE_IP}` kullanabilir. Örnek: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`
 - **Depolar arası bağlantılar çekirdek tarafından engellenir**: Çekirdek, depo için `/26` alt ağının dışındaki loopback IP'lerine yapılan bağlantıları otomatik olarak engeller. Bir depodaki servis başka bir depodaki servislere erişemez.
 - **Servisler arası iletişim**: **Servis adlarını** kullanın (ör. `db`, `redis`), renet her servis adını otomatik olarak doğru IP'ye çözümlenen bir ana bilgisayar adı olarak enjekte eder. Docker DNS adları host modunda ÇALIŞMAZ, ancak `/etc/hosts` üzerinden servis adları çalışır. Kalıcı yapılandırma dosyalarına (ör. bir veritabanında saklanan bağlantı dizeleri) `${DB_IP}` veya benzerini gömmekten kaçının, fork yapıldığında ham IP taşınır ve yanlış depoya işaret eder. Servis adları her zaman depo başına doğru şekilde çözümlenir.
@@ -106,7 +106,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 - **Etiketle etkinleştirme**: Checkpoint almak istediğiniz konteynerlere `rediacc.checkpoint=true` ekleyin. Bu etiketi olmayan konteynerler (veritabanları, önbellekler) temiz başlar ve kendi mekanizmalarıyla (WAL, LDF, AOF) kurtarılır.
 - **`repo down --checkpoint`** durdurmadan önce süreç durumunu kaydeder, sonraki `repo up` otomatik geri yükler. **Bu, aynı makinedeki birincil akıştır** ve çalıştığı doğrulanmıştır.
 - **`backup push --checkpoint`** etiketli konteynerler için çalışan süreçlerin bellek durumunu + disk durumunu yakalar, ardından birimi başka bir makineye aktarır. Hedef makinede `repo up` ile geri yüklenir.
-- **`repo fork --checkpoint`** fork öncesi süreç durumunu yakalar ve checkpoint'i fork ile birlikte CoW-klonlar. ⚠️ Aynı makinede, ebeveyn hâlâ çalışırken fork üzerindeki sonraki `repo up` **şu anda** `criu failed: type RESTORE errno 0` ile **başarısız olur**. Upstream CRIU hataları [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). Yerinde kayıt/geri yükleme için `repo down --checkpoint`, makineler arası geçiş için `backup push --checkpoint` kullanın.
+- **`repo fork --checkpoint`** fork öncesi süreç durumunu yakalar ve checkpoint'i fork ile birlikte CoW-klonlar. ⚠️ Aynı makinede, ebeveyn hala çalışırken fork üzerindeki sonraki `repo up` **su anda** `criu failed: type RESTORE errno 0` ile **başarısız olur**. Upstream CRIU hataları [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). Yerinde kayıt/geri yükleme için `repo down --checkpoint`, makineler arası geçiş için `backup push --checkpoint` kullanın.
 - **`repo up`** checkpoint verilerini otomatik algılar ve bulunursa geri yükler. Temiz başlatma için `--skip-checkpoint` kullanın.
 - **Bağımlılık farkındalıklı geri yükleme**: Compose `depends_on` kullanarak veritabanlarını önce başlatır (healthy bekler), ardından uygulama konteynerlerini CRIU ile geri yükler.
 - **TCP bağlantıları geri yüklemeden sonra eski olur**, uygulamalar `ECONNRESET` hatasını ele almalı ve yeniden bağlanmalıdır. CRIU, desteklenen hiçbir akışta geri yükleme boyunca aktif TCP bağlantı durumunu korumaz.
@@ -120,7 +120,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 - Etiketi olmayan konteynerler daha temiz bir güvenlik profiliyle çalışır (ek capability yok).
 - Docker'ın varsayılan seccomp profili korunur, CRIU, checkpoint/restore sırasında filtreleri geçici olarak askıya almak için `PTRACE_O_SUSPEND_SECCOMP` (çekirdek 4.3+) kullanır.
 - **CRIU capability'lerini compose dosyanızda manuel olarak ayarlamayın**, renet etikete göre bununla ilgilenir.
-- CRIU uyumlu referans uygulama için [heartbeat şablonuna](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) bakın.
+- CRIU uyumlu referans uygulama için [heartbeat sablonuna](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) bakın.
 
 ### CRIU uyumlu uygulama kalıpları
 
@@ -129,6 +129,16 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 - Dahili kütüphane nesnelerinden gelen eski soket hataları için güvenlik ağı olarak `process.on("uncaughtException")` ekleyin.
 - Yeniden başlatma politikaları renet tarafından otomatik yönetilir (CRIU için kaldırılır, watchdog kurtarmayı üstlenir).
 - Docker DNS'ine güvenmeyin, servisler arası iletişim için loopback IP'leri kullanın.
+
+### İsletim sistemine göre host güvenlik politikaları
+
+Resmi olarak desteklenen beş sunucu isletim sisteminde (bkz. [Gereksinimler](/en/docs/requirements)), her deponun Docker daemon'ı ve çalıştırdığı konteynerler **varsayılan konteyner etiketleri** kullanır. `rdc config machine setup`, özel bir SELinux politikası veya AppArmor profili yüklemez.
+
+- **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor varsayılan olarak etkindir. Konteynerler varsayılan docker-container profili altında çalışır. Tek istisna CRIU'dur (yukarıdaki nota bakın; `rediacc.checkpoint=true` etiketli konteynerler için `apparmor=unconfined` eklenir).
+- **Fedora 43 / Oracle Linux 10**: SELinux varsayılan olarak enforcing modda çalışır. Konteynerler standart `container_t` bağlamını alır. Ek politika yüklenmesi gerekmez. Bir kurulum adımı AVC reddiyle başarısız olursa, bkz. [Sorun giderme: SELinux redleri](/en/docs/troubleshooting).
+- **Debian 13**: AppArmor mevcut ancak tüm alanlarda varsayılan olarak uygulanmaz. Konteynerler yine de docker-container profilini kullanır.
+
+İsletim sistemine özgü bir güvenlik duruş bayrağı gerekli değildir; `rdc` ve `renet` neyin çalıştığını algılar ve beş dağıtımın tamamında aynı depo başına izolasyonu sağlar.
 
 ## Güvenlik
 

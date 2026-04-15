@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: fr
-sourceHash: "52f8d1f2d115489e"
-sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
+sourceHash: "e7e428eeb609dc5e"
+sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
 ---
 
 # Services
@@ -150,7 +150,7 @@ Chaque dépôt prend en charge jusqu'à **61 services** (slots 0 à 60).
 
 ### Utilisation des IP de services dans Docker Compose
 
-Puisque chaque dépôt exécute un démon Docker isolé, `renet compose` configure automatiquement `network_mode: host` pour tous les services. Liez les services à leurs adresses IP de bouclage assignées :
+Puisque chaque dépôt exécute un démon Docker isolé, `renet compose` configure automatiquement `network_mode: host` pour tous les services. Le noyau réécrit de façon transparente les appels `bind()` vers l'IP de bouclage assignée au service, de sorte que les services peuvent se lier à `0.0.0.0` ou `localhost` sans conflits. Pour les connexions **vers d'autres services**, utilisez le **nom du service** -- renet injecte chaque nom de service comme nom d'hôte qui résout toujours vers la bonne IP, même dans les forks :
 
 ```yaml
 services:
@@ -159,20 +159,46 @@ services:
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_PASSWORD: secret
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
+    # Pas de listen_addresses explicite nécessaire -- le noyau réécrit bind vers la bonne IP de bouclage
 
   api:
     image: my-api:latest
     environment:
-      DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
-      LISTEN_ADDR: ${API_IP}:8080
+      DATABASE_URL: postgresql://postgres:secret@postgres:5432/mydb  # utiliser le nom de service
+      LISTEN_ADDR: 0.0.0.0:8080                                      # le noyau réécrit vers l'IP du service
 ```
+
+> **Noms de service pour les connexions :** Utilisez le **nom de service** (p.ex. `postgres`, `redis`) pour **vous connecter à** d'autres services -- renet mappe automatiquement chaque nom de service vers son IP de bouclage via `/etc/hosts`. Intégrer `${POSTGRES_IP}` dans des chaînes de connexion stockées dans des bases de données ou des fichiers de configuration figera l'IP brute, ce qui rompt l'isolation des forks et constitue une **erreur de validation**. Les variables `${SERVICE_IP}` restent disponibles pour un usage explicite, mais la liaison est gérée automatiquement par le noyau.
 
 > **Note :** N'ajoutez pas `network_mode: host` manuellement, `renet compose` l'injecte automatiquement. Les politiques de redémarrage (p.ex., `restart: always`) sont sûres à utiliser, renet les supprime automatiquement pour la compatibilité CRIU et le watchdog du routeur gère la récupération des conteneurs.
 
+### Récupération des conteneurs et politique de redémarrage
+
+renet et Docker ont délibérément des avis divergents sur la façon de gérer les redémarrages de conteneurs. Comprendre cette séparation est important pour diagnostiquer pourquoi un conteneur est ou n'est pas revenu.
+
+**Traduction de la politique de redémarrage.** Lorsque vous écrivez `restart: always` (ou `unless-stopped`, ou `on-failure`) dans votre fichier compose, renet la **supprime** lors de la synthèse du déploiement compose réel et la remplace par `restart: no`. La valeur originale est sauvegardée dans `.rediacc.json` du dépôt sous `services.<name>.restart_policy`. Cela empêche le redémarrage automatique au niveau du démon Docker d'interférer avec CRIU checkpoint/restore (un redémarrage piloté par le démon reprendrait depuis un état antérieur au checkpoint devenu obsolète).
+
+**Application du watchdog.** Le watchdog du routeur s'exécute périodiquement sur chaque machine. À chaque cycle :
+
+1. Il lit `.rediacc.json` pour chaque dépôt et trouve les services avec une `restart_policy` récupérable.
+2. Il liste tous les conteneurs du démon de ce dépôt, identifie ceux qui sont arrêtés, et les redémarre selon la politique sauvegardée. Une période de grâce de 30 secondes empêche tout conflit avec un opérateur qui vient d'exécuter `docker stop`.
+3. La même boucle traite également `/var/run/rediacc/cold-backup-<guid>.running.json` (voir [Sémantique Cold Backup](backup-restore.md#cold-backup-semantics)). Les conteneurs listés sont redémarrés indépendamment de la politique sauvegardée, car le sidecar signifie "renet a arrêté ces conteneurs intentionnellement et doit à l'opérateur un redémarrage."
+
+**Pourquoi `on-failure` peut sembler cassé.** La politique `on-failure` de Docker redémarre uniquement lorsque le conteneur sort avec un code non nul. Un arrêt propre (exit 0) depuis `docker stop` ou un arrêt du démon n'est pas un "échec" et ne déclenche PAS de redémarrage, ni par la logique native de Docker ni par le chemin de politique sauvegardée du watchdog. Le sidecar cold backup est le filet de sécurité : tout conteneur que nous avons arrêté intentionnellement est redémarré indépendamment de sa politique.
+
+**Comment interpréter l'état d'exécution :**
+
+- `docker inspect <container>` → `RestartPolicy.Name` : sera toujours `no` pour les conteneurs gérés par renet. Ne vous fiez pas à cela pour la politique sémantique.
+- `.rediacc.json` à la racine du montage du dépôt → `services.<name>.restart_policy` : l'intention réelle.
+- `docker ps --format '{{.Status}}'` : état d'exécution.
+
+**Comment corriger une dérive.** Si la politique sauvegardée dans `.rediacc.json` d'un conteneur est incorrecte (par exemple parce que vous avez modifié compose sans jamais recréer le conteneur), relancez `rdc repo up --name <repo> -m <machine>`. Le conteneur est recréé avec la politique mise à jour enregistrée.
+
+> **Expérimental :** La récupération basée sur le sidecar cold backup et le flag `--sync-certs` sur `rdc machine query` ont été livrés dans renet 0.9+. Les versions antérieures s'appuient uniquement sur la `restart_policy` sauvegardée pour la récupération par watchdog, ce qui peut laisser les conteneurs `on-failure` bloqués après un cold backup.
+
 > **Le réseau bridge Docker est désactivé pour les daemons gérés par rediacc.** Chaque daemon par dépôt est configuré avec `"bridge": "none"` et `"iptables": false`. Un simple `docker run <image>` dans un shell de dépôt se lancera quand même, mais le conteneur n'obtiendra qu'une interface de loopback et ne disposera ni de DNS ni de connectivité sortante. C'est voulu : l'isolation de loopback entre dépôts est appliquée par des hooks cgroup eBPF qu'un conteneur bridgé contournerait. Les services de production doivent utiliser `renet compose` (qui injecte le réseau hôte pour vous) ; pour le débogage ponctuel, passez explicitement `--network host` : `docker run --rm --network host -it ubuntu bash`.
 
-> **Note :** Les repos fork obtiennent des auto-routes plates : `{service}-{tag}.{machine}.{baseDomain}`. Les domaines personnalisés sont ignorés pour les forks.
+> **Note :** Les repos fork obtiennent des auto-routes sous le sous-domaine du parent : `{service}-fork-{tag}.{repo}.{machine}.{baseDomain}`. Les domaines personnalisés sont ignorés pour les forks.
 
 ## Démarrer les services
 
@@ -184,13 +210,23 @@ rdc repo up --name my-app -m server-1
 
 | Option | Description |
 |--------|-------------|
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--skip-router-restart` | Ne pas redémarrer le serveur de routes après l'opération |
 
 La séquence d'exécution est :
 1. Monter le dépôt chiffré LUKS (montage automatique si non monté)
 2. Démarrer le démon Docker isolé
 3. Générer automatiquement `.rediacc.json` à partir des fichiers compose
 4. Exécuter `up()` dans tous les Rediaccfiles (ordre A-Z)
+
+Après le déploiement, la sortie affiche une section **PROXY ROUTES** avec les URLs réelles pour chaque service. Les services avec des labels Traefik personnalisés affichent leurs domaines personnalisés comme URLs principales :
+
+```
+HTTP services (accessible via proxy after ~3s):
+  gitlab-server:
+    HTTPS: https://gitlab.example.com  (custom)
+    Auto:  https://gitlab-server.gitlab.server-1.example.com
+    IP:    127.0.11.130
+```
 
 ## Arrêter les services
 
@@ -201,7 +237,7 @@ rdc repo down --name my-app -m server-1
 | Option | Description |
 |--------|-------------|
 | `--unmount` | Démonter le dépôt chiffré après l'arrêt des services. Si cela ne prend pas effet, utilisez `rdc repo unmount` séparément. |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--skip-router-restart` | Ne pas redémarrer le serveur de routes après l'opération |
 
 La séquence d'exécution est :
 1. Exécuter `down()` dans tous les Rediaccfiles (ordre inverse Z-A, au mieux)
@@ -223,7 +259,7 @@ rdc repo up -m server-1
 | `--dry-run` | Afficher ce qui serait fait |
 | `--parallel` | Exécuter les opérations en parallèle |
 | `--concurrency <n>` | Nombre maximum d'opérations simultanées (par défaut : 3) |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--skip-router-restart` | Ne pas redémarrer le serveur de routes après l'opération |
 
 ## Démarrage automatique au boot
 
@@ -262,6 +298,24 @@ rdc repo autostart disable --name my-app -m server-1
 ```
 
 Ceci supprime le fichier de clé et invalide le slot LUKS 1.
+
+### Actualisation du fichier de clé lors du déploiement
+
+Quand le démarrage automatique est activé, `rdc repo up` valide le fichier de clé du slot LUKS 1.
+Si le fichier de clé sur disque correspond encore au slot LUKS, aucun changement n'est effectué.
+
+Après avoir transféré un dépôt entre machines via `repo push` / `repo pull`,
+le fichier de clé sur la nouvelle machine ne correspondra pas. Dans ce cas, `repo up` régénère automatiquement
+le fichier de clé et met à jour le slot LUKS 1. Vous verrez des messages de journal :
+
+```
+Refreshing keyfile credential for <guid>
+Killing LUKS slot 1: /mnt/rediacc/repositories/<guid>
+Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
+```
+
+C'est sans risque, le slot 0 (votre phrase secrète) n'est jamais modifié. Si le démarrage automatique n'est pas
+activé, la vérification est silencieusement ignorée. Les échecs sont non fatals et ne bloquent pas le déploiement.
 
 ### Lister le statut
 
@@ -305,18 +359,16 @@ services:
       POSTGRES_DB: webapp
       POSTGRES_USER: app
       POSTGRES_PASSWORD: changeme
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
 
   redis:
     image: redis:7-alpine
-    command: redis-server --bind ${REDIS_IP} --port 6379
 
   api:
     image: myregistry/api:latest
     environment:
-      DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
-      REDIS_URL: redis://${REDIS_IP}:6379
-      LISTEN_ADDR: ${API_IP}:8080
+      DATABASE_URL: postgresql://app:changeme@postgres:5432/webapp
+      REDIS_URL: redis://redis:6379
+      LISTEN_ADDR: 0.0.0.0:8080
 ```
 
 **Rediaccfile :**

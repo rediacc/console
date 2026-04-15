@@ -4,7 +4,8 @@ description: "Configurez des planifications de sauvegarde automatisées, gérez 
 category: "Tutorials"
 order: 6
 language: fr
-sourceHash: "f68d915af9daf0da"
+sourceHash: "3af2b8e2e6105e29"
+sourceCommit: "2223eabccb947ee9da79f1afcef075e163797d13"
 ---
 
 # Comment configurer les sauvegardes et le réseau avec Rediacc

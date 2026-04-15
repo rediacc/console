@@ -6,12 +6,13 @@ description: >-
 category: Guides
 order: 7
 language: es
-sourceHash: "137aa1578ca99b8c"
+sourceHash: "0c7ebc3efb8877c5"
+sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
 ---
 
 # Respaldo y Restauración
 
-Rediacc puede respaldar repositorios cifrados en proveedores de almacenamiento externo y restaurarlos en la misma o en diferentes máquinas. Los respaldos están cifrados -- se requiere la credencial LUKS del repositorio para restaurar.
+Rediacc puede respaldar repositorios cifrados en proveedores de almacenamiento externo y restaurarlos en la misma o en diferentes máquinas. Los respaldos están cifrados; se requiere la credencial LUKS del repositorio para restaurar.
 
 ## Configurar Almacenamiento
 
@@ -41,6 +42,8 @@ Envíe un respaldo del repositorio al almacenamiento externo:
 rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
+Push siempre verifica que el repositorio de destino esté montado antes de escribir. Si no está montado, la operación se cancela.
+
 | Opción | Descripción |
 |--------|-------------|
 | `--to <storage>` | Ubicación de almacenamiento destino |
@@ -48,6 +51,7 @@ rdc repo push --name my-app -m server-1 --to my-storage
 | `--dest <filename>` | Nombre de archivo de destino personalizado |
 | `--checkpoint` | Crear un checkpoint CRIU antes de enviar (para contenedores con etiqueta `rediacc.checkpoint=true`). El destino se restaura automáticamente con `repo up` |
 | `--force` | Sobreescribir un respaldo existente |
+| `--bwlimit <limit>` | Límite de ancho de banda para la transferencia rsync (p. ej. `10M`, `500K`) |
 | `--tag <tag>` | Etiquetar el respaldo |
 | `-w, --watch` | Observar el progreso de la operación |
 | `--debug` | Habilitar salida detallada |
@@ -61,11 +65,14 @@ Descargue un respaldo del repositorio desde almacenamiento externo:
 rdc repo pull --name my-app -m server-1 --from my-storage
 ```
 
+Pull siempre verifica que el repositorio de destino esté montado antes de escribir. Si no está montado, la operación se cancela.
+
 | Opción | Descripción |
 |--------|-------------|
 | `--from <storage>` | Ubicación de almacenamiento de origen |
 | `--from-machine <machine>` | Máquina de origen para restauración de máquina a máquina |
 | `--force` | Sobreescribir respaldo local existente |
+| `--bwlimit <limit>` | Límite de ancho de banda para la transferencia rsync (p. ej. `10M`, `500K`) |
 | `-w, --watch` | Observar el progreso de la operación |
 | `--debug` | Habilitar salida detallada |
 | `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
@@ -105,41 +112,160 @@ rdc repo pull --from my-storage -m server-1
 
 ## Respaldos Programados
 
-Automatice los respaldos con un cronograma cron que se ejecuta como un temporizador systemd en la máquina remota.
+Rediacc utiliza estrategias de respaldo con nombre. Cada estrategia define un cronograma, modo de respaldo, límite de ancho de banda opcional y filtros de archivo. Las máquinas referencian estrategias por nombre para determinar qué respaldos se ejecutan en ellas.
 
-### Configurar Cronograma
+### Modos de Respaldo
+
+| Modo | Comportamiento | Tiempo de inactividad |
+|------|---------------|----------------------|
+| `hot` | Snapshot de BTRFS tomado mientras los servicios están en ejecución (consistente ante fallos) | Ninguno |
+| `cold` | Servicios detenidos, snapshot tomado, servicios reiniciados, snapshot cargado (consistente a nivel de aplicación) | Breve |
+
+Use `hot` para servicios que toleran snapshots consistentes ante fallos. Use `cold` cuando necesite consistencia garantizada y pueda aceptar un breve reinicio.
+
+### Semantica del Respaldo en Frio
+
+Un respaldo frio ejecuta tres fases por repositorio incluido: **detener -- snapshot -- iniciar**. Comprender los limites de las garantias ayuda a los operadores a detectar fallos parciales a tiempo.
+
+**Lo que el respaldo frio garantiza:**
+
+- Antes del snapshot, cada contenedor en ejecucion en cada repositorio incluido se detiene de forma controlada mediante el hook `down()` del Rediaccfile, y el Docker daemon por repositorio queda en reposo. El snapshot es por lo tanto consistente a nivel de aplicacion, no solo consistente ante fallos.
+- El conjunto de IDs de contenedor que estaban en ejecucion antes del snapshot se persiste en un archivo sidecar en `/var/run/rediacc/cold-backup-<guid>.running.json`. Esta es la fuente de verdad de "que debe volver a estar activo cuando terminemos."
+- Despues del snapshot, se invoca el hook `up()` del Rediaccfile del repositorio para restaurar el stack completo de compose.
+- Un archivo sidecar de estado por ejecucion en `/var/run/rediacc/cold-backup-<guid>.status.json` registra la fase, resultado y cualquier error de cada intento.
+
+**Lo que el respaldo frio NO garantiza:**
+
+- `up()` es de mejor esfuerzo. Puede fallar por razones fuera del control del respaldo frio (una condicion `depends_on: service_healthy` aun esperando, un error de sintaxis en el archivo compose, un fallo de red transitorio al descargar una imagen). Cuando falla, el respaldo frio registra el error a nivel de error, escribe el sidecar de estado y pasa al siguiente repositorio.
+- Cuando `up()` falla, se activa un **reinicio directo de respaldo**: se lee el sidecar de ejecucion y cada ID de contenedor registrado se reinicia mediante la API de Docker directamente (sin compose). Esto pone los servicios de vuelta en marcha incluso si el flujo de compose tiene un problema, aunque sin volver a ejecutar ningun hook de Rediaccfile.
+- Si incluso el respaldo falla para algunos IDs de contenedor (por ejemplo, el propio Docker daemon esta caido), el sidecar se **deja en su lugar** para que el watchdog del router pueda seguir reintentando en cada ciclo.
+
+**Recuperacion del Watchdog:** en cada ciclo, el watchdog comprueba si existe un sidecar de ejecucion. Cualquier ID de contenedor listado ahi que este actualmente detenido se reinicia, *independientemente de la `restart_policy` guardada del contenedor*. Esto significa que los servicios con `restart: on-failure` (que Docker NO reiniciaria despues de una detencion limpia) siguen volviendo despues de un respaldo frio. Una vez que todos los contenedores listados esten en ejecucion, el sidecar se elimina.
+
+**Como los operadores detectan fallos:**
+
+- `rdc machine query --name <machine> --containers` muestra el estado de ejecucion. Compare con el conjunto esperado.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` en la maquina. Inspeccione via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa que el ultimo respaldo no se completo correctamente.
+- Los registros del respaldo de renet (`journalctl -u renet-*` o la invocacion directa `rdc machine deploy-backup`) emiten una linea de resumen final de la forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` no vacio es el objetivo de grep.
+
+### Definir una Estrategia
 
 ```bash
-rdc config backup-strategy set --name nightly --destination my-storage --cron "0 2 * * *" --enable
+rdc config backup-strategy set \
+  --name hourly-hot \
+  --destination my-storage \
+  --cron "0 * * * *" \
+  --mode hot \
+  --bwlimit 20M \
+  --enable
 ```
 
-Puede configurar múltiples destinos con diferentes cronogramas:
-
 ```bash
-rdc config backup-strategy set --name nightly-s3 --destination my-s3 --cron "0 2 * * *" --enable
-rdc config backup-strategy set --name morning-azure --destination azure-backup --cron "0 6 * * *" --enable
+rdc config backup-strategy set \
+  --name nightly-cold \
+  --destination my-storage \
+  --cron "0 2 * * *" \
+  --mode cold \
+  --include "*.db" \
+  --exclude "tmp/**" \
+  --enable
 ```
 
 | Opción | Descripción |
 |--------|-------------|
-| `--destination <storage>` | Destino de respaldo (se puede configurar por destino) |
-| `--cron <expression>` | Expresión cron (por ejemplo, `"0 2 * * *"` para diario a las 2 AM) |
-| `--enable` | Habilitar el cronograma |
-| `--disable` | Deshabilitar el cronograma |
+| `--name <name>` | Nombre de la estrategia (usado para la vinculación de la máquina) |
+| `--destination <storage>` | Proveedor de almacenamiento al que cargar |
+| `--cron <expression>` | Expresión cron (p. ej. `"0 2 * * *"` para diario a las 2 AM) |
+| `--mode <hot\|cold>` | Modo de respaldo |
+| `--bwlimit <limit>` | Límite de ancho de banda para cargas (p. ej. `10M`) |
+| `--include <pattern>` | Filtro de inclusion (repetible) |
+| `--exclude <pattern>` | Filtro de exclusion (repetible) |
+| `--enable` / `--disable` | Habilitar o deshabilitar la estrategia |
 
-### Enviar Cronograma a la Máquina
+### Ver Estrategias
 
-Despliegue la configuración del cronograma en una máquina como un temporizador systemd:
+```bash
+rdc config backup-strategy list
+rdc config backup-strategy show --name nightly-cold
+```
+
+### Eliminar una Estrategia
+
+```bash
+rdc config backup-strategy remove --name nightly-cold
+```
+
+### Vincular Estrategias a una Maquina
+
+En su configuración, vincule uno o más nombres de estrategia a una máquina:
+
+```json
+{
+  "machines": {
+    "hostinger": {
+      "backupStrategies": ["hourly-hot", "nightly-cold"]
+    }
+  }
+}
+```
+
+## Operaciones de Respaldo
+
+### Desplegar Cronograma en la Máquina
+
+Envíe las estrategias vinculadas a una máquina como temporizadores systemd:
 
 ```bash
 rdc machine backup schedule -m server-1
+rdc machine backup schedule -m server-1 --dry-run
 ```
 
-### Ver Cronograma
+`--dry-run` imprime los archivos de unidad systemd generados sin desplegarlos. Los tokens de rclone están enmascarados en la salida de dry-run.
+
+### Ejecutar un Respaldo Ahora
+
+Ejecute un respaldo inmediatamente sin esperar el temporizador. Funciona incluso si no se han desplegado temporizadores, usando `systemd-run` para ejecución ad-hoc:
 
 ```bash
-rdc config backup-strategy show
+rdc machine backup now -m server-1
+rdc machine backup now -m server-1 --strategy nightly-cold
 ```
+
+### Ver Estado del Respaldo
+
+Muestre el estado actual de los temporizadores de respaldo y resultados de trabajos recientes:
+
+```bash
+rdc machine backup status -m server-1
+rdc machine backup status -m server-1 --strategy hourly-hot
+```
+
+### Cancelar un Respaldo en Ejecución
+
+```bash
+rdc machine backup cancel -m server-1
+rdc machine backup cancel -m server-1 --strategy nightly-cold
+```
+
+## Migración de Repositorios
+
+Mueva un repositorio de una máquina a otra:
+
+```bash
+rdc repo migrate --name my-app --from server-1 --to server-2
+```
+
+| Opción | Descripción |
+|--------|-------------|
+| `--name <repo>` | Repositorio a migrar |
+| `--from <machine>` | Máquina de origen |
+| `--to <machine>` | Máquina de destino |
+| `--provision` | Provisionar el repositorio en el destino antes de transferir |
+| `--checkpoint` | Crear un checkpoint CRIU antes de migrar |
+| `--skip-dns` | Omitir la actualización de registros DNS después de la migración |
+| `--bwlimit <limit>` | Límite de ancho de banda para la transferencia (p. ej. `50M`) |
+
+La migración transfiere los datos del repositorio cifrado via rsync. El repositorio de origen permanece intacto hasta que lo elimine explícitamente.
 
 ## Explorar Almacenamiento
 
@@ -151,7 +277,8 @@ rdc storage browse --name my-storage
 
 ## Mejores Prácticas
 
-- **Programe respaldos diarios** en al menos un proveedor de almacenamiento
-- **Pruebe las restauraciones** periódicamente para verificar la integridad de los respaldos
-- **Use múltiples proveedores de almacenamiento** para datos críticos (por ejemplo, S3 + B2)
-- **Mantenga las credenciales seguras** -- los respaldos están cifrados pero se requiere la credencial LUKS para restaurar
+- Programar respaldos frios diarios para snapshots consistentes a nivel de aplicacion de datos criticos
+- Usar respaldos calientes para snapshots de alta frecuencia donde se requiere tiempo de actividad total
+- Probar las restauraciones periódicamente para verificar la integridad de los respaldos
+- Usar múltiples proveedores de almacenamiento para datos críticos (p. ej. S3 + B2)
+- Mantener las credenciales seguras; los respaldos están cifrados pero se requiere la credencial LUKS para restaurar

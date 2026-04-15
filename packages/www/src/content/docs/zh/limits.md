@@ -5,8 +5,8 @@ description: >-
 category: "Reference"
 order: 99
 language: zh
-sourceHash: "fdf074885af49980"
-sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
+sourceHash: "e663f13b2f78bc65"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # 限制与配额
@@ -135,7 +135,7 @@ rdc config infra push -m server-1
 |------|-----|
 | 每个仓库的备份目标 | 无限制 |
 | 同时备份任务 | 每个仓库 1 个（同时触发时任务排队） |
-| 备份频率 | 无强制最小间隔；受限于您的存储带宽 |
+| 备份频率 | 无强制最小间隔；受限于您的存储带宽。使用 `rdc config backup-strategy set --name <name> --bwlimit "6M"` 限制上传速度 |
 | 保留策略 | 由您的存储提供商（S3、Cloudflare R2 等）控制。Rediacc 不强制执行保留策略。 |
 | 跨机器备份 | 支持；目标机器必须有足够的数据存储空间 |
 
@@ -154,15 +154,30 @@ rdc config infra push -m server-1
 
 ## 支持的操作系统版本
 
-远程机器必须运行以下操作系统之一，以满足 Rediacc 的内核、文件系统和 eBPF 要求：
+远程机器必须运行以下操作系统之一，以满足 Rediacc 的内核、文件系统和网络隔离要求。此列表是经过 CI 测试的权威集合（Bridge Workers 矩阵），必须与[要求](/en/docs/requirements)保持同步：
 
-| 操作系统 | 最低版本 | 默认内核 |
-|----------|----------|----------|
-| Ubuntu | 24.04 LTS *（推荐）* | 6.8 |
-| Debian | 12 (Bookworm) | 6.1 |
-| Fedora | 43 | 6.12 |
-| openSUSE Leap | 16.0 | 6.4+ |
+| 操作系统 | 最低版本 | 默认内核 | 备注 |
+|----------|----------|----------|------|
+| Ubuntu | 24.04 LTS *（推荐）* | 6.8 | AppArmor 默认。 |
+| Debian | 13 (Trixie)；12 Bookworm 也可使用 | 6.12（Debian 12 上为 6.1） | |
+| Fedora | 43 | 6.12 | SELinux enforcing 默认。 |
+| openSUSE Leap | 16.0 | 6.4+ | AppArmor 默认。 |
+| Oracle Linux | 10 (UEK) | UEK 7+ | UEK 保留 btrfs；SELinux enforcing 默认。 |
 
 **最低要求内核：6.1。** 运行较旧内核的机器在设置时会被拒绝，并显示明确的错误消息。
 
-> **为什么是内核 6.1？** Rediacc 使用 BTRFS 进行加密仓库存储和写时复制分支。Linux 6.1 引入了关键的 BTRFS 改进，显著减少了大型数据存储的挂载时间，提高了快照删除性能，并修复了早期内核中存在的数据完整性问题。内核 6.1 还需要支持 eBPF cgroup 套接字程序（`BPF_PROG_TYPE_CGROUP_SOCK_ADDR`），这些程序在内核级别强制执行跨仓库网络隔离，透明地重写 `bind()` 调用并阻止仓库之间的连接。
+> **为什么是内核 6.1？** Rediacc 使用 BTRFS 进行加密仓库存储和写时复制分支。Linux 6.1 引入了关键的 BTRFS 改进，显著减少了大型数据存储的挂载时间，提高了快照删除性能，并修复了早期内核中存在的数据完整性问题。内核 6.1 还需要支持内核级网络隔离钩子，这些钩子在仓库之间强制执行隔离，透明地重写 `bind()` 调用并阻止仓库之间的连接。
+
+> **为什么不是 Rocky Linux 10 / RHEL 10 原厂内核？** RHEL 10 的原厂内核不包含 `btrfs` 模块（`modprobe btrfs` 失败，提示 "Module btrfs not found"）。Rediacc 的加密存储后端没有 btrfs 无法运行。**Oracle Linux 10 是支持列表中唯一的 RHEL 兼容目标**，因为它默认使用保留了 btrfs 的 Unbreakable Enterprise Kernel（UEK）。完整说明请参阅[要求：为什么选择 UEK？](/en/docs/requirements)。
+
+### 内核功能矩阵
+
+运营人员可以通过此矩阵一目了然地查看每个经 CI 测试的操作系统在开箱即用情况下提供的功能。五个系统均满足所有要求；该矩阵是面向运营人员的参考信息，而非门控标准。
+
+| 操作系统 | btrfs 模块 | cgroups v2 | Landlock (ABI >= 1) | eBPF cgroup 钩子 |
+|----------|------------|------------|---------------------|-----------------|
+| Ubuntu 24.04 | 内置 | unified hierarchy | 是 (5.13+) | 是 |
+| Debian 13 | 内置 | unified hierarchy | 是 | 是 |
+| Fedora 43 | 内置 | unified hierarchy | 是 | 是 |
+| openSUSE Leap 16.0 | 内置 | unified hierarchy | 是 | 是 |
+| Oracle Linux 10 (UEK) | 内置 (经 UEK) | unified hierarchy | 是 | 是 |

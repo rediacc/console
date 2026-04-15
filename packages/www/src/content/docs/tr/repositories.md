@@ -4,8 +4,8 @@ description: 'Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yön
 category: Guides
 order: 4
 language: tr
-sourceHash: "a3b38ca25b01b511"
-sourceCommit: "b249ac136e10333269e1a393dd7dc2d30a89d0f1"
+sourceHash: "83f2c9fa5ae53864"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # Depolar
@@ -25,7 +25,7 @@ rdc repo create --name my-app -m server-1 --size 10G
 |---------|---------|----------|
 | `-m, --machine <name>` | Evet | Deponun oluşturulacağı hedef makine |
 | `--size <size>` | Evet | Şifrelenmiş disk imajının boyutu (ör. `5G`, `10G`, `50G`) |
-| `--skip-router-restart` | No | Skip restarting the route server after the operation |
+| `--skip-router-restart` | Hayır | İşlemden sonra rota sunucusunun yeniden başlatılmasını atla |
 
 Çıktıda otomatik olarak oluşturulan üç değer gösterilir:
 
@@ -46,8 +46,8 @@ rdc repo unmount --name my-app -m server-1  # Ayır ve tekrar şifrele
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--checkpoint` | Bağlama/ayırma öncesinde bir kontrol noktası oluştur |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--checkpoint` | Bağlama/ayırma öncesinde bir CRIU kontrol noktası oluştur (`rediacc.checkpoint=true` etiketli konteynerler için) |
+| `--skip-router-restart` | İşlemden sonra rota sunucusunun yeniden başlatılmasını atla |
 
 ## Durum Kontrolü
 
@@ -80,7 +80,7 @@ Mevcut bir deponun güncel durumunun bir kopyasını oluşturun:
 rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
-Çatallar name:tag modelini kullanır: ortaya çıkan çatal `my-app:staging` olarak adlandırılır. Bu, kendi GUID'i ve ağ kimliğine sahip yeni bir şifrelenmiş kopya oluşturur ve üst deponun adını paylaşır. Çatal (fork), üst depo ile aynı LUKS kimlik bilgisini paylaşır.
+Çatallar name:tag modelini kullanır: ortaya çıkan çatal `my-app:staging` olarak adlandırılır. Bu, kendi GUID'i ve ağ kimliğine sahip yeni bir şifrelenmiş kopya oluşturur ve üst deponun adını paylaşır. Çatal, üst depo ile aynı LUKS kimlik bilgisini paylaşır.
 
 ## Doğrulama
 
@@ -103,7 +103,7 @@ Komut, Docker konteyner veri dizinlerini (yazılabilir bind bağlamaları) otoma
 | Seçenek | Açıklama |
 |---------|----------|
 | `--uid <uid>` | 7111 yerine özel bir UID ayarla |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--skip-router-restart` | İşlemden sonra rota sunucusunun yeniden başlatılmasını atla |
 
 Tüm dosyalar üzerinde sahipliği zorlamak için (konteyner verileri dahil):
 
@@ -112,7 +112,7 @@ rdc repo ownership --name my-app -m server-1
 ```
 
 
-Sahipliğin ne zaman ve nasıl kullanılacağına dair eksiksiz bir yol haritası için [Taşıma Rehberi](/tr/docs/migration) sayfasına bakın.
+Sahipliğin ne zaman ve nasıl kullanılacağına dair eksiksiz bir kılavuz için [Taşıma Rehberi](/en/docs/migration) sayfasına bakın.
 
 ## Şablon
 
@@ -131,3 +131,50 @@ rdc repo delete --name my-app -m server-1
 ```
 
 > Bu, şifrelenmiş disk imajını kalıcı olarak yok eder. Bu işlem geri alınamaz.
+
+## Depo Taşıma
+
+Bir depoyu minimum kesinti süresiyle bir makineden diğerine canlı olarak taşıyın.
+
+```bash
+rdc repo migrate --name my-app --from server-1 --to server-2
+```
+
+| Seçenek | Açıklama |
+|---------|----------|
+| `--provision` | Taşımadan önce hedef makinede depoyu hazırla (LUKS imajı oluşturur ve yapılandırmayı kaydeder) |
+| `--checkpoint` | Geçiş öncesinde çalışan konteynerlerin CRIU kontrol noktasını oluştur |
+| `--bwlimit <kbps>` | rsync bant genişliğini kilobayt/saniye cinsinden sınırla |
+| `--skip-dns` | Geçiş sonrasında DNS kayıtlarının güncellenmesini atla |
+
+**Üç aşamalı akış:**
+
+1. **Sıcak ön kopyalama** - Depo kaynak üzerinde çalışmaya devam ederken rsync verileri aktarır. Büyük dosyalar herhangi bir kesinti olmadan önce aktarılır.
+2. **Geçiş** - Depo kaynakta durdurulur, son rsync geçişi kalan değişiklikleri senkronize eder ve depo hedefte başlatılır.
+3. **Hedefte başlatma** - renet, hedef makinede depoyu bağlar ve başlatır. `--skip-dns` geçirilmedikçe DNS güncellenir.
+
+![Depo Canlı Taşıma](/img/repo-migrate-flow.svg)
+
+**Push ile taşıma karşılaştırması:**
+
+| | `repo push` | `repo migrate` |
+|--|-------------|----------------|
+| İşlem | Kopyalama | Taşıma |
+| Kaynak sonrası | Değişmez | Durdurulmuş |
+| Kesinti süresi | Yok (yalnızca kopyalama) | Kısa geçiş penceresi |
+| DNS güncellemesi | Hayır | Evet (`--skip-dns` olmadan) |
+| Kullanım senaryosu | Yedekleme, geliştirme klonu | Makine değiştirme, sunucu taşıma |
+
+## Temizleme
+
+Depoları sildikten veya başarısız işlemlerden kurtulduktan sonra, sahipsiz bağlama dizinleri, kilit dosyaları ve taşınamaz işaretçiler kalabilir. Temizleme bunları güvenli şekilde kaldırır:
+
+```bash
+# Neyin kaldırılacağını önizle
+rdc machine prune --name server-1 --dry-run
+
+# Sahipsiz kaynakları kaldır
+rdc machine prune --name server-1
+```
+
+Yalnızca eşleşen depo imajı olmayan kaynaklar etkilenir. İçeriği boş olmayan bağlama dizinleri hiçbir zaman kaldırılmaz.

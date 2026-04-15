@@ -4,7 +4,8 @@ description: "Migrar proyectos existentes a repositorios cifrados de Rediacc."
 category: "Guides"
 order: 11
 language: es
-sourceHash: "96c0254adb792a90"
+sourceHash: "5e13e363e9dce55f"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # Guía de migración
@@ -112,7 +113,7 @@ down() {
 }
 ```
 
-Las tres funciones del ciclo de vida:
+Las dos funciones del ciclo de vida:
 
 | Función | Propósito | Comportamiento ante errores |
 |---------|-----------|---------------------------|
@@ -168,29 +169,27 @@ services:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: secret
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
 
   redis:
     image: redis:7-alpine
-    command: redis-server --bind ${REDIS_IP} --port 6379
 
   app:
     image: my-app:latest
     environment:
-      DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
-      REDIS_URL: redis://${REDIS_IP}:6379
-      LISTEN_ADDR: ${APP_IP}:8080
+      DATABASE_URL: postgresql://postgres:secret@postgres:5432/mydb
+      REDIS_URL: redis://redis:6379
+      LISTEN_ADDR: 0.0.0.0:8080
 ```
 
 Cambios principales:
 
-1. **Eliminar las asignaciones de `ports:`**, `renet compose` usa red de host y elimina las asignaciones de puertos automáticamente
-2. **Eliminar `network_mode: host`**, `renet compose` lo agrega automáticamente
-3. **Eliminar `restart: always` o `restart: unless-stopped`**, entran en conflicto con CRIU checkpoint/restore (Docker inicia automáticamente los contenedores antes de que checkpoint restore pueda ejecutarse). Use `restart: on-failure` si necesita comportamiento de reinicio, o omítalo completamente, Rediaccfile `up()`/`down()` gestiona el ciclo de vida del contenedor
-4. **Vincular servicios a variables de entorno `${SERVICE_IP}`** (inyectadas automáticamente por Rediacc)
-5. **Referenciar otros servicios por su IP** en lugar de nombres DNS de Docker (por ejemplo, `${POSTGRES_IP}` en lugar de `postgres`)
+1. **Eliminar las asignaciones de `ports:`** - `renet compose` usa red de host y elimina las asignaciones de puertos automáticamente
+2. **Eliminar `network_mode: host`** - `renet compose` lo agrega automáticamente
+3. **Las políticas de reinicio son seguras de mantener** - renet las elimina automáticamente para compatibilidad con CRIU y el watchdog del router recupera automáticamente los contenedores detenidos
+4. **Usar nombres de servicio para conexiones entre servicios** (p. ej. `postgres`, `redis`) - renet inyecta cada nombre de servicio como un nombre de host resolvible. No incruste IPs directas en cadenas de conexión que se almacenen en bases de datos o archivos de configuración; use el nombre del servicio para mantener el aislamiento de forks
+5. **El binding es automático** - el kernel reescribe `bind()` a la IP de loopback correcta. Los servicios pueden usar `0.0.0.0` o `localhost`
 
-Las variables `{SERVICE}_IP` se generan automáticamente a partir de los nombres de servicio de su archivo compose. La convención de nombres: mayúsculas, guiones reemplazados por guiones bajos, con sufijo `_IP`. Por ejemplo, `listmonk-app` se convierte en `LISTMONK_APP_IP`.
+Las variables `{SERVICE}_IP` siguen disponibles si las necesita, pero el binding explícito ya no es necesario. La convención de nombres: mayúsculas, guiones reemplazados por guiones bajos, sufijo `_IP`. Por ejemplo, `listmonk-app` se convierte en `LISTMONK_APP_IP`.
 
 Vea [Red de servicios](/es/docs/services#service-networking-rediaccjson) para detalles sobre la asignación de IP y `.rediacc.json`.
 
@@ -279,7 +278,7 @@ rdc repo ownership --name my-project -m server-1
 
 ### El contenedor no inicia
 
-Verifique que los servicios se vinculen a su IP asignada, no a `0.0.0.0` o `localhost`:
+Compruebe que los servicios estén en ejecución y revise sus registros:
 
 ```bash
 # Verificar IPs asignadas
@@ -291,7 +290,7 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### Conflicto de puertos entre repositorios
 
-Cada repositorio obtiene IPs de loopback únicas. Si ve conflictos de puertos, verifique que su `docker-compose.yml` use `${SERVICE_IP}` para la vinculación en lugar de `0.0.0.0`. Los servicios vinculados a `0.0.0.0` escuchan en todas las interfaces y entrarán en conflicto con otros repositorios.
+Cada repositorio obtiene IPs de loopback únicas y el kernel reescribe automáticamente las llamadas `bind()` a la IP correcta. Los conflictos de puertos entre repositorios no deberían ocurrir. Si observa un comportamiento inesperado, verifique que los servicios se inicien mediante `renet compose` (no `docker compose`). Para conectarse a otros servicios, use el nombre del servicio (p. ej. `postgres`) en lugar de IPs directas; los nombres de servicio se resuelven correctamente en cada fork.
 
 ### La corrección de propiedad rompe contenedores
 

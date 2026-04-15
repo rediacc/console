@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: fr
-sourceHash: "fdf074885af49980"
-sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
+sourceHash: "e663f13b2f78bc65"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # Limites et quotas
@@ -136,7 +136,7 @@ La migration à chaud via CRIU a les contraintes suivantes :
 |--------|--------|
 | Destinations de backup par repository | Illimitées |
 | Jobs de backup simultanés | 1 par repository (les jobs sont mis en file d'attente s'ils sont déclenchés simultanément) |
-| Fréquence de backup | Aucun intervalle minimum imposé ; limité par la bande passante de votre stockage |
+| Fréquence de backup | Aucun intervalle minimum imposé ; limité par la bande passante de votre stockage. Utilisez `rdc config backup-strategy set --name <name> --bwlimit "6M"` pour limiter la vitesse d'envoi |
 | Rétention | Contrôlée par votre fournisseur de stockage (S3, Cloudflare R2, etc.). Rediacc n'impose pas de politiques de rétention. |
 | Backup inter-machines | Pris en charge ; la machine de destination doit disposer d'un espace datastore suffisant |
 
@@ -155,15 +155,30 @@ La migration à chaud via CRIU a les contraintes suivantes :
 
 ## Versions de système d'exploitation prises en charge
 
-Les machines distantes doivent exécuter l'un des systèmes suivants pour satisfaire les exigences de kernel, de système de fichiers et d'eBPF de Rediacc :
+Les machines distantes doivent exécuter l'un des systèmes suivants pour satisfaire les exigences de kernel, de système de fichiers et d'isolation réseau de Rediacc. Cette liste est l'ensemble canonique testé en CI (matrice Bridge Workers) et doit rester synchronisée avec [Prérequis](/en/docs/requirements) :
 
-| SE | Version minimale | Kernel par défaut |
-|----|------------------|-------------------|
-| Ubuntu | 24.04 LTS *(recommandé)* | 6.8 |
-| Debian | 12 (Bookworm) | 6.1 |
-| Fedora | 43 | 6.12 |
-| openSUSE Leap | 16.0 | 6.4+ |
+| SE | Version minimale | Kernel par défaut | Notes |
+|----|------------------|-------------------|-------|
+| Ubuntu | 24.04 LTS *(recommandé)* | 6.8 | AppArmor par défaut. |
+| Debian | 13 (Trixie) ; 12 Bookworm fonctionne aussi | 6.12 (6.1 sur Debian 12) | |
+| Fedora | 43 | 6.12 | SELinux enforcing par défaut. |
+| openSUSE Leap | 16.0 | 6.4+ | AppArmor par défaut. |
+| Oracle Linux | 10 (UEK) | UEK 7+ | UEK conserve btrfs ; SELinux enforcing par défaut. |
 
 **Kernel minimum requis : 6.1.** Les machines avec des kernels plus anciens sont rejetées lors de la configuration avec un message d'erreur clair.
 
-> **Pourquoi le kernel 6.1 ?** Rediacc utilise BTRFS pour le stockage chiffré des repositories et le forking en copie sur écriture. Linux 6.1 a introduit des améliorations critiques de BTRFS qui réduisent considérablement les temps de montage pour les grands datastores, améliorent les performances de suppression des snapshots et corrigent des problèmes d'intégrité des données présents dans les kernels antérieurs. Le kernel 6.1 est également nécessaire pour les programmes de socket eBPF cgroup (`BPF_PROG_TYPE_CGROUP_SOCK_ADDR`) qui imposent l'isolation réseau entre repositories au niveau du kernel, en réécrivant de manière transparente les appels `bind()` et en bloquant les connexions entre repositories.
+> **Pourquoi le kernel 6.1 ?** Rediacc utilise BTRFS pour le stockage chiffré des repositories et le forking en copie sur écriture. Linux 6.1 a introduit des améliorations critiques de BTRFS qui réduisent considérablement les temps de montage pour les grands datastores, améliorent les performances de suppression des snapshots et corrigent des problèmes d'intégrité des données présents dans les kernels antérieurs. Le kernel 6.1 est également nécessaire pour les hooks d'isolation réseau au niveau du kernel qui appliquent l'isolation entre repositories, en réécrivant de manière transparente les appels `bind()` et en bloquant les connexions entre repositories.
+
+> **Pourquoi pas Rocky Linux 10 / kernel stock de RHEL 10 ?** Le kernel stock de RHEL 10 est livré sans le module `btrfs` (`modprobe btrfs` échoue avec "Module btrfs not found"). Le backend de stockage chiffré de Rediacc ne peut pas fonctionner sans btrfs. **Oracle Linux 10 est la seule cible compatible RHEL sur la liste prise en charge** car il utilise par défaut l'Unbreakable Enterprise Kernel (UEK), qui conserve btrfs. Voir [Prérequis : Pourquoi UEK ?](/en/docs/requirements) pour l'explication complète.
+
+### Matrice des fonctionnalités du kernel
+
+Les opérateurs peuvent lire cette matrice d'un coup d'oeil pour voir ce que chaque OS testé en CI fournit par défaut. Les cinq satisfont toutes les exigences ; la matrice est une référence pour les opérateurs, pas un critère de sélection.
+
+| SE | Module btrfs | cgroups v2 | Landlock (ABI >= 1) | Hooks eBPF cgroup |
+|----|--------------|------------|---------------------|-------------------|
+| Ubuntu 24.04 | intégré | unified hierarchy | oui (5.13+) | oui |
+| Debian 13 | intégré | unified hierarchy | oui | oui |
+| Fedora 43 | intégré | unified hierarchy | oui | oui |
+| openSUSE Leap 16.0 | intégré | unified hierarchy | oui | oui |
+| Oracle Linux 10 (UEK) | intégré (via UEK) | unified hierarchy | oui | oui |

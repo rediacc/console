@@ -4,8 +4,8 @@ description: "تخطيط المجلدات، وأوامر renet، وخدمات sy
 category: "Concepts"
 order: 3
 language: ar
-sourceHash: "f27a4135aed54918"
-sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
+sourceHash: "ce8786bdc5c1543f"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # مرجع الخادم
@@ -109,11 +109,21 @@ DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
 # التحقق من دعم Landlock
 renet sandbox-exec --detect
 
-# تشغيل أمر داخل عزل Landlock (يُستخدم داخليًا بواسطة renet)
+# تشغيل أمر داخل عزل Landlock (يُستخدم داخليًا)
 renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
 ```
 
-يطبق `sandbox-exec` قيود نظام الملفات الخاصة بـ Landlock LSM على أمر ما. لا يمكن للعملية المعزولة الوصول إلا إلى المسارات المسموح بها صراحةً، بينما يمنع النواة أي وصول آخر إلى نظام الملفات. يُستخدم هذا داخليًا في renet لعزل تنفيذ Rediaccfile وعمليات compose وأوامر SSH ضمن مسار تثبيت المستودع الخاص بها.
+يطبق `sandbox-exec` قيود نظام الملفات الخاصة بـ Landlock LSM، ثم ينفذ الأمر المحدد. يُستدعى تلقائيًا بواسطة `sandbox-gateway` (معالج SSH ForceCommand) لجميع اتصالات مستوى المستودع.
+
+**الأعلام:**
+- `--allow-rw`، `--allow-ro`، `--allow-exec`: قواعد مسارات Landlock
+- `--home-overlay`: تركيب OverlayFS فوق المجلد الرئيسي لعزل الكتابة لكل مستودع
+- `--sandbox-dir`: مساحة عمل لكل مستودع (`<datastore>/.interim/sandbox/<name>/`)
+- `--work-dir`: تعيين دليل العمل وتحميل `.envrc` لبيئة المستودع
+- `--run-as`: إسقاط الامتيازات للمستخدم المستهدف بعد الإعداد
+- `--reset-home`: مسح طبقة التراكب الرئيسية لكل مستودع للبدء من جديد
+
+**`sandbox-gateway`** هو معالج SSH ForceCommand المعين عبر `command=` في `authorized_keys`. يُشغّل مفتاح SSH الخاص بكل مستودع البوابة مع اسم المستودع المضمّن فيه، وهو أمر لا يمكن للعميل تزويره. تقوم البوابة ببناء وسائط sandbox-exec وتنفيذها عبر sudo.
 
 ### الوكيل والتوجيه
 
@@ -254,11 +264,11 @@ renet list containers
 
 ## نصائح
 
-- استخدم دائمًا `sudo` لأوامر `renet compose` و `renet repository` و `renet docker` -- فهي تحتاج صلاحيات الجذر لعمليات LUKS و Docker
+- استخدم دائمًا `sudo` لأوامر `renet compose` و `renet repository` و `renet docker`، فهي تحتاج صلاحيات الجذر لعمليات LUKS و Docker
 - الفاصل `--` مطلوب قبل تمرير الوسائط إلى `renet compose` و `renet docker`
 - قم بتشغيل compose من المجلد الذي يحتوي على `docker-compose.yml`
-- تعيينات فتحات `.rediacc.json` ثابتة -- لا تغيّرها بعد النشر
+- تعيينات فتحات `.rediacc.json` ثابتة، لا تغيّرها بعد النشر
 - استخدم مسارات `/run/rediacc/docker-{id}.sock` (قد يغيّر systemd مسارات `/var/run/` القديمة)
 - قم بتشغيل `renet prune --dry-run` من وقت لآخر للعثور على الموارد المعزولة
-- لقطات BTRFS (`renet backup`) سريعة وقليلة التكلفة -- استخدمها قبل إجراء تغييرات محفوفة بالمخاطر
-- المستودعات مشفرة بـ LUKS -- فقدان كلمة المرور يعني فقدان البيانات
+- لقطات BTRFS (`renet backup`) سريعة وقليلة التكلفة، استخدمها قبل إجراء تغييرات محفوفة بالمخاطر
+- المستودعات مشفرة بـ LUKS، فقدان كلمة المرور يعني فقدان البيانات

@@ -4,17 +4,18 @@ description: "创建加密仓库、部署容器化应用、检查容器和清理
 category: "Tutorials"
 order: 3
 language: zh
-sourceHash: "4d7072927542dfb3"
+sourceHash: "fecc09a324a1fa65"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # 如何使用 Rediacc 部署和管理仓库
 
-仓库是 Rediacc 的核心部署单元, , 每个仓库都是一个隔离的加密环境，拥有自己的 Docker daemon 和专用存储。在本教程中，您将创建一个加密仓库、部署容器化应用、检查运行中的容器并进行清理。完成后，您将体验完整的部署生命周期。
+仓库是 Rediacc 的核心部署单元，每个仓库都是一个隔离的加密环境，拥有自己的 Docker daemon 和专用存储。在本教程中，您将创建一个加密仓库、部署容器化应用、检查运行中的容器并进行清理。完成后，您将体验完整的部署生命周期。
 
 ## 前提条件
 
 - 已安装 `rdc` CLI 并初始化配置
-- 已配置的机器（参见[教程：机器设置](/zh/docs/tutorial-setup)）
+- 已配置的机器（参见[教程：机器设置](/en/docs/tutorial-setup)）
 - 包含 `Rediaccfile` 和 `docker-compose.yml` 的简单应用
 
 ## 交互式录像
@@ -49,7 +50,7 @@ rdc repo list -m server-1
 rdc term connect -m server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
-挂载目录是应用文件所在的位置, , `Rediaccfile`、`docker-compose.yml` 以及任何数据卷。
+挂载目录是应用文件所在的位置，包含 `Rediaccfile`、`docker-compose.yml` 以及任何数据卷。
 
 ### 步骤 4：启动服务
 
@@ -95,13 +96,15 @@ rdc repo delete --name test-app -m server-1  # 永久删除仓库
 
 > **警告：** `repo delete` 不可逆。仓库中的所有数据将被销毁。如需要，请先创建备份。
 
+> **注意：** 删除后，配置条目将被保留（仓库可能存在于其他机器上）。使用 `rdc config repository remove <name>` 将其删除，或使用 `--archive-config` 保留凭据以便恢复。
+
 ## 故障排除
 
 **创建仓库时"磁盘空间不足"**
 加密卷需要主机上连续的可用空间。使用服务器上的 `df -h` 检查可用空间。考虑使用更小的 `--size` 值或释放磁盘空间。
 
 **`repo up` 期间 Docker 镜像拉取超时**
-大型镜像在慢速连接上可能会超时。使用 `rdc repo up` 重试, , 它会从中断处继续。对于隔离网络环境，请将镜像预加载到仓库的 Docker daemon 中。
+大型镜像在慢速连接上可能会超时。使用 `rdc repo up` 重试，它会从中断处继续。对于隔离网络环境，请将镜像预加载到仓库的 Docker daemon 中。
 
 **"挂载失败"或"LUKS 打开失败"**
 LUKS 密码短语从配置中派生。验证您使用的是创建仓库时的同一配置。如果卷已被另一个进程挂载，请先卸载它。
@@ -110,6 +113,6 @@ LUKS 密码短语从配置中派生。验证您使用的是创建仓库时的同
 
 您已创建加密仓库、部署应用、检查容器并完成清理。要监控您的部署：
 
-- [服务](/zh/docs/services), , Rediaccfile 参考、服务网络、自动启动和多服务布局
-- [教程：监控与诊断](/zh/docs/tutorial-monitoring), , 健康检查、容器检查和诊断
-- [工具](/zh/docs/tools), , 终端、文件同步和 VS Code 集成
+- [服务](/en/docs/services)，Rediaccfile 参考、服务网络、自动启动和多服务布局
+- [教程：监控与诊断](/en/docs/tutorial-monitoring)，健康检查、容器检查和诊断
+- [工具](/en/docs/tools)，终端、文件同步和 VS Code 集成

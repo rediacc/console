@@ -4,8 +4,8 @@ description: "Wesentliche Regeln und Konventionen für die Entwicklung von Anwen
 category: "Guides"
 order: 5
 language: de
-sourceHash: "4a544ede5461d3a6"
-sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
+sourceHash: "fd0fa925e9b76434"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # Regeln von Rediacc
@@ -129,6 +129,16 @@ Renet injiziert diese automatisch in jeden Container:
 - Fügen Sie `process.on("uncaughtException")` als Sicherheitsnetz für veraltete Socket-Fehler von internen Bibliotheksobjekten hinzu.
 - Restart-Richtlinien werden automatisch von renet verwaltet (für CRIU entfernt, Watchdog übernimmt die Wiederherstellung).
 - Verlassen Sie sich nicht auf Docker-DNS, verwenden Sie Loopback-IPs für die Inter-Service-Kommunikation.
+
+### Host-Sicherheitsrichtlinien nach Betriebssystem
+
+Auf allen fünf offiziell unterstützten Server-Betriebssystemen (siehe [Anforderungen](/en/docs/requirements)) verwendet der pro-Repo-Docker-Daemon und die darin laufenden Container **Standard-Container-Labels**. `rdc config machine setup` installiert keine eigene SELinux-Richtlinie und kein eigenes AppArmor-Profil.
+
+- **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor ist standardmäßig aktiviert. Container laufen unter dem Standard-Docker-Container-Profil. Die einzige Ausnahme ist CRIU (`apparmor=unconfined` für Container mit `rediacc.checkpoint=true`, wie oben beschrieben).
+- **Fedora 43 / Oracle Linux 10**: SELinux läuft standardmäßig im Enforcing-Modus. Container erhalten den Standard-`container_t`-Kontext. Es ist keine zusätzliche Richtlinieninstallation erforderlich. Wenn ein Setup-Schritt mit AVC-Verweigerungen fehlschlägt, lesen Sie [Fehlerbehebung: SELinux-Verweigerungen](/en/docs/troubleshooting).
+- **Debian 13**: AppArmor ist verfügbar, wird aber nicht standardmäßig auf allen Domains durchgesetzt. Container verwenden weiterhin das Docker-Container-Profil.
+
+Es ist kein betriebssystemspezifisches Sicherheitspositions-Flag erforderlich; `rdc` und `renet` erkennen die laufende Umgebung und liefern auf allen fünf Distributionen dieselbe pro-Repo-Isolation.
 
 ## Sicherheit
 

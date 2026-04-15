@@ -4,7 +4,8 @@ description: "Crear un repositorio cifrado, desplegar una aplicación en contene
 category: "Tutorials"
 order: 3
 language: es
-sourceHash: "4d7072927542dfb3"
+sourceHash: "fecc09a324a1fa65"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # Cómo desplegar y gestionar repositorios con Rediacc
@@ -14,7 +15,7 @@ Los repositorios son la unidad de despliegue principal en Rediacc, cada uno es u
 ## Requisitos previos
 
 - El CLI `rdc` instalado con una configuración inicializada
-- Una máquina aprovisionada (ver [Tutorial: Configuración de máquina](/es/docs/tutorial-setup))
+- Una máquina aprovisionada (ver [Tutorial: Configuración de máquina](/en/docs/tutorial-setup))
 - Una aplicación sencilla con un `Rediaccfile` y `docker-compose.yml`
 
 ## Grabación interactiva
@@ -95,6 +96,8 @@ rdc repo delete --name test-app -m server-1  # Eliminar repositorio permanenteme
 
 > **Advertencia:** `repo delete` es irreversible. Todos los datos del repositorio se destruyen. Crea una copia de seguridad primero si es necesario.
 
+> **Nota:** Tras la eliminación, la entrada de configuración se conserva (el repositorio puede existir en otras máquinas). Usa `rdc config repository remove <name>` para eliminarla, o `--archive-config` para conservar las credenciales de recuperación.
+
 ## Solución de problemas
 
 **"Espacio en disco insuficiente" durante la creación del repositorio**
@@ -110,6 +113,6 @@ La contraseña LUKS se deriva de la configuración. Verifica que estás usando l
 
 Has creado un repositorio cifrado, desplegado una aplicación, inspeccionado contenedores y limpiado. Para monitorear tus despliegues:
 
-- [Servicios](/es/docs/services), referencia de Rediaccfile, redes de servicios, autoinicio y diseños multi-servicio
-- [Tutorial: Monitoreo y diagnóstico](/es/docs/tutorial-monitoring), comprobaciones de salud, inspección de contenedores y diagnóstico
-- [Herramientas](/es/docs/tools), terminal, sincronización de archivos e integración con VS Code
+- [Servicios](/en/docs/services), referencia de Rediaccfile, redes de servicios, autoinicio y diseños multi-servicio
+- [Tutorial: Monitoreo y diagnóstico](/en/docs/tutorial-monitoring), comprobaciones de salud, inspección de contenedores y diagnóstico
+- [Herramientas](/en/docs/tools), terminal, sincronización de archivos e integración con VS Code

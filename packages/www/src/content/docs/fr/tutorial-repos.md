@@ -4,7 +4,8 @@ description: "Créer un dépôt chiffré, déployer une application conteneuris�
 category: "Tutorials"
 order: 3
 language: fr
-sourceHash: "4d7072927542dfb3"
+sourceHash: "fecc09a324a1fa65"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # Comment déployer et gérer des dépôts avec Rediacc
@@ -14,7 +15,7 @@ Les dépôts sont l'unité de déploiement principale dans Rediacc, chacun est u
 ## Prérequis
 
 - Le CLI `rdc` installé avec une configuration initialisée
-- Une machine provisionnée (voir [Tutoriel : Configuration de machine](/fr/docs/tutorial-setup))
+- Une machine provisionnée (voir [Tutoriel : Configuration de machine](/en/docs/tutorial-setup))
 - Une application simple avec un `Rediaccfile` et un `docker-compose.yml`
 
 ## Enregistrement interactif
@@ -95,6 +96,8 @@ rdc repo delete --name test-app -m server-1  # Supprimer le dépôt définitivem
 
 > **Avertissement :** `repo delete` est irréversible. Toutes les données du dépôt sont détruites. Créez d'abord une sauvegarde si nécessaire.
 
+> **Remarque :** Après la suppression, l'entrée de configuration est conservée (le dépôt peut exister sur d'autres machines). Utilisez `rdc config repository remove <name>` pour la supprimer, ou `--archive-config` pour conserver les identifiants à des fins de récupération.
+
 ## Dépannage
 
 **« Espace disque insuffisant » lors de la création du dépôt**
@@ -110,6 +113,6 @@ La phrase de passe LUKS est dérivée de la configuration. Vérifiez que vous ut
 
 Vous avez créé un dépôt chiffré, déployé une application, inspecté les conteneurs et nettoyé. Pour surveiller vos déploiements :
 
-- [Services](/fr/docs/services), référence Rediaccfile, réseaux de services, démarrage automatique et configurations multi-services
-- [Tutoriel : Surveillance et diagnostic](/fr/docs/tutorial-monitoring), vérifications de santé, inspection de conteneurs et diagnostic
-- [Outils](/fr/docs/tools), terminal, synchronisation de fichiers et intégration VS Code
+- [Services](/en/docs/services), référence Rediaccfile, réseaux de services, démarrage automatique et configurations multi-services
+- [Tutoriel : Surveillance et diagnostic](/en/docs/tutorial-monitoring), vérifications de santé, inspection de conteneurs et diagnostic
+- [Outils](/en/docs/tools), terminal, synchronisation de fichiers et intégration VS Code

@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: "52f8d1f2d115489e"
-sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
+sourceHash: "e7e428eeb609dc5e"
+sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
 ---
 
 # الخدمات
@@ -150,7 +150,7 @@ down() {
 
 ### استخدام عناوين IP للخدمات في Docker Compose
 
-بما أن كل مستودع يشغّل عملية Docker معزولة، يقوم `renet compose` تلقائياً بتهيئة `network_mode: host` لجميع الخدمات. قم بربط الخدمات بعناوين IP الحلقية المخصصة لها:
+بما أن كل مستودع يشغّل عملية Docker معزولة، يقوم `renet compose` تلقائياً بتهيئة `network_mode: host` لجميع الخدمات. يعيد النواة تلقائياً توجيه استدعاءات `bind()` إلى عنوان IP الحلقي المخصص للخدمة، لذا يمكن للخدمات الارتباط بـ `0.0.0.0` أو `localhost` دون تعارض. للاتصال **بالخدمات الأخرى**، استخدم **اسم الخدمة** -- يحقن renet كل اسم خدمة كاسم مضيف يُحلَّل دائماً إلى عنوان IP الصحيح، حتى في الفروع:
 
 ```yaml
 services:
@@ -159,20 +159,46 @@ services:
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_PASSWORD: secret
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
+    # لا حاجة لـ listen_addresses صريح -- تعيد النواة توجيه bind إلى عنوان IP الحلقي الصحيح
 
   api:
     image: my-api:latest
     environment:
-      DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
-      LISTEN_ADDR: ${API_IP}:8080
+      DATABASE_URL: postgresql://postgres:secret@postgres:5432/mydb  # استخدام اسم الخدمة
+      LISTEN_ADDR: 0.0.0.0:8080                                      # تعيد النواة توجيهه إلى IP الخدمة
 ```
+
+> **أسماء الخدمات للاتصالات:** استخدم **اسم الخدمة** (مثل `postgres`، `redis`) للاتصال بالخدمات الأخرى -- يقوم renet تلقائياً بتعيين كل اسم خدمة إلى عنوان IP الحلقي الخاص به عبر `/etc/hosts`. تضمين `${POSTGRES_IP}` في سلاسل الاتصال المخزنة في قواعد البيانات أو ملفات الإعداد سيُثبّت عنوان IP الخام، مما يكسر عزل الفروع وهو **خطأ تحقق**. متغيرات `${SERVICE_IP}` لا تزال متاحة للاستخدام الصريح، لكن الارتباط يتم تلقائياً بواسطة النواة.
 
 > **ملاحظة:** لا تضف `network_mode: host` يدوياً, يقوم `renet compose` بحقنه تلقائياً. سياسات إعادة التشغيل (مثل `restart: always`) آمنة للاستخدام, يزيلها renet تلقائياً لتوافق CRIU ويتولى watchdog استعادة الحاويات.
 
+### استعادة الحاويات وسياسة إعادة التشغيل
+
+يختلف renet وDocker عن قصد في كيفية التعامل مع إعادة تشغيل الحاويات. فهم هذا التقسيم مهم عند تشخيص سبب عودة حاوية إلى العمل أو عدمها.
+
+**ترجمة سياسة إعادة التشغيل.** عند كتابة `restart: always` (أو `unless-stopped`، أو `on-failure`) في ملف compose، يقوم renet **بحذفها** عند تجميع نشر compose الفعلي ويستبدلها بـ `restart: no`. يتم حفظ القيمة الأصلية في `.rediacc.json` الخاص بالمستودع تحت `services.<name>.restart_policy`. هذا يمنع إعادة التشغيل التلقائية على مستوى Docker daemon من التدخل في عملية CRIU checkpoint/restore (فإعادة تشغيل يقودها daemon ستستأنف من حالة قديمة ما قبل نقطة التفتيش).
+
+**تطبيق الـ watchdog.** يعمل watchdog الموجّه دورياً على كل جهاز. في كل دورة:
+
+1. يقرأ `.rediacc.json` لكل مستودع ويجد الخدمات التي تحتوي على `restart_policy` قابلة للاسترداد.
+2. يسرد جميع الحاويات لـ daemon ذلك المستودع، ويحدد الموقوفة منها، ويعيد تشغيلها وفق السياسة المحفوظة. فترة سماح مدتها 30 ثانية تمنع التعارض مع مشغّل نفّذ `docker stop` للتو.
+3. تعالج نفس الحلقة أيضاً `/var/run/rediacc/cold-backup-<guid>.running.json` (انظر [دلالات النسخ الاحتياطية الباردة](backup-restore.md#cold-backup-semantics)). تُعاد تشغيل الحاويات المدرجة بغض النظر عن السياسة المحفوظة، لأن الـ sidecar يعني "أوقف renet هذه الحاويات عن قصد وعليه إعادة تشغيلها للمشغّل."
+
+**لماذا قد تبدو `on-failure` معطوبة.** سياسة Docker `on-failure` تُعيد التشغيل فقط عند خروج الحاوية بكود غير صفري. الإيقاف الطبيعي (الخروج 0) من `docker stop` أو إيقاف daemon ليس "فشلاً" ولا يُشغّل إعادة تشغيل، لا بالمنطق الأصلي لـ Docker ولا بمسار السياسة المحفوظة لـ watchdog. sidecar النسخ الاحتياطية الباردة هو شبكة الأمان: أي حاوية أوقفناها عن قصد تُعاد تشغيلها بغض النظر عن سياستها.
+
+**كيفية تفسير حالة وقت التشغيل:**
+
+- `docker inspect <container>` ← `RestartPolicy.Name`: ستكون دائماً `no` للحاويات المُدارة بـ renet. لا تعتمد على هذا للسياسة الدلالية.
+- `.rediacc.json` في جذر تحميل المستودع ← `services.<name>.restart_policy`: النية الحقيقية.
+- `docker ps --format '{{.Status}}'`: حالة وقت التشغيل.
+
+**كيفية إصلاح الانحراف.** إذا كانت السياسة المحفوظة في `.rediacc.json` للحاوية غير صحيحة (مثلاً لأنك عدّلت compose لكن لم تُعد إنشاء الحاوية)، أعد تشغيل `rdc repo up --name <repo> -m <machine>`. ستُعاد إنشاء الحاوية مع تسجيل السياسة المحدّثة.
+
+> **تجريبي:** وصل استرداد sidecar النسخ الاحتياطية الباردة وعلامة `--sync-certs` في `rdc machine query` في renet 0.9+. الإصدارات الأقدم تعتمد كلياً على `restart_policy` المحفوظة لاسترداد watchdog، مما قد يترك حاويات `on-failure` عالقة بعد نسخة احتياطية باردة.
+
 > **شبكات Docker bridge معطّلة لعمليات daemon التي تديرها rediacc.** يتم تكوين كل daemon خاص بمستودع بالقيم `"bridge": "none"` و `"iptables": false`. سيظل أمر `docker run <image>` البسيط داخل شل المستودع يبدأ التشغيل، لكن الحاوية ستحصل فقط على واجهة loopback وبدون DNS أو اتصال خارجي. هذا بالتصميم، لأن عزل الـ loopback بين المستودعات تفرضه خطاطيف cgroup الخاصة بـ eBPF، وهي خطاطيف تتجاوزها الحاويات التي تعمل عبر bridge. يجب أن تستخدم خدمات الإنتاج `renet compose` (الذي يحقن شبكة المضيف تلقائياً)؛ وللتصحيح العابر، مرّر `--network host` بشكل صريح: `docker run --rm --network host -it ubuntu bash`.
 
-> **ملاحظة:** مستودعات fork تحصل على مسارات تلقائية مسطحة: `{service}-{tag}.{machine}.{baseDomain}`. يتم تخطي النطاقات المخصصة لمستودعات fork.
+> **ملاحظة:** مستودعات fork تحصل على مسارات تلقائية مسطحة تحت نطاق فرعي الأصل: `{service}-fork-{tag}.{repo}.{machine}.{baseDomain}`. يتم تخطي النطاقات المخصصة لمستودعات fork.
 
 ## تشغيل الخدمات
 
@@ -184,13 +210,23 @@ rdc repo up --name my-app -m server-1
 
 | الخيار | الوصف |
 |--------|-------|
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--skip-router-restart` | تخطي إعادة تشغيل خادم المسارات بعد العملية |
 
 تسلسل التنفيذ هو:
 1. تحميل المستودع المشفر بـ LUKS (تحميل تلقائي إذا لم يكن محمّلاً)
 2. تشغيل عملية Docker المعزولة
 3. إنشاء `.rediacc.json` تلقائياً من ملفات compose
 4. تشغيل `up()` في جميع ملفات Rediaccfile (بترتيب A-Z)
+
+بعد النشر، يُظهر الإخراج قسم **PROXY ROUTES** مع عناوين URL الفعلية لكل خدمة. الخدمات ذات تسميات Traefik المخصصة تُظهر نطاقاتها المخصصة كعناوين URL رئيسية:
+
+```
+HTTP services (accessible via proxy after ~3s):
+  gitlab-server:
+    HTTPS: https://gitlab.example.com  (custom)
+    Auto:  https://gitlab-server.gitlab.server-1.example.com
+    IP:    127.0.11.130
+```
 
 ## إيقاف الخدمات
 
@@ -201,7 +237,7 @@ rdc repo down --name my-app -m server-1
 | الخيار | الوصف |
 |--------|-------|
 | `--unmount` | إلغاء تحميل المستودع المشفر بعد إيقاف الخدمات. إذا لم يسرِ مفعوله، استخدم `rdc repo unmount` بشكل منفصل. |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--skip-router-restart` | تخطي إعادة تشغيل خادم المسارات بعد العملية |
 
 تسلسل التنفيذ هو:
 1. تشغيل `down()` في جميع ملفات Rediaccfile (بترتيب Z-A عكسي، أفضل جهد)
@@ -223,7 +259,7 @@ rdc repo up -m server-1
 | `--dry-run` | عرض ما سيتم تنفيذه |
 | `--parallel` | تشغيل العمليات بالتوازي |
 | `--concurrency <n>` | الحد الأقصى للعمليات المتزامنة (الافتراضي: 3) |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--skip-router-restart` | تخطي إعادة تشغيل خادم المسارات بعد العملية |
 
 ## التشغيل التلقائي عند الإقلاع
 
@@ -262,6 +298,24 @@ rdc repo autostart disable --name my-app -m server-1
 ```
 
 يزيل هذا ملف المفتاح ويحذف فتحة LUKS رقم 1.
+
+### تحديث ملف المفتاح عند النشر
+
+عند تفعيل التشغيل التلقائي، يتحقق `rdc repo up` من ملف مفتاح LUKS في الفتحة رقم 1.
+إذا كان ملف المفتاح على القرص لا يزال مطابقاً لفتحة LUKS، لا يتم إجراء أي تغييرات.
+
+بعد نقل مستودع بين الأجهزة عبر `repo push` / `repo pull`،
+ملف المفتاح على الجهاز الجديد لن يتطابق. في هذه الحالة، يُعيد `repo up` تلقائياً
+إنشاء ملف المفتاح وتحديث فتحة LUKS رقم 1. ستظهر رسائل السجل:
+
+```
+Refreshing keyfile credential for <guid>
+Killing LUKS slot 1: /mnt/rediacc/repositories/<guid>
+Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
+```
+
+هذا آمن، الفتحة 0 (عبارة مرورك) لا تُعدَّل أبداً. إذا لم يكن التشغيل التلقائي
+مفعّلاً، يتم تخطي الفحص بصمت. الأخطاء غير حرجة ولا تعيق النشر.
 
 ### عرض الحالة
 
@@ -305,18 +359,16 @@ services:
       POSTGRES_DB: webapp
       POSTGRES_USER: app
       POSTGRES_PASSWORD: changeme
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
 
   redis:
     image: redis:7-alpine
-    command: redis-server --bind ${REDIS_IP} --port 6379
 
   api:
     image: myregistry/api:latest
     environment:
-      DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
-      REDIS_URL: redis://${REDIS_IP}:6379
-      LISTEN_ADDR: ${API_IP}:8080
+      DATABASE_URL: postgresql://app:changeme@postgres:5432/webapp
+      REDIS_URL: redis://redis:6379
+      LISTEN_ADDR: 0.0.0.0:8080
 ```
 
 **Rediaccfile:**

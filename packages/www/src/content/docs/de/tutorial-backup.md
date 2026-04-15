@@ -4,7 +4,8 @@ description: "Automatische Backup-Zeitpläne konfigurieren, Speicheranbieter ver
 category: "Tutorials"
 order: 6
 language: de
-sourceHash: "f68d915af9daf0da"
+sourceHash: "3af2b8e2e6105e29"
+sourceCommit: "2223eabccb947ee9da79f1afcef075e163797d13"
 ---
 
 # So konfigurieren Sie Backups und Netzwerk mit Rediacc

@@ -4,7 +4,8 @@ description: "自動バックアップスケジュールの設定、ストレー
 category: "Tutorials"
 order: 6
 language: ja
-sourceHash: "f68d915af9daf0da"
+sourceHash: "3af2b8e2e6105e29"
+sourceCommit: "2223eabccb947ee9da79f1afcef075e163797d13"
 ---
 
 # Rediaccでバックアップとネットワークを設定する方法

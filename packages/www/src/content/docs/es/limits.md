@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: es
-sourceHash: "fdf074885af49980"
-sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
+sourceHash: "e663f13b2f78bc65"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # Límites y cuotas
@@ -71,7 +71,7 @@ Los puertos solo se abren una vez que configura una IP pública con `rdc config 
 
 HTTP/HTTPS se diferencian de los puertos TCP sin procesar: aunque 80 y 443 están abiertos, cada solicitud es validada por el proxy inverso contra una tabla de enrutamiento explícita. Sin un servicio configurado y un dominio coincidente, no se alcanza ningún código de aplicación y no se exponen datos.
 
-### Reenvio TCP/UDP opcional
+### Reenvío TCP/UDP opcional
 
 Todos los demás puertos (bases de datos, cachés, brokers de mensajes, DNS, correo) están **cerrados por defecto** y deben abrirse explícitamente. Esto mantiene la superficie de ataque de la máquina al mínimo.
 
@@ -136,7 +136,7 @@ La migración en vivo a través de CRIU tiene las siguientes restricciones:
 |--------|-------|
 | Destinos de backup por repositorio | Ilimitados |
 | Trabajos de backup simultáneos | 1 por repositorio (los trabajos se ponen en cola si se activan simultáneamente) |
-| Frecuencia de backup | Sin intervalo mínimo impuesto; limitado por el ancho de banda de su almacenamiento |
+| Frecuencia de backup | Sin intervalo mínimo impuesto; limitado por el ancho de banda de su almacenamiento. Use `rdc config backup-strategy set --name <name> --bwlimit "6M"` para limitar la velocidad de subida |
 | Retención | Controlada por su proveedor de almacenamiento (S3, Cloudflare R2, etc.). Rediacc no impone políticas de retención. |
 | Backup entre máquinas | Soportado; la máquina de destino debe tener suficiente espacio en el datastore |
 
@@ -155,15 +155,30 @@ La migración en vivo a través de CRIU tiene las siguientes restricciones:
 
 ## Versiones de SO soportadas
 
-Las máquinas remotas deben ejecutar uno de los siguientes sistemas para cumplir con los requisitos de kernel, sistema de archivos y eBPF de Rediacc:
+Las máquinas remotas deben ejecutar uno de los siguientes sistemas para cumplir con los requisitos de kernel, sistema de archivos y aislamiento de red de Rediacc. Esta lista es el conjunto canónico probado en CI (matriz Bridge Workers) y debe mantenerse sincronizada con [Requisitos](/en/docs/requirements):
 
-| SO | Versión mínima | Kernel predeterminado |
-|----|----------------|----------------------|
-| Ubuntu | 24.04 LTS *(recomendado)* | 6.8 |
-| Debian | 12 (Bookworm) | 6.1 |
-| Fedora | 43 | 6.12 |
-| openSUSE Leap | 16.0 | 6.4+ |
+| SO | Versión mínima | Kernel predeterminado | Notas |
+|----|----------------|-----------------------|-------|
+| Ubuntu | 24.04 LTS *(recomendado)* | 6.8 | AppArmor por defecto. |
+| Debian | 13 (Trixie); 12 Bookworm también funciona | 6.12 (6.1 en Debian 12) | |
+| Fedora | 43 | 6.12 | SELinux enforcing por defecto. |
+| openSUSE Leap | 16.0 | 6.4+ | AppArmor por defecto. |
+| Oracle Linux | 10 (UEK) | UEK 7+ | UEK conserva btrfs; SELinux enforcing por defecto. |
 
 **Kernel mínimo requerido: 6.1.** Las máquinas con kernels anteriores se rechazan en el momento de la configuración con un mensaje de error claro.
 
-> **Por qué kernel 6.1?** Rediacc usa BTRFS para el almacenamiento cifrado de repositorios y el forking de copia en escritura. Linux 6.1 introdujo mejoras críticas de BTRFS que reducen significativamente los tiempos de montaje para grandes datastores, mejoran el rendimiento de eliminación de snapshots y corrigen problemas de integridad de datos presentes en kernels anteriores. El kernel 6.1 también es necesario para los programas de socket eBPF cgroup (`BPF_PROG_TYPE_CGROUP_SOCK_ADDR`) que aplican el aislamiento de red entre repositorios a nivel de kernel, reescribiendo de forma transparente las llamadas `bind()` y bloqueando conexiones entre repositorios.
+> **Por qué kernel 6.1?** Rediacc usa BTRFS para el almacenamiento cifrado de repositorios y el forking de copia en escritura. Linux 6.1 introdujo mejoras críticas de BTRFS que reducen significativamente los tiempos de montaje para grandes datastores, mejoran el rendimiento de eliminación de snapshots y corrigen problemas de integridad de datos presentes en kernels anteriores. El kernel 6.1 también es necesario para los hooks de aislamiento de red a nivel de kernel que aplican el aislamiento entre repositorios, reescribiendo de forma transparente las llamadas `bind()` y bloqueando conexiones entre repositorios.
+
+> **Por qué no Rocky Linux 10 / kernel stock de RHEL 10?** El kernel stock de RHEL 10 se distribuye sin el módulo `btrfs` (`modprobe btrfs` falla con "Module btrfs not found"). El backend de almacenamiento cifrado de Rediacc no puede funcionar sin btrfs. **Oracle Linux 10 es el único objetivo compatible con RHEL en la lista soportada** porque usa por defecto el Unbreakable Enterprise Kernel (UEK), que conserva btrfs. Consulte [Requisitos: Por qué UEK?](/en/docs/requirements) para la explicación completa.
+
+### Matriz de características del kernel
+
+Los operadores pueden usar esta tabla para ver de un vistazo lo que cada SO probado en CI proporciona por defecto. Los cinco satisfacen todos los requisitos; la matriz es una referencia para operadores, no un criterio de selección.
+
+| SO | Módulo btrfs | cgroups v2 | Landlock (ABI >= 1) | Hooks eBPF cgroup |
+|----|--------------|------------|---------------------|-------------------|
+| Ubuntu 24.04 | integrado | unified hierarchy | sí (5.13+) | sí |
+| Debian 13 | integrado | unified hierarchy | sí | sí |
+| Fedora 43 | integrado | unified hierarchy | sí | sí |
+| openSUSE Leap 16.0 | integrado | unified hierarchy | sí | sí |
+| Oracle Linux 10 (UEK) | integrado (via UEK) | unified hierarchy | sí | sí |

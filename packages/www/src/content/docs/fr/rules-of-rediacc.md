@@ -4,8 +4,8 @@ description: "Règles et conventions essentielles pour construire des applicatio
 category: "Guides"
 order: 5
 language: fr
-sourceHash: "4a544ede5461d3a6"
-sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
+sourceHash: "fd0fa925e9b76434"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # Règles de Rediacc
@@ -129,6 +129,16 @@ Renet auto-injecte celles-ci dans chaque conteneur :
 - Ajoutez `process.on("uncaughtException")` comme filet de sécurité pour les erreurs de sockets obsolètes provenant d'objets de bibliothèques internes.
 - Les politiques de redémarrage sont gérées automatiquement par renet (supprimées pour CRIU, le watchdog gère la récupération).
 - Évitez de dépendre du DNS Docker, utilisez les IPs de loopback pour la communication inter-services.
+
+### Politiques de sécurité de l'hôte par système d'exploitation
+
+Sur les cinq systèmes d'exploitation serveur officiellement supportés (voir [Prérequis](/en/docs/requirements)), le daemon Docker de chaque dépôt et les conteneurs qu'il exécute utilisent les **labels de conteneur par défaut**. `rdc config machine setup` n'installe ni politique SELinux personnalisée ni profil AppArmor personnalisé.
+
+- **Ubuntu 24.04 / openSUSE Leap 16.0** : AppArmor est activé par défaut. Les conteneurs s'exécutent sous le profil docker-container par défaut. La seule exception est CRIU (`apparmor=unconfined` pour les conteneurs portant `rediacc.checkpoint=true`, comme indiqué ci-dessus).
+- **Fedora 43 / Oracle Linux 10** : SELinux s'exécute en mode enforcing par défaut. Les conteneurs reçoivent le contexte `container_t` standard. Aucune installation de politique supplémentaire n'est nécessaire. Si une étape de configuration échoue avec des refus AVC, consultez [Dépannage : refus SELinux](/en/docs/troubleshooting).
+- **Debian 13** : AppArmor est disponible mais n'est pas appliqué par défaut sur tous les domaines. Les conteneurs utilisent tout de même le profil docker-container.
+
+Aucun indicateur de posture de sécurité spécifique au système d'exploitation n'est requis ; `rdc` et `renet` détectent ce qui est en cours d'exécution et produisent la même isolation par dépôt sur les cinq distributions.
 
 ## Sécurité
 

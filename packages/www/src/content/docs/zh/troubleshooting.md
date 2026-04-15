@@ -4,8 +4,8 @@ description: "SSH、设置、仓库、服务和Docker常见问题的解决方案
 category: "Guides"
 order: 10
 language: zh
-sourceHash: "756725b9a8fb168f"
-sourceCommit: "7874d5e2f0ca1262eb80ee7de79f20320d0ae2d7"
+sourceHash: "ee8fe3ee7166cfe4"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # 故障排除
@@ -34,6 +34,51 @@ rdc config machine scan-keys -m server-1
 - 确保SSH用户拥有无密码的sudo访问权限，或为所需命令配置 `NOPASSWD`
 - 检查服务器上的可用磁盘空间
 - 使用 `--debug` 运行以获取详细输出: `rdc config machine setup server-1 --debug`
+
+## 发行版特定的设置问题
+
+五个官方支持的服务器操作系统（Ubuntu 24.04、Debian 13、Fedora 43、openSUSE Leap 16.0、Oracle Linux 10）附带不同的安全策略和包管理器。大多数设置可以正常工作；以下情况涵盖了不能正常工作的例外。
+
+### SELinux 拒绝 (Fedora 43、Oracle Linux 10)
+
+两者均以强制（enforcing）模式运行 SELinux。rdc setup 不安装自定义 SELinux 策略；每个仓库的 docker daemon 在标准 `container_t` 上下文下运行。如果 setup 因 AVC 拒绝而失败，请检查 audit 日志并确定域：
+
+```bash
+sudo ausearch -m AVC -ts recent | head -40
+# 或者：
+sudo tail -f /var/log/audit/audit.log | grep AVC
+```
+
+如果拒绝指向 renet 二进制文件或特定文件路径，解决方法几乎总是重新标记（`restorecon -v /path`），而不是禁用 SELinux。作为调查期间的临时解决方案，`sudo setenforce 0` 会将系统切换到宽容模式。确认重新标记生效后，使用 `sudo setenforce 1` 重新启用强制模式。
+
+### AppArmor 拒绝 (Ubuntu 24.04、openSUSE Leap 16.0)
+
+两者默认运行 AppArmor；每个仓库的 docker daemon 使用默认容器配置文件。如果仓库内的容器被阻止：
+
+```bash
+dmesg | grep -i apparmor
+sudo aa-status
+```
+
+CRIU 是触发 AppArmor 的已知情况。Renet 自动为标记了 `rediacc.checkpoint=true` 的容器设置 `security_opt: apparmor=unconfined`。其他情况下您不需要手动配置 AppArmor 配置文件。请参阅 [Rediacc 规则](/en/docs/rules-of-rediacc) 中的 CRIU 说明。
+
+### 包管理器错误特征
+
+| 操作系统 | 包管理器 | 典型错误 | 解决方案 |
+|---|---|---|---|
+| Ubuntu / Debian | apt-get | `File has unexpected size (N != M). Mirror sync in progress?` | Cloudflare 边缘缓存落后于源站。约 15 秒后重试 `apt-get update`；下次轮询时完整性检查将通过。 |
+| Fedora / Oracle | dnf | `Problem: nothing provides rediacc-cli` | 磁盘上缓存的 RPM 仓库元数据已过期。运行 `sudo dnf clean all && sudo dnf makecache`。 |
+| openSUSE | zypper | `Repository 'rediacc' needs to be refreshed.` | 运行一次 `sudo zypper refresh rediacc`；后续安装应该成功。 |
+
+### btrfs 模块缺失 (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
+
+如果 `rdc config machine setup` 或 `renet system check-btrfs` 失败并显示：
+
+```
+Module btrfs not found
+```
+
+...服务器运行的是 RHEL 10 的标准内核，该内核不包含内置的 btrfs 模块。这不是 Rediacc 的 bug；RHEL 10 有意移除了 btrfs。解决方案是**改用 Oracle Linux 10**。Oracle 10 默认使用保留了 btrfs 的 Unbreakable Enterprise Kernel（UEK）。完整说明请参见 [要求 -- 为什么选择 UEK?](/en/docs/requirements)。
 
 ## 仓库创建失败
 

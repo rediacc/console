@@ -4,8 +4,8 @@ description: "SSH, kurulum, depolar, servisler ve Docker ile ilgili yaygın soru
 category: "Guides"
 order: 10
 language: tr
-sourceHash: "756725b9a8fb168f"
-sourceCommit: "7874d5e2f0ca1262eb80ee7de79f20320d0ae2d7"
+sourceHash: "ee8fe3ee7166cfe4"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # Sorun Giderme
@@ -34,6 +34,51 @@ Bu komut yeni host anahtarlarını alır ve yapılandırmanızı günceller.
 - SSH kullanıcısının şifresiz sudo erişimine sahip olduğundan emin olun veya gerekli komutlar için `NOPASSWD` yapılandırın
 - Sunucudaki kullanılabilir disk alanını kontrol edin
 - Ayrıntılı çıktı için `--debug` ile çalıştırın: `rdc config machine setup server-1 --debug`
+
+## Dağıtıma Özgü Kurulum Sorunları
+
+Resmi olarak desteklenen beş sunucu işletim sistemi (Ubuntu 24.04, Debian 13, Fedora 43, openSUSE Leap 16.0, Oracle Linux 10) farklı güvenlik politikaları ve paket yöneticileriyle gelir. Kurulumların büyük çoğunluğu sorunsuz çalışır; aşağıdaki durumlar çalışmayan durumları kapsar.
+
+### SELinux Redleri (Fedora 43, Oracle Linux 10)
+
+Her ikisi de SELinux'u zorlayıcı (enforcing) modda çalıştırır. rdc setup özel bir SELinux politikası yüklemez; depo başına docker daemon standart `container_t` bağlamında çalışır. Kurulum AVC redleriyle başarısız olursa, audit günlüğünü kontrol edin ve etki alanını belirleyin:
+
+```bash
+sudo ausearch -m AVC -ts recent | head -40
+# Veya:
+sudo tail -f /var/log/audit/audit.log | grep AVC
+```
+
+Bir red renet ikili dosyasına veya belirli bir dosya yoluna işaret ediyorsa, çözüm neredeyse her zaman SELinux'u devre dışı bırakmak yerine yeniden etiketlemektir (`restorecon -v /path`). Araştırma sırasında geçici bir çözüm olarak `sudo setenforce 0` sistemi izinli moda alır. Yeniden etiketlemenin kalıcı olduğunu doğruladıktan sonra `sudo setenforce 1` ile yeniden etkinleştirin.
+
+### AppArmor Redleri (Ubuntu 24.04, openSUSE Leap 16.0)
+
+Her ikisi de varsayılan olarak AppArmor kullanır; depo başına docker daemon varsayılan konteyner profilini kullanır. Bir depodaki konteyner engelleniyorsa:
+
+```bash
+dmesg | grep -i apparmor
+sudo aa-status
+```
+
+CRIU, AppArmor ile karşılaşan bilinen durumdur. Renet, `rediacc.checkpoint=true` etiketli konteynerlere otomatik olarak `security_opt: apparmor=unconfined` ayarlar. Bunun dışında herhangi bir şey için AppArmor profillerini kendiniz yapılandırmanıza gerek yoktur. CRIU notları için [Rediacc Kuralları](/en/docs/rules-of-rediacc) sayfasına bakın.
+
+### Paket Yöneticisi Hata İmzaları
+
+| İşletim Sistemi | Paket Yöneticisi | Tipik Hata | Çözüm |
+|---|---|---|---|
+| Ubuntu / Debian | apt-get | `File has unexpected size (N != M). Mirror sync in progress?` | Cloudflare edge cache kaynağın gerisinde. `apt-get update` komutunu ~15 saniye sonra yeniden deneyin; bütünlük denetimi bir sonraki sorguda geçer. |
+| Fedora / Oracle | dnf | `Problem: nothing provides rediacc-cli` | Diskte önbelleğe alınmış RPM depo meta verileri güncel değil. `sudo dnf clean all && sudo dnf makecache` komutunu çalıştırın. |
+| openSUSE | zypper | `Repository 'rediacc' needs to be refreshed.` | `sudo zypper refresh rediacc` komutunu bir kez çalıştırın; sonraki kurulumlar başarılı olacaktır. |
+
+### btrfs Modülü Eksik (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
+
+`rdc config machine setup` veya `renet system check-btrfs` aşağıdaki hatayla başarısız olursa:
+
+```
+Module btrfs not found
+```
+
+...sunucu, yerleşik btrfs modülü olmadan gelen RHEL 10'un stok çekirdeğini çalıştırıyordur. Bu bir Rediacc hatası değildir; RHEL 10 btrfs'i kasıtlı olarak kaldırdı. Çözüm, **bunun yerine Oracle Linux 10 kullanmaktır**. Oracle 10 varsayılan olarak btrfs'i koruyan Unbreakable Enterprise Kernel (UEK) kullanır. Tam hikaye için [Gereksinimler -- Neden UEK?](/en/docs/requirements) sayfasına bakın.
 
 ## Depo Oluşturma Başarısız
 

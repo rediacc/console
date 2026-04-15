@@ -4,7 +4,8 @@ description: "Configure programaciones de copias de seguridad automatizadas, ges
 category: "Tutorials"
 order: 6
 language: es
-sourceHash: "f68d915af9daf0da"
+sourceHash: "3af2b8e2e6105e29"
+sourceCommit: "2223eabccb947ee9da79f1afcef075e163797d13"
 ---
 
 # Cómo configurar copias de seguridad y redes con Rediacc

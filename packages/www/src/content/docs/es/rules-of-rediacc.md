@@ -4,8 +4,8 @@ description: "Información esencial sobre reglas y convenciones para crear aplic
 category: "Guides"
 order: 5
 language: es
-sourceHash: "4a544ede5461d3a6"
-sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
+sourceHash: "fd0fa925e9b76434"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # Reglas de Rediacc
@@ -129,6 +129,16 @@ Renet auto-inyecta estas en cada contenedor:
 - Agrega `process.on("uncaughtException")` como red de seguridad para errores de sockets obsoletos de objetos internos de bibliotecas.
 - Las políticas de reinicio son gestionadas automáticamente por renet (eliminadas para CRIU, el watchdog gestiona la recuperación).
 - Evita depender del DNS de Docker, usa IPs de loopback para la comunicación entre servicios.
+
+### Políticas de seguridad del host por sistema operativo
+
+En los cinco sistemas operativos de servidor oficialmente soportados (consulta [Requisitos](/en/docs/requirements)), el daemon Docker de cada repositorio y los contenedores que ejecuta usan **etiquetas de contenedor predeterminadas**. `rdc config machine setup` no instala ninguna política SELinux personalizada ni perfil AppArmor personalizado.
+
+- **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor está habilitado por defecto. Los contenedores se ejecutan bajo el perfil docker-container predeterminado. La única excepción es CRIU (`apparmor=unconfined` para los contenedores con `rediacc.checkpoint=true`, según la nota anterior).
+- **Fedora 43 / Oracle Linux 10**: SELinux se ejecuta en modo enforcing por defecto. Los contenedores obtienen el contexto `container_t` estándar. No se necesita instalar ninguna política adicional. Si un paso de configuración falla con denegaciones AVC, consulta [Solución de problemas: denegaciones SELinux](/en/docs/troubleshooting).
+- **Debian 13**: AppArmor está disponible pero no se aplica por defecto en todos los dominios. Los contenedores siguen usando el perfil docker-container.
+
+No se requiere ningún indicador de postura de seguridad por sistema operativo; `rdc` y `renet` detectan lo que está en ejecución y producen el mismo aislamiento por repositorio en las cinco distribuciones.
 
 ## Seguridad
 

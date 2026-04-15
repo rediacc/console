@@ -4,12 +4,13 @@ description: متى تستخدم rdc ومتى تستخدم renet.
 category: Concepts
 order: 1
 language: ar
-sourceHash: "4f7b74a70b59d9c8"
+sourceHash: "86bc5f8593d408de"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # rdc مقابل renet
 
-يحتوي Rediacc على ملفين تنفيذيين. إليك متى تستخدم كلًا منهما.
+يحتوي Rediacc على ملفين تنفيذيين. إليك متى تستخدم كلا منهما.
 
 | | rdc | renet |
 |---|-----|-------|

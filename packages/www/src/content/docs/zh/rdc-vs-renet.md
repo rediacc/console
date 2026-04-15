@@ -4,7 +4,8 @@ description: 什么时候使用 rdc，什么时候使用 renet。
 category: Concepts
 order: 1
 language: zh
-sourceHash: "4f7b74a70b59d9c8"
+sourceHash: "86bc5f8593d408de"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # rdc vs renet
@@ -35,17 +36,17 @@ Rediacc 有两个二进制文件。以下是各自的使用场景。
 所有常见任务都通过工作站上的 `rdc` 完成：
 
 ```bash
-# Set up a new server
+# 配置新服务器
 rdc config machine setup --name server-1
 
-# Create and start a repository
+# 创建并启动仓库
 rdc repo create --name my-app -m server-1 --size 10G
 rdc repo up --name my-app -m server-1
 
-# Stop a repository
+# 停止仓库
 rdc repo down --name my-app -m server-1
 
-# Check machine health
+# 检查机器健康状态
 rdc machine health server-1
 ```
 
@@ -66,12 +67,12 @@ rdc machine health server-1
 `rdc ops` 封装了 `renet ops`，用于在工作站上管理本地 VM 集群：
 
 ```bash
-rdc ops setup              # Install prerequisites (KVM or QEMU)
-rdc ops up --basic         # Start a minimal cluster
-rdc ops status             # Check VM status
-rdc ops ssh --vm-id 1  # SSH into bridge VM
-rdc ops ssh --vm-id 1 -c hostname  # Run a command on bridge VM
-rdc ops down               # Destroy cluster
+rdc ops setup              # 安装前置条件（KVM 或 QEMU）
+rdc ops up --basic         # 启动最小集群
+rdc ops status             # 检查 VM 状态
+rdc ops ssh --vm-id 1  # SSH 连接到 bridge VM
+rdc ops ssh --vm-id 1 -c hostname  # 在 bridge VM 上执行命令
+rdc ops down               # 销毁集群
 ```
 
 > 需要本地适配器。云适配器不支持此功能。

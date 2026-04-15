@@ -4,19 +4,19 @@ description: "Dizin yapısı, renet komutları, systemd servisleri ve uzak sunuc
 category: "Concepts"
 order: 3
 language: tr
-sourceHash: "f27a4135aed54918"
-sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
+sourceHash: "ce8786bdc5c1543f"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
-# Server Reference
+# Sunucu Referansı
 
-This page covers what you find when you SSH into a Rediacc server: the directory layout, `renet` commands, systemd services, and common workflows.
+Bu sayfa, bir Rediacc sunucusuna SSH ile bağlandığınızda karşılaşacaklarınızı açıklar: dizin yapısı, `renet` komutları, systemd servisleri ve yaygın iş akışları.
 
-Most users manage servers through `rdc` from their workstation and never need this page. It is here for advanced debugging or when you need to work directly on the server.
+Kullanıcıların büyük çoğunluğu sunucuları iş istasyonlarından `rdc` aracılığıyla yönetir ve bu sayfaya ihtiyaç duymaz. Bu sayfa, gelişmiş hata ayıklama veya doğrudan sunucu üzerinde çalışmanız gerektiğinde başvurmanız içindir.
 
-For the high-level architecture, see [Architecture](/en/docs/architecture). For the difference between `rdc` and `renet`, see [rdc vs renet](/en/docs/rdc-vs-renet).
+Üst düzey mimari için bkz. [Mimari](/tr/docs/architecture). `rdc` ile `renet` arasındaki fark için bkz. [rdc vs renet](/tr/docs/rdc-vs-renet).
 
-## Directory Layout
+## Dizin Yapısı
 
 ```
 /mnt/rediacc/                          # Main datastore
@@ -44,11 +44,11 @@ For the high-level architecture, see [Architecture](/en/docs/architecture). For 
 /var/lib/rediacc/router/               # Router state (port allocations)
 ```
 
-## renet Commands
+## renet Komutları
 
-`renet` is the server-side binary. All commands need root privileges (`sudo`).
+`renet`, sunucu tarafındaki ikili dosyadır. Tüm komutlar root yetkisi (`sudo`) gerektirir.
 
-### Repository Lifecycle
+### Depo Yaşam Döngüsü
 
 ```bash
 # List all repositories
@@ -78,7 +78,7 @@ renet repository delete --name {uuid} --network-id {id}
 
 ### Docker Compose
 
-Run compose commands against a specific repository's Docker daemon:
+Belirli bir deponun Docker daemon'una karşı compose komutlarını çalıştırın:
 
 ```bash
 sudo renet compose -- up -d
@@ -87,7 +87,7 @@ sudo renet compose -- logs -f
 sudo renet compose -- config
 ```
 
-Run docker commands directly:
+Docker komutlarını doğrudan çalıştırın:
 
 ```bash
 sudo renet docker --network-id {id} -- ps
@@ -101,21 +101,31 @@ Docker soketini doğrudan da kullanabilirsiniz:
 DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
 ```
 
-> Always run compose from the directory that contains `docker-compose.yml`, or Docker will not find the file.
+> Compose'u her zaman `docker-compose.yml` dosyasının bulunduğu dizinden çalıştırın; aksi takdirde Docker dosyayı bulamaz.
 
-### Dosya Sistemi Sandbox'ı
+### Dosya Sistemi Korumalı Alanı
 
 ```bash
-# Landlock destegini kontrol et
+# Landlock desteğini kontrol et
 renet sandbox-exec --detect
 
-# Bir komutu Landlock sandbox'i icinde calistir (renet bunu dahili olarak kullanir)
+# Landlock korumalı alanında komut çalıştır (dahili olarak kullanılır)
 renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
 ```
 
-`sandbox-exec`, bir komuta Landlock LSM dosya sistemi kisitlamalari uygular. Sandbox icindeki surec yalnizca acikca izin verilen yollara erisebilir; diger tum dosya sistemi erisimleri cekirdek tarafindan engellenir. renet bunu dahili olarak kullanarak Rediaccfile calistirmayi, compose islemlerini ve SSH komutlarini ilgili deponun baglama yoluyla sinirlar.
+`sandbox-exec`, Landlock LSM dosya sistemi kısıtlamalarını uygular ve ardından belirtilen komutu çalıştırır. Tüm depo düzeyindeki bağlantılar için `sandbox-gateway` (SSH ForceCommand işleyicisi) tarafından otomatik olarak çağrılır.
 
-### Proxy & Routing
+**Bayraklar:**
+- `--allow-rw`, `--allow-ro`, `--allow-exec`: Landlock yol kuralları
+- `--home-overlay`: Depo başına yazma yalıtımı için home dizininin üzerine OverlayFS bağlar
+- `--sandbox-dir`: Depo başına çalışma alanı (`<datastore>/.interim/sandbox/<name>/`)
+- `--work-dir`: Çalışma dizinini ayarlar ve depo ortamı için `.envrc` yükler
+- `--run-as`: Kurulumdan sonra hedef kullanıcıya yetki düşürür
+- `--reset-home`: Temiz bir başlangıç için depo başına home katmanını temizler
+
+**`sandbox-gateway`**, `authorized_keys` içindeki `command=` aracılığıyla ayarlanan SSH ForceCommand işleyicisidir. Her deponun SSH anahtarı, istemcinin taklit edemeyeceği depo adı gömülü olarak gateway'i tetikler. Gateway, sandbox-exec argümanlarını oluşturur ve sudo aracılığıyla çalıştırır.
+
+### Proxy ve Yönlendirme
 
 ```bash
 renet proxy status          # Check Traefik + router health
@@ -125,9 +135,9 @@ renet proxy up / down       # Start/stop Traefik
 renet proxy logs            # View proxy logs
 ```
 
-Routes are discovered automatically from container labels. See [Networking](/en/docs/networking) for how to configure Traefik labels.
+Rotalar, konteyner etiketlerinden otomatik olarak keşfedilir. Traefik etiketlerinin nasıl yapılandırılacağı için bkz. [Ağ](/tr/docs/networking).
 
-### System Status
+### Sistem Durumu
 
 ```bash
 renet ps                    # Overall system status
@@ -138,7 +148,7 @@ renet list system           # CPU, memory, disk, network
 renet ips --network-id {id} # IP allocations for a network
 ```
 
-### Daemon Management
+### Daemon Yönetimi
 
 Her depo kendi Docker daemon'ını çalıştırır. Bunları ayrı ayrı yönetebilirsiniz:
 
@@ -149,9 +159,9 @@ renet daemon stop   --network-id {id}    # Stop daemon
 renet daemon logs   --network-id {id}    # Daemon logs
 ```
 
-### Backup & Restore
+### Yedekleme ve Geri Yükleme
 
-Push backups to another machine or to cloud storage:
+Yedekleri başka bir makineye veya bulut depolama alanına gönderin:
 
 ```bash
 # Push to remote machine (SSH + rsync)
@@ -170,11 +180,11 @@ renet backup pull --name {uuid} --network-id {id} --source machine \
 renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc
 ```
 
-> Most users should use `rdc repo push/pull` instead. The `rdc` commands handle credentials and machine resolution automatically.
+> Kullanıcıların büyük çoğunluğu bunun yerine `rdc repo push/pull` kullanmalıdır. `rdc` komutları kimlik bilgilerini ve makine çözümlemesini otomatik olarak yönetir.
 
-### Checkpointing (CRIU)
+### Kontrol Noktaları (CRIU)
 
-Checkpoint saves the state of running containers so they can be restored later:
+Kontrol noktaları, çalışan konteynerlerin durumunu kaydederek daha sonra geri yüklenmesini sağlar:
 
 ```bash
 renet checkpoint create    --network-id {id}   # Save running container state
@@ -182,7 +192,7 @@ renet checkpoint restore   --network-id {id}   # Restore from checkpoint
 renet checkpoint validate  --network-id {id}   # Check checkpoint integrity
 ```
 
-### Maintenance
+### Bakım
 
 ```bash
 renet prune --dry-run       # Preview orphaned networks and IPs
@@ -192,44 +202,44 @@ renet datastore validate    # Filesystem integrity check
 renet datastore expand      # Expand the datastore online
 ```
 
-## Systemd Services
+## Systemd Servisleri
 
-Each repository creates these systemd units:
+Her depo şu systemd birimlerini oluşturur:
 
-| Unit | Purpose |
-|------|---------|
-| `rediacc-docker-{id}.service` | Isolated Docker daemon |
-| `rediacc-docker-{id}.socket` | Docker API socket activation |
-| `rediacc-loopback-{id}.service` | Loopback IP alias setup |
+| Birim | Amaç |
+|-------|------|
+| `rediacc-docker-{id}.service` | Yalıtılmış Docker daemon'u |
+| `rediacc-docker-{id}.socket` | Docker API soket aktivasyonu |
+| `rediacc-loopback-{id}.service` | Loopback IP takma adı kurulumu |
 
-Global services shared across all repositories:
+Tüm depolar arasında paylaşılan global servisler:
 
-| Unit | Purpose |
-|------|---------|
-| `rediacc-router.service` | Route discovery (port 7111) |
-| `rediacc-autostart.service` | Boot-time repository mounting |
+| Birim | Amaç |
+|-------|------|
+| `rediacc-router.service` | Rota keşfi (port 7111) |
+| `rediacc-autostart.service` | Önyükleme zamanı depo bağlama |
 
-## Common Workflows
+## Yaygın İş Akışları
 
-### Deploy a New Service
+### Yeni Bir Servis Dağıtma
 
-1. Create an encrypted repository:
+1. Şifrelenmiş bir depo oluşturun:
    ```bash
    renet repository create --name {uuid} --network-id {id} --size 2G --encrypted
    ```
-2. Mount it and add your `docker-compose.yml`, `Rediaccfile`, and `.rediacc.json` files.
-3. Start it:
+2. Bağlayın ve `docker-compose.yml`, `Rediaccfile` ve `.rediacc.json` dosyalarını ekleyin.
+3. Başlatın:
    ```bash
    renet repository up --name {uuid} --network-id {id} --password-stdin
    ```
 
-### Access a Running Container
+### Çalışan Bir Konteynere Erişim
 
 ```bash
 sudo renet docker --network-id {id} -- exec -it {container} bash
 ```
 
-### Find Which Docker Socket Runs a Container
+### Hangi Docker Soketinin Konteyneri Çalıştırdığını Bulma
 
 ```bash
 for sock in /run/rediacc/docker-*.sock; do
@@ -238,27 +248,27 @@ for sock in /run/rediacc/docker-*.sock; do
 done
 ```
 
-### Recreate a Service After Config Changes
+### Yapılandırma Değişikliklerinden Sonra Servis Yeniden Oluşturma
 
 ```bash
 sudo renet compose -- up -d
 ```
 
-Run this from the directory with `docker-compose.yml`. Changed containers are automatically recreated.
+Bunu `docker-compose.yml` içeren dizinden çalıştırın. Değiştirilen konteynerler otomatik olarak yeniden oluşturulur.
 
-### Check All Containers Across All Daemons
+### Tüm Daemon'lardaki Tüm Konteynerleri Kontrol Etme
 
 ```bash
 renet list containers
 ```
 
-## Tips
+## Ipuclari
 
-- Always use `sudo` for `renet compose`, `renet repository`, and `renet docker` commands, they need root for LUKS and Docker operations
-- The `--` separator is required before passing arguments to `renet compose` and `renet docker`
-- Run compose from the directory that contains `docker-compose.yml`
-- `.rediacc.json` slot assignments are stable, do not change them after deployment
-- Use `/run/rediacc/docker-{id}.sock` paths (systemd may change legacy `/var/run/` paths)
-- Run `renet prune --dry-run` from time to time to find orphaned resources
-- BTRFS snapshots (`renet backup`) are fast and cheap, use them before making risky changes
-- Repositories are LUKS-encrypted, losing the password means losing the data
+- `renet compose`, `renet repository` ve `renet docker` komutları için her zaman `sudo` kullanın; LUKS ve Docker işlemleri için root yetkisi gerekir
+- `renet compose` ve `renet docker`'a argüman geçirmeden önce `--` ayracı zorunludur
+- Compose'u `docker-compose.yml` içeren dizinden çalıştırın
+- `.rediacc.json` slot atamaları sabittir, dağıtımdan sonra değiştirmeyin
+- `/run/rediacc/docker-{id}.sock` yollarını kullanın (systemd eski `/var/run/` yollarını değiştirebilir)
+- Sahipsiz kaynakları bulmak için zaman zaman `renet prune --dry-run` çalıştırın
+- BTRFS anlık görüntüleri (`renet backup`) hızlı ve ucuzdur; riskli değişiklikler yapmadan önce kullanın
+- Depolar LUKS ile şifrelenmiştir; parolayı kaybetmek verileri kaybetmek anlamına gelir

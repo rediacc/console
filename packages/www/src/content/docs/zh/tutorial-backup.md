@@ -4,7 +4,8 @@ description: "配置自动备份计划、管理存储提供商、设置基础设
 category: "Tutorials"
 order: 6
 language: zh
-sourceHash: "f68d915af9daf0da"
+sourceHash: "3af2b8e2e6105e29"
+sourceCommit: "2223eabccb947ee9da79f1afcef075e163797d13"
 ---
 
 # 如何使用 Rediacc 配置备份和网络

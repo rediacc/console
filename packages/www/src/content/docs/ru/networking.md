@@ -6,16 +6,23 @@ description: >-
 category: Guides
 order: 6
 language: ru
-sourceHash: "d5504af824f9047b"
+sourceHash: "536db0c93646cad6"
+sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
 ---
 
 # Сетевое взаимодействие
 
 На этой странице описывается, как сервисы, работающие внутри изолированных Docker-демонов, становятся доступными из интернета. Рассматривается система обратного прокси, Docker-метки для маршрутизации, TLS-сертификаты, DNS и проброс TCP/UDP-портов.
-| Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
-| STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 
 Информацию о том, как сервисы получают loopback IP-адреса и как работает система слотов `.rediacc.json`, см. в разделе [Сервисы](/ru/docs/services#сетевое-взаимодействие-сервисов-rediaccjson).
+
+## Сетевая изоляция
+
+Каждый репозиторий автоматически изолируется на уровне ядра с помощью сетевых хуков. Требуется Linux kernel 6.1 или новее. Никакой настройки не требуется.
+
+- **Автоматическое переписывание bind**: Сервисы могут привязываться к `0.0.0.0` или `127.0.0.1` как обычно. Ядро прозрачно переписывает адрес на назначенный loopback IP сервиса. Явная привязка к `${SERVICE_IP}` не нужна.
+- **Блокировка соединений между репозиториями**: Если сервис пытается подключиться к loopback IP за пределами подсети `/26` своего репозитория, ядро блокирует это. Процесс в репозитории А не может достичь сервисов в репозитории Б.
+- **Никаких изменений в приложениях**: Сервисы используют `0.0.0.0` или `localhost` для привязки, и ядро гарантирует, что они слушают только на правильном loopback IP. Изоляция полностью прозрачна.
 
 ## Как это работает
 
@@ -38,7 +45,7 @@ Internet → Traefik (ports 80/443/TCP/UDP)
 
 Когда вы добавляете правильные метки к контейнеру и запускаете его с помощью `renet compose`, он автоматически становится маршрутизируемым, ручная настройка прокси не требуется.
 
-> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime, Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+> Бинарный файл сервера маршрутов поддерживается в синхронизации с версией вашего CLI. Когда CLI обновляет бинарный файл renet на машине, сервер маршрутов автоматически перезапускается (~1-2 секунды). Это не вызывает простоя, Traefik продолжает обслуживать трафик с последней известной конфигурацией во время перезапуска и получает новую конфигурацию при следующем опросе. Существующие клиентские соединения не затрагиваются. Контейнеры вашего приложения не изменяются.
 
 ## Docker-метки
 
@@ -53,9 +60,9 @@ Internet → Traefik (ports 80/443/TCP/UDP)
 | `rediacc.service_name` | Идентификатор сервиса | `myapp` |
 | `rediacc.service_ip` | Назначенный loopback IP | `127.0.11.2` |
 | `rediacc.network_id` | Идентификатор демона репозитория | `2816` |
-| `rediacc.repo_name` | Repository name | `marketing` |
-| `rediacc.tcp_ports` | TCP ports the service listens on | `8080,8443` |
-| `rediacc.udp_ports` | UDP ports the service listens on | `53` |
+| `rediacc.repo_name` | Имя репозитория | `marketing` |
+| `rediacc.tcp_ports` | TCP-порты, на которых слушает сервис | `8080,8443` |
+| `rediacc.udp_ports` | UDP-порты, на которых слушает сервис | `53` |
 
 Когда контейнер имеет только метки `rediacc.*` (без `traefik.enable=true`), сервер маршрутов генерирует **автомаршрут** с использованием имени репозитория и поддомена машины:
 
@@ -69,7 +76,19 @@ Internet → Traefik (ports 80/443/TCP/UDP)
 myapp.marketing.server-1.example.com
 ```
 
-Каждый репозиторий имеет свой собственный уровень поддомена, поэтому форки и разные репозитории никогда не пересекаются. При форке репозитория (например, `marketing-staging`) форк автоматически получает отдельные маршруты. Для сервисов с пользовательскими доменами используйте метки уровня 2 или метку `rediacc.domain`.
+Для форков имя сервиса объединяется с зарезервированным словом `fork` и тегом:
+
+```
+{service}-fork-{tag}.{repoName}.{machineName}.{baseDomain}
+```
+
+Например, форк `marketing` с тегом `staging` получит:
+
+```
+myapp-fork-staging.marketing.server-1.example.com
+```
+
+Каждый URL форка находится под поддоменом родительского репозитория и покрывается его существующим wildcard-сертификатом, поэтому новый сертификат не нужен. Разделитель `-fork-` предотвращает коллизии с реальными именами сервисов в продакшн-репозитории. Для сервисов с пользовательскими доменами используйте метки уровня 2 или метку `rediacc.domain`.
 
 #### Пользовательский домен через `rediacc.domain`
 
@@ -136,7 +155,7 @@ services:
   myapp:
     image: myapp:latest
     environment:
-      - LISTEN_ADDR=${MYAPP_IP}:8080
+      - LISTEN_ADDR=0.0.0.0:8080
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.myapp.rule=Host(`app.example.com`)"
@@ -146,7 +165,6 @@ services:
 
   database:
     image: postgres:17
-    command: ["-c", "listen_addresses=${DATABASE_IP}"]
     # Без меток traefik, база данных только для внутреннего использования
 ```
 
@@ -158,7 +176,7 @@ services:
 | `traefik.http.routers.{name}.tls.certresolver` | Резолвер сертификатов, используйте `letsencrypt` для автоматического Let's Encrypt |
 | `traefik.http.services.{name}.loadbalancer.server.port` | Порт, на котором ваше приложение слушает внутри контейнера |
 
-`{name}` в метках, произвольный идентификатор; он должен быть согласованным во всех связанных метках маршрутизатора/сервиса/middleware.
+`{name}` в метках это произвольный идентификатор; он должен быть согласованным во всех связанных метках маршрутизатора/сервиса/middleware.
 
 > **Примечание:** Метки `rediacc.*` (`rediacc.service_name`, `rediacc.service_ip`, `rediacc.network_id`) внедряются автоматически командой `renet compose`. Вам не нужно добавлять их в ваш compose-файл.
 
@@ -172,11 +190,39 @@ rdc config infra set -m server-1 \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-Автомаршруты используют **wildcard-сертификаты** на уровне поддомена репозитория (`*.marketing.server-1.example.com`) вместо сертификатов для каждого сервиса. Это позволяет избежать ограничений скорости Let's Encrypt и ускоряет запуск. Маршруты с пользовательскими доменами используют wildcard на уровне машины (`*.server-1.example.com`).
+Автомаршруты используют **wildcard-сертификаты** на уровне поддомена репозитория (`*.marketing.server-1.example.com`) вместо сертификатов для каждого сервиса. Сертификат автоматически выпускается Traefik при первом `repo up`; никаких ручных шагов не требуется. Форки повторно используют существующий wildcard родительского репозитория, поэтому никогда не вызывают новый запрос сертификата. Маршруты с пользовательскими доменами используют wildcard на уровне машины (`*.server-1.example.com`).
+
+> **Требуются учетные данные Cloudflare.** Wildcard-сертификаты используют DNS-01 проверку. Без `--cf-dns-token` (и опционально `--cert-email`) Traefik не сможет завершить проверку и HTTPS не будет работать. HTTP остается функциональным. Настройте учетные данные с помощью `rdc config infra set` перед первым деплоем.
 
 Для маршрутов уровня 2 с `traefik.http.routers.{name}.tls.certresolver=letsencrypt` wildcard-домены SAN автоматически добавляются на основе имени хоста маршрута.
 
 API-токен Cloudflare DNS должен иметь разрешение `Zone:DNS:Edit` для доменов, которые вы хотите защитить.
+
+### Жизненный цикл TLS-сертификата
+
+Полный путь, который проходит сертификат Let's Encrypt от выпуска до контейнеров каждого репозитория:
+
+1. **Выпуск на хосте.** Контейнер Traefik на уровне машины (`rediacc-proxy`, развёрнутый в `/opt/rediacc/proxy/`) владеет обновлением ACME. Он хранит всё состояние в `/opt/rediacc/proxy/letsencrypt/acme.json` на хосте. Обновление запускается автоматически примерно за 30 дней до истечения срока; никаких действий оператора не требуется, пока настроен `--cf-dns-token`.
+
+2. **Дамп для каждого репозитория (опционально).** Сервисы, которым нужны файлы сертификатов внутри собственного контейнера (например, почтовый сервер, читающий `.pem` напрямую), разворачивают рядом с собой небольшой контейнер `traefik-certs-dumper`. Дампер монтирует `/opt/rediacc/proxy/letsencrypt` в режиме только для чтения и записывает извлечённые сертификат и ключ в том данных репозитория как `cert.pem` / `key.pem`. Для этого Docker-демон репозитория должен иметь `/opt/rediacc/proxy` в списке разрешений пространства имён монтирования. Это уже включено по умолчанию.
+
+3. **Кэш на стороне клиента (`rediacc.json`).** CLI кэширует сжатую копию `acme.json` под `acmeCertCache` в вашем файле конфигурации, с ключом по `baseDomain`. Это позволяет нескольким машинам совместно использовать сертификаты (через `rdc config cert-cache push <machine>`) и работает как оффлайн-инвентарь.
+
+**Триггеры синхронизации для кэша клиента:**
+
+- Автоматически после `rdc repo up`, но только если локальный кэш для `baseDomain` машины старше 6 часов. Свежие кэши остаются нетронутыми, чтобы последовательные деплои не нагружали SSH.
+- По запросу: `rdc config cert-cache pull -m <machine>` (принудительное получение) или `rdc machine query --name <machine> --sync-certs` (получение как побочный эффект запроса статуса).
+- При `rdc config infra push` кэш загружается на машину (локальные сертификаты с более долгим сроком действия имеют приоритет над удалёнными).
+
+**Обслуживание кэша:**
+
+- Устаревшие записи автомаршрутов (старые домены с тегом идентификатора сети, например `service-3200.rediacc.io`) удаляются при каждом получении.
+- Сертификаты, у которых `notAfter` более чем на 7 дней в прошлом, удаляются полностью. Они инертны и только раздувают кэш.
+- `rdc config cert-cache clear` очищает всё; `rdc config cert-cache status` показывает инвентарь.
+
+**Устранение неполадок:** если `traefik-certs-dumper` падает с `/traefik/acme.json: no such file or directory`, демон репозитория не видит хранилище letsencrypt хоста. Проверьте (а) наличие `/opt/rediacc/proxy/letsencrypt/acme.json` на хосте (за это отвечает `rediacc-proxy` уровня хоста), и (б) что демон репозитория был запущен с достаточно новым renet, который добавляет `/opt/rediacc/proxy` в список разрешений. После обновления renet выполните `rdc repo up`, чтобы применить изменения.
+
+> **Экспериментально:** Автоматическая частота синхронизации и удаление по истечении срока появились в renet 0.9+. Более старые версии CLI/renet используют исключительно ручную синхронизацию через `rdc config cert-cache pull`.
 
 ## Проброс TCP/UDP-портов
 
@@ -195,26 +241,6 @@ rdc config infra push -m server-1
 ```
 
 Это создает точки входа Traefik с именами `tcp-{port}` и `udp-{port}`.
-
-### Plain TCP Example (Database)
-
-To expose a database externally without TLS passthrough (Traefik forwards raw TCP):
-
-```yaml
-services:
-  postgres:
-    image: postgres:17
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
-    labels:
-      - "traefik.enable=true"
-      - "traefik.tcp.routers.mydb.entrypoints=tcp-5432"
-      - "traefik.tcp.routers.mydb.rule=HostSNI(`*`)"
-      - "traefik.tcp.services.mydb.loadbalancer.server.port=5432"
-```
-
-Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
-
-> **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
 > После добавления или удаления портов всегда повторно выполняйте `rdc config infra push` для обновления конфигурации прокси.
 
@@ -248,6 +274,25 @@ services:
 - **`tls.passthrough=true`** означает, что Traefik пересылает необработанное TLS-соединение без расшифровки, приложение само обрабатывает TLS
 - Имена точек входа следуют соглашению `tcp-{port}` или `udp-{port}`
 
+### Пример простого TCP (база данных)
+
+Чтобы предоставить доступ к базе данных снаружи без TLS passthrough (Traefik пересылает сырой TCP):
+
+```yaml
+services:
+  postgres:
+    image: postgres:17
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.mydb.entrypoints=tcp-5432"
+      - "traefik.tcp.routers.mydb.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.mydb.loadbalancer.server.port=5432"
+```
+
+Порт 5432 предварительно настроен (см. ниже), поэтому настройка `--tcp-ports` не нужна.
+
+> **Примечание по безопасности:** Открытие базы данных в интернет является риском. Используйте это только когда удалённым клиентам нужен прямой доступ. В большинстве случаев держите базу данных внутренней и подключайтесь через ваше приложение.
+
 ### Предварительно настроенные порты
 
 Следующие TCP/UDP-порты имеют точки входа по умолчанию (не нужно добавлять через `--tcp-ports`). Точки входа генерируются только для настроенных семейств адресов, точки входа IPv4 требуют `--public-ipv4`, точки входа IPv6 требуют `--public-ipv6`:
@@ -264,7 +309,7 @@ services:
 | 5672 | TCP | RabbitMQ |
 | 9092 | TCP | Kafka |
 | 53 | UDP | DNS |
-| 10000–10010 | TCP | Динамический диапазон (автовыделение) |
+| 10000-10010 | TCP | Динамический диапазон (автовыделение) |
 
 ## Настройка DNS
 
@@ -371,8 +416,10 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 |----------|---------|---------|
 | Сервис не отображается в маршрутах | Контейнер не запущен или отсутствуют метки | Проверьте с помощью `docker ps` на демоне репозитория; проверьте метки |
 | Сертификат не выпущен | DNS не указывает на сервер или невалидный токен Cloudflare | Проверьте разрешение DNS; проверьте разрешения API-токена Cloudflare |
-| 502 Bad Gateway | Приложение не слушает на объявленном порту | Убедитесь, что приложение привязано к `{SERVICE}_IP` и порт совпадает с `loadbalancer.server.port` |
+| 502 Bad Gateway | Приложение не слушает на объявленном порту | Убедитесь, что приложение запущено и порт совпадает с `loadbalancer.server.port` |
 | TCP-порт недоступен | Порт не зарегистрирован в инфраструктуре | Выполните `rdc config infra set --tcp-ports ...` и `push-infra` |
+| Сервер маршрутов работает на старой версии | Бинарный файл обновлён, но сервис не перезапущен | Происходит автоматически при провизионировании; вручную: `sudo systemctl restart rediacc-router` |
+| Relay STUN/TURN недоступен | Адреса relay закэшированы при запуске | Пересоздайте сервис после изменений DNS или IP, чтобы он получил новую конфигурацию сети |
 
 ## Полный пример
 
@@ -385,8 +432,8 @@ services:
   webapp:
     image: myregistry/webapp:latest
     environment:
-      DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
-      LISTEN_ADDR: ${WEBAPP_IP}:3000
+      DATABASE_URL: postgresql://app:changeme@postgres:5432/webapp
+      LISTEN_ADDR: 0.0.0.0:3000
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.webapp.rule=Host(`app.example.com`)"
@@ -404,7 +451,6 @@ services:
       POSTGRES_DB: webapp
       POSTGRES_USER: app
       POSTGRES_PASSWORD: changeme
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     # Без меток traefik, только для внутреннего использования

@@ -4,7 +4,8 @@ description: "Mevcut projeleri şifrelenmiş Rediacc depolarına taşıyın."
 category: "Guides"
 order: 11
 language: tr
-sourceHash: "96c0254adb792a90"
+sourceHash: "5e13e363e9dce55f"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # Geçiş Rehberi
@@ -25,7 +26,7 @@ Projenize uygun boyutta şifrelenmiş bir depo oluşturun. Docker imajları ve k
 rdc repo create --name my-project -m server-1 --size 20G
 ```
 
-> **İpucu:** Daha sonra `rdc repo resize` ile yeniden boyutlandırabilirsiniz, ancak deponun önce bağlantısının kesilmesi gerekir. Yeterli alanla başlamak daha kolaydır.
+> **Ipucu:** Daha sonra `rdc repo resize` ile yeniden boyutlandırabilirsiniz, ancak deponun önce bağlantısının kesilmesi gerekir. Yeterli alanla başlamak daha kolaydır.
 
 ## Adım 2: Dosyalarınızı Yükleme
 
@@ -61,7 +62,7 @@ Yüklenen dosyalar yerel kullanıcınızın UID'si ile gelir (örn. 1000). Redia
 rdc repo ownership --name my-project -m server-1
 ```
 
-### Docker-Duyarlı İstisna
+### Docker-Duyarlı Istisna
 
 Docker konteynerleri çalışıyorsa (veya çalıştıysa), sahiplik komutu otomatik olarak yazılabilir veri dizinlerini algılar ve **atlar**. Bu, dosyalarını farklı UID'lerle yöneten konteynerlerin bozulmasını önler (örn. MariaDB UID 999, Nextcloud UID 33 kullanır).
 
@@ -86,7 +87,7 @@ Docker birim algılamasını atlayıp konteyner veri dizinleri dahil her şeyi d
 rdc repo ownership --name my-project -m server-1
 ```
 
-> **Uyarı:** Bu, çalışan konteynerleri bozabilir. Gerekirse önce `rdc repo down` ile durdurun.
+> **Uyari:** Bu, çalışan konteynerleri bozabilir. Gerekirse önce `rdc repo down` ile durdurun.
 
 ### Özel UID
 
@@ -112,7 +113,7 @@ down() {
 }
 ```
 
-Üç yaşam döngüsü fonksiyonu:
+Iki yaşam döngüsü fonksiyonu:
 
 | Fonksiyon | Amaç | Hata Davranışı |
 |-----------|------|----------------|
@@ -168,29 +169,27 @@ services:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: secret
-    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
 
   redis:
     image: redis:7-alpine
-    command: redis-server --bind ${REDIS_IP} --port 6379
 
   app:
     image: my-app:latest
     environment:
-      DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
-      REDIS_URL: redis://${REDIS_IP}:6379
-      LISTEN_ADDR: ${APP_IP}:8080
+      DATABASE_URL: postgresql://postgres:secret@postgres:5432/mydb
+      REDIS_URL: redis://redis:6379
+      LISTEN_ADDR: 0.0.0.0:8080
 ```
 
 Temel değişiklikler:
 
-1. **`ports:` eşlemelerini kaldırın**, `renet compose` host ağını kullanır ve port eşlemelerini otomatik olarak kaldırır
-2. **`network_mode: host` kaldırın**, `renet compose` bunu sizin için ekler
-3. **`restart: always` veya `restart: unless-stopped` kaldırın**, bunlar CRIU checkpoint/restore ile çakışır (Docker, checkpoint restore çalışmadan önce konteynerleri otomatik başlatır). Yeniden başlatma davranışına ihtiyacınız varsa `restart: on-failure` kullanın veya tamamen atlayın, Rediaccfile `up()`/`down()` konteyner yaşam döngüsünü yönetir
-4. **Servisleri `${SERVICE_IP}` ortam değişkenlerine bağlayın** (Rediacc tarafından otomatik enjekte edilir)
-5. **Diğer servislere Docker DNS adları yerine IP'leriyle başvurun** (örn. `postgres` yerine `${POSTGRES_IP}`)
+1. **`ports:` eşlemelerini kaldırın** - `renet compose` host ağını kullanır ve port eşlemelerini otomatik olarak kaldırır
+2. **`network_mode: host` kaldırın** - `renet compose` bunu sizin için ekler
+3. **Yeniden başlatma politikaları saklamak güvenlidir** - renet bunları CRIU uyumluluğu için otomatik olarak kaldırır ve router watchdog durdurulan konteynerleri otomatik olarak kurtarır
+4. **Servisler arası bağlantılar için servis adlarını kullanın** (örn. `postgres`, `redis`) - renet her servis adını çözümlenebilir bir ana bilgisayar adı olarak enjekte eder. Veritabanlarında veya yapılandırma dosyalarında saklanan bağlantı dizelerine ham IP'ler yerleştirmeyin; fork izolasyonunu korumak için servis adını kullanın
+5. **Bağlama otomatiktir** - kernel `bind()` çağrılarını doğru geri döngü IP'sine yeniden yazar. Servisler `0.0.0.0` veya `localhost` kullanabilir
 
-`{SERVICE}_IP` değişkenleri compose dosyanızdaki servis adlarından otomatik olarak oluşturulur. Adlandırma kuralı: büyük harf, tireler alt çizgiyle değiştirilir, `_IP` son eki. Örneğin, `listmonk-app` `LISTMONK_APP_IP` olur.
+`{SERVICE}_IP` değişkenleri ihtiyaç duyulduğunda hâlâ kullanılabilir, ancak açık bağlama artık gerekli değildir. Adlandırma kuralı: büyük harf, tireler alt çizgiyle değiştirilir, `_IP` son eki. Örneğin, `listmonk-app` `LISTMONK_APP_IP` olur.
 
 IP ataması ve `.rediacc.json` hakkında ayrıntılar için [Servis Ağı](/tr/docs/services#service-networking-rediaccjson) bölümüne bakın.
 
@@ -204,9 +203,9 @@ rdc repo up --name my-project -m server-1
 
 Bu işlem:
 1. Şifrelenmiş depoyu bağlar
-2. İzole Docker daemon'unu başlatır
+2. Izole Docker daemon'unu başlatır
 3. Servis IP atamalarıyla `.rediacc.json` dosyasını otomatik oluşturur
-5. Tüm Rediaccfile'lardan `up()` fonksiyonunu çalıştırır
+4. Tüm Rediaccfile'lardan `up()` fonksiyonunu çalıştırır
 
 Konteynerlerinizin çalıştığını doğrulayın:
 
@@ -214,7 +213,7 @@ Konteynerlerinizin çalıştığını doğrulayın:
 rdc machine containers server-1
 ```
 
-## Adım 7: Otomatik Başlatmayı Etkinleştirme (İsteğe Bağlı)
+## Adım 7: Otomatik Başlatmayı Etkinleştirme (Isteğe Bağlı)
 
 Varsayılan olarak, sunucu yeniden başlatıldıktan sonra depolar manuel olarak bağlanmalı ve başlatılmalıdır. Servislerinizin otomatik olarak başlaması için otomatik başlatmayı etkinleştirin:
 
@@ -279,7 +278,7 @@ rdc repo ownership --name my-project -m server-1
 
 ### Konteyner Başlamıyor
 
-Servislerin `0.0.0.0` veya `localhost` yerine atanmış IP'lerine bağlandığını kontrol edin:
+Servislerin çalışıp çalışmadığını kontrol edin ve günlüklerini inceleyin:
 
 ```bash
 # Atanmış IP'leri kontrol edin
@@ -291,7 +290,7 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### Depolar Arasında Port Çakışması
 
-Her depo benzersiz geri döngü IP'leri alır. Port çakışmaları görüyorsanız, `docker-compose.yml` dosyanızın bağlama için `0.0.0.0` yerine `${SERVICE_IP}` kullandığını doğrulayın. `0.0.0.0`'a bağlı servisler tüm arayüzlerde dinler ve diğer depolarla çakışır.
+Her depo benzersiz geri döngü IP'leri alır ve kernel `bind()` çağrılarını otomatik olarak doğru IP'ye yeniden yazar. Depolar arasında port çakışmaları olmamalıdır. Beklenmedik davranış görürseniz, servislerin `docker compose` yerine `renet compose` aracılığıyla başlatıldığını doğrulayın. Diğer servislere bağlanırken ham IP'ler yerine servis adını (örn. `postgres`) kullanın; servis adları her fork'ta doğru şekilde çözümlenir.
 
 ### Sahiplik Düzeltmesi Konteynerleri Bozuyor
 

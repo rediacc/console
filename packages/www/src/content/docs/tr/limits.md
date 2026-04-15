@@ -6,8 +6,8 @@ description: >-
 category: "Reference"
 order: 99
 language: tr
-sourceHash: "fdf074885af49980"
-sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
+sourceHash: "e663f13b2f78bc65"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # Limitler ve Kotalar
@@ -126,7 +126,7 @@ CRIU aracılığıyla canlı geçiş aşağıdaki kısıtlamalara sahiptir:
 - **Ağ modu**: CRIU, ana bilgisayar ağ modunu gerektirir. Özel ağ yapılandırmaları kullanan konteynerlerin kontrol noktası alınamaz.
 - **Bellek**: Kontrol noktası veri boyutu, kontrol noktasına alınan sürecin yerleşik belleğine eşittir. Bellekteki büyük veri kümeleri (örneğin, 4 GB veri önbelleğe alan bir Node.js uygulaması) 4 GB kontrol noktası dosyaları üretir.
 - **TCP bağlantıları**: Uygulamalar, geri yükleme sırasında bağlantı kaybını tolere etmelidir. Aktif TCP bağlantıları **korunmaz**, geri yüklenen süreç soketleri kapalı olarak görür ve yeniden bağlanmalıdır. Bu, hem aynı makine hem de makineler arası geri yükleme yollarına uygulanır.
-- **Aynı makinede canlı fork desteklenmiyor**: `rdc repo fork --parent X --tag Y --checkpoint` komutu checkpoint'i başarıyla yakalar, ancak ebeveyn hâlâ çalışırken aynı makinede çalıştırılan sonraki `rdc repo up` komutu `criu failed: type RESTORE errno 0` hatasıyla başarısız olur. Bu, upstream CRIU hataları [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) ve [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514) ile `network_mode: host` arasındaki etkileşimden kaynaklanır. Aynı makinede yerinde süreç durumunu korumak için bunun yerine `rdc repo down --checkpoint` + `rdc repo up` kullanın. Canlı geçiş için farklı bir makineye `rdc repo push --checkpoint` kullanın.
+- **Aynı makinede canlı çatal desteklenmiyor**: `rdc repo fork --parent X --tag Y --checkpoint` komutu kontrol noktasını başarıyla yakalar, ancak ebeveyn hala çalışırken aynı makinede çalıştırılan sonraki `rdc repo up` komutu `criu failed: type RESTORE errno 0` hatasıyla başarısız olur. Bu, upstream CRIU hataları [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) ve [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514) ile `network_mode: host` arasındaki etkileşimden kaynaklanır. Aynı makinede yerinde süreç durumunu korumak için bunun yerine `rdc repo down --checkpoint` + `rdc repo up` kullanın. Canlı geçiş için farklı bir makineye `rdc repo push --checkpoint` kullanın.
 
 ---
 
@@ -136,7 +136,7 @@ CRIU aracılığıyla canlı geçiş aşağıdaki kısıtlamalara sahiptir:
 |-------|-------|
 | Depo başına yedekleme hedefleri | Sınırsız |
 | Eş zamanlı yedekleme görevleri | Depo başına 1 (eş zamanlı tetiklenirse görevler kuyruğa alınır) |
-| Yedekleme sıklığı | Zorunlu minimum aralık yok; depolama bant genişliğinizle sınırlıdır |
+| Yedekleme sıklığı | Zorunlu minimum aralık yok; depolama bant genişliğinizle sınırlıdır. Yükleme hızını sınırlamak için `rdc config backup-strategy set --name <name> --bwlimit "6M"` kullanın |
 | Saklama | Depolama sağlayıcınız (S3, Cloudflare R2 vb.) tarafından kontrol edilir. Rediacc saklama politikaları uygulamaz. |
 | Makineler arası yedekleme | Desteklenir; hedef makinede yeterli veri deposu alanı olmalıdır |
 
@@ -155,15 +155,30 @@ CRIU aracılığıyla canlı geçiş aşağıdaki kısıtlamalara sahiptir:
 
 ## Desteklenen İşletim Sistemi Sürümleri
 
-Uzak makinelerin, Rediacc'ın çekirdek, dosya sistemi ve eBPF gereksinimlerini karşılamak için aşağıdakilerden birini çalıştırması gerekir:
+Uzak makinelerin, Rediacc'ın çekirdek, dosya sistemi ve ağ izolasyonu gereksinimlerini karşılamak için aşağıdakilerden birini çalıştırması gerekir. Bu liste, CI'da test edilen yetkili kümedir (Bridge Workers matrisi) ve [Gereksinimler](/en/docs/requirements) ile senkronize tutulmalıdır:
 
-| İşletim Sistemi | Minimum Sürüm | Varsayılan Çekirdek |
-|-----------------|----------------|---------------------|
-| Ubuntu | 24.04 LTS *(önerilen)* | 6.8 |
-| Debian | 12 (Bookworm) | 6.1 |
-| Fedora | 43 | 6.12 |
-| openSUSE Leap | 16.0 | 6.4+ |
+| İşletim Sistemi | Minimum Sürüm | Varsayılan Çekirdek | Notlar |
+|-----------------|----------------|---------------------|--------|
+| Ubuntu | 24.04 LTS *(önerilen)* | 6.8 | AppArmor varsayılan. |
+| Debian | 13 (Trixie); 12 Bookworm da çalışır | 6.12 (Debian 12'de 6.1) | |
+| Fedora | 43 | 6.12 | SELinux enforcing varsayılan. |
+| openSUSE Leap | 16.0 | 6.4+ | AppArmor varsayılan. |
+| Oracle Linux | 10 (UEK) | UEK 7+ | UEK btrfs'i korur; SELinux enforcing varsayılan. |
 
 **Minimum gerekli çekirdek: 6.1.** Daha eski çekirdek çalıştıran makineler, kurulum sırasında açık bir hata mesajıyla reddedilir.
 
-> **Neden çekirdek 6.1?** Rediacc, şifrelenmiş depo depolaması ve yazma üzerine kopyalama çatallaması için BTRFS kullanır. Linux 6.1, büyük veri depoları için bağlama sürelerini önemli ölçüde azaltan, anlık görüntü silme performansını artıran ve önceki çekirdeklerde bulunan veri bütünlüğü sorunlarını düzelten kritik BTRFS iyileştirmelerini getirmiştir. Çekirdek 6.1, çekirdek düzeyinde depolar arası ağ izolasyonunu zorunlu kılan, `bind()` çağrılarını şeffaf bir şekilde yeniden yazan ve depolar arasındaki bağlantıları engelleyen eBPF cgroup soket programları (`BPF_PROG_TYPE_CGROUP_SOCK_ADDR`) için de gereklidir.
+> **Neden çekirdek 6.1?** Rediacc, şifrelenmiş depo depolaması ve yazma üzerine kopyalama çatallaması için BTRFS kullanır. Linux 6.1, büyük veri depoları için bağlama sürelerini önemli ölçüde azaltan, anlık görüntü silme performansını artıran ve önceki çekirdeklerde bulunan veri bütünlüğü sorunlarını düzelten kritik BTRFS iyileştirmelerini getirmiştir. Çekirdek 6.1, depolar arasındaki ağ izolasyonunu zorunlu kılan, `bind()` çağrılarını şeffaf bir şekilde yeniden yazan ve depolar arasındaki bağlantıları engelleyen çekirdek düzeyindeki ağ izolasyonu kancaları için de gereklidir.
+
+> **Neden Rocky Linux 10 / RHEL 10 standart çekirdeği değil?** RHEL 10'un standart çekirdeği `btrfs` modülü olmadan gönderilir (`modprobe btrfs` "Module btrfs not found" hatasıyla başarısız olur). Rediacc'ın şifreli depolama arka ucu btrfs olmadan çalışamaz. **Oracle Linux 10, desteklenen listede tek RHEL uyumlu hedeftir** çünkü btrfs'i koruyan Unbreakable Enterprise Kernel'i (UEK) varsayılan olarak kullanır. Tam açıklama için [Gereksinimler: Neden UEK?](/en/docs/requirements) sayfasına bakın.
+
+### Çekirdek özellik matrisi
+
+Operatörler bu matrisi, CI'da test edilen her işletim sisteminin kutudan çıktığında neler sağladığına tek bakışta görmek için kullanabilir. Beşinin tümü her gereksinimi karşılar; matris operatör odaklı bir referanstır, bir seçim kriteri değildir.
+
+| İşletim Sistemi | btrfs modülü | cgroups v2 | Landlock (ABI >= 1) | eBPF cgroup kancaları |
+|-----------------|-------------|------------|---------------------|----------------------|
+| Ubuntu 24.04 | yerleşik | unified hierarchy | evet (5.13+) | evet |
+| Debian 13 | yerleşik | unified hierarchy | evet | evet |
+| Fedora 43 | yerleşik | unified hierarchy | evet | evet |
+| openSUSE Leap 16.0 | yerleşik | unified hierarchy | evet | evet |
+| Oracle Linux 10 (UEK) | yerleşik (UEK aracılığıyla) | unified hierarchy | evet | evet |

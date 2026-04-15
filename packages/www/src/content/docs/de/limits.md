@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: de
-sourceHash: "fdf074885af49980"
-sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
+sourceHash: "e663f13b2f78bc65"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # Limits & Kontingente
@@ -136,7 +136,7 @@ Live-Migration über CRIU hat folgende Einschränkungen:
 |-------|------|
 | Backup-Ziele pro Repository | Unbegrenzt |
 | Gleichzeitige Backup-Jobs | 1 pro Repository (Jobs werden in die Warteschlange gestellt, wenn sie gleichzeitig ausgelöst werden) |
-| Backup-Häufigkeit | Kein Mindestintervall erzwungen; begrenzt durch Ihre Speicherbandbreite |
+| Backup-Häufigkeit | Kein Mindestintervall erzwungen; begrenzt durch Ihre Speicherbandbreite. Verwenden Sie `rdc config backup-strategy set --name <name> --bwlimit "6M"` zum Begrenzen der Upload-Geschwindigkeit |
 | Aufbewahrung | Gesteuert durch Ihren Speicheranbieter (S3, Cloudflare R2, usw.). Rediacc erzwingt keine Aufbewahrungsrichtlinien. |
 | Maschinenübergreifendes Backup | Unterstützt; die Zielmaschine muss über ausreichend Datastore-Speicherplatz verfügen |
 
@@ -155,15 +155,30 @@ Live-Migration über CRIU hat folgende Einschränkungen:
 
 ## Unterstützte Betriebssystemversionen
 
-Remote-Maschinen müssen eines der folgenden Systeme ausführen, um die Kernel-, Dateisystem- und eBPF-Anforderungen von Rediacc zu erfüllen:
+Remote-Maschinen müssen eines der folgenden Systeme ausführen, um die Kernel-, Dateisystem- und Netzwerkisolationsanforderungen von Rediacc zu erfüllen. Diese Liste ist der maßgebliche CI-getestete Satz (Bridge Workers-Matrix) und muss synchron mit [Anforderungen](/en/docs/requirements) bleiben:
 
-| Betriebssystem | Mindestversion | Standard-Kernel |
-|----------------|----------------|-----------------|
-| Ubuntu | 24.04 LTS *(empfohlen)* | 6.8 |
-| Debian | 12 (Bookworm) | 6.1 |
-| Fedora | 43 | 6.12 |
-| openSUSE Leap | 16.0 | 6.4+ |
+| Betriebssystem | Mindestversion | Standard-Kernel | Hinweise |
+|----------------|----------------|-----------------|----------|
+| Ubuntu | 24.04 LTS *(empfohlen)* | 6.8 | AppArmor Standard. |
+| Debian | 13 (Trixie); 12 Bookworm funktioniert ebenfalls | 6.12 (6.1 auf Debian 12) | |
+| Fedora | 43 | 6.12 | SELinux enforcing Standard. |
+| openSUSE Leap | 16.0 | 6.4+ | AppArmor Standard. |
+| Oracle Linux | 10 (UEK) | UEK 7+ | UEK behält btrfs; SELinux enforcing Standard. |
 
 **Erforderlicher Mindest-Kernel: 6.1.** Maschinen mit älteren Kernels werden bei der Einrichtung mit einer klaren Fehlermeldung abgelehnt.
 
-> **Warum Kernel 6.1?** Rediacc verwendet BTRFS für verschlüsselten Repository-Speicher und Copy-on-Write-Forking. Linux 6.1 führte kritische BTRFS-Verbesserungen ein, die die Mount-Zeiten für große Datastores erheblich reduzieren, die Leistung beim Löschen von Snapshots verbessern und Datenintegritätsprobleme früherer Kernel beheben. Kernel 6.1 wird auch für eBPF-cgroup-Socket-Programme (`BPF_PROG_TYPE_CGROUP_SOCK_ADDR`) benötigt, die die netzwerkübergreifende Repository-Isolation auf Kernel-Ebene durchsetzen, indem sie `bind()`-Aufrufe transparent umschreiben und Verbindungen zwischen Repositories blockieren.
+> **Warum Kernel 6.1?** Rediacc verwendet BTRFS für verschlüsselten Repository-Speicher und Copy-on-Write-Forking. Linux 6.1 führte kritische BTRFS-Verbesserungen ein, die die Mount-Zeiten für große Datastores erheblich reduzieren, die Leistung beim Löschen von Snapshots verbessern und Datenintegritätsprobleme früherer Kernel beheben. Kernel 6.1 wird auch für die Netzwerkisolations-Hooks auf Kernel-Ebene benötigt, die die Repository-übergreifende Isolation erzwingen, indem sie `bind()`-Aufrufe transparent umschreiben und Verbindungen zwischen Repositories blockieren.
+
+> **Warum nicht Rocky Linux 10 / RHEL 10 Stock-Kernel?** Der Stock-Kernel von RHEL 10 wird ohne das `btrfs`-Modul ausgeliefert (`modprobe btrfs` schlägt mit "Module btrfs not found" fehl). Rediacc's verschlüsseltes Storage-Backend kann ohne btrfs nicht laufen. **Oracle Linux 10 ist das einzige RHEL-kompatible Ziel auf der unterstützten Liste**, weil es standardmäßig den Unbreakable Enterprise Kernel (UEK) verwendet, der btrfs beibehält. Siehe [Anforderungen: Warum UEK?](/en/docs/requirements) für die vollständige Erläuterung.
+
+### Kernel-Feature-Matrix
+
+Operatoren können diese Matrix als Übersicht nutzen, was jedes CI-getestete Betriebssystem out-of-the-box bereitstellt. Alle fünf erfüllen jede Anforderung; die Matrix ist eine operatorbezogene Referenz, kein Auswahlkriterium.
+
+| Betriebssystem | btrfs-Modul | cgroups v2 | Landlock (ABI >= 1) | eBPF cgroup Hooks |
+|----------------|-------------|------------|---------------------|-------------------|
+| Ubuntu 24.04 | im Kernel | unified hierarchy | ja (5.13+) | ja |
+| Debian 13 | im Kernel | unified hierarchy | ja | ja |
+| Fedora 43 | im Kernel | unified hierarchy | ja | ja |
+| openSUSE Leap 16.0 | im Kernel | unified hierarchy | ja | ja |
+| Oracle Linux 10 (UEK) | im Kernel (via UEK) | unified hierarchy | ja | ja |

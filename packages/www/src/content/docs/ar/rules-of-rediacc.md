@@ -4,8 +4,8 @@ description: "القواعد والاصطلاحات الأساسية لبناء 
 category: "Guides"
 order: 5
 language: ar
-sourceHash: "4a544ede5461d3a6"
-sourceCommit: "5f353240f5e0a7f9a7f7a4139e4096a1c7c97ffd"
+sourceHash: "fd0fa925e9b76434"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # قواعد Rediacc
@@ -129,6 +129,16 @@ down() {
 - أضف `process.on("uncaughtException")` كشبكة أمان لأخطاء المقابس القديمة من كائنات المكتبات الداخلية.
 - يتم إدارة سياسات إعادة التشغيل تلقائياً بواسطة renet (تُزال لـ CRIU، watchdog يتولى الاستعادة).
 - تجنب الاعتماد على DNS الخاص بـ Docker, استخدم عناوين IP loopback للاتصال بين الخدمات.
+
+### سياسات أمان المضيف حسب نظام التشغيل
+
+عبر أنظمة التشغيل الخمسة المدعومة رسمياً للخوادم (راجع [المتطلبات](/en/docs/requirements))، يستخدم Docker daemon الخاص بكل مستودع والحاويات التي يشغّلها **تسميات الحاويات الافتراضية**. لا يقوم `rdc config machine setup` بتثبيت سياسة SELinux مخصصة أو ملف تعريف AppArmor مخصص.
+
+- **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor مُفعَّل افتراضياً. تعمل الحاويات تحت ملف تعريف docker-container الافتراضي. الاستثناء الوحيد هو CRIU (يُضاف `apparmor=unconfined` للحاويات التي تحمل `rediacc.checkpoint=true`، كما هو موضح أعلاه).
+- **Fedora 43 / Oracle Linux 10**: يعمل SELinux بوضع التطبيق (enforcing) افتراضياً. تحصل الحاويات على سياق `container_t` القياسي. لا حاجة لتثبيت سياسة إضافية. إذا فشلت خطوة إعداد بسبب رفض AVC، راجع [استكشاف الأخطاء: رفض SELinux](/en/docs/troubleshooting).
+- **Debian 13**: AppArmor متاح لكن غير مُطبَّق افتراضياً على جميع النطاقات. لا تزال الحاويات تستخدم ملف تعريف docker-container.
+
+لا يلزم تحديد إعداد وضع أمان خاص بنظام التشغيل؛ فكلٌّ من `rdc` و `renet` يكتشفان ما يعمل ويوفران نفس عزل المستودع على جميع التوزيعات الخمس.
 
 ## الأمان
 

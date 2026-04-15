@@ -4,8 +4,8 @@ description: "Lösungen für häufige Probleme mit SSH, Einrichtung, Repositorie
 category: "Guides"
 order: 10
 language: de
-sourceHash: "756725b9a8fb168f"
-sourceCommit: "7874d5e2f0ca1262eb80ee7de79f20320d0ae2d7"
+sourceHash: "ee8fe3ee7166cfe4"
+sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ---
 
 # Fehlerbehebung
@@ -34,6 +34,51 @@ Dieser Befehl ruft frische Host-Schlüssel ab und aktualisiert Ihre Konfiguratio
 - Stellen Sie sicher, dass der SSH-Benutzer sudo-Zugriff ohne Passwort hat, oder konfigurieren Sie `NOPASSWD` für die erforderlichen Befehle
 - Überprüfen Sie den verfügbaren Speicherplatz auf dem Server
 - Führen Sie den Befehl mit `--debug` für ausführliche Ausgabe aus: `rdc config machine setup server-1 --debug`
+
+## Distributionsspezifische Einrichtungsprobleme
+
+Die fünf offiziell unterstützten Server-Betriebssysteme (Ubuntu 24.04, Debian 13, Fedora 43, openSUSE Leap 16.0, Oracle Linux 10) werden mit unterschiedlichen Sicherheitsrichtlinien und Paketmanagern ausgeliefert. Die meisten Einrichtungen funktionieren reibungslos; die folgenden Fälle behandeln die Ausnahmen.
+
+### SELinux-Verweigerungen (Fedora 43, Oracle Linux 10)
+
+Beide laufen mit SELinux im Enforcing-Modus. rdc setup installiert keine benutzerdefinierte SELinux-Richtlinie; der pro-Repository-Docker-Daemon läuft im Standard-Kontext `container_t`. Wenn das Setup mit AVC-Verweigerungen fehlschlägt, prüfen Sie das Audit-Log und identifizieren Sie die Domain:
+
+```bash
+sudo ausearch -m AVC -ts recent | head -40
+# Oder:
+sudo tail -f /var/log/audit/audit.log | grep AVC
+```
+
+Zeigt eine Verweigerung auf das renet-Binary oder einen bestimmten Dateipfad, ist die Lösung fast immer ein Relabeling (`restorecon -v /path`) statt SELinux zu deaktivieren. Als vorübergehende Abhilfe während der Untersuchung versetzt `sudo setenforce 0` das System in den permissiven Modus. Aktivieren Sie ihn mit `sudo setenforce 1` wieder, sobald Sie bestätigen, dass das Relabeling dauerhaft ist.
+
+### AppArmor-Verweigerungen (Ubuntu 24.04, openSUSE Leap 16.0)
+
+Beide laufen standardmäßig mit AppArmor; der pro-Repository-Docker-Daemon verwendet das Standard-Container-Profil. Wenn ein Container innerhalb eines Repositories blockiert wird:
+
+```bash
+dmesg | grep -i apparmor
+sudo aa-status
+```
+
+CRIU ist der bekannte Fall, der AppArmor auslöst. Renet setzt automatisch `security_opt: apparmor=unconfined` für Container mit dem Label `rediacc.checkpoint=true`. Für alles andere sollten Sie keine AppArmor-Profile manuell konfigurieren müssen. Siehe die CRIU-Hinweise in [Regeln von Rediacc](/en/docs/rules-of-rediacc).
+
+### Fehlersignaturen des Paketmanagers
+
+| Betriebssystem | Paketmanager | Typischer Fehler | Lösung |
+|---|---|---|---|
+| Ubuntu / Debian | apt-get | `File has unexpected size (N != M). Mirror sync in progress?` | Cloudflare-Edge-Cache hinter dem Origin. `apt-get update` nach ~15 s wiederholen; die Integritätsprüfung besteht beim nächsten Poll. |
+| Fedora / Oracle | dnf | `Problem: nothing provides rediacc-cli` | Die auf dem Datenträger zwischengespeicherten RPM-Repository-Metadaten sind veraltet. Führen Sie `sudo dnf clean all && sudo dnf makecache` aus. |
+| openSUSE | zypper | `Repository 'rediacc' needs to be refreshed.` | Führen Sie einmalig `sudo zypper refresh rediacc` aus; nachfolgende Installationen sollten dann funktionieren. |
+
+### btrfs-Modul fehlt (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
+
+Wenn `rdc config machine setup` oder `renet system check-btrfs` mit folgendem Fehler abbricht:
+
+```
+Module btrfs not found
+```
+
+...läuft der Server mit dem Standard-Kernel von RHEL 10, der ohne das integrierte btrfs-Modul ausgeliefert wird. Dies ist kein Rediacc-Fehler; RHEL 10 hat btrfs absichtlich entfernt. Die Lösung ist, stattdessen **Oracle Linux 10 zu verwenden**. Oracle 10 verwendet standardmäßig den Unbreakable Enterprise Kernel (UEK), der btrfs beibehält. Siehe [Anforderungen -- Warum UEK?](/en/docs/requirements) für die vollständige Erklärung.
 
 ## Repository-Erstellung schlägt fehl
 

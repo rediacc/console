@@ -4,7 +4,8 @@ description: "Ein verschlüsseltes Repository erstellen, eine containerisierte A
 category: "Tutorials"
 order: 3
 language: de
-sourceHash: "4d7072927542dfb3"
+sourceHash: "fecc09a324a1fa65"
+sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 ---
 
 # So stellen Sie Repositories mit Rediacc bereit und verwalten sie
@@ -14,7 +15,7 @@ Repositories sind die zentrale Bereitstellungseinheit in Rediacc, jedes ist eine
 ## Voraussetzungen
 
 - Die `rdc` CLI installiert mit einer initialisierten Konfiguration
-- Eine bereitgestellte Maschine (siehe [Tutorial: Maschineneinrichtung](/de/docs/tutorial-setup))
+- Eine bereitgestellte Maschine (siehe [Tutorial: Maschineneinrichtung](/en/docs/tutorial-setup))
 - Eine einfache Anwendung mit einem `Rediaccfile` und einer `docker-compose.yml`
 
 ## Interaktive Aufzeichnung
@@ -95,21 +96,23 @@ rdc repo delete --name test-app -m server-1  # Repository dauerhaft löschen
 
 > **Warnung:** `repo delete` ist unwiderruflich. Alle Daten im Repository werden zerstört. Erstellen Sie bei Bedarf vorher ein Backup.
 
+> **Hinweis:** Nach dem Löschen bleibt der Konfigurationseintrag erhalten (das Repository kann auf anderen Maschinen vorhanden sein). Verwenden Sie `rdc config repository remove <name>`, um ihn zu entfernen, oder `--archive-config`, um Zugangsdaten zur Wiederherstellung zu sichern.
+
 ## Fehlerbehebung
 
-**„Unzureichender Speicherplatz" bei der Repository-Erstellung**
+**"Unzureichender Speicherplatz" bei der Repository-Erstellung**
 Das verschlüsselte Volumen benötigt zusammenhängenden freien Speicherplatz auf dem Host. Überprüfen Sie den verfügbaren Speicherplatz mit `df -h` auf dem Server. Erwägen Sie einen kleineren `--size`-Wert oder geben Sie Speicherplatz frei.
 
 **Docker-Image-Pull-Timeout während `repo up`**
 Große Images können bei langsamen Verbindungen das Zeitlimit überschreiten. Wiederholen Sie mit `rdc repo up`, es setzt dort fort, wo es aufgehört hat. Für Air-Gapped-Umgebungen laden Sie Images vorab in den Docker Daemon des Repositories.
 
-**„Mount fehlgeschlagen" oder „LUKS-Öffnung fehlgeschlagen"**
+**"Mount fehlgeschlagen" oder "LUKS-Öffnung fehlgeschlagen"**
 Die LUKS-Passphrase wird aus der Konfiguration abgeleitet. Überprüfen Sie, dass Sie dieselbe Konfiguration verwenden, mit der das Repository erstellt wurde. Wenn das Volumen bereits von einem anderen Prozess gemountet ist, unmounten Sie es zuerst.
 
 ## Nächste Schritte
 
 Sie haben ein verschlüsseltes Repository erstellt, eine Anwendung bereitgestellt, Container inspiziert und aufgeräumt. Um Ihre Bereitstellungen zu überwachen:
 
-- [Dienste](/de/docs/services), Rediaccfile-Referenz, Service-Netzwerke, Autostart und Multi-Service-Layouts
-- [Tutorial: Überwachung & Diagnose](/de/docs/tutorial-monitoring), Gesundheitsprüfungen, Container-Inspektion und Diagnose
-- [Tools](/de/docs/tools), Terminal, Dateisynchronisierung und VS Code-Integration
+- [Dienste](/en/docs/services), Rediaccfile-Referenz, Service-Netzwerke, Autostart und Multi-Service-Layouts
+- [Tutorial: Überwachung und Diagnose](/en/docs/tutorial-monitoring), Gesundheitsprüfungen, Container-Inspektion und Diagnose
+- [Tools](/en/docs/tools), Terminal, Dateisynchronisierung und VS Code-Integration
