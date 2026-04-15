@@ -99,6 +99,76 @@ sha256() {
   fi
 }
 
+# Persist channel + server config so `rdc update` honors the channel this
+# install came from. We write server.json when EITHER a specific server was
+# requested OR the channel differs from the default. Writing on channel-alone
+# is the fail-safe for cases where a preview host rewrites CHANNEL but fails
+# to rewrite SERVER_URL — without this, `rdc update` would silently drift
+# back to stable on every update.
+#
+# Reads: CHANNEL, SERVER_URL, RELEASES_URL, REDIACC_CHANNEL, HOME, XDG_CONFIG_HOME
+# Writes: ${HOME}/.config/rediacc/server.json (or macOS equivalent)
+write_install_config() {
+  local default_channel="stable"
+  if [[ -z "${SERVER_URL:-}" && "${CHANNEL:-$default_channel}" == "$default_channel" ]]; then
+    return 0
+  fi
+
+  local config_dir
+  case "$(uname -s)" in
+    Darwin) config_dir="$HOME/Library/Application Support/rediacc" ;;
+    *)      config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/rediacc" ;;
+  esac
+  mkdir -p "$config_dir"
+
+  # Discover E2E public key and update channel from server (only when we
+  # have a server to ask).
+  local e2e_key=""
+  if [[ -n "${SERVER_URL:-}" ]]; then
+    local server_info
+    if server_info=$(curl -fsSL -A "Rediacc-Installer/1.0" "${SERVER_URL}/account/api/v1/.well-known/server-info" 2>/dev/null); then
+      if command -v jq &>/dev/null; then
+        e2e_key=$(echo "$server_info" | jq -r '.e2e.keys[0].publicKeySpki // empty')
+        # Auto-detect channel from server if not explicitly set by user
+        if [[ -z "${REDIACC_CHANNEL:-}" ]]; then
+          local detected_channel
+          detected_channel=$(echo "$server_info" | jq -r '.updateChannel // empty')
+          if [[ -n "$detected_channel" ]]; then
+            CHANNEL="$detected_channel"
+          fi
+        fi
+      else
+        e2e_key=$(echo "$server_info" | grep -o '"publicKeySpki":"[^"]*"' | head -1 | sed 's/"publicKeySpki":"//;s/"//')
+      fi
+    fi
+  fi
+
+  # accountServer defaults to production when unknown — matches what
+  # `rdc update --channel <x>` writes when no server was previously set
+  # (packages/cli/src/commands/update.ts:35).
+  local account_server="${SERVER_URL:-https://www.rediacc.com}"
+  local server_json="{\"accountServer\":\"$account_server\",\"updateChannel\":\"$CHANNEL\""
+  if [[ -n "$e2e_key" ]]; then
+    server_json="$server_json,\"e2ePublicKey\":\"$e2e_key\""
+  fi
+  # Store custom releases URL for on-premise CLI updates
+  if [[ "${RELEASES_URL:-https://releases.rediacc.com}" != "https://releases.rediacc.com" ]]; then
+    server_json="$server_json,\"releasesUrl\":\"$RELEASES_URL\""
+  fi
+  server_json="$server_json}"
+  echo "$server_json" > "$config_dir/server.json"
+  chmod 600 "$config_dir/server.json"
+
+  echo ""
+  if [[ -n "${SERVER_URL:-}" ]]; then
+    local server_host
+    server_host=$(echo "$SERVER_URL" | sed 's|https\?://||;s|/.*||')
+    success "Configured for: $server_host (channel: $CHANNEL)"
+  else
+    success "Channel pinned: $CHANNEL"
+  fi
+}
+
 # Main installation logic
 main() {
   echo "Setting up Rediacc CLI..."
@@ -236,55 +306,14 @@ main() {
     esac
   fi
 
-  # Configure server connection for non-production installs
-  if [[ -n "$SERVER_URL" ]]; then
-    local config_dir
-    case "$(uname -s)" in
-      Darwin) config_dir="$HOME/Library/Application Support/rediacc" ;;
-      *)      config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/rediacc" ;;
-    esac
-    mkdir -p "$config_dir"
-
-    # Discover E2E public key and update channel from server
-    local e2e_key=""
-    local server_info
-    if server_info=$(curl -fsSL -A "Rediacc-Installer/1.0" "${SERVER_URL}/account/api/v1/.well-known/server-info" 2>/dev/null); then
-      if command -v jq &>/dev/null; then
-        e2e_key=$(echo "$server_info" | jq -r '.e2e.keys[0].publicKeySpki // empty')
-        # Auto-detect channel from server if not explicitly set by user
-        if [[ -z "${REDIACC_CHANNEL:-}" ]]; then
-          local detected_channel
-          detected_channel=$(echo "$server_info" | jq -r '.updateChannel // empty')
-          if [[ -n "$detected_channel" ]]; then
-            CHANNEL="$detected_channel"
-          fi
-        fi
-      else
-        e2e_key=$(echo "$server_info" | grep -o '"publicKeySpki":"[^"]*"' | head -1 | sed 's/"publicKeySpki":"//;s/"//')
-      fi
-    fi
-
-    # Write server.json (includes channel so rdc update uses the same channel)
-    local server_json="{\"accountServer\":\"$SERVER_URL\",\"updateChannel\":\"$CHANNEL\""
-    if [[ -n "$e2e_key" ]]; then
-      server_json="$server_json,\"e2ePublicKey\":\"$e2e_key\""
-    fi
-    # Store custom releases URL for on-premise CLI updates
-    if [[ "$RELEASES_URL" != "https://releases.rediacc.com" ]]; then
-      server_json="$server_json,\"releasesUrl\":\"$RELEASES_URL\""
-    fi
-    server_json="$server_json}"
-    echo "$server_json" > "$config_dir/server.json"
-    chmod 600 "$config_dir/server.json"
-
-    local server_host
-    server_host=$(echo "$SERVER_URL" | sed 's|https\?://||;s|/.*||')
-    echo ""
-    success "Configured for: $server_host"
-  fi
+  write_install_config
 
   echo ""
   success "Installation complete!"
 }
 
-main "$@"
+# Only run main when the script is executed directly (not when sourced by
+# tests that want to call write_install_config in isolation).
+if [[ -z "${REDIACC_INSTALL_SH_SOURCE_ONLY:-}" ]]; then
+  main "$@"
+fi

@@ -668,6 +668,8 @@ test_quick_install() {
         return 0
     fi
 
+    local expected_channel="${REPO_CHANNEL:-stable}"
+
     docker run --rm \
         -e "REDIACC_RELEASES_URL=${RELEASES_BASE_URL}" \
         -e "REDIACC_CHANNEL=${REPO_CHANNEL:-stable}" \
@@ -676,8 +678,18 @@ test_quick_install() {
         apt-get update -qq
         apt-get install -y -qq curl ca-certificates >/dev/null 2>&1
 
+        # Fetch install script and verify its baked default channel matches
+        # the channel under test. Catches regressions where channel rewriting
+        # (worker or R2 upload) silently falls back to 'stable'.
+        script=\$(curl -fsSL ${REPO_URL}/cli${REPO_CHANNEL_SUFFIX}/install.sh)
+        if ! echo \"\$script\" | grep -q 'REDIACC_CHANNEL:-${expected_channel}'; then
+            echo 'FAIL: install.sh default channel is not ${expected_channel}' >&2
+            echo \"\$script\" | grep -E 'REDIACC_CHANNEL' >&2 || true
+            exit 1
+        fi
+
         # Run install script from channel
-        curl -fsSL ${REPO_URL}/cli${REPO_CHANNEL_SUFFIX}/install.sh | bash
+        echo \"\$script\" | bash
 
         # Verify (install.sh puts binary in ~/.local/bin)
         ~/.local/bin/${PKG_BINARY_NAME} --version

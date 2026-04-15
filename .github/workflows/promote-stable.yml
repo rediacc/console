@@ -136,6 +136,21 @@ jobs:
               --endpoint-url "$R2_ENDPOINT" --quiet
           done
 
+          # Re-bake install scripts so the stable copies default to stable.
+          # cd-dryrun.yml baked 'edge' into cli/edge/install.{sh,ps1}; the raw
+          # copy above propagated that to cli/stable/. Undo it.
+          for file in cli/stable/install.sh cli/stable/install.ps1; do
+            echo "Re-baking channel in ${file}..."
+            aws s3 cp "s3://${BUCKET}/${file}" /tmp/script \
+              --endpoint-url "$R2_ENDPOINT" --quiet
+            sed -i \
+              -e 's|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-stable|g' \
+              -e 's|} else { "edge" }|} else { "stable" }|g' \
+              /tmp/script
+            aws s3 cp /tmp/script "s3://${BUCKET}/${file}" \
+              --endpoint-url "$R2_ENDPOINT" --quiet
+          done
+
           echo "R2 promotion complete: edge v${{ steps.edge.outputs.version }} -> stable"
 
       - name: Login to GHCR
@@ -241,8 +256,40 @@ jobs:
         run: |
           echo "Verifying production deployment..."
 
-          curl -fsSL https://www.rediacc.com/install.sh -o /dev/null
-          echo "  marketing (install.sh): OK"
+          INSTALL_SH=$(curl -fsSL https://www.rediacc.com/install.sh)
+          if ! echo "$INSTALL_SH" | grep -q 'REDIACC_CHANNEL:-stable'; then
+            echo "::error::www.rediacc.com/install.sh is not baked to channel=stable"
+            echo "$INSTALL_SH" | grep -E 'REDIACC_CHANNEL' || true
+            exit 1
+          fi
+          echo "  marketing (install.sh): OK (channel=stable)"
+
+          INSTALL_PS1=$(curl -fsSL https://www.rediacc.com/install.ps1)
+          if ! echo "$INSTALL_PS1" | grep -qF '} else { "stable" }'; then
+            echo "::error::www.rediacc.com/install.ps1 is not baked to channel=stable"
+            echo "$INSTALL_PS1" | grep -F '$Channel' || true
+            exit 1
+          fi
+          echo "  marketing (install.ps1): OK (channel=stable)"
+
+          # R2 backstop: per-channel copy at releases.rediacc.com/cli/stable/
+          # must also be channel-baked. The re-bake step in the promote job
+          # (above) rewrites REDIACC_CHANNEL:-edge → :-stable; this asserts it
+          # worked and the upload actually landed.
+          R2_SH=$(curl -fsSL https://releases.rediacc.com/cli/stable/install.sh)
+          if ! echo "$R2_SH" | grep -q 'REDIACC_CHANNEL:-stable'; then
+            echo "::error::releases.rediacc.com/cli/stable/install.sh not baked to channel=stable"
+            echo "$R2_SH" | grep -E 'REDIACC_CHANNEL' || true
+            exit 1
+          fi
+          echo "  R2 cli/stable/install.sh: OK (channel=stable)"
+
+          R2_PS1=$(curl -fsSL https://releases.rediacc.com/cli/stable/install.ps1)
+          if ! echo "$R2_PS1" | grep -qF '} else { "stable" }'; then
+            echo "::error::releases.rediacc.com/cli/stable/install.ps1 not baked to channel=stable"
+            exit 1
+          fi
+          echo "  R2 cli/stable/install.ps1: OK (channel=stable)"
 
           while read -r domain; do
             HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" "https://${domain}/account/api/v1/.well-known/server-info" 2>/dev/null || echo "000")

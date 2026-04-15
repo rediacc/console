@@ -366,10 +366,17 @@ jobs:
                 --endpoint-url "$R2_ENDPOINT" --quiet
             fi
           done
-          # Upload install scripts
+          # Upload install scripts (rewrite default channel so R2 copies
+          # under cli/${CHANNEL}/ install from ${CHANNEL} by default)
           for f in dist/pages/install.sh dist/pages/install.ps1; do
-            [[ -f "$f" ]] && aws s3 cp "$f" "s3://rediacc-releases/cli/${CHANNEL}/$(basename "$f")" \
+            [[ -f "$f" ]] || continue
+            tmp="$(mktemp)"
+            sed -e "s|REDIACC_CHANNEL:-stable|REDIACC_CHANNEL:-${CHANNEL}|g" \
+                -e "s|} else { \"stable\" }|} else { \"${CHANNEL}\" }|g" \
+                "$f" > "$tmp"
+            aws s3 cp "$tmp" "s3://rediacc-releases/cli/${CHANNEL}/$(basename "$f")" \
               --endpoint-url "$R2_ENDPOINT" --quiet
+            rm -f "$tmp"
           done
           echo "Repos uploaded to R2 channel: ${CHANNEL}"
         env:
