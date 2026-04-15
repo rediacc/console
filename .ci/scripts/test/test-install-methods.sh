@@ -490,14 +490,15 @@ test_apt_install() {
 
         # Install — retry \`apt-get update\` because the Rediacc APT repo
         # is fronted by Cloudflare and edge caches can lag behind the
-        # staging artifact upload by up to a minute. The 'File has
-        # unexpected size' error typically clears on the next attempt.
-        for attempt in 1 2 3 4 5; do
+        # staging artifact upload by up to ~3 minutes (Packages.gz
+        # reports 'File has unexpected size' until all CF pops have
+        # converged on the newly uploaded checksum).
+        for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
             if apt-get update -qq -o Acquire::Retries=0; then
                 break
             fi
-            if [[ \$attempt -eq 5 ]]; then
-                echo 'apt-get update failed after 5 attempts' >&2
+            if [[ \$attempt -eq 12 ]]; then
+                echo 'apt-get update failed after 12 attempts (~3 min); CF cache never converged' >&2
                 exit 1
             fi
             echo \"apt-get update attempt \$attempt failed, retrying in 15s...\" >&2
