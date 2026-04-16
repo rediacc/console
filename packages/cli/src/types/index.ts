@@ -221,6 +221,12 @@ export interface BackupStrategyDestination {
   enabled?: boolean;
   /** Per-destination rclone bandwidth limit (e.g., "6M", "08:00,3M;22:00,10M") */
   bandwidthLimit?: string;
+  /**
+   * Optional subfolder under the storage's bucket/folder. Appended to the
+   * rclone remote path so two strategies sharing one storage can write to
+   * disjoint paths (e.g., hourly-hot → `hot/`, nightly-cold → `cold/`).
+   */
+  folder?: string;
 }
 
 /**

@@ -303,6 +303,7 @@
           "optionDisable": "禁用策略或目标",
           "optionEnable": "启用策略或目标",
           "optionExclude": "从备份中排除这些仓库（逗号分隔的名称）",
+          "optionFolder": "Subfolder under the storage bucket for this destination (e.g. hot, cold)",
           "optionInclude": "仅备份这些仓库（逗号分隔的名称）",
           "optionMode": "备份模式：\"hot\"（零停机）或 \"cold\"（停止、快照、重启）",
           "optionName": "策略名称（必填）",

@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1789,
-    "sourceCommit": "90430a1d4efe6a5de21112be4c22c65c665df9ca"
+    "keyCount": 1790,
+    "sourceCommit": "35b53352026ae87fb6800c7fed10b793223ca1da"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -178,6 +178,7 @@
     "commands.config.backupStrategy.set.optionDisable": "b221d6c0",
     "commands.config.backupStrategy.set.optionEnable": "e8ba0029",
     "commands.config.backupStrategy.set.optionExclude": "40866f3b",
+    "commands.config.backupStrategy.set.optionFolder": "010cf480",
     "commands.config.backupStrategy.set.optionInclude": "224212aa",
     "commands.config.backupStrategy.set.optionMode": "64a30ef8",
     "commands.config.backupStrategy.set.optionName": "cf3f47c9",

@@ -62,10 +62,21 @@ function cronToOnCalendar(cron: string): string {
   const dayPart = dayOfMonth === '*' ? '*' : dayOfMonth.padStart(2, '0');
   const datePart = `*-${monthPart}-${dayPart}`;
 
+  // systemd's OnCalendar syntax uses `..` for ranges (cron uses `-`) and
+  // comma-separated lists. Support list-of-ranges like cron's "0-2,4-23".
   function toTimerField(value: string): string {
     if (value === '*') return '*';
     if (value.startsWith('*/')) return `00/${value.slice(2)}`;
-    return value.padStart(2, '0');
+    return value
+      .split(',')
+      .map((part) => {
+        const [lo, hi] = part.split('-');
+        if (hi !== undefined) {
+          return `${lo.padStart(2, '0')}..${hi.padStart(2, '0')}`;
+        }
+        return part.padStart(2, '0');
+      })
+      .join(',');
   }
   const hourStr = toTimerField(hour);
   const minStr = toTimerField(minute);
@@ -346,11 +357,13 @@ async function deployStrategyUnits(
     return;
   }
 
-  // Resolve rclone args for each destination
+  // Resolve rclone args for each destination. `dest.folder` (if set) is
+  // appended as a subpath to the storage's bucket/folder so two strategies
+  // sharing one storage can write to disjoint remote paths.
   const rcloneArgsByDest = new Map<string, { remote: string; params: string[] }>();
   for (const dest of enabledDests) {
     const storageCfg = await configService.getStorage(dest.storage);
-    const args = buildRcloneArgs(storageCfg.vaultContent);
+    const args = buildRcloneArgs(storageCfg.vaultContent, dest.folder);
     rcloneArgsByDest.set(dest.name, args);
   }
 
@@ -494,7 +507,7 @@ async function previewDryRun(
     const rcloneArgsByDest = new Map<string, { remote: string; params: string[] }>();
     for (const dest of enabledDests) {
       const storageCfg = await configService.getStorage(dest.storage);
-      const args = buildRcloneArgs(storageCfg.vaultContent);
+      const args = buildRcloneArgs(storageCfg.vaultContent, dest.folder);
       rcloneArgsByDest.set(dest.name, args);
     }
     const onCalendar = cronToOnCalendar(config.schedule);

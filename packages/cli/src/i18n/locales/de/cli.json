@@ -303,6 +303,7 @@
           "optionDisable": "Strategie oder Ziel deaktivieren",
           "optionEnable": "Strategie oder Ziel aktivieren",
           "optionExclude": "Diese Repos vom Backup ausschließen (kommagetrennte Namen)",
+          "optionFolder": "Subfolder under the storage bucket for this destination (e.g. hot, cold)",
           "optionInclude": "Nur diese Repos sichern (kommagetrennte Namen)",
           "optionMode": "Backup-Modus: \"hot\" (ohne Ausfallzeit) oder \"cold\" (Stoppen, Snapshot, Neustart)",
           "optionName": "Strategiename (erforderlich)",

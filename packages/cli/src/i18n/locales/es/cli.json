@@ -303,6 +303,7 @@
           "optionDisable": "Deshabilitar la estrategia o destino",
           "optionEnable": "Habilitar la estrategia o destino",
           "optionExclude": "Excluir estos repos del respaldo (nombres separados por comas)",
+          "optionFolder": "Subfolder under the storage bucket for this destination (e.g. hot, cold)",
           "optionInclude": "Respaldar solo estos repos (nombres separados por comas)",
           "optionMode": "Modo de respaldo: \"hot\" (sin tiempo de inactividad) o \"cold\" (detener, instantánea, reiniciar)",
           "optionName": "Nombre de la estrategia (requerido)",
