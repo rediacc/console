@@ -79,6 +79,19 @@ RUN apt-get update \
 RUN usermod -aG libvirt,kvm vscode
 
 # =============================================================================
+# Docker CE CLI (no engine). The engine runs on the host; the hub bind-mounts
+# a per-user Docker socket into the container at /var/run/docker.sock.
+# =============================================================================
+RUN install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && chmod a+r /etc/apt/keyrings/docker.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
+       > /etc/apt/sources.list.d/docker.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin \
+    && rm -rf /var/lib/apt/lists/*
+
+# =============================================================================
 # Node.js via NVM (matching devcontainers/features/node pattern)
 # =============================================================================
 ENV NVM_DIR=/usr/local/share/nvm
