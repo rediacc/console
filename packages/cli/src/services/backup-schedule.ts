@@ -70,11 +70,11 @@ function cronToOnCalendar(cron: string): string {
     return value
       .split(',')
       .map((part) => {
-        const [lo, hi] = part.split('-');
-        if (hi !== undefined) {
-          return `${lo.padStart(2, '0')}..${hi.padStart(2, '0')}`;
-        }
-        return part.padStart(2, '0');
+        const dashIndex = part.indexOf('-');
+        if (dashIndex === -1) return part.padStart(2, '0');
+        const lo = part.slice(0, dashIndex);
+        const hi = part.slice(dashIndex + 1);
+        return `${lo.padStart(2, '0')}..${hi.padStart(2, '0')}`;
       })
       .join(',');
   }
