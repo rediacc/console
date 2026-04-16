@@ -676,6 +676,110 @@ cleanup_d1_databases() {
 }
 
 # =============================================================================
+# PHASE 7b: ORPHAN PER-PR TURNSTILE WIDGETS
+# Delete Cloudflare Turnstile widgets named `rediacc-console-pr-N` whose PR
+# is no longer open. Widget names that don't match the per-PR pattern (e.g.
+# the production `rediacc-console` and bench `rediacc-console-bench`) are
+# never touched. 24h grace window so the explicit cleanup-preview path
+# always wins races with this sweep.
+# Mirrors the D1 phase shape; same env requirements + dry-run behavior.
+# =============================================================================
+
+cleanup_orphan_turnstile_widgets() {
+    log_step "Phase 7b: Cleaning up orphan per-PR Turnstile widgets"
+
+    if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]] || [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+        log_warn "  CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID not set, skipping Turnstile cleanup"
+        return 0
+    fi
+
+    local response
+    response="$(cf_api GET "/accounts/$CLOUDFLARE_ACCOUNT_ID/challenges/widgets?per_page=100" 2>/dev/null || echo '{"success":false}')"
+
+    local success
+    success="$(echo "$response" | jq -r '.success // false')"
+    if [[ "$success" != "true" ]]; then
+        log_warn "  Turnstile widget list API request failed, skipping Turnstile cleanup"
+        return 0
+    fi
+
+    # Filter to only `rediacc-console-pr-N` widgets. Production + bench
+    # widgets (rediacc-console, rediacc-console-bench) don't match this
+    # regex and are intentionally untouched.
+    local pr_widgets
+    pr_widgets="$(echo "$response" | jq -c '[.result[] | select(.name | test("^rediacc-console-pr-[0-9]+$")) | {name: .name, sitekey: .sitekey, created_on: .created_on}]')"
+
+    local total
+    total="$(echo "$pr_widgets" | jq 'length')"
+
+    if [[ "$total" -eq 0 ]]; then
+        log_info "  No per-PR Turnstile widgets found"
+        return 0
+    fi
+
+    log_debug "  Found $total per-PR Turnstile widgets"
+
+    local deleted=0
+    local skipped=0
+    local now_epoch
+    now_epoch="$(date -u +%s)"
+    local grace_seconds=$((24 * 60 * 60))
+
+    while IFS= read -r widget_entry; do
+        [[ -z "$widget_entry" ]] && continue
+
+        local widget_name widget_sitekey created_on pr_number
+        widget_name="$(echo "$widget_entry" | jq -r '.name')"
+        widget_sitekey="$(echo "$widget_entry" | jq -r '.sitekey')"
+        created_on="$(echo "$widget_entry" | jq -r '.created_on')"
+        pr_number="${widget_name#rediacc-console-pr-}"
+
+        local pr_state
+        pr_state="$(gh pr view "$pr_number" --repo "$RELEASE_REPO" --json state --jq '.state' 2>/dev/null || echo "UNKNOWN")"
+
+        if [[ "$pr_state" == "OPEN" ]]; then
+            log_debug "  Keeping Turnstile widget: $widget_name (PR #$pr_number is open)"
+            skipped=$((skipped + 1))
+            continue
+        fi
+
+        # 24h grace window so cleanup-preview.yml always wins races
+        local created_epoch age_seconds
+        created_epoch="$(date -u -d "$created_on" +%s 2>/dev/null || echo 0)"
+        age_seconds=$((now_epoch - created_epoch))
+        if [[ "$age_seconds" -lt "$grace_seconds" ]]; then
+            local remain_hrs=$(( (grace_seconds - age_seconds + 3599) / 3600 ))
+            log_debug "  Holding Turnstile widget: $widget_name (PR #$pr_number $pr_state, only $((age_seconds / 3600))h old; ${remain_hrs}h grace remaining)"
+            skipped=$((skipped + 1))
+            continue
+        fi
+
+        if [[ "$DRY_RUN" == "true" ]]; then
+            log_warn "  [DRY-RUN] Would delete Turnstile widget: $widget_name (PR #$pr_number state: $pr_state)"
+            deleted=$((deleted + 1))
+        else
+            local del_response
+            del_response="$(cf_api DELETE "/accounts/$CLOUDFLARE_ACCOUNT_ID/challenges/widgets/$widget_sitekey" 2>/dev/null || echo '{"success":false}')"
+            local del_success
+            del_success="$(echo "$del_response" | jq -r '.success // false')"
+
+            if [[ "$del_success" == "true" ]]; then
+                log_info "  Deleted Turnstile widget: $widget_name (PR #$pr_number state: $pr_state)"
+                deleted=$((deleted + 1))
+            else
+                log_warn "  Failed to delete Turnstile widget: $widget_name"
+            fi
+        fi
+    done < <(echo "$pr_widgets" | jq -c '.[]')
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "  Turnstile widgets: would delete $deleted of $total ($skipped open or in grace, skipped)"
+    else
+        log_info "  Turnstile widgets: deleted $deleted of $total ($skipped open or in grace, skipped)"
+    fi
+}
+
+# =============================================================================
 # PHASE 8: STALE BRANCHES
 # Delete branches with no open PR and no commits in the last N days.
 # Runs across all org repos to prevent accumulation from merged PRs,
@@ -783,6 +887,8 @@ echo ""
 cleanup_environments
 echo ""
 cleanup_d1_databases
+echo ""
+cleanup_orphan_turnstile_widgets
 echo ""
 cleanup_stale_branches
 
