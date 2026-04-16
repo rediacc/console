@@ -337,9 +337,7 @@ describe('cronToOnCalendar', () => {
   // renders the timer unit "bad-setting", silently disabling the schedule.
   it('converts hyphen ranges and comma-lists to systemd ..-ranges', async () => {
     const { _testing } = await import('../backup-schedule.js');
-    expect(_testing.cronToOnCalendar('0 0-2,4-23 * * *')).toBe(
-      '*-*-* 00..02,04..23:00:00'
-    );
+    expect(_testing.cronToOnCalendar('0 0-2,4-23 * * *')).toBe('*-*-* 00..02,04..23:00:00');
     expect(_testing.cronToOnCalendar('0 */6 * * *')).toBe('*-*-* 00/6:00:00');
     expect(_testing.cronToOnCalendar('15 3 * * *')).toBe('*-*-* 03:15:00');
     expect(_testing.cronToOnCalendar('0 * * * *')).toBe('*-*-* *:00:00');
