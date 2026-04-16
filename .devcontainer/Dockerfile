@@ -23,6 +23,30 @@ RUN groupmod -g 7111 vscode \
     && find / -xdev \( -uid 1000 -o -gid 1000 \) -exec chown -h 7111:7111 {} + 2>/dev/null || true
 
 # =============================================================================
+# Telemetry opt-outs (apply image-wide to build steps and runtime processes).
+# Each variable is verified against the tool's official documentation; do not
+# add unverified flags here. Generic DO_NOT_TRACK=1 is the de-facto standard
+# (honored by Turborepo, uv, and others). VS Code telemetry is disabled via a
+# baked settings.json below, and Go telemetry via `go telemetry off` during
+# the Go-tools install step (GOTELEMETRY is a read-only env per go.dev docs).
+# =============================================================================
+ENV DO_NOT_TRACK=1 \
+    DISABLE_TELEMETRY=1 \
+    DISABLE_ERROR_REPORTING=1 \
+    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 \
+    DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    POWERSHELL_TELEMETRY_OPTOUT=1 \
+    AZURE_CORE_COLLECT_TELEMETRY=0 \
+    HOMEBREW_NO_ANALYTICS=1 \
+    CHECKPOINT_DISABLE=1 \
+    NEXT_TELEMETRY_DISABLED=1 \
+    ASTRO_TELEMETRY_DISABLED=1 \
+    GATSBY_TELEMETRY_DISABLED=1 \
+    NUXT_TELEMETRY_DISABLED=1 \
+    TURBO_TELEMETRY_DISABLED=1 \
+    SAM_CLI_TELEMETRY=0
+
+# =============================================================================
 # System packages + GitHub CLI + Python 3 + XFCE Desktop + VNC stack
 # =============================================================================
 RUN apt-get update \
@@ -126,9 +150,12 @@ RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
 
 ENV PATH="$GOROOT/bin:$GOPATH/bin:$PATH"
 
-# Install Go tools as vscode user (writes to $GOPATH/bin)
+# Install Go tools as vscode user (writes to $GOPATH/bin).
+# `go telemetry off` writes $HOME/.config/go/telemetry/mode so both local
+# collection and uploading are disabled for the vscode user.
 USER vscode
-RUN go install golang.org/x/tools/gopls@latest \
+RUN go telemetry off \
+    && go install golang.org/x/tools/gopls@latest \
     && go install github.com/go-delve/delve/cmd/dlv@latest \
     && go install honnef.co/go/tools/cmd/staticcheck@latest \
     && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
@@ -143,7 +170,6 @@ USER root
 # https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual
 # =============================================================================
 ENV DOTNET_ROOT=/usr/share/dotnet
-ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 ENV PATH="$PATH:$DOTNET_ROOT"
 
 RUN curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 9.0 --install-dir "$DOTNET_ROOT" \
@@ -235,6 +261,28 @@ RUN ARCH=$(dpkg --print-architecture) \
     done \
     && chown -R vscode:vscode /opt/openvscode-server
 
+# Bake default Machine + User settings to disable VS Code telemetry, crash
+# reporting, auto-updates, and online-lookup features. Written before first
+# boot so the settings apply from the initial session.
+RUN mkdir -p /home/vscode/.openvscode-server/data/Machine \
+             /home/vscode/.openvscode-server/data/User \
+    && printf '%s\n' \
+        '{' \
+        '  "telemetry.telemetryLevel": "off",' \
+        '  "telemetry.enableCrashReporter": false,' \
+        '  "telemetry.enableTelemetry": false,' \
+        '  "update.mode": "none",' \
+        '  "extensions.autoUpdate": false,' \
+        '  "extensions.autoCheckUpdates": false,' \
+        '  "workbench.settings.enableNaturalLanguageSearch": false,' \
+        '  "workbench.enableExperiments": false,' \
+        '  "npm.fetchOnlinePackageInfo": false' \
+        '}' \
+        > /home/vscode/.openvscode-server/data/Machine/settings.json \
+    && cp /home/vscode/.openvscode-server/data/Machine/settings.json \
+          /home/vscode/.openvscode-server/data/User/settings.json \
+    && chown -R vscode:vscode /home/vscode/.openvscode-server
+
 # Desktop startup script (starts Xvfb + XFCE + x11vnc + noVNC)
 COPY start-desktop.sh /usr/local/bin/start-desktop.sh
 RUN chmod +x /usr/local/bin/start-desktop.sh
@@ -264,6 +312,11 @@ RUN sed -i 's|^PATH=.*|PATH="/home/vscode/.local/bin:/usr/local/share/nvm/curren
     && echo 'DOCKER_BUILDKIT="1"' >> /etc/environment \
     && echo 'DOTNET_ROOT="/usr/share/dotnet"' >> /etc/environment \
     && echo 'DOTNET_CLI_TELEMETRY_OPTOUT="1"' >> /etc/environment \
+    && echo 'DO_NOT_TRACK="1"' >> /etc/environment \
+    && echo 'DISABLE_TELEMETRY="1"' >> /etc/environment \
+    && echo 'DISABLE_ERROR_REPORTING="1"' >> /etc/environment \
+    && echo 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC="1"' >> /etc/environment \
+    && echo 'HOMEBREW_NO_ANALYTICS="1"' >> /etc/environment \
     && echo 'DISPLAY=":99"' >> /etc/environment
 
 # OCI Labels
