@@ -74,17 +74,17 @@ jobs:
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
 
-      # Delete the per-PR Turnstile widget minted during deploy. Tolerates
-      # already-deleted (e.g., the housekeeping sweep ran first) so cleanup
-      # never blocks on a missing widget. See deploy-preview side at
-      # ci.yml's `Create PR Turnstile widget` step.
+      # Delete the per-PR Turnstile widget minted during deploy. The script
+      # itself treats a missing widget (already deleted by the housekeeping
+      # sweep, or never created) as a no-op, so this step is safe to hard-fail
+      # on anything else. See deploy-preview side at ci.yml's
+      # `Create PR Turnstile widget` step.
       - name: Cleanup PR Turnstile widget
         working-directory: private/account
         run: npx tsx scripts/preview-turnstile.ts delete "${{ github.event.pull_request.number }}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-        continue-on-error: true
 
       - name: Delete GitHub environment
         env:
