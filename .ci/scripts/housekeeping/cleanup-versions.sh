@@ -748,7 +748,7 @@ cleanup_orphan_turnstile_widgets() {
         created_epoch="$(date -u -d "$created_on" +%s 2>/dev/null || echo 0)"
         age_seconds=$((now_epoch - created_epoch))
         if [[ "$age_seconds" -lt "$grace_seconds" ]]; then
-            local remain_hrs=$(( (grace_seconds - age_seconds + 3599) / 3600 ))
+            local remain_hrs=$(((grace_seconds - age_seconds + 3599) / 3600))
             log_debug "  Holding Turnstile widget: $widget_name (PR #$pr_number $pr_state, only $((age_seconds / 3600))h old; ${remain_hrs}h grace remaining)"
             skipped=$((skipped + 1))
             continue
