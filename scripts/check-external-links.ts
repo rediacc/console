@@ -33,6 +33,7 @@ const ALLOWLISTED_DOMAINS = new Set([
   'sdaia.gov.sa',      // Saudi SDAIA - connection refused from non-Saudi IPs
   'www.pipc.go.kr',    // South Korea PIPC - extremely slow, times out in CI
   'www.legislation.gov.au', // Australia legislation - intermittent timeouts from CI runners
+  'www.iso.org',       // ISO standards - returns 403 to non-browser User-Agent (anti-scraping)
   // Own infrastructure -- only available after releases, not during CI
   'releases.rediacc.com',
 ]);
