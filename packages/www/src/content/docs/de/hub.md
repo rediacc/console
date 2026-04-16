@@ -1,6 +1,6 @@
 ---
 title: "Hub"
-description: "Authentifizierte, benutzerspezifische Container-Umgebungen mit benutzereigenen Docker-Daemons, Multi-Template-Auswahl, CRIU-Checkpoint/Restore, Audit-Logs und Data-Root-Garbage-Collection."
+description: "Stellt authentifizierte Container-Umgebungen pro Benutzer bereit, mit benutzereigenem Docker-Daemon, Auswahl aus mehreren Vorlagen, CRIU-Prüfpunkt-Wiederherstellung, Prüfprotokollen und Garbage-Collection für Datenwurzeln."
 category: "Guides"
 order: 14
 language: de
