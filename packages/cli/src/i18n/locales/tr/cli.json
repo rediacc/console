@@ -303,7 +303,7 @@
           "optionDisable": "Stratejiyi veya hedefi devre dışı bırak",
           "optionEnable": "Stratejiyi veya hedefi etkinleştir",
           "optionExclude": "Bu depoları yedeklemeden hariç tut (virgülle ayrılmış adlar)",
-          "optionFolder": "Subfolder under the storage bucket for this destination (e.g. hot, cold)",
+          "optionFolder": "Bu hedef için depolama kovasındaki alt klasör (ör. hot, cold)",
           "optionInclude": "Yalnızca bu depoları yedekle (virgülle ayrılmış adlar)",
           "optionMode": "Yedekleme modu: \"hot\" (kesintisiz) veya \"cold\" (durdur, anlık görüntü, yeniden başlat)",
           "optionName": "Strateji adı (zorunlu)",

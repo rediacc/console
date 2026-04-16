@@ -303,7 +303,7 @@
           "optionDisable": "戦略または宛先を無効にする",
           "optionEnable": "戦略または宛先を有効にする",
           "optionExclude": "これらのリポジトリをバックアップから除外（カンマ区切りの名前）",
-          "optionFolder": "Subfolder under the storage bucket for this destination (e.g. hot, cold)",
+          "optionFolder": "この宛先のストレージバケット内のサブフォルダー（例: hot, cold）",
           "optionInclude": "これらのリポジトリのみバックアップ（カンマ区切りの名前）",
           "optionMode": "バックアップモード: \"hot\"（ダウンタイムなし）または \"cold\"（停止、スナップショット、再起動）",
           "optionName": "戦略名（必須）",

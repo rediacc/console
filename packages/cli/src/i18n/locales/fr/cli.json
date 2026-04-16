@@ -303,7 +303,7 @@
           "optionDisable": "Désactiver la stratégie ou la destination",
           "optionEnable": "Activer la stratégie ou la destination",
           "optionExclude": "Exclure ces repos de la sauvegarde (noms séparés par des virgules)",
-          "optionFolder": "Subfolder under the storage bucket for this destination (e.g. hot, cold)",
+          "optionFolder": "Sous-dossier dans le bucket de stockage pour cette destination (ex. hot, cold)",
           "optionInclude": "Sauvegarder uniquement ces repos (noms séparés par des virgules)",
           "optionMode": "Mode de sauvegarde : \"hot\" (sans interruption) ou \"cold\" (arrêt, instantané, redémarrage)",
           "optionName": "Nom de la stratégie (requis)",
