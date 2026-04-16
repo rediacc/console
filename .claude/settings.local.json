@@ -13,12 +13,7 @@
       "Bash(xargs:*)",
       "Bash(ls:*)",
       "Bash(journalctl:*)",
-      "WebFetch(domain:hoop.dev)",
-      "Bash(mkdir -p /tmp/home-seed/dotfiles/.config/rediacc /tmp/home-seed/dotfiles/.config/git)",
-      "Bash(cp /home/muhammed/.config/rediacc/rediacc.json /tmp/home-seed/dotfiles/.config/rediacc/)",
-      "Bash(cp /home/muhammed/.gitconfig /tmp/home-seed/dotfiles/)",
-      "Bash(cp /home/muhammed/.config/git/ignore /tmp/home-seed/dotfiles/.config/git/)",
-      "Read(//tmp/home-seed/**)"
+      "WebFetch(domain:hoop.dev)"
     ],
     "deny": [],
     "ask": []
