@@ -191,7 +191,7 @@ async function triggerAdhocBackup(
   const rcloneArgsByDest = new Map<string, { remote: string; params: string[] }>();
   for (const dest of enabledDests) {
     const storageCfg = await configService.getStorage(dest.storage);
-    rcloneArgsByDest.set(dest.name, buildRcloneArgs(storageCfg.vaultContent));
+    rcloneArgsByDest.set(dest.name, buildRcloneArgs(storageCfg.vaultContent, dest.folder));
   }
 
   const { commands, envVars } = _testing.buildBackupCommands(
