@@ -466,6 +466,12 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Promote R2 artifacts to stable (hotfix)
         if: needs.init.outputs.workers_only != 'true' && inputs.publish_stable == true
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
         run: |
           export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
           export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
@@ -482,6 +488,7 @@ jobs:
           CC_MUTABLE="no-cache"
           CC_IMMUTABLE="public, max-age=31536000, immutable"
 
+          PURGE_URLS=()
           for dir in cli desktop apt rpm apk archlinux; do
             echo "Promoting ${dir}/edge/ -> ${dir}/stable/"
             TMP="/tmp/promote-${dir}"
@@ -498,6 +505,12 @@ jobs:
               --exclude "*.deb" --exclude "*.rpm" --exclude "*.apk" \
               --exclude "*.pkg.tar.zst" --exclude "*.pkg.tar.zst.sig" \
               --cache-control "$CC_MUTABLE"
+            # Enumerate just-uploaded mutable URLs for purge.
+            while IFS= read -r f; do
+              PURGE_URLS+=("https://releases.rediacc.com/${dir}/stable/${f#$TMP/}")
+            done < <(find "$TMP" -type f \
+              ! -name "*.deb" ! -name "*.rpm" ! -name "*.apk" \
+              ! -name "*.pkg.tar.zst" ! -name "*.pkg.tar.zst.sig")
             rm -rf "$TMP"
           done
 
@@ -507,6 +520,7 @@ jobs:
             sed -i 's|/edge/|/stable/|g' /tmp/config
             aws s3 cp /tmp/config "s3://${BUCKET}/${file}" $EP --quiet \
               --cache-control "$CC_MUTABLE"
+            PURGE_URLS+=("https://releases.rediacc.com/${file}")
           done
 
           # Re-bake install scripts: cd-dryrun.yml baked 'edge' into
@@ -521,13 +535,16 @@ jobs:
               /tmp/script
             aws s3 cp /tmp/script "s3://${BUCKET}/${file}" $EP --quiet \
               --cache-control "$CC_MUTABLE"
+            PURGE_URLS+=("https://releases.rediacc.com/${file}")
           done
 
           echo "R2 promoted to stable"
-        env:
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+
+          # Purge CF cache for the mutable URLs we just (re)uploaded.
+          if [[ ${#PURGE_URLS[@]} -gt 0 ]]; then
+            printf '%s\n' "${PURGE_URLS[@]}" \
+              | .ci/scripts/deploy/cf-purge-urls.sh --zone "$CLOUDFLARE_ZONE_ID"
+          fi
 
       - name: Promote Docker to stable (hotfix)
         if: needs.init.outputs.workers_only != 'true' && inputs.publish_stable == true
