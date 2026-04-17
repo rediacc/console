@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { Command } from 'commander';
 import { COMMAND_METADATA, type CommandMeta } from '../../config/command-metadata.js';
 import { t } from '../../i18n/index.js';
+import { isGrandEnvWildcard, isRepoAllowedByGrandEnv } from '../../utils/grand-env.js';
 import { isOverrideLegitimate } from '../../utils/process-ancestry.js';
 import { CUSTOM_TOOLS } from './custom-tools.js';
 import { executeRdcCommand } from './executor.js';
@@ -93,9 +94,7 @@ function checkOverrideLegitimacy(
 
 /** Guard a grand (non-fork) repo — block unless a legitimate override is present. */
 function guardGrandRepo(repoName: string): ToolResult | null {
-  const envOverride = process.env.REDIACC_ALLOW_GRAND_REPO;
-  const hasOverride = envOverride === '*' || envOverride === repoName;
-  if (!hasOverride) {
+  if (!isRepoAllowedByGrandEnv(repoName)) {
     return guardError(t('errors.agent.mcpGrandGuard', { name: repoName }));
   }
   return checkOverrideLegitimacy(
@@ -121,7 +120,7 @@ async function guardNamedRepo(
 
 /** Guard term_exec without a named repo — block unless wildcard override is legitimate. */
 function guardTermExecMachine(): ToolResult | null {
-  if (process.env.REDIACC_ALLOW_GRAND_REPO !== '*') {
+  if (!isGrandEnvWildcard()) {
     return guardError(t('errors.agent.mcpMachineGuard'));
   }
   return checkOverrideLegitimacy(

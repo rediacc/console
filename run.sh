@@ -29,6 +29,27 @@ fi
 # HELPER FUNCTIONS
 # =============================================================================
 
+# True if REDIACC_ALLOW_GRAND_REPO contains a `*` entry (machine-level wildcard).
+# Accepts a single `*`, a comma-separated list, or a list with `*` mixed in
+# (e.g. `repo1,*,repo2`). Whitespace around each entry is trimmed.
+# Mirrors isGrandEnvWildcard() in packages/cli/src/utils/grand-env.ts.
+_grand_env_is_wildcard() {
+    local raw="${REDIACC_ALLOW_GRAND_REPO:-}"
+    [[ -z "$raw" ]] && return 1
+    local -a entries
+    local IFS=','
+    # read -ra splits on IFS without performing pathname expansion (critical:
+    # a bare `*` in a for-loop would otherwise glob against the cwd).
+    read -ra entries <<<"$raw"
+    local entry
+    for entry in "${entries[@]}"; do
+        entry="${entry#"${entry%%[![:space:]]*}"}"
+        entry="${entry%"${entry##*[![:space:]]}"}"
+        [[ "$entry" == "*" ]] && return 0
+    done
+    return 1
+}
+
 # Check if Docker is running
 check_docker() {
     if ! command -v docker &>/dev/null; then
@@ -230,7 +251,7 @@ www_tutorials_record() {
     # In AI agent sessions, the user must pre-set REDIACC_ALLOW_GRAND_REPO=* before
     # starting the agent so the CLI accepts the override as legitimate.
     if [[ "${CLAUDECODE:-}" == "1" || "${GEMINI_CLI:-}" == "1" || "${COPILOT_CLI:-}" == "1" || "${REDIACC_AGENT:-}" == "1" || -n "${CURSOR_TRACE_ID:-}" ]]; then
-        if [[ "${REDIACC_ALLOW_GRAND_REPO:-}" != "*" ]]; then
+        if ! _grand_env_is_wildcard; then
             log_error "Tutorial recording requires direct machine access, which is blocked in agent mode."
             log_error ""
             log_error "Set REDIACC_ALLOW_GRAND_REPO=* in your terminal BEFORE starting the agent session:"
@@ -899,6 +920,7 @@ pr_publish() {
             --arg ses_secret "$(_env AWS_SES_SECRET_ACCESS_KEY)" \
             --arg ses_region "$(_env AWS_SES_REGION)" \
             --arg ses_from "$(_env AWS_SES_FROM)" \
+            --arg ses_cs "$(_env AWS_SES_CONFIGURATION_SET)" \
             --arg turnstile "$(_env TURNSTILE_SECRET_KEY)" \
             '{
               ED25519_PRIVATE_KEY: $ed25519_priv,
@@ -914,6 +936,7 @@ pr_publish() {
               AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
               AWS_SES_REGION: $ses_region,
               AWS_SES_FROM: $ses_from,
+              AWS_SES_CONFIGURATION_SET: $ses_cs,
               TURNSTILE_SECRET_KEY: $turnstile
             } | with_entries(select(.value != ""))' | npx wrangler secret bulk --name "$worker_name"
 

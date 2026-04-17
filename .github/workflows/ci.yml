@@ -816,11 +816,28 @@ jobs:
           name: preview-pages-${{ github.sha }}
           path: workers/www/dist/
 
+      # Mint a per-PR Turnstile widget so the preview hostname
+      # `pr-N.rediacc.workers.dev` is on its own widget allowlist.
+      # Cloudflare Turnstile does not support wildcards or parent-domain
+      # inheritance, so each PR needs its own widget.
+      # See private/account/docs/infra/cloudflare.md and
+      # private/account/scripts/preview-turnstile.ts.
+      - name: Create PR Turnstile widget
+        id: create-widget
+        working-directory: private/account
+        run: npx tsx scripts/preview-turnstile.ts create "${PR_NUMBER}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
       - name: Build account portal
         run: npm install && npx vite build --outDir ../../../workers/www/dist/account
         working-directory: private/account/web
         env:
-          VITE_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+          # PR previews use the per-PR widget minted above, NOT vars.TURNSTILE_SITE_KEY.
+          # The prod sitekey's widget is hostname-locked to apex/regional domains
+          # and cannot include workers.dev subdomains without burning hostname slots.
+          VITE_TURNSTILE_SITE_KEY: ${{ steps.create-widget.outputs.sitekey }}
           VITE_CI_MODE: 'false'
 
       # Inject e2e test videos into pages for documentation embedding
@@ -866,8 +883,11 @@ jobs:
           SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
           SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
           SECRET_SES_REGION: ${{ vars.AWS_SES_REGION_EU }}
-          SECRET_TURNSTILE_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          # Per-PR Turnstile secret comes from the create-widget step above,
+          # paired with the per-PR sitekey baked into the Vite build.
+          SECRET_TURNSTILE_KEY: ${{ steps.create-widget.outputs.secret }}
           VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
+          VAR_SES_CONFIGURATION_SET: ${{ vars.AWS_SES_CONFIGURATION_SET }}
         run: |
           # Use secret:bulk to set all secrets in a single API call.
           # Individual secret put commands each trigger a new worker version,
@@ -887,6 +907,7 @@ jobs:
             --arg ses_secret "$SECRET_SES_SECRET_ACCESS_KEY" \
             --arg ses_region "$SECRET_SES_REGION" \
             --arg ses_from "$VAR_SES_FROM" \
+            --arg ses_cs "$VAR_SES_CONFIGURATION_SET" \
             --arg turnstile "$SECRET_TURNSTILE_KEY" \
             '{
               ED25519_PRIVATE_KEY: $ed25519_priv,
@@ -902,6 +923,7 @@ jobs:
               AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
               AWS_SES_REGION: $ses_region,
               AWS_SES_FROM: $ses_from,
+              AWS_SES_CONFIGURATION_SET: $ses_cs,
               TURNSTILE_SECRET_KEY: $turnstile
             }' | npx wrangler secret bulk --name "$WORKER"
 

@@ -128,7 +128,7 @@ To allow an agent to modify grand repos, start with `--allow-grand`:
 }
 ```
 
-You can also set the `REDIACC_ALLOW_GRAND_REPO` environment variable to a specific repo name or `*` for all repos.
+You can also set the `REDIACC_ALLOW_GRAND_REPO` environment variable to a single repo name, a comma-separated list of repo names (for example `repo1,repo2,repo3`), or `*` for all repos. Whitespace around entries is ignored, so `repo1, repo2` works too. Machine-level access (such as `term connect -m <machine>` without a repo) still requires `*`; a list of repo names does not unlock it.
 
 ### Per-repo SSH keys and server-side sandbox
 

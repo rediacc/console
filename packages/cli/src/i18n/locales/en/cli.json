@@ -667,6 +667,7 @@
           "optionBwlimit": "Rclone bandwidth limit (e.g., \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")",
           "optionInclude": "Only back up these repos (comma-separated names)",
           "optionExclude": "Exclude these repos from backup (comma-separated names)",
+          "optionFolder": "Subfolder under the storage bucket for this destination (e.g. hot, cold)",
           "optionEnable": "Enable the strategy or destination",
           "optionDisable": "Disable the strategy or destination",
           "saved": "Backup strategy configuration saved",

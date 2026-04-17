@@ -488,6 +488,18 @@ jobs:
             aws s3 cp /tmp/config "s3://${BUCKET}/${file}" $EP --quiet
           done
 
+          # Re-bake install scripts: cd-dryrun.yml baked 'edge' into
+          # cli/edge/install.{sh,ps1}; the raw copy above carried that into
+          # cli/stable/. Rewrite back to stable.
+          for file in cli/stable/install.sh cli/stable/install.ps1; do
+            aws s3 cp "s3://${BUCKET}/${file}" /tmp/script $EP --quiet
+            sed -i \
+              -e 's|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-stable|g' \
+              -e 's|} else { "edge" }|} else { "stable" }|g' \
+              /tmp/script
+            aws s3 cp /tmp/script "s3://${BUCKET}/${file}" $EP --quiet
+          done
+
           echo "R2 promoted to stable"
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -689,9 +701,45 @@ jobs:
           VERSION="${{ needs.init.outputs.next_version }}"
           echo "Verifying edge deployment for v${VERSION}..."
 
-          # Marketing worker
-          curl -fsSL https://edge.rediacc.com/install.sh -o /dev/null
-          echo "  marketing (install.sh): OK"
+          # Marketing worker — also verify the channel default was rewritten.
+          INSTALL_SH=$(curl -fsSL https://edge.rediacc.com/install.sh)
+          if ! echo "$INSTALL_SH" | grep -q 'REDIACC_CHANNEL:-edge'; then
+            echo "::error::edge.rediacc.com/install.sh is not baked to channel=edge"
+            echo "$INSTALL_SH" | grep -E 'REDIACC_CHANNEL' || true
+            exit 1
+          fi
+          echo "  marketing (install.sh): OK (channel=edge)"
+
+          INSTALL_PS1=$(curl -fsSL https://edge.rediacc.com/install.ps1)
+          if ! echo "$INSTALL_PS1" | grep -qF '} else { "edge" }'; then
+            echo "::error::edge.rediacc.com/install.ps1 is not baked to channel=edge"
+            echo "$INSTALL_PS1" | grep -F '$Channel' || true
+            exit 1
+          fi
+          echo "  marketing (install.ps1): OK (channel=edge)"
+
+          # R2 backstop: the per-channel copy at releases.rediacc.com/cli/edge/
+          # is the fallback serving path (not worker-rewritten). It must also
+          # be channel-baked (done at upload time in cd-dryrun.yml). This
+          # cross-check catches R2 upload regressions.
+          if [[ "${{ needs.init.outputs.workers_only }}" != "true" ]]; then
+            R2_SH=$(curl -fsSL https://releases.rediacc.com/cli/edge/install.sh)
+            if ! echo "$R2_SH" | grep -q 'REDIACC_CHANNEL:-edge'; then
+              echo "::error::releases.rediacc.com/cli/edge/install.sh not baked to channel=edge"
+              echo "$R2_SH" | grep -E 'REDIACC_CHANNEL' || true
+              exit 1
+            fi
+            echo "  R2 cli/edge/install.sh: OK (channel=edge)"
+
+            R2_PS1=$(curl -fsSL https://releases.rediacc.com/cli/edge/install.ps1)
+            if ! echo "$R2_PS1" | grep -qF '} else { "edge" }'; then
+              echo "::error::releases.rediacc.com/cli/edge/install.ps1 not baked to channel=edge"
+              exit 1
+            fi
+            echo "  R2 cli/edge/install.ps1: OK (channel=edge)"
+          else
+            echo "  R2 backstop: skipped (workers-only deployment)"
+          fi
 
           # R2 releases (skip in workers-only mode -- no new version was published)
           if [[ "${{ needs.init.outputs.workers_only }}" != "true" ]]; then

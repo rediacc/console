@@ -214,9 +214,95 @@ async function main(): Promise<void> {
     }
   }
 
+  // ── Step 7: Channel rewrite assertions ─────────────────────────────
+  // The preview worker must rewrite install.sh/install.ps1 to bake the
+  // PR-N channel into the CLI defaults it hands out. Without this, users
+  // visiting a PR preview download the stable CLI instead of the preview
+  // build — the exact regression this test exists to catch.
+  const expectedChannel = extractChannel(PREVIEW_URL);
+  if (!expectedChannel) {
+    fail('Channel extraction', new Error(`Could not parse channel from ${PREVIEW_URL}`));
+  } else {
+    await checkInstallSh(expectedChannel);
+    await checkInstallPs1(expectedChannel);
+    await checkMarketingHtml(expectedChannel);
+  }
+
   // Summary
   console.log(`\n${passed} passed, ${failed} failed\n`);
   if (failed > 0) process.exit(1);
+}
+
+function extractChannel(url: string): string | null {
+  const host = new URL(url).hostname;
+  const m = host.match(/^([^.]+)\.rediacc\./);
+  return m ? m[1] : null;
+}
+
+async function checkInstallSh(expectedChannel: string): Promise<void> {
+  try {
+    const resp = await fetch(`${PREVIEW_URL}/install.sh`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const body = await resp.text();
+    if (!body.includes(`REDIACC_CHANNEL:-${expectedChannel}`)) {
+      throw new Error(`install.sh default channel is not ${expectedChannel}`);
+    }
+    // Belt-and-suspenders: the rewrite must REPLACE :-stable, not merely add
+    // a second line. If both remain, a user who sets REDIACC_CHANNEL before
+    // piping to bash would be safe, but the default path silently picks
+    // stable again.
+    if (body.includes('REDIACC_CHANNEL:-stable')) {
+      throw new Error('install.sh still contains REDIACC_CHANNEL:-stable; rewrite is partial');
+    }
+    if (!body.includes(`REDIACC_SERVER_URL:-${PREVIEW_URL}}`)) {
+      throw new Error(`install.sh default server URL is not ${PREVIEW_URL}`);
+    }
+    ok(`install.sh baked to channel=${expectedChannel}`);
+  } catch (e) {
+    fail('install.sh channel rewrite', e);
+  }
+}
+
+async function checkInstallPs1(expectedChannel: string): Promise<void> {
+  try {
+    const resp = await fetch(`${PREVIEW_URL}/install.ps1`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const body = await resp.text();
+    if (!body.includes(`} else { "${expectedChannel}" }`)) {
+      throw new Error(`install.ps1 default channel is not ${expectedChannel}`);
+    }
+    ok(`install.ps1 baked to channel=${expectedChannel}`);
+  } catch (e) {
+    fail('install.ps1 channel rewrite', e);
+  }
+}
+
+async function checkMarketingHtml(expectedChannel: string): Promise<void> {
+  // The install page renders BINARY_COMMANDS, DOCKER_COMMANDS, and package
+  // manager snippets. The worker rewrites `releases.rediacc.com/<fmt>/stable`
+  // → `.../<expectedChannel>` and `elite/cli:stable` → `elite/cli:<expectedChannel>`
+  // for every channel-scoped URL baked at build time.
+  try {
+    const resp = await fetch(`${PREVIEW_URL}/install`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const body = await resp.text();
+    const stale = [
+      'releases.rediacc.com/cli/stable/',
+      'releases.rediacc.com/npm/stable/',
+      'releases.rediacc.com/apt/stable',
+      'releases.rediacc.com/rpm/stable',
+      'releases.rediacc.com/apk/stable',
+      'releases.rediacc.com/archlinux/stable',
+      'elite/cli:stable',
+    ];
+    const leaked = stale.filter((s) => body.includes(s));
+    if (leaked.length > 0) {
+      throw new Error(`Marketing HTML still references stable: ${leaked.join(', ')}`);
+    }
+    ok(`Marketing /install rewritten to channel=${expectedChannel}`);
+  } catch (e) {
+    fail('Marketing HTML channel rewrite', e);
+  }
 }
 
 main().catch((e) => {

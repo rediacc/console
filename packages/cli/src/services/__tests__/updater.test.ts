@@ -6,7 +6,19 @@ import {
   isUpdateDisabled,
 } from '../../utils/platform.js';
 // Note: startupUpdateCheck was removed — replaced by background-updater
-import { checkForUpdate, compareVersions, performUpdate } from '../updater.js';
+import {
+  checkForUpdate,
+  compareVersions,
+  getManifestUrl,
+  getReleasesBaseUrl,
+  performUpdate,
+  resolveChannel,
+} from '../updater.js';
+import { loadServerConfig } from '../subscription-auth.js';
+
+vi.mock('../subscription-auth.js', () => ({
+  loadServerConfig: vi.fn(),
+}));
 
 const mockReleaseLock = vi.fn().mockResolvedValue(undefined);
 
@@ -142,6 +154,122 @@ function createErrorRequest(errorMessage = 'ECONNREFUSED') {
 describe('services/updater', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  describe('resolveChannel()', () => {
+    const originalEnv = process.env.RDC_UPDATE_CHANNEL;
+
+    afterEach(() => {
+      if (originalEnv === undefined) {
+        delete process.env.RDC_UPDATE_CHANNEL;
+      } else {
+        process.env.RDC_UPDATE_CHANNEL = originalEnv;
+      }
+      vi.mocked(loadServerConfig).mockReset();
+    });
+
+    it('returns RDC_UPDATE_CHANNEL env var when set', () => {
+      process.env.RDC_UPDATE_CHANNEL = 'edge';
+      vi.mocked(loadServerConfig).mockReturnValue({
+        accountServer: 'https://www.rediacc.com',
+        updateChannel: 'stable',
+      });
+      expect(resolveChannel()).toBe('edge');
+    });
+
+    it('falls back to server.json.updateChannel when env is unset', () => {
+      delete process.env.RDC_UPDATE_CHANNEL;
+      vi.mocked(loadServerConfig).mockReturnValue({
+        accountServer: 'https://edge.rediacc.com',
+        updateChannel: 'edge',
+      });
+      expect(resolveChannel()).toBe('edge');
+    });
+
+    it('reads updateChannel even from a partial server.json (no accountServer)', () => {
+      // install.sh writes this shape when the worker rewrote CHANNEL but not
+      // SERVER_URL (fail-safe recovery path).
+      delete process.env.RDC_UPDATE_CHANNEL;
+      vi.mocked(loadServerConfig).mockReturnValue({
+        updateChannel: 'edge',
+      } as ReturnType<typeof loadServerConfig>);
+      expect(resolveChannel()).toBe('edge');
+    });
+
+    it('defaults to UPDATE_DEFAULTS.CHANNEL when no signal is present', () => {
+      delete process.env.RDC_UPDATE_CHANNEL;
+      vi.mocked(loadServerConfig).mockReturnValue(null);
+      expect(resolveChannel()).toBe('stable');
+    });
+
+    it('defaults when loadServerConfig throws', () => {
+      delete process.env.RDC_UPDATE_CHANNEL;
+      vi.mocked(loadServerConfig).mockImplementation(() => {
+        throw new Error('parse failure');
+      });
+      expect(resolveChannel()).toBe('stable');
+    });
+  });
+
+  describe('getReleasesBaseUrl()', () => {
+    afterEach(() => {
+      vi.mocked(loadServerConfig).mockReset();
+    });
+
+    it('defaults to releases.rediacc.com/cli when server.json has no releasesUrl', () => {
+      vi.mocked(loadServerConfig).mockReturnValue(null);
+      expect(getReleasesBaseUrl()).toBe('https://releases.rediacc.com/cli');
+    });
+
+    it('honours a custom releasesUrl from server.json', () => {
+      vi.mocked(loadServerConfig).mockReturnValue({
+        accountServer: 'https://on-prem.example.com',
+        releasesUrl: 'https://on-prem.example.com/releases',
+      });
+      expect(getReleasesBaseUrl()).toBe('https://on-prem.example.com/releases/cli');
+    });
+
+    it('strips trailing slashes from a custom releasesUrl', () => {
+      vi.mocked(loadServerConfig).mockReturnValue({
+        accountServer: 'https://on-prem.example.com',
+        releasesUrl: 'https://on-prem.example.com/releases/',
+      });
+      expect(getReleasesBaseUrl()).toBe('https://on-prem.example.com/releases/cli');
+    });
+  });
+
+  describe('getManifestUrl()', () => {
+    const originalEnv = process.env.RDC_UPDATE_CHANNEL;
+
+    afterEach(() => {
+      if (originalEnv === undefined) {
+        delete process.env.RDC_UPDATE_CHANNEL;
+      } else {
+        process.env.RDC_UPDATE_CHANNEL = originalEnv;
+      }
+      vi.mocked(loadServerConfig).mockReset();
+    });
+
+    it('builds a URL from the explicit channel argument', () => {
+      vi.mocked(loadServerConfig).mockReturnValue(null);
+      expect(getManifestUrl('edge')).toBe('https://releases.rediacc.com/cli/edge/manifest.json');
+    });
+
+    it('resolves the channel from env when no argument is given', () => {
+      process.env.RDC_UPDATE_CHANNEL = 'edge';
+      vi.mocked(loadServerConfig).mockReturnValue(null);
+      expect(getManifestUrl()).toBe('https://releases.rediacc.com/cli/edge/manifest.json');
+    });
+
+    it('combines a custom releasesUrl with the resolved channel', () => {
+      delete process.env.RDC_UPDATE_CHANNEL;
+      vi.mocked(loadServerConfig).mockReturnValue({
+        accountServer: 'https://on-prem.example.com',
+        releasesUrl: 'https://on-prem.example.com/releases',
+        updateChannel: 'edge',
+      });
+      expect(getManifestUrl()).toBe('https://on-prem.example.com/releases/cli/edge/manifest.json');
+    });
   });
 
   describe('compareVersions()', () => {

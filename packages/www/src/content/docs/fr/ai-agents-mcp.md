@@ -4,8 +4,8 @@ description: Connectez des agents IA à l'infrastructure Rediacc en utilisant le
 category: Guides
 order: 33
 language: fr
-sourceHash: "ac4f508c3ad2602e"
-sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
+sourceHash: "db970e1793f0b024"
+sourceCommit: "5bffc959d9ddd689bfe8e7815270d800d9dca662"
 ---
 
 ## Aperçu
@@ -130,7 +130,7 @@ To allow an agent to modify grand repos, start with `--allow-grand`:
 }
 ```
 
-Vous pouvez aussi définir la variable d'environnement `REDIACC_ALLOW_GRAND_REPO` sur un nom de dépôt précis ou sur `*` pour tous les dépôts.
+Vous pouvez aussi définir la variable d'environnement `REDIACC_ALLOW_GRAND_REPO` sur un nom de dépôt unique, sur une liste de noms séparés par des virgules (par exemple `repo1,repo2,repo3`) ou sur `*` pour tous les dépôts. Les espaces autour des entrées sont ignorés, donc `repo1, repo2` fonctionne également. L'accès au niveau de la machine (comme `term connect -m <machine>` sans dépôt) nécessite toujours `*` ; une liste de noms de dépôts ne le débloque pas.
 
 ### Kernel-level filesystem sandbox (Landlock)
 

@@ -1,0 +1,11 @@
+{
+  "name": "rediacc-mta-sts-worker",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260228.0",
+    "wrangler": "^4.67.0"
+  }
+}

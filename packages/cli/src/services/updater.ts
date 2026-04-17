@@ -25,7 +25,7 @@ const CHECK_TIMEOUT_MS = 3000;
 const DOWNLOAD_TIMEOUT_MS = 120_000;
 
 /** Resolve the releases base URL from server.json or default. */
-function getReleasesBaseUrl(): string {
+export function getReleasesBaseUrl(): string {
   try {
     const serverConfig = loadServerConfig();
     if (serverConfig?.releasesUrl) return `${serverConfig.releasesUrl.replace(/\/+$/, '')}/cli`;

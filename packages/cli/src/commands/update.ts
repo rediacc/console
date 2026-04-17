@@ -23,7 +23,7 @@ import { VERSION } from '../version.js';
 /**
  * Handle --channel switch. Returns true if the action is complete (no further update needed).
  */
-async function handleChannelSwitch(
+export async function handleChannelSwitch(
   channel: string,
   options: { force?: boolean; checkOnly?: boolean }
 ): Promise<boolean> {

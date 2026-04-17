@@ -1,11 +1,15 @@
 {
   "name": "rediacc-www-worker",
   "private": true,
+  "scripts": {
+    "test:unit": "vitest run"
+  },
   "dependencies": {
     "drizzle-orm": "^0.45.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260228.0",
+    "vitest": "^4.1.0",
     "wrangler": "^4.67.0"
   }
 }

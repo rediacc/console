@@ -12,10 +12,56 @@ FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
 ARG NODE_VERSION=22
 ARG GO_VERSION=1.24.12
 
+# Align the vscode user with the Rediacc universal UID/GID (7111). This matches
+# common.RediaccUID in renet and the host-side ownership of /mnt/rediacc/...
+# mounts, so files created inside the container have the same UID as everything
+# else on the platform. Without this, a container running as vscode cannot
+# access paths owned by the universal user. Must happen before any later
+# `USER vscode` block so subsequent layers inherit the new UID.
+RUN groupmod -g 7111 vscode \
+    && usermod -u 7111 -g 7111 vscode \
+    && find / -xdev \( -uid 1000 -o -gid 1000 \) -exec chown -h 7111:7111 {} + 2>/dev/null || true
+
+# =============================================================================
+# Telemetry opt-outs (apply image-wide to build steps and runtime processes).
+# Each variable is verified against the tool's official documentation; do not
+# add unverified flags here. Generic DO_NOT_TRACK=1 is the de-facto standard
+# (honored by Turborepo, uv, and others). VS Code telemetry is disabled via a
+# baked settings.json below, and Go telemetry via `go telemetry off` during
+# the Go-tools install step (GOTELEMETRY is a read-only env per go.dev docs).
+# =============================================================================
+ENV DO_NOT_TRACK=1 \
+    DISABLE_TELEMETRY=1 \
+    DISABLE_ERROR_REPORTING=1 \
+    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 \
+    DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    POWERSHELL_TELEMETRY_OPTOUT=1 \
+    AZURE_CORE_COLLECT_TELEMETRY=0 \
+    HOMEBREW_NO_ANALYTICS=1 \
+    CHECKPOINT_DISABLE=1 \
+    NEXT_TELEMETRY_DISABLED=1 \
+    ASTRO_TELEMETRY_DISABLED=1 \
+    GATSBY_TELEMETRY_DISABLED=1 \
+    NUXT_TELEMETRY_DISABLED=1 \
+    TURBO_TELEMETRY_DISABLED=1 \
+    SAM_CLI_TELEMETRY=0
+
 # =============================================================================
 # System packages + GitHub CLI + Python 3 + XFCE Desktop + VNC stack
 # =============================================================================
-RUN apt-get update \
+# `apt-get update` is wrapped in a retry loop because archive.ubuntu.com
+# mirrors occasionally serve a stale Packages.gz whose checksum no longer
+# matches the freshly-uploaded InRelease ("File has unexpected size, Mirror
+# sync in progress?"). Apt caches the bad InRelease, so each retry must
+# purge /var/lib/apt/lists first to force a fresh metadata download. See
+# https://bugs.launchpad.net/ubuntu/+source/apt/+bug/2107223 (open upstream).
+RUN for i in 1 2 3 4 5; do \
+        if apt-get update; then break; fi; \
+        if [ "$i" = "5" ]; then echo "apt-get update failed after 5 attempts" >&2; exit 1; fi; \
+        echo "apt-get update attempt $i/5 failed, purging cache and retrying..." >&2; \
+        rm -rf /var/lib/apt/lists/*; \
+        sleep 15; \
+    done \
     && apt-get install -y --no-install-recommends \
         build-essential \
         python3 \
@@ -69,6 +115,25 @@ RUN apt-get update \
 RUN usermod -aG libvirt,kvm vscode
 
 # =============================================================================
+# Docker CE CLI (no engine). The engine runs on the host; the hub bind-mounts
+# a per-user Docker socket into the container at /var/run/docker.sock.
+# =============================================================================
+RUN install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && chmod a+r /etc/apt/keyrings/docker.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
+       > /etc/apt/sources.list.d/docker.list \
+    && for i in 1 2 3 4 5; do \
+        if apt-get update; then break; fi; \
+        if [ "$i" = "5" ]; then echo "apt-get update failed after 5 attempts" >&2; exit 1; fi; \
+        echo "apt-get update attempt $i/5 failed, purging cache and retrying..." >&2; \
+        rm -rf /var/lib/apt/lists/*; \
+        sleep 15; \
+    done \
+    && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin \
+    && rm -rf /var/lib/apt/lists/*
+
+# =============================================================================
 # Node.js via NVM (matching devcontainers/features/node pattern)
 # =============================================================================
 ENV NVM_DIR=/usr/local/share/nvm
@@ -103,9 +168,12 @@ RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
 
 ENV PATH="$GOROOT/bin:$GOPATH/bin:$PATH"
 
-# Install Go tools as vscode user (writes to $GOPATH/bin)
+# Install Go tools as vscode user (writes to $GOPATH/bin).
+# `go telemetry off` writes $HOME/.config/go/telemetry/mode so both local
+# collection and uploading are disabled for the vscode user.
 USER vscode
-RUN go install golang.org/x/tools/gopls@latest \
+RUN go telemetry off \
+    && go install golang.org/x/tools/gopls@latest \
     && go install github.com/go-delve/delve/cmd/dlv@latest \
     && go install honnef.co/go/tools/cmd/staticcheck@latest \
     && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
@@ -120,7 +188,6 @@ USER root
 # https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual
 # =============================================================================
 ENV DOTNET_ROOT=/usr/share/dotnet
-ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 ENV PATH="$PATH:$DOTNET_ROOT"
 
 RUN curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 9.0 --install-dir "$DOTNET_ROOT" \
@@ -212,6 +279,28 @@ RUN ARCH=$(dpkg --print-architecture) \
     done \
     && chown -R vscode:vscode /opt/openvscode-server
 
+# Bake default Machine + User settings to disable VS Code telemetry, crash
+# reporting, auto-updates, and online-lookup features. Written before first
+# boot so the settings apply from the initial session.
+RUN mkdir -p /home/vscode/.openvscode-server/data/Machine \
+             /home/vscode/.openvscode-server/data/User \
+    && printf '%s\n' \
+        '{' \
+        '  "telemetry.telemetryLevel": "off",' \
+        '  "telemetry.enableCrashReporter": false,' \
+        '  "telemetry.enableTelemetry": false,' \
+        '  "update.mode": "none",' \
+        '  "extensions.autoUpdate": false,' \
+        '  "extensions.autoCheckUpdates": false,' \
+        '  "workbench.settings.enableNaturalLanguageSearch": false,' \
+        '  "workbench.enableExperiments": false,' \
+        '  "npm.fetchOnlinePackageInfo": false' \
+        '}' \
+        > /home/vscode/.openvscode-server/data/Machine/settings.json \
+    && cp /home/vscode/.openvscode-server/data/Machine/settings.json \
+          /home/vscode/.openvscode-server/data/User/settings.json \
+    && chown -R vscode:vscode /home/vscode/.openvscode-server
+
 # Desktop startup script (starts Xvfb + XFCE + x11vnc + noVNC)
 COPY start-desktop.sh /usr/local/bin/start-desktop.sh
 RUN chmod +x /usr/local/bin/start-desktop.sh
@@ -241,6 +330,11 @@ RUN sed -i 's|^PATH=.*|PATH="/home/vscode/.local/bin:/usr/local/share/nvm/curren
     && echo 'DOCKER_BUILDKIT="1"' >> /etc/environment \
     && echo 'DOTNET_ROOT="/usr/share/dotnet"' >> /etc/environment \
     && echo 'DOTNET_CLI_TELEMETRY_OPTOUT="1"' >> /etc/environment \
+    && echo 'DO_NOT_TRACK="1"' >> /etc/environment \
+    && echo 'DISABLE_TELEMETRY="1"' >> /etc/environment \
+    && echo 'DISABLE_ERROR_REPORTING="1"' >> /etc/environment \
+    && echo 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC="1"' >> /etc/environment \
+    && echo 'HOMEBREW_NO_ANALYTICS="1"' >> /etc/environment \
     && echo 'DISPLAY=":99"' >> /etc/environment
 
 # OCI Labels

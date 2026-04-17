@@ -38,27 +38,27 @@ export const QUICK_INSTALL_WIN = `# Windows (PowerShell)\nirm ${SITE_URL}/instal
 
 export const BINARY_COMMANDS: Record<Platform, string> = {
   linux: `# Linux x64
-curl -fsSL https://releases.rediacc.com/cli/stable/rdc-linux-x64 -o rdc
+curl -fsSL ${RELEASES_URL}/cli/${CHANNEL}/rdc-linux-x64 -o rdc
 chmod +x rdc && sudo mv rdc /usr/local/bin/
 
 # Linux ARM64
-curl -fsSL https://releases.rediacc.com/cli/stable/rdc-linux-arm64 -o rdc
+curl -fsSL ${RELEASES_URL}/cli/${CHANNEL}/rdc-linux-arm64 -o rdc
 chmod +x rdc && sudo mv rdc /usr/local/bin/`,
   macos: `# macOS (Apple Silicon)
-curl -fsSL https://releases.rediacc.com/cli/stable/rdc-mac-arm64 -o rdc
+curl -fsSL ${RELEASES_URL}/cli/${CHANNEL}/rdc-mac-arm64 -o rdc
 chmod +x rdc && sudo mv rdc /usr/local/bin/
 
 # macOS (Intel)
-curl -fsSL https://releases.rediacc.com/cli/stable/rdc-mac-x64 -o rdc
+curl -fsSL ${RELEASES_URL}/cli/${CHANNEL}/rdc-mac-x64 -o rdc
 chmod +x rdc && sudo mv rdc /usr/local/bin/`,
   windows: `# Windows x64 (PowerShell) - installs to standard location
 $installDir = "$env:LOCALAPPDATA\\rediacc\\bin"; New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-Invoke-WebRequest -Uri https://releases.rediacc.com/cli/stable/rdc-win-x64.exe -OutFile "$installDir\\rdc.exe"
+Invoke-WebRequest -Uri ${RELEASES_URL}/cli/${CHANNEL}/rdc-win-x64.exe -OutFile "$installDir\\rdc.exe"
 # Add to PATH: [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$installDir", "User")
 
 # Windows ARM64 (PowerShell) - installs to standard location
 $installDir = "$env:LOCALAPPDATA\\rediacc\\bin"; New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-Invoke-WebRequest -Uri https://releases.rediacc.com/cli/stable/rdc-win-arm64.exe -OutFile "$installDir\\rdc.exe"
+Invoke-WebRequest -Uri ${RELEASES_URL}/cli/${CHANNEL}/rdc-win-arm64.exe -OutFile "$installDir\\rdc.exe"
 # Add to PATH: [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$installDir", "User")`,
 };
 

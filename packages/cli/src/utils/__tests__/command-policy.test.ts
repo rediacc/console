@@ -109,6 +109,60 @@ describe('command-policy', () => {
       );
     });
 
+    it('respects REDIACC_ALLOW_GRAND_REPO=<comma list> for each listed repo', async () => {
+      mockIsAgent.mockReturnValue(true);
+      process.env.REDIACC_ALLOW_GRAND_REPO = 'mail,web,gitlab';
+      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
+
+      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).resolves.not.toThrow();
+      await expect(assertCommandPolicy(CMD.REPO_UP, 'web')).resolves.not.toThrow();
+      await expect(assertCommandPolicy(CMD.REPO_UP, 'gitlab')).resolves.not.toThrow();
+    });
+
+    it('tolerates whitespace around comma-separated entries', async () => {
+      mockIsAgent.mockReturnValue(true);
+      process.env.REDIACC_ALLOW_GRAND_REPO = ' mail , web ';
+      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
+
+      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).resolves.not.toThrow();
+      await expect(assertCommandPolicy(CMD.REPO_UP, 'web')).resolves.not.toThrow();
+    });
+
+    it('blocks repos not in the comma list', async () => {
+      mockIsAgent.mockReturnValue(true);
+      process.env.REDIACC_ALLOW_GRAND_REPO = 'web,gitlab';
+      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
+
+      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
+        'errors.agent.grandGuard'
+      );
+    });
+
+    it('grand-repo match is case-sensitive', async () => {
+      mockIsAgent.mockReturnValue(true);
+      process.env.REDIACC_ALLOW_GRAND_REPO = 'Mail';
+      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
+
+      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
+        'errors.agent.grandGuard'
+      );
+    });
+
+    it('treats `*` inside a list as wildcard', async () => {
+      mockIsAgent.mockReturnValue(true);
+      process.env.REDIACC_ALLOW_GRAND_REPO = 'mail,*';
+      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
+
+      await expect(assertCommandPolicy(CMD.REPO_UP, 'anything')).resolves.not.toThrow();
+    });
+
+    it('agentBlocked ignores comma-list override', async () => {
+      mockIsAgent.mockReturnValue(true);
+      process.env.REDIACC_ALLOW_GRAND_REPO = 'mail,web';
+
+      await expect(assertCommandPolicy(CMD.RUN)).rejects.toThrow('errors.agent.commandBlocked');
+    });
+
     it('skips check when repo not found', async () => {
       mockIsAgent.mockReturnValue(true);
       mockGetRepo.mockResolvedValue(undefined);
