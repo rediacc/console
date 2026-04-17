@@ -375,7 +375,7 @@ jobs:
           # size, Mirror sync in progress?" until each edge POP evicts.
           # Immutable URL-versioned binaries get a 1-year cache.
           CC_MUTABLE="no-cache"
-          CC_IMMUTABLE="public, max-age=31536000, immutable"
+          CC_IMMUTABLE="public, max-age=31536000, immutable, no-transform"
 
           # Collect URLs for the post-upload CF cache purge. Only mutable
           # files need purging -- immutable URLs never collide with a stale

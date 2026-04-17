@@ -486,7 +486,7 @@ jobs:
           # URL-versioned binaries (.deb/.rpm/.apk/.pkg.tar.zst) get a
           # 1-year cache.
           CC_MUTABLE="no-cache"
-          CC_IMMUTABLE="public, max-age=31536000, immutable"
+          CC_IMMUTABLE="public, max-age=31536000, immutable, no-transform"
 
           PURGE_URLS=()
           for dir in cli desktop apt rpm apk archlinux; do

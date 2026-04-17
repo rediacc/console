@@ -112,7 +112,13 @@ fi
 #   get a 1-year cache. The URL itself includes the version so the content at a
 #   given URL never changes.
 readonly CACHE_CONTROL_MUTABLE="no-cache"
-readonly CACHE_CONTROL_IMMUTABLE="public, max-age=31536000, immutable"
+# `no-transform` tells CF (per RFC 7234 §5.2.2.4) not to modify the payload;
+# without it, CF's transparent-decompression layer can return different
+# Content-Length values on HEAD vs GET for .pkg.tar.zst / .deb / .rpm (the
+# HEAD size is 3 bytes smaller than the actual body, which makes libalpm
+# abort the download with "Maximum file size exceeded" since it ceilings
+# the download at the HEAD-reported size).
+readonly CACHE_CONTROL_IMMUTABLE="public, max-age=31536000, immutable, no-transform"
 
 # Helper: upload file to R2. Third arg is the Cache-Control value (defaults to
 # the mutable policy because most callers upload channel-pointer files; binary
