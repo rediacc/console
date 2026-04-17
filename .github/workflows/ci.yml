@@ -1096,6 +1096,7 @@ jobs:
           CC_MUTABLE="no-cache"
           CC_IMMUTABLE="public, max-age=31536000, immutable"
 
+          PURGE_URLS=()
           # Copy all repo formats from PR channel to promoted channel
           # R2 doesn't support GetObjectTagging, so download+reupload via local tmp
           for dir in apt rpm apk archlinux; do
@@ -1113,6 +1114,12 @@ jobs:
               --exclude "*.deb" --exclude "*.rpm" --exclude "*.apk" \
               --exclude "*.pkg.tar.zst" --exclude "*.pkg.tar.zst.sig" \
               --cache-control "$CC_MUTABLE"
+            # Enumerate just-uploaded mutable URLs for purge.
+            while IFS= read -r f; do
+              PURGE_URLS+=("https://releases.rediacc.com/${dir}/${PROMOTED}/${f#$TMP/}")
+            done < <(find "$TMP" -type f \
+              ! -name "*.deb" ! -name "*.rpm" ! -name "*.apk" \
+              ! -name "*.pkg.tar.zst" ! -name "*.pkg.tar.zst.sig")
             rm -rf "$TMP"
           done
 
@@ -1122,11 +1129,21 @@ jobs:
               sed -i "s|/${CHANNEL}/|/${PROMOTED}/|g" /tmp/config
               aws_s3_cp_retry /tmp/config "s3://${BUCKET}/${file}" $EP \
                 --cache-control "$CC_MUTABLE"
+              PURGE_URLS+=("https://releases.rediacc.com/${file}")
               echo "Fixed channel in ${file}"
             fi
           done
 
           echo "Promotion simulated: ${CHANNEL} -> ${PROMOTED}"
+
+          # Purge CF cache for the just-uploaded mutable URLs. Without this
+          # the test_apt_install step that runs next can hit a CF edge POP
+          # holding a stale Packages.gz from a previous CI run, even though
+          # we just uploaded fresh content with Cache-Control: no-cache.
+          if [[ ${#PURGE_URLS[@]} -gt 0 ]]; then
+            printf '%s\n' "${PURGE_URLS[@]}" \
+              | .ci/scripts/deploy/cf-purge-urls.sh --zone "$CLOUDFLARE_ZONE_ID"
+          fi
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -1134,6 +1151,8 @@ jobs:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           AWS_MAX_ATTEMPTS: 10
           AWS_RETRY_MODE: adaptive
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
 
       - name: Test APT install from promoted channel
         run: |
