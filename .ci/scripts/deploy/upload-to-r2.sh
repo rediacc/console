@@ -99,35 +99,65 @@ if [[ "$DRY_RUN" == "false" ]]; then
     export AWS_DEFAULT_REGION="auto"
 fi
 
-# Helper: upload file to R2
+# Cache-Control policies for R2 objects served via the releases.rediacc.com
+# Cloudflare custom domain. CF honors the origin Cache-Control header per
+# https://developers.cloudflare.com/cache/concepts/default-cache-behavior/.
+#
+# - Mutable index/channel-pointer files (Packages.gz, install.sh, latest.json,
+#   etc.) get "no-cache" so CF revalidates against R2 on every request. Without
+#   this, edge POPs serve a stale Packages.gz after a release and apt fails with
+#   "File has unexpected size, Mirror sync in progress?" until each POP eventually
+#   evicts on its own schedule.
+# - Immutable URL-versioned binaries (cli/v1.2.3/*.deb, .rpm, .apk, .pkg.tar.zst)
+#   get a 1-year cache. The URL itself includes the version so the content at a
+#   given URL never changes.
+readonly CACHE_CONTROL_MUTABLE="no-cache"
+readonly CACHE_CONTROL_IMMUTABLE="public, max-age=31536000, immutable"
+
+# Helper: upload file to R2. Third arg is the Cache-Control value (defaults to
+# the mutable policy because most callers upload channel-pointer files; binary
+# uploads must pass $CACHE_CONTROL_IMMUTABLE explicitly).
 r2_cp() {
     local src="$1"
     local dest="$2"
+    local cache_control="${3:-$CACHE_CONTROL_MUTABLE}"
     local full_dest="s3://${RELEASES_BUCKET}/${dest}"
 
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "[DRY-RUN] Would upload: $src → $full_dest"
+        log_info "[DRY-RUN] Would upload: $src → $full_dest (Cache-Control: $cache_control)"
         return 0
     fi
 
-    aws s3 cp "$src" "$full_dest" --endpoint-url "$R2_ENDPOINT" --no-progress
+    aws s3 cp "$src" "$full_dest" \
+        --endpoint-url "$R2_ENDPOINT" \
+        --cache-control "$cache_control" \
+        --no-progress
 }
 
-# Helper: upload directory to R2
+# Helper: upload directory to R2. Third arg is the Cache-Control value applied
+# to every object in the sync; defaults to the mutable policy. For mixed
+# directories (binaries + metadata) call this twice with --include filters and
+# different cache_control values, or use two separate r2_cp calls.
 r2_sync() {
     local src="$1"
     local dest="$2"
+    local cache_control="${3:-$CACHE_CONTROL_MUTABLE}"
     local full_dest="s3://${RELEASES_BUCKET}/${dest}"
 
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "[DRY-RUN] Would sync: $src → $full_dest"
+        log_info "[DRY-RUN] Would sync: $src → $full_dest (Cache-Control: $cache_control)"
         return 0
     fi
 
-    aws s3 sync "$src" "$full_dest" --endpoint-url "$R2_ENDPOINT" --no-progress
+    aws s3 sync "$src" "$full_dest" \
+        --endpoint-url "$R2_ENDPOINT" \
+        --cache-control "$cache_control" \
+        --no-progress
 }
 
-# Helper: write string to R2
+# Helper: write string to R2. Always uses the mutable Cache-Control policy
+# because the only callers (latest.json, manifest.json, versions.json) are by
+# nature mutable channel pointers.
 r2_put() {
     local content="$1"
     local dest="$2"
@@ -135,13 +165,14 @@ r2_put() {
     local content_type="${3:-application/json}"
 
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "[DRY-RUN] Would write: $full_dest"
+        log_info "[DRY-RUN] Would write: $full_dest (Cache-Control: $CACHE_CONTROL_MUTABLE)"
         return 0
     fi
 
     echo "$content" | aws s3 cp - "$full_dest" \
         --endpoint-url "$R2_ENDPOINT" \
         --content-type "$content_type" \
+        --cache-control "$CACHE_CONTROL_MUTABLE" \
         --no-progress
 }
 
@@ -234,11 +265,13 @@ UPLOADED=0
 if [[ -d "$CLI_DIR" ]]; then
     log_step "Uploading CLI binaries"
 
-    # Upload to versioned path (permanent link)
+    # Upload to versioned path (permanent link). Versioned URLs are
+    # immutable -- the same URL never serves different content -- so
+    # CF can cache aggressively for end-user install perf.
     for binary in "$CLI_DIR"/rdc-*; do
         [[ -f "$binary" ]] || continue
         local_name="$(basename "$binary")"
-        r2_cp "$binary" "$(r2_versioned_path "cli/v${VERSION}/${local_name}")"
+        r2_cp "$binary" "$(r2_versioned_path "cli/v${VERSION}/${local_name}")" "$CACHE_CONTROL_IMMUTABLE"
         ((UPLOADED++)) || true
     done
 
@@ -275,7 +308,8 @@ if [[ -d "$NPM_DIR" ]]; then
         [[ -f "$tgz" ]] || continue
         local_name="$(basename "$tgz")"
         [[ "$local_name" == "rediacc-cli-latest.tgz" ]] && continue
-        r2_cp "$tgz" "$(r2_path "npm" "${local_name}")"
+        # Versioned tarball filename (rediacc-cli-1.2.3.tgz) is immutable.
+        r2_cp "$tgz" "$(r2_path "npm" "${local_name}")" "$CACHE_CONTROL_IMMUTABLE"
         ((UPLOADED++)) || true
     done
 
@@ -299,11 +333,10 @@ if [[ -d "$DESKTOP_DIR" ]]; then
         local_name="$(basename "$artifact")"
         [[ "$local_name" == "builder-debug.yml" ]] && continue
 
-        # Upload to versioned path (permanent link)
-        r2_cp "$artifact" "$(r2_versioned_path "desktop/v${VERSION}/${local_name}")"
+        # Versioned path is immutable; channel path is overwritten per release
+        # so it must revalidate against R2 every time.
+        r2_cp "$artifact" "$(r2_versioned_path "desktop/v${VERSION}/${local_name}")" "$CACHE_CONTROL_IMMUTABLE"
         ((UPLOADED++)) || true
-
-        # Upload to channel path
         r2_cp "$artifact" "$(r2_path "desktop" "${local_name}")"
     done
 

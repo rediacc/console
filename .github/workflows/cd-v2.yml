@@ -473,31 +473,54 @@ jobs:
           EP="--endpoint-url $R2_ENDPOINT"
           BUCKET="rediacc-releases"
 
+          # Cache-Control policy (CF honors origin per
+          # developers.cloudflare.com/cache/concepts/default-cache-behavior).
+          # Mutable index files (Packages.gz, InRelease, repodata, APKINDEX,
+          # *.db, *.repo, *.conf, install.sh) get no-cache; immutable
+          # URL-versioned binaries (.deb/.rpm/.apk/.pkg.tar.zst) get a
+          # 1-year cache.
+          CC_MUTABLE="no-cache"
+          CC_IMMUTABLE="public, max-age=31536000, immutable"
+
           for dir in cli desktop apt rpm apk archlinux; do
             echo "Promoting ${dir}/edge/ -> ${dir}/stable/"
             TMP="/tmp/promote-${dir}"
             aws s3 cp "s3://${BUCKET}/${dir}/edge/" "$TMP/" $EP --recursive --quiet
-            aws s3 cp "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --recursive --quiet
+            # Pass 1: immutable binaries.
+            aws s3 cp "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --recursive --quiet \
+              --exclude "*" \
+              --include "*.deb" --include "*.rpm" --include "*.apk" \
+              --include "*.pkg.tar.zst" --include "*.pkg.tar.zst.sig" \
+              --cache-control "$CC_IMMUTABLE"
+            # Pass 2: mutable everything else (metadata, channel-pointer
+            # binaries under cli/desktop, install scripts, config files).
+            aws s3 cp "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --recursive --quiet \
+              --exclude "*.deb" --exclude "*.rpm" --exclude "*.apk" \
+              --exclude "*.pkg.tar.zst" --exclude "*.pkg.tar.zst.sig" \
+              --cache-control "$CC_MUTABLE"
             rm -rf "$TMP"
           done
 
-          # Fix channel references in config files
+          # Fix channel references in config files (mutable channel pointers).
           for file in rpm/stable/rediacc.repo archlinux/stable/rediacc.conf; do
             aws s3 cp "s3://${BUCKET}/${file}" /tmp/config $EP --quiet
             sed -i 's|/edge/|/stable/|g' /tmp/config
-            aws s3 cp /tmp/config "s3://${BUCKET}/${file}" $EP --quiet
+            aws s3 cp /tmp/config "s3://${BUCKET}/${file}" $EP --quiet \
+              --cache-control "$CC_MUTABLE"
           done
 
           # Re-bake install scripts: cd-dryrun.yml baked 'edge' into
           # cli/edge/install.{sh,ps1}; the raw copy above carried that into
-          # cli/stable/. Rewrite back to stable.
+          # cli/stable/. Rewrite back to stable. Channel-pointer scripts
+          # are mutable.
           for file in cli/stable/install.sh cli/stable/install.ps1; do
             aws s3 cp "s3://${BUCKET}/${file}" /tmp/script $EP --quiet
             sed -i \
               -e 's|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-stable|g' \
               -e 's|} else { "edge" }|} else { "stable" }|g' \
               /tmp/script
-            aws s3 cp /tmp/script "s3://${BUCKET}/${file}" $EP --quiet
+            aws s3 cp /tmp/script "s3://${BUCKET}/${file}" $EP --quiet \
+              --cache-control "$CC_MUTABLE"
           done
 
           echo "R2 promoted to stable"
