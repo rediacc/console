@@ -367,43 +367,33 @@ jobs:
           export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
           export AWS_DEFAULT_REGION="auto"
 
-          # Cache-Control policy (CF honors origin per
-          # developers.cloudflare.com/cache/concepts/default-cache-behavior).
-          # Mutable index files (Packages.gz, InRelease, repodata, APKINDEX,
-          # *.db, *.repo, *.conf) get no-cache so CF revalidates on every
-          # request -- otherwise apt-get update fails with "File has unexpected
-          # size, Mirror sync in progress?" until each edge POP evicts.
-          # Immutable URL-versioned binaries get a 1-year cache.
+          # Cache-Control policy. Package-manager channel paths
+          # (apt/<channel>/, rpm/<channel>/, apk/<channel>/, archlinux/<channel>/)
+          # reuse filenames across releases -- the URL cli/edge/rdc-0.9.13.deb
+          # can serve DIFFERENT bytes from one CI run to the next because
+          # edge builds that happen to land on the same semver produce
+          # slightly different archives. Marking them "immutable" let CF
+          # cache a previous run's body under a URL the next run's APKINDEX
+          # points at with a different sha256 -> "BAD signature" cascades.
+          # no-cache means CF never caches (per developers.cloudflare.com/
+          # cache/concepts/default-cache-behavior), so there is no stale
+          # cached body to go stale. R2 origin is inside CF's network, so
+          # end-user install cost is not materially different.
+          # Truly-versioned paths (cli/v<semver>/, desktop/v<semver>/,
+          # npm/<channel>/rediacc-cli-<semver>.tgz) keep their 1-year
+          # immutable cache; those are handled by upload-to-r2.sh.
           CC_MUTABLE="no-cache"
-          CC_IMMUTABLE="public, max-age=31536000, immutable, no-transform"
 
-          # Collect URLs for the post-upload CF cache purge. Channel-scoped
-          # paths (apt/<channel>/, rpm/<channel>/, ...) are overwritten on
-          # every CI run with fresh content that has the same filename, so
-          # even the "immutable" binaries must be purged -- otherwise apk
-          # fetches the fresh APKINDEX (mutable, no-cache) but a stale .apk
-          # body from CF cache and hits "BAD signature". Immutable with
-          # long cache is still correct for cli/v1.2.3/ style URLs handled
-          # by upload-to-r2.sh, but package-manager repo layouts reuse
-          # filenames per channel.
           PURGE_URLS=()
           for dir in apt rpm apk archlinux; do
             [[ -d "dist/repos/$dir" ]] || continue
-            # Pass 1: immutable binaries (URL-versioned).
             aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/${dir}/${CHANNEL}/" \
-              --exclude "*" \
-              --include "*.deb" --include "*.rpm" --include "*.apk" \
-              --include "*.pkg.tar.zst" --include "*.pkg.tar.zst.sig" \
-              --cache-control "$CC_IMMUTABLE" \
-              --endpoint-url "$R2_ENDPOINT" --quiet
-            # Pass 2: mutable metadata + config (everything else).
-            aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/${dir}/${CHANNEL}/" \
-              --exclude "*.deb" --exclude "*.rpm" --exclude "*.apk" \
-              --exclude "*.pkg.tar.zst" --exclude "*.pkg.tar.zst.sig" \
               --cache-control "$CC_MUTABLE" \
               --endpoint-url "$R2_ENDPOINT" --quiet
-            # Purge every uploaded URL (mutable AND "immutable") to flush
-            # any previously-cached body under the same filename.
+            # Purge every uploaded URL to evict entries cached under the
+            # old immutable policy. Once every CI cycle has re-uploaded
+            # with no-cache, CF won't cache anything and subsequent purges
+            # are cheap no-ops.
             while IFS= read -r f; do
               PURGE_URLS+=("https://releases.rediacc.com/${dir}/${CHANNEL}/${f#dist/repos/$dir/}")
             done < <(find "dist/repos/$dir" -type f)

@@ -1086,15 +1086,11 @@ jobs:
             done
           }
 
-          # Cache-Control policy (CF honors origin per
-          # developers.cloudflare.com/cache/concepts/default-cache-behavior).
-          # Mutable index files get no-cache so CF revalidates against R2 every
-          # request -- otherwise the test_apt_install step that runs right
-          # after this job hits the same stale-Packages.gz issue we fixed for
-          # production uploads in cd-dryrun.yml. Immutable URL-versioned
-          # binaries get a 1-year cache.
+          # Cache-Control policy: channel paths reuse filenames per release,
+          # so nothing under <fmt>/<promoted>/ is safe to cache. All upload
+          # go no-cache; CF will not cache, so the subsequent
+          # test_apt_install / test_apk_install cannot hit a stale POP.
           CC_MUTABLE="no-cache"
-          CC_IMMUTABLE="public, max-age=31536000, immutable, no-transform"
 
           PURGE_URLS=()
           # Copy all repo formats from PR channel to promoted channel
@@ -1103,20 +1099,10 @@ jobs:
             echo "Copying ${dir}/${CHANNEL}/ -> ${dir}/${PROMOTED}/"
             TMP="/tmp/promote-${dir}"
             aws_s3_cp_retry "s3://${BUCKET}/${dir}/${CHANNEL}/" "$TMP/" $EP --recursive
-            # Pass 1: immutable binaries.
             aws_s3_cp_retry "$TMP/" "s3://${BUCKET}/${dir}/${PROMOTED}/" $EP --recursive \
-              --exclude "*" \
-              --include "*.deb" --include "*.rpm" --include "*.apk" \
-              --include "*.pkg.tar.zst" --include "*.pkg.tar.zst.sig" \
-              --cache-control "$CC_IMMUTABLE"
-            # Pass 2: mutable everything else (Packages.gz, InRelease, etc.).
-            aws_s3_cp_retry "$TMP/" "s3://${BUCKET}/${dir}/${PROMOTED}/" $EP --recursive \
-              --exclude "*.deb" --exclude "*.rpm" --exclude "*.apk" \
-              --exclude "*.pkg.tar.zst" --exclude "*.pkg.tar.zst.sig" \
               --cache-control "$CC_MUTABLE"
-            # Purge every uploaded URL (mutable AND "immutable") to flush
-            # any previously-cached body under the same filename (channel
-            # paths reuse filenames across releases).
+            # Purge every uploaded URL to flush any previously-cached body
+            # under the same filename.
             while IFS= read -r f; do
               PURGE_URLS+=("https://releases.rediacc.com/${dir}/${PROMOTED}/${f#$TMP/}")
             done < <(find "$TMP" -type f)

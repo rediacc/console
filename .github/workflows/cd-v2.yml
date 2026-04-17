@@ -479,35 +479,26 @@ jobs:
           EP="--endpoint-url $R2_ENDPOINT"
           BUCKET="rediacc-releases"
 
-          # Cache-Control policy (CF honors origin per
-          # developers.cloudflare.com/cache/concepts/default-cache-behavior).
-          # Mutable index files (Packages.gz, InRelease, repodata, APKINDEX,
-          # *.db, *.repo, *.conf, install.sh) get no-cache; immutable
-          # URL-versioned binaries (.deb/.rpm/.apk/.pkg.tar.zst) get a
-          # 1-year cache.
+          # Cache-Control policy: channel paths (apt/<channel>/, cli/<channel>/,
+          # desktop/<channel>/, etc.) reuse filenames across releases, so we
+          # cannot cache any of them -- a previous run's cached body under
+          # the same URL breaks APKINDEX/Release signatures. Everything
+          # goes no-cache; CF never caches, no stale body possible.
+          # Truly-versioned (cli/v<semver>/, desktop/v<semver>/,
+          # npm/<channel>/rediacc-cli-<semver>.tgz) keep immutable cache
+          # via upload-to-r2.sh.
           CC_MUTABLE="no-cache"
-          CC_IMMUTABLE="public, max-age=31536000, immutable, no-transform"
 
           PURGE_URLS=()
           for dir in cli desktop apt rpm apk archlinux; do
             echo "Promoting ${dir}/edge/ -> ${dir}/stable/"
             TMP="/tmp/promote-${dir}"
             aws s3 cp "s3://${BUCKET}/${dir}/edge/" "$TMP/" $EP --recursive --quiet
-            # Pass 1: immutable binaries.
             aws s3 cp "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --recursive --quiet \
-              --exclude "*" \
-              --include "*.deb" --include "*.rpm" --include "*.apk" \
-              --include "*.pkg.tar.zst" --include "*.pkg.tar.zst.sig" \
-              --cache-control "$CC_IMMUTABLE"
-            # Pass 2: mutable everything else (metadata, channel-pointer
-            # binaries under cli/desktop, install scripts, config files).
-            aws s3 cp "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --recursive --quiet \
-              --exclude "*.deb" --exclude "*.rpm" --exclude "*.apk" \
-              --exclude "*.pkg.tar.zst" --exclude "*.pkg.tar.zst.sig" \
               --cache-control "$CC_MUTABLE"
-            # Purge every uploaded URL (mutable AND "immutable") to flush
-            # any previously-cached body under the same filename (channel
-            # paths reuse filenames across releases).
+            # Purge every uploaded URL to flush any previously-cached body
+            # under the same filename; channel paths reuse filenames across
+            # releases.
             while IFS= read -r f; do
               PURGE_URLS+=("https://releases.rediacc.com/${dir}/stable/${f#$TMP/}")
             done < <(find "$TMP" -type f)
