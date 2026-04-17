@@ -479,6 +479,17 @@ test_apt_install() {
 
     docker run --rm "$distro" bash -c "
         set -e
+        # Point apt at the Azure-hosted Ubuntu mirror. The upstream
+        # archive.ubuntu.com / security.ubuntu.com mirrors routinely become
+        # unreachable from Azure-hosted GitHub runners for 5-30 minute
+        # windows, taking down this test even when the Rediacc apt repo is
+        # healthy. Azure mirror is co-located with the runners.
+        for f in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            [ -f \"\$f\" ] && sed -i \\
+                -e 's|http://archive\\.ubuntu\\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\
+                -e 's|http://security\\.ubuntu\\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\
+                \"\$f\"
+        done
         apt-get update -qq
         apt-get install -y -qq curl gnupg ca-certificates >/dev/null 2>&1
 
@@ -676,6 +687,17 @@ test_quick_install() {
         -e "REDIACC_CHANNEL=${REPO_CHANNEL:-stable}" \
         "$distro" bash -c "
         set -e
+        # Point apt at the Azure-hosted Ubuntu mirror. The upstream
+        # archive.ubuntu.com / security.ubuntu.com mirrors routinely become
+        # unreachable from Azure-hosted GitHub runners for 5-30 minute
+        # windows, taking down this test even when the Rediacc apt repo is
+        # healthy. Azure mirror is co-located with the runners.
+        for f in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            [ -f \"\$f\" ] && sed -i \\
+                -e 's|http://archive\\.ubuntu\\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\
+                -e 's|http://security\\.ubuntu\\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\
+                \"\$f\"
+        done
         apt-get update -qq
         apt-get install -y -qq curl ca-certificates >/dev/null 2>&1
 
