@@ -18,10 +18,14 @@
 # evicts those stale entries; the next request hits R2 origin (which now
 # returns no-cache) and CF will not re-cache.
 #
-# Failure mode: if neither credential set is available, prints a warning
-# and exits 0 -- the no-cache origin headers are still the structural
-# fix; purge is defensive cleanup. If the API call returns an error,
-# exits non-zero so the caller can decide whether to abort.
+# Failure mode: purge is best-effort defence in depth -- the real fix
+# against stale CF cache on releases.rediacc.com is the zone-level
+# Cache Rule documented in .ci/docs/r2-setup.md. This script therefore
+# always exits 0 even on credential/auth/API failures, and logs a
+# ::warning:: so the CI run surfaces the issue without failing the job.
+# If the Cache Rule is ever disabled, the purge returning API errors
+# will still be visible as a warning and investigation can begin from
+# there.
 
 set -euo pipefail
 
@@ -90,9 +94,9 @@ while [[ $i -lt $TOTAL ]]; do
         --data "$PAYLOAD")
     SUCCESS=$(echo "$RESPONSE" | jq -r '.success // false')
     if [[ "$SUCCESS" != "true" ]]; then
-        echo "::error::CF purge failed for batch starting at index $i:" >&2
+        echo "::warning::CF purge failed for batch starting at index $i (best-effort; Cache Rule makes this non-critical):" >&2
         echo "$RESPONSE" | jq -c '.errors' >&2
-        exit 1
+        exit 0
     fi
     i=$((i + 30))
 done
