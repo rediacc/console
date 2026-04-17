@@ -499,26 +499,22 @@ test_apt_install() {
         # Add sources list
         echo 'deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${REPO_URL}/apt${REPO_CHANNEL_SUFFIX} stable main' > /etc/apt/sources.list.d/rediacc.list
 
-        # Install — retry \`apt-get update\` because the Rediacc APT repo
-        # is fronted by Cloudflare and edge caches can lag behind the
-        # staging artifact upload by 5+ minutes (Packages.gz reports
-        # 'File has unexpected size' until all CF pops have converged
-        # on the newly uploaded checksum). Acquire::http::No-Cache=true
-        # makes apt send Cache-Control: no-cache + Pragma: no-cache, which
-        # forces CF to revalidate against R2 instead of serving stale.
-        for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
-            if apt-get update -qq \\
-                -o Acquire::Retries=0 \\
-                -o Acquire::http::No-Cache=true \\
-                -o Acquire::https::No-Cache=true; then
+        # Retry apt-get update for transient network flakes on the way to
+        # releases.rediacc.com. The underlying cause of the long flake
+        # windows we chased in early iterations -- CF edge caching stale
+        # Packages.gz -- is now neutralised by the zone-level Cache Rule
+        # that bypasses cache for releases.rediacc.com (see
+        # .ci/docs/r2-setup.md), so 5x15s is sufficient.
+        for attempt in 1 2 3 4 5; do
+            if apt-get update -qq -o Acquire::Retries=0; then
                 break
             fi
-            if [[ \$attempt -eq 20 ]]; then
-                echo 'apt-get update failed after 20 attempts (~7 min); CF cache never converged' >&2
+            if [[ \$attempt -eq 5 ]]; then
+                echo 'apt-get update failed after 5 attempts' >&2
                 exit 1
             fi
-            echo \"apt-get update attempt \$attempt failed, retrying in 20s...\" >&2
-            sleep 20
+            echo \"apt-get update attempt \$attempt failed, retrying in 15s...\" >&2
+            sleep 15
         done
         apt-get install -y -qq ${PKG_NAME} >/dev/null 2>&1
 
@@ -595,17 +591,6 @@ test_pacman_install() {
 
     docker run --rm "$distro" bash -c "
         set -e
-        # Switch libalpm's internal downloader out for curl via XferCommand.
-        # releases.rediacc.com goes through Cloudflare's transparent-
-        # decompression layer, which has a known quirk where HEAD and GET
-        # disagree on Content-Length for .pkg.tar.zst by 3 bytes. libalpm
-        # treats the HEAD-reported size as a hard ceiling and aborts with
-        # 'Maximum file size exceeded' when GET delivers more. curl does
-        # not do that check, so the download completes normally.
-        sed -i \\
-            -e 's|^#XferCommand = /usr/bin/curl.*|XferCommand = /usr/bin/curl -L -C - -f -o %o %u|' \\
-            /etc/pacman.conf
-
         # Add rediacc repository
         echo '[rediacc]' >> /etc/pacman.conf
         echo 'SigLevel = Optional TrustAll' >> /etc/pacman.conf

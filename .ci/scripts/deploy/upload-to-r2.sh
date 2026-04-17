@@ -100,25 +100,24 @@ if [[ "$DRY_RUN" == "false" ]]; then
 fi
 
 # Cache-Control policies for R2 objects served via the releases.rediacc.com
-# Cloudflare custom domain. CF honors the origin Cache-Control header per
-# https://developers.cloudflare.com/cache/concepts/default-cache-behavior/.
+# Cloudflare custom domain. CF zone settings (aggressive cache + browser
+# TTL 14400) used to override these origin headers on GET responses; a
+# zone-level Cache Rule at `(http.host eq "releases.rediacc.com")` now
+# bypasses cache entirely so origin headers pass through unmodified. See
+# .ci/docs/r2-setup.md for how that rule is maintained.
 #
-# - Mutable index/channel-pointer files (Packages.gz, install.sh, latest.json,
-#   etc.) get "no-cache" so CF revalidates against R2 on every request. Without
-#   this, edge POPs serve a stale Packages.gz after a release and apt fails with
-#   "File has unexpected size, Mirror sync in progress?" until each POP eventually
-#   evicts on its own schedule.
-# - Immutable URL-versioned binaries (cli/v1.2.3/*.deb, .rpm, .apk, .pkg.tar.zst)
-#   get a 1-year cache. The URL itself includes the version so the content at a
-#   given URL never changes.
+# Even with CF bypassing cache, these headers are still correct to send:
+# browsers + other intermediaries honor Cache-Control even when CF doesn't.
+#
+# - Mutable channel pointers (Packages.gz, install.sh, latest.json, etc.)
+#   and any file under a package-manager channel path (apt/<channel>/,
+#   apk/<channel>/, etc.) get "no-cache" because channel paths reuse
+#   filenames across releases -- content at the same URL changes.
+# - Truly immutable URL-versioned binaries (cli/v1.2.3/*, desktop/v1.2.3/*,
+#   npm/<channel>/rediacc-cli-<semver>.tgz) get a 1-year cache because the
+#   URL itself encodes the version and content never changes at that URL.
 readonly CACHE_CONTROL_MUTABLE="no-cache"
-# `no-transform` tells CF (per RFC 7234 §5.2.2.4) not to modify the payload;
-# without it, CF's transparent-decompression layer can return different
-# Content-Length values on HEAD vs GET for .pkg.tar.zst / .deb / .rpm (the
-# HEAD size is 3 bytes smaller than the actual body, which makes libalpm
-# abort the download with "Maximum file size exceeded" since it ceilings
-# the download at the HEAD-reported size).
-readonly CACHE_CONTROL_IMMUTABLE="public, max-age=31536000, immutable, no-transform"
+readonly CACHE_CONTROL_IMMUTABLE="public, max-age=31536000, immutable"
 
 # Helper: upload file to R2. Third arg is the Cache-Control value (defaults to
 # the mutable policy because most callers upload channel-pointer files; binary
