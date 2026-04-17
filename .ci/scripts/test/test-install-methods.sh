@@ -501,19 +501,24 @@ test_apt_install() {
 
         # Install — retry \`apt-get update\` because the Rediacc APT repo
         # is fronted by Cloudflare and edge caches can lag behind the
-        # staging artifact upload by up to ~3 minutes (Packages.gz
-        # reports 'File has unexpected size' until all CF pops have
-        # converged on the newly uploaded checksum).
-        for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
-            if apt-get update -qq -o Acquire::Retries=0; then
+        # staging artifact upload by 5+ minutes (Packages.gz reports
+        # 'File has unexpected size' until all CF pops have converged
+        # on the newly uploaded checksum). Acquire::http::No-Cache=true
+        # makes apt send Cache-Control: no-cache + Pragma: no-cache, which
+        # forces CF to revalidate against R2 instead of serving stale.
+        for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+            if apt-get update -qq \\
+                -o Acquire::Retries=0 \\
+                -o Acquire::http::No-Cache=true \\
+                -o Acquire::https::No-Cache=true; then
                 break
             fi
-            if [[ \$attempt -eq 12 ]]; then
-                echo 'apt-get update failed after 12 attempts (~3 min); CF cache never converged' >&2
+            if [[ \$attempt -eq 20 ]]; then
+                echo 'apt-get update failed after 20 attempts (~7 min); CF cache never converged' >&2
                 exit 1
             fi
-            echo \"apt-get update attempt \$attempt failed, retrying in 15s...\" >&2
-            sleep 15
+            echo \"apt-get update attempt \$attempt failed, retrying in 20s...\" >&2
+            sleep 20
         done
         apt-get install -y -qq ${PKG_NAME} >/dev/null 2>&1
 
