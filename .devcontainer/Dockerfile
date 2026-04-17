@@ -49,18 +49,24 @@ ENV DO_NOT_TRACK=1 \
 # =============================================================================
 # System packages + GitHub CLI + Python 3 + XFCE Desktop + VNC stack
 # =============================================================================
-# Retry-with-purge wrapper around apt-get update + install. Handles both
-# (1) the recurring "Mirror sync in progress / File has unexpected size" race
-# (launchpad #2107223) that requires purging /var/lib/apt/lists between
-# attempts, and (2) outright Azure-runner-to-archive.ubuntu.com network
-# outages observed to last 5-10 minutes. Both update and install must be
-# inside the loop because the install fetches .deb files from the same
-# upstream mirrors that fail in either failure mode. Acquire::Retries=3
-# layers HTTP-level retries inside each apt call.
-RUN for i in 1 2 3 4 5; do \
+# Switch to the Azure-hosted Ubuntu mirror. archive.ubuntu.com routinely
+# becomes completely unreachable from Azure-hosted GitHub runners for
+# 5-30 minute windows (Microsoft Azure <-> Canonical CDN routing flakes),
+# and no amount of retrying inside the build makes that work. The Azure
+# mirror is in the same data centers as the runners and effectively never
+# loses connectivity from them. The retry-with-purge loop stays as defence
+# in depth for the rarer "Mirror sync in progress / File has unexpected
+# size" race (launchpad #2107223). Acquire::http::Timeout=30 fails each
+# stuck HTTP request fast (default is 120s) so a bad attempt does not eat
+# 20 minutes before the next retry begins.
+RUN find /etc/apt -name 'ubuntu.sources' -o -name 'sources.list' 2>/dev/null \
+        | xargs -r sed -i \
+            -e 's|http://archive\.ubuntu\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \
+            -e 's|http://security\.ubuntu\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \
+    && for i in 1 2 3 4 5; do \
         rm -rf /var/lib/apt/lists/*; \
-        if apt-get -o Acquire::Retries=3 update \
-            && apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
+        if apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update \
+            && apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y --no-install-recommends \
                 build-essential \
                 python3 \
                 python3-pip \
@@ -125,8 +131,8 @@ RUN install -m 0755 -d /etc/apt/keyrings \
        > /etc/apt/sources.list.d/docker.list \
     && for i in 1 2 3 4 5; do \
         rm -rf /var/lib/apt/lists/*; \
-        if apt-get -o Acquire::Retries=3 update \
-            && apt-get -o Acquire::Retries=3 install -y --no-install-recommends docker-ce-cli docker-compose-plugin; then \
+        if apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update \
+            && apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y --no-install-recommends docker-ce-cli docker-compose-plugin; then \
             break; \
         fi; \
         if [ "$i" = "5" ]; then echo "apt operations failed after 5 attempts" >&2; exit 1; fi; \
