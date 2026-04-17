@@ -398,7 +398,12 @@ jobs:
           cache: true
           cache-dependency-path: private/renet/go.sum
       - name: Install clang
-        run: sudo apt-get install -y clang llvm libbpf-dev linux-headers-generic
+        # `apt-get update` is mandatory before install: the Azure runner image
+        # ships with stale apt metadata referencing a kernel ABI that may have
+        # already rotated out of the Ubuntu pool, causing
+        # `linux-headers-generic` to 404 on the matching versioned headers
+        # package. Refresh metadata first, then install.
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Verify BPF objects are up-to-date
         run: |
           cd private/renet
