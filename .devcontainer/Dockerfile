@@ -49,65 +49,65 @@ ENV DO_NOT_TRACK=1 \
 # =============================================================================
 # System packages + GitHub CLI + Python 3 + XFCE Desktop + VNC stack
 # =============================================================================
-# `apt-get update` is wrapped in a retry loop because archive.ubuntu.com
-# mirrors occasionally serve a stale Packages.gz whose checksum no longer
-# matches the freshly-uploaded InRelease ("File has unexpected size, Mirror
-# sync in progress?"). Apt caches the bad InRelease, so each retry must
-# purge /var/lib/apt/lists first to force a fresh metadata download. See
-# https://bugs.launchpad.net/ubuntu/+source/apt/+bug/2107223 (open upstream).
+# Retry-with-purge wrapper around apt-get update + install. Handles both
+# (1) the recurring "Mirror sync in progress / File has unexpected size" race
+# (launchpad #2107223) that requires purging /var/lib/apt/lists between
+# attempts, and (2) outright Azure-runner-to-archive.ubuntu.com network
+# outages observed to last 5-10 minutes. Both update and install must be
+# inside the loop because the install fetches .deb files from the same
+# upstream mirrors that fail in either failure mode. Acquire::Retries=3
+# layers HTTP-level retries inside each apt call.
 RUN for i in 1 2 3 4 5; do \
-        if apt-get update; then break; fi; \
-        if [ "$i" = "5" ]; then echo "apt-get update failed after 5 attempts" >&2; exit 1; fi; \
-        echo "apt-get update attempt $i/5 failed, purging cache and retrying..." >&2; \
         rm -rf /var/lib/apt/lists/*; \
-        sleep 15; \
+        if apt-get -o Acquire::Retries=3 update \
+            && apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
+                build-essential \
+                python3 \
+                python3-pip \
+                python3-venv \
+                gh \
+                jq \
+                curl \
+                wget \
+                unzip \
+                xdg-utils \
+                tmux \
+                vim \
+                xvfb \
+                libgtk-3-0 \
+                libnotify4 \
+                libnss3 \
+                libxss1 \
+                libxtst6 \
+                libatspi2.0-0 \
+                libsecret-1-0 \
+                xfce4 \
+                xfce4-terminal \
+                x11vnc \
+                novnc \
+                websockify \
+                dbus-x11 \
+                netcat-openbsd \
+                gnome-keyring \
+                clang \
+                llvm \
+                libbpf-dev \
+                linux-headers-generic \
+                qemu-kvm \
+                libvirt-daemon-system \
+                libvirt-clients \
+                bridge-utils \
+                virtinst \
+                cloud-image-utils \
+                genisoimage \
+                dnsmasq-base \
+                iputils-ping; then \
+            break; \
+        fi; \
+        if [ "$i" = "5" ]; then echo "apt operations failed after 5 attempts" >&2; exit 1; fi; \
+        echo "apt attempt $i/5 failed, retrying in $((i * 30))s..." >&2; \
+        sleep $((i * 30)); \
     done \
-    && apt-get install -y --no-install-recommends \
-        build-essential \
-        python3 \
-        python3-pip \
-        python3-venv \
-        gh \
-        jq \
-        curl \
-        wget \
-        unzip \
-        xdg-utils \
-        tmux \
-        vim \
-        # X11/Xvfb for E2E testing
-        xvfb \
-        libgtk-3-0 \
-        libnotify4 \
-        libnss3 \
-        libxss1 \
-        libxtst6 \
-        libatspi2.0-0 \
-        libsecret-1-0 \
-        # XFCE desktop + VNC (browser-based desktop via noVNC)
-        xfce4 \
-        xfce4-terminal \
-        x11vnc \
-        novnc \
-        websockify \
-        dbus-x11 \
-        netcat-openbsd \
-        gnome-keyring \
-        # eBPF: clang + headers for BPF program compilation (go generate ./pkg/ebpf/...)
-        clang \
-        llvm \
-        libbpf-dev \
-        linux-headers-generic \
-        # KVM/libvirt for local VM provisioning (Standalone Run)
-        qemu-kvm \
-        libvirt-daemon-system \
-        libvirt-clients \
-        bridge-utils \
-        virtinst \
-        cloud-image-utils \
-        genisoimage \
-        dnsmasq-base \
-        iputils-ping \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -124,13 +124,15 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
        > /etc/apt/sources.list.d/docker.list \
     && for i in 1 2 3 4 5; do \
-        if apt-get update; then break; fi; \
-        if [ "$i" = "5" ]; then echo "apt-get update failed after 5 attempts" >&2; exit 1; fi; \
-        echo "apt-get update attempt $i/5 failed, purging cache and retrying..." >&2; \
         rm -rf /var/lib/apt/lists/*; \
-        sleep 15; \
+        if apt-get -o Acquire::Retries=3 update \
+            && apt-get -o Acquire::Retries=3 install -y --no-install-recommends docker-ce-cli docker-compose-plugin; then \
+            break; \
+        fi; \
+        if [ "$i" = "5" ]; then echo "apt operations failed after 5 attempts" >&2; exit 1; fi; \
+        echo "apt attempt $i/5 failed, retrying in $((i * 30))s..." >&2; \
+        sleep $((i * 30)); \
     done \
-    && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin \
     && rm -rf /var/lib/apt/lists/*
 
 # =============================================================================
