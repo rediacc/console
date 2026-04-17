@@ -85,6 +85,18 @@ export async function rewriteOrigin(response: Response, url: URL, channel: strin
 
 // ---------------------------------------------------------------------------
 
+// Non-prod hostnames (edge, PR previews) should not be indexed — sitemaps and
+// canonical links still point at www.rediacc.com after rewriteOrigin(), so
+// letting crawlers in would create duplicate-content noise.
+export function buildDisallowRobots(): Response {
+  return new Response('User-agent: *\nDisallow: /\n', {
+    headers: {
+      'content-type': 'text/plain; charset=utf-8',
+      'cache-control': 'public, max-age=86400',
+    },
+  });
+}
+
 const accountApp = createApp(
   (c) => {
     const ctx = c as { env: Record<string, unknown> };
@@ -101,6 +113,10 @@ export default {
     const url = new URL(request.url);
     const isPreview = url.hostname !== 'www.rediacc.com';
     const channel = getChannel(url.hostname);
+
+    if (url.pathname === '/robots.txt' && isPreview) {
+      return buildDisallowRobots();
+    }
 
     // Handle account API requests directly (account server embedded)
     if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {

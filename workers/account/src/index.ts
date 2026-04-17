@@ -9,6 +9,17 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
+    // Account portals (eu/us/asia/bench + edge variants) are logged-in apps,
+    // not public content — keep them out of every search index.
+    if (url.pathname === '/robots.txt') {
+      return new Response('User-agent: *\nDisallow: /\n', {
+        headers: {
+          'content-type': 'text/plain; charset=utf-8',
+          'cache-control': 'public, max-age=86400',
+        },
+      });
+    }
+
     // Account API: delegate to Hono app (handles auth, billing, configs, webhooks, etc.)
     if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
       return accountApp.fetch(request, env);
