@@ -1066,13 +1066,33 @@ jobs:
           [[ -n "$AWS_ACCESS_KEY_ID" ]] || { echo "::error::R2_ACCESS_KEY_ID not set"; exit 1; }
           [[ -n "$R2_ENDPOINT" ]] || { echo "::error::R2_ENDPOINT not set"; exit 1; }
 
+          # Wrap `aws s3 cp` in a retry loop. R2 over the public network has
+          # been observed to drop multi-MB downloads with
+          # IncompleteRead(N bytes read, M more expected). AWS_MAX_ATTEMPTS=10
+          # + AWS_RETRY_MODE=adaptive layers retries inside the SDK, and the
+          # outer loop covers the case where the SDK exhausts its budget.
+          aws_s3_cp_retry() {
+            local attempt
+            for attempt in 1 2 3 4 5; do
+              if aws s3 cp "$@"; then
+                return 0
+              fi
+              if [[ $attempt -eq 5 ]]; then
+                echo "::error::aws s3 cp $* failed after 5 attempts" >&2
+                return 1
+              fi
+              echo "aws s3 cp attempt $attempt failed, retrying in $((attempt * 15))s..." >&2
+              sleep $((attempt * 15))
+            done
+          }
+
           # Copy all repo formats from PR channel to promoted channel
           # R2 doesn't support GetObjectTagging, so download+reupload via local tmp
           for dir in apt rpm apk archlinux; do
             echo "Copying ${dir}/${CHANNEL}/ -> ${dir}/${PROMOTED}/"
             TMP="/tmp/promote-${dir}"
-            aws s3 cp "s3://${BUCKET}/${dir}/${CHANNEL}/" "$TMP/" $EP --recursive
-            aws s3 cp "$TMP/" "s3://${BUCKET}/${dir}/${PROMOTED}/" $EP --recursive
+            aws_s3_cp_retry "s3://${BUCKET}/${dir}/${CHANNEL}/" "$TMP/" $EP --recursive
+            aws_s3_cp_retry "$TMP/" "s3://${BUCKET}/${dir}/${PROMOTED}/" $EP --recursive
             rm -rf "$TMP"
           done
 
@@ -1080,7 +1100,7 @@ jobs:
           for file in "rpm/${PROMOTED}/rediacc.repo" "archlinux/${PROMOTED}/rediacc.conf"; do
             if aws s3 cp "s3://${BUCKET}/${file}" /tmp/config $EP 2>/dev/null; then
               sed -i "s|/${CHANNEL}/|/${PROMOTED}/|g" /tmp/config
-              aws s3 cp /tmp/config "s3://${BUCKET}/${file}" $EP
+              aws_s3_cp_retry /tmp/config "s3://${BUCKET}/${file}" $EP
               echo "Fixed channel in ${file}"
             fi
           done
@@ -1091,6 +1111,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: auto
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          AWS_MAX_ATTEMPTS: 10
+          AWS_RETRY_MODE: adaptive
 
       - name: Test APT install from promoted channel
         run: |
