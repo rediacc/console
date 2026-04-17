@@ -595,6 +595,17 @@ test_pacman_install() {
 
     docker run --rm "$distro" bash -c "
         set -e
+        # Switch libalpm's internal downloader out for curl via XferCommand.
+        # releases.rediacc.com goes through Cloudflare's transparent-
+        # decompression layer, which has a known quirk where HEAD and GET
+        # disagree on Content-Length for .pkg.tar.zst by 3 bytes. libalpm
+        # treats the HEAD-reported size as a hard ceiling and aborts with
+        # 'Maximum file size exceeded' when GET delivers more. curl does
+        # not do that check, so the download completes normally.
+        sed -i \\
+            -e 's|^#XferCommand = /usr/bin/curl.*|XferCommand = /usr/bin/curl -L -C - -f -o %o %u|' \\
+            /etc/pacman.conf
+
         # Add rediacc repository
         echo '[rediacc]' >> /etc/pacman.conf
         echo 'SigLevel = Optional TrustAll' >> /etc/pacman.conf

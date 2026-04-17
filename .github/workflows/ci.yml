@@ -1094,7 +1094,7 @@ jobs:
           # production uploads in cd-dryrun.yml. Immutable URL-versioned
           # binaries get a 1-year cache.
           CC_MUTABLE="no-cache"
-          CC_IMMUTABLE="public, max-age=31536000, immutable"
+          CC_IMMUTABLE="public, max-age=31536000, immutable, no-transform"
 
           PURGE_URLS=()
           # Copy all repo formats from PR channel to promoted channel
