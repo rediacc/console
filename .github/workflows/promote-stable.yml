@@ -145,12 +145,12 @@ jobs:
               --exclude "*.deb" --exclude "*.rpm" --exclude "*.apk" \
               --exclude "*.pkg.tar.zst" --exclude "*.pkg.tar.zst.sig" \
               --cache-control "$CC_MUTABLE"
-            # Enumerate just-uploaded mutable URLs for purge.
+            # Purge every uploaded URL (mutable AND "immutable") to flush
+            # any previously-cached body under the same filename (channel
+            # paths reuse filenames across releases).
             while IFS= read -r f; do
               PURGE_URLS+=("https://releases.rediacc.com/${dir}/stable/${f#$TMP/}")
-            done < <(find "$TMP" -type f \
-              ! -name "*.deb" ! -name "*.rpm" ! -name "*.apk" \
-              ! -name "*.pkg.tar.zst" ! -name "*.pkg.tar.zst.sig")
+            done < <(find "$TMP" -type f)
             rm -rf "$TMP"
           done
 

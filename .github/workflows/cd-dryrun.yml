@@ -377,9 +377,15 @@ jobs:
           CC_MUTABLE="no-cache"
           CC_IMMUTABLE="public, max-age=31536000, immutable, no-transform"
 
-          # Collect URLs for the post-upload CF cache purge. Only mutable
-          # files need purging -- immutable URLs never collide with a stale
-          # cache entry because the URL itself encodes the version.
+          # Collect URLs for the post-upload CF cache purge. Channel-scoped
+          # paths (apt/<channel>/, rpm/<channel>/, ...) are overwritten on
+          # every CI run with fresh content that has the same filename, so
+          # even the "immutable" binaries must be purged -- otherwise apk
+          # fetches the fresh APKINDEX (mutable, no-cache) but a stale .apk
+          # body from CF cache and hits "BAD signature". Immutable with
+          # long cache is still correct for cli/v1.2.3/ style URLs handled
+          # by upload-to-r2.sh, but package-manager repo layouts reuse
+          # filenames per channel.
           PURGE_URLS=()
           for dir in apt rpm apk archlinux; do
             [[ -d "dist/repos/$dir" ]] || continue
@@ -396,12 +402,11 @@ jobs:
               --exclude "*.pkg.tar.zst" --exclude "*.pkg.tar.zst.sig" \
               --cache-control "$CC_MUTABLE" \
               --endpoint-url "$R2_ENDPOINT" --quiet
-            # Enumerate just-uploaded mutable file URLs for purge.
+            # Purge every uploaded URL (mutable AND "immutable") to flush
+            # any previously-cached body under the same filename.
             while IFS= read -r f; do
               PURGE_URLS+=("https://releases.rediacc.com/${dir}/${CHANNEL}/${f#dist/repos/$dir/}")
-            done < <(find "dist/repos/$dir" -type f \
-              ! -name "*.deb" ! -name "*.rpm" ! -name "*.apk" \
-              ! -name "*.pkg.tar.zst" ! -name "*.pkg.tar.zst.sig")
+            done < <(find "dist/repos/$dir" -type f)
           done
 
           # Upload install scripts (rewrite default channel so R2 copies
