@@ -490,14 +490,15 @@ test_apt_install() {
 
         # Install — retry \`apt-get update\` because the Rediacc APT repo
         # is fronted by Cloudflare and edge caches can lag behind the
-        # staging artifact upload by up to a minute. The 'File has
-        # unexpected size' error typically clears on the next attempt.
-        for attempt in 1 2 3 4 5; do
+        # staging artifact upload by up to ~3 minutes (Packages.gz
+        # reports 'File has unexpected size' until all CF pops have
+        # converged on the newly uploaded checksum).
+        for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
             if apt-get update -qq -o Acquire::Retries=0; then
                 break
             fi
-            if [[ \$attempt -eq 5 ]]; then
-                echo 'apt-get update failed after 5 attempts' >&2
+            if [[ \$attempt -eq 12 ]]; then
+                echo 'apt-get update failed after 12 attempts (~3 min); CF cache never converged' >&2
                 exit 1
             fi
             echo \"apt-get update attempt \$attempt failed, retrying in 15s...\" >&2
@@ -668,6 +669,8 @@ test_quick_install() {
         return 0
     fi
 
+    local expected_channel="${REPO_CHANNEL:-stable}"
+
     docker run --rm \
         -e "REDIACC_RELEASES_URL=${RELEASES_BASE_URL}" \
         -e "REDIACC_CHANNEL=${REPO_CHANNEL:-stable}" \
@@ -676,8 +679,18 @@ test_quick_install() {
         apt-get update -qq
         apt-get install -y -qq curl ca-certificates >/dev/null 2>&1
 
+        # Fetch install script and verify its baked default channel matches
+        # the channel under test. Catches regressions where channel rewriting
+        # (worker or R2 upload) silently falls back to 'stable'.
+        script=\$(curl -fsSL ${REPO_URL}/cli${REPO_CHANNEL_SUFFIX}/install.sh)
+        if ! echo \"\$script\" | grep -q 'REDIACC_CHANNEL:-${expected_channel}'; then
+            echo 'FAIL: install.sh default channel is not ${expected_channel}' >&2
+            echo \"\$script\" | grep -E 'REDIACC_CHANNEL' >&2 || true
+            exit 1
+        fi
+
         # Run install script from channel
-        curl -fsSL ${REPO_URL}/cli${REPO_CHANNEL_SUFFIX}/install.sh | bash
+        echo \"\$script\" | bash
 
         # Verify (install.sh puts binary in ~/.local/bin)
         ~/.local/bin/${PKG_BINARY_NAME} --version

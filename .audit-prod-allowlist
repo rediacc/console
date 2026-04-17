@@ -73,6 +73,25 @@
 1116425
 1116473
 # follow-redirects leaks Custom Authentication Headers to Cross-Domain Redirect Targets
-# (GHSA-r4q5-vmmm-2653, <=1.15.11 — 1.15.11 is latest, no upstream fix yet; transitive
+# (GHSA-r4q5-vmmm-2653, <=1.15.11; 1.15.11 is latest, no upstream fix yet; transitive
 # via axios in packages/cli/, not runtime-exposed for CLI-only auth flows)
 1116560
+
+# hono Improperly Handles JSX Attribute Names Allows HTML Injection in hono/jsx SSR
+# (GHSA-458j-xx4x-4375, <4.12.14; transitive via @modelcontextprotocol/sdk's
+# server-side hono router, not used for SSR in our build path. Upgrade is
+# blocked by @hono/node-server pinning hono ^4 — npm refuses to override the
+# pinned 4.12.12 transitive without breaking the lockfile in CI; revisit when
+# @modelcontextprotocol/sdk bumps its hono dep)
+1116669
+
+# path-to-regexp ReDoS via sequential optional groups / multiple wildcards
+# (GHSA-j3q9-mxjg-w52f and GHSA-27v5-c462-wpq7, 8.0-8.3; @ant-design/pro-layout
+# 7.22.7 pins path-to-regexp to exactly 8.2.0 and a workspace-side npm override
+# does not propagate (verified). Build-time router compile only — bundled
+# into the React app where backtracking pathological input is operator-controlled.
+# Revisit when pro-layout bumps the pin.)
+1115573
+1115582
+# Transitive cousin (path-to-regexp 2.0-3.2 chain via the same pro-layout pin)
+1101848

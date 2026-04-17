@@ -191,10 +191,10 @@ async function triggerAdhocBackup(
   const rcloneArgsByDest = new Map<string, { remote: string; params: string[] }>();
   for (const dest of enabledDests) {
     const storageCfg = await configService.getStorage(dest.storage);
-    rcloneArgsByDest.set(dest.name, buildRcloneArgs(storageCfg.vaultContent));
+    rcloneArgsByDest.set(dest.name, buildRcloneArgs(storageCfg.vaultContent, dest.folder));
   }
 
-  const commands = _testing.buildBackupCommands(
+  const { commands, envVars } = _testing.buildBackupCommands(
     config,
     enabledDests,
     rcloneArgsByDest,
@@ -204,7 +204,16 @@ async function triggerAdhocBackup(
 
   const adhocUnit = `rediacc-backup-${name}-adhoc`;
   const fullCmd = commands.join(' && ');
-  const systemdRunCmd = `sudo systemd-run --unit=${adhocUnit} --remain-after-exit /bin/bash -c '${fullCmd.replaceAll("'", "'\\''")}'`;
+  // Pass credentials via systemd-run --setenv= so JSON tokens never appear in
+  // the unit's on-disk ExecStart= line (or in `systemctl show` output as the
+  // persistent units do). Each value is single-quote-wrapped so the outer
+  // shell hands systemd-run exactly `KEY=value`.
+  const shQuote = (v: string): string => `'${v.replaceAll("'", "'\\''")}'`;
+  const setenvArgs = Object.entries(envVars)
+    .map(([k, v]) => `--setenv=${k}=${shQuote(v)}`)
+    .join(' ');
+  const setenvPart = setenvArgs ? `${setenvArgs} ` : '';
+  const systemdRunCmd = `sudo systemd-run --unit=${adhocUnit} ${setenvPart}--remain-after-exit /bin/bash -c '${fullCmd.replaceAll("'", "'\\''")}'`;
 
   if (debug) {
     const { sanitizeBackupOutput } = await import('../../services/backup-schedule.js');

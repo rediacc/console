@@ -159,6 +159,19 @@ describe('assertAgentMachineAccess', () => {
     process.env.REDIACC_ALLOW_GRAND_REPO = 'mail';
     expect(() => assertAgentMachineAccess('prod-1')).toThrow();
   });
+
+  it('does not allow a comma-separated repo list as machine access consent', () => {
+    process.env.REDIACC_AGENT = '1';
+    process.env.REDIACC_ALLOW_GRAND_REPO = 'mail,web,gitlab';
+    expect(() => assertAgentMachineAccess('prod-1')).toThrow();
+  });
+
+  it('allows machine access when `*` appears inside a comma list', () => {
+    process.env.REDIACC_AGENT = '1';
+    process.env.REDIACC_ALLOW_GRAND_REPO = 'mail,*,web';
+    mockIsOverrideLegitimate.mockReturnValue(true);
+    expect(() => assertAgentMachineAccess('prod-1')).not.toThrow();
+  });
 });
 
 describe('assertAgentRepoCreate', () => {
@@ -197,5 +210,18 @@ describe('assertAgentRepoCreate', () => {
     process.env.REDIACC_ALLOW_GRAND_REPO = '*';
     mockIsOverrideLegitimate.mockReturnValue(false);
     expect(() => assertAgentRepoCreate('my-app')).toThrow();
+  });
+
+  it('blocks when only a comma list is set (no wildcard)', () => {
+    process.env.REDIACC_AGENT = '1';
+    process.env.REDIACC_ALLOW_GRAND_REPO = 'my-app,other';
+    expect(() => assertAgentRepoCreate('my-app')).toThrow();
+  });
+
+  it('allows when `*` appears inside a comma list', () => {
+    process.env.REDIACC_AGENT = '1';
+    process.env.REDIACC_ALLOW_GRAND_REPO = 'my-app,*';
+    mockIsOverrideLegitimate.mockReturnValue(true);
+    expect(() => assertAgentRepoCreate('my-app')).not.toThrow();
   });
 });

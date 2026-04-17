@@ -137,6 +137,7 @@ export const BackupDestinationSchema = z.object({
   storage: z.string().min(1, 'Storage name cannot be empty'),
   enabled: z.boolean().optional(),
   bandwidthLimit: z.string().optional(),
+  folder: z.string().optional(),
 });
 
 export const CertEmailSchema = z.email('Must be a valid email address');

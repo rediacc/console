@@ -16,7 +16,7 @@ interface Env {
 const PRODUCTION_ORIGIN = 'https://www.rediacc.com';
 const DEFAULT_ACCOUNT_ORIGIN = 'https://eu.rediacc.com';
 
-const REWRITABLE_TYPES = [
+export const REWRITABLE_TYPES = [
   'text/html',
   'text/plain',
   'text/xml',
@@ -28,21 +28,28 @@ const REWRITABLE_TYPES = [
   'text/css',
 ];
 
-function shouldRewrite(contentType: string | null): boolean {
+// Install scripts are served with content-types outside REWRITABLE_TYPES
+// (application/x-sh, or no content-type for .ps1). Bypass the MIME check
+// so the channel default is still rewritten on preview hosts.
+export const REWRITABLE_PATHS = ['/install.sh', '/install.ps1'];
+
+export function shouldRewrite(contentType: string | null, pathname: string): boolean {
+  if (REWRITABLE_PATHS.includes(pathname)) return true;
   if (!contentType) return false;
   return REWRITABLE_TYPES.some((t) => contentType.startsWith(t));
 }
 
 /** Extract release channel from hostname (pr-420 | edge | stable). */
-function getChannel(hostname: string): string {
+export function getChannel(hostname: string): string {
   const match = hostname.match(/^([^.]+)\.rediacc\./);
   return match ? match[1] : 'stable';
 }
 
-async function rewriteOrigin(response: Response, origin: string, channel: string): Promise<Response> {
-  if (!shouldRewrite(response.headers.get('content-type'))) return response;
+export async function rewriteOrigin(response: Response, url: URL, channel: string): Promise<Response> {
+  if (!shouldRewrite(response.headers.get('content-type'), url.pathname)) return response;
 
   let body = await response.text();
+  const origin = url.origin;
 
   // Rewrite production origin -> preview origin
   if (body.includes(PRODUCTION_ORIGIN)) {
@@ -57,7 +64,7 @@ async function rewriteOrigin(response: Response, origin: string, channel: string
   body = body.replaceAll('} else { "stable" }', `} else { "${channel}" }`);
 
   // Rewrite channel references in website HTML (install commands baked at build time)
-  for (const format of ['apt', 'rpm', 'apk', 'archlinux']) {
+  for (const format of ['apt', 'rpm', 'apk', 'archlinux', 'cli', 'npm']) {
     body = body.replaceAll(`releases.rediacc.com/${format}/stable`, `releases.rediacc.com/${format}/${channel}`);
   }
   body = body.replaceAll('elite/cli:stable', `elite/cli:${channel}`);
@@ -120,6 +127,6 @@ export default {
       }
     }
 
-    return isPreview ? rewriteOrigin(response, url.origin, channel) : response;
+    return isPreview ? rewriteOrigin(response, url, channel) : response;
   },
 };

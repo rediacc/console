@@ -1,0 +1,15 @@
+name = "mta-sts-policy"
+main = "src/index.ts"
+compatibility_date = "2026-01-20"
+
+# Cloudflare Workers Custom Domains for both rediacc.{com,io}. Each binding
+# auto-provisions an A/AAAA record at the matching subdomain, no DNS edits
+# needed beyond the `_mta-sts.<domain>` TXT (managed manually — see the
+# Phase 4.3 deploy notes in /home/muhammed/.claude/plans/cozy-bouncing-clock.md).
+routes = [
+  { pattern = "mta-sts.rediacc.com", custom_domain = true },
+  { pattern = "mta-sts.rediacc.io", custom_domain = true },
+]
+
+[observability]
+enabled = true

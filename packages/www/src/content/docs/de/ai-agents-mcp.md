@@ -4,8 +4,8 @@ description: Verknüpfen Sie KI-Agenten über den Model Context Protocol (MCP) S
 category: Guides
 order: 33
 language: de
-sourceHash: "ac4f508c3ad2602e"
-sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
+sourceHash: "db970e1793f0b024"
+sourceCommit: "5bffc959d9ddd689bfe8e7815270d800d9dca662"
 ---
 
 ## Überblick
@@ -130,7 +130,7 @@ To allow an agent to modify grand repos, start with `--allow-grand`:
 }
 ```
 
-Sie können die Umgebungsvariable `REDIACC_ALLOW_GRAND_REPO` auch auf einen bestimmten Repo-Namen oder auf `*` für alle Repos setzen.
+Sie können die Umgebungsvariable `REDIACC_ALLOW_GRAND_REPO` auch auf einen einzelnen Repo-Namen, auf eine durch Kommas getrennte Liste von Repo-Namen (zum Beispiel `repo1,repo2,repo3`) oder auf `*` für alle Repos setzen. Leerzeichen um die Einträge werden ignoriert, `repo1, repo2` funktioniert also ebenfalls. Maschinenweiter Zugriff (etwa `term connect -m <machine>` ohne Repo) erfordert weiterhin `*`; eine Liste von Repo-Namen schaltet ihn nicht frei.
 
 ### Kernel-level filesystem sandbox (Landlock)
 

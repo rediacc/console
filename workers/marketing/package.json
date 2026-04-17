@@ -1,8 +1,12 @@
 {
   "name": "rediacc-marketing-worker",
   "private": true,
+  "scripts": {
+    "test:unit": "vitest run"
+  },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260228.0",
+    "vitest": "^4.1.0",
     "wrangler": "^4.67.0"
   }
 }

@@ -887,6 +887,7 @@ Create or update a backup strategy
 - `--bwlimit <limit>` — Rclone bandwidth limit (e.g., "6M", "10M:off", "08:00,3M;22:00,10M")
 - `--include <repos>` — Only back up these repos (comma-separated names)
 - `--exclude <repos>` — Exclude these repos from backup (comma-separated names)
+- `--folder <path>` — Subfolder under the storage bucket for this destination (e.g. hot, cold)
 - `--enable` — Enable the strategy or destination
 - `--disable` — Disable the strategy or destination
 

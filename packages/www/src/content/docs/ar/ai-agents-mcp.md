@@ -4,8 +4,8 @@ description: ربط وكلاء الذكاء الاصطناعي بالبنية ا
 category: Guides
 order: 33
 language: ar
-sourceHash: "ac4f508c3ad2602e"
-sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
+sourceHash: "db970e1793f0b024"
+sourceCommit: "5bffc959d9ddd689bfe8e7815270d800d9dca662"
 ---
 
 ## نظرة عامة
@@ -130,7 +130,7 @@ To allow an agent to modify grand repos, start with `--allow-grand`:
 }
 ```
 
-يمكنك أيضا ضبط متغير البيئة `REDIACC_ALLOW_GRAND_REPO` على اسم مستودع محدد أو على `*` لجميع المستودعات.
+يمكنك أيضا ضبط متغير البيئة `REDIACC_ALLOW_GRAND_REPO` على اسم مستودع واحد، أو على قائمة أسماء مستودعات مفصولة بفواصل (على سبيل المثال `repo1,repo2,repo3`)، أو على `*` لجميع المستودعات. تُتجاهل المسافات البيضاء حول كل مُدخَل، لذا فإن `repo1, repo2` يعمل أيضا. لا يزال الوصول على مستوى الآلة (مثل `term connect -m <machine>` دون تحديد مستودع) يتطلب `*`؛ قائمة أسماء المستودعات لا تفتح هذا الوصول.
 
 ### Kernel-level filesystem sandbox (Landlock)
 
