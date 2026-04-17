@@ -1086,21 +1086,42 @@ jobs:
             done
           }
 
+          # Cache-Control policy (CF honors origin per
+          # developers.cloudflare.com/cache/concepts/default-cache-behavior).
+          # Mutable index files get no-cache so CF revalidates against R2 every
+          # request -- otherwise the test_apt_install step that runs right
+          # after this job hits the same stale-Packages.gz issue we fixed for
+          # production uploads in cd-dryrun.yml. Immutable URL-versioned
+          # binaries get a 1-year cache.
+          CC_MUTABLE="no-cache"
+          CC_IMMUTABLE="public, max-age=31536000, immutable"
+
           # Copy all repo formats from PR channel to promoted channel
           # R2 doesn't support GetObjectTagging, so download+reupload via local tmp
           for dir in apt rpm apk archlinux; do
             echo "Copying ${dir}/${CHANNEL}/ -> ${dir}/${PROMOTED}/"
             TMP="/tmp/promote-${dir}"
             aws_s3_cp_retry "s3://${BUCKET}/${dir}/${CHANNEL}/" "$TMP/" $EP --recursive
-            aws_s3_cp_retry "$TMP/" "s3://${BUCKET}/${dir}/${PROMOTED}/" $EP --recursive
+            # Pass 1: immutable binaries.
+            aws_s3_cp_retry "$TMP/" "s3://${BUCKET}/${dir}/${PROMOTED}/" $EP --recursive \
+              --exclude "*" \
+              --include "*.deb" --include "*.rpm" --include "*.apk" \
+              --include "*.pkg.tar.zst" --include "*.pkg.tar.zst.sig" \
+              --cache-control "$CC_IMMUTABLE"
+            # Pass 2: mutable everything else (Packages.gz, InRelease, etc.).
+            aws_s3_cp_retry "$TMP/" "s3://${BUCKET}/${dir}/${PROMOTED}/" $EP --recursive \
+              --exclude "*.deb" --exclude "*.rpm" --exclude "*.apk" \
+              --exclude "*.pkg.tar.zst" --exclude "*.pkg.tar.zst.sig" \
+              --cache-control "$CC_MUTABLE"
             rm -rf "$TMP"
           done
 
-          # Sed-fix config files (replace channel in URLs)
+          # Sed-fix config files (replace channel in URLs). Mutable.
           for file in "rpm/${PROMOTED}/rediacc.repo" "archlinux/${PROMOTED}/rediacc.conf"; do
             if aws s3 cp "s3://${BUCKET}/${file}" /tmp/config $EP 2>/dev/null; then
               sed -i "s|/${CHANNEL}/|/${PROMOTED}/|g" /tmp/config
-              aws_s3_cp_retry /tmp/config "s3://${BUCKET}/${file}" $EP
+              aws_s3_cp_retry /tmp/config "s3://${BUCKET}/${file}" $EP \
+                --cache-control "$CC_MUTABLE"
               echo "Fixed channel in ${file}"
             fi
           done

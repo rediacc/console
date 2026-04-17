@@ -360,14 +360,37 @@ jobs:
           export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
           export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
           export AWS_DEFAULT_REGION="auto"
+
+          # Cache-Control policy (CF honors origin per
+          # developers.cloudflare.com/cache/concepts/default-cache-behavior).
+          # Mutable index files (Packages.gz, InRelease, repodata, APKINDEX,
+          # *.db, *.repo, *.conf) get no-cache so CF revalidates on every
+          # request -- otherwise apt-get update fails with "File has unexpected
+          # size, Mirror sync in progress?" until each edge POP evicts.
+          # Immutable URL-versioned binaries get a 1-year cache.
+          CC_MUTABLE="no-cache"
+          CC_IMMUTABLE="public, max-age=31536000, immutable"
+
           for dir in apt rpm apk archlinux; do
-            if [[ -d "dist/repos/$dir" ]]; then
-              aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/${dir}/${CHANNEL}/" \
-                --endpoint-url "$R2_ENDPOINT" --quiet
-            fi
+            [[ -d "dist/repos/$dir" ]] || continue
+            # Pass 1: immutable binaries (URL-versioned).
+            aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/${dir}/${CHANNEL}/" \
+              --exclude "*" \
+              --include "*.deb" --include "*.rpm" --include "*.apk" \
+              --include "*.pkg.tar.zst" --include "*.pkg.tar.zst.sig" \
+              --cache-control "$CC_IMMUTABLE" \
+              --endpoint-url "$R2_ENDPOINT" --quiet
+            # Pass 2: mutable metadata + config (everything else).
+            aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/${dir}/${CHANNEL}/" \
+              --exclude "*.deb" --exclude "*.rpm" --exclude "*.apk" \
+              --exclude "*.pkg.tar.zst" --exclude "*.pkg.tar.zst.sig" \
+              --cache-control "$CC_MUTABLE" \
+              --endpoint-url "$R2_ENDPOINT" --quiet
           done
+
           # Upload install scripts (rewrite default channel so R2 copies
-          # under cli/${CHANNEL}/ install from ${CHANNEL} by default)
+          # under cli/${CHANNEL}/ install from ${CHANNEL} by default).
+          # Channel-pointer scripts are mutable.
           for f in dist/pages/install.sh dist/pages/install.ps1; do
             [[ -f "$f" ]] || continue
             tmp="$(mktemp)"
@@ -375,6 +398,7 @@ jobs:
                 -e "s|} else { \"stable\" }|} else { \"${CHANNEL}\" }|g" \
                 "$f" > "$tmp"
             aws s3 cp "$tmp" "s3://rediacc-releases/cli/${CHANNEL}/$(basename "$f")" \
+              --cache-control "$CC_MUTABLE" \
               --endpoint-url "$R2_ENDPOINT" --quiet
             rm -f "$tmp"
           done
