@@ -144,7 +144,7 @@
     "inflight": "npm:@isaacs/inflight@^1.0.1",
     "@npmcli/move-file": "npm:@npmcli/fs@^3.1.0",
     "rollup": "^4.59.0",
-    "fast-xml-parser": "5.5.9",
+    "fast-xml-parser": "5.7.1",
     "flatted": ">=3.4.2",
     "smol-toml": ">=1.6.1",
     "h3": ">=1.15.9",
