@@ -77,6 +77,21 @@ export async function rewriteOrigin(response: Response, url: URL, channel: strin
 }
 
 // ---------------------------------------------------------------------------
+// Non-prod hostnames (edge.rediacc.com, pr-N.*) should not be indexed --
+// rewriteOrigin() points sitemaps + canonicals back at www.rediacc.com, so
+// letting crawlers in would create duplicate-content noise.
+// ---------------------------------------------------------------------------
+
+export function buildDisallowRobots(): Response {
+  return new Response('User-agent: *\nDisallow: /\n', {
+    headers: {
+      'content-type': 'text/plain; charset=utf-8',
+      'cache-control': 'public, max-age=86400',
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Proxy-allowed API prefixes (public, unauthenticated endpoints)
 // ---------------------------------------------------------------------------
 
@@ -92,6 +107,10 @@ export default {
     const url = new URL(request.url);
     const isPreview = url.hostname !== 'www.rediacc.com';
     const channel = getChannel(url.hostname);
+
+    if (url.pathname === '/robots.txt' && isPreview) {
+      return buildDisallowRobots();
+    }
 
     // Proxy public account API calls to default account region.
     // Newsletter subscribe, lead magnets, and contact form submissions
