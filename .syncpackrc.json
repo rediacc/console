@@ -25,19 +25,19 @@
         "@opentelemetry/instrumentation-fetch",
         "@opentelemetry/instrumentation-xml-http-request"
       ],
-      "pinVersion": "^0.211.0"
+      "pinVersion": "^0.215.0"
     },
     {
       "label": "Pin OpenTelemetry sdk-node for CLI",
       "packages": ["**"],
       "dependencies": ["@opentelemetry/sdk-node"],
-      "pinVersion": "^0.211.0"
+      "pinVersion": "^0.215.0"
     },
     {
       "label": "Pin OpenTelemetry resources to compatible version",
       "packages": ["**"],
       "dependencies": ["@opentelemetry/resources"],
-      "pinVersion": "^2.5.1"
+      "pinVersion": "^2.7.0"
     },
     {
       "label": "Pin i18next to web version",
