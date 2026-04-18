@@ -69,14 +69,17 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
   const assignMachine = useUpdateMachineClusterAssignment();
   const removeMachine = useUpdateMachineClusterRemoval();
 
-  // Reset state when modal closes
-  React.useEffect(() => {
+  // Reset state when modal closes. Track previous open during render to avoid
+  // synchronous setState inside an effect (react-hooks/set-state-in-effect).
+  const [prevOpen, setPrevOpen] = React.useState(open);
+  if (prevOpen !== open) {
+    setPrevOpen(open);
     if (!open) {
       setActiveTab('assign');
       setSelectedMachines([]);
       setSelectedRemoveMachines([]);
     }
-  }, [open]);
+  }
 
   const handleAssignMachines = async () => {
     if (selectedMachines.length === 0) {

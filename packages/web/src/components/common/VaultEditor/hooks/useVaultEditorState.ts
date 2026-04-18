@@ -2,7 +2,7 @@ import type { SSHTestResult } from '@rediacc/shared/utils';
 import { parseSshTestResult } from '@rediacc/shared/utils';
 import { Form, theme } from 'antd';
 import type { FormInstance } from 'antd/es/form';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
 import { useCreateQueueItemWithValidation, useQueueItemTraceWithEnabled } from '@/api/hooks-queue';
@@ -279,206 +279,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
     [message]
   );
 
-  // Reset when modal opens (transitions from closed to open)
-  useEffect(() => {
-    if (isModalOpen && !prevModalOpenRef.current) {
-      setLastInitializedData('');
-      form.resetFields();
-      form.setFields([]);
-      setExtraFields({});
-      setImportedData(stableInitialData);
-      setRawJsonValue('{}');
-      setRawJsonError(null);
-      setSshKeyConfigured(false);
-      setSelectedProvider(null);
-      setTestConnectionSuccess(false);
-    }
-    prevModalOpenRef.current = isModalOpen;
-  }, [isModalOpen, form, stableInitialData]);
-
   const importedDataString = useMemo(() => JSON.stringify(importedData), [importedData]);
-
-  // Monitor SSH test results
-  useEffect(() => {
-    if (!testTraceData?.queueDetails) {
-      return;
-    }
-
-    const status =
-      testTraceData.queueDetails.status ??
-      (testTraceData.queueDetails as { Status?: string }).Status;
-
-    // Handle failure states
-    if (status === 'FAILED' || status === 'CANCELLED') {
-      handleSshTestFailure(
-        undefined,
-        message,
-        setTestConnectionSuccess,
-        onTestConnectionStateChange
-      );
-      setIsTestingConnection(false);
-      setTestTaskId(null);
-      return;
-    }
-
-    // Handle completed state
-    if (status !== 'COMPLETED') {
-      return;
-    }
-
-    try {
-      const result = parseSshTestResult({
-        responseVaultContent: testTraceData.responseVaultContent?.vaultContent ?? null,
-        consoleOutput: testTraceData.summary?.consoleOutput ?? null,
-      });
-
-      if (!result) {
-        return;
-      }
-
-      if (result.status === 'success') {
-        message.success('common:vaultEditor.testConnection.success');
-        handleSshTestSuccess(
-          result,
-          form,
-          setSshKeyConfigured,
-          setOsSetupCompleted,
-          onOsSetupStatusChange,
-          setTestConnectionSuccess,
-          onTestConnectionStateChange,
-          handleFormChange
-        );
-      } else {
-        handleSshTestFailure(
-          result.message,
-          message,
-          setTestConnectionSuccess,
-          onTestConnectionStateChange
-        );
-      }
-    } catch {
-      handleSshTestFailure(
-        undefined,
-        message,
-        setTestConnectionSuccess,
-        onTestConnectionStateChange
-      );
-    } finally {
-      setIsTestingConnection(false);
-      setTestTaskId(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [testTraceData, form, message, onOsSetupStatusChange, onTestConnectionStateChange]);
-
-  // Calculate extra fields not in schema
-  useEffect(() => {
-    // entityDef is always defined for known entity types, but we keep this guard
-    // for defensive programming against future entity type additions
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive guard
-    if (!entityDef) return;
-
-    const schemaFields = buildSchemaFieldsList(entityDef, entityType, importedData.provider);
-    const { extras, movedToExtra, movedFromExtra } = processExtraFields(
-      importedData,
-      schemaFields,
-      extraFields
-    );
-
-    const extrasString = JSON.stringify(extras);
-    const currentExtrasString = JSON.stringify(extraFields);
-
-    if (extrasString === currentExtrasString) {
-      return;
-    }
-
-    setExtraFields(extras);
-
-    const hasMovements = movedToExtra.length > 0 || movedFromExtra.length > 0;
-    if (hasMovements) {
-      onFieldMovement?.(movedToExtra, movedFromExtra);
-    }
-
-    showFieldMovementToasts(movedToExtra, movedFromExtra);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [importedDataString, entityDef, entityType, onFieldMovement, showFieldMovementToasts]);
-
-  // Initialize form with data
-  useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive guard
-    if (!entityDef) return;
-
-    if (!shouldInitializeForm(initialDataJson, lastInitializedData)) {
-      return;
-    }
-
-    // Build form data from entity definition fields
-    const formData = buildFormDataFromFields(entityDef.fields ?? {}, stableInitialData);
-
-    // Add storage provider fields if applicable
-    const providerFields = getStorageProviderFields(entityType, stableInitialData.provider);
-    if (providerFields) {
-      Object.assign(formData, buildFormDataFromFields(providerFields, stableInitialData));
-    }
-
-    // Reset and populate form
-    form.resetFields();
-    form.setFieldsValue(formData);
-    setSshKeyConfigured(false);
-    setSelectedProvider(null);
-    setRawJsonError(null);
-
-    // Initialize entity-specific state
-    initializeEntityState(entityType, formData, setSshKeyConfigured, setSelectedProvider);
-
-    // Extract extras and build complete data
-    const schemaFields = buildSchemaFieldsList(entityDef, entityType, stableInitialData.provider);
-    const extras = extractExtrasFromData(stableInitialData, schemaFields);
-
-    const completeData = { ...formData };
-    if (Object.keys(extras).length > 0) {
-      completeData.extraFields = extras;
-    }
-
-    updateRawJson(completeData);
-    setLastInitializedData(initialDataJson);
-
-    const validateOptions = showValidationErrors ? undefined : { validateOnly: true };
-    form
-      .validateFields(undefined, validateOptions)
-      .then(() => {
-        onValidate?.(true);
-      })
-      .catch((errorInfo: unknown) => {
-        const errors = formatValidationErrors(errorInfo as ValidateErrorEntity<VaultFormValues>);
-        onValidate?.(false, errors);
-      });
-  }, [
-    form,
-    entityDef,
-    entityType,
-    initialDataJson,
-    updateRawJson,
-    lastInitializedData,
-    stableInitialData,
-    onValidate,
-    showValidationErrors,
-  ]);
-
-  // Pass form instance to parent when ready
-  useEffect(() => {
-    if (onFormReady) {
-      onFormReady(form);
-    }
-  }, [onFormReady, form]);
-
-  // When showValidationErrors changes to true, re-validate to show errors
-  useEffect(() => {
-    if (showValidationErrors) {
-      form.validateFields().catch(() => {
-        // Errors will be shown on fields
-      });
-    }
-  }, [showValidationErrors, form]);
 
   const handleFormChange = useCallback(
     (changedValues?: Partial<VaultFormValues>) => {
@@ -562,6 +363,193 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
       showValidationErrors,
     ]
   );
+
+  // Effect-event wrappers: React 19 useEffectEvent lets an effect invoke logic
+  // that reads the latest props/state without listing them as dependencies and
+  // without triggering the react-hooks/set-state-in-effect rule (the state
+  // changes happen in an "event", not synchronously during the effect body).
+
+  const handleModalOpen = useEffectEvent(() => {
+    setLastInitializedData('');
+    form.resetFields();
+    form.setFields([]);
+    setExtraFields({});
+    setImportedData(stableInitialData);
+    setRawJsonValue('{}');
+    setRawJsonError(null);
+    setSshKeyConfigured(false);
+    setSelectedProvider(null);
+    setTestConnectionSuccess(false);
+  });
+
+  useEffect(() => {
+    if (isModalOpen && !prevModalOpenRef.current) {
+      handleModalOpen();
+    }
+    prevModalOpenRef.current = isModalOpen;
+  }, [isModalOpen]);
+
+  const applySshTestResult = useEffectEvent(() => {
+    if (!testTraceData?.queueDetails) {
+      return;
+    }
+
+    const status =
+      testTraceData.queueDetails.status ??
+      (testTraceData.queueDetails as { Status?: string }).Status;
+
+    if (status === 'FAILED' || status === 'CANCELLED') {
+      handleSshTestFailure(
+        undefined,
+        message,
+        setTestConnectionSuccess,
+        onTestConnectionStateChange
+      );
+      setIsTestingConnection(false);
+      setTestTaskId(null);
+      return;
+    }
+
+    if (status !== 'COMPLETED') {
+      return;
+    }
+
+    try {
+      const result = parseSshTestResult({
+        responseVaultContent: testTraceData.responseVaultContent?.vaultContent ?? null,
+        consoleOutput: testTraceData.summary?.consoleOutput ?? null,
+      });
+
+      if (!result) {
+        return;
+      }
+
+      if (result.status === 'success') {
+        message.success('common:vaultEditor.testConnection.success');
+        handleSshTestSuccess(
+          result,
+          form,
+          setSshKeyConfigured,
+          setOsSetupCompleted,
+          onOsSetupStatusChange,
+          setTestConnectionSuccess,
+          onTestConnectionStateChange,
+          handleFormChange
+        );
+      } else {
+        handleSshTestFailure(
+          result.message,
+          message,
+          setTestConnectionSuccess,
+          onTestConnectionStateChange
+        );
+      }
+    } catch {
+      handleSshTestFailure(
+        undefined,
+        message,
+        setTestConnectionSuccess,
+        onTestConnectionStateChange
+      );
+    } finally {
+      setIsTestingConnection(false);
+      setTestTaskId(null);
+    }
+  });
+
+  useEffect(() => {
+    queueMicrotask(() => applySshTestResult());
+  }, [testTraceData]);
+
+  const applyExtraFieldsUpdate = useEffectEvent(() => {
+    const schemaFields = buildSchemaFieldsList(entityDef, entityType, importedData.provider);
+    const { extras, movedToExtra, movedFromExtra } = processExtraFields(
+      importedData,
+      schemaFields,
+      extraFields
+    );
+
+    const extrasString = JSON.stringify(extras);
+    const currentExtrasString = JSON.stringify(extraFields);
+
+    if (extrasString === currentExtrasString) {
+      return;
+    }
+
+    setExtraFields(extras);
+
+    const hasMovements = movedToExtra.length > 0 || movedFromExtra.length > 0;
+    if (hasMovements) {
+      onFieldMovement?.(movedToExtra, movedFromExtra);
+    }
+
+    showFieldMovementToasts(movedToExtra, movedFromExtra);
+  });
+
+  useEffect(() => {
+    queueMicrotask(() => applyExtraFieldsUpdate());
+  }, [importedDataString, entityDef, entityType]);
+
+  const initializeForm = useEffectEvent(() => {
+    if (!shouldInitializeForm(initialDataJson, lastInitializedData)) {
+      return;
+    }
+
+    const formData = buildFormDataFromFields(entityDef.fields ?? {}, stableInitialData);
+
+    const providerFieldsForInit = getStorageProviderFields(entityType, stableInitialData.provider);
+    if (providerFieldsForInit) {
+      Object.assign(formData, buildFormDataFromFields(providerFieldsForInit, stableInitialData));
+    }
+
+    form.resetFields();
+    form.setFieldsValue(formData);
+    setSshKeyConfigured(false);
+    setSelectedProvider(null);
+    setRawJsonError(null);
+
+    initializeEntityState(entityType, formData, setSshKeyConfigured, setSelectedProvider);
+
+    const schemaFields = buildSchemaFieldsList(entityDef, entityType, stableInitialData.provider);
+    const extras = extractExtrasFromData(stableInitialData, schemaFields);
+
+    const completeData = { ...formData };
+    if (Object.keys(extras).length > 0) {
+      completeData.extraFields = extras;
+    }
+
+    updateRawJson(completeData);
+    setLastInitializedData(initialDataJson);
+
+    const validateOptions = showValidationErrors ? undefined : { validateOnly: true };
+    form
+      .validateFields(undefined, validateOptions)
+      .then(() => {
+        onValidate?.(true);
+      })
+      .catch((errorInfo: unknown) => {
+        const errors = formatValidationErrors(errorInfo as ValidateErrorEntity<VaultFormValues>);
+        onValidate?.(false, errors);
+      });
+  });
+
+  useEffect(() => {
+    queueMicrotask(() => initializeForm());
+  }, [entityDef, entityType, initialDataJson]);
+
+  useEffect(() => {
+    if (onFormReady) {
+      onFormReady(form);
+    }
+  }, [onFormReady, form]);
+
+  useEffect(() => {
+    if (showValidationErrors) {
+      form.validateFields().catch(() => {
+        // Errors will be shown on fields
+      });
+    }
+  }, [showValidationErrors, form]);
 
   return {
     // Form instance

@@ -239,7 +239,7 @@ Auth: `SES_AK_ID`/`SES_AK_SECRET` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or 
 | `check:format` | `npx biome format --write packages/ private/account/` |
 | `check:i18n` | `npm run i18n:generate-hashes && npm run i18n:sync`, then translate missing keys |
 | `check:ci-renet` | `cd private/renet && go fmt ./...`, then fix golangci-lint issues |
-| `lint` / `check:lint` | Fix ESLint errors properly (never suppress with comments) |
+| `lint` / `check:lint` | Fix ESLint errors properly (never suppress with comments). **Never revert a dev-dep bump (or pin it in `.deps-upgrade-blocklist`) just to silence new rules a plugin surfaces.** When `eslint-plugin-react-hooks` 7.x flags `react-hooks/set-state-in-effect` / `refs-in-render` / `immutability` / `preserve-manual-memoization` across existing files, fix each site per React 19 idioms: move ref writes into a dependency-less `useEffect`, derive state via the "previous value" pattern (`const [prev, setPrev] = useState(value); if (prev !== value) { setPrev(value); setDerived(...); }`), wrap effect-only side effects in `useEffectEvent` (from `react`, available in 19+), defer problematic setState with `queueMicrotask`, use `window.location.assign(url)` instead of direct `window.location.href = url` assignments, and initialize state lazily with `useState(() => ...)` instead of a post-mount effect. Downgrade is not a fix. |
 | `lint:unused` | Add to `ignoreDependencies` in `knip.json` if it's a transitive/runtime dep |
 | `check:ci-e2e-coverage` | Add test stubs for new bridge functions in `packages/cli/tests/tests/08-e2e/` |
 | `check:ci-renet` (types) | `private/renet/bin/renet bridge generate-types --output packages/shared/src/queue-vault/data --version dev` |

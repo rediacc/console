@@ -400,7 +400,9 @@ const TerminalPlayer: FC<TerminalPlayerProps> = ({ src, title, lang = 'en', cast
   useEffect(() => {
     const currentStep = steps.length > 0 ? steps[Math.min(stepIndex, steps.length - 1)] : null;
     if (!currentStep) {
-      setPhase('idle');
+      // Defer the setState to the next microtask so it's not a synchronous
+      // cascade inside the effect (react-hooks/set-state-in-effect).
+      queueMicrotask(() => setPhase('idle'));
       return;
     }
 

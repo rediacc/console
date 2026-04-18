@@ -6,7 +6,7 @@ import {
 } from '@ant-design/icons';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { Alert, Button, Empty, Flex, Input, Select, Space, Tooltip, Typography } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useGetOrganizationTeams,
@@ -101,7 +101,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<RemoteFile[]>([]);
   const [currentPath, setCurrentPath] = useState('');
-  const [selectedSource, setSelectedSource] = useState<string>('');
+  const [selectedSource, setSelectedSource] = useState<string>(machineName);
   const [selectedFile, setSelectedFile] = useState<string>('');
   const [searchText, setSearchText] = useState('');
 
@@ -126,12 +126,6 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
 
     return sources;
   }, [machinesData, storageData]);
-
-  useEffect(() => {
-    if (!selectedSource && machineName) {
-      setSelectedSource(machineName);
-    }
-  }, [machineName, selectedSource]);
 
   const mapGuidToRepository = (guid: string) => {
     const repositoryInfo = teamRepositories.find((r) => r.repositoryGuid === guid);
