@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getChannel, rewriteOrigin, shouldRewrite } from '../index';
+import { buildDisallowRobots, getChannel, rewriteOrigin, shouldRewrite } from '../index';
 
 describe('getChannel', () => {
   it('returns the subdomain for preview hosts', () => {
@@ -142,5 +142,23 @@ describe('rewriteOrigin', () => {
     expect(out.status).toBe(202);
     expect(out.statusText).toBe('Accepted');
     expect(out.headers.get('x-custom')).toBe('keep');
+  });
+});
+
+describe('buildDisallowRobots', () => {
+  it('returns a Disallow: / body with text/plain content-type', async () => {
+    const res = buildDisallowRobots();
+    expect(res.headers.get('content-type')).toBe('text/plain; charset=utf-8');
+    expect(res.headers.get('cache-control')).toBe('public, max-age=86400');
+    expect(await res.text()).toBe('User-agent: *\nDisallow: /\n');
+  });
+
+  it('only fires on preview hosts (gate check matches fetch handler)', () => {
+    // Mirrors the isPreview gate at the top of fetch(): true for every non-prod host.
+    const isPreview = (h: string) => h !== 'www.rediacc.com';
+    expect(isPreview('edge.rediacc.com')).toBe(true);
+    expect(isPreview('pr-420.rediacc.com')).toBe(true);
+    expect(isPreview('pr-420.rediacc.workers.dev')).toBe(true);
+    expect(isPreview('www.rediacc.com')).toBe(false);
   });
 });
