@@ -12,7 +12,7 @@ Rediacc publishes updates through two release channels: **Stable** and **Edge**.
 
 Stable is the default channel for all users. Releases are promoted from Edge after a 7-day soak period with no reported issues.
 
-- Recommended for production workloads and paid plans
+- Recommended when you prefer a conservative upgrade cadence and want access to paid plans
 - Deployed after 7 days of testing on Edge
 - Hotfixes can be pushed directly when critical
 - Domains: `eu.rediacc.com`, `us.rediacc.com`, `asia.rediacc.com`
@@ -60,12 +60,12 @@ Edge and Stable run on separate infrastructure with separate databases. An accou
 2. After 7 days without issues, Edge is promoted to Stable automatically.
 3. Critical hotfixes can be pushed to both channels simultaneously.
 
-This means Stable is always at most 7 days behind Edge. The soak period catches regressions before they reach production users.
+This means Stable is always at most 7 days behind Edge. The soak period catches regressions before they propagate from Edge to Stable.
 
 ## Which Channel Should I Choose?
 
 **Choose Stable if:**
-- You run production workloads
+- You prefer a conservative upgrade cadence with a 7-day soak window
 - You need paid plans (Professional, Business, Enterprise)
 - You prefer maximum reliability over latest features
 
