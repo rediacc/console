@@ -253,8 +253,15 @@ RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} \
 # Pre-pull the matching chromium-headless-shell so the first `agent-browser
 # open` in a fresh container doesn't stall on a ~113 MiB download. Runs as
 # vscode so the cache lands in /home/vscode/.cache/ms-playwright/.
+# Chrome for Testing (upstream) does not publish Linux ARM64 builds; skip the
+# pre-pull on arm64 so the image still builds, and let the first invocation
+# fall back to Playwright's bundled Chromium at runtime.
 USER vscode
-RUN agent-browser install
+RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
+        agent-browser install; \
+    else \
+        echo "Skipping agent-browser install on $(dpkg --print-architecture): Chrome for Testing has no Linux ARM64 builds"; \
+    fi
 USER root
 
 # Claude Code (installs to ~/.local/bin for vscode user)
