@@ -2265,7 +2265,7 @@
     }
   },
   "help": {
-    "agentMode": "\n  代理模式\n    • 仅限分支: 在对任何仓库进行更改之前创建分支\n    • Grand (非分支) 仓库对代理为只读\n    • 工作流: repo fork <parent> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
+    "agentMode": "\n  代理模式\n    • 仅限分支: 在对任何仓库进行更改之前创建分支\n    • Grand (非分支) 仓库对代理为只读\n    • 工作流: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
     "cli": {
       "machineQuery": "显示机器状态",
       "repoUp": "部署仓库服务",

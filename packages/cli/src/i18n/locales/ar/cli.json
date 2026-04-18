@@ -2265,7 +2265,7 @@
     }
   },
   "help": {
-    "agentMode": "\n  وضع الوكيل\n    • النسخ فقط: أنشئ نسخة متفرعة قبل إجراء أي تغييرات على أي مستودع\n    • المستودعات الرئيسية (غير المتفرعة) للقراءة فقط للوكلاء\n    • سير العمل: repo fork <parent> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
+    "agentMode": "\n  وضع الوكيل\n    • النسخ فقط: أنشئ نسخة متفرعة قبل إجراء أي تغييرات على أي مستودع\n    • المستودعات الرئيسية (غير المتفرعة) للقراءة فقط للوكلاء\n    • سير العمل: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
     "cli": {
       "machineQuery": "عرض حالة الجهاز",
       "repoUp": "نشر خدمات المستودع",

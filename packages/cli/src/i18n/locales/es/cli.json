@@ -2265,7 +2265,7 @@
     }
   },
   "help": {
-    "agentMode": "\n  Modo Agente\n    • Solo forks: cree un fork antes de realizar cambios en cualquier repositorio\n    • Los repositorios grand (no fork) son de solo lectura para los agentes\n    • Flujo de trabajo: repo fork <parent> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
+    "agentMode": "\n  Modo Agente\n    • Solo forks: cree un fork antes de realizar cambios en cualquier repositorio\n    • Los repositorios grand (no fork) son de solo lectura para los agentes\n    • Flujo de trabajo: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
     "cli": {
       "machineQuery": "Mostrar estado de la máquina",
       "repoUp": "Desplegar servicios del repositorio",
