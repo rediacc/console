@@ -97,12 +97,11 @@
 1101848
 
 # protobufjs <7.5.5 arbitrary code execution via malicious decode input
-# (GHSA-xq3m-2v4x-88gg). Transitive via @opentelemetry/sdk-node 0.211.x and
-# the whole @opentelemetry/exporter-*-otlp-* 0.211.x family pinned across 11
-# packages in this monorepo. Upstream fix ships in @opentelemetry/* 0.215.0
-# (isSemVerMajor = true), requiring a coordinated cross-cutting OTel SDK bump
-# tracked separately. The OTLP exporters only serialize our own telemetry to
-# our own collector endpoint, so a malicious decode input is not reachable at
-# runtime. Revisit when the OTel SDK bump lands.
+# (GHSA-xq3m-2v4x-88gg). Remaining reach is a deeply-nested transitive via
+# @grpc/proto-loader 0.8.0 (pulled in by @opentelemetry/exporter-logs-otlp-grpc)
+# which pins protobufjs ^7.5.3 and is not yet bumped to 7.5.5 upstream. An
+# npm override to 7.5.5 was attempted but npm 10.x ignores the request through
+# the grpc-js chain. The gRPC OTLP exporter only serializes our own telemetry
+# to our own collector endpoint, so a malicious decode input is not reachable
+# at runtime. Revisit when @grpc/proto-loader publishes 7.5.5 or later.
 1116756
-1116757
