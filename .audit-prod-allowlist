@@ -95,3 +95,14 @@
 1115582
 # Transitive cousin (path-to-regexp 2.0-3.2 chain via the same pro-layout pin)
 1101848
+
+# protobufjs <7.5.5 arbitrary code execution via malicious decode input
+# (GHSA-xq3m-2v4x-88gg). Transitive via @opentelemetry/sdk-node 0.211.x and
+# the whole @opentelemetry/exporter-*-otlp-* 0.211.x family pinned across 11
+# packages in this monorepo. Upstream fix ships in @opentelemetry/* 0.215.0
+# (isSemVerMajor = true), requiring a coordinated cross-cutting OTel SDK bump
+# tracked separately. The OTLP exporters only serialize our own telemetry to
+# our own collector endpoint, so a malicious decode input is not reachable at
+# runtime. Revisit when the OTel SDK bump lands.
+1116756
+1116757
