@@ -96,7 +96,7 @@ npm install -g https://account.example.com/npm/rediacc-cli-latest.tgz
 
 The on-premise Docker image uses the same `ENVIRONMENT` variable as the hosted service. Set it in your Docker environment or orchestration config:
 
-- `ENVIRONMENT=production` (default): standard resource limits; CLIs connecting to this server default to the **stable** update channel. The value name `production` is a legacy deploy identifier — both `production` and `edge` modes are production-quality.
+- `ENVIRONMENT=production` (default): standard resource limits; CLIs connecting to this server default to the **stable** update channel. The value name `production` is a legacy deploy identifier. Both `production` and `edge` modes are production-quality.
 - `ENVIRONMENT=edge`: 2X Community limits; CLIs default to the **edge** update channel
 
 See [Release Channels](/en/docs/release-channels) for details on what each environment provides.
