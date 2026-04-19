@@ -2265,7 +2265,7 @@
     }
   },
   "help": {
-    "agentMode": "\n  エージェントモード\n    • フォークのみ: リポジトリに変更を加える前にフォークを作成してください\n    • Grand (非フォーク) リポジトリはエージェントに対して読み取り専用です\n    • ワークフロー: repo fork <parent> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
+    "agentMode": "\n  エージェントモード\n    • フォークのみ: リポジトリに変更を加える前にフォークを作成してください\n    • Grand (非フォーク) リポジトリはエージェントに対して読み取り専用です\n    • ワークフロー: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
     "cli": {
       "machineQuery": "マシンの状態を表示",
       "repoUp": "リポジトリサービスをデプロイ",

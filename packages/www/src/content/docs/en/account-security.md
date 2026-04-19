@@ -86,7 +86,7 @@ Every API request passes through all applicable layers in sequence. A request to
 ### Update Channels
 
 The CLI supports two release channels:
-- **stable** (default): Thoroughly tested, recommended for production
+- **stable** (default): Promoted from edge after a 7-day soak; choose this for a conservative upgrade cadence
 - **edge**: Latest features, updated on every release
 
 ```bash

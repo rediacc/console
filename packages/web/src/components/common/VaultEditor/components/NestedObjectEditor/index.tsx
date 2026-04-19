@@ -13,7 +13,7 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
 import {
@@ -213,16 +213,22 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
     () => detectStructurePattern(safeValue)
   );
 
-  useEffect(() => {
-    const entriesArray = Object.entries(parsedValue).map(([key, val]) => ({
-      key,
-      value: val,
-      isEditing: false,
-    }));
-    setEntries(entriesArray);
+  // Reset derived state when the source prop changes. Track the previous
+  // serialized snapshot during render instead of synchronously calling
+  // setState in useEffect, per react-hooks/set-state-in-effect.
+  const [prevSerializedValue, setPrevSerializedValue] = useState(serializedValue);
+  if (prevSerializedValue !== serializedValue) {
+    setPrevSerializedValue(serializedValue);
+    setEntries(
+      Object.entries(parsedValue).map(([key, val]) => ({
+        key,
+        value: val,
+        isEditing: false,
+      }))
+    );
     setRawJsonValue(JSON.stringify(parsedValue, null, 2));
     setStructureInfo(detectStructurePattern(parsedValue));
-  }, [parsedValue, serializedValue]);
+  }
 
   const updateValue = (newEntries: ObjectEntry[]) => {
     const newValue = newEntries.reduce<NestedRecord>((acc, entry) => {

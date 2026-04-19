@@ -4,7 +4,7 @@ description: "Edge- und Stable-Release-Kanäle verstehen, ihre Unterschiede und 
 category: "Concepts"
 order: 2
 language: de
-sourceHash: "33795f3fa77f4aa5"
+sourceHash: "b0f431fd1bcc22c1"
 sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
 ---
 
@@ -14,7 +14,7 @@ Rediacc veröffentlicht Updates über zwei Release-Kanäle: **Stable** und **Edg
 
 Stable ist der Standardkanal für alle Benutzer. Releases werden nach einer 7-tägigen Einlaufphase ohne gemeldete Probleme von Edge gefördert.
 
-- Empfohlen für Produktionsworkloads und kostenpflichtige Pläne
+- Empfohlen, wenn Sie eine konservative Update-Kadenz bevorzugen und Zugang zu kostenpflichtigen Plänen möchten
 - Nach 7 Testtagen auf Edge bereitgestellt
 - Kritische Hotfixes können direkt verteilt werden
 - Domains: `eu.rediacc.com`, `us.rediacc.com`, `asia.rediacc.com`
@@ -62,12 +62,12 @@ Edge und Stable laufen auf separater Infrastruktur mit separaten Datenbanken. Ei
 2. Nach 7 Tagen ohne Probleme wird Edge automatisch auf Stable gefördert.
 3. Kritische Hotfixes können gleichzeitig auf beide Kanäle verteilt werden.
 
-Das bedeutet, Stable liegt immer höchstens 7 Tage hinter Edge. Die Einlaufphase erkennt Regressionen, bevor sie Produktionsbenutzer erreichen.
+Das bedeutet, Stable liegt immer höchstens 7 Tage hinter Edge. Die Einlaufphase erkennt Regressionen, bevor sie von Edge nach Stable übernommen werden.
 
 ## Welchen Kanal wählen?
 
 **Stable wählen, wenn:**
-- Produktionsworkloads betrieben werden
+- eine konservative Update-Kadenz mit 7-tägigem Einlauffenster bevorzugt wird
 - Kostenpflichtige Pläne benötigt werden (Professional, Business, Enterprise)
 - Maximale Zuverlässigkeit gegenüber neuesten Funktionen bevorzugt wird
 

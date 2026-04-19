@@ -4,7 +4,7 @@ description: "Comprendre les canaux de publication Edge et Stable, leurs différ
 category: "Concepts"
 order: 2
 language: fr
-sourceHash: "33795f3fa77f4aa5"
+sourceHash: "b0f431fd1bcc22c1"
 sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
 ---
 
@@ -14,7 +14,7 @@ Rediacc publie les mises à jour via deux canaux de publication : **Stable** et 
 
 Stable est le canal par défaut pour tous les utilisateurs. Les versions sont promues depuis Edge après une période de stabilisation de 7 jours sans incident signalé.
 
-- Recommandé pour les charges de production et les plans payants
+- Recommandé lorsque vous préférez une cadence de mise à jour conservatrice et souhaitez accéder aux plans payants
 - Déployé après 7 jours de tests sur Edge
 - Les correctifs critiques peuvent être poussés directement
 - Domaines : `eu.rediacc.com`, `us.rediacc.com`, `asia.rediacc.com`
@@ -62,12 +62,12 @@ Edge et Stable fonctionnent sur des infrastructures séparées avec des bases de
 2. Après 7 jours sans incident, Edge est automatiquement promu vers Stable.
 3. Les correctifs critiques peuvent être poussés simultanément sur les deux canaux.
 
-Stable se trouve donc toujours au maximum à 7 jours derrière Edge. La période de stabilisation permet de détecter les régressions avant qu'elles n'atteignent les utilisateurs en production.
+Stable se trouve donc toujours au maximum à 7 jours derrière Edge. La période de stabilisation permet de détecter les régressions avant qu'elles ne soient propagées d'Edge à Stable.
 
 ## Quel canal choisir ?
 
 **Choisissez Stable si :**
-- Vous gérez des charges de production
+- Vous préférez une cadence de mise à jour conservatrice avec une fenêtre de stabilisation de 7 jours
 - Vous avez besoin de plans payants (Professional, Business, Enterprise)
 - Vous privilégiez la fiabilité maximale sur les dernières fonctionnalités
 

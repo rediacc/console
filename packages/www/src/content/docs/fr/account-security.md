@@ -4,7 +4,7 @@ description: Authentification, tokens API, gestion des sessions et modèle de pe
 category: Guides
 order: 13
 language: fr
-sourceHash: "10dfa967f7ffca7d"
+sourceHash: "73586ec39a85e208"
 sourceCommit: "dabe1a33844b3b7ec8a2c4ab44dc2de6683283c9"
 ---
 
@@ -88,7 +88,7 @@ Chaque requête API passe par toutes les couches applicables en séquence. Une r
 ### Canaux de mise à jour
 
 La CLI prend en charge deux canaux de publication :
-- **stable** (par défaut) : Testé en profondeur, recommandé pour la production
+- **stable** (par défaut) : Promu depuis edge après une période de stabilisation de 7 jours ; choisissez ce canal pour une cadence de mise à jour conservatrice
 - **edge** : Dernières fonctionnalités, mis à jour à chaque publication
 
 ```bash

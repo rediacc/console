@@ -4,7 +4,7 @@ description: "独自インフラ上でアカウントサーバーとCLIディス
 category: "Guides"
 order: 5
 language: ja
-sourceHash: "bd53b8bc522532de"
+sourceHash: "91498e4c2f374e86"
 sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
 ---
 
@@ -98,8 +98,8 @@ npm install -g https://account.example.com/npm/rediacc-cli-latest.tgz
 
 オンプレミスDockerイメージはホスト型サービスと同じ`ENVIRONMENT`変数を使用します。DockerまたはオーケストレーションのConfig内に設定してください：
 
-- `ENVIRONMENT=production`（デフォルト）：標準制限、クライアントへstableチャネルを推奨
-- `ENVIRONMENT=edge`：Communityの2倍制限、クライアントへedgeチャネルを推奨
+- `ENVIRONMENT=production`（デフォルト）：標準のリソース制限。このサーバーに接続するCLIはデフォルトで**stable**アップデートチャネルを使用します。値名`production`はレガシーデプロイ識別子です。`production`モードと`edge`モードはどちらも本番環境品質です。
+- `ENVIRONMENT=edge`：Communityの2倍制限。CLIはデフォルトで**edge**アップデートチャネルを使用します
 
 各環境の詳細については[リリースチャネル](/en/docs/release-channels)を参照してください。
 
@@ -110,7 +110,7 @@ CLIがサーバーに接続すると、`/.well-known/server-info`をクエリし
 - **E2E暗号化公開鍵**：ゼロ知識Config保存のため
 - **最低CLIバージョン**：古いCLIの接続をブロック
 - **更新チャネル**：CLIが更新に使用するリリースチャネルを通知
-- **環境**：本番かエッジデプロイメントかを示す
+- **環境**：サーバーが実行するデプロイプロファイル(標準制限 vs. 2X制限のedge)
 
 この自動設定により、ユーザーはサーバーURLを知るだけで済みます。その他は自動的に検出されます。
 

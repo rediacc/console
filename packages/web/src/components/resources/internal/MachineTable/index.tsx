@@ -69,12 +69,16 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const remoteFileBrowserModal = useDialogState<Machine>();
   const assignClusterModal = useDialogState<Machine>();
 
-  // Reset to 'machine' view when entering Simple mode
-  React.useEffect(() => {
+  // Reset to 'machine' view when entering Simple mode. Derive from render
+  // using the "previous value" pattern so we don't synchronously set state
+  // inside an effect (react-hooks/set-state-in-effect).
+  const [prevUiMode, setPrevUiMode] = useState(uiMode);
+  if (prevUiMode !== uiMode) {
+    setPrevUiMode(uiMode);
     if (uiMode === 'simple' && groupBy !== 'machine') {
       setGroupBy('machine');
     }
-  }, [uiMode, groupBy]);
+  }
 
   // Queries
   const { data: machines = [], isLoading, refetch } = useGetTeamMachines(teamFilter?.[0]);

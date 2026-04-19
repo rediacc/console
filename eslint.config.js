@@ -60,6 +60,7 @@ function i18nLocaleConfigs({
   sourceDir,
   unusedKeyIgnores,
   extraUntranslatedPatterns = [],
+  cliSyntax,
 }) {
   const jsonBase = {
     plugins: { json, 'i18n': i18nJsonPlugin },
@@ -79,6 +80,7 @@ function i18nLocaleConfigs({
           keyFormat: 'camelCase',
           allowedPatterns: ['^[A-Z]$', '_one$', '_other$', '_zero$', '_few$', '_many$'],
         }],
+        ...(cliSyntax ? { 'i18n/no-positional-cli-syntax': ['error', cliSyntax] } : {}),
       },
     },
     // 2. English cross-language validation
@@ -637,6 +639,29 @@ export default tseslint.config(
       'Generate command reference',
       '^Activation failed$',
     ],
+    // Ban documentation/help strings that teach positional syntax for
+    // commands that actually require named options (see issue #446).
+    // Complements custom/no-positional-arguments which enforces the
+    // Commander API side in source files.
+    //
+    // To add a new command, list it here with the flags it requires. The
+    // rule auto-detects the positional-teaching pattern — no regex needed.
+    cliSyntax: {
+      commands: [
+        { path: 'repo fork', requiredOptions: ['--parent'] },
+      ],
+      // Legacy / cloud-adapter commands that use positional subcommands
+      // legitimately (mirrors the exemptFiles list at
+      // custom/no-positional-arguments below). Skips the whole string if
+      // its trimmed start matches any prefix.
+      exemptCommandPrefixes: [
+        'rdc auth', 'rdc audit', 'rdc bridge', 'rdc organization',
+        'rdc permission', 'rdc protocol', 'rdc queue', 'rdc region',
+        'rdc repository', 'rdc team', 'rdc user', 'rdc ceph',
+        'rdc machine containers', 'rdc machine services',
+        'rdc machine repos', 'rdc machine health',
+      ],
+    },
   }),
   ...i18nLocaleConfigs({
     localesDir: 'private/account/web/src/i18n/locales',

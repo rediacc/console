@@ -242,12 +242,27 @@ RUN curl -fsSL -o /tmp/bottom.deb "https://github.com/ClementTsang/bottom/releas
     && dpkg -i /tmp/bottom.deb \
     && rm /tmp/bottom.deb
 
-# agent-browser (https://github.com/vercel-labs/agent-browser)
-ARG AGENT_BROWSER_VERSION=0.9.0
-RUN ARCH=$(dpkg --print-architecture) \
-    && case "$ARCH" in amd64) AB_ARCH="x64" ;; arm64) AB_ARCH="arm64" ;; esac \
-    && curl -fsSL -o /usr/local/bin/agent-browser "https://github.com/vercel-labs/agent-browser/releases/download/v${AGENT_BROWSER_VERSION}/agent-browser-linux-${AB_ARCH}" \
-    && chmod +x /usr/local/bin/agent-browser
+# agent-browser — browser automation CLI (https://github.com/vercel-labs/agent-browser)
+# Installed via npm so the package's postinstall picks the right native binary
+# for the host arch; the standalone GitHub release binary is missing its
+# daemon/playwright support files and cannot run on its own.
+ARG AGENT_BROWSER_VERSION=0.26.0
+RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} \
+    && npm cache clean --force
+
+# Pre-pull the matching chromium-headless-shell so the first `agent-browser
+# open` in a fresh container doesn't stall on a ~113 MiB download. Runs as
+# vscode so the cache lands in /home/vscode/.cache/ms-playwright/.
+# Chrome for Testing (upstream) does not publish Linux ARM64 builds; skip the
+# pre-pull on arm64 so the image still builds, and let the first invocation
+# fall back to Playwright's bundled Chromium at runtime.
+USER vscode
+RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
+        agent-browser install; \
+    else \
+        echo "Skipping agent-browser install on $(dpkg --print-architecture): Chrome for Testing has no Linux ARM64 builds"; \
+    fi
+USER root
 
 # Claude Code (installs to ~/.local/bin for vscode user)
 USER vscode

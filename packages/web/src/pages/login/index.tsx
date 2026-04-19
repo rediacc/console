@@ -2,7 +2,7 @@ import { parseLoginResult as parseAuthenticationResult, parseResponse } from '@r
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { AuthLoginResult, VerifyTfaResult } from '@rediacc/shared/types';
 import { Alert, Button, Flex, Typography } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -61,7 +61,13 @@ const LoginPage: React.FC = () => {
     | undefined
   >(undefined);
   const [isQuickRegistration, setIsQuickRegistration] = useState(false);
-  const [isConnectionSecure, setIsConnectionSecure] = useState(true);
+  const isConnectionSecure = useMemo(() => {
+    const secure = isSecureContext();
+    if (!secure) {
+      console.warn('[LoginPage] Insecure connection detected. Web Crypto API unavailable.');
+    }
+    return secure;
+  }, []);
   const [insecureWarningDismissed, setInsecureWarningDismissed] = useState(false);
 
   const navigate = useNavigate();
@@ -139,14 +145,9 @@ const LoginPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-  // Check if connection is secure
-  useEffect(() => {
-    const secure = isSecureContext();
-    setIsConnectionSecure(secure);
-    if (!secure) {
-      console.warn('[LoginPage] Insecure connection detected. Web Crypto API unavailable.');
-    }
-  }, []);
+  // Check if connection is secure. isSecureContext() is stable across the
+  // lifetime of the page, so we can compute the initial value lazily instead
+  // of syncing inside an effect (react-hooks/set-state-in-effect).
 
   const processSuccessfulLogin = async (values: LoginFormValues, authResult: AuthLoginResult) => {
     const vaultOrganization = authResult.vaultOrganization;

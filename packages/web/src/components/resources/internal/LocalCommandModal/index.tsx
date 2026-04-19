@@ -1,7 +1,7 @@
 import { Button, Checkbox, Flex, Form, Input, Radio, Tabs, Typography } from 'antd';
 import type { CheckboxChangeEvent } from 'antd/es/checkbox';
 import type { RadioChangeEvent } from 'antd/es/radio';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import { SizedModal } from '@/components/common/SizedModal';
@@ -43,23 +43,28 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
   const [os, setOs] = useState<OperatingSystem>('unix');
   const [useDocker, setUseDocker] = useState(false);
   const [useNetworkHost, setUseNetworkHost] = useState(true);
-  const [apiUrl, setApiUrl] = useState('');
+  const [apiUrl, setApiUrl] = useState(() => {
+    const { protocol, host } = window.location;
+    return `${protocol}//${host}/api`;
+  });
   const [termCommand, setTermCommand] = useState('');
   const [isGeneratingToken, setIsGeneratingToken] = useState(false);
   const [tokenError, setTokenError] = useState('');
 
-  useEffect(() => {
+  // Refresh apiUrl every time the modal opens (in case the host changed since
+  // first mount) and clear any stale token error from the previous open. Track
+  // the previous open state during render to avoid synchronous setState in an
+  // effect (react-hooks/set-state-in-effect).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (prevOpen !== open) {
+    setPrevOpen(open);
     if (open) {
       const { protocol, host } = window.location;
       setApiUrl(`${protocol}//${host}/api`);
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) {
+    } else {
       setTokenError('');
     }
-  }, [open]);
+  }
 
   const buildProtocolUrl = (token: string, action: string, params?: Record<string, string>) => {
     const team = 'Default';

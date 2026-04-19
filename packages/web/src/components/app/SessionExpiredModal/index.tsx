@@ -1,5 +1,5 @@
 import { Button, Card, Flex, Typography } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { SizedModal } from '@/components/common/SizedModal';
@@ -16,16 +16,29 @@ export const SessionExpiredModal: React.FC = () => {
   const isVisible = useSelector((state: RootState) => state.auth.showSessionExpiredModal);
 
   const [countdown, setCountdown] = useState(COUNTDOWN_DURATION);
-  const isVisibleRef = useRef(isVisible);
 
-  // Reset countdown when dialog opens (synchronously during render)
-  if (isVisible && !isVisibleRef.current) {
-    // Dialog just opened - reset countdown synchronously
-    if (countdown !== COUNTDOWN_DURATION) {
+  // Reset countdown each time the dialog transitions from hidden → visible.
+  // Tracking the previous visibility during render keeps the state change
+  // out of an effect (react-hooks/set-state-in-effect).
+  const [prevVisible, setPrevVisible] = useState(isVisible);
+  if (prevVisible !== isVisible) {
+    setPrevVisible(isVisible);
+    if (isVisible) {
       setCountdown(COUNTDOWN_DURATION);
     }
   }
-  isVisibleRef.current = isVisible;
+
+  const handleStayLoggedOut = useCallback(() => {
+    dispatch(setStayLoggedOutMode(true));
+    dispatch(hideSessionExpiredModal());
+  }, [dispatch]);
+
+  const handleContinueToLogin = useCallback(() => {
+    dispatch(hideSessionExpiredModal());
+    const basePath = import.meta.env.BASE_URL || '/';
+    const loginPath = `${basePath}login`.replace('//', '/');
+    window.location.href = loginPath;
+  }, [dispatch]);
 
   // Run timer when dialog is visible
   useEffect(() => {
@@ -44,20 +57,7 @@ export const SessionExpiredModal: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isVisible]);
-
-  const handleStayLoggedOut = () => {
-    dispatch(setStayLoggedOutMode(true));
-    dispatch(hideSessionExpiredModal());
-  };
-
-  const handleContinueToLogin = () => {
-    dispatch(hideSessionExpiredModal());
-    const basePath = import.meta.env.BASE_URL || '/';
-    const loginPath = `${basePath}login`.replace('//', '/');
-    window.location.href = loginPath;
-  };
+  }, [isVisible, handleContinueToLogin]);
 
   const formatTime = (seconds: number) => {
     if (seconds <= 0) return t('sessionExpired.zeroSeconds');

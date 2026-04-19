@@ -4,7 +4,7 @@ description: "Den Account-Server und die CLI-Distribution auf eigener Infrastruk
 category: "Guides"
 order: 5
 language: de
-sourceHash: "bd53b8bc522532de"
+sourceHash: "91498e4c2f374e86"
 sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
 ---
 
@@ -98,8 +98,8 @@ npm install -g https://account.example.com/npm/rediacc-cli-latest.tgz
 
 Das On-Premise-Docker-Image verwendet dieselbe Variable `ENVIRONMENT` wie der gehostete Dienst. Sie wird in der Docker-Umgebung oder der Orchestrierungskonfiguration gesetzt:
 
-- `ENVIRONMENT=production` (Standard): Standardlimits, Stable-Update-Kanal an Clients empfohlen
-- `ENVIRONMENT=edge`: Doppelte Community-Limits, Edge-Update-Kanal an Clients empfohlen
+- `ENVIRONMENT=production` (Standard): Standard-Ressourcenlimits; CLIs, die sich mit diesem Server verbinden, verwenden standardmäßig den **stable** Update-Kanal. Der Wertname `production` ist eine Legacy-Deploy-Kennung. Sowohl `production`- als auch `edge`-Modi sind produktionstauglich.
+- `ENVIRONMENT=edge`: 2X Community-Limits; CLIs verwenden standardmäßig den **edge** Update-Kanal
 
 Details zu den jeweiligen Umgebungen finden sich unter [Release-Kanäle](/de/docs/release-channels).
 
@@ -110,7 +110,7 @@ Wenn die CLI sich mit dem Server verbindet, ruft sie `/.well-known/server-info` 
 - **E2E-Verschlüsselung öffentlicher Schlüssel**: für Zero-Knowledge-Konfigurationsspeicher
 - **Minimale CLI-Version**: blockiert veraltete CLIs beim Verbinden
 - **Update-Kanal**: teilt der CLI mit, welchen Release-Kanal sie für Updates verwenden soll
-- **Umgebung**: ob es sich um eine Produktions- oder Edge-Bereitstellung handelt
+- **Umgebung**: Welches Deploy-Profil der Server ausführt (Standard-Limits vs. Edge-mit-2X-Limits)
 
 Diese automatische Konfiguration bedeutet, dass Benutzer nur die Server-URL benötigen. Alles andere wird automatisch ermittelt.
 

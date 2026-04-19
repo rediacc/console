@@ -144,9 +144,13 @@ export function useContainer(options: UseContainerOptions): UseContainerReturn {
   const [status, setStatus] = useState<ContainerStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
 
-  // Keep options ref updated for callbacks
+  // Keep options ref updated for callbacks. Ref writes belong in an effect,
+  // not the render body, so that strict-mode double-rendering doesn't tear
+  // the stored value (react-hooks/refs-in-render).
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+  useEffect(() => {
+    optionsRef.current = options;
+  });
 
   // Track cleanup functions
   const cleanupRef = useRef<(() => void)[]>([]);

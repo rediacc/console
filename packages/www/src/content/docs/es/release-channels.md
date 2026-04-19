@@ -4,7 +4,7 @@ description: "Comprender los canales de release Edge y Stable, sus diferencias y
 category: "Concepts"
 order: 2
 language: es
-sourceHash: "33795f3fa77f4aa5"
+sourceHash: "b0f431fd1bcc22c1"
 sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
 ---
 
@@ -14,7 +14,7 @@ Rediacc publica actualizaciones a través de dos canales de release: **Stable** 
 
 Stable es el canal predeterminado para todos los usuarios. Los releases se promueven desde Edge tras un período de prueba de 7 días sin problemas reportados.
 
-- Recomendado para cargas de trabajo de producción y planes de pago
+- Recomendado cuando prefieres una cadencia de actualización conservadora y quieres acceso a planes de pago
 - Desplegado después de 7 días de pruebas en Edge
 - Las correcciones críticas pueden enviarse directamente cuando sea necesario
 - Dominios: `eu.rediacc.com`, `us.rediacc.com`, `asia.rediacc.com`
@@ -62,12 +62,12 @@ Edge y Stable funcionan en infraestructura separada con bases de datos independi
 2. Después de 7 días sin problemas, Edge se promueve a Stable automáticamente.
 3. Las correcciones críticas pueden enviarse a ambos canales simultáneamente.
 
-Esto significa que Stable siempre está como máximo 7 días por detrás de Edge. El período de prueba detecta regresiones antes de que lleguen a los usuarios de producción.
+Esto significa que Stable siempre está como máximo 7 días por detrás de Edge. El período de prueba detecta regresiones antes de que se propaguen desde Edge a Stable.
 
 ## ¿Qué Canal Debo Elegir?
 
 **Elige Stable si:**
-- Ejecutas cargas de trabajo de producción
+- Prefieres una cadencia de actualización conservadora con una ventana de prueba de 7 días
 - Necesitas planes de pago (Professional, Business, Enterprise)
 - Prefieres máxima fiabilidad sobre las últimas funcionalidades
 
