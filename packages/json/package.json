@@ -7,7 +7,7 @@
     "test": "./test-templates.sh"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.982.0",
+    "@aws-sdk/client-s3": "^3.1032.0",
     "@opentelemetry/context-zone": "^2.7.0",
     "@opentelemetry/core": "^2.7.0",
     "@opentelemetry/instrumentation": "^0.211.0",
@@ -15,10 +15,10 @@
     "@opentelemetry/instrumentation-xml-http-request": "^0.211.0",
     "@opentelemetry/sdk-node": "^0.211.0",
     "@opentelemetry/sdk-trace-web": "^2.7.0",
-    "@vitest/coverage-v8": "^4.0.18",
-    "@vitest/runner": "^4.0.18",
-    "@vitest/ui": "^4.0.18",
-    "@vitest/utils": "^4.0.18",
+    "@vitest/coverage-v8": "^4.1.4",
+    "@vitest/runner": "^4.1.4",
+    "@vitest/ui": "^4.1.4",
+    "@vitest/utils": "^4.1.4",
     "react-i18next": "^16.5.4",
     "unist-util-visit": "^5.1.0",
     "zod": "^4.3.6"

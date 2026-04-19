@@ -16,7 +16,9 @@ antd # v6.x requires CSS-in-JS removal, component API changes, extensive migrati
 electron # v40.x breaks native module rebuild with nan library errors
 
 # ESLint v10 - blocked until typescript-eslint, eslint-plugin-import, eslint-plugin-react support v10
+eslint # v10.x requires ecosystem-wide migration of plugins
 @eslint/js # v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support
+@vitejs/plugin-react # v6.x requires vite v8 and eslint v10 ecosystem
 
 # @astrojs/react - 5.0.3 won't install due to npm lock file + electron-builder conflict
 @astrojs/react # npm workspace lock resolution prevents 5.0.3; clean npm install breaks electron-builder
@@ -30,11 +32,52 @@ react-syntax-highlighter # ^16.1.1 spec causes workspace-level install, losing t
 # better-sqlite3 v12 - major version, newly adopted dep
 better-sqlite3 # v12.x requires native binding rebuild, potential API changes
 
-# Zod v4 - major rewrite with different API surface
-zod # v4.x requires schema migration, different error handling
+# Vite v8 - major version, requires extensive testing of build pipeline
+vite # v8.x is a major architectural change
+
+# Zod v4 - major rewrite with different API surface (ALREADY ADOPTED)
+zod # v4.x adopted; block v5 if it ever appears (currently just pinning to 4.x)
+
+# Astro v6 - major version, requires migration of server-side logic
+astro # v6.x is a major breaking change
 
 # inquirer v13.3.x - npm publishes are broken (missing dist/ directory)
 inquirer # v13.3.1 and v13.3.2 published without dist/ folder
 
-# @types/node major must match Node engine version (22.x)
+# @types/node major must match Node engine version (22.12.0+)
 @types/node # v25+ is for Node 25; project uses Node 22
+
+# i18next ecosystem - major jumps
+i18next # v26.x is a major version
+react-i18next # v17.x is a major version
+
+# TypeScript v6 - major version
+typescript # v6.x requires manual audit of type changes
+
+# dotenv v17 - major version
+dotenv # v17.x is a major version
+
+# OpenTelemetry - versions must be perfectly synced across workspaces
+@opentelemetry/api # Sync required across workspaces
+@opentelemetry/api-logs # Sync required across workspaces
+@opentelemetry/auto-instrumentations-web # Sync required across workspaces
+@opentelemetry/context-zone # Sync required across workspaces
+@opentelemetry/core # Sync required across workspaces
+@opentelemetry/exporter-logs-otlp-http # Sync required across workspaces
+@opentelemetry/exporter-metrics-otlp-http # Sync required across workspaces
+@opentelemetry/exporter-trace-otlp-http # Sync required across workspaces
+@opentelemetry/instrumentation # Sync required across workspaces
+@opentelemetry/instrumentation-document-load # Sync required across workspaces
+@opentelemetry/instrumentation-fetch # Sync required across workspaces
+@opentelemetry/instrumentation-user-interaction # Sync required across workspaces
+@opentelemetry/instrumentation-xml-http-request # Sync required across workspaces
+@opentelemetry/resources # Sync required across workspaces
+@opentelemetry/sdk-logs # Sync required across workspaces
+@opentelemetry/sdk-metrics # Sync required across workspaces
+@opentelemetry/sdk-node # Sync required across workspaces
+@opentelemetry/sdk-trace-web # Sync required across workspaces
+@opentelemetry/semantic-conventions # Sync required across workspaces
+
+# Transitive deps causing monorepo drift
+fast-xml-parser # versions often drift between aws-sdk and astro
+jsdom # frequent minor updates causing CI churn
