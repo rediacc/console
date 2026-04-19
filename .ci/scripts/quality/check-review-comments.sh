@@ -60,8 +60,9 @@ is_low_effort_reply() {
         fi
     done
 
-    # Also reject very short replies (less than 10 chars after normalization)
-    if [[ ${#normalized} -lt 10 ]]; then
+    # Also reject extremely short replies (less than 4 chars after normalization)
+    # This allows "Done", "Fixed", "Sure", but still catches "ok", "ty", etc.
+    if [[ ${#normalized} -lt 4 ]]; then
         return 0 # Is low-effort
     fi
 
@@ -80,6 +81,13 @@ if [[ -z "${PR_NUMBER:-}" ]]; then
 fi
 
 REPO="${GITHUB_REPOSITORY:-rediacc/console}"
+
+echo "Fetching PR metadata..."
+PR_METADATA=$(gh pr view "${PR_NUMBER}" --json author,reviewThreads 2>/dev/null || echo "{}")
+PR_AUTHOR=$(echo "$PR_METADATA" | jq -r '.author.login // empty')
+
+# Build a list of resolved thread IDs to skip
+RESOLVED_THREADS=$(echo "$PR_METADATA" | jq -r '[.reviewThreads[] | select(.isResolved == true) | .comments[0].id] | .[]' 2>/dev/null || echo "")
 
 echo "Checking review comments for PR #${PR_NUMBER}..."
 
@@ -128,6 +136,16 @@ while IFS= read -r comment; do
     COMMENT_LINE=$(echo "$comment" | jq -r '.line // .original_line // "N/A"')
     COMMENT_AUTHOR=$(echo "$comment" | jq -r '.user.login')
     COMMENT_BODY=$(echo "$comment" | jq -r '.body' | head -c 100)
+
+    # Skip comments made by the PR author themselves
+    if [[ "$COMMENT_AUTHOR" == "$PR_AUTHOR" ]]; then
+        continue
+    fi
+
+    # Skip comments that belong to a resolved thread
+    if echo "$RESOLVED_THREADS" | grep -q "^${COMMENT_ID}$"; then
+        continue
+    fi
 
     # Check if this comment has a substantive reply
     if [[ -z "${HAS_SUBSTANTIVE_REPLY[$COMMENT_ID]:-}" ]]; then

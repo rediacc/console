@@ -83,7 +83,7 @@ UNRESOLVED_COUNT=$(echo "$UNRESOLVED" | jq 'length')
 # Check for "Changes Requested" reviews
 log_step "Checking review status..."
 
-REVIEWS=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" 2>/dev/null || echo "[]")
+REVIEWS=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" --paginate 2>/dev/null || echo "[]")
 
 # Get the latest review state per reviewer (reviewers can change their review)
 CHANGES_REQUESTED=$(echo "$REVIEWS" | jq '[
@@ -181,7 +181,7 @@ if [[ "$HAS_ISSUES" == "true" ]]; then
 fi
 
 # All good
-TOTAL_THREADS=$(echo "$RESULT" | jq '.data.repository.pullRequest.reviewThreads.nodes | length')
+TOTAL_THREADS=$(echo "$RESULT" | jq '.data.repository.pullRequest.reviewThreads.nodes | length // 0')
 RESOLVED_COUNT=$((TOTAL_THREADS - UNRESOLVED_COUNT))
 
 echo ""
