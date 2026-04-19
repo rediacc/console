@@ -40,29 +40,19 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   const { execute, isExecuting: loading, error } = useAsyncAction();
 
   useEffect(() => {
-    void fetchTemplates();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const fetchTemplates = async () => {
-    const result = await execute(
-      async () => {
-        const fetchedTemplates = await templateService.fetchTemplates();
-        // Sort templates alphabetically by name
-        const sortedTemplates = fetchedTemplates.sort((a, b) => {
-          return a.name.localeCompare(b.name);
-        });
-        return sortedTemplates;
-      },
-      {
+    const loadFetched = async () => {
+      const fetchedTemplates = await templateService.fetchTemplates();
+      return fetchedTemplates.sort((a, b) => a.name.localeCompare(b.name));
+    };
+    void (async () => {
+      const result = await execute(loadFetched, {
         errorMessage: 'Unable to load templates. Please check your connection.',
+      });
+      if (result.success && result.data) {
+        setTemplates(result.data);
       }
-    );
-
-    if (result.success && result.data) {
-      setTemplates(result.data);
-    }
-  };
+    })();
+  }, [execute]);
 
   const getTemplateIcon = (name: string) => {
     const lowerName = name.toLowerCase();

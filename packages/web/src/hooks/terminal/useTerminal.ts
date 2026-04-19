@@ -96,9 +96,12 @@ export function useTerminal(options: UseTerminalOptions): UseTerminalReturn {
   const [status, setStatus] = useState<TerminalStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
 
-  // Keep options ref updated for callbacks
+  // Keep options ref updated for callbacks. Ref writes belong in an effect,
+  // not the render body (react-hooks/refs-in-render).
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+  useEffect(() => {
+    optionsRef.current = options;
+  });
 
   // Track cleanup functions
   const cleanupRef = useRef<(() => void)[]>([]);

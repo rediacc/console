@@ -4,7 +4,7 @@ description: Kimlik doğrulama, API tokenleri, oturum yönetimi ve izin modeli.
 category: Guides
 order: 13
 language: tr
-sourceHash: "10dfa967f7ffca7d"
+sourceHash: "73586ec39a85e208"
 sourceCommit: "dabe1a33844b3b7ec8a2c4ab44dc2de6683283c9"
 ---
 
@@ -88,7 +88,7 @@ Her API isteği tüm geçerli katmanlardan sırasıyla geçer. Ekip kapsamlı bi
 ### Güncelleme Kanalları
 
 CLI iki yayın kanalını destekler:
-- **stable** (varsayılan): Kapsamlı test edilmiş, üretim için önerilir
+- **stable** (varsayılan): 7 günlük bekleme süresinin ardından edge'den terfi ettirilir; muhafazakar bir yükseltme temposu için bu kanalı seçin
 - **edge**: En son özellikler, her sürümde güncellenir
 
 ```bash

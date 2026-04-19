@@ -4,7 +4,7 @@ description: Autenticación, tokens de API, gestión de sesiones y el modelo de 
 category: Guides
 order: 13
 language: es
-sourceHash: "10dfa967f7ffca7d"
+sourceHash: "73586ec39a85e208"
 sourceCommit: "dabe1a33844b3b7ec8a2c4ab44dc2de6683283c9"
 ---
 
@@ -88,7 +88,7 @@ Cada solicitud de API pasa por todas las capas aplicables en secuencia. Una soli
 ### Canales de actualización
 
 La CLI admite dos canales de lanzamiento:
-- **stable** (predeterminado): Probado exhaustivamente, recomendado para producción
+- **stable** (predeterminado): Promovido desde edge tras un período de prueba de 7 días; elige este canal para una cadencia de actualización conservadora
 - **edge**: Últimas funciones, actualizado en cada lanzamiento
 
 ```bash

@@ -4,7 +4,7 @@ description: Authentifizierung, API-Token-Verwaltung, Sitzungsüberwachung und d
 category: Guides
 order: 13
 language: de
-sourceHash: "10dfa967f7ffca7d"
+sourceHash: "73586ec39a85e208"
 sourceCommit: "dabe1a33844b3b7ec8a2c4ab44dc2de6683283c9"
 ---
 
@@ -88,7 +88,7 @@ Jede API-Anfrage durchläuft alle zutreffenden Ebenen nacheinander. Eine Anfrage
 ### Update-Kanäle
 
 Die CLI unterstützt zwei Release-Kanäle:
-- **stable** (Standard): Gründlich getestet, empfohlen für Produktion
+- **stable** (Standard): Nach 7-tägiger Einlaufphase von Edge befördert; wählen Sie diesen Kanal für eine konservative Update-Kadenz
 - **edge**: Neueste Funktionen, bei jedem Release aktualisiert
 
 ```bash

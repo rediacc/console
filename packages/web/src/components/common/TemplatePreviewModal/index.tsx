@@ -90,69 +90,74 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   const effectiveTemplate =
     loadedTemplate ?? template ?? (templateName ? { name: templateName, readme: '' } : null);
 
-  useEffect(() => {
-    if (!open) {
-      // Reset state when modal is closed
-      setTemplateDetails(null);
-      setLoadedTemplate(null);
-      setLoading(false);
-      setActiveTab('overview');
-      setSelectedFileIndex(0);
-      return;
-    }
+  // Reset modal-scoped state when the modal is reopened or the target template changes.
+  // Derive via the "previous value" pattern so we don't synchronously set state inside
+  // an effect (react-hooks/set-state-in-effect).
+  const [prevOpenKey, setPrevOpenKey] = useState<string | null>(null);
+  const currentOpenKey = open ? `${template?.name ?? ''}|${templateName ?? ''}` : null;
+  if (prevOpenKey !== currentOpenKey) {
+    setPrevOpenKey(currentOpenKey);
+    // Intentional state reset when the modal instance changes.
+    setTemplateDetails(null);
+    setLoadedTemplate(null);
+    setLoading(false);
+    setActiveTab('overview');
+    setSelectedFileIndex(0);
+    setIconFailed(false);
+  }
 
-    const fetchTemplateDetails = async () => {
-      let baseTemplate = template ?? (templateName ? { name: templateName, readme: '' } : null);
-      if (!baseTemplate) return;
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+
+    const resolveBaseTemplate = async (): Promise<Template | null> => {
+      const initial = template ?? (templateName ? { name: templateName, readme: '' } : null);
+      if (!initial) return null;
+      if (!templateName || initial.readme) return initial;
 
       try {
-        setLoading(true);
+        const templates: Template[] = await templateService.fetchTemplates();
+        const found = templates.find((templateItem) => templateItem.name === templateName);
+        if (!found) return initial;
 
-        // Fetch the template from templates.json to get README if not already provided
-        if (templateName && !baseTemplate.readme) {
-          try {
-            const templates: Template[] = await templateService.fetchTemplates();
-            const foundTemplate = templates.find(
-              (templateItem) => templateItem.name === templateName
-            );
-            if (foundTemplate) {
-              // Set the loaded template with README content
-              const fullTemplate = {
-                id: foundTemplate.id,
-                name: foundTemplate.name,
-                readme: foundTemplate.readme,
-                category: foundTemplate.category,
-                tags: foundTemplate.tags,
-                difficulty: foundTemplate.difficulty,
-                download_url: foundTemplate.download_url,
-              };
-              setLoadedTemplate(fullTemplate);
-              baseTemplate = fullTemplate; // Use the full template for fetching details
-            }
-          } catch (templatesError) {
-            console.error('Failed to fetch templates:', templatesError);
-          }
-        }
+        const fullTemplate: Template = {
+          id: found.id,
+          name: found.name,
+          readme: found.readme,
+          category: found.category,
+          tags: found.tags,
+          difficulty: found.difficulty,
+          download_url: found.download_url,
+        };
+        if (!cancelled) setLoadedTemplate(fullTemplate);
+        return fullTemplate;
+      } catch (templatesError) {
+        console.error('Failed to fetch templates:', templatesError);
+        return initial;
+      }
+    };
 
-        // Fetch the detailed template data (files, etc.)
+    const fetchTemplateDetails = async () => {
+      setLoading(true);
+      try {
+        const baseTemplate = await resolveBaseTemplate();
+        if (!baseTemplate) return;
         const data = await templateService.fetchTemplateData(baseTemplate);
         setTemplateDetails(data as unknown as TemplateDetails);
       } catch (error) {
-        // Failed to fetch template details
         console.error('Failed to fetch template details:', error);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     void fetchTemplateDetails();
-    setActiveTab('overview');
-    setSelectedFileIndex(0);
-  }, [open, template, templateName]);
 
-  useEffect(() => {
-    setIconFailed(false);
-  }, [effectiveTemplate?.iconUrl]);
+    return () => {
+      cancelled = true;
+    };
+  }, [open, template, templateName]);
 
   if (!effectiveTemplate) return null;
 

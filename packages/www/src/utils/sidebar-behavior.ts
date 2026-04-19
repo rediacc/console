@@ -9,6 +9,21 @@
 
 import { stringToSlug } from './slug';
 
+const NAMED_ENTITIES: Record<string, string> = {
+  '&amp;': '&',
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+  '&#39;': "'",
+};
+
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replaceAll(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(Number.parseInt(hex, 16)))
+    .replaceAll(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number.parseInt(dec, 10)))
+    .replaceAll(/&(?:lt|gt|quot|#39|amp);/g, (m) => NAMED_ENTITIES[m]);
+}
+
 /**
  * Represents a heading for table of contents
  */
@@ -63,6 +78,9 @@ export function generateTOCFromHtml(htmlContent: string, options: TOCOptions = {
     if (stripTags) {
       title = title.replaceAll(/<[^>]+>/g, '');
     }
+
+    // Decode HTML entities so rendered text doesn't double-encode (e.g. "Fork & Backup" not "Fork &#x26; Backup")
+    title = decodeHtmlEntities(title);
 
     // Generate ID from title
     const id = stringToSlug(title);

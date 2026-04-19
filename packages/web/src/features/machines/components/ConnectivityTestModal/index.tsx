@@ -1,6 +1,6 @@
 import { Alert, Button, Flex, Progress, Table, Tag, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table/interface';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   createStatusColumn,
@@ -54,20 +54,25 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
 
   const { executePingForMachine, waitForQueueItemCompletion } = usePingFunction();
 
-  // Initialize test results when modal opens
-  useEffect(() => {
+  // Initialize test results when the modal opens. Track open state during
+  // render so we only reset on the off→on transition, avoiding a synchronous
+  // setState inside an effect (react-hooks/set-state-in-effect).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (prevOpen !== open) {
+    setPrevOpen(open);
     if (open && machines.length > 0) {
-      const initialResults: TestResult[] = machines.map((machine) => ({
-        machineName: machine.machineName ?? '',
-        teamName: machine.teamName ?? '',
-        bridgeName: machine.bridgeName ?? '',
-        status: 'pending',
-      }));
-      setTestResults(initialResults);
+      setTestResults(
+        machines.map((machine) => ({
+          machineName: machine.machineName ?? '',
+          teamName: machine.teamName ?? '',
+          bridgeName: machine.bridgeName ?? '',
+          status: 'pending',
+        }))
+      );
       setProgress(0);
       setCurrentMachineIndex(-1);
     }
-  }, [open, machines]);
+  }
 
   // Helper to format completion message
   const formatCompletionMessage = (result: QueueItemCompletionResult) => {

@@ -4,7 +4,7 @@ description: "Edge ve Stable sürüm kanallarını, farklılıklarını ve nası
 category: "Concepts"
 order: 2
 language: tr
-sourceHash: "33795f3fa77f4aa5"
+sourceHash: "b0f431fd1bcc22c1"
 sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
 ---
 
@@ -14,7 +14,7 @@ Rediacc güncellemeleri iki sürüm kanalı üzerinden yayınlar: **Stable** ve 
 
 Stable, tüm kullanıcılar için varsayılan kanaldır. Sürümler, bildirilen sorun olmaksızın 7 günlük bir bekleme süresinin ardından Edge'den terfi ettirilir.
 
-- Üretim iş yükleri ve ücretli planlar için önerilir
+- Muhafazakar bir yükseltme temposu tercih ediyorsanız ve ücretli planlara erişmek istiyorsanız önerilir
 - Edge'de 7 günlük test sonrasında dağıtılır
 - Kritik durumlarda düzeltmeler doğrudan iletilebilir
 - Etki alanları: `eu.rediacc.com`, `us.rediacc.com`, `asia.rediacc.com`
@@ -62,12 +62,12 @@ Edge ve Stable, ayrı veritabanlarıyla ayrı altyapılar üzerinde çalışır.
 2. 7 gün sorunsuz geçtikten sonra Edge, otomatik olarak Stable'a terfi ettirilir.
 3. Kritik düzeltmeler her iki kanala da aynı anda iletilebilir.
 
-Bu, Stable'ın her zaman Edge'in en fazla 7 gün gerisinde olduğu anlamına gelir. Bekleme süresi, regresyonları üretim kullanıcılarına ulaşmadan önce yakalar.
+Bu, Stable'ın her zaman Edge'in en fazla 7 gün gerisinde olduğu anlamına gelir. Bekleme süresi, regresyonları Edge'den Stable'a yayılmadan önce yakalar.
 
 ## Hangi Kanalı Seçmeliyim?
 
 **Stable'ı seçin:**
-- Üretim iş yükleri çalıştırıyorsanız
+- 7 günlük bekleme penceresiyle muhafazakar bir yükseltme temposu tercih ediyorsanız
 - Ücretli planlara ihtiyaç duyuyorsanız (Professional, Business, Enterprise)
 - En yeni özelliklerden çok maksimum güvenilirliği tercih ediyorsanız
 

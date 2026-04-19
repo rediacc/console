@@ -4,7 +4,7 @@ description: "Exécuter le serveur de compte et la distribution de la CLI sur vo
 category: "Guides"
 order: 5
 language: fr
-sourceHash: "bd53b8bc522532de"
+sourceHash: "91498e4c2f374e86"
 sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
 ---
 
@@ -98,8 +98,8 @@ npm install -g https://account.example.com/npm/rediacc-cli-latest.tgz
 
 L'image Docker on-premise utilise la même variable `ENVIRONMENT` que le service hébergé. Définissez-la dans votre environnement Docker ou votre configuration d'orchestration :
 
-- `ENVIRONMENT=production` (par défaut) : limites standard, canal de mise à jour stable recommandé aux clients
-- `ENVIRONMENT=edge` : limites Community 2X, canal de mise à jour edge recommandé aux clients
+- `ENVIRONMENT=production` (par défaut) : limites de ressources standard ; les CLI qui se connectent à ce serveur utilisent par défaut le canal de mise à jour **stable**. Le nom `production` est un identifiant de déploiement hérité. Les modes `production` et `edge` sont tous deux de qualité production.
+- `ENVIRONMENT=edge` : limites Community 2X ; les CLI utilisent par défaut le canal de mise à jour **edge**
 
 Consultez [Canaux de publication](/fr/docs/release-channels) pour plus de détails sur ce que chaque environnement fournit.
 
@@ -110,7 +110,7 @@ Lorsque la CLI se connecte à votre serveur, elle interroge `/.well-known/server
 - **Clé publique de chiffrement E2E** : pour le stockage de configuration zéro-connaissance
 - **Version minimale de la CLI** : bloque les CLI obsolètes de se connecter
 - **Canal de mise à jour** : indique à la CLI quel canal de publication utiliser pour les mises à jour
-- **Environnement** : si ce déploiement est production ou edge
+- **Environnement** : quel profil de déploiement le serveur exécute (limites standard vs. edge-avec-limites-2X)
 
 Cette auto-configuration signifie que les utilisateurs n'ont besoin que de l'URL du serveur. Tout le reste est découvert automatiquement.
 

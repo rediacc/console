@@ -4,7 +4,7 @@ description: 身份验证、API令牌、会话管理和权限模型。
 category: Guides
 order: 13
 language: zh
-sourceHash: "10dfa967f7ffca7d"
+sourceHash: "73586ec39a85e208"
 sourceCommit: "dabe1a33844b3b7ec8a2c4ab44dc2de6683283c9"
 ---
 
@@ -88,7 +88,7 @@ Rediacc使用三个独立的权限层：
 ### 更新渠道
 
 CLI支持两个发布渠道：
-- **stable**（默认）：经过全面测试，推荐用于生产环境
+- **stable**（默认）：经过 7 天浸泡期后从 edge 升级而来；若偏好保守的升级节奏请选择此通道
 - **edge**：最新功能，每次发布时更新
 
 ```bash
