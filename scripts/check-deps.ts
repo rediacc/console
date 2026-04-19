@@ -66,13 +66,18 @@ interface PackageInfo {
  * Categorize outdated packages into must-upgrade vs blocked lists
  */
 function categorizePackages(
-  outdated: Record<string, OutdatedPackageInfo>,
+  outdated: Record<string, OutdatedPackageInfo | OutdatedPackageInfo[]>,
   blocklist: Map<string, BlocklistEntry>,
 ): { mustUpgrade: PackageInfo[]; blocked: PackageInfo[] } {
   const mustUpgrade: PackageInfo[] = [];
   const blocked: PackageInfo[] = [];
 
-  for (const [name, info] of Object.entries(outdated)) {
+  for (const [name, infoOrArray] of Object.entries(outdated)) {
+    // npm outdated returns an array if the same package is used in multiple workspaces/locations
+    const infos = Array.isArray(infoOrArray) ? infoOrArray : [infoOrArray];
+    
+    // Use the first entry to determine version status (usually they are all same version in monorepo root)
+    const info = infos[0];
     const current = info.current;
     const latest = info.latest;
 
@@ -92,6 +97,9 @@ function categorizePackages(
 // Cache for changelog URLs to avoid duplicate fetches
 const changelogCache = new Map<string, string | null>();
 
+// Cache for workspace package.json contents
+const workspacePackageCache = new Map<string, any>();
+
 /**
  * Find which workspace packages contain a given dependency
  */
@@ -101,27 +109,29 @@ function findWorkspacesWithPackage(packageName: string): string[] {
 
   if (!fs.existsSync(packagesDir)) return workspaces;
 
-  for (const dir of fs.readdirSync(packagesDir)) {
-    const pkgPath = path.join(packagesDir, dir, 'package.json');
-    if (!fs.existsSync(pkgPath)) continue;
+  if (workspacePackageCache.size === 0) {
+    for (const dir of fs.readdirSync(packagesDir)) {
+      const pkgPath = path.join(packagesDir, dir, 'package.json');
+      if (!fs.existsSync(pkgPath)) continue;
 
-    try {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')) as {
-        dependencies?: Record<string, string>;
-        devDependencies?: Record<string, string>;
-        peerDependencies?: Record<string, string>;
-      };
-      const allDeps = {
-        ...pkg.dependencies,
-        ...pkg.devDependencies,
-        ...pkg.peerDependencies,
-      };
-
-      if (packageName in allDeps) {
-        workspaces.push(dir);
+      try {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+        workspacePackageCache.set(dir, pkg);
+      } catch {
+        // Skip invalid package.json files
       }
-    } catch {
-      // Skip invalid package.json files
+    }
+  }
+
+  for (const [dir, pkg] of workspacePackageCache.entries()) {
+    const allDeps = {
+      ...pkg.dependencies,
+      ...pkg.devDependencies,
+      ...pkg.peerDependencies,
+    };
+
+    if (packageName in allDeps) {
+      workspaces.push(dir);
     }
   }
 
@@ -233,38 +243,36 @@ interface PrivateOutdatedResult {
 /**
  * Get outdated packages from private (non-workspace) packages
  */
-function getPrivateOutdatedPackages(): PrivateOutdatedResult[] {
-  const results: PrivateOutdatedResult[] = [];
-
-  for (const dir of getPrivatePackageDirs()) {
-    try {
-      // Use --package-lock-only so the check works in CI where node_modules
-      // is not installed for private submodule packages. npm reads installed
-      // versions from package-lock.json and queries the registry for latest.
-      execSync('npm outdated --json --package-lock-only', {
-        cwd: dir,
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-    } catch (error) {
-      const execError = error as { stdout?: string; stderr?: string };
-      if (execError.stdout) {
-        try {
-          const packages = JSON.parse(execError.stdout) as Record<string, OutdatedPackageInfo>;
-          if (Object.keys(packages).length > 0) {
-            const dirName = path.relative(CONSOLE_ROOT, dir);
-            results.push({ dir, name: dirName, packages });
+async function getPrivateOutdatedPackages(): Promise<PrivateOutdatedResult[]> {
+  const { exec } = await import('node:child_process');
+  const dirs = getPrivatePackageDirs();
+  const promises = dirs.map(async (dir) => {
+    return new Promise<PrivateOutdatedResult | null>((resolve) => {
+      try {
+        const dirName = path.relative(CONSOLE_ROOT, dir);
+        console.log(`Checking outdated packages in ${dirName}...`);
+        
+        exec('npm outdated --json --package-lock-only', { cwd: dir }, (error, stdout) => {
+          if (stdout) {
+            try {
+              const packages = JSON.parse(stdout) as Record<string, OutdatedPackageInfo>;
+              if (Object.keys(packages).length > 0) {
+                return resolve({ dir, name: dirName, packages });
+              }
+            } catch {
+              // Ignore parse errors
+            }
           }
-        } catch (jsonError) {
-          console.error(`Failed to parse 'npm outdated' output for ${dir}:`, jsonError);
-        }
-      } else {
-        console.error(`'npm outdated' failed in ${dir}:`, execError.stderr || error);
+          resolve(null);
+        });
+      } catch {
+        resolve(null);
       }
-    }
-  }
+    });
+  });
 
-  return results;
+  const results = await Promise.all(promises);
+  return results.filter((r): r is PrivateOutdatedResult => r !== null);
 }
 
 /**
@@ -500,7 +508,8 @@ async function checkDependencies(): Promise<void> {
   const { mustUpgrade, blocked } = categorizePackages(outdated, blocklist);
 
   // Also check private (non-workspace) packages
-  const privateOutdated = getPrivateOutdatedPackages();
+  console.log('Checking private packages...');
+  const privateOutdated = await getPrivateOutdatedPackages();
   const privateMustUpgrade: Array<{ dir: string; name: string; packages: PackageInfo[] }> = [];
   const privateBlocked: Array<{ dir: string; name: string; packages: PackageInfo[] }> = [];
 

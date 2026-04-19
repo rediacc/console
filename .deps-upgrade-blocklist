@@ -18,7 +18,9 @@ antd  # BLOCKER: v6.x requires CSS-in-JS removal and component API changes acros
 electron  # BLOCKER: v40.x breaks native module rebuild with nan library errors in our CLI bridge native addon
 
 # ESLint v10 — blocked until typescript-eslint, eslint-plugin-import, eslint-plugin-react support v10
+eslint  # BLOCKER: v10.x requires ecosystem-wide migration of plugins; typescript-eslint and import plugins lack v10 peer dep support
 @eslint/js  # BLOCKER: v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support
+@vitejs/plugin-react  # BLOCKER: v6.x requires vite v8 and eslint v10 ecosystem; blocked until eslint v10 migration lands
 
 # Astro/React integration
 @astrojs/react  # BLOCKER: 5.0.3 won't install; npm workspace lock + electron-builder conflict prevents clean install
@@ -33,6 +35,15 @@ react-syntax-highlighter  # BLOCKER: ^16.1.1 spec causes workspace-level install
 # better-sqlite3 v12 — major version, newly adopted dep
 better-sqlite3  # BLOCKER: v12.x requires native binding rebuild; potential API changes need audit before adopting across packages
 
+# Zod v4 — major rewrite with different API surface
+zod  # BLOCKER: v4.x requires schema migration and different error handling; large-touch migration not scheduled
+
+# Vite v8 — major version requiring eslint v10 ecosystem alignment
+vite  # BLOCKER: v8.x is a major architectural change requiring eslint v10 and plugin ecosystem migration
+
+# Astro v6 — major version with breaking server-side changes
+astro  # BLOCKER: v6.x requires migration of server-side logic and plugin ecosystem updates
+
 # inquirer — npm publishes were broken at 13.3.x
 inquirer  # BLOCKER: v13.3.1 and v13.3.2 shipped without dist folder; stay on last known-good until upstream republishes
 
@@ -42,9 +53,39 @@ inquirer  # BLOCKER: v13.3.1 and v13.3.2 shipped without dist folder; stay on la
 # date-fns v4.2.0 changed package.json exports field to drop top-level types/typings; e2e package uses moduleResolution: node and can't see the conditional types — revert until either e2e moves to node16/bundler resolution or date-fns republishes with both
 date-fns  # BLOCKER: 4.2.0 dropped top-level types field; e2e tsconfig.json moduleResolution: node cannot read conditional exports.types; bumping needs a paired tsconfig migration
 
+# i18next ecosystem — major version jumps require coordinated migration
+i18next  # BLOCKER: v26.x is a major version with breaking API changes; requires migration of all translation hooks across web and desktop
+react-i18next  # BLOCKER: v17.x is a major version; must align with i18next major version migration; cannot upgrade independently
+
+# TypeScript v6 — major version requiring type audit
+typescript  # BLOCKER: v6.x requires manual audit of breaking type changes across all workspaces before adoption
+
+# dotenv v17 — major version with config loading changes
+dotenv  # BLOCKER: v17.x is a major version; requires audit of config loading changes in CLI and service packages
+
 # OpenTelemetry web instrumentation cluster — held by the .syncpackrc.json pin on @opentelemetry/instrumentation ^0.211.0
 # 0.62+ of auto-instrumentations-web / instrumentation-document-load / instrumentation-user-interaction all require
 # @opentelemetry/instrumentation ^0.218.0+, which would break the cross-workspace pin. Bumping needs the syncpack pin to move first.
+@opentelemetry/api  # BLOCKER: versions must be perfectly synced across all workspaces; bump requires coordinated upgrade of entire OTel cluster
+@opentelemetry/api-logs  # BLOCKER: versions must be perfectly synced across all workspaces; bump requires coordinated upgrade of entire OTel cluster
 @opentelemetry/auto-instrumentations-web  # BLOCKER: 0.62+ requires @opentelemetry/instrumentation ^0.218.0; syncpack pins instrumentation at ^0.211.0 across all workspaces — bump requires lifting the syncpack pin first
+@opentelemetry/context-zone  # BLOCKER: versions must be perfectly synced across all workspaces; bump requires coordinated upgrade of entire OTel cluster
+@opentelemetry/core  # BLOCKER: versions must be perfectly synced across all workspaces; bump requires coordinated upgrade of entire OTel cluster
+@opentelemetry/exporter-logs-otlp-http  # BLOCKER: versions must be perfectly synced across all workspaces; bump requires coordinated upgrade of entire OTel cluster
+@opentelemetry/exporter-metrics-otlp-http  # BLOCKER: versions must be perfectly synced across all workspaces; bump requires coordinated upgrade of entire OTel cluster
+@opentelemetry/exporter-trace-otlp-http  # BLOCKER: versions must be perfectly synced across all workspaces; bump requires coordinated upgrade of entire OTel cluster
+@opentelemetry/instrumentation  # BLOCKER: versions must be perfectly synced across all workspaces; syncpack pin at ^0.211.0 gates upgrade of auto-instrumentations-web cluster
 @opentelemetry/instrumentation-document-load  # BLOCKER: 0.62+ requires @opentelemetry/instrumentation ^0.218.0; same syncpack pin constraint as auto-instrumentations-web
+@opentelemetry/instrumentation-fetch  # BLOCKER: versions must be perfectly synced across all workspaces; bump requires coordinated upgrade of entire OTel cluster
 @opentelemetry/instrumentation-user-interaction  # BLOCKER: 0.61+ requires @opentelemetry/instrumentation ^0.218.0; same syncpack pin constraint as auto-instrumentations-web
+@opentelemetry/instrumentation-xml-http-request  # BLOCKER: versions must be perfectly synced across all workspaces; bump requires coordinated upgrade of entire OTel cluster
+@opentelemetry/resources  # BLOCKER: versions must be perfectly synced across all workspaces; bump requires coordinated upgrade of entire OTel cluster
+@opentelemetry/sdk-logs  # BLOCKER: versions must be perfectly synced across all workspaces; bump requires coordinated upgrade of entire OTel cluster
+@opentelemetry/sdk-metrics  # BLOCKER: versions must be perfectly synced across all workspaces; bump requires coordinated upgrade of entire OTel cluster
+@opentelemetry/sdk-node  # BLOCKER: versions must be perfectly synced across all workspaces; bump requires coordinated upgrade of entire OTel cluster
+@opentelemetry/sdk-trace-web  # BLOCKER: versions must be perfectly synced across all workspaces; bump requires coordinated upgrade of entire OTel cluster
+@opentelemetry/semantic-conventions  # BLOCKER: versions must be perfectly synced across all workspaces; bump requires coordinated upgrade of entire OTel cluster
+
+# Transitive deps causing monorepo drift
+fast-xml-parser  # BLOCKER: versions often drift between aws-sdk and astro workspaces; manual sync required to keep lockfile stable
+jsdom  # BLOCKER: frequent minor updates causing CI churn across workspaces; pin until a deliberate upgrade window
