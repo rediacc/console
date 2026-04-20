@@ -366,10 +366,10 @@ const TerminalPlayer: FC<TerminalPlayerProps> = ({ src, title, lang = 'en', cast
     };
 
     document.addEventListener('fullscreenchange', onFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', onFullscreenChange as EventListener);
+    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
     return () => {
       document.removeEventListener('fullscreenchange', onFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', onFullscreenChange as EventListener);
+      document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
     };
   }, []);
 

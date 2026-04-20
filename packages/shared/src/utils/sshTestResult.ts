@@ -28,14 +28,14 @@ function unwrapResult(parsed: SSHTestResultWrapper): SSHTestResult | null {
     const inner = tryParseJson(parsed.result);
     return inner as SSHTestResult | null;
   }
-  return parsed as SSHTestResult;
+  return parsed;
 }
 
 /** Try to parse an object candidate */
 function parseObjectCandidate(candidate: object): SSHTestResult | null {
   const wrapped = candidate as SSHTestResultWrapper;
   if (typeof wrapped.result !== 'string') {
-    return wrapped as SSHTestResult;
+    return wrapped;
   }
   const inner = tryParseJson(wrapped.result);
   return inner as SSHTestResult | null;

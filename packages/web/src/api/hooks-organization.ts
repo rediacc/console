@@ -34,7 +34,7 @@ export const useOrganizationInfo = () => {
     queryKey: ORGANIZATION_KEYS.info(),
     queryFn: async () => {
       const response = await typedApi.GetOrganizationDashboard({});
-      return parseOrganizationInfo(response as never);
+      return parseOrganizationInfo(response);
     },
     staleTime: 60000,
   });
@@ -161,7 +161,7 @@ export const useEntityAuditTraceWithEnabled = (
         throw new Error('Entity type and identifier are required');
       }
       const response = await typedApi.GetEntityAuditTrace({ entityType, entityIdentifier });
-      return parseGetEntityAuditTrace(response as never);
+      return parseGetEntityAuditTrace(response);
     },
     enabled: enabled && !!entityType && !!entityIdentifier,
     staleTime: 30000,

@@ -83,11 +83,10 @@ async function fetchRepositoryVault(
     if (!vaultContent) return undefined;
 
     if (repository?.repositoryNetworkId !== undefined) {
-      (vaultContent as Record<string, unknown>).repositoryNetworkId =
-        repository.repositoryNetworkId;
+      vaultContent.repositoryNetworkId = repository.repositoryNetworkId;
     }
     if (repository?.repositoryNetworkMode) {
-      (vaultContent as Record<string, unknown>).networkMode = repository.repositoryNetworkMode;
+      vaultContent.networkMode = repository.repositoryNetworkMode;
     }
     return vaultContent;
   } catch {
@@ -201,10 +200,8 @@ class CliQueueService {
       storageVault: vaults.storageVault,
       bridgeVault: vaults.bridgeVault,
       repositoryGuid: context.params.repository as string | undefined,
-      repositoryNetworkId: (vaults.vaultContent as { repositoryNetworkId?: number } | undefined)
-        ?.repositoryNetworkId,
-      repositoryNetworkMode: (vaults.vaultContent as { networkMode?: string } | undefined)
-        ?.networkMode,
+      repositoryNetworkId: vaults.vaultContent?.repositoryNetworkId,
+      repositoryNetworkMode: vaults.vaultContent?.networkMode,
       storageName: (context.params.to ?? context.params.from) as string | undefined,
       language: context.language,
     };

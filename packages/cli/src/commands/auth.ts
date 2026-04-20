@@ -261,7 +261,7 @@ export function registerAuthCommands(program: Command): void {
           t('commands.auth.token.fork.success')
         );
 
-        const credentials = parseForkAuthenticationRequest(apiResponse as never);
+        const credentials = parseForkAuthenticationRequest(apiResponse);
 
         const tokenValue = credentials.requestToken ?? credentials.nextRequestToken;
         if (tokenValue) {

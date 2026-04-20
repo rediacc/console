@@ -98,7 +98,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     const filtered: Record<string, QueueFunction> = {};
     for (const [key, value] of Object.entries(rawLocalizedFunctions)) {
       if (value !== null) {
-        filtered[key] = value as QueueFunction;
+        filtered[key] = value;
       }
     }
     return filtered;
@@ -216,7 +216,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
 
     // Reset form
     setSelectedFunction(null);
-    setFunctionParams({} as FunctionParams);
+    setFunctionParams({});
     setFunctionPriority(4);
     setFunctionDescription('');
     setFunctionSearchTerm('');
@@ -227,7 +227,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   const handleCancel = () => {
     // Reset form
     setSelectedFunction(null);
-    setFunctionParams({} as FunctionParams);
+    setFunctionParams({});
     setFunctionPriority(4);
     setFunctionDescription('');
     setFunctionSearchTerm('');

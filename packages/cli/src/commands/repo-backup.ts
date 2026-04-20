@@ -250,14 +250,14 @@ async function pushSingleRepo(
     repoConfig.repositoryGuid,
     resolvedType,
     targetName,
-    options as { checkpoint?: boolean; force?: boolean; tag?: string }
+    options
   );
 
   attachSeedLineage(params, repoConfig);
   if (options.bwlimit) params.bwlimit = options.bwlimit;
 
   outputService.info(t('commands.repo.push.pushing', { repo, dest }));
-  await executeFunction('backup_push', params, options as BackupRunOptions, repoCommand);
+  await executeFunction('backup_push', params, options, repoCommand);
 
   if (options.up && resolvedType === 'machine') {
     await postPushDeploy(repo, targetName, options);
@@ -327,7 +327,7 @@ async function pullSingleRepo(
   }
 
   outputService.info(t('commands.repo.pull.pulling', { repo }));
-  await executeFunction('backup_pull', params, options as BackupRunOptions, repoCommand);
+  await executeFunction('backup_pull', params, options, repoCommand);
 
   if (options.up && targetMachine) {
     await postPullDeploy(repo, targetMachine, options);

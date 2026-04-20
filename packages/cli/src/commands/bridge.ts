@@ -7,7 +7,6 @@ import {
 import type {
   CreateBridgeParams,
   DeleteBridgeParams,
-  GetOrganizationVaults_ResultSet1,
   UpdateBridgeNameParams,
   UpdateBridgeVaultParams,
 } from '@rediacc/shared/types';
@@ -50,7 +49,7 @@ export function registerBridgeCommands(program: Command): void {
       fetch: async () => {
         const response = await typedApi.GetOrganizationVaults({});
         const vaults = parseGetOrganizationVaults(response as never);
-        return vaults as unknown as (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[];
+        return vaults;
       },
       vaultType: 'Bridge',
     },

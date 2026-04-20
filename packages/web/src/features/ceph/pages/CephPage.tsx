@@ -271,7 +271,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
           onEditCluster={(cluster) => openModal('cluster', 'edit', cluster as ModalData)}
           onDeleteCluster={(cluster) => handleDelete('cluster', cluster)}
           onRunFunction={(cluster) =>
-            openModal('cluster', 'create', { ...cluster, isFunction: true } as ModalData)
+            openModal('cluster', 'create', { ...cluster, isFunction: true })
           }
         />
       );
@@ -286,9 +286,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
           onCreatePool={() => openModal('pool', 'create')}
           onEditPool={(pool) => openModal('pool', 'edit', pool as ModalData)}
           onDeletePool={(pool) => handleDelete('pool', pool)}
-          onRunFunction={(pool) =>
-            openModal('pool', 'create', { ...pool, isFunction: true } as ModalData)
-          }
+          onRunFunction={(pool) => openModal('pool', 'create', { ...pool, isFunction: true })}
         />
       );
     }
@@ -396,14 +394,14 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
               const data = modalState.data ?? {};
               if (modalState.type === 'cluster') {
                 await updateClusterVaultMutation.mutateAsync({
-                  clusterName: data.clusterName as string,
+                  clusterName: data.clusterName,
                   vaultContent: vault,
                   vaultVersion: version,
                 });
               } else if (primaryTeam) {
                 await updatePoolVaultMutation.mutateAsync({
                   teamName: primaryTeam,
-                  poolName: data.poolName as string,
+                  poolName: data.poolName,
                   vaultContent: vault,
                   vaultVersion: version,
                 });

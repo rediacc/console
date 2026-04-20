@@ -6,7 +6,6 @@ import {
 import type {
   CreateTeamParams,
   DeleteTeamParams,
-  GetOrganizationVaults_ResultSet1,
   UpdateTeamNameParams,
   UpdateTeamVaultParams,
 } from '@rediacc/shared/types';
@@ -49,7 +48,7 @@ export function registerTeamCommands(program: Command): void {
       fetch: async () => {
         const response = await typedApi.GetOrganizationVaults({});
         const vaults = parseGetOrganizationVaults(response as never);
-        return vaults as unknown as (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[];
+        return vaults;
       },
       vaultType: 'Team',
     },

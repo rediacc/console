@@ -106,9 +106,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       typeof useQuickRepositoryAction
     >[0]['teamRepositories'],
     machine: machine as Parameters<typeof useQuickRepositoryAction>[0]['machine'],
-    executeDynamic: executeDynamic as Parameters<
-      typeof useQuickRepositoryAction
-    >[0]['executeDynamic'],
+    executeDynamic,
     onQueueItemCreated,
     t,
   });
@@ -119,7 +117,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     >[0]['teamRepositories'],
     machine: machine as Parameters<typeof useConfirmForkDeletion>[0]['machine'],
     confirm: confirm as Parameters<typeof useConfirmForkDeletion>[0]['confirm'],
-    executeTyped: executeTyped as Parameters<typeof useConfirmForkDeletion>[0]['executeTyped'],
+    executeTyped,
     onQueueItemCreated,
     t,
   });
@@ -235,8 +233,8 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         machine: machine as FunctionExecutionContext['machine'],
         teamMachines: teamMachines as FunctionExecutionContext['teamMachines'],
         teamStorages: teamStorages as FunctionExecutionContext['teamStorages'],
-        executeTyped: executeTyped as FunctionExecutionContext['executeTyped'],
-        executeDynamic: executeDynamic as FunctionExecutionContext['executeDynamic'],
+        executeTyped,
+        executeDynamic,
         createRepositoryCredential:
           createRepositoryCredential as FunctionExecutionContext['createRepositoryCredential'],
         onQueueItemCreated,

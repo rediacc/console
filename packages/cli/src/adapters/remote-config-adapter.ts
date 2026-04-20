@@ -148,9 +148,9 @@ export class RemoteConfigAdapter {
       id: config.id,
       version: currentVersion + 1,
       sdkEpoch: session.sdkEpoch,
-      machines: (config.machines ?? {}) as Record<string, unknown>,
-      repositories: (config.repositories ?? {}) as Record<string, unknown>,
-      storages: (config.storages ?? {}) as Record<string, unknown>,
+      machines: config.machines ?? {},
+      repositories: config.repositories ?? {},
+      storages: config.storages ?? {},
       ssh: config.ssh as Record<string, unknown> | undefined,
     };
 

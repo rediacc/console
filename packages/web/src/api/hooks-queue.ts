@@ -98,7 +98,7 @@ export const useCreateQueueItemWithValidation = () => {
         priority,
       };
       const response = await typedApi.CreateQueueItem(params);
-      return parseCreateQueueItem(response as never);
+      return parseCreateQueueItem(response);
     },
     successMessage: i18n.t('queue:success.created'),
     errorMessage: i18n.t('queue:errors.createFailed'),
@@ -153,7 +153,7 @@ export const useQueueItemTraceWithEnabled = (taskId: string | null, enabled = tr
     queryKey: ['queue', 'trace', taskId ?? ''],
     queryFn: async () => {
       const response = await typedApi.GetQueueItemTrace({ taskId: taskId! });
-      return parseGetQueueItemTrace(response as never);
+      return parseGetQueueItemTrace(response);
     },
     enabled: enabled && !!taskId,
     staleTime: 5000,

@@ -103,7 +103,7 @@ export const useEnableTFA = () => {
           isTFAEnabled: true,
           isAuthorized: true,
           authenticationStatus: i18n.t('settings:twoFactorAuth.statusMessages.enabled'),
-        } as TwoFactorStatus);
+        });
         void queryClient.invalidateQueries({ queryKey: ['tfa-status'] });
       }
     },
@@ -136,7 +136,7 @@ export const useDisableTFA = () => {
         isTFAEnabled: false,
         isAuthorized: true,
         authenticationStatus: i18n.t('settings:twoFactorAuth.statusMessages.none'),
-      } as TwoFactorStatus);
+      });
       void queryClient.invalidateQueries({ queryKey: ['tfa-status'] });
     },
   });
