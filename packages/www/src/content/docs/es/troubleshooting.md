@@ -17,7 +17,7 @@ Problemas comunes y sus soluciones. En caso de duda, comience con `rdc doctor` p
 ## Falla la conexión SSH
 
 - Verifique que puede conectarse manualmente: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Ejecute `rdc config machine scan-keys --name server-1` para actualizar las claves del host
+- Ejecute `rdc config machine scan-keys -m server-1` para actualizar las claves del host
 - Compruebe que el puerto SSH coincida: `--port 22`
 - Pruebe con un comando simple: `rdc term connect -m server-1 -c "hostname"`
 

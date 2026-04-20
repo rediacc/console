@@ -15,7 +15,7 @@ sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ## فشل اتصال SSH
 
 - تحقق من إمكانية الاتصال يدوياً: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- شغّل `rdc config machine scan-keys --name server-1` لتحديث مفاتيح المضيف
+- شغّل `rdc config machine scan-keys -m server-1` لتحديث مفاتيح المضيف
 - تأكد من تطابق منفذ SSH: `--port 22`
 - اختبر بأمر بسيط: `rdc term connect -m server-1 -c "hostname"`
 

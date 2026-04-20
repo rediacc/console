@@ -15,7 +15,7 @@ sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ## SSH接続の失敗
 
 - 手動で接続できるか確認してください: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- `rdc config machine scan-keys --name server-1` を実行してホストキーを更新してください
+- `rdc config machine scan-keys -m server-1` を実行してホストキーを更新してください
 - SSHポートが一致しているか確認してください: `--port 22`
 - 簡単なコマンドでテストしてください: `rdc term connect -m server-1 -c "hostname"`
 

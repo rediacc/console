@@ -17,7 +17,7 @@ sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ## Ошибка подключения SSH
 
 - Убедитесь, что можете подключиться вручную: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Выполните `rdc config machine scan-keys --name server-1` для обновления ключей хоста
+- Выполните `rdc config machine scan-keys -m server-1` для обновления ключей хоста
 - Проверьте соответствие порта SSH: `--port 22`
 - Проверьте простой командой: `rdc term connect -m server-1 -c "hostname"`
 

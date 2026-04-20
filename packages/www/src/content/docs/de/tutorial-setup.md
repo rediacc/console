@@ -117,7 +117,7 @@ Stellen Sie die generierte Traefik-Proxy-Konfiguration mit `rdc config infra pus
 Bestätigen Sie, dass der Server läuft und die IP korrekt ist. Prüfen Sie, ob Port 22 offen ist: `nc -zv <ip> 22`. Bei einem nicht standardmäßigen Port übergeben Sie `--port` beim Hinzufügen der Maschine.
 
 **"Host key verification failed"**
-Der gespeicherte Host-Schlüssel stimmt nicht mit dem aktuellen Schlüssel des Servers überein. Dies passiert nach einem Server-Neuaufbau oder einer IP-Neuzuweisung. Führen Sie `rdc config machine scan-keys --name <machine>` aus, um den Schlüssel zu aktualisieren.
+Der gespeicherte Host-Schlüssel stimmt nicht mit dem aktuellen Schlüssel des Servers überein. Dies passiert nach einem Server-Neuaufbau oder einer IP-Neuzuweisung. Führen Sie `rdc config machine scan-keys -m <machine>` aus, um den Schlüssel zu aktualisieren.
 
 ## Nächste Schritte
 

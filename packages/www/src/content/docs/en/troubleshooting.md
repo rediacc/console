@@ -13,7 +13,7 @@ Common issues and their solutions. When in doubt, start with `rdc doctor` to run
 ## SSH Connection Fails
 
 - Verify you can connect manually: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Run `rdc config machine scan-keys --name server-1` to refresh host keys
+- Run `rdc config machine scan-keys -m server-1` to refresh host keys
 - Check that the SSH port matches: `--port 22`
 - Test with a simple command: `rdc term connect -m server-1 -c "hostname"`
 

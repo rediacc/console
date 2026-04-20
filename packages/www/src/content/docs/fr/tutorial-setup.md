@@ -116,7 +116,7 @@ Vérifiez que le chemin de clé passé à `config init` existe et correspond au 
 Confirmez que le serveur fonctionne et que l'IP est correcte. Vérifiez que le port 22 est ouvert : `nc -zv <ip> 22`. Si vous utilisez un port non standard, passez `--port` lors de l'ajout de la machine.
 
 **"Host key verification failed"**
-La clé d'hôte stockée ne correspond pas à la clé actuelle du serveur. Cela se produit après une reconstruction du serveur ou une réattribution d'IP. Exécutez `rdc config machine scan-keys --name <machine>` pour actualiser la clé.
+La clé d'hôte stockée ne correspond pas à la clé actuelle du serveur. Cela se produit après une reconstruction du serveur ou une réattribution d'IP. Exécutez `rdc config machine scan-keys -m <machine>` pour actualiser la clé.
 
 ## Étapes suivantes
 

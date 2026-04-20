@@ -113,7 +113,7 @@ Verify the key path passed to `config init` exists and matches the server's `aut
 Confirm the server is running and the IP is correct. Check that port 22 is open: `nc -zv <ip> 22`. If using a non-standard port, pass `--port` when adding the machine.
 
 **"Host key verification failed"**
-The stored host key doesn't match the server's current key. This happens after a server rebuild or IP reassignment. Run `rdc config machine scan-keys --name <machine>` to refresh the key.
+The stored host key doesn't match the server's current key. This happens after a server rebuild or IP reassignment. Run `rdc config machine scan-keys -m <machine>` to refresh the key.
 
 ## Next Steps
 
