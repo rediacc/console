@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 10
 language: tr
-sourceHash: 54e552831b2b125c
+sourceHash: 4575658381fb6508
 sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 

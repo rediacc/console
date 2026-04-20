@@ -4,7 +4,7 @@ description: حلول للمشاكل الشائعة مع SSH والإعداد و
 category: Guides
 order: 10
 language: ar
-sourceHash: 54e552831b2b125c
+sourceHash: 4575658381fb6508
 sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 

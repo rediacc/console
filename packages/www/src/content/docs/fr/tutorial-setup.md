@@ -6,7 +6,7 @@ description: >-
 category: Tutorials
 order: 2
 language: fr
-sourceHash: 9ff760ad1c9dc0b0
+sourceHash: 0c36a98feadd7aaa
 ---
 
 # Comment configurer une machine avec Rediacc
