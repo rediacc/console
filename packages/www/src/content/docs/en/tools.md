@@ -16,7 +16,7 @@ Transfer files between your workstation and a remote repository using rsync over
 
 ### Upload Files
 
-`--local` accepts one or more paths. Each path may be a file or a directory — files land at `<remote>/<basename>`, directory contents merge into `<remote>/`.
+`--local` accepts one or more paths. Each path may be a file or a directory. Files land at `<remote>/<basename>`; directory contents merge into `<remote>/`.
 
 ```bash
 # Directory (contents merged into remote)
@@ -29,7 +29,7 @@ rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/co
 rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
 ```
 
-`--mirror` cannot be combined with a file source — it would delete sibling files in the remote directory.
+`--mirror` cannot be combined with a file source; it would delete sibling files in the remote directory.
 
 ### Download Files
 
@@ -59,7 +59,7 @@ rdc repo sync status -m server-1 -r my-app
 | `--remote <path>` | Remote directory (relative to repository mount) |
 | `--remote-file <path>` | Remote file path, for single-file downloads (alternative to `--remote`) |
 | `--dry-run` | Preview changes without transferring |
-| `--mirror` | Mirror source to destination (delete extra files) — directory sources only |
+| `--mirror` | Mirror source to destination, delete extra files (directory sources only) |
 | `--verify` | Verify checksums after transfer |
 | `--confirm` | Interactive confirmation with detail view |
 | `--exclude <patterns...>` | Exclude file patterns |
