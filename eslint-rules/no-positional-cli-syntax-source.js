@@ -131,7 +131,7 @@ export const noPositionalCliSyntaxSource = {
     ];
 
     const { leaves, all } = loadPathsFromTree();
-    const leafEntries = [...leaves].map((p) => ({
+    const leafEntries = [...leaves].sort((a, b) => b.length - a.length).map((p) => ({
       path: p,
       regex: buildCommandRegex(p),
     }));

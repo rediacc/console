@@ -174,8 +174,10 @@ export const noPositionalCliSyntax = {
     let derivedCommands = [];
     if (autoDerive) {
       const { leaves, all } = loadPathsFromTree();
-      // Leaf-command pass: reject ANY non-flag next token.
-      for (const p of leaves) {
+      // Leaf-command pass: reject ANY non-flag next token. Sorted
+      // longest-first so the most specific leaf wins on dedup.
+      const sortedLeaves = [...leaves].sort((a, b) => b.length - a.length);
+      for (const p of sortedLeaves) {
         derivedCommands.push({
           path: p,
           regex: buildCommandRegex(p),

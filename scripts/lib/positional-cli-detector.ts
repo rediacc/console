@@ -246,10 +246,12 @@ export function scanText(text: string, opts: ScanOptions = {}): Violation[] {
     ...(opts.extraExemptPrefixes ?? []),
   ];
 
-  const leafEntries = [...getZeroPositionalCommands()].map((p) => ({
-    path: p,
-    regex: buildDetectionRegex(p),
-  }));
+  const leafEntries = [...getZeroPositionalCommands()]
+    .sort((a, b) => b.length - a.length)
+    .map((p) => ({
+      path: p,
+      regex: buildDetectionRegex(p),
+    }));
   // Sort descending by path length so `repo autostart enable` matches
   // before `repo` (otherwise the shorter parent wins on regex dispatch).
   const allEntries = [...getAllCommandPaths()]
