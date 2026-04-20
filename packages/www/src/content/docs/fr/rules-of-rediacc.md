@@ -156,7 +156,7 @@ Aucun indicateur de posture de sécurité spécifique au système d'exploitation
 - **`rdc repo down`** exécute `down()` et arrête le daemon Docker.
 - **`rdc repo down --unmount`** ferme également le volume LUKS (verrouille le stockage chiffré).
 - **Forks** (`rdc repo fork`) créent un clone CoW (copy-on-write) avec un nouveau GUID et networkId, en **temps constant quelle que soit la taille du dépôt**. Le reflink BTRFS duplique les métadonnées de l'image, pas les données, si bien qu'un dépôt de 100 Go se fork en autant de secondes qu'un dépôt de 1 Go. Le fork partage la clé de chiffrement du parent.
-- **Takeover** (`rdc repo takeover <fork> -m <machine>`) remplace les données du grand dépôt par celles d'un fork. Le grand conserve son identité (GUID, networkId, domaines, autostart, chaîne de sauvegardes). Les anciennes données de production sont conservées sous forme de fork de sauvegarde. Utilisation : tester une mise à jour sur un fork, vérifier, puis takeover en production. Réverter avec `rdc repo takeover <backup-fork> -m <machine>`.
+- **Takeover** (`rdc repo takeover --name <fork> -m <machine>`) remplace les données du grand dépôt par celles d'un fork. Le grand conserve son identité (GUID, networkId, domaines, autostart, chaîne de sauvegardes). Les anciennes données de production sont conservées sous forme de fork de sauvegarde. Utilisation : tester une mise à jour sur un fork, vérifier, puis takeover en production. Réverter avec `rdc repo takeover --name <backup-fork> -m <machine>`.
 - **Les routes proxy** mettent environ 3 secondes à devenir actives après le déploiement. L'avertissement « Proxy is not running » pendant `repo up` est informatif dans les environnements ops/dev.
 - **`rdc repo up` et `rdc repo fork --up` impriment le modèle d'URL** à la fin du déploiement pour les services étiquetés avec `rediacc.service_port`. Remplacez `{service}` par le nom de votre service exposé pour obtenir l'URL exacte. Les services sans `rediacc.service_port` (bases de données, workers) n'obtiennent pas de routes et ne sont pas affichés.
 
@@ -167,4 +167,4 @@ Aucun indicateur de posture de sécurité spécifique au système d'exploitation
 - Utiliser `privileged: true`, inutile, renet injecte des capabilities CRIU spécifiques à la place.
 - Coder en dur des IPs brutes dans des fichiers de configuration persistants - utilisez les noms de service pour les connexions afin de préserver l'isolation du fork.
 - Utiliser `rdc term connect -c` comme contournement pour les commandes échouées, signalez les bugs à la place.
-- `repo delete` effectue un nettoyage complet incluant les IPs de loopback et les unités systemd. Exécutez `rdc machine prune <name>` pour nettoyer les restes des suppressions anciennes.
+- `repo delete` effectue un nettoyage complet incluant les IPs de loopback et les unités systemd. Exécutez `rdc machine prune --name <name>` pour nettoyer les restes des suppressions anciennes.

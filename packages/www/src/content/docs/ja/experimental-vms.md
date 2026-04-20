@@ -140,7 +140,7 @@ rdc ops down
 | `rdc ops up [options]` | VMクラスターをプロビジョニング |
 | `rdc ops down` | すべてのVMを破棄しクリーンアップ |
 | `rdc ops status` | すべてのVMのステータスを表示 |
-| `rdc ops ssh <vm-id> [command...]` | VMにSSH接続、またはVM上でコマンドを実行 |
+| `rdc ops ssh --vm-id <id> [command...]` | VMにSSH接続、またはVM上でコマンドを実行 |
 
 ### `rdc ops up` オプション
 

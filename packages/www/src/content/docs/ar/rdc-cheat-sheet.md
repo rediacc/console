@@ -4,8 +4,8 @@ description: مرجع سريع لجميع أوامر rdc، الإعدادات، 
 category: Guides
 order: 3
 language: ar
-sourceHash: "b941deba8b6d1b56"
-sourceCommit: "b010d8dc3d3edd8b08ec25593f39f4808d7f1d03"
+sourceHash: "2ec57c88104cdc1e"
+sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
 ---
 
 # ورقة مرجعية لـ RDC CLI
@@ -83,7 +83,7 @@ sourceCommit: "b010d8dc3d3edd8b08ec25593f39f4808d7f1d03"
 | `rdc machine query --name <machine> --network` | معلومات الشبكة فقط |
 | `rdc machine query --name <machine> --block-devices` | معلومات أجهزة التخزين فقط |
 | `rdc machine list` | عرض جميع الأجهزة في الإعدادات |
-| `rdc config machine setup <machine>` | تشغيل التجهيز الأولي للجهاز |
+| `rdc config machine setup --name <machine>` | تشغيل التجهيز الأولي للجهاز |
 | `rdc machine prune --name <machine>` | إزالة الموارد غير المستخدمة من الجهاز |
 | `rdc machine deprovision --name <machine>` | إلغاء تجهيز الجهاز بالكامل |
 | `rdc machine vault-status --name <machine>` | عرض حالة خزينة LUKS |
@@ -95,8 +95,9 @@ sourceCommit: "b010d8dc3d3edd8b08ec25593f39f4808d7f1d03"
 | `rdc term connect -m <machine>` | فتح طرفية SSH للجهاز |
 | `rdc term connect -m <machine> -r <repo>` | فتح طرفية SSH للمستودع (تعيين DOCKER_HOST) |
 | `rdc term connect -m <machine> -c "<command>"` | تشغيل أمر على الجهاز |
-| `rdc repo sync upload -m <machine> -r <repo> --local <path>` | رفع ملفات محلية إلى المستودع |
-| `rdc repo sync download -m <machine> -r <repo> --local <path>` | تنزيل ملفات المستودع محلياً |
+| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | رفع ملف أو مجلد أو عدة مصادر إلى المستودع |
+| `rdc repo sync download -m <machine> -r <repo> --local <dir>` | تنزيل مجلد المستودع محلياً |
+| `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | تنزيل ملف واحد من المستودع إلى مجلد محلي |
 | `rdc vscode connect -m <machine> -r <repo>` | فتح جلسة VS Code Remote SSH |
 
 ## الإعدادات

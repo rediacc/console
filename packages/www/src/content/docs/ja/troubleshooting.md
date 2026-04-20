@@ -15,7 +15,7 @@ sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ## SSH接続の失敗
 
 - 手動で接続できるか確認してください: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- `rdc config machine scan-keys server-1` を実行してホストキーを更新してください
+- `rdc config machine scan-keys --name server-1` を実行してホストキーを更新してください
 - SSHポートが一致しているか確認してください: `--port 22`
 - 簡単なコマンドでテストしてください: `rdc term connect -m server-1 -c "hostname"`
 
@@ -33,7 +33,7 @@ rdc config machine scan-keys -m server-1
 
 - SSHユーザーがパスワードなしのsudoアクセスを持っているか確認するか、必要なコマンドに `NOPASSWD` を設定してください
 - サーバーの空きディスク容量を確認してください
-- `--debug` を付けて詳細な出力を取得してください: `rdc config machine setup server-1 --debug`
+- `--debug` を付けて詳細な出力を取得してください: `rdc config machine setup --name server-1 --debug`
 
 ## ディストリビューション固有のセットアップ問題
 
@@ -100,7 +100,7 @@ rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 または全てのコンテナを表示:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## 権限拒否エラー

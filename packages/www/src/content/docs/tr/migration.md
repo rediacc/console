@@ -210,7 +210,7 @@ Bu işlem:
 Konteynerlerinizin çalıştığını doğrulayın:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## Adım 7: Otomatik Başlatmayı Etkinleştirme (Isteğe Bağlı)

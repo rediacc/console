@@ -210,7 +210,7 @@ Dies wird:
 Überprüfen Sie, ob Ihre Container laufen:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## Schritt 7: Autostart aktivieren (Optional)

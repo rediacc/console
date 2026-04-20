@@ -17,7 +17,7 @@ Rediacc es un componente de la capa de controles técnicos dentro de un SGSI. La
 
 | Dominio de control | Control | Capacidad de Rediacc |
 |-------------------|---------|---------------------|
-| **A.8**, Gestión de activos | A.8.1 Inventario de activos | Cada repositorio es un activo discreto e identificable con un GUID único. `rdc machine query <machine> --repositories` lista todos los repositorios con tamaño, estado de montaje y cantidad de contenedores. |
+| **A.8**, Gestión de activos | A.8.1 Inventario de activos | Cada repositorio es un activo discreto e identificable con un GUID único. `rdc machine query --name <machine> --repositories` lista todos los repositorios con tamaño, estado de montaje y cantidad de contenedores. |
 | **A.8**, Gestión de activos | A.8.24 Uso de criptografía | Cifrado LUKS2 AES-256 obligatorio en todos los repositorios. Gestión de claves: credenciales almacenadas solo en la configuración local del operador, nunca en el servidor. |
 | **A.9**, Control de acceso | A.9.2 Gestión de acceso de usuarios | Autenticación por clave SSH. Tokens API con vinculación IP, alcance por equipos y revocación automática al remover del equipo. Autenticación de dos factores (TOTP). |
 | **A.10**, Criptografía | A.10.1 Controles criptográficos | LUKS2 con parámetros de clave configurables. Credenciales de cifrado por repositorio. Todo el transporte remoto por SSH. El almacén de configuración implementa cifrado de conocimiento cero: AES-256-GCM con derivación de clave HKDF, intercambio de claves X25519 para miembros y claves SDK con ventana temporal para revocación inmediata. |

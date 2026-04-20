@@ -46,7 +46,7 @@ Der Standard für die Selbsthosting-Nutzung. Der gesamte Zustand liegt in einer 
 - Direkte SSH-Verbindungen zu Maschinen
 - Keine externen Dienste erforderlich
 - Einzelbenutzer, einzelne Workstation
-- Die Standardkonfiguration wird beim ersten CLI-Aufruf automatisch erstellt. Benannte Konfigurationen werden mit `rdc config init <name>` erstellt
+- Die Standardkonfiguration wird beim ersten CLI-Aufruf automatisch erstellt. Benannte Konfigurationen werden mit `rdc config init --name <name>` erstellt
 
 ### Cloud-Adapter (Experimentell)
 

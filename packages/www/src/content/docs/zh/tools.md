@@ -4,7 +4,8 @@ description: 文件同步、终端访问、VS Code 集成、更新和诊断。
 category: Guides
 order: 9
 language: zh
-sourceHash: "5577c66ce89c1925"
+sourceHash: "d969636d6c2e459f"
+sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
 ---
 
 # 工具
@@ -39,8 +40,9 @@ rdc repo sync status -m server-1 -r my-app
 |--------|-------------|
 | `-m, --machine <name>` | 目标机器 |
 | `-r, --repository <name>` | 目标仓库 |
-| `--local <path>` | 本地目录路径 |
-| `--remote <path>` | 远程路径（相对于仓库挂载点） |
+| `--local <paths...>` | 一个或多个本地文件/目录路径（上传）或本地目标目录（下载） |
+| `--remote <path>` | 远程目录（相对于仓库挂载点） |
+| `--remote-file <path>` | 单个远程文件（仅限下载，`--remote` 的替代项） |
 | `--dry-run` | 预览更改，不实际传输 |
 | `--mirror` | 将源镜像到目标（删除多余文件） |
 | `--verify` | 传输后验证校验和 |

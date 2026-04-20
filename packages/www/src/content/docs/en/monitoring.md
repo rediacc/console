@@ -15,7 +15,7 @@ Rediacc provides built-in monitoring commands to inspect machine health, running
 Get a comprehensive health report for a machine:
 
 ```bash
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 This reports:
@@ -31,7 +31,7 @@ Use `--output json` for machine-readable output.
 View all running containers across all repositories on a machine:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 | Column | Description |
@@ -55,7 +55,7 @@ JSON output includes full container details (`labels`, `port_mappings`, `image`,
 View systemd services related to Rediacc on a machine:
 
 ```bash
-rdc machine services server-1
+rdc machine services --name server-1
 ```
 
 | Column | Description |
@@ -78,7 +78,7 @@ JSON output includes full service details with `repository` (resolved name) and 
 View repositories on a machine with detailed stats:
 
 ```bash
-rdc machine repos server-1
+rdc machine repos --name server-1
 ```
 
 | Column | Description |

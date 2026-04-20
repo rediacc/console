@@ -146,6 +146,15 @@ function optionExpectsValue(flag, optionDefs) {
   return false;
 }
 
+function optionIsVariadic(flag, optionDefs) {
+  for (const option of optionDefs || []) {
+    const names = extractFlagNames(option.flags);
+    if (!names.includes(flag)) continue;
+    return /<[^>]*\.\.\.>|\[[^\]]*\.\.\.\]/.test(option.flags);
+  }
+  return false;
+}
+
 function walkCommands(node, pathParts, out) {
   const commandPath = pathParts.join(' ');
   if (commandPath) {
@@ -370,7 +379,15 @@ export function parseRdcCommand(commandText) {
           optionExpectsValue(flag, commandOptionDefs) ||
           GLOBAL_VALUE_FLAGS.has(flag))
       ) {
+        const isVariadic =
+          optionIsVariadic(flag, rootOptionDefs) || optionIsVariadic(flag, commandOptionDefs);
         i += 1;
+        if (isVariadic) {
+          // Variadic options (e.g. --local <paths...>) consume everything up to the next flag
+          while (i + 1 < tokens.length && !tokens[i + 1].startsWith('-')) {
+            i += 1;
+          }
+        }
       }
     } else {
       positionals += 1;

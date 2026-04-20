@@ -4,7 +4,8 @@ description: "Sincronización de archivos, acceso por terminal, integración con
 category: Guides
 order: 9
 language: es
-sourceHash: "5577c66ce89c1925"
+sourceHash: "d969636d6c2e459f"
+sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
 ---
 
 # Herramientas
@@ -39,8 +40,9 @@ rdc repo sync status -m server-1 -r my-app
 |--------|-------------|
 | `-m, --machine <name>` | Máquina destino |
 | `-r, --repository <name>` | Repositorio destino |
-| `--local <path>` | Ruta del directorio local |
-| `--remote <path>` | Ruta remota (relativa al montaje del repositorio) |
+| `--local <paths...>` | Una o más rutas locales de archivo/directorio (subida) o directorio local de destino (descarga) |
+| `--remote <path>` | Directorio remoto (relativo al montaje del repositorio) |
+| `--remote-file <path>` | Archivo remoto único (solo descarga, alternativa a `--remote`) |
 | `--dry-run` | Previsualizar cambios sin transferir |
 | `--mirror` | Duplicar origen en destino (eliminar archivos extra) |
 | `--verify` | Verificar checksums después de la transferencia |

@@ -699,6 +699,12 @@
           "descriptionKey": "commands.machine.repos.description",
           "options": [
             {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "-t, --team <name>",
               "descriptionKey": "options.team",
               "mandatory": false,
@@ -711,14 +717,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -726,26 +725,31 @@
           "descriptionKey": "commands.machine.health.description",
           "options": [
             {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
               "flags": "-t, --team <name>",
               "descriptionKey": "options.team",
               "mandatory": false,
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "containers",
           "descriptionKey": "commands.machine.containers.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
             {
               "flags": "-t, --team <name>",
               "descriptionKey": "options.team",
@@ -759,20 +763,19 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
           "name": "services",
           "descriptionKey": "commands.machine.services.description",
           "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
             {
               "flags": "-t, --team <name>",
               "descriptionKey": "options.team",
@@ -786,14 +789,7 @@
               "defaultValue": null
             }
           ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
+          "arguments": [],
           "subcommands": []
         },
         {
@@ -919,6 +915,12 @@
             {
               "flags": "--storage-health",
               "descriptionKey": "options.queryStorageHealth",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--sync-certs",
+              "descriptionKey": "options.querySyncCerts",
               "mandatory": false,
               "defaultValue": null
             }
@@ -2563,8 +2565,8 @@
                   "defaultValue": null
                 },
                 {
-                  "flags": "--local <path>",
-                  "descriptionKey": "options.localPath",
+                  "flags": "--local <paths...>",
+                  "descriptionKey": "options.localPaths",
                   "mandatory": false,
                   "defaultValue": null
                 },
@@ -2643,6 +2645,12 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--remote-file <path>",
+                  "descriptionKey": "options.remoteFile",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--mirror",
                   "descriptionKey": "options.mirrorDownload",
                   "mandatory": false,
@@ -2707,6 +2715,12 @@
                 {
                   "flags": "--remote <path>",
                   "descriptionKey": "options.remotePath",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--remote-file <path>",
+                  "descriptionKey": "options.remoteFile",
                   "mandatory": false,
                   "defaultValue": null
                 }
@@ -4794,6 +4808,12 @@
                 {
                   "flags": "--exclude <repos>",
                   "descriptionKey": "commands.config.backupStrategy.set.optionExclude",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--folder <path>",
+                  "descriptionKey": "commands.config.backupStrategy.set.optionFolder",
                   "mandatory": false,
                   "defaultValue": null
                 },

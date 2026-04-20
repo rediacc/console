@@ -103,7 +103,7 @@ rdc config infra set -m bridge-vm \
 rdc config infra show -m bridge-vm
 ```
 
-生成されたTraefikプロキシ構成を`rdc config infra push bridge-vm`でサーバーにデプロイします。
+生成されたTraefikプロキシ構成を`rdc config infra push -m bridge-vm`でサーバーにデプロイします。
 
 ## トラブルシューティング
 
@@ -114,7 +114,7 @@ rdc config infra show -m bridge-vm
 サーバーが実行中でIPが正しいことを確認してください。ポート22が開いているか確認: `nc -zv <ip> 22`。非標準ポートを使用している場合は、マシン追加時に`--port`を渡してください。
 
 **"Host key verification failed"**
-保存されたホストキーがサーバーの現在のキーと一致しません。これはサーバーの再構築やIPの再割り当て後に発生します。`rdc config machine scan-keys <machine>`を実行してキーを更新してください。
+保存されたホストキーがサーバーの現在のキーと一致しません。これはサーバーの再構築やIPの再割り当て後に発生します。`rdc config machine scan-keys --name <machine>`を実行してキーを更新してください。
 
 ## 次のステップ
 

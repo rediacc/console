@@ -24,7 +24,7 @@ Cuando `rdc` se ejecuta en un entorno non-TTY (tubería, subshell o invocado por
 
 ```bash
 # These all produce JSON automatically
-result=$(rdc machine query prod-1)
+result=$(rdc machine query --name prod-1)
 echo '{}' | rdc agent exec "machine query"
 ```
 
@@ -106,7 +106,7 @@ Los errores no reintentables (autenticación, no encontrado, argumentos inválid
 Use `--fields` para limitar la salida a claves específicas. Esto reduce el uso de tokens cuando solo se necesitan datos específicos:
 
 ```bash
-rdc machine containers prod-1 -o json --fields name,status,repository
+rdc machine containers --name prod-1 -o json --fields name,status,repository
 ```
 
 ## Salida de simulación
@@ -192,7 +192,7 @@ Acepta JSON en stdin, mapea las claves a los argumentos y opciones del comando, 
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine query prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python

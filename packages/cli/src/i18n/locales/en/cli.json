@@ -472,7 +472,7 @@
         },
         "list": {
           "description": "List machines in the current config",
-          "noMachines": "No machines configured. Add one with: rdc config machine add <name> --ip <ip> --user <user>"
+          "noMachines": "No machines configured. Add one with: rdc config machine add --name <name> --ip <ip> --user <user>"
         },
         "scanKeys": {
           "description": "Scan SSH host keys for machines in the current config",
@@ -514,7 +514,7 @@
         },
         "list": {
           "description": "List repository GUID mappings in the current config",
-          "noRepositories": "No repositories configured. Add one with: rdc config repository add <name> --guid <guid>"
+          "noRepositories": "No repositories configured. Add one with: rdc config repository add --name <name> --guid <guid>"
         },
         "listArchived": {
           "description": "List archived repository credentials",
@@ -580,7 +580,7 @@
         },
         "list": {
           "description": "List storages in the current config",
-          "noStorages": "No storages configured. Import with: rdc config storage import <file>"
+          "noStorages": "No storages configured. Import with: rdc config storage import --file <path>"
         }
       },
       "infra": {
@@ -610,7 +610,7 @@
           "success": "Infrastructure config pushed to \"{{name}}\"",
           "proxyInstallWarning": "Proxy install failed (code {{code}}). Run manually: sudo renet proxy install",
           "installingProxy": "Installing and starting proxy...",
-          "dnsSkipNoToken": "Skipping DNS: no Cloudflare API token. Set with: rdc config infra set <machine> --cf-dns-token <token>",
+          "dnsSkipNoToken": "Skipping DNS: no Cloudflare API token. Set with: rdc config infra set -m <machine> --cf-dns-token <token>",
           "dnsSkipLocal": "Skipping DNS: .local domain does not use Cloudflare",
           "dnsResolvingZone": "Resolving Cloudflare zone for {{domain}}...",
           "dnsCreated": "DNS: created {{type}} {{name}} → {{content}}",
@@ -640,7 +640,7 @@
           "uploaded": "Uploaded {{count}} certificate(s) to {{machine}}",
           "merged": "Merged {{count}} certificate(s) with longer expiry into {{machine}}",
           "upToDate": "Certificates on {{machine}} are up to date",
-          "noCache": "No certificate cache found. Run 'rdc config cert-cache pull <machine>' first"
+          "noCache": "No certificate cache found. Run 'rdc config cert-cache pull -m <machine>' first"
         },
         "status": {
           "description": "Show cached certificate inventory",
@@ -845,7 +845,7 @@
         "optionNoInfra": "Skip infrastructure configuration (proxy + DNS)",
         "configuringInfra": "Configuring infrastructure (proxy + DNS) for {{name}}...",
         "infraInherited": "Auto-detected base domain from sibling machine \"{{source}}\"",
-        "noInfraHint": "No base domain configured. Run 'rdc config infra set <machine> --base-domain <domain>' then 'rdc config infra push <machine>' to enable DNS and proxy.",
+        "noInfraHint": "No base domain configured. Run 'rdc config infra set -m <machine> --base-domain <domain>' then 'rdc config infra push -m <machine>' to enable DNS and proxy.",
         "providerRequired": "Cloud provider \"{{name}}\" not found. Add with: rdc config provider add",
         "tofuNotInstalled": "OpenTofu (tofu) is not installed. Install from: https://opentofu.org/docs/intro/install/",
         "provisioning": "Provisioning {{name}} on {{provider}} ({{region}})...",
@@ -1345,7 +1345,7 @@
         "archiveOption": "Move config entry to deletedRepositories for later recovery",
         "starting": "Deleting \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Repository deleted",
-        "configRetained": "Config entry for \"{{repository}}\" retained (repo may exist on other machines). To remove: rdc config repository remove {{repository}}",
+        "configRetained": "Config entry for \"{{repository}}\" retained (repo may exist on other machines). To remove: rdc config repository remove --name {{repository}}",
         "archiveHint": "To archive credentials for recovery: rerun with --archive-config",
         "archived": "Credential for \"{{repository}}\" archived",
         "restoreHint": "Restore with: rdc config restore-archived {{guid}}",
@@ -1374,7 +1374,7 @@
         "starting": "Taking over \"{{grand}}\" with data from \"{{fork}}\" on \"{{machine}}\"...",
         "completed": "Takeover complete. Grand repo now has fork's data.",
         "backupInfo": "Old production data preserved as: {{backup}}",
-        "revertHint": "To revert: rdc repo takeover {{backup}} -m {{machine}}",
+        "revertHint": "To revert: rdc repo takeover --name {{backup}} -m {{machine}}",
         "failed": "Takeover failed",
         "rollback": "Rolled back config for \"{{name}}\""
       },
@@ -2021,11 +2021,11 @@
       "query": "Show full machine status",
       "containers": "List running containers",
       "health": "Health check for CI/CD",
-      "keyConcepts": "\nKey Concepts:\n\n  Query Filters\n    • rdc machine query <name> returns all sections by default\n    • Use --system, --repositories, --containers, --services, --network, --block-devices to filter\n    • JSON output enriches containers with: repository (resolved name), domain, autoRoute\n\n  Health & Monitoring\n    • machine health exits with: 0=healthy, 1=warning, 2=error — use for CI/CD gates\n    • containers --health-check exits 2 if any container is unhealthy\n    • services --stability-check exits 2 if any service is failed, restarting, or has >3 restarts\n    • machine prune removes orphaned loopback IPs and systemd units from deleted repos\n\n  Datastore Structure (/mnt/rediacc/)\n    • repositories/ — encrypted LUKS images (one per repo GUID)\n    • mounts/ — decrypted mount points (accessible when repo is mounted)\n    • immovable/ — per-repo Docker daemon data\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n"
+      "keyConcepts": "\nKey Concepts:\n\n  Query Filters\n    • rdc machine query --name <name> returns all sections by default\n    • Use --system, --repositories, --containers, --services, --network, --block-devices to filter\n    • JSON output enriches containers with: repository (resolved name), domain, autoRoute\n\n  Health & Monitoring\n    • machine health exits with: 0=healthy, 1=warning, 2=error — use for CI/CD gates\n    • containers --health-check exits 2 if any container is unhealthy\n    • services --stability-check exits 2 if any service is failed, restarting, or has >3 restarts\n    • machine prune removes orphaned loopback IPs and systemd units from deleted repos\n\n  Datastore Structure (/mnt/rediacc/)\n    • repositories/ — encrypted LUKS images (one per repo GUID)\n    • mounts/ — decrypted mount points (accessible when repo is mounted)\n    • immovable/ — per-repo Docker daemon data\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n"
     },
     "repo": {
       "create": "Create encrypted repo",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. eBPF bind rewriting handles isolation transparently, so apps can bind to 0.0.0.0\n    • To connect to sibling services use their service name (e.g. \"db\", \"redis\") — renet injects all service names as hostnames. Never embed ${DB_IP} in connection strings stored inside databases — it bakes the IP and breaks fork isolation (validation error)\n    • Health checks can use localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing\n    • Grand repo auto-route: https://{service}.{repo}.{machine}.{baseDomain} (wildcard cert *.{repo}.{machine}.{baseDomain} auto-provisioned by Traefik on first repo up)\n    • Fork auto-route: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (uses parent repo's wildcard cert, zero rate limit impact)\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Custom domains (rediacc.domain label) are ignored on forks — the domain belongs to the grand repo\n\n  Lifecycle\n    • repo delete fully cleans up: storage, Docker daemon, loopback IPs, systemd units\n    • repo down stops containers but keeps Docker daemon and IPs (quick restart with repo up)\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n    • Scheduled backups skip fork repos automatically. Use rdc repo push for manual fork backup\n    • repo takeover <fork> -m <machine> — replace production data with fork data (preserves identity). Revert with: repo takeover <backup-fork>\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. eBPF bind rewriting handles isolation transparently, so apps can bind to 0.0.0.0\n    • To connect to sibling services use their service name (e.g. \"db\", \"redis\") — renet injects all service names as hostnames. Never embed ${DB_IP} in connection strings stored inside databases — it bakes the IP and breaks fork isolation (validation error)\n    • Health checks can use localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing\n    • Grand repo auto-route: https://{service}.{repo}.{machine}.{baseDomain} (wildcard cert *.{repo}.{machine}.{baseDomain} auto-provisioned by Traefik on first repo up)\n    • Fork auto-route: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (uses parent repo's wildcard cert, zero rate limit impact)\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Custom domains (rediacc.domain label) are ignored on forks — the domain belongs to the grand repo\n\n  Lifecycle\n    • repo delete fully cleans up: storage, Docker daemon, loopback IPs, systemd units\n    • repo down stops containers but keeps Docker daemon and IPs (quick restart with repo up)\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable --name <name> -m <machine> — auto-mounts and starts repo on machine boot\n    • Scheduled backups skip fork repos automatically. Use rdc repo push --name <name> -m <machine> --to <remote> for manual fork backup\n    • rdc repo takeover --name <fork> -m <machine> — replace production data with fork data (preserves identity). Revert with: rdc repo takeover --name <backup-fork> -m <machine>\n",
       "up": "Deploy with auto-mount",
       "down": "Stop services",
       "fork": "CoW fork for testing",
@@ -2108,7 +2108,7 @@
       "unknownRegion": "Unknown region: {{region}}"
     },
     "networkError": "Network error: {{message}}",
-    "noActiveConfig": "No active config. Create one with: rdc config init <name>",
+    "noActiveConfig": "No active config. Create one with: rdc config init --name <name>",
     "notAuthenticated": "Not authenticated. Run: rdc auth login",
     "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
     "unknownSubcommand": "Unknown subcommand \"{{command}}\". Available {{parent}} subcommands: {{available}}.",
@@ -2129,7 +2129,10 @@
       "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault",
       "localPathNotFound": "Local path does not exist: {{path}}",
       "absolutePathBlocked": "The --remote path must be relative, not absolute. Use a path relative to the repository root.",
-      "pathTraversalBlocked": "The --remote path must not contain \"..\" path traversal. Use a path within the repository."
+      "pathTraversalBlocked": "The --remote path must not contain \"..\" path traversal. Use a path within the repository.",
+      "mirrorWithFile": "Cannot use --mirror when a source is a file: it would delete sibling files in the destination directory.",
+      "remoteAndRemoteFile": "Cannot use --remote and --remote-file together. Pick one.",
+      "remoteFileLocalNotDir": "When --remote-file is set, --local must be an existing directory: {{path}}"
     },
     "subscription": {
       "notLoggedIn": "Not logged in. Humans should run `rdc subscription login`. Automation should run `rdc subscription login --token <token>` or set `REDIACC_SUBSCRIPTION_TOKEN`.",
@@ -2169,11 +2172,11 @@
     "vaultDataRequired": "Vault data required. Use --vault <json> or pipe JSON via stdin.",
     "vaultVersionRequired": "Vault version required. Use --vault-version <n>.",
     "agent": {
-      "grandGuard": "\"{{name}}\" is a grand (production) repository. Agents cannot modify grand repositories directly.\n\nGrand repositories contain production data. Use a fork instead — forks are safe, isolated sandbox copies.\n\nWorkflow:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Operate on the fork (e.g., rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. When done, the user can promote the fork with rdc repo takeover\n\nUser: to allow direct access, set REDIACC_ALLOW_GRAND_REPO={{name}} (or * for all repos) in your terminal before starting the agent session.",
+      "grandGuard": "\"{{name}}\" is a grand (production) repository. Agents cannot modify grand repositories directly.\n\nGrand repositories contain production data. Use a fork instead — forks are safe, isolated sandbox copies.\n\nWorkflow:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Operate on the fork (e.g., rdc repo up --name {{name}}:<tag-name> -m <machine> --mount)\n  3. When done, the user can promote the fork with rdc repo takeover\n\nUser: to allow direct access, set REDIACC_ALLOW_GRAND_REPO={{name}} (or * for all repos) in your terminal before starting the agent session.",
       "grandGuardOverride": "\"{{name}}\" is a grand (production) repository. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.\n\nUse a fork instead — forks are safe, isolated sandbox copies:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Operate on the fork\n  3. When done, the user can promote the fork with rdc repo takeover",
       "mcpGrandGuard": "\"{{name}}\" is a grand (production) repository. Agents cannot modify grand repositories directly.\n\nUse repo_fork to create a safe, isolated sandbox copy, then operate on the fork.\nIf you need direct access, ask the user to restart the MCP server with --allow-grand.",
       "mcpGrandGuardOverride": "\"{{name}}\" is a grand (production) repository. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork to create a safe, isolated sandbox copy, then operate on the fork.",
-      "machineGuard": "Direct machine access to \"{{machine}}\" is not allowed in agent mode.\n\nAgents must connect through a repository context for sandboxed access. Fork a repository first, then connect to the fork.\n\nWorkflow:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term {{machine}} <repo>:<tag-name> -c \"<command>\"\n\nUser: to allow direct machine access, set REDIACC_ALLOW_GRAND_REPO=* (or a specific repo name) in your terminal before starting the agent session.",
+      "machineGuard": "Direct machine access to \"{{machine}}\" is not allowed in agent mode.\n\nAgents must connect through a repository context for sandboxed access. Fork a repository first, then connect to the fork.\n\nWorkflow:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nUser: to allow direct machine access, set REDIACC_ALLOW_GRAND_REPO=* (or a specific repo name) in your terminal before starting the agent session.",
       "machineGuardOverride": "Direct machine access to \"{{machine}}\" is not allowed. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.\n\nFork a repository first, then connect to the fork:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"",
       "mcpMachineGuard": "Direct machine access is not allowed in fork-only mode.\n\nAgents must connect through a repository context. Use repo_fork to create a fork, then connect to it.\nIf you need direct access, ask the user to restart the MCP server with --allow-grand.",
       "mcpMachineGuardOverride": "Direct machine access is not allowed. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork to create a fork, then connect to it.",
@@ -2291,7 +2294,9 @@
     "machineForVault": "Machine name (for updating vault after test)",
     "saveKnownHosts": "Save known_hosts to machine vault after successful test",
     "localPath": "Local directory path (default: current directory)",
+    "localPaths": "One or more local file or directory paths (default: current directory)",
     "remotePath": "Remote subdirectory path within repository",
+    "remoteFile": "Remote file path within repository (alternative to --remote for single-file transfers)",
     "mirrorUpload": "Mirror mode - delete remote files not present locally",
     "mirrorDownload": "Mirror mode - delete local files not present on remote",
     "verifyChecksum": "Verify files using checksums after sync",

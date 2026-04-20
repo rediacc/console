@@ -17,7 +17,7 @@ Rediacc bietet integrierte Überwachungsbefehle, um Maschinengesundheit, laufend
 Einen umfassenden Gesundheitsbericht für eine Maschine abrufen:
 
 ```bash
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 Dieser meldet:
@@ -33,7 +33,7 @@ Verwenden Sie `--output json` für maschinenlesbare Ausgabe.
 Alle laufenden Container über alle Repositories auf einer Maschine anzeigen:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 | Spalte | Beschreibung |
@@ -57,7 +57,7 @@ Die JSON-Ausgabe enthält vollständige Containerdetails (`labels`, `port_mappin
 Systemd-Dienste im Zusammenhang mit Rediacc auf einer Maschine anzeigen:
 
 ```bash
-rdc machine services server-1
+rdc machine services --name server-1
 ```
 
 | Spalte | Beschreibung |
@@ -80,7 +80,7 @@ Die JSON-Ausgabe enthält vollständige Dienstdetails mit `repository` (aufgelö
 Repositories auf einer Maschine mit detaillierten Statistiken anzeigen:
 
 ```bash
-rdc machine repos server-1
+rdc machine repos --name server-1
 ```
 
 | Spalte | Beschreibung |

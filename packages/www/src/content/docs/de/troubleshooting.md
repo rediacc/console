@@ -15,7 +15,7 @@ Häufige Probleme und ihre Lösungen. Im Zweifelsfall starten Sie mit `rdc docto
 ## SSH-Verbindung schlägt fehl
 
 - Überprüfen Sie, ob Sie sich manuell verbinden können: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Führen Sie `rdc config machine scan-keys server-1` aus, um die Host-Schlüssel zu aktualisieren
+- Führen Sie `rdc config machine scan-keys --name server-1` aus, um die Host-Schlüssel zu aktualisieren
 - Stellen Sie sicher, dass der SSH-Port übereinstimmt: `--port 22`
 - Testen Sie mit einem einfachen Befehl: `rdc term connect -m server-1 -c "hostname"`
 
@@ -33,7 +33,7 @@ Dieser Befehl ruft frische Host-Schlüssel ab und aktualisiert Ihre Konfiguratio
 
 - Stellen Sie sicher, dass der SSH-Benutzer sudo-Zugriff ohne Passwort hat, oder konfigurieren Sie `NOPASSWD` für die erforderlichen Befehle
 - Überprüfen Sie den verfügbaren Speicherplatz auf dem Server
-- Führen Sie den Befehl mit `--debug` für ausführliche Ausgabe aus: `rdc config machine setup server-1 --debug`
+- Führen Sie den Befehl mit `--debug` für ausführliche Ausgabe aus: `rdc config machine setup --name server-1 --debug`
 
 ## Distributionsspezifische Einrichtungsprobleme
 
@@ -100,7 +100,7 @@ rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 Oder alle Container anzeigen:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## Zugriff-verweigert-Fehler

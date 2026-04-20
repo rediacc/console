@@ -46,7 +46,7 @@ Kendi sunucunuzda barındırma için varsayılandır. Tüm durum bilgisi iş ist
 - Makinelere doğrudan SSH bağlantısı
 - Harici servis gerekmez
 - Tek kullanıcı, tek iş istasyonu
-- Varsayılan yapılandırma ilk CLI kullanımında otomatik oluşturulur. Adlandırılmış yapılandırmalar `rdc config init <name>` ile oluşturulur
+- Varsayılan yapılandırma ilk CLI kullanımında otomatik oluşturulur. Adlandırılmış yapılandırmalar `rdc config init --name <name>` ile oluşturulur
 
 ### Bulut Adaptörü (Deneysel)
 

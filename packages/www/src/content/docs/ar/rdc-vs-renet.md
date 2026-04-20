@@ -47,7 +47,7 @@ rdc repo up --name my-app -m server-1
 rdc repo down --name my-app -m server-1
 
 # Check machine health
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 راجع [البدء السريع](/ar/docs/quick-start) للاطلاع على شرح تفصيلي كامل.

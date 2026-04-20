@@ -140,7 +140,7 @@ rdc ops down
 | `rdc ops up [options]` | Создание кластера VM |
 | `rdc ops down` | Уничтожение всех VM и очистка |
 | `rdc ops status` | Отображение статуса всех VM |
-| `rdc ops ssh <vm-id> [command...]` | SSH-подключение к VM или выполнение команды на ней |
+| `rdc ops ssh --vm-id <id> [command...]` | SSH-подключение к VM или выполнение команды на ней |
 
 ### Параметры `rdc ops up`
 

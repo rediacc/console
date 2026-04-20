@@ -113,7 +113,7 @@ El formato cron es `minute hour day month weekday`. Programaciones comunes: `0 2
 El nombre del destino debe coincidir con un proveedor de almacenamiento configurado. Ejecute `rdc config storage list` para ver los nombres disponibles. Agregue nuevos proveedores mediante la configuración de rclone.
 
 **"Infrastructure config incomplete" al desplegar**
-Los tres campos son obligatorios: `--public-ipv4`, `--base-domain` y `--cert-email`. Ejecute `rdc config infra show <machine>` para verificar qué campos faltan.
+Los tres campos son obligatorios: `--public-ipv4`, `--base-domain` y `--cert-email`. Ejecute `rdc config infra show -m <machine>` para verificar qué campos faltan.
 
 ## Próximos pasos
 

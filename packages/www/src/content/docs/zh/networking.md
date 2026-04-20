@@ -204,7 +204,7 @@ Let's Encrypt 证书从签发到到达每个仓库容器的完整路径：
 
 2. **按仓库转储（可选）。**需要在其自身容器内存放证书文件的服务（例如直接读取 `.pem` 文件的邮件服务器），会在自身旁边部署一个小型 `traefik-certs-dumper` 容器。转储器以只读方式绑定挂载 `/opt/rediacc/proxy/letsencrypt`，并将提取的证书和密钥作为 `cert.pem` / `key.pem` 写入仓库的数据卷。为使其正常工作，每个仓库的 Docker 守护进程必须在其挂载命名空间允许列表中包含 `/opt/rediacc/proxy`。默认情况下已包含此项。
 
-3. **客户端缓存（`rediacc.json`）。** CLI 在配置文件的 `acmeCertCache` 下缓存 `acme.json` 的压缩副本，以 `baseDomain` 为键。这使多台机器可以共享证书（通过 `rdc config cert-cache push <machine>`），并充当离线清单。
+3. **客户端缓存（`rediacc.json`）。** CLI 在配置文件的 `acmeCertCache` 下缓存 `acme.json` 的压缩副本，以 `baseDomain` 为键。这使多台机器可以共享证书（通过 `rdc config cert-cache push -m <machine>`），并充当离线清单。
 
 **客户端缓存的同步触发条件：**
 

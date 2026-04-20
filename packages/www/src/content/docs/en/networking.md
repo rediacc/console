@@ -202,7 +202,7 @@ The full path a Let's Encrypt cert takes from issuance to each repo's containers
 
 2. **Per-repo dumping (optional).** Services that need cert files inside their own container (for example, a mail server that reads a `.pem` directly) deploy a small `traefik-certs-dumper` container alongside themselves. The dumper bind-mounts `/opt/rediacc/proxy/letsencrypt` read-only and writes the extracted cert + key into the repo's data volume as `cert.pem` / `key.pem`. For this to work, the per-repo Docker daemon must have `/opt/rediacc/proxy` in its mount-namespace allowlist. This is already included by default.
 
-3. **Client-side cache (`rediacc.json`).** The CLI caches a compressed copy of `acme.json` under `acmeCertCache` in your config file, keyed by `baseDomain`. This lets multiple machines share certs (via `rdc config cert-cache push <machine>`) and acts as an offline inventory.
+3. **Client-side cache (`rediacc.json`).** The CLI caches a compressed copy of `acme.json` under `acmeCertCache` in your config file, keyed by `baseDomain`. This lets multiple machines share certs (via `rdc config cert-cache push -m <machine>`) and acts as an offline inventory.
 
 **Sync triggers for the client cache:**
 

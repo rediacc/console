@@ -210,7 +210,7 @@ Esto hará:
 Verifique que sus contenedores estén ejecutándose:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## Paso 7: Habilitar inicio automático (Opcional)

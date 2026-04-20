@@ -140,7 +140,7 @@ rdc ops down
 | `rdc ops up [options]` | تجهيز مجموعة VM |
 | `rdc ops down` | تدمير جميع VMs وتنظيف الموارد |
 | `rdc ops status` | عرض حالة جميع VMs |
-| `rdc ops ssh <vm-id> [command...]` | الاتصال بـ VM عبر SSH، أو تشغيل أمر عليها |
+| `rdc ops ssh --vm-id <id> [command...]` | الاتصال بـ VM عبر SSH، أو تشغيل أمر عليها |
 
 ### خيارات `rdc ops up`
 

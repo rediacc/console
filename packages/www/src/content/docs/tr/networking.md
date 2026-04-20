@@ -206,7 +206,7 @@ Let's Encrypt sertifikasının verilmesinden her deponun konteynerlerine ulaşma
 
 2. **Depo başına dökme (isteğe bağlı).** Kendi konteyneri içinde sertifika dosyalarına ihtiyaç duyan servisler (örneğin, doğrudan bir `.pem` okuyan bir posta sunucusu), yanlarına küçük bir `traefik-certs-dumper` konteyneri dağıtır. Dökücü `/opt/rediacc/proxy/letsencrypt`'i salt okunur olarak bağlar ve çıkarılan sertifika ile anahtarı deponun veri birimine `cert.pem` / `key.pem` olarak yazar. Bunun çalışması için, depo başına Docker daemon'ının bağlama ad alanı izin listesinde `/opt/rediacc/proxy` bulunmalıdır. Bu varsayılan olarak zaten dahildir.
 
-3. **İstemci tarafı önbellek (`rediacc.json`).** CLI, yapılandırma dosyanızda `acmeCertCache` altında `acme.json`'ın sıkıştırılmış bir kopyasını `baseDomain`'e göre anahtarlanmış olarak önbelleğe alır. Bu, birden fazla makinenin sertifikaları paylaşmasına olanak tanır (`rdc config cert-cache push <machine>` aracılığıyla) ve çevrimdışı envanter olarak işlev görür.
+3. **İstemci tarafı önbellek (`rediacc.json`).** CLI, yapılandırma dosyanızda `acmeCertCache` altında `acme.json`'ın sıkıştırılmış bir kopyasını `baseDomain`'e göre anahtarlanmış olarak önbelleğe alır. Bu, birden fazla makinenin sertifikaları paylaşmasına olanak tanır (`rdc config cert-cache push -m <machine>` aracılığıyla) ve çevrimdışı envanter olarak işlev görür.
 
 **İstemci önbelleği için eşitleme tetikleyicileri:**
 

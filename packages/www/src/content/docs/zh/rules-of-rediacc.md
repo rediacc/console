@@ -156,7 +156,7 @@ Renet 会自动将以下变量注入每个容器：
 - **`rdc repo down`** 执行 `down()` 并停止 Docker 守护进程。
 - **`rdc repo down --unmount`** 还会关闭 LUKS 卷（锁定加密存储）。
 - **Fork**（`rdc repo fork`）创建具有新 GUID 和 networkId 的 CoW（写时复制）克隆，**耗时与仓库大小无关，是常数时间**。BTRFS reflink 只复制镜像元数据而非数据，因此 100 GB 的仓库 fork 和 1 GB 的仓库 fork 一样只需几秒钟。Fork 共享父级的加密密钥。
-- **接管**（`rdc repo takeover <fork> -m <machine>`）将 grand 仓库的数据替换为 fork 的数据。Grand 保留其身份（GUID、networkId、域名、自动启动、备份链）。旧的生产数据作为备份 fork 保留。用途：在 fork 上测试升级，验证后接管到生产。使用 `rdc repo takeover <backup-fork> -m <machine>` 回滚。
+- **接管**（`rdc repo takeover --name <fork> -m <machine>`）将 grand 仓库的数据替换为 fork 的数据。Grand 保留其身份（GUID、networkId、域名、自动启动、备份链）。旧的生产数据作为备份 fork 保留。用途：在 fork 上测试升级，验证后接管到生产。使用 `rdc repo takeover --name <backup-fork> -m <machine>` 回滚。
 - **代理路由**在部署后约 3 秒后变为活跃。`repo up` 期间的 "Proxy is not running" 警告在 ops/dev 环境中是信息性的。
 - **`rdc repo up` 和 `rdc repo fork --up` 会在部署结束时打印带有 `rediacc.service_port` 标签的服务的 URL 模式**。将 `{service}` 替换为你暴露的服务名以获得确切的 URL。没有 `rediacc.service_port` 的服务（数据库、工作进程）不会获得路由，也不会显示。
 
@@ -167,4 +167,4 @@ Renet 会自动将以下变量注入每个容器：
 - 使用 `privileged: true`, 没有必要，renet 会改为注入特定的 CRIU capabilities。
 - 在持久配置文件中硬编码原始 IP - 连接请使用服务名以保持 fork 隔离的完整性。
 - 使用 `rdc term connect -c` 作为失败命令的变通方法, 请改为报告 bug。
-- `repo delete` 执行完整清理，包括回环 IP 和 systemd 单元。运行 `rdc machine prune <name>` 清理旧版删除操作遗留的残余。
+- `repo delete` 执行完整清理，包括回环 IP 和 systemd 单元。运行 `rdc machine prune --name <name>` 清理旧版删除操作遗留的残余。

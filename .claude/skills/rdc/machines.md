@@ -35,8 +35,8 @@ All machine commands support the global `--output` flag (`json` or `table`).
 rdc machine query --name server-1
 
 # Check if containers are running after deploy
-rdc machine containers server-1
+rdc machine containers --name server-1
 
 # CI/CD health gate
-rdc machine health server-1 --output json
+rdc machine health --name server-1 --output json
 ```

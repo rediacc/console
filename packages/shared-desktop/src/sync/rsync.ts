@@ -268,8 +268,8 @@ export function buildRsyncArgs(
 export interface RsyncExecutorOptions {
   /** SSH options string */
   sshOptions: string;
-  /** Source path */
-  source: string;
+  /** Source path, or multiple sources for multi-file upload. */
+  source: string | string[];
   /** Destination path */
   destination: string;
   /** Whether to delete files not in source */
@@ -324,7 +324,11 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
     false
   );
 
-  args.push(source, dest);
+  if (Array.isArray(source)) {
+    args.push(...source, dest);
+  } else {
+    args.push(source, dest);
+  }
 
   // Merge MSYS2 environment variables for Windows compatibility
   const env = { ...process.env, ...getMsys2Environment() };
@@ -457,7 +461,11 @@ export async function getRsyncPreview(options: RsyncExecutorOptions): Promise<Rs
     true // dry-run
   );
 
-  args.push(source, dest);
+  if (Array.isArray(source)) {
+    args.push(...source, dest);
+  } else {
+    args.push(source, dest);
+  }
 
   // Merge MSYS2 environment variables for Windows compatibility
   const env = { ...process.env, ...getMsys2Environment() };

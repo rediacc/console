@@ -4,7 +4,8 @@ description: Starten Sie einen containerisierten Dienst auf Ihrem Server in weni
 category: Guides
 order: -1
 language: de
-sourceHash: "50b448b7b1e7b85b"
+sourceHash: "a06ed41ca6a9c5ed"
+sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
 ---
 
 # Schnellstart
@@ -148,9 +149,11 @@ rdc term connect -m my-server                                   # SSH zur Maschi
 
 **Dateisynchronisation (rsync über SSH):**
 ```bash
-rdc repo sync upload -m my-server -r my-app --local ./src       # Lokale Dateien ins Repo übertragen
-rdc repo sync download -m my-server -r my-app --local ./backup  # Repo-Dateien lokal herunterladen
-rdc repo sync download -m my-server -r my-app --local ./backup --dry-run  # Vorschau zuerst
+rdc repo sync upload -m my-server -r my-app --local ./src                                   # Ein Verzeichnis hochladen
+rdc repo sync upload -m my-server -r my-app --local ./config.yml --remote conf              # Einzelne Datei hochladen
+rdc repo sync download -m my-server -r my-app --local ./backup                              # Verzeichnis herunterladen
+rdc repo sync download -m my-server -r my-app --remote-file conf/config.yml --local ./dl    # Einzelne Datei herunterladen
+rdc repo sync download -m my-server -r my-app --local ./backup --dry-run                    # Vorschau zuerst
 ```
 
 **Tunnel (SSH-Portweiterleitung zum Container):**

@@ -4,7 +4,8 @@ description: "Dateisynchronisation, Terminalzugriff, VS Code-Unterstützung und 
 category: Guides
 order: 9
 language: de
-sourceHash: "5577c66ce89c1925"
+sourceHash: "d969636d6c2e459f"
+sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
 ---
 
 # Werkzeuge
@@ -39,8 +40,9 @@ rdc repo sync status -m server-1 -r my-app
 |--------|-------------|
 | `-m, --machine <name>` | Zielmaschine |
 | `-r, --repository <name>` | Ziel-Repository |
-| `--local <path>` | Lokaler Verzeichnispfad |
-| `--remote <path>` | Entfernter Pfad (relativ zum Repository-Einbindungspunkt) |
+| `--local <paths...>` | Ein oder mehrere lokale Datei-/Verzeichnispfade (Upload) oder lokales Zielverzeichnis (Download) |
+| `--remote <path>` | Entferntes Verzeichnis (relativ zum Repository-Einbindungspunkt) |
+| `--remote-file <path>` | Einzelne entfernte Datei (nur Download, Alternative zu `--remote`) |
 | `--dry-run` | Änderungen anzeigen, ohne zu übertragen |
 | `--mirror` | Quelle auf Ziel spiegeln (zusätzliche Dateien löschen) |
 | `--verify` | Prüfsummen nach der Übertragung verifizieren |

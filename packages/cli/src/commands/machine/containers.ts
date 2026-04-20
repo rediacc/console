@@ -80,13 +80,15 @@ function formatContainersForTable(
 
 export function registerContainersCommand(machine: Command, program: Command): void {
   machine
-    .command('containers <name>')
+    .command('containers')
     .summary(t('commands.machine.containers.descriptionShort'))
     .description(t('commands.machine.containers.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .option('-t, --team <name>', t('options.team'))
     .option('--health-check', t('commands.machine.containers.healthCheck'))
-    .action(async (name: string, options: { team?: string; healthCheck?: boolean }) => {
+    .action(async (options: { name: string; team?: string; healthCheck?: boolean }) => {
       try {
+        const name = options.name;
         const provider = await getStateProvider();
         if (provider.isCloud) {
           await authService.requireAuth();

@@ -46,7 +46,7 @@ Le mode par défaut pour un usage auto-hébergé. Tout l'état réside dans un f
 - Connexions SSH directes aux machines
 - Aucun service externe requis
 - Mono-utilisateur, mono-poste
-- La configuration par défaut est créée automatiquement au premier lancement du CLI. Les configurations nommées sont créées avec `rdc config init <name>`
+- La configuration par défaut est créée automatiquement au premier lancement du CLI. Les configurations nommées sont créées avec `rdc config init --name <name>`
 
 ### Adaptateur cloud (expérimental)
 

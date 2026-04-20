@@ -19,6 +19,7 @@ import { noDuplicateTranslationProps } from './eslint-rules/no-duplicate-transla
 import { preferConstArrays } from './eslint-rules/prefer-const-arrays.js';
 import { noHardcodedNullishDefaults } from './eslint-rules/no-hardcoded-nullish-defaults.js';
 import { noPositionalArguments } from './eslint-rules/no-positional-arguments.js';
+import { noPositionalCliSyntaxSource } from './eslint-rules/no-positional-cli-syntax-source.js';
 import { e2eTestNamingConvention } from './eslint-rules/e2e-test-naming-convention.js';
 import { requireDataTrack } from './eslint-rules/require-data-track.js';
 import { seoNoVagueAnchorText } from './eslint-rules/seo-no-vague-anchor-text.js';
@@ -235,6 +236,7 @@ export default tseslint.config(
           'e2e-test-naming-convention': e2eTestNamingConvention,
           'require-data-track': requireDataTrack,
           'no-positional-arguments': noPositionalArguments,
+          'no-positional-cli-syntax-source': noPositionalCliSyntaxSource,
           'seo-no-vague-anchor-text': seoNoVagueAnchorText,
           'seo-require-img-alt': seoRequireImgAlt,
           'seo-no-hash-breadcrumb-url': seoNoHashBreadcrumbUrl,
@@ -556,11 +558,6 @@ export default tseslint.config(
           'packages/cli/src/commands/team.ts',
           'packages/cli/src/commands/user.ts',
           'packages/cli/src/commands/ceph/**',
-          // Experimental machine subcommands
-          'packages/cli/src/commands/machine/containers.ts',
-          'packages/cli/src/commands/machine/services.ts',
-          'packages/cli/src/commands/machine/repositories.ts',
-          'packages/cli/src/commands/machine/health.ts',
         ],
       }],
       // Enforce t() for CLI-specific patterns
@@ -580,6 +577,9 @@ export default tseslint.config(
       }],
       // Enforce type-safe API calls - use typedApi instead of raw apiClient methods
       'custom/no-raw-api-calls': 'error',
+      // Ban positional CLI syntax in help text / error strings / JSX.
+      // Mirrors custom/i18n/no-positional-cli-syntax but for source strings.
+      'custom/no-positional-cli-syntax-source': 'error',
     }
   },
 
@@ -602,6 +602,7 @@ export default tseslint.config(
       'i18n-source/interpolation-match': ['error', {
         localeDir: 'private/account/web/src/i18n/locales/en',
       }],
+      'custom/no-positional-cli-syntax-source': 'error',
     }
   },
 
@@ -644,22 +645,18 @@ export default tseslint.config(
     // Complements custom/no-positional-arguments which enforces the
     // Commander API side in source files.
     //
-    // To add a new command, list it here with the flags it requires. The
-    // rule auto-detects the positional-teaching pattern — no regex needed.
+    // autoDerive reads packages/cli/scripts/command-tree.json and builds
+    // the denylist from every leaf command with zero positional arguments.
+    // Keeps the rule in sync with Commander source with zero hand-editing.
     cliSyntax: {
-      commands: [
-        { path: 'repo fork', requiredOptions: ['--parent'] },
-      ],
-      // Legacy / cloud-adapter commands that use positional subcommands
-      // legitimately (mirrors the exemptFiles list at
-      // custom/no-positional-arguments below). Skips the whole string if
-      // its trimmed start matches any prefix.
+      autoDerive: true,
+      // Legacy / cloud-adapter command groups that use positional
+      // subcommands legitimately. Skips a line if its trimmed start
+      // matches any prefix.
       exemptCommandPrefixes: [
         'rdc auth', 'rdc audit', 'rdc bridge', 'rdc organization',
         'rdc permission', 'rdc protocol', 'rdc queue', 'rdc region',
         'rdc repository', 'rdc team', 'rdc user', 'rdc ceph',
-        'rdc machine containers', 'rdc machine services',
-        'rdc machine repos', 'rdc machine health',
       ],
     },
   }),
@@ -687,6 +684,14 @@ export default tseslint.config(
       // (borrowed/shared vocabulary across European languages and international tech terms)
       '^(Plan|Type|Newsletter|Name|Limit|Source|Admin|Total|Team|Status|Magnet|Machines|Code|Permissions|General|Description|Date|Dashboard|Contact|Activations|Actions)$',
     ],
+    cliSyntax: {
+      autoDerive: true,
+      exemptCommandPrefixes: [
+        'rdc auth', 'rdc audit', 'rdc bridge', 'rdc organization',
+        'rdc permission', 'rdc protocol', 'rdc queue', 'rdc region',
+        'rdc repository', 'rdc team', 'rdc user', 'rdc ceph',
+      ],
+    },
   }),
   ...i18nLocaleConfigs({
     localesDir: 'private/account/src/i18n/locales',
@@ -1058,6 +1063,8 @@ export default tseslint.config(
       // trailingSlash: "never" in astro.config.mjs — Astro dev overlay errors
       // and extra redirect hops in production)
       'custom/seo-no-trailing-slash-internal-link': 'error',
+      // Ban positional CLI syntax in help text / error strings / JSX.
+      'custom/no-positional-cli-syntax-source': 'error',
     },
   },
 

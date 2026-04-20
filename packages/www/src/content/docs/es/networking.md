@@ -206,7 +206,7 @@ El camino completo que recorre un certificado Let's Encrypt desde su emisión ha
 
 2. **Volcado por repositorio (opcional).** Los servicios que necesitan archivos de certificados dentro de su propio contenedor (por ejemplo, un servidor de correo que lee un `.pem` directamente) despliegan un pequeño contenedor `traefik-certs-dumper` junto a ellos. El volcador monta `/opt/rediacc/proxy/letsencrypt` como solo lectura y escribe el certificado y la clave extraídos en el volumen de datos del repositorio como `cert.pem` / `key.pem`. Para que esto funcione, el daemon Docker por repositorio debe tener `/opt/rediacc/proxy` en su lista de permisos del espacio de nombres de montaje. Esto ya está incluido por defecto.
 
-3. **Cache del lado del cliente (`rediacc.json`).** La CLI almacena en caché una copia comprimida de `acme.json` bajo `acmeCertCache` en su archivo de configuración, indexada por `baseDomain`. Esto permite que varias máquinas compartan certificados (via `rdc config cert-cache push <machine>`) y actúa como un inventario sin conexión.
+3. **Cache del lado del cliente (`rediacc.json`).** La CLI almacena en caché una copia comprimida de `acme.json` bajo `acmeCertCache` en su archivo de configuración, indexada por `baseDomain`. Esto permite que varias máquinas compartan certificados (via `rdc config cert-cache push -m <machine>`) y actúa como un inventario sin conexión.
 
 **Disparadores de sincronización para el cache del cliente:**
 

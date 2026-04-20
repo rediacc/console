@@ -140,7 +140,7 @@ Les variables d'environnement remplacent les ressources des VM workers :
 | `rdc ops up [options]` | Provisionner le cluster de VM |
 | `rdc ops down` | Détruire toutes les VM et nettoyer |
 | `rdc ops status` | Afficher le statut de toutes les VM |
-| `rdc ops ssh <vm-id> [command...]` | Se connecter en SSH à une VM, ou y exécuter une commande |
+| `rdc ops ssh --vm-id <id> [command...]` | Se connecter en SSH à une VM, ou y exécuter une commande |
 
 ### Options de `rdc ops up`
 

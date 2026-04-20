@@ -113,7 +113,7 @@ Cron formatı `minute hour day month weekday` şeklindedir. Yaygın zamanlamalar
 Hedef adı yapılandırılmış bir depolama sağlayıcısıyla eşleşmelidir. Mevcut adları görmek için `rdc config storage list` çalıştırın. Yeni sağlayıcıları rclone yapılandırması aracılığıyla ekleyin.
 
 **Dağıtım sırasında "Infrastructure config incomplete"**
-Üç alanın tümü gereklidir: `--public-ipv4`, `--base-domain` ve `--cert-email`. Eksik alanları kontrol etmek için `rdc config infra show <machine>` çalıştırın.
+Üç alanın tümü gereklidir: `--public-ipv4`, `--base-domain` ve `--cert-email`. Eksik alanları kontrol etmek için `rdc config infra show -m <machine>` çalıştırın.
 
 ## Sonraki Adımlar
 

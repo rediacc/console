@@ -73,7 +73,7 @@ rdc repo sync upload -m <machine> -r <app-name> --local <path-to-app-dir>/
 rdc repo up --name <app-name> -m <machine>
 
 # 4. Verify (~5s after deploy for first output)
-rdc machine containers <machine>
+rdc machine containers --name <machine>
 rdc term connect -m <machine> -r <app-name> --container <container-name> --container-action logs --log-lines 20
 ```
 

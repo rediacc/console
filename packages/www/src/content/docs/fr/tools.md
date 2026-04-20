@@ -6,7 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: fr
-sourceHash: "5577c66ce89c1925"
+sourceHash: "d969636d6c2e459f"
+sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
 ---
 
 # Outils
@@ -41,8 +42,9 @@ rdc repo sync status -m server-1 -r my-app
 |--------|-------------|
 | `-m, --machine <name>` | Machine cible |
 | `-r, --repository <name>` | Dépôt cible |
-| `--local <path>` | Chemin du répertoire local |
-| `--remote <path>` | Chemin distant (relatif au point de montage du dépôt) |
+| `--local <paths...>` | Un ou plusieurs chemins locaux de fichier/répertoire (téléversement) ou répertoire local de destination (téléchargement) |
+| `--remote <path>` | Répertoire distant (relatif au point de montage du dépôt) |
+| `--remote-file <path>` | Fichier distant unique (téléchargement uniquement, alternative à `--remote`) |
 | `--dry-run` | Prévisualiser les changements sans transférer |
 | `--mirror` | Miroir de la source vers la destination (supprimer les fichiers en trop) |
 | `--verify` | Vérifier les sommes de contrôle après le transfert |

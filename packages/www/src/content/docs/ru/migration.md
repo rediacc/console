@@ -210,7 +210,7 @@ rdc repo up --name my-project -m server-1
 Убедитесь, что ваши контейнеры запущены:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## Шаг 7: Включение автозапуска (необязательно)

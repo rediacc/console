@@ -67,7 +67,7 @@ rdc repo up --name test-app -m server-1
 ### ステップ5: 実行中のコンテナを表示
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 マシン上のすべてのリポジトリにわたるすべての実行中のコンテナを、CPUとメモリの使用量を含めて表示します。
@@ -96,7 +96,7 @@ rdc repo delete --name test-app -m server-1  # リポジトリを完全に削除
 
 > **警告:** `repo delete`は取り消せません。リポジトリ内のすべてのデータが破壊されます。必要に応じて先にバックアップを作成してください。
 
-> **注意:** 削除後もコンフィグエントリは保持されます（リポジトリが他のマシンに存在する場合があります）。`rdc config repository remove <name>` で削除するか、`--archive-config` で復旧用の認証情報を保持してください。
+> **注意:** 削除後もコンフィグエントリは保持されます（リポジトリが他のマシンに存在する場合があります）。`rdc config repository remove --name <name>` で削除するか、`--archive-config` で復旧用の認証情報を保持してください。
 
 ## トラブルシューティング
 

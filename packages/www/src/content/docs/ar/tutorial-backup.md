@@ -113,7 +113,7 @@ rdc config backup-strategy show
 يجب أن يتطابق اسم الوجهة مع موفر تخزين مُكوّن. شغّل `rdc config storage list` لرؤية الأسماء المتاحة. أضف موفرين جدد عبر تكوين rclone.
 
 **"Infrastructure config incomplete" عند النشر**
-جميع الحقول الثلاثة مطلوبة: `--public-ipv4` و `--base-domain` و `--cert-email`. شغّل `rdc config infra show <machine>` للتحقق من الحقول المفقودة.
+جميع الحقول الثلاثة مطلوبة: `--public-ipv4` و `--base-domain` و `--cert-email`. شغّل `rdc config infra show -m <machine>` للتحقق من الحقول المفقودة.
 
 ## الخطوات التالية
 

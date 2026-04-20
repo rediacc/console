@@ -4,7 +4,8 @@ description: Birkaç dakika içinde sunucunuzda konteynerize bir servis çalış
 category: Guides
 order: -1
 language: tr
-sourceHash: "50b448b7b1e7b85b"
+sourceHash: "a06ed41ca6a9c5ed"
+sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
 ---
 
 # Hızlı Başlangıç
@@ -148,9 +149,11 @@ rdc term connect -m my-server                                   # Makineye SSH (
 
 **Dosya Senkronizasyonu (SSH üzerinden rsync):**
 ```bash
-rdc repo sync upload -m my-server -r my-app --local ./src       # Yerel dosyaları repoya gönder
-rdc repo sync download -m my-server -r my-app --local ./backup  # Repo dosyalarını yerele çek
-rdc repo sync download -m my-server -r my-app --local ./backup --dry-run  # Önce önizleme yap
+rdc repo sync upload -m my-server -r my-app --local ./src                                   # Bir dizin yükle
+rdc repo sync upload -m my-server -r my-app --local ./config.yml --remote conf              # Tek bir dosya yükle
+rdc repo sync download -m my-server -r my-app --local ./backup                              # Bir dizin indir
+rdc repo sync download -m my-server -r my-app --remote-file conf/config.yml --local ./dl    # Tek bir dosya indir
+rdc repo sync download -m my-server -r my-app --local ./backup --dry-run                    # Önce önizleme yap
 ```
 
 **Tünel (Konteynere SSH port yönlendirme):**

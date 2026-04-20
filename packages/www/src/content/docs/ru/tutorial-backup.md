@@ -113,7 +113,7 @@ rdc config backup-strategy show
 Имя назначения должно совпадать с настроенным провайдером хранения. Выполните `rdc config storage list`, чтобы увидеть доступные имена. Добавляйте новых провайдеров через конфигурацию rclone.
 
 **"Infrastructure config incomplete" при развёртывании**
-Все три поля обязательны: `--public-ipv4`, `--base-domain` и `--cert-email`. Выполните `rdc config infra show <machine>`, чтобы проверить, какие поля отсутствуют.
+Все три поля обязательны: `--public-ipv4`, `--base-domain` и `--cert-email`. Выполните `rdc config infra show -m <machine>`, чтобы проверить, какие поля отсутствуют.
 
 ## Следующие шаги
 

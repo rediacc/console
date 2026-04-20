@@ -24,7 +24,7 @@ rdc machine query --name prod-1 -o json
 
 ```bash
 # These all produce JSON automatically
-result=$(rdc machine query prod-1)
+result=$(rdc machine query --name prod-1)
 echo '{}' | rdc agent exec "machine query"
 ```
 
@@ -106,7 +106,7 @@ Yeniden denenemez hatalar (kimlik doğrulama, bulunamadı, geçersiz argümanlar
 Çıktıyı belirli anahtarlarla sınırlamak için `--fields` kullanın. Bu, yalnızca belirli verilere ihtiyaç duyulduğunda token kullanımını azaltır:
 
 ```bash
-rdc machine containers prod-1 -o json --fields name,status,repository
+rdc machine containers --name prod-1 -o json --fields name,status,repository
 ```
 
 ## Kuru Çalıştırma Çıktısı
@@ -192,7 +192,7 @@ Stdin üzerinden JSON kabul eder, anahtarları komut argümanlarına ve seçenek
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine query prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python

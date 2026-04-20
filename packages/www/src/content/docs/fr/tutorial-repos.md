@@ -67,7 +67,7 @@ Cela monte le dépôt (s'il n'est pas déjà monté), démarre un Docker daemon 
 ### Étape 5 : Voir les conteneurs en cours d'exécution
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 Affiche tous les conteneurs en cours d'exécution sur tous les dépôts de la machine, y compris l'utilisation du processeur et de la mémoire.
@@ -96,7 +96,7 @@ rdc repo delete --name test-app -m server-1  # Supprimer le dépôt définitivem
 
 > **Avertissement :** `repo delete` est irréversible. Toutes les données du dépôt sont détruites. Créez d'abord une sauvegarde si nécessaire.
 
-> **Remarque :** Après la suppression, l'entrée de configuration est conservée (le dépôt peut exister sur d'autres machines). Utilisez `rdc config repository remove <name>` pour la supprimer, ou `--archive-config` pour conserver les identifiants à des fins de récupération.
+> **Remarque :** Après la suppression, l'entrée de configuration est conservée (le dépôt peut exister sur d'autres machines). Utilisez `rdc config repository remove --name <name>` pour la supprimer, ou `--archive-config` pour conserver les identifiants à des fins de récupération.
 
 ## Dépannage
 

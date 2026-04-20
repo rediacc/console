@@ -210,7 +210,7 @@ rdc repo up --name my-project -m server-1
 コンテナが稼働していることを確認します：
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## ステップ7：自動起動を有効にする（オプション）

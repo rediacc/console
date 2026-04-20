@@ -33,7 +33,7 @@ Verifica Node.js, la versión de CLI, el binario de renet, la configuración y e
 ### Paso 2: Verificación de estado de la máquina
 
 ```bash
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 Obtiene un informe de salud completo de la máquina remota: tiempo de actividad del sistema, uso de disco, uso del almacén de datos, recuento de contenedores, estado SMART del almacenamiento y cualquier problema identificado.
@@ -41,7 +41,7 @@ Obtiene un informe de salud completo de la máquina remota: tiempo de actividad 
 ### Paso 3: Ver contenedores en ejecución
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 Lista todos los contenedores en ejecución en todos los repositorios de la máquina, mostrando nombre, estado, condición, salud, uso de CPU, uso de memoria y qué repositorio posee cada contenedor.
@@ -51,7 +51,7 @@ Lista todos los contenedores en ejecución en todos los repositorios de la máqu
 Para ver los servicios subyacentes que alimentan el Docker daemon y la red de cada repositorio:
 
 ```bash
-rdc machine services server-1
+rdc machine services --name server-1
 ```
 
 Lista los servicios systemd relacionados con Rediacc (Docker daemons, alias de loopback) con su estado, subestado, conteo de reinicios y uso de memoria.
@@ -94,7 +94,7 @@ Verifique que la máquina esté en línea y sea accesible: `ping <ip>`. Comprueb
 Los servicios de Rediacc solo aparecen después de que se haya desplegado al menos un repositorio. Si no existen repositorios, la lista de servicios está vacía.
 
 **El listado de contenedores muestra contenedores obsoletos o detenidos**
-Los contenedores de despliegues anteriores pueden permanecer si `repo down` no se ejecutó limpiamente. Deténgalos con `rdc repo down <repo> -m <machine>` o inspeccione directamente vía `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
+Los contenedores de despliegues anteriores pueden permanecer si `repo down` no se ejecutó limpiamente. Deténgalos con `rdc repo down --name <repo> -m <machine>` o inspeccione directamente vía `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
 
 ## Próximos pasos
 

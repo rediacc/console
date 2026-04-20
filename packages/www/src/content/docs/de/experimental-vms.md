@@ -140,7 +140,7 @@ Umgebungsvariablen überschreiben die Worker-VM-Ressourcen:
 | `rdc ops up [options]` | VM-Cluster bereitstellen |
 | `rdc ops down` | Alle VMs zerstören und aufräumen |
 | `rdc ops status` | Status aller VMs anzeigen |
-| `rdc ops ssh <vm-id> [command...]` | SSH in eine VM, oder Befehl darauf ausführen |
+| `rdc ops ssh --vm-id <id> [command...]` | SSH in eine VM, oder Befehl darauf ausführen |
 
 ### `rdc ops up` Optionen
 

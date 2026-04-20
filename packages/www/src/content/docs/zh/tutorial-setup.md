@@ -103,7 +103,7 @@ rdc config infra set -m bridge-vm \
 rdc config infra show -m bridge-vm
 ```
 
-使用 `rdc config infra push bridge-vm` 将生成的 Traefik 代理配置部署到服务器。
+使用 `rdc config infra push -m bridge-vm` 将生成的 Traefik 代理配置部署到服务器。
 
 ## 故障排除
 
@@ -114,7 +114,7 @@ rdc config infra show -m bridge-vm
 确认服务器正在运行且 IP 正确。检查端口 22 是否开放：`nc -zv <ip> 22`。如果使用非标准端口，请在添加机器时传递 `--port`。
 
 **"Host key verification failed"**
-存储的主机密钥与服务器的当前密钥不匹配。这在服务器重建或 IP 重新分配后发生。运行 `rdc config machine scan-keys <machine>` 来刷新密钥。
+存储的主机密钥与服务器的当前密钥不匹配。这在服务器重建或 IP 重新分配后发生。运行 `rdc config machine scan-keys --name <machine>` 来刷新密钥。
 
 ## 后续步骤
 

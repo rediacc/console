@@ -17,7 +17,7 @@ sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 الحصول على تقرير صحي شامل لجهاز:
 
 ```bash
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 يُبلغ هذا عن:
@@ -33,7 +33,7 @@ rdc machine health server-1
 عرض جميع الحاويات قيد التشغيل عبر جميع المستودعات على جهاز:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 | العمود | الوصف |
@@ -57,7 +57,7 @@ rdc machine containers server-1
 عرض خدمات systemd المتعلقة بـ Rediacc على جهاز:
 
 ```bash
-rdc machine services server-1
+rdc machine services --name server-1
 ```
 
 | العمود | الوصف |
@@ -80,7 +80,7 @@ rdc machine services server-1
 عرض المستودعات على جهاز مع إحصائيات مفصلة:
 
 ```bash
-rdc machine repos server-1
+rdc machine repos --name server-1
 ```
 
 | العمود | الوصف |

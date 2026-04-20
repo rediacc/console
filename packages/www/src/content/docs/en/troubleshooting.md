@@ -13,7 +13,7 @@ Common issues and their solutions. When in doubt, start with `rdc doctor` to run
 ## SSH Connection Fails
 
 - Verify you can connect manually: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Run `rdc config machine scan-keys server-1` to refresh host keys
+- Run `rdc config machine scan-keys --name server-1` to refresh host keys
 - Check that the SSH port matches: `--port 22`
 - Test with a simple command: `rdc term connect -m server-1 -c "hostname"`
 
@@ -31,7 +31,7 @@ This fetches fresh host keys and updates your config.
 
 - Ensure the SSH user has sudo access without a password, or configure `NOPASSWD` for the required commands
 - Check available disk space on the server
-- Run with `--debug` for verbose output: `rdc config machine setup server-1 --debug`
+- Run with `--debug` for verbose output: `rdc config machine setup --name server-1 --debug`
 
 ## Distribution-Specific Setup Issues
 
@@ -98,7 +98,7 @@ rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 Or view all containers:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## Permission Denied Errors

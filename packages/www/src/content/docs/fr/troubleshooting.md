@@ -15,7 +15,7 @@ Problèmes courants et leurs solutions. En cas de doute, commencez par `rdc doct
 ## Échec de la connexion SSH
 
 - Vérifiez que vous pouvez vous connecter manuellement : `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Exécutez `rdc config machine scan-keys server-1` pour actualiser les clés de l'hôte
+- Exécutez `rdc config machine scan-keys --name server-1` pour actualiser les clés de l'hôte
 - Vérifiez que le port SSH correspond : `--port 22`
 - Testez avec une commande simple : `rdc term connect -m server-1 -c "hostname"`
 
@@ -33,7 +33,7 @@ Cette commande récupère de nouvelles clés d'hôte et met à jour votre config
 
 - Assurez-vous que l'utilisateur SSH dispose d'un accès sudo sans mot de passe, ou configurez `NOPASSWD` pour les commandes requises
 - Vérifiez l'espace disque disponible sur le serveur
-- Exécutez avec `--debug` pour une sortie détaillée : `rdc config machine setup server-1 --debug`
+- Exécutez avec `--debug` pour une sortie détaillée : `rdc config machine setup --name server-1 --debug`
 
 ## Problèmes de configuration spécifiques à la distribution
 
@@ -100,7 +100,7 @@ rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 Ou affichez tous les conteneurs :
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## Erreurs de permission refusée

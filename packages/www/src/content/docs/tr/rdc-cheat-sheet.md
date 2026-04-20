@@ -4,8 +4,8 @@ description: Tüm rdc komutları için hızlı referans; yapılandırmalar, depo
 category: Guides
 order: 3
 language: tr
-sourceHash: "b941deba8b6d1b56"
-sourceCommit: "b010d8dc3d3edd8b08ec25593f39f4808d7f1d03"
+sourceHash: "2ec57c88104cdc1e"
+sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
 ---
 
 # RDC CLI Hızlı Referans
@@ -83,7 +83,7 @@ En sık kullanılan `rdc` komutları için hızlı referans. Tüm seçenekleri g
 | `rdc machine query --name <machine> --network` | Yalnızca ağ bilgisi |
 | `rdc machine query --name <machine> --block-devices` | Yalnızca blok cihaz bilgisi |
 | `rdc machine list` | Yapılandırmadaki tüm makineleri listele |
-| `rdc config machine setup <machine>` | İlk makine hazırlığını çalıştır |
+| `rdc config machine setup --name <machine>` | İlk makine hazırlığını çalıştır |
 | `rdc machine prune --name <machine>` | Makineden kullanılmayan kaynakları kaldır |
 | `rdc machine deprovision --name <machine>` | Makineyi tamamen kaldır |
 | `rdc machine vault-status --name <machine>` | LUKS vault durumunu göster |
@@ -95,8 +95,9 @@ En sık kullanılan `rdc` komutları için hızlı referans. Tüm seçenekleri g
 | `rdc term connect -m <machine>` | Makineye SSH terminali aç |
 | `rdc term connect -m <machine> -r <repo>` | Depoya SSH terminali aç (DOCKER_HOST ayarlar) |
 | `rdc term connect -m <machine> -c "<command>"` | Makinede komut çalıştır |
-| `rdc repo sync upload -m <machine> -r <repo> --local <path>` | Yerel dosyaları depoya yükle |
-| `rdc repo sync download -m <machine> -r <repo> --local <path>` | Depo dosyalarını yerel olarak indir |
+| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Bir dosyayı, dizini veya birden çok kaynağı depoya yükle |
+| `rdc repo sync download -m <machine> -r <repo> --local <dir>` | Depo dizinini yerele indir |
+| `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | Tek bir uzak dosyayı yerel bir dizine indir |
 | `rdc vscode connect -m <machine> -r <repo>` | VS Code Remote SSH oturumu aç |
 
 ## Yapılandırma

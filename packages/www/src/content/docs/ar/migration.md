@@ -210,7 +210,7 @@ rdc repo up --name my-project -m server-1
 تحقق من أن الحاويات تعمل:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## الخطوة 7: تفعيل البدء التلقائي (اختياري)

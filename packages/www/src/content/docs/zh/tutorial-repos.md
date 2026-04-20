@@ -67,7 +67,7 @@ rdc repo up --name test-app -m server-1
 ### 步骤 5：查看运行中的容器
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 显示机器上所有仓库中的所有运行容器，包括 CPU 和内存使用情况。
@@ -96,7 +96,7 @@ rdc repo delete --name test-app -m server-1  # 永久删除仓库
 
 > **警告：** `repo delete` 不可逆。仓库中的所有数据将被销毁。如需要，请先创建备份。
 
-> **注意：** 删除后，配置条目将被保留（仓库可能存在于其他机器上）。使用 `rdc config repository remove <name>` 将其删除，或使用 `--archive-config` 保留凭据以便恢复。
+> **注意：** 删除后，配置条目将被保留（仓库可能存在于其他机器上）。使用 `rdc config repository remove --name <name>` 将其删除，或使用 `--archive-config` 保留凭据以便恢复。
 
 ## 故障排除
 

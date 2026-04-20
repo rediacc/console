@@ -103,7 +103,7 @@ rdc config infra set -m bridge-vm \
 rdc config infra show -m bridge-vm
 ```
 
-انشر تكوين وكيل Traefik المُنشأ إلى الخادم باستخدام `rdc config infra push bridge-vm`.
+انشر تكوين وكيل Traefik المُنشأ إلى الخادم باستخدام `rdc config infra push -m bridge-vm`.
 
 ## استكشاف الأخطاء وإصلاحها
 
@@ -114,7 +114,7 @@ rdc config infra show -m bridge-vm
 تأكد من تشغيل الخادم وصحة عنوان IP. تحقق من أن المنفذ 22 مفتوح: `nc -zv <ip> 22`. إذا كنت تستخدم منفذاً غير قياسي، مرّر `--port` عند إضافة الجهاز.
 
 **"Host key verification failed"**
-المفتاح المخزن لا يتطابق مع مفتاح الخادم الحالي. يحدث هذا بعد إعادة بناء الخادم أو إعادة تعيين عنوان IP. شغّل `rdc config machine scan-keys <machine>` لتحديث المفتاح.
+المفتاح المخزن لا يتطابق مع مفتاح الخادم الحالي. يحدث هذا بعد إعادة بناء الخادم أو إعادة تعيين عنوان IP. شغّل `rdc config machine scan-keys --name <machine>` لتحديث المفتاح.
 
 ## الخطوات التالية
 

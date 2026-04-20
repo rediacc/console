@@ -4,8 +4,8 @@ description: Краткий справочник по всем командам 
 category: Guides
 order: 3
 language: ru
-sourceHash: "b941deba8b6d1b56"
-sourceCommit: "b010d8dc3d3edd8b08ec25593f39f4808d7f1d03"
+sourceHash: "2ec57c88104cdc1e"
+sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
 ---
 
 # Шпаргалка RDC CLI
@@ -83,7 +83,7 @@ sourceCommit: "b010d8dc3d3edd8b08ec25593f39f4808d7f1d03"
 | `rdc machine query --name <machine> --network` | Только сетевая информация |
 | `rdc machine query --name <machine> --block-devices` | Только информация о блочных устройствах |
 | `rdc machine list` | Вывести список всех машин в конфигурации |
-| `rdc config machine setup <machine>` | Запустить первоначальное развёртывание машины |
+| `rdc config machine setup --name <machine>` | Запустить первоначальное развёртывание машины |
 | `rdc machine prune --name <machine>` | Удалить неиспользуемые ресурсы с машины |
 | `rdc machine deprovision --name <machine>` | Полностью депровизионировать машину |
 | `rdc machine vault-status --name <machine>` | Показать состояние хранилища LUKS |
@@ -95,8 +95,9 @@ sourceCommit: "b010d8dc3d3edd8b08ec25593f39f4808d7f1d03"
 | `rdc term connect -m <machine>` | Открыть SSH-терминал к машине |
 | `rdc term connect -m <machine> -r <repo>` | Открыть SSH-терминал к репозиторию (устанавливает DOCKER_HOST) |
 | `rdc term connect -m <machine> -c "<command>"` | Выполнить команду на машине |
-| `rdc repo sync upload -m <machine> -r <repo> --local <path>` | Загрузить локальные файлы в репозиторий |
-| `rdc repo sync download -m <machine> -r <repo> --local <path>` | Скачать файлы репозитория локально |
+| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Загрузить файл, каталог или несколько источников в репозиторий |
+| `rdc repo sync download -m <machine> -r <repo> --local <dir>` | Скачать каталог репозитория локально |
+| `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | Скачать один файл из репозитория в локальный каталог |
 | `rdc vscode connect -m <machine> -r <repo>` | Открыть сеанс VS Code Remote SSH |
 
 ## Конфигурация

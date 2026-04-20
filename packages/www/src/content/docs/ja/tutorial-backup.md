@@ -113,7 +113,7 @@ cronのフォーマットは`minute hour day month weekday`です。一般的な
 宛先名は設定済みのストレージプロバイダーと一致する必要があります。`rdc config storage list`を実行して利用可能な名前を確認してください。新しいプロバイダーはrclone設定で追加します。
 
 **デプロイ時の"Infrastructure config incomplete"**
-3つのフィールドすべてが必須です：`--public-ipv4`、`--base-domain`、`--cert-email`。`rdc config infra show <machine>`を実行して不足しているフィールドを確認してください。
+3つのフィールドすべてが必須です：`--public-ipv4`、`--base-domain`、`--cert-email`。`rdc config infra show -m <machine>`を実行して不足しているフィールドを確認してください。
 
 ## 次のステップ
 

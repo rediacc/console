@@ -342,7 +342,7 @@
         "push": {
           "description": "رفع شهادات TLS المخزنة مؤقتاً إلى جهاز",
           "merged": "تم دمج {{count}} شهادة(شهادات) بفترة صلاحية أطول في {{machine}}",
-          "noCache": "لم يتم العثور على ذاكرة تخزين مؤقت للشهادات. شغّل 'rdc config cert-cache pull <machine>' أولاً",
+          "noCache": "لم يتم العثور على ذاكرة تخزين مؤقت للشهادات. شغّل 'rdc config cert-cache pull -m <machine>' أولاً",
           "uploaded": "تم رفع {{count}} شهادة(شهادات) إلى {{machine}}",
           "uploading": "جارٍ رفع الشهادات المخزنة مؤقتاً إلى {{machine}}...",
           "upToDate": "الشهادات على {{machine}} محدّثة"
@@ -376,7 +376,7 @@
           "dnsError": "تحذير DNS: {{message}} (قد تحتاج السجلات إلى إعداد يدوي)",
           "dnsResolvingZone": "جارٍ تحديد منطقة Cloudflare لـ {{domain}}...",
           "dnsSkipLocal": "تخطي DNS: النطاق .local لا يستخدم Cloudflare",
-          "dnsSkipNoToken": "تخطي DNS: لا يوجد رمز Cloudflare API. عيّنه بـ: rdc config infra set <machine> --cf-dns-token <token>",
+          "dnsSkipNoToken": "تخطي DNS: لا يوجد رمز Cloudflare API. عيّنه بـ: rdc config infra set -m <machine> --cf-dns-token <token>",
           "dnsUnchanged": "DNS: {{type}} {{name}} صحيح بالفعل",
           "dnsUpdated": "DNS: تم تحديث {{type}} {{name}} → {{content}}",
           "installingProxy": "جارٍ تثبيت وتشغيل الوكيل...",
@@ -535,7 +535,7 @@
         "description": "إدارة ربط المستودعات في التكوين الحالي",
         "list": {
           "description": "عرض قائمة ربط GUID للمستودعات في التكوين الحالي",
-          "noRepositories": "لا توجد مستودعات مُعدَّة. أضف واحدًا بـ: rdc config repository add <name> --guid <guid>"
+          "noRepositories": "لا توجد مستودعات مُعدَّة. أضف واحدًا بـ: rdc config repository add --name <name> --guid <guid>"
         },
         "listArchived": {
           "description": "عرض بيانات اعتماد المستودعات المؤرشفة",
@@ -606,7 +606,7 @@
         },
         "list": {
           "description": "عرض قائمة التخزين في التكوين الحالي",
-          "noStorages": "لا توجد وحدات تخزين مُعدَّة. استورد بـ: rdc config storage import <file>"
+          "noStorages": "لا توجد وحدات تخزين مُعدَّة. استورد بـ: rdc config storage import --file <path>"
         },
         "remove": {
           "description": "إزالة تخزين من التكوين الحالي",
@@ -810,7 +810,7 @@
         "description": "توفير جهاز جديد على مزود سحابي باستخدام OpenTofu",
         "failed": "فشل توفير الجهاز: {{error}}",
         "infraInherited": "تم اكتشاف النطاق الأساسي تلقائياً من الجهاز الشقيق \"{{source}}\"",
-        "noInfraHint": "لم يتم تكوين النطاق الأساسي. شغّل 'rdc config infra set <machine> --base-domain <domain>' ثم 'rdc config infra push <machine>' لتفعيل DNS والوكيل.",
+        "noInfraHint": "لم يتم تكوين النطاق الأساسي. شغّل 'rdc config infra set -m <machine> --base-domain <domain>' ثم 'rdc config infra push -m <machine>' لتفعيل DNS والوكيل.",
         "optionBaseDomain": "النطاق الأساسي للبنية التحتية (مثال: example.com). يتضمن --infra",
         "optionImage": "تجاوز صورة نظام التشغيل الافتراضية",
         "optionInfra": "تكوين البنية التحتية أيضاً (infra set + infra push)",
@@ -1249,7 +1249,7 @@
         "archiveHint": "لأرشفة بيانات الاعتماد للاسترداد: أعد التشغيل باستخدام --archive-config",
         "archiveOption": "نقل إدخال الإعدادات إلى deletedRepositories للاستعادة لاحقاً",
         "completed": "تم حذف المستودع",
-        "configRetained": "تم الاحتفاظ بإعداد \"{{repository}}\" (قد يكون المستودع موجودًا على أجهزة أخرى). للإزالة: rdc config repository remove {{repository}}",
+        "configRetained": "تم الاحتفاظ بإعداد \"{{repository}}\" (قد يكون المستودع موجودًا على أجهزة أخرى). للإزالة: rdc config repository remove --name {{repository}}",
         "description": "حذف مستودع (يدمّر الحاويات والأقراص والصورة المشفّرة). يتم الاحتفاظ بإدخال الإعدادات. استخدم --archive-config لنقل بيانات الاعتماد إلى deletedRepositories للاستعادة عبر 'config restore-archived'",
         "descriptionShort": "حذف مستودع من جهاز",
         "failed": "فشل حذف المستودع",
@@ -1450,7 +1450,7 @@
         "forceOption": "تخطي تحذيرات التعديل",
         "grandNotFound": "لم يتم العثور على المستودع الأصلي للنسخة المتفرعة \"{{name}}\"",
         "notAFork": "\"{{name}}\" ليس مستودعاً متفرعاً (parentGuid مفقود)",
-        "revertHint": "للتراجع: rdc repo takeover {{backup}} -m {{machine}}",
+        "revertHint": "للتراجع: rdc repo takeover --name {{backup}} -m {{machine}}",
         "rollback": "تم التراجع عن تكوين \"{{name}}\"",
         "starting": "جارٍ الاستحواذ على \"{{grand}}\" بالبيانات من \"{{fork}}\" على \"{{machine}}\"..."
       },
@@ -2142,7 +2142,7 @@
       "createGuardOverride": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\". لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\". تجاوز REDIACC_ALLOW_GRAND_REPO غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nلاستخدام التجاوز، شغّل الوكيل على Linux (مباشرةً، أو WSL، أو Docker، أو VM).",
       "forkBlocked": "الأمر \"{{command}}\" غير متاح في مستودعات fork.\n\nمستودعات fork هي بيئات معزولة مؤقتة. هذه العملية تنطبق فقط على المستودعات الرئيسية (الإنتاجية). اطلب من المستخدم تشغيل هذا الأمر مباشرةً.",
-      "grandGuard": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يمكن للوكلاء تعديل المستودعات الرئيسية مباشرةً.\n\nتحتوي المستودعات الرئيسية على بيانات الإنتاج. استخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة.\n\nسير العمل:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork (مثال: rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover\n\nللمستخدم: للسماح بالوصول المباشر، عيّن REDIACC_ALLOW_GRAND_REPO={{name}} (أو * لجميع المستودعات) في الطرفية قبل بدء جلسة الوكيل.",
+      "grandGuard": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يمكن للوكلاء تعديل المستودعات الرئيسية مباشرةً.\n\nتحتوي المستودعات الرئيسية على بيانات الإنتاج. استخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة.\n\nسير العمل:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork (مثال: rdc repo up --name {{name}}:<tag-name> -m <machine> --mount)\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover\n\nللمستخدم: للسماح بالوصول المباشر، عيّن REDIACC_ALLOW_GRAND_REPO={{name}} (أو * لجميع المستودعات) في الطرفية قبل بدء جلسة الوكيل.",
       "grandGuardOverride": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nاستخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover",
       "grandGuardOverrideNonLinux": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). تجاوز REDIACC_ALLOW_GRAND_REPO غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nسير العمل:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover\n\nلاستخدام التجاوز، شغّل الوكيل على Linux (مباشرةً، أو WSL، أو Docker، أو VM).",
       "machineGuard": "الوصول المباشر إلى الآلة \"{{machine}}\" غير مسموح في وضع الوكيل.\n\nيجب على الوكلاء الاتصال من خلال سياق مستودع للوصول المعزول. أنشئ fork للمستودع أولاً، ثم اتصل بالـ fork.\n\nسير العمل:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nللمستخدم: للسماح بالوصول المباشر للآلة، عيّن REDIACC_ALLOW_GRAND_REPO=* (أو اسم مستودع محدد) في الطرفية قبل بدء جلسة الوكيل.",
@@ -2185,7 +2185,7 @@
     "machineRequired": "اسم الآلة مطلوب. استخدم --machine <name>",
     "machineRequiredLocal": "اسم الآلة مطلوب. استخدم --machine <name>",
     "networkError": "خطأ الشبكة: {{message}}",
-    "noActiveConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام: rdc config init <name>",
+    "noActiveConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام: rdc config init --name <name>",
     "notAuthenticated": "لم تتم المصادقة. قم بتشغيل: rdc auth login",
     "passwordsMismatch": "كلمات المرور غير متطابقة",
     "permissionDenied": "تم رفض الإذن",
@@ -2224,10 +2224,13 @@
     "sync": {
       "absolutePathBlocked": "يجب أن يكون مسار --remote نسبياً وليس مطلقاً. استخدم مساراً نسبياً بالنسبة لجذر المستودع.",
       "localPathNotFound": "المسار المحلي غير موجود: {{path}}",
+      "mirrorWithFile": "لا يمكن استخدام --mirror عندما يكون المصدر ملفاً: سيؤدي ذلك إلى حذف الملفات الشقيقة في مجلد الوجهة.",
       "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
       "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
-      "pathTraversalBlocked": "يجب ألا يحتوي مسار --remote على اجتياز المسار \"..\". استخدم مساراً داخل المستودع."
+      "pathTraversalBlocked": "يجب ألا يحتوي مسار --remote على اجتياز المسار \"..\". استخدم مساراً داخل المستودع.",
+      "remoteAndRemoteFile": "لا يمكن استخدام --remote و --remote-file معاً. اختر واحداً منهما.",
+      "remoteFileLocalNotDir": "عند تعيين --remote-file، يجب أن يكون --local مجلداً موجوداً: {{path}}"
     },
     "teamRequired": "اسم الفريق مطلوب. استخدم --team أو اضبط السياق.",
     "term": {
@@ -2291,7 +2294,7 @@
       "create": "إنشاء مستودع مشفر",
       "down": "إيقاف الخدمات",
       "fork": "نسخ CoW للاختبار",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable --name <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "عرض النسخ الاحتياطية على التخزين",
       "pull": "سحب نسخة احتياطية من التخزين",
       "push": "دفع نسخة احتياطية إلى التخزين",
@@ -2360,6 +2363,7 @@
     "lang": "تجاوز اللغة ({{languages}})",
     "limit": "الحد الأقصى لعدد النتائج",
     "localPath": "مسار المجلد المحلي (افتراضي: المجلد الحالي)",
+    "localPaths": "مسار واحد أو أكثر لملف أو مجلد محلي (الافتراضي: المجلد الحالي)",
     "logLines": "عدد أسطر السجل المراد عرضها (افتراضي: 50)",
     "machine": "اسم الآلة",
     "machineForVault": "اسم الآلة (لتحديث الخزينة بعد الاختبار)",
@@ -2412,6 +2416,7 @@
     "quiet": "إخفاء المخرجات المعلوماتية",
     "rawVault": "خزينة JSON أولية (للنصوص البرمجية/CI)",
     "region": "اسم المنطقة",
+    "remoteFile": "مسار الملف البعيد داخل المستودع (بديل لـ --remote لنقل ملف واحد)",
     "remotePath": "مسار المجلد الفرعي البعيد ضمن المستودع",
     "renetPath": "المسار إلى ثنائي renet (افتراضي: renet في PATH)",
     "repository": "اسم المستودع (يتصل ببيئة المستودع)",

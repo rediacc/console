@@ -46,7 +46,7 @@ El predeterminado para uso auto-hospedado. Todo el estado reside en un archivo d
 - Conexiones SSH directas a las máquinas
 - No se requieren servicios externos
 - Un solo usuario, una sola estación de trabajo
-- La configuración predeterminada se crea automáticamente en el primer uso de la CLI. Las configuraciones con nombre se crean con `rdc config init <name>`
+- La configuración predeterminada se crea automáticamente en el primer uso de la CLI. Las configuraciones con nombre se crean con `rdc config init --name <name>`
 
 ### Adaptador Cloud (Experimental)
 

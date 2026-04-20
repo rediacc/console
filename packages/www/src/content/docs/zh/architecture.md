@@ -44,7 +44,7 @@ Rediacc 采用两个通过 SSH 协同工作的二进制文件：
 - 直接通过 SSH 连接到机器
 - 无需外部服务
 - 单用户、单工作站
-- 首次使用 CLI 时自动创建默认配置。命名配置通过 `rdc config init <name>` 创建
+- 首次使用 CLI 时自动创建默认配置。命名配置通过 `rdc config init --name <name>` 创建
 
 ### 云适配器（实验性）
 

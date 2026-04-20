@@ -4,8 +4,8 @@ description: Kurzreferenz für alle rdc-Befehle, Konfigurationen, Repos, Maschin
 category: Guides
 order: 3
 language: de
-sourceHash: "b941deba8b6d1b56"
-sourceCommit: "b010d8dc3d3edd8b08ec25593f39f4808d7f1d03"
+sourceHash: "2ec57c88104cdc1e"
+sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
 ---
 
 # RDC CLI Cheat Sheet
@@ -83,7 +83,7 @@ Kurzreferenz für die gebräuchlichsten `rdc`-Befehle. Führe jeden Befehl mit `
 | `rdc machine query --name <machine> --network` | Nur Netzwerkinformationen |
 | `rdc machine query --name <machine> --block-devices` | Nur Block-Geräteinformationen |
 | `rdc machine list` | Alle Maschinen in der Konfiguration auflisten |
-| `rdc config machine setup <machine>` | Erstmalige Maschinenbereitstellung ausführen |
+| `rdc config machine setup --name <machine>` | Erstmalige Maschinenbereitstellung ausführen |
 | `rdc machine prune --name <machine>` | Ungenutzte Ressourcen von der Maschine entfernen |
 | `rdc machine deprovision --name <machine>` | Maschine vollständig deprovisionieren |
 | `rdc machine vault-status --name <machine>` | LUKS-Vault-Status anzeigen |
@@ -95,8 +95,9 @@ Kurzreferenz für die gebräuchlichsten `rdc`-Befehle. Führe jeden Befehl mit `
 | `rdc term connect -m <machine>` | SSH-Terminal zur Maschine öffnen |
 | `rdc term connect -m <machine> -r <repo>` | SSH-Terminal zum Repository öffnen (setzt DOCKER_HOST) |
 | `rdc term connect -m <machine> -c "<command>"` | Befehl auf der Maschine ausführen |
-| `rdc repo sync upload -m <machine> -r <repo> --local <path>` | Lokale Dateien in Repository hochladen |
-| `rdc repo sync download -m <machine> -r <repo> --local <path>` | Repository-Dateien lokal herunterladen |
+| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Datei, Verzeichnis oder mehrere Quellen ins Repository hochladen |
+| `rdc repo sync download -m <machine> -r <repo> --local <dir>` | Repository-Verzeichnis lokal herunterladen |
+| `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | Einzelne Datei in ein lokales Verzeichnis herunterladen |
 | `rdc vscode connect -m <machine> -r <repo>` | VS Code Remote SSH-Sitzung öffnen |
 
 ## Konfiguration

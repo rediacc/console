@@ -156,7 +156,7 @@ Resmi olarak desteklenen beş sunucu isletim sisteminde (bkz. [Gereksinimler](/e
 - **`rdc repo down`** `down()` çalıştırır ve Docker daemon'ını durdurur.
 - **`rdc repo down --unmount`** ayrıca LUKS birimini kapatır (şifreli depolamayı kilitler).
 - **Fork'lar** (`rdc repo fork`) yeni GUID ve networkId ile bir CoW (copy-on-write) klon oluşturur ve bunu **depo boyutundan bağımsız olarak sabit sürede** yapar. BTRFS reflink veriyi değil görüntü meta verilerini çoğaltır, bu nedenle 100 GB'lık bir depo 1 GB'lık bir depo ile aynı birkaç saniyede fork edilir. Fork, üst öğenin şifreleme anahtarını paylaşır.
-- **Takeover** (`rdc repo takeover <fork> -m <machine>`) grand deponun verilerini bir fork'un verileriyle değiştirir. Grand kimliğini korur (GUID, networkId, alan adları, otomatik başlatma, yedekleme zinciri). Eski üretim verileri yedekleme fork'u olarak korunur. Kullanım: fork üzerinde yükseltmeyi test edin, doğrulayın, ardından üretime takeover yapın. `rdc repo takeover <backup-fork> -m <machine>` ile geri alın.
+- **Takeover** (`rdc repo takeover --name <fork> -m <machine>`) grand deponun verilerini bir fork'un verileriyle değiştirir. Grand kimliğini korur (GUID, networkId, alan adları, otomatik başlatma, yedekleme zinciri). Eski üretim verileri yedekleme fork'u olarak korunur. Kullanım: fork üzerinde yükseltmeyi test edin, doğrulayın, ardından üretime takeover yapın. `rdc repo takeover --name <backup-fork> -m <machine>` ile geri alın.
 - **Proxy yolları** dağıtımdan sonra yaklaşık 3 saniyede aktif olur. `repo up` sırasında "Proxy is not running" uyarısı ops/dev ortamlarında bilgilendirme amaçlıdır.
 - **`rdc repo up` ve `rdc repo fork --up`, dağıtımın sonunda** `rediacc.service_port` ile etiketlenmiş servisler için URL kalıbını yazdırır. `{service}` yerine açığa çıkarılan servis adınızı yazarak tam URL'yi elde edin. `rediacc.service_port` olmayan servisler (veritabanları, işçiler) rota almaz ve gösterilmez.
 
@@ -167,4 +167,4 @@ Resmi olarak desteklenen beş sunucu isletim sisteminde (bkz. [Gereksinimler](/e
 - `privileged: true` kullanmak, gerekli değildir, renet bunun yerine belirli CRIU capability'lerini enjekte eder.
 - Ham IP'leri kalıcı yapılandırma dosyalarına sabit kodlamak - fork izolasyonunu sağlam tutmak için bağlantılarda servis adlarını kullanın.
 - Başarısız komutlar için geçici çözüm olarak `rdc term connect -c` kullanmak, bunun yerine hataları bildirin.
-- `repo delete` loopback IP'leri ve systemd birimlerini de dahil ederek tam temizlik yapar. Eski silmelerden kalan artıkları temizlemek için `rdc machine prune <name>` çalıştırın.
+- `repo delete` loopback IP'leri ve systemd birimlerini de dahil ederek tam temizlik yapar. Eski silmelerden kalan artıkları temizlemek için `rdc machine prune --name <name>` çalıştırın.

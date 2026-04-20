@@ -140,7 +140,7 @@ Ortam değişkenleri çalışan VM kaynaklarını geçersiz kılar:
 | `rdc ops up [seçenekler]` | VM kümesi hazırla |
 | `rdc ops down` | Tüm VM'leri yok et ve temizle |
 | `rdc ops status` | Tüm VM'lerin durumunu göster |
-| `rdc ops ssh <vm-id> [komut...]` | Bir VM'ye SSH ile bağlan veya üzerinde komut çalıştır |
+| `rdc ops ssh --vm-id <id> [komut...]` | Bir VM'ye SSH ile bağlan veya üzerinde komut çalıştır |
 
 ### `rdc ops up` Seçenekleri
 

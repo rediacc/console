@@ -47,7 +47,7 @@ rdc repo up --name my-app -m server-1
 rdc repo down --name my-app -m server-1
 
 # マシンの健全性を確認
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 完全なウォークスルーについては、[クイックスタート](/ja/docs/quick-start)を参照してください。

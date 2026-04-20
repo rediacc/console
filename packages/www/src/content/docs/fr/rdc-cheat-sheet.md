@@ -4,8 +4,8 @@ description: Référence rapide de toutes les commandes rdc, configurations, dé
 category: Guides
 order: 3
 language: fr
-sourceHash: "b941deba8b6d1b56"
-sourceCommit: "b010d8dc3d3edd8b08ec25593f39f4808d7f1d03"
+sourceHash: "2ec57c88104cdc1e"
+sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
 ---
 
 # Aide-mémoire RDC CLI
@@ -83,7 +83,7 @@ Référence rapide des commandes `rdc` les plus courantes. Exécutez n'importe q
 | `rdc machine query --name <machine> --network` | Informations réseau uniquement |
 | `rdc machine query --name <machine> --block-devices` | Informations sur les périphériques de bloc uniquement |
 | `rdc machine list` | Lister toutes les machines dans la configuration |
-| `rdc config machine setup <machine>` | Exécuter le provisionnement initial de la machine |
+| `rdc config machine setup --name <machine>` | Exécuter le provisionnement initial de la machine |
 | `rdc machine prune --name <machine>` | Supprimer les ressources inutilisées de la machine |
 | `rdc machine deprovision --name <machine>` | Déprovisionner complètement une machine |
 | `rdc machine vault-status --name <machine>` | Afficher l'état du vault LUKS |
@@ -95,8 +95,9 @@ Référence rapide des commandes `rdc` les plus courantes. Exécutez n'importe q
 | `rdc term connect -m <machine>` | Ouvrir un terminal SSH vers la machine |
 | `rdc term connect -m <machine> -r <repo>` | Ouvrir un terminal SSH vers le dépôt (définit DOCKER_HOST) |
 | `rdc term connect -m <machine> -c "<command>"` | Exécuter une commande sur la machine |
-| `rdc repo sync upload -m <machine> -r <repo> --local <path>` | Téléverser des fichiers locaux vers le dépôt |
-| `rdc repo sync download -m <machine> -r <repo> --local <path>` | Télécharger les fichiers du dépôt localement |
+| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Téléverser un fichier, un répertoire ou plusieurs sources vers le dépôt |
+| `rdc repo sync download -m <machine> -r <repo> --local <dir>` | Télécharger un répertoire du dépôt localement |
+| `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | Télécharger un fichier distant dans un répertoire local |
 | `rdc vscode connect -m <machine> -r <repo>` | Ouvrir une session VS Code Remote SSH |
 
 ## Configuration

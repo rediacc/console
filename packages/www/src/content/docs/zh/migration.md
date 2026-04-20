@@ -210,7 +210,7 @@ rdc repo up --name my-project -m server-1
 验证您的容器正在运行：
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## 步骤 7：启用自动启动（可选）
