@@ -6,7 +6,7 @@ order: 2
 language: ja
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ja/cli.json
-sourceHash: "25009589f7d56a51"
+sourceHash: "1d4e217dd1ae3509"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -952,11 +952,12 @@ rdc machine update
 {{t:cli.docs.supplements.machine.health.afterDescription}}
 
 ```bash
-rdc machine health --name <name> [options]
+rdc machine health [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -966,11 +967,12 @@ rdc machine health --name <name> [options]
 {{t:cli.commands.machine.containers.description}}
 
 ```bash
-rdc machine containers --name <name> [options]
+rdc machine containers [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--health-check` | {{t:cli.commands.machine.containers.healthCheck}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -981,11 +983,12 @@ rdc machine containers --name <name> [options]
 {{t:cli.commands.machine.services.description}}
 
 ```bash
-rdc machine services --name <name> [options]
+rdc machine services [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--stability-check` | {{t:cli.commands.machine.services.stabilityCheck}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -1035,11 +1038,12 @@ rdc machine vault-status [options]
 {{t:cli.commands.machine.repos.description}}
 
 ```bash
-rdc machine repos --name <name> [options]
+rdc machine repos [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--search <text>` | {{t:cli.options.searchRepos}} | {{t:cli.docs.optionLabels.no}} | - |
 
