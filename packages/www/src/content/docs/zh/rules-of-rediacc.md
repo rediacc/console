@@ -1,11 +1,11 @@
 ---
-title: "Rediacc 规则"
-description: "在 Rediacc 平台上构建应用程序的基本规则和约定。涵盖 Rediaccfile、compose、网络、存储、CRIU 和部署。"
-category: "Guides"
+title: Rediacc 规则
+description: 在 Rediacc 平台上构建应用程序的基本规则和约定。涵盖 Rediaccfile、compose、网络、存储、CRIU 和部署。
+category: Guides
 order: 5
 language: zh
-sourceHash: "fd0fa925e9b76434"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 9365e0cabf7e8f03
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # Rediacc 规则

@@ -1,11 +1,14 @@
 ---
-title: "Regeln von Rediacc"
-description: "Wesentliche Regeln und Konventionen für die Entwicklung von Anwendungen auf der Rediacc-Plattform. Umfasst Rediaccfile, Compose, Netzwerk, Speicher, CRIU und Deployment."
-category: "Guides"
+title: Regeln von Rediacc
+description: >-
+  Wesentliche Regeln und Konventionen für die Entwicklung von Anwendungen auf
+  der Rediacc-Plattform. Umfasst Rediaccfile, Compose, Netzwerk, Speicher, CRIU
+  und Deployment.
+category: Guides
 order: 5
 language: de
-sourceHash: "fd0fa925e9b76434"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 9365e0cabf7e8f03
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # Regeln von Rediacc

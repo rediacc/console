@@ -1,11 +1,13 @@
 ---
 title: Шпаргалка RDC CLI
-description: Краткий справочник по всем командам rdc, конфигурации, репозиториям, машинам, синхронизации, контейнерам и многому другому.
+description: >-
+  Краткий справочник по всем командам rdc, конфигурации, репозиториям, машинам,
+  синхронизации, контейнерам и многому другому.
 category: Guides
 order: 3
 language: ru
-sourceHash: "2ec57c88104cdc1e"
-sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
+sourceHash: c552951bebd937b0
+sourceCommit: 35b53352026ae87fb6800c7fed10b793223ca1da
 ---
 
 # Шпаргалка RDC CLI

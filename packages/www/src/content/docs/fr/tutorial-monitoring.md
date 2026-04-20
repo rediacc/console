@@ -1,10 +1,12 @@
 ---
-title: "Surveillance et diagnostics"
-description: "Vérifier l'état de la machine, inspecter les conteneurs, examiner les services systemd, scanner les clés d'hôte et exécuter les diagnostics d'environnement."
-category: "Tutorials"
+title: Surveillance et diagnostics
+description: >-
+  Vérifier l'état de la machine, inspecter les conteneurs, examiner les services
+  systemd, scanner les clés d'hôte et exécuter les diagnostics d'environnement.
+category: Tutorials
 order: 4
 language: fr
-sourceHash: "2efd897e27dca34e"
+sourceHash: fa85cf9b00d42a6e
 ---
 
 # Comment surveiller et diagnostiquer l'infrastructure avec Rediacc

@@ -1,11 +1,13 @@
 ---
-title: "Solución de problemas"
-description: "Soluciones para problemas comunes con SSH, configuración, repositorios, servicios y Docker."
-category: "Guides"
+title: Solución de problemas
+description: >-
+  Soluciones para problemas comunes con SSH, configuración, repositorios,
+  servicios y Docker.
+category: Guides
 order: 10
 language: es
-sourceHash: "ee8fe3ee7166cfe4"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 54e552831b2b125c
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # Solución de problemas

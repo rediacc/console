@@ -1,11 +1,11 @@
 ---
-title: "استكشاف الأخطاء وإصلاحها"
-description: "حلول للمشاكل الشائعة مع SSH والإعداد والمستودعات والخدمات وDocker."
-category: "Guides"
+title: استكشاف الأخطاء وإصلاحها
+description: حلول للمشاكل الشائعة مع SSH والإعداد والمستودعات والخدمات وDocker.
+category: Guides
 order: 10
 language: ar
-sourceHash: "ee8fe3ee7166cfe4"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 54e552831b2b125c
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # استكشاف الأخطاء وإصلاحها

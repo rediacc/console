@@ -1,11 +1,13 @@
 ---
 title: Araçlar
-description: "Dosya senkronizasyonu, terminal erişimi, VS Code entegrasyonu ve CLI güncellemeleri."
+description: >-
+  Dosya senkronizasyonu, terminal erişimi, VS Code entegrasyonu ve CLI
+  güncellemeleri.
 category: Guides
 order: 9
 language: tr
-sourceHash: "d969636d6c2e459f"
-sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
+sourceHash: 2cf225f5af0b2d32
+sourceCommit: 9fbdf33aa443d362590f37b30636c50015cc77a0
 ---
 
 # Araçlar

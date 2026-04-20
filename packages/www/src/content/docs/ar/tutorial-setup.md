@@ -1,10 +1,12 @@
 ---
-title: "إعداد الجهاز"
-description: "إنشاء ملف تعريف التكوين، تسجيل جهاز بعيد، التحقق من اتصال SSH، وتكوين إعدادات البنية التحتية."
-category: "Tutorials"
+title: إعداد الجهاز
+description: >-
+  إنشاء ملف تعريف التكوين، تسجيل جهاز بعيد، التحقق من اتصال SSH، وتكوين إعدادات
+  البنية التحتية.
+category: Tutorials
 order: 2
 language: ar
-sourceHash: "2a32100e76d41bc0"
+sourceHash: 9ff760ad1c9dc0b0
 ---
 
 # كيفية إعداد جهاز باستخدام Rediacc

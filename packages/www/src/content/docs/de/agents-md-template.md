@@ -1,10 +1,12 @@
 ---
 title: AGENTS.md-Vorlage für KI-Assistenten
-description: Kopierfertige Vorlage zur Konfiguration von Claude Code, Cursor und anderen KI-Coding-Assistenten für die Arbeit mit der Rediacc-Infrastruktur.
+description: >-
+  Kopierfertige Vorlage zur Konfiguration von Claude Code, Cursor und anderen
+  KI-Coding-Assistenten für die Arbeit mit der Rediacc-Infrastruktur.
 category: Reference
 order: 50
 language: de
-sourceHash: "b1ea9373a19bbedb"
+sourceHash: 37be1e401927ed9a
 ---
 
 Verwenden Sie diese Vorlage, um KI-Coding-Assistenten (Claude Code, Cursor, Cline, Windsurf) für die autonome Verwaltung der Rediacc-Infrastruktur zu konfigurieren. Kopieren Sie den folgenden Block in die Datei `CLAUDE.md`, `.cursorrules` oder die entsprechende Agenten-Konfigurationsdatei Ihres Projekts.

@@ -1,11 +1,13 @@
 ---
-title: "النسخ الاحتياطي والشبكات"
-description: "تكوين جداول النسخ الاحتياطي التلقائي، وإدارة موفري التخزين، وإعداد شبكات البنية التحتية، وتسجيل منافذ الخدمات."
-category: "Tutorials"
+title: النسخ الاحتياطي والشبكات
+description: >-
+  تكوين جداول النسخ الاحتياطي التلقائي، وإدارة موفري التخزين، وإعداد شبكات
+  البنية التحتية، وتسجيل منافذ الخدمات.
+category: Tutorials
 order: 6
 language: ar
-sourceHash: "3af2b8e2e6105e29"
-sourceCommit: "2223eabccb947ee9da79f1afcef075e163797d13"
+sourceHash: b91d408984abfc75
+sourceCommit: 2223eabccb947ee9da79f1afcef075e163797d13
 ---
 
 # كيفية تكوين النسخ الاحتياطي والشبكات مع Rediacc

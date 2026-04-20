@@ -1,10 +1,12 @@
 ---
-title: "Экспериментальные VM"
-description: "Создание локальных кластеров VM для разработки и тестирования с помощью rdc ops."
-category: "Concepts"
+title: Экспериментальные VM
+description: >-
+  Создание локальных кластеров VM для разработки и тестирования с помощью rdc
+  ops.
+category: Concepts
 order: 2
 language: ru
-sourceHash: "af686ab0f22d58c7"
+sourceHash: df01dc35c82beb81
 ---
 
 # Экспериментальные VM

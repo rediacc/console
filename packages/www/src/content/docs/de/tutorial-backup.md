@@ -1,11 +1,13 @@
 ---
-title: "Backup & Netzwerk"
-description: "Automatische Backup-Zeitpläne konfigurieren, Speicheranbieter verwalten, Infrastruktur-Netzwerk einrichten und Service-Ports registrieren."
-category: "Tutorials"
+title: Backup & Netzwerk
+description: >-
+  Automatische Backup-Zeitpläne konfigurieren, Speicheranbieter verwalten,
+  Infrastruktur-Netzwerk einrichten und Service-Ports registrieren.
+category: Tutorials
 order: 6
 language: de
-sourceHash: "3af2b8e2e6105e29"
-sourceCommit: "2223eabccb947ee9da79f1afcef075e163797d13"
+sourceHash: b91d408984abfc75
+sourceCommit: 2223eabccb947ee9da79f1afcef075e163797d13
 ---
 
 # So konfigurieren Sie Backups und Netzwerk mit Rediacc

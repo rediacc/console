@@ -1,11 +1,11 @@
 ---
 title: Werkzeuge
-description: "Dateisynchronisation, Terminalzugriff, VS Code-Unterstützung und CLI-Updates."
+description: 'Dateisynchronisation, Terminalzugriff, VS Code-Unterstützung und CLI-Updates.'
 category: Guides
 order: 9
 language: de
-sourceHash: "d969636d6c2e459f"
-sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
+sourceHash: 2cf225f5af0b2d32
+sourceCommit: 9fbdf33aa443d362590f37b30636c50015cc77a0
 ---
 
 # Werkzeuge

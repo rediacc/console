@@ -1,10 +1,10 @@
 ---
-title: "マシンセットアップ"
-description: "構成プロファイルの作成、リモートマシンの登録、SSH接続の検証、インフラストラクチャ設定の構成を行います。"
-category: "Tutorials"
+title: マシンセットアップ
+description: 構成プロファイルの作成、リモートマシンの登録、SSH接続の検証、インフラストラクチャ設定の構成を行います。
+category: Tutorials
 order: 2
 language: ja
-sourceHash: "2a32100e76d41bc0"
+sourceHash: 9ff760ad1c9dc0b0
 ---
 
 # Rediaccでマシンをセットアップする方法

@@ -1,11 +1,11 @@
 ---
 title: rdc vs renet
-description: Wann Sie rdc verwenden und wann renet, eine Übersicht.
+description: 'Wann Sie rdc verwenden und wann renet, eine Übersicht.'
 category: Concepts
 order: 1
 language: de
-sourceHash: "86bc5f8593d408de"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 526136e143dbcf08
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # rdc vs renet

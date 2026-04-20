@@ -1,10 +1,12 @@
 ---
 title: Руководство по настройке Claude Code
-description: Пошаговое руководство по настройке Claude Code для автономного управления инфраструктурой Rediacc.
+description: >-
+  Пошаговое руководство по настройке Claude Code для автономного управления
+  инфраструктурой Rediacc.
 category: Guides
 order: 31
 language: ru
-sourceHash: "1a9f31b2430273f9"
+sourceHash: 7f38feb385e7e005
 ---
 
 Claude Code нативно работает с Rediacc через CLI `rdc`. Это руководство охватывает настройку, разрешения и типичные рабочие процессы.

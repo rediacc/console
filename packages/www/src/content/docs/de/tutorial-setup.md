@@ -1,10 +1,13 @@
 ---
-title: "Maschineneinrichtung"
-description: "Erstellen Sie ein Konfigurationsprofil, registrieren Sie eine Remote-Maschine, überprüfen Sie die SSH-Konnektivität und konfigurieren Sie Infrastruktureinstellungen."
-category: "Tutorials"
+title: Maschineneinrichtung
+description: >-
+  Erstellen Sie ein Konfigurationsprofil, registrieren Sie eine Remote-Maschine,
+  überprüfen Sie die SSH-Konnektivität und konfigurieren Sie
+  Infrastruktureinstellungen.
+category: Tutorials
 order: 2
 language: de
-sourceHash: "2a32100e76d41bc0"
+sourceHash: 9ff760ad1c9dc0b0
 ---
 
 # So richten Sie eine Maschine mit Rediacc ein

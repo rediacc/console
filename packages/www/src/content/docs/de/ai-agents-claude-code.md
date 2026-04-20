@@ -1,10 +1,12 @@
 ---
 title: Claude Code Einrichtungsanleitung
-description: Schritt-für-Schritt-Anleitung zur Konfiguration von Claude Code für die autonome Verwaltung der Rediacc-Infrastruktur.
+description: >-
+  Schritt-für-Schritt-Anleitung zur Konfiguration von Claude Code für die
+  autonome Verwaltung der Rediacc-Infrastruktur.
 category: Guides
 order: 31
 language: de
-sourceHash: "1a9f31b2430273f9"
+sourceHash: 7f38feb385e7e005
 ---
 
 Claude Code funktioniert nativ mit Rediacc über die `rdc` CLI. Diese Anleitung behandelt Einrichtung, Berechtigungen und gaengige Workflows.

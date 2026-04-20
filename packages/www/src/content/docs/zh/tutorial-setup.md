@@ -1,10 +1,10 @@
 ---
-title: "机器设置"
-description: "创建配置文件、注册远程机器、验证 SSH 连接，并配置基础设施设置。"
-category: "Tutorials"
+title: 机器设置
+description: 创建配置文件、注册远程机器、验证 SSH 连接，并配置基础设施设置。
+category: Tutorials
 order: 2
 language: zh
-sourceHash: "2a32100e76d41bc0"
+sourceHash: 9ff760ad1c9dc0b0
 ---
 
 # 如何使用 Rediacc 设置机器

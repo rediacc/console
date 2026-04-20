@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: "1b60f9a60324f737"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 7574575ee78682a9
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # İzleme

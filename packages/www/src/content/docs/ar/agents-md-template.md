@@ -1,10 +1,12 @@
 ---
 title: قالب AGENTS.md لمساعدي الذكاء الاصطناعي
-description: قالب جاهز للنسخ واللصق لتهيئة Claude Code وCursor ومساعدي البرمجة الذكية الأخرى للعمل مع بنية Rediacc التحتية.
+description: >-
+  قالب جاهز للنسخ واللصق لتهيئة Claude Code وCursor ومساعدي البرمجة الذكية
+  الأخرى للعمل مع بنية Rediacc التحتية.
 category: Reference
 order: 50
 language: ar
-sourceHash: "b1ea9373a19bbedb"
+sourceHash: 37be1e401927ed9a
 ---
 
 استخدم هذا القالب لتهيئة مساعدي البرمجة الذكية (Claude Code، Cursor، Cline، Windsurf) لإدارة بنية Rediacc التحتية بشكل مستقل. انسخ الكتلة أدناه إلى ملف `CLAUDE.md` أو `.cursorrules` أو ملف تهيئة الوكيل المعادل في مشروعك.

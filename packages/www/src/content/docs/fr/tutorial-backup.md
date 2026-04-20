@@ -1,11 +1,14 @@
 ---
-title: "Sauvegarde et réseau"
-description: "Configurez des planifications de sauvegarde automatisées, gérez les fournisseurs de stockage, configurez le réseau d'infrastructure et enregistrez les ports de service."
-category: "Tutorials"
+title: Sauvegarde et réseau
+description: >-
+  Configurez des planifications de sauvegarde automatisées, gérez les
+  fournisseurs de stockage, configurez le réseau d'infrastructure et enregistrez
+  les ports de service.
+category: Tutorials
 order: 6
 language: fr
-sourceHash: "3af2b8e2e6105e29"
-sourceCommit: "2223eabccb947ee9da79f1afcef075e163797d13"
+sourceHash: b91d408984abfc75
+sourceCommit: 2223eabccb947ee9da79f1afcef075e163797d13
 ---
 
 # Comment configurer les sauvegardes et le réseau avec Rediacc

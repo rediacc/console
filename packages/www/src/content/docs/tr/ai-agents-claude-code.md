@@ -1,10 +1,12 @@
 ---
 title: Claude Code Kurulum Kılavuzu
-description: Claude Code'u otonom Rediacc altyapı yönetimi için yapılandırmanın adım adım kılavuzu.
+description: >-
+  Claude Code'u otonom Rediacc altyapı yönetimi için yapılandırmanın adım adım
+  kılavuzu.
 category: Guides
 order: 31
 language: tr
-sourceHash: "1a9f31b2430273f9"
+sourceHash: 7f38feb385e7e005
 ---
 
 Claude Code, `rdc` CLI aracılığıyla Rediacc ile doğal olarak çalışır. Bu kılavuz kurulumu, izinleri ve yaygın iş akışlarını kapsar.

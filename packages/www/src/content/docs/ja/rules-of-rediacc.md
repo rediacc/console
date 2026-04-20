@@ -1,11 +1,12 @@
 ---
-title: "Rediaccのルール"
-description: "Rediaccプラットフォームでアプリケーションを構築するための基本ルールと規則。Rediaccfile、compose、ネットワーク、ストレージ、CRIU、デプロイについて説明します。"
-category: "Guides"
+title: Rediaccのルール
+description: >-
+  Rediaccプラットフォームでアプリケーションを構築するための基本ルールと規則。Rediaccfile、compose、ネットワーク、ストレージ、CRIU、デプロイについて説明します。
+category: Guides
 order: 5
 language: ja
-sourceHash: "fd0fa925e9b76434"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 9365e0cabf7e8f03
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # Rediaccのルール

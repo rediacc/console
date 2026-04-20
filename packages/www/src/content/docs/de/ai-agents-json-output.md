@@ -1,10 +1,12 @@
 ---
 title: JSON-Ausgabe-Referenz
-description: Vollständige Referenz für das JSON-Ausgabeformat der rdc CLI, Envelope-Schema, Fehlerbehandlung und Agenten-Erkennungsbefehle.
+description: >-
+  Vollständige Referenz für das JSON-Ausgabeformat der rdc CLI, Envelope-Schema,
+  Fehlerbehandlung und Agenten-Erkennungsbefehle.
 category: Reference
 order: 51
 language: de
-sourceHash: "11259cd1eeebf361"
+sourceHash: 43cdbf89d4314d73
 ---
 
 Alle `rdc`-Befehle unterstützen strukturierte JSON-Ausgabe für die programmatische Nutzung durch KI-Agenten und Skripte.

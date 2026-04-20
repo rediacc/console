@@ -1,11 +1,13 @@
 ---
-title: "Dépannage"
-description: "Solutions aux problèmes courants avec SSH, la configuration, les dépôts, les services et Docker."
-category: "Guides"
+title: Dépannage
+description: >-
+  Solutions aux problèmes courants avec SSH, la configuration, les dépôts, les
+  services et Docker.
+category: Guides
 order: 10
 language: fr
-sourceHash: "ee8fe3ee7166cfe4"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 54e552831b2b125c
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # Dépannage

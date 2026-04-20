@@ -1,11 +1,11 @@
 ---
-title: "移行ガイド"
-description: "既存のプロジェクトを暗号化されたRediaccリポジトリに移行します。"
-category: "Guides"
+title: 移行ガイド
+description: 既存のプロジェクトを暗号化されたRediaccリポジトリに移行します。
+category: Guides
 order: 11
 language: ja
-sourceHash: "5e13e363e9dce55f"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: c0ea82abb1d29de0
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # 移行ガイド

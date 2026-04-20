@@ -1,10 +1,10 @@
 ---
-title: "Deneysel VM'ler"
-description: "rdc ops ile geliştirme ve test için yerel VM kümeleri oluşturma."
-category: "Concepts"
+title: Deneysel VM'ler
+description: rdc ops ile geliştirme ve test için yerel VM kümeleri oluşturma.
+category: Concepts
 order: 2
 language: tr
-sourceHash: "af686ab0f22d58c7"
+sourceHash: df01dc35c82beb81
 ---
 
 # Deneysel VM'ler

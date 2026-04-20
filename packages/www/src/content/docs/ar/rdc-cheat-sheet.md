@@ -1,11 +1,13 @@
 ---
 title: ورقة مرجعية لـ RDC CLI
-description: مرجع سريع لجميع أوامر rdc، الإعدادات، المستودعات، الأجهزة، المزامنة، الحاويات والمزيد.
+description: >-
+  مرجع سريع لجميع أوامر rdc، الإعدادات، المستودعات، الأجهزة، المزامنة، الحاويات
+  والمزيد.
 category: Guides
 order: 3
 language: ar
-sourceHash: "2ec57c88104cdc1e"
-sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
+sourceHash: c552951bebd937b0
+sourceCommit: 35b53352026ae87fb6800c7fed10b793223ca1da
 ---
 
 # ورقة مرجعية لـ RDC CLI

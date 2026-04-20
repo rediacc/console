@@ -1,10 +1,10 @@
 ---
-title: "实验性虚拟机"
-description: "使用 rdc ops 在工作站上配置本地 VM 集群，用于开发和测试。"
-category: "Concepts"
+title: 实验性虚拟机
+description: 使用 rdc ops 在工作站上配置本地 VM 集群，用于开发和测试。
+category: Concepts
 order: 2
 language: zh
-sourceHash: "af686ab0f22d58c7"
+sourceHash: df01dc35c82beb81
 ---
 
 # 实验性虚拟机

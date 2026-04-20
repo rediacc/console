@@ -1,10 +1,10 @@
 ---
-title: "监控与诊断"
-description: "检查机器健康状况、检查容器、查看 systemd 服务、扫描主机密钥和运行环境诊断。"
-category: "Tutorials"
+title: 监控与诊断
+description: 检查机器健康状况、检查容器、查看 systemd 服务、扫描主机密钥和运行环境诊断。
+category: Tutorials
 order: 4
 language: zh
-sourceHash: "2efd897e27dca34e"
+sourceHash: fa85cf9b00d42a6e
 ---
 
 # 如何使用 Rediacc 监控和诊断基础设施

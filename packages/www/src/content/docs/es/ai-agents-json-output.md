@@ -1,10 +1,13 @@
 ---
 title: Referencia de salida JSON
-description: Referencia completa del formato de salida JSON del CLI rdc, esquema de la información envolvente, gestión de errores y comandos de descubrimiento para agentes.
+description: >-
+  Referencia completa del formato de salida JSON del CLI rdc, esquema de la
+  información envolvente, gestión de errores y comandos de descubrimiento para
+  agentes.
 category: Reference
 order: 51
 language: es
-sourceHash: "11259cd1eeebf361"
+sourceHash: 43cdbf89d4314d73
 ---
 
 Todos los comandos `rdc` admiten salida JSON estructurada para consumo programático por agentes de IA y scripts.

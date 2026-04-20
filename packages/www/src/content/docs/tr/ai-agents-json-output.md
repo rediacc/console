@@ -1,10 +1,12 @@
 ---
 title: JSON Çıktı Referansı
-description: rdc CLI JSON çıktı formatı, zarf şeması, hata işleme ve ajan keşif komutları için eksiksiz referans.
+description: >-
+  rdc CLI JSON çıktı formatı, zarf şeması, hata işleme ve ajan keşif komutları
+  için eksiksiz referans.
 category: Reference
 order: 51
 language: tr
-sourceHash: "11259cd1eeebf361"
+sourceHash: 43cdbf89d4314d73
 ---
 
 Tüm `rdc` komutları, AI ajanları ve betikler tarafından programatik tüketim için yapılandırılmış JSON çıktısını destekler.

@@ -1,11 +1,13 @@
 ---
-title: "Depo Yaşam Döngüsü"
-description: "Şifreli bir depo oluşturun, konteynerleştirilmiş bir uygulama dağıtın, konteynerleri inceleyin ve temizleyin."
-category: "Tutorials"
+title: Depo Yaşam Döngüsü
+description: >-
+  Şifreli bir depo oluşturun, konteynerleştirilmiş bir uygulama dağıtın,
+  konteynerleri inceleyin ve temizleyin.
+category: Tutorials
 order: 3
 language: tr
-sourceHash: "fecc09a324a1fa65"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 46c155563808d0b7
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # Rediacc ile Depoları Dağıtma ve Yönetme

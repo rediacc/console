@@ -1,11 +1,11 @@
 ---
-title: "仓库生命周期"
-description: "创建加密仓库、部署容器化应用、检查容器和清理。"
-category: "Tutorials"
+title: 仓库生命周期
+description: 创建加密仓库、部署容器化应用、检查容器和清理。
+category: Tutorials
 order: 3
 language: zh
-sourceHash: "fecc09a324a1fa65"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 46c155563808d0b7
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # 如何使用 Rediacc 部署和管理仓库

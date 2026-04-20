@@ -1,11 +1,11 @@
 ---
-title: "备份与网络"
-description: "配置自动备份计划、管理存储提供商、设置基础设施网络并注册服务端口。"
-category: "Tutorials"
+title: 备份与网络
+description: 配置自动备份计划、管理存储提供商、设置基础设施网络并注册服务端口。
+category: Tutorials
 order: 6
 language: zh
-sourceHash: "3af2b8e2e6105e29"
-sourceCommit: "2223eabccb947ee9da79f1afcef075e163797d13"
+sourceHash: b91d408984abfc75
+sourceCommit: 2223eabccb947ee9da79f1afcef075e163797d13
 ---
 
 # 如何使用 Rediacc 配置备份和网络

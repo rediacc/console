@@ -1,10 +1,12 @@
 ---
-title: "Makine Kurulumu"
-description: "Bir yapılandırma profili oluşturun, uzak bir makine kaydedin, SSH bağlantısını doğrulayın ve altyapı ayarlarını yapılandırın."
-category: "Tutorials"
+title: Makine Kurulumu
+description: >-
+  Bir yapılandırma profili oluşturun, uzak bir makine kaydedin, SSH bağlantısını
+  doğrulayın ve altyapı ayarlarını yapılandırın.
+category: Tutorials
 order: 2
 language: tr
-sourceHash: "2a32100e76d41bc0"
+sourceHash: 9ff760ad1c9dc0b0
 ---
 
 # Rediacc ile Makine Nasıl Kurulur

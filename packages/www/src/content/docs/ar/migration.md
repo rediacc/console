@@ -1,11 +1,11 @@
 ---
-title: "دليل الترحيل"
-description: "ترحيل المشاريع الحالية إلى مستودعات Rediacc المشفرة."
-category: "Guides"
+title: دليل الترحيل
+description: ترحيل المشاريع الحالية إلى مستودعات Rediacc المشفرة.
+category: Guides
 order: 11
 language: ar
-sourceHash: "5e13e363e9dce55f"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: c0ea82abb1d29de0
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # دليل الترحيل

@@ -1,11 +1,13 @@
 ---
-title: "Ciclo de vida del repositorio"
-description: "Crear un repositorio cifrado, desplegar una aplicación en contenedores, inspeccionar contenedores y limpiar."
-category: "Tutorials"
+title: Ciclo de vida del repositorio
+description: >-
+  Crear un repositorio cifrado, desplegar una aplicación en contenedores,
+  inspeccionar contenedores y limpiar.
+category: Tutorials
 order: 3
 language: es
-sourceHash: "fecc09a324a1fa65"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 46c155563808d0b7
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # Cómo desplegar y gestionar repositorios con Rediacc

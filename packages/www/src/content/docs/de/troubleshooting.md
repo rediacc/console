@@ -1,11 +1,13 @@
 ---
-title: "Fehlerbehebung"
-description: "Lösungen für häufige Probleme mit SSH, Einrichtung, Repositories, Services und Docker."
-category: "Guides"
+title: Fehlerbehebung
+description: >-
+  Lösungen für häufige Probleme mit SSH, Einrichtung, Repositories, Services und
+  Docker.
+category: Guides
 order: 10
 language: de
-sourceHash: "ee8fe3ee7166cfe4"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 54e552831b2b125c
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # Fehlerbehebung

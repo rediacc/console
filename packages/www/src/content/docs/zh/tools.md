@@ -4,8 +4,8 @@ description: 文件同步、终端访问、VS Code 集成、更新和诊断。
 category: Guides
 order: 9
 language: zh
-sourceHash: "d969636d6c2e459f"
-sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
+sourceHash: 2cf225f5af0b2d32
+sourceCommit: 9fbdf33aa443d362590f37b30636c50015cc77a0
 ---
 
 # 工具

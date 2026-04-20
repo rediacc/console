@@ -1,10 +1,12 @@
 ---
 title: AI Asistanları için AGENTS.md Şablonu
-description: Claude Code, Cursor ve diğer AI kodlama asistanlarını Rediacc altyapısıyla çalışacak şekilde yapılandırmak için kopyala-yapıştır şablonu.
+description: >-
+  Claude Code, Cursor ve diğer AI kodlama asistanlarını Rediacc altyapısıyla
+  çalışacak şekilde yapılandırmak için kopyala-yapıştır şablonu.
 category: Reference
 order: 50
 language: tr
-sourceHash: "b1ea9373a19bbedb"
+sourceHash: 37be1e401927ed9a
 ---
 
 Bu şablonu, AI kodlama asistanlarını (Claude Code, Cursor, Cline, Windsurf) otonom Rediacc altyapı yönetimi için yapılandırmak üzere kullanın. Aşağıdaki bloğu projenizin `CLAUDE.md`, `.cursorrules` veya eşdeğer ajan yapılandırma dosyasına kopyalayın.

@@ -1,11 +1,11 @@
 ---
-title: "バックアップとネットワーク"
-description: "自動バックアップスケジュールの設定、ストレージプロバイダーの管理、インフラストラクチャネットワークの構築、サービスポートの登録を行います。"
-category: "Tutorials"
+title: バックアップとネットワーク
+description: 自動バックアップスケジュールの設定、ストレージプロバイダーの管理、インフラストラクチャネットワークの構築、サービスポートの登録を行います。
+category: Tutorials
 order: 6
 language: ja
-sourceHash: "3af2b8e2e6105e29"
-sourceCommit: "2223eabccb947ee9da79f1afcef075e163797d13"
+sourceHash: b91d408984abfc75
+sourceCommit: 2223eabccb947ee9da79f1afcef075e163797d13
 ---
 
 # Rediaccでバックアップとネットワークを設定する方法

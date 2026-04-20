@@ -1,11 +1,11 @@
 ---
-title: "故障排除"
-description: "SSH、设置、仓库、服务和Docker常见问题的解决方案。"
-category: "Guides"
+title: 故障排除
+description: SSH、设置、仓库、服务和Docker常见问题的解决方案。
+category: Guides
 order: 10
 language: zh
-sourceHash: "ee8fe3ee7166cfe4"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 54e552831b2b125c
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # 故障排除

@@ -1,10 +1,12 @@
 ---
-title: "المراقبة والتشخيص"
-description: "فحص صحة الجهاز، وفحص الحاويات، ومراجعة خدمات systemd، ومسح مفاتيح المضيف، وتشغيل تشخيصات البيئة."
-category: "Tutorials"
+title: المراقبة والتشخيص
+description: >-
+  فحص صحة الجهاز، وفحص الحاويات، ومراجعة خدمات systemd، ومسح مفاتيح المضيف،
+  وتشغيل تشخيصات البيئة.
+category: Tutorials
 order: 4
 language: ar
-sourceHash: "2efd897e27dca34e"
+sourceHash: fa85cf9b00d42a6e
 ---
 
 # كيفية مراقبة وتشخيص البنية التحتية باستخدام Rediacc

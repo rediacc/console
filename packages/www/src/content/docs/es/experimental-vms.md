@@ -1,10 +1,10 @@
 ---
-title: "VMs Experimentales"
-description: "Aprovisione clústeres de VMs locales para desarrollo y pruebas con rdc ops."
-category: "Concepts"
+title: VMs Experimentales
+description: Aprovisione clústeres de VMs locales para desarrollo y pruebas con rdc ops.
+category: Concepts
 order: 2
 language: es
-sourceHash: "af686ab0f22d58c7"
+sourceHash: df01dc35c82beb81
 ---
 
 # VMs Experimentales

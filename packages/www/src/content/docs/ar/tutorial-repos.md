@@ -1,11 +1,11 @@
 ---
-title: "دورة حياة المستودع"
-description: "إنشاء مستودع مشفر ونشر تطبيق حاوية وفحص الحاويات والتنظيف."
-category: "Tutorials"
+title: دورة حياة المستودع
+description: إنشاء مستودع مشفر ونشر تطبيق حاوية وفحص الحاويات والتنظيف.
+category: Tutorials
 order: 3
 language: ar
-sourceHash: "fecc09a324a1fa65"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 46c155563808d0b7
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # كيفية نشر وإدارة المستودعات باستخدام Rediacc

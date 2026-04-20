@@ -1,10 +1,10 @@
 ---
-title: "実験的VM"
-description: "rdc opsを使用して、開発およびテスト用のローカルVMクラスターをプロビジョニングします。"
-category: "Concepts"
+title: 実験的VM
+description: rdc opsを使用して、開発およびテスト用のローカルVMクラスターをプロビジョニングします。
+category: Concepts
 order: 2
 language: ja
-sourceHash: "af686ab0f22d58c7"
+sourceHash: df01dc35c82beb81
 ---
 
 # 実験的VM

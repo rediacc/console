@@ -1,10 +1,13 @@
 ---
 title: Plantilla AGENTS.md para asistentes de IA
-description: Plantilla lista para copiar y pegar que permite configurar Claude Code, Cursor y otros asistentes de programación con IA para gestionar infraestructura Rediacc.
+description: >-
+  Plantilla lista para copiar y pegar que permite configurar Claude Code, Cursor
+  y otros asistentes de programación con IA para gestionar infraestructura
+  Rediacc.
 category: Reference
 order: 50
 language: es
-sourceHash: "b1ea9373a19bbedb"
+sourceHash: 37be1e401927ed9a
 ---
 
 Utilice esta plantilla para configurar asistentes de programación con IA (Claude Code, Cursor, Cline, Windsurf) para la gestión autónoma de infraestructura Rediacc. Copie el bloque siguiente en el archivo `CLAUDE.md`, `.cursorrules` o el archivo de configuración de agente equivalente de su proyecto.

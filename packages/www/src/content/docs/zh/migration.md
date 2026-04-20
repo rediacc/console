@@ -1,11 +1,11 @@
 ---
-title: "迁移指南"
-description: "将现有项目迁移到加密的 Rediacc 仓库中。"
-category: "Guides"
+title: 迁移指南
+description: 将现有项目迁移到加密的 Rediacc 仓库中。
+category: Guides
 order: 11
 language: zh
-sourceHash: "5e13e363e9dce55f"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: c0ea82abb1d29de0
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # 迁移指南

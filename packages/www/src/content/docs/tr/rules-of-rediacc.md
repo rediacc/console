@@ -1,11 +1,14 @@
 ---
-title: "Rediacc Kuralları"
-description: "Rediacc platformunda uygulama geliştirmek için temel kurallar ve konvansiyonlar. Rediaccfile, compose, ağ, depolama, CRIU ve dağıtım konularını kapsar."
-category: "Guides"
+title: Rediacc Kuralları
+description: >-
+  Rediacc platformunda uygulama geliştirmek için temel kurallar ve
+  konvansiyonlar. Rediaccfile, compose, ağ, depolama, CRIU ve dağıtım konularını
+  kapsar.
+category: Guides
 order: 5
 language: tr
-sourceHash: "fd0fa925e9b76434"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 9365e0cabf7e8f03
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # Rediacc Kuralları

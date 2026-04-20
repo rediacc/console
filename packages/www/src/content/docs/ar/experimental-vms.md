@@ -1,10 +1,10 @@
 ---
-title: "الأجهزة الافتراضية التجريبية"
-description: "إنشاء مجموعات أجهزة افتراضية محلية للتطوير والاختبار باستخدام rdc ops."
-category: "Concepts"
+title: الأجهزة الافتراضية التجريبية
+description: إنشاء مجموعات أجهزة افتراضية محلية للتطوير والاختبار باستخدام rdc ops.
+category: Concepts
 order: 2
 language: ar
-sourceHash: "af686ab0f22d58c7"
+sourceHash: df01dc35c82beb81
 ---
 
 # الأجهزة الافتراضية التجريبية

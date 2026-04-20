@@ -1,13 +1,13 @@
 ---
 title: Arquitectura
 description: >-
-  Cómo funciona Rediacc: arquitectura de dos herramientas, detección de adaptadores,
-  modelo de seguridad y estructura de configuración.
+  Cómo funciona Rediacc: arquitectura de dos herramientas, detección de
+  adaptadores, modelo de seguridad y estructura de configuración.
 category: Concepts
 order: 0
 language: es
-sourceHash: "2c2d289c280e2a7f"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 342214c5a4cf9321
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # Arquitectura

@@ -1,10 +1,12 @@
 ---
-title: "Configuration de la machine"
-description: "Créez un profil de configuration, enregistrez une machine distante, vérifiez la connectivité SSH et configurez les paramètres d'infrastructure."
-category: "Tutorials"
+title: Configuration de la machine
+description: >-
+  Créez un profil de configuration, enregistrez une machine distante, vérifiez
+  la connectivité SSH et configurez les paramètres d'infrastructure.
+category: Tutorials
 order: 2
 language: fr
-sourceHash: "2a32100e76d41bc0"
+sourceHash: 9ff760ad1c9dc0b0
 ---
 
 # Comment configurer une machine avec Rediacc

@@ -1,10 +1,10 @@
 ---
-title: "監視と診断"
-description: "マシンの健全性確認、コンテナの検査、systemdサービスの確認、ホストキーのスキャン、環境診断の実行。"
-category: "Tutorials"
+title: 監視と診断
+description: マシンの健全性確認、コンテナの検査、systemdサービスの確認、ホストキーのスキャン、環境診断の実行。
+category: Tutorials
 order: 4
 language: ja
-sourceHash: "2efd897e27dca34e"
+sourceHash: fa85cf9b00d42a6e
 ---
 
 # Rediaccでインフラストラクチャを監視・診断する方法

@@ -1,10 +1,12 @@
 ---
-title: "Überwachung & Diagnose"
-description: "Maschinengesundheit prüfen, Container inspizieren, systemd-Dienste überprüfen, Host-Schlüssel scannen und Umgebungsdiagnosen ausführen."
-category: "Tutorials"
+title: Überwachung & Diagnose
+description: >-
+  Maschinengesundheit prüfen, Container inspizieren, systemd-Dienste überprüfen,
+  Host-Schlüssel scannen und Umgebungsdiagnosen ausführen.
+category: Tutorials
 order: 4
 language: de
-sourceHash: "2efd897e27dca34e"
+sourceHash: fa85cf9b00d42a6e
 ---
 
 # Infrastruktur mit Rediacc überwachen und diagnostizieren

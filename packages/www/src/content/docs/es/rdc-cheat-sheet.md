@@ -1,11 +1,13 @@
 ---
 title: Hoja de referencia de RDC CLI
-description: Referencia rápida de todos los comandos rdc, configuraciones, repositorios, máquinas, sincronización, contenedores y más.
+description: >-
+  Referencia rápida de todos los comandos rdc, configuraciones, repositorios,
+  máquinas, sincronización, contenedores y más.
 category: Guides
 order: 3
 language: es
-sourceHash: "2ec57c88104cdc1e"
-sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
+sourceHash: c552951bebd937b0
+sourceCommit: 35b53352026ae87fb6800c7fed10b793223ca1da
 ---
 
 # Hoja de referencia de RDC CLI

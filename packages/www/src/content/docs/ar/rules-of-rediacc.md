@@ -1,11 +1,13 @@
 ---
-title: "قواعد Rediacc"
-description: "القواعد والاصطلاحات الأساسية لبناء التطبيقات على منصة Rediacc. يغطي Rediaccfile و compose والشبكات والتخزين و CRIU والنشر."
-category: "Guides"
+title: قواعد Rediacc
+description: >-
+  القواعد والاصطلاحات الأساسية لبناء التطبيقات على منصة Rediacc. يغطي
+  Rediaccfile و compose والشبكات والتخزين و CRIU والنشر.
+category: Guides
 order: 5
 language: ar
-sourceHash: "fd0fa925e9b76434"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 9365e0cabf7e8f03
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # قواعد Rediacc

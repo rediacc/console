@@ -1,10 +1,13 @@
 ---
-title: "Monitoreo y diagnósticos"
-description: "Verificar el estado de la máquina, inspeccionar contenedores, revisar servicios systemd, escanear claves de host y ejecutar diagnósticos del entorno."
-category: "Tutorials"
+title: Monitoreo y diagnósticos
+description: >-
+  Verificar el estado de la máquina, inspeccionar contenedores, revisar
+  servicios systemd, escanear claves de host y ejecutar diagnósticos del
+  entorno.
+category: Tutorials
 order: 4
 language: es
-sourceHash: "2efd897e27dca34e"
+sourceHash: fa85cf9b00d42a6e
 ---
 
 # Cómo monitorear y diagnosticar infraestructura con Rediacc

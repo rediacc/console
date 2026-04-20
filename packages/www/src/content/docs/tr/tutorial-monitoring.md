@@ -1,10 +1,12 @@
 ---
-title: "İzleme ve Tanılama"
-description: "Makine sağlığını kontrol edin, konteynerleri inceleyin, systemd servislerini gözden geçirin, host anahtarlarını tarayın ve ortam tanılamalarını çalıştırın."
-category: "Tutorials"
+title: İzleme ve Tanılama
+description: >-
+  Makine sağlığını kontrol edin, konteynerleri inceleyin, systemd servislerini
+  gözden geçirin, host anahtarlarını tarayın ve ortam tanılamalarını çalıştırın.
+category: Tutorials
 order: 4
 language: tr
-sourceHash: "2efd897e27dca34e"
+sourceHash: fa85cf9b00d42a6e
 ---
 
 # Rediacc ile Altyapıyı İzleme ve Tanılama

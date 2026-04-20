@@ -1,10 +1,12 @@
 ---
 title: Шаблон AGENTS.md для AI-ассистентов
-description: Готовый шаблон для настройки Claude Code, Cursor и других AI-ассистентов для кодирования для работы с инфраструктурой Rediacc.
+description: >-
+  Готовый шаблон для настройки Claude Code, Cursor и других AI-ассистентов для
+  кодирования для работы с инфраструктурой Rediacc.
 category: Reference
 order: 50
 language: ru
-sourceHash: "b1ea9373a19bbedb"
+sourceHash: 37be1e401927ed9a
 ---
 
 Используйте этот шаблон для настройки AI-ассистентов для кодирования (Claude Code, Cursor, Cline, Windsurf) для автономного управления инфраструктурой Rediacc. Скопируйте блок ниже в файл `CLAUDE.md`, `.cursorrules` или аналогичный файл конфигурации агента в вашем проекте.

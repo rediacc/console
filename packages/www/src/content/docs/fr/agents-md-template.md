@@ -1,10 +1,12 @@
 ---
 title: Modèle AGENTS.md pour les assistants IA
-description: Modèle prêt à copier-coller pour configurer Claude Code, Cursor et d'autres assistants de programmation IA afin de gérer l'infrastructure Rediacc.
+description: >-
+  Modèle prêt à copier-coller pour configurer Claude Code, Cursor et d'autres
+  assistants de programmation IA afin de gérer l'infrastructure Rediacc.
 category: Reference
 order: 50
 language: fr
-sourceHash: "b1ea9373a19bbedb"
+sourceHash: 37be1e401927ed9a
 ---
 
 Utilisez ce modèle pour configurer les assistants de programmation IA (Claude Code, Cursor, Cline, Windsurf) pour la gestion autonome de l'infrastructure Rediacc. Copiez le bloc ci-dessous dans le fichier `CLAUDE.md`, `.cursorrules` ou le fichier de configuration d'agent équivalent de votre projet.

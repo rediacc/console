@@ -1,10 +1,12 @@
 ---
 title: AIアシスタント向け AGENTS.md テンプレート
-description: Claude Code、Cursor、その他のAIコーディングアシスタントをRediaccインフラストラクチャと連携させるためのコピー＆ペーストテンプレート。
+description: >-
+  Claude
+  Code、Cursor、その他のAIコーディングアシスタントをRediaccインフラストラクチャと連携させるためのコピー＆ペーストテンプレート。
 category: Reference
 order: 50
 language: ja
-sourceHash: "b1ea9373a19bbedb"
+sourceHash: 37be1e401927ed9a
 ---
 
 このテンプレートを使用して、AIコーディングアシスタント（Claude Code、Cursor、Cline、Windsurf）をRediaccインフラストラクチャの自律管理用に設定します。以下のブロックをプロジェクトの `CLAUDE.md`、`.cursorrules`、または同等のエージェント設定ファイルにコピーしてください。

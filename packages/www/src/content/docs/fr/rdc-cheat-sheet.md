@@ -1,11 +1,13 @@
 ---
 title: Aide-mémoire RDC CLI
-description: Référence rapide de toutes les commandes rdc, configurations, dépôts, machines, synchronisation, conteneurs et plus.
+description: >-
+  Référence rapide de toutes les commandes rdc, configurations, dépôts,
+  machines, synchronisation, conteneurs et plus.
 category: Guides
 order: 3
 language: fr
-sourceHash: "2ec57c88104cdc1e"
-sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
+sourceHash: c552951bebd937b0
+sourceCommit: 35b53352026ae87fb6800c7fed10b793223ca1da
 ---
 
 # Aide-mémoire RDC CLI

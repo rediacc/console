@@ -1,11 +1,13 @@
 ---
-title: "Cycle de vie des dépôts"
-description: "Créer un dépôt chiffré, déployer une application conteneurisée, inspecter les conteneurs et nettoyer."
-category: "Tutorials"
+title: Cycle de vie des dépôts
+description: >-
+  Créer un dépôt chiffré, déployer une application conteneurisée, inspecter les
+  conteneurs et nettoyer.
+category: Tutorials
 order: 3
 language: fr
-sourceHash: "fecc09a324a1fa65"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 46c155563808d0b7
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # Comment déployer et gérer des dépôts avec Rediacc

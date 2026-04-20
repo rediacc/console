@@ -1,11 +1,14 @@
 ---
-title: "Règles de Rediacc"
-description: "Règles et conventions essentielles pour construire des applications sur la plateforme Rediacc. Couvre Rediaccfile, compose, réseau, stockage, CRIU et déploiement."
-category: "Guides"
+title: Règles de Rediacc
+description: >-
+  Règles et conventions essentielles pour construire des applications sur la
+  plateforme Rediacc. Couvre Rediaccfile, compose, réseau, stockage, CRIU et
+  déploiement.
+category: Guides
 order: 5
 language: fr
-sourceHash: "fd0fa925e9b76434"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 9365e0cabf7e8f03
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # Règles de Rediacc

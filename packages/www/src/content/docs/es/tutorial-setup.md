@@ -1,10 +1,12 @@
 ---
-title: "Configuración de máquina"
-description: "Cree un perfil de configuración, registre una máquina remota, verifique la conectividad SSH y configure los ajustes de infraestructura."
-category: "Tutorials"
+title: Configuración de máquina
+description: >-
+  Cree un perfil de configuración, registre una máquina remota, verifique la
+  conectividad SSH y configure los ajustes de infraestructura.
+category: Tutorials
 order: 2
 language: es
-sourceHash: "2a32100e76d41bc0"
+sourceHash: 9ff760ad1c9dc0b0
 ---
 
 # Cómo configurar una máquina con Rediacc
