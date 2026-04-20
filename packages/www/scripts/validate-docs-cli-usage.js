@@ -103,10 +103,12 @@ const getPathsFromTree = () => {
 
 const scanPositional = (text) => {
   const { leaves, all } = getPathsFromTree();
-  const leafEntries = [...leaves].sort((a, b) => b.length - a.length).map((p) => ({
-    path: p,
-    regex: buildDetectionRegex(p),
-  }));
+  const leafEntries = [...leaves]
+    .sort((a, b) => b.length - a.length)
+    .map((p) => ({
+      path: p,
+      regex: buildDetectionRegex(p),
+    }));
   const allEntries = [...all]
     .sort((a, b) => b.length - a.length)
     .map((p) => ({ path: p, regex: buildPlaceholderOnlyRegex(p) }));
