@@ -67,9 +67,7 @@ const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const buildDetectionRegex = (commandPath) => {
   const segments = commandPath.trim().split(/\s+/).map(escapeRegex).join('\\s+');
-  return new RegExp(
-    `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?=[<{\\["'a-zA-Z0-9])`
-  );
+  return new RegExp(`(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?=[<{\\["'a-zA-Z0-9])`);
 };
 
 const buildPlaceholderOnlyRegex = (commandPath) => {
@@ -249,9 +247,7 @@ function validateCodeFences(content, file, errors) {
 
   const lines = content.split(/\r?\n/);
   let inFence = false;
-  const enterMarkdownFences = MARKDOWN_FENCE_WHITELIST_PATTERNS.some((p) =>
-    p.test(file)
-  );
+  const enterMarkdownFences = MARKDOWN_FENCE_WHITELIST_PATTERNS.some((p) => p.test(file));
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -259,8 +255,7 @@ function validateCodeFences(content, file, errors) {
     if (line.startsWith('```')) {
       const lang = line.slice(3).trim().toLowerCase();
       const isShell = SHELL_FENCE_LANGS.has(lang);
-      const isTemplateFence =
-        enterMarkdownFences && (lang === 'markdown' || lang === '');
+      const isTemplateFence = enterMarkdownFences && (lang === 'markdown' || lang === '');
       inFence = isShell || isTemplateFence;
       continue;
     }
