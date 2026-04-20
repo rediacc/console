@@ -25,6 +25,18 @@ import { apiClient, typedApi } from './api.js';
 /** Generic vault data type for parsed vault content */
 type ParsedVaultData = Record<string, unknown>;
 
+/** Read a typed scalar field from an untyped vault. Returns undefined when
+ *  the vault is absent or the field is not of the expected primitive type. */
+function readVaultNumber(vault: ParsedVaultData | undefined, key: string): number | undefined {
+  const value = vault?.[key];
+  return typeof value === 'number' ? value : undefined;
+}
+
+function readVaultString(vault: ParsedVaultData | undefined, key: string): string | undefined {
+  const value = vault?.[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
 interface FetchedVaults {
   organizationVault?: ParsedVaultData;
   teamVault?: ParsedVaultData;
@@ -200,8 +212,8 @@ class CliQueueService {
       storageVault: vaults.storageVault,
       bridgeVault: vaults.bridgeVault,
       repositoryGuid: context.params.repository as string | undefined,
-      repositoryNetworkId: vaults.vaultContent?.repositoryNetworkId,
-      repositoryNetworkMode: vaults.vaultContent?.networkMode,
+      repositoryNetworkId: readVaultNumber(vaults.vaultContent, 'repositoryNetworkId'),
+      repositoryNetworkMode: readVaultString(vaults.vaultContent, 'networkMode'),
       storageName: (context.params.to ?? context.params.from) as string | undefined,
       language: context.language,
     };
