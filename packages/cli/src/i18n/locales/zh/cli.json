@@ -411,7 +411,7 @@
         "get": {
           "description": "按 JSON 指针读取单个配置值。敏感字段默认脱敏,除非使用 --reveal(仅限人工)。",
           "optionDigest": "输出 SHA-256 摘要而非数值(可安全地分享给代理)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken）",
           "optionReveal": "以明文显示敏感值(仅限交互式 TTY;记入审计日志)"
         },
         "list": {
@@ -422,20 +422,20 @@
         "rotate": {
           "description": "在不提供 --current 的情况下轮换敏感值。仅交互式 TTY;详尽审计。",
           "optionNew": "新值",
-          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "指向敏感字段的 JSON 指针（例如 /credentials/cfDnsApiToken）",
           "success": "已轮换 {{pointer}}"
         },
         "set": {
           "description": "在 JSON 指针位置写入配置值。敏感路径需提供 --current(知识门控)。",
           "optionCurrent": "当前明文值 — 修改敏感路径时必填(知识门控证明)",
           "optionNew": "新值(若以 {、[、\" 开头或为 true/false/null/数字,则按 JSON 解析)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken）",
           "success": "已设置 {{pointer}}"
         },
         "unset": {
           "description": "删除 JSON 指针位置的配置值。敏感路径需提供 --current。",
           "optionCurrent": "当前明文值 — 删除敏感路径时必填",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken）",
           "success": "已取消 {{pointer}}"
         }
       },
@@ -644,7 +644,7 @@
       "show": {
         "description": "显示当前配置详情",
         "noConfig": "没有活跃的配置。请使用以下命令创建：rdc config init",
-        "optionReveal": "Show plaintext for sensitive values (interactive only)"
+        "optionReveal": "以明文显示敏感值（仅限交互模式）"
       },
       "ssh": {
         "description": "管理 SSH 密钥配置",

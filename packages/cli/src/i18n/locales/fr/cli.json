@@ -411,7 +411,7 @@
         "get": {
           "description": "Lire une valeur de configuration via un pointeur JSON. Les champs sensibles sont masqués sauf avec --reveal (humains uniquement).",
           "optionDigest": "Afficher l'empreinte SHA-256 au lieu de la valeur (sûr à partager avec des agents)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "Pointeur JSON vers le champ (ex : /credentials/cfDnsApiToken)",
           "optionReveal": "Afficher les valeurs sensibles en clair (TTY interactif uniquement ; audité)"
         },
         "list": {
@@ -422,20 +422,20 @@
         "rotate": {
           "description": "Rotation d'une valeur sensible sans --current. TTY interactif uniquement ; audité en évidence.",
           "optionNew": "Nouvelle valeur",
-          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "Pointeur JSON vers le champ sensible (ex : /credentials/cfDnsApiToken)",
           "success": "{{pointer}} a été tourné"
         },
         "set": {
           "description": "Écrire une valeur de configuration à un pointeur JSON. Les chemins sensibles exigent --current (preuve de connaissance).",
           "optionCurrent": "Valeur actuelle en clair — requise pour modifier les chemins sensibles (preuve de connaissance)",
           "optionNew": "Nouvelle valeur (interprétée comme JSON si elle commence par {, [, \", true, false, null ou un nombre)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "Pointeur JSON vers le champ (ex : /credentials/cfDnsApiToken)",
           "success": "{{pointer}} défini"
         },
         "unset": {
           "description": "Supprimer une valeur de configuration à un pointeur JSON. Les chemins sensibles exigent --current.",
           "optionCurrent": "Valeur actuelle en clair — requise pour supprimer les chemins sensibles",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "Pointeur JSON vers le champ (ex : /credentials/cfDnsApiToken)",
           "success": "{{pointer}} supprimé"
         }
       },
@@ -644,7 +644,7 @@
       "show": {
         "description": "Afficher les détails de la configuration actuelle",
         "noConfig": "Aucune configuration active. Créez-en une avec : rdc config init",
-        "optionReveal": "Show plaintext for sensitive values (interactive only)"
+        "optionReveal": "Afficher en clair les valeurs sensibles (mode interactif uniquement)"
       },
       "ssh": {
         "description": "Gérer la configuration de la clé SSH",

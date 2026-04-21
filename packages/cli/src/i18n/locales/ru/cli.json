@@ -411,7 +411,7 @@
         "get": {
           "description": "Прочитать значение конфигурации по указателю JSON. Секретные поля скрываются, если не указан --reveal (только для человека).",
           "optionDigest": "Вывести дайджест SHA-256 вместо значения (безопасно для агентов)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "JSON Pointer к полю (например, /credentials/cfDnsApiToken)",
           "optionReveal": "Показать секретные значения в открытом виде (только интерактивный TTY; аудируется)"
         },
         "list": {
@@ -422,20 +422,20 @@
         "rotate": {
           "description": "Ротация секретного значения без --current. Только интерактивный TTY; подробно аудируется.",
           "optionNew": "Новое значение",
-          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "JSON Pointer к конфиденциальному полю (например, /credentials/cfDnsApiToken)",
           "success": "{{pointer}} обновлён"
         },
         "set": {
           "description": "Записать значение конфигурации по JSON-указателю. Для секретных путей требуется --current (шлюз знаний).",
           "optionCurrent": "Текущее значение в открытом виде — обязательно для изменения секретных путей (доказательство знания)",
           "optionNew": "Новое значение (парсится как JSON, если начинается с {, [, \" или равно true/false/null/числу)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "JSON Pointer к полю (например, /credentials/cfDnsApiToken)",
           "success": "{{pointer}} установлен"
         },
         "unset": {
           "description": "Удалить значение конфигурации по JSON-указателю. Для секретных путей требуется --current.",
           "optionCurrent": "Текущее значение в открытом виде — обязательно для удаления секретных путей",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "JSON Pointer к полю (например, /credentials/cfDnsApiToken)",
           "success": "{{pointer}} удалён"
         }
       },
@@ -644,7 +644,7 @@
       "show": {
         "description": "Показать детали текущей конфигурации",
         "noConfig": "Нет активной конфигурации. Создайте с помощью: rdc config init",
-        "optionReveal": "Show plaintext for sensitive values (interactive only)"
+        "optionReveal": "Показать открытый текст для конфиденциальных значений (только интерактивный режим)"
       },
       "ssh": {
         "description": "Управление конфигурацией SSH-ключа",

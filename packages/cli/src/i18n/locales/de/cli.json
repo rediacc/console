@@ -411,7 +411,7 @@
         "get": {
           "description": "Einzelnen Konfigurationswert per JSON-Pointer lesen. Sensible Felder werden zensiert, außer mit --reveal (nur interaktiv).",
           "optionDigest": "SHA-256-Prüfsumme statt des Werts ausgeben (ist für KI-Agenten freigegeben)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "JSON-Pointer zum Feld (z. B. /credentials/cfDnsApiToken)",
           "optionReveal": "Klartext für sensible Werte anzeigen (nur interaktives TTY; Audit-Log)"
         },
         "list": {
@@ -422,20 +422,20 @@
         "rotate": {
           "description": "Einen sensiblen Wert ohne --current rotieren. Nur interaktives TTY; laut geloggt.",
           "optionNew": "Neuer Wert",
-          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "JSON-Pointer zum sensiblen Feld (z. B. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} rotiert"
         },
         "set": {
           "description": "Konfigurationswert an einem JSON-Pointer schreiben. Sensible Pfade erfordern --current (Wissensnachweis).",
           "optionCurrent": "Aktueller Klartextwert — für Änderungen sensibler Pfade erforderlich (Wissensnachweis)",
           "optionNew": "Neuer Wert (als JSON interpretiert, falls er mit {, [, \", true, false, null oder einer Zahl beginnt)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "JSON-Pointer zum Feld (z. B. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} gesetzt"
         },
         "unset": {
           "description": "Konfigurationswert an einem JSON-Pointer löschen. Sensible Pfade erfordern --current.",
           "optionCurrent": "Aktueller Klartextwert — für Löschungen sensibler Pfade erforderlich",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "JSON-Pointer zum Feld (z. B. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} entfernt"
         }
       },
@@ -644,7 +644,7 @@
       "show": {
         "description": "Aktuelle Konfigurationsdetails anzeigen",
         "noConfig": "Keine aktive Konfiguration. Erstellen Sie eine mit: rdc config init",
-        "optionReveal": "Show plaintext for sensitive values (interactive only)"
+        "optionReveal": "Klartext für sensible Werte anzeigen (nur interaktiv)"
       },
       "ssh": {
         "description": "SSH-Schlüsselkonfiguration verwalten",

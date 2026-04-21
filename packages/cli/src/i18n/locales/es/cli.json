@@ -411,7 +411,7 @@
         "get": {
           "description": "Lee un único valor de configuración por puntero JSON. Los campos sensibles se redactan salvo con --reveal (solo humanos).",
           "optionDigest": "Imprimir el resumen SHA-256 en lugar del valor (seguro para compartir con agentes)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "Puntero JSON al campo (p. ej. /credentials/cfDnsApiToken)",
           "optionReveal": "Mostrar texto en claro de valores sensibles (solo TTY interactivo; auditado)"
         },
         "list": {
@@ -422,20 +422,20 @@
         "rotate": {
           "description": "Rotar un valor sensible sin --current. Solo TTY interactivo; auditado con énfasis.",
           "optionNew": "Valor nuevo",
-          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "Puntero JSON al campo sensible (p. ej. /credentials/cfDnsApiToken)",
           "success": "Se rotó {{pointer}}"
         },
         "set": {
           "description": "Escribir un valor de configuración en un puntero JSON. Los caminos sensibles requieren --current (puerta de conocimiento).",
           "optionCurrent": "Valor actual en claro — obligatorio para mutar caminos sensibles (prueba de conocimiento)",
           "optionNew": "Valor nuevo (se interpreta como JSON si empieza con {, [, \", true, false, null o un número)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "Puntero JSON al campo (p. ej. /credentials/cfDnsApiToken)",
           "success": "Se estableció {{pointer}}"
         },
         "unset": {
           "description": "Eliminar un valor de configuración en un puntero JSON. Los caminos sensibles requieren --current.",
           "optionCurrent": "Valor actual en claro — obligatorio para eliminar caminos sensibles",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "Puntero JSON al campo (p. ej. /credentials/cfDnsApiToken)",
           "success": "Se eliminó {{pointer}}"
         }
       },
@@ -644,7 +644,7 @@
       "show": {
         "description": "Mostrar detalles de la configuración actual",
         "noConfig": "No hay configuración activa. Cree una con: rdc config init",
-        "optionReveal": "Show plaintext for sensitive values (interactive only)"
+        "optionReveal": "Mostrar texto plano para valores sensibles (solo interactivo)"
       },
       "ssh": {
         "description": "Gestionar la configuración de clave SSH",

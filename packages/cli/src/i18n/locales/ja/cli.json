@@ -411,7 +411,7 @@
         "get": {
           "description": "JSON ポインタで単一の設定値を読み取ります。機密フィールドは --reveal を指定しない限り秘匿されます(人間のみ)。",
           "optionDigest": "値の代わりに SHA-256 ダイジェストを出力(エージェントに共有しても安全)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken）",
           "optionReveal": "機密値を平文で表示する(対話型 TTY のみ、監査ログに記録)"
         },
         "list": {
@@ -422,20 +422,20 @@
         "rotate": {
           "description": "--current なしで機密値をローテーションします。対話型 TTY のみ、詳細に監査されます。",
           "optionNew": "新しい値",
-          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "機密フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken）",
           "success": "{{pointer}} をローテーションしました"
         },
         "set": {
           "description": "JSON ポインタ位置に設定値を書き込みます。機密パスには --current(知識ゲート)が必要です。",
           "optionCurrent": "現在の平文値 — 機密パスの変更に必須(知識ゲート証明)",
           "optionNew": "新しい値({, [, \", true/false/null, 数値で始まる場合は JSON として解釈)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken）",
           "success": "{{pointer}} を設定しました"
         },
         "unset": {
           "description": "JSON ポインタ位置の設定値を削除。機密パスには --current が必要です。",
           "optionCurrent": "現在の平文値 — 機密パスの削除に必須",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken）",
           "success": "{{pointer}} を削除しました"
         }
       },
@@ -644,7 +644,7 @@
       "show": {
         "description": "現在の設定の詳細を表示する",
         "noConfig": "アクティブな設定がありません。次のコマンドで作成してください: rdc config init",
-        "optionReveal": "Show plaintext for sensitive values (interactive only)"
+        "optionReveal": "機密値を平文で表示（対話モードのみ）"
       },
       "ssh": {
         "description": "SSH キーの設定を管理する",

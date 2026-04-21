@@ -63,7 +63,7 @@ Shows all machines in the current config with their connection details.
 Setting a default machine avoids repeating `-m bridge-vm` on every command.
 
 ```bash
-rdc --config tutorial-demo config field set /defaults/machine --new '"bridge-vm"'
+rdc --config tutorial-demo config field set --pointer /defaults/machine --new '"bridge-vm"'
 ```
 
 ### Step 6: Test connectivity

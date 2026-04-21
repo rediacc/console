@@ -209,29 +209,29 @@ Each config is a JSON file stored in `~/.config/rediacc/`. The default config is
 
 ```bash
 # Pointer-addressed single-field edits (knowledge-gated for sensitive paths)
-rdc config field set /resources/machines/prod-1/port --new 2222
-rdc config field set /credentials/cfDnsApiToken --current "$OLD" --new "$NEW"
+rdc config field set --pointer /resources/machines/prod-1/port --new 2222
+rdc config field set --pointer /credentials/cfDnsApiToken --current "$OLD" --new "$NEW"
 
 # Full editor with redacted JSONC projection (humans only)
 rdc config edit
 
 # Read-only JSONC dump, safe for scripts and agents
-rdc config edit --dump > /tmp/view.jsonc
+rdc config edit --dump
 
 # Inspect every mutation + refusal + reveal in the audit log
 rdc config audit log --since 24h
 rdc config audit verify
 ```
 
-> This file contains sensitive data (SSH private keys, LUKS credentials, Cloudflare tokens). It is stored with `0600` permissions (owner read/write only). Do not share it or commit it to version control. When any `rdc` command reads it, sensitive fields are [redacted by default](/en/docs/ai-agents-safety) — plaintext only appears with `--reveal` on an interactive human TTY.
+> This file contains sensitive data (SSH private keys, LUKS credentials, Cloudflare tokens). It is stored with `0600` permissions (owner read/write only). Do not share it or commit it to version control. When any `rdc` command reads it, sensitive fields are [redacted by default](/en/docs/ai-agents-safety): plaintext only appears with `--reveal` on an interactive human TTY.
 
 ### Envelope v2 and server-side enforcement
 
-When the config is synced to the [encrypted config store](/en/docs/config-storage), the CLI wraps every sensitive field in a per-field HMAC commitment and carries those commitments in the plaintext envelope. The server sees only hex digests — never the values — yet can enforce knowledge-gates on every write:
+When the config is synced to the [encrypted config store](/en/docs/config-storage), the CLI wraps every sensitive field in a per-field HMAC commitment and carries those commitments in the plaintext envelope. The server sees only hex digests: never the values: yet can enforce knowledge-gates on every write:
 
 - **Precondition check**: on `PUT /configs/<id>`, the client submits the digests it claims to know for the paths it wants to mutate. The server compares against the stored envelope's commitments. Mismatch → `409 precondition_failed` with `mismatchedPaths`. Zero-knowledge: the server never sees plaintext.
 - **Anti-downgrade**: the new envelope must commit every sensitive path that the previous envelope committed. An agent can't drop a path from the commitments to bypass a future precondition.
 - **Envelope version pinning**: the server rejects envelopes missing `envelopeVersion: 2` with `400 unsupported_envelope_version`. No dual-accept window.
 - **Per-field encryption-at-rest** (CLI-side): when `encryption.mode === "master-password"`, each secret becomes an individual AES-GCM blob keyed by the master password. Reads don't trigger a prompt unless the command actually touches a secret (so `rdc machine list` stays prompt-free).
 
-The commitment key (FCK) is derived client-side from the CEK via `HKDF-SHA256(ikm=CEK, salt=fckSalt, info="rediacc-config-fck-v1")` with a per-config salt. Rotating `fckSalt` invalidates all prior commitments, forcing a full recomputation — useful when rotating CEK.
+The commitment key (FCK) is derived client-side from the CEK via `HKDF-SHA256(ikm=CEK, salt=fckSalt, info="rediacc-config-fck-v1")` with a per-config salt. Rotating `fckSalt` invalidates all prior commitments, forcing a full recomputation: useful when rotating CEK.

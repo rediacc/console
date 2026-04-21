@@ -4,7 +4,7 @@ description: Claude Code, Cursor ve Cline gibi AI kodlama asistanlarının otono
 category: Guides
 order: 30
 language: tr
-sourceHash: "c4f31aca01e62a7f"
+sourceHash: "7789f1e26755c779"
 ---
 
 AI kodlama asistanları, `rdc` CLI aracılığıyla Rediacc altyapısını otonom olarak yönetebilir. Bu kılavuz entegrasyon yaklaşımlarını ve nasıl başlayacağınızı kapsar.

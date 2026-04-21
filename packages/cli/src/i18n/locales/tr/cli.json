@@ -411,7 +411,7 @@
         "get": {
           "description": "JSON Pointer ile tek bir yapılandırma değerini oku. --reveal olmadıkça hassas alanlar maskelenir (yalnızca insan).",
           "optionDigest": "Değer yerine SHA-256 özetini yaz (ajanlarla paylaşmak için güvenli)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "Alana işaret eden JSON Pointer (örn. /credentials/cfDnsApiToken)",
           "optionReveal": "Hassas değerleri açık metin olarak göster (yalnızca etkileşimli TTY; denetlenir)"
         },
         "list": {
@@ -422,20 +422,20 @@
         "rotate": {
           "description": "Hassas bir değeri --current olmadan döndür. Yalnızca etkileşimli TTY; belirgin şekilde denetlenir.",
           "optionNew": "Yeni değer",
-          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "Hassas alana işaret eden JSON Pointer (örn. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} döndürüldü"
         },
         "set": {
           "description": "JSON Pointer konumuna yapılandırma değeri yaz. Hassas yollar --current gerektirir (bilgi kapısı).",
           "optionCurrent": "Mevcut açık metin değer — hassas yol değişikliklerinde gerekli (bilgi kapısı kanıtı)",
           "optionNew": "Yeni değer ({, [, \", true/false/null veya sayı ile başlıyorsa JSON olarak ayrıştırılır)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "Alana işaret eden JSON Pointer (örn. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} ayarlandı"
         },
         "unset": {
           "description": "JSON Pointer konumundaki yapılandırma değerini sil. Hassas yollar --current gerektirir.",
           "optionCurrent": "Mevcut açık metin değer — hassas yol silmelerinde gerekli",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "Alana işaret eden JSON Pointer (örn. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} kaldırıldı"
         }
       },
@@ -644,7 +644,7 @@
       "show": {
         "description": "Geçerli yapılandırma ayrıntılarını gösterin",
         "noConfig": "Etkin yapılandırma yok. Oluşturun: rdc config init",
-        "optionReveal": "Show plaintext for sensitive values (interactive only)"
+        "optionReveal": "Hassas değerler için düz metni göster (yalnızca etkileşimli modda)"
       },
       "ssh": {
         "description": "SSH anahtar yapılandırmasını yönet",

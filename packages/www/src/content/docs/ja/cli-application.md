@@ -6,7 +6,7 @@ order: 2
 language: ja
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ja/cli.json
-sourceHash: "fd00bc6d44beb9c6"
+sourceHash: "2095fc514f88d10f"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -144,7 +144,7 @@ rdc config show [options]
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--reveal` | — | {{t:cli.docs.optionLabels.no}} | - |
+| `--reveal` | {{t:cli.commands.config.show.optionReveal}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-config-delete"></a>
@@ -705,11 +705,12 @@ rdc config cert-cache clear
 {{t:cli.commands.config.field.get.description}}
 
 ```bash
-rdc config field get <pointer> [options]
+rdc config field get [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
+| `--pointer <pointer>` | {{t:cli.commands.config.field.get.optionPointer}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--reveal` | {{t:cli.commands.config.field.get.optionReveal}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--digest` | {{t:cli.commands.config.field.get.optionDigest}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -720,11 +721,12 @@ rdc config field get <pointer> [options]
 {{t:cli.commands.config.field.set.description}}
 
 ```bash
-rdc config field set <pointer> [options]
+rdc config field set [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
+| `--pointer <pointer>` | {{t:cli.commands.config.field.get.optionPointer}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--new <value>` | {{t:cli.commands.config.field.set.optionNew}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--current <value>` | {{t:cli.commands.config.field.set.optionCurrent}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -735,11 +737,12 @@ rdc config field set <pointer> [options]
 {{t:cli.commands.config.field.unset.description}}
 
 ```bash
-rdc config field unset <pointer> [options]
+rdc config field unset [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
+| `--pointer <pointer>` | {{t:cli.commands.config.field.get.optionPointer}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--current <value>` | {{t:cli.commands.config.field.unset.optionCurrent}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -749,11 +752,12 @@ rdc config field unset <pointer> [options]
 {{t:cli.commands.config.field.rotate.description}}
 
 ```bash
-rdc config field rotate <pointer> [options]
+rdc config field rotate [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
+| `--pointer <pointer>` | {{t:cli.commands.config.field.rotate.optionPointer}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--new <value>` | {{t:cli.commands.config.field.rotate.optionNew}} | {{t:cli.docs.optionLabels.yes}} | - |
 
 

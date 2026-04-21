@@ -4714,7 +4714,7 @@
           "options": [
             {
               "flags": "--reveal",
-              "descriptionKey": null,
+              "descriptionKey": "commands.config.show.optionReveal",
               "mandatory": false,
               "defaultValue": null
             }
@@ -5621,6 +5621,12 @@
               "descriptionKey": "commands.config.field.get.description",
               "options": [
                 {
+                  "flags": "--pointer <pointer>",
+                  "descriptionKey": "commands.config.field.get.optionPointer",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--reveal",
                   "descriptionKey": "commands.config.field.get.optionReveal",
                   "mandatory": false,
@@ -5633,20 +5639,19 @@
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "pointer",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
               "name": "set",
               "descriptionKey": "commands.config.field.set.description",
               "options": [
+                {
+                  "flags": "--pointer <pointer>",
+                  "descriptionKey": "commands.config.field.get.optionPointer",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
                 {
                   "flags": "--new <value>",
                   "descriptionKey": "commands.config.field.set.optionNew",
@@ -5660,14 +5665,7 @@
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "pointer",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
@@ -5675,20 +5673,19 @@
               "descriptionKey": "commands.config.field.unset.description",
               "options": [
                 {
+                  "flags": "--pointer <pointer>",
+                  "descriptionKey": "commands.config.field.get.optionPointer",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--current <value>",
                   "descriptionKey": "commands.config.field.unset.optionCurrent",
                   "mandatory": false,
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "pointer",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {
@@ -5696,20 +5693,19 @@
               "descriptionKey": "commands.config.field.rotate.description",
               "options": [
                 {
+                  "flags": "--pointer <pointer>",
+                  "descriptionKey": "commands.config.field.rotate.optionPointer",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--new <value>",
                   "descriptionKey": "commands.config.field.rotate.optionNew",
                   "mandatory": true,
                   "defaultValue": null
                 }
               ],
-              "arguments": [
-                {
-                  "name": "pointer",
-                  "required": true,
-                  "variadic": false,
-                  "defaultValue": null
-                }
-              ],
+              "arguments": [],
               "subcommands": []
             },
             {

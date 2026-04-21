@@ -4,7 +4,7 @@ description: "Создание конфигурации, добавление м
 category: "Guides"
 order: 3
 language: ru
-sourceHash: "143694525e0fcd9b"
+sourceHash: "edfb821962d35ccb"
 ---
 
 # Настройка машины

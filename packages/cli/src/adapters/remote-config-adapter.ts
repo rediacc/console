@@ -154,9 +154,9 @@ export class RemoteConfigAdapter {
       credentials: sshRaw?.privateKey
         ? {
             ssh: {
-              privateKey: sshRaw.privateKey,
-              publicKey: sshRaw.publicKey,
-              knownHosts: sshRaw.knownHosts,
+              privateKey: sshRaw.privateKey as string,
+              publicKey: sshRaw.publicKey as string | undefined,
+              knownHosts: sshRaw.knownHosts as string | undefined,
             },
           }
         : undefined,

@@ -4,7 +4,7 @@ description: "Konfiguration erstellen, Maschinen hinzufügen, Server provisionie
 category: "Guides"
 order: 3
 language: de
-sourceHash: "143694525e0fcd9b"
+sourceHash: "edfb821962d35ccb"
 ---
 
 # Maschineneinrichtung

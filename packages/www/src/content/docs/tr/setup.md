@@ -4,7 +4,7 @@ description: "Yapılandırma oluşturma, makine ekleme, sunucuları hazırlama v
 category: "Guides"
 order: 3
 language: tr
-sourceHash: "143694525e0fcd9b"
+sourceHash: "edfb821962d35ccb"
 ---
 
 # Makine Kurulumu

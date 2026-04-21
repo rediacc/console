@@ -230,7 +230,7 @@ rdc config provider list
 Set default values so you don't need to specify them on every command:
 
 ```bash
-rdc config field set /defaults/machine --new '"server-1"'   # Default machine
+rdc config field set --pointer /defaults/machine --new '"server-1"'   # Default machine
 rdc config set --key team --value my-team                   # Default team (cloud adapter, experimental)
 ```
 

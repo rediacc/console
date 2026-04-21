@@ -844,7 +844,7 @@ Show current config details
 
 **Options:**
 
-- `--reveal` — show plaintext for sensitive values (interactive only)
+- `--reveal` — Show plaintext for sensitive values (interactive only)
 
 ### rdc config delete
 
@@ -1183,38 +1183,42 @@ Show remote connection status
 
 Force re-fetch config from remote storage
 
-### rdc config field get <pointer>
+### rdc config field get
 
 Read a single config value by JSON Pointer. Sensitive fields redact unless --reveal (humans only).
 
 **Options:**
 
+- `--pointer <pointer>` — JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)
 - `--reveal` — Show plaintext for sensitive values (interactive TTY only; audited)
 - `--digest` — Print the SHA-256 digest instead of the value (safe to share with agents)
 
-### rdc config field set <pointer>
+### rdc config field set
 
 Write a config value at a JSON Pointer. Sensitive paths require --current (knowledge-gate).
 
 **Options:**
 
+- `--pointer <pointer>` — JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)
 - `--new <value>` — New value (parsed as JSON if it looks like JSON: {, [, ", true/false/null/number)
 - `--current <value>` — Current plaintext value — required for sensitive-path mutations (knowledge-gate proof)
 
-### rdc config field unset <pointer>
+### rdc config field unset
 
 Delete a config value at a JSON Pointer. Sensitive paths require --current.
 
 **Options:**
 
+- `--pointer <pointer>` — JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)
 - `--current <value>` — Current plaintext value — required for sensitive-path deletions
 
-### rdc config field rotate <pointer>
+### rdc config field rotate
 
 Rotate a sensitive value without --current. Interactive TTY only; loudly audited.
 
 **Options:**
 
+- `--pointer <pointer>` — JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)
 - `--new <value>` — New value
 
 ### rdc config field list

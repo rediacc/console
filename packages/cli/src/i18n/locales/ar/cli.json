@@ -411,7 +411,7 @@
         "get": {
           "description": "قراءة قيمة تكوين واحدة بواسطة مؤشر JSON. تُخفى الحقول الحساسة إلا باستخدام --reveal (للمستخدمين البشريين فقط).",
           "optionDigest": "طباعة تلخيص SHA-256 بدلاً من القيمة (آمن للمشاركة مع العملاء الذكيين)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "مؤشر JSON إلى الحقل (مثال: /credentials/cfDnsApiToken)",
           "optionReveal": "إظهار النص الصريح للقيم الحساسة (طرفية تفاعلية فقط؛ يُسجَّل في التدقيق)"
         },
         "list": {
@@ -422,20 +422,20 @@
         "rotate": {
           "description": "تدوير قيمة حساسة دون --current. طرفية تفاعلية فقط؛ يُسجَّل بشكل بارز.",
           "optionNew": "قيمة جديدة",
-          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "مؤشر JSON إلى الحقل الحساس (مثال: /credentials/cfDnsApiToken)",
           "success": "تم تدوير {{pointer}}"
         },
         "set": {
           "description": "كتابة قيمة تكوين عند مؤشر JSON. المسارات الحساسة تتطلب --current (بوابة المعرفة).",
           "optionCurrent": "القيمة الصريحة الحالية - مطلوبة لتعديل المسارات الحساسة (إثبات بوابة المعرفة)",
           "optionNew": "القيمة الجديدة (تُفسَّر كـ JSON إذا بدأت بـ { [ \" أو true/false/null/رقم)",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "مؤشر JSON إلى الحقل (مثال: /credentials/cfDnsApiToken)",
           "success": "تم تعيين {{pointer}}"
         },
         "unset": {
           "description": "حذف قيمة تكوين عند مؤشر JSON. المسارات الحساسة تتطلب --current.",
           "optionCurrent": "القيمة الصريحة الحالية - مطلوبة لحذف المسارات الحساسة",
-          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionPointer": "مؤشر JSON إلى الحقل (مثال: /credentials/cfDnsApiToken)",
           "success": "تم إلغاء {{pointer}}"
         }
       },
@@ -644,7 +644,7 @@
       "show": {
         "description": "عرض تفاصيل الإعدادات الحالية",
         "noConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام: rdc config init",
-        "optionReveal": "Show plaintext for sensitive values (interactive only)"
+        "optionReveal": "عرض النص الصريح للقيم الحساسة (الوضع التفاعلي فقط)"
       },
       "ssh": {
         "description": "إدارة إعدادات مفتاح SSH",

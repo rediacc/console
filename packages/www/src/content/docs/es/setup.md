@@ -4,7 +4,7 @@ description: "Cree una configuración, agregue máquinas, aprovisione servidores
 category: "Guides"
 order: 3
 language: es
-sourceHash: "143694525e0fcd9b"
+sourceHash: "edfb821962d35ccb"
 ---
 
 # Configuración de Máquinas
