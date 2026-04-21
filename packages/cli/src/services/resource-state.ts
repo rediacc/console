@@ -209,9 +209,7 @@ export class LocalResourceState implements ResourceState {
           },
         },
         resources: undefined,
-        credentials: cfg.credentials
-          ? { ...cfg.credentials, ssh: undefined }
-          : cfg.credentials,
+        credentials: cfg.credentials ? { ...cfg.credentials, ssh: undefined } : cfg.credentials,
       }));
     } else {
       await configFileStorage.update(configName, (cfg) => ({
@@ -235,9 +233,8 @@ export class LocalResourceState implements ResourceState {
               }
             : undefined,
         },
-        encryption: cfg.encryption?.mode === 'master-password'
-          ? { mode: 'plaintext' }
-          : cfg.encryption,
+        encryption:
+          cfg.encryption?.mode === 'master-password' ? { mode: 'plaintext' } : cfg.encryption,
       }));
     }
   }

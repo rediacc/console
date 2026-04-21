@@ -35,10 +35,7 @@ import {
   redactClone,
   shortFingerprint,
 } from '../../schema/walker.js';
-import {
-  listSensitivityTemplates,
-  SENSITIVITY_REGISTRY,
-} from '../../schema/sensitivity.js';
+import { listSensitivityTemplates, SENSITIVITY_REGISTRY } from '../../schema/sensitivity.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 
 function configDir(): string {
@@ -63,11 +60,7 @@ function emit(draft: AuditEventDraft): void {
  * Set/unset are persisted by the caller via configFileStorage.update —
  * MutationGate validates first.
  */
-function applyMutation(
-  config: unknown,
-  pointer: string,
-  newValue: unknown
-): unknown {
+function applyMutation(config: unknown, pointer: string, newValue: unknown): unknown {
   if (pointer === '') return newValue;
   const segments = pointer
     .split('/')
@@ -162,16 +155,14 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
         const knowledge: Record<string, string> = {};
         if (options.current !== undefined) {
           const claim = parseValue(options.current);
-          knowledge[pointer] = createHash('sha256')
-            .update(canonicalJson(claim))
-            .digest('hex');
+          knowledge[pointer] = createHash('sha256').update(canonicalJson(claim)).digest('hex');
         }
 
         try {
-          evaluateMutations(
-            [{ pointer, previousValue, newValue }] as MutationEntry[],
-            { previousConfig: config, knowledge }
-          );
+          evaluateMutations([{ pointer, previousValue, newValue }] as MutationEntry[], {
+            previousConfig: config,
+            knowledge,
+          });
         } catch (err) {
           if (err instanceof PreconditionMismatchError) {
             emit({
@@ -186,7 +177,10 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
         }
 
         const configName = configService.getCurrentName();
-        await configFileStorage.update(configName, (cfg) => applyMutation(cfg, pointer, newValue) as typeof cfg);
+        await configFileStorage.update(
+          configName,
+          (cfg) => applyMutation(cfg, pointer, newValue) as typeof cfg
+        );
 
         emit({
           command: 'config field set',
@@ -219,16 +213,14 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
         const knowledge: Record<string, string> = {};
         if (options.current !== undefined) {
           const claim = parseValue(options.current);
-          knowledge[pointer] = createHash('sha256')
-            .update(canonicalJson(claim))
-            .digest('hex');
+          knowledge[pointer] = createHash('sha256').update(canonicalJson(claim)).digest('hex');
         }
 
         try {
-          evaluateMutations(
-            [{ pointer, previousValue, newValue: undefined }] as MutationEntry[],
-            { previousConfig: config, knowledge }
-          );
+          evaluateMutations([{ pointer, previousValue, newValue: undefined }] as MutationEntry[], {
+            previousConfig: config,
+            knowledge,
+          });
         } catch (err) {
           if (err instanceof PreconditionMismatchError) {
             emit({
@@ -243,7 +235,10 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
         }
 
         const configName = configService.getCurrentName();
-        await configFileStorage.update(configName, (cfg) => applyMutation(cfg, pointer, undefined) as typeof cfg);
+        await configFileStorage.update(
+          configName,
+          (cfg) => applyMutation(cfg, pointer, undefined) as typeof cfg
+        );
 
         emit({
           command: 'config field unset',
@@ -280,16 +275,16 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
         const newValue = parseValue(options.new);
         const previousValue = getByPointer(config, pointer);
 
-        evaluateMutations(
-          [{ pointer, previousValue, newValue }] as MutationEntry[],
-          {
-            previousConfig: config,
-            rotateAcknowledged: new Set([pointer]),
-          }
-        );
+        evaluateMutations([{ pointer, previousValue, newValue }] as MutationEntry[], {
+          previousConfig: config,
+          rotateAcknowledged: new Set([pointer]),
+        });
 
         const configName = configService.getCurrentName();
-        await configFileStorage.update(configName, (cfg) => applyMutation(cfg, pointer, newValue) as typeof cfg);
+        await configFileStorage.update(
+          configName,
+          (cfg) => applyMutation(cfg, pointer, newValue) as typeof cfg
+        );
 
         emit({
           command: 'config field rotate',

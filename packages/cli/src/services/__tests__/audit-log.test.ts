@@ -54,7 +54,10 @@ describe('auditLog', () => {
     auditLog(dir, { command: 'c', paths: [], outcome: 'ok' });
     const text = readFileSync(logPath, 'utf8');
     // Tamper with line 2: change outcome from ok → refused.
-    const tampered = text.replace('"command":"b","paths":[],"outcome":"ok"', '"command":"b","paths":[],"outcome":"refused"');
+    const tampered = text.replace(
+      '"command":"b","paths":[],"outcome":"ok"',
+      '"command":"b","paths":[],"outcome":"refused"'
+    );
     writeFileSync(logPath, tampered);
     const broken = verifyChain(logPath);
     // Line 2 hash changes, so line 3's prevHash no longer matches → break at line 3.

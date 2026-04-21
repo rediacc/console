@@ -92,9 +92,9 @@ describe('MutationGate — agent environment', () => {
         newValue: 'new-cf-token',
       },
     ];
-    expect(() =>
-      evaluateMutations(entries, { previousConfig: v2Config })
-    ).toThrow(PreconditionMismatchError);
+    expect(() => evaluateMutations(entries, { previousConfig: v2Config })).toThrow(
+      PreconditionMismatchError
+    );
   });
 
   it('allows sensitive mutation with correct --current digest', () => {
@@ -130,9 +130,7 @@ describe('MutationGate — agent environment', () => {
   });
 
   it('allows public field mutation regardless of agent', () => {
-    const entries: MutationEntry[] = [
-      { pointer: '/version', previousValue: 1, newValue: 2 },
-    ];
+    const entries: MutationEntry[] = [{ pointer: '/version', previousValue: 1, newValue: 2 }];
     const decisions = evaluateMutations(entries, { previousConfig: v2Config });
     expect(decisions[0].action).toBe('allowed');
   });
@@ -162,8 +160,8 @@ describe('MutationGate — agent environment', () => {
         newValue: 'new-token',
       },
     ];
-    expect(() =>
-      evaluateMutations(entries, { previousConfig: v2Config })
-    ).toThrow(PreconditionMismatchError);
+    expect(() => evaluateMutations(entries, { previousConfig: v2Config })).toThrow(
+      PreconditionMismatchError
+    );
   });
 });

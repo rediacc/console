@@ -113,7 +113,10 @@ export function configEditOverrideScope(): string | null {
  * - Multiple scopes can be separated by commas.
  */
 export function scopeAllows(allowedScope: string, pointer: string): boolean {
-  for (const scope of allowedScope.split(',').map((s) => s.trim()).filter(Boolean)) {
+  for (const scope of allowedScope
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)) {
     if (scope === '*') return true;
     if (scope === pointer) return true;
     if (scope.includes('*') && templateMatches(scope, pointer)) return true;

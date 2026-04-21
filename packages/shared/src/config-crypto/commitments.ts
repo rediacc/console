@@ -82,13 +82,10 @@ export async function deriveFieldCommitmentKey(
   const cekRaw = new Uint8Array(await crypto.subtle.exportKey('raw', cek));
   const salt = fromBase64(fckSaltB64);
   const fckRaw = await hkdfDeriveRaw(cekRaw, salt, HKDF_INFO.FIELD_COMMITMENT);
-  return crypto.subtle.importKey(
-    'raw',
-    buf(fckRaw),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign', 'verify']
-  );
+  return crypto.subtle.importKey('raw', buf(fckRaw), { name: 'HMAC', hash: 'SHA-256' }, false, [
+    'sign',
+    'verify',
+  ]);
 }
 
 /**

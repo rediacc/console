@@ -41,9 +41,7 @@ function matchesPath(entry: AuditEntry, glob: string | undefined): boolean {
 }
 
 export function registerAuditCommands(parent: Command, _program: Command): void {
-  const audit = parent
-    .command('audit')
-    .description(t('commands.config.audit.description'));
+  const audit = parent.command('audit').description(t('commands.config.audit.description'));
 
   audit
     .command('log')
@@ -83,7 +81,9 @@ export function registerAuditCommands(parent: Command, _program: Command): void 
         process.stdout.write(`${JSON.stringify(entry)}\n`);
       }
       // watchFile polls mtime; good enough for a user-facing tail command.
-      let lastSize = existsSync(path) ? (require('node:fs').statSync(path) as { size: number }).size : 0;
+      let lastSize = existsSync(path)
+        ? (require('node:fs').statSync(path) as { size: number }).size
+        : 0;
       watchFile(path, { interval: 500 }, (curr) => {
         if (curr.size > lastSize) {
           const stream = createReadStream(path, { start: lastSize, end: curr.size });
@@ -113,9 +113,7 @@ export function registerAuditCommands(parent: Command, _program: Command): void 
             t('commands.config.audit.verify.chainOk', { count: entries.length })
           );
         } else {
-          outputService.error(
-            t('commands.config.audit.verify.chainBroken', { line: broken })
-          );
+          outputService.error(t('commands.config.audit.verify.chainBroken', { line: broken }));
           process.exit(1);
         }
       } catch (error) {

@@ -20,7 +20,15 @@
  *   edit_open / edit_apply / edit_abort / reveal_granted are all logged.
  */
 
-import { mkdtempSync, readFileSync, writeFileSync, statSync, existsSync, copyFileSync, rmSync } from 'node:fs';
+import {
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+  statSync,
+  existsSync,
+  copyFileSync,
+  rmSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
@@ -41,7 +49,12 @@ import {
   walkSensitive,
   getByPointer,
 } from '../../schema/walker.js';
-import { parseConfig, RdcConfigSchema, stringifyConfig, type RdcConfig } from '../../schema/schemas.js';
+import {
+  parseConfig,
+  RdcConfigSchema,
+  stringifyConfig,
+  type RdcConfig,
+} from '../../schema/schemas.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 
 const REDACT_PATTERN = /^<redacted:[^>]+>:[0-9a-f]{8}$/;
@@ -148,11 +161,7 @@ function reconcileStubs(
         ? null
         : `${meta.redactAs ?? `<redacted:${meta.kind}>`}:${shortFingerprint(currentValue)}`;
 
-    if (
-      typeof editedValue === 'string' &&
-      currentStub &&
-      editedValue === currentStub
-    ) {
+    if (typeof editedValue === 'string' && currentStub && editedValue === currentStub) {
       // Untouched — substitute current value back.
       assignAtPointer(view, pointer, currentValue);
       continue;
@@ -198,7 +207,10 @@ function loadKnowledgeFile(path: string): Record<string, unknown> {
   return parsed;
 }
 
-function knowledgeDigests(raw: Record<string, unknown>, currentConfig: RdcConfig): Record<string, string> {
+function knowledgeDigests(
+  raw: Record<string, unknown>,
+  currentConfig: RdcConfig
+): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [pointer, claim] of Object.entries(raw)) {
     const expected = digestForPointer(currentConfig, pointer);
@@ -325,7 +337,9 @@ export function registerEditCommands(parent: Command, _program: Command): void {
             try {
               edited = JSON.parse(stripped);
             } catch (err) {
-              throw new ValidationError(`Invalid JSON in ${options.apply}: ${(err as Error).message}`);
+              throw new ValidationError(
+                `Invalid JSON in ${options.apply}: ${(err as Error).message}`
+              );
             }
             const { result, failures, rotations } = reconcileStubs(edited, config, knowledge);
             const allFailures = [
@@ -417,14 +431,19 @@ export function registerEditCommands(parent: Command, _program: Command): void {
             if (rotations.length > 0) {
               if (!isatty(process.stdin.fd) || !isatty(process.stdout.fd)) {
                 lastFailures = rotations.map(
-                  (p) => `${p}: rotation confirmation requires an interactive TTY (or use --current-secrets)`
+                  (p) =>
+                    `${p}: rotation confirmation requires an interactive TTY (or use --current-secrets)`
                 );
                 attempt++;
                 const banner = `// ─── ${rotations.length} UNCONFIRMED ROTATION(S) ───\n`;
                 const errorBlock = lastFailures.map((f) => `// ${f}`).join('\n') + '\n';
-                writeFileSync(tmpFile, banner + errorBlock + JSON.stringify(edited, null, 2) + '\n', {
-                  mode: 0o600,
-                });
+                writeFileSync(
+                  tmpFile,
+                  banner + errorBlock + JSON.stringify(edited, null, 2) + '\n',
+                  {
+                    mode: 0o600,
+                  }
+                );
                 continue;
               }
               const confirmed = await promptRotationConfirmation(rotations);

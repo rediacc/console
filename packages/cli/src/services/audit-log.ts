@@ -19,7 +19,13 @@ import { dirname } from 'node:path';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
 
 const ROTATE_BYTES = 10 * 1024 * 1024; // 10 MB
-const AGENT_ENV_VARS = ['REDIACC_AGENT', 'CLAUDECODE', 'GEMINI_CLI', 'COPILOT_CLI', 'CURSOR_TRACE_ID'] as const;
+const AGENT_ENV_VARS = [
+  'REDIACC_AGENT',
+  'CLAUDECODE',
+  'GEMINI_CLI',
+  'COPILOT_CLI',
+  'CURSOR_TRACE_ID',
+] as const;
 
 export type AuditOutcome =
   | 'ok'

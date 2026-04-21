@@ -44,8 +44,7 @@ function withDefaults(meta: SensitivityMeta): Required<SensitivityMeta> {
     kind: meta.kind,
     redactAs: meta.redactAs ?? `<redacted:${meta.kind}>`,
     commit: meta.commit ?? meta.kind !== 'public',
-    encryptAtRest:
-      meta.encryptAtRest ?? (meta.kind === 'secret' || meta.kind === 'credential'),
+    encryptAtRest: meta.encryptAtRest ?? (meta.kind === 'secret' || meta.kind === 'credential'),
   };
 }
 

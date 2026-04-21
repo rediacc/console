@@ -128,14 +128,20 @@ export async function openEditor(filePath: string, explicit?: string): Promise<v
     });
     child.on('error', (err) => {
       reject(
-        new EditorError('spawn_failed', t('errors.editor.spawnFailed', { command, reason: err.message }))
+        new EditorError(
+          'spawn_failed',
+          t('errors.editor.spawnFailed', { command, reason: err.message })
+        )
       );
     });
     child.on('exit', (code) => {
       if (code === 0 || code === null) resolve();
       else
         reject(
-          new EditorError('nonzero_exit', t('errors.editor.nonzeroExit', { command, code: String(code) }))
+          new EditorError(
+            'nonzero_exit',
+            t('errors.editor.nonzeroExit', { command, code: String(code) })
+          )
         );
     });
   });

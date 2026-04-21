@@ -167,9 +167,7 @@ function setByPointer(root: unknown, pointer: string, newValue: unknown): unknow
       if (!Number.isFinite(idx) || idx < 0 || idx >= cursor.length) return clone;
       cursor = cursor[idx] as Record<string, unknown> | unknown[];
     } else {
-      cursor = (cursor as Record<string, unknown>)[segment] as
-        | Record<string, unknown>
-        | unknown[];
+      cursor = (cursor as Record<string, unknown>)[segment] as Record<string, unknown> | unknown[];
     }
   }
   const last = segments[segments.length - 1];
