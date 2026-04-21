@@ -1,10 +1,12 @@
 ---
 title: AIアシスタント向け AGENTS.md テンプレート
-description: Claude Code、Cursor、その他のAIコーディングアシスタントをRediaccインフラストラクチャと連携させるためのコピー＆ペーストテンプレート。
+description: >-
+  Claude
+  Code、Cursor、その他のAIコーディングアシスタントをRediaccインフラストラクチャと連携させるためのコピー＆ペーストテンプレート。
 category: Reference
 order: 50
 language: ja
-sourceHash: "b1ea9373a19bbedb"
+sourceHash: 37be1e401927ed9a
 ---
 
 このテンプレートを使用して、AIコーディングアシスタント（Claude Code、Cursor、Cline、Windsurf）をRediaccインフラストラクチャの自律管理用に設定します。以下のブロックをプロジェクトの `CLAUDE.md`、`.cursorrules`、または同等のエージェント設定ファイルにコピーしてください。
@@ -36,38 +38,37 @@ On error: {"success": false, "command": "...", "data": null, "errors": [{"code":
 ### Common Operations
 
 # Machine status
-rdc machine query <machine> -o json
+rdc machine query --name <machine> -o json
 
 # List containers on a machine
-rdc machine containers <machine> -o json
+rdc machine containers --name <machine> -o json
 
 # Machine health check
-rdc machine health <machine> -o json
+rdc machine health --name <machine> -o json
 
 # Deploy a repository
-rdc repo up <repo> -m <machine> --yes
+rdc repo up --name <repo> -m <machine> --yes
 
 # Stop a repository
-rdc repo down <repo> -m <machine> --yes
+rdc repo down --name <repo> -m <machine> --yes
 
 # SSH terminal to machine
-rdc term <machine>
-
+rdc term connect -m <machine> 
 # SSH terminal to specific repo (sets DOCKER_HOST)
-rdc term <machine> <repo>
+rdc term connect -m <machine> -r <repo>
 
 # Run command on machine
-rdc term <machine> -c "command"
+rdc term connect -m <machine> -c "command"
 
 # File sync
-rdc repo sync upload -m <machine> -r <repo> -l ./local-path
-rdc repo sync download -m <machine> -r <repo> -l ./local-path
+rdc repo sync upload -m <machine> -r <repo> --local ./local-path
+rdc repo sync download -m <machine> -r <repo> --local ./local-path
 
 # List all available commands with schemas
 rdc agent capabilities
 
 # Show schema for a specific command
-rdc agent schema "machine query"
+rdc agent schema --command "machine query"
 
 ### Architecture
 - **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/

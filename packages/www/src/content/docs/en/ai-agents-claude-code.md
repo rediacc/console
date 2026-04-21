@@ -28,8 +28,8 @@ Place this at your project root. See the full [AGENTS.md template](/en/docs/agen
 ### Common Operations
 - Status: rdc machine query --name <machine> -o json
 - Deploy: rdc repo up --name <repo> -m <machine> --yes
-- Containers: rdc machine containers <machine> -o json
-- Health: rdc machine health <machine> -o json
+- Containers: rdc machine containers --name <machine> -o json
+- Health: rdc machine health --name <machine> -o json
 - SSH: rdc term connect -m <machine> [-r <repo>]
 
 ### Rules
@@ -76,7 +76,7 @@ Claude Code runs: rdc repo up --name mail -m prod-1 --yes
 ```
 You: "Why is the nextcloud container unhealthy?"
 
-Claude Code runs: rdc machine containers prod-1 -o json --fields name,status,repository
+Claude Code runs: rdc machine containers --name prod-1 -o json --fields name,status,repository
 → Lists container states
 Claude Code runs: rdc term connect -m prod-1 -c "docker logs nextcloud-app --tail 50"
 → Checks recent logs

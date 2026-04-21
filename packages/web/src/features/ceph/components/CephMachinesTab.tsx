@@ -188,7 +188,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
             <Select
               placeholder={t('machines.filters.assignmentStatus')}
               value={assignmentFilter}
-              onChange={(value) => setAssignmentFilter(value as AssignmentFilter)}
+              onChange={(value) => setAssignmentFilter(value)}
               suffixIcon={<FilterOutlined />}
               data-testid="ds-machines-filter-assignment"
               className="w-full"

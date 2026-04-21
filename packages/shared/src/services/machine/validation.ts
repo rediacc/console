@@ -357,7 +357,7 @@ export class MachineValidationService {
       case 'clone':
         return 'clone';
       default:
-        return targetType as 'cluster' | 'image' | 'clone';
+        return targetType;
     }
   }
 

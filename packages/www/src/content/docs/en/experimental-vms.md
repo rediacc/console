@@ -139,7 +139,7 @@ Environment variables override worker VM resources:
 | `rdc ops up [options]` | Provision VM cluster |
 | `rdc ops down` | Destroy all VMs and cleanup |
 | `rdc ops status` | Show status of all VMs |
-| `rdc ops ssh <vm-id> [command...]` | SSH into a VM, or run a command on it |
+| `rdc ops ssh --vm-id <id> [command...]` | SSH into a VM, or run a command on it |
 
 ### `rdc ops up` Options
 

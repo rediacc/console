@@ -34,7 +34,7 @@ Rediacc en tant que logiciel n'accède pas aux données des consommateurs, ne le
 
 Chaque dépôt Rediacc est une unité de données discrète et chiffrée avec un GUID unique. Vous pouvez inventorier précisément quelles données existent et où :
 
-- `rdc machine query <machine> --repositories` liste tous les dépôts sur une machine avec leur taille et leur état de montage
+- `rdc machine query --name <machine> --repositories` liste tous les dépôts sur une machine avec leur taille et leur état de montage
 - Chaque dépôt est isolé au niveau du système de fichiers, du réseau et des conteneurs
 - Les relations de fork sont tracées, vous permettant d'identifier toutes les copies d'un jeu de données
 

@@ -81,7 +81,7 @@ Quick reference for the most common `rdc` commands. Run any command with `--help
 | `rdc machine query --name <machine> --network` | Network info only |
 | `rdc machine query --name <machine> --block-devices` | Block device info only |
 | `rdc machine list` | List all machines in config |
-| `rdc config machine setup <machine>` | Run initial machine provisioning |
+| `rdc config machine setup --name <machine>` | Run initial machine provisioning |
 | `rdc machine prune --name <machine>` | Remove unused resources from machine |
 | `rdc machine deprovision --name <machine>` | Fully deprovision a machine |
 | `rdc machine vault-status --name <machine>` | Show LUKS vault status |
@@ -93,8 +93,9 @@ Quick reference for the most common `rdc` commands. Run any command with `--help
 | `rdc term connect -m <machine>` | Open SSH terminal to machine |
 | `rdc term connect -m <machine> -r <repo>` | Open SSH terminal to repository (sets DOCKER_HOST) |
 | `rdc term connect -m <machine> -c "<command>"` | Run a command on machine |
-| `rdc repo sync upload -m <machine> -r <repo> --local <path>` | Upload local files to repository |
-| `rdc repo sync download -m <machine> -r <repo> --local <path>` | Download repository files locally |
+| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Upload one or more local files/dirs to repository |
+| `rdc repo sync download -m <machine> -r <repo> --local <dir>` | Download repository directory locally |
+| `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | Download a single remote file into a local dir |
 | `rdc vscode connect -m <machine> -r <repo>` | Open VS Code Remote SSH session |
 
 ## Configuration

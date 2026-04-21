@@ -1,10 +1,12 @@
 ---
-title: "المراقبة والتشخيص"
-description: "فحص صحة الجهاز، وفحص الحاويات، ومراجعة خدمات systemd، ومسح مفاتيح المضيف، وتشغيل تشخيصات البيئة."
-category: "Tutorials"
+title: المراقبة والتشخيص
+description: >-
+  فحص صحة الجهاز، وفحص الحاويات، ومراجعة خدمات systemd، ومسح مفاتيح المضيف،
+  وتشغيل تشخيصات البيئة.
+category: Tutorials
 order: 4
 language: ar
-sourceHash: "2efd897e27dca34e"
+sourceHash: fa85cf9b00d42a6e
 ---
 
 # كيفية مراقبة وتشخيص البنية التحتية باستخدام Rediacc
@@ -33,7 +35,7 @@ rdc doctor
 ### الخطوة 2: فحص صحة الجهاز
 
 ```bash
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 يجلب تقريراً شاملاً عن الصحة من الجهاز البعيد: وقت تشغيل النظام، واستخدام القرص، واستخدام مخزن البيانات، وعدد الحاويات، وحالة SMART للتخزين، وأي مشكلات محددة.
@@ -41,7 +43,7 @@ rdc machine health server-1
 ### الخطوة 3: عرض الحاويات العاملة
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 يسرد جميع الحاويات العاملة عبر جميع المستودعات على الجهاز، مع عرض الاسم والحالة والوضع والصحة واستخدام CPU واستخدام الذاكرة والمستودع المالك لكل حاوية.
@@ -51,7 +53,7 @@ rdc machine containers server-1
 لرؤية الخدمات الأساسية التي تشغل Docker daemon والشبكات لكل مستودع:
 
 ```bash
-rdc machine services server-1
+rdc machine services --name server-1
 ```
 
 يسرد خدمات systemd المتعلقة بـ Rediacc (Docker daemons، أسماء loopback المستعارة) مع حالتها وحالتها الفرعية وعدد مرات إعادة التشغيل واستخدام الذاكرة.
@@ -94,7 +96,7 @@ rdc term connect -m server-1 -c "uptime"
 تظهر خدمات Rediacc فقط بعد نشر مستودع واحد على الأقل. إذا لم تكن هناك مستودعات، فإن قائمة الخدمات تكون فارغة.
 
 **قائمة الحاويات تعرض حاويات قديمة أو متوقفة**
-قد تبقى حاويات من عمليات نشر سابقة إذا لم يتم تشغيل `repo down` بشكل نظيف. أوقفها باستخدام `rdc repo down <repo> -m <machine>` أو افحصها مباشرة عبر `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
+قد تبقى حاويات من عمليات نشر سابقة إذا لم يتم تشغيل `repo down` بشكل نظيف. أوقفها باستخدام `rdc repo down --name <repo> -m <machine>` أو افحصها مباشرة عبر `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
 
 ## الخطوات التالية
 

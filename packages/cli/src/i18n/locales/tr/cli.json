@@ -342,7 +342,7 @@
         "push": {
           "description": "Önbelleğe alınmış TLS sertifikalarını bir makineye yükle",
           "merged": "Daha uzun süreli {{count}} sertifika {{machine}} ile birleştirildi",
-          "noCache": "Sertifika önbelleği bulunamadı. Önce 'rdc config cert-cache pull <machine>' çalıştırın",
+          "noCache": "Sertifika önbelleği bulunamadı. Önce 'rdc config cert-cache pull -m <machine>' çalıştırın",
           "uploaded": "{{count}} sertifika {{machine}} adresine yüklendi",
           "uploading": "Önbelleğe alınmış sertifikalar {{machine}} adresine yükleniyor...",
           "upToDate": "{{machine}} üzerindeki sertifikalar güncel"
@@ -376,7 +376,7 @@
           "dnsError": "DNS uyarısı: {{message}} (kayıtların manuel kurulumu gerekebilir)",
           "dnsResolvingZone": "{{domain}} için Cloudflare bölgesi çözümleniyor...",
           "dnsSkipLocal": "DNS atlanıyor: .local alan adı Cloudflare kullanmaz",
-          "dnsSkipNoToken": "DNS atlanıyor: Cloudflare API belirteci yok. Şu komutla ayarlayın: rdc config infra set <machine> --cf-dns-token <token>",
+          "dnsSkipNoToken": "DNS atlanıyor: Cloudflare API belirteci yok. Şu komutla ayarlayın: rdc config infra set -m <machine> --cf-dns-token <token>",
           "dnsUnchanged": "DNS: {{type}} {{name}} zaten doğru",
           "dnsUpdated": "DNS: {{type}} {{name}} → {{content}} güncellendi",
           "installingProxy": "Proxy kuruluyor ve başlatılıyor...",
@@ -535,7 +535,7 @@
         "description": "Mevcut yapılandırmadaki depo eşlemelerini yönet",
         "list": {
           "description": "Mevcut yapılandırmadaki depo GUID eşlemelerini listele",
-          "noRepositories": "Yapılandırılmış depo yok. Şu komutla ekleyin: rdc config repository add <name> --guid <guid>"
+          "noRepositories": "Yapılandırılmış depo yok. Şu komutla ekleyin: rdc config repository add --name <name> --guid <guid>"
         },
         "listArchived": {
           "description": "Arşivlenmiş depo kimlik bilgilerini listele",
@@ -606,7 +606,7 @@
         },
         "list": {
           "description": "Mevcut yapılandırmadaki depoları listele",
-          "noStorages": "Yapılandırılmış depolama alanı yok. Şu komutla içe aktarın: rdc config storage import <file>"
+          "noStorages": "Yapılandırılmış depolama alanı yok. Şu komutla içe aktarın: rdc config storage import --file <path>"
         },
         "remove": {
           "description": "Mevcut yapılandırmadan depolamayı kaldır",
@@ -810,7 +810,7 @@
         "description": "OpenTofu kullanarak bir bulut sağlayıcıda yeni makine oluştur",
         "failed": "Makine oluşturma başarısız: {{error}}",
         "infraInherited": "Temel alan adı kardeş makineden otomatik algılandı: \"{{source}}\"",
-        "noInfraHint": "Temel alan adı yapılandırılmamış. DNS ve proxy'yi etkinleştirmek için 'rdc config infra set <machine> --base-domain <domain>' ardından 'rdc config infra push <machine>' komutunu çalıştırın.",
+        "noInfraHint": "Temel alan adı yapılandırılmamış. DNS ve proxy'yi etkinleştirmek için 'rdc config infra set -m <machine> --base-domain <domain>' ardından 'rdc config infra push -m <machine>' komutunu çalıştırın.",
         "optionBaseDomain": "Altyapı için temel alan adı (ör. example.com). --infra'yı içerir",
         "optionImage": "Varsayılan işletim sistemi imajını geçersiz kıl",
         "optionInfra": "Altyapıyı da yapılandır (infra set + infra push)",
@@ -1249,7 +1249,7 @@
         "archiveHint": "Kurtarma için kimlik bilgilerini arşivlemek üzere: --archive-config ile tekrar çalıştırın",
         "archiveOption": "Yapılandırma girdisini daha sonra kurtarmak için deletedRepositories'e taşı",
         "completed": "Depo silindi",
-        "configRetained": "\"{{repository}}\" yapılandırma girişi korundu (depo başka makinelerde mevcut olabilir). Kaldırmak için: rdc config repository remove {{repository}}",
+        "configRetained": "\"{{repository}}\" yapılandırma girişi korundu (depo başka makinelerde mevcut olabilir). Kaldırmak için: rdc config repository remove --name {{repository}}",
         "description": "Bir depoyu sil (konteynerleri, birimleri ve şifreli imajı yok eder). Yapılandırma girdisi korunur. Kimlik bilgilerini deletedRepositories'e taşımak için --archive-config kullanın, 'config restore-archived' ile kurtarılabilir",
         "descriptionShort": "Bir makineden depoyu sil",
         "failed": "Depo silme başarısız",
@@ -1450,7 +1450,7 @@
         "forceOption": "Değişiklik uyarılarını atla",
         "grandNotFound": "\"{{name}}\" çatalı için grand depo bulunamadı",
         "notAFork": "\"{{name}}\" bir çatal depo değil (parentGuid eksik)",
-        "revertHint": "Geri almak için: rdc repo takeover {{backup}} -m {{machine}}",
+        "revertHint": "Geri almak için: rdc repo takeover --name {{backup}} -m {{machine}}",
         "rollback": "\"{{name}}\" yapılandırması geri alındı",
         "starting": "\"{{machine}}\" üzerinde \"{{fork}}\" verisiyle \"{{grand}}\" devralınıyor..."
       },
@@ -2142,9 +2142,9 @@
       "createGuardOverride": "Yeni bir grand depo \"{{name}}\" oluşturulamaz. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "Yeni bir grand depo \"{{name}}\" oluşturulamaz. REDIACC_ALLOW_GRAND_REPO geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nGeçersiz kılmayı kullanmak için ajanınızı Linux üzerinde çalıştırın (doğrudan, WSL, Docker veya VM).",
       "forkBlocked": "\"{{command}}\" komutu fork depolarında kullanılamaz.\n\nFork depoları geçici sandbox ortamlarıdır. Bu işlem yalnızca grand (üretim) depoları için geçerlidir. Kullanıcıdan bu komutu doğrudan çalıştırmasını isteyin.",
-      "grandGuard": "\"{{name}}\" bir grand (üretim) deposudur. Ajanlar grand depoları doğrudan değiştiremez.\n\nGrand depolar üretim verilerini içerir. Bunun yerine fork kullanın — fork'lar güvenli, izole sandbox kopyalarıdır.\n\nİş akışı:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın (örn: rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. Tamamlandığında, kullanıcı rdc repo takeover ile fork'u yüseltebilir\n\nKullanıcı: doğrudan erişime izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (veya tüm depolar için *) ayarlayın.",
-      "grandGuardOverride": "\"{{name}}\" bir grand (üretim) deposudur. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nBunun yerine fork kullanın — fork'lar güvenli, izole sandbox kopyalarıdır:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın\n  3. Tamamlandığında, kullanıcı rdc repo takeover ile fork'u yüseltebilir",
-      "grandGuardOverrideNonLinux": "\"{{name}}\" bir grand (üretim) deposudur. REDIACC_ALLOW_GRAND_REPO geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nİş akışı:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın\n  3. Tamamlandığında, kullanıcı rdc repo takeover ile fork'u yüseltebilir\n\nGeçersiz kılmayı kullanmak için ajanınızı Linux üzerinde çalıştırın (doğrudan, WSL, Docker veya VM).",
+      "grandGuard": "\"{{name}}\" bir grand (üretim) deposudur. Ajanlar grand depoları doğrudan değiştiremez.\n\nGrand depolar üretim verilerini içerir. Bunun yerine fork kullanın — fork'lar güvenli, izole sandbox kopyalarıdır.\n\nİş akışı:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın (örn: rdc repo up --name {{name}}:<tag-name> -m <machine> --mount)\n  3. Tamamlandığında, kullanıcı rdc repo takeover --name <fork> komutuyla fork'u yükseltebilir\n\nKullanıcı: doğrudan erişime izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (veya tüm depolar için *) ayarlayın.",
+      "grandGuardOverride": "\"{{name}}\" bir grand (üretim) deposudur. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nBunun yerine fork kullanın — fork'lar güvenli, izole sandbox kopyalarıdır:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın\n  3. Tamamlandığında, kullanıcı rdc repo takeover --name <fork> komutuyla fork'u yükseltebilir",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" bir grand (üretim) deposudur. REDIACC_ALLOW_GRAND_REPO geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nİş akışı:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın\n  3. Tamamlandığında, kullanıcı rdc repo takeover --name <fork> komutuyla fork'u yükseltebilir\n\nGeçersiz kılmayı kullanmak için ajanınızı Linux üzerinde çalıştırın (doğrudan, WSL, Docker veya VM).",
       "machineGuard": "Ajan modunda \"{{machine}}\" makinesine doğrudan erişim izni verilmez.\n\nAjanlar sandbox erişimi için bir depo bağlamı üzerinden bağlanmalıdır. Önce bir deponun fork'unu oluşturun, ardından fork'a bağlanın.\n\nİş akışı:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nKullanıcı: doğrudan makine erişimine izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO=* (veya belirli bir depo adı) ayarlayın.",
       "machineGuardOverride": "\"{{machine}}\" makinesine doğrudan erişim izni verilmez. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nÖnce bir deponun fork'unu oluşturun, ardından fork'a bağlanın:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"",
       "machineGuardOverrideNonLinux": "Doğrudan makine erişimi geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nİş akışı:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nGeçersiz kılmayı kullanmak için ajanınızı Linux üzerinde çalıştırın (doğrudan, WSL, Docker veya VM).",
@@ -2185,7 +2185,7 @@
     "machineRequired": "Makine adı gerekli. --machine <name> kullanın",
     "machineRequiredLocal": "Makine adı gerekli. --machine <name> kullanın",
     "networkError": "Ağ hatası: {{message}}",
-    "noActiveConfig": "Etkin yapılandırma yok. Şununla oluşturun: rdc config init <name>",
+    "noActiveConfig": "Etkin yapılandırma yok. Şununla oluşturun: rdc config init --name <name>",
     "notAuthenticated": "Kimlik doğrulaması yapılmamış. Çalıştırın: rdc auth login",
     "passwordsMismatch": "Parolalar eşleşmiyor",
     "permissionDenied": "İzin reddedildi",
@@ -2224,10 +2224,13 @@
     "sync": {
       "absolutePathBlocked": "--remote yolu mutlak değil, göreli olmalıdır. Depo kök dizinine göre göreli bir yol kullanın.",
       "localPathNotFound": "Yerel yol bulunamadı: {{path}}",
+      "mirrorWithFile": "Kaynak bir dosyaysa --mirror kullanılamaz: hedef dizindeki kardeş dosyalar silinirdi.",
       "noHostKey": "\"{{machine}}\" makinesinin kasada yapılandırılmış bir ana bilgisayar anahtarı yok",
       "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",
       "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok",
-      "pathTraversalBlocked": "--remote yolu \"..\" yol geçişi içermemelidir. Depo içinde bir yol kullanın."
+      "pathTraversalBlocked": "--remote yolu \"..\" yol geçişi içermemelidir. Depo içinde bir yol kullanın.",
+      "remoteAndRemoteFile": "--remote ve --remote-file birlikte kullanılamaz. Birini seçin.",
+      "remoteFileLocalNotDir": "--remote-file ayarlandığında, --local var olan bir dizin olmalıdır: {{path}}"
     },
     "teamRequired": "Takım adı gerekli. --team kullanın veya bağlamı ayarlayın.",
     "term": {
@@ -2291,7 +2294,7 @@
       "create": "Şifreli depo oluştur",
       "down": "Servisleri durdur",
       "fork": "Test için CoW fork",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable --name <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "Depolamadaki yedeklemeleri listele",
       "pull": "Yedeklemeyi depolamadan al",
       "push": "Yedeklemeyi depolamaya gönder",
@@ -2360,6 +2363,7 @@
     "lang": "Dil geçersiz kılması ({{languages}})",
     "limit": "Maksimum sonuç sayısı",
     "localPath": "Yerel dizin yolu (varsayılan: güncel dizin)",
+    "localPaths": "Bir veya daha fazla yerel dosya veya dizin yolu (varsayılan: geçerli dizin)",
     "logLines": "Gösterilecek günlük satırı sayısı (varsayılan: 50)",
     "machine": "Makine adı",
     "machineForVault": "Makine adı (test sonrasında kasa güncellemesi için)",
@@ -2412,6 +2416,7 @@
     "quiet": "Bilgilendirme çıkışını bastır",
     "rawVault": "Ham kasa JSON'u (komut dosyaları/CI için)",
     "region": "Bölge adı",
+    "remoteFile": "Depodaki uzak dosya yolu (tek dosya aktarımları için --remote yerine kullanılır)",
     "remotePath": "Depo içinde uzak alt dizin yolu",
     "renetPath": "Renet ikili dosyasının yolu (varsayılan: PATH'te renet)",
     "repository": "Depo adı (depo ortamına bağlanır)",

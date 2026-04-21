@@ -4,7 +4,7 @@ description: rdc CLI JSON 输出格式、信封模式、错误处理和代理发
 category: Reference
 order: 51
 language: zh
-sourceHash: "11259cd1eeebf361"
+sourceHash: 43cdbf89d4314d73
 ---
 
 所有 `rdc` 命令都支持结构化 JSON 输出，供 AI 代理和脚本进行程序化消费。
@@ -24,7 +24,7 @@ rdc machine query --name prod-1 -o json
 
 ```bash
 # These all produce JSON automatically
-result=$(rdc machine query prod-1)
+result=$(rdc machine query --name prod-1)
 echo '{}' | rdc agent exec "machine query"
 ```
 
@@ -106,7 +106,7 @@ echo '{}' | rdc agent exec "machine query"
 使用 `--fields` 将输出限制为特定键。当只需要特定数据时，这可以减少 token 使用量：
 
 ```bash
-rdc machine containers prod-1 -o json --fields name,status,repository
+rdc machine containers --name prod-1 -o json --fields name,status,repository
 ```
 
 ## 模拟运行输出
@@ -192,7 +192,7 @@ echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine query prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python

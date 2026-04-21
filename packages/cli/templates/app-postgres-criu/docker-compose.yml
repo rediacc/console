@@ -16,7 +16,7 @@ services:
     labels:
       - "rediacc.service_name=app"
       # Auto-route URL: https://{serviceName}.{repoName}.{machineName}.{baseDomain}
-      # Example: rdc repo create myrepo -m server-1 → https://app.myrepo.server-1.example.com
+      # Example: rdc repo create --name myrepo -m server-1 → https://app.myrepo.server-1.example.com
       - "rediacc.service_port=3000"
       # CRIU: enables checkpoint/restore for live migration.
       # eBPF handles bind rewriting, so apps do not need to track IP changes.

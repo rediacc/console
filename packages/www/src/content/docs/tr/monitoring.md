@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: "1b60f9a60324f737"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 7574575ee78682a9
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # İzleme
@@ -19,7 +19,7 @@ Rediacc, makine sağlığını, çalışan konteynerleri, servisleri, depo durum
 Bir makine için kapsamlı bir sağlık raporu alın:
 
 ```bash
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 Rapor içeriği:
@@ -35,7 +35,7 @@ Makine tarafından okunabilir çıktı için `--output json` kullanın.
 Bir makinedeki tüm depolardaki çalışan konteynerleri görüntüleyin:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 | Sütun | Açıklama |
@@ -59,7 +59,7 @@ JSON çıktısı tam konteyner ayrıntılarını (`labels`, `port_mappings`, `im
 Bir makinedeki Rediacc ile ilgili systemd servislerini görüntüleyin:
 
 ```bash
-rdc machine services server-1
+rdc machine services --name server-1
 ```
 
 | Sütun | Açıklama |
@@ -82,7 +82,7 @@ JSON çıktısı, `repository` (çözümlenmiş ad) ve `repository_guid` (orijin
 Bir makinedeki depoları ayrıntılı istatistiklerle görüntüleyin:
 
 ```bash
-rdc machine repos server-1
+rdc machine repos --name server-1
 ```
 
 | Sütun | Açıklama |

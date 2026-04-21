@@ -1,11 +1,14 @@
 ---
-title: "Copia de seguridad y conexión de red"
-description: "Configure programaciones de copias de seguridad automatizadas, gestione proveedores de almacenamiento, configure la red de infraestructura y registre puertos de servicio."
-category: "Tutorials"
+title: Copia de seguridad y conexión de red
+description: >-
+  Configure programaciones de copias de seguridad automatizadas, gestione
+  proveedores de almacenamiento, configure la red de infraestructura y registre
+  puertos de servicio.
+category: Tutorials
 order: 6
 language: es
-sourceHash: "3af2b8e2e6105e29"
-sourceCommit: "2223eabccb947ee9da79f1afcef075e163797d13"
+sourceHash: b91d408984abfc75
+sourceCommit: 2223eabccb947ee9da79f1afcef075e163797d13
 ---
 
 # Cómo configurar copias de seguridad y redes con Rediacc
@@ -113,7 +116,7 @@ El formato cron es `minute hour day month weekday`. Programaciones comunes: `0 2
 El nombre del destino debe coincidir con un proveedor de almacenamiento configurado. Ejecute `rdc config storage list` para ver los nombres disponibles. Agregue nuevos proveedores mediante la configuración de rclone.
 
 **"Infrastructure config incomplete" al desplegar**
-Los tres campos son obligatorios: `--public-ipv4`, `--base-domain` y `--cert-email`. Ejecute `rdc config infra show <machine>` para verificar qué campos faltan.
+Los tres campos son obligatorios: `--public-ipv4`, `--base-domain` y `--cert-email`. Ejecute `rdc config infra show -m <machine>` para verificar qué campos faltan.
 
 ## Próximos pasos
 

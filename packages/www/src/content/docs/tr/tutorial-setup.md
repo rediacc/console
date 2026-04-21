@@ -1,10 +1,12 @@
 ---
-title: "Makine Kurulumu"
-description: "Bir yapılandırma profili oluşturun, uzak bir makine kaydedin, SSH bağlantısını doğrulayın ve altyapı ayarlarını yapılandırın."
-category: "Tutorials"
+title: Makine Kurulumu
+description: >-
+  Bir yapılandırma profili oluşturun, uzak bir makine kaydedin, SSH bağlantısını
+  doğrulayın ve altyapı ayarlarını yapılandırın.
+category: Tutorials
 order: 2
 language: tr
-sourceHash: "2a32100e76d41bc0"
+sourceHash: 0c36a98feadd7aaa
 ---
 
 # Rediacc ile Makine Nasıl Kurulur
@@ -103,7 +105,7 @@ Yapılandırmayı doğrulayın:
 rdc config infra show -m bridge-vm
 ```
 
-Oluşturulan Traefik proxy yapılandırmasını `rdc config infra push bridge-vm` ile sunucuya dağıtın.
+Oluşturulan Traefik proxy yapılandırmasını `rdc config infra push -m bridge-vm` ile sunucuya dağıtın.
 
 ## Sorun Giderme
 
@@ -114,7 +116,7 @@ Oluşturulan Traefik proxy yapılandırmasını `rdc config infra push bridge-vm
 Sunucunun çalıştığını ve IP'nin doğru olduğunu onaylayın. Port 22'nin açık olduğunu kontrol edin: `nc -zv <ip> 22`. Standart olmayan bir port kullanıyorsanız, makine eklerken `--port` parametresini geçirin.
 
 **"Host key verification failed"**
-Saklanan host anahtarı sunucunun mevcut anahtarıyla eşleşmiyor. Bu, sunucu yeniden oluşturulduktan veya IP yeniden atandıktan sonra gerçekleşir. Anahtarı yenilemek için `rdc config machine scan-keys <machine>` komutunu çalıştırın.
+Saklanan host anahtarı sunucunun mevcut anahtarıyla eşleşmiyor. Bu, sunucu yeniden oluşturulduktan veya IP yeniden atandıktan sonra gerçekleşir. Anahtarı yenilemek için `rdc config machine scan-keys -m <machine>` komutunu çalıştırın.
 
 ## Sonraki Adımlar
 

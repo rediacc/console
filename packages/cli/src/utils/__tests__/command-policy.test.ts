@@ -28,7 +28,6 @@ import {
   assertCommandPolicy,
   CMD,
   COMMAND_POLICIES,
-  type CommandPath,
   validateRemotePath,
 } from '../command-policy.js';
 
@@ -236,10 +235,9 @@ describe('command-policy', () => {
 
     it('every CMD value has a policy entry', () => {
       for (const [key, value] of Object.entries(CMD)) {
-        expect(
-          COMMAND_POLICIES.has(value as CommandPath),
-          `${key} (${value}) missing from COMMAND_POLICIES`
-        ).toBe(true);
+        expect(COMMAND_POLICIES.has(value), `${key} (${value}) missing from COMMAND_POLICIES`).toBe(
+          true
+        );
       }
     });
   });

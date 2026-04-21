@@ -128,7 +128,7 @@ const createRegionField = (
   placeholder: t('regions.placeholders.selectRegion'),
   required: true,
   type: 'select' as const,
-  options: mapToOptions(dropdownData?.regions) as { value: string; label: string }[],
+  options: mapToOptions(dropdownData?.regions),
   rules: [validationRules.required('Region')],
 });
 

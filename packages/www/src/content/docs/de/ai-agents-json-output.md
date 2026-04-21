@@ -1,10 +1,12 @@
 ---
 title: JSON-Ausgabe-Referenz
-description: Vollständige Referenz für das JSON-Ausgabeformat der rdc CLI, Envelope-Schema, Fehlerbehandlung und Agenten-Erkennungsbefehle.
+description: >-
+  Vollständige Referenz für das JSON-Ausgabeformat der rdc CLI, Envelope-Schema,
+  Fehlerbehandlung und Agenten-Erkennungsbefehle.
 category: Reference
 order: 51
 language: de
-sourceHash: "11259cd1eeebf361"
+sourceHash: 43cdbf89d4314d73
 ---
 
 Alle `rdc`-Befehle unterstützen strukturierte JSON-Ausgabe für die programmatische Nutzung durch KI-Agenten und Skripte.
@@ -24,7 +26,7 @@ Wenn `rdc` in einer non-TTY-Umgebung laeuft (gepipt, Subshell oder von einem KI-
 
 ```bash
 # These all produce JSON automatically
-result=$(rdc machine query prod-1)
+result=$(rdc machine query --name prod-1)
 echo '{}' | rdc agent exec "machine query"
 ```
 
@@ -106,7 +108,7 @@ Nicht wiederholbare Fehler (Authentifizierung, nicht gefunden, ungueltige Argume
 Verwenden Sie `--fields`, um die Ausgabe auf bestimmte Schluessel zu beschraenken. Dies reduziert den Token-Verbrauch, wenn nur bestimmte Daten benoetigt werden:
 
 ```bash
-rdc machine containers prod-1 -o json --fields name,status,repository
+rdc machine containers --name prod-1 -o json --fields name,status,repository
 ```
 
 ## Testlauf-Ausgabe
@@ -192,7 +194,7 @@ Akzeptiert JSON über stdin, ordnet Schluessel den Befehlsargumenten und -option
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine query prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python

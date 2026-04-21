@@ -2,7 +2,6 @@ import { parseGetOrganizationRegions, parseGetOrganizationVaults } from '@rediac
 import type {
   CreateRegionParams,
   DeleteRegionParams,
-  GetOrganizationVaults_ResultSet1,
   UpdateRegionNameParams,
   UpdateRegionVaultParams,
 } from '@rediacc/shared/types';
@@ -38,7 +37,7 @@ export function registerRegionCommands(program: Command): void {
       fetch: async () => {
         const response = await typedApi.GetOrganizationVaults({});
         const vaults = parseGetOrganizationVaults(response as never);
-        return vaults as unknown as (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[];
+        return vaults;
       },
       vaultType: 'Region',
     },

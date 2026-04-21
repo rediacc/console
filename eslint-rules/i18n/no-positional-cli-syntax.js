@@ -5,43 +5,109 @@
  * Complements `custom/no-positional-arguments` (which enforces named options
  * on the Commander API side) by catching documentation that teaches the wrong
  * syntax. Fresh agents reliably try the form shown in help text first, so a
- * string like `rdc repo fork <parent>` — when the real command requires
- * `--parent <parent>` — burns one failed command per session.
+ * string like `rdc machine query <name>` — when the real command requires
+ * `--name <name>` — burns one failed command per session.
  *
  * See issue #446.
  *
- * Config shape:
+ * Config shape (either-or):
  *
+ *   // Explicit form (retained for pinning specific commands with custom msg):
  *   {
  *     commands: [
- *       { path: 'repo fork',     requiredOptions: ['--parent'] },
- *       { path: 'repo takeover', requiredOptions: ['--target'] },
+ *       { path: 'repo fork', requiredOptions: ['--parent'] },
  *     ],
  *     exemptCommandPrefixes: ['rdc audit', 'rdc team', ...]
  *   }
  *
- * For each command, the rule auto-builds a regex that matches the command
- * path immediately followed by a placeholder `<...>` or handlebars `{{...}}`
- * — the two forms that unambiguously teach positional syntax. Correct
- * documentation (`repo fork --parent <name>`) has `--` after the command and
- * never matches.
+ *   // Auto-derive from packages/cli/scripts/command-tree.json (preferred):
+ *   {
+ *     autoDerive: true,
+ *     exemptCommandPrefixes: ['rdc audit', ...],
+ *   }
+ *
+ * In autoDerive mode the rule reads command-tree.json at init time and flags
+ * any text that matches `rdc <leaf-command-path> <non-flag>` for every leaf
+ * command whose arguments array is empty. This keeps the denylist in sync
+ * with the Commander source automatically.
+ *
+ * The detector logic is duplicated here from scripts/lib/positional-cli-detector.ts
+ * because ESLint rules are plain JS (no tsx) and must stay self-contained.
  */
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const COMMAND_TREE_PATH = path.resolve(
+  __dirname,
+  '../../packages/cli/scripts/command-tree.json'
+);
+
+const FREEFORM_ARG_COMMAND_PATHS = new Set([
+  'agent schema',
+  'agent exec',
+  'mcp capabilities',
+  'mcp schema',
+  'mcp exec',
+  'run',
+]);
 
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
- * Build a detection regex for a command path. The path segments are separated
- * by any whitespace, with an optional `rdc` prefix.
+ * Build a detection regex for a command path. Matches when the command path
+ * is immediately followed by a non-flag token (placeholder, interpolation,
+ * literal). Does NOT match when `--flag` follows, or when the line ends
+ * immediately after the path.
  */
+/** Match any non-flag token after the command path. Used for leaf commands. */
 const buildCommandRegex = (commandPath) => {
   const segments = commandPath.trim().split(/\s+/).map(escapeRegex).join('\\s+');
-  // (?:^|\s) — command starts at a word boundary
-  // (?:rdc\s+)? — optional 'rdc' prefix (workflow diagrams often drop it)
-  // <segments>\s+ — the command path followed by whitespace
-  // (?:<|\{\{) — a placeholder '<name>' or interpolation '{{name}}' (the
-  // forms that teach positional syntax). When --parent/--flag is used, '-'
-  // follows instead and never matches.
-  return new RegExp(`(?:^|\\s)(?:rdc\\s+)?${segments}\\s+(?:<|\\{\\{)`);
+  return new RegExp(
+    `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?=[<{\\["'a-zA-Z0-9])`
+  );
+};
+
+/** Match only placeholder/interpolation next token. Used for ALL commands
+ *  (a placeholder is never a valid subcommand name, so even parent paths
+ *  should reject this form). */
+const buildPlaceholderOnlyRegex = (commandPath) => {
+  const segments = commandPath.trim().split(/\s+/).map(escapeRegex).join('\\s+');
+  return new RegExp(
+    `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?=<[a-zA-Z_][\\w-]*>|\\{\\{[a-zA-Z_]\\w*\\}\\})`
+  );
+};
+
+let cachedLeafPaths = null;
+let cachedAllPaths = null;
+
+const loadPathsFromTree = () => {
+  if (cachedLeafPaths && cachedAllPaths) {
+    return { leaves: cachedLeafPaths, all: cachedAllPaths };
+  }
+  const raw = fs.readFileSync(COMMAND_TREE_PATH, 'utf-8');
+  const tree = JSON.parse(raw);
+  const leaves = new Set();
+  const all = new Set();
+  const walk = (node, parts) => {
+    if (parts.length > 0) {
+      const commandPath = parts.join(' ');
+      if (!FREEFORM_ARG_COMMAND_PATHS.has(commandPath)) {
+        all.add(commandPath);
+        const isLeaf = (node.subcommands ?? []).length === 0;
+        if (isLeaf && (node.arguments ?? []).length === 0) {
+          leaves.add(commandPath);
+        }
+      }
+    }
+    for (const sub of node.subcommands ?? []) walk(sub, [...parts, sub.name]);
+  };
+  walk(tree, []);
+  cachedLeafPaths = leaves;
+  cachedAllPaths = all;
+  return { leaves, all };
 };
 
 /** @type {import('eslint').Rule.RuleModule} */
@@ -57,21 +123,20 @@ export const noPositionalCliSyntax = {
       {
         type: 'object',
         properties: {
+          autoDerive: {
+            type: 'boolean',
+            description:
+              'Derive the zero-positional command set automatically from packages/cli/scripts/command-tree.json.',
+          },
           commands: {
             type: 'array',
             items: {
               type: 'object',
               properties: {
-                path: {
-                  type: 'string',
-                  description:
-                    'Space-separated command path, e.g. "repo fork" or "machine vault set".',
-                },
+                path: { type: 'string' },
                 requiredOptions: {
                   type: 'array',
                   items: { type: 'string' },
-                  description:
-                    'The --flag names this command requires (shown in the error message).',
                 },
               },
               required: ['path', 'requiredOptions'],
@@ -81,29 +146,60 @@ export const noPositionalCliSyntax = {
           exemptCommandPrefixes: {
             type: 'array',
             items: { type: 'string' },
-            description:
-              'Values whose trimmed start matches any of these strings are skipped (for legacy/cloud-adapter commands that use positional subcommands legitimately).',
           },
         },
         additionalProperties: false,
       },
     ],
     messages: {
-      positionalSyntax:
+      positionalSyntaxExplicit:
         'Locale string "{{key}}" teaches positional syntax for `{{path}}`, but this command requires {{requiredOptions}}. Rewrite the example to use the named form (e.g., `{{path}} {{firstOption}} <name>`). See issue #446.',
+      positionalSyntaxDerived:
+        'Locale string "{{key}}" teaches positional syntax for `{{path}}`. This command accepts zero positional arguments — use named options instead (e.g., `{{path}} --name <value>`). See issue #446.',
     },
   },
 
   create(context) {
     const options = context.options[0] || {};
-    const commands = (options.commands || []).map((c) => ({
+    const autoDerive = Boolean(options.autoDerive);
+    const exemptCommandPrefixes = options.exemptCommandPrefixes || [];
+
+    const explicitCommands = (options.commands || []).map((c) => ({
       path: c.path,
       regex: buildCommandRegex(c.path),
       requiredOptions: c.requiredOptions,
+      source: 'explicit',
     }));
-    const exemptCommandPrefixes = options.exemptCommandPrefixes || [];
 
-    if (commands.length === 0) return {};
+    let derivedCommands = [];
+    if (autoDerive) {
+      const { leaves, all } = loadPathsFromTree();
+      // Leaf-command pass: reject ANY non-flag next token. Sorted
+      // longest-first so the most specific leaf wins on dedup.
+      const sortedLeaves = [...leaves].sort((a, b) => b.length - a.length);
+      for (const p of sortedLeaves) {
+        derivedCommands.push({
+          path: p,
+          regex: buildCommandRegex(p),
+          requiredOptions: [],
+          source: 'derived',
+        });
+      }
+      // All-paths pass: reject placeholder/interpolation next token.
+      // Sorted longest-first so the most specific path wins.
+      const sortedAll = [...all].sort((a, b) => b.length - a.length);
+      for (const p of sortedAll) {
+        derivedCommands.push({
+          path: p,
+          regex: buildPlaceholderOnlyRegex(p),
+          requiredOptions: [],
+          source: 'derived',
+        });
+      }
+    }
+
+    const allCommands = [...explicitCommands, ...derivedCommands];
+    if (allCommands.length === 0) return {};
 
     const isExempt = (value) => {
       const trimmed = value.trimStart();
@@ -128,20 +224,52 @@ export const noPositionalCliSyntax = {
           checkObject(value, fullPath);
         } else if (value?.type === 'String') {
           const strValue = value.value;
-          if (isExempt(strValue)) continue;
-
-          for (const command of commands) {
-            if (command.regex.test(strValue)) {
-              context.report({
-                node: value,
-                messageId: 'positionalSyntax',
-                data: {
-                  key: fullPath,
-                  path: command.path,
-                  requiredOptions: command.requiredOptions.join(', '),
-                  firstOption: command.requiredOptions[0],
-                },
-              });
+          const lines = strValue.split(/\r?\n/);
+          for (const line of lines) {
+            if (isExempt(line.trimStart())) continue;
+            // Dedupe per-line per-rdc-position so a longer match wins.
+            const reported = new Set();
+            for (const command of allCommands) {
+              const m = command.regex.exec(line);
+              if (!m) continue;
+              const rdcIndex = line.indexOf('rdc ', m.index);
+              // Skip Commander usage placeholders like `[options]`,
+              // `[command...]` — these aren't teaching positional syntax.
+              const trailing = line.slice(rdcIndex);
+              const afterPath = trailing.slice(`rdc ${command.path} `.length);
+              if (
+                /^\[options\](?!\w)/.test(afterPath) ||
+                /^\[command\.\.\.\](?!\w)/.test(afterPath) ||
+                /^\[command\](?!\w)/.test(afterPath) ||
+                /^\[komut\.\.\.\](?!\w)/.test(afterPath) ||
+                /^\[seçenekler\](?!\w)/.test(afterPath)
+              ) {
+                continue;
+              }
+              const posKey = `${rdcIndex}`;
+              if (reported.has(posKey)) continue;
+              reported.add(posKey);
+              if (command.source === 'explicit') {
+                context.report({
+                  node: value,
+                  messageId: 'positionalSyntaxExplicit',
+                  data: {
+                    key: fullPath,
+                    path: command.path,
+                    requiredOptions: command.requiredOptions.join(', '),
+                    firstOption: command.requiredOptions[0],
+                  },
+                });
+              } else {
+                context.report({
+                  node: value,
+                  messageId: 'positionalSyntaxDerived',
+                  data: {
+                    key: fullPath,
+                    path: command.path,
+                  },
+                });
+              }
             }
           }
         }

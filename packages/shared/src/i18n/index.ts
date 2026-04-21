@@ -30,15 +30,15 @@ export * from './types';
  * Static translations map for sync loading (CLI).
  */
 const translationsMap: Record<SupportedLanguage, SharedCommonTranslations> = {
-  en: en as SharedCommonTranslations,
-  de: de as SharedCommonTranslations,
-  es: es as SharedCommonTranslations,
-  fr: fr as SharedCommonTranslations,
-  ja: ja as SharedCommonTranslations,
-  ar: ar as SharedCommonTranslations,
-  ru: ru as SharedCommonTranslations,
-  tr: tr as SharedCommonTranslations,
-  zh: zh as SharedCommonTranslations,
+  en,
+  de,
+  es,
+  fr,
+  ja,
+  ar,
+  ru,
+  tr,
+  zh,
 };
 
 /**

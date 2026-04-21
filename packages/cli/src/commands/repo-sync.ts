@@ -1,5 +1,3 @@
-import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
 import {
   createTempKnownHostsFile,
   createTempSSHKeyFile,
@@ -8,16 +6,13 @@ import {
 } from '@rediacc/shared-desktop/ssh';
 import {
   executeRsync,
-  formatChangesSummary,
-  formatDetailedChanges,
-  getRsyncPreview,
-  type RsyncChanges,
   type RsyncExecutorOptions,
   sftpDownloadDirectory,
-  sftpUploadDirectory,
+  sftpDownloadFile,
+  sftpUploadPaths,
+  type SftpUploadSource,
 } from '@rediacc/shared-desktop/sync';
 import type { SyncProgress } from '@rediacc/shared-desktop/types';
-import chalk from 'chalk';
 import type { Command } from 'commander';
 import ora from 'ora';
 import { t } from '../i18n/index.js';
@@ -31,113 +26,19 @@ import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-p
 import { auditService } from '../services/audit.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
+import {
+  formatBytes,
+  handleConfirmMode,
+  handleDryRun,
+  resolveUploadLocalPaths,
+  type SyncDownloadOptions,
+  type SyncUploadOptions,
+  validateDownloadOptions,
+  withTrailingSlash,
+} from './repo-sync-helpers.js';
 
-interface SyncUploadOptions {
-  team?: string;
-  machine?: string;
-  repository?: string;
-  local?: string;
-  remote?: string;
-  mirror?: boolean;
-  verify?: boolean;
-  confirm?: boolean;
-  exclude?: string[];
-  dryRun?: boolean;
-  [key: string]: unknown;
-}
-
-interface SyncDownloadOptions {
-  team?: string;
-  machine?: string;
-  repository?: string;
-  local?: string;
-  remote?: string;
-  mirror?: boolean;
-  verify?: boolean;
-  confirm?: boolean;
-  exclude?: string[];
-  dryRun?: boolean;
-  [key: string]: unknown;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-}
-
-async function interactiveConfirmation(changes: RsyncChanges): Promise<boolean> {
-  const readline = await import('node:readline');
-  process.stdout.write(`${formatChangesSummary(changes)}\n`);
-
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  const ask = (): Promise<string> =>
-    new Promise((resolve) => {
-      rl.question(t('prompts.syncConfirm'), resolve);
-    });
-
-  let answered = false;
-  let proceed = false;
-
-  while (!answered) {
-    const answer = (await ask()).toLowerCase().trim();
-    switch (answer) {
-      case 'y':
-      case 'yes':
-        proceed = true;
-        answered = true;
-        break;
-      case 'n':
-      case 'no':
-      case '':
-        proceed = false;
-        answered = true;
-        break;
-      case 'd':
-      case 'details':
-        process.stdout.write(
-          `${formatDetailedChanges(changes, {
-            colorNew: chalk.green,
-            colorModified: chalk.yellow,
-            colorDeleted: chalk.red,
-            colorDim: chalk.dim,
-          })}\n`
-        );
-        process.stdout.write(`\n${formatChangesSummary(changes)}\n`);
-        break;
-      default:
-        process.stdout.write(`${t('prompts.syncConfirmHelp')}\n`);
-    }
-  }
-
-  rl.close();
-  return proceed;
-}
-
-function resolveUploadLocalPath(local: string | undefined): string {
-  let localPath = resolve(local ?? process.cwd());
-  if (!existsSync(localPath)) {
-    throw new Error(t('errors.sync.localPathNotFound', { path: localPath }));
-  }
-  if (!localPath.endsWith('/')) {
-    localPath += '/';
-  }
-  return localPath;
-}
-
-function hasNoChanges(changes: RsyncChanges): boolean {
-  return (
-    changes.newFiles.length === 0 &&
-    changes.modifiedFiles.length === 0 &&
-    changes.deletedFiles.length === 0
-  );
-}
+export { resolveUploadLocalPaths } from './repo-sync-helpers.js';
+export type { ResolvedLocalSource } from './repo-sync-helpers.js';
 
 async function ensureRenetProvisioned(machineName: string): Promise<void> {
   try {
@@ -149,36 +50,6 @@ async function ensureRenetProvisioned(machineName: string): Promise<void> {
   } catch {
     // Non-fatal — sync may still work with existing renet on remote
   }
-}
-
-async function handleConfirmMode(
-  rsyncOptions: RsyncExecutorOptions,
-  options: { confirm?: boolean; dryRun?: boolean }
-): Promise<boolean> {
-  if (!options.confirm || options.dryRun) return true;
-
-  process.stdout.write(`${t('commands.sync.previewingChanges')}\n`);
-
-  const changes = await getRsyncPreview(rsyncOptions);
-
-  if (hasNoChanges(changes)) {
-    process.stdout.write(`${t('commands.sync.noChanges')}\n`);
-    return false;
-  }
-
-  const proceed = await interactiveConfirmation(changes);
-  if (!proceed) {
-    process.stdout.write(`${t('commands.sync.cancelled')}\n`);
-    return false;
-  }
-
-  return true;
-}
-
-async function handleDryRun(rsyncOptions: RsyncExecutorOptions): Promise<void> {
-  process.stdout.write(`${t('commands.sync.dryRunHeader')}\n`);
-  const changes = await getRsyncPreview(rsyncOptions);
-  process.stdout.write(`${formatChangesSummary(changes)}\n`);
 }
 
 function displaySyncResult(
@@ -270,7 +141,8 @@ interface SyncConnectionContext {
 
 async function prepareSyncConnection(
   validated: ValidatedSyncOptions,
-  remoteSubPath: string | undefined
+  remoteSubPath: string | undefined,
+  opts: { isFile?: boolean } = {}
 ): Promise<SyncConnectionContext> {
   await ensureRenetProvisioned(validated.machine);
   await deployRepoKeyIfNeeded(validated.repository, validated.machine);
@@ -281,10 +153,18 @@ async function prepareSyncConnection(
 
   const baseRemotePath =
     details.workingDirectory ?? `${details.datastore}/mounts/${validated.repository}`;
-  const remotePath = remoteSubPath ? `${baseRemotePath}/${remoteSubPath}/` : `${baseRemotePath}/`;
 
-  // SFTP in sandbox mode uses relative paths from the repo mount root
-  const sftpRemotePath = remoteSubPath ? `${remoteSubPath}/` : '.';
+  let remotePath: string;
+  let sftpRemotePath: string;
+  if (opts.isFile) {
+    // Single-file mode: no trailing slash so rsync treats source/dest as a file.
+    const sub = remoteSubPath ?? '';
+    remotePath = `${baseRemotePath}/${sub}`;
+    sftpRemotePath = sub;
+  } else {
+    remotePath = remoteSubPath ? `${baseRemotePath}/${remoteSubPath}/` : `${baseRemotePath}/`;
+    sftpRemotePath = remoteSubPath ? `${remoteSubPath}/` : '.';
+  }
 
   const sftpConfig = {
     host: details.host,
@@ -365,8 +245,20 @@ async function executeSyncWithSftpFallback(
 async function syncUpload(options: SyncUploadOptions): Promise<void> {
   const startTime = Date.now();
   const validated = await validateSyncOptions(options, CMD.REPO_SYNC_UPLOAD);
-  const localPath = resolveUploadLocalPath(options.local);
+  const sources = resolveUploadLocalPaths(options.local);
+  if (options.mirror && sources.some((s) => s.isFile)) {
+    throw new Error(t('errors.sync.mirrorWithFile'));
+  }
   const ctx = await prepareSyncConnection(validated, options.remote);
+
+  // rsync accepts either a single source string (dir with trailing slash or a file)
+  // or an array of sources when the user passes multiple --local paths.
+  const rsyncSource: string | string[] =
+    sources.length === 1 ? sources[0].path : sources.map((s) => s.path);
+  const sftpSources: SftpUploadSource[] = sources.map((s) => ({
+    path: s.rawPath,
+    isFile: s.isFile,
+  }));
 
   let success = true;
   let error: string | undefined;
@@ -374,7 +266,7 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
     await withTempSshFiles(ctx.details, async (keyFilePath, knownHostsPath) => {
       const rsyncOptions: RsyncExecutorOptions = {
         sshOptions: buildSshOptions(knownHostsPath, ctx.details.port, keyFilePath),
-        source: localPath,
+        source: rsyncSource,
         destination: `${ctx.details.user}@${ctx.details.host}:${ctx.remotePath}`,
         mirror: options.mirror,
         verify: options.verify,
@@ -388,7 +280,7 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
 
       if (options.dryRun) {
         await handleDryRunWithSftpFallback(rsyncOptions, () =>
-          sftpUploadDirectory(localPath, ctx.sftpRemotePath, ctx.sftpConfig, {
+          sftpUploadPaths(sftpSources, ctx.sftpRemotePath, ctx.sftpConfig, {
             exclude: options.exclude,
             dryRun: true,
           })
@@ -397,7 +289,7 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
       }
 
       await executeSyncWithSftpFallback(rsyncOptions, 'upload', (spinner) =>
-        sftpUploadDirectory(localPath, ctx.sftpRemotePath, ctx.sftpConfig, {
+        sftpUploadPaths(sftpSources, ctx.sftpRemotePath, ctx.sftpConfig, {
           exclude: options.exclude,
           onProgress: (file) => {
             spinner.text = `Uploading: ${file}`;
@@ -424,11 +316,25 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
   }
 }
 
+function sftpDownloadTransfer(
+  isFileMode: boolean,
+  ctx: SyncConnectionContext,
+  localPath: string,
+  sftpOptions: Parameters<typeof sftpDownloadDirectory>[3]
+): ReturnType<typeof sftpDownloadDirectory> {
+  return isFileMode
+    ? sftpDownloadFile(ctx.sftpRemotePath, localPath, ctx.sftpConfig, sftpOptions)
+    : sftpDownloadDirectory(ctx.sftpRemotePath, localPath, ctx.sftpConfig, sftpOptions);
+}
+
 async function syncDownload(options: SyncDownloadOptions): Promise<void> {
   const startTime = Date.now();
   const validated = await validateSyncOptions(options, CMD.REPO_SYNC_DOWNLOAD);
-  const localPath = resolve(options.local ?? process.cwd());
-  const ctx = await prepareSyncConnection(validated, options.remote);
+  const { localPath, isFileMode } = validateDownloadOptions(options);
+  const ctx = await prepareSyncConnection(validated, options.remoteFile ?? options.remote, {
+    isFile: isFileMode,
+  });
+  const destination = isFileMode ? withTrailingSlash(localPath) : localPath;
 
   let success = true;
   let error: string | undefined;
@@ -437,7 +343,7 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
       const rsyncOptions: RsyncExecutorOptions = {
         sshOptions: buildSshOptions(knownHostsPath, ctx.details.port, keyFilePath),
         source: `${ctx.details.user}@${ctx.details.host}:${ctx.remotePath}`,
-        destination: localPath,
+        destination,
         mirror: options.mirror,
         verify: options.verify,
         exclude: options.exclude,
@@ -449,13 +355,13 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
 
       if (options.dryRun) {
         await handleDryRunWithSftpFallback(rsyncOptions, () =>
-          sftpDownloadDirectory(ctx.sftpRemotePath, localPath, ctx.sftpConfig, { dryRun: true })
+          sftpDownloadTransfer(isFileMode, ctx, localPath, { dryRun: true })
         );
         return;
       }
 
       await executeSyncWithSftpFallback(rsyncOptions, 'download', (spinner) =>
-        sftpDownloadDirectory(ctx.sftpRemotePath, localPath, ctx.sftpConfig, {
+        sftpDownloadTransfer(isFileMode, ctx, localPath, {
           onProgress: (file) => {
             spinner.text = `Downloading: ${file}`;
           },
@@ -507,7 +413,7 @@ ${t('help.examples')}
     .option('-t, --team <name>', t('options.team'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('-r, --repository <name>', t('options.repository'))
-    .option('--local <path>', t('options.localPath'))
+    .option('--local <paths...>', t('options.localPaths'))
     .option('--remote <path>', t('options.remotePath'))
     .option('--mirror', t('options.mirrorUpload'))
     .option('--verify', t('options.verifyChecksum'))
@@ -536,6 +442,7 @@ ${t('help.examples')}
     .option('-r, --repository <name>', t('options.repository'))
     .option('--local <path>', t('options.localPath'))
     .option('--remote <path>', t('options.remotePath'))
+    .option('--remote-file <path>', t('options.remoteFile'))
     .option('--mirror', t('options.mirrorDownload'))
     .option('--verify', t('options.verifyChecksum'))
     .option('--confirm', t('options.confirmSync'))
@@ -563,6 +470,7 @@ ${t('help.examples')}
     .option('-r, --repository <name>', t('options.repository'))
     .option('--local <path>', t('options.localPath'))
     .option('--remote <path>', t('options.remotePath'))
+    .option('--remote-file <path>', t('options.remoteFile'))
     .action(async (options: SyncDownloadOptions) => {
       try {
         const provider = await getStateProvider();

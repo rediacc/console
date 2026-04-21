@@ -487,7 +487,7 @@ class RenetProvisionerService {
         source: localBinaryPath,
         destination,
         remoteRsyncPath,
-      } as Parameters<typeof executeRsync>[0]);
+      });
       if (!result.success) {
         throw new Error(result.errors.join('\n') || 'rsync transfer failed');
       }

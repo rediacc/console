@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: fr
-sourceHash: "2c2d289c280e2a7f"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 342214c5a4cf9321
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # Architecture
@@ -46,7 +46,7 @@ Le mode par défaut pour un usage auto-hébergé. Tout l'état réside dans un f
 - Connexions SSH directes aux machines
 - Aucun service externe requis
 - Mono-utilisateur, mono-poste
-- La configuration par défaut est créée automatiquement au premier lancement du CLI. Les configurations nommées sont créées avec `rdc config init <name>`
+- La configuration par défaut est créée automatiquement au premier lancement du CLI. Les configurations nommées sont créées avec `rdc config init --name <name>`
 
 ### Adaptateur cloud (expérimental)
 

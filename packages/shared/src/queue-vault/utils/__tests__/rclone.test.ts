@@ -383,7 +383,7 @@ describe('mapRcloneToStorageProvider', () => {
       type: 'drive',
       config: {
         type: 'drive',
-        token: { access_token: 'ya29.test', expiry: '2026-01-01' } as unknown as string,
+        token: { access_token: 'ya29.test', expiry: '2026-01-01' },
       },
     };
 

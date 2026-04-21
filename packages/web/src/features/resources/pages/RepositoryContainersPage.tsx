@@ -126,7 +126,7 @@ const RepoContainersPage: React.FC = () => {
   const handleContainerClick = (
     container: PluginContainer | { id: string; name: string; state: string; [key: string]: unknown }
   ) => {
-    setSelectedContainer(container as PluginContainer);
+    setSelectedContainer(container);
   };
 
   // Loading state

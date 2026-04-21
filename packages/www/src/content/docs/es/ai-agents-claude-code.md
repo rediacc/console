@@ -1,10 +1,12 @@
 ---
 title: Guía de configuración de Claude Code
-description: Guía paso a paso para configurar Claude Code para la gestión autónoma de infraestructura Rediacc.
+description: >-
+  Guía paso a paso para configurar Claude Code para la gestión autónoma de
+  infraestructura Rediacc.
 category: Guides
 order: 31
 language: es
-sourceHash: "1a9f31b2430273f9"
+sourceHash: 7f38feb385e7e005
 ---
 
 Claude Code funciona de forma nativa con Rediacc a través del CLI `rdc`. Esta guía cubre la configuración, los permisos y los flujos de trabajo habituales.
@@ -27,11 +29,11 @@ Coloque esto en la raíz de su proyecto. Consulte la [plantilla AGENTS.md](/es/d
 ## CLI Tool: rdc
 
 ### Common Operations
-- Status: rdc machine query <machine> -o json
-- Deploy: rdc repo up <repo> -m <machine> --yes
-- Containers: rdc machine containers <machine> -o json
-- Health: rdc machine health <machine> -o json
-- SSH: rdc term <machine> [repo]
+- Status: rdc machine query --name <machine> -o json
+- Deploy: rdc repo up --name <repo> -m <machine> --yes
+- Containers: rdc machine containers --name <machine> -o json
+- Health: rdc machine health --name <machine> -o json
+- SSH: rdc term connect -m <machine> [repo]
 
 ### Rules
 - Always use --output json when parsing output
@@ -57,7 +59,7 @@ Para operaciones destructivas (`rdc repo up`, `rdc repo delete`), Claude Code si
 ```
 You: "What's the status of prod-1?"
 
-Claude Code runs: rdc machine query prod-1 -o json
+Claude Code runs: rdc machine query --name prod-1 -o json
 → Shows machine status, repositories, containers, services
 ```
 
@@ -66,9 +68,9 @@ Claude Code runs: rdc machine query prod-1 -o json
 ```
 You: "Deploy the mail repo to prod-1"
 
-Claude Code runs: rdc repo up mail -m prod-1 --dry-run -o json
+Claude Code runs: rdc repo up --name mail -m prod-1 --dry-run -o json
 → Shows what would happen
-Claude Code runs: rdc repo up mail -m prod-1 --yes
+Claude Code runs: rdc repo up --name mail -m prod-1 --yes
 → Deploys the repository
 ```
 
@@ -77,7 +79,7 @@ Claude Code runs: rdc repo up mail -m prod-1 --yes
 ```
 You: "Why is the nextcloud container unhealthy?"
 
-Claude Code runs: rdc machine containers prod-1 -o json --fields name,status,repository
+Claude Code runs: rdc machine containers --name prod-1 -o json --fields name,status,repository
 → Lists container states
 Claude Code runs: rdc term prod-1 -c "docker logs nextcloud-app --tail 50"
 → Checks recent logs

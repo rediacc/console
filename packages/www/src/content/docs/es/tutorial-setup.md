@@ -1,10 +1,12 @@
 ---
-title: "Configuración de máquina"
-description: "Cree un perfil de configuración, registre una máquina remota, verifique la conectividad SSH y configure los ajustes de infraestructura."
-category: "Tutorials"
+title: Configuración de máquina
+description: >-
+  Cree un perfil de configuración, registre una máquina remota, verifique la
+  conectividad SSH y configure los ajustes de infraestructura.
+category: Tutorials
 order: 2
 language: es
-sourceHash: "2a32100e76d41bc0"
+sourceHash: 0c36a98feadd7aaa
 ---
 
 # Cómo configurar una máquina con Rediacc
@@ -103,7 +105,7 @@ Verifique la configuración:
 rdc config infra show -m bridge-vm
 ```
 
-Implemente la configuración de proxy Traefik generada en el servidor con `rdc config infra push bridge-vm`.
+Implemente la configuración de proxy Traefik generada en el servidor con `rdc config infra push -m bridge-vm`.
 
 ## Solución de problemas
 
@@ -114,7 +116,7 @@ Verifique que la ruta de clave pasada a `config init` exista y coincida con `aut
 Confirme que el servidor esté ejecutándose y que la IP sea correcta. Verifique que el puerto 22 esté abierto: `nc -zv <ip> 22`. Si usa un puerto no estándar, pase `--port` al agregar la máquina.
 
 **"Host key verification failed"**
-La clave de host almacenada no coincide con la clave actual del servidor. Esto ocurre después de una reconstrucción del servidor o reasignación de IP. Ejecute `rdc config machine scan-keys <machine>` para actualizar la clave.
+La clave de host almacenada no coincide con la clave actual del servidor. Esto ocurre después de una reconstrucción del servidor o reasignación de IP. Ejecute `rdc config machine scan-keys -m <machine>` para actualizar la clave.
 
 ## Próximos pasos
 

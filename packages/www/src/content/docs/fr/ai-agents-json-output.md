@@ -1,10 +1,12 @@
 ---
 title: Référence de la sortie JSON
-description: Référence complète du format de sortie JSON du CLI rdc, schéma de l'enveloppe, gestion des erreurs et commandes de découverte pour les agents.
+description: >-
+  Référence complète du format de sortie JSON du CLI rdc, schéma de l'enveloppe,
+  gestion des erreurs et commandes de découverte pour les agents.
 category: Reference
 order: 51
 language: fr
-sourceHash: "11259cd1eeebf361"
+sourceHash: 43cdbf89d4314d73
 ---
 
 Toutes les commandes `rdc` prennent en charge la sortie JSON structurée pour la consommation programmatique par les agents IA et les scripts.
@@ -24,7 +26,7 @@ Lorsque `rdc` s'exécute dans un environnement non-TTY (tube, sous-shell ou lanc
 
 ```bash
 # These all produce JSON automatically
-result=$(rdc machine query prod-1)
+result=$(rdc machine query --name prod-1)
 echo '{}' | rdc agent exec "machine query"
 ```
 
@@ -106,7 +108,7 @@ Les erreurs non réessayables (authentification, non trouvé, arguments invalide
 Utilisez `--fields` pour limiter la sortie à des clés spécifiques. Cela réduit l'utilisation de tokens quand seules des données spécifiques sont nécessaires :
 
 ```bash
-rdc machine containers prod-1 -o json --fields name,status,repository
+rdc machine containers --name prod-1 -o json --fields name,status,repository
 ```
 
 ## Sortie de simulation
@@ -192,7 +194,7 @@ Accepte du JSON sur stdin, associe les clés aux arguments et options de la comm
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine query prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python

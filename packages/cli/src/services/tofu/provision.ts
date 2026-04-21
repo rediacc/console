@@ -153,7 +153,7 @@ async function loadSSHPublicKey(): Promise<{
   }
   if (!sshPublicKey) {
     throw new Error(
-      'SSH public key required for cloud provisioning. Set with: rdc config init <name> --ssh-key <path>'
+      'SSH public key required for cloud provisioning. Set with: rdc config init --name <name> --ssh-key <path>'
     );
   }
   return { localConfig, sshPublicKey };

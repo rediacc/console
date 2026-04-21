@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { SolutionCategory } from '../config/solution-pages';
 import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
@@ -45,7 +44,7 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({ lang = 'en' }) => {
           description: t(`featureShowcase.categoryDescriptions.${cat}`),
           tutorialSrc: TUTORIAL_BY_CATEGORY[cat],
           solutions,
-          Icon: CATEGORY_ICONS[cat as SolutionCategory],
+          Icon: CATEGORY_ICONS[cat],
         };
       }),
     [t, to]

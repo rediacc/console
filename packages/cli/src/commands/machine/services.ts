@@ -65,13 +65,15 @@ function formatServicesForTable(
 
 export function registerServicesCommand(machine: Command, program: Command): void {
   machine
-    .command('services <name>')
+    .command('services')
     .summary(t('commands.machine.services.descriptionShort'))
     .description(t('commands.machine.services.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .option('-t, --team <name>', t('options.team'))
     .option('--stability-check', t('commands.machine.services.stabilityCheck'))
-    .action(async (name: string, options: { team?: string; stabilityCheck?: boolean }) => {
+    .action(async (options: { name: string; team?: string; stabilityCheck?: boolean }) => {
       try {
+        const name = options.name;
         const provider = await getStateProvider();
         if (provider.isCloud) {
           await authService.requireAuth();

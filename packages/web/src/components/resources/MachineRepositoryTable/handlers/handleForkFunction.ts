@@ -1,4 +1,3 @@
-import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import { showMessage } from '@/utils/messages';
 import type { FunctionExecutionContext } from '../hooks/useFunctionExecution';
 import { getGrandRepoVault, getRequiredTag } from '../hooks/useFunctionExecution';
@@ -85,7 +84,7 @@ export const handleForkFunction = async (
   const grandRepoVault = getGrandRepoVault(RepoData, teamRepositories);
 
   try {
-    const result = await executeDynamic('backup_push' as BridgeFunctionName, {
+    const result = await executeDynamic('backup_push', {
       params: {
         repository: RepoData.repositoryGuid,
         repositoryName: RepoData.repositoryName,

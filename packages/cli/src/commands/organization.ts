@@ -59,7 +59,7 @@ export function registerOrganizationCommands(program: Command): void {
           t('commands.organization.dashboard.success')
         );
 
-        const dashboard = parseGetOrganizationDashboard(apiResponse as never);
+        const dashboard = parseGetOrganizationDashboard(apiResponse);
         const format = program.opts().output as OutputFormat;
 
         outputService.print(dashboard, format);

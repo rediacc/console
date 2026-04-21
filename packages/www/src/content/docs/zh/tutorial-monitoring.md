@@ -1,10 +1,10 @@
 ---
-title: "监控与诊断"
-description: "检查机器健康状况、检查容器、查看 systemd 服务、扫描主机密钥和运行环境诊断。"
-category: "Tutorials"
+title: 监控与诊断
+description: 检查机器健康状况、检查容器、查看 systemd 服务、扫描主机密钥和运行环境诊断。
+category: Tutorials
 order: 4
 language: zh
-sourceHash: "2efd897e27dca34e"
+sourceHash: fa85cf9b00d42a6e
 ---
 
 # 如何使用 Rediacc 监控和诊断基础设施
@@ -33,7 +33,7 @@ rdc doctor
 ### 步骤2: 机器健康检查
 
 ```bash
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 从远程机器获取全面的健康报告：系统运行时间、磁盘使用量、数据存储使用量、容器数量、存储 SMART 状态和已识别的问题。
@@ -41,7 +41,7 @@ rdc machine health server-1
 ### 步骤3: 查看运行中的容器
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 列出机器上所有仓库中所有运行中的容器，显示名称、状态、运行状态、健康状况、CPU 使用量、内存使用量以及每个容器所属的仓库。
@@ -51,7 +51,7 @@ rdc machine containers server-1
 要查看支撑每个仓库的 Docker daemon 和网络的底层服务：
 
 ```bash
-rdc machine services server-1
+rdc machine services --name server-1
 ```
 
 列出与 Rediacc 相关的 systemd 服务（Docker daemon、loopback 别名）及其状态、子状态、重启次数和内存使用量。
@@ -94,7 +94,7 @@ rdc term connect -m server-1 -c "uptime"
 Rediacc 服务仅在部署至少一个仓库后才会出现。如果没有仓库，服务列表为空。
 
 **容器列表显示过时或已停止的容器**
-如果 `repo down` 未干净执行，之前部署的容器可能会残留。使用 `rdc repo down <repo> -m <machine>` 停止它们，或通过 `rdc term connect -m <machine> -r <repo> -c "docker ps -a"` 直接检查。
+如果 `repo down` 未干净执行，之前部署的容器可能会残留。使用 `rdc repo down --name <repo> -m <machine>` 停止它们，或通过 `rdc term connect -m <machine> -r <repo> -c "docker ps -a"` 直接检查。
 
 ## 后续步骤
 

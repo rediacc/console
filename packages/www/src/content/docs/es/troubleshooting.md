@@ -1,11 +1,13 @@
 ---
-title: "Solución de problemas"
-description: "Soluciones para problemas comunes con SSH, configuración, repositorios, servicios y Docker."
-category: "Guides"
+title: Solución de problemas
+description: >-
+  Soluciones para problemas comunes con SSH, configuración, repositorios,
+  servicios y Docker.
+category: Guides
 order: 10
 language: es
-sourceHash: "ee8fe3ee7166cfe4"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 4575658381fb6508
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # Solución de problemas
@@ -15,7 +17,7 @@ Problemas comunes y sus soluciones. En caso de duda, comience con `rdc doctor` p
 ## Falla la conexión SSH
 
 - Verifique que puede conectarse manualmente: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Ejecute `rdc config machine scan-keys server-1` para actualizar las claves del host
+- Ejecute `rdc config machine scan-keys -m server-1` para actualizar las claves del host
 - Compruebe que el puerto SSH coincida: `--port 22`
 - Pruebe con un comando simple: `rdc term connect -m server-1 -c "hostname"`
 
@@ -33,7 +35,7 @@ Este comando obtiene claves de host nuevas y actualiza su configuración.
 
 - Asegúrese de que el usuario SSH tenga acceso sudo sin contraseña, o configure `NOPASSWD` para los comandos requeridos
 - Verifique el espacio en disco disponible en el servidor
-- Ejecute con `--debug` para una salida detallada: `rdc config machine setup server-1 --debug`
+- Ejecute con `--debug` para una salida detallada: `rdc config machine setup --name server-1 --debug`
 
 ## Problemas de configuración específicos de la distribución
 
@@ -100,7 +102,7 @@ rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 O vea todos los contenedores:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## Errores de permiso denegado

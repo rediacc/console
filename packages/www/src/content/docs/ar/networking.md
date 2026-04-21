@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 6
 language: ar
-sourceHash: "536db0c93646cad6"
-sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
+sourceHash: 5f8a1092ed53e1b4
+sourceCommit: 8b0f83c57ebaaa0a2bee93143db34ab677b4e68b
 ---
 
 # الشبكات
@@ -206,7 +206,7 @@ rdc config infra set -m server-1 \
 
 2. **التفريغ لكل مستودع (اختياري).** الخدمات التي تحتاج إلى ملفات شهادات داخل حاويتها الخاصة (مثل خادم بريد يقرأ `.pem` مباشرة) تنشر حاوية `traefik-certs-dumper` صغيرة بجانبها. يقوم المفرِّغ بتثبيت `/opt/rediacc/proxy/letsencrypt` للقراءة فقط ويكتب الشهادة والمفتاح المُستخرجَين في مجلد بيانات المستودع كـ `cert.pem` / `key.pem`. لهذا أن يعمل، يجب أن يكون Docker daemon الخاص بالمستودع قد أُضيف `/opt/rediacc/proxy` إلى قائمة السماح بمساحة الاسم. هذا مُضمَّن افتراضياً.
 
-3. **ذاكرة التخزين المؤقت من جانب العميل (`rediacc.json`).** يُخزّن CLI نسخة مضغوطة من `acme.json` تحت `acmeCertCache` في ملف تكوينك، مفهرسة بـ `baseDomain`. يتيح ذلك لأجهزة متعددة مشاركة الشهادات (عبر `rdc config cert-cache push <machine>`) ويعمل كسجل غير متصل بالشبكة.
+3. **ذاكرة التخزين المؤقت من جانب العميل (`rediacc.json`).** يُخزّن CLI نسخة مضغوطة من `acme.json` تحت `acmeCertCache` في ملف تكوينك، مفهرسة بـ `baseDomain`. يتيح ذلك لأجهزة متعددة مشاركة الشهادات (عبر `rdc config cert-cache push -m <machine>`) ويعمل كسجل غير متصل بالشبكة.
 
 **محفزات المزامنة لذاكرة التخزين المؤقت للعميل:**
 

@@ -23,7 +23,7 @@ import { clearAuthData, getAuthData, saveAuthData } from '@/utils/auth';
 import { MenuOutlined, SafetyCertificateOutlined, SmileOutlined } from '@/utils/optimizedIcons';
 import { HeaderActions } from './HeaderActions';
 import { filterRouteItems, flattenRoutePaths } from './helpers';
-import { getRoutes, RouteItem } from './routes';
+import { getRoutes } from './routes';
 import { SIDEBAR_EXPANDED_WIDTH } from './types';
 
 const MainLayout: React.FC = () => {
@@ -89,7 +89,7 @@ const MainLayout: React.FC = () => {
   // Filter menu based on uiMode, plan, feature flags
   const menuDataRender = useCallback(
     (menuData: MenuDataItem[]) => {
-      return filterRouteItems(menuData as RouteItem[], uiMode, organizationData) as MenuDataItem[];
+      return filterRouteItems(menuData, uiMode, organizationData) as MenuDataItem[];
     },
     [uiMode, organizationData]
   );

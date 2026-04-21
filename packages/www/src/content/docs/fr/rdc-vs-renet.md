@@ -1,11 +1,13 @@
 ---
 title: rdc vs renet
-description: Différences entre rdc et renet, et à quel moment utiliser chacun de ces éléments.
+description: >-
+  Différences entre rdc et renet, et à quel moment utiliser chacun de ces
+  éléments.
 category: Concepts
 order: 1
 language: fr
-sourceHash: "86bc5f8593d408de"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 526136e143dbcf08
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # rdc vs renet
@@ -47,7 +49,7 @@ rdc repo up --name my-app -m server-1
 rdc repo down --name my-app -m server-1
 
 # Vérifier la santé de la machine
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 Consultez le [Démarrage rapide](/fr/docs/quick-start) pour un guide complet.

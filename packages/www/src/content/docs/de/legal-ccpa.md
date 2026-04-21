@@ -34,7 +34,7 @@ Rediacc als Software greift nicht auf Verbraucherdaten zu, verarbeitet sie nicht
 
 Jedes Rediacc-Repository ist eine diskrete, verschlüsselte Dateneinheit mit einer eindeutigen GUID. Sie können genau inventarisieren, welche Daten wo vorhanden sind:
 
-- `rdc machine query <machine> --repositories` listet alle Repositories auf einer Maschine mit Größe und Mount-Status auf
+- `rdc machine query --name <machine> --repositories` listet alle Repositories auf einer Maschine mit Größe und Mount-Status auf
 - Jedes Repository ist auf Dateisystem-, Netzwerk- und Container-Ebene isoliert
 - Fork-Beziehungen werden verfolgt, sodass Sie alle Kopien eines Datensatzes identifizieren können
 

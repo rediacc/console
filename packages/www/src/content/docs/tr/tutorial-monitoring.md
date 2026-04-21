@@ -1,10 +1,12 @@
 ---
-title: "İzleme ve Tanılama"
-description: "Makine sağlığını kontrol edin, konteynerleri inceleyin, systemd servislerini gözden geçirin, host anahtarlarını tarayın ve ortam tanılamalarını çalıştırın."
-category: "Tutorials"
+title: İzleme ve Tanılama
+description: >-
+  Makine sağlığını kontrol edin, konteynerleri inceleyin, systemd servislerini
+  gözden geçirin, host anahtarlarını tarayın ve ortam tanılamalarını çalıştırın.
+category: Tutorials
 order: 4
 language: tr
-sourceHash: "2efd897e27dca34e"
+sourceHash: fa85cf9b00d42a6e
 ---
 
 # Rediacc ile Altyapıyı İzleme ve Tanılama
@@ -33,7 +35,7 @@ Node.js, CLI sürümü, renet ikili dosyası, yapılandırma ve sanallaştırma 
 ### Adım 2: Makine sağlık kontrolü
 
 ```bash
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 Uzak makineden kapsamlı bir sağlık raporu alır: sistem çalışma süresi, disk kullanımı, veri deposu kullanımı, konteyner sayıları, depolama SMART durumu ve tespit edilen sorunlar.
@@ -41,7 +43,7 @@ Uzak makineden kapsamlı bir sağlık raporu alır: sistem çalışma süresi, d
 ### Adım 3: Çalışan konteynerleri görüntüleyin
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 Makinedeki tüm depolardaki tüm çalışan konteynerleri listeler; ad, durum, hal, sağlık, CPU kullanımı, bellek kullanımı ve her konteynerin hangi depoya ait olduğunu gösterir.
@@ -51,7 +53,7 @@ Makinedeki tüm depolardaki tüm çalışan konteynerleri listeler; ad, durum, h
 Her deponun Docker daemon ve ağını çalıştıran temel servisleri görmek için:
 
 ```bash
-rdc machine services server-1
+rdc machine services --name server-1
 ```
 
 Rediacc ile ilgili systemd servislerini (Docker daemon'ları, loopback takma adları) durumları, alt durumları, yeniden başlatma sayıları ve bellek kullanımları ile listeler.
@@ -94,7 +96,7 @@ Makinenin çevrimiçi ve erişilebilir olduğunu doğrulayın: `ping <ip>`. SSH 
 Rediacc servisleri yalnızca en az bir depo dağıtıldıktan sonra görünür. Depo yoksa servis listesi boştur.
 
 **Konteyner listesi eski veya durmuş konteynerleri gösteriyor**
-Önceki dağıtımlardan kalan konteynerler, `repo down` temiz çalıştırılmadıysa kalabilir. Bunları `rdc repo down <repo> -m <machine>` ile durdurun veya `rdc term connect -m <machine> -r <repo> -c "docker ps -a"` ile doğrudan inceleyin.
+Önceki dağıtımlardan kalan konteynerler, `repo down` temiz çalıştırılmadıysa kalabilir. Bunları `rdc repo down --name <repo> -m <machine>` ile durdurun veya `rdc term connect -m <machine> -r <repo> -c "docker ps -a"` ile doğrudan inceleyin.
 
 ## Sonraki Adımlar
 

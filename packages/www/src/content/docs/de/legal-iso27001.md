@@ -17,7 +17,7 @@ Rediacc ist eine Komponente der technischen Kontrollschicht innerhalb eines ISMS
 
 | Kontrolldomäne | Kontrolle | Rediacc-Fähigkeit |
 |----------------|-----------|-------------------|
-| **A.8**, Asset-Management | A.8.1 Inventar der Assets | Jedes Repository ist ein diskretes, identifizierbares Asset mit einer einzigartigen GUID. `rdc machine query <machine> --repositories` listet alle Repositories mit Größe, Mount-Status und Container-Anzahl. |
+| **A.8**, Asset-Management | A.8.1 Inventar der Assets | Jedes Repository ist ein diskretes, identifizierbares Asset mit einer einzigartigen GUID. `rdc machine query --name <machine> --repositories` listet alle Repositories mit Größe, Mount-Status und Container-Anzahl. |
 | **A.8**, Asset-Management | A.8.24 Einsatz von Kryptographie | LUKS2 AES-256 obligatorische Verschlüsselung aller Repositories. Key-Management: Anmeldedaten nur in der lokalen Konfiguration des Operators, nie auf dem Server. |
 | **A.9**, Zugangskontrolle | A.9.2 Benutzerzugangsverwaltung | SSH-Schlüssel-Authentifizierung. API-Tokens mit IP-Bindung, Team-Scoping und automatischem Widerruf bei Team-Entfernung. Zwei-Faktor-Authentifizierung (TOTP). |
 | **A.10**, Kryptographie | A.10.1 Kryptographische Kontrollen | LUKS2 mit konfigurierbaren Schlüsselparametern. Pro-Repository-Verschlüsselungsanmeldedaten. Gesamter Remote-Transport über SSH. Config Store implementiert Zero-Knowledge-Verschlüsselung: AES-256-GCM mit HKDF-Schlüsselableitung, X25519-Mitglieder-Schlüsselaustausch und zeitlich begrenzte SDK-Schlüssel für sofortigen Widerruf. |

@@ -1,11 +1,11 @@
 ---
-title: "استكشاف الأخطاء وإصلاحها"
-description: "حلول للمشاكل الشائعة مع SSH والإعداد والمستودعات والخدمات وDocker."
-category: "Guides"
+title: استكشاف الأخطاء وإصلاحها
+description: حلول للمشاكل الشائعة مع SSH والإعداد والمستودعات والخدمات وDocker.
+category: Guides
 order: 10
 language: ar
-sourceHash: "ee8fe3ee7166cfe4"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 4575658381fb6508
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # استكشاف الأخطاء وإصلاحها
@@ -15,7 +15,7 @@ sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ## فشل اتصال SSH
 
 - تحقق من إمكانية الاتصال يدوياً: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- شغّل `rdc config machine scan-keys server-1` لتحديث مفاتيح المضيف
+- شغّل `rdc config machine scan-keys -m server-1` لتحديث مفاتيح المضيف
 - تأكد من تطابق منفذ SSH: `--port 22`
 - اختبر بأمر بسيط: `rdc term connect -m server-1 -c "hostname"`
 
@@ -33,7 +33,7 @@ rdc config machine scan-keys -m server-1
 
 - تأكد من أن مستخدم SSH لديه صلاحيات sudo بدون كلمة مرور، أو قم بتكوين `NOPASSWD` للأوامر المطلوبة
 - تحقق من مساحة القرص المتوفرة على الخادم
-- شغّل مع `--debug` للحصول على مخرجات مفصّلة: `rdc config machine setup server-1 --debug`
+- شغّل مع `--debug` للحصول على مخرجات مفصّلة: `rdc config machine setup --name server-1 --debug`
 
 ## مشاكل الإعداد الخاصة بكل توزيعة
 
@@ -100,7 +100,7 @@ rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 أو عرض جميع الحاويات:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## أخطاء رفض الصلاحيات

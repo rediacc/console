@@ -111,7 +111,7 @@ Cron format is `minute hour day month weekday`. Common schedules: `0 2 * * *` (d
 The destination name must match a configured storage provider. Run `rdc config storage list` to see available names. Add new providers via rclone configuration.
 
 **"Infrastructure config incomplete" when deploying**
-All three fields are required: `--public-ipv4`, `--base-domain`, and `--cert-email`. Run `rdc config infra show <machine>` to check which fields are missing.
+All three fields are required: `--public-ipv4`, `--base-domain`, and `--cert-email`. Run `rdc config infra show -m <machine>` to check which fields are missing.
 
 ## Next Steps
 

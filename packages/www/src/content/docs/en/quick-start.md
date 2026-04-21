@@ -147,9 +147,11 @@ rdc term connect -m my-server                                   # SSH to machine
 
 **File Sync (rsync over SSH):**
 ```bash
-rdc repo sync upload -m my-server -r my-app --local ./src       # Push local files to repo
-rdc repo sync download -m my-server -r my-app --local ./backup  # Pull repo files to local
-rdc repo sync download -m my-server -r my-app --local ./backup --dry-run  # Preview first
+rdc repo sync upload -m my-server -r my-app --local ./src                                   # Push a directory
+rdc repo sync upload -m my-server -r my-app --local ./config.yml --remote conf              # Push a single file
+rdc repo sync download -m my-server -r my-app --local ./backup                              # Pull a directory
+rdc repo sync download -m my-server -r my-app --remote-file conf/config.yml --local ./dl    # Pull a single file
+rdc repo sync download -m my-server -r my-app --local ./backup --dry-run                    # Preview first
 ```
 
 **Tunnel (SSH port-forwarding to container):**

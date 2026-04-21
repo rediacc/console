@@ -4,6 +4,7 @@ import {
   isRemotePath,
   joinRemotePath,
   parseRemotePath,
+  prepareRsyncPaths,
   removeTrailingSlash,
 } from '../pathConverter.js';
 
@@ -240,6 +241,31 @@ describe('sync/pathConverter', () => {
       const parsed = parseRemotePath(joined);
 
       expect(parsed).toEqual({ host, path });
+    });
+  });
+
+  describe('prepareRsyncPaths', () => {
+    // These assertions only exercise the non-Windows branch. The Windows branch
+    // calls windowsToUnixPath and is covered elsewhere; here we just assert that
+    // array and string source inputs both round-trip unchanged on Linux/macOS.
+    it('returns a single string source unchanged', () => {
+      const [src, dest] = prepareRsyncPaths('/local/dir/', 'user@host:/remote/');
+      expect(src).toBe('/local/dir/');
+      expect(dest).toBe('user@host:/remote/');
+    });
+
+    it('returns array source unchanged when source is a list', () => {
+      const [src, dest] = prepareRsyncPaths(
+        ['/local/a.txt', '/local/dir/', '/local/b.md'],
+        'user@host:/remote/'
+      );
+      expect(src).toEqual(['/local/a.txt', '/local/dir/', '/local/b.md']);
+      expect(dest).toBe('user@host:/remote/');
+    });
+
+    it('preserves remote destination format', () => {
+      const [, dest] = prepareRsyncPaths(['/a'], 'user@host:/deeply/nested/dir/');
+      expect(dest).toBe('user@host:/deeply/nested/dir/');
     });
   });
 });

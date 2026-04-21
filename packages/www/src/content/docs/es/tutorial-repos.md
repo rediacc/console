@@ -1,11 +1,13 @@
 ---
-title: "Ciclo de vida del repositorio"
-description: "Crear un repositorio cifrado, desplegar una aplicación en contenedores, inspeccionar contenedores y limpiar."
-category: "Tutorials"
+title: Ciclo de vida del repositorio
+description: >-
+  Crear un repositorio cifrado, desplegar una aplicación en contenedores,
+  inspeccionar contenedores y limpiar.
+category: Tutorials
 order: 3
 language: es
-sourceHash: "fecc09a324a1fa65"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 46c155563808d0b7
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # Cómo desplegar y gestionar repositorios con Rediacc
@@ -67,7 +69,7 @@ Esto monta el repositorio (si no está ya montado), inicia un Docker daemon aisl
 ### Paso 5: Ver contenedores en ejecución
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 Muestra todos los contenedores en ejecución en todos los repositorios de la máquina, incluyendo el uso de CPU y memoria.
@@ -96,7 +98,7 @@ rdc repo delete --name test-app -m server-1  # Eliminar repositorio permanenteme
 
 > **Advertencia:** `repo delete` es irreversible. Todos los datos del repositorio se destruyen. Crea una copia de seguridad primero si es necesario.
 
-> **Nota:** Tras la eliminación, la entrada de configuración se conserva (el repositorio puede existir en otras máquinas). Usa `rdc config repository remove <name>` para eliminarla, o `--archive-config` para conservar las credenciales de recuperación.
+> **Nota:** Tras la eliminación, la entrada de configuración se conserva (el repositorio puede existir en otras máquinas). Usa `rdc config repository remove --name <name>` para eliminarla, o `--archive-config` para conservar las credenciales de recuperación.
 
 ## Solución de problemas
 

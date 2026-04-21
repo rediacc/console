@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: ar
-sourceHash: "2c2d289c280e2a7f"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 342214c5a4cf9321
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # البنية التحتية
@@ -46,7 +46,7 @@ sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
 - اتصالات SSH مباشرة بالأجهزة
 - لا حاجة لخدمات خارجية
 - مستخدم واحد، محطة عمل واحدة
-- يُنشأ الإعداد الافتراضي تلقائياً عند أول استخدام لسطر الأوامر. تُنشأ الإعدادات المسمّاة باستخدام `rdc config init <name>`
+- يُنشأ الإعداد الافتراضي تلقائياً عند أول استخدام لسطر الأوامر. تُنشأ الإعدادات المسمّاة باستخدام `rdc config init --name <name>`
 
 ### محوّل السحابة (تجريبي)
 

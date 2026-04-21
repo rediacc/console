@@ -1,10 +1,10 @@
 ---
-title: "Experimentelle VMs"
-description: "Lokale VM-Cluster für Entwicklung und Tests mit rdc ops bereitstellen."
-category: "Concepts"
+title: Experimentelle VMs
+description: Lokale VM-Cluster für Entwicklung und Tests mit rdc ops bereitstellen.
+category: Concepts
 order: 2
 language: de
-sourceHash: "af686ab0f22d58c7"
+sourceHash: df01dc35c82beb81
 ---
 
 # Experimentelle VMs
@@ -140,7 +140,7 @@ Umgebungsvariablen überschreiben die Worker-VM-Ressourcen:
 | `rdc ops up [options]` | VM-Cluster bereitstellen |
 | `rdc ops down` | Alle VMs zerstören und aufräumen |
 | `rdc ops status` | Status aller VMs anzeigen |
-| `rdc ops ssh <vm-id> [command...]` | SSH in eine VM, oder Befehl darauf ausführen |
+| `rdc ops ssh --vm-id <id> [command...]` | SSH in eine VM, oder Befehl darauf ausführen |
 
 ### `rdc ops up` Optionen
 

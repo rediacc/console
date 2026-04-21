@@ -1,11 +1,13 @@
 ---
-title: "Устранение неполадок"
-description: "Решения распространённых проблем с SSH, настройкой, репозиториями, сервисами и Docker."
-category: "Guides"
+title: Устранение неполадок
+description: >-
+  Решения распространённых проблем с SSH, настройкой, репозиториями, сервисами и
+  Docker.
+category: Guides
 order: 10
 language: ru
-sourceHash: "ee8fe3ee7166cfe4"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 4575658381fb6508
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # Устранение неполадок
@@ -15,7 +17,7 @@ sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ## Ошибка подключения SSH
 
 - Убедитесь, что можете подключиться вручную: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Выполните `rdc config machine scan-keys server-1` для обновления ключей хоста
+- Выполните `rdc config machine scan-keys -m server-1` для обновления ключей хоста
 - Проверьте соответствие порта SSH: `--port 22`
 - Проверьте простой командой: `rdc term connect -m server-1 -c "hostname"`
 
@@ -33,7 +35,7 @@ rdc config machine scan-keys -m server-1
 
 - Убедитесь, что SSH-пользователь имеет доступ sudo без пароля, или настройте `NOPASSWD` для необходимых команд
 - Проверьте доступное дисковое пространство на сервере
-- Запустите с `--debug` для подробного вывода: `rdc config machine setup server-1 --debug`
+- Запустите с `--debug` для подробного вывода: `rdc config machine setup --name server-1 --debug`
 
 ## Проблемы настройки, специфичные для дистрибутива
 
@@ -100,7 +102,7 @@ rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 Или просмотрите все контейнеры:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## Ошибки отказа в доступе

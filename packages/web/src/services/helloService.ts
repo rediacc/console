@@ -39,7 +39,7 @@ const parseResponseVaultContent = (
     }
   }
 
-  return vaultContent as HelloResponseData;
+  return vaultContent;
 };
 
 export async function waitForQueueItemCompletion(
@@ -65,7 +65,7 @@ export async function waitForQueueItemCompletion(
 async function pollQueueItemStatus(taskId: string): Promise<QueueItemCompletionResult | null> {
   try {
     const response = await typedApi.GetQueueItemTrace({ taskId });
-    const trace = parseGetQueueItemTrace(response as never);
+    const trace = parseGetQueueItemTrace(response);
     const queueDetails = trace.queueDetails;
 
     if (!queueDetails) {

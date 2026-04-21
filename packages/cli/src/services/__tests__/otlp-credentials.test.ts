@@ -105,7 +105,7 @@ describe('fetchOtlpCredentials', () => {
   });
 
   it('returns null when the response is missing the otlp field', async () => {
-    mockedFetch.mockResolvedValue({} as never);
+    mockedFetch.mockResolvedValue({});
 
     const result = await fetchOtlpCredentials();
 

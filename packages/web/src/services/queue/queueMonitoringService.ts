@@ -200,7 +200,7 @@ class QueueMonitoringService {
   private async fetchTaskTrace(task: MonitoredTask): Promise<QueueTrace | null> {
     if (!this.isExtensionContext()) {
       const response = await typedApi.GetQueueItemTrace({ taskId: task.taskId });
-      return parseGetQueueItemTrace(response as never);
+      return parseGetQueueItemTrace(response);
     }
 
     try {
@@ -210,7 +210,7 @@ class QueueMonitoringService {
           setTimeout(() => reject(new Error('Chrome extension timeout')), 8000)
         ),
       ])) as Awaited<ReturnType<typeof typedApi.GetQueueItemTrace>>;
-      return parseGetQueueItemTrace(response as never);
+      return parseGetQueueItemTrace(response);
     } catch (extensionError: unknown) {
       if (
         extensionError instanceof Error &&

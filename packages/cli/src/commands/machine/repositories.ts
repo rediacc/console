@@ -14,13 +14,15 @@ import { withSpinner } from '../../utils/spinner.js';
 
 export function registerRepositoriesCommand(machine: Command, program: Command): void {
   machine
-    .command('repos <name>')
+    .command('repos')
     .summary(t('commands.machine.repos.descriptionShort'))
     .description(t('commands.machine.repos.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .option('-t, --team <name>', t('options.team'))
     .option('--search <text>', t('options.searchRepos'))
-    .action(async (name: string, options: { team?: string; search?: string }) => {
+    .action(async (options: { name: string; team?: string; search?: string }) => {
       try {
+        const name = options.name;
         const provider = await getStateProvider();
         if (provider.isCloud) {
           await authService.requireAuth();

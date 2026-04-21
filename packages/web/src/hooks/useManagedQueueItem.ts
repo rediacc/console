@@ -49,13 +49,13 @@ export const useManagedQueueItem = () => {
 
     const response = await typedApi.CreateQueueItem({
       teamName: minifiedData.teamName,
-      machineName: minifiedData.machineName as string,
+      machineName: minifiedData.machineName,
       bridgeName: minifiedData.bridgeName as string,
       vaultContent: minifiedData.queueVault,
       priority: minifiedData.priority,
     });
 
-    return parseCreateQueueItem(response as never);
+    return parseCreateQueueItem(response);
   };
 
   const mutation = useMutation({

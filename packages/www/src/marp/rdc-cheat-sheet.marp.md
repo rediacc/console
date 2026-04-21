@@ -79,16 +79,16 @@ rdc config repository list
 rdc machine query --name <machine>
 
 # List all Docker containers across all repos
-rdc machine containers <machine>
+rdc machine containers --name <machine>
 
 # List systemd services managed by renet
-rdc machine services <machine>
+rdc machine services --name <machine>
 
 # List deployed repositories with mount/Docker status
-rdc machine repos <machine>
+rdc machine repos --name <machine>
 
 # Health check — exits 0 (healthy) / 1 (warning) / 2 (error)
-rdc machine health <machine>
+rdc machine health --name <machine>
 
 # Vault / LUKS encryption status
 rdc machine vault-status --name <machine>
@@ -182,30 +182,39 @@ rdc repo autostart list -m <machine>
 <h2><a href="tools">File Sync</a></h2>
 
 ```bash
-# Upload local directory to repo mount (rsync over SSH)
+# Upload a directory (contents merge into --remote)
 rdc repo sync upload \
   -m <machine> -r <repo> \
   --local ./local-path
 
-# Download from repo mount to local directory
+# Upload a single file (lands at <remote>/<basename>)
+rdc repo sync upload -m <machine> -r <repo> \
+  --local ./config.yml --remote conf
+
+# Upload multiple sources in one call
+rdc repo sync upload -m <machine> -r <repo> \
+  --local a.yml b.yml ./assets --remote app
+
+# Download a remote directory to a local directory
 rdc repo sync download \
   -m <machine> -r <repo> \
   --local ./local-path
+
+# Download a single remote file into a local dir
+rdc repo sync download -m <machine> -r <repo> \
+  --remote-file conf/config.yml --local ./local-conf
 
 # Preview changes without transferring (dry run)
 rdc repo sync upload -m <machine> -r <repo> \
   --local ./local-path --dry-run
 
-# Interactive confirm before syncing
-rdc repo sync upload -m <machine> -r <repo> \
-  --local ./local-path --confirm
-
 # Compare local vs remote without syncing
 rdc repo sync status -m <machine> -r <repo>
 ```
 
-`--remote <path>` — subdirectory within the repo mount
-`--mirror` — delete remote files not present locally
+`--remote <path>` — directory within the repo mount
+`--remote-file <path>` — single remote file (download only)
+`--mirror` — delete remote files not present locally (directory sources only)
 `--verify` — verify checksums after transfer
 `--exclude <pattern>` — exclude files matching pattern
 

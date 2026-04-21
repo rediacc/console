@@ -1,10 +1,12 @@
 ---
 title: JSON Çıktı Referansı
-description: rdc CLI JSON çıktı formatı, zarf şeması, hata işleme ve ajan keşif komutları için eksiksiz referans.
+description: >-
+  rdc CLI JSON çıktı formatı, zarf şeması, hata işleme ve ajan keşif komutları
+  için eksiksiz referans.
 category: Reference
 order: 51
 language: tr
-sourceHash: "11259cd1eeebf361"
+sourceHash: 43cdbf89d4314d73
 ---
 
 Tüm `rdc` komutları, AI ajanları ve betikler tarafından programatik tüketim için yapılandırılmış JSON çıktısını destekler.
@@ -24,7 +26,7 @@ rdc machine query --name prod-1 -o json
 
 ```bash
 # These all produce JSON automatically
-result=$(rdc machine query prod-1)
+result=$(rdc machine query --name prod-1)
 echo '{}' | rdc agent exec "machine query"
 ```
 
@@ -106,7 +108,7 @@ Yeniden denenemez hatalar (kimlik doğrulama, bulunamadı, geçersiz argümanlar
 Çıktıyı belirli anahtarlarla sınırlamak için `--fields` kullanın. Bu, yalnızca belirli verilere ihtiyaç duyulduğunda token kullanımını azaltır:
 
 ```bash
-rdc machine containers prod-1 -o json --fields name,status,repository
+rdc machine containers --name prod-1 -o json --fields name,status,repository
 ```
 
 ## Kuru Çalıştırma Çıktısı
@@ -192,7 +194,7 @@ Stdin üzerinden JSON kabul eder, anahtarları komut argümanlarına ve seçenek
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine query prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python

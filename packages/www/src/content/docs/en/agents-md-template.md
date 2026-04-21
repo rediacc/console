@@ -38,10 +38,10 @@ On error: {"success": false, "command": "...", "data": null, "errors": [{"code":
 rdc machine query --name <machine> -o json
 
 # List containers on a machine
-rdc machine containers <machine> -o json
+rdc machine containers --name <machine> -o json
 
 # Machine health check
-rdc machine health <machine> -o json
+rdc machine health --name <machine> -o json
 
 # Deploy a repository
 rdc repo up --name <repo> -m <machine> --yes
@@ -59,14 +59,14 @@ rdc term connect -m <machine> -r <repo>
 rdc term connect -m <machine> -c "command"
 
 # File sync
-rdc repo sync upload -m <machine> -r <repo> -l ./local-path
-rdc repo sync download -m <machine> -r <repo> -l ./local-path
+rdc repo sync upload -m <machine> -r <repo> --local ./local-path
+rdc repo sync download -m <machine> -r <repo> --local ./local-path
 
 # List all available commands with schemas
 rdc agent capabilities
 
 # Show schema for a specific command
-rdc agent schema "machine query"
+rdc agent schema --command "machine query"
 
 ### Architecture
 - **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/

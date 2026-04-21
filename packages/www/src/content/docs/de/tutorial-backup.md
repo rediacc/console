@@ -1,11 +1,13 @@
 ---
-title: "Backup & Netzwerk"
-description: "Automatische Backup-Zeitpläne konfigurieren, Speicheranbieter verwalten, Infrastruktur-Netzwerk einrichten und Service-Ports registrieren."
-category: "Tutorials"
+title: Backup & Netzwerk
+description: >-
+  Automatische Backup-Zeitpläne konfigurieren, Speicheranbieter verwalten,
+  Infrastruktur-Netzwerk einrichten und Service-Ports registrieren.
+category: Tutorials
 order: 6
 language: de
-sourceHash: "3af2b8e2e6105e29"
-sourceCommit: "2223eabccb947ee9da79f1afcef075e163797d13"
+sourceHash: b91d408984abfc75
+sourceCommit: 2223eabccb947ee9da79f1afcef075e163797d13
 ---
 
 # So konfigurieren Sie Backups und Netzwerk mit Rediacc
@@ -113,7 +115,7 @@ Das Cron-Format ist `minute hour day month weekday`. Gängige Zeitpläne: `0 2 *
 Der Zielname muss mit einem konfigurierten Speicheranbieter übereinstimmen. Führen Sie `rdc config storage list` aus, um verfügbare Namen zu sehen. Fügen Sie neue Anbieter über die rclone-Konfiguration hinzu.
 
 **"Infrastructure config incomplete" beim Deployment**
-Alle drei Felder sind erforderlich: `--public-ipv4`, `--base-domain` und `--cert-email`. Führen Sie `rdc config infra show <machine>` aus, um fehlende Felder zu prüfen.
+Alle drei Felder sind erforderlich: `--public-ipv4`, `--base-domain` und `--cert-email`. Führen Sie `rdc config infra show -m <machine>` aus, um fehlende Felder zu prüfen.
 
 ## Nächste Schritte
 

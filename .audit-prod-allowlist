@@ -98,17 +98,21 @@
 
 # protobufjs arbitrary code execution via malicious decode input
 # (GHSA-xq3m-2v4x-88gg and sibling advisory for protobufjs 8.0.0).
-# 1116756: protobufjs <7.5.5 — transitive via @grpc/proto-loader 0.8.0 (pulled
-#   in by @opentelemetry/exporter-logs-otlp-grpc) which pins protobufjs ^7.5.3
-#   and is not yet bumped to 7.5.5 upstream.
-# 1116757: protobufjs 8.0.0 — transitive via @opentelemetry/otlp-transformer
-#   0.211.x (pulled in by @opentelemetry/sdk-node 0.211.x, which is
-#   deliberately pinned in .syncpackrc.json at ^0.211.0 — the 0.215.0 OTel
-#   bump that would take us to protobufjs 8.0.1 is gated by the pin).
+# 1116756 / 1116832: protobufjs <7.5.5 — transitive via @grpc/proto-loader
+#   0.8.0 (pulled in by @opentelemetry/exporter-logs-otlp-grpc) which pins
+#   protobufjs ^7.5.3 and is not yet bumped to 7.5.5 upstream.
+# 1116757 / 1116833: protobufjs 8.0.0 — transitive via
+#   @opentelemetry/otlp-transformer 0.211.x (pulled in by
+#   @opentelemetry/sdk-node 0.211.x, which is deliberately pinned in
+#   .syncpackrc.json at ^0.211.0 — the 0.215.0 OTel bump that would take
+#   us to protobufjs 8.0.1 is gated by the pin).
 # Both advisories are not reachable at runtime: the OTLP exporters only
 # serialize our own telemetry to our own collector endpoint, there is no
 # untrusted protobuf decode path. Revisit either when @grpc/proto-loader
-# ships 7.5.5 (removes 1116756) or when the syncpack pin is lifted to
-# 0.215.x and the tree moves to protobufjs 8.0.1 (removes 1116757).
+# ships 7.5.5 (removes 1116756 / 1116832) or when the syncpack pin is
+# lifted to 0.215.x and the tree moves to protobufjs 8.0.1 (removes
+# 1116757 / 1116833).
 1116756
 1116757
+1116832
+1116833

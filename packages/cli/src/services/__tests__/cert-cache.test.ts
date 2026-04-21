@@ -215,7 +215,7 @@ describe('mergeAcmeJson', () => {
   // the critical safety property.
   it('is a no-op when secondary has no resolvers', () => {
     const primary = buildAcme('letsencrypt', [{ domain: 'a', key: 'k' }]);
-    const { mergedFromSecondary } = mergeAcmeJson(primary as never, {} as never);
+    const { mergedFromSecondary } = mergeAcmeJson(primary as never, {});
     expect(mergedFromSecondary).toBe(0);
   });
 

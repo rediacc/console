@@ -20,6 +20,9 @@ import {
   SHELL_FENCE_LANGS,
 } from '../packages/www/scripts/lib/cli-reference-catalog.js';
 
+// Shared positional-syntax detector (zero-positional commands)
+import { scanText as scanPositional } from './lib/positional-cli-detector.ts';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
@@ -35,10 +38,12 @@ const TARGET_GLOBS = [
   // CLI source (help text strings)
   'packages/cli/src/cli.ts',
   'packages/cli/src/commands/**/*.ts',
+  'packages/cli/templates/**/docker-compose.yml',
 
-  // i18n: only English locales (non-English mirror English and contain translated
-  // prose that produces false positives; the i18n sync workflow propagates fixes)
-  'packages/cli/src/i18n/locales/en/cli.json',
+  // i18n locales — ALL languages (positional-syntax drift surfaces in
+  // translated `rdc …` fragments even when the surrounding prose is
+  // correctly translated).
+  'packages/cli/src/i18n/locales/{ar,de,en,es,fr,ja,ru,tr,zh}/cli.json',
   'private/account/web/src/i18n/locales/en/**/*.json',
 
   // Account submodule
@@ -55,6 +60,18 @@ const TARGET_GLOBS = [
   'packages/www/src/marp/**/*.md',
   'packages/www/src/components/**/*.astro',
   'packages/json/templates/**/*.md',
+];
+
+/**
+ * Files that legitimately contain AGENTS.md-style copy-paste templates
+ * inside ```markdown fences. Shell-fence-only scanning misses these. The
+ * scanner enters the markdown fence for files matching these path hints.
+ */
+const MARKDOWN_FENCE_WHITELIST_PATTERNS = [
+  /agents-md-template\.md$/,
+  /ai-agents-.*\.md$/,
+  /AGENTS\.md$/,
+  /CLAUDE\.md$/,
 ];
 
 // ---------------------------------------------------------------------------
@@ -146,6 +163,8 @@ function formatParsedError(parsed: ReturnType<typeof parseRdcCommand>): string {
 
 /**
  * Extract rdc commands from markdown shell code fences.
+ * Also enters ```markdown fences for AGENTS.md-template files that
+ * deliberately nest CLI examples inside a markdown fence for copy-paste.
  */
 function extractFromMarkdown(
   content: string,
@@ -154,6 +173,9 @@ function extractFromMarkdown(
 ): void {
   const lines = content.split(/\r?\n/);
   let inFence = false;
+  const enterMarkdownFences = MARKDOWN_FENCE_WHITELIST_PATTERNS.some((p) =>
+    p.test(filePath)
+  );
 
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
@@ -164,12 +186,30 @@ function extractFromMarkdown(
         continue;
       }
       const lang = trimmed.slice(3).trim().toLowerCase();
-      inFence = SHELL_FENCE_LANGS.has(lang);
+      const isShell = SHELL_FENCE_LANGS.has(lang);
+      const isTemplateFence =
+        enterMarkdownFences && (lang === 'markdown' || lang === '');
+      inFence = isShell || isTemplateFence;
       continue;
     }
 
-    if (!inFence) continue;
-    if (!trimmed || trimmed.startsWith('#')) continue;
+    if (!inFence) {
+      // Even outside fences, we still want to catch positional-syntax
+      // violations in prose (e.g., `- \`rdc machine query <machine>\``,
+      // `Claude Code runs: rdc machine query prod-1`, table cells).
+      checkPositionalSyntax(lines[i], filePath, i + 1, violations, lines);
+      continue;
+    }
+    if (!trimmed || trimmed.startsWith('#')) {
+      // Comments inside shell fences should still be checked for
+      // positional syntax (they frequently contain example commands).
+      checkPositionalSyntax(lines[i], filePath, i + 1, violations, lines);
+      continue;
+    }
+
+    // Catch wrapped forms inside fences: result=$(rdc ...), `rdc ...`, etc.
+    // These line-level checks fire BEFORE the strict parser path below.
+    checkPositionalSyntax(lines[i], filePath, i + 1, violations, lines);
 
     // Strip leading $ prompt
     let command = trimmed;
@@ -186,6 +226,32 @@ function extractFromMarkdown(
     // Pass surrounding lines for cloud-only context detection
     const ctx = lines.slice(Math.max(0, i - 10), i + 1);
     validateCommand(mergedCommand, filePath, i + 1, violations, ctx);
+  }
+}
+
+/**
+ * Scan a single line for positional-syntax violations — handles wrapped
+ * forms that `extractFromMarkdown`'s strict line-start filter misses
+ * (command substitution, inline prose, markdown list items, table cells).
+ */
+function checkPositionalSyntax(
+  line: string,
+  filePath: string,
+  lineNumber: number,
+  violations: Violation[],
+  contextLines: string[]
+): void {
+  if (!line.includes('rdc ')) return;
+  if (isSkippableContext(contextLines, lineNumber - 1)) return;
+  const hits = scanPositional(line);
+  for (const hit of hits) {
+    violations.push({
+      file: filePath,
+      line: lineNumber,
+      command: hit.match,
+      reason: 'positional-syntax',
+      detail: `Positional syntax for "rdc ${hit.commandPath}" — use named options instead`,
+    });
   }
 }
 
@@ -455,6 +521,49 @@ function validateCommand(
   });
 }
 
+/**
+ * Whole-file positional-syntax scan. Uses the shared detector to catch any
+ * `rdc <zero-positional-cmd> <token>` pattern anywhere in the file.
+ */
+function scanFileForPositional(
+  content: string,
+  filePath: string,
+  violations: Violation[]
+): void {
+  if (!content.includes('rdc ')) return;
+  const lines = content.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    if (isSkippableContext(lines, i)) continue;
+    const hits = scanPositional(lines[i]);
+    for (const hit of hits) {
+      violations.push({
+        file: filePath,
+        line: i + 1,
+        command: hit.match,
+        reason: 'positional-syntax',
+        detail: `Positional syntax for "rdc ${hit.commandPath}" — use named options instead (issue #446)`,
+      });
+    }
+  }
+}
+
+/**
+ * Remove duplicate violations (same file + line + reason + command snippet).
+ * The whole-file pre-scan overlaps with narrow extractors on clean cases.
+ */
+function dedupeViolations(violations: Violation[]): void {
+  const seen = new Set<string>();
+  let writeIdx = 0;
+  for (let i = 0; i < violations.length; i++) {
+    const v = violations[i];
+    const key = `${v.file}|${v.line}|${v.reason}|${v.command.trim()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    violations[writeIdx++] = v;
+  }
+  violations.length = writeIdx;
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -489,16 +598,24 @@ async function main(): Promise<void> {
     const content = fs.readFileSync(absPath, 'utf-8');
     const ext = path.extname(relPath);
 
+    // Whole-file positional-syntax scan. Catches wrapped forms that the
+    // narrow per-filetype extractors miss (command substitution, inline
+    // prose, markdown list items, table cells, comments).
+    scanFileForPositional(content, relPath, violations);
+
     if (ext === '.md') {
       extractFromMarkdown(content, relPath, violations);
     } else if (ext === '.ts' || ext === '.tsx' || ext === '.astro') {
       extractFromTypeScript(content, relPath, violations);
     } else if (ext === '.json') {
       extractFromJSON(content, relPath, violations);
-    } else if (ext === '.go') {
+    } else if (ext === '.go' || ext === '.yml' || ext === '.yaml') {
       extractFromGo(content, relPath, violations);
     }
   }
+
+  // Deduplicate: scanFileForPositional may overlap with narrow extractors
+  dedupeViolations(violations);
 
   // Print results
   console.log(colors.bold('CLI Examples Validation'));

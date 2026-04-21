@@ -1,11 +1,12 @@
 ---
-title: "Rediaccのルール"
-description: "Rediaccプラットフォームでアプリケーションを構築するための基本ルールと規則。Rediaccfile、compose、ネットワーク、ストレージ、CRIU、デプロイについて説明します。"
-category: "Guides"
+title: Rediaccのルール
+description: >-
+  Rediaccプラットフォームでアプリケーションを構築するための基本ルールと規則。Rediaccfile、compose、ネットワーク、ストレージ、CRIU、デプロイについて説明します。
+category: Guides
 order: 5
 language: ja
-sourceHash: "fd0fa925e9b76434"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 9365e0cabf7e8f03
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # Rediaccのルール
@@ -156,7 +157,7 @@ OS固有のセキュリティ姿勢フラグは必要ありません。`rdc`と`
 - **`rdc repo down`** は`down()`を実行してDockerデーモンを停止します。
 - **`rdc repo down --unmount`** はLUKSボリュームも閉じます（暗号化ストレージをロックします）。
 - **フォーク**（`rdc repo fork`）は新しいGUIDとnetworkIdを持つCoW（コピーオンライト）クローンを、**リポジトリのサイズに関係なく一定時間で**作成します。BTRFS reflink はイメージのメタデータを複製するだけでデータは複製しないため、100 GB のリポジトリも 1 GB のリポジトリも同じ数秒でフォークされます。フォークは親の暗号化キーを共有します。
-- **テイクオーバー**（`rdc repo takeover <fork> -m <machine>`）はgrandリポジトリのデータをフォークのデータで置き換えます。grandはその識別情報（GUID、networkId、ドメイン、自動起動、バックアップチェーン）を保持します。古い本番データはバックアップフォークとして保存されます。使用例: フォークでアップグレードをテストし、確認後に本番にテイクオーバー。`rdc repo takeover <backup-fork> -m <machine>`で元に戻せます。
+- **テイクオーバー**（`rdc repo takeover --name <fork> -m <machine>`）はgrandリポジトリのデータをフォークのデータで置き換えます。grandはその識別情報（GUID、networkId、ドメイン、自動起動、バックアップチェーン）を保持します。古い本番データはバックアップフォークとして保存されます。使用例: フォークでアップグレードをテストし、確認後に本番にテイクオーバー。`rdc repo takeover --name <backup-fork> -m <machine>`で元に戻せます。
 - **プロキシルート**はデプロイ後約3秒で有効になります。`repo up`中の「Proxy is not running」警告はops/dev環境では情報提供目的です。
 - **`rdc repo up` と `rdc repo fork --up` は、デプロイ終了時に** `rediacc.service_port` でラベル付けされたサービスの URL パターンを出力します。`{service}` を公開されたサービス名に置き換えて正確な URL を取得してください。`rediacc.service_port` のないサービス（データベース、ワーカー）はルートを取得せず、表示されません。
 
@@ -167,4 +168,4 @@ OS固有のセキュリティ姿勢フラグは必要ありません。`rdc`と`
 - `privileged: true` を使用する, 不要です。renetが代わりに特定のCRIUケーパビリティを注入します。
 - 生の IP を永続的な設定ファイルにハードコードする - 接続にはサービス名を使用して fork の分離性を保ってください。
 - 失敗したコマンドの回避策として`rdc term connect -c`を使用する, 代わりにバグを報告してください。
-- `repo delete`はループバックIPとsystemdユニットを含む完全なクリーンアップを実行します。古い削除の残骸をクリーンアップするには`rdc machine prune <name>`を実行してください。
+- `repo delete`はループバックIPとsystemdユニットを含む完全なクリーンアップを実行します。古い削除の残骸をクリーンアップするには`rdc machine prune --name <name>`を実行してください。

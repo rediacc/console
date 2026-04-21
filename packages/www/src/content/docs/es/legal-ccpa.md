@@ -34,7 +34,7 @@ Rediacc como software no accede, procesa ni almacena datos del consumidor. Tu eq
 
 Cada repositorio de Rediacc es una unidad de datos discreta y cifrada con un GUID único. Puedes inventariar exactamente qué datos existen y dónde:
 
-- `rdc machine query <machine> --repositories` lista todos los repositorios en una máquina con tamaño y estado de montaje
+- `rdc machine query --name <machine> --repositories` lista todos los repositorios en una máquina con tamaño y estado de montaje
 - Cada repositorio está aislado a nivel de sistema de archivos, red y contenedores
 - Se rastrean las relaciones de fork, para que puedas identificar todas las copias de un conjunto de datos
 

@@ -1,10 +1,10 @@
 ---
-title: "Deneysel VM'ler"
-description: "rdc ops ile geliştirme ve test için yerel VM kümeleri oluşturma."
-category: "Concepts"
+title: Deneysel VM'ler
+description: rdc ops ile geliştirme ve test için yerel VM kümeleri oluşturma.
+category: Concepts
 order: 2
 language: tr
-sourceHash: "af686ab0f22d58c7"
+sourceHash: df01dc35c82beb81
 ---
 
 # Deneysel VM'ler
@@ -140,7 +140,7 @@ Ortam değişkenleri çalışan VM kaynaklarını geçersiz kılar:
 | `rdc ops up [seçenekler]` | VM kümesi hazırla |
 | `rdc ops down` | Tüm VM'leri yok et ve temizle |
 | `rdc ops status` | Tüm VM'lerin durumunu göster |
-| `rdc ops ssh <vm-id> [komut...]` | Bir VM'ye SSH ile bağlan veya üzerinde komut çalıştır |
+| `rdc ops ssh --vm-id <id> [komut...]` | Bir VM'ye SSH ile bağlan veya üzerinde komut çalıştır |
 
 ### `rdc ops up` Seçenekleri
 

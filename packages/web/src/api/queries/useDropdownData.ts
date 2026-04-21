@@ -44,7 +44,7 @@ function mergeDropdownData(parsed: Partial<OrganizationDropdownData>): Organizat
   for (const key of DROPDOWN_KEYS) {
     (result as Record<string, unknown[]>)[key] = ensureArray(parsed[key]);
   }
-  return result as OrganizationDropdownData;
+  return result;
 }
 
 export const useDropdownData = (context?: string) => {
@@ -53,8 +53,8 @@ export const useDropdownData = (context?: string) => {
     queryFn: async () => {
       const response = await typedApi.GetLookupData(context ? { context } : {});
       const row =
-        extractFirstByIndex<{ dropdownValues?: string | null }>(response as never, 1) ??
-        extractFirstByIndex<{ dropdownValues?: string | null }>(response as never, 0);
+        extractFirstByIndex<{ dropdownValues?: string | null }>(response, 1) ??
+        extractFirstByIndex<{ dropdownValues?: string | null }>(response, 0);
       if (row?.dropdownValues) {
         try {
           const parsed = JSON.parse(row.dropdownValues) as Partial<OrganizationDropdownData>;

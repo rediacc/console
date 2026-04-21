@@ -123,7 +123,7 @@ async function pollForCompletion(taskId: string): Promise<SshTestResult> {
     await new Promise((resolve) => setTimeout(resolve, pollInterval));
 
     const traceResponse = await typedApi.GetQueueItemTrace({ taskId });
-    const trace = parseGetQueueItemTrace(traceResponse as never);
+    const trace = parseGetQueueItemTrace(traceResponse);
     const status = trace.summary?.status ?? trace.queueDetails?.status;
 
     if (isTerminalStatus(status)) {
@@ -310,7 +310,7 @@ export function registerTestConnectionCommand(machine: Command, program: Command
           t('commands.machine.testConnection.created')
         );
 
-        const { taskId } = parseCreateQueueItem(createResponse as never);
+        const { taskId } = parseCreateQueueItem(createResponse);
         if (!taskId) {
           throw new ValidationError(t('errors.failedCreateQueueItem'));
         }

@@ -195,7 +195,7 @@ const TeamsPage: React.FC = () => {
       unifiedModal.openEdit({
         ...team,
         teamName: team.teamName ?? undefined,
-      } as ExistingResourceData),
+      }),
     onManageMembers: (team: GetOrganizationTeams_ResultSet1) => {
       manageTeamModal.open(team);
     },
@@ -219,7 +219,7 @@ const TeamsPage: React.FC = () => {
           unifiedModal.openEdit({
             ...record,
             teamName: record.teamName ?? undefined,
-          } as ExistingResourceData)
+          })
         ),
         buildMembersMenuItem(tCommon, () => manageTeamModal.open(record)),
         buildTraceMenuItem(tCommon, () =>

@@ -16,14 +16,31 @@ Transfer files between your workstation and a remote repository using rsync over
 
 ### Upload Files
 
+`--local` accepts one or more paths. Each path may be a file or a directory. Files land at `<remote>/<basename>`; directory contents merge into `<remote>/`.
+
 ```bash
+# Directory (contents merged into remote)
 rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+
+# Single file
+rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+
+# Multiple sources in one call
+rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
 ```
+
+`--mirror` cannot be combined with a file source; it would delete sibling files in the remote directory.
 
 ### Download Files
 
+Use `--remote` for a directory (today's default) or `--remote-file` for a single file. The two flags are mutually exclusive.
+
 ```bash
+# Directory
 rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+
+# Single file — --local must be an existing directory
+rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### Check Sync Status
@@ -38,10 +55,11 @@ rdc repo sync status -m server-1 -r my-app
 |--------|-------------|
 | `-m, --machine <name>` | Target machine |
 | `-r, --repository <name>` | Target repository |
-| `--local <path>` | Local directory path |
-| `--remote <path>` | Remote path (relative to repository mount) |
+| `--local <paths...>` | One or more local file or directory paths (upload) or local destination directory (download) |
+| `--remote <path>` | Remote directory (relative to repository mount) |
+| `--remote-file <path>` | Remote file path, for single-file downloads (alternative to `--remote`) |
 | `--dry-run` | Preview changes without transferring |
-| `--mirror` | Mirror source to destination (delete extra files) |
+| `--mirror` | Mirror source to destination, delete extra files (directory sources only) |
 | `--verify` | Verify checksums after transfer |
 | `--confirm` | Interactive confirmation with detail view |
 | `--exclude <patterns...>` | Exclude file patterns |

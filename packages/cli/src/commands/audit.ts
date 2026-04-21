@@ -52,7 +52,7 @@ export function registerAuditCommands(program: Command): void {
           t('commands.audit.trace.success')
         );
 
-        const trace = parseGetEntityAuditTrace(apiResponse as never);
+        const trace = parseGetEntityAuditTrace(apiResponse);
         const format = program.opts().output as OutputFormat;
 
         outputService.print(trace.records, format);
@@ -75,7 +75,7 @@ export function registerAuditCommands(program: Command): void {
           t('commands.audit.history.success')
         );
 
-        const trace = parseGetEntityAuditTrace(apiResponse as never);
+        const trace = parseGetEntityAuditTrace(apiResponse);
         const format = program.opts().output as OutputFormat;
 
         outputService.print(trace.records, format);

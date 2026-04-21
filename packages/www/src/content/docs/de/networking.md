@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 6
 language: de
-sourceHash: "536db0c93646cad6"
-sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
+sourceHash: 5f8a1092ed53e1b4
+sourceCommit: 8b0f83c57ebaaa0a2bee93143db34ab677b4e68b
 ---
 
 # Netzwerk
@@ -206,7 +206,7 @@ Der vollständige Weg, den ein Let's Encrypt-Zertifikat von der Ausstellung bis 
 
 2. **Pro-Repo-Dumping (optional).** Dienste, die Zertifikatsdateien innerhalb ihres eigenen Containers benötigen (z. B. ein Mailserver, der eine `.pem`-Datei direkt liest), stellen einen kleinen `traefik-certs-dumper`-Container neben sich her. Der Dumper bindet `/opt/rediacc/proxy/letsencrypt` schreibgeschützt ein und schreibt das extrahierte Zertifikat und den Schlüssel als `cert.pem` / `key.pem` in das Datenvolume des Repos. Dafür muss der pro-Repo Docker-Daemon `/opt/rediacc/proxy` in seiner Mount-Namespace-Positivliste haben. Dies ist standardmäßig bereits enthalten.
 
-3. **Client-seitiger Cache (`rediacc.json`).** Die CLI speichert eine komprimierte Kopie von `acme.json` unter `acmeCertCache` in Ihrer Konfigurationsdatei, indexiert nach `baseDomain`. Dies ermöglicht mehreren Maschinen die gemeinsame Nutzung von Zertifikaten (via `rdc config cert-cache push <machine>`) und dient als Offline-Inventar.
+3. **Client-seitiger Cache (`rediacc.json`).** Die CLI speichert eine komprimierte Kopie von `acme.json` unter `acmeCertCache` in Ihrer Konfigurationsdatei, indexiert nach `baseDomain`. Dies ermöglicht mehreren Maschinen die gemeinsame Nutzung von Zertifikaten (via `rdc config cert-cache push -m <machine>`) und dient als Offline-Inventar.
 
 **Sync-Auslöser für den Client-Cache:**
 

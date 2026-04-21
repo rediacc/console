@@ -206,7 +206,7 @@ export async function verifyMachineSetup(
     if (result.trim() !== 'OK') {
       throw new Error(
         `Machine '${machine.ip}' has not been set up. ` +
-          `Run 'rdc config machine setup <name>' or 'sudo renet setup --auto' directly on the machine.`
+          `Run 'rdc config machine setup --name <name>' or 'sudo renet setup --auto' directly on the machine.`
       );
     }
 
@@ -222,7 +222,7 @@ export async function verifyMachineSetup(
     if (fsCheck.trim() !== 'btrfs') {
       throw new Error(
         `Machine '${machine.ip}' datastore at ${datastorePath} is not BTRFS (found: ${fsCheck.trim()}). ` +
-          `Run 'rdc config machine setup <name>' to initialize the BTRFS datastore.`
+          `Run 'rdc config machine setup --name <name>' to initialize the BTRFS datastore.`
       );
     }
 

@@ -1,10 +1,10 @@
 ---
-title: "実験的VM"
-description: "rdc opsを使用して、開発およびテスト用のローカルVMクラスターをプロビジョニングします。"
-category: "Concepts"
+title: 実験的VM
+description: rdc opsを使用して、開発およびテスト用のローカルVMクラスターをプロビジョニングします。
+category: Concepts
 order: 2
 language: ja
-sourceHash: "af686ab0f22d58c7"
+sourceHash: df01dc35c82beb81
 ---
 
 # 実験的VM
@@ -140,7 +140,7 @@ rdc ops down
 | `rdc ops up [options]` | VMクラスターをプロビジョニング |
 | `rdc ops down` | すべてのVMを破棄しクリーンアップ |
 | `rdc ops status` | すべてのVMのステータスを表示 |
-| `rdc ops ssh <vm-id> [command...]` | VMにSSH接続、またはVM上でコマンドを実行 |
+| `rdc ops ssh --vm-id <id> [command...]` | VMにSSH接続、またはVM上でコマンドを実行 |
 
 ### `rdc ops up` オプション
 

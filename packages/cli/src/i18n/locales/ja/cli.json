@@ -342,7 +342,7 @@
         "push": {
           "description": "キャッシュされたTLS証明書をマシンにアップロード",
           "merged": "より長い有効期限の証明書 {{count}} 件を {{machine}} にマージしました",
-          "noCache": "証明書キャッシュが見つかりません。先に 'rdc config cert-cache pull <machine>' を実行してください",
+          "noCache": "証明書キャッシュが見つかりません。先に 'rdc config cert-cache pull -m <machine>' を実行してください",
           "uploaded": "{{count}} 件の証明書を {{machine}} にアップロードしました",
           "uploading": "キャッシュされた証明書を {{machine}} にアップロード中...",
           "upToDate": "{{machine}} の証明書は最新です"
@@ -376,7 +376,7 @@
           "dnsError": "DNS 警告: {{message}}（レコードの手動設定が必要な場合があります）",
           "dnsResolvingZone": "{{domain}} の Cloudflare ゾーンを解決中...",
           "dnsSkipLocal": "DNS をスキップ: .local ドメインは Cloudflare を使用しません",
-          "dnsSkipNoToken": "DNS をスキップ: Cloudflare API トークンがありません。次のコマンドで設定してください: rdc config infra set <machine> --cf-dns-token <token>",
+          "dnsSkipNoToken": "DNS をスキップ: Cloudflare API トークンがありません。次のコマンドで設定してください: rdc config infra set -m <machine> --cf-dns-token <token>",
           "dnsUnchanged": "DNS: {{type}} {{name}} は既に正しい設定です",
           "dnsUpdated": "DNS: {{type}} {{name}} → {{content}} を更新しました",
           "installingProxy": "プロキシをインストールして起動中...",
@@ -535,7 +535,7 @@
         "description": "現在の設定のリポジトリマッピングを管理する",
         "list": {
           "description": "現在の設定のリポジトリ GUID マッピングをリスト表示する",
-          "noRepositories": "リポジトリが設定されていません。次のコマンドで追加してください: rdc config repository add <name> --guid <guid>"
+          "noRepositories": "リポジトリが設定されていません。次のコマンドで追加してください: rdc config repository add --name <name> --guid <guid>"
         },
         "listArchived": {
           "description": "アーカイブ済みリポジトリ資格情報をリスト表示する",
@@ -606,7 +606,7 @@
         },
         "list": {
           "description": "現在の設定のストレージをリスト表示する",
-          "noStorages": "ストレージが設定されていません。次のコマンドでインポートしてください: rdc config storage import <file>"
+          "noStorages": "ストレージが設定されていません。次のコマンドでインポートしてください: rdc config storage import --file <path>"
         },
         "remove": {
           "description": "現在の設定からストレージを削除する",
@@ -810,7 +810,7 @@
         "description": "OpenTofuを使用してクラウドプロバイダーに新しいマシンをプロビジョニングする",
         "failed": "マシンのプロビジョニングに失敗しました: {{error}}",
         "infraInherited": "兄弟マシン \"{{source}}\" からベースドメインを自動検出しました",
-        "noInfraHint": "ベースドメインが設定されていません。'rdc config infra set <machine> --base-domain <domain>' を実行してから 'rdc config infra push <machine>' を実行してDNSとプロキシを有効にしてください。",
+        "noInfraHint": "ベースドメインが設定されていません。'rdc config infra set -m <machine> --base-domain <domain>' を実行してから 'rdc config infra push -m <machine>' を実行してDNSとプロキシを有効にしてください。",
         "optionBaseDomain": "インフラストラクチャのベースドメイン（例: example.com）。--infra を含む",
         "optionImage": "デフォルトOSイメージを上書き",
         "optionInfra": "インフラストラクチャも設定する（infra set + infra push）",
@@ -1249,7 +1249,7 @@
         "archiveHint": "リカバリ用に認証情報をアーカイブするには: --archive-config を付けて再実行",
         "archiveOption": "設定エントリを deletedRepositories に移動して後から復元可能にする",
         "completed": "リポジトリを削除しました",
-        "configRetained": "\"{{repository}}\" の設定エントリを保持 (リポジトリは他のマシンに存在する可能性があります)。削除するには: rdc config repository remove {{repository}}",
+        "configRetained": "\"{{repository}}\" の設定エントリを保持 (リポジトリは他のマシンに存在する可能性があります)。削除するには: rdc config repository remove --name {{repository}}",
         "description": "リポジトリを削除する（コンテナ、ボリューム、暗号化イメージを破棄）。設定エントリは保持されます。--archive-config を使用して資格情報を deletedRepositories に移動し、'config restore-archived' で復元できます",
         "descriptionShort": "マシンからリポジトリを削除する",
         "failed": "リポジトリの削除に失敗しました",
@@ -1450,7 +1450,7 @@
         "forceOption": "変更の警告をスキップする",
         "grandNotFound": "フォーク \"{{name}}\" のグランドリポジトリが見つかりません",
         "notAFork": "\"{{name}}\" はフォークリポジトリではありません（parentGuid がありません）",
-        "revertHint": "元に戻すには: rdc repo takeover {{backup}} -m {{machine}}",
+        "revertHint": "元に戻すには: rdc repo takeover --name {{backup}} -m {{machine}}",
         "rollback": "\"{{name}}\" の設定をロールバックしました",
         "starting": "\"{{machine}}\" 上で \"{{fork}}\" のデータを使って \"{{grand}}\" を引き継いでいます..."
       },
@@ -2142,7 +2142,7 @@
       "createGuardOverride": "新しいgrandリポジトリ \"{{name}}\" を作成できません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "新しいgrandリポジトリ \"{{name}}\" を作成できません。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
       "forkBlocked": "コマンド \"{{command}}\" はforkリポジトリでは使用できません。\n\nforkリポジトリは一時的なサンドボックス環境です。この操作はgrand（本番）リポジトリにのみ適用されます。ユーザーにこのコマンドを直接実行するよう依頼してください。",
-      "grandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\ngrandリポジトリには本番データが含まれています。代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです。\n\nワークフロー:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する（例: rdc repo up {{name}}:<tag-name> -m <machine> --mount）\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nユーザーへ: 直接アクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
+      "grandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\ngrandリポジトリには本番データが含まれています。代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです。\n\nワークフロー:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する（例: rdc repo up --name {{name}}:<tag-name> -m <machine> --mount）\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nユーザーへ: 直接アクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
       "grandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます",
       "grandGuardOverrideNonLinux": "\"{{name}}\" はgrand（本番）リポジトリです。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nワークフロー:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
       "machineGuard": "エージェントモードでは \"{{machine}}\" への直接マシンアクセスは許可されていません。\n\nエージェントはサンドボックスアクセスのためにリポジトリコンテキストを通じて接続する必要があります。まずリポジトリのforkを作成し、fork に接続してください。\n\nワークフロー:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nユーザーへ: 直接マシンアクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
@@ -2185,7 +2185,7 @@
     "machineRequired": "マシン名が必要です。--machine <name> を使用してください",
     "machineRequiredLocal": "マシン名が必要です。--machine <name> を使用してください",
     "networkError": "ネットワークエラー: {{message}}",
-    "noActiveConfig": "アクティブな設定がありません。`rdc config init <name>` で作成してください。",
+    "noActiveConfig": "アクティブな設定がありません。`rdc config init --name <name>` で作成してください。",
     "notAuthenticated": "認証されていません。実行してください: rdc auth login",
     "passwordsMismatch": "パスワードが一致しません",
     "permissionDenied": "権限がありません",
@@ -2224,10 +2224,13 @@
     "sync": {
       "absolutePathBlocked": "--remote パスは絶対パスではなく相対パスでなければなりません。リポジトリルートからの相対パスを使用してください。",
       "localPathNotFound": "ローカルパスが存在しません: {{path}}",
+      "mirrorWithFile": "ソースがファイルの場合、--mirror は使用できません。宛先ディレクトリの兄弟ファイルが削除されます。",
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
-      "pathTraversalBlocked": "--remote パスに \"..\" パストラバーサルを含めることはできません。リポジトリ内のパスを使用してください。"
+      "pathTraversalBlocked": "--remote パスに \"..\" パストラバーサルを含めることはできません。リポジトリ内のパスを使用してください。",
+      "remoteAndRemoteFile": "--remote と --remote-file は併用できません。どちらか一方を選択してください。",
+      "remoteFileLocalNotDir": "--remote-file を指定した場合、--local は既存のディレクトリである必要があります: {{path}}"
     },
     "teamRequired": "チーム名が必要です。--team を使用するか、コンテキストを設定してください。",
     "term": {
@@ -2291,7 +2294,7 @@
       "create": "暗号化リポジトリを作成",
       "down": "サービスを停止",
       "fork": "テスト用CoWフォーク",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable --name <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "ストレージ上のバックアップを一覧表示",
       "pull": "ストレージからバックアップをプル",
       "push": "バックアップをストレージにプッシュ",
@@ -2360,6 +2363,7 @@
     "lang": "言語オーバーライド ({{languages}})",
     "limit": "結果の最大数",
     "localPath": "ローカルディレクトリパス (デフォルト: 現在のディレクトリ)",
+    "localPaths": "1 つ以上のローカルファイルまたはディレクトリのパス（既定: カレントディレクトリ）",
     "logLines": "表示するログ行数 (デフォルト: 50)",
     "machine": "マシン名",
     "machineForVault": "マシン名 (テスト後にボルトを更新)",
@@ -2412,6 +2416,7 @@
     "quiet": "情報出力を抑制する",
     "rawVault": "未加工ボルト JSON (スクリプト/CI 用)",
     "region": "リージョン名",
+    "remoteFile": "リポジトリ内のリモートファイルパス（単一ファイル転送時の --remote の代替）",
     "remotePath": "リポジトリ内のリモートサブディレクトリパス",
     "renetPath": "renet バイナリへのパス (デフォルト: PATH の renet)",
     "repository": "リポジトリ名 (リポジトリ環境に接続)",

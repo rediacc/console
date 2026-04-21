@@ -52,7 +52,7 @@ server.listen(PORT, HOST, () => {
     labels:
       - "rediacc.service_name=app"
       # Auto-route URL: https://{serviceName}.{repoName}.{machineName}.{baseDomain}
-      # Example: rdc repo create myrepo -m server-1 → https://app.myrepo.server-1.example.com
+      # Example: rdc repo create --name myrepo -m server-1 → https://app.myrepo.server-1.example.com
       - "rediacc.service_port=3000"
 
   db:
@@ -157,7 +157,7 @@ server.listen(PORT, HOST, () => {
     labels:
       - "rediacc.service_name=app"
       # Auto-route URL: https://{serviceName}.{repoName}.{machineName}.{baseDomain}
-      # Example: rdc repo create myrepo -m server-1 → https://app.myrepo.server-1.example.com
+      # Example: rdc repo create --name myrepo -m server-1 → https://app.myrepo.server-1.example.com
       - "rediacc.service_port=3000"
       # CRIU: enables checkpoint/restore for live migration.
       # eBPF handles bind rewriting, so apps do not need to track IP changes.
@@ -346,7 +346,7 @@ down() {
       # OPTION 1: Auto-route (simplest, fork-friendly)
       # Renet auto-generates a URL from the service name and repo name:
       #   https://{serviceName}.{repoName}.{machineName}.{baseDomain}
-      # Example: rdc repo create myrepo -m server-1
+      # Example: rdc repo create --name myrepo -m server-1
       #   → https://app.myrepo.server-1.example.com
       # Set rediacc.service_port if your app listens on a port other than 80:
       - "rediacc.service_port=80"

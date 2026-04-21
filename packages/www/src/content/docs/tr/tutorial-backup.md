@@ -1,11 +1,13 @@
 ---
-title: "Yedekleme ve Ağ"
-description: "Otomatik yedekleme zamanlamalarını yapılandırın, depolama sağlayıcılarını yönetin, altyapı ağını kurun ve hizmet portlarını kaydedin."
-category: "Tutorials"
+title: Yedekleme ve Ağ
+description: >-
+  Otomatik yedekleme zamanlamalarını yapılandırın, depolama sağlayıcılarını
+  yönetin, altyapı ağını kurun ve hizmet portlarını kaydedin.
+category: Tutorials
 order: 6
 language: tr
-sourceHash: "3af2b8e2e6105e29"
-sourceCommit: "2223eabccb947ee9da79f1afcef075e163797d13"
+sourceHash: b91d408984abfc75
+sourceCommit: 2223eabccb947ee9da79f1afcef075e163797d13
 ---
 
 # Rediacc ile Yedekleme ve Ağ Nasıl Yapılandırılır
@@ -113,7 +115,7 @@ Cron formatı `minute hour day month weekday` şeklindedir. Yaygın zamanlamalar
 Hedef adı yapılandırılmış bir depolama sağlayıcısıyla eşleşmelidir. Mevcut adları görmek için `rdc config storage list` çalıştırın. Yeni sağlayıcıları rclone yapılandırması aracılığıyla ekleyin.
 
 **Dağıtım sırasında "Infrastructure config incomplete"**
-Üç alanın tümü gereklidir: `--public-ipv4`, `--base-domain` ve `--cert-email`. Eksik alanları kontrol etmek için `rdc config infra show <machine>` çalıştırın.
+Üç alanın tümü gereklidir: `--public-ipv4`, `--base-domain` ve `--cert-email`. Eksik alanları kontrol etmek için `rdc config infra show -m <machine>` çalıştırın.
 
 ## Sonraki Adımlar
 

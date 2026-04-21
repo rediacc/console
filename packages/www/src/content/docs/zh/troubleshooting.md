@@ -1,11 +1,11 @@
 ---
-title: "故障排除"
-description: "SSH、设置、仓库、服务和Docker常见问题的解决方案。"
-category: "Guides"
+title: 故障排除
+description: SSH、设置、仓库、服务和Docker常见问题的解决方案。
+category: Guides
 order: 10
 language: zh
-sourceHash: "ee8fe3ee7166cfe4"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 4575658381fb6508
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # 故障排除
@@ -15,7 +15,7 @@ sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
 ## SSH连接失败
 
 - 验证您是否可以手动连接: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- 运行 `rdc config machine scan-keys server-1` 以刷新主机密钥
+- 运行 `rdc config machine scan-keys -m server-1` 以刷新主机密钥
 - 检查SSH端口是否匹配: `--port 22`
 - 使用简单命令测试: `rdc term connect -m server-1 -c "hostname"`
 
@@ -33,7 +33,7 @@ rdc config machine scan-keys -m server-1
 
 - 确保SSH用户拥有无密码的sudo访问权限，或为所需命令配置 `NOPASSWD`
 - 检查服务器上的可用磁盘空间
-- 使用 `--debug` 运行以获取详细输出: `rdc config machine setup server-1 --debug`
+- 使用 `--debug` 运行以获取详细输出: `rdc config machine setup --name server-1 --debug`
 
 ## 发行版特定的设置问题
 
@@ -100,7 +100,7 @@ rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 或查看所有容器:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## 权限被拒绝错误

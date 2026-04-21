@@ -1,10 +1,12 @@
 ---
-title: "Überwachung & Diagnose"
-description: "Maschinengesundheit prüfen, Container inspizieren, systemd-Dienste überprüfen, Host-Schlüssel scannen und Umgebungsdiagnosen ausführen."
-category: "Tutorials"
+title: Überwachung & Diagnose
+description: >-
+  Maschinengesundheit prüfen, Container inspizieren, systemd-Dienste überprüfen,
+  Host-Schlüssel scannen und Umgebungsdiagnosen ausführen.
+category: Tutorials
 order: 4
 language: de
-sourceHash: "2efd897e27dca34e"
+sourceHash: fa85cf9b00d42a6e
 ---
 
 # Infrastruktur mit Rediacc überwachen und diagnostizieren
@@ -33,7 +35,7 @@ Prüft Node.js, CLI-Version, renet-Binary, Konfiguration und Virtualisierungsunt
 ### Schritt 2: Maschinengesundheitsprüfung
 
 ```bash
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 Ruft einen umfassenden Gesundheitsbericht von der Remote-Maschine ab: Systembetriebszeit, Festplattennutzung, Datastore-Nutzung, Container-Anzahl, Speicher-SMART-Status und erkannte Probleme.
@@ -41,7 +43,7 @@ Ruft einen umfassenden Gesundheitsbericht von der Remote-Maschine ab: Systembetr
 ### Schritt 3: Laufende Container anzeigen
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 Listet alle laufenden Container über alle Repositories auf der Maschine auf und zeigt Name, Status, Zustand, Gesundheit, CPU-Nutzung, Speichernutzung und welchem Repository jeder Container gehört.
@@ -51,7 +53,7 @@ Listet alle laufenden Container über alle Repositories auf der Maschine auf und
 Um die zugrunde liegenden Dienste zu sehen, die den Docker-Daemon und die Netzwerke jedes Repositorys betreiben:
 
 ```bash
-rdc machine services server-1
+rdc machine services --name server-1
 ```
 
 Listet Rediacc-bezogene systemd-Dienste (Docker-Daemons, Loopback-Aliase) mit ihrem Zustand, Unterzustand, Neustart-Anzahl und Speichernutzung auf.
@@ -94,7 +96,7 @@ Der Hostname bestätigt, dass Sie mit dem richtigen Server verbunden sind. Die B
 Rediacc-Dienste erscheinen erst, nachdem mindestens ein Repository bereitgestellt wurde. Wenn keine Repositories existieren, ist die Dienstliste leer.
 
 **Container-Liste zeigt veraltete oder gestoppte Container**
-Container aus früheren Bereitstellungen können bestehen bleiben, wenn `repo down` nicht sauber ausgeführt wurde. Stoppen Sie sie mit `rdc repo down <repo> -m <machine>` oder inspizieren Sie direkt über `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
+Container aus früheren Bereitstellungen können bestehen bleiben, wenn `repo down` nicht sauber ausgeführt wurde. Stoppen Sie sie mit `rdc repo down --name <repo> -m <machine>` oder inspizieren Sie direkt über `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
 
 ## Nächste Schritte
 

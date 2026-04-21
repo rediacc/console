@@ -89,8 +89,130 @@ function collectSubdirs(files: { relativePath: string }[]): string[] {
 }
 
 /**
+ * Source entry for multi-path upload.
+ */
+export interface SftpUploadSource {
+  /** Absolute path to a local file or directory. */
+  path: string;
+  /** True if path is a file (not a directory). */
+  isFile: boolean;
+}
+
+interface SftpFileEntry {
+  remoteRelative: string;
+  absolutePath: string;
+  size: number;
+}
+
+/**
+ * Expand a mixed list of file/dir sources into flat SFTP file entries rooted
+ * at the remote destination. Directory sources use rsync "contents-of"
+ * semantics (no basename prefix); files land at `<remoteDir>/<basename>`.
+ */
+async function expandSftpSources(
+  sources: SftpUploadSource[],
+  exclude: string[]
+): Promise<SftpFileEntry[]> {
+  const entries: SftpFileEntry[] = [];
+  for (const src of sources) {
+    const normalized = src.path.replace(/[/\\]+$/, '');
+    if (src.isFile) {
+      const stat = await fsPromises.stat(normalized);
+      entries.push({
+        remoteRelative: path.basename(normalized),
+        absolutePath: normalized,
+        size: stat.size,
+      });
+    } else {
+      const walked = await walkLocalDir(normalized, normalized, exclude);
+      for (const f of walked) {
+        entries.push({
+          remoteRelative: f.relativePath,
+          absolutePath: f.absolutePath,
+          size: f.size,
+        });
+      }
+    }
+  }
+  return entries;
+}
+
+/**
+ * Upload one or more local files/directories to a remote directory via SFTP.
+ * Files are copied by basename into `remoteDir`; directory contents are copied
+ * preserving their hierarchy under `remoteDir/<basename>/`. No delta sync.
+ */
+export async function sftpUploadPaths(
+  sources: SftpUploadSource[],
+  remoteDir: string,
+  config: SFTPClientConfig,
+  options?: SftpTransferOptions
+): Promise<SftpTransferResult> {
+  const startTime = Date.now();
+  const exclude = options?.exclude ?? [];
+  const errors: string[] = [];
+
+  const fileEntries = await expandSftpSources(sources, exclude);
+
+  if (options?.dryRun) {
+    return {
+      success: true,
+      filesTransferred: fileEntries.length,
+      bytesTransferred: fileEntries.reduce((sum, f) => sum + f.size, 0),
+      errors: [],
+      duration: Date.now() - startTime,
+    };
+  }
+
+  const sftp = new SFTPClient(config);
+  let filesTransferred = 0;
+  let bytesTransferred = 0;
+
+  try {
+    await sftp.connect();
+
+    const normalizedRemote = remoteDir.replace(/\/+$/, '');
+    const subdirs = collectSubdirs(fileEntries.map((f) => ({ relativePath: f.remoteRelative })));
+    const allDirs = [normalizedRemote, ...subdirs.map((d) => `${normalizedRemote}/${d}`)];
+    await sftp.exec(`mkdir -p ${allDirs.map((d) => `"${d}"`).join(' ')}`);
+
+    const totalBytes = fileEntries.reduce((s, f) => s + f.size, 0);
+    for (const file of fileEntries) {
+      const remoteFilePath = `${normalizedRemote}/${file.remoteRelative}`;
+      try {
+        const data = await fsPromises.readFile(file.absolutePath);
+        const b64 = data.toString('base64');
+        const exitCode = await sftp.execStreaming(`base64 -d > "${remoteFilePath}"`, {
+          stdin: b64,
+        });
+        if (exitCode !== 0) {
+          errors.push(`${file.remoteRelative}: remote write failed (exit code ${exitCode})`);
+          continue;
+        }
+        filesTransferred++;
+        bytesTransferred += data.length;
+        options?.onProgress?.(file.remoteRelative, bytesTransferred, totalBytes);
+      } catch (err) {
+        errors.push(`${file.remoteRelative}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+  } finally {
+    sftp.close();
+  }
+
+  return {
+    success: errors.length === 0,
+    filesTransferred,
+    bytesTransferred,
+    errors,
+    duration: Date.now() - startTime,
+  };
+}
+
+/**
  * Upload a local directory to a remote path via SFTP.
- * No delta sync — transfers all files.
+ * Contents of the local dir are copied into `remotePath` (no basename prefix).
+ * Kept for backward compatibility; delegates to the file-aware path loop.
  */
 export async function sftpUploadDirectory(
   localPath: string,
@@ -102,10 +224,7 @@ export async function sftpUploadDirectory(
   const exclude = options?.exclude ?? [];
   const errors: string[] = [];
 
-  // Normalize local path (remove trailing slash for path.relative)
   const normalizedLocal = localPath.replace(/[/\\]+$/, '');
-
-  // Collect local files
   const files = await walkLocalDir(normalizedLocal, normalizedLocal, exclude);
 
   if (options?.dryRun) {
@@ -126,18 +245,10 @@ export async function sftpUploadDirectory(
     await sftp.connect();
 
     const normalizedRemote = remotePath.replace(/\/+$/, '');
-
-    // Use SSH exec channel for file operations (not SFTP subsystem) because
-    // sandbox-gateway may restrict SFTP paths differently from exec paths.
-    // Write files by piping data through: base64 | base64 -d > file
     const subdirs = collectSubdirs(files);
-
-    // Create target + all subdirectories via exec
     const allDirs = [normalizedRemote, ...subdirs.map((d) => `${normalizedRemote}/${d}`)];
     await sftp.exec(`mkdir -p ${allDirs.map((d) => `"${d}"`).join(' ')}`);
 
-    // Upload files via exec channel using base64 encoding to handle binary safely.
-    // execStreaming pipes base64 data through stdin → base64 -d > file on remote.
     const totalBytes = files.reduce((s, f) => s + f.size, 0);
     for (const file of files) {
       const remoteFilePath = `${normalizedRemote}/${file.relativePath}`;
@@ -245,6 +356,70 @@ export async function sftpDownloadDirectory(
   return {
     success: errors.length === 0,
     filesTransferred,
+    bytesTransferred,
+    errors,
+    duration: Date.now() - startTime,
+  };
+}
+
+/**
+ * Download a single remote file into a local directory via SFTP.
+ * The file lands at `<localDir>/<basename(remoteFilePath)>`.
+ */
+export async function sftpDownloadFile(
+  remoteFilePath: string,
+  localDir: string,
+  config: SFTPClientConfig,
+  options?: SftpTransferOptions
+): Promise<SftpTransferResult> {
+  const startTime = Date.now();
+  const errors: string[] = [];
+  const normalizedRemote = remoteFilePath.replace(/\/+$/, '');
+  const normalizedLocalDir = localDir.replace(/[/\\]+$/, '');
+  const basename = path.posix.basename(normalizedRemote);
+  const localFilePath = path.join(normalizedLocalDir, basename);
+
+  if (options?.dryRun) {
+    const sftp = new SFTPClient(config);
+    try {
+      await sftp.connect();
+      const sizeOut = await sftp.exec(
+        `stat -c '%s' "${normalizedRemote}" 2>/dev/null || wc -c < "${normalizedRemote}"`
+      );
+      const size = Number.parseInt(sizeOut.trim(), 10) || 0;
+      return {
+        success: true,
+        filesTransferred: 1,
+        bytesTransferred: size,
+        errors: [],
+        duration: Date.now() - startTime,
+      };
+    } finally {
+      sftp.close();
+    }
+  }
+
+  const sftp = new SFTPClient(config);
+  let bytesTransferred = 0;
+
+  try {
+    await sftp.connect();
+    await fsPromises.mkdir(normalizedLocalDir, { recursive: true });
+
+    const b64 = await sftp.exec(`base64 "${normalizedRemote}"`);
+    const data = Buffer.from(b64.trim(), 'base64');
+    await fsPromises.writeFile(localFilePath, data);
+    bytesTransferred = data.length;
+    options?.onProgress?.(basename, bytesTransferred, bytesTransferred);
+  } catch (err) {
+    errors.push(`${basename}: ${err instanceof Error ? err.message : String(err)}`);
+  } finally {
+    sftp.close();
+  }
+
+  return {
+    success: errors.length === 0,
+    filesTransferred: errors.length === 0 ? 1 : 0,
     bytesTransferred,
     errors,
     duration: Date.now() - startTime,

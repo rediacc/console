@@ -224,7 +224,7 @@ export function registerDatastoreCommands(program: Command): void {
           const machine = await configService.getLocalMachine(machineName);
           if (!machine.ceph) {
             throw new ValidationError(
-              `Machine "${machineName}" does not have Ceph configuration. Run: rdc config set ceph --pool <pool> --image <image> -m ${machineName}`
+              `Machine "${machineName}" does not have Ceph configuration. Run: rdc config machine set-ceph -m ${machineName} --pool <pool> --image <image>`
             );
           }
 

@@ -105,7 +105,7 @@ Non-retryable errors (authentication, not found, invalid arguments) require corr
 Use `--fields` to limit output to specific keys. This reduces token usage when only specific data is needed:
 
 ```bash
-rdc machine containers prod-1 -o json --fields name,status,repository
+rdc machine containers --name prod-1 -o json --fields name,status,repository
 ```
 
 ## Dry-Run Output

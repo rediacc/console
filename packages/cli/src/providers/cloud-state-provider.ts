@@ -94,13 +94,13 @@ class CloudQueueProvider implements QueueProvider {
       vaultContent: params.vaultContent as string,
       priority: params.priority as number,
     });
-    const parsed = parseCreateQueueItem(response as never);
+    const parsed = parseCreateQueueItem(response);
     return { taskId: parsed.taskId ?? undefined };
   }
 
   async trace(taskId: string): Promise<ResourceRecord | null> {
     const response = await typedApi.GetQueueItemTrace({ taskId });
-    const parsed = parseGetQueueItemTrace(response as never);
+    const parsed = parseGetQueueItemTrace(response);
     return parsed as unknown as ResourceRecord;
   }
 

@@ -34,7 +34,7 @@ Yazılım olarak Rediacc, tüketici verilerine erişmez, işlemez veya depolamaz
 
 Her Rediacc deposu, benzersiz bir GUID'e sahip ayrı, şifrelenmiş bir veri birimidir. Hangi verilerin nerede olduğunu tam olarak envantere alabilirsiniz:
 
-- `rdc machine query <machine> --repositories` bir makinedeki tüm depoları boyut ve bağlama durumu ile listeler
+- `rdc machine query --name <machine> --repositories` bir makinedeki tüm depoları boyut ve bağlama durumu ile listeler
 - Her depo dosya sistemi, ağ ve konteyner düzeyinde izole edilmiştir
 - Fork ilişkileri takip edilir, böylece bir veri setinin tüm kopyalarını tanımlayabilirsiniz
 

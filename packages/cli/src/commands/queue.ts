@@ -200,9 +200,9 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
     t('commands.queue.create.creating', { function: options.function }),
     () =>
       provider.queue.create({
-        teamName: opts.team as string,
-        machineName: opts.machine as string,
-        bridgeName: opts.bridge as string,
+        teamName: opts.team,
+        machineName: opts.machine,
+        bridgeName: opts.bridge,
         vaultContent: queueVault,
         priority: Number.parseInt(options.priority, 10),
         functionName: options.function,
@@ -249,7 +249,7 @@ async function fetchTraceSummary(
 ): Promise<QueueTraceSummary | null> {
   if (provider.isCloud) {
     const apiResponse = await typedApi.GetQueueItemTrace({ taskId });
-    return mapTraceToSummary(parseGetQueueItemTrace(apiResponse as never));
+    return mapTraceToSummary(parseGetQueueItemTrace(apiResponse));
   }
   const item = await provider.queue.trace(taskId);
   if (!item) return null;

@@ -110,10 +110,8 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
     </Flex>
   );
 
-  const currentKeyType: 'rsa' | 'ed25519' =
-    keyOptions.keyType ?? (SSH_KEY_DEFAULTS.ALGORITHM as 'rsa' | 'ed25519');
-  const currentKeySize: 2048 | 4096 =
-    keyOptions.keySize ?? (SSH_KEY_DEFAULTS.KEY_SIZE as 2048 | 4096);
+  const currentKeyType: 'rsa' | 'ed25519' = keyOptions.keyType ?? SSH_KEY_DEFAULTS.ALGORITHM;
+  const currentKeySize: 2048 | 4096 = keyOptions.keySize ?? SSH_KEY_DEFAULTS.KEY_SIZE;
 
   const renderSSHKeyOptions = () => (
     <Flex vertical className="w-full">

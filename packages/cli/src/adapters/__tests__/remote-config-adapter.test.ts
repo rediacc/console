@@ -41,7 +41,7 @@ vi.mock('@rediacc/shared/config-crypto', () => ({
   fromBase64: mockFromBase64,
 }));
 
-import type { RemoteConfig, RdcConfig } from '../../types/index.js';
+import type { RemoteConfig } from '../../types/index.js';
 import {
   RemoteConfigAdapter,
   RemotePasskeySecretMissingError,
@@ -254,7 +254,7 @@ describe('RemoteConfigAdapter', () => {
         machines: { m1: { ip: '10.0.0.1', user: 'root' } },
       };
 
-      const result = await adapter.push(config as RdcConfig, 5);
+      const result = await adapter.push(config, 5);
 
       expect(result.version).toBe(6);
       expect(mockSelectiveEncrypt).toHaveBeenCalled();
@@ -287,7 +287,7 @@ describe('RemoteConfigAdapter', () => {
         data: { version: 2 },
       });
 
-      await adapter.push({ id: 'id', version: 1 } as RdcConfig, 1);
+      await adapter.push({ id: 'id', version: 1 }, 1);
 
       expect(tokenStorage.updateToken).toHaveBeenCalledWith(CONFIG_NAME, 'tok_push_rotated');
     });

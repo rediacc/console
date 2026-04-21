@@ -281,7 +281,7 @@ export async function pushInfraConfig(
 
   if (!machine.infra) {
     throw new Error(
-      `Machine "${machineName}" has no infrastructure config. Set it with: rdc config infra set ${machineName}`
+      `Machine "${machineName}" has no infrastructure config. Set it with: rdc config infra set -m ${machineName}`
     );
   }
 

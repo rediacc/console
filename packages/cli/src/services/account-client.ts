@@ -251,15 +251,7 @@ export async function accountServerFetch<T = unknown>(
       // literal assertion. Callers' `.catch(() => null)` paths don't run.
       return Object.create(null);
     }
-    handle426Response(
-      parsed as {
-        error?: string;
-        minVersion?: string;
-        currentVersion?: string;
-        updateChannel?: string;
-      },
-      getInstallMethod()
-    );
+    handle426Response(parsed, getInstallMethod());
   }
 
   // Check the inner HTTP status
