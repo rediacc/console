@@ -42,7 +42,12 @@ import { configEditOverrideScope, isAgentEnvironment } from '../../utils/agent-g
 import { openEditor, EditorError } from '../../utils/editor-launcher.js';
 import { outputService } from '../../services/output.js';
 import { redactClone, shortFingerprint, walkSensitive, getByPointer } from '../../schema/walker.js';
-import { parseConfig, RdcConfigSchema, type RdcConfig } from '../../schema/schemas.js';
+import {
+  parseConfig,
+  RdcConfigSchema,
+  stringifyConfig,
+  type RdcConfig,
+} from '../../schema/schemas.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 
 const REDACT_PATTERN = /^<redacted:[^>]+>:[0-9a-f]{8}$/;
@@ -80,7 +85,7 @@ function renderJsonc(config: RdcConfig, options: RenderOptions): string {
     `// ${t('commands.config.edit.bannerRotateLine2')}`,
     '',
   ].join('\n');
-  return `${banner + JSON.stringify(view, null, 2)}\n`;
+  return `${banner + stringifyConfig(view)}\n`;
 }
 
 /**
