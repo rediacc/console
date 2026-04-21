@@ -114,7 +114,12 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/remote/storageKeyId': { kind: 'identifier' },
 
   // ── Local binary override ────────────────────────────────────────────────
-  '/renetPath': { kind: 'pii' },
+  // renetPath is a user-set filesystem override (e.g. /opt/bin/renet). It is
+  // not a secret — marking it public lets `config show` surface the actual
+  // value so scripts and tests can verify which binary is in use. A user who
+  // embeds their home directory ("/home/alice/bin/renet") accepts that the
+  // path surfaces like any other resource path they chose.
+  '/renetPath': { kind: 'public' },
 };
 
 /**
