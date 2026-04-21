@@ -11,6 +11,7 @@ import playwrightPlugin from 'eslint-plugin-playwright';
 import globals from 'globals';
 import { requireTestId } from './eslint-rules/require-testid.js';
 import { requireTranslation } from './eslint-rules/require-translation.js';
+import { requireTranslationKeyArg } from './eslint-rules/require-translation-key-arg.js';
 import { noHardcodedText } from './eslint-rules/no-hardcoded-text.js';
 import { noHardcodedCliText } from './eslint-rules/no-hardcoded-cli-text.js';
 import { requireCommandSummary } from './eslint-rules/require-command-summary.js';
@@ -226,6 +227,7 @@ export default tseslint.config(
         rules: {
           'require-testid': requireTestId,
           'require-translation': requireTranslation,
+          'require-translation-key-arg': requireTranslationKeyArg,
           'no-hardcoded-text': noHardcodedText,
           'no-hardcoded-cli-text': noHardcodedCliText,
           'require-command-summary': requireCommandSummary,
@@ -571,6 +573,16 @@ export default tseslint.config(
       // Enforce translation keys exist in locale files
       'custom/require-translation': ['error', {
         localeDir: 'packages/cli/src/i18n/locales/en',
+      }],
+      // Validate string literals passed to indirect translation-key helpers
+      // (e.g., errorResult('commands.update.errors.lockFailed')) against the
+      // locale dir. Prevents raw-key leaks where the string bypasses t() and
+      // is later interpolated into a translated template.
+      'custom/require-translation-key-arg': ['error', {
+        localeDir: 'packages/cli/src/i18n/locales/en',
+        functions: [
+          { name: 'errorResult', argIndex: 0 },
+        ],
       }],
       'i18n-source/interpolation-match': ['error', {
         localeDir: 'packages/cli/src/i18n/locales/en',

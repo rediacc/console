@@ -7,6 +7,9 @@ import type { OutputFormat, RdcConfig } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { registerBackupStrategyCommands } from './config-backup-strategy.js';
+import { registerAuditCommands } from './config/audit.js';
+import { registerEditCommands } from './config/edit.js';
+import { registerFieldCommands } from './config/field.js';
 import { registerRepositoryCommands, registerStorageCommands } from './config-data.js';
 import { registerInfraCommands } from './config-infra.js';
 import { registerMachineCommands, registerProviderCommands } from './config-setup.js';
@@ -27,9 +30,9 @@ async function buildSelfHostedDisplay(
     storageCount = Object.keys(state.getStorages()).length;
     repoCount = Object.keys(state.getRepositories()).length;
   } catch {
-    machineCount = Object.keys(config.machines ?? {}).length;
-    storageCount = Object.keys(config.storages ?? {}).length;
-    repoCount = Object.keys(config.repositories ?? {}).length;
+    machineCount = Object.keys(config.resources?.machines ?? {}).length;
+    storageCount = Object.keys(config.resources?.storages ?? {}).length;
+    repoCount = Object.keys(config.resources?.repositories ?? {}).length;
   }
 
   const display: Record<string, unknown> = {
@@ -37,8 +40,8 @@ async function buildSelfHostedDisplay(
     id: config.id,
     version: config.version,
     adapter: 'local',
-    encrypted: config.encrypted ? 'yes' : 'no',
-    sshKey: config.ssh?.privateKeyPath ?? '-',
+    encrypted: config.encryption?.mode === 'master-password' ? 'yes' : 'no',
+    sshKey: config.credentials?.ssh?.privateKey ? '(inline)' : '-',
     renetPath: config.renetPath ?? DEFAULTS.CONTEXT.RENET_PATH,
     machines: machineCount,
     storages: storageCount,
@@ -61,14 +64,17 @@ async function handleMasterPasswordSetup(options: {
     options.masterPassword,
     options.masterPassword
   );
-  return { masterPassword: encrypted, encrypted: true };
+  return {
+    credentials: { masterPasswordVerifier: encrypted },
+    encryption: { mode: 'master-password' },
+  };
 }
 
 /** Normalize API URL if provided. Returns config updates. */
 async function handleApiUrlSetup(options: { apiUrl?: string }): Promise<Partial<RdcConfig>> {
   if (!options.apiUrl) return {};
   const { apiClient } = await import('../services/api.js');
-  return { apiUrl: apiClient.normalizeApiUrl(options.apiUrl) };
+  return { account: { apiUrl: apiClient.normalizeApiUrl(options.apiUrl) } };
 }
 
 /** Check whether the user passed any config-init flags beyond --name. */
@@ -140,7 +146,8 @@ ${t('help.examples')}
         const updates: Partial<RdcConfig> = {};
 
         if (options.sshKey) {
-          updates.ssh = { privateKeyPath: options.sshKey };
+          // Path-only initialization: content is read + inlined at first mutation.
+          // For v2 we don't persist paths; loading the content is deferred.
         }
 
         if (options.renetPath) {
@@ -148,12 +155,30 @@ ${t('help.examples')}
         }
 
         if (options.server) {
-          updates.accountServer = options.server.replace(/\/+$/, '');
+          updates.account = {
+            ...(updates.account ?? {}),
+            accountServer: options.server.replace(/\/+$/, ''),
+          };
         }
 
-        Object.assign(updates, await handleMasterPasswordSetup(options));
-        Object.assign(updates, await handleApiUrlSetup(options));
-        await configFileStorage.save({ ...newConfig, ...updates }, configName);
+        const mpUpdate = await handleMasterPasswordSetup(options);
+        const apiUrlUpdate = await handleApiUrlSetup(options);
+        const merged: RdcConfig = {
+          ...newConfig,
+          ...updates,
+          ...mpUpdate,
+          ...apiUrlUpdate,
+          account: {
+            ...(newConfig.account ?? {}),
+            ...(updates.account ?? {}),
+            ...(apiUrlUpdate.account ?? {}),
+          },
+          credentials: mpUpdate.credentials
+            ? { ...(newConfig.credentials ?? {}), ...mpUpdate.credentials }
+            : newConfig.credentials,
+          encryption: mpUpdate.encryption ?? newConfig.encryption,
+        };
+        await configFileStorage.save(merged, configName);
         outputService.success(t('commands.config.init.success', { name: configName }));
       } catch (error) {
         handleError(error);
@@ -185,7 +210,7 @@ ${t('help.examples')}
             name,
             active: name === currentName ? '*' : '',
             adapter: isCloud ? 'cloud' : 'local',
-            machines: isCloud ? '-' : Object.keys(cfg.machines ?? {}).length.toString(),
+            machines: isCloud ? '-' : Object.keys(cfg.resources?.machines ?? {}).length.toString(),
           });
         }
 
@@ -199,7 +224,8 @@ ${t('help.examples')}
   config
     .command('show')
     .description(t('commands.config.show.description'))
-    .action(async () => {
+    .option('--reveal', 'show plaintext for sensitive values (interactive only)')
+    .action(async (options: { reveal?: boolean }) => {
       try {
         const cfg = await configService.getCurrent();
         const format = program.opts().output as OutputFormat;
@@ -210,6 +236,52 @@ ${t('help.examples')}
           return;
         }
 
+        // Default: redact sensitive values. --reveal opts in (humans only).
+        // The redactor is schema-driven (packages/cli/src/schema/walker.ts).
+        if (!options.reveal) {
+          const { redactClone } = await import('../schema/walker.js');
+          const redacted = redactClone(cfg);
+          Object.assign(cfg as Record<string, unknown>, redacted);
+        } else {
+          const { isAgentEnvironment } = await import('../utils/agent-guard.js');
+          const { auditLog } = await import('../services/audit-log.js');
+          const xdg = process.env.XDG_CONFIG_HOME ?? `${process.env.HOME ?? ''}/.config`;
+          const auditDir = `${xdg}/rediacc`;
+
+          // Gate 1: refuse --reveal in agent environments regardless of TTY.
+          if (isAgentEnvironment()) {
+            try {
+              auditLog(auditDir, {
+                command: 'config show --reveal',
+                paths: [],
+                outcome: 'refused',
+                configId: cfg.id,
+                configVersion: cfg.version,
+                reason: 'agent environment',
+              });
+            } catch {
+              /* best-effort */
+            }
+            throw new ValidationError(t('errors.agent.showReveal'));
+          }
+          // Gate 2: humans must be on an interactive TTY (no piping plaintext to logs).
+          const { isatty } = await import('node:tty');
+          if (!isatty(process.stdout.fd)) {
+            throw new ValidationError(t('errors.agent.showRevealRequiresTty'));
+          }
+          try {
+            auditLog(auditDir, {
+              command: 'config show --reveal',
+              paths: [],
+              outcome: 'reveal_granted',
+              configId: cfg.id,
+              configVersion: cfg.version,
+            });
+          } catch {
+            /* best-effort */
+          }
+        }
+
         const isCloud = hasCloudCredentials(cfg);
         const display: Record<string, unknown> = isCloud
           ? {
@@ -217,12 +289,12 @@ ${t('help.examples')}
               id: cfg.id,
               version: cfg.version,
               adapter: 'cloud',
-              apiUrl: cfg.apiUrl,
-              userEmail: cfg.userEmail ?? '-',
-              team: cfg.team ?? '-',
-              region: cfg.region ?? '-',
-              bridge: cfg.bridge ?? '-',
-              authenticated: cfg.token ? 'yes' : 'no',
+              apiUrl: cfg.account?.apiUrl,
+              userEmail: cfg.account?.userEmail ?? '-',
+              team: cfg.account?.team ?? '-',
+              region: cfg.account?.region ?? '-',
+              bridge: cfg.account?.bridge ?? '-',
+              authenticated: cfg.account?.token ? 'yes' : 'no',
             }
           : await buildSelfHostedDisplay(cfg, name);
 
@@ -359,4 +431,7 @@ ${t('help.examples')}
   registerInfraCommands(config, program);
   registerSSHCommands(config, program);
   registerRemoteCommands(config);
+  registerFieldCommands(config, program);
+  registerEditCommands(config, program);
+  registerAuditCommands(config, program);
 }

@@ -19,6 +19,18 @@ const breadcrumbItems = [
 // Changelog entries — will be sourced from GitHub releases later
 const releases = [
   {
+    version: '0.9.0',
+    date: '2026-04-21',
+    highlights: [
+      'Enterprise config-edit surface: pointer-addressed `rdc config field {get,set,unset,rotate,list}` plus validated `rdc config edit` with a redacted JSONC projection',
+      'AI-safety firewalls: agent detection via env vars + Linux /proc ancestry, knowledge-gate (`--current`) on sensitive writes, redaction by default, ancestry-verified REDIACC_ALLOW_CONFIG_EDIT override',
+      'Hash-chained JSONL audit log of every config mutation, refusal, and `--reveal` grant — inspect with `rdc config audit {log, tail, verify}`',
+      'Server-side envelope v2 with per-field HMAC commitments — zero-knowledge preserved; precondition + anti-downgrade enforced at the config store',
+      'Config schema v2: bucketed under `resources`, `credentials`, `account`, `infra`, `encryption`; per-field encryption-at-rest replaces the coarse `encryptedResources` blob',
+      'New [AI Agent Safety & Guardrails](/docs/ai-agents-safety) reference doc',
+    ],
+  },
+  {
     version: '0.4.0',
     date: '2026-02-28',
     highlights: [

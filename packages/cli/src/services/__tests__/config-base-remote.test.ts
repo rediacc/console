@@ -85,9 +85,10 @@ describe('ConfigServiceBase remote integration', () => {
   let service: InstanceType<typeof ConfigServiceBase>;
 
   const localConfig = {
+    schemaVersion: 2 as const,
     id: 'local-id',
     version: 1,
-    machines: { m1: { ip: '10.0.0.1', user: 'root' } },
+    resources: { machines: { m1: { ip: '10.0.0.1', user: 'root' } } },
   };
 
   const remotePointer = {
@@ -101,15 +102,18 @@ describe('ConfigServiceBase remote integration', () => {
   const localConfigWithRemote = {
     ...localConfig,
     remote: remotePointer,
-    language: 'en',
+    defaults: { language: 'en' },
   };
 
   const pulledConfig = {
+    schemaVersion: 2 as const,
     id: 'remote-id',
     version: 3,
-    machines: { prod: { ip: '10.0.0.5', user: 'deploy' } },
-    repositories: {},
-    storages: {},
+    resources: {
+      machines: { prod: { ip: '10.0.0.5', user: 'deploy' } },
+      repositories: {},
+      storages: {},
+    },
   };
 
   beforeEach(async () => {
@@ -149,8 +153,8 @@ describe('ConfigServiceBase remote integration', () => {
       expect(mockAdapterInstance.pull).toHaveBeenCalled();
       // Pulled config should have remote pointer and language preserved from local
       expect(result?.remote).toEqual(remotePointer);
-      expect(result?.language).toBe('en');
-      expect(result?.machines).toHaveProperty('prod');
+      expect(result?.defaults?.language).toBe('en');
+      expect(result?.resources?.machines).toHaveProperty('prod');
     });
 
     it('should cache remote config on second call', async () => {

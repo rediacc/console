@@ -54,7 +54,7 @@ async function maybeSyncCertCache(baseDomain: string, machineName: string): Prom
   try {
     const { isCertCacheStale, downloadCertCache } = await import('../services/cert-cache.js');
     const current = await configService.getCurrent().catch(() => undefined);
-    const entry = current?.acmeCertCache?.[baseDomain];
+    const entry = current?.infra?.acmeCertCache?.[baseDomain];
     if (!isCertCacheStale(entry?.updatedAt)) return;
     const before = entry?.certCount ?? 0;
     const result = await downloadCertCache(machineName, { silent: true });

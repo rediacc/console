@@ -1,6 +1,0 @@
-# Cloudflare Pages edge redirects.
-# Served BEFORE any static HTML, so visitors never see the meta-refresh
-# fallback emitted by src/pages/index.astro.
-
-# Root → default language (single 301 hop, no trailing slash)
-/  /en  301

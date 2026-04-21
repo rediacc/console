@@ -320,6 +320,17 @@ describe('services/background-updater', () => {
 
       expect(mockTelemetry.telemetryService.trackEvent).toHaveBeenCalledWith('update.spawn');
     });
+
+    it('does nothing when user invoked `rdc update`', async () => {
+      const originalArgv = process.argv;
+      process.argv = ['/usr/bin/node', '/usr/local/bin/rdc', 'update'];
+      try {
+        await maybeSpawnBackgroundUpdate();
+        expect(mockSpawn).not.toHaveBeenCalled();
+      } finally {
+        process.argv = originalArgv;
+      }
+    });
   });
 
   // ==========================================================================

@@ -9,6 +9,7 @@ export const SDK_WINDOW_SECONDS = 300;
 export const HKDF_INFO = {
   SDK_DERIVE: 'rediacc-config-sdk-v1',
   WRAPPING_KEY: 'rediacc-config-wrapping-key-v1',
+  FIELD_COMMITMENT: 'rediacc-config-fck-v1',
 } as const;
 
 /** HMAC info */

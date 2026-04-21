@@ -271,7 +271,13 @@ rdc machine backup schedule -m server-1
 rdc machine backup schedule -m server-1 --dry-run
 ```
 
-`--dry-run` oluşturulan systemd birim dosyalarını dağıtmadan yazdırır. rclone token'ları dry-run çıktısında maskelenir.
+Dağıtım bir durum uzlaştırıcıdır. Makinedeki mevcut birim dosyalarını ve systemd durumunu okur, yapılandırmanın üreteceği içerikle karşılaştırır (dosya başına SHA-256) ve yalnızca içeriği gerçekten değişen birimlere dokunur. Yapılandırma değişikliği olmadan yeniden çalıştırmak bir no-op'tur: yazma yok, `daemon-reload` yok, zamanlayıcı gürültüsü yok.
+
+`--dry-run` her strateji için planı yazdırır (`created`, `updated (service, timer, env)`, `unchanged`, `removed`) ve makineye dokunmaz. Oluşturulan birim gövdelerini de yazdırmak için `--debug` ile birlikte kullanın; rclone token'ları gizlenir.
+
+Güncellemek veya kaldırmak üzere olduğunuz bir strateji için şu anda bir yedekleme çalışıyorsa, dağıtım hızlıca başarısız olur ve onu iptal etmeniz ya da `--force` geçirmeniz önerilir. `--force` ile, çalışan işlem belleğindeki birimini korur ve yeni yapılandırma bir sonraki zamanlayıcı tetiklemesinde geçerli olur; çalışan yedekleme asla sonlandırılmaz.
+
+`--reset-failed` isteğe bağlıdır. Geçirildiğinde, başarılı bir dağıtımdan sonra dokunulan servislerde systemd'nin failed durumunu temizler. Varsayılan olarak kapalıdır, böylece önceki arıza sinyalleri uyarı sistemleri için görünür kalır.
 
 ### Şimdi Yedekleme Çalıştırma
 

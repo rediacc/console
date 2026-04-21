@@ -284,6 +284,23 @@
       }
     },
     "config": {
+      "audit": {
+        "description": "Konfigurations-Audit-Log inspizieren (hash-verkettete JSONL in ~/.config/rediacc/audit.log.jsonl)",
+        "log": {
+          "description": "Kürzliche Audit-Einträge als JSON ausgeben",
+          "optionActor": "Nach Akteur-Typ filtern (human|agent)",
+          "optionPath": "Nach JSON-Pointer-Glob filtern (z. B. /credentials/*)",
+          "optionSince": "Nur Einträge nach (z. B. '24h', '7d', ISO-Zeitstempel)"
+        },
+        "tail": {
+          "description": "Neue Audit-Einträge live streamen (Ctrl+C zum Beenden)"
+        },
+        "verify": {
+          "chainBroken": "Kette bei Zeile {{line}} unterbrochen — Datei wurde manipuliert oder ist beschädigt.",
+          "chainOk": "Ketten-Integrität über {{count}} Einträge verifiziert.",
+          "description": "Integrität der SHA-256-Hash-Kette über alle Audit-Einträge prüfen"
+        }
+      },
       "backupStrategy": {
         "description": "Benannte Backup-Strategien verwalten (Hot/Cold-Modi, Ziele, Zeitplanung)",
         "list": {
@@ -366,6 +383,57 @@
       },
       "description": "Konfigurationsdateien, Maschinen und SSH-Verbindungen verwalten",
       "descriptionShort": "Konfigurationsdateien, Maschinen und SSH-Verbindungen verwalten",
+      "edit": {
+        "abortAfterRetries": "Abbruch nach {{count}} fehlgeschlagenen Versuchen. Entwurf gespeichert unter: {{path}}",
+        "applied": "{{path}} angewendet",
+        "bannerRedacted": "Sensible Felder werden als <redacted:KIND>:DIGEST-Stubs angezeigt, die sicher unverändert zurücklaufen.",
+        "bannerReveal": "--reveal aktiv: SENSIBLE WERTE SICHTBAR. Audit-Log aktiv.",
+        "bannerRotateLine1": "Zum Rotieren eines Geheimnisses: Ersetzen Sie den Stub durch den neuen Klartext — Sie werden",
+        "bannerRotateLine2": "nach dem Schließen des Editors zur Bestätigung jeder Rotation aufgefordert.",
+        "bannerStrip": "Zeilen, die mit // beginnen, werden beim Speichern entfernt.",
+        "bannerTitle": "rdc config edit — {{name}} (v{{version}})",
+        "description": "Aktive Konfiguration in $EDITOR als zensiertes JSONC öffnen. Nur für Menschen; Agenten werden abgelehnt.",
+        "noChanges": "Keine Änderungen gespeichert; breche ab.",
+        "optionApply": "Eine bearbeitete JSONC-Datei anwenden (überspringt das Öffnen von $EDITOR)",
+        "optionCurrentSecrets": "JSON-Datei mit Pointer→alter-Klartext-Zuordnung für den Wissensnachweis bei --apply",
+        "optionDump": "Aktuelle Konfiguration als JSONC an stdout ausgeben, statt den Editor zu öffnen (schreibgeschützt; für Agenten sicher, wenn zensiert)",
+        "optionEditor": "Editor-Befehl (folgt git-Reihenfolge: --editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+        "optionReveal": "Klartext für sensible Werte anzeigen (nur interaktives TTY; Audit-Log)",
+        "rotateDeclined": "Abgebrochen; Entwurf in der Editor-Temp-Datei erhalten.",
+        "rotatePromptBullet": "  • {{pointer}}",
+        "rotatePromptFooter": "Tippen Sie 'rotate', um zu bestätigen (alles andere bricht ab): ",
+        "rotatePromptHeader": "Sie sind dabei, {{count}} sensible(s) Feld(er) zu rotieren:",
+        "saved": "Konfiguration „{{name}}\" gespeichert"
+      },
+      "field": {
+        "description": "Feldoperationen der Konfiguration mit Pointer-Adressierung (get/set/unset/rotate/list). JSON-Pointer (RFC 6901), z. B. /credentials/cfDnsApiToken.",
+        "get": {
+          "description": "Einzelnen Konfigurationswert per JSON-Pointer lesen. Sensible Felder werden zensiert, außer mit --reveal (nur interaktiv).",
+          "optionDigest": "SHA-256-Prüfsumme statt des Werts ausgeben (ist für KI-Agenten freigegeben)",
+          "optionReveal": "Klartext für sensible Werte anzeigen (nur interaktives TTY; Audit-Log)"
+        },
+        "list": {
+          "description": "Alle registrierten Pointer-Vorlagen mit Art und Commit/Verschlüsselungs-Policy auflisten.",
+          "optionOutput": "Ausgabeformat (json|table)",
+          "optionSensitive": "Nur sensible (nicht-öffentliche) Vorlagen anzeigen"
+        },
+        "rotate": {
+          "description": "Einen sensiblen Wert ohne --current rotieren. Nur interaktives TTY; laut geloggt.",
+          "optionNew": "Neuer Wert",
+          "success": "{{pointer}} rotiert"
+        },
+        "set": {
+          "description": "Konfigurationswert an einem JSON-Pointer schreiben. Sensible Pfade erfordern --current (Wissensnachweis).",
+          "optionCurrent": "Aktueller Klartextwert — für Änderungen sensibler Pfade erforderlich (Wissensnachweis)",
+          "optionNew": "Neuer Wert (als JSON interpretiert, falls er mit {, [, \", true, false, null oder einer Zahl beginnt)",
+          "success": "{{pointer}} gesetzt"
+        },
+        "unset": {
+          "description": "Konfigurationswert an einem JSON-Pointer löschen. Sensible Pfade erfordern --current.",
+          "optionCurrent": "Aktueller Klartextwert — für Löschungen sensibler Pfade erforderlich",
+          "success": "{{pointer}} entfernt"
+        }
+      },
       "infra": {
         "description": "Infrastrukturkonfiguration verwalten (Proxy, DNS, Zertifikate)",
         "push": {
@@ -730,6 +798,8 @@
         "schedule": {
           "description": "Backup-Zeitplan auf einem Remote-Rechner deployen (systemd-Timer)",
           "optionDryRun": "Generierte Units anzeigen ohne zu deployen",
+          "optionForce": "Auch fortfahren, wenn gerade ein Backup läuft (neue Unit greift beim nächsten Timer-Tick; laufender Vorgang behält seine alte Unit)",
+          "optionResetFailed": "Fehlerstatus berührter Dienste nach erfolgreichem Deploy zurücksetzen (standardmäßig aus, bewahrt das Fehlersignal)",
           "success": "Backup-Zeitplan auf {{machine}} deployed"
         },
         "status": {
@@ -1843,10 +1913,19 @@
       "description": "CLI-Updates prüfen und anwenden",
       "descriptionShort": "CLI-Updates prüfen und anwenden",
       "downloading": "Lade v{{version}} herunter...",
+      "errors": {
+        "binaryBusy": "Die aktuelle Binärdatei wird verwendet; das Update wurde für den nächsten Start vorbereitet.",
+        "checksumMismatch": "Prüfsummenverifikation der heruntergeladenen Binärdatei fehlgeschlagen.",
+        "lockFailed": "Ein anderes Update läuft bereits. Bitte in wenigen Sekunden erneut versuchen.",
+        "noBinary": "Für diese Plattform ist in der neuesten Version keine Binärdatei verfügbar.",
+        "noChecksum": "Dem Release-Manifest fehlt die SHA256-Prüfsumme.",
+        "notSEA": "Update nicht möglich: läuft nicht als gepackte Binärdatei. Zuerst mit SEA erstellen.",
+        "unknown": "Unbekannter Fehler beim Update.",
+        "unsupportedPlatform": "Diese Plattform wird für Selbst-Updates nicht unterstützt."
+      },
       "failed": "Update fehlgeschlagen: {{error}}",
       "force": "Update erzwingen, auch wenn bereits aktuell",
       "invalidChannel": "Ungültiger Kanal: {{channel}}. Verwenden Sie stable oder edge.",
-      "notSEA": "Update nicht möglich: Keine gepackte Binärdatei. Erst mit SEA bauen.",
       "npmUpdateHint": "Zum Aktualisieren ausführen:\n  {{command}}",
       "progress": "Herunterladen... {{percent}}%",
       "releaseNotes": "Versionshinweise: {{url}}",
@@ -2138,9 +2217,12 @@
     "affectedChildClones": ". Betroffene untergeordnete Klone: {{clones}}. Löschen oder befördern Sie untergeordnete Klone zuerst.",
     "agent": {
       "commandBlocked": "Der Befehl \"{{command}}\" ist im Agenten-Modus nicht verfugbar.\n\nDieser Befehl fuhrt beliebige Low-Level-Funktionen ohne Sicherheitsschutzmechanismen aus. Verwenden Sie stattdessen typisierte CLI-Befehle oder MCP-Tools.\n\nAlternativen:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Fuhren Sie \"rdc agent capabilities\" aus, um alle verfugbaren Befehle anzuzeigen\n\nWenn Sie direkten Zugriff benotigen, bitten Sie den Benutzer, den Befehl direkt auszufuhren.",
+      "configEdit": "Interaktiver Editor ist in Agenten-Umgebungen blockiert.\n\nAlternativen:\n  • rdc config edit --dump > config.jsonc    (sichere, zensierte Inspektion)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nZum Überschreiben REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> in der Elternshell setzen,\nBEVOR der Agent startet (muss in der Agent-Prozess-Ahnenkette erscheinen).",
+      "configEditAncestry": "Interaktiver Editor ist in Agenten-Umgebungen blockiert (REDIACC_ALLOW_CONFIG_EDIT gesetzt, Ahnenprüfung fehlgeschlagen — Override muss aus Ihrer Shell kommen, nicht vom Agenten).\n\nAlternativen:\n  • rdc config edit --dump > config.jsonc    (sichere, zensierte Inspektion)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nSetzen Sie REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> in der Elternshell BEVOR der Agent startet.",
       "createGuard": "Es kann kein neues Grand-Repository \"{{name}}\" im Agenten-Modus erstellt werden.\n\nAgenten arbeiten im Fork-Only-Modus. Grand-Repositories sind Produktionsumgebungen, auf die Agenten nach der Erstellung nicht zugreifen können.\n\nErstellen Sie stattdessen einen Fork eines bestehenden Repositories:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nBenutzer: Um die Repository-Erstellung zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO=* (oder einen bestimmten Repository-Namen) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten.",
       "createGuardOverride": "Es kann kein neues Grand-Repository \"{{name}}\" erstellt werden. Vom Agenten initiierte Überschreibungen werden nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen — nur der Benutzer kann dies vor dem Start des Agenten autorisieren.\n\nErstellen Sie stattdessen einen Fork eines bestehenden Repositories:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "Es kann kein neues Grand-Repository \"{{name}}\" erstellt werden. Die REDIACC_ALLOW_GRAND_REPO-Überschreibung wird auf {{platform}} nicht unterstützt.\n\nDiese Überschreibung funktioniert nur unter Linux. Unter Windows und macOS müssen Agenten den Fork-First-Arbeitsablauf verwenden.\n\nErstellen Sie stattdessen einen Fork eines bestehenden Repositories:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nUm die Überschreibung zu verwenden, führen Sie Ihren Agenten unter Linux aus (direkt, WSL, Docker oder eine VM).",
+      "fieldReveal": "--reveal für das sensible Feld {{pointer}} ist in Agenten-Umgebungen blockiert. Agenten sollten --digest verwenden. Ein echter Benutzer an einem interaktiven Terminal kann --reveal ausführen.",
       "forkBlocked": "Der Befehl \"{{command}}\" ist für Fork-Repositories nicht verfügbar.\n\nFork-Repos sind temporäre Sandbox-Umgebungen. Diese Operation gilt nur für Grand-Repositories (Produktion). Bitten Sie den Benutzer, diesen Befehl direkt auszuführen.",
       "grandGuard": "\"{{name}}\" ist ein Grand-Repository (Produktion). Agenten können Grand-Repositories nicht direkt ändern.\n\nGrand-Repositories enthalten Produktionsdaten. Verwenden Sie stattdessen einen Fork — Forks sind sichere, isolierte Sandbox-Kopien.\n\nArbeitsablauf:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork (z.B. rdc repo up --name {{name}}:<tag-name> -m <machine> --mount)\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo takeover übernehmen\n\nBenutzer: Um direkten Zugriff zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO={{name}} (oder * für alle Repos) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten.",
       "grandGuardOverride": "\"{{name}}\" ist ein Grand-Repository (Produktion). Vom Agenten initiierte Überschreibungen werden nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen — nur der Benutzer kann dies vor dem Start des Agenten autorisieren.\n\nVerwenden Sie stattdessen einen Fork — Forks sind sichere, isolierte Sandbox-Kopien:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo takeover übernehmen",
@@ -2153,7 +2235,12 @@
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" ist ein Grand-Repository (Produktion). Die REDIACC_ALLOW_GRAND_REPO-Überschreibung wird auf {{platform}} nicht unterstützt.\n\nDiese Überschreibung funktioniert nur unter Linux. Unter Windows und macOS müssen Agenten den Fork-First-Arbeitsablauf verwenden.\n\nVerwenden Sie repo_fork, um eine sichere, isolierte Sandbox-Kopie zu erstellen, und arbeiten Sie dann mit dem Fork.",
       "mcpMachineGuard": "Direkter Maschinenzugriff ist im Fork-Only-Modus nicht erlaubt.\n\nAgenten müssen sich über einen Repository-Kontext verbinden. Verwenden Sie repo_fork, um einen Fork zu erstellen, und verbinden Sie sich dann damit.\nWenn Sie direkten Zugriff benötigen, bitten Sie den Benutzer, den MCP-Server mit --allow-grand neu zu starten.",
       "mcpMachineGuardOverride": "Direkter Maschinenzugriff ist nicht erlaubt. Vom Agenten initiierte Überschreibungen werden nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen.\n\nVerwenden Sie repo_fork, um einen Fork zu erstellen, und verbinden Sie sich dann damit.",
-      "mcpMachineGuardOverrideNonLinux": "Die Überschreibung für direkten Maschinenzugriff wird auf {{platform}} nicht unterstützt.\n\nDiese Überschreibung funktioniert nur unter Linux. Unter Windows und macOS müssen Agenten den Fork-First-Arbeitsablauf verwenden.\n\nVerwenden Sie repo_fork, um einen Fork zu erstellen, und verbinden Sie sich dann damit."
+      "mcpMachineGuardOverrideNonLinux": "Die Überschreibung für direkten Maschinenzugriff wird auf {{platform}} nicht unterstützt.\n\nDiese Überschreibung funktioniert nur unter Linux. Unter Windows und macOS müssen Agenten den Fork-First-Arbeitsablauf verwenden.\n\nVerwenden Sie repo_fork, um einen Fork zu erstellen, und verbinden Sie sich dann damit.",
+      "revealRequiresTty": "--reveal erfordert ein interaktives TTY; sensible Werte werden nicht an eine Pipe ausgegeben.",
+      "rotateNotSensitive": "Pointer „{{pointer}}\" ist kein sensibles Feld; verwenden Sie 'config field set'.",
+      "rotateRequiresTty": "config field rotate erfordert eine interaktive TTY-Bestätigung; wird in nicht-interaktivem Kontext abgelehnt (setzen Sie REDIACC_ALLOW_CONFIG_EDIT zur Umgehung).",
+      "showReveal": "--reveal ist in Agenten-Umgebungen blockiert. Verwenden Sie `rdc config show` (zensiert) oder `rdc config field get <pointer> --digest` für einen sicheren Fingerabdruck.",
+      "showRevealRequiresTty": "--reveal erfordert ein interaktives TTY; Klartext wird nicht in eine Nicht-TTY-Senke geleitet."
     },
     "authFailed": "Authentifizierung fehlgeschlagen",
     "authRequired": "Authentifizierung erforderlich. Ausführen: rdc auth login",
@@ -2164,9 +2251,17 @@
     "config": {
       "invalidEmail": "Ungültige E-Mail-Adresse: \"{{value}}\".",
       "machineNotFound": "Maschine \"{{name}}\" nicht in der Konfiguration gefunden. Verfügbar: {{available}}.",
+      "noActiveConfig": "Keine aktive Konfiguration",
+      "pointerNotFound": "Pointer „{{pointer}}\" nicht gefunden",
       "storageNotFound": "Speicher \"{{name}}\" nicht in der Konfiguration gefunden. Verfügbar: {{available}}."
     },
     "contextNotFound": "Kontext \"{{name}}\" nicht gefunden",
+    "editor": {
+      "headlessRefused": "Headless-Editor-Aufruf würde ewig blockieren: {{command}}. Übergeben Sie --editor explizit mit interaktiven Flags.",
+      "nonzeroExit": "Editor {{command}} mit Code {{code}} beendet",
+      "notFound": "Kein Editor konfiguriert. Setzen Sie $GIT_EDITOR, git config core.editor, $VISUAL oder $EDITOR, oder übergeben Sie --editor.",
+      "spawnFailed": "Editor {{command}} konnte nicht gestartet werden: {{reason}}"
+    },
     "failedCreateQueueItem": "Queue-Item konnte nicht erstellt werden",
     "invalidAction": "Ungültige Aktion \"{{action}}\". Verwenden Sie \"{{valid}}\".",
     "invalidCredentials": "Ungültige Anmeldedaten",
@@ -2190,6 +2285,15 @@
     "passwordsMismatch": "Passwörter stimmen nicht überein",
     "permissionDenied": "Berechtigung verweigert",
     "poolNotFound": "Ceph-Pool \"{{name}}\" nicht gefunden",
+    "precondition": {
+      "currentSecretsRequired": "{{pointer}}: Sensibles Feld ohne --current geändert; geben Sie --current-secrets <file> mit pointer→alter-Wert-Zuordnung an",
+      "digestMismatch": "--current-Prüfsummen-Mismatch (erwartet {{expected}}…, erhalten {{got}}…)",
+      "kindMismatch": "Werttyp geändert (gespeichert: {{stored}}, behauptet: {{claimed}})",
+      "mismatch": "Precondition fehlgeschlagen für {{count}} Pfad(e):\n{{details}}",
+      "missing": "Sensibler Pfad erfordert --current (oder --rotate-secret)",
+      "rotationRequiresTty": "{{pointer}}: Rotations-Bestätigung erfordert interaktives TTY (oder verwenden Sie --current-secrets)",
+      "stubStillStub": "{{pointer}}: Der bearbeitete Wert sieht noch wie ein Redaction-Stub aus, stimmt aber nicht mit der aktuellen Prüfsumme überein"
+    },
     "protocol": {
       "commandExitCode": "Befehl mit Code {{code}} beendet",
       "invalidAction": "Ungültige Aktion '{{action}}'. Muss eine der folgenden sein: {{validActions}}",

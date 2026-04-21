@@ -94,3 +94,9 @@ rdc update --channel edge      # Switch to edge
 rdc update --channel stable    # Switch back to stable
 rdc update --status            # Show current channel
 ```
+
+### CLI Security Posture for AI Agents
+
+Every `rdc` invocation is classified at startup as either **human** or **agent** based on environment signals (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) plus a Linux `/proc` ancestry walk. Agents receive a reduced permission set: sensitive config mutations require the knowledge-gate (`--current <old>`), the interactive editor is refused without an ancestry-verified `REDIACC_ALLOW_CONFIG_EDIT` override, and `--reveal` on any display command is blocked. Every decision — allow, refuse, grant `--reveal` — writes one hash-chained JSONL line to `~/.config/rediacc/audit.log.jsonl`. Run `rdc config audit verify` to check chain integrity.
+
+See [AI Agent Safety & Guardrails](/en/docs/ai-agents-safety) for the full matrix of what agents can and cannot do, worked examples of the knowledge-gate, and scope-override mechanics.

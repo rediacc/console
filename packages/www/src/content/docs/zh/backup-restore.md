@@ -269,7 +269,13 @@ rdc machine backup schedule -m server-1
 rdc machine backup schedule -m server-1 --dry-run
 ```
 
-`--dry-run` 打印生成的 systemd 单元文件而不部署它们。rclone token 在 dry-run 输出中被屏蔽。
+部署是一个状态协调器。它读取机器上当前的单元文件和 systemd 状态，与配置会生成的内容进行比较（每个文件 SHA-256），只触及内容实际发生变化的单元。在没有配置变更的情况下重新运行是 no-op：无写入、无 `daemon-reload`、无定时器扰动。
+
+`--dry-run` 为每个策略打印计划（`created`、`updated (service, timer, env)`、`unchanged`、`removed`），不触及机器。与 `--debug` 组合使用还会打印生成的单元内容；rclone token 会被编辑。
+
+如果您即将更新或删除的策略当前正在运行备份，部署会快速失败，并提示取消它或传递 `--force`。使用 `--force` 时，正在运行的调用保留其内存中的单元，新配置在下次定时器触发时生效，正在运行的备份因此永远不会被终止。
+
+`--reset-failed` 是可选的。传递时，它会在部署成功后清除已修改服务上 systemd 的 failed 状态。默认关闭，以便以前的故障信号对告警保持可见。
 
 ### 立即运行备份
 

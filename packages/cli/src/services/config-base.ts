@@ -63,7 +63,7 @@ export class ConfigServiceBase {
     }
 
     let masterPassword: string | null = null;
-    if (config.masterPassword) {
+    if (config.credentials?.masterPasswordVerifier) {
       const { authService } = await import('./auth.js');
       masterPassword = await authService.requireMasterPassword();
     }
@@ -120,32 +120,20 @@ export class ConfigServiceBase {
   }
 
   /**
-   * Fields stored only in the local pointer file, never in the remote blob.
-   * These must be preserved from localConfig when composing the merged state.
-   */
-  private static readonly LOCAL_ONLY_FIELDS = [
-    'language',
-    'remote',
-    'team',
-    'region',
-    'bridge',
-  ] as const;
-
-  /**
    * Load config from the remote server, caching for the session.
-   * Preserves all local-only settings (language, remote pointer, defaults).
+   * Preserves all local-only settings (remote pointer, account defaults, language).
    */
   private async loadRemote(localConfig: RdcConfig, configName: string): Promise<RdcConfig> {
     const adapter = await this.getRemoteAdapter(localConfig, configName);
     const { config, version, sdkEpoch } = await adapter.pull();
 
-    // Preserve local-only settings on the pulled config.
-    // Local values take precedence; fall back to whatever the remote has.
-    for (const field of ConfigServiceBase.LOCAL_ONLY_FIELDS) {
-      const localValue = localConfig[field];
-      if (localValue !== undefined) {
-        (config as unknown as Record<string, unknown>)[field] = localValue;
-      }
+    // Local pointer fields take precedence over anything remote might send.
+    if (localConfig.remote) config.remote = localConfig.remote;
+    if (localConfig.account) {
+      config.account = { ...(config.account ?? {}), ...localConfig.account };
+    }
+    if (localConfig.defaults) {
+      config.defaults = { ...(config.defaults ?? {}), ...localConfig.defaults };
     }
 
     this._remoteConfig = config;
@@ -212,7 +200,7 @@ export class ConfigServiceBase {
       return process.env.REDIACC_API_URL;
     }
     const config = await this.getCurrent();
-    return config?.apiUrl ?? DEFAULT_API_URL;
+    return config?.account?.apiUrl ?? DEFAULT_API_URL;
   }
 
   async getToken(): Promise<string | null> {
@@ -220,31 +208,37 @@ export class ConfigServiceBase {
       return process.env.REDIACC_TOKEN;
     }
     const config = await this.getCurrent();
-    return config?.token ?? null;
+    return config?.account?.token ?? null;
   }
 
   async setToken(token: string): Promise<void> {
     const name = this.getEffectiveConfigName();
     const exists = await configFileStorage.exists(name);
     if (!exists) return;
-    await this.update(name, { token });
+    await configFileStorage.update(name, (cfg) => ({
+      ...cfg,
+      account: { ...(cfg.account ?? {}), token },
+    }));
   }
 
   async getMasterPassword(): Promise<string | null> {
     const config = await this.getCurrent();
-    return config?.masterPassword ?? null;
+    return config?.credentials?.masterPasswordVerifier ?? null;
   }
 
   async setMasterPassword(password: string): Promise<void> {
     const name = this.getEffectiveConfigName();
     const exists = await configFileStorage.exists(name);
     if (!exists) return;
-    await this.update(name, { masterPassword: password });
+    await configFileStorage.update(name, (cfg) => ({
+      ...cfg,
+      credentials: { ...(cfg.credentials ?? {}), masterPasswordVerifier: password },
+    }));
   }
 
   async getUserEmail(): Promise<string | null> {
     const config = await this.getCurrent();
-    return config?.userEmail ?? null;
+    return config?.account?.userEmail ?? null;
   }
 
   // ============================================================================
@@ -254,38 +248,45 @@ export class ConfigServiceBase {
   async getTeam(): Promise<string | undefined> {
     if (process.env.REDIACC_TEAM) return process.env.REDIACC_TEAM;
     const config = await this.getCurrent();
-    return config?.team;
+    return config?.account?.team;
   }
 
   async getRegion(): Promise<string | undefined> {
     if (process.env.REDIACC_REGION) return process.env.REDIACC_REGION;
     const config = await this.getCurrent();
-    return config?.region;
+    return config?.account?.region;
   }
 
   async getBridge(): Promise<string | undefined> {
     if (process.env.REDIACC_BRIDGE) return process.env.REDIACC_BRIDGE;
     const config = await this.getCurrent();
-    return config?.bridge;
+    return config?.account?.bridge;
   }
 
   async set(key: 'team' | 'region' | 'bridge', value: string): Promise<void> {
     const name = this.getEffectiveConfigName();
-    await this.update(name, { [key]: value });
+    await configFileStorage.update(name, (cfg) => ({
+      ...cfg,
+      account: { ...(cfg.account ?? {}), [key]: value },
+    }));
   }
 
   async remove(key: 'team' | 'region' | 'bridge'): Promise<void> {
     const name = this.getEffectiveConfigName();
-    await this.update(name, { [key]: undefined });
+    await configFileStorage.update(name, (cfg) => ({
+      ...cfg,
+      account: cfg.account ? { ...cfg.account, [key]: undefined } : undefined,
+    }));
   }
 
   async clearDefaults(): Promise<void> {
     const name = this.getEffectiveConfigName();
-    await this.update(name, {
-      team: undefined,
-      region: undefined,
-      bridge: undefined,
-    });
+    await configFileStorage.update(name, (cfg) => ({
+      ...cfg,
+      account: cfg.account
+        ? { ...cfg.account, team: undefined, region: undefined, bridge: undefined }
+        : undefined,
+    }));
   }
 
   // --- Language Settings ---
@@ -293,13 +294,16 @@ export class ConfigServiceBase {
   async getLanguage(): Promise<string> {
     if (process.env.REDIACC_LANG) return normalizeLanguage(process.env.REDIACC_LANG);
     const config = await this.getCurrent();
-    if (config?.language) return config.language;
+    if (config?.defaults?.language) return config.defaults.language;
     return detectSystemLanguage();
   }
 
   async setLanguage(language: string): Promise<void> {
     const name = this.getEffectiveConfigName();
-    await this.update(name, { language: normalizeLanguage(language) });
+    await configFileStorage.update(name, (cfg) => ({
+      ...cfg,
+      defaults: { ...(cfg.defaults ?? {}), language: normalizeLanguage(language) },
+    }));
   }
 
   isLanguageSupported(lang: string): boolean {
@@ -341,25 +345,23 @@ export class ConfigServiceBase {
     }
   ): Promise<void> {
     const exists = await configFileStorage.exists(configName);
-    if (exists) {
-      await this.update(configName, {
+    const apply = (cfg: RdcConfig): RdcConfig => ({
+      ...cfg,
+      account: {
+        ...(cfg.account ?? {}),
         apiUrl: credentials.apiUrl,
         token: credentials.token,
         userEmail: credentials.userEmail,
-        masterPassword: credentials.masterPassword,
-      });
+      },
+      credentials: credentials.masterPassword
+        ? { ...(cfg.credentials ?? {}), masterPasswordVerifier: credentials.masterPassword }
+        : cfg.credentials,
+    });
+    if (exists) {
+      await configFileStorage.update(configName, apply);
     } else {
       const config = await configFileStorage.init(configName);
-      await configFileStorage.save(
-        {
-          ...config,
-          apiUrl: credentials.apiUrl,
-          token: credentials.token,
-          userEmail: credentials.userEmail,
-          masterPassword: credentials.masterPassword,
-        },
-        configName
-      );
+      await configFileStorage.save(apply(config), configName);
     }
   }
 
@@ -367,7 +369,13 @@ export class ConfigServiceBase {
     const name = this.getEffectiveConfigName();
     const exists = await configFileStorage.exists(name);
     if (!exists) return;
-    await this.update(name, { token: undefined, masterPassword: undefined });
+    await configFileStorage.update(name, (cfg) => ({
+      ...cfg,
+      account: cfg.account ? { ...cfg.account, token: undefined } : undefined,
+      credentials: cfg.credentials
+        ? { ...cfg.credentials, masterPasswordVerifier: undefined }
+        : undefined,
+    }));
   }
 
   async hasToken(): Promise<boolean> {

@@ -1046,6 +1046,18 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--force",
+                  "descriptionKey": "commands.machine.backup.schedule.optionForce",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--reset-failed",
+                  "descriptionKey": "commands.machine.backup.schedule.optionResetFailed",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--debug",
                   "descriptionKey": "options.debug",
                   "mandatory": false,
@@ -2466,6 +2478,24 @@
                   "flags": "-m, --machine <name>",
                   "descriptionKey": "options.machine",
                   "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--dry-run",
+                  "descriptionKey": "commands.machine.backup.schedule.optionDryRun",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--force",
+                  "descriptionKey": "commands.machine.backup.schedule.optionForce",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--reset-failed",
+                  "descriptionKey": "commands.machine.backup.schedule.optionResetFailed",
+                  "mandatory": false,
                   "defaultValue": null
                 },
                 {
@@ -4681,7 +4711,14 @@
         {
           "name": "show",
           "descriptionKey": "commands.config.show.description",
-          "options": [],
+          "options": [
+            {
+              "flags": "--reveal",
+              "descriptionKey": null,
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
           "arguments": [],
           "subcommands": []
         },
@@ -5567,6 +5604,210 @@
             {
               "name": "refresh",
               "descriptionKey": "commands.config.remote.refresh.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "field",
+          "descriptionKey": "commands.config.field.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "get",
+              "descriptionKey": "commands.config.field.get.description",
+              "options": [
+                {
+                  "flags": "--reveal",
+                  "descriptionKey": "commands.config.field.get.optionReveal",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--digest",
+                  "descriptionKey": "commands.config.field.get.optionDigest",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "pointer",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "set",
+              "descriptionKey": "commands.config.field.set.description",
+              "options": [
+                {
+                  "flags": "--new <value>",
+                  "descriptionKey": "commands.config.field.set.optionNew",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--current <value>",
+                  "descriptionKey": "commands.config.field.set.optionCurrent",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "pointer",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "unset",
+              "descriptionKey": "commands.config.field.unset.description",
+              "options": [
+                {
+                  "flags": "--current <value>",
+                  "descriptionKey": "commands.config.field.unset.optionCurrent",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "pointer",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "rotate",
+              "descriptionKey": "commands.config.field.rotate.description",
+              "options": [
+                {
+                  "flags": "--new <value>",
+                  "descriptionKey": "commands.config.field.rotate.optionNew",
+                  "mandatory": true,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "pointer",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "list",
+              "descriptionKey": "commands.config.field.list.description",
+              "options": [
+                {
+                  "flags": "--sensitive",
+                  "descriptionKey": "commands.config.field.list.optionSensitive",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "edit",
+          "descriptionKey": "commands.config.edit.description",
+          "options": [
+            {
+              "flags": "--reveal",
+              "descriptionKey": "commands.config.field.get.optionReveal",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--dump",
+              "descriptionKey": "commands.config.edit.optionDump",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--apply <file>",
+              "descriptionKey": "commands.config.edit.optionApply",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--current-secrets <file>",
+              "descriptionKey": "commands.config.edit.optionCurrentSecrets",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--editor <cmd>",
+              "descriptionKey": "commands.config.edit.optionEditor",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "audit",
+          "descriptionKey": "commands.config.audit.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "log",
+              "descriptionKey": "commands.config.audit.log.description",
+              "options": [
+                {
+                  "flags": "--since <spec>",
+                  "descriptionKey": "commands.config.audit.log.optionSince",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--path <glob>",
+                  "descriptionKey": "commands.config.audit.log.optionPath",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--actor <kind>",
+                  "descriptionKey": "commands.config.audit.log.optionActor",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "tail",
+              "descriptionKey": "commands.config.audit.tail.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "verify",
+              "descriptionKey": "commands.config.audit.verify.description",
               "options": [],
               "arguments": [],
               "subcommands": []

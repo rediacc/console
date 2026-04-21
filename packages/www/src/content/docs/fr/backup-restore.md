@@ -271,7 +271,13 @@ rdc machine backup schedule -m server-1
 rdc machine backup schedule -m server-1 --dry-run
 ```
 
-`--dry-run` affiche les fichiers d'unité systemd générés sans les déployer. Les tokens rclone sont masqués dans la sortie dry-run.
+Le déploiement est un réconciliateur d'état. Il lit les fichiers d'unité actuels et l'état de systemd sur la machine, les compare à ce que la configuration produirait (SHA-256 par fichier) et ne touche que les unités dont le contenu a réellement changé. Relancer sans changement de configuration est un no-op : pas d'écritures, pas de `daemon-reload`, pas d'agitation des minuteurs.
+
+`--dry-run` affiche le plan pour chaque stratégie (`created`, `updated (service, timer, env)`, `unchanged`, `removed`) sans toucher à la machine. Combinez avec `--debug` pour afficher également les corps d'unités générés ; les tokens rclone sont masqués.
+
+Si une sauvegarde est en cours d'exécution pour une stratégie que vous êtes sur le point de mettre à jour ou de supprimer, le déploiement échoue rapidement avec une indication pour l'annuler ou passer `--force`. Avec `--force`, l'invocation en cours conserve son unité en mémoire et la nouvelle configuration s'applique au prochain tick du minuteur, de sorte que la sauvegarde en cours n'est jamais interrompue.
+
+`--reset-failed` est opt-in. Lorsqu'il est passé, il efface l'état d'échec de systemd sur les services modifiés après un déploiement réussi. Désactivé par défaut pour que les signaux d'échec précédents restent visibles pour les alertes.
 
 ### Exécuter une sauvegarde maintenant
 

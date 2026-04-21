@@ -6,7 +6,7 @@ order: 2
 language: ar
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ar/cli.json
-sourceHash: "1d4e217dd1ae3509"
+sourceHash: "fd00bc6d44beb9c6"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -139,8 +139,13 @@ rdc config list
 {{t:cli.commands.config.show.description}}
 
 ```bash
-rdc config show
+rdc config show [options]
 ```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--reveal` | — | {{t:cli.docs.optionLabels.no}} | - |
+
 
 <a id="cli-local-config-delete"></a>
 ### 2.4 delete
@@ -689,8 +694,142 @@ rdc config cert-cache status
 rdc config cert-cache clear
 ```
 
+<a id="cli-local-config-field"></a>
+### 2.18 field
+
+{{t:cli.commands.config.field.description}}
+
+<a id="cli-local-config-field-get"></a>
+#### get
+
+{{t:cli.commands.config.field.get.description}}
+
+```bash
+rdc config field get <pointer> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--reveal` | {{t:cli.commands.config.field.get.optionReveal}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--digest` | {{t:cli.commands.config.field.get.optionDigest}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-config-field-set"></a>
+#### set
+
+{{t:cli.commands.config.field.set.description}}
+
+```bash
+rdc config field set <pointer> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--new <value>` | {{t:cli.commands.config.field.set.optionNew}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--current <value>` | {{t:cli.commands.config.field.set.optionCurrent}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-config-field-unset"></a>
+#### unset
+
+{{t:cli.commands.config.field.unset.description}}
+
+```bash
+rdc config field unset <pointer> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--current <value>` | {{t:cli.commands.config.field.unset.optionCurrent}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-config-field-rotate"></a>
+#### rotate
+
+{{t:cli.commands.config.field.rotate.description}}
+
+```bash
+rdc config field rotate <pointer> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--new <value>` | {{t:cli.commands.config.field.rotate.optionNew}} | {{t:cli.docs.optionLabels.yes}} | - |
+
+
+<a id="cli-local-config-field-list"></a>
+#### list
+
+{{t:cli.commands.config.field.list.description}}
+
+```bash
+rdc config field list [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--sensitive` | {{t:cli.commands.config.field.list.optionSensitive}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-config-edit"></a>
+### 2.19 edit
+
+{{t:cli.commands.config.edit.description}}
+
+```bash
+rdc config edit [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--reveal` | {{t:cli.commands.config.field.get.optionReveal}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--dump` | {{t:cli.commands.config.edit.optionDump}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--apply <file>` | {{t:cli.commands.config.edit.optionApply}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--current-secrets <file>` | {{t:cli.commands.config.edit.optionCurrentSecrets}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--editor <cmd>` | {{t:cli.commands.config.edit.optionEditor}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-config-audit"></a>
+### 2.20 audit
+
+{{t:cli.commands.config.audit.description}}
+
+<a id="cli-local-config-audit-log"></a>
+#### log
+
+{{t:cli.commands.config.audit.log.description}}
+
+```bash
+rdc config audit log [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--since <spec>` | {{t:cli.commands.config.audit.log.optionSince}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--path <glob>` | {{t:cli.commands.config.audit.log.optionPath}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--actor <kind>` | {{t:cli.commands.config.audit.log.optionActor}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-config-audit-tail"></a>
+#### tail
+
+{{t:cli.commands.config.audit.tail.description}}
+
+```bash
+rdc config audit tail
+```
+
+<a id="cli-local-config-audit-verify"></a>
+#### verify
+
+{{t:cli.commands.config.audit.verify.description}}
+
+```bash
+rdc config audit verify
+```
+
 <a id="cli-local-config-backup-strategy"></a>
-### 2.18 backup-strategy
+### 2.21 backup-strategy
 
 {{t:cli.commands.config.backupStrategy.description}}
 
@@ -1137,6 +1276,8 @@ rdc machine backup schedule [options]
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--dry-run` | {{t:cli.commands.machine.backup.schedule.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--force` | {{t:cli.commands.machine.backup.schedule.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--reset-failed` | {{t:cli.commands.machine.backup.schedule.optionResetFailed}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 

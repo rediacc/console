@@ -284,6 +284,23 @@
       }
     },
     "config": {
+      "audit": {
+        "description": "設定監査ログを確認(~/.config/rediacc/audit.log.jsonl のハッシュチェーン JSONL)",
+        "log": {
+          "description": "最近の監査エントリを JSON として出力",
+          "optionActor": "アクターの種類でフィルタ(human|agent)",
+          "optionPath": "JSON Pointer グロブでフィルタ(例: /credentials/*)",
+          "optionSince": "指定より新しいエントリのみ表示(例: '24h', '7d', ISO タイムスタンプ)"
+        },
+        "tail": {
+          "description": "新しいエントリを書き込まれた順にストリーム(Ctrl+C で停止)"
+        },
+        "verify": {
+          "chainBroken": "{{line}} 行目でチェーンが破損しました — ファイルが改ざんまたは破損しています。",
+          "chainOk": "{{count}} エントリにわたりチェーン整合性を確認しました。",
+          "description": "すべての監査エントリにおける SHA-256 ハッシュチェーンの整合性を検証"
+        }
+      },
       "backupStrategy": {
         "description": "名前付きバックアップ戦略を管理（ホット/コールドモード、宛先、スケジュール）",
         "list": {
@@ -366,6 +383,57 @@
       },
       "description": "設定ファイル、マシン、SSH 接続を管理する",
       "descriptionShort": "設定ファイル、マシン、SSH 接続を管理する",
+      "edit": {
+        "abortAfterRetries": "{{count}} 回の失敗後に中止します。下書きを保存: {{path}}",
+        "applied": "{{path}} を適用しました",
+        "bannerRedacted": "機密フィールドは <redacted:KIND>:DIGEST 形式のスタブとして表示され、安全に往復変換されます。",
+        "bannerReveal": "--reveal 有効: 機密値が可視。監査ログに記録されます。",
+        "bannerRotateLine1": "シークレットをローテーションするには、そのスタブを新しい平文に置き換えます。エディタを閉じた後、",
+        "bannerRotateLine2": "各ローテーションの確認を求められます。",
+        "bannerStrip": "// で始まる行は保存時に削除されます。",
+        "bannerTitle": "rdc config edit — {{name}} (v{{version}})",
+        "description": "アクティブな設定を秘匿された JSONC プロジェクションとして $EDITOR で開きます。人間のみ、エージェントは拒否されます。",
+        "noChanges": "変更は保存されませんでした。中止します。",
+        "optionApply": "編集済み JSONC ファイルを適用($EDITOR 起動をスキップ)",
+        "optionCurrentSecrets": "ポインタ → 旧平文 のマップ JSON ファイル。--apply 時の知識ゲート用",
+        "optionDump": "エディタを開かず、現在の設定を JSONC として stdout に出力(読み取り専用。秘匿時はエージェントでも安全)",
+        "optionEditor": "エディタ コマンドの上書き(git と同じ優先順位: --editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+        "optionReveal": "機密値を平文で表示(対話型 TTY のみ、監査ログに記録)",
+        "rotateDeclined": "中止しました。下書きはエディタの一時ファイルに保持されています。",
+        "rotatePromptBullet": "  • {{pointer}}",
+        "rotatePromptFooter": "確認するには 'rotate' を入力してください(それ以外は中止): ",
+        "rotatePromptHeader": "{{count}} 個の機密フィールドをローテーションしようとしています:",
+        "saved": "設定「{{name}}」を保存しました"
+      },
+      "field": {
+        "description": "ポインタ指定による設定フィールド操作(get/set/unset/rotate/list)。/credentials/cfDnsApiToken のような JSON Pointer(RFC 6901)を使用します。",
+        "get": {
+          "description": "JSON ポインタで単一の設定値を読み取ります。機密フィールドは --reveal を指定しない限り秘匿されます(人間のみ)。",
+          "optionDigest": "値の代わりに SHA-256 ダイジェストを出力(エージェントに共有しても安全)",
+          "optionReveal": "機密値を平文で表示する(対話型 TTY のみ、監査ログに記録)"
+        },
+        "list": {
+          "description": "登録済みのすべてのセンシティビティ・ポインタ・テンプレートと種類、commit/encrypt ポリシーを一覧表示。",
+          "optionOutput": "出力形式(json|table)",
+          "optionSensitive": "機密(非パブリック)テンプレートのみ表示"
+        },
+        "rotate": {
+          "description": "--current なしで機密値をローテーションします。対話型 TTY のみ、詳細に監査されます。",
+          "optionNew": "新しい値",
+          "success": "{{pointer}} をローテーションしました"
+        },
+        "set": {
+          "description": "JSON ポインタ位置に設定値を書き込みます。機密パスには --current(知識ゲート)が必要です。",
+          "optionCurrent": "現在の平文値 — 機密パスの変更に必須(知識ゲート証明)",
+          "optionNew": "新しい値({, [, \", true/false/null, 数値で始まる場合は JSON として解釈)",
+          "success": "{{pointer}} を設定しました"
+        },
+        "unset": {
+          "description": "JSON ポインタ位置の設定値を削除。機密パスには --current が必要です。",
+          "optionCurrent": "現在の平文値 — 機密パスの削除に必須",
+          "success": "{{pointer}} を削除しました"
+        }
+      },
       "infra": {
         "description": "インフラ設定を管理する（プロキシ、DNS、証明書）",
         "push": {
@@ -730,6 +798,8 @@
         "schedule": {
           "description": "リモートマシンにバックアップスケジュールをデプロイ（systemd タイマー）",
           "optionDryRun": "デプロイせずに生成されるユニットをプレビュー",
+          "optionForce": "現在バックアップが実行中でも続行する（新しいユニットは次のタイマーティックで適用され、実行中の呼び出しは古いユニットを保持）",
+          "optionResetFailed": "デプロイ成功後、変更したサービスの失敗状態をクリアする（既定は無効、失敗シグナルを保持）",
           "success": "バックアップスケジュールを {{machine}} にデプロイしました"
         },
         "status": {
@@ -1843,10 +1913,19 @@
       "description": "CLIのアップデートを確認して適用",
       "descriptionShort": "CLIのアップデートを確認して適用",
       "downloading": "v{{version}}をダウンロード中...",
+      "errors": {
+        "binaryBusy": "現在のバイナリは使用中のため、更新は次回起動時に適用されます。",
+        "checksumMismatch": "ダウンロードしたバイナリのチェックサム検証に失敗しました。",
+        "lockFailed": "別の更新が進行中です。数秒後にもう一度お試しください。",
+        "noBinary": "最新リリースにはこのプラットフォーム用のバイナリがありません。",
+        "noChecksum": "リリースマニフェストに SHA256 チェックサムが含まれていません。",
+        "notSEA": "更新できません: パッケージ化されたバイナリとして実行されていません。まず SEA でビルドしてください。",
+        "unknown": "更新中に不明なエラーが発生しました。",
+        "unsupportedPlatform": "このプラットフォームは自己更新に対応していません。"
+      },
       "failed": "アップデート失敗: {{error}}",
       "force": "最新でも強制的にアップデート",
       "invalidChannel": "無効なチャンネル: {{channel}}。stable または edge を使用してください。",
-      "notSEA": "アップデートできません：パッケージバイナリとして実行されていません。先にSEAでビルドしてください。",
       "npmUpdateHint": "更新するには、以下を実行してください:\n  {{command}}",
       "progress": "ダウンロード中... {{percent}}%",
       "releaseNotes": "リリースノート: {{url}}",
@@ -2138,9 +2217,12 @@
     "affectedChildClones": "。影響を受ける子クローン: {{clones}}。子クローンを最初に削除するか昇格させてください。",
     "agent": {
       "commandBlocked": "\"{{command}}\" コマンドはエージェントモードでは使用できません。\n\nこのコマンドは安全ガードなしに任意の低レベル関数を実行します。代わりに型付きCLIコマンドまたはMCPツールを使用してください。\n\n代替手段:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 利用可能なすべてのコマンドを表示するには \"rdc agent capabilities\" を実行してください\n\n直接アクセスが必要な場合は、ユーザーにコマンドを直接実行するよう依頼してください。",
+      "configEdit": "対話型エディタはエージェント環境ではブロックされます。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nオーバーライドするには、エージェントを起動する前に親シェルで\nREDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください(エージェントの祖先プロセス内に存在する必要があります)。",
+      "configEditAncestry": "対話型エディタはエージェント環境ではブロックされます(REDIACC_ALLOW_CONFIG_EDIT は設定されましたが祖先検証に失敗 — オーバーライドはエージェントではなく親シェルから設定する必要があります)。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nエージェントを起動する前に親シェルで REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください。",
       "createGuard": "エージェントモードでは新しいgrandリポジトリ \"{{name}}\" を作成できません。\n\nエージェントはfork専用モードで動作します。grandリポジトリは本番環境であり、作成後にエージェントがアクセスすることはできません。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nユーザーへ: リポジトリの作成を許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
       "createGuardOverride": "新しいgrandリポジトリ \"{{name}}\" を作成できません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "新しいgrandリポジトリ \"{{name}}\" を作成できません。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
+      "fieldReveal": "機密フィールド {{pointer}} の --reveal はエージェント環境ではブロックされます。エージェントは --digest を使用してください。対話型端末の実ユーザーは --reveal を使えます。",
       "forkBlocked": "コマンド \"{{command}}\" はforkリポジトリでは使用できません。\n\nforkリポジトリは一時的なサンドボックス環境です。この操作はgrand（本番）リポジトリにのみ適用されます。ユーザーにこのコマンドを直接実行するよう依頼してください。",
       "grandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\ngrandリポジトリには本番データが含まれています。代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです。\n\nワークフロー:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する（例: rdc repo up --name {{name}}:<tag-name> -m <machine> --mount）\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nユーザーへ: 直接アクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
       "grandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます",
@@ -2153,7 +2235,12 @@
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" はgrand（本番）リポジトリです。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。",
       "mcpMachineGuard": "fork専用モードでは直接マシンアクセスは許可されていません。\n\nエージェントはリポジトリコンテキストを通じて接続する必要があります。repo_fork を使用してforkを作成し、接続してください。\n直接アクセスが必要な場合は、ユーザーに --allow-grand を付けてMCPサーバーを再起動するよう依頼してください。",
       "mcpMachineGuardOverride": "直接マシンアクセスは許可されていません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。\n\nrepo_fork を使用してforkを作成し、接続してください。",
-      "mcpMachineGuardOverrideNonLinux": "直接マシンアクセスのオーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nrepo_fork を使用してforkを作成し、接続してください。"
+      "mcpMachineGuardOverrideNonLinux": "直接マシンアクセスのオーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nrepo_fork を使用してforkを作成し、接続してください。",
+      "revealRequiresTty": "--reveal には対話型 TTY が必要です。機密値をパイプに出力することは拒否します。",
+      "rotateNotSensitive": "ポインタ「{{pointer}}」は機密フィールドではありません。代わりに 'config field set' を使用してください。",
+      "rotateRequiresTty": "config field rotate には対話型 TTY による確認が必要です。非対話型では拒否されます(上書きには REDIACC_ALLOW_CONFIG_EDIT を設定)。",
+      "showReveal": "--reveal はエージェント環境ではブロックされます。秘匿された `rdc config show` または `rdc config field get <pointer> --digest` を使用してください。",
+      "showRevealRequiresTty": "--reveal には対話型 TTY が必要です。平文を非 TTY 先へ流すことは拒否します。"
     },
     "authFailed": "認証に失敗しました",
     "authRequired": "認証が必要です。実行してください: rdc auth login",
@@ -2164,9 +2251,17 @@
     "config": {
       "invalidEmail": "無効なメールアドレス: \"{{value}}\"。",
       "machineNotFound": "マシン \"{{name}}\" が設定に見つかりません。利用可能: {{available}}。",
+      "noActiveConfig": "アクティブな設定がありません",
+      "pointerNotFound": "ポインタ「{{pointer}}」が見つかりません",
       "storageNotFound": "ストレージ \"{{name}}\" が設定に見つかりません。利用可能: {{available}}。"
     },
     "contextNotFound": "コンテキスト \"{{name}}\" が見つかりません",
+    "editor": {
+      "headlessRefused": "ヘッドレス エディタ呼び出しは永久にブロックします: {{command}}。対話型フラグを付けて --editor を明示してください。",
+      "nonzeroExit": "エディタ {{command}} はコード {{code}} で終了しました",
+      "notFound": "エディタが設定されていません。$GIT_EDITOR、git config core.editor、$VISUAL、$EDITOR を設定するか、--editor を指定してください。",
+      "spawnFailed": "エディタ {{command}} の起動に失敗しました: {{reason}}"
+    },
     "failedCreateQueueItem": "キュー項目の作成に失敗しました",
     "invalidAction": "無効なアクション \"{{action}}\"。\"{{valid}}\" を使用してください。",
     "invalidCredentials": "認証情報が無効です",
@@ -2190,6 +2285,15 @@
     "passwordsMismatch": "パスワードが一致しません",
     "permissionDenied": "権限がありません",
     "poolNotFound": "Ceph プール \"{{name}}\" が見つかりません",
+    "precondition": {
+      "currentSecretsRequired": "{{pointer}}: --current なしで機密フィールドが変更されました。ポインタ→旧値をマッピングした --current-secrets <file> を指定してください",
+      "digestMismatch": "--current ダイジェスト不一致(期待値 {{expected}}…、実際 {{got}}…)",
+      "kindMismatch": "値の種類が変わりました(保存: {{stored}}、申告: {{claimed}})",
+      "mismatch": "{{count}} パスで事前条件失敗:\n{{details}}",
+      "missing": "機密パスには --current(または --rotate-secret)が必要です",
+      "rotationRequiresTty": "{{pointer}}: ローテーションの確認には対話型 TTY が必要です(または --current-secrets を使用)",
+      "stubStillStub": "{{pointer}}: 編集された値は秘匿スタブのように見えますが、現在のダイジェストと一致しません"
+    },
     "protocol": {
       "commandExitCode": "コマンドが終了コード {{code}} で終了しました",
       "invalidAction": "無効なアクション '{{action}}'。次のいずれかである必要があります: {{validActions}}",

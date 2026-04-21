@@ -44,7 +44,7 @@ export function registerAuthCommands(program: Command): void {
           const existingConfig = (await configFileStorage.exists(configName))
             ? await configFileStorage.load(configName)
             : null;
-          apiUrl = existingConfig?.apiUrl ?? (await configService.getApiUrl());
+          apiUrl = existingConfig?.account?.apiUrl ?? (await configService.getApiUrl());
         } else {
           apiUrl = await configService.getApiUrl();
         }

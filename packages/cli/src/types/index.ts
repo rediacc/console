@@ -1,439 +1,48 @@
-// CLI-specific types
-import { randomUUID } from 'node:crypto';
+// CLI-specific types — re-exports from the v2 Zod schema plus
+// non-config-shape enums/interfaces that remain hand-written.
+
 import type { PlatformKey } from '../utils/platform.js';
 
 // ============================================================================
-// Config File Types
+// Config types (derived from Zod v2 schema — single source of truth)
 // ============================================================================
 
-/**
- * Machine configuration. Defines SSH connection details for a machine.
- */
-export interface MachineConfig {
-  /** Machine IP address or hostname */
-  ip: string;
-  /** SSH username */
-  user: string;
-  /** SSH port (default: 22) */
-  port?: number;
-  /** Datastore path on the machine */
-  datastore?: string;
-  /** SSH host key(s) for this machine (from ssh-keyscan) */
-  knownHosts?: string;
-  /** Infrastructure configuration (public IPs, domain, TLS, ports) */
-  infra?: InfraConfig;
-  /** Ceph RBD datastore configuration */
-  ceph?: CephConfig;
-  /** Backup strategies bound to this machine (references backupStrategies by name) */
-  backupStrategies?: string[];
-}
+import type { RdcConfig } from '../schema/schemas.js';
+
+export type {
+  RdcConfig,
+  MachineConfig,
+  StorageConfig,
+  RepositoryConfig,
+  ArchivedRepository,
+  InfraConfig,
+  BackupDestination,
+  BackupDestination as BackupStrategyDestination,
+  BackupStrategyConfig,
+  CloudProviderConfig,
+  AcmeCertCache,
+  RemoteConfig,
+  EncryptedBlob,
+  EncryptionState,
+} from '../schema/schemas.js';
+
+export {
+  createEmptyRdcConfig,
+  hasCloudCredentials,
+  hasCloudIntent,
+  hasRemoteConfig,
+} from '../schema/schemas.js';
 
 /**
- * Ceph RBD configuration for a machine's datastore.
- * When set, the machine uses Ceph RBD as the datastore backend instead of local loop device.
+ * SSH credentials — derived from the Zod schema's `credentials.ssh` so that
+ * schema changes propagate automatically. The name `SSHContent` is retained
+ * for grep-continuity with existing call sites.
  */
-export interface CephConfig {
-  /** Ceph pool name (e.g., "rbd") */
-  pool: string;
-  /** RBD image name (e.g., "datastore-prod1") */
-  image: string;
-  /** Ceph cluster name (default: "ceph") */
-  clusterName?: string;
-}
-
-/**
- * Infrastructure configuration for a machine.
- * Stores public networking, domain, TLS, and port forwarding settings.
- * Used by `renet proxy configure` to generate proxy/router config on remote machines.
- */
-export interface InfraConfig {
-  /** Public IPv4 address for external access (binds Traefik entrypoints) */
-  publicIPv4?: string;
-  /** Public IPv6 address for external access (binds Traefik entrypoints) */
-  publicIPv6?: string;
-  /** Base domain for applications (e.g., "example.com") */
-  baseDomain?: string;
-  /** Additional TCP ports to forward (e.g., [25, 143, 465, 587, 993]) */
-  tcpPorts?: number[];
-  /** Additional UDP ports to forward (e.g., [53]) */
-  udpPorts?: number[];
-}
+export type SSHContent = NonNullable<NonNullable<RdcConfig['credentials']>['ssh']>;
 
 // ============================================================================
-// Cloud Provider Types (OpenTofu-based VM provisioning)
+// Output / UI types
 // ============================================================================
-
-/** SSH key injection mechanism for cloud providers. */
-export interface ProviderSSHKeyConfig {
-  /** Resource attribute name for SSH keys */
-  attr: string;
-  /** How keys are injected: 'inline_list' (raw key in array) or 'resource_id' (separate SSH key resource) */
-  format: 'inline_list' | 'resource_id';
-  /** If format='resource_id', the OpenTofu resource type for SSH keys (e.g., "hcloud_ssh_key") */
-  keyResource?: string;
-}
-
-/** Firewall configuration in provider registry. */
-export interface ProviderFirewallConfig {
-  /** Firewall resource type (e.g., "linode_firewall") */
-  resource: string;
-  /** Attribute that links firewall to instance (e.g., "linodes") */
-  linkAttr?: string;
-  /** Reference expression for the link (e.g., "${linode_instance.machine.id}") */
-  linkRef?: string;
-  /** Separate attachment resource (e.g., "hcloud_firewall_attachment") */
-  attachResource?: string;
-}
-
-/** Provider mapping — describes how to generate .tf.json for a specific cloud provider. */
-export interface ProviderMapping {
-  /** OpenTofu provider source (e.g., "linode/linode") */
-  source: string;
-  /** Provider version constraint (e.g., "~> 3.0") */
-  version?: string;
-  /** Provider config attribute name for the API token */
-  tokenAttr: string;
-  /** Resource type for the VM (e.g., "linode_instance") */
-  resource: string;
-  /** Attribute name for the VM label/name */
-  labelAttr: string;
-  /** Attribute name for region/location */
-  regionAttr: string;
-  /** Attribute name for instance type/size */
-  sizeAttr: string;
-  /** Attribute name for OS image */
-  imageAttr: string;
-  /** Output attribute path for IPv4 */
-  ipv4Output: string;
-  /** Output attribute path for IPv6 (optional) */
-  ipv6Output?: string;
-  /** SSH key injection config */
-  sshKey: ProviderSSHKeyConfig;
-  /** Firewall configuration (optional) */
-  firewall?: ProviderFirewallConfig;
-  /** Default values for provider-specific attributes */
-  defaults?: Record<string, string>;
-}
-
-/** Cloud provider configuration stored in rediacc.json. */
-export interface CloudProviderConfig {
-  /** For known providers: matches a key in provider-registry.json (e.g., "linode/linode") */
-  provider?: string;
-  /** For custom providers: full OpenTofu source (e.g., "vultr/vultr"). Presence triggers custom mode. */
-  source?: string;
-  /** API token for the cloud provider */
-  apiToken: string;
-  /** Default region */
-  region?: string;
-  /** Default instance type/size */
-  instanceType?: string;
-  /** Default OS image */
-  image?: string;
-  /** SSH username for created VMs (default: "root") */
-  sshUser?: string;
-
-  // --- Custom provider fields (only when source is set) ---
-  /** Provider version constraint */
-  version?: string;
-  /** Provider attribute name for the API token */
-  tokenAttr?: string;
-  /** Resource type for the VM */
-  resource?: string;
-  /** Attribute name for the VM label */
-  labelAttr?: string;
-  /** Attribute name for region */
-  regionAttr?: string;
-  /** Attribute name for instance type */
-  sizeAttr?: string;
-  /** Attribute name for OS image */
-  imageAttr?: string;
-  /** Output attribute for IPv4 */
-  ipv4Output?: string;
-  /** Output attribute for IPv6 */
-  ipv6Output?: string;
-  /** SSH key config */
-  sshKey?: ProviderSSHKeyConfig;
-}
-
-/**
- * Storage configuration. Stores rclone-imported storage vault data.
- */
-export interface StorageConfig {
-  /** Storage provider type (s3, b2, drive, etc.) */
-  provider: string;
-  /** Full vault content (provider, bucket, credentials, etc.) */
-  vaultContent: Record<string, unknown>;
-}
-
-/**
- * Repository configuration. Maps a human-readable name to its GUID.
- */
-export interface RepositoryConfig {
-  /** Repository GUID (the UUID used as filename in storage backups) */
-  repositoryGuid: string;
-  /** Repository tag (default: 'latest') */
-  tag?: string;
-  /** Repository credential (encryption passphrase for the backup) */
-  credential?: string;
-  /** Network ID for Docker isolation (2816 + n*64). Auto-assigned if omitted. */
-  networkId?: number;
-  /** GUID of the original ancestor repository. Present on forks; absent on grand repos. */
-  grandGuid?: string;
-  /** GUID of the immediate parent repository. Present on forks; absent on grand repos. */
-  parentGuid?: string;
-  /** Per-repo SSH private key (OpenSSH format). Used for sandbox-isolated connections. */
-  sshPrivateKey?: string;
-  /** Per-repo SSH public key. Deployed to remote authorized_keys with sandbox gateway command= prefix. */
-  sshPublicKey?: string;
-}
-
-/**
- * Archived repository entry. Preserved when a repo is deleted via `rdc repo delete`
- * so the LUKS credential can be restored if the same repo exists on other machines.
- */
-export interface ArchivedRepository extends RepositoryConfig {
-  /** Original friendly name of the repository */
-  name: string;
-  /** ISO 8601 timestamp when the repository was deleted */
-  deletedAt: string;
-}
-
-/**
- * SSH configuration. Points to local SSH key files.
- */
-export interface SSHConfig {
-  /** Path to SSH private key file (e.g., ~/.ssh/id_rsa) */
-  privateKeyPath: string;
-  /** Path to SSH public key file (optional) */
-  publicKeyPath?: string;
-}
-
-/**
- * A single backup destination within a strategy.
- * References a storage config (rclone credentials) by name.
- */
-export interface BackupStrategyDestination {
-  /** Unique destination name (used for logging and identification) */
-  name: string;
-  /** Storage config name (references rclone credentials in config.storages) */
-  storage: string;
-  /** Per-destination enable/disable (falls back to strategy enabled) */
-  enabled?: boolean;
-  /** Per-destination rclone bandwidth limit (e.g., "6M", "08:00,3M;22:00,10M") */
-  bandwidthLimit?: string;
-  /**
-   * Optional subfolder under the storage's bucket/folder. Appended to the
-   * rclone remote path so two strategies sharing one storage can write to
-   * disjoint paths (e.g., hourly-hot → `hot/`, nightly-cold → `cold/`).
-   */
-  folder?: string;
-}
-
-/**
- * Named backup strategy configuration.
- * Each strategy has a single schedule and mode, with one or more storage destinations.
- * Strategies are bound to machines via MachineConfig.backupStrategies.
- *
- * - hot mode: BTRFS snapshot while services run (crash-consistent, zero downtime)
- * - cold mode: stop services, snapshot, restart, then upload (application-consistent, brief downtime)
- */
-export interface BackupStrategyConfig {
-  /** Backup destinations (upload to all from the same snapshot) */
-  destinations: BackupStrategyDestination[];
-  /** Cron schedule (e.g., "0 * * * *" for hourly, "0 3 * * *" for nightly at 3 AM) */
-  schedule: string;
-  /** Backup mode: "hot" (default) or "cold" */
-  mode?: 'hot' | 'cold';
-  /** Enable/disable this strategy (default: true) */
-  enabled?: boolean;
-  /** Default rclone bandwidth limit for all destinations (e.g., "6M") */
-  bandwidthLimit?: string;
-  /** Only back up these repos by name (mutually exclusive with exclude) */
-  include?: string[];
-  /** Back up all repos except these by name (mutually exclusive with include) */
-  exclude?: string[];
-}
-
-/**
- * Cached ACME certificate data from Traefik's acme.json.
- * Stored at config level keyed by baseDomain (shared across machines).
- * Compressed with gzip + base64. Chunked into 48KB pieces for backends with size limits.
- */
-export interface AcmeCertCache {
-  /** Base domain this cache applies to (e.g., "rediacc.io") */
-  baseDomain: string;
-  /** ISO 8601 timestamp of last cache update */
-  updatedAt: string;
-  /** Machine name the cache was downloaded from */
-  sourceMachine: string;
-  /** Number of certificates in the cache */
-  certCount: number;
-  /** Certificate inventory: domain → expiry date (ISO 8601) */
-  certs: Record<string, string>;
-  /** gzip + base64 encoded acme.json. Array of 48KB chunks if large. */
-  data: string | string[];
-  /** Original uncompressed size in bytes */
-  rawSize: number;
-}
-
-/**
- * A flat config file (e.g., rediacc.json, production.json).
- * Each file is an independent, self-contained unit with a unique GUID
- * and version number for conflict detection during store sync.
- *
- * Adapter detection is automatic:
- * - Has apiUrl + token → Cloud adapter (experimental)
- * - Otherwise → Local adapter (default)
- */
-export interface RdcConfig {
-  /** UUID v4 — unique identifier for this config file. Never changes. Unencrypted, always visible. */
-  id: string;
-  /** Monotonically increasing version number. Incremented on every write. */
-  version: number;
-
-  // ============================================================================
-  // Cloud (experimental — requires REDIACC_EXPERIMENTAL=1)
-  // ============================================================================
-
-  /** API endpoint URL (cloud mode only) */
-  apiUrl?: string;
-  /** Authentication token (cloud mode only) */
-  token?: string;
-  /** User email address (cloud mode only) */
-  userEmail?: string;
-  /** Default team (cloud mode only) */
-  team?: string;
-  /** Default region (cloud mode only) */
-  region?: string;
-  /** Default bridge (cloud mode only) */
-  bridge?: string;
-
-  // ============================================================================
-  // Subscription / Account Server
-  // ============================================================================
-
-  /** Account server URL for this config (overrides global server.json) */
-  accountServer?: string;
-
-  // ============================================================================
-  // Self-Hosted (local adapter)
-  // ============================================================================
-
-  /** Machine configurations (name -> config) */
-  machines?: Record<string, MachineConfig>;
-  /** Storage configurations (name -> config) */
-  storages?: Record<string, StorageConfig>;
-  /** Repository name-to-GUID mappings (name -> config) */
-  repositories?: Record<string, RepositoryConfig>;
-  /** Archived repository credentials from deleted repos */
-  deletedRepositories?: ArchivedRepository[];
-  /** SSH configuration */
-  ssh?: SSHConfig;
-  /** Inline SSH key content for portability */
-  sshContent?: SSHContent;
-  /** Path to renet binary (default: 'renet' in PATH) */
-  renetPath?: string;
-  /** Named backup strategies (name -> config). Bound to machines via MachineConfig.backupStrategies */
-  backupStrategies?: Record<string, BackupStrategyConfig>;
-  /** Cloudflare DNS API token for ACME DNS-01 challenge (shared across machines) */
-  cfDnsApiToken?: string;
-  /** Cached Cloudflare DNS zone ID (auto-resolved from baseDomain) */
-  cfDnsZoneId?: string;
-  /** Email address for TLS certificate notifications (shared across machines) */
-  certEmail?: string;
-  /** When true, resources are encrypted in encryptedResources blob */
-  encrypted?: boolean;
-  /** Encrypted blob of {machines, storages, repositories, sshContent} */
-  encryptedResources?: string;
-  /** Encrypted master password for vault operations */
-  masterPassword?: string;
-  /** Cloud provider configurations for automated VM provisioning (name -> config) */
-  cloudProviders?: Record<string, CloudProviderConfig>;
-  /** Cached ACME certificate data, keyed by baseDomain (shared across machines) */
-  acmeCertCache?: Record<string, AcmeCertCache>;
-
-  // ============================================================================
-  // Defaults & Global Settings
-  // ============================================================================
-
-  /** Preferred language code (en, de, es, fr, ja, ar, ru, tr, zh) */
-  language?: string;
-  /** Network ID counter. Monotonically increasing. */
-  nextNetworkId?: number;
-  /** Override the default universal user ("rediacc") for command execution */
-  universalUser?: string;
-  /** Days to retain archived repos before prune considers them stale (default: 7) */
-  pruneGraceDays?: number;
-  /** Default datastore size for new provisions and machine setup (e.g., "95%", "500G") */
-  datastoreSize?: string;
-
-  // ============================================================================
-  // Remote Config Storage
-  // ============================================================================
-
-  /** Remote config pointer. When present, config is fetched/pushed to encrypted server. */
-  remote?: RemoteConfig;
-}
-
-/**
- * Create a new empty config with a fresh UUID and version 1.
- */
-export function createEmptyRdcConfig(): RdcConfig {
-  return {
-    id: randomUUID(),
-    version: 1,
-    language: 'en',
-    datastoreSize: '95%',
-  };
-}
-
-/**
- * Detect if a config has cloud credentials (apiUrl + token).
- * Used for adapter-based detection instead of an explicit mode field.
- */
-export function hasCloudCredentials(config: RdcConfig | null | undefined): boolean {
-  return Boolean(config?.apiUrl && config.token);
-}
-
-/**
- * Detect if a config has cloud intent (apiUrl present, token may be absent).
- * Used by the mode guard to allow pre-authentication commands (auth register/login)
- * to run before a token is obtained.
- */
-export function hasCloudIntent(config: RdcConfig | null | undefined): boolean {
-  return Boolean(config?.apiUrl);
-}
-
-/**
- * Remote config storage pointer.
- * When present on an RdcConfig, the CLI transparently fetches/pushes
- * encrypted config from the account server. The local file stores only
- * this pointer and non-sensitive settings (language, etc.).
- */
-export interface RemoteConfig {
-  /** Account server URL (e.g., 'https://eu.rediacc.com/account/api/v1') */
-  apiUrl: string;
-  /** Config store UUID on the server */
-  storeId: string;
-  /** Config entry UUID (this config's identity on the server) */
-  configId: string;
-  /** Optional team scope */
-  teamId?: string;
-  /** Key for OS secure storage lookup (passkey_secret) */
-  storageKeyId: string;
-  /** Data region where this config is stored (informational, from server) */
-  dataRegion?: string;
-}
-
-/**
- * Detect if a config has a remote storage pointer.
- * When true, getCurrent() transparently fetches from the server.
- */
-export function hasRemoteConfig(
-  config: RdcConfig | null | undefined
-): config is RdcConfig & { remote: RemoteConfig } {
-  return Boolean(config?.remote?.apiUrl && config.remote.storeId && config.remote.configId);
-}
 
 export interface OutputConfig {
   format: OutputFormat;
@@ -459,24 +68,23 @@ export interface ApiCallOptions {
   headers?: Record<string, string>;
 }
 
+// ============================================================================
 // Exit codes (Unix-compatible)
+// ============================================================================
+
 export const EXIT_CODES = {
   SUCCESS: 0,
   GENERAL_ERROR: 1,
-  INVALID_ARGUMENTS: 2, // Unix convention for usage error
+  INVALID_ARGUMENTS: 2,
   AUTH_REQUIRED: 3,
   PERMISSION_DENIED: 4,
   NOT_FOUND: 5,
   NETWORK_ERROR: 6,
-  API_ERROR: 7, // Server returned error
-  PAYMENT_REQUIRED: 8, // HTTP 402 - edition/subscription limit reached
-  RATE_LIMITED: 9, // HTTP 429 - too many requests
+  API_ERROR: 7,
+  PAYMENT_REQUIRED: 8,
+  RATE_LIMITED: 9,
 } as const;
 
-/**
- * Map HTTP status codes to CLI exit codes.
- * Used for converting API responses to Unix-compatible exit codes.
- */
 export function httpStatusToExitCode(httpStatus: number): number {
   switch (httpStatus) {
     case 400:
@@ -500,7 +108,6 @@ export function httpStatusToExitCode(httpStatus: number): number {
 
 export type ExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES];
 
-// Storage provider interface (matches console/src/core/types/storage.ts)
 export interface IStorageProvider {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
@@ -509,18 +116,6 @@ export interface IStorageProvider {
 }
 
 export type { ICryptoProvider } from '@rediacc/shared/encryption';
-
-/** SSH key content for embedded key portability. */
-export interface SSHContent {
-  /** Actual SSH private key (PEM content) */
-  privateKey: string;
-  /** Actual SSH public key content */
-  publicKey?: string;
-}
-
-// ============================================================================
-// Auto-Update Types
-// ============================================================================
 
 export interface BinaryInfo {
   url: string;
@@ -532,4 +127,43 @@ export interface UpdateManifest {
   releaseDate: string;
   releaseNotesUrl: string;
   binaries: Partial<Record<PlatformKey, BinaryInfo>>;
+}
+
+// ============================================================================
+// Provider sub-types (still hand-written — not part of the top-level shape)
+// ============================================================================
+
+export interface ProviderSSHKeyConfig {
+  attr: string;
+  format: 'inline_list' | 'resource_id';
+  keyResource?: string;
+}
+
+export interface ProviderFirewallConfig {
+  resource: string;
+  linkAttr?: string;
+  linkRef?: string;
+  attachResource?: string;
+}
+
+export interface ProviderMapping {
+  source: string;
+  version?: string;
+  tokenAttr: string;
+  resource: string;
+  labelAttr: string;
+  regionAttr: string;
+  sizeAttr: string;
+  imageAttr: string;
+  ipv4Output: string;
+  ipv6Output?: string;
+  sshKey: ProviderSSHKeyConfig;
+  firewall?: ProviderFirewallConfig;
+  defaults?: Record<string, string>;
+}
+
+export interface CephConfig {
+  pool: string;
+  image: string;
+  clusterName?: string;
 }

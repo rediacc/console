@@ -284,6 +284,23 @@
       }
     },
     "config": {
+      "audit": {
+        "description": "Yapılandırma denetim günlüğünü incele (~/.config/rediacc/audit.log.jsonl konumunda hash zincirli JSONL)",
+        "log": {
+          "description": "Son denetim girdilerini JSON olarak yaz",
+          "optionActor": "Aktör türüne göre filtrele (human|agent)",
+          "optionPath": "JSON Pointer glob'una göre filtrele (örn.: /credentials/*)",
+          "optionSince": "Yalnızca belirtilen zamandan sonraki girdileri göster (örn.: '24h', '7d', ISO zaman damgası)"
+        },
+        "tail": {
+          "description": "Yazıldıkça yeni denetim girdilerini akıt (durdurmak için Ctrl+C)"
+        },
+        "verify": {
+          "chainBroken": "Zincir {{line}} satırında kırık — dosya kurcalanmış veya bozulmuş.",
+          "chainOk": "{{count}} girdi boyunca zincir bütünlüğü doğrulandı.",
+          "description": "Tüm denetim girdilerinde SHA-256 hash zincirinin bütünlüğünü doğrula"
+        }
+      },
       "backupStrategy": {
         "description": "Adlandırılmış yedekleme stratejilerini yönet (sıcak/soğuk modlar, hedefler, zamanlama)",
         "list": {
@@ -366,6 +383,57 @@
       },
       "description": "Yapılandırma dosyalarını, makineleri ve SSH bağlantılarını yönetin",
       "descriptionShort": "Yapılandırma dosyalarını, makineleri ve SSH bağlantılarını yönetin",
+      "edit": {
+        "abortAfterRetries": "{{count}} başarısız denemeden sonra iptal ediliyor. Taslak şurada korundu: {{path}}",
+        "applied": "{{path}} uygulandı",
+        "bannerRedacted": "Hassas alanlar <redacted:KIND>:DIGEST formunda stub olarak gösterilir ve güvenle gidip gelir.",
+        "bannerReveal": "--reveal etkin: HASSAS DEĞERLER GÖRÜNÜR. Denetleniyor.",
+        "bannerRotateLine1": "Bir sırrı döndürmek için: stub'ı yeni açık metin değerle değiştir — editörü kapattıktan",
+        "bannerRotateLine2": "sonra her döndürmeyi onaylamanız istenecektir.",
+        "bannerStrip": "// ile başlayan satırlar kaydedilirken kaldırılır.",
+        "bannerTitle": "rdc config edit — {{name}} (v{{version}})",
+        "description": "Aktif yapılandırmayı $EDITOR içinde redakte edilmiş JSONC yansıması olarak aç. Yalnızca insan; ajanlar reddedilir.",
+        "noChanges": "Değişiklik kaydedilmedi; iptal ediliyor.",
+        "optionApply": "Düzenlenmiş JSONC dosyasını uygula ($EDITOR başlatmayı atlar)",
+        "optionCurrentSecrets": "--apply için bilgi kapısında kullanılan pointer→eski açık metin eşlemesi JSON dosyası",
+        "optionDump": "Editörü açmak yerine mevcut yapılandırmayı JSONC olarak stdout'a yaz (salt okunur; redakte edildiğinde ajanlar için güvenli)",
+        "optionEditor": "Editör komutu geçersiz kılma (git önceliğine uyar: --editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+        "optionReveal": "Hassas değerleri açık metin olarak göster (yalnızca etkileşimli TTY; denetlenir)",
+        "rotateDeclined": "İptal edildi; taslak editör geçici dosyasında korundu.",
+        "rotatePromptBullet": "  • {{pointer}}",
+        "rotatePromptFooter": "Onaylamak için 'rotate' yazın (başka her şey iptal): ",
+        "rotatePromptHeader": "{{count}} hassas alanı döndürmek üzeresiniz:",
+        "saved": "Yapılandırma \"{{name}}\" kaydedildi"
+      },
+      "field": {
+        "description": "İşaretçi adresli yapılandırma alan işlemleri (get/set/unset/rotate/list). /credentials/cfDnsApiToken gibi JSON Pointer (RFC 6901).",
+        "get": {
+          "description": "JSON Pointer ile tek bir yapılandırma değerini oku. --reveal olmadıkça hassas alanlar maskelenir (yalnızca insan).",
+          "optionDigest": "Değer yerine SHA-256 özetini yaz (ajanlarla paylaşmak için güvenli)",
+          "optionReveal": "Hassas değerleri açık metin olarak göster (yalnızca etkileşimli TTY; denetlenir)"
+        },
+        "list": {
+          "description": "Kaydedilmiş tüm duyarlılık pointer şablonlarını türü ve commit/şifreleme politikasıyla listele.",
+          "optionOutput": "Çıktı biçimi (json|table)",
+          "optionSensitive": "Yalnızca hassas (genel olmayan) şablonları göster"
+        },
+        "rotate": {
+          "description": "Hassas bir değeri --current olmadan döndür. Yalnızca etkileşimli TTY; belirgin şekilde denetlenir.",
+          "optionNew": "Yeni değer",
+          "success": "{{pointer}} döndürüldü"
+        },
+        "set": {
+          "description": "JSON Pointer konumuna yapılandırma değeri yaz. Hassas yollar --current gerektirir (bilgi kapısı).",
+          "optionCurrent": "Mevcut açık metin değer — hassas yol değişikliklerinde gerekli (bilgi kapısı kanıtı)",
+          "optionNew": "Yeni değer ({, [, \", true/false/null veya sayı ile başlıyorsa JSON olarak ayrıştırılır)",
+          "success": "{{pointer}} ayarlandı"
+        },
+        "unset": {
+          "description": "JSON Pointer konumundaki yapılandırma değerini sil. Hassas yollar --current gerektirir.",
+          "optionCurrent": "Mevcut açık metin değer — hassas yol silmelerinde gerekli",
+          "success": "{{pointer}} kaldırıldı"
+        }
+      },
       "infra": {
         "description": "Altyapı yapılandırmasını yönet (proxy, DNS, sertifikalar)",
         "push": {
@@ -730,6 +798,8 @@
         "schedule": {
           "description": "Uzak makineye yedekleme zamanlaması dağıt (systemd zamanlayıcıları)",
           "optionDryRun": "Dağıtmadan oluşturulan birimleri önizle",
+          "optionForce": "Şu anda bir yedekleme çalışıyor olsa bile devam et (yeni birim sonraki tetiklemede uygulanır; çalışan işlem eski birimini korur)",
+          "optionResetFailed": "Başarılı dağıtım sonrası etkilenen servislerin failed durumunu temizle (varsayılan kapalı, hata sinyalini korur)",
           "success": "Yedekleme zamanlaması {{machine}} makinesine dağıtıldı"
         },
         "status": {
@@ -1843,10 +1913,19 @@
       "description": "CLI güncellemelerini kontrol et ve uygula",
       "descriptionShort": "CLI güncellemelerini kontrol et ve uygula",
       "downloading": "v{{version}} indiriliyor...",
+      "errors": {
+        "binaryBusy": "Mevcut ikili dosya kullanımda; güncelleme sonraki başlatmada uygulanacak.",
+        "checksumMismatch": "İndirilen ikili dosya sağlama doğrulamasında başarısız oldu.",
+        "lockFailed": "Başka bir güncelleme zaten sürüyor. Birkaç saniye sonra tekrar deneyin.",
+        "noBinary": "En son sürümde bu platform için ikili dosya yok.",
+        "noChecksum": "Sürüm bildirgesinde SHA256 sağlaması eksik.",
+        "notSEA": "Güncelleme yapılamıyor: paketlenmiş ikili dosya olarak çalışmıyor. Önce SEA ile derleyin.",
+        "unknown": "Güncelleme sırasında bilinmeyen hata.",
+        "unsupportedPlatform": "Bu platform kendi kendine güncellemeyi desteklemiyor."
+      },
       "failed": "Güncelleme başarısız: {{error}}",
       "force": "Güncel olsa bile güncellemeyi zorla",
       "invalidChannel": "Geçersiz kanal: {{channel}}. stable veya edge kullanın.",
-      "notSEA": "Güncellenemiyor: paketlenmiş ikili dosya olarak çalışmıyor. Önce SEA ile derleyin.",
       "npmUpdateHint": "Güncellemek için çalıştırın:\n  {{command}}",
       "progress": "İndiriliyor... {{percent}}%",
       "releaseNotes": "Sürüm notları: {{url}}",
@@ -2138,9 +2217,12 @@
     "affectedChildClones": ". Etkilenen alt klonlar: {{clones}}. Önce alt klonları silin veya yükseltin.",
     "agent": {
       "commandBlocked": "\"{{command}}\" komutu ajan modunda kullanilabilir degil.\n\nBu komut, guvenlik korumalari olmadan rastgele dusuk seviyeli islevler calistirir. Bunun yerine tipli CLI komutlari veya MCP araclari kullanin.\n\nAlternatifler:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Tum kullanilabilir komutlari gormek icin \"rdc agent capabilities\" calistirin\n\nDogrudan erisime ihtiyaciniz varsa, kullanicidan komutu dogrudan calistirmasini isteyin.",
+      "configEdit": "Etkileşimli editör, ajan ortamlarında engellenir.\n\nAlternatifler:\n  • rdc config edit --dump > config.jsonc    (güvenli redakte inceleme)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nGeçersiz kılmak için ajanı başlatmadan ÖNCE üst shell'de\nREDIACC_ALLOW_CONFIG_EDIT=<scope-glob> tanımlayın (ajan proses ataları arasında görünmelidir).",
+      "configEditAncestry": "Etkileşimli editör, ajan ortamlarında engellendi (REDIACC_ALLOW_CONFIG_EDIT ayarlandı ancak ata doğrulaması başarısız oldu — geçersiz kılma ajanınız tarafından değil kabuğunuz tarafından ayarlanmalıdır).\n\nAlternatifler:\n  • rdc config edit --dump > config.jsonc    (güvenli redakte inceleme)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nAjanı başlatmadan ÖNCE üst shell'de REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> tanımlayın.",
       "createGuard": "Ajan modunda yeni bir grand depo \"{{name}}\" oluşturulamaz.\n\nAjanlar yalnızca fork modunda çalışır. Grand depolar, oluşturulduktan sonra ajanların erişemeyeceği üretim ortamlarıdır.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nKullanıcı: depo oluşturmaya izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO=* (veya belirli bir depo adı) ayarlayın.",
       "createGuardOverride": "Yeni bir grand depo \"{{name}}\" oluşturulamaz. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "Yeni bir grand depo \"{{name}}\" oluşturulamaz. REDIACC_ALLOW_GRAND_REPO geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nGeçersiz kılmayı kullanmak için ajanınızı Linux üzerinde çalıştırın (doğrudan, WSL, Docker veya VM).",
+      "fieldReveal": "Hassas {{pointer}} alanı için --reveal, ajan ortamlarında engellenir. Ajanlar --digest kullanmalıdır. Etkileşimli terminaldeki gerçek bir kullanıcı --reveal kullanabilir.",
       "forkBlocked": "\"{{command}}\" komutu fork depolarında kullanılamaz.\n\nFork depoları geçici sandbox ortamlarıdır. Bu işlem yalnızca grand (üretim) depoları için geçerlidir. Kullanıcıdan bu komutu doğrudan çalıştırmasını isteyin.",
       "grandGuard": "\"{{name}}\" bir grand (üretim) deposudur. Ajanlar grand depoları doğrudan değiştiremez.\n\nGrand depolar üretim verilerini içerir. Bunun yerine fork kullanın — fork'lar güvenli, izole sandbox kopyalarıdır.\n\nİş akışı:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın (örn: rdc repo up --name {{name}}:<tag-name> -m <machine> --mount)\n  3. Tamamlandığında, kullanıcı rdc repo takeover --name <fork> komutuyla fork'u yükseltebilir\n\nKullanıcı: doğrudan erişime izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (veya tüm depolar için *) ayarlayın.",
       "grandGuardOverride": "\"{{name}}\" bir grand (üretim) deposudur. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nBunun yerine fork kullanın — fork'lar güvenli, izole sandbox kopyalarıdır:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Fork üzerinde çalışın\n  3. Tamamlandığında, kullanıcı rdc repo takeover --name <fork> komutuyla fork'u yükseltebilir",
@@ -2153,7 +2235,12 @@
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" bir grand (üretim) deposudur. REDIACC_ALLOW_GRAND_REPO geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nGüvenli, izole bir sandbox kopya oluşturmak için repo_fork kullanın, ardından fork üzerinde çalışın.",
       "mcpMachineGuard": "Yalnızca fork modunda doğrudan makine erişimine izin verilmez.\n\nAjanlar bir depo bağlamı üzerinden bağlanmalıdır. Fork oluşturmak için repo_fork kullanın, ardından bağlanın.\nDoğrudan erişime ihtiyacınız varsa, kullanıcıdan MCP sunucusunu --allow-grand ile yeniden başlatmasını isteyin.",
       "mcpMachineGuardOverride": "Doğrudan makine erişimine izin verilmez. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın.\n\nFork oluşturmak için repo_fork kullanın, ardından bağlanın.",
-      "mcpMachineGuardOverrideNonLinux": "Doğrudan makine erişimi geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nFork oluşturmak için repo_fork kullanın, ardından bağlanın."
+      "mcpMachineGuardOverrideNonLinux": "Doğrudan makine erişimi geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nFork oluşturmak için repo_fork kullanın, ardından bağlanın.",
+      "revealRequiresTty": "--reveal etkileşimli TTY gerektirir; hassas değer bir boruya yazılmayacak.",
+      "rotateNotSensitive": "Pointer \"{{pointer}}\" hassas bir alan değil; bunun yerine 'config field set' kullanın.",
+      "rotateRequiresTty": "config field rotate, etkileşimli TTY onayı gerektirir; etkileşimli olmayan bağlamda reddedilir (geçersiz kılmak için REDIACC_ALLOW_CONFIG_EDIT tanımlayın).",
+      "showReveal": "--reveal, ajan ortamlarında engellenir. Güvenli parmak izi için `rdc config show` (redakte) veya `rdc config field get <pointer> --digest` kullanın.",
+      "showRevealRequiresTty": "--reveal etkileşimli TTY gerektirir; açık metin TTY olmayan bir hedefe aktarılmayacak."
     },
     "authFailed": "Kimlik doğrulama başarısız",
     "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc auth login",
@@ -2164,9 +2251,17 @@
     "config": {
       "invalidEmail": "Geçersiz e-posta adresi: \"{{value}}\".",
       "machineNotFound": "\"{{name}}\" makinesi yapılandırmada bulunamadı. Mevcut: {{available}}.",
+      "noActiveConfig": "Aktif yapılandırma yok",
+      "pointerNotFound": "Pointer \"{{pointer}}\" bulunamadı",
       "storageNotFound": "\"{{name}}\" depolama alanı yapılandırmada bulunamadı. Mevcut: {{available}}."
     },
     "contextNotFound": "\"{{name}}\" bağlamı bulunamadı",
+    "editor": {
+      "headlessRefused": "Başlıksız editör çağrısı sonsuza dek bloklar: {{command}}. Etkileşimli bayraklarla --editor'ü açıkça geçirin.",
+      "nonzeroExit": "Editör {{command}} {{code}} koduyla çıktı",
+      "notFound": "Yapılandırılmış editör yok. $GIT_EDITOR, git config core.editor, $VISUAL ya da $EDITOR tanımlayın veya --editor geçirin.",
+      "spawnFailed": "Editör {{command}} başlatılamadı: {{reason}}"
+    },
     "failedCreateQueueItem": "Sıra öğesi oluşturulamadı",
     "invalidAction": "Geçersiz işlem \"{{action}}\". \"{{valid}}\" kullanın.",
     "invalidCredentials": "Geçersiz kimlik bilgileri",
@@ -2190,6 +2285,15 @@
     "passwordsMismatch": "Parolalar eşleşmiyor",
     "permissionDenied": "İzin reddedildi",
     "poolNotFound": "Ceph havuzu \"{{name}}\" bulunamadı",
+    "precondition": {
+      "currentSecretsRequired": "{{pointer}}: hassas alan --current olmadan değişti; pointer→eski-değer eşlemesi için --current-secrets <file> sağlayın",
+      "digestMismatch": "--current özet uyuşmazlığı (beklenen {{expected}}…, alınan {{got}}…)",
+      "kindMismatch": "Değer türü değişti (saklanan: {{stored}}, iddia edilen: {{claimed}})",
+      "mismatch": "{{count}} yol için önkoşul başarısız:\n{{details}}",
+      "missing": "Hassas yol --current (veya --rotate-secret) gerektirir",
+      "rotationRequiresTty": "{{pointer}}: döndürme onayı etkileşimli TTY gerektirir (veya --current-secrets kullanın)",
+      "stubStillStub": "{{pointer}}: düzenlenmiş değer hâlâ bir redaksiyon stub'u gibi görünüyor ancak mevcut özetle eşleşmiyor"
+    },
     "protocol": {
       "commandExitCode": "Komut {{code}} koduyla çıktı",
       "invalidAction": "Geçersiz işlem '{{action}}'. Şunlardan biri olmalıdır: {{validActions}}",

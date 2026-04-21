@@ -149,7 +149,7 @@ describe('RemoteConfigAdapter', () => {
       const result = await adapter.pull();
 
       expect(result.config.id).toBe('cfg-id-123');
-      expect(result.config.machines).toHaveProperty('prod');
+      expect(result.config.resources?.machines).toHaveProperty('prod');
       expect(result.version).toBe(5);
       expect(result.sdkEpoch).toBe(42);
 

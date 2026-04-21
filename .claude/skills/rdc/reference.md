@@ -147,6 +147,8 @@ Deploy backup schedule to a remote machine (systemd timers)
 
 - `-m, --machine <name>` — Machine name
 - `--dry-run` — Preview generated units without deploying
+- `--force` — Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)
+- `--reset-failed` — Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)
 - `--debug` — Enable debug output
 
 ### rdc machine backup now
@@ -731,6 +733,9 @@ Deploy backup schedules to remote machines
 **Options:**
 
 - `-m, --machine <name>` — Machine name
+- `--dry-run` — Preview generated units without deploying
+- `--force` — Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)
+- `--reset-failed` — Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)
 - `--debug` — Enable debug output
 
 ### rdc repo migrate
@@ -836,6 +841,10 @@ List all config files
 ### rdc config show
 
 Show current config details
+
+**Options:**
+
+- `--reveal` — show plaintext for sensitive values (interactive only)
 
 ### rdc config delete
 
@@ -1173,6 +1182,79 @@ Show remote connection status
 ### rdc config remote refresh
 
 Force re-fetch config from remote storage
+
+### rdc config field get <pointer>
+
+Read a single config value by JSON Pointer. Sensitive fields redact unless --reveal (humans only).
+
+**Options:**
+
+- `--reveal` — Show plaintext for sensitive values (interactive TTY only; audited)
+- `--digest` — Print the SHA-256 digest instead of the value (safe to share with agents)
+
+### rdc config field set <pointer>
+
+Write a config value at a JSON Pointer. Sensitive paths require --current (knowledge-gate).
+
+**Options:**
+
+- `--new <value>` — New value (parsed as JSON if it looks like JSON: {, [, ", true/false/null/number)
+- `--current <value>` — Current plaintext value — required for sensitive-path mutations (knowledge-gate proof)
+
+### rdc config field unset <pointer>
+
+Delete a config value at a JSON Pointer. Sensitive paths require --current.
+
+**Options:**
+
+- `--current <value>` — Current plaintext value — required for sensitive-path deletions
+
+### rdc config field rotate <pointer>
+
+Rotate a sensitive value without --current. Interactive TTY only; loudly audited.
+
+**Options:**
+
+- `--new <value>` — New value
+
+### rdc config field list
+
+List every registered sensitivity pointer template with its kind and commit/encrypt policy.
+
+**Options:**
+
+- `--sensitive` — Show only sensitive (non-public) templates
+- `--output <format>` — Output format (json|table) (default: table)
+
+### rdc config edit
+
+Open the active config in $EDITOR as a redacted JSONC projection. Humans only; agents refused.
+
+**Options:**
+
+- `--reveal` — Show plaintext for sensitive values (interactive TTY only; audited)
+- `--dump` — Print current config as JSONC to stdout (read-only; safe for agents when redacted)
+- `--apply <file>` — Apply an edited JSONC file (skips $EDITOR launch)
+- `--current-secrets <file>` — JSON file mapping pointer→old plaintext for knowledge-gate on --apply
+- `--editor <cmd>` — Editor command override (follows git precedence: flag > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)
+
+### rdc config audit log
+
+Print recent audit entries as JSON
+
+**Options:**
+
+- `--since <spec>` — Only show entries newer than (e.g., '24h', '7d', ISO timestamp)
+- `--path <glob>` — Filter by JSON Pointer glob (e.g., /credentials/*)
+- `--actor <kind>` — Filter by actor kind (human|agent)
+
+### rdc config audit tail
+
+Stream new audit entries as they are written (Ctrl+C to stop)
+
+### rdc config audit verify
+
+Verify the integrity of the SHA-256 hash chain across all audit entries
 
 ### rdc doctor
 

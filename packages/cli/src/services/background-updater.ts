@@ -159,6 +159,10 @@ export async function runBackgroundUpdateWorker(): Promise<void> {
  */
 export async function maybeSpawnBackgroundUpdate(): Promise<void> {
   if (!isSEA() || isUpdateDisabled()) return;
+  // Foreground `rdc update` will own the lock and perform the work itself;
+  // spawning a background worker here would race the user's own invocation
+  // and cause spurious "update already in progress" failures.
+  if (process.argv[2] === 'update') return;
 
   try {
     const state = await readUpdateState();

@@ -2,8 +2,10 @@
  * ResourceState interface and LocalResourceState implementation.
  *
  * ResourceState abstracts access to machines, storages, repositories, and SSH keys.
- * LocalResourceState wraps config file reads/writes with optional AES-256-GCM encryption.
- * When encrypted, all resource data is stored as a single blob in RdcConfig.encryptedResources.
+ * Storage shape (v2): resources are nested under `config.resources.*` and SSH is
+ * at `config.credentials.ssh`. Encryption-at-rest is per-field (see Step 13) —
+ * when `config.encryption.mode === 'master-password'` is set, sensitive values
+ * are replaced by encrypted blob pointers in `config.encryption.encryptedFields`.
  */
 
 import { configFileStorage } from '../adapters/config-file-storage.js';
@@ -62,9 +64,14 @@ interface LocalState {
 }
 
 /**
- * ResourceState implementation backed by config.json.
- * Supports optional AES-256-GCM encryption via masterPassword.
+ * Blob used when encryption-at-rest is active. The `encrypted` field holds the
+ * AES-GCM ciphertext of the JSON-serialized combined resources (machines,
+ * storages, repositories, sshContent). On v2, this lives under
+ * `config.encryption.encryptedFields['/resources']` as a single compound blob
+ * for simplicity; per-individual-field encryption is a future evolution.
  */
+const RESOURCES_BLOB_POINTER = '/resources';
+
 export class LocalResourceState implements ResourceState {
   private readonly configName: string;
   private readonly masterPassword: string | null;
@@ -76,11 +83,6 @@ export class LocalResourceState implements ResourceState {
     this.state = state;
   }
 
-  /**
-   * Load resource state from an RdcConfig.
-   * If encrypted, decrypts the encryptedResources blob.
-   * If unencrypted, reads from inline config fields.
-   */
   static async load(
     config: RdcConfig,
     configName: string,
@@ -88,15 +90,23 @@ export class LocalResourceState implements ResourceState {
   ): Promise<LocalResourceState> {
     let state: LocalState;
 
-    if (config.encrypted && config.encryptedResources && masterPassword) {
-      // Encrypted mode: decrypt the single blob
+    const encryptionMode = config.encryption?.mode ?? 'plaintext';
+    const encryptedBlob =
+      encryptionMode === 'master-password'
+        ? config.encryption?.encryptedFields?.[RESOURCES_BLOB_POINTER]
+        : undefined;
+
+    if (encryptedBlob && masterPassword) {
+      // Encrypted mode: decrypt the combined resources blob
+      // (ciphertext+nonce+tag concatenation format matches aes.ts helpers)
+      const serialized = `${encryptedBlob.nonce}:${encryptedBlob.tag}:${encryptedBlob.ciphertext}`;
       const decrypted = await decryptSection<{
         machines: Record<string, MachineConfig>;
         storages: Record<string, StorageConfig>;
         repositories: Record<string, RepositoryConfig>;
         deletedRepositories?: ArchivedRepository[];
         sshContent?: SSHContent | null;
-      }>(config.encryptedResources, masterPassword);
+      }>(serialized, masterPassword);
 
       state = {
         machines: decrypted.machines,
@@ -106,22 +116,25 @@ export class LocalResourceState implements ResourceState {
         sshContent: decrypted.sshContent ?? null,
       };
     } else {
-      // Unencrypted mode: read directly from config fields
+      // Plaintext mode: read from config.resources and config.credentials
+      const sshCred = config.credentials?.ssh;
       state = {
-        machines: config.machines ?? {},
-        storages: config.storages ?? {},
-        repositories: config.repositories ?? {},
-        deletedRepositories: config.deletedRepositories ?? [],
-        sshContent: config.sshContent ?? null,
+        machines: config.resources?.machines ?? {},
+        storages: config.resources?.storages ?? {},
+        repositories: config.resources?.repositories ?? {},
+        deletedRepositories: config.resources?.deletedRepositories ?? [],
+        sshContent: sshCred
+          ? {
+              privateKey: sshCred.privateKey,
+              publicKey: sshCred.publicKey,
+              knownHosts: sshCred.knownHosts,
+            }
+          : null,
       };
     }
 
     return new LocalResourceState(configName, masterPassword, state);
   }
-
-  // ===========================================================================
-  // Getters (return cached in-memory data)
-  // ===========================================================================
 
   getMachines(): Record<string, MachineConfig> {
     return this.state.machines;
@@ -142,10 +155,6 @@ export class LocalResourceState implements ResourceState {
   getSSH(): SSHContent | null {
     return this.state.sshContent;
   }
-
-  // ===========================================================================
-  // Setters (update in-memory cache + persist to config.json)
-  // ===========================================================================
 
   async setMachines(machines: Record<string, MachineConfig>): Promise<void> {
     this.state.machines = machines;
@@ -172,16 +181,12 @@ export class LocalResourceState implements ResourceState {
     await this.persist();
   }
 
-  // ===========================================================================
-  // Persistence
-  // ===========================================================================
-
   private async persist(): Promise<void> {
     const configName = this.configName;
+    const sshContent = this.state.sshContent;
 
     if (this.masterPassword) {
-      // Encrypted: store all sections as a single encrypted blob
-      const blob = await encryptSection(
+      const serialized = await encryptSection(
         {
           machines: this.state.machines,
           storages: this.state.storages,
@@ -191,28 +196,48 @@ export class LocalResourceState implements ResourceState {
         },
         this.masterPassword
       );
+      // nodeCryptoProvider.encrypt returns nonce:tag:ciphertext format.
+      const [nonce, tag, ciphertext] = serialized.split(':');
 
       await configFileStorage.update(configName, (cfg) => ({
         ...cfg,
-        encrypted: true,
-        encryptedResources: blob,
-        machines: undefined,
-        storages: undefined,
-        repositories: undefined,
-        sshContent: undefined,
+        encryption: {
+          mode: 'master-password',
+          encryptedFields: {
+            ...(cfg.encryption?.encryptedFields ?? {}),
+            [RESOURCES_BLOB_POINTER]: { nonce, tag, ciphertext },
+          },
+        },
+        resources: undefined,
+        credentials: cfg.credentials
+          ? { ...cfg.credentials, ssh: undefined }
+          : cfg.credentials,
       }));
     } else {
-      // Unencrypted: store sections directly on the config
       await configFileStorage.update(configName, (cfg) => ({
         ...cfg,
-        machines: this.state.machines,
-        storages: this.state.storages,
-        repositories: this.state.repositories,
-        deletedRepositories:
-          this.state.deletedRepositories.length > 0 ? this.state.deletedRepositories : undefined,
-        sshContent: this.state.sshContent ?? undefined,
-        encrypted: undefined,
-        encryptedResources: undefined,
+        resources: {
+          ...(cfg.resources ?? {}),
+          machines: Object.keys(this.state.machines).length > 0 ? this.state.machines : undefined,
+          storages: Object.keys(this.state.storages).length > 0 ? this.state.storages : undefined,
+          repositories:
+            Object.keys(this.state.repositories).length > 0 ? this.state.repositories : undefined,
+          deletedRepositories:
+            this.state.deletedRepositories.length > 0 ? this.state.deletedRepositories : undefined,
+        },
+        credentials: {
+          ...(cfg.credentials ?? {}),
+          ssh: sshContent
+            ? {
+                privateKey: sshContent.privateKey,
+                publicKey: sshContent.publicKey,
+                knownHosts: sshContent.knownHosts,
+              }
+            : undefined,
+        },
+        encryption: cfg.encryption?.mode === 'master-password'
+          ? { mode: 'plaintext' }
+          : cfg.encryption,
       }));
     }
   }
@@ -250,10 +275,6 @@ export class RemoteResourceState implements ResourceState {
     this.configId = configId;
   }
 
-  /**
-   * Load resource state from a remote-pulled RdcConfig.
-   * The config is already decrypted by the adapter.
-   */
   static load(
     config: RdcConfig,
     configName: string,
@@ -261,19 +282,22 @@ export class RemoteResourceState implements ResourceState {
     version: number,
     sdkEpoch: number
   ): RemoteResourceState {
+    const sshCred = config.credentials?.ssh;
     const state: LocalState = {
-      machines: config.machines ?? {},
-      storages: config.storages ?? {},
-      repositories: config.repositories ?? {},
-      deletedRepositories: config.deletedRepositories ?? [],
-      sshContent: config.sshContent ?? null,
+      machines: config.resources?.machines ?? {},
+      storages: config.resources?.storages ?? {},
+      repositories: config.resources?.repositories ?? {},
+      deletedRepositories: config.resources?.deletedRepositories ?? [],
+      sshContent: sshCred
+        ? {
+            privateKey: sshCred.privateKey,
+            publicKey: sshCred.publicKey,
+            knownHosts: sshCred.knownHosts,
+          }
+        : null,
     };
     return new RemoteResourceState(adapter, configName, version, sdkEpoch, state, config.id);
   }
-
-  // ===========================================================================
-  // Getters (return cached in-memory data)
-  // ===========================================================================
 
   getMachines(): Record<string, MachineConfig> {
     return this.state.machines;
@@ -294,10 +318,6 @@ export class RemoteResourceState implements ResourceState {
   getSSH(): SSHContent | null {
     return this.state.sshContent;
   }
-
-  // ===========================================================================
-  // Setters (update in-memory cache + push to remote)
-  // ===========================================================================
 
   async setMachines(machines: Record<string, MachineConfig>): Promise<void> {
     this.state.machines = machines;
@@ -324,20 +344,29 @@ export class RemoteResourceState implements ResourceState {
     await this.persist();
   }
 
-  // ===========================================================================
-  // Persistence (push encrypted config to remote server)
-  // ===========================================================================
-
   private async persist(): Promise<void> {
+    const sshContent = this.state.sshContent;
     const fullConfig: RdcConfig = {
+      schemaVersion: 2,
       id: this.configId,
       version: this.version,
-      machines: this.state.machines,
-      storages: this.state.storages,
-      repositories: this.state.repositories,
-      deletedRepositories:
-        this.state.deletedRepositories.length > 0 ? this.state.deletedRepositories : undefined,
-      sshContent: this.state.sshContent ?? undefined,
+      resources: {
+        machines: this.state.machines,
+        storages: this.state.storages,
+        repositories: this.state.repositories,
+        deletedRepositories:
+          this.state.deletedRepositories.length > 0 ? this.state.deletedRepositories : undefined,
+      },
+      credentials: sshContent
+        ? {
+            ssh: {
+              privateKey: sshContent.privateKey,
+              publicKey: sshContent.publicKey,
+              knownHosts: sshContent.knownHosts,
+            },
+          }
+        : undefined,
+      encryption: { mode: 'plaintext' },
     };
 
     const result = await this.adapter.push(fullConfig, this.version);
