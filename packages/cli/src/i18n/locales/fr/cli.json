@@ -407,9 +407,11 @@
       },
       "field": {
         "description": "Opérations sur les champs de configuration adressés par pointeur (get/set/unset/rotate/list). Pointeurs JSON (RFC 6901) tels que /credentials/cfDnsApiToken.",
+        "descriptionShort": "Opérations de champs de configuration par pointeur",
         "get": {
           "description": "Lire une valeur de configuration via un pointeur JSON. Les champs sensibles sont masqués sauf avec --reveal (humains uniquement).",
           "optionDigest": "Afficher l'empreinte SHA-256 au lieu de la valeur (sûr à partager avec des agents)",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "optionReveal": "Afficher les valeurs sensibles en clair (TTY interactif uniquement ; audité)"
         },
         "list": {
@@ -420,17 +422,20 @@
         "rotate": {
           "description": "Rotation d'une valeur sensible sans --current. TTY interactif uniquement ; audité en évidence.",
           "optionNew": "Nouvelle valeur",
+          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} a été tourné"
         },
         "set": {
           "description": "Écrire une valeur de configuration à un pointeur JSON. Les chemins sensibles exigent --current (preuve de connaissance).",
           "optionCurrent": "Valeur actuelle en clair — requise pour modifier les chemins sensibles (preuve de connaissance)",
           "optionNew": "Nouvelle valeur (interprétée comme JSON si elle commence par {, [, \", true, false, null ou un nombre)",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} défini"
         },
         "unset": {
           "description": "Supprimer une valeur de configuration à un pointeur JSON. Les chemins sensibles exigent --current.",
           "optionCurrent": "Valeur actuelle en clair — requise pour supprimer les chemins sensibles",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} supprimé"
         }
       },
@@ -638,7 +643,8 @@
       },
       "show": {
         "description": "Afficher les détails de la configuration actuelle",
-        "noConfig": "Aucune configuration active. Créez-en une avec : rdc config init"
+        "noConfig": "Aucune configuration active. Créez-en une avec : rdc config init",
+        "optionReveal": "Show plaintext for sensitive values (interactive only)"
       },
       "ssh": {
         "description": "Gérer la configuration de la clé SSH",
@@ -2217,8 +2223,8 @@
     "affectedChildClones": ". Clones enfants affectés : {{clones}}. Supprimez ou promouvez d'abord les clones enfants.",
     "agent": {
       "commandBlocked": "La commande \"{{command}}\" n'est pas disponible en mode agent.\n\nCette commande execute des fonctions arbitraires de bas niveau sans garde-fous de securite. Utilisez plutot des commandes CLI typees ou des outils MCP.\n\nAlternatives :\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Executez \"rdc agent capabilities\" pour voir toutes les commandes disponibles\n\nSi vous avez besoin d'un acces direct, demandez a l'utilisateur d'executer la commande directement.",
-      "configEdit": "L'éditeur interactif est bloqué dans les environnements d'agent.\n\nAlternatives :\n  • rdc config edit --dump > config.jsonc    (inspection caviardée sûre)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nPour passer outre, définissez REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> dans le shell parent\nAVANT de démarrer l'agent (doit apparaître dans l'arborescence du processus).",
-      "configEditAncestry": "L'éditeur interactif est bloqué dans les environnements d'agent (REDIACC_ALLOW_CONFIG_EDIT défini mais la vérification d'ascendance a échoué — l'override doit venir du shell, pas de l'agent).\n\nAlternatives :\n  • rdc config edit --dump > config.jsonc    (inspection caviardée sûre)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nDéfinissez REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> dans le shell parent AVANT de démarrer l'agent.",
+      "configEdit": "L'éditeur interactif est bloqué dans les environnements d'agent.\n\nAlternatives :\n  • rdc config edit --dump > config.jsonc    (inspection caviardée sûre)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nPour passer outre, définissez REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> dans le shell parent\nAVANT de démarrer l'agent (doit apparaître dans l'arborescence du processus).",
+      "configEditAncestry": "L'éditeur interactif est bloqué dans les environnements d'agent (REDIACC_ALLOW_CONFIG_EDIT défini mais la vérification d'ascendance a échoué — l'override doit venir du shell, pas de l'agent).\n\nAlternatives :\n  • rdc config edit --dump > config.jsonc    (inspection caviardée sûre)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nDéfinissez REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> dans le shell parent AVANT de démarrer l'agent.",
       "createGuard": "Impossible de créer un nouveau dépôt grand \"{{name}}\" en mode agent.\n\nLes agents fonctionnent en mode fork uniquement. Les dépôts grand sont des environnements de production auxquels les agents ne peuvent pas accéder après la création.\n\nCréez plutôt un fork d'un dépôt existant :\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nUtilisateur : pour autoriser la création de dépôts, définissez REDIACC_ALLOW_GRAND_REPO=* (ou un nom de dépôt spécifique) dans votre terminal avant de démarrer la session de l'agent.",
       "createGuardOverride": "Impossible de créer un nouveau dépôt grand \"{{name}}\". Les contournements initiés par l'agent ne sont pas acceptés.\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO — seul l'utilisateur peut l'autoriser avant le démarrage de l'agent.\n\nCréez plutôt un fork d'un dépôt existant :\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "Impossible de créer un nouveau dépôt grand \"{{name}}\". Le contournement REDIACC_ALLOW_GRAND_REPO n'est pas pris en charge sur {{platform}}.\n\nCe contournement ne fonctionne que sous Linux. Sous Windows et macOS, les agents doivent utiliser le flux de travail fork-first.\n\nCréez plutôt un fork d'un dépôt existant :\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nPour utiliser le contournement, exécutez votre agent sous Linux (directement, WSL, Docker ou une VM).",
@@ -2239,7 +2245,7 @@
       "revealRequiresTty": "--reveal nécessite un TTY interactif ; impossible d'envoyer une valeur sensible dans un tube.",
       "rotateNotSensitive": "Le pointeur « {{pointer}} » n'est pas un champ sensible ; utilisez 'config field set' à la place.",
       "rotateRequiresTty": "config field rotate exige une confirmation interactive sur un TTY ; refusé en contexte non interactif (définissez REDIACC_ALLOW_CONFIG_EDIT pour passer outre).",
-      "showReveal": "--reveal est bloqué dans les environnements d'agent. Utilisez `rdc config show` (caviardé) ou `rdc config field get <pointer> --digest` pour une empreinte sûre.",
+      "showReveal": "--reveal est bloqué dans les environnements d'agent. Utilisez `rdc config show` (caviardé) ou `rdc config field get --name <pointer> --digest` pour une empreinte sûre.",
       "showRevealRequiresTty": "--reveal nécessite un TTY interactif ; pas de texte en clair vers une cible non-TTY."
     },
     "authFailed": "L'authentification a échoué",

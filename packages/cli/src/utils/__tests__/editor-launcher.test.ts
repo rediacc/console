@@ -32,7 +32,7 @@ describe('resolveEditor', () => {
     delete process.env.EDITOR;
     delete process.env.GIT_EDITOR;
     // Default: git config returns nothing (simulates "no core.editor set").
-    mockedExecFileSync.mockReturnValue('' as unknown as Buffer);
+    mockedExecFileSync.mockReturnValue('');
   });
 
   afterEach(() => {
@@ -47,7 +47,7 @@ describe('resolveEditor', () => {
     process.env.GIT_EDITOR = 'git-ed';
     process.env.VISUAL = 'vim';
     process.env.EDITOR = 'nano';
-    mockedExecFileSync.mockReturnValue('core-ed' as unknown as Buffer);
+    mockedExecFileSync.mockReturnValue('core-ed');
     const r = resolveEditor('/usr/bin/nano');
     expect(r.command).toBe('/usr/bin/nano');
     expect(r.args).toEqual([]);
@@ -57,21 +57,21 @@ describe('resolveEditor', () => {
     process.env.GIT_EDITOR = 'git-ed';
     process.env.VISUAL = 'vim';
     process.env.EDITOR = 'nano';
-    mockedExecFileSync.mockReturnValue('core-ed' as unknown as Buffer);
+    mockedExecFileSync.mockReturnValue('core-ed');
     expect(resolveEditor().command).toBe('git-ed');
   });
 
   it('prefers git config core.editor over $VISUAL / $EDITOR when $GIT_EDITOR unset', () => {
     process.env.VISUAL = 'vim';
     process.env.EDITOR = 'nano';
-    mockedExecFileSync.mockReturnValue('core-ed\n' as unknown as Buffer);
+    mockedExecFileSync.mockReturnValue('core-ed\n');
     expect(resolveEditor().command).toBe('core-ed');
   });
 
   it('falls through to $VISUAL when git config returns empty string', () => {
     process.env.VISUAL = 'vim';
     process.env.EDITOR = 'nano';
-    mockedExecFileSync.mockReturnValue('' as unknown as Buffer);
+    mockedExecFileSync.mockReturnValue('');
     expect(resolveEditor().command).toBe('vim');
   });
 
@@ -102,7 +102,7 @@ describe('resolveEditor', () => {
   });
 
   it('falls back to platform default when nothing set', () => {
-    mockedExecFileSync.mockReturnValue('' as unknown as Buffer);
+    mockedExecFileSync.mockReturnValue('');
     const r = resolveEditor();
     if (process.platform === 'win32') {
       expect(r.command).toBe('notepad.exe');
@@ -125,7 +125,7 @@ describe('resolveEditor', () => {
   });
 
   it('honors git config even when the value has trailing whitespace/newlines', () => {
-    mockedExecFileSync.mockReturnValue('emacs -nw\n\n' as unknown as Buffer);
+    mockedExecFileSync.mockReturnValue('emacs -nw\n\n');
     expect(resolveEditor().command).toBe('emacs');
   });
 });

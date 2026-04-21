@@ -94,6 +94,47 @@ function hasInitFlags(options: {
   );
 }
 
+/** Gate --reveal: refuse agents and non-TTY; emit audit log. */
+async function applyRevealGate(cfg: RdcConfig): Promise<void> {
+  const { isAgentEnvironment } = await import('../utils/agent-guard.js');
+  const { auditLog } = await import('../services/audit-log.js');
+  const xdg = process.env.XDG_CONFIG_HOME ?? `${process.env.HOME ?? ''}/.config`;
+  const auditDir = `${xdg}/rediacc`;
+
+  if (isAgentEnvironment()) {
+    try {
+      auditLog(auditDir, {
+        command: 'config show --reveal',
+        paths: [],
+        outcome: 'refused',
+        configId: cfg.id,
+        configVersion: cfg.version,
+        reason: 'agent environment',
+      });
+    } catch {
+      /* best-effort */
+    }
+    throw new ValidationError(t('errors.agent.showReveal'));
+  }
+
+  const { isatty } = await import('node:tty');
+  if (!isatty(process.stdout.fd)) {
+    throw new ValidationError(t('errors.agent.showRevealRequiresTty'));
+  }
+
+  try {
+    auditLog(auditDir, {
+      command: 'config show --reveal',
+      paths: [],
+      outcome: 'reveal_granted',
+      configId: cfg.id,
+      configVersion: cfg.version,
+    });
+  } catch {
+    /* best-effort */
+  }
+}
+
 export function registerConfigCommands(program: Command): void {
   const config = program
     .command('config')
@@ -224,7 +265,7 @@ ${t('help.examples')}
   config
     .command('show')
     .description(t('commands.config.show.description'))
-    .option('--reveal', 'show plaintext for sensitive values (interactive only)')
+    .option('--reveal', t('commands.config.show.optionReveal'))
     .action(async (options: { reveal?: boolean }) => {
       try {
         const cfg = await configService.getCurrent();
@@ -238,48 +279,12 @@ ${t('help.examples')}
 
         // Default: redact sensitive values. --reveal opts in (humans only).
         // The redactor is schema-driven (packages/cli/src/schema/walker.ts).
-        if (!options.reveal) {
+        if (options.reveal) {
+          await applyRevealGate(cfg);
+        } else {
           const { redactClone } = await import('../schema/walker.js');
           const redacted = redactClone(cfg);
           Object.assign(cfg as Record<string, unknown>, redacted);
-        } else {
-          const { isAgentEnvironment } = await import('../utils/agent-guard.js');
-          const { auditLog } = await import('../services/audit-log.js');
-          const xdg = process.env.XDG_CONFIG_HOME ?? `${process.env.HOME ?? ''}/.config`;
-          const auditDir = `${xdg}/rediacc`;
-
-          // Gate 1: refuse --reveal in agent environments regardless of TTY.
-          if (isAgentEnvironment()) {
-            try {
-              auditLog(auditDir, {
-                command: 'config show --reveal',
-                paths: [],
-                outcome: 'refused',
-                configId: cfg.id,
-                configVersion: cfg.version,
-                reason: 'agent environment',
-              });
-            } catch {
-              /* best-effort */
-            }
-            throw new ValidationError(t('errors.agent.showReveal'));
-          }
-          // Gate 2: humans must be on an interactive TTY (no piping plaintext to logs).
-          const { isatty } = await import('node:tty');
-          if (!isatty(process.stdout.fd)) {
-            throw new ValidationError(t('errors.agent.showRevealRequiresTty'));
-          }
-          try {
-            auditLog(auditDir, {
-              command: 'config show --reveal',
-              paths: [],
-              outcome: 'reveal_granted',
-              configId: cfg.id,
-              configVersion: cfg.version,
-            });
-          } catch {
-            /* best-effort */
-          }
         }
 
         const isCloud = hasCloudCredentials(cfg);

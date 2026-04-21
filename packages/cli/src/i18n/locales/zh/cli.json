@@ -407,9 +407,11 @@
       },
       "field": {
         "description": "基于 JSON 指针(RFC 6901)的配置字段操作(get/set/unset/rotate/list),如 /credentials/cfDnsApiToken。",
+        "descriptionShort": "基于指针的配置字段操作",
         "get": {
           "description": "按 JSON 指针读取单个配置值。敏感字段默认脱敏,除非使用 --reveal(仅限人工)。",
           "optionDigest": "输出 SHA-256 摘要而非数值(可安全地分享给代理)",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "optionReveal": "以明文显示敏感值(仅限交互式 TTY;记入审计日志)"
         },
         "list": {
@@ -420,17 +422,20 @@
         "rotate": {
           "description": "在不提供 --current 的情况下轮换敏感值。仅交互式 TTY;详尽审计。",
           "optionNew": "新值",
+          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
           "success": "已轮换 {{pointer}}"
         },
         "set": {
           "description": "在 JSON 指针位置写入配置值。敏感路径需提供 --current(知识门控)。",
           "optionCurrent": "当前明文值 — 修改敏感路径时必填(知识门控证明)",
           "optionNew": "新值(若以 {、[、\" 开头或为 true/false/null/数字,则按 JSON 解析)",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "success": "已设置 {{pointer}}"
         },
         "unset": {
           "description": "删除 JSON 指针位置的配置值。敏感路径需提供 --current。",
           "optionCurrent": "当前明文值 — 删除敏感路径时必填",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "success": "已取消 {{pointer}}"
         }
       },
@@ -638,7 +643,8 @@
       },
       "show": {
         "description": "显示当前配置详情",
-        "noConfig": "没有活跃的配置。请使用以下命令创建：rdc config init"
+        "noConfig": "没有活跃的配置。请使用以下命令创建：rdc config init",
+        "optionReveal": "Show plaintext for sensitive values (interactive only)"
       },
       "ssh": {
         "description": "管理 SSH 密钥配置",
@@ -2217,8 +2223,8 @@
     "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
     "agent": {
       "commandBlocked": "\"{{command}}\" 命令在代理模式下不可用。\n\n此命令在没有安全防护的情况下执行任意低级函数。请改用类型化的 CLI 命令或 MCP 工具。\n\n替代方案：\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 运行 \"rdc agent capabilities\" 查看所有可用命令\n\n如果需要直接访问，请让用户直接运行该命令。",
-      "configEdit": "交互式编辑器在代理环境中被阻止。\n\n替代方案:\n  • rdc config edit --dump > config.jsonc    (安全的脱敏查看)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\n如需覆盖,请在启动代理之前,在父 shell 中\n设置 REDIACC_ALLOW_CONFIG_EDIT=<scope-glob>(必须出现在代理进程祖先链中)。",
-      "configEditAncestry": "交互式编辑器在代理环境中被阻止(REDIACC_ALLOW_CONFIG_EDIT 已设置但祖先验证失败 — 该覆盖必须由您的 shell 而不是代理设置)。\n\n替代方案:\n  • rdc config edit --dump > config.jsonc    (安全的脱敏查看)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\n在启动代理之前在父 shell 中设置 REDIACC_ALLOW_CONFIG_EDIT=<scope-glob>。",
+      "configEdit": "交互式编辑器在代理环境中被阻止。\n\n替代方案:\n  • rdc config edit --dump > config.jsonc    (安全的脱敏查看)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\n如需覆盖,请在启动代理之前,在父 shell 中\n设置 REDIACC_ALLOW_CONFIG_EDIT=<scope-glob>(必须出现在代理进程祖先链中)。",
+      "configEditAncestry": "交互式编辑器在代理环境中被阻止(REDIACC_ALLOW_CONFIG_EDIT 已设置但祖先验证失败 — 该覆盖必须由您的 shell 而不是代理设置)。\n\n替代方案:\n  • rdc config edit --dump > config.jsonc    (安全的脱敏查看)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\n在启动代理之前在父 shell 中设置 REDIACC_ALLOW_CONFIG_EDIT=<scope-glob>。",
       "createGuard": "在代理模式下无法创建新的 grand 仓库 \"{{name}}\"。\n\n代理在仅 fork 模式下运行。Grand 仓库是生产环境，代理在创建后无法访问。\n\n请改为 fork 现有仓库：\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\n用户提示：要允许创建仓库，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
       "createGuardOverride": "无法创建新的 grand 仓库 \"{{name}}\"。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改为 fork 现有仓库：\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "无法创建新的 grand 仓库 \"{{name}}\"。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n请改为 fork 现有仓库：\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
@@ -2239,7 +2245,7 @@
       "revealRequiresTty": "--reveal 需要交互式 TTY;拒绝将敏感值打印到管道。",
       "rotateNotSensitive": "指针“{{pointer}}”不是敏感字段;请改用 'config field set'。",
       "rotateRequiresTty": "config field rotate 需要交互式 TTY 确认;在非交互式上下文中被拒绝(如需覆盖请设置 REDIACC_ALLOW_CONFIG_EDIT)。",
-      "showReveal": "在代理环境中禁止使用 --reveal。请使用 `rdc config show`(脱敏)或 `rdc config field get <pointer> --digest` 获取安全指纹。",
+      "showReveal": "在代理环境中禁止使用 --reveal。请使用 `rdc config show`(脱敏)或 `rdc config field get --name <pointer> --digest` 获取安全指纹。",
       "showRevealRequiresTty": "--reveal 需要交互式 TTY;拒绝将明文重定向到非 TTY 目标。"
     },
     "authFailed": "身份验证失败",

@@ -75,7 +75,7 @@ export function registerSSHCommands(config: Command, program: Command): void {
           return;
         }
 
-        outputService.print({ embedded: 'yes' } as Record<string, string>, format);
+        outputService.print({ embedded: 'yes' }, format);
       } catch (error) {
         handleError(error);
       }

@@ -114,7 +114,7 @@ export async function commitField(
 export async function computeCommitments(
   fck: CryptoKey,
   fckSaltB64: string,
-  entries: Array<{ pointer: string; value: unknown }>
+  entries: { pointer: string; value: unknown }[]
 ): Promise<FieldCommitments> {
   const fields: Record<string, FieldCommitment> = {};
   for (const { pointer, value } of entries) {

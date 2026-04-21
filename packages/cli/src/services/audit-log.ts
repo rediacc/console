@@ -63,7 +63,6 @@ function readLastHash(logPath: string): string {
   const lines = text.trim().split('\n').filter(Boolean);
   if (lines.length === 0) return 'sha256:0';
   try {
-    const last = JSON.parse(lines[lines.length - 1]) as { prevHash?: string };
     const thisLineHash = sha256(lines[lines.length - 1]);
     return `sha256:${thisLineHash}`;
   } catch {

@@ -41,20 +41,8 @@ import { t } from '../../i18n/index.js';
 import { configEditOverrideScope, isAgentEnvironment } from '../../utils/agent-guard.js';
 import { openEditor, EditorError } from '../../utils/editor-launcher.js';
 import { outputService } from '../../services/output.js';
-import {
-  digestForPointer,
-  metaForPointer,
-  redactClone,
-  shortFingerprint,
-  walkSensitive,
-  getByPointer,
-} from '../../schema/walker.js';
-import {
-  parseConfig,
-  RdcConfigSchema,
-  stringifyConfig,
-  type RdcConfig,
-} from '../../schema/schemas.js';
+import { redactClone, shortFingerprint, walkSensitive, getByPointer } from '../../schema/walker.js';
+import { parseConfig, RdcConfigSchema, type RdcConfig } from '../../schema/schemas.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 
 const REDACT_PATTERN = /^<redacted:[^>]+>:[0-9a-f]{8}$/;
@@ -92,7 +80,7 @@ function renderJsonc(config: RdcConfig, options: RenderOptions): string {
     `// ${t('commands.config.edit.bannerRotateLine2')}`,
     '',
   ].join('\n');
-  return banner + JSON.stringify(view, null, 2) + '\n';
+  return `${banner + JSON.stringify(view, null, 2)}\n`;
 }
 
 /**
@@ -144,6 +132,42 @@ function stripComments(jsonc: string): string {
  * show a single confirmation prompt for all rotations; non-interactive `--apply`
  * keeps strict behavior by converting `rotations` to `failures` at the call site.
  */
+type StubOutcome =
+  | { kind: 'untouched'; currentValue: unknown }
+  | { kind: 'bad-stub' }
+  | { kind: 'rotation' }
+  | { kind: 'public' };
+
+function classifyStub(
+  pointer: string,
+  editedValue: unknown,
+  currentConfig: RdcConfig,
+  meta: { kind: string; redactAs?: string },
+  knowledge: Record<string, unknown> | undefined
+): StubOutcome {
+  if (meta.kind === 'public') return { kind: 'public' };
+
+  const currentValue = getByPointer(currentConfig, pointer);
+  const currentStub =
+    currentValue === null || currentValue === undefined
+      ? null
+      : `${meta.redactAs ?? `<redacted:${meta.kind}>`}:${shortFingerprint(currentValue)}`;
+
+  if (typeof editedValue === 'string' && currentStub && editedValue === currentStub) {
+    return { kind: 'untouched', currentValue };
+  }
+
+  if (typeof editedValue === 'string' && REDACT_PATTERN.test(editedValue)) {
+    return { kind: 'bad-stub' };
+  }
+
+  if (currentValue !== undefined && knowledge?.[pointer] === undefined) {
+    return { kind: 'rotation' };
+  }
+
+  return { kind: 'untouched', currentValue };
+}
+
 function reconcileStubs(
   edited: unknown,
   currentConfig: RdcConfig,
@@ -154,29 +178,15 @@ function reconcileStubs(
   const view = JSON.parse(JSON.stringify(edited));
 
   for (const { pointer, value: editedValue, meta } of walkSensitive(view as RdcConfig)) {
-    if (meta.kind === 'public') continue;
-    const currentValue = getByPointer(currentConfig, pointer);
-    const currentStub =
-      currentValue === null || currentValue === undefined
-        ? null
-        : `${meta.redactAs ?? `<redacted:${meta.kind}>`}:${shortFingerprint(currentValue)}`;
-
-    if (typeof editedValue === 'string' && currentStub && editedValue === currentStub) {
-      // Untouched — substitute current value back.
-      assignAtPointer(view, pointer, currentValue);
-      continue;
-    }
-
-    if (typeof editedValue === 'string' && REDACT_PATTERN.test(editedValue)) {
-      // The user replaced a stub with a different stub — that's never legal.
+    const outcome = classifyStub(pointer, editedValue, currentConfig, meta, knowledge);
+    if (outcome.kind === 'public') continue;
+    if (outcome.kind === 'untouched') {
+      assignAtPointer(view, pointer, outcome.currentValue);
+    } else if (outcome.kind === 'bad-stub') {
       failures.push(
         `${pointer}: edited value still looks like a redaction stub but does not match the current digest`
       );
-      continue;
-    }
-
-    // The user supplied a real new value at a sensitive path.
-    if (currentValue !== undefined && knowledge?.[pointer] === undefined) {
+    } else {
       rotations.push(pointer);
     }
   }
@@ -189,56 +199,22 @@ function assignAtPointer(root: unknown, pointer: string, value: unknown): void {
   const segments = pointer
     .split('/')
     .slice(1)
-    .map((s) => s.replace(/~1/g, '/').replace(/~0/g, '~'));
-  let cursor: Record<string, unknown> = root as Record<string, unknown>;
+    .map((s) => s.replaceAll('~1', '/').replaceAll('~0', '~'));
+  let cursor: Record<string, unknown> | undefined = root as Record<string, unknown>;
   for (let i = 0; i < segments.length - 1; i++) {
-    cursor = cursor[segments[i]] as Record<string, unknown>;
-    if (cursor === undefined) return;
+    cursor = cursor[segments[i]] as Record<string, unknown> | undefined;
+    if (!cursor) return;
   }
   cursor[segments[segments.length - 1]] = value;
 }
 
 function loadKnowledgeFile(path: string): Record<string, unknown> {
   const text = readFileSync(path, 'utf8');
-  const parsed = JSON.parse(text) as Record<string, unknown>;
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+  const raw: unknown = JSON.parse(text);
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
     throw new ValidationError(`--current-secrets must be a JSON object: ${path}`);
   }
-  return parsed;
-}
-
-function knowledgeDigests(
-  raw: Record<string, unknown>,
-  currentConfig: RdcConfig
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const [pointer, claim] of Object.entries(raw)) {
-    const expected = digestForPointer(currentConfig, pointer);
-    if (expected === undefined) continue; // pointer not in current → treated as new field
-    const claimed = require('node:crypto')
-      .createHash('sha256')
-      .update(canonicalJson(claim))
-      .digest('hex');
-    out[pointer] = claimed;
-    void expected;
-  }
-  return out;
-}
-
-function canonicalJson(value: unknown): string {
-  if (value === null) return 'null';
-  if (value === undefined) return ' undef';
-  if (typeof value === 'string') return JSON.stringify(value);
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
-  if (typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>)
-      .filter(([, v]) => v !== undefined)
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-      .map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`);
-    return `{${entries.join(',')}}`;
-  }
-  return String(value);
+  return raw as Record<string, unknown>;
 }
 
 async function applyEdit(
@@ -249,7 +225,7 @@ async function applyEdit(
   configVersionForAudit: number
 ): Promise<void> {
   // Replace the entire config with the reconciled v2-validated value.
-  const validated = parseConfig(RdcConfigSchema, reconciled, 'rdc config edit') as RdcConfig;
+  const validated = parseConfig(RdcConfigSchema, reconciled, 'rdc config edit');
   await configFileStorage.update(configName, () => validated);
   auditLog(configDir(), {
     command: 'config edit',
@@ -259,6 +235,301 @@ async function applyEdit(
     configVersion: configVersionForAudit,
   });
   void parsed;
+}
+
+/** Handle `--apply <file>` mode: parse, reconcile, and apply without interaction. */
+async function handleApplyMode(
+  applyPath: string,
+  config: RdcConfig,
+  configName: string,
+  knowledge: Record<string, unknown> | undefined
+): Promise<void> {
+  const text = readFileSync(applyPath, 'utf8');
+  const stripped = stripComments(text);
+  let edited: unknown;
+  try {
+    edited = JSON.parse(stripped);
+  } catch (err) {
+    throw new ValidationError(`Invalid JSON in ${applyPath}: ${(err as Error).message}`);
+  }
+  const { result, failures, rotations } = reconcileStubs(edited, config, knowledge);
+  const allFailures = [
+    ...failures,
+    ...rotations.map(
+      (p) =>
+        `${p}: sensitive field changed without --current; supply --current-secrets <file> mapping pointer→old-value`
+    ),
+  ];
+  if (allFailures.length > 0) {
+    throw new ValidationError(
+      `Reconciliation failed:\n${allFailures.map((f) => `  ${f}`).join('\n')}`
+    );
+  }
+  await applyEdit(config, result, configName, config.id, config.version);
+  outputService.success(t('commands.config.edit.applied', { path: applyPath }));
+}
+
+/** Write error banner + content to the tmp file and return a failed-iteration result. */
+function writeErrorToTmp(
+  tmpFile: string,
+  banner: string,
+  errorBlock: string,
+  content: string,
+  nextAttempt: number
+): { done: boolean; failed: boolean; nextAttempt: number } {
+  writeFileSync(tmpFile, `${banner}${errorBlock}${content}`, { mode: 0o600 });
+  return { done: false, failed: true, nextAttempt };
+}
+
+/**
+ * Confirm pending rotations with the user. Returns null if the iteration
+ * should continue normally, or a done/failed result if it should stop.
+ */
+async function confirmRotations(
+  rotations: string[],
+  edited: unknown,
+  tmpFile: string,
+  config: RdcConfig,
+  attempt: number,
+  tmp: string
+): Promise<{ done: boolean; failed: boolean; nextAttempt: number } | null> {
+  if (!isatty(process.stdin.fd) || !isatty(process.stdout.fd)) {
+    const errs = rotations.map(
+      (p) => `${p}: rotation confirmation requires an interactive TTY (or use --current-secrets)`
+    );
+    const banner = `// ─── ${rotations.length} UNCONFIRMED ROTATION(S) ───\n`;
+    return writeErrorToTmp(
+      tmpFile,
+      banner,
+      `${errs.map((f) => `// ${f}`).join('\n')}\n`,
+      `${JSON.stringify(edited, null, 2)}\n`,
+      attempt + 1
+    );
+  }
+  const confirmed = await promptRotationConfirmation(rotations);
+  if (!confirmed) {
+    outputService.info(t('commands.config.edit.rotateDeclined'));
+    auditLog(configDir(), {
+      command: 'config edit',
+      paths: rotations,
+      outcome: 'edit_abort',
+      configId: config.id,
+      configVersion: config.version,
+      reason: 'user declined rotation confirmation',
+    });
+    rmSync(tmp, { recursive: true, force: true });
+    return { done: true, failed: false, nextAttempt: attempt };
+  }
+  auditLog(configDir(), {
+    command: 'config edit',
+    paths: rotations,
+    outcome: 'rotate_no_knowledge',
+    configId: config.id,
+    configVersion: config.version,
+    reason: 'interactive editor confirmation',
+  });
+  return null;
+}
+
+/** Parse JSONC from the tmp file; returns the parsed value or an error result. */
+function parseTmpFile(
+  tmpFile: string,
+  attempt: number
+): { edited: unknown } | { done: boolean; failed: boolean; nextAttempt: number } {
+  const text = readFileSync(tmpFile, 'utf8');
+  const stripped = stripComments(text);
+  try {
+    return { edited: JSON.parse(stripped) };
+  } catch (err) {
+    const errs = [`JSON parse error: ${(err as Error).message}`];
+    const banner = `// ─── ${errs.length} ERROR(S) on attempt ${attempt + 1}/${MAX_RETRIES} ───\n`;
+    return writeErrorToTmp(
+      tmpFile,
+      banner,
+      `${errs.map((f) => `// ${f}`).join('\n')}\n`,
+      stripped,
+      attempt + 1
+    );
+  }
+}
+
+/** Reconcile, confirm rotations, and apply. Returns iteration result. */
+async function reconcileAndApply(
+  edited: unknown,
+  config: RdcConfig,
+  configName: string,
+  knowledge: Record<string, unknown> | undefined,
+  tmpFile: string,
+  attempt: number,
+  tmp: string
+): Promise<{ done: boolean; failed: boolean; nextAttempt: number }> {
+  const { result, failures, rotations } = reconcileStubs(edited, config, knowledge);
+  if (failures.length > 0) {
+    const banner = `// ─── ${failures.length} RECONCILIATION ERROR(S) on attempt ${attempt + 1}/${MAX_RETRIES} ───\n`;
+    const errorBlock = `${failures.map((f) => `// ${f}`).join('\n')}\n`;
+    return writeErrorToTmp(
+      tmpFile,
+      banner,
+      errorBlock,
+      `${JSON.stringify(edited, null, 2)}\n`,
+      attempt + 1
+    );
+  }
+  if (rotations.length > 0) {
+    const rotResult = await confirmRotations(rotations, edited, tmpFile, config, attempt, tmp);
+    if (rotResult) return rotResult;
+  }
+  try {
+    await applyEdit(config, result, configName, config.id, config.version);
+    outputService.success(t('commands.config.edit.saved', { name: configName }));
+    rmSync(tmp, { recursive: true, force: true });
+    return { done: true, failed: false, nextAttempt: attempt };
+  } catch (err) {
+    const banner = `// ─── VALIDATION ERROR on attempt ${attempt + 1}/${MAX_RETRIES} ───\n`;
+    const errorBlock = `// ${(err as Error).message.split('\n').join('\n// ')}\n`;
+    return writeErrorToTmp(
+      tmpFile,
+      banner,
+      errorBlock,
+      `${JSON.stringify(edited, null, 2)}\n`,
+      attempt + 1
+    );
+  }
+}
+
+/** Handle one retry iteration of the interactive editor loop. */
+async function runEditorIteration(
+  tmpFile: string,
+  config: RdcConfig,
+  configName: string,
+  editorCmd: string | undefined,
+  knowledge: Record<string, unknown> | undefined,
+  beforeMtimeMs: number,
+  attempt: number,
+  tmp: string
+): Promise<{ done: boolean; failed: boolean; nextAttempt: number }> {
+  try {
+    await openEditor(tmpFile, editorCmd);
+  } catch (err) {
+    if (err instanceof EditorError) throw new ValidationError(err.message);
+    throw err;
+  }
+
+  const afterStat = statSync(tmpFile);
+  if (afterStat.mtimeMs === beforeMtimeMs && attempt === 0) {
+    outputService.info(t('commands.config.edit.noChanges'));
+    auditLog(configDir(), {
+      command: 'config edit',
+      paths: [],
+      outcome: 'edit_abort',
+      configId: config.id,
+      configVersion: config.version,
+      reason: 'no changes',
+    });
+    rmSync(tmp, { recursive: true, force: true });
+    return { done: true, failed: false, nextAttempt: attempt };
+  }
+
+  const parseResult = parseTmpFile(tmpFile, attempt);
+  if (!('edited' in parseResult)) return parseResult;
+
+  return reconcileAndApply(
+    parseResult.edited,
+    config,
+    configName,
+    knowledge,
+    tmpFile,
+    attempt,
+    tmp
+  );
+}
+
+/** Handle interactive editor flow with retry loop. */
+async function handleInteractiveMode(
+  config: RdcConfig,
+  configName: string,
+  reveal: boolean,
+  editorCmd: string | undefined,
+  knowledge: Record<string, unknown> | undefined
+): Promise<void> {
+  const tmp = mkdtempSync(join(tmpdir(), 'rdc-edit-'));
+  const tmpFile = join(tmp, `${configName}.jsonc`);
+  writeFileSync(tmpFile, renderJsonc(config, { reveal }), { mode: 0o600 });
+  const beforeMtimeMs = statSync(tmpFile).mtimeMs;
+
+  auditLog(configDir(), {
+    command: 'config edit',
+    paths: [],
+    outcome: 'edit_open',
+    configId: config.id,
+    configVersion: config.version,
+  });
+
+  let attempt = 0;
+  while (attempt < MAX_RETRIES) {
+    const { done, nextAttempt } = await runEditorIteration(
+      tmpFile,
+      config,
+      configName,
+      editorCmd,
+      knowledge,
+      beforeMtimeMs,
+      attempt,
+      tmp
+    );
+    attempt = nextAttempt;
+    if (done) return;
+  }
+
+  // Out of retries — preserve draft and abort.
+  const orig = `${configDir()}/${configName}.edit-${Date.now()}.orig`;
+  if (existsSync(tmpFile)) copyFileSync(tmpFile, orig);
+  rmSync(tmp, { recursive: true, force: true });
+  auditLog(configDir(), {
+    command: 'config edit',
+    paths: [],
+    outcome: 'edit_abort',
+    configId: config.id,
+    configVersion: config.version,
+    reason: `${MAX_RETRIES} consecutive failures; draft saved to ${orig}`,
+  });
+  throw new ValidationError(
+    t('commands.config.edit.abortAfterRetries', { count: MAX_RETRIES, path: orig })
+  );
+}
+
+/** Check agent gate and reveal gate; throws if access should be refused. */
+function checkEditGates(
+  config: RdcConfig,
+  agent: boolean,
+  needsAgentGate: boolean,
+  reveal: boolean
+): void {
+  if (agent && needsAgentGate) {
+    const scope = configEditOverrideScope();
+    if (!scope || scope !== '*') {
+      auditLog(configDir(), {
+        command: 'config edit',
+        paths: [],
+        outcome: 'refused',
+        configId: config.id,
+        configVersion: config.version,
+        reason: 'agent without REDIACC_ALLOW_CONFIG_EDIT=*',
+      });
+      refuseAgentEdit();
+    }
+  }
+  if (reveal) {
+    if (!isatty(process.stdout.fd))
+      throw new ValidationError(t('errors.agent.showRevealRequiresTty'));
+    auditLog(configDir(), {
+      command: 'config edit --reveal',
+      paths: [],
+      outcome: 'reveal_granted',
+      configId: config.id,
+      configVersion: config.version,
+    });
+  }
 }
 
 export function registerEditCommands(parent: Command, _program: Command): void {
@@ -289,219 +560,24 @@ export function registerEditCommands(parent: Command, _program: Command): void {
           // Agent gate: block interactive editor + --apply + --reveal.
           // --dump without --reveal is read-only redacted output — safe for agents.
           const interactive = !options.dump && !options.apply;
-          const needsAgentGate = interactive || options.apply || reveal;
-          if (agent && needsAgentGate) {
-            const scope = configEditOverrideScope();
-            if (!scope || scope !== '*') {
-              auditLog(configDir(), {
-                command: 'config edit',
-                paths: [],
-                outcome: 'refused',
-                configId: config.id,
-                configVersion: config.version,
-                reason: 'agent without REDIACC_ALLOW_CONFIG_EDIT=*',
-              });
-              refuseAgentEdit();
-            }
-          }
-          if (reveal) {
-            if (!isatty(process.stdout.fd)) {
-              throw new ValidationError(t('errors.agent.showRevealRequiresTty'));
-            }
-            auditLog(configDir(), {
-              command: 'config edit --reveal',
-              paths: [],
-              outcome: 'reveal_granted',
-              configId: config.id,
-              configVersion: config.version,
-            });
-          }
+          const needsAgentGate = interactive || Boolean(options.apply) || reveal;
+          checkEditGates(config, agent, needsAgentGate, reveal);
 
           const knowledge: Record<string, unknown> | undefined = options.currentSecrets
             ? loadKnowledgeFile(options.currentSecrets)
             : undefined;
 
-          // --dump: print and exit
           if (options.dump) {
             process.stdout.write(renderJsonc(config, { reveal }));
             return;
           }
 
-          // --apply: read file, reconcile, validate, apply
-          // Strict mode: unresolved rotations are failures. Callers scripting
-          // --apply must pass --current-secrets for any rotated sensitive field.
           if (options.apply) {
-            const text = readFileSync(options.apply, 'utf8');
-            const stripped = stripComments(text);
-            let edited: unknown;
-            try {
-              edited = JSON.parse(stripped);
-            } catch (err) {
-              throw new ValidationError(
-                `Invalid JSON in ${options.apply}: ${(err as Error).message}`
-              );
-            }
-            const { result, failures, rotations } = reconcileStubs(edited, config, knowledge);
-            const allFailures = [
-              ...failures,
-              ...rotations.map(
-                (p) =>
-                  `${p}: sensitive field changed without --current; supply --current-secrets <file> mapping pointer→old-value`
-              ),
-            ];
-            if (allFailures.length > 0) {
-              throw new ValidationError(
-                `Reconciliation failed:\n${allFailures.map((f) => `  ${f}`).join('\n')}`
-              );
-            }
-            await applyEdit(config, result, configName, config.id, config.version);
-            outputService.success(t('commands.config.edit.applied', { path: options.apply }));
+            await handleApplyMode(options.apply, config, configName, knowledge);
             return;
           }
 
-          // Interactive editor flow
-          const tmp = mkdtempSync(join(tmpdir(), 'rdc-edit-'));
-          const tmpFile = join(tmp, `${configName}.jsonc`);
-          writeFileSync(tmpFile, renderJsonc(config, { reveal }), { mode: 0o600 });
-          const beforeStat = statSync(tmpFile);
-
-          auditLog(configDir(), {
-            command: 'config edit',
-            paths: [],
-            outcome: 'edit_open',
-            configId: config.id,
-            configVersion: config.version,
-          });
-
-          let attempt = 0;
-          let lastFailures: string[] = [];
-          while (attempt < MAX_RETRIES) {
-            try {
-              await openEditor(tmpFile, options.editor);
-            } catch (err) {
-              if (err instanceof EditorError) {
-                throw new ValidationError(err.message);
-              }
-              throw err;
-            }
-
-            const afterStat = statSync(tmpFile);
-            if (afterStat.mtimeMs === beforeStat.mtimeMs && attempt === 0) {
-              outputService.info(t('commands.config.edit.noChanges'));
-              auditLog(configDir(), {
-                command: 'config edit',
-                paths: [],
-                outcome: 'edit_abort',
-                configId: config.id,
-                configVersion: config.version,
-                reason: 'no changes',
-              });
-              rmSync(tmp, { recursive: true, force: true });
-              return;
-            }
-
-            const text = readFileSync(tmpFile, 'utf8');
-            const stripped = stripComments(text);
-            let edited: unknown;
-            try {
-              edited = JSON.parse(stripped);
-            } catch (err) {
-              lastFailures = [`JSON parse error: ${(err as Error).message}`];
-              attempt++;
-              const banner = `// ─── ${lastFailures.length} ERROR(S) on attempt ${attempt}/${MAX_RETRIES} ───\n`;
-              const errorBlock = lastFailures.map((f) => `// ${f}`).join('\n') + '\n';
-              writeFileSync(tmpFile, banner + errorBlock + stripped, { mode: 0o600 });
-              continue;
-            }
-
-            const { result, failures, rotations } = reconcileStubs(edited, config, knowledge);
-            if (failures.length > 0) {
-              lastFailures = failures;
-              attempt++;
-              const banner = `// ─── ${failures.length} RECONCILIATION ERROR(S) on attempt ${attempt}/${MAX_RETRIES} ───\n`;
-              const errorBlock = failures.map((f) => `// ${f}`).join('\n') + '\n';
-              writeFileSync(tmpFile, banner + errorBlock + JSON.stringify(edited, null, 2) + '\n', {
-                mode: 0o600,
-              });
-              continue;
-            }
-
-            // Interactive rotation confirmation — the human physically typed new
-            // values into the editor; show what's about to be rotated and prompt.
-            if (rotations.length > 0) {
-              if (!isatty(process.stdin.fd) || !isatty(process.stdout.fd)) {
-                lastFailures = rotations.map(
-                  (p) =>
-                    `${p}: rotation confirmation requires an interactive TTY (or use --current-secrets)`
-                );
-                attempt++;
-                const banner = `// ─── ${rotations.length} UNCONFIRMED ROTATION(S) ───\n`;
-                const errorBlock = lastFailures.map((f) => `// ${f}`).join('\n') + '\n';
-                writeFileSync(
-                  tmpFile,
-                  banner + errorBlock + JSON.stringify(edited, null, 2) + '\n',
-                  {
-                    mode: 0o600,
-                  }
-                );
-                continue;
-              }
-              const confirmed = await promptRotationConfirmation(rotations);
-              if (!confirmed) {
-                outputService.info(t('commands.config.edit.rotateDeclined'));
-                auditLog(configDir(), {
-                  command: 'config edit',
-                  paths: rotations,
-                  outcome: 'edit_abort',
-                  configId: config.id,
-                  configVersion: config.version,
-                  reason: 'user declined rotation confirmation',
-                });
-                rmSync(tmp, { recursive: true, force: true });
-                return;
-              }
-              auditLog(configDir(), {
-                command: 'config edit',
-                paths: rotations,
-                outcome: 'rotate_no_knowledge',
-                configId: config.id,
-                configVersion: config.version,
-                reason: 'interactive editor confirmation',
-              });
-            }
-
-            try {
-              await applyEdit(config, result, configName, config.id, config.version);
-              outputService.success(t('commands.config.edit.saved', { name: configName }));
-              rmSync(tmp, { recursive: true, force: true });
-              return;
-            } catch (err) {
-              lastFailures = [(err as Error).message];
-              attempt++;
-              const banner = `// ─── VALIDATION ERROR on attempt ${attempt}/${MAX_RETRIES} ───\n`;
-              const errorBlock = `// ${(err as Error).message.split('\n').join('\n// ')}\n`;
-              writeFileSync(tmpFile, banner + errorBlock + JSON.stringify(edited, null, 2) + '\n', {
-                mode: 0o600,
-              });
-              continue;
-            }
-          }
-
-          // Out of retries — preserve draft and abort.
-          const orig = `${configDir()}/${configName}.edit-${Date.now()}.orig`;
-          if (existsSync(tmpFile)) copyFileSync(tmpFile, orig);
-          rmSync(tmp, { recursive: true, force: true });
-          auditLog(configDir(), {
-            command: 'config edit',
-            paths: [],
-            outcome: 'edit_abort',
-            configId: config.id,
-            configVersion: config.version,
-            reason: `${MAX_RETRIES} consecutive failures; draft saved to ${orig}`,
-          });
-          throw new ValidationError(
-            t('commands.config.edit.abortAfterRetries', { count: MAX_RETRIES, path: orig })
-          );
+          await handleInteractiveMode(config, configName, reveal, options.editor, knowledge);
         } catch (error) {
           handleError(error);
         }

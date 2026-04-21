@@ -407,9 +407,11 @@
       },
       "field": {
         "description": "عمليات حقول التكوين المعنونة بالمؤشرات (get/set/unset/rotate/list). مؤشرات JSON (RFC 6901) مثل /credentials/cfDnsApiToken.",
+        "descriptionShort": "عمليات حقول التكوين عبر المؤشرات",
         "get": {
           "description": "قراءة قيمة تكوين واحدة بواسطة مؤشر JSON. تُخفى الحقول الحساسة إلا باستخدام --reveal (للمستخدمين البشريين فقط).",
           "optionDigest": "طباعة تلخيص SHA-256 بدلاً من القيمة (آمن للمشاركة مع العملاء الذكيين)",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "optionReveal": "إظهار النص الصريح للقيم الحساسة (طرفية تفاعلية فقط؛ يُسجَّل في التدقيق)"
         },
         "list": {
@@ -420,17 +422,20 @@
         "rotate": {
           "description": "تدوير قيمة حساسة دون --current. طرفية تفاعلية فقط؛ يُسجَّل بشكل بارز.",
           "optionNew": "قيمة جديدة",
+          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
           "success": "تم تدوير {{pointer}}"
         },
         "set": {
           "description": "كتابة قيمة تكوين عند مؤشر JSON. المسارات الحساسة تتطلب --current (بوابة المعرفة).",
           "optionCurrent": "القيمة الصريحة الحالية - مطلوبة لتعديل المسارات الحساسة (إثبات بوابة المعرفة)",
           "optionNew": "القيمة الجديدة (تُفسَّر كـ JSON إذا بدأت بـ { [ \" أو true/false/null/رقم)",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "success": "تم تعيين {{pointer}}"
         },
         "unset": {
           "description": "حذف قيمة تكوين عند مؤشر JSON. المسارات الحساسة تتطلب --current.",
           "optionCurrent": "القيمة الصريحة الحالية - مطلوبة لحذف المسارات الحساسة",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "success": "تم إلغاء {{pointer}}"
         }
       },
@@ -638,7 +643,8 @@
       },
       "show": {
         "description": "عرض تفاصيل الإعدادات الحالية",
-        "noConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام: rdc config init"
+        "noConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام: rdc config init",
+        "optionReveal": "Show plaintext for sensitive values (interactive only)"
       },
       "ssh": {
         "description": "إدارة إعدادات مفتاح SSH",
@@ -2217,8 +2223,8 @@
     "affectedChildClones": ". النسخ المتأثرة: {{clones}}. احذف أو ارقِ النسخ الفرعية أولاً.",
     "agent": {
       "commandBlocked": "الامر \"{{command}}\" غير متاح في وضع الوكيل.\n\nهذا الامر ينفذ وظائف منخفضة المستوى بشكل اعتباطي دون ضمانات السلامة. استخدم اوامر CLI المكتوبة او ادوات MCP بدلا من ذلك.\n\nالبدائل:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - نفذ \"rdc agent capabilities\" لعرض جميع الاوامر المتاحة\n\nاذا كنت بحاجة الى وصول مباشر، اطلب من المستخدم تشغيل الامر مباشرة.",
-      "configEdit": "المحرر التفاعلي محظور في بيئات العملاء.\n\nالبدائل:\n  • rdc config edit --dump > config.jsonc    (فحص مُخفى آمن)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nللتجاوز، حدد REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> في الصدفة الأبوية\nقبل بدء العميل (يجب أن يظهر في سلالة العميل).",
-      "configEditAncestry": "المحرر التفاعلي محظور في بيئات العملاء (تم تعيين REDIACC_ALLOW_CONFIG_EDIT لكن فشل التحقق من السلالة — يجب تعيين التجاوز من الصدفة وليس من العميل).\n\nالبدائل:\n  • rdc config edit --dump > config.jsonc    (فحص مُخفى آمن)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nحدد REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> في الصدفة الأبوية قبل بدء العميل.",
+      "configEdit": "المحرر التفاعلي محظور في بيئات العملاء.\n\nالبدائل:\n  • rdc config edit --dump > config.jsonc    (فحص مُخفى آمن)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nللتجاوز، حدد REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> في الصدفة الأبوية\nقبل بدء العميل (يجب أن يظهر في سلالة العميل).",
+      "configEditAncestry": "المحرر التفاعلي محظور في بيئات العملاء (تم تعيين REDIACC_ALLOW_CONFIG_EDIT لكن فشل التحقق من السلالة — يجب تعيين التجاوز من الصدفة وليس من العميل).\n\nالبدائل:\n  • rdc config edit --dump > config.jsonc    (فحص مُخفى آمن)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nحدد REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> في الصدفة الأبوية قبل بدء العميل.",
       "createGuard": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\" في وضع الوكيل.\n\nالوكلاء يعملون في وضع fork فقط. المستودعات الرئيسية هي بيئات إنتاجية لا يمكن للوكلاء الوصول إليها بعد الإنشاء.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nللمستخدم: للسماح بإنشاء المستودع، عيّن REDIACC_ALLOW_GRAND_REPO=* (أو اسم مستودع محدد) في الطرفية قبل بدء جلسة الوكيل.",
       "createGuardOverride": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\". لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\". تجاوز REDIACC_ALLOW_GRAND_REPO غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nلاستخدام التجاوز، شغّل الوكيل على Linux (مباشرةً، أو WSL، أو Docker، أو VM).",
@@ -2239,7 +2245,7 @@
       "revealRequiresTty": "‏--reveal يتطلب طرفية تفاعلية؛ يُرفض طباعة القيمة الحساسة إلى أنبوب.",
       "rotateNotSensitive": "المؤشر \"{{pointer}}\" ليس حقلاً حساساً؛ استخدم 'config field set' بدلاً من ذلك.",
       "rotateRequiresTty": "‏config field rotate يتطلب تأكيدًا في طرفية تفاعلية؛ يُرفض في السياق غير التفاعلي (حدد REDIACC_ALLOW_CONFIG_EDIT للتجاوز).",
-      "showReveal": "‏--reveal محظور في بيئات العملاء. استخدم `rdc config show` (مُخفى) أو `rdc config field get <pointer> --digest` للحصول على بصمة آمنة.",
+      "showReveal": "‏--reveal محظور في بيئات العملاء. استخدم `rdc config show` (مُخفى) أو `rdc config field get --name <pointer> --digest` للحصول على بصمة آمنة.",
       "showRevealRequiresTty": "‏--reveal يتطلب طرفية تفاعلية؛ يُرفض تمرير النص الصريح إلى وجهة غير تفاعلية."
     },
     "authFailed": "فشلت المصادقة",

@@ -16,6 +16,7 @@
 import { createHash } from 'node:crypto';
 import { isatty } from 'node:tty';
 import type { Command } from 'commander';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { configService } from '../../services/config-resources.js';
 import { auditLog, type AuditEventDraft } from '../../services/audit-log.js';
@@ -65,14 +66,12 @@ function applyMutation(config: unknown, pointer: string, newValue: unknown): unk
   const segments = pointer
     .split('/')
     .slice(1)
-    .map((s) => s.replace(/~1/g, '/').replace(/~0/g, '~'));
+    .map((s) => s.replaceAll('~1', '/').replaceAll('~0', '~'));
   const clone = JSON.parse(JSON.stringify(config)) as Record<string, unknown>;
   let cursor: Record<string, unknown> = clone;
   for (let i = 0; i < segments.length - 1; i++) {
     const segment = segments[i];
-    if (cursor[segment] === undefined || cursor[segment] === null) {
-      cursor[segment] = {};
-    }
+    cursor[segment] ??= {};
     cursor = cursor[segment] as Record<string, unknown>;
   }
   const last = segments[segments.length - 1];
@@ -81,16 +80,57 @@ function applyMutation(config: unknown, pointer: string, newValue: unknown): unk
   return clone;
 }
 
+/** Gate --reveal for a sensitive field: refuse agents and non-TTY. */
+function checkFieldReveal(pointer: string): void {
+  if (isAgentEnvironment()) {
+    emit({
+      command: 'config field get --reveal',
+      paths: [pointer],
+      outcome: 'refused',
+      reason: 'agent environment — use --digest for a safe fingerprint',
+    });
+    throw new ValidationError(t('errors.agent.fieldReveal', { pointer }));
+  }
+  if (!isatty(process.stdout.fd)) {
+    throw new ValidationError(t('errors.agent.revealRequiresTty'));
+  }
+  emit({ command: 'config field get', paths: [pointer], outcome: 'reveal_granted' });
+}
+
+/** Print a field value, redacting if sensitive and --reveal not set. */
+function printFieldValue(pointer: string, value: unknown, reveal: boolean | undefined): void {
+  const meta = metaForPointer(pointer);
+  const isSensitive = meta && meta.kind !== 'public';
+
+  if (isSensitive && !reveal) {
+    const stub = `${meta.redactAs ?? `<redacted:${meta.kind}>`}:${shortFingerprint(value)}`;
+    outputService.print({ pointer, value: stub }, 'json');
+    emit({ command: 'config field get', paths: [pointer], outcome: 'ok' });
+    return;
+  }
+
+  if (isSensitive && reveal) {
+    checkFieldReveal(pointer);
+  }
+
+  outputService.print({ pointer, value }, 'json');
+}
+
 export function registerFieldCommands(parent: Command, _program: Command): void {
-  const field = parent.command('field').description(t('commands.config.field.description'));
+  const field = parent
+    .command('field')
+    .summary(t('commands.config.field.descriptionShort'))
+    .description(t('commands.config.field.description'));
 
   field
-    .command('get <pointer>')
+    .command('get')
     .description(t('commands.config.field.get.description'))
+    .requiredOption('--pointer <pointer>', t('commands.config.field.get.optionPointer'))
     .option('--reveal', t('commands.config.field.get.optionReveal'))
     .option('--digest', t('commands.config.field.get.optionDigest'))
-    .action(async (pointer: string, options: { reveal?: boolean; digest?: boolean }) => {
+    .action(async (options: { pointer: string; reveal?: boolean; digest?: boolean }) => {
       try {
+        const { pointer } = options;
         const config = await configService.getCurrent();
         if (!config) throw new ValidationError(t('errors.config.noActiveConfig'));
 
@@ -107,45 +147,21 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
         if (value === undefined)
           throw new ValidationError(t('errors.config.pointerNotFound', { pointer }));
 
-        const meta = metaForPointer(pointer);
-        const isSensitive = meta && meta.kind !== 'public';
-
-        if (isSensitive && !options.reveal) {
-          const stub = `${meta.redactAs ?? `<redacted:${meta.kind}>`}:${shortFingerprint(value)}`;
-          outputService.print({ pointer, value: stub }, 'json');
-          emit({ command: 'config field get', paths: [pointer], outcome: 'ok' });
-          return;
-        }
-
-        if (isSensitive && options.reveal) {
-          if (isAgentEnvironment()) {
-            emit({
-              command: 'config field get --reveal',
-              paths: [pointer],
-              outcome: 'refused',
-              reason: 'agent environment — use --digest for a safe fingerprint',
-            });
-            throw new ValidationError(t('errors.agent.fieldReveal', { pointer }));
-          }
-          if (!isatty(process.stdout.fd)) {
-            throw new ValidationError(t('errors.agent.revealRequiresTty'));
-          }
-          emit({ command: 'config field get', paths: [pointer], outcome: 'reveal_granted' });
-        }
-
-        outputService.print({ pointer, value }, 'json');
+        printFieldValue(pointer, value, options.reveal);
       } catch (error) {
         handleError(error);
       }
     });
 
   field
-    .command('set <pointer>')
+    .command('set')
     .description(t('commands.config.field.set.description'))
+    .requiredOption('--pointer <pointer>', t('commands.config.field.set.optionPointer'))
     .requiredOption('--new <value>', t('commands.config.field.set.optionNew'))
     .option('--current <value>', t('commands.config.field.set.optionCurrent'))
-    .action(async (pointer: string, options: { new: string; current?: string }) => {
+    .action(async (options: { pointer: string; new: string; current?: string }) => {
       try {
+        const { pointer } = options;
         const config = await configService.getCurrent();
         if (!config) throw new ValidationError(t('errors.config.noActiveConfig'));
 
@@ -197,11 +213,13 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
     });
 
   field
-    .command('unset <pointer>')
+    .command('unset')
     .description(t('commands.config.field.unset.description'))
+    .requiredOption('--pointer <pointer>', t('commands.config.field.unset.optionPointer'))
     .option('--current <value>', t('commands.config.field.unset.optionCurrent'))
-    .action(async (pointer: string, options: { current?: string }) => {
+    .action(async (options: { pointer: string; current?: string }) => {
       try {
+        const { pointer } = options;
         const config = await configService.getCurrent();
         if (!config) throw new ValidationError(t('errors.config.noActiveConfig'));
 
@@ -255,11 +273,13 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
     });
 
   field
-    .command('rotate <pointer>')
+    .command('rotate')
     .description(t('commands.config.field.rotate.description'))
+    .requiredOption('--pointer <pointer>', t('commands.config.field.rotate.optionPointer'))
     .requiredOption('--new <value>', t('commands.config.field.rotate.optionNew'))
-    .action(async (pointer: string, options: { new: string }) => {
+    .action(async (options: { pointer: string; new: string }) => {
       try {
+        const { pointer } = options;
         const config = await configService.getCurrent();
         if (!config) throw new ValidationError(t('errors.config.noActiveConfig'));
 
@@ -312,7 +332,10 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
           .map((pointer) => ({ pointer, ...SENSITIVITY_REGISTRY.get(pointer)! }))
           .filter((row) => !options.sensitive || row.kind !== 'public')
           .sort((a, b) => (a.pointer < b.pointer ? -1 : 1));
-        outputService.print(rows, (options.output ?? 'table') as 'json' | 'table');
+        outputService.print(
+          rows,
+          (options.output ?? DEFAULTS.CONTEXT.FIELD_LIST_OUTPUT) as 'json' | 'table'
+        );
       } catch (error) {
         handleError(error);
       }

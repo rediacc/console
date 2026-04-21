@@ -19,7 +19,7 @@ import { SENSITIVITY_REGISTRY } from './sensitivity.js';
 
 /** RFC 6901 escape for a single JSON Pointer segment. */
 export function escapePointerSegment(segment: string): string {
-  return segment.replace(/~/g, '~0').replace(/\//g, '~1');
+  return segment.replaceAll('~', '~0').replaceAll('/', '~1');
 }
 
 export function buildPointer(segments: string[]): string {
@@ -122,6 +122,24 @@ export function digestForPointer(root: unknown, pointer: string): string | undef
 }
 
 /**
+ * Advance a cursor by one segment. Returns `undefined` to signal the path
+ * does not exist (either the cursor is not traversable or the index is out of
+ * range). Used by `getByPointer` to keep its loop body flat.
+ */
+function advanceCursorRead(cursor: unknown, segment: string): { next: unknown } | undefined {
+  if (cursor === null || cursor === undefined) return undefined;
+  if (Array.isArray(cursor)) {
+    const idx = Number.parseInt(segment, 10);
+    if (!Number.isFinite(idx)) return undefined;
+    return { next: cursor[idx] };
+  }
+  if (typeof cursor === 'object') {
+    return { next: (cursor as Record<string, unknown>)[segment] };
+  }
+  return undefined;
+}
+
+/**
  * Resolve a JSON Pointer against a value tree. Returns undefined for missing paths.
  * Handles RFC 6901 escapes (`~0` → `~`, `~1` → `/`).
  */
@@ -130,21 +148,47 @@ export function getByPointer(root: unknown, pointer: string): unknown {
   const segments = pointer
     .split('/')
     .slice(1)
-    .map((s) => s.replace(/~1/g, '/').replace(/~0/g, '~'));
+    .map((s) => s.replaceAll('~1', '/').replaceAll('~0', '~'));
   let cursor: unknown = root;
   for (const segment of segments) {
-    if (cursor === null || cursor === undefined) return undefined;
-    if (Array.isArray(cursor)) {
-      const idx = Number.parseInt(segment, 10);
-      if (!Number.isFinite(idx)) return undefined;
-      cursor = cursor[idx];
-    } else if (typeof cursor === 'object') {
-      cursor = (cursor as Record<string, unknown>)[segment];
-    } else {
-      return undefined;
-    }
+    const result = advanceCursorRead(cursor, segment);
+    if (result === undefined) return undefined;
+    cursor = result.next;
   }
   return cursor;
+}
+
+/**
+ * Advance a mutable cursor (Record or Array) by one intermediate segment.
+ * Returns the child container, or `undefined` if traversal should abort
+ * (invalid array index or out-of-bounds).
+ */
+function advanceCursorWrite(
+  cursor: Record<string, unknown> | unknown[],
+  segment: string
+): Record<string, unknown> | unknown[] | undefined {
+  if (Array.isArray(cursor)) {
+    const idx = Number.parseInt(segment, 10);
+    if (!Number.isFinite(idx) || idx < 0 || idx >= cursor.length) return undefined;
+    return cursor[idx] as Record<string, unknown> | unknown[];
+  }
+  return cursor[segment] as Record<string, unknown> | unknown[];
+}
+
+/**
+ * Write `newValue` at `pointer` within a mutable cursor (Record or Array).
+ */
+function writeAtLeaf(
+  cursor: Record<string, unknown> | unknown[],
+  segment: string,
+  newValue: unknown
+): void {
+  if (Array.isArray(cursor)) {
+    const idx = Number.parseInt(segment, 10);
+    if (Number.isFinite(idx)) cursor[idx] = newValue;
+  } else {
+    cursor[segment] = newValue;
+  }
 }
 
 /**
@@ -156,27 +200,15 @@ function setByPointer(root: unknown, pointer: string, newValue: unknown): unknow
   const segments = pointer
     .split('/')
     .slice(1)
-    .map((s) => s.replace(/~1/g, '/').replace(/~0/g, '~'));
+    .map((s) => s.replaceAll('~1', '/').replaceAll('~0', '~'));
   const clone = deepClone(root);
   let cursor: Record<string, unknown> | unknown[] = clone as Record<string, unknown>;
   for (let i = 0; i < segments.length - 1; i++) {
-    const segment = segments[i];
-    if (cursor === null || cursor === undefined) return clone;
-    if (Array.isArray(cursor)) {
-      const idx = Number.parseInt(segment, 10);
-      if (!Number.isFinite(idx) || idx < 0 || idx >= cursor.length) return clone;
-      cursor = cursor[idx] as Record<string, unknown> | unknown[];
-    } else {
-      cursor = (cursor as Record<string, unknown>)[segment] as Record<string, unknown> | unknown[];
-    }
+    const next = advanceCursorWrite(cursor, segments[i]);
+    if (next === undefined) return clone;
+    cursor = next;
   }
-  const last = segments[segments.length - 1];
-  if (Array.isArray(cursor)) {
-    const idx = Number.parseInt(last, 10);
-    if (Number.isFinite(idx)) cursor[idx] = newValue;
-  } else if (cursor && typeof cursor === 'object') {
-    (cursor as Record<string, unknown>)[last] = newValue;
-  }
+  writeAtLeaf(cursor, segments[segments.length - 1], newValue);
   return clone;
 }
 
@@ -211,6 +243,13 @@ export function pathsToCommit(config: unknown): string[] {
   return out.sort();
 }
 
+/** Stable comparator for string keys used in canonical JSON sorting. */
+function compareStrings(a: string, b: string): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
 /**
  * Canonical JSON for hashing.
  *
@@ -233,7 +272,7 @@ export function canonicalJson(value: unknown): string {
   if (typeof value === 'object') {
     const entries = Object.entries(value as Record<string, unknown>)
       .filter(([, v]) => v !== undefined)
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .sort(([a], [b]) => compareStrings(a, b))
       .map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`);
     return `{${entries.join(',')}}`;
   }

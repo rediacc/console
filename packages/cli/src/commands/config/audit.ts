@@ -3,7 +3,7 @@
  * hash-chained audit log at `<configdir>/audit.log.jsonl`.
  */
 
-import { createReadStream, watchFile, unwatchFile, existsSync } from 'node:fs';
+import { createReadStream, watchFile, unwatchFile, existsSync, statSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import type { Command } from 'commander';
 import { t } from '../../i18n/index.js';
@@ -17,11 +17,19 @@ function auditLogPath(): string {
 }
 
 /** Parse relative time strings like "24h", "7d", "30m" to a cutoff epoch ms. */
+// Regex /^(\d+)([hdm])$/ guarantees match[2] is always one of these keys.
+const UNIT_MS = new Map<string, number>([
+  ['h', 3_600_000],
+  ['d', 86_400_000],
+  ['m', 60_000],
+]);
+
 function parseSince(value: string): number | null {
   const match = /^(\d+)([hdm])$/.exec(value.trim());
   if (match) {
     const n = Number.parseInt(match[1], 10);
-    const mult = match[2] === 'h' ? 3_600_000 : match[2] === 'd' ? 86_400_000 : 60_000;
+    // Regex guarantees match[2] is h/d/m; safe cast.
+    const mult = UNIT_MS.get(match[2]) as number;
     return Date.now() - n * mult;
   }
   const iso = Date.parse(value);
@@ -81,9 +89,7 @@ export function registerAuditCommands(parent: Command, _program: Command): void 
         process.stdout.write(`${JSON.stringify(entry)}\n`);
       }
       // watchFile polls mtime; good enough for a user-facing tail command.
-      let lastSize = existsSync(path)
-        ? (require('node:fs').statSync(path) as { size: number }).size
-        : 0;
+      let lastSize = existsSync(path) ? statSync(path).size : 0;
       watchFile(path, { interval: 500 }, (curr) => {
         if (curr.size > lastSize) {
           const stream = createReadStream(path, { start: lastSize, end: curr.size });

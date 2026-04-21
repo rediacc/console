@@ -40,7 +40,7 @@ export interface SelectiveEncryptOptions {
   /** Reuse a prior salt, or omit to generate a fresh one. */
   fckSalt?: string;
   /** Pointers + values whose HMACs are stored in the envelope. */
-  commitEntries: Array<{ pointer: string; value: unknown }>;
+  commitEntries: { pointer: string; value: unknown }[];
 }
 
 /**
@@ -97,7 +97,7 @@ export async function selectiveDecrypt(
   cek: CryptoKey,
   sdkDerived: CryptoKey
 ): Promise<FullConfig> {
-  if (payload.envelope.envelopeVersion !== 2) {
+  if ((payload.envelope.envelopeVersion as number) !== 2) {
     throw new Error(
       `Unsupported envelope version: ${String((payload.envelope as { envelopeVersion?: unknown }).envelopeVersion)}. This CLI requires envelope v2.`
     );

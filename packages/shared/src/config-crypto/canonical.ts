@@ -44,54 +44,77 @@ export function canonicalize(value: unknown): Uint8Array {
   return concat(chunks);
 }
 
-function writeValue(value: unknown, out: Uint8Array[]): void {
+function writeNumber(value: number, out: Uint8Array[]): void {
+  if (!Number.isFinite(value)) {
+    throw new Error('Cannot canonicalize non-finite number');
+  }
+  out.push(new Uint8Array([PREFIX_NUMBER]));
+  // ES6 Number.toString — stable on Node and V8 workers.
+  out.push(new TextEncoder().encode(value.toString()));
+}
+
+function writeObject(value: Record<string, unknown>, out: Uint8Array[]): void {
+  out.push(new Uint8Array([PREFIX_OBJECT]));
+  const entries = Object.entries(value)
+    .filter(([, v]) => v !== undefined)
+    .sort(([a], [b]) => compareStrings(a, b));
+  writeUint32(entries.length, out);
+  for (const [key, child] of entries) {
+    writeLengthPrefixed(new TextEncoder().encode(key), out);
+    writeValue(child, out);
+  }
+}
+
+function compareStrings(a: string, b: string): -1 | 0 | 1 {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
+function writeArray(value: unknown[], out: Uint8Array[]): void {
+  out.push(new Uint8Array([PREFIX_ARRAY]));
+  writeUint32(value.length, out);
+  for (const item of value) writeValue(item, out);
+}
+
+function writePrimitive(value: unknown, out: Uint8Array[]): boolean {
   if (value === undefined) {
     out.push(new Uint8Array([PREFIX_MISSING]));
-    return;
+    return true;
   }
   if (value === null) {
     out.push(new Uint8Array([PREFIX_NULL]));
-    return;
+    return true;
   }
   if (typeof value === 'boolean') {
     out.push(new Uint8Array([PREFIX_BOOL, value ? 1 : 0]));
-    return;
+    return true;
   }
   if (typeof value === 'number') {
-    if (!Number.isFinite(value)) {
-      throw new Error('Cannot canonicalize non-finite number');
-    }
-    out.push(new Uint8Array([PREFIX_NUMBER]));
-    // ES6 Number.toString — stable on Node and V8 workers.
-    out.push(new TextEncoder().encode(value.toString()));
-    return;
+    writeNumber(value, out);
+    return true;
   }
   if (typeof value === 'string') {
     out.push(new Uint8Array([PREFIX_STRING]));
     writeLengthPrefixed(new TextEncoder().encode(value), out);
-    return;
+    return true;
   }
   if (value instanceof Uint8Array) {
     out.push(new Uint8Array([PREFIX_BYTES]));
     writeLengthPrefixed(value, out);
-    return;
+    return true;
   }
+  return false;
+}
+
+function writeValue(value: unknown, out: Uint8Array[]): void {
+  if (writePrimitive(value, out)) return;
   if (Array.isArray(value)) {
-    out.push(new Uint8Array([PREFIX_ARRAY]));
-    writeUint32(value.length, out);
-    for (const item of value) writeValue(item, out);
+    writeArray(value, out);
     return;
   }
   if (typeof value === 'object') {
-    out.push(new Uint8Array([PREFIX_OBJECT]));
-    const entries = Object.entries(value as Record<string, unknown>)
-      .filter(([, v]) => v !== undefined)
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-    writeUint32(entries.length, out);
-    for (const [key, child] of entries) {
-      writeLengthPrefixed(new TextEncoder().encode(key), out);
-      writeValue(child, out);
-    }
+    writeObject(value as Record<string, unknown>, out);
     return;
   }
   throw new Error(`Cannot canonicalize value of type ${typeof value}`);

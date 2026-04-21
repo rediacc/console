@@ -407,9 +407,11 @@
       },
       "field": {
         "description": "İşaretçi adresli yapılandırma alan işlemleri (get/set/unset/rotate/list). /credentials/cfDnsApiToken gibi JSON Pointer (RFC 6901).",
+        "descriptionShort": "İşaretçi adresli yapılandırma alanı işlemleri",
         "get": {
           "description": "JSON Pointer ile tek bir yapılandırma değerini oku. --reveal olmadıkça hassas alanlar maskelenir (yalnızca insan).",
           "optionDigest": "Değer yerine SHA-256 özetini yaz (ajanlarla paylaşmak için güvenli)",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "optionReveal": "Hassas değerleri açık metin olarak göster (yalnızca etkileşimli TTY; denetlenir)"
         },
         "list": {
@@ -420,17 +422,20 @@
         "rotate": {
           "description": "Hassas bir değeri --current olmadan döndür. Yalnızca etkileşimli TTY; belirgin şekilde denetlenir.",
           "optionNew": "Yeni değer",
+          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} döndürüldü"
         },
         "set": {
           "description": "JSON Pointer konumuna yapılandırma değeri yaz. Hassas yollar --current gerektirir (bilgi kapısı).",
           "optionCurrent": "Mevcut açık metin değer — hassas yol değişikliklerinde gerekli (bilgi kapısı kanıtı)",
           "optionNew": "Yeni değer ({, [, \", true/false/null veya sayı ile başlıyorsa JSON olarak ayrıştırılır)",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} ayarlandı"
         },
         "unset": {
           "description": "JSON Pointer konumundaki yapılandırma değerini sil. Hassas yollar --current gerektirir.",
           "optionCurrent": "Mevcut açık metin değer — hassas yol silmelerinde gerekli",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} kaldırıldı"
         }
       },
@@ -638,7 +643,8 @@
       },
       "show": {
         "description": "Geçerli yapılandırma ayrıntılarını gösterin",
-        "noConfig": "Etkin yapılandırma yok. Oluşturun: rdc config init"
+        "noConfig": "Etkin yapılandırma yok. Oluşturun: rdc config init",
+        "optionReveal": "Show plaintext for sensitive values (interactive only)"
       },
       "ssh": {
         "description": "SSH anahtar yapılandırmasını yönet",
@@ -2217,8 +2223,8 @@
     "affectedChildClones": ". Etkilenen alt klonlar: {{clones}}. Önce alt klonları silin veya yükseltin.",
     "agent": {
       "commandBlocked": "\"{{command}}\" komutu ajan modunda kullanilabilir degil.\n\nBu komut, guvenlik korumalari olmadan rastgele dusuk seviyeli islevler calistirir. Bunun yerine tipli CLI komutlari veya MCP araclari kullanin.\n\nAlternatifler:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Tum kullanilabilir komutlari gormek icin \"rdc agent capabilities\" calistirin\n\nDogrudan erisime ihtiyaciniz varsa, kullanicidan komutu dogrudan calistirmasini isteyin.",
-      "configEdit": "Etkileşimli editör, ajan ortamlarında engellenir.\n\nAlternatifler:\n  • rdc config edit --dump > config.jsonc    (güvenli redakte inceleme)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nGeçersiz kılmak için ajanı başlatmadan ÖNCE üst shell'de\nREDIACC_ALLOW_CONFIG_EDIT=<scope-glob> tanımlayın (ajan proses ataları arasında görünmelidir).",
-      "configEditAncestry": "Etkileşimli editör, ajan ortamlarında engellendi (REDIACC_ALLOW_CONFIG_EDIT ayarlandı ancak ata doğrulaması başarısız oldu — geçersiz kılma ajanınız tarafından değil kabuğunuz tarafından ayarlanmalıdır).\n\nAlternatifler:\n  • rdc config edit --dump > config.jsonc    (güvenli redakte inceleme)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nAjanı başlatmadan ÖNCE üst shell'de REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> tanımlayın.",
+      "configEdit": "Etkileşimli editör, ajan ortamlarında engellenir.\n\nAlternatifler:\n  • rdc config edit --dump > config.jsonc    (güvenli redakte inceleme)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nGeçersiz kılmak için ajanı başlatmadan ÖNCE üst shell'de\nREDIACC_ALLOW_CONFIG_EDIT=<scope-glob> tanımlayın (ajan proses ataları arasında görünmelidir).",
+      "configEditAncestry": "Etkileşimli editör, ajan ortamlarında engellendi (REDIACC_ALLOW_CONFIG_EDIT ayarlandı ancak ata doğrulaması başarısız oldu — geçersiz kılma ajanınız tarafından değil kabuğunuz tarafından ayarlanmalıdır).\n\nAlternatifler:\n  • rdc config edit --dump > config.jsonc    (güvenli redakte inceleme)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nAjanı başlatmadan ÖNCE üst shell'de REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> tanımlayın.",
       "createGuard": "Ajan modunda yeni bir grand depo \"{{name}}\" oluşturulamaz.\n\nAjanlar yalnızca fork modunda çalışır. Grand depolar, oluşturulduktan sonra ajanların erişemeyeceği üretim ortamlarıdır.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nKullanıcı: depo oluşturmaya izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO=* (veya belirli bir depo adı) ayarlayın.",
       "createGuardOverride": "Yeni bir grand depo \"{{name}}\" oluşturulamaz. Ajan tarafından başlatılan geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın — bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "Yeni bir grand depo \"{{name}}\" oluşturulamaz. REDIACC_ALLOW_GRAND_REPO geçersiz kılma {{platform}} üzerinde desteklenmez.\n\nBu geçersiz kılma yalnızca Linux üzerinde çalışır. Windows ve macOS üzerinde ajanlar fork-first iş akışını kullanmalıdır.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nGeçersiz kılmayı kullanmak için ajanınızı Linux üzerinde çalıştırın (doğrudan, WSL, Docker veya VM).",
@@ -2239,7 +2245,7 @@
       "revealRequiresTty": "--reveal etkileşimli TTY gerektirir; hassas değer bir boruya yazılmayacak.",
       "rotateNotSensitive": "Pointer \"{{pointer}}\" hassas bir alan değil; bunun yerine 'config field set' kullanın.",
       "rotateRequiresTty": "config field rotate, etkileşimli TTY onayı gerektirir; etkileşimli olmayan bağlamda reddedilir (geçersiz kılmak için REDIACC_ALLOW_CONFIG_EDIT tanımlayın).",
-      "showReveal": "--reveal, ajan ortamlarında engellenir. Güvenli parmak izi için `rdc config show` (redakte) veya `rdc config field get <pointer> --digest` kullanın.",
+      "showReveal": "--reveal, ajan ortamlarında engellenir. Güvenli parmak izi için `rdc config show` (redakte) veya `rdc config field get --name <pointer> --digest` kullanın.",
       "showRevealRequiresTty": "--reveal etkileşimli TTY gerektirir; açık metin TTY olmayan bir hedefe aktarılmayacak."
     },
     "authFailed": "Kimlik doğrulama başarısız",

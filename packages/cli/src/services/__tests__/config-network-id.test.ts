@@ -34,7 +34,7 @@ describe('allocateNetworkId', () => {
     const { configService } = await import('../config-resources.js');
     const id = await configService.allocateNetworkId();
     expect(id).toBe(MIN_NETWORK_ID);
-    expect((mockConfig.defaults as { nextNetworkId?: number })?.nextNetworkId).toBe(
+    expect((mockConfig.defaults as { nextNetworkId?: number }).nextNetworkId).toBe(
       MIN_NETWORK_ID + NETWORK_ID_INCREMENT
     );
   });
@@ -51,7 +51,7 @@ describe('allocateNetworkId', () => {
     const { configService } = await import('../config-resources.js');
     const id = await configService.allocateNetworkId();
     expect(id).toBe(5000);
-    expect((mockConfig.defaults as { nextNetworkId?: number })?.nextNetworkId).toBe(
+    expect((mockConfig.defaults as { nextNetworkId?: number }).nextNetworkId).toBe(
       5000 + NETWORK_ID_INCREMENT
     );
   });

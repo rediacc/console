@@ -57,8 +57,8 @@ export interface MutationContext {
 }
 
 export class PreconditionMismatchError extends Error {
-  readonly failures: Array<{ pointer: string; reason: string }>;
-  constructor(failures: Array<{ pointer: string; reason: string }>) {
+  readonly failures: { pointer: string; reason: string }[];
+  constructor(failures: { pointer: string; reason: string }[]) {
     super(
       `Precondition failed for ${failures.length} path(s):\n${failures
         .map((f) => `  ${f.pointer}: ${f.reason}`)
@@ -76,6 +76,78 @@ export interface GateDecision {
   reason: string;
 }
 
+interface SingleMutationResult {
+  decision: GateDecision;
+  failure?: { pointer: string; reason: string };
+}
+
+/**
+ * Evaluate a single sensitive-path mutation in agent context.
+ * Covers override scope, rotate-acknowledged, and knowledge-digest checks.
+ */
+function evaluateAgentMutation(
+  entry: MutationEntry,
+  meta: SensitivityMeta,
+  overrideScope: string | null,
+  context: MutationContext
+): SingleMutationResult {
+  if (overrideScope && scopeAllows(overrideScope, entry.pointer)) {
+    return {
+      decision: {
+        pointer: entry.pointer,
+        meta,
+        action: 'allowed',
+        reason: `override scope (${overrideScope})`,
+      },
+    };
+  }
+
+  if (context.rotateAcknowledged?.has(entry.pointer)) {
+    return {
+      decision: { pointer: entry.pointer, meta, action: 'allowed', reason: 'rotate acknowledged' },
+    };
+  }
+
+  const claimed = context.knowledge?.[entry.pointer];
+  if (!claimed) {
+    return {
+      decision: { pointer: entry.pointer, meta, action: 'refused', reason: 'missing knowledge' },
+      failure: {
+        pointer: entry.pointer,
+        reason: 'sensitive path requires --current (or --rotate-secret)',
+      },
+    };
+  }
+
+  const stored = digestForPointer(context.previousConfig, entry.pointer);
+  if (stored === undefined) {
+    // New field being added — knowledge claim has nothing to verify against.
+    // Treat as rotation: permit, but audit.
+    return {
+      decision: {
+        pointer: entry.pointer,
+        meta,
+        action: 'allowed',
+        reason: 'new field with knowledge claim',
+      },
+    };
+  }
+
+  if (stored !== claimed) {
+    return {
+      decision: { pointer: entry.pointer, meta, action: 'refused', reason: 'digest mismatch' },
+      failure: {
+        pointer: entry.pointer,
+        reason: `--current digest mismatch (expected ${stored.slice(0, 8)}…, got ${claimed.slice(0, 8)}…)`,
+      },
+    };
+  }
+
+  return {
+    decision: { pointer: entry.pointer, meta, action: 'allowed', reason: 'knowledge verified' },
+  };
+}
+
 /**
  * Evaluate a batch of mutations. If any sensitive path fails the knowledge
  * gate without an acknowledgement, throws PreconditionMismatchError before
@@ -88,7 +160,7 @@ export function evaluateMutations(
   context: MutationContext
 ): GateDecision[] {
   const decisions: GateDecision[] = [];
-  const failures: Array<{ pointer: string; reason: string }> = [];
+  const failures: { pointer: string; reason: string }[] = [];
   const agent = isAgentEnvironment();
   const overrideScope = agent ? configEditOverrideScope() : null;
 
@@ -106,84 +178,14 @@ export function evaluateMutations(
 
     // Non-agent: human TTY owns the file, pass.
     if (!agent) {
-      decisions.push({
-        pointer: entry.pointer,
-        meta,
-        action: 'allowed',
-        reason: 'human tty',
-      });
+      decisions.push({ pointer: entry.pointer, meta, action: 'allowed', reason: 'human tty' });
       continue;
     }
 
-    // Agent path below.
-    if (overrideScope && scopeAllows(overrideScope, entry.pointer)) {
-      decisions.push({
-        pointer: entry.pointer,
-        meta,
-        action: 'allowed',
-        reason: `override scope (${overrideScope})`,
-      });
-      continue;
-    }
-
-    if (context.rotateAcknowledged?.has(entry.pointer)) {
-      decisions.push({
-        pointer: entry.pointer,
-        meta,
-        action: 'allowed',
-        reason: 'rotate acknowledged',
-      });
-      continue;
-    }
-
-    const claimed = context.knowledge?.[entry.pointer];
-    if (!claimed) {
-      failures.push({
-        pointer: entry.pointer,
-        reason: 'sensitive path requires --current (or --rotate-secret)',
-      });
-      decisions.push({
-        pointer: entry.pointer,
-        meta,
-        action: 'refused',
-        reason: 'missing knowledge',
-      });
-      continue;
-    }
-
-    const stored = digestForPointer(context.previousConfig, entry.pointer);
-    if (stored === undefined) {
-      // New field being added — knowledge claim has nothing to verify against.
-      // Treat as rotation: permit, but audit.
-      decisions.push({
-        pointer: entry.pointer,
-        meta,
-        action: 'allowed',
-        reason: 'new field with knowledge claim',
-      });
-      continue;
-    }
-
-    if (stored !== claimed) {
-      failures.push({
-        pointer: entry.pointer,
-        reason: `--current digest mismatch (expected ${stored.slice(0, 8)}…, got ${claimed.slice(0, 8)}…)`,
-      });
-      decisions.push({
-        pointer: entry.pointer,
-        meta,
-        action: 'refused',
-        reason: 'digest mismatch',
-      });
-      continue;
-    }
-
-    decisions.push({
-      pointer: entry.pointer,
-      meta,
-      action: 'allowed',
-      reason: 'knowledge verified',
-    });
+    // Agent path: delegate to helper to keep complexity low.
+    const { decision, failure } = evaluateAgentMutation(entry, meta, overrideScope, context);
+    decisions.push(decision);
+    if (failure) failures.push(failure);
   }
 
   if (failures.length > 0) {

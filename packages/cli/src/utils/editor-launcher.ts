@@ -22,7 +22,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import { t } from '../i18n/index.js';
 
 /** Known GUI editors that need a --wait flag to block. */
-const KNOWN_WAIT_FLAGS: Record<string, string[]> = {
+const KNOWN_WAIT_FLAGS: Record<string, string[] | undefined> = {
   code: ['--wait'],
   'code-insiders': ['--wait'],
   codium: ['--wait'],
@@ -95,7 +95,7 @@ export function resolveEditor(explicit?: string): ResolvedEditor {
     throw new EditorError('not_found', t('errors.editor.notFound'));
   }
   const parts = raw.split(/\s+/).filter(Boolean);
-  const command = parts[0]!;
+  const command = parts[0];
   const callerArgs = parts.slice(1);
 
   // Reject headless invocations.

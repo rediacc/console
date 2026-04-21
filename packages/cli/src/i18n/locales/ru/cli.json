@@ -407,9 +407,11 @@
       },
       "field": {
         "description": "Операции над полями конфигурации по JSON-указателю (get/set/unset/rotate/list). Указатели JSON (RFC 6901), например /credentials/cfDnsApiToken.",
+        "descriptionShort": "Операции над полями конфигурации по указателю",
         "get": {
           "description": "Прочитать значение конфигурации по указателю JSON. Секретные поля скрываются, если не указан --reveal (только для человека).",
           "optionDigest": "Вывести дайджест SHA-256 вместо значения (безопасно для агентов)",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "optionReveal": "Показать секретные значения в открытом виде (только интерактивный TTY; аудируется)"
         },
         "list": {
@@ -420,17 +422,20 @@
         "rotate": {
           "description": "Ротация секретного значения без --current. Только интерактивный TTY; подробно аудируется.",
           "optionNew": "Новое значение",
+          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} обновлён"
         },
         "set": {
           "description": "Записать значение конфигурации по JSON-указателю. Для секретных путей требуется --current (шлюз знаний).",
           "optionCurrent": "Текущее значение в открытом виде — обязательно для изменения секретных путей (доказательство знания)",
           "optionNew": "Новое значение (парсится как JSON, если начинается с {, [, \" или равно true/false/null/числу)",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} установлен"
         },
         "unset": {
           "description": "Удалить значение конфигурации по JSON-указателю. Для секретных путей требуется --current.",
           "optionCurrent": "Текущее значение в открытом виде — обязательно для удаления секретных путей",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} удалён"
         }
       },
@@ -638,7 +643,8 @@
       },
       "show": {
         "description": "Показать детали текущей конфигурации",
-        "noConfig": "Нет активной конфигурации. Создайте с помощью: rdc config init"
+        "noConfig": "Нет активной конфигурации. Создайте с помощью: rdc config init",
+        "optionReveal": "Show plaintext for sensitive values (interactive only)"
       },
       "ssh": {
         "description": "Управление конфигурацией SSH-ключа",
@@ -2217,8 +2223,8 @@
     "affectedChildClones": ". Затронутые дочерние клоны: {{clones}}. Сначала удалите или повысьте уровень дочерних клонов.",
     "agent": {
       "commandBlocked": "Команда \"{{command}}\" недоступна в режиме агента.\n\nЭта команда выполняет произвольные низкоуровневые функции без защитных механизмов. Используйте вместо этого типизированные CLI-команды или инструменты MCP.\n\nАльтернативы:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Выполните \"rdc agent capabilities\", чтобы увидеть все доступные команды\n\nЕсли вам нужен прямой доступ, попросите пользователя выполнить команду напрямую.",
-      "configEdit": "Интерактивный редактор заблокирован в агентных окружениях.\n\nАльтернативы:\n  • rdc config edit --dump > config.jsonc    (безопасный редактированный просмотр)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nДля обхода установите REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> в родительской оболочке\nДО запуска агента (должно присутствовать в родословной процесса).",
-      "configEditAncestry": "Интерактивный редактор заблокирован в агентных окружениях (REDIACC_ALLOW_CONFIG_EDIT был установлен, но проверка родословной не пройдена — обход должен задаваться вашей оболочкой, а не агентом).\n\nАльтернативы:\n  • rdc config edit --dump > config.jsonc    (безопасный редактированный просмотр)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nЗадайте REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> в родительской оболочке ДО запуска агента.",
+      "configEdit": "Интерактивный редактор заблокирован в агентных окружениях.\n\nАльтернативы:\n  • rdc config edit --dump > config.jsonc    (безопасный редактированный просмотр)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nДля обхода установите REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> в родительской оболочке\nДО запуска агента (должно присутствовать в родословной процесса).",
+      "configEditAncestry": "Интерактивный редактор заблокирован в агентных окружениях (REDIACC_ALLOW_CONFIG_EDIT был установлен, но проверка родословной не пройдена — обход должен задаваться вашей оболочкой, а не агентом).\n\nАльтернативы:\n  • rdc config edit --dump > config.jsonc    (безопасный редактированный просмотр)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nЗадайте REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> в родительской оболочке ДО запуска агента.",
       "createGuard": "Невозможно создать новый grand-репозиторий \"{{name}}\" в режиме агента.\n\nАгенты работают в режиме только fork. Grand-репозитории — это продакшн-среды, к которым агенты не могут получить доступ после создания.\n\nВместо этого создайте fork существующего репозитория:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nПользователю: для разрешения создания репозитория установите REDIACC_ALLOW_GRAND_REPO=* (или конкретное имя репозитория) в терминале перед запуском сессии агента.",
       "createGuardOverride": "Невозможно создать новый grand-репозиторий \"{{name}}\". Переопределения, инициированные агентом, не принимаются.\n\nНе пытайтесь установить REDIACC_ALLOW_GRAND_REPO — только пользователь может авторизовать это перед запуском агента.\n\nВместо этого создайте fork существующего репозитория:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "Невозможно создать новый grand-репозиторий \"{{name}}\". Переопределение REDIACC_ALLOW_GRAND_REPO не поддерживается на {{platform}}.\n\nЭто переопределение работает только на Linux. На Windows и macOS агенты должны использовать рабочий процесс fork-first.\n\nВместо этого создайте fork существующего репозитория:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nДля использования переопределения запустите агента на Linux (напрямую, WSL, Docker или VM).",
@@ -2239,7 +2245,7 @@
       "revealRequiresTty": "--reveal требует интерактивного TTY; отказ в печати секретного значения в канал.",
       "rotateNotSensitive": "Указатель «{{pointer}}» не является секретным полем; используйте 'config field set'.",
       "rotateRequiresTty": "config field rotate требует подтверждения в интерактивном TTY; отказ в неинтерактивном режиме (для обхода задайте REDIACC_ALLOW_CONFIG_EDIT).",
-      "showReveal": "--reveal заблокирован в агентных окружениях. Используйте `rdc config show` (редактированный) или `rdc config field get <pointer> --digest` для безопасного отпечатка.",
+      "showReveal": "--reveal заблокирован в агентных окружениях. Используйте `rdc config show` (редактированный) или `rdc config field get --name <pointer> --digest` для безопасного отпечатка.",
       "showRevealRequiresTty": "--reveal требует интерактивного TTY; отказ перенаправлять открытый текст в не-TTY приёмник."
     },
     "authFailed": "Аутентификация не удалась",

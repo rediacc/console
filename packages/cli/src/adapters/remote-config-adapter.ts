@@ -135,9 +135,7 @@ export class RemoteConfigAdapter {
     const decrypted = await selectiveDecrypt(payload, cek, session.sdkDerived);
 
     // Map decrypted FullConfig to RdcConfig (v2 shape).
-    const sshRaw = decrypted.ssh as
-      | { privateKey?: string; publicKey?: string; knownHosts?: string }
-      | undefined;
+    const sshRaw = decrypted.ssh;
     const config: RdcConfig = {
       schemaVersion: 2,
       id: decrypted.id,
@@ -196,10 +194,10 @@ export class RemoteConfigAdapter {
       version: currentVersion + 1,
       sdkEpoch: session.sdkEpoch,
       commitments: { alg: 'HMAC-SHA256', fckSalt: '', fields: {} },
-      machines: (config.resources?.machines ?? {}) as Record<string, unknown>,
-      repositories: (config.resources?.repositories ?? {}) as Record<string, unknown>,
-      storages: (config.resources?.storages ?? {}) as Record<string, unknown>,
-      ssh: config.credentials?.ssh as Record<string, unknown> | undefined,
+      machines: config.resources?.machines ?? {},
+      repositories: config.resources?.repositories ?? {},
+      storages: config.resources?.storages ?? {},
+      ssh: config.credentials?.ssh,
     };
 
     const encrypted = await selectiveEncrypt(fullConfig, session.sdkDerived, cek, {

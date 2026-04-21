@@ -407,9 +407,11 @@
       },
       "field": {
         "description": "ポインタ指定による設定フィールド操作(get/set/unset/rotate/list)。/credentials/cfDnsApiToken のような JSON Pointer(RFC 6901)を使用します。",
+        "descriptionShort": "ポインタ指定によるコンフィグフィールド操作",
         "get": {
           "description": "JSON ポインタで単一の設定値を読み取ります。機密フィールドは --reveal を指定しない限り秘匿されます(人間のみ)。",
           "optionDigest": "値の代わりに SHA-256 ダイジェストを出力(エージェントに共有しても安全)",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "optionReveal": "機密値を平文で表示する(対話型 TTY のみ、監査ログに記録)"
         },
         "list": {
@@ -420,17 +422,20 @@
         "rotate": {
           "description": "--current なしで機密値をローテーションします。対話型 TTY のみ、詳細に監査されます。",
           "optionNew": "新しい値",
+          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} をローテーションしました"
         },
         "set": {
           "description": "JSON ポインタ位置に設定値を書き込みます。機密パスには --current(知識ゲート)が必要です。",
           "optionCurrent": "現在の平文値 — 機密パスの変更に必須(知識ゲート証明)",
           "optionNew": "新しい値({, [, \", true/false/null, 数値で始まる場合は JSON として解釈)",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} を設定しました"
         },
         "unset": {
           "description": "JSON ポインタ位置の設定値を削除。機密パスには --current が必要です。",
           "optionCurrent": "現在の平文値 — 機密パスの削除に必須",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} を削除しました"
         }
       },
@@ -638,7 +643,8 @@
       },
       "show": {
         "description": "現在の設定の詳細を表示する",
-        "noConfig": "アクティブな設定がありません。次のコマンドで作成してください: rdc config init"
+        "noConfig": "アクティブな設定がありません。次のコマンドで作成してください: rdc config init",
+        "optionReveal": "Show plaintext for sensitive values (interactive only)"
       },
       "ssh": {
         "description": "SSH キーの設定を管理する",
@@ -2217,8 +2223,8 @@
     "affectedChildClones": "。影響を受ける子クローン: {{clones}}。子クローンを最初に削除するか昇格させてください。",
     "agent": {
       "commandBlocked": "\"{{command}}\" コマンドはエージェントモードでは使用できません。\n\nこのコマンドは安全ガードなしに任意の低レベル関数を実行します。代わりに型付きCLIコマンドまたはMCPツールを使用してください。\n\n代替手段:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 利用可能なすべてのコマンドを表示するには \"rdc agent capabilities\" を実行してください\n\n直接アクセスが必要な場合は、ユーザーにコマンドを直接実行するよう依頼してください。",
-      "configEdit": "対話型エディタはエージェント環境ではブロックされます。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nオーバーライドするには、エージェントを起動する前に親シェルで\nREDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください(エージェントの祖先プロセス内に存在する必要があります)。",
-      "configEditAncestry": "対話型エディタはエージェント環境ではブロックされます(REDIACC_ALLOW_CONFIG_EDIT は設定されましたが祖先検証に失敗 — オーバーライドはエージェントではなく親シェルから設定する必要があります)。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nエージェントを起動する前に親シェルで REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください。",
+      "configEdit": "対話型エディタはエージェント環境ではブロックされます。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nオーバーライドするには、エージェントを起動する前に親シェルで\nREDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください(エージェントの祖先プロセス内に存在する必要があります)。",
+      "configEditAncestry": "対話型エディタはエージェント環境ではブロックされます(REDIACC_ALLOW_CONFIG_EDIT は設定されましたが祖先検証に失敗 — オーバーライドはエージェントではなく親シェルから設定する必要があります)。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nエージェントを起動する前に親シェルで REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください。",
       "createGuard": "エージェントモードでは新しいgrandリポジトリ \"{{name}}\" を作成できません。\n\nエージェントはfork専用モードで動作します。grandリポジトリは本番環境であり、作成後にエージェントがアクセスすることはできません。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nユーザーへ: リポジトリの作成を許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
       "createGuardOverride": "新しいgrandリポジトリ \"{{name}}\" を作成できません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "新しいgrandリポジトリ \"{{name}}\" を作成できません。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
@@ -2239,7 +2245,7 @@
       "revealRequiresTty": "--reveal には対話型 TTY が必要です。機密値をパイプに出力することは拒否します。",
       "rotateNotSensitive": "ポインタ「{{pointer}}」は機密フィールドではありません。代わりに 'config field set' を使用してください。",
       "rotateRequiresTty": "config field rotate には対話型 TTY による確認が必要です。非対話型では拒否されます(上書きには REDIACC_ALLOW_CONFIG_EDIT を設定)。",
-      "showReveal": "--reveal はエージェント環境ではブロックされます。秘匿された `rdc config show` または `rdc config field get <pointer> --digest` を使用してください。",
+      "showReveal": "--reveal はエージェント環境ではブロックされます。秘匿された `rdc config show` または `rdc config field get --name <pointer> --digest` を使用してください。",
       "showRevealRequiresTty": "--reveal には対話型 TTY が必要です。平文を非 TTY 先へ流すことは拒否します。"
     },
     "authFailed": "認証に失敗しました",

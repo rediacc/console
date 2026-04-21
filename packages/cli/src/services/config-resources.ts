@@ -97,8 +97,8 @@ class ConfigService extends ConfigServiceBase {
     return {
       machines,
       ssh: { privateKeyPath: '' },
-      sshPrivateKey: sshContent?.privateKey,
-      sshPublicKey: sshContent?.publicKey,
+      sshPrivateKey: sshContent.privateKey,
+      sshPublicKey: sshContent.publicKey,
       renetPath: config.renetPath ?? DEFAULTS.CONTEXT.RENET_BINARY,
       cfDnsApiToken: config.credentials?.cfDnsApiToken,
       cfDnsZoneId: config.infra?.cfDnsZoneId,
@@ -493,12 +493,12 @@ class ConfigService extends ConfigServiceBase {
     const strategies: Record<string, BackupStrategyConfig> = {
       ...(current.resources?.backupStrategies ?? {}),
     };
-    const strategy = strategies[strategyName];
-    if (!strategy) {
+    if (!Object.hasOwn(strategies, strategyName)) {
       throw new Error(
         `Backup strategy "${strategyName}" not found. Create it first with: rdc config backup-strategy set --name ${strategyName} --cron "..."`
       );
     }
+    const strategy = strategies[strategyName];
     const destinations = [...strategy.destinations];
     const idx = destinations.findIndex((d) => d.name === dest.name);
     if (idx >= 0) destinations[idx] = { ...destinations[idx], ...dest };
@@ -517,8 +517,8 @@ class ConfigService extends ConfigServiceBase {
     const strategies: Record<string, BackupStrategyConfig> = {
       ...(current.resources?.backupStrategies ?? {}),
     };
+    if (!Object.hasOwn(strategies, strategyName)) return;
     const strategy = strategies[strategyName];
-    if (!strategy) return;
     strategies[strategyName] = {
       ...strategy,
       destinations: strategy.destinations.filter((d) => d.name !== destName),

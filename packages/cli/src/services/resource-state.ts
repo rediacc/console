@@ -8,6 +8,7 @@
  * are replaced by encrypted blob pointers in `config.encryption.encryptedFields`.
  */
 
+import { DEFAULTS } from '@rediacc/shared/config';
 import { configFileStorage } from '../adapters/config-file-storage.js';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import type { RemoteConfigAdapter } from '../adapters/remote-config-adapter.js';
@@ -90,7 +91,7 @@ export class LocalResourceState implements ResourceState {
   ): Promise<LocalResourceState> {
     let state: LocalState;
 
-    const encryptionMode = config.encryption?.mode ?? 'plaintext';
+    const encryptionMode = config.encryption?.mode ?? DEFAULTS.CONTEXT.CONFIG_KIND;
     const encryptedBlob =
       encryptionMode === 'master-password'
         ? config.encryption?.encryptedFields?.[RESOURCES_BLOB_POINTER]

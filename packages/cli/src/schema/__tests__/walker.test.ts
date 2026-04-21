@@ -77,20 +77,20 @@ describe('walker', () => {
 
   it('redactClone replaces sensitive values with stubs', () => {
     const redacted = redactClone(sampleConfig);
-    expect(redacted.credentials?.ssh?.privateKey).toMatch(/^<redacted:credential>:[0-9a-f]{8}$/);
-    expect(redacted.credentials?.cfDnsApiToken).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
-    expect(redacted.account?.token).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
-    expect(redacted.resources?.machines?.['web-1']?.ip).toMatch(/^<redacted:pii>:[0-9a-f]{8}$/);
+    expect(redacted.credentials.ssh.privateKey).toMatch(/^<redacted:credential>:[0-9a-f]{8}$/);
+    expect(redacted.credentials.cfDnsApiToken).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
+    expect(redacted.account.token).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
+    expect(redacted.resources.machines['web-1'].ip).toMatch(/^<redacted:pii>:[0-9a-f]{8}$/);
     // Public fields remain as-is.
     expect(redacted.schemaVersion).toBe(2);
     expect(redacted.version).toBe(1);
-    expect(redacted.resources?.machines?.['web-1']?.port).toBe(22);
+    expect(redacted.resources.machines['web-1'].port).toBe(22);
   });
 
   it('redactClone preserves identical fingerprints for identical values', () => {
     const redacted = redactClone(sampleConfig);
-    const web1Ip = redacted.resources?.machines?.['web-1']?.ip as string;
-    const web2Ip = redacted.resources?.machines?.['web-2']?.ip as string;
+    const web1Ip = redacted.resources.machines['web-1'].ip;
+    const web2Ip = redacted.resources.machines['web-2'].ip;
     // Different IPs → different fingerprints.
     expect(web1Ip).not.toBe(web2Ip);
     // Same fingerprint within the redaction stub when values match.
@@ -104,8 +104,8 @@ describe('walker', () => {
         },
       },
     });
-    const original = alt.resources?.machines?.['web-1']?.ip;
-    const clone = alt.resources?.machines?.['web-clone']?.ip;
+    const original = alt.resources.machines['web-1'].ip;
+    const clone = alt.resources.machines['web-clone'].ip;
     expect(original).toBe(clone);
   });
 

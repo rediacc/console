@@ -407,9 +407,11 @@
       },
       "field": {
         "description": "Operaciones de campos de configuración direccionados por puntero (get/set/unset/rotate/list). Punteros JSON (RFC 6901) como /credentials/cfDnsApiToken.",
+        "descriptionShort": "Operaciones de campos de configuración por puntero",
         "get": {
           "description": "Lee un único valor de configuración por puntero JSON. Los campos sensibles se redactan salvo con --reveal (solo humanos).",
           "optionDigest": "Imprimir el resumen SHA-256 en lugar del valor (seguro para compartir con agentes)",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "optionReveal": "Mostrar texto en claro de valores sensibles (solo TTY interactivo; auditado)"
         },
         "list": {
@@ -420,17 +422,20 @@
         "rotate": {
           "description": "Rotar un valor sensible sin --current. Solo TTY interactivo; auditado con énfasis.",
           "optionNew": "Valor nuevo",
+          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
           "success": "Se rotó {{pointer}}"
         },
         "set": {
           "description": "Escribir un valor de configuración en un puntero JSON. Los caminos sensibles requieren --current (puerta de conocimiento).",
           "optionCurrent": "Valor actual en claro — obligatorio para mutar caminos sensibles (prueba de conocimiento)",
           "optionNew": "Valor nuevo (se interpreta como JSON si empieza con {, [, \", true, false, null o un número)",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "success": "Se estableció {{pointer}}"
         },
         "unset": {
           "description": "Eliminar un valor de configuración en un puntero JSON. Los caminos sensibles requieren --current.",
           "optionCurrent": "Valor actual en claro — obligatorio para eliminar caminos sensibles",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "success": "Se eliminó {{pointer}}"
         }
       },
@@ -638,7 +643,8 @@
       },
       "show": {
         "description": "Mostrar detalles de la configuración actual",
-        "noConfig": "No hay configuración activa. Cree una con: rdc config init"
+        "noConfig": "No hay configuración activa. Cree una con: rdc config init",
+        "optionReveal": "Show plaintext for sensitive values (interactive only)"
       },
       "ssh": {
         "description": "Gestionar la configuración de clave SSH",
@@ -2217,8 +2223,8 @@
     "affectedChildClones": ". Clones secundarios afectados: {{clones}}. Primero elimine o promueva clones secundarios.",
     "agent": {
       "commandBlocked": "El comando \"{{command}}\" no esta disponible en modo agente.\n\nEste comando ejecuta funciones arbitrarias de bajo nivel sin protecciones de seguridad. Use comandos CLI tipados o herramientas MCP en su lugar.\n\nAlternativas:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Ejecute \"rdc agent capabilities\" para ver todos los comandos disponibles\n\nSi necesita acceso directo, pida al usuario que ejecute el comando directamente.",
-      "configEdit": "El editor interactivo está bloqueado en entornos de agente.\n\nAlternativas:\n  • rdc config edit --dump > config.jsonc    (inspección segura redactada)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nPara anularlo, define REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> en el shell padre\nANTES de iniciar el agente (debe aparecer en la ascendencia del proceso).",
-      "configEditAncestry": "El editor interactivo está bloqueado en entornos de agente (REDIACC_ALLOW_CONFIG_EDIT se estableció pero falló la verificación de ascendencia — el override debe venir del shell, no del agente).\n\nAlternativas:\n  • rdc config edit --dump > config.jsonc    (inspección segura redactada)\n  • rdc config field set <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nDefine REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> en el shell padre ANTES de iniciar el agente.",
+      "configEdit": "El editor interactivo está bloqueado en entornos de agente.\n\nAlternativas:\n  • rdc config edit --dump > config.jsonc    (inspección segura redactada)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nPara anularlo, define REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> en el shell padre\nANTES de iniciar el agente (debe aparecer en la ascendencia del proceso).",
+      "configEditAncestry": "El editor interactivo está bloqueado en entornos de agente (REDIACC_ALLOW_CONFIG_EDIT se estableció pero falló la verificación de ascendencia — el override debe venir del shell, no del agente).\n\nAlternativas:\n  • rdc config edit --dump > config.jsonc    (inspección segura redactada)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nDefine REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> en el shell padre ANTES de iniciar el agente.",
       "createGuard": "No se puede crear un nuevo repositorio grand \"{{name}}\" en modo agente.\n\nLos agentes operan en modo solo-fork. Los repositorios grand son entornos de producción a los que los agentes no pueden acceder después de la creación.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nUsuario: para permitir la creación de repositorios, establezca REDIACC_ALLOW_GRAND_REPO=* (o un nombre de repositorio específico) en su terminal antes de iniciar la sesión del agente.",
       "createGuardOverride": "No se puede crear un nuevo repositorio grand \"{{name}}\". No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "No se puede crear un nuevo repositorio grand \"{{name}}\". La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
@@ -2239,7 +2245,7 @@
       "revealRequiresTty": "--reveal requiere un TTY interactivo; no se imprimirá un valor sensible en una tubería.",
       "rotateNotSensitive": "El puntero \"{{pointer}}\" no es un campo sensible; usa 'config field set' en su lugar.",
       "rotateRequiresTty": "config field rotate requiere confirmación en un TTY interactivo; rechazado en contexto no interactivo (define REDIACC_ALLOW_CONFIG_EDIT para anular).",
-      "showReveal": "--reveal está bloqueado en entornos de agente. Usa `rdc config show` (redactado) o `rdc config field get <pointer> --digest` para una huella segura.",
+      "showReveal": "--reveal está bloqueado en entornos de agente. Usa `rdc config show` (redactado) o `rdc config field get --name <pointer> --digest` para una huella segura.",
       "showRevealRequiresTty": "--reveal requiere un TTY interactivo; no se enviará texto en claro a un destino sin TTY."
     },
     "authFailed": "Falló la autenticación",
