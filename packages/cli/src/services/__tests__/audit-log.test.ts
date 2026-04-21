@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { auditLog, readAuditLog, verifyChain } from '../audit-log.js';
+import { _resetCache as resetAgentCache } from '../../utils/agent-guard.js';
 
 describe('auditLog', () => {
   let dir: string;
@@ -67,6 +68,10 @@ describe('auditLog', () => {
   it('preserves actor kind + agent signals', () => {
     const prev = process.env.CLAUDECODE;
     process.env.CLAUDECODE = '1';
+    // Reset the module-level cache in agent-guard so the env change takes
+    // effect. Without this, a previous test that triggered isAgentEnvironment()
+    // with CLAUDECODE unset poisons the cache for the remainder of the suite.
+    resetAgentCache();
     try {
       auditLog(dir, { command: 'x', paths: [], outcome: 'ok' });
       const entries = readAuditLog(logPath);
@@ -75,6 +80,7 @@ describe('auditLog', () => {
     } finally {
       if (prev === undefined) delete process.env.CLAUDECODE;
       else process.env.CLAUDECODE = prev;
+      resetAgentCache();
     }
   });
 
