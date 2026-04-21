@@ -13,7 +13,7 @@
  * Run via: `npm run check:ci-search-index`
  */
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -28,10 +28,16 @@ function fail(msg: string): never {
   process.exit(1);
 }
 
-// Generator hardcodes its output path. Run it from a sandbox copy of
-// packages/www/ ... actually it's simpler: run the generator as-is, then
-// read the file it wrote and compare against git's HEAD:packages/www/public/search-index.json.
-// To keep this non-destructive in dev, restore from git after comparing.
+// If the generator was moved or renamed, bail clearly instead of silently
+// letting execFileSync throw ENOENT deep inside. A repo audit won't catch
+// drift if the check itself is a no-op.
+if (!existsSync(GENERATOR)) {
+  fail(`Missing generator ${GENERATOR}. Was the script moved or renamed?`);
+}
+
+// Generator hardcodes its output path. Run it, then read the file it wrote
+// and compare against git's HEAD:packages/www/public/search-index.json.
+// To keep this non-destructive in dev, restore from backup after comparing.
 const tmpDir = mkdtempSync(path.join(tmpdir(), 'search-index-check-'));
 const backupPath = path.join(tmpDir, 'backup.json');
 
