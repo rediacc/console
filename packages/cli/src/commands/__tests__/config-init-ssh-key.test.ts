@@ -23,8 +23,7 @@ import type { RdcConfig } from '../../types/index.js';
 
 const PRIVATE_KEY_BODY =
   '-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAA==\n-----END OPENSSH PRIVATE KEY-----';
-const PUBLIC_KEY_BODY =
-  'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICGJtmxsvlC7O6eD test@host';
+const PUBLIC_KEY_BODY = 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICGJtmxsvlC7O6eD test@host';
 
 function baseConfig(): RdcConfig {
   return {

@@ -87,9 +87,7 @@ async function handleApiUrlSetup(options: { apiUrl?: string }): Promise<Partial<
 export async function readSshKeyForInit(
   keyPath: string
 ): Promise<{ privateKey: string; publicKey?: string }> {
-  const { readSSHKey, readOptionalSSHKey } = await import(
-    '../services/renet-execution.js'
-  );
+  const { readSSHKey, readOptionalSSHKey } = await import('../services/renet-execution.js');
   const privateKey = (await readSSHKey(keyPath)).trim();
   const publicKey = (await readOptionalSSHKey(`${keyPath}.pub`)).trim() || undefined;
   return { privateKey, publicKey };
@@ -239,9 +237,7 @@ ${t('help.examples')}
           ? await configFileStorage.load(configName)
           : await configService.init(configName);
 
-        const sshContent = options.sshKey
-          ? await readSshKeyForInit(options.sshKey)
-          : undefined;
+        const sshContent = options.sshKey ? await readSshKeyForInit(options.sshKey) : undefined;
 
         const accountUpdate = options.server
           ? { accountServer: options.server.replace(/\/+$/, '') }
