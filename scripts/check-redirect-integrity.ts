@@ -137,6 +137,15 @@ ok(`all ${redirects.patterns.length} patterns compile`);
 const shapeIssues: string[] = [];
 for (const [from, rule] of Object.entries(redirects.exact)) {
   if (!from.startsWith('/')) shapeIssues.push(`key must start with /: ${from}`);
+  // Keys must be already-normalized: the Worker runs normalizePath BEFORE
+  // alias lookup, so a trailing-slash key is unreachable and probably a
+  // transcription mistake.
+  if (from.length > 1 && from.endsWith('/'))
+    shapeIssues.push(`key has trailing slash (will never match after normalization): ${from}`);
+  // Same for .html/.md suffix — normalizer strips those, so a rule keyed
+  // with one would be dead.
+  if (/\.(html|md)$/i.test(from))
+    shapeIssues.push(`key ends in .html/.md (normalizer strips these): ${from}`);
   if (rule.status !== 301 && rule.status !== 410)
     shapeIssues.push(`${from}: status must be 301 or 410, got ${rule.status}`);
   if (rule.status === 410 && rule.to !== null)
