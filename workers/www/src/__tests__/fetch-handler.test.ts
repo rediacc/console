@@ -43,6 +43,22 @@ describe('normalizePath', () => {
       changed: false,
     });
   });
+  test('preserves percent-encoded UTF-8 triples (does not lowercase them)', () => {
+    // RFC 3986 says %XX is case-insensitive, but CF ASSETS re-encodes to
+    // uppercase. If we lowercased the whole path we'd trigger a redirect
+    // loop (%C3%B3 -> %c3%b3 -> ASSETS -> %C3%B3 -> ...). Surrounding ASCII
+    // still lowercases.
+    expect(normalizePath('/ES/Blog/Tags/configuraci%C3%B3n')).toEqual({
+      path: '/es/blog/tags/configuraci%C3%B3n',
+      changed: true,
+    });
+  });
+  test('preserves already-lowercase paths with percent triples', () => {
+    expect(normalizePath('/es/blog/tags/configuraci%C3%B3n')).toEqual({
+      path: '/es/blog/tags/configuraci%C3%B3n',
+      changed: false,
+    });
+  });
 });
 
 describe('detectLanguage', () => {
