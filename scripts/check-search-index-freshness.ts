@@ -13,7 +13,7 @@
  * Run via: `npm run check:ci-search-index`
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -43,7 +43,8 @@ try {
 }
 
 // Stash the working copy in tmpDir so we can restore it regardless of drift.
-execFileSync('cp', [COMMITTED, backupPath]);
+// copyFileSync (Node built-in) is portable — `cp` assumed unix.
+copyFileSync(COMMITTED, backupPath);
 
 try {
   execFileSync('node', [GENERATOR], {
@@ -51,13 +52,17 @@ try {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 } catch (err) {
+  // Restore before exiting on generator failure; otherwise CI leaves the
+  // working copy potentially overwritten by a partial regeneration.
+  copyFileSync(backupPath, COMMITTED);
+  rmSync(tmpDir, { recursive: true, force: true });
   fail(`Generator script failed: ${(err as Error).message}`);
 }
 
 const regenerated = readFileSync(COMMITTED, 'utf8');
 
 // Restore the committed version so this check leaves no side effects.
-execFileSync('cp', [backupPath, COMMITTED]);
+copyFileSync(backupPath, COMMITTED);
 rmSync(tmpDir, { recursive: true, force: true });
 
 if (committedBefore === regenerated) {
