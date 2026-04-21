@@ -77,6 +77,61 @@ async function handleApiUrlSetup(options: { apiUrl?: string }): Promise<Partial<
   return { account: { apiUrl: apiClient.normalizeApiUrl(options.apiUrl) } };
 }
 
+/**
+ * Read an SSH key file + optional .pub sibling for `config init --ssh-key <path>`.
+ * Returns the `credentials.ssh` sub-shape that gets merged into the config.
+ *
+ * Exported so the regression test can exercise the read without driving
+ * Commander / configFileStorage.
+ */
+export async function readSshKeyForInit(
+  keyPath: string
+): Promise<{ privateKey: string; publicKey?: string }> {
+  const { readSSHKey, readOptionalSSHKey } = await import(
+    '../services/renet-execution.js'
+  );
+  const privateKey = (await readSSHKey(keyPath)).trim();
+  const publicKey = (await readOptionalSSHKey(`${keyPath}.pub`)).trim() || undefined;
+  return { privateKey, publicKey };
+}
+
+/**
+ * Merge the pieces an `init` action collects into a single RdcConfig ready
+ * for `configFileStorage.save`. Pure — no I/O — so unit tests can drive it
+ * and assert the resulting shape, which is where the v1→v2 regression hid.
+ */
+export function mergeInitUpdates(
+  newConfig: RdcConfig,
+  parts: {
+    renetPath?: string;
+    accountUpdate?: Partial<NonNullable<RdcConfig['account']>>;
+    sshContent?: { privateKey: string; publicKey?: string; knownHosts?: string };
+    mpUpdate: Partial<RdcConfig>;
+    apiUrlUpdate: Partial<RdcConfig>;
+  }
+): RdcConfig {
+  return {
+    ...newConfig,
+    ...(parts.renetPath ? { renetPath: parts.renetPath } : {}),
+    ...parts.mpUpdate,
+    ...parts.apiUrlUpdate,
+    account: {
+      ...(newConfig.account ?? {}),
+      ...(parts.accountUpdate ?? {}),
+      ...(parts.apiUrlUpdate.account ?? {}),
+    },
+    credentials:
+      parts.mpUpdate.credentials || parts.sshContent
+        ? {
+            ...(newConfig.credentials ?? {}),
+            ...(parts.mpUpdate.credentials ?? {}),
+            ...(parts.sshContent ? { ssh: parts.sshContent } : {}),
+          }
+        : newConfig.credentials,
+    encryption: parts.mpUpdate.encryption ?? newConfig.encryption,
+  };
+}
+
 /** Check whether the user passed any config-init flags beyond --name. */
 function hasInitFlags(options: {
   sshKey?: string;
@@ -184,41 +239,23 @@ ${t('help.examples')}
           ? await configFileStorage.load(configName)
           : await configService.init(configName);
 
-        const updates: Partial<RdcConfig> = {};
+        const sshContent = options.sshKey
+          ? await readSshKeyForInit(options.sshKey)
+          : undefined;
 
-        if (options.sshKey) {
-          // Path-only initialization: content is read + inlined at first mutation.
-          // For v2 we don't persist paths; loading the content is deferred.
-        }
-
-        if (options.renetPath) {
-          updates.renetPath = options.renetPath;
-        }
-
-        if (options.server) {
-          updates.account = {
-            ...(updates.account ?? {}),
-            accountServer: options.server.replace(/\/+$/, ''),
-          };
-        }
+        const accountUpdate = options.server
+          ? { accountServer: options.server.replace(/\/+$/, '') }
+          : undefined;
 
         const mpUpdate = await handleMasterPasswordSetup(options);
         const apiUrlUpdate = await handleApiUrlSetup(options);
-        const merged: RdcConfig = {
-          ...newConfig,
-          ...updates,
-          ...mpUpdate,
-          ...apiUrlUpdate,
-          account: {
-            ...(newConfig.account ?? {}),
-            ...(updates.account ?? {}),
-            ...(apiUrlUpdate.account ?? {}),
-          },
-          credentials: mpUpdate.credentials
-            ? { ...(newConfig.credentials ?? {}), ...mpUpdate.credentials }
-            : newConfig.credentials,
-          encryption: mpUpdate.encryption ?? newConfig.encryption,
-        };
+        const merged: RdcConfig = mergeInitUpdates(newConfig, {
+          renetPath: options.renetPath,
+          accountUpdate,
+          sshContent,
+          mpUpdate,
+          apiUrlUpdate,
+        });
         await configFileStorage.save(merged, configName);
         outputService.success(t('commands.config.init.success', { name: configName }));
       } catch (error) {
