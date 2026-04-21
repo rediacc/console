@@ -1,7 +1,6 @@
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SELF_HOSTED_MODES } from '../../config/command-registry.js';
-import type { RdcConfig } from '../../types/index.js';
 
 // Mock configService and outputService
 const mockGetCurrent = vi.fn();
@@ -48,7 +47,7 @@ describe('utils/mode-guard', () => {
 
   describe('addModeGuard', () => {
     it('should block cloud-only command in local mode', async () => {
-      mockGetCurrent.mockResolvedValue({ id: '1', version: 1 } as RdcConfig);
+      mockGetCurrent.mockResolvedValue({ id: '1', version: 1 });
 
       const cmd = new Command('auth');
       addModeGuard(cmd, ['cloud']);
@@ -66,7 +65,7 @@ describe('utils/mode-guard', () => {
         version: 1,
         apiUrl: 'https://api.example.com',
         token: 'tok',
-      } as RdcConfig);
+      });
 
       const cmd = new Command('repo');
       addModeGuard(cmd, SELF_HOSTED_MODES);
@@ -82,7 +81,7 @@ describe('utils/mode-guard', () => {
         version: 1,
         apiUrl: 'https://api.example.com',
         token: 'tok',
-      } as RdcConfig);
+      });
 
       const cmd = new Command('auth');
       addModeGuard(cmd, ['cloud']);
@@ -97,7 +96,7 @@ describe('utils/mode-guard', () => {
         id: '1',
         version: 1,
         apiUrl: 'https://api.example.com',
-      } as RdcConfig);
+      });
 
       const cmd = new Command('auth');
       addModeGuard(cmd, ['cloud']);
@@ -108,7 +107,7 @@ describe('utils/mode-guard', () => {
     });
 
     it('should allow local command in local mode', async () => {
-      mockGetCurrent.mockResolvedValue({ id: '1', version: 1 } as RdcConfig);
+      mockGetCurrent.mockResolvedValue({ id: '1', version: 1 });
 
       const cmd = new Command('repo');
       addModeGuard(cmd, SELF_HOSTED_MODES);

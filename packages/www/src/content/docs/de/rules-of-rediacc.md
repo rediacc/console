@@ -1,11 +1,14 @@
 ---
-title: "Regeln von Rediacc"
-description: "Wesentliche Regeln und Konventionen für die Entwicklung von Anwendungen auf der Rediacc-Plattform. Umfasst Rediaccfile, Compose, Netzwerk, Speicher, CRIU und Deployment."
-category: "Guides"
+title: Regeln von Rediacc
+description: >-
+  Wesentliche Regeln und Konventionen für die Entwicklung von Anwendungen auf
+  der Rediacc-Plattform. Umfasst Rediaccfile, Compose, Netzwerk, Speicher, CRIU
+  und Deployment.
+category: Guides
 order: 5
 language: de
-sourceHash: "fd0fa925e9b76434"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 9365e0cabf7e8f03
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # Regeln von Rediacc
@@ -156,7 +159,7 @@ Es ist kein betriebssystemspezifisches Sicherheitspositions-Flag erforderlich; `
 - **`rdc repo down`** führt `down()` aus und stoppt den Docker-Daemon.
 - **`rdc repo down --unmount`** schließt zusätzlich das LUKS-Volume (sperrt den verschlüsselten Speicher).
 - **Forks** (`rdc repo fork`) erstellen einen CoW-Klon (Copy-on-Write) mit neuer GUID und networkId, in **konstanter Zeit, unabhängig von der Repo-Größe**. BTRFS-Reflink dupliziert die Image-Metadaten, nicht die Daten, sodass ein 100-GB-Repo in denselben wenigen Sekunden geforkt wird wie ein 1-GB-Repo. Der Fork teilt den Verschlüsselungsschlüssel des Elternteils.
-- **Takeover** (`rdc repo takeover <fork> -m <machine>`) ersetzt die Daten des grand Repos durch die Daten eines Forks. Das grand Repo behält seine Identität (GUID, networkId, Domains, Autostart, Backup-Kette). Alte Produktionsdaten werden als Backup-Fork gesichert. Verwendung: Upgrade auf Fork testen, verifizieren, dann Takeover zur Produktion. Rückgängig machen mit `rdc repo takeover <backup-fork> -m <machine>`.
+- **Takeover** (`rdc repo takeover --name <fork> -m <machine>`) ersetzt die Daten des grand Repos durch die Daten eines Forks. Das grand Repo behält seine Identität (GUID, networkId, Domains, Autostart, Backup-Kette). Alte Produktionsdaten werden als Backup-Fork gesichert. Verwendung: Upgrade auf Fork testen, verifizieren, dann Takeover zur Produktion. Rückgängig machen mit `rdc repo takeover --name <backup-fork> -m <machine>`.
 - **Proxy-Routen** werden ca. 3 Sekunden nach dem Deploy aktiv. Die Warnung „Proxy is not running" während `repo up` ist informativ in Ops/Dev-Umgebungen.
 - **`rdc repo up` und `rdc repo fork --up` geben das URL-Muster** am Ende des Deploys für Dienste mit dem Label `rediacc.service_port` aus. Ersetzen Sie `{service}` durch Ihren freigegebenen Dienstnamen, um die exakte URL zu erhalten. Dienste ohne `rediacc.service_port` (Datenbanken, Worker) erhalten keine Routen und werden nicht angezeigt.
 
@@ -167,4 +170,4 @@ Es ist kein betriebssystemspezifisches Sicherheitspositions-Flag erforderlich; `
 - `privileged: true` verwenden, nicht nötig, renet injiziert stattdessen spezifische CRIU-Capabilities.
 - Rohe IPs in persistenten Konfigurationsdateien hartkodieren - verwenden Sie Dienstnamen für Verbindungen, um die Fork-Isolation intakt zu halten.
 - `rdc term connect -c` als Workaround für fehlgeschlagene Befehle verwenden, melden Sie stattdessen Bugs.
-- `repo delete` führt eine vollständige Bereinigung durch, einschließlich Loopback-IPs und systemd-Units. Führen Sie `rdc machine prune <name>` aus, um Überreste aus alten Löschvorgängen zu bereinigen.
+- `repo delete` führt eine vollständige Bereinigung durch, einschließlich Loopback-IPs und systemd-Units. Führen Sie `rdc machine prune --name <name>` aus, um Überreste aus alten Löschvorgängen zu bereinigen.

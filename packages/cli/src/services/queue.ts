@@ -25,6 +25,18 @@ import { apiClient, typedApi } from './api.js';
 /** Generic vault data type for parsed vault content */
 type ParsedVaultData = Record<string, unknown>;
 
+/** Read a typed scalar field from an untyped vault. Returns undefined when
+ *  the vault is absent or the field is not of the expected primitive type. */
+function readVaultNumber(vault: ParsedVaultData | undefined, key: string): number | undefined {
+  const value = vault?.[key];
+  return typeof value === 'number' ? value : undefined;
+}
+
+function readVaultString(vault: ParsedVaultData | undefined, key: string): string | undefined {
+  const value = vault?.[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
 interface FetchedVaults {
   organizationVault?: ParsedVaultData;
   teamVault?: ParsedVaultData;
@@ -83,11 +95,10 @@ async function fetchRepositoryVault(
     if (!vaultContent) return undefined;
 
     if (repository?.repositoryNetworkId !== undefined) {
-      (vaultContent as Record<string, unknown>).repositoryNetworkId =
-        repository.repositoryNetworkId;
+      vaultContent.repositoryNetworkId = repository.repositoryNetworkId;
     }
     if (repository?.repositoryNetworkMode) {
-      (vaultContent as Record<string, unknown>).networkMode = repository.repositoryNetworkMode;
+      vaultContent.networkMode = repository.repositoryNetworkMode;
     }
     return vaultContent;
   } catch {
@@ -201,10 +212,8 @@ class CliQueueService {
       storageVault: vaults.storageVault,
       bridgeVault: vaults.bridgeVault,
       repositoryGuid: context.params.repository as string | undefined,
-      repositoryNetworkId: (vaults.vaultContent as { repositoryNetworkId?: number } | undefined)
-        ?.repositoryNetworkId,
-      repositoryNetworkMode: (vaults.vaultContent as { networkMode?: string } | undefined)
-        ?.networkMode,
+      repositoryNetworkId: readVaultNumber(vaults.vaultContent, 'repositoryNetworkId'),
+      repositoryNetworkMode: readVaultString(vaults.vaultContent, 'networkMode'),
       storageName: (context.params.to ?? context.params.from) as string | undefined,
       language: context.language,
     };

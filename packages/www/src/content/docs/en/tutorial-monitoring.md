@@ -32,7 +32,7 @@ Checks Node.js, CLI version, renet binary, configuration, and virtualization sup
 ### Step 2: Machine health check
 
 ```bash
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 Fetches a comprehensive health report from the remote machine: system uptime, disk usage, datastore usage, container counts, storage SMART status, and any identified issues.
@@ -40,7 +40,7 @@ Fetches a comprehensive health report from the remote machine: system uptime, di
 ### Step 3: View running containers
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 Lists all running containers across all repositories on the machine, showing name, status, state, health, CPU usage, memory usage, and which repository owns each container.
@@ -50,7 +50,7 @@ Lists all running containers across all repositories on the machine, showing nam
 To see the underlying services that power each repository's Docker daemon and networking:
 
 ```bash
-rdc machine services server-1
+rdc machine services --name server-1
 ```
 
 Lists Rediacc-related systemd services (Docker daemons, loopback aliases) with their state, sub-state, restart count, and memory usage.
@@ -93,7 +93,7 @@ Verify the machine is online and reachable: `ping <ip>`. Check that your SSH key
 Rediacc services only appear after at least one repository has been deployed. If no repositories exist, the service list is empty.
 
 **Container listing shows stale or stopped containers**
-Containers from previous deployments may linger if `repo down` was not run cleanly. Stop them with `rdc repo down <repo> -m <machine>` or inspect directly via `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
+Containers from previous deployments may linger if `repo down` was not run cleanly. Stop them with `rdc repo down --name <repo> -m <machine>` or inspect directly via `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
 
 ## Next Steps
 

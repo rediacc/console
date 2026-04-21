@@ -4,8 +4,8 @@ description: 'Когда использовать rdc, а когда renet.'
 category: Concepts
 order: 1
 language: ru
-sourceHash: "86bc5f8593d408de"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 526136e143dbcf08
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # rdc vs renet
@@ -47,7 +47,7 @@ rdc repo up --name my-app -m server-1
 rdc repo down --name my-app -m server-1
 
 # Проверить состояние машины
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 Подробное пошаговое руководство см. в разделе [Быстрый старт](/ru/docs/quick-start).

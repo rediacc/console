@@ -154,7 +154,7 @@ No per-OS security posture flag is required; `rdc` and `renet` detect what is ru
 - **`rdc repo down`** runs `down()` and stops the Docker daemon.
 - **`rdc repo down --unmount`** also closes the LUKS volume (locks the encrypted storage).
 - **Forks** (`rdc repo fork`) create a CoW (copy-on-write) clone with a new GUID and networkId, in **constant time regardless of repo size**. BTRFS reflink duplicates the image metadata, not the data, so a 100 GB repo forks in the same few seconds as a 1 GB repo. The fork shares the parent's encryption key.
-- **Takeover** (`rdc repo takeover <fork> -m <machine>`) replaces the grand repo's data with a fork's data. The grand keeps its identity (GUID, networkId, domains, autostart, backup chain). Old production data is preserved as a backup fork. Use for: test upgrade on fork, verify, then takeover to production. Revert with `rdc repo takeover <backup-fork> -m <machine>`.
+- **Takeover** (`rdc repo takeover --name <fork> -m <machine>`) replaces the grand repo's data with a fork's data. The grand keeps its identity (GUID, networkId, domains, autostart, backup chain). Old production data is preserved as a backup fork. Use for: test upgrade on fork, verify, then takeover to production. Revert with `rdc repo takeover --name <backup-fork> -m <machine>`.
 - **Proxy routes** take ~3 seconds to become active after deploy. The "Proxy is not running" warning during `repo up` is informational in ops/dev environments.
 - **`rdc repo up` and `rdc repo fork --up` print the URL pattern** for services labelled with `rediacc.service_port` at the end of deploy. Replace `{service}` with your exposed service name to get the exact URL. Services without `rediacc.service_port` (databases, workers) do not get routes and are not shown.
 
@@ -165,4 +165,4 @@ No per-OS security posture flag is required; `rdc` and `renet` detect what is ru
 - Using `privileged: true`, not needed, renet injects specific CRIU capabilities instead.
 - Hardcoding raw IPs in persistent config files - use service names for connections to keep fork isolation intact.
 - Using `rdc term connect -c` as a workaround for failed commands, report bugs instead.
-- `repo delete` performs full cleanup including loopback IPs and systemd units. Run `rdc machine prune <name>` to clean leftovers from legacy deletions.
+- `repo delete` performs full cleanup including loopback IPs and systemd units. Run `rdc machine prune --name <name>` to clean leftovers from legacy deletions.

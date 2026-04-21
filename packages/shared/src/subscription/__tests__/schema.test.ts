@@ -172,7 +172,7 @@ describe('Subscription Schema Helper Functions', () => {
     });
 
     it('should return COMMUNITY limits for invalid plan', () => {
-      const limits = getPlanLimits('INVALID' as PlanCode);
+      const limits = getPlanLimits('INVALID');
       expect(limits.maxRepoLicenseIssuancesPerMonth).toBe(500);
     });
   });
@@ -185,7 +185,7 @@ describe('Subscription Schema Helper Functions', () => {
     });
 
     it('should return COMMUNITY features for invalid plan', () => {
-      const features = getPlanFeatures('INVALID' as PlanCode);
+      const features = getPlanFeatures('INVALID');
       expect(features.ceph).toBe(false);
     });
   });
@@ -208,7 +208,7 @@ describe('Subscription Schema Helper Functions', () => {
     });
 
     it('should return 0 for invalid plan', () => {
-      expect(getPlanLimit('INVALID' as PlanCode, 'maxRepoLicenseIssuancesPerMonth')).toBe(500);
+      expect(getPlanLimit('INVALID', 'maxRepoLicenseIssuancesPerMonth')).toBe(500);
     });
   });
 

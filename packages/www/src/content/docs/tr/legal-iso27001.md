@@ -17,7 +17,7 @@ Rediacc, bir BGYS içindeki teknik kontrol katmanının bir bileşenidir. Aşağ
 
 | Kontrol alanı | Kontrol | Rediacc Yeteneği |
 |--------------|---------|-----------------|
-| **A.8**, Varlık yönetimi | A.8.1 Varlık envanteri | Her depo benzersiz bir GUID'e sahip ayrı, tanımlanabilir bir varlıktır. `rdc machine query <machine> --repositories` tüm depoları boyut, bağlama durumu ve konteyner sayısı ile listeler. |
+| **A.8**, Varlık yönetimi | A.8.1 Varlık envanteri | Her depo benzersiz bir GUID'e sahip ayrı, tanımlanabilir bir varlıktır. `rdc machine query --name <machine> --repositories` tüm depoları boyut, bağlama durumu ve konteyner sayısı ile listeler. |
 | **A.8**, Varlık yönetimi | A.8.24 Kriptografi kullanımı | Tüm depolarda zorunlu LUKS2 AES-256 şifreleme. Anahtar yönetimi: kimlik bilgileri yalnızca operatörün yerel yapılandırmasında saklanır, asla sunucuda değil. |
 | **A.9**, Erişim kontrolü | A.9.2 Kullanıcı erişim yönetimi | SSH anahtar kimlik doğrulaması. IP bağlama, ekip kapsamı ve ekipten çıkarılma durumunda otomatik iptal ile API token'ları. İki faktörlü kimlik doğrulama (TOTP). |
 | **A.10**, Kriptografi | A.10.1 Kriptografik kontroller | Yapılandırılabilir anahtar parametreleri ile LUKS2. Depo başına şifreleme kimlik bilgileri. Tüm uzak aktarım SSH üzerinden. Yapılandırma deposu sıfır bilgi şifrelemesi uygular: HKDF anahtar türetme ile AES-256-GCM, üyeler için X25519 anahtar değişimi ve anında iptal için zaman pencereli SDK anahtarları. |

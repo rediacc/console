@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: es
-sourceHash: "1b60f9a60324f737"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 7574575ee78682a9
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # Monitoreo
@@ -19,7 +19,7 @@ Rediacc proporciona comandos de monitoreo integrados para inspeccionar el estado
 Obtenga un informe completo del estado de una máquina:
 
 ```bash
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 Esto reporta:
@@ -35,7 +35,7 @@ Use `--output json` para salida legible por máquinas.
 Vea todos los contenedores en ejecución en todos los repositorios de una máquina:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 | Columna | Descripción |
@@ -59,7 +59,7 @@ La salida JSON incluye todos los detalles del contenedor (`labels`, `port_mappin
 Vea los servicios systemd relacionados con Rediacc en una máquina:
 
 ```bash
-rdc machine services server-1
+rdc machine services --name server-1
 ```
 
 | Columna | Descripción |
@@ -82,7 +82,7 @@ La salida JSON incluye todos los detalles del servicio con `repository` (nombre 
 Vea los repositorios en una máquina con estadísticas detalladas:
 
 ```bash
-rdc machine repos server-1
+rdc machine repos --name server-1
 ```
 
 | Columna | Descripción |

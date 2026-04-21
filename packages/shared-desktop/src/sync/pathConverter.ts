@@ -48,18 +48,30 @@ export function convertLocalPathForRsync(localPath: string): string {
 }
 
 /**
- * Prepares rsync source and destination paths for the current platform
+ * Prepares rsync source and destination paths for the current platform.
+ * Source may be a single path or an array (for multi-source uploads).
  *
- * @param source - Source path
+ * @param source - Source path or array of source paths
  * @param dest - Destination path
- * @returns Tuple of [convertedSource, convertedDest]
+ * @returns Tuple of [convertedSource(s), convertedDest]
  */
-export function prepareRsyncPaths(source: string, dest: string): [string, string] {
+export function prepareRsyncPaths(source: string, dest: string): [string, string];
+export function prepareRsyncPaths(source: string[], dest: string): [string[], string];
+export function prepareRsyncPaths(
+  source: string | string[],
+  dest: string
+): [string | string[], string];
+export function prepareRsyncPaths(
+  source: string | string[],
+  dest: string
+): [string | string[], string] {
+  const convert = (p: string): string => (isRemotePath(p) ? p : convertLocalPathForRsync(p));
+
   if (getPlatform() !== 'windows') {
     return [source, dest];
   }
 
-  const convertedSource = isRemotePath(source) ? source : convertLocalPathForRsync(source);
+  const convertedSource = Array.isArray(source) ? source.map(convert) : convert(source);
   const convertedDest = isRemotePath(dest) ? dest : convertLocalPathForRsync(dest);
 
   return [convertedSource, convertedDest];

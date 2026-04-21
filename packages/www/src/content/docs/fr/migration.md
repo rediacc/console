@@ -1,11 +1,11 @@
 ---
-title: "Guide de migration"
-description: "Migrer des projets existants vers des dépôts chiffrés Rediacc."
-category: "Guides"
+title: Guide de migration
+description: Migrer des projets existants vers des dépôts chiffrés Rediacc.
+category: Guides
 order: 11
 language: fr
-sourceHash: "5e13e363e9dce55f"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: c0ea82abb1d29de0
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # Guide de migration
@@ -210,7 +210,7 @@ Cela va :
 Vérifiez que vos conteneurs sont en cours d'exécution :
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## Etape 7 : Activer le démarrage automatique (Optionnel)

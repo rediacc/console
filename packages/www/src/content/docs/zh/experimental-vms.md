@@ -1,10 +1,10 @@
 ---
-title: "实验性虚拟机"
-description: "使用 rdc ops 在工作站上配置本地 VM 集群，用于开发和测试。"
-category: "Concepts"
+title: 实验性虚拟机
+description: 使用 rdc ops 在工作站上配置本地 VM 集群，用于开发和测试。
+category: Concepts
 order: 2
 language: zh
-sourceHash: "af686ab0f22d58c7"
+sourceHash: df01dc35c82beb81
 ---
 
 # 实验性虚拟机
@@ -140,7 +140,7 @@ rdc ops down
 | `rdc ops up [options]` | 配置 VM 集群 |
 | `rdc ops down` | 销毁所有虚拟机并清理 |
 | `rdc ops status` | 显示所有虚拟机的状态 |
-| `rdc ops ssh <vm-id> [command...]` | 通过 SSH 连接到指定虚拟机，或在其上运行命令 |
+| `rdc ops ssh --vm-id <id> [command...]` | 通过 SSH 连接到指定虚拟机，或在其上运行命令 |
 
 ### `rdc ops up` 选项
 

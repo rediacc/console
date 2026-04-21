@@ -1,11 +1,13 @@
 ---
 title: Hoja de referencia de RDC CLI
-description: Referencia rápida de todos los comandos rdc, configuraciones, repositorios, máquinas, sincronización, contenedores y más.
+description: >-
+  Referencia rápida de todos los comandos rdc, configuraciones, repositorios,
+  máquinas, sincronización, contenedores y más.
 category: Guides
 order: 3
 language: es
-sourceHash: "b941deba8b6d1b56"
-sourceCommit: "b010d8dc3d3edd8b08ec25593f39f4808d7f1d03"
+sourceHash: c552951bebd937b0
+sourceCommit: 35b53352026ae87fb6800c7fed10b793223ca1da
 ---
 
 # Hoja de referencia de RDC CLI
@@ -83,7 +85,7 @@ Referencia rápida de los comandos `rdc` más comunes. Ejecuta cualquier comando
 | `rdc machine query --name <machine> --network` | Solo información de red |
 | `rdc machine query --name <machine> --block-devices` | Solo información de dispositivos de bloque |
 | `rdc machine list` | Listar todas las máquinas en la configuración |
-| `rdc config machine setup <machine>` | Ejecutar el aprovisionamiento inicial de la máquina |
+| `rdc config machine setup --name <machine>` | Ejecutar el aprovisionamiento inicial de la máquina |
 | `rdc machine prune --name <machine>` | Eliminar recursos no utilizados de la máquina |
 | `rdc machine deprovision --name <machine>` | Desaprovisionar completamente una máquina |
 | `rdc machine vault-status --name <machine>` | Mostrar el estado del vault de LUKS |
@@ -95,8 +97,9 @@ Referencia rápida de los comandos `rdc` más comunes. Ejecuta cualquier comando
 | `rdc term connect -m <machine>` | Abrir terminal SSH a la máquina |
 | `rdc term connect -m <machine> -r <repo>` | Abrir terminal SSH al repositorio (establece DOCKER_HOST) |
 | `rdc term connect -m <machine> -c "<command>"` | Ejecutar un comando en la máquina |
-| `rdc repo sync upload -m <machine> -r <repo> --local <path>` | Subir archivos locales al repositorio |
-| `rdc repo sync download -m <machine> -r <repo> --local <path>` | Descargar archivos del repositorio localmente |
+| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Subir un archivo, directorio o varios orígenes al repositorio |
+| `rdc repo sync download -m <machine> -r <repo> --local <dir>` | Descargar un directorio del repositorio localmente |
+| `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | Descargar un archivo remoto a un directorio local |
 | `rdc vscode connect -m <machine> -r <repo>` | Abrir sesión VS Code Remote SSH |
 
 ## Configuración

@@ -81,8 +81,7 @@ function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
 
 function buildContainerCommand(options: TermConnectOptions, envPrefix: string): string {
   const containerId = options.container!;
-  const containerAction = (options.containerAction ??
-    DEFAULTS.REPOSITORY.CONTAINER_ACTION) as ContainerAction;
+  const containerAction = options.containerAction ?? DEFAULTS.REPOSITORY.CONTAINER_ACTION;
   const builder = containerCommandBuilders[containerAction];
   const dockerCmd = builder(options, containerId);
   return `${envPrefix}${dockerCmd}`;

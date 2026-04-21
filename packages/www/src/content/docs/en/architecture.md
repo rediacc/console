@@ -44,7 +44,7 @@ The default for self-hosted usage. All state lives in a config file on your work
 - Direct SSH connections to machines
 - No external services required
 - Single-user, single-workstation
-- Default config is created automatically on first CLI use. Named configs are created with `rdc config init <name>`
+- Default config is created automatically on first CLI use. Named configs are created with `rdc config init --name <name>`
 
 ### Cloud Adapter (Experimental)
 

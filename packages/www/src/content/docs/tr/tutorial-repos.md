@@ -1,11 +1,13 @@
 ---
-title: "Depo Yaşam Döngüsü"
-description: "Şifreli bir depo oluşturun, konteynerleştirilmiş bir uygulama dağıtın, konteynerleri inceleyin ve temizleyin."
-category: "Tutorials"
+title: Depo Yaşam Döngüsü
+description: >-
+  Şifreli bir depo oluşturun, konteynerleştirilmiş bir uygulama dağıtın,
+  konteynerleri inceleyin ve temizleyin.
+category: Tutorials
 order: 3
 language: tr
-sourceHash: "fecc09a324a1fa65"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 46c155563808d0b7
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # Rediacc ile Depoları Dağıtma ve Yönetme
@@ -67,7 +69,7 @@ Bu, depoyu bağlar (zaten bağlı değilse), izole bir Docker daemon başlatır 
 ### Adım 5: Çalışan konteynerleri görüntüleyin
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 Makinedeki tüm depolardaki tüm çalışan konteynerleri, CPU ve bellek kullanımı dahil gösterir.
@@ -96,7 +98,7 @@ rdc repo delete --name test-app -m server-1  # Depoyu kalıcı olarak sil
 
 > **Uyarı:** `repo delete` geri alınamaz. Depodaki tüm veriler yok edilir. Gerekiyorsa önce bir yedek oluşturun.
 
-> **Not:** Silme işleminin ardından yapılandırma girişi korunur (depo başka makinelerde mevcut olabilir). Kaldırmak için `rdc config repository remove <name>` komutunu kullanın ya da kurtarma amacıyla kimlik bilgilerini korumak için `--archive-config` seçeneğini kullanın.
+> **Not:** Silme işleminin ardından yapılandırma girişi korunur (depo başka makinelerde mevcut olabilir). Kaldırmak için `rdc config repository remove --name <name>` komutunu kullanın ya da kurtarma amacıyla kimlik bilgilerini korumak için `--archive-config` seçeneğini kullanın.
 
 ## Sorun Giderme
 

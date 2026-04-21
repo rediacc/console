@@ -1,10 +1,13 @@
 ---
 title: Araçlar
-description: "Dosya senkronizasyonu, terminal erişimi, VS Code entegrasyonu ve CLI güncellemeleri."
+description: >-
+  Dosya senkronizasyonu, terminal erişimi, VS Code entegrasyonu ve CLI
+  güncellemeleri.
 category: Guides
 order: 9
 language: tr
-sourceHash: "5577c66ce89c1925"
+sourceHash: 2cf225f5af0b2d32
+sourceCommit: 9fbdf33aa443d362590f37b30636c50015cc77a0
 ---
 
 # Araçlar
@@ -39,8 +42,9 @@ rdc repo sync status -m server-1 -r my-app
 |---------|----------|
 | `-m, --machine <name>` | Hedef makine |
 | `-r, --repository <name>` | Hedef depo |
-| `--local <path>` | Yerel dizin yolu |
-| `--remote <path>` | Uzak yol (depo bağlama noktasına göre) |
+| `--local <paths...>` | Bir veya daha fazla yerel dosya/dizin yolu (yükleme) ya da yerel hedef dizin (indirme) |
+| `--remote <path>` | Uzak dizin (depo bağlama noktasına göre) |
+| `--remote-file <path>` | Tek bir uzak dosya (yalnızca indirme, `--remote` yerine kullanılır) |
 | `--dry-run` | Aktarım yapmadan değişiklikleri önizle |
 | `--mirror` | Kaynağı hedefe yansıt (fazla dosyaları sil) |
 | `--verify` | Aktarım sonrası sağlama toplamlarını doğrula |

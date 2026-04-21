@@ -239,7 +239,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
   ];
 
   const menuItems = isContainerMenu ? buildContainerMenuItems() : buildMachineMenuItems();
-  const menuConfig: MenuProps = { items: menuItems as ItemType[] };
+  const menuConfig: MenuProps = { items: menuItems };
 
   const tooltipLabel = isContainerMenu
     ? t('resources:localActions.containerLocal')

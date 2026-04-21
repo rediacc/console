@@ -1,10 +1,13 @@
 ---
 title: Plantilla AGENTS.md para asistentes de IA
-description: Plantilla lista para copiar y pegar que permite configurar Claude Code, Cursor y otros asistentes de programación con IA para gestionar infraestructura Rediacc.
+description: >-
+  Plantilla lista para copiar y pegar que permite configurar Claude Code, Cursor
+  y otros asistentes de programación con IA para gestionar infraestructura
+  Rediacc.
 category: Reference
 order: 50
 language: es
-sourceHash: "b1ea9373a19bbedb"
+sourceHash: 37be1e401927ed9a
 ---
 
 Utilice esta plantilla para configurar asistentes de programación con IA (Claude Code, Cursor, Cline, Windsurf) para la gestión autónoma de infraestructura Rediacc. Copie el bloque siguiente en el archivo `CLAUDE.md`, `.cursorrules` o el archivo de configuración de agente equivalente de su proyecto.
@@ -36,38 +39,37 @@ On error: {"success": false, "command": "...", "data": null, "errors": [{"code":
 ### Common Operations
 
 # Machine status
-rdc machine query <machine> -o json
+rdc machine query --name <machine> -o json
 
 # List containers on a machine
-rdc machine containers <machine> -o json
+rdc machine containers --name <machine> -o json
 
 # Machine health check
-rdc machine health <machine> -o json
+rdc machine health --name <machine> -o json
 
 # Deploy a repository
-rdc repo up <repo> -m <machine> --yes
+rdc repo up --name <repo> -m <machine> --yes
 
 # Stop a repository
-rdc repo down <repo> -m <machine> --yes
+rdc repo down --name <repo> -m <machine> --yes
 
 # SSH terminal to machine
-rdc term <machine>
-
+rdc term connect -m <machine> 
 # SSH terminal to specific repo (sets DOCKER_HOST)
-rdc term <machine> <repo>
+rdc term connect -m <machine> -r <repo>
 
 # Run command on machine
-rdc term <machine> -c "command"
+rdc term connect -m <machine> -c "command"
 
 # File sync
-rdc repo sync upload -m <machine> -r <repo> -l ./local-path
-rdc repo sync download -m <machine> -r <repo> -l ./local-path
+rdc repo sync upload -m <machine> -r <repo> --local ./local-path
+rdc repo sync download -m <machine> -r <repo> --local ./local-path
 
 # List all available commands with schemas
 rdc agent capabilities
 
 # Show schema for a specific command
-rdc agent schema "machine query"
+rdc agent schema --command "machine query"
 
 ### Architecture
 - **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/

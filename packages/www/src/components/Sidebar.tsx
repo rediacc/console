@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import type { SolutionCategory } from '../config/solution-pages';
 import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
@@ -345,7 +344,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, accountUrl }) => {
               {solutionCategories.map((group) => (
                 <li key={group.label} className="sidebar-category-group">
                   <span className="sidebar-category-label">
-                    {React.createElement(CATEGORY_ICONS[group.category as SolutionCategory], {
+                    {React.createElement(CATEGORY_ICONS[group.category], {
                       size: 16,
                       className: 'sidebar-category-icon',
                     })}

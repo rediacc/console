@@ -4,8 +4,8 @@ description: 什么时候使用 rdc，什么时候使用 renet。
 category: Concepts
 order: 1
 language: zh
-sourceHash: "86bc5f8593d408de"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 526136e143dbcf08
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # rdc vs renet
@@ -47,7 +47,7 @@ rdc repo up --name my-app -m server-1
 rdc repo down --name my-app -m server-1
 
 # 检查机器健康状态
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 完整操作流程请参阅[快速入门](/zh/docs/quick-start)。

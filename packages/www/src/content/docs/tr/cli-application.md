@@ -6,7 +6,7 @@ order: 2
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "641e97931b2b0b36"
+sourceHash: "1d4e217dd1ae3509"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -713,6 +713,7 @@ rdc config backup-strategy set [options]
 | `--bwlimit <limit>` | {{t:cli.commands.config.backupStrategy.set.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--include <repos>` | {{t:cli.commands.config.backupStrategy.set.optionInclude}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--exclude <repos>` | {{t:cli.commands.config.backupStrategy.set.optionExclude}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--folder <path>` | {{t:cli.commands.config.backupStrategy.set.optionFolder}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--enable` | {{t:cli.commands.config.backupStrategy.set.optionEnable}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--disable` | {{t:cli.commands.config.backupStrategy.set.optionDisable}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -951,11 +952,12 @@ rdc machine update
 {{t:cli.docs.supplements.machine.health.afterDescription}}
 
 ```bash
-rdc machine health <name> [options]
+rdc machine health [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -965,11 +967,12 @@ rdc machine health <name> [options]
 {{t:cli.commands.machine.containers.description}}
 
 ```bash
-rdc machine containers <name> [options]
+rdc machine containers [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--health-check` | {{t:cli.commands.machine.containers.healthCheck}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -980,11 +983,12 @@ rdc machine containers <name> [options]
 {{t:cli.commands.machine.services.description}}
 
 ```bash
-rdc machine services <name> [options]
+rdc machine services [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--stability-check` | {{t:cli.commands.machine.services.stabilityCheck}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -1010,6 +1014,7 @@ rdc machine query [options]
 | `--block-devices` | {{t:cli.options.queryBlockDevices}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--licenses` | {{t:cli.options.queryLicenses}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--storage-health` | {{t:cli.options.queryStorageHealth}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--sync-certs` | {{t:cli.options.querySyncCerts}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-machine-vault-status"></a>
@@ -1033,11 +1038,12 @@ rdc machine vault-status [options]
 {{t:cli.commands.machine.repos.description}}
 
 ```bash
-rdc machine repos <name> [options]
+rdc machine repos [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--search <text>` | {{t:cli.options.searchRepos}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -1735,7 +1741,7 @@ rdc repo sync upload [options]
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--local <path>` | {{t:cli.options.localPath}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--local <paths...>` | {{t:cli.options.localPaths}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--remote <path>` | {{t:cli.options.remotePath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--mirror` | {{t:cli.options.mirrorUpload}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--verify` | {{t:cli.options.verifyChecksum}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1760,6 +1766,7 @@ rdc repo sync download [options]
 | `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--local <path>` | {{t:cli.options.localPath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--remote <path>` | {{t:cli.options.remotePath}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--remote-file <path>` | {{t:cli.options.remoteFile}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--mirror` | {{t:cli.options.mirrorDownload}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--verify` | {{t:cli.options.verifyChecksum}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--confirm` | {{t:cli.options.confirmSync}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1783,6 +1790,7 @@ rdc repo sync status [options]
 | `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--local <path>` | {{t:cli.options.localPath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--remote <path>` | {{t:cli.options.remotePath}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--remote-file <path>` | {{t:cli.options.remoteFile}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-snapshot"></a>

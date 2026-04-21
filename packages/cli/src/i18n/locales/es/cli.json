@@ -342,7 +342,7 @@
         "push": {
           "description": "Subir certificados TLS en caché a una máquina",
           "merged": "{{count}} certificado(s) con mayor vigencia fusionado(s) en {{machine}}",
-          "noCache": "No se encontró caché de certificados. Ejecutar 'rdc config cert-cache pull <machine>' primero",
+          "noCache": "No se encontró caché de certificados. Ejecutar 'rdc config cert-cache pull -m <machine>' primero",
           "uploaded": "{{count}} certificado(s) subido(s) a {{machine}}",
           "uploading": "Subiendo certificados en caché a {{machine}}...",
           "upToDate": "Los certificados en {{machine}} están actualizados"
@@ -376,7 +376,7 @@
           "dnsError": "Advertencia DNS: {{message}} (los registros pueden necesitar configuración manual)",
           "dnsResolvingZone": "Resolviendo zona de Cloudflare para {{domain}}...",
           "dnsSkipLocal": "Omitiendo DNS: el dominio .local no usa Cloudflare",
-          "dnsSkipNoToken": "Omitiendo DNS: no hay token de API de Cloudflare. Configura con: rdc config infra set <machine> --cf-dns-token <token>",
+          "dnsSkipNoToken": "Omitiendo DNS: no hay token de API de Cloudflare. Configura con: rdc config infra set -m <machine> --cf-dns-token <token>",
           "dnsUnchanged": "DNS: {{type}} {{name}} ya está correcto",
           "dnsUpdated": "DNS: {{type}} {{name}} → {{content}} actualizado",
           "installingProxy": "Instalando e iniciando el proxy...",
@@ -535,7 +535,7 @@
         "description": "Gestionar mapeos de repositorios en la configuración actual",
         "list": {
           "description": "Listar mapeos de GUID de repositorios en la configuración actual",
-          "noRepositories": "No hay repositorios configurados. Agrega uno con: rdc config repository add <name> --guid <guid>"
+          "noRepositories": "No hay repositorios configurados. Agrega uno con: rdc config repository add --name <name> --guid <guid>"
         },
         "listArchived": {
           "description": "Listar credenciales de repositorios archivados",
@@ -606,7 +606,7 @@
         },
         "list": {
           "description": "Listar almacenamientos en la configuración actual",
-          "noStorages": "No hay almacenamientos configurados. Importa con: rdc config storage import <file>"
+          "noStorages": "No hay almacenamientos configurados. Importa con: rdc config storage import --file <path>"
         },
         "remove": {
           "description": "Eliminar un almacenamiento de la configuración actual",
@@ -810,7 +810,7 @@
         "description": "Aprovisionar una nueva máquina en un proveedor de nube usando OpenTofu",
         "failed": "Aprovisionamiento de máquina fallido: {{error}}",
         "infraInherited": "Dominio base detectado automáticamente desde la máquina hermana \"{{source}}\"",
-        "noInfraHint": "No hay dominio base configurado. Ejecute 'rdc config infra set <machine> --base-domain <domain>' y luego 'rdc config infra push <machine>' para habilitar DNS y proxy.",
+        "noInfraHint": "No hay dominio base configurado. Ejecute 'rdc config infra set -m <machine> --base-domain <domain>' y luego 'rdc config infra push -m <machine>' para habilitar DNS y proxy.",
         "optionBaseDomain": "Dominio base para infraestructura (ej. example.com). Implica --infra",
         "optionImage": "Anular imagen de SO predeterminada",
         "optionInfra": "También configurar infraestructura (infra set + infra push)",
@@ -1249,7 +1249,7 @@
         "archiveHint": "Para archivar las credenciales para recuperación: vuelva a ejecutar con --archive-config",
         "archiveOption": "Mover entrada de configuración a deletedRepositories para recuperación posterior",
         "completed": "Repositorio eliminado",
-        "configRetained": "Entrada de configuración para \"{{repository}}\" retenida (el repositorio puede existir en otras máquinas). Para eliminar: rdc config repository remove {{repository}}",
+        "configRetained": "Entrada de configuración para \"{{repository}}\" retenida (el repositorio puede existir en otras máquinas). Para eliminar: rdc config repository remove --name {{repository}}",
         "description": "Eliminar un repositorio (destruye contenedores, volúmenes e imagen cifrada). La entrada de configuración se conserva. Use --archive-config para mover credenciales a deletedRepositories para recuperación vía 'config restore-archived'",
         "descriptionShort": "Eliminar un repositorio de una máquina",
         "failed": "Error al eliminar el repositorio",
@@ -1450,7 +1450,7 @@
         "forceOption": "Omitir advertencias de modificación",
         "grandNotFound": "Repositorio principal no encontrado para el fork \"{{name}}\"",
         "notAFork": "\"{{name}}\" no es un repositorio fork (falta parentGuid)",
-        "revertHint": "Para revertir: rdc repo takeover {{backup}} -m {{machine}}",
+        "revertHint": "Para revertir: rdc repo takeover --name {{backup}} -m {{machine}}",
         "rollback": "Configuración revertida para \"{{name}}\"",
         "starting": "Tomando el control de \"{{grand}}\" con datos de \"{{fork}}\" en \"{{machine}}\"..."
       },
@@ -2142,7 +2142,7 @@
       "createGuardOverride": "No se puede crear un nuevo repositorio grand \"{{name}}\". No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "No se puede crear un nuevo repositorio grand \"{{name}}\". La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
       "forkBlocked": "El comando \"{{command}}\" no está disponible en repositorios fork.\n\nLos repos fork son entornos sandbox temporales. Esta operación solo se aplica a repositorios grand (producción). Pida al usuario que ejecute este comando directamente.",
-      "grandGuard": "\"{{name}}\" es un repositorio grand (producción). Los agentes no pueden modificar repositorios grand directamente.\n\nLos repositorios grand contienen datos de producción. Use un fork en su lugar — los forks son copias sandbox seguras y aisladas.\n\nFlujo de trabajo:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork (ej: rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover\n\nUsuario: para permitir acceso directo, establezca REDIACC_ALLOW_GRAND_REPO={{name}} (o * para todos los repos) en su terminal antes de iniciar la sesión del agente.",
+      "grandGuard": "\"{{name}}\" es un repositorio grand (producción). Los agentes no pueden modificar repositorios grand directamente.\n\nLos repositorios grand contienen datos de producción. Use un fork en su lugar — los forks son copias sandbox seguras y aisladas.\n\nFlujo de trabajo:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork (ej: rdc repo up --name {{name}}:<tag-name> -m <machine> --mount)\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover\n\nUsuario: para permitir acceso directo, establezca REDIACC_ALLOW_GRAND_REPO={{name}} (o * para todos los repos) en su terminal antes de iniciar la sesión del agente.",
       "grandGuardOverride": "\"{{name}}\" es un repositorio grand (producción). No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nUse un fork en su lugar — los forks son copias sandbox seguras y aisladas:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover",
       "grandGuardOverrideNonLinux": "\"{{name}}\" es un repositorio grand (producción). La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nFlujo de trabajo:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
       "machineGuard": "El acceso directo a la máquina \"{{machine}}\" no está permitido en modo agente.\n\nLos agentes deben conectarse a través de un contexto de repositorio para acceso sandbox. Cree un fork del repositorio primero, luego conéctese al fork.\n\nFlujo de trabajo:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nUsuario: para permitir acceso directo a la máquina, establezca REDIACC_ALLOW_GRAND_REPO=* (o un nombre de repositorio específico) en su terminal antes de iniciar la sesión del agente.",
@@ -2185,7 +2185,7 @@
     "machineRequired": "Nombre de máquina requerido. Use --machine <name>",
     "machineRequiredLocal": "Nombre de máquina requerido. Use --machine <name>",
     "networkError": "Error de red: {{message}}",
-    "noActiveConfig": "Sin configuración activa. Cree una con: rdc config init <name>",
+    "noActiveConfig": "Sin configuración activa. Cree una con: rdc config init --name <name>",
     "notAuthenticated": "No autenticado. Ejecute: rdc auth login",
     "passwordsMismatch": "Las contraseñas no coinciden",
     "permissionDenied": "Permiso denegado",
@@ -2224,10 +2224,13 @@
     "sync": {
       "absolutePathBlocked": "La ruta --remote debe ser relativa, no absoluta. Use una ruta relativa a la raíz del repositorio.",
       "localPathNotFound": "Ruta local no existe: {{path}}",
+      "mirrorWithFile": "No se puede usar --mirror cuando el origen es un archivo: eliminaría archivos hermanos en el directorio de destino.",
       "noHostKey": "Máquina '{{machine}}' no tiene clave de host configurada en la bóveda",
       "noIpAddress": "Máquina '{{machine}}' no tiene dirección IP configurada",
       "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada",
-      "pathTraversalBlocked": "La ruta --remote no debe contener recorrido de ruta \"..\". Use una ruta dentro del repositorio."
+      "pathTraversalBlocked": "La ruta --remote no debe contener recorrido de ruta \"..\". Use una ruta dentro del repositorio.",
+      "remoteAndRemoteFile": "--remote y --remote-file no se pueden usar juntos. Elige uno.",
+      "remoteFileLocalNotDir": "Cuando se establece --remote-file, --local debe ser un directorio existente: {{path}}"
     },
     "teamRequired": "Nombre de equipo requerido. Use --team o establezca contexto.",
     "term": {
@@ -2291,7 +2294,7 @@
       "create": "Crear repositorio cifrado",
       "down": "Detener servicios",
       "fork": "Fork CoW para pruebas",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable --name <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "Listar respaldos en almacenamiento",
       "pull": "Obtener respaldo del almacenamiento",
       "push": "Enviar respaldo al almacenamiento",
@@ -2360,6 +2363,7 @@
     "lang": "Anulación de idioma ({{languages}})",
     "limit": "Número máximo de resultados",
     "localPath": "Ruta de directorio local (predeterminado: directorio actual)",
+    "localPaths": "Una o más rutas locales de archivo o directorio (predeterminado: directorio actual)",
     "logLines": "Número de líneas de log a mostrar (predeterminado: 50)",
     "machine": "Nombre de máquina",
     "machineForVault": "Nombre de máquina (para actualizar bóveda después de prueba)",
@@ -2412,6 +2416,7 @@
     "quiet": "Suprimir salida informativa",
     "rawVault": "JSON de bóveda sin procesar (para scripts/CI)",
     "region": "Nombre de región",
+    "remoteFile": "Ruta del archivo remoto en el repositorio (alternativa a --remote para transferencias de un solo archivo)",
     "remotePath": "Ruta de subdirectorio remoto dentro del repositorio",
     "renetPath": "Ruta al binario renet (predeterminado: renet en PATH)",
     "repository": "Nombre de repositorio (conecta a entorno de repositorio)",

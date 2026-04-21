@@ -4,7 +4,8 @@ description: Lancez un service conteneurisé sur votre serveur en quelques minut
 category: Guides
 order: -1
 language: fr
-sourceHash: "50b448b7b1e7b85b"
+sourceHash: "a06ed41ca6a9c5ed"
+sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
 ---
 
 # Démarrage rapide
@@ -148,9 +149,11 @@ rdc term connect -m my-server                                   # SSH vers la ma
 
 **Synchronisation de fichiers (rsync via SSH) :**
 ```bash
-rdc repo sync upload -m my-server -r my-app --local ./src       # Envoyer les fichiers locaux vers le repo
-rdc repo sync download -m my-server -r my-app --local ./backup  # Récupérer les fichiers du repo en local
-rdc repo sync download -m my-server -r my-app --local ./backup --dry-run  # Aperçu d'abord
+rdc repo sync upload -m my-server -r my-app --local ./src                                   # Téléverser un répertoire
+rdc repo sync upload -m my-server -r my-app --local ./config.yml --remote conf              # Téléverser un fichier
+rdc repo sync download -m my-server -r my-app --local ./backup                              # Télécharger un répertoire
+rdc repo sync download -m my-server -r my-app --remote-file conf/config.yml --local ./dl    # Télécharger un fichier
+rdc repo sync download -m my-server -r my-app --local ./backup --dry-run                    # Aperçu d'abord
 ```
 
 **Tunnel (redirection de port SSH vers un conteneur) :**

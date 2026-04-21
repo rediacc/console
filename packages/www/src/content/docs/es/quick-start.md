@@ -4,7 +4,8 @@ description: Ejecute un servicio en contenedores en su servidor en minutos.
 category: Guides
 order: -1
 language: es
-sourceHash: "50b448b7b1e7b85b"
+sourceHash: "a06ed41ca6a9c5ed"
+sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
 ---
 
 # Inicio rápido
@@ -148,9 +149,11 @@ rdc term connect -m my-server                                   # SSH a la máqu
 
 **Sincronización de archivos (rsync sobre SSH):**
 ```bash
-rdc repo sync upload -m my-server -r my-app --local ./src       # Subir archivos locales al repo
-rdc repo sync download -m my-server -r my-app --local ./backup  # Descargar archivos del repo a local
-rdc repo sync download -m my-server -r my-app --local ./backup --dry-run  # Previsualizar primero
+rdc repo sync upload -m my-server -r my-app --local ./src                                   # Subir un directorio
+rdc repo sync upload -m my-server -r my-app --local ./config.yml --remote conf              # Subir un archivo
+rdc repo sync download -m my-server -r my-app --local ./backup                              # Descargar un directorio
+rdc repo sync download -m my-server -r my-app --remote-file conf/config.yml --local ./dl    # Descargar un archivo
+rdc repo sync download -m my-server -r my-app --local ./backup --dry-run                    # Previsualizar primero
 ```
 
 **Túnel (reenvío de puertos SSH al contenedor):**

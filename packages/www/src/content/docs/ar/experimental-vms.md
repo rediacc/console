@@ -1,10 +1,10 @@
 ---
-title: "الأجهزة الافتراضية التجريبية"
-description: "إنشاء مجموعات أجهزة افتراضية محلية للتطوير والاختبار باستخدام rdc ops."
-category: "Concepts"
+title: الأجهزة الافتراضية التجريبية
+description: إنشاء مجموعات أجهزة افتراضية محلية للتطوير والاختبار باستخدام rdc ops.
+category: Concepts
 order: 2
 language: ar
-sourceHash: "af686ab0f22d58c7"
+sourceHash: df01dc35c82beb81
 ---
 
 # الأجهزة الافتراضية التجريبية
@@ -140,7 +140,7 @@ rdc ops down
 | `rdc ops up [options]` | تجهيز مجموعة VM |
 | `rdc ops down` | تدمير جميع VMs وتنظيف الموارد |
 | `rdc ops status` | عرض حالة جميع VMs |
-| `rdc ops ssh <vm-id> [command...]` | الاتصال بـ VM عبر SSH، أو تشغيل أمر عليها |
+| `rdc ops ssh --vm-id <id> [command...]` | الاتصال بـ VM عبر SSH، أو تشغيل أمر عليها |
 
 ### خيارات `rdc ops up`
 

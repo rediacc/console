@@ -52,7 +52,7 @@ const findRepositoryInMachine = (
 
   const repositoryData = listResult.repositories.find((r) => {
     return r.name === repository.repositoryName || r.name === repository.repositoryGuid;
-  }) as RepositoryVaultData | undefined;
+  });
 
   if (!repositoryData) return null;
 

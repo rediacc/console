@@ -1,10 +1,13 @@
 ---
-title: "Maschineneinrichtung"
-description: "Erstellen Sie ein Konfigurationsprofil, registrieren Sie eine Remote-Maschine, überprüfen Sie die SSH-Konnektivität und konfigurieren Sie Infrastruktureinstellungen."
-category: "Tutorials"
+title: Maschineneinrichtung
+description: >-
+  Erstellen Sie ein Konfigurationsprofil, registrieren Sie eine Remote-Maschine,
+  überprüfen Sie die SSH-Konnektivität und konfigurieren Sie
+  Infrastruktureinstellungen.
+category: Tutorials
 order: 2
 language: de
-sourceHash: "2a32100e76d41bc0"
+sourceHash: 0c36a98feadd7aaa
 ---
 
 # So richten Sie eine Maschine mit Rediacc ein
@@ -103,7 +106,7 @@ rdc config infra set -m bridge-vm \
 rdc config infra show -m bridge-vm
 ```
 
-Stellen Sie die generierte Traefik-Proxy-Konfiguration mit `rdc config infra push bridge-vm` auf dem Server bereit.
+Stellen Sie die generierte Traefik-Proxy-Konfiguration mit `rdc config infra push -m bridge-vm` auf dem Server bereit.
 
 ## Fehlerbehebung
 
@@ -114,7 +117,7 @@ Stellen Sie die generierte Traefik-Proxy-Konfiguration mit `rdc config infra pus
 Bestätigen Sie, dass der Server läuft und die IP korrekt ist. Prüfen Sie, ob Port 22 offen ist: `nc -zv <ip> 22`. Bei einem nicht standardmäßigen Port übergeben Sie `--port` beim Hinzufügen der Maschine.
 
 **"Host key verification failed"**
-Der gespeicherte Host-Schlüssel stimmt nicht mit dem aktuellen Schlüssel des Servers überein. Dies passiert nach einem Server-Neuaufbau oder einer IP-Neuzuweisung. Führen Sie `rdc config machine scan-keys <machine>` aus, um den Schlüssel zu aktualisieren.
+Der gespeicherte Host-Schlüssel stimmt nicht mit dem aktuellen Schlüssel des Servers überein. Dies passiert nach einem Server-Neuaufbau oder einer IP-Neuzuweisung. Führen Sie `rdc config machine scan-keys -m <machine>` aus, um den Schlüssel zu aktualisieren.
 
 ## Nächste Schritte
 

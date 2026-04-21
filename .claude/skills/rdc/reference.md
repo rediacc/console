@@ -527,7 +527,7 @@ List repositories on a machine
 
 ### rdc repo fork
 
-Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically.
+Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork --parent <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically.
 
 **Options:**
 
@@ -757,7 +757,7 @@ Upload files to a repository via rsync over SSH (delta transfer). Use --mirror t
 - `-t, --team <name>` — Team name
 - `-m, --machine <name>` — Machine name
 - `-r, --repository <name>` — Repository name (connects to repository environment)
-- `--local <path>` — Local directory path (default: current directory)
+- `--local <paths...>` — One or more local file or directory paths (default: current directory)
 - `--remote <path>` — Remote subdirectory path within repository
 - `--mirror` — Mirror mode - delete remote files not present locally
 - `--verify` — Verify files using checksums after sync
@@ -778,6 +778,7 @@ Download files from a repository via rsync over SSH (delta transfer). Use --mirr
 - `-r, --repository <name>` — Repository name (connects to repository environment)
 - `--local <path>` — Local directory path (default: current directory)
 - `--remote <path>` — Remote subdirectory path within repository
+- `--remote-file <path>` — Remote file path within repository (alternative to --remote for single-file transfers)
 - `--mirror` — Mirror mode - delete local files not present on remote
 - `--verify` — Verify files using checksums after sync
 - `--confirm` — Preview changes and ask for confirmation before syncing
@@ -797,6 +798,7 @@ Dry-run comparison of local and remote files (shows what would be transferred wi
 - `-r, --repository <name>` — Repository name (connects to repository environment)
 - `--local <path>` — Local directory path (default: current directory)
 - `--remote <path>` — Remote subdirectory path within repository
+- `--remote-file <path>` — Remote file path within repository (alternative to --remote for single-file transfers)
 
 ### rdc repo tunnel
 

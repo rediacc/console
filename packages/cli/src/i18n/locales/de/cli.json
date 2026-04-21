@@ -342,7 +342,7 @@
         "push": {
           "description": "Zwischengespeicherte TLS-Zertifikate auf eine Maschine hochladen",
           "merged": "{{count}} Zertifikat(e) mit längerer Gültigkeit in {{machine}} zusammengeführt",
-          "noCache": "Kein Zertifikats-Cache gefunden. Zuerst 'rdc config cert-cache pull <machine>' ausführen",
+          "noCache": "Kein Zertifikats-Cache gefunden. Zuerst 'rdc config cert-cache pull -m <machine>' ausführen",
           "uploaded": "{{count}} Zertifikat(e) auf {{machine}} hochgeladen",
           "uploading": "Zwischengespeicherte Zertifikate werden auf {{machine}} hochgeladen...",
           "upToDate": "Zertifikate auf {{machine}} sind aktuell"
@@ -376,7 +376,7 @@
           "dnsError": "DNS-Warnung: {{message}} (Einträge müssen möglicherweise manuell eingerichtet werden)",
           "dnsResolvingZone": "Cloudflare-Zone für {{domain}} wird aufgelöst...",
           "dnsSkipLocal": "DNS übersprungen: .local-Domain verwendet kein Cloudflare",
-          "dnsSkipNoToken": "DNS übersprungen: kein Cloudflare API-Token. Festlegen mit: rdc config infra set <machine> --cf-dns-token <token>",
+          "dnsSkipNoToken": "DNS übersprungen: kein Cloudflare API-Token. Festlegen mit: rdc config infra set -m <machine> --cf-dns-token <token>",
           "dnsUnchanged": "DNS: {{type}} {{name}} bereits korrekt",
           "dnsUpdated": "DNS: {{type}} {{name}} → {{content}} aktualisiert",
           "installingProxy": "Proxy wird installiert und gestartet...",
@@ -535,7 +535,7 @@
         "description": "Repository-Zuordnungen in der aktuellen Konfiguration verwalten",
         "list": {
           "description": "Repository-GUID-Zuordnungen in der aktuellen Konfiguration auflisten",
-          "noRepositories": "Keine Repositories konfiguriert. Hinzufügen mit: rdc config repository add <name> --guid <guid>"
+          "noRepositories": "Keine Repositories konfiguriert. Hinzufügen mit: rdc config repository add --name <name> --guid <guid>"
         },
         "listArchived": {
           "description": "Archivierte Repository-Anmeldedaten auflisten",
@@ -606,7 +606,7 @@
         },
         "list": {
           "description": "Speicher in der aktuellen Konfiguration auflisten",
-          "noStorages": "Keine Speicher konfiguriert. Importieren mit: rdc config storage import <file>"
+          "noStorages": "Keine Speicher konfiguriert. Importieren mit: rdc config storage import --file <path>"
         },
         "remove": {
           "description": "Speicher aus der aktuellen Konfiguration entfernen",
@@ -810,7 +810,7 @@
         "description": "Neue Maschine bei einem Cloud-Anbieter mit OpenTofu bereitstellen",
         "failed": "Maschinenbereitstellung fehlgeschlagen: {{error}}",
         "infraInherited": "Basisdomain automatisch von Schwestermaschine \"{{source}}\" erkannt",
-        "noInfraHint": "Keine Basisdomain konfiguriert. Führen Sie 'rdc config infra set <machine> --base-domain <domain>' und dann 'rdc config infra push <machine>' aus, um DNS und Proxy zu aktivieren.",
+        "noInfraHint": "Keine Basisdomain konfiguriert. Führen Sie 'rdc config infra set -m <machine> --base-domain <domain>' und dann 'rdc config infra push -m <machine>' aus, um DNS und Proxy zu aktivieren.",
         "optionBaseDomain": "Basisdomain für Infrastruktur (z.B. example.com). Impliziert --infra",
         "optionImage": "Standard-Betriebssystem-Image überschreiben",
         "optionInfra": "Auch Infrastruktur konfigurieren (infra set + infra push)",
@@ -1249,7 +1249,7 @@
         "archiveHint": "Um Anmeldedaten für die Wiederherstellung zu archivieren: erneut mit --archive-config ausführen",
         "archiveOption": "Konfigurationseintrag nach deletedRepositories verschieben zur späteren Wiederherstellung",
         "completed": "Repository gelöscht",
-        "configRetained": "Konfigurationseintrag für \"{{repository}}\" beibehalten (Repository kann auf anderen Maschinen existieren). Zum Entfernen: rdc config repository remove {{repository}}",
+        "configRetained": "Konfigurationseintrag für \"{{repository}}\" beibehalten (Repository kann auf anderen Maschinen existieren). Zum Entfernen: rdc config repository remove --name {{repository}}",
         "description": "Repository löschen (zerstört Container, Volumes und verschlüsseltes Image). Konfigurationseintrag bleibt erhalten. Verwenden Sie --archive-config, um Anmeldedaten nach deletedRepositories zu verschieben, zur Wiederherstellung über 'config restore-archived'",
         "descriptionShort": "Repository von einer Maschine löschen",
         "failed": "Repository-Löschung fehlgeschlagen",
@@ -1450,7 +1450,7 @@
         "forceOption": "Änderungswarnungen überspringen",
         "grandNotFound": "Grand-Repository für Fork \"{{name}}\" nicht gefunden",
         "notAFork": "\"{{name}}\" ist kein Fork-Repository (parentGuid fehlt)",
-        "revertHint": "Zum Zurücksetzen: rdc repo takeover {{backup}} -m {{machine}}",
+        "revertHint": "Zum Zurücksetzen: rdc repo takeover --name {{backup}} -m {{machine}}",
         "rollback": "Konfiguration für \"{{name}}\" zurückgesetzt",
         "starting": "\"{{grand}}\" wird mit Daten aus \"{{fork}}\" auf \"{{machine}}\" übernommen..."
       },
@@ -2142,7 +2142,7 @@
       "createGuardOverride": "Es kann kein neues Grand-Repository \"{{name}}\" erstellt werden. Vom Agenten initiierte Überschreibungen werden nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen — nur der Benutzer kann dies vor dem Start des Agenten autorisieren.\n\nErstellen Sie stattdessen einen Fork eines bestehenden Repositories:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "Es kann kein neues Grand-Repository \"{{name}}\" erstellt werden. Die REDIACC_ALLOW_GRAND_REPO-Überschreibung wird auf {{platform}} nicht unterstützt.\n\nDiese Überschreibung funktioniert nur unter Linux. Unter Windows und macOS müssen Agenten den Fork-First-Arbeitsablauf verwenden.\n\nErstellen Sie stattdessen einen Fork eines bestehenden Repositories:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nUm die Überschreibung zu verwenden, führen Sie Ihren Agenten unter Linux aus (direkt, WSL, Docker oder eine VM).",
       "forkBlocked": "Der Befehl \"{{command}}\" ist für Fork-Repositories nicht verfügbar.\n\nFork-Repos sind temporäre Sandbox-Umgebungen. Diese Operation gilt nur für Grand-Repositories (Produktion). Bitten Sie den Benutzer, diesen Befehl direkt auszuführen.",
-      "grandGuard": "\"{{name}}\" ist ein Grand-Repository (Produktion). Agenten können Grand-Repositories nicht direkt ändern.\n\nGrand-Repositories enthalten Produktionsdaten. Verwenden Sie stattdessen einen Fork — Forks sind sichere, isolierte Sandbox-Kopien.\n\nArbeitsablauf:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork (z.B. rdc repo up {{name}}:<tag-name> -m <machine> --mount)\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo takeover übernehmen\n\nBenutzer: Um direkten Zugriff zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO={{name}} (oder * für alle Repos) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten.",
+      "grandGuard": "\"{{name}}\" ist ein Grand-Repository (Produktion). Agenten können Grand-Repositories nicht direkt ändern.\n\nGrand-Repositories enthalten Produktionsdaten. Verwenden Sie stattdessen einen Fork — Forks sind sichere, isolierte Sandbox-Kopien.\n\nArbeitsablauf:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork (z.B. rdc repo up --name {{name}}:<tag-name> -m <machine> --mount)\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo takeover übernehmen\n\nBenutzer: Um direkten Zugriff zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO={{name}} (oder * für alle Repos) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten.",
       "grandGuardOverride": "\"{{name}}\" ist ein Grand-Repository (Produktion). Vom Agenten initiierte Überschreibungen werden nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen — nur der Benutzer kann dies vor dem Start des Agenten autorisieren.\n\nVerwenden Sie stattdessen einen Fork — Forks sind sichere, isolierte Sandbox-Kopien:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo takeover übernehmen",
       "grandGuardOverrideNonLinux": "\"{{name}}\" ist ein Grand-Repository (Produktion). Die REDIACC_ALLOW_GRAND_REPO-Überschreibung wird auf {{platform}} nicht unterstützt.\n\nDiese Überschreibung funktioniert nur unter Linux. Unter Windows und macOS müssen Agenten den Fork-First-Arbeitsablauf verwenden.\n\nArbeitsablauf:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo takeover übernehmen\n\nUm die Überschreibung zu verwenden, führen Sie Ihren Agenten unter Linux aus (direkt, WSL, Docker oder eine VM).",
       "machineGuard": "Direkter Maschinenzugriff auf \"{{machine}}\" ist im Agenten-Modus nicht erlaubt.\n\nAgenten müssen sich über einen Repository-Kontext für sandboxed Zugriff verbinden. Erstellen Sie zuerst einen Fork eines Repositories und verbinden Sie sich dann mit dem Fork.\n\nArbeitsablauf:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nBenutzer: Um direkten Maschinenzugriff zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO=* (oder einen bestimmten Repository-Namen) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten.",
@@ -2185,7 +2185,7 @@
     "machineRequired": "Machine-Name erforderlich. Verwenden Sie --machine <name>",
     "machineRequiredLocal": "Machine-Name erforderlich. Verwenden Sie --machine <name>",
     "networkError": "Netzwerkfehler: {{message}}",
-    "noActiveConfig": "Keine aktive Konfiguration. Erstellen Sie eine mit: rdc config init <name>",
+    "noActiveConfig": "Keine aktive Konfiguration. Erstellen Sie eine mit: rdc config init --name <name>",
     "notAuthenticated": "Nicht authentifiziert. Ausführen: rdc auth login",
     "passwordsMismatch": "Passwörter stimmen nicht überein",
     "permissionDenied": "Berechtigung verweigert",
@@ -2224,10 +2224,13 @@
     "sync": {
       "absolutePathBlocked": "Der --remote-Pfad muss relativ sein, nicht absolut. Verwenden Sie einen Pfad relativ zum Repository-Stammverzeichnis.",
       "localPathNotFound": "Lokaler Pfad existiert nicht: {{path}}",
+      "mirrorWithFile": "--mirror kann nicht verwendet werden, wenn eine Quelle eine Datei ist: Geschwisterdateien im Zielverzeichnis würden gelöscht.",
       "noHostKey": "Machine '{{machine}}' hat keinen Host-Schlüssel im Vault konfiguriert",
       "noIpAddress": "Machine '{{machine}}' hat keine IP-Adresse konfiguriert",
       "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert",
-      "pathTraversalBlocked": "Der --remote-Pfad darf keine \"..\" Pfadtraversierung enthalten. Verwenden Sie einen Pfad innerhalb des Repositorys."
+      "pathTraversalBlocked": "Der --remote-Pfad darf keine \"..\" Pfadtraversierung enthalten. Verwenden Sie einen Pfad innerhalb des Repositorys.",
+      "remoteAndRemoteFile": "--remote und --remote-file können nicht zusammen verwendet werden. Wählen Sie eine Option.",
+      "remoteFileLocalNotDir": "Wenn --remote-file gesetzt ist, muss --local ein vorhandenes Verzeichnis sein: {{path}}"
     },
     "teamRequired": "Team-Name erforderlich. Verwenden Sie --team oder stellen Sie den Kontext ein.",
     "term": {
@@ -2291,7 +2294,7 @@
       "create": "Verschlüsseltes Repository erstellen",
       "down": "Dienste stoppen",
       "fork": "CoW-Fork zum Testen",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable --name <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "Backups auf Speicher auflisten",
       "pull": "Repo-Backup vom Speicher abrufen",
       "push": "Repo-Backup zum Speicher pushen",
@@ -2360,6 +2363,7 @@
     "lang": "Sprache überschreiben ({{languages}})",
     "limit": "Maximale Anzahl von Ergebnissen",
     "localPath": "Lokaler Verzeichnispfad (Standard: aktuelles Verzeichnis)",
+    "localPaths": "Ein oder mehrere lokale Datei- oder Verzeichnispfade (Standard: aktuelles Verzeichnis)",
     "logLines": "Anzahl der angezeigten Log-Zeilen (Standard: 50)",
     "machine": "Machine-Name",
     "machineForVault": "Machine-Name (zum Aktualisieren des Vault nach Test)",
@@ -2412,6 +2416,7 @@
     "quiet": "Informationsausgabe unterdrücken",
     "rawVault": "Raw Vault JSON (für Scripts/CI)",
     "region": "Regionsname",
+    "remoteFile": "Pfad einer entfernten Datei im Repository (Alternative zu --remote für Einzeldatei-Transfers)",
     "remotePath": "Remote-Unterverzichnis-Pfad innerhalb des Repository",
     "renetPath": "Pfad zur renet-Binärdatei (Standard: renet in PATH)",
     "repository": "Repository-Name (verbindet sich mit Repository-Umgebung)",

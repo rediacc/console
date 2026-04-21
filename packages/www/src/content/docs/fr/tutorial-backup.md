@@ -1,11 +1,14 @@
 ---
-title: "Sauvegarde et réseau"
-description: "Configurez des planifications de sauvegarde automatisées, gérez les fournisseurs de stockage, configurez le réseau d'infrastructure et enregistrez les ports de service."
-category: "Tutorials"
+title: Sauvegarde et réseau
+description: >-
+  Configurez des planifications de sauvegarde automatisées, gérez les
+  fournisseurs de stockage, configurez le réseau d'infrastructure et enregistrez
+  les ports de service.
+category: Tutorials
 order: 6
 language: fr
-sourceHash: "3af2b8e2e6105e29"
-sourceCommit: "2223eabccb947ee9da79f1afcef075e163797d13"
+sourceHash: b91d408984abfc75
+sourceCommit: 2223eabccb947ee9da79f1afcef075e163797d13
 ---
 
 # Comment configurer les sauvegardes et le réseau avec Rediacc
@@ -113,7 +116,7 @@ Le format cron est `minute hour day month weekday`. Planifications courantes : `
 Le nom de destination doit correspondre à un fournisseur de stockage configuré. Exécutez `rdc config storage list` pour voir les noms disponibles. Ajoutez de nouveaux fournisseurs via la configuration rclone.
 
 **"Infrastructure config incomplete" lors du déploiement**
-Les trois champs sont requis : `--public-ipv4`, `--base-domain` et `--cert-email`. Exécutez `rdc config infra show <machine>` pour vérifier les champs manquants.
+Les trois champs sont requis : `--public-ipv4`, `--base-domain` et `--cert-email`. Exécutez `rdc config infra show -m <machine>` pour vérifier les champs manquants.
 
 ## Étapes suivantes
 

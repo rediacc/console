@@ -37,7 +37,7 @@ function filterSensitiveEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     Object.entries(env).filter(
       ([key]) => !SENSITIVE_ENV_PREFIXES.some((prefix) => key.startsWith(prefix))
     )
-  ) as NodeJS.ProcessEnv;
+  );
 }
 
 /**

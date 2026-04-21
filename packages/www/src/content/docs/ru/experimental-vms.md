@@ -1,10 +1,12 @@
 ---
-title: "Экспериментальные VM"
-description: "Создание локальных кластеров VM для разработки и тестирования с помощью rdc ops."
-category: "Concepts"
+title: Экспериментальные VM
+description: >-
+  Создание локальных кластеров VM для разработки и тестирования с помощью rdc
+  ops.
+category: Concepts
 order: 2
 language: ru
-sourceHash: "af686ab0f22d58c7"
+sourceHash: df01dc35c82beb81
 ---
 
 # Экспериментальные VM
@@ -140,7 +142,7 @@ rdc ops down
 | `rdc ops up [options]` | Создание кластера VM |
 | `rdc ops down` | Уничтожение всех VM и очистка |
 | `rdc ops status` | Отображение статуса всех VM |
-| `rdc ops ssh <vm-id> [command...]` | SSH-подключение к VM или выполнение команды на ней |
+| `rdc ops ssh --vm-id <id> [command...]` | SSH-подключение к VM или выполнение команды на ней |
 
 ### Параметры `rdc ops up`
 

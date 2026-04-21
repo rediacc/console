@@ -158,11 +158,11 @@ export async function generateKeyPair(): Promise<{
   publicKey: string;
   privateKey: string;
 }> {
-  const keyPair = (await crypto.subtle.generateKey(
+  const keyPair = await crypto.subtle.generateKey(
     { name: 'Ed25519' },
     true, // extractable
     ['sign', 'verify']
-  )) as unknown as { publicKey: CryptoKey; privateKey: CryptoKey };
+  );
 
   const publicKeyBuffer = await crypto.subtle.exportKey('spki', keyPair.publicKey);
   const privateKeyBuffer = await crypto.subtle.exportKey('pkcs8', keyPair.privateKey);

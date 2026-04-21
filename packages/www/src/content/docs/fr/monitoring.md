@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: fr
-sourceHash: "1b60f9a60324f737"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 7574575ee78682a9
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # Supervision
@@ -19,7 +19,7 @@ Rediacc fournit des commandes de supervision intégrées pour inspecter la sant�
 Obtenez un rapport de santé complet pour une machine :
 
 ```bash
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 Ce rapport inclut :
@@ -35,7 +35,7 @@ Utilisez `--output json` pour une sortie lisible par les machines.
 Affichez tous les conteneurs en cours d'exécution sur tous les dépôts d'une machine :
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 | Colonne | Description |
@@ -59,7 +59,7 @@ La sortie JSON inclut les détails complets des conteneurs (`labels`, `port_mapp
 Affichez les services systemd liés à Rediacc sur une machine :
 
 ```bash
-rdc machine services server-1
+rdc machine services --name server-1
 ```
 
 | Colonne | Description |
@@ -82,7 +82,7 @@ La sortie JSON inclut les détails complets des services avec `repository` (nom 
 Affichez les dépôts sur une machine avec des statistiques détaillées :
 
 ```bash
-rdc machine repos server-1
+rdc machine repos --name server-1
 ```
 
 | Colonne | Description |

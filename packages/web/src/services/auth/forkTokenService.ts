@@ -175,7 +175,7 @@ class ForkTokenService {
       childName,
       tokenExpirationHours: expirationHours,
     });
-    const credentials = parseForkAuthenticationRequest(response as never);
+    const credentials = parseForkAuthenticationRequest(response);
 
     if (!credentials.nextRequestToken) {
       throw new Error('Fork token data not found in API response');

@@ -156,7 +156,7 @@ const InstallMethods: React.FC<InstallMethodsProps> = ({ lang }) => {
   const filterTabs: { key: FilterTab; label: string; icon?: React.FC }[] = [
     { key: 'all', label: t('pages.install.platformFilter.all') },
     ...PLATFORMS.map(({ key }) => ({
-      key: key as FilterTab,
+      key,
       label: t(`hero.install.tabs.${key}`),
       icon: PLATFORM_ICON_MAP[key],
     })),

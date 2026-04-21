@@ -1,4 +1,3 @@
-import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import { canBackupToStorage } from '@/platform';
 import { showMessage } from '@/utils/messages';
 import type { FunctionExecutionContext } from '../hooks/useFunctionExecution';
@@ -78,7 +77,7 @@ async function deployToSingleMachine(
     return null;
   }
 
-  const result = await executeDynamic('backup_push' as BridgeFunctionName, {
+  const result = await executeDynamic('backup_push', {
     params: {
       ...functionData.params,
       machines: machinesArray.join(','),
@@ -214,7 +213,7 @@ async function backupToSingleStorage(
     return null;
   }
 
-  const result = await executeDynamic('backup_push' as BridgeFunctionName, {
+  const result = await executeDynamic('backup_push', {
     params: {
       ...functionData.params,
       storages: storagesArray.join(','),

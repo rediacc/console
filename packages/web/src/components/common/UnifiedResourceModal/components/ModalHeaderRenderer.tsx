@@ -73,7 +73,7 @@ export const createFunctionSubtitle = (
     typeof existingData.teamName === 'string' ? existingData.teamName : t('common:unknown');
 
   const resourceNameKey = `${resourceType}Name`;
-  const resourceNameValue = (existingData as Record<string, unknown>)[resourceNameKey];
+  const resourceNameValue = existingData[resourceNameKey];
   const resourceName: string = typeof resourceNameValue === 'string' ? resourceNameValue : '';
 
   return (

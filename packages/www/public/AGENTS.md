@@ -55,10 +55,10 @@ All JSON output uses a consistent envelope:
 
 ```bash
 rdc machine query --name <machine> -o json       # Machine status and resources
-rdc machine containers <machine> -o json         # List Docker containers
-rdc machine services <machine> -o json           # List systemd services
-rdc machine repos <machine> -o json              # List deployed repositories
-rdc machine health <machine> -o json             # Health check
+rdc machine containers --name <machine> -o json         # List Docker containers
+rdc machine services --name <machine> -o json           # List systemd services
+rdc machine repos --name <machine> -o json              # List deployed repositories
+rdc machine health --name <machine> -o json             # Health check
 rdc repo up --name <repo> -m <machine> --yes     # Deploy a repository
 rdc repo down --name <repo> -m <machine> --yes   # Stop a repository
 rdc term connect -m <machine> -c "command"       # Run command via SSH

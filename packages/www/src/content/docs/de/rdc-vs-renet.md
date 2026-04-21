@@ -1,11 +1,11 @@
 ---
 title: rdc vs renet
-description: Wann Sie rdc verwenden und wann renet, eine Übersicht.
+description: 'Wann Sie rdc verwenden und wann renet, eine Übersicht.'
 category: Concepts
 order: 1
 language: de
-sourceHash: "86bc5f8593d408de"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 526136e143dbcf08
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # rdc vs renet
@@ -47,7 +47,7 @@ rdc repo up --name my-app -m server-1
 rdc repo down --name my-app -m server-1
 
 # Maschinengesundheit prüfen
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 Siehe den [Schnellstart](/de/docs/quick-start) für eine vollständige Anleitung.

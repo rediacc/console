@@ -81,11 +81,11 @@ export function getPlatformKey(): PlatformKey | null {
 
   switch (process.platform) {
     case 'linux':
-      return `linux-${arch}` as PlatformKey;
+      return `linux-${arch}`;
     case 'darwin':
-      return `mac-${arch}` as PlatformKey;
+      return `mac-${arch}`;
     case 'win32':
-      return `win-${arch}` as PlatformKey;
+      return `win-${arch}`;
     default:
       return null;
   }

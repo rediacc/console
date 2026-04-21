@@ -1,11 +1,11 @@
 ---
-title: "Geçiş Rehberi"
-description: "Mevcut projeleri şifrelenmiş Rediacc depolarına taşıyın."
-category: "Guides"
+title: Geçiş Rehberi
+description: Mevcut projeleri şifrelenmiş Rediacc depolarına taşıyın.
+category: Guides
 order: 11
 language: tr
-sourceHash: "5e13e363e9dce55f"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: c0ea82abb1d29de0
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # Geçiş Rehberi
@@ -210,7 +210,7 @@ Bu işlem:
 Konteynerlerinizin çalıştığını doğrulayın:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## Adım 7: Otomatik Başlatmayı Etkinleştirme (Isteğe Bağlı)

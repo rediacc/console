@@ -4,8 +4,8 @@ description: rdc を使う場面と renet を使う場面。
 category: Concepts
 order: 1
 language: ja
-sourceHash: "86bc5f8593d408de"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 526136e143dbcf08
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # rdc vs renet
@@ -47,7 +47,7 @@ rdc repo up --name my-app -m server-1
 rdc repo down --name my-app -m server-1
 
 # マシンの健全性を確認
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 完全なウォークスルーについては、[クイックスタート](/ja/docs/quick-start)を参照してください。

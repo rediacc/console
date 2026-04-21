@@ -4,7 +4,8 @@ description: ファイル同期、ターミナルアクセス、VS Code統合、
 category: Guides
 order: 9
 language: ja
-sourceHash: "5577c66ce89c1925"
+sourceHash: 2cf225f5af0b2d32
+sourceCommit: 9fbdf33aa443d362590f37b30636c50015cc77a0
 ---
 
 # ツール
@@ -39,8 +40,9 @@ rdc repo sync status -m server-1 -r my-app
 |--------|-------------|
 | `-m, --machine <name>` | 対象マシン |
 | `-r, --repository <name>` | 対象リポジトリ |
-| `--local <path>` | ローカルディレクトリのパス |
-| `--remote <path>` | リモートパス（リポジトリマウントからの相対パス） |
+| `--local <paths...>` | 1つ以上のローカルファイル/ディレクトリパス（アップロード）またはローカル出力ディレクトリ（ダウンロード） |
+| `--remote <path>` | リモートディレクトリ（リポジトリマウントからの相対パス） |
+| `--remote-file <path>` | 単一のリモートファイル（ダウンロードのみ、`--remote` の代替） |
 | `--dry-run` | 転送せずに変更をプレビュー |
 | `--mirror` | ソースをデスティネーションにミラーリング（余分なファイルを削除） |
 | `--verify` | 転送後にチェックサムを検証 |

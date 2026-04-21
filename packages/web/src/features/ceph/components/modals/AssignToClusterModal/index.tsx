@@ -252,7 +252,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
               <Select
                 placeholder={t('machines:selectCluster')}
                 value={selectedCluster}
-                onChange={(value) => setSelectedCluster(value as string | null)}
+                onChange={(value) => setSelectedCluster(value)}
                 showSearch
                 optionFilterProp="children"
                 options={clusterOptions}

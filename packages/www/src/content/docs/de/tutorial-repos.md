@@ -1,11 +1,13 @@
 ---
-title: "Repository-Lebenszyklus"
-description: "Ein verschlüsseltes Repository erstellen, eine containerisierte Anwendung bereitstellen, Container inspizieren und aufräumen."
-category: "Tutorials"
+title: Repository-Lebenszyklus
+description: >-
+  Ein verschlüsseltes Repository erstellen, eine containerisierte Anwendung
+  bereitstellen, Container inspizieren und aufräumen.
+category: Tutorials
 order: 3
 language: de
-sourceHash: "fecc09a324a1fa65"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 46c155563808d0b7
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # So stellen Sie Repositories mit Rediacc bereit und verwalten sie
@@ -67,7 +69,7 @@ Dies mountet das Repository (falls nicht bereits gemountet), startet einen isoli
 ### Schritt 5: Laufende Container anzeigen
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 Zeigt alle laufenden Container über alle Repositories auf der Maschine, einschließlich CPU- und Speichernutzung.
@@ -96,7 +98,7 @@ rdc repo delete --name test-app -m server-1  # Repository dauerhaft löschen
 
 > **Warnung:** `repo delete` ist unwiderruflich. Alle Daten im Repository werden zerstört. Erstellen Sie bei Bedarf vorher ein Backup.
 
-> **Hinweis:** Nach dem Löschen bleibt der Konfigurationseintrag erhalten (das Repository kann auf anderen Maschinen vorhanden sein). Verwenden Sie `rdc config repository remove <name>`, um ihn zu entfernen, oder `--archive-config`, um Zugangsdaten zur Wiederherstellung zu sichern.
+> **Hinweis:** Nach dem Löschen bleibt der Konfigurationseintrag erhalten (das Repository kann auf anderen Maschinen vorhanden sein). Verwenden Sie `rdc config repository remove --name <name>`, um ihn zu entfernen, oder `--archive-config`, um Zugangsdaten zur Wiederherstellung zu sichern.
 
 ## Fehlerbehebung
 

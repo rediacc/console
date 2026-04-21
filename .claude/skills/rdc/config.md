@@ -85,7 +85,7 @@ Destroys a cloud-provisioned VM via OpenTofu and removes from config. Only works
 ### Workflow: Cloud-provisioned machine
 ```bash
 rdc config ssh set --key ~/.ssh/id_ed25519
-rdc config provider add my-linode --provider linode/linode --token $TOKEN --region us-east
+rdc config provider add --name my-linode --provider linode/linode --token $TOKEN --region us-east
 rdc machine provision --name prod-1 --provider my-linode
 # baseDomain auto-detected from sibling machines (or pass --base-domain example.com)
 # Now ready for: rdc repo create --name <name> -m prod-1 --size 5G

@@ -1,11 +1,11 @@
 ---
-title: "Migrationsleitfaden"
-description: "Bestehende Projekte in verschlüsselte Rediacc-Repositories migrieren."
-category: "Guides"
+title: Migrationsleitfaden
+description: Bestehende Projekte in verschlüsselte Rediacc-Repositories migrieren.
+category: Guides
 order: 11
 language: de
-sourceHash: "5e13e363e9dce55f"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: c0ea82abb1d29de0
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # Migrationsleitfaden
@@ -210,7 +210,7 @@ Dies wird:
 Überprüfen Sie, ob Ihre Container laufen:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## Schritt 7: Autostart aktivieren (Optional)

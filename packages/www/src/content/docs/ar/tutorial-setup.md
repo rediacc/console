@@ -1,10 +1,12 @@
 ---
-title: "إعداد الجهاز"
-description: "إنشاء ملف تعريف التكوين، تسجيل جهاز بعيد، التحقق من اتصال SSH، وتكوين إعدادات البنية التحتية."
-category: "Tutorials"
+title: إعداد الجهاز
+description: >-
+  إنشاء ملف تعريف التكوين، تسجيل جهاز بعيد، التحقق من اتصال SSH، وتكوين إعدادات
+  البنية التحتية.
+category: Tutorials
 order: 2
 language: ar
-sourceHash: "2a32100e76d41bc0"
+sourceHash: 0c36a98feadd7aaa
 ---
 
 # كيفية إعداد جهاز باستخدام Rediacc
@@ -103,7 +105,7 @@ rdc config infra set -m bridge-vm \
 rdc config infra show -m bridge-vm
 ```
 
-انشر تكوين وكيل Traefik المُنشأ إلى الخادم باستخدام `rdc config infra push bridge-vm`.
+انشر تكوين وكيل Traefik المُنشأ إلى الخادم باستخدام `rdc config infra push -m bridge-vm`.
 
 ## استكشاف الأخطاء وإصلاحها
 
@@ -114,7 +116,7 @@ rdc config infra show -m bridge-vm
 تأكد من تشغيل الخادم وصحة عنوان IP. تحقق من أن المنفذ 22 مفتوح: `nc -zv <ip> 22`. إذا كنت تستخدم منفذاً غير قياسي، مرّر `--port` عند إضافة الجهاز.
 
 **"Host key verification failed"**
-المفتاح المخزن لا يتطابق مع مفتاح الخادم الحالي. يحدث هذا بعد إعادة بناء الخادم أو إعادة تعيين عنوان IP. شغّل `rdc config machine scan-keys <machine>` لتحديث المفتاح.
+المفتاح المخزن لا يتطابق مع مفتاح الخادم الحالي. يحدث هذا بعد إعادة بناء الخادم أو إعادة تعيين عنوان IP. شغّل `rdc config machine scan-keys -m <machine>` لتحديث المفتاح.
 
 ## الخطوات التالية
 

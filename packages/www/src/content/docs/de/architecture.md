@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: de
-sourceHash: "2c2d289c280e2a7f"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 342214c5a4cf9321
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # Architektur
@@ -46,7 +46,7 @@ Der Standard für die Selbsthosting-Nutzung. Der gesamte Zustand liegt in einer 
 - Direkte SSH-Verbindungen zu Maschinen
 - Keine externen Dienste erforderlich
 - Einzelbenutzer, einzelne Workstation
-- Die Standardkonfiguration wird beim ersten CLI-Aufruf automatisch erstellt. Benannte Konfigurationen werden mit `rdc config init <name>` erstellt
+- Die Standardkonfiguration wird beim ersten CLI-Aufruf automatisch erstellt. Benannte Konfigurationen werden mit `rdc config init --name <name>` erstellt
 
 ### Cloud-Adapter (Experimentell)
 

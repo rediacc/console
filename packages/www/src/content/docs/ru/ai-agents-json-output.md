@@ -1,10 +1,12 @@
 ---
 title: Справочник по JSON-выводу
-description: Полный справочник по формату JSON-вывода rdc CLI, схеме конверта, обработке ошибок и командам обнаружения агентов.
+description: >-
+  Полный справочник по формату JSON-вывода rdc CLI, схеме конверта, обработке
+  ошибок и командам обнаружения агентов.
 category: Reference
 order: 51
 language: ru
-sourceHash: "11259cd1eeebf361"
+sourceHash: 43cdbf89d4314d73
 ---
 
 Все команды `rdc` поддерживают структурированный JSON-вывод для программного использования AI-агентами и скриптами.
@@ -24,7 +26,7 @@ rdc machine query --name prod-1 -o json
 
 ```bash
 # These all produce JSON automatically
-result=$(rdc machine query prod-1)
+result=$(rdc machine query --name prod-1)
 echo '{}' | rdc agent exec "machine query"
 ```
 
@@ -106,7 +108,7 @@ echo '{}' | rdc agent exec "machine query"
 Используйте `--fields` для ограничения вывода определёнными ключами. Это снижает потребление токенов, когда нужны только определённые данные:
 
 ```bash
-rdc machine containers prod-1 -o json --fields name,status,repository
+rdc machine containers --name prod-1 -o json --fields name,status,repository
 ```
 
 ## Вывод пробного запуска
@@ -192,7 +194,7 @@ echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine query prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python

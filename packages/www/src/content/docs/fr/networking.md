@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 6
 language: fr
-sourceHash: "536db0c93646cad6"
-sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
+sourceHash: 5f8a1092ed53e1b4
+sourceCommit: 8b0f83c57ebaaa0a2bee93143db34ab677b4e68b
 ---
 
 # Réseau
@@ -206,7 +206,7 @@ Le chemin complet qu'un certificat Let's Encrypt parcourt depuis son émission j
 
 2. **Dump par dépôt (optionnel).** Les services qui ont besoin de fichiers de certificats dans leur propre conteneur (par exemple, un serveur de messagerie qui lit un `.pem` directement) déploient un petit conteneur `traefik-certs-dumper` à côté d'eux. Le dumper monte `/opt/rediacc/proxy/letsencrypt` en lecture seule et écrit le certificat et la clé extraits dans le volume de données du dépôt sous forme de `cert.pem` / `key.pem`. Pour que cela fonctionne, le démon Docker par dépôt doit avoir `/opt/rediacc/proxy` dans sa liste d'autorisations d'espace de noms de montage. Cela est déjà inclus par défaut.
 
-3. **Cache côté client (`rediacc.json`).** La CLI met en cache une copie compressée de `acme.json` sous `acmeCertCache` dans votre fichier de configuration, indexée par `baseDomain`. Cela permet à plusieurs machines de partager des certificats (via `rdc config cert-cache push <machine>`) et sert d'inventaire hors ligne.
+3. **Cache côté client (`rediacc.json`).** La CLI met en cache une copie compressée de `acme.json` sous `acmeCertCache` dans votre fichier de configuration, indexée par `baseDomain`. Cela permet à plusieurs machines de partager des certificats (via `rdc config cert-cache push -m <machine>`) et sert d'inventaire hors ligne.
 
 **Déclencheurs de synchronisation pour le cache client :**
 

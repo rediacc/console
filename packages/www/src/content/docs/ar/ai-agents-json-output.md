@@ -1,10 +1,12 @@
 ---
 title: مرجع مخرجات JSON
-description: مرجع كامل لتنسيق مخرجات JSON لأداة rdc CLI، ومخطط الغلاف، ومعالجة الأخطاء، وأوامر اكتشاف الوكيل.
+description: >-
+  مرجع كامل لتنسيق مخرجات JSON لأداة rdc CLI، ومخطط الغلاف، ومعالجة الأخطاء،
+  وأوامر اكتشاف الوكيل.
 category: Reference
 order: 51
 language: ar
-sourceHash: "11259cd1eeebf361"
+sourceHash: 43cdbf89d4314d73
 ---
 
 تدعم جميع أوامر `rdc` مخرجات JSON المنظمة للاستهلاك البرمجي بواسطة وكلاء الذكاء الاصطناعي والنصوص البرمجية.
@@ -24,7 +26,7 @@ rdc machine query --name prod-1 -o json
 
 ```bash
 # These all produce JSON automatically
-result=$(rdc machine query prod-1)
+result=$(rdc machine query --name prod-1)
 echo '{}' | rdc agent exec "machine query"
 ```
 
@@ -106,7 +108,7 @@ echo '{}' | rdc agent exec "machine query"
 استخدم `--fields` لتحديد المخرجات بمفاتيح معينة. هذا يقلل استهلاك الرموز عندما تحتاج فقط إلى بيانات محددة:
 
 ```bash
-rdc machine containers prod-1 -o json --fields name,status,repository
+rdc machine containers --name prod-1 -o json --fields name,status,repository
 ```
 
 ## مخرجات التشغيل التجريبي
@@ -192,7 +194,7 @@ echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine query prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python

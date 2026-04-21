@@ -1,11 +1,13 @@
 ---
-title: "Sorun Giderme"
-description: "SSH, kurulum, depolar, servisler ve Docker ile ilgili yaygın sorunların çözümleri."
-category: "Guides"
+title: Sorun Giderme
+description: >-
+  SSH, kurulum, depolar, servisler ve Docker ile ilgili yaygın sorunların
+  çözümleri.
+category: Guides
 order: 10
 language: tr
-sourceHash: "ee8fe3ee7166cfe4"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: 4575658381fb6508
+sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
 ---
 
 # Sorun Giderme
@@ -15,7 +17,7 @@ Yaygın sorunlar ve çözümleri. Şüphe durumunda, kapsamlı bir tanılama kon
 ## SSH Bağlantısı Başarısız
 
 - Manuel olarak bağlanabildiğinizi doğrulayın: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Host anahtarlarını yenilemek için `rdc config machine scan-keys server-1` komutunu çalıştırın
+- Host anahtarlarını yenilemek için `rdc config machine scan-keys -m server-1` komutunu çalıştırın
 - SSH portunun eşleştiğini kontrol edin: `--port 22`
 - Basit bir komutla test edin: `rdc term connect -m server-1 -c "hostname"`
 
@@ -33,7 +35,7 @@ Bu komut yeni host anahtarlarını alır ve yapılandırmanızı günceller.
 
 - SSH kullanıcısının şifresiz sudo erişimine sahip olduğundan emin olun veya gerekli komutlar için `NOPASSWD` yapılandırın
 - Sunucudaki kullanılabilir disk alanını kontrol edin
-- Ayrıntılı çıktı için `--debug` ile çalıştırın: `rdc config machine setup server-1 --debug`
+- Ayrıntılı çıktı için `--debug` ile çalıştırın: `rdc config machine setup --name server-1 --debug`
 
 ## Dağıtıma Özgü Kurulum Sorunları
 
@@ -100,7 +102,7 @@ rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 Veya tüm konteynerleri görüntüleyin:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## İzin Reddedildi Hataları

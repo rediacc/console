@@ -1,10 +1,12 @@
 ---
-title: "Surveillance et diagnostics"
-description: "Vérifier l'état de la machine, inspecter les conteneurs, examiner les services systemd, scanner les clés d'hôte et exécuter les diagnostics d'environnement."
-category: "Tutorials"
+title: Surveillance et diagnostics
+description: >-
+  Vérifier l'état de la machine, inspecter les conteneurs, examiner les services
+  systemd, scanner les clés d'hôte et exécuter les diagnostics d'environnement.
+category: Tutorials
 order: 4
 language: fr
-sourceHash: "2efd897e27dca34e"
+sourceHash: fa85cf9b00d42a6e
 ---
 
 # Comment surveiller et diagnostiquer l'infrastructure avec Rediacc
@@ -33,7 +35,7 @@ Vérifie Node.js, la version de la CLI, le binaire renet, la configuration et le
 ### Étape 2 : Vérification de la santé de la machine
 
 ```bash
-rdc machine health server-1
+rdc machine health --name server-1
 ```
 
 Récupère un rapport de santé complet de la machine distante : temps de fonctionnement du système, utilisation du disque, utilisation du datastore, nombre de conteneurs, état SMART du stockage et problèmes identifiés.
@@ -41,7 +43,7 @@ Récupère un rapport de santé complet de la machine distante : temps de foncti
 ### Étape 3 : Voir les conteneurs en cours d'exécution
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 Liste tous les conteneurs en cours d'exécution sur tous les dépôts de la machine, affichant le nom, le statut, l'état, la santé, l'utilisation CPU, l'utilisation mémoire et le dépôt propriétaire de chaque conteneur.
@@ -51,7 +53,7 @@ Liste tous les conteneurs en cours d'exécution sur tous les dépôts de la mach
 Pour voir les services sous-jacents qui alimentent le Docker daemon et le réseau de chaque dépôt :
 
 ```bash
-rdc machine services server-1
+rdc machine services --name server-1
 ```
 
 Liste les services systemd liés à Rediacc (Docker daemons, alias loopback) avec leur état, sous-état, nombre de redémarrages et utilisation mémoire.
@@ -94,7 +96,7 @@ Vérifiez que la machine est en ligne et accessible : `ping <ip>`. Vérifiez que
 Les services Rediacc n'apparaissent qu'après le déploiement d'au moins un dépôt. Si aucun dépôt n'existe, la liste des services est vide.
 
 **La liste des conteneurs affiche des conteneurs obsolètes ou arrêtés**
-Les conteneurs de déploiements précédents peuvent persister si `repo down` n'a pas été exécuté proprement. Arrêtez-les avec `rdc repo down <repo> -m <machine>` ou inspectez directement via `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
+Les conteneurs de déploiements précédents peuvent persister si `repo down` n'a pas été exécuté proprement. Arrêtez-les avec `rdc repo down --name <repo> -m <machine>` ou inspectez directement via `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
 
 ## Étapes suivantes
 

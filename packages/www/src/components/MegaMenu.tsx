@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { SolutionCategory } from '../config/solution-pages';
 import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
@@ -198,7 +197,7 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onToggle, onClose }) => {
                 aria-label={group.label}
               >
                 <span className="mega-menu-category-label">
-                  {React.createElement(CATEGORY_ICONS[group.category as SolutionCategory], {
+                  {React.createElement(CATEGORY_ICONS[group.category], {
                     size: 16,
                     className: 'mega-menu-category-icon',
                   })}

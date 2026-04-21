@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: tr
-sourceHash: "2c2d289c280e2a7f"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: 342214c5a4cf9321
+sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 ---
 
 # Mimari
@@ -46,7 +46,7 @@ Kendi sunucunuzda barındırma için varsayılandır. Tüm durum bilgisi iş ist
 - Makinelere doğrudan SSH bağlantısı
 - Harici servis gerekmez
 - Tek kullanıcı, tek iş istasyonu
-- Varsayılan yapılandırma ilk CLI kullanımında otomatik oluşturulur. Adlandırılmış yapılandırmalar `rdc config init <name>` ile oluşturulur
+- Varsayılan yapılandırma ilk CLI kullanımında otomatik oluşturulur. Adlandırılmış yapılandırmalar `rdc config init --name <name>` ile oluşturulur
 
 ### Bulut Adaptörü (Deneysel)
 

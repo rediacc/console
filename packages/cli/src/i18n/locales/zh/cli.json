@@ -342,7 +342,7 @@
         "push": {
           "description": "将缓存的 TLS 证书上传到机器",
           "merged": "已将 {{count}} 个有效期更长的证书合并到 {{machine}}",
-          "noCache": "未找到证书缓存。请先运行 'rdc config cert-cache pull <machine>'",
+          "noCache": "未找到证书缓存。请先运行 'rdc config cert-cache pull -m <machine>'",
           "uploaded": "已上传 {{count}} 个证书到 {{machine}}",
           "uploading": "正在将缓存的证书上传到 {{machine}}...",
           "upToDate": "{{machine}} 上的证书已是最新"
@@ -376,7 +376,7 @@
           "dnsError": "DNS 警告：{{message}}（可能需要手动设置记录）",
           "dnsResolvingZone": "正在解析 {{domain}} 的 Cloudflare 区域...",
           "dnsSkipLocal": "跳过 DNS：.local 域名不使用 Cloudflare",
-          "dnsSkipNoToken": "跳过 DNS：没有 Cloudflare API 令牌。使用以下命令设置：rdc config infra set <machine> --cf-dns-token <token>",
+          "dnsSkipNoToken": "跳过 DNS：没有 Cloudflare API 令牌。使用以下命令设置：rdc config infra set -m <machine> --cf-dns-token <token>",
           "dnsUnchanged": "DNS：{{type}} {{name}} 已是正确配置",
           "dnsUpdated": "DNS：已更新 {{type}} {{name}} → {{content}}",
           "installingProxy": "正在安装并启动代理...",
@@ -535,7 +535,7 @@
         "description": "管理当前配置中的仓库映射",
         "list": {
           "description": "列出当前配置中的仓库 GUID 映射",
-          "noRepositories": "未配置仓库。使用以下命令添加：rdc config repository add <name> --guid <guid>"
+          "noRepositories": "未配置仓库。使用以下命令添加：rdc config repository add --name <name> --guid <guid>"
         },
         "listArchived": {
           "description": "列出已归档的仓库凭据",
@@ -606,7 +606,7 @@
         },
         "list": {
           "description": "列出当前配置中的存储",
-          "noStorages": "未配置存储。使用以下命令导入：rdc config storage import <file>"
+          "noStorages": "未配置存储。使用以下命令导入：rdc config storage import --file <path>"
         },
         "remove": {
           "description": "从当前配置中移除存储",
@@ -810,7 +810,7 @@
         "description": "使用OpenTofu在云提供商上配置新机器",
         "failed": "机器配置失败：{{error}}",
         "infraInherited": "已从兄弟机器 \"{{source}}\" 自动检测到基础域名",
-        "noInfraHint": "未配置基础域名。运行 'rdc config infra set <machine> --base-domain <domain>' 然后 'rdc config infra push <machine>' 以启用 DNS 和代理。",
+        "noInfraHint": "未配置基础域名。运行 'rdc config infra set -m <machine> --base-domain <domain>' 然后 'rdc config infra push -m <machine>' 以启用 DNS 和代理。",
         "optionBaseDomain": "基础设施的基础域名（例如 example.com）。隐含 --infra",
         "optionImage": "覆盖默认操作系统镜像",
         "optionInfra": "同时配置基础设施（infra set + infra push）",
@@ -1249,7 +1249,7 @@
         "archiveHint": "要归档凭据以便恢复: 使用 --archive-config 重新运行",
         "archiveOption": "将配置条目移至 deletedRepositories 以便后续恢复",
         "completed": "仓库已删除",
-        "configRetained": "\"{{repository}}\" 的配置条目已保留 (仓库可能存在于其他机器上)。要移除: rdc config repository remove {{repository}}",
+        "configRetained": "\"{{repository}}\" 的配置条目已保留 (仓库可能存在于其他机器上)。要移除: rdc config repository remove --name {{repository}}",
         "description": "删除仓库（销毁容器、卷和加密镜像）。配置条目将被保留。使用 --archive-config 将凭据移至 deletedRepositories，可通过 'config restore-archived' 恢复",
         "descriptionShort": "从机器上删除仓库",
         "failed": "仓库删除失败",
@@ -1450,7 +1450,7 @@
         "forceOption": "跳过修改警告",
         "grandNotFound": "未找到分支 \"{{name}}\" 的主仓库",
         "notAFork": "\"{{name}}\" 不是分支仓库（缺少 parentGuid）",
-        "revertHint": "要还原：rdc repo takeover {{backup}} -m {{machine}}",
+        "revertHint": "要还原：rdc repo takeover --name {{backup}} -m {{machine}}",
         "rollback": "已回滚 \"{{name}}\" 的配置",
         "starting": "正在用 \"{{fork}}\" 的数据接管 \"{{machine}}\" 上的 \"{{grand}}\"..."
       },
@@ -2142,7 +2142,7 @@
       "createGuardOverride": "无法创建新的 grand 仓库 \"{{name}}\"。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改为 fork 现有仓库：\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "无法创建新的 grand 仓库 \"{{name}}\"。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n请改为 fork 现有仓库：\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
       "forkBlocked": "命令 \"{{command}}\" 在 fork 仓库上不可用。\n\nFork 仓库是临时沙箱环境。此操作仅适用于 grand（生产）仓库。请要求用户直接运行此命令。",
-      "grandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\nGrand 仓库包含生产数据。请改用 fork — fork 是安全、隔离的沙箱副本。\n\n工作流程：\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作（例如：rdc repo up {{name}}:<tag-name> -m <machine> --mount）\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork\n\n用户提示：要允许直接访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。",
+      "grandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\nGrand 仓库包含生产数据。请改用 fork — fork 是安全、隔离的沙箱副本。\n\n工作流程：\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作（例如：rdc repo up --name {{name}}:<tag-name> -m <machine> --mount）\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork\n\n用户提示：要允许直接访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。",
       "grandGuardOverride": "\"{{name}}\" 是一个 grand（生产）仓库。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改用 fork — fork 是安全、隔离的沙箱副本：\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork",
       "grandGuardOverrideNonLinux": "\"{{name}}\" 是一个 grand（生产）仓库。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n工作流程：\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
       "machineGuard": "在代理模式下不允许直接访问机器 \"{{machine}}\"。\n\n代理必须通过仓库上下文连接以获得沙箱访问。请先 fork 一个仓库，然后连接到 fork。\n\n工作流程：\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\n用户提示：要允许直接机器访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
@@ -2185,7 +2185,7 @@
     "machineRequired": "需要机器名称。使用 --machine <name>",
     "machineRequiredLocal": "需要机器名称。使用 --machine <name>",
     "networkError": "网络错误：{{message}}",
-    "noActiveConfig": "没有活跃的配置。请使用以下命令创建：rdc config init <name>",
+    "noActiveConfig": "没有活跃的配置。请使用以下命令创建：rdc config init --name <name>",
     "notAuthenticated": "未认证。运行：rdc auth login",
     "passwordsMismatch": "密码不匹配",
     "permissionDenied": "权限被拒绝",
@@ -2224,10 +2224,13 @@
     "sync": {
       "absolutePathBlocked": "--remote 路径必须是相对路径，不能是绝对路径。请使用相对于仓库根目录的路径。",
       "localPathNotFound": "本地路径不存在：{{path}}",
+      "mirrorWithFile": "当源是文件时不能使用 --mirror：这会删除目标目录中的同级文件。",
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
-      "pathTraversalBlocked": "--remote 路径不得包含 \"..\" 路径遍历。请使用仓库内的路径。"
+      "pathTraversalBlocked": "--remote 路径不得包含 \"..\" 路径遍历。请使用仓库内的路径。",
+      "remoteAndRemoteFile": "--remote 和 --remote-file 不能同时使用。请选择其中一个。",
+      "remoteFileLocalNotDir": "设置了 --remote-file 时，--local 必须是已存在的目录：{{path}}"
     },
     "teamRequired": "需要团队名称。使用 --team 或设置上下文。",
     "term": {
@@ -2291,7 +2294,7 @@
       "create": "创建加密仓库",
       "down": "停止服务",
       "fork": "创建 CoW 测试分支",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable --name <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "列出存储上的备份",
       "pull": "从存储拉取仓库备份",
       "push": "推送仓库备份到存储",
@@ -2360,6 +2363,7 @@
     "lang": "语言覆盖（{{languages}}）",
     "limit": "最大结果数",
     "localPath": "本地目录路径（默认：当前目录）",
+    "localPaths": "一个或多个本地文件或目录路径（默认：当前目录）",
     "logLines": "显示的日志行数（默认：50）",
     "machine": "机器名称",
     "machineForVault": "机器名称（用于测试后更新保险箱）",
@@ -2412,6 +2416,7 @@
     "quiet": "抑制信息性输出",
     "rawVault": "原始保险箱 JSON（用于脚本/CI）",
     "region": "区域名称",
+    "remoteFile": "仓库中的远程文件路径（用于单文件传输，作为 --remote 的替代项）",
     "remotePath": "仓库内的远程子目录路径",
     "renetPath": "renet 二进制文件的路径（默认：PATH 中的 renet）",
     "repository": "仓库名称（连接到仓库环境）",

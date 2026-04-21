@@ -48,9 +48,7 @@ export function parseGetRequestAuthenticationStatus(
   const row =
     extractFirstByIndex<AuthStatusRow>(response, 1) ??
     extractFirstByIndex<AuthStatusRow>(response, 0) ??
-    (typeof (response as AuthStatusRow).isTFAEnabled === 'undefined'
-      ? null
-      : (response as AuthStatusRow));
+    (typeof (response as AuthStatusRow).isTFAEnabled === 'undefined' ? null : response);
 
   return normalizeAuthStatus(row);
 }

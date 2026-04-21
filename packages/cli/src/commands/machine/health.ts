@@ -140,11 +140,13 @@ function displayHealthReport(health: MachineHealthResult, name: string): void {
 
 export function registerHealthCommand(machine: Command, program: Command): void {
   machine
-    .command('health <name>')
+    .command('health')
     .description(t('commands.machine.health.description'))
+    .requiredOption('--name <name>', t('options.name'))
     .option('-t, --team <name>', t('options.team'))
-    .action(async (name: string, options: { team?: string }) => {
+    .action(async (options: { name: string; team?: string }) => {
       try {
+        const name = options.name;
         const provider = await getStateProvider();
         if (provider.isCloud) {
           await authService.requireAuth();

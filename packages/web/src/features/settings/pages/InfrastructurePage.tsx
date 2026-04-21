@@ -136,7 +136,7 @@ const InfrastructurePage: React.FC = () => {
 
       if (data.regionName && data.regionName !== existingData.regionName) {
         await updateRegionNameMutation.mutateAsync({
-          currentRegionName: existingData.regionName as string,
+          currentRegionName: existingData.regionName,
           newRegionName: data.regionName,
         });
       }
@@ -144,7 +144,7 @@ const InfrastructurePage: React.FC = () => {
       const vaultData = data.vaultContent;
       if (vaultData && vaultData !== existingData.vaultContent) {
         await updateRegionVaultMutation.mutateAsync({
-          regionName: (data.regionName ?? existingData.regionName) as string,
+          regionName: data.regionName ?? existingData.regionName,
           vaultContent: vaultData,
           vaultVersion: (existingData.vaultVersion ?? 0) + 1,
         });
@@ -172,8 +172,8 @@ const InfrastructurePage: React.FC = () => {
 
       if (data.bridgeName && data.bridgeName !== existingData.bridgeName) {
         await updateBridgeNameMutation.mutateAsync({
-          regionName: existingData.regionName as string,
-          currentBridgeName: existingData.bridgeName as string,
+          regionName: existingData.regionName,
+          currentBridgeName: existingData.bridgeName,
           newBridgeName: data.bridgeName,
         });
       }
@@ -181,8 +181,8 @@ const InfrastructurePage: React.FC = () => {
       const vaultData = data.vaultContent;
       if (vaultData && vaultData !== existingData.vaultContent) {
         await updateBridgeVaultMutation.mutateAsync({
-          regionName: (data.regionName ?? existingData.regionName) as string,
-          bridgeName: (data.bridgeName ?? existingData.bridgeName) as string,
+          regionName: data.regionName ?? existingData.regionName,
+          bridgeName: data.bridgeName ?? existingData.bridgeName,
           vaultContent: vaultData,
           vaultVersion: (existingData.vaultVersion ?? 0) + 1,
         });
@@ -198,17 +198,9 @@ const InfrastructurePage: React.FC = () => {
 
       try {
         if (modalData.resourceType === 'region') {
-          await handleRegionSubmit(
-            data,
-            modalData.mode,
-            modalData.data as Partial<GetOrganizationRegions_ResultSet1> | null
-          );
+          await handleRegionSubmit(data, modalData.mode, modalData.data);
         } else {
-          await handleBridgeSubmit(
-            data,
-            modalData.mode,
-            modalData.data as Partial<GetRegionBridges_ResultSet1> | null
-          );
+          await handleBridgeSubmit(data, modalData.mode, modalData.data);
         }
         closeUnifiedModal();
       } catch {
@@ -226,15 +218,15 @@ const InfrastructurePage: React.FC = () => {
       try {
         if (modalData.resourceType === 'region') {
           await updateRegionVaultMutation.mutateAsync({
-            regionName: modalData.data.regionName as string,
+            regionName: modalData.data.regionName,
             vaultContent: vault,
             vaultVersion: version,
           });
         } else {
           const bridgeData = modalData.data as Partial<GetRegionBridges_ResultSet1>;
           await updateBridgeVaultMutation.mutateAsync({
-            regionName: bridgeData.regionName as string,
-            bridgeName: bridgeData.bridgeName as string,
+            regionName: bridgeData.regionName,
+            bridgeName: bridgeData.bridgeName,
             vaultContent: vault,
             vaultVersion: version,
           });

@@ -209,7 +209,7 @@ This will:
 Verify your containers are running:
 
 ```bash
-rdc machine containers server-1
+rdc machine containers --name server-1
 ```
 
 ## Step 7: Enable Autostart (Optional)

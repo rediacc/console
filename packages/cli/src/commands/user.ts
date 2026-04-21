@@ -233,7 +233,7 @@ export function registerUserCommands(program: Command): void {
     .action(async (email) => {
       try {
         const apiResponse = await typedApi.IsRegistered({ userName: email });
-        const status = parseIsRegistered(apiResponse as never);
+        const status = parseIsRegistered(apiResponse);
 
         if (status.isRegistered) {
           outputService.success(t('commands.user.exists.exists', { email }));
