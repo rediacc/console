@@ -3,14 +3,16 @@ import type { Language } from '../../i18n/types';
 import { createTranslator } from '../../i18n/utils';
 import { TEAM_MEMBERS } from '../../config/team-videos';
 import TeamVideoPlayer from '../TeamVideoPlayer';
+import YouTubeEmbed from '../YouTubeEmbed.astro';
 
 interface Props {
   member: string;
-  videoKey: string;
+  videoKey?: string;
+  youtubeVideoId?: string;
   lang: Language;
 }
 
-const { member, videoKey, lang } = Astro.props;
+const { member, videoKey, youtubeVideoId, lang } = Astro.props;
 const { t } = createTranslator(lang);
 const memberData = TEAM_MEMBERS[member];
 ---
@@ -29,13 +31,17 @@ const memberData = TEAM_MEMBERS[member];
     <div class="sp-team-story-content">
       <h2 class="sp-team-story-headline">{t(`team.${member}.story.headline`)}</h2>
       <p class="sp-team-story-description">{t(`team.${member}.story.description`)}</p>
-      <TeamVideoPlayer
-        client:visible
-        member={member}
-        videoKey={videoKey}
-        lang={lang}
-        size="full"
-      />
+      {youtubeVideoId ? (
+        <YouTubeEmbed videoId={youtubeVideoId} title={t('video.youtubeTitle')} playLabel={t('video.playVideo')} lang={lang} />
+      ) : videoKey ? (
+        <TeamVideoPlayer
+          client:visible
+          member={member}
+          videoKey={videoKey}
+          lang={lang}
+          size="full"
+        />
+      ) : null}
     </div>
   </div>
 </section>
