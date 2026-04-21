@@ -87,4 +87,21 @@ describe('auditLog', () => {
   it('readAuditLog returns empty array when file does not exist', () => {
     expect(readAuditLog(logPath)).toEqual([]);
   });
+
+  it('chains correctly across a log larger than the readLastHash chunk window', () => {
+    // readLastHash seeks from EOF in 64KB windows; exercise the multi-chunk
+    // path by appending enough padding that the last line sits beyond the
+    // first read. A real entry at the tail must still chain cleanly.
+    const padding = 'x'.repeat(80_000);
+    auditLog(dir, { command: 'preamble', paths: [], outcome: 'ok' });
+    // Inflate the log with a long `reason` field so the next prevHash lookup
+    // has to walk back more than 64KB.
+    auditLog(dir, { command: 'bloat', paths: [], outcome: 'ok', reason: padding });
+    auditLog(dir, { command: 'tail', paths: [], outcome: 'ok' });
+    const entries = readAuditLog(logPath);
+    expect(entries).toHaveLength(3);
+    expect(entries[2].command).toBe('tail');
+    expect(entries[2].prevHash).not.toBe('sha256:0');
+    expect(verifyChain(logPath)).toBeNull();
+  });
 });
