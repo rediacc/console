@@ -1,6 +1,7 @@
-name: Deploy Worker
+name: Deploy WWW Worker
 
-# Reusable workflow for deploying the www Worker to the edge or stable channel.
+# Reusable workflow for deploying the www Worker (marketing site + embedded
+# account portal) to the edge or stable channel.
 # Both channels are production-quality; "stable" serves www.rediacc.com, "edge"
 # serves edge.rediacc.com. Called by Release workflow (edge, and stable for
 # hotfixes) and promote-stable.yml (stable, after soak).
