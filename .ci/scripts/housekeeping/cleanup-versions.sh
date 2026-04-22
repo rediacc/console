@@ -857,6 +857,11 @@ cleanup_r2() {
     export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
     export AWS_DEFAULT_REGION="auto"
 
+    # Relax set -e inside the phase -- many aws|awk pipes here have SIGPIPE
+    # edge cases that would otherwise kill the whole housekeeping job silently.
+    # Every destructive call has its own || true / 2>/dev/null guard.
+    set +e
+
     local now_epoch
     now_epoch="$(date -u +%s)"
     local dryrun_max_age=$((R2_RETENTION_DAYS * 86400))
@@ -1082,6 +1087,9 @@ cleanup_r2() {
         done < <(echo "$uploads" | jq -r '.[] | "\(.Key)\t\(.UploadId)\t\(.Initiated)"')
         log_info "  8e: aborted $mpu_aborted of $mpu_count (held $((mpu_count - mpu_aborted)) under 24h grace)"
     fi
+
+    # Restore strict mode for the remaining phases.
+    set -e
 }
 
 # =============================================================================

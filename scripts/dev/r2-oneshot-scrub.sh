@@ -264,6 +264,9 @@ stage2b() {
 # Stage 2c - Reap pr-N/ channel artifacts older than 3 days or closed -----
 
 stage2c() {
+    # Locally relax set -e; the many aws/gh pipes here have annoying SIGPIPE
+    # edge cases that can silently kill the whole script otherwise.
+    set +e
     log_step "Stage 2c: reap pr-N/ older than 3d or closed"
     local pr_age_max=$((3 * 86400))
     local now_epoch
@@ -272,7 +275,8 @@ stage2c() {
     for fmt in cli desktop npm apt rpm apk archlinux; do
         local listing
         listing="$(aws s3 ls "s3://${BUCKET}/${fmt}/" --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
-            awk '/^[[:space:]]*PRE[[:space:]]pr-[0-9]+\// {print $2}' || true)"
+            awk '/^[[:space:]]*PRE[[:space:]]pr-[0-9]+\// {print $2}')"
+        [[ -z "$listing" ]] && continue
         while IFS= read -r sub; do
             [[ -z "$sub" ]] && continue
             local pr_num="${sub#pr-}"
@@ -291,23 +295,27 @@ stage2c() {
                 reason="stale $((age / 86400))d"
             else
                 local state
-                state="$(gh pr view "$pr_num" --repo rediacc/console --json state --jq '.state' 2>/dev/null || echo "UNKNOWN")"
+                state="$(gh pr view "$pr_num" --repo rediacc/console --json state --jq '.state' 2>/dev/null)"
+                [[ -z "$state" ]] && state="UNKNOWN"
                 if [[ "$state" != "OPEN" ]]; then
                     reason="PR #${pr_num} ${state}"
                 fi
             fi
             if [[ -n "$reason" ]]; then
-                rm_prefix "$prefix" "$reason"
+                log_info "  reaping $prefix ($reason)"
+                aws s3 rm "s3://${BUCKET}/${prefix}" --recursive --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null
                 deleted=$((deleted + 1))
             fi
         done <<<"$listing"
     done
     log_info "  processed; reaped $deleted prefix(es)"
+    set -e
 }
 
 # Stage 2d - Package-manager channel retention (keep 7v or 10d) ----------
 
 stage2d() {
+    set +e
     log_step "Stage 2d: channel artifact retention (keep 7v or 10d; zap 0.0.0-dev)"
     # Patterns:
     #   apt/<ch>/rediacc-cli_<ver>_<arch>.deb
@@ -372,6 +380,7 @@ stage2d() {
         done
     done
     log_info "  reaped $deleted stale artifact(s)"
+    set -e
 }
 
 # Stage 3 - Delete polluted latest-*.yml under v1.0.{1,2}/ ----------------
