@@ -1,54 +1,14 @@
-import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import {
+  ROOT_DIR,
+  getResources,
+  getStringValue,
+  hasPath,
+  isNotTranslationKey,
+  splitKey,
+} from './translation-helpers.js';
 
-const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_LOCALE_DIR = path.join(ROOT_DIR, 'packages/web/src/i18n/locales/en');
-
-let cachedResources = null;
-let cachedLocaleDir = null;
-
-const loadResources = (localeDir) => {
-  const resources = new Map();
-  if (!fs.existsSync(localeDir)) {
-    return resources;
-  }
-
-  const files = fs.readdirSync(localeDir);
-  files.forEach((file) => {
-    if (!file.endsWith('.json')) return;
-    const namespace = path.basename(file, '.json');
-    const filePath = path.join(localeDir, file);
-    try {
-      const contents = fs.readFileSync(filePath, 'utf8');
-      resources.set(namespace, JSON.parse(contents));
-    } catch {
-      // If JSON is malformed, treat as missing.
-      resources.set(namespace, null);
-    }
-  });
-
-  return resources;
-};
-
-const getResources = (localeDir) => {
-  if (!cachedResources || cachedLocaleDir !== localeDir) {
-    cachedResources = loadResources(localeDir);
-    cachedLocaleDir = localeDir;
-  }
-  return cachedResources;
-};
-
-const getStringValue = (node) => {
-  if (!node) return null;
-  if (node.type === 'Literal' && typeof node.value === 'string') {
-    return node.value;
-  }
-  if (node.type === 'TemplateLiteral' && node.expressions.length === 0) {
-    return node.quasis[0]?.value?.cooked ?? null;
-  }
-  return null;
-};
 
 const extractNamespaces = (node) => {
   if (!node) return null;
@@ -84,54 +44,6 @@ const hasDefaultValue = (node) => {
       prop.key.type === 'Identifier' ? prop.key.name : prop.key.value;
     return keyName === 'defaultValue';
   });
-};
-
-const splitKey = (key) => {
-  const colonIndex = key.indexOf(':');
-  if (colonIndex === -1) {
-    return { namespace: null, path: key };
-  }
-  return {
-    namespace: key.slice(0, colonIndex),
-    path: key.slice(colonIndex + 1),
-  };
-};
-
-// Patterns that are clearly not translation keys
-const isNotTranslationKey = (key) => {
-  // Shared namespace keys - validated in packages/shared/src/i18n/locales/
-  if (key.startsWith('shared:')) return true;
-  // Node.js built-in module specifiers (e.g., node:fs, node:path, node:sea)
-  if (key.startsWith('node:')) return true;
-  // Commander event names (e.g., command:*)
-  if (key === 'command:*') return true;
-  // URLs (http, https, or any protocol like rediacc://)
-  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(key)) return true;
-  // Date/time format patterns (e.g., HH:mm:ss, YYYY-MM-DD, YYYY-MM-DDTHH:mm:ss)
-  if (/^[YMDHhmsaAzZT\-/:.\s]+$/.test(key)) return true;
-  // ISO 8601 date strings (e.g., 2023-01-01T00:00:00Z)
-  if (/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?Z?$/.test(key)) return true;
-  // JSON arrays or objects
-  if (/^\s*[\[{]/.test(key)) return true;
-  // Log-style prefixed messages (e.g., "[API Connection] DEBUG...")
-  if (/^\[.+\]\s/.test(key)) return true;
-  // Pure numbers or punctuation
-  if (/^[\d\s.,;:!?-]+$/.test(key)) return true;
-  // Commander option flags (e.g., --extra-machine <name:ip:user>)
-  if (/^-/.test(key)) return true;
-  return false;
-};
-
-const hasPath = (resource, segments) => {
-  if (!resource) return false;
-  let current = resource;
-  for (const segment of segments) {
-    if (!Object.prototype.hasOwnProperty.call(current, segment)) {
-      return false;
-    }
-    current = current[segment];
-  }
-  return true;
 };
 
 /** @type {import('eslint').Rule.RuleModule} */

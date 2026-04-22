@@ -104,7 +104,7 @@ Set a custom default grace period in your config file so you don't need to pass 
 
 ```bash
 # Set grace period to 14 days in the active config
-rdc config set --key pruneGraceDays --value 14
+rdc config field set --pointer /defaults/pruneGraceDays --new 14
 ```
 
 The `--grace-days` CLI flag overrides this value when provided.

@@ -284,6 +284,23 @@
       }
     },
     "config": {
+      "audit": {
+        "description": "فحص سجل تدقيق التكوين (JSONL متسلسل التجزئة في ~/.config/rediacc/audit.log.jsonl)",
+        "log": {
+          "description": "طباعة أحدث إدخالات التدقيق بصيغة JSON",
+          "optionActor": "تصفية حسب نوع الفاعل (human|agent)",
+          "optionPath": "تصفية حسب نمط مؤشر JSON (مثال: /credentials/*)",
+          "optionSince": "إظهار الإدخالات الأحدث من (مثال: '24h', '7d', طابع زمني ISO)"
+        },
+        "tail": {
+          "description": "بث الإدخالات الجديدة أثناء كتابتها (Ctrl+C للإيقاف)"
+        },
+        "verify": {
+          "chainBroken": "السلسلة مكسورة في السطر {{line}} — تم تلاعب في الملف أو تلفه.",
+          "chainOk": "سلامة السلسلة مؤكدة عبر {{count}} إدخال.",
+          "description": "التحقق من سلامة سلسلة تجزئة SHA-256 عبر جميع إدخالات التدقيق"
+        }
+      },
       "backupStrategy": {
         "description": "إدارة استراتيجيات النسخ الاحتياطي المسماة (أوضاع ساخنة/باردة، وجهات، جدولة)",
         "list": {
@@ -366,6 +383,62 @@
       },
       "description": "إدارة ملفات الإعدادات والأجهزة واتصالات SSH",
       "descriptionShort": "إدارة ملفات الإعدادات والأجهزة واتصالات SSH",
+      "edit": {
+        "abortAfterRetries": "الإلغاء بعد {{count}} محاولات فاشلة. تم حفظ المسودة في: {{path}}",
+        "applied": "تم تطبيق {{path}}",
+        "bannerRedacted": "تظهر الحقول الحساسة على شكل <redacted:KIND>:DIGEST وهي قوالب تعود ذاتياً بأمان.",
+        "bannerReveal": "--reveal نشط: القيم الحساسة مرئية. يُسجَّل في التدقيق.",
+        "bannerRotateLine1": "لتدوير سر: استبدل قالبه بالقيمة الصريحة الجديدة — سيُطلب منك",
+        "bannerRotateLine2": "تأكيد كل عملية تدوير بعد إغلاق المحرر.",
+        "bannerStrip": "الأسطر التي تبدأ بـ // تُحذف عند الحفظ.",
+        "bannerTitle": "rdc config edit — {{name}} (v{{version}})",
+        "description": "فتح التكوين الحالي في $EDITOR كإسقاط JSONC مُخفى. للمستخدمين البشريين فقط؛ يُرفض العملاء.",
+        "noChanges": "لم يتم حفظ أي تغييرات؛ الإلغاء.",
+        "optionApply": "تطبيق ملف JSONC معدّل (يتخطى إطلاق $EDITOR)",
+        "optionCurrentSecrets": "ملف JSON يربط المؤشر → النص الصريح القديم لبوابة المعرفة عند --apply",
+        "optionDump": "طباعة التكوين الحالي كـ JSONC إلى stdout بدلاً من فتح المحرر (للقراءة فقط؛ آمن للعملاء عند الإخفاء)",
+        "optionEditor": "أمر المحرر البديل (يتبع تسلسل git: --editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+        "optionReveal": "إظهار النص الصريح للقيم الحساسة (طرفية تفاعلية فقط؛ يُسجَّل)",
+        "rotateDeclined": "تم الإلغاء؛ تم الحفاظ على المسودة في ملف المحرر المؤقت.",
+        "rotatePromptBullet": "  • {{pointer}}",
+        "rotatePromptFooter": "اكتب 'rotate' للتأكيد (أي شيء آخر يلغي): ",
+        "rotatePromptHeader": "أنت على وشك تدوير {{count}} حقل حساس:",
+        "saved": "تم حفظ التكوين \"{{name}}\""
+      },
+      "field": {
+        "description": "عمليات حقول التكوين المعنونة بالمؤشرات (get/set/unset/rotate/list). مؤشرات JSON (RFC 6901) مثل /credentials/cfDnsApiToken.",
+        "descriptionShort": "عمليات حقول التكوين عبر المؤشرات",
+        "get": {
+          "description": "قراءة قيمة تكوين واحدة بواسطة مؤشر JSON. تُخفى الحقول الحساسة إلا باستخدام --reveal (للمستخدمين البشريين فقط).",
+          "optionDigest": "طباعة تلخيص SHA-256 بدلاً من القيمة (آمن للمشاركة مع العملاء الذكيين)",
+          "optionPointer": "مؤشر JSON إلى الحقل (مثال: /credentials/cfDnsApiToken)",
+          "optionReveal": "إظهار النص الصريح للقيم الحساسة (طرفية تفاعلية فقط؛ يُسجَّل في التدقيق)"
+        },
+        "list": {
+          "description": "سرد كل قالب مؤشر مسجّل مع نوعه وسياسة الالتزام/التشفير.",
+          "optionOutput": "صيغة الإخراج (json|table)",
+          "optionSensitive": "عرض القوالب الحساسة فقط (غير العامة)"
+        },
+        "rotate": {
+          "description": "تدوير قيمة حساسة دون --current. طرفية تفاعلية فقط؛ يُسجَّل بشكل بارز.",
+          "optionNew": "قيمة جديدة",
+          "optionPointer": "مؤشر JSON إلى الحقل الحساس (مثال: /credentials/cfDnsApiToken)",
+          "success": "تم تدوير {{pointer}}"
+        },
+        "set": {
+          "description": "كتابة قيمة تكوين عند مؤشر JSON. المسارات الحساسة تتطلب --current (بوابة المعرفة).",
+          "optionCurrent": "القيمة الصريحة الحالية - مطلوبة لتعديل المسارات الحساسة (إثبات بوابة المعرفة)",
+          "optionNew": "القيمة الجديدة (تُفسَّر كـ JSON إذا بدأت بـ { [ \" أو true/false/null/رقم)",
+          "optionPointer": "مؤشر JSON إلى الحقل (مثال: /credentials/cfDnsApiToken)",
+          "success": "تم تعيين {{pointer}}"
+        },
+        "unset": {
+          "description": "حذف قيمة تكوين عند مؤشر JSON. المسارات الحساسة تتطلب --current.",
+          "optionCurrent": "القيمة الصريحة الحالية - مطلوبة لحذف المسارات الحساسة",
+          "optionPointer": "مؤشر JSON إلى الحقل (مثال: /credentials/cfDnsApiToken)",
+          "success": "تم إلغاء {{pointer}}"
+        }
+      },
       "infra": {
         "description": "إدارة تكوين البنية التحتية (الوكيل، DNS، الشهادات)",
         "push": {
@@ -570,7 +643,8 @@
       },
       "show": {
         "description": "عرض تفاصيل الإعدادات الحالية",
-        "noConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام: rdc config init"
+        "noConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام: rdc config init",
+        "optionReveal": "عرض النص الصريح للقيم الحساسة (الوضع التفاعلي فقط)"
       },
       "ssh": {
         "description": "إدارة إعدادات مفتاح SSH",
@@ -730,6 +804,8 @@
         "schedule": {
           "description": "نشر جدول النسخ الاحتياطي على جهاز بعيد (مؤقتات systemd)",
           "optionDryRun": "معاينة الوحدات المُولَّدة دون نشرها",
+          "optionForce": "المتابعة حتى إن كانت هناك نسخة احتياطية قيد التشغيل (تنطبق الوحدة الجديدة عند النبضة التالية للمؤقت؛ يحتفظ التنفيذ الجاري بوحدته القديمة)",
+          "optionResetFailed": "مسح حالة الفشل للخدمات المُعدَّلة بعد نشر ناجح (معطّل افتراضيًا، يحافظ على إشارة الفشل)",
           "success": "تم نشر جدول النسخ الاحتياطي على {{machine}}"
         },
         "status": {
@@ -1843,10 +1919,19 @@
       "description": "التحقق من تحديثات CLI وتطبيقها",
       "descriptionShort": "التحقق من تحديثات CLI وتطبيقها",
       "downloading": "جارٍ تنزيل v{{version}}...",
+      "errors": {
+        "binaryBusy": "الملف الثنائي الحالي قيد الاستخدام؛ تم تجهيز التحديث للتشغيل التالي.",
+        "checksumMismatch": "فشل التحقق من مجموع الملف الثنائي الذي تم تنزيله.",
+        "lockFailed": "هناك تحديث آخر قيد التشغيل بالفعل. حاول مرة أخرى خلال بضع ثوانٍ.",
+        "noBinary": "لا يتوفر ملف ثنائي لهذه المنصة في أحدث إصدار.",
+        "noChecksum": "بيان الإصدار يفتقر إلى مجموع التحقق SHA256.",
+        "notSEA": "يتعذر التحديث: لا يعمل كملف ثنائي مُحزَّم. قم بالبناء باستخدام SEA أولاً.",
+        "unknown": "حدث خطأ غير معروف أثناء التحديث.",
+        "unsupportedPlatform": "هذه المنصة غير مدعومة للتحديث الذاتي."
+      },
       "failed": "فشل التحديث: {{error}}",
       "force": "فرض التحديث حتى لو كان محدثاً",
       "invalidChannel": "قناة غير صالحة: {{channel}}. استخدم stable أو edge.",
-      "notSEA": "لا يمكن التحديث: لا يعمل كملف ثنائي مجمّع. قم بالبناء باستخدام SEA أولاً.",
       "npmUpdateHint": "للتحديث، نفّذ:\n  {{command}}",
       "progress": "جارٍ التنزيل... {{percent}}%",
       "releaseNotes": "ملاحظات الإصدار: {{url}}",
@@ -2138,9 +2223,12 @@
     "affectedChildClones": ". النسخ المتأثرة: {{clones}}. احذف أو ارقِ النسخ الفرعية أولاً.",
     "agent": {
       "commandBlocked": "الامر \"{{command}}\" غير متاح في وضع الوكيل.\n\nهذا الامر ينفذ وظائف منخفضة المستوى بشكل اعتباطي دون ضمانات السلامة. استخدم اوامر CLI المكتوبة او ادوات MCP بدلا من ذلك.\n\nالبدائل:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - نفذ \"rdc agent capabilities\" لعرض جميع الاوامر المتاحة\n\nاذا كنت بحاجة الى وصول مباشر، اطلب من المستخدم تشغيل الامر مباشرة.",
+      "configEdit": "المحرر التفاعلي محظور في بيئات العملاء.\n\nالبدائل:\n  • rdc config edit --dump > config.jsonc    (فحص مُخفى آمن)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nللتجاوز، حدد REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> في الصدفة الأبوية\nقبل بدء العميل (يجب أن يظهر في سلالة العميل).",
+      "configEditAncestry": "المحرر التفاعلي محظور في بيئات العملاء (تم تعيين REDIACC_ALLOW_CONFIG_EDIT لكن فشل التحقق من السلالة — يجب تعيين التجاوز من الصدفة وليس من العميل).\n\nالبدائل:\n  • rdc config edit --dump > config.jsonc    (فحص مُخفى آمن)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nحدد REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> في الصدفة الأبوية قبل بدء العميل.",
       "createGuard": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\" في وضع الوكيل.\n\nالوكلاء يعملون في وضع fork فقط. المستودعات الرئيسية هي بيئات إنتاجية لا يمكن للوكلاء الوصول إليها بعد الإنشاء.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nللمستخدم: للسماح بإنشاء المستودع، عيّن REDIACC_ALLOW_GRAND_REPO=* (أو اسم مستودع محدد) في الطرفية قبل بدء جلسة الوكيل.",
       "createGuardOverride": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\". لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\". تجاوز REDIACC_ALLOW_GRAND_REPO غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nلاستخدام التجاوز، شغّل الوكيل على Linux (مباشرةً، أو WSL، أو Docker، أو VM).",
+      "fieldReveal": "‏--reveal للحقل الحساس {{pointer}} محظور في بيئات العملاء. يجب على العملاء استخدام --digest. يمكن لمستخدم حقيقي في طرفية تفاعلية استخدام --reveal.",
       "forkBlocked": "الأمر \"{{command}}\" غير متاح في مستودعات fork.\n\nمستودعات fork هي بيئات معزولة مؤقتة. هذه العملية تنطبق فقط على المستودعات الرئيسية (الإنتاجية). اطلب من المستخدم تشغيل هذا الأمر مباشرةً.",
       "grandGuard": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يمكن للوكلاء تعديل المستودعات الرئيسية مباشرةً.\n\nتحتوي المستودعات الرئيسية على بيانات الإنتاج. استخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة.\n\nسير العمل:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork (مثال: rdc repo up --name {{name}}:<tag-name> -m <machine> --mount)\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover\n\nللمستخدم: للسماح بالوصول المباشر، عيّن REDIACC_ALLOW_GRAND_REPO={{name}} (أو * لجميع المستودعات) في الطرفية قبل بدء جلسة الوكيل.",
       "grandGuardOverride": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nاستخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover",
@@ -2153,7 +2241,12 @@
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). تجاوز REDIACC_ALLOW_GRAND_REPO غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nاستخدم repo_fork لإنشاء نسخة معزولة وآمنة، ثم اعمل على الـ fork.",
       "mcpMachineGuard": "الوصول المباشر إلى الآلة غير مسموح في وضع fork فقط.\n\nيجب على الوكلاء الاتصال من خلال سياق مستودع. استخدم repo_fork لإنشاء fork، ثم اتصل به.\nإذا كنت بحاجة إلى وصول مباشر، اطلب من المستخدم إعادة تشغيل خادم MCP مع --allow-grand.",
       "mcpMachineGuardOverride": "الوصول المباشر إلى الآلة غير مسموح. لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO.\n\nاستخدم repo_fork لإنشاء fork، ثم اتصل به.",
-      "mcpMachineGuardOverrideNonLinux": "تجاوز الوصول المباشر إلى الآلة غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nاستخدم repo_fork لإنشاء fork، ثم اتصل به."
+      "mcpMachineGuardOverrideNonLinux": "تجاوز الوصول المباشر إلى الآلة غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nاستخدم repo_fork لإنشاء fork، ثم اتصل به.",
+      "revealRequiresTty": "‏--reveal يتطلب طرفية تفاعلية؛ يُرفض طباعة القيمة الحساسة إلى أنبوب.",
+      "rotateNotSensitive": "المؤشر \"{{pointer}}\" ليس حقلاً حساساً؛ استخدم 'config field set' بدلاً من ذلك.",
+      "rotateRequiresTty": "‏config field rotate يتطلب تأكيدًا في طرفية تفاعلية؛ يُرفض في السياق غير التفاعلي (حدد REDIACC_ALLOW_CONFIG_EDIT للتجاوز).",
+      "showReveal": "‏--reveal محظور في بيئات العملاء. استخدم `rdc config show` (مُخفى) أو `rdc config field get --name <pointer> --digest` للحصول على بصمة آمنة.",
+      "showRevealRequiresTty": "‏--reveal يتطلب طرفية تفاعلية؛ يُرفض تمرير النص الصريح إلى وجهة غير تفاعلية."
     },
     "authFailed": "فشلت المصادقة",
     "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc auth login",
@@ -2164,9 +2257,17 @@
     "config": {
       "invalidEmail": "عنوان بريد إلكتروني غير صالح: \"{{value}}\".",
       "machineNotFound": "الآلة \"{{name}}\" غير موجودة في التكوين. المتاحة: {{available}}.",
+      "noActiveConfig": "لا يوجد تكوين نشط",
+      "pointerNotFound": "المؤشر \"{{pointer}}\" غير موجود",
       "storageNotFound": "التخزين \"{{name}}\" غير موجود في التكوين. المتاحة: {{available}}."
     },
     "contextNotFound": "لم يتم العثور على السياق \"{{name}}\"",
+    "editor": {
+      "headlessRefused": "استدعاء المحرر بلا رأس سيتوقف إلى الأبد: {{command}}. مرر --editor مع خيارات تفاعلية.",
+      "nonzeroExit": "خرج المحرر {{command}} بالرمز {{code}}",
+      "notFound": "لم يتم تكوين محرر. حدد $GIT_EDITOR أو git config core.editor أو $VISUAL أو $EDITOR، أو مرر --editor.",
+      "spawnFailed": "فشل إطلاق المحرر {{command}}: {{reason}}"
+    },
     "failedCreateQueueItem": "فشل إنشاء عنصر الطابور",
     "invalidAction": "إجراء غير صحيح \"{{action}}\". استخدم \"{{valid}}\".",
     "invalidCredentials": "بيانات اعتماد غير صحيحة",
@@ -2190,6 +2291,15 @@
     "passwordsMismatch": "كلمات المرور غير متطابقة",
     "permissionDenied": "تم رفض الإذن",
     "poolNotFound": "تجمع Ceph \"{{name}}\" غير موجود",
+    "precondition": {
+      "currentSecretsRequired": "{{pointer}}: تم تغيير الحقل الحساس دون --current؛ قدم --current-secrets <file> يربط المؤشر→القيمة القديمة",
+      "digestMismatch": "عدم تطابق تلخيص --current (المتوقع {{expected}}…، الفعلي {{got}}…)",
+      "kindMismatch": "تغيّر نوع القيمة (المخزّن: {{stored}}، المُدَّعى: {{claimed}})",
+      "mismatch": "فشلت الشروط المسبقة لـ {{count}} مسار:\n{{details}}",
+      "missing": "المسار الحساس يتطلب --current (أو --rotate-secret)",
+      "rotationRequiresTty": "{{pointer}}: تأكيد التدوير يتطلب طرفية تفاعلية (أو استخدم --current-secrets)",
+      "stubStillStub": "{{pointer}}: لا تزال القيمة المعدَّلة تبدو قالب إخفاء لكنها لا تطابق التلخيص الحالي"
+    },
     "protocol": {
       "commandExitCode": "انتهت الأوامر برمز {{code}}",
       "invalidAction": "إجراء غير صحيح '{{action}}'. يجب أن يكون أحد: {{validActions}}",

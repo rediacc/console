@@ -457,14 +457,30 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .command('schedule')
     .description(t('commands.backup.schedule.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
+    .option('--dry-run', t('commands.machine.backup.schedule.optionDryRun'))
+    .option('--force', t('commands.machine.backup.schedule.optionForce'))
+    .option('--reset-failed', t('commands.machine.backup.schedule.optionResetFailed'))
     .option('--debug', t('options.debug'))
-    .action(async (options: { machine: string; debug?: boolean }) => {
-      try {
-        const machine = options.machine;
-        const { pushBackupSchedule } = await import('../services/backup-schedule.js');
-        await pushBackupSchedule(machine, options);
-      } catch (error) {
-        handleError(error);
+    .action(
+      async (options: {
+        machine: string;
+        debug?: boolean;
+        dryRun?: boolean;
+        force?: boolean;
+        resetFailed?: boolean;
+      }) => {
+        try {
+          const machine = options.machine;
+          const { pushBackupSchedule } = await import('../services/backup-schedule.js');
+          await pushBackupSchedule(machine, {
+            debug: options.debug,
+            dryRun: options.dryRun,
+            force: options.force,
+            resetFailed: options.resetFailed,
+          });
+        } catch (error) {
+          handleError(error);
+        }
       }
-    });
+    );
 }

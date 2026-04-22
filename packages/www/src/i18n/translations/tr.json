@@ -8,19 +8,19 @@
     "after": {
       "label": "Rediacc ile",
       "points": [
-        "60 saniyenin altında üretime birebir klonlar",
-        "Ekstra disk alanı olmadan saatlik yedeklemeler",
-        "60 saniyenin altında doğrulanmış yük devretme",
-        "Her geliştirici kendi taze üretim klonunu alır"
+        "60 saniyede kusursuz bir kopya.",
+        "Saatlik yedekler. Ekstra depolama yok.",
+        "Kurtarma 60 saniyede test edildi.",
+        "Her geliştiriciye taze bir kopya."
       ]
     },
     "before": {
       "label": "Rediacc olmadan",
       "points": [
-        "Ortamlar günler içinde üretimden sapıyor",
-        "Yedeklemeler haftalar sürüyor, depolamayı dolduruyor ve genellikle sessizce başarısız oluyor",
-        "Kurtarma planları 4 saat diyor — gerçek 4 gün",
-        "Geliştiriciler sandbox eski olduğu için üretimde kodlama yapıyor"
+        "Ekibiniz test kopyası için günlerce bekliyor. Gene de birebir olmuyor.",
+        "Yedekler haftalar sürüyor. Çoğu uyarı vermeden başarısız oluyor.",
+        "Kurtarma planınız 4 saat diyor. Gerçek hayat 4 gün.",
+        "Geliştiriciler canlı sitede kod yazıyor. Test kopyası haftalar eski."
       ]
     },
     "title": "Fark"
@@ -322,8 +322,8 @@
   "metrics": {
     "items": [
       {
-        "label": "Klonlama süresi",
-        "number": "< 60s"
+        "label": "60 sn altında kopyalandı",
+        "number": "241 GB"
       },
       {
         "label": "Ek depolama",
@@ -412,6 +412,28 @@
     "successMessage": "Aboneliğinizi onaylamak için gelen kutunuzu kontrol edin.",
     "title": "Bülten",
     "unsubscribed": "Aboneliğiniz iptal edildi. Gittiğinizi görmek üzücü."
+  },
+  "notASlice": {
+    "overline": "Tek araç. Tüm yığın.",
+    "slices": [
+      {
+        "description": "Verinizi kopyalarlar. Uygulamanız veriden fazlasıdır.",
+        "title": "Veritabanı araçları"
+      },
+      {
+        "description": "Kodunuzu kopyalarlar. Kod tek başına bir test değildir.",
+        "title": "Dev-box araçları"
+      },
+      {
+        "description": "Her şeyi saklarlar. Kurtarma bir dakika değil, saatler sürer.",
+        "title": "Backup araçları"
+      }
+    ],
+    "title": "Çoğu araç bir parça kopyalar. Biz hepsini kopyalarız.",
+    "winner": {
+      "description": "Her takım kendi yazılabilir kopyasını alır. Veri, uygulamalar, ayarlar, hepsi. 60 saniyede hazır. Yalnızca bir şey değiştiğinde depolama için ödersiniz.",
+      "label": "Rediacc"
+    }
   },
   "pages": {
     "blog": {
@@ -13388,5 +13410,24 @@
     "toggleFullscreen": "Tam ekran geçişi",
     "volume": "Ses",
     "youtubeTitle": "Ürün tanıtımı"
+  },
+  "whyNow": {
+    "cards": [
+      {
+        "description": "AI dakikalar içinde kod yazıyor. Siz test etmek için günlerce kopya bekliyorsunuz.",
+        "title": "Geliştiriciler 10× daha hızlı"
+      },
+      {
+        "description": "AI saniyeler içinde saldırıyor. 3 ayda bir pen-test yetmez.",
+        "title": "Hackerlar 10× daha hızlı"
+      },
+      {
+        "description": "Birçok bulutta çalışıyorsunuz. Test kopyanız hiçbirine uymuyor.",
+        "title": "Kurulumunuz parçalı"
+      }
+    ],
+    "footer": "Çoğu ekip birden çok bulutta çalışır. Test kopyaları hiçbiriyle nadiren örtüşür.",
+    "overline": "Neden şimdi",
+    "title": "Dünyanız hızlı hareket ediyor. Test kopyanız etmiyor."
   }
 }

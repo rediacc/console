@@ -44,6 +44,20 @@ export { cekHandoffDecrypt, cekHandoffEncrypt } from './handoff.js';
 // Selective encryption
 export { selectiveDecrypt, selectiveEncrypt } from './selective.js';
 
+// Canonical serialization for field-commitment HMACs
+export { canonicalize, valueKind } from './canonical.js';
+export type { CommitmentValueKind } from './canonical.js';
+
+// Field commitments (server-side precondition enforcement)
+export {
+  commitField,
+  computeCommitments,
+  deriveFieldCommitmentKey,
+  generateFckSalt,
+  verifyCommitment,
+} from './commitments.js';
+export type { FieldCommitment, FieldCommitments } from './commitments.js';
+
 // Constants
 export {
   ENVELOPE_FIELDS,

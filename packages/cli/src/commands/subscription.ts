@@ -80,7 +80,7 @@ async function resolveAndSyncServer(options: { server?: string }): Promise<strin
   let configAccountServer: string | undefined;
   try {
     const currentRdcConfig = await configService.getCurrent();
-    configAccountServer = currentRdcConfig?.accountServer;
+    configAccountServer = currentRdcConfig?.account?.accountServer;
   } catch {
     /* config might not exist yet */
   }
@@ -90,8 +90,12 @@ async function resolveAndSyncServer(options: { server?: string }): Promise<strin
   try {
     const configName = configService.getCurrentName();
     const currentRdcConfig = await configService.getCurrent();
-    if (currentRdcConfig && currentRdcConfig.accountServer !== serverUrl) {
-      await configService.update(configName, { accountServer: serverUrl });
+    if (currentRdcConfig && currentRdcConfig.account?.accountServer !== serverUrl) {
+      const { configFileStorage } = await import('../adapters/config-file-storage.js');
+      await configFileStorage.update(configName, (cfg) => ({
+        ...cfg,
+        account: { ...(cfg.account ?? {}), accountServer: serverUrl },
+      }));
     }
   } catch {
     /* config might not exist yet */

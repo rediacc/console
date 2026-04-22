@@ -26,10 +26,15 @@ const REMOTE_INSTALL_ROOT = '/usr/lib/rediacc/renet';
 const REMOTE_CURRENT_DIR = `${REMOTE_INSTALL_ROOT}/current`;
 const REMOTE_CURRENT_PATH = `${REMOTE_CURRENT_DIR}/renet`;
 
-/** Default renet binary path on remote machines (for systemd units, dry-run output). */
+/** Default renet binary path on remote machines (for ad-hoc invocations). */
 export const REMOTE_RENET_PATH = REMOTE_CURRENT_PATH;
 
-const REMOTE_INSTALL_PATH = `${REMOTE_INSTALL_ROOT}/${VERSION}/renet`;
+/**
+ * Version-specific install path used by `provisionRenetToRemote` as the
+ * committed binary location. Exported so the backup reconciler's dry-run
+ * can match the exact ExecStart= path a real deploy would write.
+ */
+export const REMOTE_INSTALL_PATH = `${REMOTE_INSTALL_ROOT}/${VERSION}/renet`;
 
 /** Prefix for per-attempt staging uploads (no sudo needed for /tmp) */
 const STAGING_PATH_PREFIX = '/tmp/.rdc-staging-renet';

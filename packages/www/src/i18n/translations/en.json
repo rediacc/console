@@ -225,32 +225,73 @@
       "defense": "Clone production. Point your pen-testing tools at the clone. Fix what they find. Delete the clone."
     }
   },
+  "whyNow": {
+    "overline": "Why Now",
+    "title": "Your world moves fast. Your test copy doesn't.",
+    "cards": [
+      {
+        "title": "Devs are 10× faster",
+        "description": "AI writes code in minutes. You wait days for a copy to test it."
+      },
+      {
+        "title": "Hackers are 10× faster",
+        "description": "AI attacks in seconds. A pen-test every 3 months is not enough."
+      },
+      {
+        "title": "Your setup is split",
+        "description": "You run on many clouds. Your test copy fits none of them."
+      }
+    ],
+    "footer": "Most teams run across many clouds. Their test copy rarely matches any of them."
+  },
+  "notASlice": {
+    "overline": "One tool. The whole stack.",
+    "title": "Most tools copy one piece. We copy all of it.",
+    "slices": [
+      {
+        "title": "Database tools",
+        "description": "They copy your data. Your app is more than data."
+      },
+      {
+        "title": "Dev-box tools",
+        "description": "They copy your code. Code alone is not a test."
+      },
+      {
+        "title": "Backup tools",
+        "description": "They save everything. Recovery takes hours, not a minute."
+      }
+    ],
+    "winner": {
+      "label": "Rediacc",
+      "description": "Each team gets their own writable copy. Data, apps, settings, all of it. Ready in 60 seconds. You only pay for storage when something changes."
+    }
+  },
   "beforeAfter": {
     "title": "The Difference",
     "before": {
       "label": "Without Rediacc",
       "points": [
-        "Environments drift from production within days",
-        "Backups take weeks, fill storage, and often fail silently",
-        "Recovery plans say 4 hours — reality is 4 days",
-        "Developers code on production because sandbox is stale"
+        "Your team waits days for a test copy. And it still doesn't match.",
+        "Backups take weeks. Many fail without warning.",
+        "Your recovery plan says 4 hours. Real life is 4 days.",
+        "Devs write code on the live site. The test copy is weeks old."
       ]
     },
     "after": {
       "label": "With Rediacc",
       "points": [
-        "Production-exact clones in under 60 seconds",
-        "Hourly backups with zero extra disk space",
-        "Verified failover in under 60 seconds",
-        "Every developer gets their own fresh production clone"
+        "A perfect copy in 60 seconds.",
+        "Hourly backups. No extra storage.",
+        "Recovery tested in 60 seconds.",
+        "Every dev gets a fresh copy."
       ]
     }
   },
   "metrics": {
     "items": [
       {
-        "number": "< 60s",
-        "label": "Clone Time"
+        "number": "241 GB",
+        "label": "Copied in under 60s"
       },
       {
         "number": "0 bytes",

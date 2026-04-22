@@ -16,7 +16,6 @@ import type {
   MachineConfig,
   RdcConfig,
   RepositoryConfig,
-  SSHConfig,
   StorageConfig,
 } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
@@ -72,7 +71,7 @@ class ConfigService extends ConfigServiceBase {
    */
   async getLocalConfig(): Promise<{
     machines: Record<string, MachineConfig | undefined>;
-    ssh: SSHConfig;
+    ssh: { privateKeyPath: string; publicKeyPath?: string };
     sshPrivateKey?: string;
     sshPublicKey?: string;
     renetPath: string;
@@ -91,20 +90,20 @@ class ConfigService extends ConfigServiceBase {
     }
 
     const sshContent = state.getSSH();
-    if (!sshContent?.privateKey && !config.ssh?.privateKeyPath) {
+    if (!sshContent?.privateKey) {
       throw new Error(`Config "${configName}" has no SSH key configured`);
     }
 
     return {
       machines,
-      ssh: config.ssh ?? { privateKeyPath: '' },
-      sshPrivateKey: sshContent?.privateKey,
-      sshPublicKey: sshContent?.publicKey,
+      ssh: { privateKeyPath: '' },
+      sshPrivateKey: sshContent.privateKey,
+      sshPublicKey: sshContent.publicKey,
       renetPath: config.renetPath ?? DEFAULTS.CONTEXT.RENET_BINARY,
-      cfDnsApiToken: config.cfDnsApiToken,
-      cfDnsZoneId: config.cfDnsZoneId,
-      certEmail: config.certEmail,
-      datastoreSize: config.datastoreSize,
+      cfDnsApiToken: config.credentials?.cfDnsApiToken,
+      cfDnsZoneId: config.infra?.cfDnsZoneId,
+      certEmail: config.infra?.certEmail,
+      datastoreSize: config.defaults?.datastoreSize,
     };
   }
 
@@ -168,26 +167,37 @@ class ConfigService extends ConfigServiceBase {
     await state.setMachines(machines);
   }
 
-  async setLocalSSH(ssh: SSHConfig): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    await this.requireSelfHosted(name);
-    await this.update(name, { ssh });
-  }
-
   async setRenetPath(renetPath: string): Promise<void> {
     const name = this.getEffectiveConfigName();
     await this.requireSelfHosted(name);
-    await this.update(name, { renetPath });
+    await configFileStorage.update(name, (cfg) => ({ ...cfg, renetPath }));
   }
 
-  async updateConfigFields(
-    updates: Partial<
-      Pick<RdcConfig, 'cfDnsApiToken' | 'cfDnsZoneId' | 'certEmail' | 'acmeCertCache'>
-    >
-  ): Promise<void> {
+  async updateConfigFields(updates: {
+    cfDnsApiToken?: string;
+    cfDnsZoneId?: string;
+    certEmail?: string;
+    acmeCertCache?: RdcConfig['infra'] extends infer I
+      ? I extends { acmeCertCache?: infer A }
+        ? A
+        : never
+      : never;
+  }): Promise<void> {
     const name = this.getEffectiveConfigName();
     await this.requireSelfHosted(name);
-    await this.update(name, updates);
+    await configFileStorage.update(name, (cfg) => ({
+      ...cfg,
+      credentials:
+        'cfDnsApiToken' in updates
+          ? { ...(cfg.credentials ?? {}), cfDnsApiToken: updates.cfDnsApiToken }
+          : cfg.credentials,
+      infra: {
+        ...(cfg.infra ?? {}),
+        ...('cfDnsZoneId' in updates ? { cfDnsZoneId: updates.cfDnsZoneId } : {}),
+        ...('certEmail' in updates ? { certEmail: updates.certEmail } : {}),
+        ...('acmeCertCache' in updates ? { acmeCertCache: updates.acmeCertCache } : {}),
+      },
+    }));
   }
 
   // ============================================================================
@@ -439,12 +449,12 @@ class ConfigService extends ConfigServiceBase {
 
   async getBackupStrategy(strategyName: string): Promise<BackupStrategyConfig | undefined> {
     const config = await this.requireSelfHosted();
-    return config.backupStrategies?.[strategyName];
+    return config.resources?.backupStrategies?.[strategyName];
   }
 
   async listBackupStrategies(): Promise<Record<string, BackupStrategyConfig>> {
     const config = await this.requireSelfHosted();
-    return config.backupStrategies ?? {};
+    return config.resources?.backupStrategies ?? {};
   }
 
   async setBackupStrategy(
@@ -453,53 +463,70 @@ class ConfigService extends ConfigServiceBase {
   ): Promise<void> {
     const configName = this.getEffectiveConfigName();
     const current = await this.requireSelfHosted(configName);
-    const strategies = { ...current.backupStrategies };
+    const strategies: Record<string, BackupStrategyConfig> = {
+      ...(current.resources?.backupStrategies ?? {}),
+    };
     const existing = strategies[strategyName] ?? { destinations: [], schedule: '' };
     strategies[strategyName] = { ...existing, ...update };
-    await this.update(configName, { backupStrategies: strategies });
+    await configFileStorage.update(configName, (cfg) => ({
+      ...cfg,
+      resources: { ...(cfg.resources ?? {}), backupStrategies: strategies },
+    }));
   }
 
   async removeBackupStrategy(strategyName: string): Promise<void> {
     const configName = this.getEffectiveConfigName();
     const current = await this.requireSelfHosted(configName);
-    const strategies = { ...current.backupStrategies };
+    const strategies: Record<string, BackupStrategyConfig> = {
+      ...(current.resources?.backupStrategies ?? {}),
+    };
     delete strategies[strategyName];
-    await this.update(configName, { backupStrategies: strategies });
+    await configFileStorage.update(configName, (cfg) => ({
+      ...cfg,
+      resources: { ...(cfg.resources ?? {}), backupStrategies: strategies },
+    }));
   }
 
   async addBackupDestination(strategyName: string, dest: BackupStrategyDestination): Promise<void> {
     const configName = this.getEffectiveConfigName();
     const current = await this.requireSelfHosted(configName);
-    const strategies = { ...current.backupStrategies };
-    const strategy = strategies[strategyName] as (typeof strategies)[string] | undefined;
-    if (!strategy) {
+    const strategies: Record<string, BackupStrategyConfig> = {
+      ...(current.resources?.backupStrategies ?? {}),
+    };
+    if (!Object.hasOwn(strategies, strategyName)) {
       throw new Error(
-        `Backup strategy "${strategyName}" not found. Create it first with: rdc config backup-strategy set --name ${strategyName} --cron "...""`
+        `Backup strategy "${strategyName}" not found. Create it first with: rdc config backup-strategy set --name ${strategyName} --cron "..."`
       );
     }
+    const strategy = strategies[strategyName];
     const destinations = [...strategy.destinations];
     const idx = destinations.findIndex((d) => d.name === dest.name);
-    if (idx >= 0) {
-      destinations[idx] = { ...destinations[idx], ...dest };
-    } else {
-      destinations.push(dest);
-    }
+    if (idx >= 0) destinations[idx] = { ...destinations[idx], ...dest };
+    else destinations.push(dest);
     destinations.sort((a, b) => a.name.localeCompare(b.name));
     strategies[strategyName] = { ...strategy, destinations };
-    await this.update(configName, { backupStrategies: strategies });
+    await configFileStorage.update(configName, (cfg) => ({
+      ...cfg,
+      resources: { ...(cfg.resources ?? {}), backupStrategies: strategies },
+    }));
   }
 
   async removeBackupDestination(strategyName: string, destName: string): Promise<void> {
     const configName = this.getEffectiveConfigName();
     const current = await this.requireSelfHosted(configName);
-    const strategies = { ...current.backupStrategies };
-    const strategy = strategies[strategyName] as (typeof strategies)[string] | undefined;
-    if (!strategy) return;
+    const strategies: Record<string, BackupStrategyConfig> = {
+      ...(current.resources?.backupStrategies ?? {}),
+    };
+    if (!Object.hasOwn(strategies, strategyName)) return;
+    const strategy = strategies[strategyName];
     strategies[strategyName] = {
       ...strategy,
       destinations: strategy.destinations.filter((d) => d.name !== destName),
     };
-    await this.update(configName, { backupStrategies: strategies });
+    await configFileStorage.update(configName, (cfg) => ({
+      ...cfg,
+      resources: { ...(cfg.resources ?? {}), backupStrategies: strategies },
+    }));
   }
 
   // ============================================================================
@@ -509,26 +536,30 @@ class ConfigService extends ConfigServiceBase {
   async addCloudProvider(name: string, config: CloudProviderConfig): Promise<void> {
     const configName = this.getEffectiveConfigName();
     await this.requireSelfHosted(configName);
-    const current = await this.getCurrent();
-    const providers = { ...current?.cloudProviders };
-    providers[name] = config;
-    await this.update(configName, { cloudProviders: providers });
+    await configFileStorage.update(configName, (cfg) => ({
+      ...cfg,
+      resources: {
+        ...(cfg.resources ?? {}),
+        cloudProviders: { ...(cfg.resources?.cloudProviders ?? {}), [name]: config },
+      },
+    }));
   }
 
   async removeCloudProvider(name: string): Promise<void> {
     const configName = this.getEffectiveConfigName();
     await this.requireSelfHosted(configName);
-    const current = await this.getCurrent();
-    const providers = { ...current?.cloudProviders };
-    if (!(name in providers)) throw new Error(`Cloud provider "${name}" not found`);
-    delete providers[name];
-    await this.update(configName, { cloudProviders: providers });
+    await configFileStorage.update(configName, (cfg) => {
+      const providers = { ...(cfg.resources?.cloudProviders ?? {}) };
+      if (!(name in providers)) throw new Error(`Cloud provider "${name}" not found`);
+      delete providers[name];
+      return { ...cfg, resources: { ...(cfg.resources ?? {}), cloudProviders: providers } };
+    });
   }
 
   async listCloudProviders(): Promise<{ name: string; config: CloudProviderConfig }[]> {
     const config = await this.getCurrent();
-    if (!config?.cloudProviders) return [];
-    return Object.entries(config.cloudProviders)
+    if (!config?.resources?.cloudProviders) return [];
+    return Object.entries(config.resources.cloudProviders)
       .map(([name, providerConfig]) => ({ name, config: providerConfig }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }
@@ -537,13 +568,11 @@ class ConfigService extends ConfigServiceBase {
   // Network ID Allocation (per config file)
   // ============================================================================
 
-  /**
-   * Scan all repositories in a config and return an array of used network IDs.
-   */
   private scanUsedNetworkIds(config: RdcConfig): Set<number> {
     const usedIds = new Set<number>();
-    if (config.repositories) {
-      for (const repo of Object.values(config.repositories)) {
+    const repos = config.resources?.repositories;
+    if (repos) {
+      for (const repo of Object.values(repos)) {
         if (repo.networkId !== undefined && repo.networkId > 0) {
           usedIds.add(repo.networkId);
         }
@@ -554,15 +583,13 @@ class ConfigService extends ConfigServiceBase {
 
   async allocateNetworkId(): Promise<number> {
     // Network ID space: 2816 to ~16,777,152, step 64 → ~261,944 possible IDs.
-    // The ID encodes a loopback /26 subnet: 127.{id/65536}.{(id/256)%256}.{id%256}/26.
-    // Max valid ID where the 2nd octet stays ≤ 255: 255 * 65536 = 16,711,680 + headroom.
-    const MAX_NETWORK_ID = 16_711_680; // 255 * 65536 — second octet = 255
+    const MAX_NETWORK_ID = 16_711_680;
 
     const name = this.getEffectiveConfigName();
     let allocated = 0;
     await configFileStorage.update(name, (config) => {
       const usedIds = this.scanUsedNetworkIds(config);
-      let nextId = config.nextNetworkId;
+      let nextId = config.defaults?.nextNetworkId;
 
       if (nextId === undefined || nextId < MIN_NETWORK_ID) {
         nextId = pickInitialNetworkId(usedIds);
@@ -577,7 +604,7 @@ class ConfigService extends ConfigServiceBase {
       allocated = nextId;
       return {
         ...config,
-        nextNetworkId: nextId + NETWORK_ID_INCREMENT,
+        defaults: { ...(config.defaults ?? {}), nextNetworkId: nextId + NETWORK_ID_INCREMENT },
       };
     });
     return allocated;

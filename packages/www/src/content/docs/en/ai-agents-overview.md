@@ -84,8 +84,13 @@ echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 | `--fields name,status` | Limit output to specific fields |
 | `--dry-run` | Preview destructive operations without executing |
 
+## Safety & Guardrails
+
+The CLI treats AI agents differently from humans at a keyboard. Sensitive operations require proof of prior knowledge (the `--current` flag), interactive-editor flows are refused by default, and every refusal is audit-logged. The [AI Agent Safety & Guardrails](/en/docs/ai-agents-safety) reference covers the full firewall table, the knowledge-gate model, the `REDIACC_ALLOW_CONFIG_EDIT` scope-override, and the hash-chained audit log.
+
 ## Next Steps
 
+- [AI Agent Safety & Guardrails](/en/docs/ai-agents-safety), What agents can and can't do, knowledge-gate, audit log
 - [Claude Code Setup Guide](/en/docs/ai-agents-claude-code), Step-by-step Claude Code configuration
 - [Cursor Setup Guide](/en/docs/ai-agents-cursor), Cursor IDE integration
 - [JSON Output Reference](/en/docs/ai-agents-json-output), Complete JSON output documentation

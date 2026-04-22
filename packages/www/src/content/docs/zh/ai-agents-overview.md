@@ -4,7 +4,7 @@ description: Claude Code、Cursor 和 Cline 等 AI 编程助手如何与 Rediacc
 category: Guides
 order: 30
 language: zh
-sourceHash: "c4f31aca01e62a7f"
+sourceHash: "7789f1e26755c779"
 ---
 
 AI 编程助手可以通过 `rdc` CLI 自主管理 Rediacc 基础设施。本指南涵盖集成方法以及如何开始。

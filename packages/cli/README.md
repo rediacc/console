@@ -1,6 +1,6 @@
 # @rediacc/cli
 
-Command-line interface for Rediacc operations. Manage infrastructure, queue tasks, sync files, and administer storage — via the Rediacc cloud API or self-hosted S3-compatible storage.
+Command-line interface for Rediacc operations. Manage machines, repositories, storages, and deployments — locally via SSH or through the encrypted config store.
 
 | | |
 |---|---|
@@ -26,201 +26,115 @@ The CLI also supports self-update via `rdc update`.
 
 ## Quick Start
 
-### Cloud Mode
-
 ```bash
-# Create a context and log in
-rdc config create production --api-url https://www.rediacc.com/api
-rdc auth login --email you@example.com
+# Initialise a config
+rdc config init --name production --ssh-key ~/.ssh/id_ed25519
 
-# Set defaults
-rdc config set team my-team
-rdc config set region eu-central
+# Add a machine
+rdc config machine add --name web-1 --ip 10.0.0.1 --user deploy
 
-# Run a function
-rdc run my-function -m my-machine --watch
+# Deploy a repository
+rdc repo fork --parent app --tag prod -m web-1
+rdc repo up --name app:prod -m web-1
+
+# Inspect config (redacted by default; --reveal on an interactive TTY)
+rdc config show
+
+# Pointer-addressed field editing with knowledge-gate
+rdc config field set /credentials/cfDnsApiToken \
+    --current "$OLD_TOKEN" --new "$NEW_TOKEN"
+
+# Full editor with redacted JSONC projection (humans only)
+rdc config edit
 ```
 
-### S3 Mode (Self-Hosted)
+See the [canonical CLI reference](https://www.rediacc.com/en/docs/cli-application) for every subcommand's arguments and options, or run `rdc <command> --help` locally.
 
-S3 mode stores all state (queue items, vault secrets) in any S3-compatible bucket (MinIO, RustFS, AWS S3, Cloudflare R2). Functions are executed locally via the `renet` binary over SSH. No cloud account required.
+## AI agent safety
 
-```bash
-# Create an S3 context
-rdc config create-s3 selfhosted \
-  --endpoint https://s3.example.com \
-  --bucket my-rediacc-bucket \
-  --access-key-id AKID... \
-  --secret-access-key SECRET... \
-  --ssh-key ~/.ssh/id_ed25519 \
-  --region auto
+`rdc` detects AI coding assistants (Claude Code, Cursor, Gemini CLI, Copilot CLI) via environment signals and `/proc` ancestry, then applies a reduced permission set:
 
-# Add machines
-rdc config add-machine web-server --ip 192.168.1.10 --user deploy
+- Sensitive writes require the knowledge-gate (`--current <old>`)
+- Interactive editor, `--reveal`, and direct machine SSH are refused unless the operator has set an ancestry-verified `REDIACC_ALLOW_CONFIG_EDIT` override
+- Every mutation / refusal / `--reveal` grant is written to a hash-chained JSONL log at `~/.config/rediacc/audit.log.jsonl` — inspect with `rdc config audit {log, tail, verify}`
 
-# Run a function
-rdc run my-function -m web-server
-```
+See the [AI Agent Safety & Guardrails](https://www.rediacc.com/en/docs/ai-agents-safety) doc for the full firewall matrix and worked examples.
 
-## Master Password
+## Command surface (abbreviated)
 
-The master password is an **optional**, **client-side-only** encryption layer. It is never transmitted to any server.
+| Command group | Purpose |
+|---|---|
+| `config init` / `config show` / `config list` / `config delete` | Config file lifecycle |
+| `config field {get,set,unset,rotate,list}` | Pointer-addressed CRUD on any config leaf (canonical mutation surface) |
+| `config edit` | Humans-only editor with redacted JSONC projection + validation loop |
+| `config audit {log,tail,verify}` | Hash-chained audit log inspection |
+| `config machine {add,remove,list,setup,...}` | Typed wrappers for `resources.machines.*` |
+| `config storage {add,remove,list}` | Typed wrappers for `resources.storages.*` |
+| `config repository {add,remove,list,...}` | Typed wrappers for `resources.repositories.*` |
+| `config backup-strategy {set,remove,list,...}` | Hot/cold backup schedules |
+| `config remote {enable,disable,status,refresh}` | Link to the encrypted config store |
+| `machine query` | Machine status (SSH + `renet list all`) |
+| `repo up / down / fork / takeover / sync` | Repository deployment + sync |
+| `term connect -m <machine> -r <repo>` | SSH into a sandboxed repo context |
+| `vscode connect` | VS Code Remote-SSH helper |
+| `doctor` | Environment diagnosis |
+| `update` | Self-update |
 
-### What It Encrypts
+## Config storage and encryption
 
-When enabled, the master password encrypts sensitive data at rest using AES-256-GCM with PBKDF2 key derivation (100,000 iterations, SHA-256):
+Configs live at `~/.config/rediacc/` (XDG-compatible). The shape uses `schemaVersion: 2` and is bucketed under `resources.*`, `credentials.*`, `account.*`, `infra.*`, `encryption.*` — see the [architecture doc](https://www.rediacc.com/en/docs/architecture#configuration-structure) for the full schema.
 
-- **S3 mode:** S3 secret access key stored in context config, and vault contents stored as `.json.enc` files in the bucket
-- **Cloud mode:** Vault secrets before they leave your machine
+Two encryption modes:
 
-### When Disabled
+- **`encryption.mode === "plaintext"`** (default) — keys and secrets are stored as-is, protected by filesystem permissions (`0600`). Redaction still applies to every read-path in the CLI.
+- **`encryption.mode === "master-password"`** — each sensitive field is individually AES-GCM-encrypted at rest. One master-password prompt per session caches the derived key; commands that don't touch secrets skip the prompt entirely.
 
-If you skip the master password (press Enter or omit `--master-password`):
+For zero-knowledge server-side enforcement (per-field HMAC commitments, anti-downgrade), enable `config remote` to sync the config to the encrypted config store.
 
-- S3 secret access key is stored in plaintext in the context config
-- Vault data is stored as plain JSON in S3
-- Data is still protected by S3 bucket ACLs (S3 mode) or cloud API authentication (cloud mode)
-
-### Usage
-
-```bash
-# S3 mode — with encryption
-rdc config create-s3 myctx ... --master-password <pw>
-
-# S3 mode — without encryption (leave empty when prompted, or omit the flag)
-rdc config create-s3 myctx ...
-
-# Cloud mode
-rdc auth login --master-password <pw>
-```
-
-For non-interactive usage (CI/CD), set the `REDIACC_MASTER_PASSWORD` environment variable.
-
-## Commands
-
-### All Modes
-
-| Command | Description |
-|---------|-------------|
-| `context` | Manage named contexts (`create`, `create-s3`, `create-local`, `show`, `list`, `set`, `delete`, `add-machine`, `remove-machine`, `machines`, ...) |
-| `queue` | Task lifecycle (`create`, `list`, `trace`, `cancel`, `retry`, `delete`) |
-| `machine` | Machine CRUD, vault management, bridge assignment |
-| `storage` | Storage system management |
-| `repository` | Repository management |
-| `sync` | File synchronization via rsync (`upload`, `download`, `status`) |
-| `doctor` | Check environment, configuration, and connectivity |
-| `update` | Self-update the CLI binary |
-
-### Shortcuts
-
-| Command | Description |
-|---------|-------------|
-| `rdc run <function>` | Execute a function |
-| `rdc trace <taskId>` | Trace a task's progress |
-| `rdc cancel <taskId>` | Cancel a queued task |
-| `rdc retry <taskId>` | Retry a failed task |
-
-### Cloud-Only
-
-These commands are unavailable in S3/local mode:
-
-| Command | Description |
-|---------|-------------|
-| `auth` | Login, logout, session management, 2FA |
-| `team` | Team CRUD |
-| `bridge` | Bridge management |
-| `region` | Region listing |
-| `organization` | Organization management |
-| `user` | User management |
-| `permission` | Permission management |
-| `audit` | Audit log queries |
-| `ceph` | Ceph storage operations |
-
-### Global Options
+## Global options
 
 ```
 -o, --output <format>    Output format: table, json, yaml, csv (default: table)
---context <name>         Use a specific named context
+--config <name>          Use a specific named config (default: rediacc)
 -l, --lang <code>        Language: en|de|es|fr|ja|ar|ru|tr|zh
 -V, --version            Show version
 -h, --help               Show help
 ```
 
-## Contexts
-
-Configuration is stored per-context in `~/.config/rediacc/` (XDG-compatible). Each context has a name, mode (`cloud`, `s3`, or `local`), and its own credentials/defaults.
-
-The default context is `"default"`. Override with `--context <name>` or set a different default via the config.
-
-```bash
-rdc config list                  # List all contexts
-rdc config show                  # Show current context details
-rdc --context staging queue list  # Use a specific context
-```
-
 ## Testing
 
 ```bash
-# Unit tests (Vitest)
-npm run test:unit
-
-# S3 integration tests (requires S3_TEST_* env vars)
-npm run test:unit:s3
-
-# E2E tests (Playwright)
-npm run test                # All projects
-npm run test:core           # Core commands
-npm run test:s3             # S3 mode
-npm run test:e2e            # End-to-end
-npm run test:security       # Security
-npm run test:operations     # Operations
-npm run test:resources      # Resources
-npm run test:errors         # Error handling
-npm run test:edition        # Edition checks
-npm run test:ceph           # Ceph commands
-npm run test:vscode         # VS Code integration
-
-# View report
-npm run test:report
-```
-
-### S3 Integration Test Environment
-
-Set these environment variables to run S3 integration tests:
-
-```bash
-export S3_TEST_ENDPOINT=http://localhost:9000
-export S3_TEST_ACCESS_KEY=minioadmin
-export S3_TEST_SECRET_KEY=minioadmin
-export S3_TEST_BUCKET=rediacc-test
+npm run test:unit                # Unit tests (Vitest)
+npm run test                     # E2E tests (Playwright) — all projects
+npm run test:report              # View HTML report
 ```
 
 ## Development
 
 ```bash
-npm install                    # Install dependencies
-npm run dev -- <command>       # Run in dev mode (tsx)
-npm run build                  # TypeScript compilation
-npm run build:bundle           # Single-file CJS bundle (esbuild)
-npm run build:sea              # Single Executable Application
-npm run lint                   # ESLint
-npm run typecheck              # Type checking
-npm run export:command-tree    # Export command tree for docs
+npm install                      # Install dependencies
+npm run dev -- <command>         # Run in dev mode (tsx)
+npm run build                    # TypeScript compilation
+npm run build:bundle             # Single-file CJS bundle (esbuild)
+npm run build:sea                # Single Executable Application
+npm run lint                     # ESLint
+npm run typecheck                # Type checking
+npm run export:command-tree      # Export command tree for the doc generator
 ```
 
-### Project Structure
+### Project layout
 
 ```
 src/
   cli.ts              # Command registration and global options
   commands/           # One file per command group
-  providers/          # State provider abstraction (cloud, s3, local)
-  services/           # Business logic (API, auth, context, S3 client, vault)
-  adapters/           # Platform adapters (crypto)
+    config/           # field.ts, edit.ts, audit.ts (canonical surface)
+  schema/             # v2 Zod schema + JSON-Pointer walker + sensitivity registry
+  services/           # Business logic (config-resources, mutation-gate, audit-log)
+  adapters/           # Platform adapters (config-file-storage, remote-config-adapter, crypto)
+  providers/          # State provider abstraction (local vs remote)
   i18n/               # Internationalization (9 languages)
-  types/              # TypeScript type definitions
-  utils/              # Shared utilities (formatting, errors, spinners)
+  utils/              # Shared utilities (agent-guard, editor-launcher, errors, spinners)
 tests/
   tests/              # Playwright E2E tests (organized by project)
-  src/utils/          # Test utilities (CliTestRunner, helpers)
 ```

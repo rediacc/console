@@ -40,6 +40,11 @@ const ALLOWED_IDENTICAL = new Set([
   'Professional',
   // Common loanwords used identically in many languages
   'Newsletter',
+  // Pure-formatting strings (bullet prefix + JSON-Pointer placeholder) —
+  // the rendered pointer is the meaningful content, not the bullet glyph.
+  '  • {{pointer}}',
+  // Generated command title banner — brand name + untranslated program name.
+  'rdc config edit — {{name}} (v{{version}})',
   // Brand names
   'Rediacc',
   'Rediaccfile',

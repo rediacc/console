@@ -1,0 +1,923 @@
+{
+  "exact": {
+    "/about": {
+      "to": null,
+      "status": 410,
+      "rationale": "No /about page exists in the live route manifest and no sufficiently close heir was found."
+    },
+    "/acceptable-use-policy": {
+      "to": null,
+      "status": 410,
+      "rationale": "No /acceptable-use-policy in the manifest; the closest live policy pages (cookie-policy, privacy-policy, etc.) are distinct documents with no meaningful overlap."
+    },
+    "/api": {
+      "to": null,
+      "status": 410,
+      "rationale": "No /api page in the manifest; was likely a legacy API endpoint or developer-portal stub, not a content page."
+    },
+    "/apk/x86_64": {
+      "to": "/downloads",
+      "status": 301,
+      "rationale": "Legacy binary download path; /downloads is the live installation hub covering all platforms including Linux x86_64."
+    },
+    "/apt": {
+      "to": "/downloads",
+      "status": 301,
+      "rationale": "Legacy Debian/Ubuntu package repository path; /downloads is the live installation hub."
+    },
+    "/archlinux": {
+      "to": "/downloads",
+      "status": 301,
+      "rationale": "Legacy Arch Linux package path; /downloads is the live installation hub."
+    },
+    "/blog": {
+      "to": "/blog",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/blog."
+    },
+    "/blog/advanced-task-workflows": {
+      "to": null,
+      "status": 410,
+      "rationale": "Deleted blog post. No live successor exists; only /blog/welcome remains and is unrelated."
+    },
+    "/blog/buenas-practicas-gestion-tareas-distribuidas": {
+      "to": null,
+      "status": 410,
+      "rationale": "Deleted Spanish-language blog post. No live successor exists."
+    },
+    "/blog/collaboration-model": {
+      "to": null,
+      "status": 410,
+      "rationale": "Deleted blog post. No live successor exists."
+    },
+    "/blog/comenzando-con-rediacc": {
+      "to": null,
+      "status": 410,
+      "rationale": "Deleted Spanish-language blog post. No live successor exists."
+    },
+    "/blog/distributed-task-management-best-practices": {
+      "to": null,
+      "status": 410,
+      "rationale": "Deleted blog post. No live successor exists."
+    },
+    "/blog/getting-started-with-rediacc": {
+      "to": null,
+      "status": 410,
+      "rationale": "Deleted blog post. No live successor exists."
+    },
+    "/blog/infrastructure-for-agentic-ai": {
+      "to": null,
+      "status": 410,
+      "rationale": "Deleted blog post. No live successor exists."
+    },
+    "/blog/rss.xml": {
+      "to": null,
+      "status": 410,
+      "rationale": "Legacy RSS path. Live feed is at /[lang]/rss.xml (e.g. /en/rss.xml), but this is a file endpoint not a page route; no clean language-preserving 1:1 redirect is possible from the Worker, so 410 is safer than a misdirected 301."
+    },
+    "/blog/tags": {
+      "to": null,
+      "status": 410,
+      "rationale": "Tag index route was never implemented. Google crawled the phantom URL from broken links in the blog index."
+    },
+    "/blog/tags/announcement": {
+      "to": null,
+      "status": 410,
+      "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
+    },
+    "/blog/tags/best-practices": {
+      "to": null,
+      "status": 410,
+      "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
+    },
+    "/blog/tags/collaboration": {
+      "to": null,
+      "status": 410,
+      "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
+    },
+    "/blog/tags/configuraci\u00f3n": {
+      "to": null,
+      "status": 410,
+      "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
+    },
+    "/blog/tags/culture": {
+      "to": null,
+      "status": 410,
+      "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
+    },
+    "/blog/tags/distributed-systems": {
+      "to": null,
+      "status": 410,
+      "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
+    },
+    "/blog/tags/gesti\u00f3n-tareas": {
+      "to": null,
+      "status": 410,
+      "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
+    },
+    "/blog/tags/getting-started": {
+      "to": null,
+      "status": 410,
+      "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
+    },
+    "/blog/tags/mejores-pr\u00e1cticas": {
+      "to": null,
+      "status": 410,
+      "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
+    },
+    "/blog/tags/rediacc": {
+      "to": null,
+      "status": 410,
+      "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
+    },
+    "/blog/tags/setup": {
+      "to": null,
+      "status": 410,
+      "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
+    },
+    "/blog/tags/task-management": {
+      "to": null,
+      "status": 410,
+      "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
+    },
+    "/blog/tags/tutorial": {
+      "to": null,
+      "status": 410,
+      "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
+    },
+    "/blog/tags/welcome": {
+      "to": null,
+      "status": 410,
+      "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
+    },
+    "/careers": {
+      "to": null,
+      "status": 410,
+      "rationale": "No /careers page in the manifest; careers section was removed."
+    },
+    "/changelog": {
+      "to": "/changelog",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/changelog."
+    },
+    "/checkout/success": {
+      "to": "/checkout/success",
+      "status": 301,
+      "rationale": "Page lives at packages/www/src/pages/[lang]/checkout/success.astro; root URL needs lang-prefix redirect."
+    },
+    "/contact": {
+      "to": "/contact",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/contact."
+    },
+    "/cookie-policy": {
+      "to": "/cookie-policy",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/cookie-policy."
+    },
+    "/disaster-recovery": {
+      "to": "/disaster-recovery",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/disaster-recovery."
+    },
+    "/docs": {
+      "to": "/docs",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/docs."
+    },
+    "/docs/administration/risk-free-upgrades": {
+      "to": "/docs/risk-free-upgrades",
+      "status": 301,
+      "rationale": "The risk-free-upgrades page was moved to a flat docs path during the removal of the administration/ section prefix."
+    },
+    "/docs/api-reference": {
+      "to": null,
+      "status": 410,
+      "rationale": "Top-level API reference index was removed; the reference content was dogfooded into rdc --help output and no single live heir covers it."
+    },
+    "/docs/api-reference/audit": {
+      "to": null,
+      "status": 410,
+      "rationale": "Legacy granular audit API reference was removed; no live doc covers it as a distinct API page."
+    },
+    "/docs/api-reference/auth": {
+      "to": "/docs/account-security",
+      "status": 301,
+      "rationale": "Auth API content (tokens, sessions, permissions) is now covered by the Account Security & API page."
+    },
+    "/docs/api-reference/company": {
+      "to": "/docs/account-management",
+      "status": 301,
+      "rationale": "Company/organization API content consolidated into the Account Management page covering orgs, teams, and members."
+    },
+    "/docs/api-reference/inspect": {
+      "to": null,
+      "status": 410,
+      "rationale": "Inspect API reference was removed with no live heir; inspect concept was absorbed into CLI --help output."
+    },
+    "/docs/api-reference/list": {
+      "to": null,
+      "status": 410,
+      "rationale": "List API reference was removed; no live page covers it as a discrete topic."
+    },
+    "/docs/api-reference/misc": {
+      "to": null,
+      "status": 410,
+      "rationale": "Miscellaneous API reference bucket was removed with no semantic heir."
+    },
+    "/docs/api-reference/queue": {
+      "to": null,
+      "status": 410,
+      "rationale": "Queue API reference was removed; the queue-system concept has no live doc heir."
+    },
+    "/docs/api-reference/update": {
+      "to": null,
+      "status": 410,
+      "rationale": "Legacy API endpoint for state updates; release-channels is narrower (edge vs stable only) and misses the real topic."
+    },
+    "/docs/api-reference/user": {
+      "to": "/docs/account-management",
+      "status": 301,
+      "rationale": "User API reference consolidated into Account Management, which covers members and user administration."
+    },
+    "/docs/api-reference/vault": {
+      "to": "/docs/config-storage",
+      "status": 301,
+      "rationale": "Vault API reference is semantically succeeded by the Config Storage page, which covers encrypted config sync (the vault replacement)."
+    },
+    "/docs/audit": {
+      "to": null,
+      "status": 410,
+      "rationale": "Standalone audit doc was removed; no live page covers audit as a distinct topic."
+    },
+    "/docs/auth": {
+      "to": "/docs/account-security",
+      "status": 301,
+      "rationale": "The auth page content (authentication, API tokens) is now covered by Account Security & API."
+    },
+    "/docs/backup/zero-cost": {
+      "to": "/docs/zero-cost-backup",
+      "status": 301,
+      "rationale": "The zero-cost backup page was moved from the backup/ prefix to a flat slug per the known rename hint."
+    },
+    "/docs/bridge": {
+      "to": "/docs/cli-application",
+      "status": 301,
+      "rationale": "Bridge was a granular admin/API page consolidated into the CLI Application guide during the docs refactor."
+    },
+    "/docs/cli-reference": {
+      "to": "/docs/cli-application",
+      "status": 301,
+      "rationale": "The cli-reference page was split and absorbed into the cli-application guide per the known rename."
+    },
+    "/docs/cli/api-reference": {
+      "to": null,
+      "status": 410,
+      "rationale": "CLI API reference index was removed; content was dogfooded into rdc --help output with no single live heir."
+    },
+    "/docs/cli/api-reference/authentication": {
+      "to": "/docs/account-security",
+      "status": 301,
+      "rationale": "CLI authentication reference content is now covered by Account Security & API."
+    },
+    "/docs/cli/api-reference/distributed-storage-commands": {
+      "to": "/docs/cli-application",
+      "status": 301,
+      "rationale": "Distributed storage CLI commands were absorbed into the unified CLI Application guide."
+    },
+    "/docs/cli/api-reference/inspect-commands": {
+      "to": "/docs/cli-application",
+      "status": 301,
+      "rationale": "Inspect CLI commands were absorbed into the CLI Application guide."
+    },
+    "/docs/cli/api-reference/machine": {
+      "to": "/docs/cli-application",
+      "status": 301,
+      "rationale": "Machine CLI reference was absorbed into the unified CLI Application guide."
+    },
+    "/docs/cli/api-reference/machine-commands": {
+      "to": "/docs/cli-application",
+      "status": 301,
+      "rationale": "Machine CLI commands reference was absorbed into the CLI Application guide."
+    },
+    "/docs/cli/api-reference/misc": {
+      "to": null,
+      "status": 410,
+      "rationale": "Miscellaneous CLI API reference had no coherent topic and was removed with no live heir."
+    },
+    "/docs/cli/api-reference/misc-commands": {
+      "to": null,
+      "status": 410,
+      "rationale": "Miscellaneous CLI commands reference had no coherent topic and was removed with no live heir."
+    },
+    "/docs/cli/api-reference/queue": {
+      "to": null,
+      "status": 410,
+      "rationale": "CLI queue reference was removed; the queue-system concept has no live doc successor."
+    },
+    "/docs/cli/api-reference/region": {
+      "to": "/docs/data-regions",
+      "status": 301,
+      "rationale": "Region CLI reference corresponds to the live Data Regions page per the known region -> data-regions rename."
+    },
+    "/docs/cli/api-reference/rm": {
+      "to": "/docs/cli-application",
+      "status": 301,
+      "rationale": "The rm command reference was a granular page absorbed into the CLI Application guide."
+    },
+    "/docs/cli/api-reference/rm-commands": {
+      "to": "/docs/cli-application",
+      "status": 301,
+      "rationale": "rm-commands was a granular reference page absorbed into the CLI Application guide."
+    },
+    "/docs/cli/api-reference/system-commands": {
+      "to": "/docs/cli-application",
+      "status": 301,
+      "rationale": "System CLI commands were absorbed into the unified CLI Application guide."
+    },
+    "/docs/cli/api-reference/team-members": {
+      "to": "/docs/account-management",
+      "status": 301,
+      "rationale": "Team member CLI reference was absorbed into Account Management, which covers members and team administration."
+    },
+    "/docs/cli/api-reference/user": {
+      "to": "/docs/account-management",
+      "status": 301,
+      "rationale": "User CLI reference was absorbed into Account Management."
+    },
+    "/docs/cli/api-reference/vault": {
+      "to": "/docs/config-storage",
+      "status": 301,
+      "rationale": "Vault CLI reference is succeeded by Config Storage, which covers the encrypted config sync that replaced vault."
+    },
+    "/docs/cli/authentication": {
+      "to": "/docs/account-security",
+      "status": 301,
+      "rationale": "CLI authentication page merged into Account Security & API, which covers auth tokens and sessions."
+    },
+    "/docs/cli/infrastructure": {
+      "to": "/docs/cli-application",
+      "status": 301,
+      "rationale": "CLI infrastructure page was absorbed into the CLI Application guide."
+    },
+    "/docs/cli/installation": {
+      "to": "/docs/installation",
+      "status": 301,
+      "rationale": "CLI installation content is now at the flat /docs/installation path."
+    },
+    "/docs/cli/introduction": {
+      "to": "/docs/cli-application",
+      "status": 301,
+      "rationale": "CLI introduction page was consolidated into the CLI Application guide."
+    },
+    "/docs/cli/tutorials/getting-started-tutorial": {
+      "to": "/docs/quick-start",
+      "status": 301,
+      "rationale": "Getting-started tutorial maps to the live Quick Start page, which covers the same onboarding flow."
+    },
+    "/docs/cli/tutorials/job-orchestration": {
+      "to": null,
+      "status": 410,
+      "rationale": "Job orchestration is the queue-system concept (other queue/job sources are all 410). tutorial-ops is about local VM provisioning, not job orchestration. Soft-404 risk."
+    },
+    "/docs/cli/tutorials/team-management-workflow": {
+      "to": "/docs/account-management",
+      "status": 301,
+      "rationale": "Team management workflow tutorial content is now covered by Account Management."
+    },
+    "/docs/clone": {
+      "to": "/docs/repositories",
+      "status": 301,
+      "rationale": "Clone was a granular repo operation page; the Repositories guide now covers the full repo lifecycle including cloning."
+    },
+    "/docs/company": {
+      "to": "/docs/account-management",
+      "status": 301,
+      "rationale": "Company admin page was consolidated into Account Management, which covers orgs, teams, and members."
+    },
+    "/docs/config-stores": {
+      "to": "/docs/config-storage",
+      "status": 301,
+      "rationale": "config-stores was an earlier name for what is now the Config Storage page."
+    },
+    "/docs/console-guide": {
+      "to": null,
+      "status": 410,
+      "rationale": "The entire console-guide section was removed because the console now has its own dashboard UI; no single live heir covers the index."
+    },
+    "/docs/console-guide/api-integration": {
+      "to": null,
+      "status": 410,
+      "rationale": "console-guide section was removed; API integration content was not migrated to a live doc."
+    },
+    "/docs/console-guide/audit": {
+      "to": null,
+      "status": 410,
+      "rationale": "console-guide section was removed; no live doc heir for the console audit page."
+    },
+    "/docs/console-guide/bridge-types": {
+      "to": null,
+      "status": 410,
+      "rationale": "console-guide section was removed; bridge-types had no live successor."
+    },
+    "/docs/console-guide/dashboard": {
+      "to": "/docs/web-application",
+      "status": 301,
+      "rationale": "Dashboard content is most closely covered by the Web Application page, which documents the console UI."
+    },
+    "/docs/console-guide/errors/common-errors": {
+      "to": "/docs/troubleshooting",
+      "status": 301,
+      "rationale": "Common errors page maps directly to the live Troubleshooting page."
+    },
+    "/docs/console-guide/features-overview": {
+      "to": "/docs/web-application",
+      "status": 301,
+      "rationale": "Console features overview is best covered by the Web Application page."
+    },
+    "/docs/console-guide/internationalization": {
+      "to": null,
+      "status": 410,
+      "rationale": "Internationalization was a console-guide-specific page with no live heir."
+    },
+    "/docs/console-guide/marketplace": {
+      "to": null,
+      "status": 410,
+      "rationale": "Marketplace concept was removed with the console-guide section; no live page covers it."
+    },
+    "/docs/console-guide/mcp-integration": {
+      "to": "/docs/ai-agents-mcp",
+      "status": 301,
+      "rationale": "MCP integration content moved to the dedicated MCP Server Setup page under ai-agents."
+    },
+    "/docs/console-guide/notifications": {
+      "to": null,
+      "status": 410,
+      "rationale": "Console notifications page was removed with the console-guide section; no live heir."
+    },
+    "/docs/console-guide/quick-start": {
+      "to": "/docs/quick-start",
+      "status": 301,
+      "rationale": "Console quick-start maps to the live flat /docs/quick-start page."
+    },
+    "/docs/console-guide/resources": {
+      "to": "/docs/repositories",
+      "status": 301,
+      "rationale": "Console resources page is best matched by the Repositories page, which covers resource management."
+    },
+    "/docs/console-guide/tutorials": {
+      "to": "/docs/quick-start",
+      "status": 301,
+      "rationale": "Console tutorials index redirects to Quick Start as the primary entry point for new users."
+    },
+    "/docs/console-guide/tutorials/backup-strategies": {
+      "to": "/docs/tutorial-backup",
+      "status": 301,
+      "rationale": "Backup strategies tutorial maps to the live Backup & Networking tutorial page."
+    },
+    "/docs/console-guide/tutorials/monitoring-setup": {
+      "to": "/docs/tutorial-monitoring",
+      "status": 301,
+      "rationale": "Monitoring setup tutorial maps to the live Monitoring & Diagnostics tutorial page."
+    },
+    "/docs/console-guide/user-sessions": {
+      "to": "/docs/account-security",
+      "status": 301,
+      "rationale": "User sessions content is now covered by Account Security & API, which covers session management."
+    },
+    "/docs/console-guide/vault-versioning": {
+      "to": "/docs/config-storage",
+      "status": 301,
+      "rationale": "Vault versioning was part of the old vault concept; Config Storage is the live successor."
+    },
+    "/docs/console/resources/storage": {
+      "to": "/docs/repositories",
+      "status": 301,
+      "rationale": "Console storage resources page maps to Repositories, which covers storage and resource management."
+    },
+    "/docs/create": {
+      "to": "/docs/repositories",
+      "status": 301,
+      "rationale": "Create was a granular repo operation page; the Repositories guide covers the full lifecycle including creation."
+    },
+    "/docs/distributed-storage": {
+      "to": "/docs/repositories",
+      "status": 301,
+      "rationale": "Distributed storage was absorbed into the Repositories guide, which covers LUKS-encrypted isolated environments."
+    },
+    "/docs/file-sync": {
+      "to": "/docs/cli-application",
+      "status": 301,
+      "rationale": "File sync commands are documented in the CLI Application guide (rdc repo sync)."
+    },
+    "/docs/index": {
+      "to": "/docs/quick-start",
+      "status": 301,
+      "rationale": "The /docs/index path was a docs landing page; Quick Start is the canonical entry point."
+    },
+    "/docs/inspect": {
+      "to": "/docs/cli-application",
+      "status": 301,
+      "rationale": "Inspect was a granular CLI concept absorbed into the CLI Application guide."
+    },
+    "/docs/intro": {
+      "to": "/docs/quick-start",
+      "status": 301,
+      "rationale": "The intro page was consolidated; Quick Start is the live entry point for new users."
+    },
+    "/docs/list": {
+      "to": "/docs/cli-application",
+      "status": 301,
+      "rationale": "List was a granular admin/API page absorbed into the CLI Application guide."
+    },
+    "/docs/machine": {
+      "to": "/docs/setup",
+      "status": 301,
+      "rationale": "The machine page covers machine management; the live Machine Setup page is the closest heir."
+    },
+    "/docs/misc": {
+      "to": null,
+      "status": 410,
+      "rationale": "Misc was a catch-all page with no coherent topic; removed with no live heir."
+    },
+    "/docs/operations/risk-free-upgrades": {
+      "to": "/docs/risk-free-upgrades",
+      "status": 301,
+      "rationale": "The risk-free-upgrades page was moved from the operations/ prefix to a flat docs path per the known rename."
+    },
+    "/docs/permissions": {
+      "to": "/docs/account-security",
+      "status": 301,
+      "rationale": "Permissions was a granular admin page; the permission model is now documented in Account Security & API."
+    },
+    "/docs/queue": {
+      "to": null,
+      "status": 410,
+      "rationale": "Queue was a granular admin page removed with no live heir."
+    },
+    "/docs/queue-system": {
+      "to": null,
+      "status": 410,
+      "rationale": "Queue-system was consolidated and removed; no live page covers it."
+    },
+    "/docs/rdc-cheat-sheet": {
+      "to": "/docs/rdc-cheat-sheet",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/docs/rdc-cheat-sheet."
+    },
+    "/docs/referencia-cli": {
+      "to": null,
+      "status": 410,
+      "rationale": "Spanish CLI reference page was removed; Spanish localized docs are handled separately and there is no live /docs/referencia-cli heir."
+    },
+    "/docs/region": {
+      "to": "/docs/data-regions",
+      "status": 301,
+      "rationale": "Region was renamed to data-regions per the known rename hint."
+    },
+    "/docs/rm": {
+      "to": "/docs/cli-application",
+      "status": 301,
+      "rationale": "rm was a granular CLI command page absorbed into the CLI Application guide."
+    },
+    "/docs/scaling/legacy-database-scaling": {
+      "to": "/docs/legacy-database-scaling",
+      "status": 301,
+      "rationale": "The page was moved from scaling/ prefix to a flat slug per the known rename."
+    },
+    "/docs/sistema-colas": {
+      "to": null,
+      "status": 410,
+      "rationale": "Spanish queue-system page was removed; Spanish localized docs are handled separately and the queue-system concept has no live heir."
+    },
+    "/docs/solutions/cross-backup": {
+      "to": "/docs/cross-backup",
+      "status": 301,
+      "rationale": "Cross-backup doc was moved from solutions/ prefix to flat /docs/cross-backup per the known rename."
+    },
+    "/docs/team": {
+      "to": "/docs/account-management",
+      "status": 301,
+      "rationale": "Team page was consolidated into Account Management, which covers orgs, teams, and members."
+    },
+    "/docs/team-members": {
+      "to": "/docs/account-management",
+      "status": 301,
+      "rationale": "Team-members was a granular admin page consolidated into Account Management."
+    },
+    "/docs/update": {
+      "to": "/docs/release-channels",
+      "status": 301,
+      "rationale": "Update page content is now covered by Release Channels, which documents how CLI updates and channels work."
+    },
+    "/docs/use-cases/time-travel": {
+      "to": "/docs/time-travel-recovery",
+      "status": 301,
+      "rationale": "use-cases/time-travel maps to the live time-travel-recovery page per the known rename hint."
+    },
+    "/docs/user": {
+      "to": "/docs/account-management",
+      "status": 301,
+      "rationale": "User admin page was consolidated into Account Management."
+    },
+    "/docs/vault": {
+      "to": "/docs/config-storage",
+      "status": 301,
+      "rationale": "Vault was replaced by Config Storage (zero-knowledge encrypted config sync); Config Storage is the live semantic heir."
+    },
+    "/downloads": {
+      "to": "/downloads",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/downloads."
+    },
+    "/features/ai-safety": {
+      "to": "/solutions/ai-pentesting",
+      "status": 301,
+      "rationale": "AI safety feature page maps to the AI pentesting solutions page, which covers automated security testing and safety validation (>70% topic overlap)."
+    },
+    "/features/cross-backup": {
+      "to": "/docs/cross-backup",
+      "status": 301,
+      "rationale": "Feature page has a direct docs equivalent at /docs/cross-backup (Cross Backup Strategy)."
+    },
+    "/features/dynamic-scaling": {
+      "to": "/docs/dynamic-resource-scaling",
+      "status": 301,
+      "rationale": "Feature page has a direct docs equivalent at /docs/dynamic-resource-scaling (Dynamic Resource Scaling)."
+    },
+    "/features/risk-free-upgrades": {
+      "to": "/docs/risk-free-upgrades",
+      "status": 301,
+      "rationale": "Feature page has a direct docs equivalent at /docs/risk-free-upgrades (Risk-Free Upgrades)."
+    },
+    "/features/security": {
+      "to": null,
+      "status": 410,
+      "rationale": "Generic security hub page with no single strong heir; matches 410 decision for /security (standalone)."
+    },
+    "/features/time-travel": {
+      "to": "/docs/time-travel-recovery",
+      "status": 301,
+      "rationale": "Feature page has a direct docs equivalent at /docs/time-travel-recovery (Time Travel Recovery)."
+    },
+    "/features/zero-cost-backup": {
+      "to": "/docs/zero-cost-backup",
+      "status": 301,
+      "rationale": "Feature page has a direct docs equivalent at /docs/zero-cost-backup."
+    },
+    "/for-ai-agents": {
+      "to": "/for-ai-agents",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/for-ai-agents."
+    },
+    "/for-ceos": {
+      "to": "/for-ceos",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/for-ceos."
+    },
+    "/for-ctos": {
+      "to": "/for-ctos",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/for-ctos."
+    },
+    "/for-devops": {
+      "to": "/for-devops",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/for-devops."
+    },
+    "/install": {
+      "to": "/install",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/install."
+    },
+    "/legal-information": {
+      "to": "/legal-information",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/legal-information."
+    },
+    "/newsletter": {
+      "to": "/newsletter",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/newsletter."
+    },
+    "/ntact": {
+      "to": "/contact",
+      "status": 301,
+      "rationale": "Mangled contact URL (Google misread a broken relative link, likely /en/tact -> /ntact); /contact is live."
+    },
+    "/otlp": {
+      "to": null,
+      "status": 410,
+      "rationale": "OTLP telemetry ingest endpoint, not a web content page; no live content heir exists."
+    },
+    "/otlp/v1/traces": {
+      "to": null,
+      "status": 410,
+      "rationale": "OTLP traces ingest endpoint, not a web content page; no live content heir exists."
+    },
+    "/partnerships": {
+      "to": null,
+      "status": 410,
+      "rationale": "No /partnerships page in the manifest; partnerships section was removed with no discoverable heir."
+    },
+    "/pricing": {
+      "to": "/pricing",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/pricing."
+    },
+    "/privacy": {
+      "to": "/privacy-policy",
+      "status": 301,
+      "rationale": "Short-form URL for the privacy policy; /privacy-policy is live and is the canonical page."
+    },
+    "/privacy-policy": {
+      "to": "/privacy-policy",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/privacy-policy."
+    },
+    "/professional-services": {
+      "to": "/professional-services",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/professional-services."
+    },
+    "/refund-policy": {
+      "to": "/refund-policy",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/refund-policy."
+    },
+    "/roi-calculator": {
+      "to": "/roi-calculator",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/roi-calculator."
+    },
+    "/security": {
+      "to": null,
+      "status": 410,
+      "rationale": "No /security page in the manifest; the old standalone security page was removed. Security content is now distributed across /solutions/continuous-security-testing, /solutions/encryption, and /docs/account-security \u2014 no single page is a strong enough heir for a 301."
+    },
+    "/solutions/ai-safety": {
+      "to": "/solutions/ai-pentesting",
+      "status": 301,
+      "rationale": "AI safety was about securing AI workloads; ai-pentesting is the direct successor covering AI-specific security testing."
+    },
+    "/solutions/backup-recovery": {
+      "to": "/solutions/rapid-recovery",
+      "status": 301,
+      "rationale": "Backup-recovery covered backup and restore workflows; rapid-recovery is the closest live heir covering the same recovery-from-backup topic."
+    },
+    "/solutions/cloud-migration": {
+      "to": "/solutions/migration-safety",
+      "status": 301,
+      "rationale": "Cloud-migration maps directly to migration-safety, which covers safe cloud-to-cloud and on-prem migration."
+    },
+    "/solutions/data-security": {
+      "to": "/solutions/encryption",
+      "status": 301,
+      "rationale": "Data-security was a general data-protection page; encryption is the most focused live heir covering at-rest and in-transit data protection."
+    },
+    "/solutions/database": {
+      "to": null,
+      "status": 410,
+      "rationale": "Generic database solution page removed with no sufficiently focused live heir covering database-specific concerns."
+    },
+    "/solutions/development-environments": {
+      "to": "/solutions/environment-cloning",
+      "status": 301,
+      "rationale": "Development-environments was about spinning up isolated dev envs; environment-cloning is the direct live replacement."
+    },
+    "/solutions/devops": {
+      "to": null,
+      "status": 410,
+      "rationale": "Broad DevOps category page removed; no single live solution covers the same wide DevOps scope without forcing a poor fit."
+    },
+    "/solutions/disaster-recovery": {
+      "to": "/solutions/rapid-recovery",
+      "status": 301,
+      "rationale": "Disaster-recovery maps cleanly to rapid-recovery, the live solution dedicated to restoring services after outages."
+    },
+    "/solutions/enterprise": {
+      "to": null,
+      "status": 410,
+      "rationale": "Generic enterprise landing page removed; no live solution covers a comparable broad enterprise-features scope."
+    },
+    "/solutions/enterprise-scaling": {
+      "to": null,
+      "status": 410,
+      "rationale": "Enterprise-scaling page removed; no live heir addresses horizontal scaling or capacity planning at that level of specificity."
+    },
+    "/solutions/infrastructure-protection": {
+      "to": "/solutions/vulnerability-management",
+      "status": 301,
+      "rationale": "Infrastructure-protection focused on hardening infrastructure against threats; vulnerability-management is the closest live heir covering infrastructure-level security gaps."
+    },
+    "/solutions/preemptive-defense": {
+      "to": "/solutions/continuous-security-testing",
+      "status": 301,
+      "rationale": "Preemptive-defense was about proactive security posture; continuous-security-testing is its direct renamed successor."
+    },
+    "/solutions/system-portability": {
+      "to": "/solutions/vendor-lock-in",
+      "status": 301,
+      "rationale": "System-portability was about avoiding platform lock-in; vendor-lock-in is the live page covering the same topic."
+    },
+    "/solutions/threat-response": {
+      "to": "/solutions/rapid-recovery",
+      "status": 301,
+      "rationale": "Threat-response covered rapid reaction to active incidents; rapid-recovery is the live heir focused on fast service restoration."
+    },
+    "/story": {
+      "to": null,
+      "status": 410,
+      "rationale": "No /story page in the manifest; company story content was removed with no discoverable heir."
+    },
+    "/team": {
+      "to": "/team",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/team."
+    },
+    "/telemetry-policy": {
+      "to": "/telemetry-policy",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/telemetry-policy."
+    },
+    "/terms": {
+      "to": "/terms-of-service",
+      "status": 301,
+      "rationale": "Short-form URL for terms; /terms-of-service is live and is the canonical page."
+    },
+    "/terms-of-service": {
+      "to": "/terms-of-service",
+      "status": 301,
+      "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/terms-of-service."
+    },
+    "/terms-of-service/acceptable-use-policy": {
+      "to": null,
+      "status": 410,
+      "rationale": "Override legal pattern: /acceptable-use-policy page was deleted; no live heir."
+    },
+    "/transparency": {
+      "to": null,
+      "status": 410,
+      "rationale": "No /transparency page in the manifest; transparency content was removed with no discoverable heir."
+    },
+    "/yr": {
+      "to": null,
+      "status": 410,
+      "rationale": "Unknown legacy path with no discoverable heir."
+    }
+  },
+  "patterns": [
+    {
+      "from": "^/(terms-of-service|privacy-policy|cookie-policy|telemetry-policy|refund-policy|acceptable-use-policy)/(terms-of-service|privacy-policy|cookie-policy|telemetry-policy|refund-policy|acceptable-use-policy)$",
+      "to": "/$2",
+      "status": 301,
+      "rationale": "Concatenated legal paths caused by old relative-href bug in legal pages. Second segment is the link target the user intended to reach (they were on the first-segment page and clicked a relative link expecting to land on the second-segment page). Pattern covers all 30 theoretical combinations; 11 observed in GSC. NOTE: /acceptable-use-policy is absent from route-manifest.json \u2014 any concat path whose second segment is acceptable-use-policy (e.g. /terms-of-service/acceptable-use-policy, observed in GSC) will redirect to a potentially missing page. Verify that /acceptable-use-policy is live before deploying, or add it to the manifest."
+    },
+    {
+      "from": "^/[a-z]+ntact$",
+      "to": "/contact",
+      "status": 301,
+      "rationale": "Mangled \"contact\" URLs Google crawled from broken relative links (9 observed: /arntact, /dentact, /esntact, /frntact, /jantact, /runtact, /trntact, /zhntact)."
+    },
+    {
+      "from": "^/console(/.*)?$",
+      "to": "/account",
+      "status": 301,
+      "rationale": "Legacy console/login paths; dashboard now at /account (served by Worker). Covers /console, /console/login, and query-string register variants."
+    },
+    {
+      "from": "^/docs/rdc-cheat-sheet/.+$",
+      "to": "/docs/rdc-cheat-sheet",
+      "status": 301,
+      "rationale": "Multi-page cheat-sheet was consolidated into a single Marp-rendered page (8 subpaths observed)."
+    }
+  ],
+  "allowed_non_manifest_targets": [
+    "/account",
+    "/checkout/success",
+    "/downloads",
+    "/install",
+    "/contact",
+    "/pricing",
+    "/team",
+    "/changelog",
+    "/newsletter",
+    "/for-ai-agents",
+    "/for-ceos",
+    "/for-ctos",
+    "/for-devops",
+    "/professional-services",
+    "/roi-calculator",
+    "/legal-information",
+    "/disaster-recovery",
+    "/rss.xml",
+    "/cookie-policy",
+    "/privacy-policy",
+    "/telemetry-policy",
+    "/refund-policy",
+    "/terms-of-service",
+    "/docs",
+    "/blog",
+    "/docs/rdc-cheat-sheet"
+  ]
+}

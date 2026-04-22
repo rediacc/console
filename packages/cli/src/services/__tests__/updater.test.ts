@@ -416,7 +416,7 @@ describe('services/updater', () => {
       const result = await performUpdate();
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('update.errors.notSEA');
+      expect(result.error).toBe('commands.update.errors.notSEA');
     });
 
     it('returns error when platform is unsupported', async () => {
@@ -425,7 +425,7 @@ describe('services/updater', () => {
       const result = await performUpdate();
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('update.errors.unsupportedPlatform');
+      expect(result.error).toBe('commands.update.errors.unsupportedPlatform');
     });
 
     it('returns error when lock cannot be acquired', async () => {
@@ -434,7 +434,16 @@ describe('services/updater', () => {
       const result = await performUpdate();
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('update.errors.lockFailed');
+      expect(result.error).toBe('commands.update.errors.lockFailed');
+    });
+
+    it('requests the lock with a non-zero wait budget', async () => {
+      await performUpdate();
+      expect(acquireUpdateLock).toHaveBeenCalledWith(
+        expect.objectContaining({ waitMs: expect.any(Number) })
+      );
+      const call = vi.mocked(acquireUpdateLock).mock.calls[0]?.[0];
+      expect(call?.waitMs).toBeGreaterThan(0);
     });
 
     it('releases lock after completion', async () => {
@@ -504,7 +513,7 @@ describe('services/updater', () => {
       const result = await performUpdate({ force: true });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('update.errors.noBinary');
+      expect(result.error).toBe('commands.update.errors.noBinary');
       expect(result.toVersion).toBe('0.5.0');
     });
 
@@ -558,7 +567,7 @@ describe('services/updater', () => {
       const result = await performUpdate({ force: true });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('update.errors.checksumMismatch');
+      expect(result.error).toBe('commands.update.errors.checksumMismatch');
     });
 
     it('stages binary on EBUSY instead of failing', async () => {
@@ -619,7 +628,7 @@ describe('services/updater', () => {
       // Should succeed with staging fallback
       expect(result.success).toBe(true);
       expect(result.toVersion).toBe('0.5.0');
-      expect(result.error).toBe('update.errors.binaryBusy');
+      expect(result.error).toBe('commands.update.errors.binaryBusy');
 
       // Should track telemetry event for staging
       expect(mockTelemetry.telemetryService.trackEvent).toHaveBeenCalledWith(

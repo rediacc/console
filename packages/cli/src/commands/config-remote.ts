@@ -141,39 +141,28 @@ function startCallbackServer(): Promise<{
 
 // ─── Sensitive Field Stripping ───────────────────────────────────────────
 
-/** Fields to strip from the local config when switching to remote storage */
-const REMOTE_STRIPPED_FIELDS = [
-  'machines',
-  'repositories',
-  'storages',
-  'ssh',
-  'sshContent',
-  'encrypted',
-  'encryptedResources',
-  'masterPassword',
-  'token',
-  'apiUrl',
-  'userEmail',
-  'cloudProviders',
-  'backupStrategies',
-  'deletedRepositories',
-  'cfDnsApiToken',
-  'cfDnsZoneId',
-  'certEmail',
-  'acmeCertCache',
-  'renetPath',
-  'nextNetworkId',
-  'universalUser',
-  'pruneGraceDays',
-  'datastoreSize',
-] as const satisfies readonly (keyof RdcConfig)[];
-
+/**
+ * When switching to remote storage, the local pointer file keeps only the
+ * `remote` pointer, metadata (id/version/schemaVersion), and a subset of
+ * account-level defaults. Everything else moves server-side.
+ */
 function stripSensitiveFields(config: RdcConfig): RdcConfig {
-  const stripped = { ...config };
-  for (const field of REMOTE_STRIPPED_FIELDS) {
-    delete stripped[field];
-  }
-  return stripped;
+  return {
+    schemaVersion: config.schemaVersion,
+    id: config.id,
+    version: config.version,
+    remote: config.remote,
+    account: config.account
+      ? {
+          team: config.account.team,
+          region: config.account.region,
+          bridge: config.account.bridge,
+          accountServer: config.account.accountServer,
+        }
+      : undefined,
+    defaults: config.defaults ? { language: config.defaults.language } : undefined,
+    encryption: { mode: 'plaintext' },
+  };
 }
 
 // ─── Enable Flow ─────────────────────────────────────────────────────────
@@ -361,7 +350,10 @@ async function disableRemote(configName: string): Promise<void> {
   // Write full decrypted config to local file, removing remote pointer
   const restored: RdcConfig = {
     ...fullConfig,
-    language: localConfig.language,
+    defaults: {
+      ...(fullConfig.defaults ?? {}),
+      language: localConfig.defaults?.language ?? fullConfig.defaults?.language,
+    },
   };
   delete restored.remote;
   await configFileStorage.save(restored, configName);

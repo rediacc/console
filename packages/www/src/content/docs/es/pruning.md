@@ -4,7 +4,7 @@ description: "Eliminar copias de seguridad hu√©rfanas, snapshots obsoletos e im√
 category: "Guides"
 order: 12
 language: es
-sourceHash: "9b28efe3bd8ca2dc"
+sourceHash: "f355a0921afb72e9"
 sourceCommit: "7874d5e2f0ca1262eb80ee7de79f20320d0ae2d7"
 ---
 

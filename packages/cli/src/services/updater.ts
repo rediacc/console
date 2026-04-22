@@ -231,7 +231,7 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
  */
 class BinaryBusyError extends Error {
   constructor(public readonly stagedVersion: string) {
-    super('update.errors.binaryBusy');
+    super('commands.update.errors.binaryBusy');
   }
 }
 
@@ -284,7 +284,7 @@ async function downloadVerifyAndReplace(
     // Verify SHA256 checksum
     const actualHash = await computeSha256(tempPath);
     if (actualHash !== expectedSha256) {
-      throw new Error('update.errors.checksumMismatch');
+      throw new Error('commands.update.errors.checksumMismatch');
     }
 
     // Self-replace: rename current -> .old, rename new -> current
@@ -338,10 +338,10 @@ function handleUpdateError(err: unknown): UpdateResult {
       success: true,
       fromVersion: VERSION,
       toVersion: err.stagedVersion,
-      error: 'update.errors.binaryBusy',
+      error: 'commands.update.errors.binaryBusy',
     };
   }
-  const message = err instanceof Error ? err.message : 'update.errors.unknown';
+  const message = err instanceof Error ? err.message : 'commands.update.errors.unknown';
   telemetryService.trackEvent('update.manual.failed', { error: message });
   return errorResult(message);
 }
@@ -354,13 +354,16 @@ export async function performUpdate(
 ): Promise<UpdateResult> {
   const { force = false, onProgress } = options;
 
-  if (!isSEA()) return errorResult('update.errors.notSEA');
+  if (!isSEA()) return errorResult('commands.update.errors.notSEA');
 
   const platformKey = getPlatformKey();
-  if (!platformKey) return errorResult('update.errors.unsupportedPlatform');
+  if (!platformKey) return errorResult('commands.update.errors.unsupportedPlatform');
 
-  const releaseLock = await acquireUpdateLock();
-  if (!releaseLock) return errorResult('update.errors.lockFailed');
+  const releaseLock = await acquireUpdateLock({ waitMs: 3000 });
+  if (!releaseLock) {
+    telemetryService.trackEvent('update.lock.contention');
+    return errorResult('commands.update.errors.lockFailed');
+  }
 
   try {
     const manifest = await fetchManifest(10_000);
@@ -370,13 +373,13 @@ export async function performUpdate(
         success: true,
         fromVersion: VERSION,
         toVersion: VERSION,
-        error: 'update.errors.alreadyUpToDate',
       };
     }
 
     const binaryInfo = manifest.binaries[platformKey];
-    if (!binaryInfo) return errorResult('update.errors.noBinary', manifest.version);
-    if (!binaryInfo.sha256) return errorResult('update.errors.noChecksum', manifest.version);
+    if (!binaryInfo) return errorResult('commands.update.errors.noBinary', manifest.version);
+    if (!binaryInfo.sha256)
+      return errorResult('commands.update.errors.noChecksum', manifest.version);
 
     await downloadVerifyAndReplace(
       binaryInfo.url,

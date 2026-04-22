@@ -7,7 +7,7 @@ description: >-
 category: Tutorials
 order: 2
 language: de
-sourceHash: 0c36a98feadd7aaa
+sourceHash: "b5958b990c537d8f"
 ---
 
 # So richten Sie eine Maschine mit Rediacc ein

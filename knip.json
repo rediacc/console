@@ -151,7 +151,8 @@
     "astro-seo",
     "glob",
     "react-i18next",
-    "tiny-typed-emitter"
+    "tiny-typed-emitter",
+    "asciinema-player"
   ],
   "ignoreBinaries": ["rimraf", "vite", "vitest", "wrangler"]
 }

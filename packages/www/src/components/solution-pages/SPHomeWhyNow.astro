@@ -1,0 +1,161 @@
+---
+import type { Language } from '../../i18n/types';
+import { createTranslator } from '../../i18n/utils';
+
+interface Props {
+  lang: Language;
+}
+
+interface Card {
+  title: string;
+  description: string;
+}
+
+const { lang } = Astro.props as Props;
+const { t, to } = createTranslator(lang);
+const cards = (to('whyNow.cards') as Card[] | undefined) ?? [];
+---
+
+<section class="sp-why-now" id="why-now">
+  <div class="sp-why-now-inner">
+    <p class="sp-overline">{t('whyNow.overline')}</p>
+    <h2>{t('whyNow.title')}</h2>
+
+    <div class="sp-why-now-grid">
+      {cards.map((card, i) => (
+        <article class="sp-why-now-card">
+          <div class="sp-why-now-icon">
+            {i === 0 && (
+              <svg viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M30 90 A50 50 0 0 1 130 90" stroke="currentColor" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+                <path d="M30 90 A50 50 0 0 1 60 47" stroke="currentColor" stroke-width="2" opacity="0.25" stroke-linecap="round"/>
+                <line x1="30" y1="90" x2="36" y2="78" stroke="currentColor" stroke-width="1.5" opacity="0.3" stroke-linecap="round"/>
+                <line x1="80" y1="38" x2="80" y2="46" stroke="currentColor" stroke-width="1.5" opacity="0.3" stroke-linecap="round"/>
+                <line x1="130" y1="90" x2="124" y2="78" stroke="currentColor" stroke-width="1.5" opacity="0.3" stroke-linecap="round"/>
+                <line x1="80" y1="90" x2="116" y2="58" stroke="#7fa03f" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="80" cy="90" r="4" fill="#7fa03f"/>
+                <text x="80" y="108" font-size="9" fill="currentColor" opacity="0.5" font-family="sans-serif" text-anchor="middle">10× faster</text>
+              </svg>
+            )}
+            {i === 1 && (
+              <svg viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M80 20 L112 32 L112 60 C112 80 96 96 80 102 C64 96 48 80 48 60 L48 32 Z" stroke="currentColor" stroke-width="1.5" opacity="0.35" fill="none"/>
+                <path d="M74 48 L88 48 L80 66 L92 66 L76 88 L82 72 L70 72 Z" fill="#7fa03f" stroke="#7fa03f" stroke-width="1" stroke-linejoin="round"/>
+                <text x="80" y="115" font-size="9" fill="currentColor" opacity="0.5" font-family="sans-serif" text-anchor="middle">seconds, not months</text>
+              </svg>
+            )}
+            {i === 2 && (
+              <svg viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M40 42 Q34 42 34 36 Q34 28 44 28 Q46 20 56 20 Q66 20 68 28 Q76 28 76 36 Q76 42 70 42 Z" stroke="#7fa03f" stroke-width="1.5" fill="none"/>
+                <path d="M96 42 Q90 42 90 36 Q90 28 100 28 Q102 20 112 20 Q122 20 124 28 Q132 28 132 36 Q132 42 126 42 Z" stroke="currentColor" stroke-width="1.5" opacity="0.3" fill="none"/>
+                <path d="M68 86 Q62 86 62 80 Q62 72 72 72 Q74 64 84 64 Q94 64 96 72 Q104 72 104 80 Q104 86 98 86 Z" stroke="currentColor" stroke-width="1.5" opacity="0.3" fill="none"/>
+                <line x1="56" y1="42" x2="80" y2="64" stroke="currentColor" stroke-width="1" opacity="0.25" stroke-dasharray="4 3"/>
+                <line x1="112" y1="42" x2="88" y2="64" stroke="currentColor" stroke-width="1" opacity="0.25" stroke-dasharray="4 3"/>
+                <text x="80" y="108" font-size="9" fill="currentColor" opacity="0.5" font-family="sans-serif" text-anchor="middle">many clouds, no copy</text>
+              </svg>
+            )}
+          </div>
+          <h3>{card.title}</h3>
+          <p>{card.description}</p>
+        </article>
+      ))}
+    </div>
+
+    <div class="sp-why-now-footer">
+      <p>{t('whyNow.footer')}</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .sp-why-now {
+    background: var(--sp-bg-white);
+    padding: 96px 48px;
+    color: var(--sp-text-body);
+  }
+  .sp-why-now-inner {
+    max-width: var(--sp-page-max);
+    margin: 0 auto;
+  }
+  .sp-why-now .sp-overline {
+    text-align: center;
+  }
+  .sp-why-now h2 {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--sp-text-primary);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    text-align: center;
+    margin-bottom: 56px;
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .sp-why-now-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .sp-why-now-card {
+    background: var(--sp-bg-light);
+    border: 1px solid var(--sp-border-light);
+    border-radius: 12px;
+    padding: 32px 28px;
+    text-align: center;
+    color: var(--sp-text-body);
+  }
+  .sp-why-now-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 120px;
+    margin-bottom: 16px;
+  }
+  .sp-why-now-icon svg {
+    width: 160px;
+    height: 120px;
+  }
+  .sp-why-now-card h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--sp-text-primary);
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+  .sp-why-now-card p {
+    font-size: 16px;
+    color: var(--sp-text-body);
+    line-height: 1.6;
+    margin: 0;
+  }
+  .sp-why-now-footer {
+    margin-top: 48px;
+    text-align: center;
+  }
+  .sp-why-now-footer p {
+    display: inline-block;
+    padding: 14px 28px;
+    background: var(--sp-bg-stats);
+    border: 1px solid var(--sp-border-light);
+    border-left: 3px solid var(--sp-brand-primary);
+    border-radius: 0 8px 8px 0;
+    font-size: 16px;
+    color: var(--sp-text-primary);
+    line-height: 1.5;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  @media (max-width: 900px) {
+    .sp-why-now {
+      padding: 64px 24px;
+    }
+    .sp-why-now-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .sp-why-now h2 {
+      font-size: 28px;
+    }
+  }
+</style>

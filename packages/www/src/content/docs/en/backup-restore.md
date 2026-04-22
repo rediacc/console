@@ -268,7 +268,13 @@ rdc machine backup schedule -m server-1
 rdc machine backup schedule -m server-1 --dry-run
 ```
 
-`--dry-run` prints the generated systemd unit files without deploying them. rclone tokens are masked in dry-run output.
+The deploy is a state reconciler. It reads the current unit files and systemd state on the machine, compares against what the config would produce (SHA-256 per file), and only touches units whose content actually changed. Re-running with no config changes is a no-op: no writes, no `daemon-reload`, no timer churn.
+
+`--dry-run` prints the plan for each strategy (`created`, `updated (service, timer, env)`, `unchanged`, `removed`) without touching the machine. Combine with `--debug` to also print the generated unit bodies; rclone tokens are redacted.
+
+If a backup is currently running for a strategy you are about to update or remove, the deploy fails fast with a hint to cancel it or pass `--force`. With `--force`, the running invocation keeps its in-memory unit and the new configuration applies on the next timer tick, so the running backup is never killed.
+
+`--reset-failed` is opt-in. When passed, it clears systemd's failed state on touched services after a successful deploy. Off by default so prior failure signals stay visible to alerting.
 
 ### Run a Backup Now
 

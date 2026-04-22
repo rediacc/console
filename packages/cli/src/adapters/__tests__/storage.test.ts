@@ -99,11 +99,14 @@ async function runConcurrentWrites(
     (i: number) =>
     (config: RdcConfig): RdcConfig => ({
       ...config,
-      machines: {
-        ...config.machines,
-        [`process-${i}`]: {
-          ip: `10.0.0.${i}`,
-          user: `user-${i}`,
+      resources: {
+        ...config.resources,
+        machines: {
+          ...config.resources?.machines,
+          [`process-${i}`]: {
+            ip: `10.0.0.${i}`,
+            user: `user-${i}`,
+          },
         },
       },
     });
@@ -159,13 +162,16 @@ describe('ConfigFileStorage', () => {
 
     it('should load config from file', async () => {
       const initial: RdcConfig = {
+        schemaVersion: 2,
         id: '550e8400-e29b-41d4-a716-446655440000',
         version: 1,
-        mode: 'local',
-        machine: 'prod-1',
-        machines: {
-          'prod-1': { ip: '10.0.0.1', user: 'admin' },
+        defaults: { machine: 'prod-1' },
+        resources: {
+          machines: {
+            'prod-1': { ip: '10.0.0.1', user: 'admin' },
+          },
         },
+        encryption: { mode: 'plaintext' },
       };
       await writeRawConfig('test', initial);
 
@@ -173,8 +179,8 @@ describe('ConfigFileStorage', () => {
 
       expect(config.id).toBe('550e8400-e29b-41d4-a716-446655440000');
       expect(config.version).toBe(1);
-      expect(config.machine).toBe('prod-1');
-      expect(config.machines?.['prod-1']?.ip).toBe('10.0.0.1');
+      expect(config.defaults?.machine).toBe('prod-1');
+      expect(config.resources?.machines?.['prod-1']?.ip).toBe('10.0.0.1');
     });
 
     it('should save config atomically (temp file + rename)', async () => {
@@ -523,13 +529,13 @@ describe('ConfigFileStorage', () => {
       await storage.withApiLock('test', () =>
         storage.update('test', (cfg) => ({
           ...cfg,
-          token: 'new-token',
+          account: { ...cfg.account, token: 'new-token' },
         }))
       );
 
       storage.clearCache();
       const config = await storage.load('test');
-      expect(config.token).toBe('new-token');
+      expect(config.account?.token).toBe('new-token');
     });
 
     it('should handle triple-nested lock calls', async () => {
@@ -538,11 +544,17 @@ describe('ConfigFileStorage', () => {
       const doUpdates = async (): Promise<void> => {
         await storage.update('test', (cfg) => ({
           ...cfg,
-          machines: { ...cfg.machines, first: { ip: '10.0.0.1', user: 'admin' } },
+          resources: {
+            ...cfg.resources,
+            machines: { ...cfg.resources?.machines, first: { ip: '10.0.0.1', user: 'admin' } },
+          },
         }));
         await storage.update('test', (cfg) => ({
           ...cfg,
-          machines: { ...cfg.machines, second: { ip: '10.0.0.2', user: 'admin' } },
+          resources: {
+            ...cfg.resources,
+            machines: { ...cfg.resources?.machines, second: { ip: '10.0.0.2', user: 'admin' } },
+          },
         }));
       };
 
@@ -550,8 +562,8 @@ describe('ConfigFileStorage', () => {
 
       storage.clearCache();
       const config = await storage.load('test');
-      expect(config.machines).toHaveProperty('first');
-      expect(config.machines).toHaveProperty('second');
+      expect(config.resources?.machines).toHaveProperty('first');
+      expect(config.resources?.machines).toHaveProperty('second');
     });
 
     it('should track lock depth correctly', async () => {
@@ -678,9 +690,12 @@ describe('ConfigFileStorage', () => {
         await storage.withApiLock('test', () =>
           storage.update('test', (cfg) => ({
             ...cfg,
-            machines: {
-              ...cfg.machines,
-              [`machine-${i}`]: { ip: `10.0.0.${i}`, user: `user-${i}` },
+            resources: {
+              ...cfg.resources,
+              machines: {
+                ...cfg.resources?.machines,
+                [`machine-${i}`]: { ip: `10.0.0.${i}`, user: `user-${i}` },
+              },
             },
           }))
         );
@@ -688,13 +703,13 @@ describe('ConfigFileStorage', () => {
 
       storage.clearCache();
       const config = await storage.load('test');
-      expect(Object.keys(config.machines ?? {})).toHaveLength(20);
+      expect(Object.keys(config.resources?.machines ?? {})).toHaveLength(20);
     });
 
     it('should not corrupt file under concurrent writes', async () => {
       await storage.init('test');
       const config = await runConcurrentWrites(storage, 'test', 5);
-      expect(Object.keys(config.machines ?? {})).toHaveLength(5);
+      expect(Object.keys(config.resources?.machines ?? {})).toHaveLength(5);
     });
 
     it('should handle interleaved read-modify-write operations', async () => {

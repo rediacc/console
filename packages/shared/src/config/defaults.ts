@@ -325,6 +325,12 @@ export const CONTEXT_DEFAULTS = {
 
   /** Default config file name */
   CONFIG_NAME: 'rediacc',
+
+  /** Default encryption kind for configs that have no explicit encryption setting */
+  CONFIG_KIND: 'plaintext',
+
+  /** Default output format for config field list */
+  FIELD_LIST_OUTPUT: 'table',
 } as const;
 
 /**

@@ -270,7 +270,7 @@ async function checkConfiguration(): Promise<CheckSection> {
   });
   if (!isCloud) {
     await checkMachineCount(checks);
-    checkSshKey(checks, context?.ssh?.privateKeyPath);
+    checkSshKey(checks, context?.credentials?.ssh?.privateKey ? '(inline)' : undefined);
   }
   return { title: t('commands.doctor.sections.configuration'), checks };
 }

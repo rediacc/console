@@ -2,8 +2,9 @@
 import type { Language } from '../../i18n/types';
 import { createTranslator } from '../../i18n/utils';
 import SPHero from './SPHero.astro';
+import SPHomeWhyNow from './SPHomeWhyNow.astro';
 import SPHomeLogoWall from './SPHomeLogoWall.astro';
-import SPHomeFeatureShowcase from './SPHomeFeatureShowcase.astro';
+import SPHomeNotASlice from './SPHomeNotASlice.astro';
 import SPHomeTeamStory from './SPHomeTeamStory.astro';
 import SPHomeBeforeAfter from './SPHomeBeforeAfter.astro';
 import SPHomeMetricsBar from './SPHomeMetricsBar.astro';
@@ -49,9 +50,10 @@ const homeHero = {
     terminal={{ lines: heroTerminalLines }}
     youtubeVideoId="TCYVznJ0rGI"
   />
+  <SPHomeWhyNow lang={lang} />
   <SPHomeLogoWall lang={lang} />
-  <SPHomeFeatureShowcase lang={lang} />
-  <SPHomeTeamStory member="founder" videoKey="our-story" lang={lang} />
+  <SPHomeNotASlice lang={lang} />
+  <SPHomeTeamStory member="founder" youtubeVideoId="TCYVznJ0rGI" lang={lang} />
   <SPHomeBeforeAfter lang={lang} />
   <SPHomeMetricsBar lang={lang} />
   <SPHomeTestimonials lang={lang} />

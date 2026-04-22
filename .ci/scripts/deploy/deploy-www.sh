@@ -115,6 +115,11 @@ head_sampling_rate = 1
 directory = "./dist"
 binding = "ASSETS"
 not_found_handling = "404-page"
+# Match Astro's \`trailingSlash: 'never'\` so ASSETS does not 307 \`/foo\`
+# to \`/foo/\`. Without this, the Worker's normalizePath strips the
+# trailing slash with a 301 and ASSETS re-adds it — infinite loop.
+# Mirrors the setting in wrangler.{,edge.}toml.
+html_handling = "drop-trailing-slash"
 run_worker_first = ["/*"]
 
 [[d1_databases]]

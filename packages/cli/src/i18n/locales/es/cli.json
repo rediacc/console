@@ -284,6 +284,23 @@
       }
     },
     "config": {
+      "audit": {
+        "description": "Inspeccionar el registro de auditoría de configuración (JSONL encadenado por hash en ~/.config/rediacc/audit.log.jsonl)",
+        "log": {
+          "description": "Imprimir entradas de auditoría recientes como JSON",
+          "optionActor": "Filtrar por tipo de actor (human|agent)",
+          "optionPath": "Filtrar por patrón de puntero JSON (ej.: /credentials/*)",
+          "optionSince": "Mostrar solo entradas posteriores a (ej.: '24h', '7d', timestamp ISO)"
+        },
+        "tail": {
+          "description": "Transmitir nuevas entradas a medida que se escriben (Ctrl+C para detener)"
+        },
+        "verify": {
+          "chainBroken": "Cadena rota en la línea {{line}} — el archivo fue manipulado o está corrupto.",
+          "chainOk": "Integridad de la cadena verificada en {{count}} entradas.",
+          "description": "Verificar la integridad de la cadena SHA-256 de todas las entradas de auditoría"
+        }
+      },
       "backupStrategy": {
         "description": "Gestionar estrategias de respaldo con nombre (modos caliente/frío, destinos, programación)",
         "list": {
@@ -366,6 +383,62 @@
       },
       "description": "Gestionar archivos de configuración, máquinas y conexiones SSH",
       "descriptionShort": "Gestionar archivos de configuración, máquinas y conexiones SSH",
+      "edit": {
+        "abortAfterRetries": "Cancelando tras {{count}} intentos fallidos. Borrador guardado en: {{path}}",
+        "applied": "Se aplicó {{path}}",
+        "bannerRedacted": "Los campos sensibles se muestran como marcadores <redacted:KIND>:DIGEST que se reintegran de forma segura.",
+        "bannerReveal": "--reveal activo: VALORES SENSIBLES VISIBLES. Auditado.",
+        "bannerRotateLine1": "Para rotar un secreto: reemplaza el marcador con el nuevo valor en claro — se te pedirá",
+        "bannerRotateLine2": "confirmar cada rotación después de cerrar el editor.",
+        "bannerStrip": "Las líneas que comienzan con // se eliminan al guardar.",
+        "bannerTitle": "rdc config edit — {{name}} (v{{version}})",
+        "description": "Abre la configuración activa en $EDITOR como proyección JSONC redactada. Solo humanos; los agentes son rechazados.",
+        "noChanges": "No se guardaron cambios; cancelando.",
+        "optionApply": "Aplicar un archivo JSONC editado (omite el lanzamiento de $EDITOR)",
+        "optionCurrentSecrets": "Archivo JSON que mapea puntero→texto antiguo en claro para la puerta de conocimiento en --apply",
+        "optionDump": "Imprimir la configuración actual como JSONC en stdout en lugar de abrir el editor (solo lectura; seguro para agentes cuando está redactado)",
+        "optionEditor": "Orden de editor (sigue la precedencia de git: --editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+        "optionReveal": "Mostrar texto en claro de valores sensibles (solo TTY interactivo; auditado)",
+        "rotateDeclined": "Cancelado; borrador conservado en el archivo temporal del editor.",
+        "rotatePromptBullet": "  • {{pointer}}",
+        "rotatePromptFooter": "Escribe 'rotate' para confirmar (cualquier otra cosa cancela): ",
+        "rotatePromptHeader": "Estás a punto de rotar {{count}} campo(s) sensible(s):",
+        "saved": "Se guardó la configuración \"{{name}}\""
+      },
+      "field": {
+        "description": "Operaciones de campos de configuración direccionados por puntero (get/set/unset/rotate/list). Punteros JSON (RFC 6901) como /credentials/cfDnsApiToken.",
+        "descriptionShort": "Operaciones de campos de configuración por puntero",
+        "get": {
+          "description": "Lee un único valor de configuración por puntero JSON. Los campos sensibles se redactan salvo con --reveal (solo humanos).",
+          "optionDigest": "Imprimir el resumen SHA-256 en lugar del valor (seguro para compartir con agentes)",
+          "optionPointer": "Puntero JSON al campo (p. ej. /credentials/cfDnsApiToken)",
+          "optionReveal": "Mostrar texto en claro de valores sensibles (solo TTY interactivo; auditado)"
+        },
+        "list": {
+          "description": "Listar cada plantilla de puntero registrada con su tipo y política de commit/encriptación.",
+          "optionOutput": "Formato de salida (json|table)",
+          "optionSensitive": "Mostrar solo plantillas sensibles (no públicas)"
+        },
+        "rotate": {
+          "description": "Rotar un valor sensible sin --current. Solo TTY interactivo; auditado con énfasis.",
+          "optionNew": "Valor nuevo",
+          "optionPointer": "Puntero JSON al campo sensible (p. ej. /credentials/cfDnsApiToken)",
+          "success": "Se rotó {{pointer}}"
+        },
+        "set": {
+          "description": "Escribir un valor de configuración en un puntero JSON. Los caminos sensibles requieren --current (puerta de conocimiento).",
+          "optionCurrent": "Valor actual en claro — obligatorio para mutar caminos sensibles (prueba de conocimiento)",
+          "optionNew": "Valor nuevo (se interpreta como JSON si empieza con {, [, \", true, false, null o un número)",
+          "optionPointer": "Puntero JSON al campo (p. ej. /credentials/cfDnsApiToken)",
+          "success": "Se estableció {{pointer}}"
+        },
+        "unset": {
+          "description": "Eliminar un valor de configuración en un puntero JSON. Los caminos sensibles requieren --current.",
+          "optionCurrent": "Valor actual en claro — obligatorio para eliminar caminos sensibles",
+          "optionPointer": "Puntero JSON al campo (p. ej. /credentials/cfDnsApiToken)",
+          "success": "Se eliminó {{pointer}}"
+        }
+      },
       "infra": {
         "description": "Gestionar configuración de infraestructura (proxy, DNS, certificados)",
         "push": {
@@ -570,7 +643,8 @@
       },
       "show": {
         "description": "Mostrar detalles de la configuración actual",
-        "noConfig": "No hay configuración activa. Cree una con: rdc config init"
+        "noConfig": "No hay configuración activa. Cree una con: rdc config init",
+        "optionReveal": "Mostrar texto plano para valores sensibles (solo interactivo)"
       },
       "ssh": {
         "description": "Gestionar la configuración de clave SSH",
@@ -730,6 +804,8 @@
         "schedule": {
           "description": "Desplegar programación de respaldos en una máquina remota (temporizadores systemd)",
           "optionDryRun": "Previsualizar unidades generadas sin desplegar",
+          "optionForce": "Continuar aunque haya una copia de seguridad en ejecución (la nueva unidad se aplica en el siguiente tick del temporizador; la ejecución en curso conserva su unidad anterior)",
+          "optionResetFailed": "Borrar el estado de fallo en los servicios modificados tras un despliegue exitoso (desactivado por defecto, preserva la señal de fallo)",
           "success": "Programación de respaldos desplegada en {{machine}}"
         },
         "status": {
@@ -1843,10 +1919,19 @@
       "description": "Verificar y aplicar actualizaciones del CLI",
       "descriptionShort": "Verificar y aplicar actualizaciones del CLI",
       "downloading": "Descargando v{{version}}...",
+      "errors": {
+        "binaryBusy": "El binario actual está en uso; la actualización se aplicará en el próximo inicio.",
+        "checksumMismatch": "El binario descargado no superó la verificación de suma.",
+        "lockFailed": "Ya hay otra actualización en curso. Inténtalo de nuevo en unos segundos.",
+        "noBinary": "No hay binario disponible para esta plataforma en la última versión.",
+        "noChecksum": "Al manifiesto de la versión le falta la suma SHA256.",
+        "notSEA": "No se puede actualizar: no se ejecuta como binario empaquetado. Compila primero con SEA.",
+        "unknown": "Error desconocido durante la actualización.",
+        "unsupportedPlatform": "Esta plataforma no admite la autoactualización."
+      },
       "failed": "Actualización fallida: {{error}}",
       "force": "Forzar actualización aunque esté al día",
       "invalidChannel": "Canal no válido: {{channel}}. Use stable o edge.",
-      "notSEA": "No se puede actualizar: no se ejecuta como binario empaquetado. Compile con SEA primero.",
       "npmUpdateHint": "Para actualizar, ejecuta:\n  {{command}}",
       "progress": "Descargando... {{percent}}%",
       "releaseNotes": "Notas de la versión: {{url}}",
@@ -2138,9 +2223,12 @@
     "affectedChildClones": ". Clones secundarios afectados: {{clones}}. Primero elimine o promueva clones secundarios.",
     "agent": {
       "commandBlocked": "El comando \"{{command}}\" no esta disponible en modo agente.\n\nEste comando ejecuta funciones arbitrarias de bajo nivel sin protecciones de seguridad. Use comandos CLI tipados o herramientas MCP en su lugar.\n\nAlternativas:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Ejecute \"rdc agent capabilities\" para ver todos los comandos disponibles\n\nSi necesita acceso directo, pida al usuario que ejecute el comando directamente.",
+      "configEdit": "El editor interactivo está bloqueado en entornos de agente.\n\nAlternativas:\n  • rdc config edit --dump > config.jsonc    (inspección segura redactada)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nPara anularlo, define REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> en el shell padre\nANTES de iniciar el agente (debe aparecer en la ascendencia del proceso).",
+      "configEditAncestry": "El editor interactivo está bloqueado en entornos de agente (REDIACC_ALLOW_CONFIG_EDIT se estableció pero falló la verificación de ascendencia — el override debe venir del shell, no del agente).\n\nAlternativas:\n  • rdc config edit --dump > config.jsonc    (inspección segura redactada)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nDefine REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> en el shell padre ANTES de iniciar el agente.",
       "createGuard": "No se puede crear un nuevo repositorio grand \"{{name}}\" en modo agente.\n\nLos agentes operan en modo solo-fork. Los repositorios grand son entornos de producción a los que los agentes no pueden acceder después de la creación.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nUsuario: para permitir la creación de repositorios, establezca REDIACC_ALLOW_GRAND_REPO=* (o un nombre de repositorio específico) en su terminal antes de iniciar la sesión del agente.",
       "createGuardOverride": "No se puede crear un nuevo repositorio grand \"{{name}}\". No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "No se puede crear un nuevo repositorio grand \"{{name}}\". La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nPara usar la anulación, ejecute su agente en Linux (directamente, WSL, Docker o una VM).",
+      "fieldReveal": "--reveal para el campo sensible {{pointer}} está bloqueado en entornos de agente. Los agentes deben usar --digest. Un usuario real en un terminal interactivo puede usar --reveal.",
       "forkBlocked": "El comando \"{{command}}\" no está disponible en repositorios fork.\n\nLos repos fork son entornos sandbox temporales. Esta operación solo se aplica a repositorios grand (producción). Pida al usuario que ejecute este comando directamente.",
       "grandGuard": "\"{{name}}\" es un repositorio grand (producción). Los agentes no pueden modificar repositorios grand directamente.\n\nLos repositorios grand contienen datos de producción. Use un fork en su lugar — los forks son copias sandbox seguras y aisladas.\n\nFlujo de trabajo:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork (ej: rdc repo up --name {{name}}:<tag-name> -m <machine> --mount)\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover\n\nUsuario: para permitir acceso directo, establezca REDIACC_ALLOW_GRAND_REPO={{name}} (o * para todos los repos) en su terminal antes de iniciar la sesión del agente.",
       "grandGuardOverride": "\"{{name}}\" es un repositorio grand (producción). No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO — solo el usuario puede autorizar esto antes de que el agente se inicie.\n\nUse un fork en su lugar — los forks son copias sandbox seguras y aisladas:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Opere en el fork\n  3. Cuando termine, el usuario puede promover el fork con rdc repo takeover",
@@ -2153,7 +2241,12 @@
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" es un repositorio grand (producción). La anulación REDIACC_ALLOW_GRAND_REPO no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nUse repo_fork para crear una copia sandbox segura y aislada, luego opere en el fork.",
       "mcpMachineGuard": "El acceso directo a la máquina no está permitido en modo solo-fork.\n\nLos agentes deben conectarse a través de un contexto de repositorio. Use repo_fork para crear un fork, luego conéctese a él.\nSi necesita acceso directo, pida al usuario que reinicie el servidor MCP con --allow-grand.",
       "mcpMachineGuardOverride": "El acceso directo a la máquina no está permitido. No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork para crear un fork, luego conéctese a él.",
-      "mcpMachineGuardOverrideNonLinux": "La anulación de acceso directo a la máquina no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nUse repo_fork para crear un fork, luego conéctese a él."
+      "mcpMachineGuardOverrideNonLinux": "La anulación de acceso directo a la máquina no es compatible con {{platform}}.\n\nEsta anulación solo funciona en Linux. En Windows y macOS, los agentes deben usar el flujo de trabajo fork-first.\n\nUse repo_fork para crear un fork, luego conéctese a él.",
+      "revealRequiresTty": "--reveal requiere un TTY interactivo; no se imprimirá un valor sensible en una tubería.",
+      "rotateNotSensitive": "El puntero \"{{pointer}}\" no es un campo sensible; usa 'config field set' en su lugar.",
+      "rotateRequiresTty": "config field rotate requiere confirmación en un TTY interactivo; rechazado en contexto no interactivo (define REDIACC_ALLOW_CONFIG_EDIT para anular).",
+      "showReveal": "--reveal está bloqueado en entornos de agente. Usa `rdc config show` (redactado) o `rdc config field get --name <pointer> --digest` para una huella segura.",
+      "showRevealRequiresTty": "--reveal requiere un TTY interactivo; no se enviará texto en claro a un destino sin TTY."
     },
     "authFailed": "Falló la autenticación",
     "authRequired": "Se requiere autenticación. Ejecute: rdc auth login",
@@ -2164,9 +2257,17 @@
     "config": {
       "invalidEmail": "Dirección de correo electrónico no válida: \"{{value}}\".",
       "machineNotFound": "Máquina \"{{name}}\" no encontrada en la configuración. Disponibles: {{available}}.",
+      "noActiveConfig": "No hay configuración activa",
+      "pointerNotFound": "Puntero \"{{pointer}}\" no encontrado",
       "storageNotFound": "Almacenamiento \"{{name}}\" no encontrado en la configuración. Disponibles: {{available}}."
     },
     "contextNotFound": "Contexto \"{{name}}\" no encontrado",
+    "editor": {
+      "headlessRefused": "La invocación sin cabeza del editor se bloquearía para siempre: {{command}}. Pasa --editor explícitamente con flags interactivos.",
+      "nonzeroExit": "El editor {{command}} salió con código {{code}}",
+      "notFound": "No se configuró un editor. Define $GIT_EDITOR, git config core.editor, $VISUAL o $EDITOR, o pasa --editor.",
+      "spawnFailed": "No se pudo lanzar el editor {{command}}: {{reason}}"
+    },
     "failedCreateQueueItem": "Falló al crear elemento de cola",
     "invalidAction": "Acción inválida \"{{action}}\". Use \"{{valid}}\".",
     "invalidCredentials": "Credenciales inválidas",
@@ -2190,6 +2291,15 @@
     "passwordsMismatch": "Las contraseñas no coinciden",
     "permissionDenied": "Permiso denegado",
     "poolNotFound": "Pool Ceph \"{{name}}\" no encontrado",
+    "precondition": {
+      "currentSecretsRequired": "{{pointer}}: campo sensible cambiado sin --current; aporta --current-secrets <file> mapeando puntero→valor-antiguo",
+      "digestMismatch": "Desajuste de digest --current (se esperaba {{expected}}…, se obtuvo {{got}}…)",
+      "kindMismatch": "El tipo de valor cambió (almacenado: {{stored}}, reclamado: {{claimed}})",
+      "mismatch": "Precondición fallida para {{count}} ruta(s):\n{{details}}",
+      "missing": "La ruta sensible requiere --current (o --rotate-secret)",
+      "rotationRequiresTty": "{{pointer}}: la confirmación de rotación requiere un TTY interactivo (o usa --current-secrets)",
+      "stubStillStub": "{{pointer}}: el valor editado aún parece un marcador de redacción pero no coincide con el digest actual"
+    },
     "protocol": {
       "commandExitCode": "Comando salió con código {{code}}",
       "invalidAction": "Acción inválida '{{action}}'. Debe ser uno de: {{validActions}}",

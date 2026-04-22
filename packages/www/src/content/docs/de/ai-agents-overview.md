@@ -4,7 +4,7 @@ description: Wie KI-Coding-Assistenten wie Claude Code, Cursor und Cline sich mi
 category: Guides
 order: 30
 language: de
-sourceHash: "c4f31aca01e62a7f"
+sourceHash: "7789f1e26755c779"
 ---
 
 KI-Coding-Assistenten können die Rediacc-Infrastruktur über die `rdc` CLI autonom verwalten. Diese Anleitung behandelt die Integrationsansaetze und den Einstieg.
