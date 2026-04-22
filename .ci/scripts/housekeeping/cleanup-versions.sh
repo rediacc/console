@@ -952,6 +952,44 @@ cleanup_r2() {
         done < <(r2_ls_prefix "${dir}/")
     done
     log_info "  8d: deleted $orphan_ver_deleted orphan versioned prefix(es)"
+
+    # 8e. Abort abandoned multipart uploads ---------------------------------
+    # Successful multiparts complete in minutes; anything older than 24h is
+    # an abandoned CI/promote run leaking storage until aborted.
+    log_step "  8e: abort multipart uploads older than 24h"
+    local uploads
+    uploads="$(aws s3api list-multipart-uploads --bucket "$R2_BUCKET" \
+        --endpoint-url "$R2_ENDPOINT" \
+        --query 'Uploads[].{Key:Key,UploadId:UploadId,Initiated:Initiated}' \
+        --output json 2>/dev/null || echo "[]")"
+    local mpu_count
+    mpu_count="$(echo "$uploads" | jq 'length')"
+    if [[ "$mpu_count" -eq 0 ]]; then
+        log_info "  8e: no ongoing multipart uploads"
+    else
+        local mpu_aborted=0
+        local mpu_max_age=$((24 * 3600))
+        while IFS=$'\t' read -r key upload_id initiated; do
+            [[ -z "$key" ]] && continue
+            local init_epoch
+            init_epoch="$(date -u -d "$initiated" +%s 2>/dev/null || echo 0)"
+            [[ "$init_epoch" -eq 0 ]] && continue
+            if ((now_epoch - init_epoch <= mpu_max_age)); then
+                continue
+            fi
+            if [[ "$DRY_RUN" == "true" ]]; then
+                log_warn "  [DRY-RUN] Would abort multipart: $key (age $(((now_epoch - init_epoch) / 3600))h)"
+                mpu_aborted=$((mpu_aborted + 1))
+                continue
+            fi
+            aws s3api abort-multipart-upload \
+                --bucket "$R2_BUCKET" --key "$key" --upload-id "$upload_id" \
+                --endpoint-url "$R2_ENDPOINT" 2>/dev/null || continue
+            log_info "  Aborted multipart: $key"
+            mpu_aborted=$((mpu_aborted + 1))
+        done < <(echo "$uploads" | jq -r '.[] | "\(.Key)\t\(.UploadId)\t\(.Initiated)"')
+        log_info "  8e: aborted $mpu_aborted of $mpu_count (held $((mpu_count - mpu_aborted)) under 24h grace)"
+    fi
 }
 
 # =============================================================================

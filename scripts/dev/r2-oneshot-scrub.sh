@@ -171,6 +171,26 @@ stage1() {
     # PR #451 pollution (v1.0.3 never released)
     rm_prefix "cli/v1.0.3/" "PR #451 pollution"
     rm_prefix "desktop/v1.0.3/" "PR #451 pollution"
+
+    # Top-level stray pointer files from the pre-channel-model era.
+    # Consumers all read {cli,desktop}/{channel}/... today; top-level
+    # manifest.json / latest.json / latest-*.yml have no reader.
+    # cli/versions.json and desktop/versions.json are ALIVE (retention
+    # tracker written by upload-to-r2.sh) -- do NOT delete.
+    for f in cli/manifest.json cli/latest.json \
+        desktop/latest-linux.yml desktop/latest-linux-arm64.yml \
+        desktop/latest-mac.yml desktop/latest-win.yml; do
+        if aws s3api head-object --bucket "$BUCKET" --key "$f" --endpoint-url "$R2_ENDPOINT" >/dev/null 2>&1; then
+            if $DRY_RUN; then
+                log_warn "  [DRY-RUN] Would delete s3://${BUCKET}/${f} (legacy top-level stray)"
+            elif confirm "Delete legacy top-level s3://${BUCKET}/${f}?"; then
+                aws s3 rm "s3://${BUCKET}/${f}" --endpoint-url "$R2_ENDPOINT" --quiet
+                log_info "  Deleted s3://${BUCKET}/${f}"
+            else
+                log_info "  skipped: $f"
+            fi
+        fi
+    done
 }
 
 # Stage 2 - Selective scrub of 0.0.0-dev-named files under v1.0.{1,2}/ ----
@@ -203,6 +223,42 @@ stage2() {
             log_info "    deleted ${prefix}${f}"
         done <<<"$files"
     done
+}
+
+# Stage 2b - Abort abandoned multipart uploads ---------------------------
+
+stage2b() {
+    log_step "Stage 2b: abort abandoned multipart uploads (any age)"
+    local uploads
+    uploads="$(aws s3api list-multipart-uploads --bucket "$BUCKET" \
+        --endpoint-url "$R2_ENDPOINT" \
+        --query 'Uploads[].{Key:Key,UploadId:UploadId,Initiated:Initiated}' \
+        --output json 2>/dev/null || echo "[]")"
+    local count
+    count="$(echo "$uploads" | jq 'length')"
+    if [[ "$count" -eq 0 ]]; then
+        log_info "  No ongoing multipart uploads"
+        return 0
+    fi
+    log_info "  Found $count ongoing multipart upload(s)"
+    echo "$uploads" | jq -r '.[] | "    \(.Initiated)  \(.Key)"' | head -20
+    if $DRY_RUN; then
+        log_warn "  [DRY-RUN] Would abort $count upload(s)"
+        return 0
+    fi
+    if ! confirm "Abort all $count ongoing multipart uploads?"; then
+        log_info "  skipped by user"
+        return 0
+    fi
+    local aborted=0
+    while IFS=$'\t' read -r key upload_id; do
+        [[ -z "$key" ]] && continue
+        aws s3api abort-multipart-upload \
+            --bucket "$BUCKET" --key "$key" --upload-id "$upload_id" \
+            --endpoint-url "$R2_ENDPOINT" 2>/dev/null || continue
+        aborted=$((aborted + 1))
+    done < <(echo "$uploads" | jq -r '.[] | "\(.Key)\t\(.UploadId)"')
+    log_info "  Aborted $aborted of $count"
 }
 
 # Stage 3 - Delete polluted latest-*.yml under v1.0.{1,2}/ ----------------
@@ -244,6 +300,8 @@ echo ""
 stage1
 echo ""
 stage2
+echo ""
+stage2b
 echo ""
 stage3
 echo ""
