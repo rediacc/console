@@ -308,14 +308,23 @@ stage2c() {
 # Stage 2d - Package-manager channel retention (keep 7v or 10d) ----------
 
 stage2d() {
-    log_step "Stage 2d: package-manager retention (apt/rpm/apk/archlinux)"
+    log_step "Stage 2d: channel artifact retention (keep 7v or 10d; zap 0.0.0-dev)"
+    # Patterns:
+    #   apt/<ch>/rediacc-cli_<ver>_<arch>.deb
+    #   rpm/<ch>/rediacc-cli-<ver>.<arch>.rpm
+    #   apk/<ch>/rediacc-cli-<ver>.apk
+    #   archlinux/<ch>/rediacc-cli-<ver>-<arch>.pkg.tar.zst
+    #   npm/<ch>/rediacc-cli-<ver>.tgz
+    #   desktop/<ch>/rediacc-desktop-<ver>-<platform>.<ext>(+.blockmap)
+    # Metadata (Packages.gz, Release*, APKINDEX, repodata/, *.db.tar.gz,
+    # latest-*.yml, manifest.json, gpg.key, rediacc-cli-latest.tgz) stays.
     local keep_versions=7
     local keep_days=10
     local keep_age=$((keep_days * 86400))
     local now_epoch
     now_epoch="$(date -u +%s)"
     local deleted=0
-    for fmt in apt rpm apk archlinux; do
+    for fmt in apt rpm apk archlinux npm desktop; do
         for channel in stable edge; do
             local root="${fmt}/${channel}/"
             log_step "  $root"
@@ -323,39 +332,46 @@ stage2d() {
             listing="$(aws s3 ls "s3://${BUCKET}/${root}" --recursive --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
                 awk '{
                     n = split($4, p, "/"); fname = p[n];
-                    if (match(fname, /^rediacc-cli-[0-9]+\.[0-9]+\.[0-9]+(\.|-)/)) {
-                        ver = fname; sub(/^rediacc-cli-/, "", ver);
-                        sub(/(\.|-).*/, "", ver);
-                        print $1"T"$2"Z""|"ver"|"$4
+                    if (fname !~ /^rediacc-(cli|desktop)[-_]/) next
+                    rest = fname; sub(/^rediacc-(cli|desktop)[-_]/, "", rest);
+                    if (match(rest, /^[0-9]+\.[0-9]+\.[0-9]+/)) {
+                        semver = substr(rest, 1, RLENGTH);
+                        after = substr(rest, RLENGTH + 1);
+                        is_dev = (semver == "0.0.0" && after ~ /^-dev/) ? 1 : 0;
+                        print $1"T"$2"Z""|"semver"|"is_dev"|"$4
                     }
                 }' | sort -t'|' -k2,2 -V -r || true)"
             if [[ -z "$listing" ]]; then
-                log_info "    empty or no package files"
+                log_info "    empty or no artifact files"
                 continue
             fi
             local idx=0
-            while IFS='|' read -r ts ver key; do
+            while IFS='|' read -r ts semver is_dev key; do
                 [[ -z "$key" ]] && continue
                 local ts_epoch
                 ts_epoch="$(date -u -d "$ts" +%s 2>/dev/null || echo 0)"
                 local age=$((now_epoch - ts_epoch))
-                if ((idx < keep_versions)) || ((age < keep_age)); then
-                    log_info "    keep v${ver} ($((age / 86400))d, rank $idx)"
-                    idx=$((idx + 1))
-                    continue
+                if [[ "$is_dev" != "1" ]]; then
+                    if ((idx < keep_versions)) || ((age < keep_age)); then
+                        log_info "    keep v${semver} ($((age / 86400))d, rank $idx) -> ${key}"
+                        idx=$((idx + 1))
+                        continue
+                    fi
                 fi
+                local tag="v${semver}, $((age / 86400))d"
+                [[ "$is_dev" == "1" ]] && tag="0.0.0-dev pollution, $((age / 86400))d"
                 if $DRY_RUN; then
-                    log_warn "    [DRY-RUN] Would delete ${key} (v${ver}, $((age / 86400))d)"
-                elif confirm "Delete ${key} (v${ver}, $((age / 86400))d)?"; then
+                    log_warn "    [DRY-RUN] Would delete ${key} (${tag})"
+                elif confirm "Delete ${key} (${tag})?"; then
                     aws s3 rm "s3://${BUCKET}/${key}" --endpoint-url "$R2_ENDPOINT" --quiet
-                    log_info "    deleted ${key}"
+                    log_info "    deleted ${key} (${tag})"
                 fi
                 deleted=$((deleted + 1))
                 idx=$((idx + 1))
             done <<<"$listing"
         done
     done
-    log_info "  reaped $deleted package file(s)"
+    log_info "  reaped $deleted stale artifact(s)"
 }
 
 # Stage 3 - Delete polluted latest-*.yml under v1.0.{1,2}/ ----------------
