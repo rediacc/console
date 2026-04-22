@@ -1,18 +1,24 @@
 name: Deploy Worker
 
-# Reusable workflow for deploying the www Worker to edge or production.
-# Called by Release workflow (edge, and production for hotfixes) and promote-stable.yml (production, after soak).
+# Reusable workflow for deploying the www Worker to the edge or stable channel.
+# Both channels are production-quality; "stable" serves www.rediacc.com, "edge"
+# serves edge.rediacc.com. Called by Release workflow (edge, and stable for
+# hotfixes) and promote-stable.yml (stable, after soak).
 # Builds pages + account portal from source at the specified git ref, then deploys.
 
 on:
   workflow_call:
     inputs:
       target:
-        description: 'Deploy target: edge or production'
+        description: 'Deploy channel: edge or stable'
         required: true
         type: string
       ref:
         description: 'Git ref to checkout (SHA, tag, or branch)'
+        required: true
+        type: string
+      version:
+        description: 'Semver version string to embed in the marketing build footer (e.g. 1.0.3)'
         required: true
         type: string
     secrets:
@@ -53,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.target }}
-      url: ${{ inputs.target == 'production' && 'https://www.rediacc.com' || 'https://edge.rediacc.com' }}
+      url: ${{ inputs.target == 'stable' && 'https://www.rediacc.com' || 'https://edge.rediacc.com' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -93,6 +99,7 @@ jobs:
         run: npm run build -w @rediacc/www
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
+          APP_VERSION: ${{ inputs.version }}
 
       - name: Copy pages to www worker assets
         run: |
@@ -122,7 +129,7 @@ jobs:
       - name: Set deploy target
         id: target
         run: |
-          if [[ "${{ inputs.target }}" == "production" ]]; then
+          if [[ "${{ inputs.target }}" == "stable" ]]; then
             echo "script=deploy-www.sh" >> "$GITHUB_OUTPUT"
             echo "worker=rediacc-www" >> "$GITHUB_OUTPUT"
             echo "domain=www.rediacc.com" >> "$GITHUB_OUTPUT"
@@ -150,8 +157,8 @@ jobs:
           SECRET_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
           SECRET_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           SECRET_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-          SECRET_STRIPE_KEY: ${{ inputs.target == 'production' && secrets.STRIPE_SECRET_KEY_EU || secrets.STRIPE_SANDBOX_SECRET_KEY }}
-          SECRET_STRIPE_WEBHOOK: ${{ inputs.target == 'production' && secrets.STRIPE_WEBHOOK_SECRET_EU || secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
+          SECRET_STRIPE_KEY: ${{ inputs.target == 'stable' && secrets.STRIPE_SECRET_KEY_EU || secrets.STRIPE_SANDBOX_SECRET_KEY }}
+          SECRET_STRIPE_WEBHOOK: ${{ inputs.target == 'stable' && secrets.STRIPE_WEBHOOK_SECRET_EU || secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
           SECRET_ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
           SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
           SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
@@ -225,5 +232,5 @@ jobs:
         run: npx tsx scripts/verify-webhook.ts ${{ steps.target.outputs.sandbox }} --expected-url "https://${{ steps.target.outputs.domain }}/account/api/v1/webhooks/stripe"
         working-directory: private/account
         env:
-          STRIPE_SECRET_KEY: ${{ inputs.target == 'production' && secrets.STRIPE_SECRET_KEY_EU || '' }}
-          STRIPE_SANDBOX_SECRET_KEY: ${{ inputs.target != 'production' && secrets.STRIPE_SANDBOX_SECRET_KEY || '' }}
+          STRIPE_SECRET_KEY: ${{ inputs.target == 'stable' && secrets.STRIPE_SECRET_KEY_EU || '' }}
+          STRIPE_SANDBOX_SECRET_KEY: ${{ inputs.target != 'stable' && secrets.STRIPE_SANDBOX_SECRET_KEY || '' }}

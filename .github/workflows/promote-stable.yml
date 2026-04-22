@@ -214,27 +214,40 @@ jobs:
           echo "- R2: CLI, Desktop, APT, RPM, APK, Archlinux promoted" >> $GITHUB_STEP_SUMMARY
           echo "- Docker: all images retagged :edge -> :stable" >> $GITHUB_STEP_SUMMARY
 
-  # Deploy production Workers from the exact tagged version
-  deploy-marketing-production:
-    name: Deploy production Marketing
+  # Deploy stable Workers from the exact tagged version
+  deploy-marketing-stable:
+    name: Deploy stable Marketing
     needs: [promote]
     if: needs.promote.outputs.promoted == 'true'
-    uses: ./.github/workflows/cd-deploy-marketing.yml
+    uses: ./.github/workflows/cd-deploy-worker.yml
     with:
-      target: production
+      target: stable
       ref: v${{ needs.promote.outputs.version }}
       version: ${{ needs.promote.outputs.version }}
     secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
+      ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+      ACCOUNT_X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
+      ACCOUNT_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
+      ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+      ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
+      STRIPE_SECRET_KEY_EU: ${{ secrets.STRIPE_SECRET_KEY_EU }}
+      STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET_EU: ${{ secrets.STRIPE_WEBHOOK_SECRET_EU }}
+      STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
+      AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
+      AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
+      TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
-  deploy-account-production:
-    name: Deploy production Account (all regions)
+  deploy-account-stable:
+    name: Deploy stable Account (all regions)
     needs: [promote]
     if: needs.promote.outputs.promoted == 'true'
     uses: ./.github/workflows/cd-deploy-account.yml
     with:
-      target: production
+      target: stable
       ref: v${{ needs.promote.outputs.version }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
@@ -261,10 +274,10 @@ jobs:
       AWS_SES_SECRET_ACCESS_KEY_ASIA: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_ASIA }}
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
-  # Verify production endpoints after deployment
-  verify-production:
-    name: Verify production
-    needs: [promote, deploy-marketing-production, deploy-account-production]
+  # Verify stable endpoints after deployment
+  verify-stable:
+    name: Verify stable
+    needs: [promote, deploy-marketing-stable, deploy-account-stable]
     if: needs.promote.outputs.promoted == 'true'
     runs-on: ubuntu-slim
     steps:
@@ -273,9 +286,9 @@ jobs:
           sparse-checkout: regions.json
           sparse-checkout-cone-mode: false
 
-      - name: Verify production endpoints
+      - name: Verify stable endpoints
         run: |
-          echo "Verifying production deployment..."
+          echo "Verifying stable deployment..."
 
           INSTALL_SH=$(curl -fsSL https://www.rediacc.com/install.sh)
           if ! echo "$INSTALL_SH" | grep -q 'REDIACC_CHANNEL:-stable'; then
@@ -292,6 +305,25 @@ jobs:
             exit 1
           fi
           echo "  marketing (install.ps1): OK (channel=stable)"
+
+          # Worker-fingerprint checks. These assert that the NEW Worker bundle
+          # from workers/www/ is actually serving — not a stale deploy of the
+          # old workers/marketing/ code (which has no redirect table, no
+          # html_handling=drop-trailing-slash, and no asset-path guard).
+          # Cache-busting query strings ensure we hit the Worker, not a cached
+          # response.
+          RNDA=$RANDOM$RANDOM; RNDB=$RANDOM$RANDOM; RNDC=$RANDOM$RANDOM
+          S=$(curl -sI -o /dev/null -w '%{http_code}' "https://www.rediacc.com/about?cb=$RNDA")
+          [[ "$S" == "410" ]] || { echo "::error::www /about expected 410 (curated redirect table), got $S — old worker bundle likely live"; exit 1; }
+          echo "  worker fingerprint (redirect table): OK (/about=410)"
+
+          S=$(curl -sI -o /dev/null -w '%{http_code}' "https://www.rediacc.com/en?cb=$RNDB")
+          [[ "$S" == "200" ]] || { echo "::error::www /en expected 200 (html_handling=drop-trailing-slash), got $S"; exit 1; }
+          echo "  worker fingerprint (html_handling): OK (/en=200, no 307)"
+
+          S=$(curl -sI -o /dev/null -w '%{http_code}' "https://www.rediacc.com/fonts/inter/Inter-Regular.woff2?cb=$RNDC")
+          [[ "$S" == "200" ]] || { echo "::error::www mixed-case font expected 200 (asset-path guard), got $S"; exit 1; }
+          echo "  worker fingerprint (asset-path guard): OK (Inter-Regular.woff2=200)"
 
           # R2 backstop: per-channel copy at releases.rediacc.com/cli/stable/
           # must also be channel-baked. The re-bake step in the promote job
@@ -321,4 +353,4 @@ jobs:
             fi
           done < <(jq -r '.regions[] | .domain' regions.json)
 
-          echo "Production verification complete"
+          echo "Stable verification complete"
