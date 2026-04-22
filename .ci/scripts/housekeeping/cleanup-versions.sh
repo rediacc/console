@@ -66,6 +66,12 @@ R2_ORPHAN_VERSION_AGE_DAYS=14
 # A new push on the PR regenerates artifacts via CI, so this only affects
 # stale open PRs that nobody touches.
 R2_PR_MAX_AGE_DAYS=3
+# Package-manager channel retention (apt/, rpm/, apk/, archlinux/).
+# Each aws s3 sync during release adds new rediacc-cli-<semver>.<ext> without
+# deleting predecessors -- without retention the channel dir grows unbounded.
+# Keep if rank < R2_PACKAGE_KEEP_VERSIONS OR age < R2_PACKAGE_KEEP_DAYS.
+R2_PACKAGE_KEEP_VERSIONS=7
+R2_PACKAGE_KEEP_DAYS=10
 
 # =============================================================================
 # PREREQUISITES
@@ -970,6 +976,60 @@ cleanup_r2() {
         done < <(r2_ls_prefix "${dir}/")
     done
     log_info "  8d: deleted $orphan_ver_deleted orphan versioned prefix(es)"
+
+    # 8f. Package-manager channel retention ---------------------------------
+    # apt/rpm/apk/archlinux/<channel>/ accumulates rediacc-cli-<semver>.<ext>
+    # on every release because aws s3 sync runs without --delete. Keep only
+    # the last R2_PACKAGE_KEEP_VERSIONS semvers OR anything younger than
+    # R2_PACKAGE_KEEP_DAYS. Leaves metadata files (Packages.gz, APKINDEX,
+    # repodata/, *.db) alone so `apt/apk/dnf update` keeps working until
+    # the next release rewrites them.
+    log_step "  8f: package-manager retention (keep ${R2_PACKAGE_KEEP_VERSIONS}v or ${R2_PACKAGE_KEEP_DAYS}d)"
+    local pkg_keep_age=$((R2_PACKAGE_KEEP_DAYS * 86400))
+    local pkg_deleted=0
+    for fmt in apt rpm apk archlinux; do
+        for channel in stable edge; do
+            local channel_root="${fmt}/${channel}/"
+            # Only operate if the channel exists
+            [[ -z "$(r2_ls_prefix "$channel_root")" ]] && continue
+            # List every rediacc-cli-*.ext under the channel (recursive -- apt
+            # uses subdirs like pool/main/r/rediacc-cli/, archlinux uses arch
+            # subdirs). Extract fullkey + semver + last-modified.
+            local listing
+            listing="$(aws s3 ls "s3://${R2_BUCKET}/${channel_root}" --recursive \
+                --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
+                awk '{
+                    n = split($4, p, "/"); fname = p[n];
+                    if (match(fname, /^rediacc-cli-[0-9]+\.[0-9]+\.[0-9]+(\.|-)/)) {
+                        ver = fname; sub(/^rediacc-cli-/, "", ver);
+                        sub(/(\.|-).*/, "", ver);
+                        print $1"T"$2"Z""|"ver"|"$4
+                    }
+                }' | sort -t'|' -k2,2 -V -r)"
+            [[ -z "$listing" ]] && continue
+            local idx=0
+            while IFS='|' read -r ts ver key; do
+                [[ -z "$key" ]] && continue
+                local ts_epoch
+                ts_epoch="$(date -u -d "$ts" +%s 2>/dev/null || echo 0)"
+                local age=$((now_epoch - ts_epoch))
+                # Keep if rank < KEEP_VERSIONS or age < KEEP_DAYS
+                if ((idx < R2_PACKAGE_KEEP_VERSIONS)) || ((age < pkg_keep_age)); then
+                    idx=$((idx + 1))
+                    continue
+                fi
+                if [[ "$DRY_RUN" == "true" ]]; then
+                    log_warn "  [DRY-RUN] Would delete s3://${R2_BUCKET}/${key} (v${ver}, $((age / 86400))d)"
+                else
+                    aws s3 rm "s3://${R2_BUCKET}/${key}" --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null || true
+                    log_info "  Deleted ${key} (v${ver}, $((age / 86400))d)"
+                fi
+                pkg_deleted=$((pkg_deleted + 1))
+                idx=$((idx + 1))
+            done <<<"$listing"
+        done
+    done
+    log_info "  8f: deleted $pkg_deleted stale package file(s) across apt/rpm/apk/archlinux"
 
     # 8e. Abort abandoned multipart uploads ---------------------------------
     # Successful multiparts complete in minutes; anything older than 24h is

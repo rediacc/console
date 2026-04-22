@@ -305,6 +305,59 @@ stage2c() {
     log_info "  processed; reaped $deleted prefix(es)"
 }
 
+# Stage 2d - Package-manager channel retention (keep 7v or 10d) ----------
+
+stage2d() {
+    log_step "Stage 2d: package-manager retention (apt/rpm/apk/archlinux)"
+    local keep_versions=7
+    local keep_days=10
+    local keep_age=$((keep_days * 86400))
+    local now_epoch
+    now_epoch="$(date -u +%s)"
+    local deleted=0
+    for fmt in apt rpm apk archlinux; do
+        for channel in stable edge; do
+            local root="${fmt}/${channel}/"
+            log_step "  $root"
+            local listing
+            listing="$(aws s3 ls "s3://${BUCKET}/${root}" --recursive --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
+                awk '{
+                    n = split($4, p, "/"); fname = p[n];
+                    if (match(fname, /^rediacc-cli-[0-9]+\.[0-9]+\.[0-9]+(\.|-)/)) {
+                        ver = fname; sub(/^rediacc-cli-/, "", ver);
+                        sub(/(\.|-).*/, "", ver);
+                        print $1"T"$2"Z""|"ver"|"$4
+                    }
+                }' | sort -t'|' -k2,2 -V -r || true)"
+            if [[ -z "$listing" ]]; then
+                log_info "    empty or no package files"
+                continue
+            fi
+            local idx=0
+            while IFS='|' read -r ts ver key; do
+                [[ -z "$key" ]] && continue
+                local ts_epoch
+                ts_epoch="$(date -u -d "$ts" +%s 2>/dev/null || echo 0)"
+                local age=$((now_epoch - ts_epoch))
+                if ((idx < keep_versions)) || ((age < keep_age)); then
+                    log_info "    keep v${ver} ($((age / 86400))d, rank $idx)"
+                    idx=$((idx + 1))
+                    continue
+                fi
+                if $DRY_RUN; then
+                    log_warn "    [DRY-RUN] Would delete ${key} (v${ver}, $((age / 86400))d)"
+                elif confirm "Delete ${key} (v${ver}, $((age / 86400))d)?"; then
+                    aws s3 rm "s3://${BUCKET}/${key}" --endpoint-url "$R2_ENDPOINT" --quiet
+                    log_info "    deleted ${key}"
+                fi
+                deleted=$((deleted + 1))
+                idx=$((idx + 1))
+            done <<<"$listing"
+        done
+    done
+    log_info "  reaped $deleted package file(s)"
+}
+
 # Stage 3 - Delete polluted latest-*.yml under v1.0.{1,2}/ ----------------
 
 stage3() {
@@ -348,6 +401,8 @@ echo ""
 stage2b
 echo ""
 stage2c
+echo ""
+stage2d
 echo ""
 stage3
 echo ""

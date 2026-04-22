@@ -188,8 +188,8 @@ readonly PKG_DESCRIPTION="Rediacc CLI - automation and scripting tool"
 readonly PKG_HOMEPAGE="https://www.rediacc.com"
 readonly PKG_SECTION="utils"
 readonly PKG_PRIORITY="optional"
-readonly PKG_MAX_VERSIONS=3
-readonly R2_MAX_RELEASE_VERSIONS=3
+readonly PKG_MAX_VERSIONS=7
+readonly R2_MAX_RELEASE_VERSIONS=7
 readonly PKG_RELEASE_REPO="rediacc/console"
 
 # nfpm configuration (replaces dpkg-deb + rpmbuild for package creation)
