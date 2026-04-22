@@ -114,7 +114,8 @@ rm_prefix() {
 # Stage 0 - Manifest backup ----------------------------------------------
 
 backup_manifests() {
-    local out="/tmp/r2-manifest-backup-$(date -u +%Y%m%d-%H%M%S).tar.gz"
+    local out
+    out="/tmp/r2-manifest-backup-$(date -u +%Y%m%d-%H%M%S).tar.gz"
     log_step "Backing up all manifests (*.json / *.yml) before scrub -> $out"
     local tmp
     tmp="$(mktemp -d)"
