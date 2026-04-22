@@ -15,6 +15,10 @@ on:
         description: 'Git ref to checkout (SHA, tag, or branch)'
         required: true
         type: string
+      version:
+        description: 'Semver version string to embed in the marketing build (e.g. 1.0.3)'
+        required: true
+        type: string
     secrets:
       CLOUDFLARE_API_TOKEN:
         required: true
@@ -32,6 +36,8 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           ref: ${{ inputs.ref }}
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4
         with:
@@ -48,6 +54,7 @@ jobs:
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
           PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+          APP_VERSION: ${{ inputs.version }}
 
       - name: Copy pages to marketing worker assets
         run: |

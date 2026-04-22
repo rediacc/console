@@ -158,24 +158,17 @@ if ((BASH_VERSINFO[0] >= 4)); then
     )
 fi
 
-# Version source of truth: git tags (e.g., v0.8.3)
-# Version injection: CLI via __CLI_VERSION__ esbuild define, www via APP_VERSION env,
-# web via VITE_APP_VERSION env, renet via ldflags, middleware via /p:Version MSBuild arg.
-# bump.sh still used by: desktop (electron-builder), middleware (.csproj), CLI (npm pack)
+# Version source of truth: git tags (e.g., v0.8.3).
+# Version injection at build time: CLI via __CLI_VERSION__ esbuild define, www via
+# APP_VERSION env, web via VITE_APP_VERSION env, renet via ldflags, middleware via
+# /p:Version MSBuild arg. All env vars are exported together by
+# .ci/scripts/version/inject-env.sh so every build boundary sees the same value.
+# bump.sh only updates the two package.json files that downstream tooling reads at
+# pack/publish time (desktop electron-builder, CLI npm pack).
 readonly VERSION_FILES_JSON=(
-    "package.json"
     "packages/cli/package.json"
-    "packages/shared/package.json"
-    "packages/shared-desktop/package.json"
-    "packages/web/package.json"
     "packages/desktop/package.json"
-    "packages/e2e/package.json"
-    "packages/bridge-tests/package.json"
-    "packages/www/package.json"
-    "packages/json/package.json"
 )
-readonly VERSION_FILE_TS="packages/cli/src/version.ts"
-readonly VERSION_FILE_GO="private/renet/cmd/renet/version.go"
 readonly VERSION_FILE_CSPROJ="private/middleware/middleware.csproj"
 
 # =============================================================================

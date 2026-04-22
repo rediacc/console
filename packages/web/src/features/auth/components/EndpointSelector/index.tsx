@@ -7,9 +7,9 @@ import apiClient from '@/api/client';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
 import { apiConnectionService, Endpoint, endpointService } from '@/services/api';
-import { versionService } from '@/services/versionService';
 import { showMessage } from '@/utils/messages';
 import { ApiOutlined, DeleteOutlined, LoadingOutlined, PlusOutlined } from '@/utils/optimizedIcons';
+import { formatAppVersion } from '@/utils/version';
 
 interface EndpointHealth {
   isHealthy: boolean;
@@ -31,34 +31,20 @@ const EndpointSelector: React.FC = () => {
   const [healthStatus, setHealthStatus] = useState<Record<string, EndpointHealth>>({});
   const healthStatusRef = useRef(healthStatus);
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
-  const [versionDisplay, setVersionDisplay] = useState<string>('');
 
   const HEALTH_CACHE_DURATION = 10000; // 10 seconds
   const HEALTH_CHECK_TIMEOUT = 2500; // 2.5 seconds
 
-  // Fetch version info on mount
-  useEffect(() => {
-    const fetchVersion = async () => {
-      try {
-        const versionInfo = await versionService.getVersion();
-        const formattedVersion = versionService.formatVersion(versionInfo.version);
-
-        if (formattedVersion === 'Development') {
-          setVersionDisplay('Development');
-        } else {
-          const buildType =
-            (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? DEFAULTS.EDITION.BUILD_TYPE;
-          const buildLabel = buildType === 'RELEASE' ? 'Release' : 'Development';
-          setVersionDisplay(`${buildLabel} - ${formattedVersion}`);
-        }
-      } catch (error) {
-        console.warn('Failed to fetch version information', error);
-        setVersionDisplay('Development');
-      }
-    };
-
-    void fetchVersion();
-  }, []);
+  const formattedVersion = formatAppVersion(import.meta.env.VITE_APP_VERSION);
+  let versionDisplay: string;
+  if (formattedVersion === 'Development') {
+    versionDisplay = 'Development';
+  } else {
+    const buildType =
+      (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? DEFAULTS.EDITION.BUILD_TYPE;
+    const buildLabel = buildType === 'RELEASE' ? 'Release' : 'Development';
+    versionDisplay = `${buildLabel} - ${formattedVersion}`;
+  }
 
   /**
    * Check health for a single endpoint

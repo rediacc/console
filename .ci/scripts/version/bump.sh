@@ -173,48 +173,6 @@ update_package_json() {
     log_info "Updated $file"
 }
 
-# Update TypeScript version constant
-# Pattern: const DEV_VERSION = 'X.Y.Z';
-# (Build-time version is injected via esbuild --define, DEV_VERSION is the fallback)
-update_version_ts() {
-    local file="$1"
-    local version="$2"
-
-    if [[ ! -f "$file" ]]; then
-        log_warn "File not found: $file"
-        return 1
-    fi
-
-    if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "[DRY-RUN] Would update $file to $version"
-        return 0
-    fi
-
-    # Handle both single and double quotes
-    sed_in_place "s/const DEV_VERSION = ['\"][^'\"]*['\"]/const DEV_VERSION = '$version'/" "$file"
-    log_info "Updated $file"
-}
-
-# Update Go version constant
-# Pattern: const Version = "X.Y.Z"
-update_version_go() {
-    local file="$1"
-    local version="$2"
-
-    if [[ ! -f "$file" ]]; then
-        log_warn "File not found: $file"
-        return 1
-    fi
-
-    if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "[DRY-RUN] Would update $file to $version"
-        return 0
-    fi
-
-    sed_in_place "s/const Version = \"[^\"]*\"/const Version = \"$version\"/" "$file"
-    log_info "Updated $file"
-}
-
 # Update C# project file version
 # Pattern: <Version>X.Y.Z</Version>
 update_csproj() {
@@ -285,30 +243,6 @@ main() {
             ((failed++)) || true
         fi
     done
-
-    # Update TypeScript version constant
-    local ts_file="$CONSOLE_ROOT_DIR/$VERSION_FILE_TS"
-    if [[ -f "$ts_file" ]]; then
-        if update_version_ts "$ts_file" "$new_version"; then
-            ((updated++)) || true
-        else
-            ((failed++)) || true
-        fi
-    else
-        log_warn "TypeScript version file not found: $ts_file"
-    fi
-
-    # Update Go version constant
-    local go_file="$CONSOLE_ROOT_DIR/$VERSION_FILE_GO"
-    if [[ -f "$go_file" ]]; then
-        if update_version_go "$go_file" "$new_version"; then
-            ((updated++)) || true
-        else
-            ((failed++)) || true
-        fi
-    else
-        log_warn "Go version file not found: $go_file"
-    fi
 
     # Update C# project version
     local csproj_file="$CONSOLE_ROOT_DIR/$VERSION_FILE_CSPROJ"

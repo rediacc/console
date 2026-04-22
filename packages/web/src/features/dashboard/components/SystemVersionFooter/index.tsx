@@ -1,10 +1,10 @@
 import { ClockCircleOutlined, CloudServerOutlined, DesktopOutlined } from '@ant-design/icons';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { Flex, Tag, Tooltip, Typography } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApiHealth } from '@/api/hooks-system';
-import { versionService } from '@/services/versionService';
+import { formatAppVersion } from '@/utils/version';
 
 const formatUptime = (uptime: { days: number; hours: number; minutes: number }): string => {
   const parts: string[] = [];
@@ -16,20 +16,8 @@ const formatUptime = (uptime: { days: number; hours: number; minutes: number }):
 
 const SystemVersionFooter: React.FC = () => {
   const { t } = useTranslation('common');
-  const [uiVersion, setUiVersion] = useState<string>('...');
   const { data: apiHealth, isLoading: apiLoading } = useApiHealth();
-
-  useEffect(() => {
-    const fetchUiVersion = async () => {
-      try {
-        const versionInfo = await versionService.getVersion();
-        setUiVersion(versionService.formatVersion(versionInfo.version));
-      } catch {
-        setUiVersion('Unknown');
-      }
-    };
-    void fetchUiVersion();
-  }, []);
+  const uiVersion = formatAppVersion(import.meta.env.VITE_APP_VERSION);
 
   // Determine API version display
   let apiVersion: string;

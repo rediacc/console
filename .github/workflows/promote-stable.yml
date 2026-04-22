@@ -223,6 +223,7 @@ jobs:
     with:
       target: production
       ref: v${{ needs.promote.outputs.version }}
+      version: ${{ needs.promote.outputs.version }}
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
