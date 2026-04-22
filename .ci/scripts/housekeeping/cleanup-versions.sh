@@ -998,11 +998,11 @@ cleanup_r2() {
     # Metadata (Packages.gz, Release*, InRelease, APKINDEX.tar.gz, repodata/,
     # *.db.tar.gz, latest-*.yml, manifest.json, gpg.key, rediacc-cli-latest.tgz)
     # is left alone; next release rewrites it.
-    # Retention is PER-SEMVER (not per-file): keep if semver is among the top
-    # R2_PACKAGE_KEEP_VERSIONS OR any file of that semver is <R2_PACKAGE_KEEP_DAYS
-    # old. 0.0.0-dev files are always deleted (pre-version-injection pollution).
-    log_step "  8f: channel artifact retention (keep ${R2_PACKAGE_KEEP_VERSIONS}v or ${R2_PACKAGE_KEEP_DAYS}d; zap 0.0.0-dev)"
-    local pkg_keep_age=$((R2_PACKAGE_KEEP_DAYS * 86400))
+    # Retention is PER-SEMVER, strict top-N. No age grace because
+    # promote-stable.yml resets LastModified on every file at promotion, so
+    # an age rule keeps everything on stable forever.
+    # 0.0.0-dev files are always deleted (pre-version-injection pollution).
+    log_step "  8f: channel artifact retention (keep top ${R2_PACKAGE_KEEP_VERSIONS} semvers; zap 0.0.0-dev)"
     local pkg_deleted=0
     for fmt in apt rpm apk archlinux npm desktop; do
         for channel in stable edge; do
@@ -1026,14 +1026,6 @@ cleanup_r2() {
             # Top-N non-dev semvers (per-semver rank, not per-file).
             local top_versions
             top_versions="$(echo "$listing" | awk -F'|' '$3 == 0 {print $2}' | sort -u -V -r | head -n "$R2_PACKAGE_KEEP_VERSIONS")"
-            # Newest-file-ts (epoch) per semver, for 10-day override.
-            local newest_ts_by_ver
-            newest_ts_by_ver="$(echo "$listing" | awk -F'|' '
-                {
-                    "date -u -d \""$1"\" +%s" | getline e;
-                    if (e > seen[$2]) seen[$2] = e
-                }
-                END { for (v in seen) print v"|"seen[v] }')"
             while IFS='|' read -r ts semver is_dev key; do
                 [[ -z "$key" ]] && continue
                 local ts_epoch
@@ -1054,13 +1046,7 @@ cleanup_r2() {
                 if echo "$top_versions" | grep -qxF "$semver"; then
                     continue
                 fi
-                # Keep if newest file of this semver is < pkg_keep_age old
-                local newest
-                newest="$(echo "$newest_ts_by_ver" | awk -F'|' -v v="$semver" '$1 == v {print $2}')"
-                if [[ -n "$newest" ]] && ((now_epoch - newest < pkg_keep_age)); then
-                    continue
-                fi
-                local tag="v${semver}, $((age / 86400))d, outside top-${R2_PACKAGE_KEEP_VERSIONS}"
+                local tag="v${semver}, outside top-${R2_PACKAGE_KEEP_VERSIONS}"
                 if [[ "$DRY_RUN" == "true" ]]; then
                     log_warn "  [DRY-RUN] Would delete s3://${R2_BUCKET}/${key} (${tag})"
                 else

@@ -324,14 +324,13 @@ stage2d() {
     #   archlinux/<ch>/rediacc-cli-<ver>-<arch>.pkg.tar.zst
     #   npm/<ch>/rediacc-cli-<ver>.tgz
     #   desktop/<ch>/rediacc-desktop-<ver>-<platform>.<ext>(+.blockmap)
-    # Retention is PER-SEMVER (not per-file): keep if semver is among the top
-    # R2_PACKAGE_KEEP_VERSIONS OR any file of that semver is <R2_PACKAGE_KEEP_DAYS
-    # old. 0.0.0-dev files are always deleted (pre-version-injection pollution).
+    # Retention is PER-SEMVER, strict top-N. Age grace is not applied because
+    # `promote-stable.yml` resets LastModified on every stable file during
+    # edge->stable promotion -- an age rule would keep everything forever.
+    # 0.0.0-dev files are always deleted (pre-version-injection pollution).
     # Metadata (Packages.gz, Release*, APKINDEX, repodata/, *.db.tar.gz,
     # latest-*.yml, manifest.json, gpg.key, rediacc-cli-latest.tgz) stays.
     local keep_versions=7
-    local keep_days=10
-    local keep_age=$((keep_days * 86400))
     local now_epoch
     now_epoch="$(date -u +%s)"
     local deleted=0
@@ -356,18 +355,10 @@ stage2d() {
                 log_info "    empty or no artifact files"
                 continue
             fi
-            # Top-7 non-dev semvers (per-semver rank, not per-file). Dev is
+            # Top-N non-dev semvers (per-semver rank, not per-file). Dev is
             # handled below and deliberately excluded from the rank window.
             local top_versions
             top_versions="$(echo "$listing" | awk -F'|' '$3 == 0 {print $2}' | sort -u -V -r | head -n "$keep_versions")"
-            # Newest file ts (epoch) per semver, for the 10-day override.
-            local newest_ts_by_ver
-            newest_ts_by_ver="$(echo "$listing" | awk -F'|' '
-                {
-                    "date -u -d \""$1"\" +%s" | getline e;
-                    if (e > seen[$2]) seen[$2] = e
-                }
-                END { for (v in seen) print v"|"seen[v] }')"
             while IFS='|' read -r ts semver is_dev key; do
                 [[ -z "$key" ]] && continue
                 local ts_epoch
@@ -389,13 +380,7 @@ stage2d() {
                 if echo "$top_versions" | grep -qxF "$semver"; then
                     continue
                 fi
-                # Keep if newest file of this semver is < keep_age old
-                local newest
-                newest="$(echo "$newest_ts_by_ver" | awk -F'|' -v v="$semver" '$1 == v {print $2}')"
-                if [[ -n "$newest" ]] && ((now_epoch - newest < keep_age)); then
-                    continue
-                fi
-                local tag="v${semver}, $((age / 86400))d, outside top-${keep_versions}"
+                local tag="v${semver}, outside top-${keep_versions}"
                 if $DRY_RUN; then
                     log_warn "    [DRY-RUN] Would delete ${key} (${tag})"
                 elif confirm "Delete ${key} (${tag})?"; then
