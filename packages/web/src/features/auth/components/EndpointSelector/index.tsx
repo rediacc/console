@@ -19,6 +19,18 @@ interface EndpointHealth {
 }
 
 const HEALTH_INDICATOR_SYMBOL = '●';
+const HEALTH_CACHE_DURATION = 10000; // 10 seconds
+const HEALTH_CHECK_TIMEOUT = 2500; // 2.5 seconds
+
+// Resolved once at module load — all inputs are build-time constants.
+const VERSION_DISPLAY = (() => {
+  const formatted = formatAppVersion(import.meta.env.VITE_APP_VERSION);
+  if (formatted === 'Development') return 'Development';
+  const buildType =
+    (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? DEFAULTS.EDITION.BUILD_TYPE;
+  const buildLabel = buildType === 'RELEASE' ? 'Release' : 'Development';
+  return `${buildLabel} - ${formatted}`;
+})();
 
 const EndpointSelector: React.FC = () => {
   const { t } = useTranslation('auth');
@@ -31,20 +43,6 @@ const EndpointSelector: React.FC = () => {
   const [healthStatus, setHealthStatus] = useState<Record<string, EndpointHealth>>({});
   const healthStatusRef = useRef(healthStatus);
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
-
-  const HEALTH_CACHE_DURATION = 10000; // 10 seconds
-  const HEALTH_CHECK_TIMEOUT = 2500; // 2.5 seconds
-
-  const formattedVersion = formatAppVersion(import.meta.env.VITE_APP_VERSION);
-  let versionDisplay: string;
-  if (formattedVersion === 'Development') {
-    versionDisplay = 'Development';
-  } else {
-    const buildType =
-      (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? DEFAULTS.EDITION.BUILD_TYPE;
-    const buildLabel = buildType === 'RELEASE' ? 'Release' : 'Development';
-    versionDisplay = `${buildLabel} - ${formattedVersion}`;
-  }
 
   /**
    * Check health for a single endpoint
@@ -320,7 +318,7 @@ const EndpointSelector: React.FC = () => {
         {selectedEndpoint && (
           <Typography.Text>
             {selectedEndpoint.url}
-            {versionDisplay && ` - ${versionDisplay}`}
+            {VERSION_DISPLAY && ` - ${VERSION_DISPLAY}`}
             {isCheckingHealth && (
               <Flex align="center" className="inline-flex">
                 <LoadingOutlined />

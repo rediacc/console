@@ -25,67 +25,79 @@
 #
 # In CI (env CI=true), callers should pass --strict so a missed resolver
 # returns exit 1 instead of silently shipping 0.0.0-dev.
+#
+# This file is meant to be sourced. All logic is wrapped in a function so
+# `set -euo pipefail` stays scoped to this script and does not leak into the
+# caller shell. The function and helpers are unset before returning so the
+# caller's namespace stays clean even on early-return paths.
 
-set -euo pipefail
+_inject_env_main() {
+    set -euo pipefail
 
-_IE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local _ie_dir
+    _ie_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-_IE_VERSION_OVERRIDE=""
-_IE_STRICT=false
-_IE_PRINT=false
+    local _ie_version_override=""
+    local _ie_strict=false
+    local _ie_print=false
 
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --version)
-            _IE_VERSION_OVERRIDE="${2:-}"
-            shift 2
-            ;;
-        --strict)
-            _IE_STRICT=true
-            shift
-            ;;
-        --print)
-            _IE_PRINT=true
-            shift
-            ;;
-        *)
-            echo "inject-env.sh: unknown arg: $1" >&2
-            return 1 2>/dev/null || exit 1
-            ;;
-    esac
-done
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --version)
+                if [[ $# -lt 2 ]]; then
+                    echo "inject-env.sh: --version requires an argument" >&2
+                    return 1
+                fi
+                _ie_version_override="$2"
+                shift 2
+                ;;
+            --strict)
+                _ie_strict=true
+                shift
+                ;;
+            --print)
+                _ie_print=true
+                shift
+                ;;
+            *)
+                echo "inject-env.sh: unknown arg: $1" >&2
+                return 1
+                ;;
+        esac
+    done
 
-_ie_resolve() {
-    if [[ -n "$_IE_VERSION_OVERRIDE" ]]; then
-        echo "$_IE_VERSION_OVERRIDE"
-        return 0
+    local _ie_resolved
+    if [[ -n "$_ie_version_override" ]]; then
+        _ie_resolved="$_ie_version_override"
+    elif [[ -n "${VERSION:-}" ]]; then
+        _ie_resolved="$VERSION"
+    elif _ie_resolved="$("$_ie_dir/resolve-version.sh" --current 2>/dev/null)"; then
+        :
+    else
+        _ie_resolved="0.0.0-dev"
     fi
-    if [[ -n "${VERSION:-}" ]]; then
-        echo "$VERSION"
-        return 0
+
+    if [[ "$_ie_strict" == "true" && "$_ie_resolved" == "0.0.0-dev" ]]; then
+        echo "inject-env.sh: version resolved to 0.0.0-dev under --strict (did the checkout include tags?)" >&2
+        return 1
     fi
-    if v=$("$_IE_DIR/resolve-version.sh" --current 2>/dev/null); then
-        echo "$v"
-        return 0
+
+    export APP_VERSION="$_ie_resolved"
+    export VITE_APP_VERSION="$_ie_resolved"
+    export CLI_VERSION="$_ie_resolved"
+    # TAG is the legacy name used by renet/build.sh and some Docker builds.
+    export TAG="$_ie_resolved"
+
+    if [[ "$_ie_print" == "true" ]]; then
+        echo "$_ie_resolved"
     fi
-    echo "0.0.0-dev"
 }
 
-_IE_RESOLVED=$(_ie_resolve)
-
-if [[ "$_IE_STRICT" == "true" && "$_IE_RESOLVED" == "0.0.0-dev" ]]; then
-    echo "inject-env.sh: version resolved to 0.0.0-dev under --strict (did the checkout include tags?)" >&2
-    return 1 2>/dev/null || exit 1
+if _inject_env_main "$@"; then
+    unset -f _inject_env_main
+    return 0 2>/dev/null || exit 0
+else
+    _ie_st=$?
+    unset -f _inject_env_main
+    return "$_ie_st" 2>/dev/null || exit "$_ie_st"
 fi
-
-export APP_VERSION="$_IE_RESOLVED"
-export VITE_APP_VERSION="$_IE_RESOLVED"
-export CLI_VERSION="$_IE_RESOLVED"
-# TAG is the legacy name used by renet/build.sh and some Docker builds.
-export TAG="$_IE_RESOLVED"
-
-if [[ "$_IE_PRINT" == "true" ]]; then
-    echo "$_IE_RESOLVED"
-fi
-
-unset _IE_DIR _IE_VERSION_OVERRIDE _IE_STRICT _IE_PRINT _IE_RESOLVED

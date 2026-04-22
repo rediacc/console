@@ -14,10 +14,12 @@ const formatUptime = (uptime: { days: number; hours: number; minutes: number }):
   return parts.join(' ');
 };
 
+// Resolved once at module load — VITE_APP_VERSION is a build-time constant.
+const UI_VERSION = formatAppVersion(import.meta.env.VITE_APP_VERSION);
+
 const SystemVersionFooter: React.FC = () => {
   const { t } = useTranslation('common');
   const { data: apiHealth, isLoading: apiLoading } = useApiHealth();
-  const uiVersion = formatAppVersion(import.meta.env.VITE_APP_VERSION);
 
   // Determine API version display
   let apiVersion: string;
@@ -37,7 +39,7 @@ const SystemVersionFooter: React.FC = () => {
       <Flex align="center" className="inline-flex">
         <DesktopOutlined />
         <Typography.Text>{t('dashboard.widgets.systemVersion.console')}</Typography.Text>
-        <Typography.Text data-testid="ui-version">{uiVersion}</Typography.Text>
+        <Typography.Text data-testid="ui-version">{UI_VERSION}</Typography.Text>
       </Flex>
 
       <Typography.Text>|</Typography.Text>
