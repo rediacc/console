@@ -159,10 +159,11 @@ Instead of manually creating VMs, you can configure a cloud provider and let `rd
 
 Install OpenTofu: [opentofu.org/docs/intro/install](https://opentofu.org/docs/intro/install/)
 
-Ensure your SSH config includes a public key:
+Ensure your SSH config has a key registered with `rdc`:
 
 ```bash
-rdc config set --key ssh.privateKeyPath --value ~/.ssh/id_ed25519
+# Reads the key file and inlines the content under /credentials/ssh.
+rdc config ssh set --key ~/.ssh/id_ed25519
 ```
 
 ### Add a Cloud Provider
@@ -229,8 +230,8 @@ rdc config provider list
 Set default values so you don't need to specify them on every command:
 
 ```bash
-rdc config set --key machine --value server-1  # Default machine
-rdc config set --key team --value my-team  # Default team (cloud adapter, experimental)
+rdc config field set --pointer /defaults/machine --new '"server-1"'   # Default machine
+rdc config set --key team --value my-team                   # Default team (cloud adapter, experimental)
 ```
 
 After setting a default machine, you can omit `-m server-1` from commands:

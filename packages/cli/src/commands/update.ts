@@ -87,7 +87,7 @@ async function tryApplyPending(): Promise<boolean> {
 async function handleUpdateResult(
   result: Awaited<ReturnType<typeof performUpdate>>
 ): Promise<void> {
-  if (result.success && result.error === 'update.errors.binaryBusy') {
+  if (result.success && result.error === 'commands.update.errors.binaryBusy') {
     process.stderr.write('\n');
     outputService.info(t('commands.update.stagedFallback', { version: result.toVersion }));
     return;
@@ -107,8 +107,8 @@ async function handleUpdateResult(
     outputService.success(t('commands.update.upToDate', { version: VERSION }));
     return;
   }
-  const errorKey = result.error ?? t('commands.update.unknownError');
-  outputService.error(t('commands.update.failed', { error: errorKey }));
+  const errorMessage = result.error ? t(result.error) : t('commands.update.errors.unknown');
+  outputService.error(t('commands.update.failed', { error: errorMessage }));
   process.exit(1);
 }
 
@@ -293,7 +293,7 @@ async function dispatchUpdate(
   } else if (installMethod === 'npm') {
     await handleNpmUpdate();
   } else {
-    outputService.error(t('commands.update.notSEA'));
+    outputService.error(t('commands.update.errors.notSEA'));
     process.exit(1);
   }
 }

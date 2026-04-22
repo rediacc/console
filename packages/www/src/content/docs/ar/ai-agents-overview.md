@@ -4,7 +4,7 @@ description: كيف تتكامل مساعدات البرمجة الذكية مث
 category: Guides
 order: 30
 language: ar
-sourceHash: "c4f31aca01e62a7f"
+sourceHash: "7789f1e26755c779"
 ---
 
 يمكن لمساعدات البرمجة الذكية إدارة بنية Rediacc التحتية بشكل مستقل من خلال أداة `rdc` CLI. يغطي هذا الدليل مناهج التكامل وكيفية البدء.

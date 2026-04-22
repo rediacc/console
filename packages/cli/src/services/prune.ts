@@ -68,12 +68,12 @@ async function scanOtherConfig(
     const config = await configFileStorage.load(name);
 
     // Check if config is encrypted and repos aren't readable
-    if (config.encrypted && !config.repositories) {
+    if (config.encryption?.mode === 'master-password' && !config.resources?.repositories) {
       unreadableConfigs.push(name);
       return;
     }
 
-    const repos = config.repositories ?? {};
+    const repos = config.resources?.repositories ?? {};
     for (const repoConfig of Object.values(repos)) {
       const guid = repoConfig.repositoryGuid;
       if (guid) addGuidSource(guidSources, guid, name);
@@ -128,7 +128,7 @@ async function collectArchivedGuids(): Promise<Map<string, Date>> {
 
 /** Resolve the grace-day threshold from options or config. */
 function resolveGraceDays(options: AnalyzeOptions, config: RdcConfig | null): number {
-  return options.graceDays ?? config?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
+  return options.graceDays ?? config?.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
 }
 
 /** Classify a single GUID as orphaned or protected. */
@@ -266,7 +266,7 @@ export function printPruneAnalysis(analysis: PruneAnalysis, dryRun: boolean): vo
  */
 export async function purgeExpiredArchives(graceDays?: number): Promise<ArchivedRepository[]> {
   const config = await configService.getCurrent();
-  const threshold = graceDays ?? config?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
+  const threshold = graceDays ?? config?.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
 
   const expired = await configService.purgeExpiredArchives(threshold);
   if (expired.length > 0) {

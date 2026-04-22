@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: "f5222efa9505ab5e"
+sourceHash: "14cf2fb4ac3dc4d6"
 sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
 ---
 
@@ -271,7 +271,13 @@ rdc machine backup schedule -m server-1
 rdc machine backup schedule -m server-1 --dry-run
 ```
 
-`--dry-run` gibt die generierten systemd-Unit-Dateien aus, ohne sie zu deployen. rclone-Tokens werden in der Dry-run-Ausgabe maskiert.
+Das Deploy ist ein State-Reconciler. Er liest die aktuellen Unit-Dateien und den systemd-Zustand auf der Maschine, vergleicht sie mit dem, was die Konfiguration erzeugen würde (SHA-256 pro Datei), und berührt nur Units, deren Inhalt sich tatsächlich geändert hat. Ein erneuter Aufruf ohne Konfigurationsänderungen ist ein No-op: keine Writes, kein `daemon-reload`, kein Timer-Churn.
+
+`--dry-run` gibt den Plan pro Strategie aus (`created`, `updated (service, timer, env)`, `unchanged`, `removed`), ohne die Maschine anzufassen. In Kombination mit `--debug` werden auch die generierten Unit-Inhalte ausgegeben; rclone-Tokens werden redigiert.
+
+Wenn gerade ein Backup für eine Strategie läuft, die aktualisiert oder entfernt werden soll, bricht das Deploy sofort ab und weist darauf hin, das Backup abzubrechen oder `--force` zu übergeben. Mit `--force` behält der laufende Vorgang seine In-Memory-Unit, und die neue Konfiguration greift beim nächsten Timer-Tick, sodass das laufende Backup niemals beendet wird.
+
+`--reset-failed` ist opt-in. Wenn übergeben, löscht es nach einem erfolgreichen Deploy den Failed-Status auf berührten Services. Standardmäßig aus, damit vorherige Fehlersignale für Alerting sichtbar bleiben.
 
 ### Backup jetzt ausführen
 

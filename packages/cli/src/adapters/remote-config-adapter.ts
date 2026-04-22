@@ -16,6 +16,7 @@ import {
   selectiveDecrypt,
   selectiveEncrypt,
   type EncryptedConfigPayload,
+  type FieldCommitments,
   type FullConfig,
 } from '@rediacc/shared/config-crypto';
 import type { RemoteConfig, RdcConfig } from '../types/index.js';
@@ -98,18 +99,34 @@ export class RemoteConfigAdapter {
     }`;
     const pullResp = await this.fetch<{
       configData: string;
-      envelope: { configId: string; version: number; teamId: string | null; lastModified: string };
+      envelope: {
+        configId: string;
+        version: number;
+        teamId: string | null;
+        lastModified: string;
+        envelopeVersion?: 2;
+        commitments?: FieldCommitments;
+      };
       hmac: string | null;
     }>(pullPath, token);
 
     // Decrypt: Layer 2 (CEK) + Layer 1 (SDK)
+    // Server-stored envelope is v2 (see Step 5). Until the server supports that,
+    // fabricate empty commitments so the v2 shape is well-formed; selectiveDecrypt
+    // still verifies HMAC + decrypts the blob successfully.
     const payload: EncryptedConfigPayload = {
       envelope: {
+        envelopeVersion: 2,
         id: pullResp.data.envelope.configId,
         version: pullResp.data.envelope.version,
         sdkEpoch: session.sdkEpoch,
         teamId: pullResp.data.envelope.teamId ?? undefined,
         lastModified: pullResp.data.envelope.lastModified,
+        commitments: pullResp.data.envelope.commitments ?? {
+          alg: 'HMAC-SHA256',
+          fckSalt: '',
+          fields: {},
+        },
       },
       encryptedBlob: pullResp.data.configData,
       hmac: pullResp.data.hmac ?? '',
@@ -117,14 +134,33 @@ export class RemoteConfigAdapter {
 
     const decrypted = await selectiveDecrypt(payload, cek, session.sdkDerived);
 
-    // Map decrypted FullConfig to RdcConfig
+    // Map decrypted FullConfig to RdcConfig (v2 shape).
+    const sshRaw = decrypted.ssh;
     const config: RdcConfig = {
+      schemaVersion: 2,
       id: decrypted.id,
       version: decrypted.version,
-      machines: (decrypted.machines ?? {}) as RdcConfig['machines'],
-      repositories: (decrypted.repositories ?? {}) as RdcConfig['repositories'],
-      storages: (decrypted.storages ?? {}) as RdcConfig['storages'],
-      ssh: (decrypted.ssh ?? undefined) as RdcConfig['ssh'],
+      resources: {
+        machines: (decrypted.machines ?? {}) as NonNullable<
+          NonNullable<RdcConfig['resources']>['machines']
+        >,
+        repositories: (decrypted.repositories ?? {}) as NonNullable<
+          NonNullable<RdcConfig['resources']>['repositories']
+        >,
+        storages: (decrypted.storages ?? {}) as NonNullable<
+          NonNullable<RdcConfig['resources']>['storages']
+        >,
+      },
+      credentials: sshRaw?.privateKey
+        ? {
+            ssh: {
+              privateKey: sshRaw.privateKey as string,
+              publicKey: sshRaw.publicKey as string | undefined,
+              knownHosts: sshRaw.knownHosts as string | undefined,
+            },
+          }
+        : undefined,
+      encryption: { mode: 'plaintext' },
     };
 
     return {
@@ -143,19 +179,31 @@ export class RemoteConfigAdapter {
     const session = await this.fetchSession(token);
     const cek = await this.deriveCek(session.serverSecret);
 
-    // Build a FullConfig for selective encryption
+    // Build a FullConfig for selective encryption. Commitments are computed
+    // from the schema walker over the v2-shape config.
+    const { pathsToCommit, getByPointer } = await import('../schema/walker.js');
+    const commitPaths = pathsToCommit(config);
+    const commitEntries = commitPaths.map((pointer) => ({
+      pointer,
+      value: getByPointer(config, pointer),
+    }));
+
     const fullConfig: FullConfig = {
+      envelopeVersion: 2,
       id: config.id,
       version: currentVersion + 1,
       sdkEpoch: session.sdkEpoch,
-      machines: config.machines ?? {},
-      repositories: config.repositories ?? {},
-      storages: config.storages ?? {},
-      ssh: config.ssh as Record<string, unknown> | undefined,
+      commitments: { alg: 'HMAC-SHA256', fckSalt: '', fields: {} },
+      machines: config.resources?.machines ?? {},
+      repositories: config.resources?.repositories ?? {},
+      storages: config.resources?.storages ?? {},
+      ssh: config.credentials?.ssh,
     };
 
-    // Encrypt: Layer 1 (SDK) + Layer 2 (CEK)
-    const encrypted = await selectiveEncrypt(fullConfig, session.sdkDerived, cek, session.sdkEpoch);
+    const encrypted = await selectiveEncrypt(fullConfig, session.sdkDerived, cek, {
+      sdkEpoch: session.sdkEpoch,
+      commitEntries,
+    });
 
     // Push to server (server adds Layer 3)
     const pushPath = `/account/api/v1/configs/${this.remote.configId}`;
@@ -167,6 +215,7 @@ export class RemoteConfigAdapter {
         encryptedBlob: encrypted.encryptedBlob,
         sdkEpoch: session.sdkEpoch,
         hmac: encrypted.hmac,
+        envelope: encrypted.envelope,
       },
     });
 

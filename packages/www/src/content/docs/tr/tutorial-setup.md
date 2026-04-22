@@ -6,7 +6,7 @@ description: >-
 category: Tutorials
 order: 2
 language: tr
-sourceHash: 0c36a98feadd7aaa
+sourceHash: "b5958b990c537d8f"
 ---
 
 # Rediacc ile Makine Nasıl Kurulur

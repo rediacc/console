@@ -376,7 +376,8 @@
       },
       "show": {
         "description": "Show current config details",
-        "noConfig": "No active config. Create one with: rdc config init"
+        "noConfig": "No active config. Create one with: rdc config init",
+        "optionReveal": "Show plaintext for sensitive values (interactive only)"
       },
       "delete": {
         "description": "Delete a config file",
@@ -655,6 +656,79 @@
           "noCache": "No certificate cache to clear"
         }
       },
+      "field": {
+        "description": "Pointer-addressed config field operations (get/set/unset/rotate/list). JSON Pointers (RFC 6901) like /credentials/cfDnsApiToken.",
+        "descriptionShort": "Pointer-addressed config field operations",
+        "get": {
+          "description": "Read a single config value by JSON Pointer. Sensitive fields redact unless --reveal (humans only).",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionReveal": "Show plaintext for sensitive values (interactive TTY only; audited)",
+          "optionDigest": "Print the SHA-256 digest instead of the value (safe to share with agents)"
+        },
+        "set": {
+          "description": "Write a config value at a JSON Pointer. Sensitive paths require --current (knowledge-gate).",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionNew": "New value (parsed as JSON if it looks like JSON: {, [, \", true/false/null/number)",
+          "optionCurrent": "Current plaintext value — required for sensitive-path mutations (knowledge-gate proof)",
+          "success": "Set {{pointer}}"
+        },
+        "unset": {
+          "description": "Delete a config value at a JSON Pointer. Sensitive paths require --current.",
+          "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
+          "optionCurrent": "Current plaintext value — required for sensitive-path deletions",
+          "success": "Unset {{pointer}}"
+        },
+        "rotate": {
+          "description": "Rotate a sensitive value without --current. Interactive TTY only; loudly audited.",
+          "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
+          "optionNew": "New value",
+          "success": "Rotated {{pointer}}"
+        },
+        "list": {
+          "description": "List every registered sensitivity pointer template with its kind and commit/encrypt policy.",
+          "optionSensitive": "Show only sensitive (non-public) templates",
+          "optionOutput": "Output format (json|table)"
+        }
+      },
+      "edit": {
+        "description": "Open the active config in $EDITOR as a redacted JSONC projection. Humans only; agents refused.",
+        "optionReveal": "Show plaintext for sensitive values (interactive TTY only; audited)",
+        "optionDump": "Print current config as JSONC to stdout (read-only; safe for agents when redacted)",
+        "optionApply": "Apply an edited JSONC file (skips $EDITOR launch)",
+        "optionCurrentSecrets": "JSON file mapping pointer→old plaintext for knowledge-gate on --apply",
+        "optionEditor": "Editor command override (follows git precedence: flag > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+        "bannerTitle": "rdc config edit — {{name}} (v{{version}})",
+        "bannerStrip": "Lines beginning with // are stripped on save.",
+        "bannerReveal": "--reveal active: SENSITIVE VALUES VISIBLE. Audited.",
+        "bannerRedacted": "Sensitive fields shown as <redacted:KIND>:DIGEST stubs that round-trip safely.",
+        "bannerRotateLine1": "To rotate a secret: replace its stub with the new plaintext value — you'll",
+        "bannerRotateLine2": "be asked to confirm each rotation after you close the editor.",
+        "noChanges": "No changes saved; aborting.",
+        "saved": "Saved config \"{{name}}\"",
+        "applied": "Applied {{path}}",
+        "rotatePromptHeader": "You are about to rotate {{count}} sensitive field(s):",
+        "rotatePromptBullet": "  • {{pointer}}",
+        "rotatePromptFooter": "Type 'rotate' to confirm (anything else aborts): ",
+        "rotateDeclined": "Aborted; draft preserved in editor tempfile.",
+        "abortAfterRetries": "Aborting after {{count}} failed attempts. Draft preserved at: {{path}}"
+      },
+      "audit": {
+        "description": "Inspect the config audit log (hash-chained JSONL at ~/.config/rediacc/audit.log.jsonl)",
+        "log": {
+          "description": "Print recent audit entries as JSON",
+          "optionSince": "Only show entries newer than (e.g., '24h', '7d', ISO timestamp)",
+          "optionPath": "Filter by JSON Pointer glob (e.g., /credentials/*)",
+          "optionActor": "Filter by actor kind (human|agent)"
+        },
+        "tail": {
+          "description": "Stream new audit entries as they are written (Ctrl+C to stop)"
+        },
+        "verify": {
+          "description": "Verify the integrity of the SHA-256 hash chain across all audit entries",
+          "chainOk": "Chain integrity verified across {{count}} entries.",
+          "chainBroken": "Chain broken at line {{line}} — file has been tampered with or corrupted."
+        }
+      },
       "backupStrategy": {
         "description": "Manage named backup strategies (hot/cold modes, destinations, scheduling)",
         "set": {
@@ -875,6 +949,8 @@
         "schedule": {
           "description": "Deploy backup schedule to a remote machine (systemd timers)",
           "optionDryRun": "Preview generated units without deploying",
+          "optionForce": "Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)",
+          "optionResetFailed": "Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)",
           "success": "Backup schedule deployed to {{machine}}"
         },
         "now": {
@@ -1840,7 +1916,16 @@
       "description": "Check for new CLI versions and apply updates. Supports --check-only to check without installing, and --force to update even if already on the latest version.",
       "force": "Force update even if already up-to-date",
       "checkOnly": "Only check for updates without downloading",
-      "notSEA": "Cannot update: not running as a packaged binary. Build with SEA first.",
+      "errors": {
+        "notSEA": "Cannot update: not running as a packaged binary. Build with SEA first.",
+        "unsupportedPlatform": "This platform is not supported for self-update.",
+        "lockFailed": "Another update is already in progress. Try again in a few seconds.",
+        "noBinary": "No binary available for this platform in the latest release.",
+        "noChecksum": "Release manifest is missing the SHA256 checksum.",
+        "checksumMismatch": "Downloaded binary failed checksum verification.",
+        "binaryBusy": "Current binary is in use; the update has been staged for the next launch.",
+        "unknown": "Unknown error during update."
+      },
       "available": "Update available: v{{version}} (current: v{{current}})",
       "releaseNotes": "Release notes: {{url}}",
       "upToDate": "Already up to date (v{{version}})",
@@ -2188,12 +2273,37 @@
       "createGuardOverrideNonLinux": "Cannot create a new grand repository \"{{name}}\". The REDIACC_ALLOW_GRAND_REPO override is not supported on {{platform}}.\n\nThis override only works on Linux. On Windows and macOS, agents must use the fork-first workflow.\n\nInstead, fork an existing repository:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nTo use the override, run your agent on Linux (directly, WSL, Docker, or a VM).",
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" is a grand (production) repository. The REDIACC_ALLOW_GRAND_REPO override is not supported on {{platform}}.\n\nThis override only works on Linux. On Windows and macOS, agents must use the fork-first workflow.\n\nUse repo_fork to create a safe, isolated sandbox copy, then operate on the fork.",
       "mcpMachineGuardOverrideNonLinux": "Direct machine access override is not supported on {{platform}}.\n\nThis override only works on Linux. On Windows and macOS, agents must use the fork-first workflow.\n\nUse repo_fork to create a fork, then connect to it.",
-      "commandBlocked": "The \"{{command}}\" command is not available in agent mode.\n\nThis command executes arbitrary low-level functions without safety guards. Use typed CLI commands or MCP tools instead.\n\nAlternatives:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Run \"rdc agent capabilities\" to see all available commands\n\nIf you need raw access, ask the user to run the command directly."
+      "commandBlocked": "The \"{{command}}\" command is not available in agent mode.\n\nThis command executes arbitrary low-level functions without safety guards. Use typed CLI commands or MCP tools instead.\n\nAlternatives:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Run \"rdc agent capabilities\" to see all available commands\n\nIf you need raw access, ask the user to run the command directly.",
+      "configEdit": "Interactive editor is blocked in agent environments.\n\nAlternatives:\n  • rdc config edit --dump > config.jsonc    (safe redacted inspection)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nTo override, set REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> in the parent shell\nBEFORE starting your agent (it must appear in the agent's process ancestry).",
+      "configEditAncestry": "Interactive editor is blocked in agent environments (REDIACC_ALLOW_CONFIG_EDIT was set but ancestry verification failed — the override must be set by your shell, not by an agent).\n\nAlternatives:\n  • rdc config edit --dump > config.jsonc    (safe redacted inspection)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nSet REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> in the parent shell BEFORE starting your agent.",
+      "fieldReveal": "--reveal for sensitive field {{pointer}} is blocked in agent environments. Agents should use --digest. A real user at an interactive terminal can --reveal.",
+      "showReveal": "--reveal is blocked in agent environments. Use `rdc config show` (redacted) or `rdc config field get --name <pointer> --digest` for a safe fingerprint.",
+      "revealRequiresTty": "--reveal requires an interactive TTY; refusing to print sensitive value to a pipe.",
+      "showRevealRequiresTty": "--reveal requires an interactive TTY; refusing to pipe plaintext to a non-TTY sink.",
+      "rotateRequiresTty": "config field rotate requires interactive TTY confirmation; refusing in non-interactive context (set REDIACC_ALLOW_CONFIG_EDIT to override).",
+      "rotateNotSensitive": "Pointer \"{{pointer}}\" is not a sensitive field; use 'config field set' instead."
+    },
+    "precondition": {
+      "mismatch": "Precondition failed for {{count}} path(s):\n{{details}}",
+      "missing": "sensitive path requires --current (or --rotate-secret)",
+      "kindMismatch": "value kind changed (stored: {{stored}}, claimed: {{claimed}})",
+      "digestMismatch": "--current digest mismatch (expected {{expected}}…, got {{got}}…)",
+      "currentSecretsRequired": "{{pointer}}: sensitive field changed without --current; supply --current-secrets <file> mapping pointer→old-value",
+      "stubStillStub": "{{pointer}}: edited value still looks like a redaction stub but does not match the current digest",
+      "rotationRequiresTty": "{{pointer}}: rotation confirmation requires an interactive TTY (or use --current-secrets)"
+    },
+    "editor": {
+      "notFound": "No editor configured. Set $GIT_EDITOR, git config core.editor, $VISUAL, or $EDITOR, or pass --editor.",
+      "headlessRefused": "Headless editor invocation would block forever: {{command}}. Pass --editor explicitly with interactive flags.",
+      "spawnFailed": "Failed to launch editor {{command}}: {{reason}}",
+      "nonzeroExit": "Editor {{command}} exited with code {{code}}"
     },
     "config": {
       "storageNotFound": "Storage \"{{name}}\" not found in config. Available: {{available}}.",
       "machineNotFound": "Machine \"{{name}}\" not found in config. Available: {{available}}.",
-      "invalidEmail": "Invalid email address: \"{{value}}\"."
+      "invalidEmail": "Invalid email address: \"{{value}}\".",
+      "noActiveConfig": "No active config",
+      "pointerNotFound": "Pointer \"{{pointer}}\" not found"
     }
   },
   "options": {

@@ -216,7 +216,7 @@ class LocalVaultProvider implements VaultProvider {
       user: machine.user,
       known_hosts: machine.knownHosts ?? '',
       datastore: machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
-      universalUser: currentConfig?.universalUser ?? DEFAULTS.REPOSITORY.UNIVERSAL_USER,
+      universalUser: currentConfig?.defaults?.universalUser ?? DEFAULTS.REPOSITORY.UNIVERSAL_USER,
     };
 
     const teamVault: VaultData = {

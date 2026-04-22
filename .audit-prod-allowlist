@@ -116,3 +116,12 @@
 1116757
 1116832
 1116833
+
+# astro <6.1.6 XSS in define:vars via incomplete </script> sanitization
+# (GHSA-j687-52p2-xcff). Fix requires Astro 6.x (semver-major), which
+# is blocked in .deps-upgrade-blocklist per the wider migration plan.
+# Not exploitable here: every define:vars site in packages/www/src uses
+# internally-derived values (currentLang, pathWithoutLang, sitemap data)
+# — no untrusted input reaches the escape path. Revisit when astro 6
+# unblocks.
+1116896

@@ -284,6 +284,23 @@
       }
     },
     "config": {
+      "audit": {
+        "description": "查看配置审计日志(~/.config/rediacc/audit.log.jsonl 中的哈希链 JSONL)",
+        "log": {
+          "description": "以 JSON 格式打印最近的审计条目",
+          "optionActor": "按操作者类型过滤(human|agent)",
+          "optionPath": "按 JSON 指针通配符过滤(例如 /credentials/*)",
+          "optionSince": "仅显示指定时间之后的条目(例如 '24h'、'7d'、ISO 时间戳)"
+        },
+        "tail": {
+          "description": "实时输出新写入的审计条目(Ctrl+C 停止)"
+        },
+        "verify": {
+          "chainBroken": "第 {{line}} 行的链断裂 — 文件已被篡改或损坏。",
+          "chainOk": "已对 {{count}} 条目验证链完整性。",
+          "description": "验证所有审计条目上 SHA-256 哈希链的完整性"
+        }
+      },
       "backupStrategy": {
         "description": "管理命名备份策略（热/冷模式、目标、调度）",
         "list": {
@@ -366,6 +383,62 @@
       },
       "description": "管理配置文件、机器和 SSH 连接",
       "descriptionShort": "管理配置文件、机器和 SSH 连接",
+      "edit": {
+        "abortAfterRetries": "在 {{count}} 次失败尝试后中止。草稿已保留于:{{path}}",
+        "applied": "已应用 {{path}}",
+        "bannerRedacted": "敏感字段以 <redacted:KIND>:DIGEST 占位符显示,可安全往返转换。",
+        "bannerReveal": "--reveal 已启用:敏感值可见。已记入审计。",
+        "bannerRotateLine1": "要轮换秘密:用新的明文值替换其占位符 — 您将在",
+        "bannerRotateLine2": "关闭编辑器后被要求确认每次轮换。",
+        "bannerStrip": "以 // 开头的行在保存时会被删除。",
+        "bannerTitle": "rdc config edit — {{name}} (v{{version}})",
+        "description": "在 $EDITOR 中以脱敏后的 JSONC 投影打开当前配置。仅限人工;拒绝代理。",
+        "noChanges": "未保存任何更改;正在中止。",
+        "optionApply": "应用已编辑的 JSONC 文件(跳过启动 $EDITOR)",
+        "optionCurrentSecrets": "指针→旧明文 的 JSON 映射文件,用于 --apply 时的知识门控",
+        "optionDump": "将当前配置以 JSONC 形式输出到 stdout,不打开编辑器(只读;脱敏时代理也可安全使用)",
+        "optionEditor": "编辑器命令(遵循 git 优先级:--editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+        "optionReveal": "以明文显示敏感值(仅限交互式 TTY;记入审计日志)",
+        "rotateDeclined": "已中止;草稿已保留在编辑器临时文件中。",
+        "rotatePromptBullet": "  • {{pointer}}",
+        "rotatePromptFooter": "键入 'rotate' 确认(其他输入将中止): ",
+        "rotatePromptHeader": "您即将轮换 {{count}} 个敏感字段:",
+        "saved": "已保存配置“{{name}}”"
+      },
+      "field": {
+        "description": "基于 JSON 指针(RFC 6901)的配置字段操作(get/set/unset/rotate/list),如 /credentials/cfDnsApiToken。",
+        "descriptionShort": "基于指针的配置字段操作",
+        "get": {
+          "description": "按 JSON 指针读取单个配置值。敏感字段默认脱敏,除非使用 --reveal(仅限人工)。",
+          "optionDigest": "输出 SHA-256 摘要而非数值(可安全地分享给代理)",
+          "optionPointer": "指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken）",
+          "optionReveal": "以明文显示敏感值(仅限交互式 TTY;记入审计日志)"
+        },
+        "list": {
+          "description": "列出每个已注册的敏感字段指针模板及其类别和提交/加密策略。",
+          "optionOutput": "输出格式(json|table)",
+          "optionSensitive": "仅显示敏感(非公开)模板"
+        },
+        "rotate": {
+          "description": "在不提供 --current 的情况下轮换敏感值。仅交互式 TTY;详尽审计。",
+          "optionNew": "新值",
+          "optionPointer": "指向敏感字段的 JSON 指针（例如 /credentials/cfDnsApiToken）",
+          "success": "已轮换 {{pointer}}"
+        },
+        "set": {
+          "description": "在 JSON 指针位置写入配置值。敏感路径需提供 --current(知识门控)。",
+          "optionCurrent": "当前明文值 — 修改敏感路径时必填(知识门控证明)",
+          "optionNew": "新值(若以 {、[、\" 开头或为 true/false/null/数字,则按 JSON 解析)",
+          "optionPointer": "指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken）",
+          "success": "已设置 {{pointer}}"
+        },
+        "unset": {
+          "description": "删除 JSON 指针位置的配置值。敏感路径需提供 --current。",
+          "optionCurrent": "当前明文值 — 删除敏感路径时必填",
+          "optionPointer": "指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken）",
+          "success": "已取消 {{pointer}}"
+        }
+      },
       "infra": {
         "description": "管理基础设施配置（代理、DNS、证书）",
         "push": {
@@ -570,7 +643,8 @@
       },
       "show": {
         "description": "显示当前配置详情",
-        "noConfig": "没有活跃的配置。请使用以下命令创建：rdc config init"
+        "noConfig": "没有活跃的配置。请使用以下命令创建：rdc config init",
+        "optionReveal": "以明文显示敏感值（仅限交互模式）"
       },
       "ssh": {
         "description": "管理 SSH 密钥配置",
@@ -730,6 +804,8 @@
         "schedule": {
           "description": "将备份计划部署到远程机器（systemd 定时器）",
           "optionDryRun": "预览生成的单元而不部署",
+          "optionForce": "即使当前有备份正在运行也继续执行（新单元在下次定时器触发时生效；正在运行的调用保留其旧单元）",
+          "optionResetFailed": "部署成功后清除已修改服务的 failed 状态（默认关闭，保留故障信号）",
           "success": "已将备份计划部署到 {{machine}}"
         },
         "status": {
@@ -1843,10 +1919,19 @@
       "description": "检查并应用CLI更新",
       "descriptionShort": "检查并应用CLI更新",
       "downloading": "正在下载 v{{version}}...",
+      "errors": {
+        "binaryBusy": "当前二进制正在使用；更新已为下次启动准备就绪。",
+        "checksumMismatch": "下载的二进制文件未通过校验和验证。",
+        "lockFailed": "已有另一项更新正在进行。请几秒后再试。",
+        "noBinary": "最新版本中没有适用于该平台的二进制文件。",
+        "noChecksum": "发行清单缺少 SHA256 校验和。",
+        "notSEA": "无法更新：未以打包二进制方式运行。请先使用 SEA 构建。",
+        "unknown": "更新过程中发生未知错误。",
+        "unsupportedPlatform": "该平台不支持自更新。"
+      },
       "failed": "更新失败: {{error}}",
       "force": "即使已是最新也强制更新",
       "invalidChannel": "无效的渠道: {{channel}}。请使用 stable 或 edge。",
-      "notSEA": "无法更新：未作为打包二进制文件运行。请先使用SEA构建。",
       "npmUpdateHint": "如需更新，请运行:\n  {{command}}",
       "progress": "正在下载... {{percent}}%",
       "releaseNotes": "发行说明: {{url}}",
@@ -2138,9 +2223,12 @@
     "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
     "agent": {
       "commandBlocked": "\"{{command}}\" 命令在代理模式下不可用。\n\n此命令在没有安全防护的情况下执行任意低级函数。请改用类型化的 CLI 命令或 MCP 工具。\n\n替代方案：\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 运行 \"rdc agent capabilities\" 查看所有可用命令\n\n如果需要直接访问，请让用户直接运行该命令。",
+      "configEdit": "交互式编辑器在代理环境中被阻止。\n\n替代方案:\n  • rdc config edit --dump > config.jsonc    (安全的脱敏查看)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\n如需覆盖,请在启动代理之前,在父 shell 中\n设置 REDIACC_ALLOW_CONFIG_EDIT=<scope-glob>(必须出现在代理进程祖先链中)。",
+      "configEditAncestry": "交互式编辑器在代理环境中被阻止(REDIACC_ALLOW_CONFIG_EDIT 已设置但祖先验证失败 — 该覆盖必须由您的 shell 而不是代理设置)。\n\n替代方案:\n  • rdc config edit --dump > config.jsonc    (安全的脱敏查看)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\n在启动代理之前在父 shell 中设置 REDIACC_ALLOW_CONFIG_EDIT=<scope-glob>。",
       "createGuard": "在代理模式下无法创建新的 grand 仓库 \"{{name}}\"。\n\n代理在仅 fork 模式下运行。Grand 仓库是生产环境，代理在创建后无法访问。\n\n请改为 fork 现有仓库：\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\n用户提示：要允许创建仓库，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
       "createGuardOverride": "无法创建新的 grand 仓库 \"{{name}}\"。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改为 fork 现有仓库：\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
       "createGuardOverrideNonLinux": "无法创建新的 grand 仓库 \"{{name}}\"。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n请改为 fork 现有仓库：\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
+      "fieldReveal": "在代理环境中禁止对敏感字段 {{pointer}} 使用 --reveal。代理应改用 --digest。真正用户在交互式终端可使用 --reveal。",
       "forkBlocked": "命令 \"{{command}}\" 在 fork 仓库上不可用。\n\nFork 仓库是临时沙箱环境。此操作仅适用于 grand（生产）仓库。请要求用户直接运行此命令。",
       "grandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\nGrand 仓库包含生产数据。请改用 fork — fork 是安全、隔离的沙箱副本。\n\n工作流程：\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作（例如：rdc repo up --name {{name}}:<tag-name> -m <machine> --mount）\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork\n\n用户提示：要允许直接访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。",
       "grandGuardOverride": "\"{{name}}\" 是一个 grand（生产）仓库。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改用 fork — fork 是安全、隔离的沙箱副本：\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork",
@@ -2153,7 +2241,12 @@
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" 是一个 grand（生产）仓库。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。",
       "mcpMachineGuard": "在仅 fork 模式下不允许直接机器访问。\n\n代理必须通过仓库上下文连接。使用 repo_fork 创建 fork，然后连接。\n如需直接访问，请要求用户使用 --allow-grand 重新启动 MCP 服务器。",
       "mcpMachineGuardOverride": "不允许直接机器访问。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。\n\n使用 repo_fork 创建 fork，然后连接。",
-      "mcpMachineGuardOverrideNonLinux": "直接机器访问覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n使用 repo_fork 创建 fork，然后连接。"
+      "mcpMachineGuardOverrideNonLinux": "直接机器访问覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n使用 repo_fork 创建 fork，然后连接。",
+      "revealRequiresTty": "--reveal 需要交互式 TTY;拒绝将敏感值打印到管道。",
+      "rotateNotSensitive": "指针“{{pointer}}”不是敏感字段;请改用 'config field set'。",
+      "rotateRequiresTty": "config field rotate 需要交互式 TTY 确认;在非交互式上下文中被拒绝(如需覆盖请设置 REDIACC_ALLOW_CONFIG_EDIT)。",
+      "showReveal": "在代理环境中禁止使用 --reveal。请使用 `rdc config show`(脱敏)或 `rdc config field get --name <pointer> --digest` 获取安全指纹。",
+      "showRevealRequiresTty": "--reveal 需要交互式 TTY;拒绝将明文重定向到非 TTY 目标。"
     },
     "authFailed": "身份验证失败",
     "authRequired": "需要身份验证。运行：rdc auth login",
@@ -2164,9 +2257,17 @@
     "config": {
       "invalidEmail": "无效的电子邮件地址: \"{{value}}\"。",
       "machineNotFound": "机器 \"{{name}}\" 在配置中未找到。可用: {{available}}。",
+      "noActiveConfig": "没有激活的配置",
+      "pointerNotFound": "未找到指针“{{pointer}}”",
       "storageNotFound": "存储 \"{{name}}\" 在配置中未找到。可用: {{available}}。"
     },
     "contextNotFound": "上下文 \"{{name}}\" 未找到",
+    "editor": {
+      "headlessRefused": "无头编辑器调用将永远阻塞:{{command}}。请显式传入带交互标志的 --editor。",
+      "nonzeroExit": "编辑器 {{command}} 以退出码 {{code}} 终止",
+      "notFound": "未配置编辑器。请设置 $GIT_EDITOR、git config core.editor、$VISUAL 或 $EDITOR,或传入 --editor。",
+      "spawnFailed": "启动编辑器 {{command}} 失败:{{reason}}"
+    },
     "failedCreateQueueItem": "无法创建队列项",
     "invalidAction": "无效的操作 \"{{action}}\"。使用 \"{{valid}}\"。",
     "invalidCredentials": "凭证无效",
@@ -2190,6 +2291,15 @@
     "passwordsMismatch": "密码不匹配",
     "permissionDenied": "权限被拒绝",
     "poolNotFound": "Ceph 池 \"{{name}}\" 未找到",
+    "precondition": {
+      "currentSecretsRequired": "{{pointer}}:未提供 --current 情况下更改了敏感字段;请提供 --current-secrets <file>,映射 pointer→旧值",
+      "digestMismatch": "--current 摘要不匹配(期望 {{expected}}…,实际 {{got}}…)",
+      "kindMismatch": "值类型已更改(已存储:{{stored}},声明:{{claimed}})",
+      "mismatch": "{{count}} 条路径前置条件失败:\n{{details}}",
+      "missing": "敏感路径需要 --current(或 --rotate-secret)",
+      "rotationRequiresTty": "{{pointer}}:轮换确认需要交互式 TTY(或使用 --current-secrets)",
+      "stubStillStub": "{{pointer}}:编辑后的值仍像脱敏占位符,但不匹配当前摘要"
+    },
     "protocol": {
       "commandExitCode": "命令退出代码 {{code}}",
       "invalidAction": "无效的操作 '{{action}}'。必须是以下之一：{{validActions}}",

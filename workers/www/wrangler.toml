@@ -23,6 +23,12 @@ head_sampling_rate = 1
 directory = "./dist"
 binding = "ASSETS"
 not_found_handling = "404-page"
+# Serve /foo directly from /foo/index.html without a 307 to /foo/.
+# Matches Astro's `trailingSlash: 'never'` config and our Worker-side
+# normalizePath() which strips trailing slashes. Without this, ASSETS
+# would 307 to the trailing-slash variant and the Worker would 301
+# back, creating an infinite loop on every live page.
+html_handling = "drop-trailing-slash"
 run_worker_first = ["/*"]
 
 [[d1_databases]]

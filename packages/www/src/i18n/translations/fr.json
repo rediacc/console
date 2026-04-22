@@ -8,19 +8,19 @@
     "after": {
       "label": "Avec Rediacc",
       "points": [
-        "Des clones identiques à la production en moins de 60 secondes",
-        "Des sauvegardes toutes les heures sans espace disque supplémentaire",
-        "Un basculement vérifié en moins de 60 secondes",
-        "Chaque développeur obtient son propre clone frais de production"
+        "Une copie parfaite en 60 secondes.",
+        "Des sauvegardes toutes les heures. Sans stockage en plus.",
+        "Récupération testée en 60 secondes.",
+        "Chaque dev reçoit une copie fraîche."
       ]
     },
     "before": {
       "label": "Sans Rediacc",
       "points": [
-        "Les environnements dérivent de la production en quelques jours",
-        "Les sauvegardes prennent des semaines, remplissent le stockage et échouent souvent silencieusement",
-        "Les plans de récupération disent 4 heures — la réalité, c'est 4 jours",
-        "Les développeurs codent sur la production parce que le bac à sable est obsolète"
+        "Votre équipe attend des jours pour une copie de test. Et elle ne correspond toujours pas.",
+        "Les sauvegardes prennent des semaines. Beaucoup échouent sans alerte.",
+        "Votre plan de reprise dit 4 heures. La réalité, c'est 4 jours.",
+        "Les devs codent sur le site en prod. La copie de test a des semaines."
       ]
     },
     "title": "La différence"
@@ -322,8 +322,8 @@
   "metrics": {
     "items": [
       {
-        "label": "Temps de clonage",
-        "number": "< 60s"
+        "label": "Copié en moins de 60 s",
+        "number": "241 GB"
       },
       {
         "label": "Stockage supplémentaire",
@@ -412,6 +412,28 @@
     "successMessage": "Vérifiez votre boîte de réception pour confirmer votre abonnement.",
     "title": "Newsletter",
     "unsubscribed": "Vous avez été désabonné. Nous sommes désolés de vous voir partir."
+  },
+  "notASlice": {
+    "overline": "Un seul outil. Toute la stack.",
+    "slices": [
+      {
+        "description": "Ils copient vos données. Votre appli, c'est plus que des données.",
+        "title": "Outils de base de données"
+      },
+      {
+        "description": "Ils copient votre code. Le code seul n'est pas un test.",
+        "title": "Outils de dev-box"
+      },
+      {
+        "description": "Ils sauvegardent tout. La récupération prend des heures, pas une minute.",
+        "title": "Outils de backup"
+      }
+    ],
+    "title": "La plupart des outils copient un morceau. Nous copions tout.",
+    "winner": {
+      "description": "Chaque équipe obtient sa propre copie inscriptible. Données, applis, réglages, tout. Prête en 60 secondes. Vous ne payez le stockage que lorsque quelque chose change.",
+      "label": "Rediacc"
+    }
   },
   "pages": {
     "blog": {
@@ -13402,5 +13424,24 @@
     "toggleFullscreen": "Basculer en plein écran",
     "volume": "Volume",
     "youtubeTitle": "Présentation du produit"
+  },
+  "whyNow": {
+    "cards": [
+      {
+        "description": "L'AI écrit du code en quelques minutes. Vous attendez des jours pour une copie à tester.",
+        "title": "Les devs sont 10× plus rapides"
+      },
+      {
+        "description": "L'AI attaque en quelques secondes. Un pen-test tous les 3 mois ne suffit pas.",
+        "title": "Les hackers sont 10× plus rapides"
+      },
+      {
+        "description": "Vous tournez sur plusieurs clouds. Votre copie de test ne correspond à aucun.",
+        "title": "Votre setup est éclaté"
+      }
+    ],
+    "footer": "La plupart des équipes tournent sur plusieurs clouds. Leur copie de test correspond rarement à l'un d'eux.",
+    "overline": "Pourquoi maintenant",
+    "title": "Votre monde va vite. Votre copie de test non."
   }
 }

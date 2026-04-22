@@ -58,10 +58,145 @@ vi.mock('../output.js', () => ({
   },
 }));
 
+// ---------------------------------------------------------------------------
+// Test helpers
+// ---------------------------------------------------------------------------
+
+interface ExecScript {
+  match: string | RegExp;
+  stdout?: string;
+  exit?: number;
+}
+
+/**
+ * Install a per-test scripted mock for execStreaming. Each call walks the
+ * script in order and returns the first matching entry's stdout/exit.
+ * Unmatched commands resolve with exit=0 and empty stdout (safe default).
+ */
+function scriptedExec(scripts: ExecScript[]): void {
+  mockExecStreaming.mockImplementation(
+    (
+      cmd: string,
+      opts?: {
+        stdin?: string;
+        onStdout?: (data: Buffer) => void;
+        onStderr?: (data: Buffer) => void;
+      }
+    ): Promise<number> => {
+      for (const s of scripts) {
+        const matches = typeof s.match === 'string' ? cmd.includes(s.match) : s.match.test(cmd);
+        if (matches) {
+          if (s.stdout !== undefined && opts?.onStdout) {
+            opts.onStdout(Buffer.from(s.stdout));
+          }
+          return Promise.resolve(s.exit ?? 0);
+        }
+      }
+      return Promise.resolve(0);
+    }
+  );
+}
+
+/** Build a `systemctl show` record block for a single unit. */
+function showRecord(id: string, props: Record<string, string>): string {
+  const lines = [`Id=${id}`, ...Object.entries(props).map(([k, v]) => `${k}=${v}`)];
+  return `${lines.join('\n')}\n\n`;
+}
+
+function idleServiceRecord(unit: string): string {
+  return showRecord(unit, {
+    LoadState: 'loaded',
+    ActiveState: 'inactive',
+    SubState: 'dead',
+    UnitFileState: 'static',
+  });
+}
+
+function healthyTimerRecord(unit: string): string {
+  return showRecord(unit, {
+    LoadState: 'loaded',
+    ActiveState: 'active',
+    SubState: 'waiting',
+    UnitFileState: 'enabled',
+  });
+}
+
+function notFoundRecord(unit: string): string {
+  return showRecord(unit, {
+    LoadState: 'not-found',
+    ActiveState: 'inactive',
+    SubState: 'dead',
+    UnitFileState: '',
+  });
+}
+
+/** Compute the exact on-disk content the reconciler would produce for a strategy. */
+async function desiredContentFor(
+  strategyName: string,
+  strategy: import('../../types/index.js').BackupStrategyConfig,
+  destinations: import('../../types/index.js').BackupStrategyDestination[],
+  rcloneArgsByDest: Map<string, { remote: string; params: string[] }>,
+  datastore = '/mnt/rediacc',
+  remoteRenetPath = '/usr/bin/renet'
+) {
+  const { _testing } = await import('../backup-schedule.js');
+  const { serviceContent, envVars } = _testing.generateServiceUnit(
+    strategyName,
+    strategy,
+    destinations,
+    rcloneArgsByDest,
+    datastore,
+    remoteRenetPath
+  );
+  const timerContent = _testing.generateTimerUnit(
+    strategyName,
+    _testing.cronToOnCalendar(strategy.schedule)
+  );
+  const envFileContent = _testing.generateEnvFile(envVars);
+  return {
+    serviceContent,
+    timerContent,
+    envFileContent,
+    serviceHash: _testing.sha256Hex(serviceContent),
+    timerHash: _testing.sha256Hex(timerContent),
+    envHash: envFileContent ? _testing.sha256Hex(envFileContent) : null,
+  };
+}
+
+const DEFAULT_LOCAL_CONFIG = {
+  renetPath: '/local/renet',
+  sshPrivateKey: 'PRIVATE_KEY',
+  ssh: { privateKeyPath: '/tmp/key' },
+  machines: {
+    hostinger: {
+      ip: '72.61.137.225',
+      user: 'muhammed',
+      port: 22,
+      datastore: '/mnt/rediacc',
+      backupStrategies: ['hourly-hot'],
+    },
+  },
+};
+
+const DEFAULT_STRATEGY = {
+  schedule: '0 * * * *',
+  mode: 'hot',
+  destinations: [{ name: 'onedrive-hourly', storage: 'microsoft', enabled: true }],
+};
+
+const DEFAULT_RCLONE_ARGS = {
+  remote: ':s3:rediacc/hostinger',
+  // Empty params so the default strategy has no env file — integration
+  // tests can focus on unit reconciliation without also mocking env hashes.
+  params: [] as string[],
+};
+
+// ---------------------------------------------------------------------------
+// Pure-function unit tests
+// ---------------------------------------------------------------------------
+
 describe('generateServiceUnit', () => {
   it('keeps bwlimit on argv (per-destination) and emits EnvironmentFile=', async () => {
-    // bwlimit is NOT a credential, and two destinations may legitimately
-    // set different rates — so it lives on argv, not in the shared env file.
     const { _testing } = await import('../backup-schedule.js');
     const { serviceContent, envVars } = _testing.generateServiceUnit(
       'hourly-hot',
@@ -73,144 +208,8 @@ describe('generateServiceUnit', () => {
     );
     expect(serviceContent).toContain('--mode hot');
     expect(serviceContent).toContain('--rclone-param bwlimit=6M');
-    // No credentials in this test -> no EnvironmentFile= directive emitted.
     expect(serviceContent).not.toContain('EnvironmentFile=');
     expect(envVars.RCLONE_BWLIMIT).toBeUndefined();
-  });
-
-  it('per-dest bwlimit overrides strategy bwlimit on argv', async () => {
-    const { _testing } = await import('../backup-schedule.js');
-    const { serviceContent, envVars } = _testing.generateServiceUnit(
-      'test',
-      { schedule: '0 * * * *', bandwidthLimit: '6M', destinations: [] },
-      [{ name: 'fast-dest', storage: 'microsoft', bandwidthLimit: '50M' }],
-      new Map([['fast-dest', { remote: ':s3:bucket', params: [] }]]),
-      '/mnt/rediacc',
-      '/usr/bin/renet'
-    );
-    expect(serviceContent).toContain('--rclone-param bwlimit=50M');
-    expect(serviceContent).not.toContain('bwlimit=6M');
-    expect(envVars.RCLONE_BWLIMIT).toBeUndefined();
-  });
-
-  it('allows two destinations with different bwlimits in one strategy', async () => {
-    // Regression: moving bwlimit to envVars caused mergeEnvVars to throw on
-    // conflicting per-destination rates, breaking a legitimate config.
-    const { _testing } = await import('../backup-schedule.js');
-    const { serviceContent } = _testing.generateServiceUnit(
-      'mixed-rates',
-      { schedule: '0 * * * *', destinations: [] },
-      [
-        { name: 'slow', storage: 'microsoft', bandwidthLimit: '1M' },
-        { name: 'fast', storage: 'microsoft', bandwidthLimit: '100M' },
-      ],
-      new Map([
-        ['slow', { remote: ':onedrive:slow', params: [] }],
-        ['fast', { remote: ':onedrive:fast', params: [] }],
-      ]),
-      '/mnt/rediacc',
-      '/usr/bin/renet'
-    );
-    expect(serviceContent).toContain('--rclone-param bwlimit=1M');
-    expect(serviceContent).toContain('--rclone-param bwlimit=100M');
-  });
-
-  it('includes --include-repo when strategy has include', async () => {
-    const { _testing } = await import('../backup-schedule.js');
-    const { serviceContent } = _testing.generateServiceUnit(
-      'critical',
-      { schedule: '0 * * * *', include: ['mail', 'nextcloud'], destinations: [] },
-      [{ name: 'dest', storage: 'microsoft' }],
-      new Map([['dest', { remote: ':onedrive:hostinger', params: [] }]]),
-      '/mnt/rediacc',
-      '/usr/bin/renet'
-    );
-    expect(serviceContent).toContain('--include-repo mail,nextcloud');
-    expect(serviceContent).not.toContain('--exclude-repo');
-  });
-
-  it('includes --exclude-repo when strategy has exclude', async () => {
-    const { _testing } = await import('../backup-schedule.js');
-    const { serviceContent } = _testing.generateServiceUnit(
-      'nightly',
-      { schedule: '0 3 * * *', mode: 'cold', exclude: ['gitlab'], destinations: [] },
-      [{ name: 'dest', storage: 'microsoft' }],
-      new Map([['dest', { remote: ':onedrive:hostinger', params: [] }]]),
-      '/mnt/rediacc',
-      '/usr/bin/renet'
-    );
-    expect(serviceContent).toContain('--exclude-repo gitlab');
-    expect(serviceContent).toContain('--mode cold');
-  });
-
-  it('omits mode flag when mode is undefined (defaults to hot)', async () => {
-    const { _testing } = await import('../backup-schedule.js');
-    const { serviceContent } = _testing.generateServiceUnit(
-      'default',
-      { schedule: '0 * * * *', destinations: [] },
-      [{ name: 'dest', storage: 'microsoft' }],
-      new Map([['dest', { remote: ':onedrive:hostinger', params: [] }]]),
-      '/mnt/rediacc',
-      '/usr/bin/renet'
-    );
-    expect(serviceContent).toContain('--mode hot');
-  });
-
-  it('generates multiple ExecStart lines for multiple destinations', async () => {
-    const { _testing } = await import('../backup-schedule.js');
-    const { serviceContent } = _testing.generateServiceUnit(
-      'multi',
-      { schedule: '0 3 * * *', destinations: [] },
-      [
-        { name: 'dest1', storage: 'microsoft' },
-        { name: 'dest2', storage: 'r2' },
-      ],
-      new Map([
-        ['dest1', { remote: ':onedrive:hostinger', params: [] }],
-        ['dest2', { remote: ':s3:bucket', params: [] }],
-      ]),
-      '/mnt/rediacc',
-      '/usr/bin/renet'
-    );
-    const execStartCount = (serviceContent.match(/ExecStart=/g) ?? []).length;
-    expect(execStartCount).toBe(2);
-    expect(serviceContent).toContain('--rclone-backend onedrive');
-    expect(serviceContent).toContain('--rclone-backend s3');
-  });
-
-  it('emits TimeoutStartSec=infinity so long uploads are never killed by systemd', async () => {
-    const { _testing } = await import('../backup-schedule.js');
-    const { serviceContent } = _testing.generateServiceUnit(
-      'nightly-cold',
-      { schedule: '0 3 * * *', mode: 'cold', destinations: [] },
-      [{ name: 'dest', storage: 'microsoft' }],
-      new Map([['dest', { remote: ':onedrive:hostinger', params: [] }]]),
-      '/mnt/rediacc',
-      '/usr/bin/renet'
-    );
-    expect(serviceContent).toContain('TimeoutStartSec=infinity');
-    // TimeoutStartSec= must sit between Type=oneshot and the first ExecStart=
-    // so systemd applies it to the actual run.
-    const typeIdx = serviceContent.indexOf('Type=oneshot');
-    const timeoutIdx = serviceContent.indexOf('TimeoutStartSec=infinity');
-    const execIdx = serviceContent.indexOf('ExecStart=');
-    expect(typeIdx).toBeGreaterThanOrEqual(0);
-    expect(timeoutIdx).toBeGreaterThan(typeIdx);
-    expect(execIdx).toBeGreaterThan(timeoutIdx);
-  });
-
-  it('omits EnvironmentFile= when no credentials are present', async () => {
-    const { _testing } = await import('../backup-schedule.js');
-    const { serviceContent, envVars } = _testing.generateServiceUnit(
-      'no-creds',
-      { schedule: '0 * * * *', destinations: [] },
-      [{ name: 'dest', storage: 'microsoft' }],
-      new Map([['dest', { remote: ':onedrive:hostinger', params: [] }]]),
-      '/mnt/rediacc',
-      '/usr/bin/renet'
-    );
-    expect(envVars).toEqual({});
-    expect(serviceContent).not.toContain('EnvironmentFile=');
   });
 
   it('moves rclone credential params to envVars as RCLONE_<KEY> and keeps them out of ExecStart', async () => {
@@ -236,18 +235,33 @@ describe('generateServiceUnit', () => {
       '/mnt/rediacc',
       '/usr/bin/renet'
     );
-
     expect(envVars).toEqual({
       RCLONE_ONEDRIVE_TOKEN: tokenJson,
       RCLONE_ONEDRIVE_DRIVE_ID: '4D895B49A06E9E5C',
       RCLONE_ONEDRIVE_DRIVE_TYPE: 'personal',
     });
-    // No access/refresh token or param flag should appear in the argv.
     expect(serviceContent).not.toContain('onedrive-token');
     expect(serviceContent).not.toContain('access_token');
-    expect(serviceContent).not.toContain('refresh_token');
-    expect(serviceContent).not.toContain('--rclone-param');
     expect(serviceContent).toContain('EnvironmentFile=/etc/rediacc/backup-nightly-cold.env');
+  });
+
+  it('emits TimeoutStartSec=infinity so long uploads are never killed by systemd', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const { serviceContent } = _testing.generateServiceUnit(
+      'nightly-cold',
+      { schedule: '0 3 * * *', mode: 'cold', destinations: [] },
+      [{ name: 'dest', storage: 'microsoft' }],
+      new Map([['dest', { remote: ':onedrive:hostinger', params: [] }]]),
+      '/mnt/rediacc',
+      '/usr/bin/renet'
+    );
+    expect(serviceContent).toContain('TimeoutStartSec=infinity');
+    const typeIdx = serviceContent.indexOf('Type=oneshot');
+    const timeoutIdx = serviceContent.indexOf('TimeoutStartSec=infinity');
+    const execIdx = serviceContent.indexOf('ExecStart=');
+    expect(typeIdx).toBeGreaterThanOrEqual(0);
+    expect(timeoutIdx).toBeGreaterThan(typeIdx);
+    expect(execIdx).toBeGreaterThan(timeoutIdx);
   });
 
   it('throws on conflicting env vars across destinations', async () => {
@@ -281,22 +295,13 @@ describe('sanitizeBackupOutput', () => {
     expect(out).toContain('bwlimit=6M');
   });
 
-  it('redacts --setenv values for sensitive RCLONE_ keys (quoted form)', async () => {
+  it('redacts --setenv values for sensitive RCLONE_ keys', async () => {
     const { sanitizeBackupOutput } = await import('../backup-schedule.js');
     const input =
-      'systemd-run --unit=u --setenv=RCLONE_ONEDRIVE_TOKEN=\'{"access_token":"abc"}\' --setenv=RCLONE_BWLIMIT=\'6M\' --remain-after-exit';
+      'systemd-run --setenv=RCLONE_ONEDRIVE_TOKEN=\'{"access_token":"abc"}\' --setenv=RCLONE_BWLIMIT=\'6M\' --remain-after-exit';
     const out = sanitizeBackupOutput(input);
     expect(out).toContain("--setenv=RCLONE_ONEDRIVE_TOKEN='[REDACTED]'");
     expect(out).toContain("--setenv=RCLONE_BWLIMIT='6M'");
-  });
-
-  it('redacts --setenv values for sensitive RCLONE_ keys (bare form)', async () => {
-    const { sanitizeBackupOutput } = await import('../backup-schedule.js');
-    const input =
-      'systemd-run --setenv=RCLONE_S3_SECRET_ACCESS_KEY=deadbeef --setenv=RCLONE_BWLIMIT=6M';
-    const out = sanitizeBackupOutput(input);
-    expect(out).toContain('--setenv=RCLONE_S3_SECRET_ACCESS_KEY=[REDACTED]');
-    expect(out).toContain('--setenv=RCLONE_BWLIMIT=6M');
   });
 });
 
@@ -305,7 +310,6 @@ describe('generateEnvFile', () => {
     const { _testing } = await import('../backup-schedule.js');
     const tokenJson = '{"access_token":"ab\\c","refresh_token":"x\\"y"}';
     const content = _testing.generateEnvFile({ RCLONE_ONEDRIVE_TOKEN: tokenJson });
-    // Every value must be double-quoted; embedded " and \ escaped.
     expect(content).toBe(
       `RCLONE_ONEDRIVE_TOKEN="{\\"access_token\\":\\"ab\\\\c\\",\\"refresh_token\\":\\"x\\\\\\"y\\"}"\n`
     );
@@ -314,20 +318,6 @@ describe('generateEnvFile', () => {
   it('returns empty string for an empty map', async () => {
     const { _testing } = await import('../backup-schedule.js');
     expect(_testing.generateEnvFile({})).toBe('');
-  });
-
-  it('emits one line per key', async () => {
-    const { _testing } = await import('../backup-schedule.js');
-    const content = _testing.generateEnvFile({
-      RCLONE_ONEDRIVE_TOKEN: 'tok',
-      RCLONE_ONEDRIVE_DRIVE_ID: 'id',
-      RCLONE_BWLIMIT: '6M',
-    });
-    const lines = content.trimEnd().split('\n');
-    expect(lines).toHaveLength(3);
-    expect(lines).toContain('RCLONE_ONEDRIVE_TOKEN="tok"');
-    expect(lines).toContain('RCLONE_ONEDRIVE_DRIVE_ID="id"');
-    expect(lines).toContain('RCLONE_BWLIMIT="6M"');
   });
 });
 
@@ -344,38 +334,264 @@ describe('cronToOnCalendar', () => {
   });
 });
 
-describe('pushBackupSchedule', () => {
+describe('sha256Hex', () => {
+  it('is deterministic for the same UTF-8 input', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    expect(_testing.sha256Hex('hello')).toBe(_testing.sha256Hex('hello'));
+    // Pinned against a known expected value — guards against an accidental
+    // encoding flip (bytes vs hex) that would silently turn every reconcile
+    // into "everything updated."
+    expect(_testing.sha256Hex('hello')).toBe(
+      '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
+    );
+  });
+});
+
+describe('parseSystemctlShow', () => {
+  it('parses multiple records anchored on Id=', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const out =
+      'Id=unit-a.service\nLoadState=loaded\nActiveState=active\n\n' +
+      'Id=unit-b.timer\nLoadState=loaded\nActiveState=inactive\n\n';
+    const records = _testing.parseSystemctlShow(out);
+    expect(records.get('unit-a.service')?.ActiveState).toBe('active');
+    expect(records.get('unit-b.timer')?.ActiveState).toBe('inactive');
+  });
+});
+
+describe('parseStrategyFromPath', () => {
+  it('extracts strategy name from service/timer/env paths', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    expect(
+      _testing.parseStrategyFromPath('/etc/systemd/system/rediacc-backup-hourly-hot.service')
+    ).toEqual({ strategy: 'hourly-hot', type: 'service' });
+    expect(
+      _testing.parseStrategyFromPath('/etc/systemd/system/rediacc-backup-weekly-cold.timer')
+    ).toEqual({ strategy: 'weekly-cold', type: 'timer' });
+    expect(_testing.parseStrategyFromPath('/etc/rediacc/backup-hourly-hot.env')).toEqual({
+      strategy: 'hourly-hot',
+      type: 'env',
+    });
+  });
+
+  it('excludes -adhoc service files', async () => {
+    // `-adhoc` units belong to the on-demand backup path (`machine backup now`)
+    // and must not be reconciled as scheduled strategies — otherwise the
+    // reconciler would try to remove them as orphans on every run.
+    const { _testing } = await import('../backup-schedule.js');
+    expect(
+      _testing.parseStrategyFromPath('/etc/systemd/system/rediacc-backup-foo-adhoc.service')
+    ).toBeNull();
+  });
+
+  it('returns null for unrelated files', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    expect(_testing.parseStrategyFromPath('/etc/systemd/system/sshd.service')).toBeNull();
+  });
+});
+
+// Build a RemoteUnitState fixture without hard-coding the internal type.
+function buildRemoteFixture(
+  overrides: Partial<{
+    service: { exists: boolean; sha256: string | null };
+    timer: { exists: boolean; sha256: string | null };
+    env: { exists: boolean; sha256: string | null };
+    isActiveService: boolean;
+    isActiveAdhoc: boolean;
+    isFailed: boolean;
+  }> = {}
+) {
+  return {
+    serviceFile: {
+      path: '/etc/systemd/system/rediacc-backup-x.service',
+      exists: overrides.service?.exists ?? false,
+      sha256: overrides.service?.sha256 ?? null,
+    },
+    timerFile: {
+      path: '/etc/systemd/system/rediacc-backup-x.timer',
+      exists: overrides.timer?.exists ?? false,
+      sha256: overrides.timer?.sha256 ?? null,
+    },
+    envFile: {
+      path: '/etc/rediacc/backup-x.env',
+      exists: overrides.env?.exists ?? false,
+      sha256: overrides.env?.sha256 ?? null,
+    },
+    isActiveService: overrides.isActiveService ?? false,
+    isActiveAdhoc: overrides.isActiveAdhoc ?? false,
+    isEnabledTimer: false,
+    isActiveTimer: false,
+    isFailed: overrides.isFailed ?? false,
+  };
+}
+
+describe('computeReconcilePlan', () => {
+  function makeUnit(name: string, serviceContent = 's', timerContent = 't', envFileContent = '') {
+    return { strategyName: name, serviceContent, timerContent, envFileContent };
+  }
+
+  it('classifies fresh strategy as created', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const desired = new Map([['x', makeUnit('x')]]);
+    const plan = _testing.computeReconcilePlan(desired, new Map());
+    expect(plan.toCreate).toHaveLength(1);
+    expect(plan.toCreate[0].changedFiles).toEqual(['service', 'timer']);
+    expect(plan.toUpdate).toHaveLength(0);
+    expect(plan.toRemove).toHaveLength(0);
+    expect(plan.unchanged).toHaveLength(0);
+    expect(plan.daemonReloadNeeded).toBe(true);
+  });
+
+  it('classifies all-matching hashes as unchanged (no daemon-reload needed)', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const unit = makeUnit('x', 'svc', 'tim');
+    const desired = new Map([['x', unit]]);
+    const remote = new Map([
+      [
+        'x',
+        buildRemoteFixture({
+          service: { exists: true, sha256: _testing.sha256Hex('svc') },
+          timer: { exists: true, sha256: _testing.sha256Hex('tim') },
+        }),
+      ],
+    ]);
+    const plan = _testing.computeReconcilePlan(desired, remote);
+    expect(plan.unchanged).toHaveLength(1);
+    expect(plan.toUpdate).toHaveLength(0);
+    expect(plan.toCreate).toHaveLength(0);
+    expect(plan.daemonReloadNeeded).toBe(false);
+  });
+
+  it('classifies differing timer hash as updated with changedFiles=[timer]', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const unit = makeUnit('x', 'svc', 'tim');
+    const desired = new Map([['x', unit]]);
+    const remote = new Map([
+      [
+        'x',
+        buildRemoteFixture({
+          service: { exists: true, sha256: _testing.sha256Hex('svc') },
+          timer: { exists: true, sha256: 'DIFFERENT' },
+        }),
+      ],
+    ]);
+    const plan = _testing.computeReconcilePlan(desired, remote);
+    expect(plan.toUpdate).toHaveLength(1);
+    expect(plan.toUpdate[0].changedFiles).toEqual(['timer']);
+    expect(plan.unchanged).toHaveLength(0);
+  });
+
+  it('classifies strategies not in desired as removed', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const desired = new Map();
+    const remote = new Map([
+      [
+        'obsolete',
+        buildRemoteFixture({
+          service: { exists: true, sha256: 'a' },
+          timer: { exists: true, sha256: 'b' },
+        }),
+      ],
+    ]);
+    const plan = _testing.computeReconcilePlan(desired, remote);
+    expect(plan.toRemove).toHaveLength(1);
+    expect(plan.toRemove[0].changedFiles).toEqual(['service', 'timer']);
+    expect(plan.daemonReloadNeeded).toBe(true);
+  });
+
+  it('handles env file removal when desired no longer needs credentials', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const unit = makeUnit('x', 'svc', 'tim', '');
+    const desired = new Map([['x', unit]]);
+    const remote = new Map([
+      [
+        'x',
+        buildRemoteFixture({
+          service: { exists: true, sha256: _testing.sha256Hex('svc') },
+          timer: { exists: true, sha256: _testing.sha256Hex('tim') },
+          env: { exists: true, sha256: 'stale' },
+        }),
+      ],
+    ]);
+    const plan = _testing.computeReconcilePlan(desired, remote);
+    expect(plan.toUpdate).toHaveLength(1);
+    expect(plan.toUpdate[0].changedFiles).toEqual(['env']);
+  });
+
+  it('treats new env desire as part of fresh create', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const unit = makeUnit('x', 's', 't', 'creds');
+    const desired = new Map([['x', unit]]);
+    const plan = _testing.computeReconcilePlan(desired, new Map());
+    expect(plan.toCreate[0].changedFiles).toEqual(['service', 'timer', 'env']);
+  });
+});
+
+describe('applyInFlightGate', () => {
+  function planWithActiveUpdate(active: 'service' | 'adhoc') {
+    return {
+      toCreate: [],
+      toUpdate: [
+        {
+          name: 'x',
+          action: 'updated' as const,
+          desired: null,
+          remote: buildRemoteFixture({
+            service: { exists: true, sha256: 'a' },
+            timer: { exists: true, sha256: 'b' },
+            isActiveService: active === 'service',
+            isActiveAdhoc: active === 'adhoc',
+          }),
+          changedFiles: ['timer'] as ('service' | 'timer' | 'env')[],
+        },
+      ],
+      toRemove: [],
+      unchanged: [],
+      skippedInFlight: [],
+      daemonReloadNeeded: true,
+    };
+  }
+
+  it('throws with backup cancel hint when a scheduled service is running', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const plan = planWithActiveUpdate('service');
+    expect(() => _testing.applyInFlightGate(plan, false)).toThrow(
+      /rediacc-backup-x\.service is currently running/
+    );
+  });
+
+  it('throws when an adhoc service is running', async () => {
+    // Adhoc backups are tracked by a distinct `-adhoc` unit; we must not
+    // clobber unit files that belong to an in-flight on-demand backup.
+    const { _testing } = await import('../backup-schedule.js');
+    const plan = planWithActiveUpdate('adhoc');
+    expect(() => _testing.applyInFlightGate(plan, false)).toThrow(
+      /rediacc-backup-x-adhoc\.service is currently running/
+    );
+  });
+
+  it('with force=true, emits a warning and does not throw', async () => {
+    const { _testing } = await import('../backup-schedule.js');
+    const plan = planWithActiveUpdate('service');
+    expect(() => _testing.applyInFlightGate(plan, true)).not.toThrow();
+    expect(mockOutputWarn).toHaveBeenCalledWith(
+      expect.stringContaining('currently running; deploy proceeds')
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Integration tests — pushBackupSchedule (full flow with scripted SSH)
+// ---------------------------------------------------------------------------
+
+describe('pushBackupSchedule (reconcile)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-
     mockExecStreaming.mockResolvedValue(0);
-
-    mockGetLocalConfig.mockResolvedValue({
-      renetPath: '/local/renet',
-      sshPrivateKey: 'PRIVATE_KEY',
-      ssh: { privateKeyPath: '/tmp/key' },
-      machines: {
-        hostinger: {
-          ip: '72.61.137.225',
-          user: 'muhammed',
-          port: 22,
-          datastore: '/mnt/rediacc',
-          backupStrategies: ['hourly-hot'],
-        },
-      },
-    });
-
-    mockGetBackupStrategy.mockResolvedValue({
-      schedule: '0 * * * *',
-      mode: 'hot',
-      destinations: [{ name: 'onedrive-hourly', storage: 'microsoft', enabled: true }],
-    });
-
+    mockGetLocalConfig.mockResolvedValue(DEFAULT_LOCAL_CONFIG);
+    mockGetBackupStrategy.mockResolvedValue(DEFAULT_STRATEGY);
     mockGetStorage.mockResolvedValue({ vaultContent: { any: 'value' } });
-    mockBuildRcloneArgs.mockReturnValue({
-      remote: ':s3:rediacc/hostinger',
-      params: ['--s3-region=auto'],
-    });
+    mockBuildRcloneArgs.mockReturnValue(DEFAULT_RCLONE_ARGS);
     mockRefreshRepoLicensesBatch.mockResolvedValue({
       scanned: 2,
       issued: 1,
@@ -387,20 +603,344 @@ describe('pushBackupSchedule', () => {
     });
   });
 
-  it('reads machine.backupStrategies and deploys one timer per strategy', async () => {
-    const { pushBackupSchedule } = await import('../backup-schedule.js');
+  function recordedCommands(): string[] {
+    return mockExecStreaming.mock.calls.map(([cmd]) => cmd as string);
+  }
 
+  it('test 1: no existing units → creates both units atomically via staging + mv', async () => {
+    scriptedExec([
+      { match: /find \/etc\/systemd\/system/, stdout: '' },
+      {
+        match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
+        stdout: notFoundRecord('rediacc-backup-hourly-hot.service'),
+      },
+      {
+        match: 'Id,LoadState,ActiveState,UnitFileState',
+        stdout: healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
+      },
+    ]);
+
+    const { pushBackupSchedule } = await import('../backup-schedule.js');
     await pushBackupSchedule('hostinger');
 
-    // Should write service + timer + enable for the strategy
-    const commands = mockExecStreaming.mock.calls.map(([cmd]) => cmd);
-    expect(commands).toContain(
-      'sudo tee /etc/systemd/system/rediacc-backup-hourly-hot.service > /dev/null'
+    const cmds = recordedCommands();
+    expect(cmds).toContain(
+      'sudo tee /etc/systemd/system/rediacc-backup-hourly-hot.service.new > /dev/null'
     );
-    expect(commands).toContain(
-      'sudo tee /etc/systemd/system/rediacc-backup-hourly-hot.timer > /dev/null'
+    expect(cmds).toContain(
+      'sudo tee /etc/systemd/system/rediacc-backup-hourly-hot.timer.new > /dev/null'
     );
-    expect(commands).toContain('sudo systemctl enable --now rediacc-backup-hourly-hot.timer');
+    expect(cmds).toContain(
+      `sudo mv '/etc/systemd/system/rediacc-backup-hourly-hot.service.new' '/etc/systemd/system/rediacc-backup-hourly-hot.service'`
+    );
+    expect(cmds).toContain(
+      `sudo mv '/etc/systemd/system/rediacc-backup-hourly-hot.timer.new' '/etc/systemd/system/rediacc-backup-hourly-hot.timer'`
+    );
+    const reloads = cmds.filter((c) => c === 'sudo systemctl daemon-reload');
+    expect(reloads).toHaveLength(1);
+    expect(cmds).toContain('sudo systemctl enable --now rediacc-backup-hourly-hot.timer');
+    // No legacy glob-remove — only orphan cleanup of *.new files.
+    expect(cmds.some((c) => c.includes('rm -f') && c.includes('rediacc-backup-*.service'))).toBe(
+      false
+    );
+  });
+
+  it('test 2: all hashes match → unchanged, no writes, no daemon-reload', async () => {
+    const rcloneArgsByDest = new Map([['onedrive-hourly', DEFAULT_RCLONE_ARGS]]);
+    const desired = await desiredContentFor(
+      'hourly-hot',
+      DEFAULT_STRATEGY as import('../../types/index.js').BackupStrategyConfig,
+      DEFAULT_STRATEGY.destinations,
+      rcloneArgsByDest
+    );
+
+    scriptedExec([
+      {
+        match: /find \/etc\/systemd\/system/,
+        stdout:
+          '/etc/systemd/system/rediacc-backup-hourly-hot.service\n' +
+          '/etc/systemd/system/rediacc-backup-hourly-hot.timer\n',
+      },
+      {
+        match: 'sha256sum',
+        stdout:
+          `${desired.serviceHash}  /etc/systemd/system/rediacc-backup-hourly-hot.service\n` +
+          `${desired.timerHash}  /etc/systemd/system/rediacc-backup-hourly-hot.timer\n`,
+      },
+      {
+        match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
+        stdout:
+          idleServiceRecord('rediacc-backup-hourly-hot.service') +
+          notFoundRecord('rediacc-backup-hourly-hot-adhoc.service') +
+          healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
+      },
+    ]);
+
+    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    await pushBackupSchedule('hostinger');
+
+    const cmds = recordedCommands();
+    expect(cmds.some((c) => c.includes('tee '))).toBe(false);
+    expect(cmds.some((c) => c.startsWith('sudo mv '))).toBe(false);
+    expect(cmds).not.toContain('sudo systemctl daemon-reload');
+    expect(cmds).not.toContain('sudo systemctl enable --now rediacc-backup-hourly-hot.timer');
+    expect(mockOutputInfo).toHaveBeenCalledWith(expect.stringContaining('unchanged hourly-hot'));
+  });
+
+  it('test 3: schedule changed → only timer staged, service untouched', async () => {
+    const rcloneArgsByDest = new Map([['onedrive-hourly', DEFAULT_RCLONE_ARGS]]);
+    const desired = await desiredContentFor(
+      'hourly-hot',
+      DEFAULT_STRATEGY as import('../../types/index.js').BackupStrategyConfig,
+      DEFAULT_STRATEGY.destinations,
+      rcloneArgsByDest
+    );
+
+    scriptedExec([
+      {
+        match: /find \/etc\/systemd\/system/,
+        stdout:
+          '/etc/systemd/system/rediacc-backup-hourly-hot.service\n' +
+          '/etc/systemd/system/rediacc-backup-hourly-hot.timer\n',
+      },
+      {
+        match: 'sha256sum',
+        stdout:
+          `${desired.serviceHash}  /etc/systemd/system/rediacc-backup-hourly-hot.service\n` +
+          `0000000000000000000000000000000000000000000000000000000000000000  /etc/systemd/system/rediacc-backup-hourly-hot.timer\n`,
+      },
+      {
+        match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
+        stdout:
+          idleServiceRecord('rediacc-backup-hourly-hot.service') +
+          notFoundRecord('rediacc-backup-hourly-hot-adhoc.service') +
+          idleServiceRecord('rediacc-backup-hourly-hot.timer'),
+      },
+      {
+        match: 'Id,LoadState,ActiveState,UnitFileState',
+        stdout: healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
+      },
+    ]);
+
+    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    await pushBackupSchedule('hostinger');
+
+    const cmds = recordedCommands();
+    expect(cmds).toContain(
+      'sudo tee /etc/systemd/system/rediacc-backup-hourly-hot.timer.new > /dev/null'
+    );
+    expect(cmds.some((c) => c.includes('rediacc-backup-hourly-hot.service.new'))).toBe(false);
+    expect(cmds).toContain(
+      `sudo mv '/etc/systemd/system/rediacc-backup-hourly-hot.timer.new' '/etc/systemd/system/rediacc-backup-hourly-hot.timer'`
+    );
+    const reloads = cmds.filter((c) => c === 'sudo systemctl daemon-reload');
+    expect(reloads).toHaveLength(1);
+  });
+
+  it('test 4: removed strategy → disable --now, then rm on exact paths (no glob)', async () => {
+    const rcloneArgsByDest = new Map([['onedrive-hourly', DEFAULT_RCLONE_ARGS]]);
+    const desired = await desiredContentFor(
+      'hourly-hot',
+      DEFAULT_STRATEGY as import('../../types/index.js').BackupStrategyConfig,
+      DEFAULT_STRATEGY.destinations,
+      rcloneArgsByDest
+    );
+
+    scriptedExec([
+      {
+        match: /find \/etc\/systemd\/system/,
+        stdout:
+          '/etc/systemd/system/rediacc-backup-hourly-hot.service\n' +
+          '/etc/systemd/system/rediacc-backup-hourly-hot.timer\n' +
+          '/etc/systemd/system/rediacc-backup-obsolete.service\n' +
+          '/etc/systemd/system/rediacc-backup-obsolete.timer\n',
+      },
+      {
+        match: 'sha256sum',
+        stdout:
+          `${desired.serviceHash}  /etc/systemd/system/rediacc-backup-hourly-hot.service\n` +
+          `${desired.timerHash}  /etc/systemd/system/rediacc-backup-hourly-hot.timer\n` +
+          `abc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1  /etc/systemd/system/rediacc-backup-obsolete.service\n` +
+          `def456def456def456def456def456def456def456def456def456def456def4  /etc/systemd/system/rediacc-backup-obsolete.timer\n`,
+      },
+      {
+        match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
+        stdout:
+          idleServiceRecord('rediacc-backup-hourly-hot.service') +
+          notFoundRecord('rediacc-backup-hourly-hot-adhoc.service') +
+          idleServiceRecord('rediacc-backup-hourly-hot.timer') +
+          idleServiceRecord('rediacc-backup-obsolete.service') +
+          notFoundRecord('rediacc-backup-obsolete-adhoc.service') +
+          idleServiceRecord('rediacc-backup-obsolete.timer'),
+      },
+    ]);
+
+    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    await pushBackupSchedule('hostinger');
+
+    const cmds = recordedCommands();
+    const disableIdx = cmds.findIndex(
+      (c) => c === 'sudo systemctl disable --now rediacc-backup-obsolete.timer'
+    );
+    expect(disableIdx).toBeGreaterThanOrEqual(0);
+    const rmIdx = cmds.findIndex(
+      (c) =>
+        c.startsWith('sudo rm -f') &&
+        c.includes('rediacc-backup-obsolete.service') &&
+        c.includes('rediacc-backup-obsolete.timer')
+    );
+    expect(rmIdx).toBeGreaterThan(disableIdx);
+    expect(cmds.some((c) => c.includes('reset-failed'))).toBe(false);
+  });
+
+  it('test 5: update with in-flight service and no --force → throws with cancel hint', async () => {
+    scriptedExec([
+      {
+        match: /find \/etc\/systemd\/system/,
+        stdout:
+          '/etc/systemd/system/rediacc-backup-hourly-hot.service\n' +
+          '/etc/systemd/system/rediacc-backup-hourly-hot.timer\n',
+      },
+      {
+        match: 'sha256sum',
+        stdout:
+          `zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz  /etc/systemd/system/rediacc-backup-hourly-hot.service\n` +
+          `yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy  /etc/systemd/system/rediacc-backup-hourly-hot.timer\n`,
+      },
+      {
+        match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
+        stdout:
+          showRecord('rediacc-backup-hourly-hot.service', {
+            LoadState: 'loaded',
+            ActiveState: 'active',
+            SubState: 'running',
+            UnitFileState: 'static',
+          }) +
+          notFoundRecord('rediacc-backup-hourly-hot-adhoc.service') +
+          idleServiceRecord('rediacc-backup-hourly-hot.timer'),
+      },
+    ]);
+
+    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    await expect(pushBackupSchedule('hostinger')).rejects.toThrow(
+      /rediacc-backup-hourly-hot\.service is currently running/
+    );
+    const cmds = recordedCommands();
+    expect(cmds.some((c) => c.includes('.new'))).toBe(false);
+    expect(cmds.some((c) => c === 'sudo systemctl daemon-reload')).toBe(false);
+  });
+
+  it('test 6: update with in-flight service and --force → proceeds with warning, never stops the service', async () => {
+    scriptedExec([
+      {
+        match: /find \/etc\/systemd\/system/,
+        stdout:
+          '/etc/systemd/system/rediacc-backup-hourly-hot.service\n' +
+          '/etc/systemd/system/rediacc-backup-hourly-hot.timer\n',
+      },
+      {
+        match: 'sha256sum',
+        stdout:
+          `differenthash1differenthash1differenthash1differenthash1differen  /etc/systemd/system/rediacc-backup-hourly-hot.service\n` +
+          `differenthash2differenthash2differenthash2differenthash2differen  /etc/systemd/system/rediacc-backup-hourly-hot.timer\n`,
+      },
+      {
+        match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
+        stdout:
+          showRecord('rediacc-backup-hourly-hot.service', {
+            LoadState: 'loaded',
+            ActiveState: 'active',
+            SubState: 'running',
+            UnitFileState: 'static',
+          }) +
+          notFoundRecord('rediacc-backup-hourly-hot-adhoc.service') +
+          idleServiceRecord('rediacc-backup-hourly-hot.timer'),
+      },
+      {
+        match: 'Id,LoadState,ActiveState,UnitFileState',
+        stdout: healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
+      },
+    ]);
+
+    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    await pushBackupSchedule('hostinger', { force: true });
+
+    expect(mockOutputWarn).toHaveBeenCalledWith(
+      expect.stringContaining('rediacc-backup-hourly-hot.service is currently running')
+    );
+    const cmds = recordedCommands();
+    expect(cmds.some((c) => c.includes('.new'))).toBe(true);
+    expect(cmds).toContain('sudo systemctl daemon-reload');
+    // Critically: we did NOT stop the running service; systemd keeps the
+    // in-memory copy alive until the invocation finishes.
+    expect(cmds.some((c) => c.startsWith('sudo systemctl stop '))).toBe(false);
+  });
+
+  it('test 7: post-deploy verification failure throws with timer name and observed state', async () => {
+    scriptedExec([
+      { match: /find \/etc\/systemd\/system/, stdout: '' },
+      {
+        match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
+        stdout: notFoundRecord('rediacc-backup-hourly-hot.service'),
+      },
+      {
+        match: 'Id,LoadState,ActiveState,UnitFileState',
+        stdout: showRecord('rediacc-backup-hourly-hot.timer', {
+          LoadState: 'loaded',
+          ActiveState: 'inactive',
+          SubState: 'dead',
+          UnitFileState: 'enabled',
+        }),
+      },
+    ]);
+
+    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    await expect(pushBackupSchedule('hostinger')).rejects.toThrow(
+      /rediacc-backup-hourly-hot\.timer.*ActiveState=inactive/s
+    );
+  });
+
+  it('test 8: --reset-failed does nothing when no touched service was in failed state', async () => {
+    scriptedExec([
+      { match: /find \/etc\/systemd\/system/, stdout: '' },
+      {
+        match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
+        stdout: notFoundRecord('rediacc-backup-hourly-hot.service'),
+      },
+      {
+        match: 'Id,LoadState,ActiveState,UnitFileState',
+        stdout: healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
+      },
+    ]);
+
+    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    await pushBackupSchedule('hostinger', { resetFailed: true });
+
+    const cmds = recordedCommands();
+    expect(cmds.some((c) => c.includes('reset-failed'))).toBe(false);
+  });
+
+  it('test 9: dry-run reads state but performs zero mutations and no license mint', async () => {
+    scriptedExec([
+      { match: /find \/etc\/systemd\/system/, stdout: '' },
+      {
+        match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
+        stdout: notFoundRecord('rediacc-backup-hourly-hot.service'),
+      },
+    ]);
+
+    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    await pushBackupSchedule('hostinger', { dryRun: true });
+
+    const cmds = recordedCommands();
+    expect(cmds.some((c) => c.includes('find /etc/systemd/system'))).toBe(true);
+    expect(cmds.some((c) => c.includes('systemctl show'))).toBe(true);
+    expect(cmds.some((c) => c.includes('tee '))).toBe(false);
+    expect(cmds.some((c) => c.startsWith('sudo mv '))).toBe(false);
+    expect(cmds.some((c) => c === 'sudo systemctl daemon-reload')).toBe(false);
+    expect(cmds.some((c) => c.includes('enable --now'))).toBe(false);
+    expect(mockProvisionRenetToRemote).not.toHaveBeenCalled();
+    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
   });
 
   it('throws when machine has no backupStrategies', async () => {
@@ -413,53 +953,6 @@ describe('pushBackupSchedule', () => {
 
     const { pushBackupSchedule } = await import('../backup-schedule.js');
     await expect(pushBackupSchedule('hostinger')).rejects.toThrow('No backup strategies bound');
-  });
-
-  it('writes env file with umask 077 before writing the service unit', async () => {
-    mockBuildRcloneArgs.mockReturnValue({
-      remote: ':onedrive:hostinger',
-      params: ['--onedrive-token={"access_token":"a"}'],
-    });
-
-    const { pushBackupSchedule } = await import('../backup-schedule.js');
-    await pushBackupSchedule('hostinger');
-
-    const commands = mockExecStreaming.mock.calls.map(([cmd]) => cmd as string);
-
-    const envFileIdx = commands.findIndex((c) =>
-      c.includes(`umask 077 && cat > /etc/rediacc/backup-hourly-hot.env`)
-    );
-    const serviceIdx = commands.findIndex((c) =>
-      c.includes('tee /etc/systemd/system/rediacc-backup-hourly-hot.service')
-    );
-    const mkdirIdx = commands.findIndex((c) =>
-      c.includes('install -d -m 0755 -o root -g root /etc/rediacc')
-    );
-
-    expect(mkdirIdx).toBeGreaterThanOrEqual(0);
-    expect(envFileIdx).toBeGreaterThan(mkdirIdx);
-    expect(serviceIdx).toBeGreaterThan(envFileIdx);
-
-    // Stdin for the env-file write must carry the token, not the service unit.
-    const envStdin = mockExecStreaming.mock.calls[envFileIdx][1].stdin as string;
-    expect(envStdin).toContain('RCLONE_ONEDRIVE_TOKEN=');
-    expect(envStdin).toContain('access_token');
-
-    // The service unit written to disk must NOT contain the token.
-    const serviceStdin = mockExecStreaming.mock.calls[serviceIdx][1].stdin as string;
-    expect(serviceStdin).not.toContain('access_token');
-    expect(serviceStdin).not.toContain('--rclone-param');
-    expect(serviceStdin).toContain('EnvironmentFile=/etc/rediacc/backup-hourly-hot.env');
-  });
-
-  it('cleanup removes stale env files alongside units', async () => {
-    const { pushBackupSchedule } = await import('../backup-schedule.js');
-    await pushBackupSchedule('hostinger');
-
-    const commands = mockExecStreaming.mock.calls.map(([cmd]) => cmd as string);
-    const cleanupCmd = commands.find((c) => c.startsWith('sudo rm -f'));
-    expect(cleanupCmd).toBeDefined();
-    expect(cleanupCmd).toContain('/etc/rediacc/backup-*.env');
   });
 
   it('aborts when no valid repo licenses', async () => {

@@ -269,7 +269,10 @@ test.describe('Local Context Commands @cli @core', () => {
 
       expect(ctx.name).toBe(testLocalContext);
       expect(ctx.adapter).toBe('local');
-      expect(ctx.sshKey).toContain('.ssh');
+      // `rdc config init --ssh-key <path>` now reads + inlines the key into
+      // credentials.ssh.privateKey; `config show` displays '(inline)' as a
+      // sentinel indicating the key is embedded in the config file.
+      expect(ctx.sshKey).toBe('(inline)');
       expect(ctx.machines).toBeGreaterThanOrEqual(1);
     });
   });

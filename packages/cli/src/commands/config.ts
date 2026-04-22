@@ -7,6 +7,9 @@ import type { OutputFormat, RdcConfig } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { registerBackupStrategyCommands } from './config-backup-strategy.js';
+import { registerAuditCommands } from './config/audit.js';
+import { registerEditCommands } from './config/edit.js';
+import { registerFieldCommands } from './config/field.js';
 import { registerRepositoryCommands, registerStorageCommands } from './config-data.js';
 import { registerInfraCommands } from './config-infra.js';
 import { registerMachineCommands, registerProviderCommands } from './config-setup.js';
@@ -27,9 +30,9 @@ async function buildSelfHostedDisplay(
     storageCount = Object.keys(state.getStorages()).length;
     repoCount = Object.keys(state.getRepositories()).length;
   } catch {
-    machineCount = Object.keys(config.machines ?? {}).length;
-    storageCount = Object.keys(config.storages ?? {}).length;
-    repoCount = Object.keys(config.repositories ?? {}).length;
+    machineCount = Object.keys(config.resources?.machines ?? {}).length;
+    storageCount = Object.keys(config.resources?.storages ?? {}).length;
+    repoCount = Object.keys(config.resources?.repositories ?? {}).length;
   }
 
   const display: Record<string, unknown> = {
@@ -37,8 +40,8 @@ async function buildSelfHostedDisplay(
     id: config.id,
     version: config.version,
     adapter: 'local',
-    encrypted: config.encrypted ? 'yes' : 'no',
-    sshKey: config.ssh?.privateKeyPath ?? '-',
+    encrypted: config.encryption?.mode === 'master-password' ? 'yes' : 'no',
+    sshKey: config.credentials?.ssh?.privateKey ? '(inline)' : '-',
     renetPath: config.renetPath ?? DEFAULTS.CONTEXT.RENET_PATH,
     machines: machineCount,
     storages: storageCount,
@@ -61,14 +64,70 @@ async function handleMasterPasswordSetup(options: {
     options.masterPassword,
     options.masterPassword
   );
-  return { masterPassword: encrypted, encrypted: true };
+  return {
+    credentials: { masterPasswordVerifier: encrypted },
+    encryption: { mode: 'master-password' },
+  };
 }
 
 /** Normalize API URL if provided. Returns config updates. */
 async function handleApiUrlSetup(options: { apiUrl?: string }): Promise<Partial<RdcConfig>> {
   if (!options.apiUrl) return {};
   const { apiClient } = await import('../services/api.js');
-  return { apiUrl: apiClient.normalizeApiUrl(options.apiUrl) };
+  return { account: { apiUrl: apiClient.normalizeApiUrl(options.apiUrl) } };
+}
+
+/**
+ * Read an SSH key file + optional .pub sibling for `config init --ssh-key <path>`.
+ * Returns the `credentials.ssh` sub-shape that gets merged into the config.
+ *
+ * Exported so the regression test can exercise the read without driving
+ * Commander / configFileStorage.
+ */
+export async function readSshKeyForInit(
+  keyPath: string
+): Promise<{ privateKey: string; publicKey?: string }> {
+  const { readSSHKey, readOptionalSSHKey } = await import('../services/renet-execution.js');
+  const privateKey = (await readSSHKey(keyPath)).trim();
+  const publicKey = (await readOptionalSSHKey(`${keyPath}.pub`)).trim() || undefined;
+  return { privateKey, publicKey };
+}
+
+/**
+ * Merge the pieces an `init` action collects into a single RdcConfig ready
+ * for `configFileStorage.save`. Pure — no I/O — so unit tests can drive it
+ * and assert the resulting shape, which is where the v1→v2 regression hid.
+ */
+export function mergeInitUpdates(
+  newConfig: RdcConfig,
+  parts: {
+    renetPath?: string;
+    accountUpdate?: Partial<NonNullable<RdcConfig['account']>>;
+    sshContent?: { privateKey: string; publicKey?: string; knownHosts?: string };
+    mpUpdate: Partial<RdcConfig>;
+    apiUrlUpdate: Partial<RdcConfig>;
+  }
+): RdcConfig {
+  return {
+    ...newConfig,
+    ...(parts.renetPath ? { renetPath: parts.renetPath } : {}),
+    ...parts.mpUpdate,
+    ...parts.apiUrlUpdate,
+    account: {
+      ...(newConfig.account ?? {}),
+      ...(parts.accountUpdate ?? {}),
+      ...(parts.apiUrlUpdate.account ?? {}),
+    },
+    credentials:
+      parts.mpUpdate.credentials || parts.sshContent
+        ? {
+            ...(newConfig.credentials ?? {}),
+            ...(parts.mpUpdate.credentials ?? {}),
+            ...(parts.sshContent ? { ssh: parts.sshContent } : {}),
+          }
+        : newConfig.credentials,
+    encryption: parts.mpUpdate.encryption ?? newConfig.encryption,
+  };
 }
 
 /** Check whether the user passed any config-init flags beyond --name. */
@@ -86,6 +145,47 @@ function hasInitFlags(options: {
     options.apiUrl ??
     options.server
   );
+}
+
+/** Gate --reveal: refuse agents and non-TTY; emit audit log. */
+async function applyRevealGate(cfg: RdcConfig): Promise<void> {
+  const { isAgentEnvironment } = await import('../utils/agent-guard.js');
+  const { auditLog } = await import('../services/audit-log.js');
+  const xdg = process.env.XDG_CONFIG_HOME ?? `${process.env.HOME ?? ''}/.config`;
+  const auditDir = `${xdg}/rediacc`;
+
+  if (isAgentEnvironment()) {
+    try {
+      auditLog(auditDir, {
+        command: 'config show --reveal',
+        paths: [],
+        outcome: 'refused',
+        configId: cfg.id,
+        configVersion: cfg.version,
+        reason: 'agent environment',
+      });
+    } catch {
+      /* best-effort */
+    }
+    throw new ValidationError(t('errors.agent.showReveal'));
+  }
+
+  const { isatty } = await import('node:tty');
+  if (!isatty(process.stdout.fd)) {
+    throw new ValidationError(t('errors.agent.showRevealRequiresTty'));
+  }
+
+  try {
+    auditLog(auditDir, {
+      command: 'config show --reveal',
+      paths: [],
+      outcome: 'reveal_granted',
+      configId: cfg.id,
+      configVersion: cfg.version,
+    });
+  } catch {
+    /* best-effort */
+  }
 }
 
 export function registerConfigCommands(program: Command): void {
@@ -137,23 +237,22 @@ ${t('help.examples')}
           ? await configFileStorage.load(configName)
           : await configService.init(configName);
 
-        const updates: Partial<RdcConfig> = {};
+        const sshContent = options.sshKey ? await readSshKeyForInit(options.sshKey) : undefined;
 
-        if (options.sshKey) {
-          updates.ssh = { privateKeyPath: options.sshKey };
-        }
+        const accountUpdate = options.server
+          ? { accountServer: options.server.replace(/\/+$/, '') }
+          : undefined;
 
-        if (options.renetPath) {
-          updates.renetPath = options.renetPath;
-        }
-
-        if (options.server) {
-          updates.accountServer = options.server.replace(/\/+$/, '');
-        }
-
-        Object.assign(updates, await handleMasterPasswordSetup(options));
-        Object.assign(updates, await handleApiUrlSetup(options));
-        await configFileStorage.save({ ...newConfig, ...updates }, configName);
+        const mpUpdate = await handleMasterPasswordSetup(options);
+        const apiUrlUpdate = await handleApiUrlSetup(options);
+        const merged: RdcConfig = mergeInitUpdates(newConfig, {
+          renetPath: options.renetPath,
+          accountUpdate,
+          sshContent,
+          mpUpdate,
+          apiUrlUpdate,
+        });
+        await configFileStorage.save(merged, configName);
         outputService.success(t('commands.config.init.success', { name: configName }));
       } catch (error) {
         handleError(error);
@@ -185,7 +284,7 @@ ${t('help.examples')}
             name,
             active: name === currentName ? '*' : '',
             adapter: isCloud ? 'cloud' : 'local',
-            machines: isCloud ? '-' : Object.keys(cfg.machines ?? {}).length.toString(),
+            machines: isCloud ? '-' : Object.keys(cfg.resources?.machines ?? {}).length.toString(),
           });
         }
 
@@ -199,7 +298,8 @@ ${t('help.examples')}
   config
     .command('show')
     .description(t('commands.config.show.description'))
-    .action(async () => {
+    .option('--reveal', t('commands.config.show.optionReveal'))
+    .action(async (options: { reveal?: boolean }) => {
       try {
         const cfg = await configService.getCurrent();
         const format = program.opts().output as OutputFormat;
@@ -210,6 +310,16 @@ ${t('help.examples')}
           return;
         }
 
+        // Default: redact sensitive values. --reveal opts in (humans only).
+        // The redactor is schema-driven (packages/cli/src/schema/walker.ts).
+        if (options.reveal) {
+          await applyRevealGate(cfg);
+        } else {
+          const { redactClone } = await import('../schema/walker.js');
+          const redacted = redactClone(cfg);
+          Object.assign(cfg as Record<string, unknown>, redacted);
+        }
+
         const isCloud = hasCloudCredentials(cfg);
         const display: Record<string, unknown> = isCloud
           ? {
@@ -217,12 +327,12 @@ ${t('help.examples')}
               id: cfg.id,
               version: cfg.version,
               adapter: 'cloud',
-              apiUrl: cfg.apiUrl,
-              userEmail: cfg.userEmail ?? '-',
-              team: cfg.team ?? '-',
-              region: cfg.region ?? '-',
-              bridge: cfg.bridge ?? '-',
-              authenticated: cfg.token ? 'yes' : 'no',
+              apiUrl: cfg.account?.apiUrl,
+              userEmail: cfg.account?.userEmail ?? '-',
+              team: cfg.account?.team ?? '-',
+              region: cfg.account?.region ?? '-',
+              bridge: cfg.account?.bridge ?? '-',
+              authenticated: cfg.account?.token ? 'yes' : 'no',
             }
           : await buildSelfHostedDisplay(cfg, name);
 
@@ -359,4 +469,7 @@ ${t('help.examples')}
   registerInfraCommands(config, program);
   registerSSHCommands(config, program);
   registerRemoteCommands(config);
+  registerFieldCommands(config, program);
+  registerEditCommands(config, program);
+  registerAuditCommands(config, program);
 }

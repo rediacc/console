@@ -61,10 +61,10 @@ describe('utils/mode-guard', () => {
 
     it('should block local command in cloud mode', async () => {
       mockGetCurrent.mockResolvedValue({
+        schemaVersion: 2,
         id: '1',
         version: 1,
-        apiUrl: 'https://api.example.com',
-        token: 'tok',
+        account: { apiUrl: 'https://api.example.com', token: 'tok' },
       });
 
       const cmd = new Command('repo');
@@ -77,10 +77,10 @@ describe('utils/mode-guard', () => {
 
     it('should allow cloud-only command in cloud mode', async () => {
       mockGetCurrent.mockResolvedValue({
+        schemaVersion: 2,
         id: '1',
         version: 1,
-        apiUrl: 'https://api.example.com',
-        token: 'tok',
+        account: { apiUrl: 'https://api.example.com', token: 'tok' },
       });
 
       const cmd = new Command('auth');
@@ -93,9 +93,10 @@ describe('utils/mode-guard', () => {
 
     it('should allow cloud-only command when apiUrl set but no token (pre-auth)', async () => {
       mockGetCurrent.mockResolvedValue({
+        schemaVersion: 2,
         id: '1',
         version: 1,
-        apiUrl: 'https://api.example.com',
+        account: { apiUrl: 'https://api.example.com' },
       });
 
       const cmd = new Command('auth');

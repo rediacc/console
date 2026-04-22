@@ -4,7 +4,7 @@ description: Cómo los asistentes de programación con IA como Claude Code, Curs
 category: Guides
 order: 30
 language: es
-sourceHash: "c4f31aca01e62a7f"
+sourceHash: "7789f1e26755c779"
 ---
 
 Los asistentes de programación con IA pueden gestionar la infraestructura Rediacc de forma autónoma a través del CLI `rdc`. Esta guía cubre los enfoques de integración y cómo empezar.

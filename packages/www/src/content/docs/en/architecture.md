@@ -132,55 +132,106 @@ The credential is stored in your config file but **never** on the server. Withou
 
 ## Configuration Structure
 
-Each config is a flat JSON file stored in `~/.config/rediacc/`. The default config is `rediacc.json`; named configs use the name as the filename (e.g., `production.json`). Here is an annotated example:
+Each config is a JSON file stored in `~/.config/rediacc/`. The default config is `rediacc.json`; named configs use the name as the filename (e.g., `production.json`). Fields are bucketed by purpose: `resources` holds deployments, `credentials` holds secrets, `account` holds cloud defaults, `infra` holds TLS/DNS, and `encryption` holds per-field at-rest state. The top-level `schemaVersion: 2` discriminator anchors forward compatibility.
 
 ```json
 {
+  "schemaVersion": 2,
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "version": 1,
-  "ssh": {
-    "privateKeyPath": "/home/you/.ssh/id_ed25519"
+  "version": 47,
+  "defaults": {
+    "language": "en",
+    "machine": "prod-1",
+    "nextNetworkId": 2880,
+    "universalUser": "rediacc"
   },
-  "machines": {
-    "prod-1": {
-      "ip": "203.0.113.50",
-      "user": "deploy",
-      "port": 22,
-      "datastore": "/mnt/rediacc",
-      "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
+  "credentials": {
+    "ssh": {
+      "privateKey": "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----",
+      "publicKey": "ssh-ed25519 AAAA...",
+      "knownHosts": "..."
+    },
+    "cfDnsApiToken": "cf-token-xxxxxxxxxxxx"
+  },
+  "resources": {
+    "machines": {
+      "prod-1": {
+        "ip": "203.0.113.50",
+        "user": "deploy",
+        "port": 22,
+        "datastore": "/mnt/rediacc",
+        "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
+      }
+    },
+    "storages": {
+      "backblaze": {
+        "provider": "b2",
+        "vaultContent": { "...": "..." }
+      }
+    },
+    "repositories": {
+      "webapp": {
+        "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "credential": "base64-encoded-random-passphrase",
+        "networkId": 2816
+      }
     }
   },
-  "storages": {
-    "backblaze": {
-      "provider": "b2",
-      "vaultContent": { "...": "..." }
-    }
+  "infra": {
+    "certEmail": "admin@example.com",
+    "cfDnsZoneId": "..."
   },
-  "repositories": {
-    "webapp": {
-      "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "credential": "base64-encoded-random-passphrase",
-      "networkId": 2816
-    }
-  },
-  "nextNetworkId": 2880,
-  "universalUser": "rediacc"
+  "encryption": {
+    "mode": "plaintext"
+  }
 }
 ```
 
-**Key fields:**
+**Key buckets:**
 
-| Field | Description |
-|-------|-------------|
-| `id` | Unique identifier for this config file |
-| `version` | Config file schema version |
-| `ssh.privateKeyPath` | SSH private key used for all machine connections |
-| `machines.<name>.user` | SSH username for connecting to the machine |
-| `machines.<name>.knownHosts` | SSH host keys from `ssh-keyscan` |
-| `repositories.<name>.repositoryGuid` | UUID identifying the encrypted disk image |
-| `repositories.<name>.credential` | LUKS encryption passphrase (**not stored on server**) |
-| `repositories.<name>.networkId` | Determines the IP subnet (2816 + n*64), auto-assigned |
-| `nextNetworkId` | Global counter for assigning network IDs |
-| `universalUser` | Override the default system user (`rediacc`) |
+| Bucket | Contents |
+|---|---|
+| `schemaVersion` | Discriminator (currently `2`). Loaders reject unknown versions. |
+| `id` / `version` | Immutable UUID + monotonic counter; used for optimistic locking on the remote config store. |
+| `defaults.*` | Non-sensitive runtime defaults (`machine`, `language`, `pruneGraceDays`, `universalUser`, `nextNetworkId`). |
+| `credentials.ssh` | Inline SSH keypair + `knownHosts`. Replaces the legacy `ssh.privateKeyPath` (no more file-path indirection; the content is resolved at load time and stored inline). |
+| `credentials.cfDnsApiToken` | Cloudflare DNS-01 ACME token. |
+| `credentials.masterPasswordVerifier` | Present only when `encryption.mode === "master-password"`. |
+| `resources.machines.*` | SSH connection detail per machine. |
+| `resources.storages.*` | rclone-compatible off-site backup credentials. |
+| `resources.repositories.*` | Per-repo GUID + LUKS credential + SSH key for sandbox-isolated agent access. |
+| `infra.acmeCertCache.*` | Cached Traefik acme.json, gzip+base64, keyed by domain. |
+| `encryption.mode` | `"plaintext"` (default) or `"master-password"`. |
+| `encryption.encryptedFields` | When encrypted, a per-pointer AES-GCM blob map (`/resources/repositories/webapp/credential` → `{ciphertext, nonce, tag}`). One unlock prompt per session decrypts as fields are read. |
+| `remote` | Present only when the config is synced to the encrypted config store; see [Encrypted config store](/en/docs/config-storage). |
 
-> This file contains sensitive data (SSH key paths, LUKS credentials). It is stored with `0600` permissions (owner read/write only). Do not share it or commit it to version control.
+**Edit safely with the CLI, not `vim`:**
+
+```bash
+# Pointer-addressed single-field edits (knowledge-gated for sensitive paths)
+rdc config field set --pointer /resources/machines/prod-1/port --new 2222
+rdc config field set --pointer /credentials/cfDnsApiToken --current "$OLD" --new "$NEW"
+
+# Full editor with redacted JSONC projection (humans only)
+rdc config edit
+
+# Read-only JSONC dump, safe for scripts and agents
+rdc config edit --dump
+
+# Inspect every mutation + refusal + reveal in the audit log
+rdc config audit log --since 24h
+rdc config audit verify
+```
+
+> This file contains sensitive data (SSH private keys, LUKS credentials, Cloudflare tokens). It is stored with `0600` permissions (owner read/write only). Do not share it or commit it to version control. When any `rdc` command reads it, sensitive fields are [redacted by default](/en/docs/ai-agents-safety): plaintext only appears with `--reveal` on an interactive human TTY.
+
+### Envelope v2 and server-side enforcement
+
+When the config is synced to the [encrypted config store](/en/docs/config-storage), the CLI wraps every sensitive field in a per-field HMAC commitment and carries those commitments in the plaintext envelope. The server sees only hex digests: never the values: yet can enforce knowledge-gates on every write:
+
+- **Precondition check**: on `PUT /configs/<id>`, the client submits the digests it claims to know for the paths it wants to mutate. The server compares against the stored envelope's commitments. Mismatch → `409 precondition_failed` with `mismatchedPaths`. Zero-knowledge: the server never sees plaintext.
+- **Anti-downgrade**: the new envelope must commit every sensitive path that the previous envelope committed. An agent can't drop a path from the commitments to bypass a future precondition.
+- **Envelope version pinning**: the server rejects envelopes missing `envelopeVersion: 2` with `400 unsupported_envelope_version`. No dual-accept window.
+- **Per-field encryption-at-rest** (CLI-side): when `encryption.mode === "master-password"`, each secret becomes an individual AES-GCM blob keyed by the master password. Reads don't trigger a prompt unless the command actually touches a secret (so `rdc machine list` stays prompt-free).
+
+The commitment key (FCK) is derived client-side from the CEK via `HKDF-SHA256(ikm=CEK, salt=fckSalt, info="rediacc-config-fck-v1")` with a per-config salt. Rotating `fckSalt` invalidates all prior commitments, forcing a full recomputation: useful when rotating CEK.

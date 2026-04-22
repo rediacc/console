@@ -172,7 +172,7 @@ export async function createCloudMachine(
   const config = await configService.getCurrent();
   if (!config) throw new Error('No active config');
 
-  const providerConfig = config.cloudProviders?.[providerName];
+  const providerConfig = config.resources?.cloudProviders?.[providerName];
   if (!providerConfig) {
     throw new Error(t('commands.machine.provision.providerRequired', { name: providerName }));
   }

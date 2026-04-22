@@ -116,8 +116,14 @@ export async function cleanupOldBinary(): Promise<void> {
 /**
  * Acquire the update lock file.
  * Returns a release function on success, or null if already locked.
+ *
+ * Pass `waitMs` to retry for up to that many milliseconds before giving up;
+ * used by the user-initiated update path to absorb brief contention with a
+ * background worker or a concurrent terminal. Defaults to fail-fast (0 ms).
  */
-export async function acquireUpdateLock(): Promise<(() => Promise<void>) | null> {
+export async function acquireUpdateLock(
+  opts: { waitMs?: number } = {}
+): Promise<(() => Promise<void>) | null> {
   try {
     await fs.mkdir(dirname(UPDATE_LOCK_FILE), { recursive: true });
     // Ensure lock file exists (proper-lockfile requires it)
@@ -127,9 +133,18 @@ export async function acquireUpdateLock(): Promise<(() => Promise<void>) | null>
       await fs.writeFile(UPDATE_LOCK_FILE, '', { mode: 0o600 });
     }
 
+    const waitMs = opts.waitMs ?? 0;
     const release = await lockfile.lock(UPDATE_LOCK_FILE, {
       stale: 300000, // 5 minutes (updates can involve large downloads)
-      retries: 0, // Don't wait — skip if already locked
+      retries:
+        waitMs > 0
+          ? {
+              retries: Math.max(1, Math.ceil(waitMs / 500)),
+              factor: 1,
+              minTimeout: 500,
+              maxTimeout: 500,
+            }
+          : 0,
     });
 
     return async () => {

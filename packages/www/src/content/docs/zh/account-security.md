@@ -4,7 +4,7 @@ description: 身份验证、API令牌、会话管理和权限模型。
 category: Guides
 order: 13
 language: zh
-sourceHash: "73586ec39a85e208"
+sourceHash: "009d0d8033c591a3"
 sourceCommit: "dabe1a33844b3b7ec8a2c4ab44dc2de6683283c9"
 ---
 

@@ -430,7 +430,7 @@ async function mergeWithLocalCache(
   silent?: boolean
 ): Promise<void> {
   const currentConfig = await configService.getCurrent();
-  const existingCache = currentConfig?.acmeCertCache?.[baseDomain];
+  const existingCache = currentConfig?.infra?.acmeCertCache?.[baseDomain];
   if (!existingCache) return;
 
   try {
@@ -497,7 +497,7 @@ export async function downloadCertCache(
     await mergeWithLocalCache(remoteAcme, baseDomain, options.silent);
 
     const currentConfig = await configService.getCurrent();
-    const acmeCertCache = currentConfig?.acmeCertCache ?? {};
+    const acmeCertCache = currentConfig?.infra?.acmeCertCache ?? {};
     const { entry, compressedSize } = buildCacheEntry(remoteAcme, baseDomain, machineName);
     acmeCertCache[baseDomain] = entry;
     await configService.updateConfigFields({ acmeCertCache });
@@ -534,7 +534,7 @@ export async function uploadCertCacheViaConnection(
   options: UploadCertCacheOptions = {}
 ): Promise<boolean> {
   const currentConfig = await configService.getCurrent();
-  const cache = currentConfig?.acmeCertCache?.[baseDomain];
+  const cache = currentConfig?.infra?.acmeCertCache?.[baseDomain];
   if (!cache) {
     if (options.debug)
       outputService.info(t('commands.config.certCache.noCacheForDomain', { domain: baseDomain }));
@@ -577,7 +577,7 @@ export async function uploadCertCache(
     }
 
     const currentConfig = await configService.getCurrent();
-    const cache = currentConfig?.acmeCertCache?.[baseDomain];
+    const cache = currentConfig?.infra?.acmeCertCache?.[baseDomain];
     if (!cache) {
       outputService.warn(t('commands.config.certCache.push.noCache'));
       return false;
@@ -642,7 +642,7 @@ export async function getCertStatus(): Promise<
   }[]
 > {
   const currentConfig = await configService.getCurrent();
-  const cacheMap = currentConfig?.acmeCertCache;
+  const cacheMap = currentConfig?.infra?.acmeCertCache;
   if (!cacheMap) return [];
 
   return Object.values(cacheMap).map((cache) => {
@@ -667,7 +667,7 @@ export async function getCertStatus(): Promise<
  */
 export async function clearCertCache(baseDomain?: string): Promise<boolean> {
   const currentConfig = await configService.getCurrent();
-  const cacheMap = currentConfig?.acmeCertCache;
+  const cacheMap = currentConfig?.infra?.acmeCertCache;
   if (!cacheMap || Object.keys(cacheMap).length === 0) return false;
 
   if (baseDomain) {

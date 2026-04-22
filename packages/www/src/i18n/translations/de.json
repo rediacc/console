@@ -8,19 +8,19 @@
     "after": {
       "label": "Mit Rediacc",
       "points": [
-        "Produktionsexakte Klone in unter 60 Sekunden",
-        "Stündliche Backups ohne zusätzlichen Speicherplatz",
-        "Verifizierter Failover in unter 60 Sekunden",
-        "Jeder Entwickler bekommt seinen eigenen frischen Produktionsklon"
+        "Eine perfekte Kopie in 60 Sekunden.",
+        "Stündliche Backups. Kein zusätzlicher Speicher.",
+        "Wiederherstellung in 60 Sekunden getestet.",
+        "Jeder Entwickler bekommt eine frische Kopie."
       ]
     },
     "before": {
       "label": "Ohne Rediacc",
       "points": [
-        "Umgebungen weichen innerhalb von Tagen von der Produktion ab",
-        "Backups dauern Wochen, füllen den Speicher und scheitern oft unbemerkt",
-        "Wiederherstellungspläne sagen 4 Stunden — die Realität sind 4 Tage",
-        "Entwickler programmieren auf der Produktion, weil die Sandbox veraltet ist"
+        "Dein Team wartet tagelang auf eine Testkopie. Und sie passt trotzdem nicht.",
+        "Backups dauern Wochen. Viele scheitern ohne Warnung.",
+        "Dein Wiederherstellungsplan sagt 4 Stunden. Die Realität sind 4 Tage.",
+        "Entwickler schreiben Code auf der Live-Seite. Die Testkopie ist Wochen alt."
       ]
     },
     "title": "Der Unterschied"
@@ -322,8 +322,8 @@
   "metrics": {
     "items": [
       {
-        "label": "Klonzeit",
-        "number": "< 60s"
+        "label": "In unter 60 Sekunden kopiert",
+        "number": "241 GB"
       },
       {
         "label": "Zusätzlicher Speicher",
@@ -412,6 +412,28 @@
     "successMessage": "Überprüfen Sie Ihren Posteingang, um Ihr Abonnement zu bestätigen.",
     "title": "Newsletter",
     "unsubscribed": "Sie wurden abgemeldet. Schade, dass Sie gehen."
+  },
+  "notASlice": {
+    "overline": "Ein Tool. Der ganze Stack.",
+    "slices": [
+      {
+        "description": "Sie kopieren deine Daten. Deine App ist mehr als Daten.",
+        "title": "Datenbank-Tools"
+      },
+      {
+        "description": "Sie kopieren deinen Code. Code allein ist kein Test.",
+        "title": "Dev-Box-Tools"
+      },
+      {
+        "description": "Sie speichern alles. Wiederherstellung dauert Stunden, nicht eine Minute.",
+        "title": "Backup-Tools"
+      }
+    ],
+    "title": "Die meisten Tools kopieren ein Stück. Wir kopieren alles.",
+    "winner": {
+      "description": "Jedes Team bekommt seine eigene schreibbare Kopie. Daten, Apps, Einstellungen, alles. Bereit in 60 Sekunden. Du zahlst nur für Speicher, wenn sich etwas ändert.",
+      "label": "Rediacc"
+    }
   },
   "pages": {
     "blog": {
@@ -13396,5 +13418,24 @@
     "toggleFullscreen": "Vollbild umschalten",
     "volume": "Lautstärke",
     "youtubeTitle": "Produktvorstellung"
+  },
+  "whyNow": {
+    "cards": [
+      {
+        "description": "AI schreibt Code in Minuten. Du wartest tagelang auf eine Kopie zum Testen.",
+        "title": "Entwickler sind 10× schneller"
+      },
+      {
+        "description": "AI greift in Sekunden an. Ein Pen-Test alle 3 Monate reicht nicht.",
+        "title": "Hacker sind 10× schneller"
+      },
+      {
+        "description": "Du läufst auf vielen Clouds. Deine Testkopie passt zu keiner davon.",
+        "title": "Dein Setup ist verteilt"
+      }
+    ],
+    "footer": "Die meisten Teams laufen über viele Clouds. Ihre Testkopie passt selten zu einer davon.",
+    "overline": "Warum jetzt",
+    "title": "Deine Welt bewegt sich schnell. Deine Testkopie nicht."
   }
 }

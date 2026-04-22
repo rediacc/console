@@ -333,12 +333,14 @@ describe('CEK Handoff', () => {
 
 describe('Selective Encryption', () => {
   const sampleConfig: FullConfig = {
+    envelopeVersion: 2,
     id: '550e8400-e29b-41d4-a716-446655440000',
     version: 42,
     teamId: 'team-xyz',
     orgId: 'org-abc',
     sdkEpoch: 5913166,
     lastModified: '2026-03-19T20:00:00Z',
+    commitments: { alg: 'HMAC-SHA256', fckSalt: '', fields: {} },
     machines: { server1: { ip: '10.0.0.1', port: 22 } },
     repositories: { myapp: { guid: 'abc-123', credential: 'secret' } },
     storages: { s3: { endpoint: 'https://s3.example.com', key: 'AKID' } },
@@ -350,7 +352,10 @@ describe('Selective Encryption', () => {
     const cek = await generateCek();
     const epoch = 5913166;
 
-    const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, epoch);
+    const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
+      sdkEpoch: epoch,
+      commitEntries: [],
+    });
     const result = await selectiveDecrypt(payload, cek, sdkKey);
 
     expect(result.id).toBe(sampleConfig.id);
@@ -366,18 +371,26 @@ describe('Selective Encryption', () => {
     const sdkKey = await generateAesKey();
     const cek = await generateCek();
 
-    const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, 5913166);
+    const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
+      sdkEpoch: 5913166,
+      commitEntries: [],
+    });
     expect(payload.envelope.id).toBe(sampleConfig.id);
     expect(payload.envelope.version).toBe(42);
     expect(payload.envelope.sdkEpoch).toBe(5913166);
     expect(payload.envelope.teamId).toBe('team-xyz');
+    expect(payload.envelope.envelopeVersion).toBe(2);
+    expect(payload.envelope.commitments.alg).toBe('HMAC-SHA256');
   });
 
   it('encrypted blob does not contain plaintext sensitive data', async () => {
     const sdkKey = await generateAesKey();
     const cek = await generateCek();
 
-    const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, 5913166);
+    const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
+      sdkEpoch: 5913166,
+      commitEntries: [],
+    });
     expect(payload.encryptedBlob).not.toContain('10.0.0.1');
     expect(payload.encryptedBlob).not.toContain('PRIVATE KEY');
     expect(payload.encryptedBlob).not.toContain('secret');
@@ -387,7 +400,10 @@ describe('Selective Encryption', () => {
     const sdkKey = await generateAesKey();
     const cek = await generateCek();
 
-    const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, 5913166);
+    const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
+      sdkEpoch: 5913166,
+      commitEntries: [],
+    });
     payload.encryptedBlob = `${payload.encryptedBlob.slice(0, -4)}XXXX`; // tamper
 
     await expect(selectiveDecrypt(payload, cek, sdkKey)).rejects.toThrow(/integrity check failed/);
@@ -395,20 +411,61 @@ describe('Selective Encryption', () => {
 
   it('handles config with missing optional fields', async () => {
     const minimalConfig: FullConfig = {
+      envelopeVersion: 2,
       id: 'minimal-id',
       version: 1,
       sdkEpoch: 1,
+      commitments: { alg: 'HMAC-SHA256', fckSalt: '', fields: {} },
     };
 
     const sdkKey = await generateAesKey();
     const cek = await generateCek();
 
-    const payload = await selectiveEncrypt(minimalConfig, sdkKey, cek, 1);
+    const payload = await selectiveEncrypt(minimalConfig, sdkKey, cek, {
+      sdkEpoch: 1,
+      commitEntries: [],
+    });
     const result = await selectiveDecrypt(payload, cek, sdkKey);
     expect(result.id).toBe('minimal-id');
     expect(result.version).toBe(1);
     expect(result.machines).toBeUndefined();
     expect(result.ssh).toBeUndefined();
+  });
+
+  it('envelope v2 stores field commitments for sensitive paths', async () => {
+    const sdkKey = await generateAesKey();
+    const cek = await generateCek();
+
+    const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
+      sdkEpoch: 1,
+      commitEntries: [
+        { pointer: '/machines/server1/ip', value: '10.0.0.1' },
+        { pointer: '/ssh/privateKey', value: sampleConfig.ssh?.privateKey },
+      ],
+    });
+
+    expect(payload.envelope.commitments.fields['/machines/server1/ip']).toBeDefined();
+    expect(payload.envelope.commitments.fields['/ssh/privateKey']).toBeDefined();
+    expect(payload.envelope.commitments.fckSalt).not.toBe('');
+    expect(payload.envelope.commitments.fields['/machines/server1/ip'].kind).toBe('string');
+  });
+
+  it('selectiveDecrypt rejects v1 envelopes', async () => {
+    const sdkKey = await generateAesKey();
+    const cek = await generateCek();
+
+    const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
+      sdkEpoch: 1,
+      commitEntries: [],
+    });
+    // Simulate a v1 envelope arriving from the wire.
+    const v1Payload = {
+      ...payload,
+      envelope: { ...payload.envelope, envelopeVersion: 1 as unknown as 2 },
+    };
+    await expect(selectiveDecrypt(v1Payload, cek, sdkKey)).rejects.toThrow(
+      /Unsupported envelope version/
+    );
   });
 });
 
@@ -436,14 +493,19 @@ describe('Full Lifecycle', () => {
 
     // CLI encrypts config (Layer 1: SDK, Layer 2: CEK)
     const config: FullConfig = {
+      envelopeVersion: 2,
       id: 'push-test',
       version: 1,
       sdkEpoch: epoch,
+      commitments: { alg: 'HMAC-SHA256', fckSalt: '', fields: {} },
       machines: { prod: { ip: '192.168.1.1' } },
       ssh: { key: 'ssh-ed25519 AAAA...' },
     };
 
-    const payload = await selectiveEncrypt(config, sdkDerived, unwrappedCek, epoch);
+    const payload = await selectiveEncrypt(config, sdkDerived, unwrappedCek, {
+      sdkEpoch: epoch,
+      commitEntries: [{ pointer: '/machines/prod/ip', value: '192.168.1.1' }],
+    });
 
     // Server encrypts (Layer 3: Org)
     const stored = await orgEncrypt(payload.encryptedBlob, orgPassphrase);
@@ -523,14 +585,19 @@ describe('Full Lifecycle', () => {
     const cek = await generateCek();
 
     const config: FullConfig = {
+      envelopeVersion: 2,
       id: 'readable-id',
       version: 99,
       sdkEpoch: 12345,
       teamId: 'team-123',
+      commitments: { alg: 'HMAC-SHA256', fckSalt: '', fields: {} },
       machines: { secret: { ip: '10.0.0.1' } },
     };
 
-    const payload = await selectiveEncrypt(config, sdkKey, cek, 12345);
+    const payload = await selectiveEncrypt(config, sdkKey, cek, {
+      sdkEpoch: 12345,
+      commitEntries: [],
+    });
 
     // Server can read envelope without any keys
     expect(payload.envelope.id).toBe('readable-id');

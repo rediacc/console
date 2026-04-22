@@ -76,6 +76,8 @@ export function registerDeployBackupCommand(machine: Command): void {
     .description(t('commands.machine.backup.schedule.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--dry-run', t('commands.machine.backup.schedule.optionDryRun'))
+    .option('--force', t('commands.machine.backup.schedule.optionForce'))
+    .option('--reset-failed', t('commands.machine.backup.schedule.optionResetFailed'))
     .option('--debug', t('options.debug'))
     .action(async (options) => {
       try {
@@ -84,6 +86,8 @@ export function registerDeployBackupCommand(machine: Command): void {
         await pushBackupSchedule(machineName, {
           debug: options.debug,
           dryRun: options.dryRun,
+          force: options.force,
+          resetFailed: options.resetFailed,
         });
         if (!options.dryRun) {
           outputService.success(

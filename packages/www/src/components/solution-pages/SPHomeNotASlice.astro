@@ -1,0 +1,231 @@
+---
+import type { Language } from '../../i18n/types';
+import { createTranslator } from '../../i18n/utils';
+
+interface Props {
+  lang: Language;
+}
+
+interface Slice {
+  title: string;
+  description: string;
+}
+
+const { lang } = Astro.props as Props;
+const { t, to } = createTranslator(lang);
+const slices = (to('notASlice.slices') as Slice[] | undefined) ?? [];
+---
+
+<section class="sp-not-a-slice" id="not-a-slice">
+  <div class="sp-not-a-slice-inner">
+    <p class="sp-overline">{t('notASlice.overline')}</p>
+    <h2>{t('notASlice.title')}</h2>
+
+    <div class="sp-slice-grid">
+      {slices.map((slice, i) => (
+        <article class="sp-slice-card">
+          <div class="sp-slice-icon">
+            {i === 0 && (
+              <svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <ellipse cx="70" cy="22" rx="34" ry="9" stroke="currentColor" stroke-width="1.75" opacity="0.7"/>
+                <path d="M36 22 L36 78 Q36 88 70 88 Q104 88 104 78 L104 22" stroke="currentColor" stroke-width="1.75" opacity="0.7" fill="none"/>
+                <ellipse cx="70" cy="44" rx="34" ry="9" stroke="currentColor" stroke-width="1.25" opacity="0.55"/>
+                <ellipse cx="70" cy="66" rx="34" ry="9" stroke="currentColor" stroke-width="1.25" opacity="0.55"/>
+                <text x="70" y="28" font-size="8" fill="currentColor" opacity="0.55" font-family="monospace" text-anchor="middle">DB</text>
+              </svg>
+            )}
+            {i === 1 && (
+              <svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="26" y="18" width="88" height="56" rx="5" stroke="currentColor" stroke-width="1.75" opacity="0.7"/>
+                <rect x="34" y="26" width="72" height="40" rx="2" stroke="currentColor" stroke-width="1.25" opacity="0.55"/>
+                <path d="M18 86 L122 86" stroke="currentColor" stroke-width="1.75" opacity="0.7" stroke-linecap="round"/>
+                <path d="M50 86 L48 74 L92 74 L90 86 Z" stroke="currentColor" stroke-width="1.5" opacity="0.6" fill="none"/>
+                <text x="70" y="50" font-size="10" fill="currentColor" opacity="0.55" font-family="monospace" text-anchor="middle">&lt;/&gt;</text>
+              </svg>
+            )}
+            {i === 2 && (
+              <svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="30" y="22" width="80" height="14" rx="3" stroke="currentColor" stroke-width="1.5" opacity="0.7"/>
+                <rect x="30" y="42" width="80" height="14" rx="3" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+                <rect x="30" y="62" width="80" height="14" rx="3" stroke="currentColor" stroke-width="1.5" opacity="0.5"/>
+                <circle cx="42" cy="29" r="2.5" fill="currentColor" opacity="0.55"/>
+                <circle cx="42" cy="49" r="2.5" fill="currentColor" opacity="0.45"/>
+                <circle cx="42" cy="69" r="2.5" fill="currentColor" opacity="0.35"/>
+                <circle cx="96" cy="88" r="9" stroke="currentColor" stroke-width="1.5" opacity="0.7" fill="none"/>
+                <line x1="96" y1="82" x2="96" y2="88" stroke="currentColor" stroke-width="1.5" opacity="0.7" stroke-linecap="round"/>
+                <line x1="96" y1="88" x2="101" y2="91" stroke="currentColor" stroke-width="1.5" opacity="0.7" stroke-linecap="round"/>
+              </svg>
+            )}
+          </div>
+          <h3>{slice.title}</h3>
+          <p>{slice.description}</p>
+        </article>
+      ))}
+    </div>
+
+    <div class="sp-slice-divider" aria-hidden="true"></div>
+
+    <article class="sp-slice-winner">
+      <div class="sp-slice-winner-icon">
+        <svg viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect x="30" y="18" width="140" height="18" rx="4" stroke="#7fa03f" stroke-width="1.5"/>
+          <rect x="30" y="42" width="140" height="18" rx="4" stroke="#7fa03f" stroke-width="1.5"/>
+          <rect x="30" y="66" width="140" height="18" rx="4" stroke="#7fa03f" stroke-width="1.5"/>
+          <rect x="30" y="90" width="140" height="18" rx="4" stroke="#7fa03f" stroke-width="1.5"/>
+          <circle cx="42" cy="27" r="3" fill="#7fa03f"/>
+          <circle cx="42" cy="51" r="3" fill="#7fa03f"/>
+          <circle cx="42" cy="75" r="3" fill="#7fa03f"/>
+          <circle cx="42" cy="99" r="3" fill="#7fa03f"/>
+          <text x="54" y="31" font-size="10" fill="currentColor" opacity="0.65" font-family="monospace">data</text>
+          <text x="54" y="55" font-size="10" fill="currentColor" opacity="0.65" font-family="monospace">apps</text>
+          <text x="54" y="79" font-size="10" fill="currentColor" opacity="0.65" font-family="monospace">configs</text>
+          <text x="54" y="103" font-size="10" fill="currentColor" opacity="0.65" font-family="monospace">secrets</text>
+          <path d="M152 27 L156 31 L164 22" stroke="#7fa03f" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M152 51 L156 55 L164 46" stroke="#7fa03f" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M152 75 L156 79 L164 70" stroke="#7fa03f" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M152 99 L156 103 L164 94" stroke="#7fa03f" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="sp-slice-winner-content">
+        <p class="sp-slice-winner-label"><span class="sp-slice-winner-dot" aria-hidden="true"></span>{t('notASlice.winner.label')}</p>
+        <p class="sp-slice-winner-description">{t('notASlice.winner.description')}</p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<style>
+  .sp-not-a-slice {
+    background: var(--sp-bg-light);
+    padding: 96px 48px;
+    color: var(--sp-text-body);
+  }
+  .sp-not-a-slice-inner {
+    max-width: var(--sp-page-max);
+    margin: 0 auto;
+  }
+  .sp-not-a-slice .sp-overline {
+    text-align: center;
+  }
+  .sp-not-a-slice h2 {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--sp-text-primary);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    text-align: center;
+    margin-bottom: 56px;
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .sp-slice-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+  .sp-slice-card {
+    background: var(--sp-bg-white);
+    border: 1px solid var(--sp-border-light);
+    border-radius: 12px;
+    padding: 28px 24px;
+    text-align: center;
+    color: var(--sp-text-muted-light);
+  }
+  .sp-slice-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100px;
+    margin-bottom: 14px;
+  }
+  .sp-slice-icon svg {
+    width: 140px;
+    height: 100px;
+  }
+  .sp-slice-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--sp-text-muted-light);
+    margin: 0 0 8px;
+    letter-spacing: 0.01em;
+  }
+  .sp-slice-card p {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--sp-text-muted-light);
+    margin: 0;
+  }
+  .sp-slice-divider {
+    height: 1px;
+    background: var(--sp-border-light);
+    margin: 0 auto 40px;
+    max-width: 720px;
+  }
+  .sp-slice-winner {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 40px;
+    align-items: center;
+    background: var(--sp-bg-white);
+    border: 1.5px solid var(--sp-brand-primary);
+    border-radius: 14px;
+    padding: 36px 40px;
+    box-shadow: 0 4px 24px var(--sp-brand-glow);
+  }
+  .sp-slice-winner-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sp-slice-winner-icon svg {
+    width: 200px;
+    height: 120px;
+  }
+  .sp-slice-winner-label {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sp-brand-primary);
+    margin: 0 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sp-slice-winner-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--sp-brand-primary);
+    box-shadow: 0 0 0 4px var(--sp-brand-glow);
+  }
+  .sp-slice-winner-description {
+    font-size: 18px;
+    color: var(--sp-text-primary);
+    line-height: 1.6;
+    margin: 0;
+  }
+  @media (max-width: 900px) {
+    .sp-not-a-slice {
+      padding: 64px 24px;
+    }
+    .sp-slice-grid {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .sp-not-a-slice h2 {
+      font-size: 28px;
+    }
+    .sp-slice-winner {
+      grid-template-columns: 1fr;
+      padding: 28px 24px;
+      gap: 20px;
+      text-align: center;
+    }
+    .sp-slice-winner-label {
+      justify-content: center;
+    }
+  }
+</style>
