@@ -46,9 +46,18 @@ ASSUME_YES=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --execute) DRY_RUN=false; shift ;;
-        --yes | -y) ASSUME_YES=true; shift ;;
-        --dry-run) DRY_RUN=true; shift ;;
+        --execute)
+            DRY_RUN=false
+            shift
+            ;;
+        --yes | -y)
+            ASSUME_YES=true
+            shift
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
         -h | --help)
             sed -n '/^# /,/^$/p' "$0" | sed 's/^# \?//'
             exit 0
@@ -97,7 +106,10 @@ confirm() {
 rm_prefix() {
     local prefix="$1" label="$2"
     log_step "About to delete s3://${BUCKET}/${prefix} (${label})"
-    describe_prefix "$prefix" || { log_info "  skipping (nothing to delete)"; return 0; }
+    describe_prefix "$prefix" || {
+        log_info "  skipping (nothing to delete)"
+        return 0
+    }
     if $DRY_RUN; then
         log_warn "  [DRY-RUN] Would delete s3://${BUCKET}/${prefix}"
         return 0
@@ -143,8 +155,8 @@ stage1() {
     # Dryrun orphans across every format dir
     for fmt in cli desktop npm apt rpm apk archlinux; do
         local out
-        out="$(aws s3 ls "s3://${BUCKET}/${fmt}/" --endpoint-url "$R2_ENDPOINT" 2>/dev/null \
-            | awk '/^[[:space:]]*PRE[[:space:]]dryrun-/ {print $2}' || true)"
+        out="$(aws s3 ls "s3://${BUCKET}/${fmt}/" --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
+            awk '/^[[:space:]]*PRE[[:space:]]dryrun-/ {print $2}' || true)"
         while IFS= read -r sub; do
             [[ -z "$sub" ]] && continue
             rm_prefix "${fmt}/${sub}" "dryrun orphan"
@@ -170,8 +182,8 @@ stage2() {
         local prefix="desktop/v1.0.${n}/"
         log_step "  Processing $prefix"
         local files
-        files="$(aws s3 ls "s3://${BUCKET}/${prefix}" --endpoint-url "$R2_ENDPOINT" 2>/dev/null \
-            | awk '{print $NF}' | grep -E '^rediacc-desktop-0\.0\.0-dev-' || true)"
+        files="$(aws s3 ls "s3://${BUCKET}/${prefix}" --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
+            awk '{print $NF}' | grep -E '^rediacc-desktop-0\.0\.0-dev-' || true)"
         if [[ -z "$files" ]]; then
             log_info "    no 0.0.0-dev-* files under $prefix"
             continue

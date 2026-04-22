@@ -817,8 +817,8 @@ r2_ls_prefix() {
 r2_prefix_last_modified() {
     local prefix="$1"
     aws s3 ls "s3://${R2_BUCKET}/${prefix}" --recursive \
-        --endpoint-url "$R2_ENDPOINT" 2>/dev/null \
-        | awk 'NR==1 {print $1"T"$2"Z"; exit}'
+        --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
+        awk 'NR==1 {print $1"T"$2"Z"; exit}'
 }
 
 # Delete a prefix recursively, or log the intent in dry-run.
@@ -868,8 +868,8 @@ cleanup_r2() {
             local last_epoch
             last_epoch="$(date -u -d "$last" +%s 2>/dev/null || echo 0)"
             [[ "$last_epoch" -eq 0 ]] && continue
-            if (( now_epoch - last_epoch > dryrun_max_age )); then
-                r2_rm_recursive "$prefix" "dryrun $((( now_epoch - last_epoch ) / 86400))d old"
+            if ((now_epoch - last_epoch > dryrun_max_age)); then
+                r2_rm_recursive "$prefix" "dryrun $(((now_epoch - last_epoch) / 86400))d old"
                 dryrun_deleted=$((dryrun_deleted + 1))
             fi
         done < <(r2_ls_prefix "${dir}/")
@@ -896,7 +896,7 @@ cleanup_r2() {
             local last_epoch
             last_epoch="$(date -u -d "$last" +%s 2>/dev/null || echo 0)"
             [[ "$last_epoch" -eq 0 ]] && continue
-            if (( now_epoch - last_epoch > pr_grace )); then
+            if ((now_epoch - last_epoch > pr_grace)); then
                 r2_rm_recursive "$prefix" "PR #${pr_num} ${state}"
                 pr_deleted=$((pr_deleted + 1))
             fi
@@ -945,7 +945,7 @@ cleanup_r2() {
             local last_epoch
             last_epoch="$(date -u -d "$last" +%s 2>/dev/null || echo 0)"
             [[ "$last_epoch" -eq 0 ]] && continue
-            if (( now_epoch - last_epoch > orphan_ver_max_age )); then
+            if ((now_epoch - last_epoch > orphan_ver_max_age)); then
                 r2_rm_recursive "$prefix" "orphan ${tag} (not in versions.json, no git tag)"
                 orphan_ver_deleted=$((orphan_ver_deleted + 1))
             fi
