@@ -261,6 +261,50 @@ stage2b() {
     log_info "  Aborted $aborted of $count"
 }
 
+# Stage 2c - Reap pr-N/ channel artifacts older than 3 days or closed -----
+
+stage2c() {
+    log_step "Stage 2c: reap pr-N/ older than 3d or closed"
+    local pr_age_max=$((3 * 86400))
+    local now_epoch
+    now_epoch="$(date -u +%s)"
+    local deleted=0
+    for fmt in cli desktop npm apt rpm apk archlinux; do
+        local listing
+        listing="$(aws s3 ls "s3://${BUCKET}/${fmt}/" --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
+            awk '/^[[:space:]]*PRE[[:space:]]pr-[0-9]+\// {print $2}' || true)"
+        while IFS= read -r sub; do
+            [[ -z "$sub" ]] && continue
+            local pr_num="${sub#pr-}"
+            pr_num="${pr_num%/}"
+            local prefix="${fmt}/${sub}"
+            local last
+            last="$(aws s3 ls "s3://${BUCKET}/${prefix}" --recursive --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
+                awk 'NR==1 {print $1"T"$2"Z"; exit}')"
+            [[ -z "$last" ]] && continue
+            local last_epoch
+            last_epoch="$(date -u -d "$last" +%s 2>/dev/null || echo 0)"
+            [[ "$last_epoch" -eq 0 ]] && continue
+            local age=$((now_epoch - last_epoch))
+            local reason=""
+            if ((age > pr_age_max)); then
+                reason="stale $((age / 86400))d"
+            else
+                local state
+                state="$(gh pr view "$pr_num" --repo rediacc/console --json state --jq '.state' 2>/dev/null || echo "UNKNOWN")"
+                if [[ "$state" != "OPEN" ]]; then
+                    reason="PR #${pr_num} ${state}"
+                fi
+            fi
+            if [[ -n "$reason" ]]; then
+                rm_prefix "$prefix" "$reason"
+                deleted=$((deleted + 1))
+            fi
+        done <<<"$listing"
+    done
+    log_info "  processed; reaped $deleted prefix(es)"
+}
+
 # Stage 3 - Delete polluted latest-*.yml under v1.0.{1,2}/ ----------------
 
 stage3() {
@@ -302,6 +346,8 @@ echo ""
 stage2
 echo ""
 stage2b
+echo ""
+stage2c
 echo ""
 stage3
 echo ""

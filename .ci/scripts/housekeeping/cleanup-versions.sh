@@ -62,6 +62,10 @@ R2_FORMAT_DIRS=("cli" "desktop" "npm" "apt" "rpm" "apk" "archlinux")
 # double of R2_RETENTION_DAYS so a real release whose tag was pruned still has
 # time to be noticed before its R2 bytes are reaped.
 R2_ORPHAN_VERSION_AGE_DAYS=14
+# pr-N/ under any format dir older than this is reaped regardless of PR state.
+# A new push on the PR regenerates artifacts via CI, so this only affects
+# stale open PRs that nobody touches.
+R2_PR_MAX_AGE_DAYS=3
 
 # =============================================================================
 # PREREQUISITES
@@ -850,7 +854,6 @@ cleanup_r2() {
     local now_epoch
     now_epoch="$(date -u +%s)"
     local dryrun_max_age=$((R2_RETENTION_DAYS * 86400))
-    local pr_grace=$((24 * 3600))
     local orphan_ver_max_age=$((R2_ORPHAN_VERSION_AGE_DAYS * 86400))
 
     # 8a. Dryrun reaper ------------------------------------------------------
@@ -876,9 +879,16 @@ cleanup_r2() {
     done
     log_info "  8a: processed ${#R2_FORMAT_DIRS[@]} format dirs, deleted $dryrun_deleted dryrun prefix(es)"
 
-    # 8b. Closed-PR reaper ---------------------------------------------------
-    log_step "  8b: pr-N/ for closed PRs"
+    # 8b. PR channel reaper --------------------------------------------------
+    # Deletes pr-N/ when EITHER condition holds:
+    #   * PR state != OPEN (no grace -- cleanup-r2-staging.yml on PR close
+    #     also runs; this sweep is just a backstop)
+    #   * last-modified > R2_PR_MAX_AGE_DAYS regardless of PR state
+    # The age cap catches stale bytes on long-lived open PRs; next push on
+    # the PR regenerates artifacts via CI.
+    log_step "  8b: pr-N/ closed or older than ${R2_PR_MAX_AGE_DAYS}d"
     local pr_deleted=0
+    local pr_age_max=$((R2_PR_MAX_AGE_DAYS * 86400))
     for dir in "${R2_FORMAT_DIRS[@]}"; do
         while IFS= read -r line; do
             local sub
@@ -886,9 +896,6 @@ cleanup_r2() {
             [[ -z "$sub" ]] && continue
             local pr_num="${sub#pr-}"
             pr_num="${pr_num%/}"
-            local state
-            state="$(gh pr view "$pr_num" --repo "$RELEASE_REPO" --json state --jq '.state' 2>/dev/null || echo "UNKNOWN")"
-            [[ "$state" == "OPEN" ]] && continue
             local prefix="${dir}/${sub}"
             local last
             last="$(r2_prefix_last_modified "$prefix")"
@@ -896,13 +903,24 @@ cleanup_r2() {
             local last_epoch
             last_epoch="$(date -u -d "$last" +%s 2>/dev/null || echo 0)"
             [[ "$last_epoch" -eq 0 ]] && continue
-            if ((now_epoch - last_epoch > pr_grace)); then
-                r2_rm_recursive "$prefix" "PR #${pr_num} ${state}"
+            local age=$((now_epoch - last_epoch))
+            local reason=""
+            if ((age > pr_age_max)); then
+                reason="stale $((age / 86400))d"
+            else
+                local state
+                state="$(gh pr view "$pr_num" --repo "$RELEASE_REPO" --json state --jq '.state' 2>/dev/null || echo "UNKNOWN")"
+                if [[ "$state" != "OPEN" ]]; then
+                    reason="PR #${pr_num} ${state}"
+                fi
+            fi
+            if [[ -n "$reason" ]]; then
+                r2_rm_recursive "$prefix" "$reason"
                 pr_deleted=$((pr_deleted + 1))
             fi
         done < <(r2_ls_prefix "${dir}/")
     done
-    log_info "  8b: deleted $pr_deleted closed-PR prefix(es)"
+    log_info "  8b: deleted $pr_deleted PR channel prefix(es)"
 
     # 8c. Legacy dead prefixes ----------------------------------------------
     log_step "  8c: legacy dead prefixes"
