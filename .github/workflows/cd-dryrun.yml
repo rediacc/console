@@ -153,6 +153,7 @@ jobs:
         run: |
           .ci/scripts/build/generate-cli-manifest.sh \
             --version ${{ inputs.next_version }} \
+            --channel "${{ inputs.channel }}" \
             --input dist/cli/ \
             --output dist/cli/manifest.json
 

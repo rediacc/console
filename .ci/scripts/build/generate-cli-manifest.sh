@@ -20,6 +20,7 @@ VERSION=""
 INPUT_DIR=""
 OUTPUT_PATH=""
 REPO="rediacc/console"
+CHANNEL=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -39,8 +40,12 @@ while [[ $# -gt 0 ]]; do
             REPO="$2"
             shift 2
             ;;
+        --channel)
+            CHANNEL="$2"
+            shift 2
+            ;;
         -h | --help)
-            echo "Usage: $0 --version VERSION [--input DIR] [--output PATH] [--repo REPO]"
+            echo "Usage: $0 --version VERSION [--input DIR] [--output PATH] [--repo REPO] [--channel CHANNEL]"
             exit 0
             ;;
         *)
@@ -64,7 +69,16 @@ if [[ -z "$OUTPUT_PATH" ]]; then
 fi
 
 RELEASE_URL="https://github.com/$REPO/releases/tag/v$VERSION"
-DOWNLOAD_BASE="${RELEASES_BASE_URL:-https://releases.rediacc.com}/cli/v$VERSION"
+# Release channels get the immutable versioned URL baked in (homebrew, CF
+# long-cache). PR / dryrun channels point at their channel path so rdc update
+# works against the bits that were actually uploaded -- see upload-to-r2.sh
+# which only writes cli/v${VERSION}/ for stable|edge.
+RELEASES_BASE="${RELEASES_BASE_URL:-https://releases.rediacc.com}"
+if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" || -z "$CHANNEL" ]]; then
+    DOWNLOAD_BASE="${RELEASES_BASE}/cli/v$VERSION"
+else
+    DOWNLOAD_BASE="${RELEASES_BASE}/cli/$CHANNEL"
+fi
 RELEASE_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 log_step "Generating CLI manifest v$VERSION"

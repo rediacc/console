@@ -8,7 +8,7 @@ on:
   workflow_call:
     inputs:
       target:
-        description: 'Deploy target: edge or production'
+        description: 'Deploy channel: edge or stable'
         required: true
         type: string
       ref:
@@ -148,7 +148,7 @@ jobs:
       fail-fast: false
     environment:
       name: ${{ inputs.target }}-${{ matrix.id }}
-      url: ${{ inputs.target == 'production' && format('https://{0}', matrix.domain) || format('https://{0}', matrix.edgeDomain) }}
+      url: ${{ inputs.target == 'stable' && format('https://{0}', matrix.domain) || format('https://{0}', matrix.edgeDomain) }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -199,7 +199,7 @@ jobs:
         run: |
           REGION="${{ matrix.id }}"
           SUFFIX="${{ matrix.secretSuffix }}"
-          if [[ "${{ inputs.target }}" == "production" ]]; then
+          if [[ "${{ inputs.target }}" == "stable" ]]; then
             WORKER="${{ matrix.workerName }}"
             DOMAIN="${{ matrix.domain }}"
             SANDBOX=""
@@ -266,7 +266,7 @@ jobs:
           VAR_SELLER_EMAIL: ${{ vars.SELLER_EMAIL }}
         run: |
           # Resolve region-aware secrets via bash indirection
-          if [[ "$TARGET" == "production" ]]; then
+          if [[ "$TARGET" == "stable" ]]; then
             STRIPE_VAR="STRIPE_KEY_${SUFFIX}"; SECRET_STRIPE_KEY="${!STRIPE_VAR}"
             WH_VAR="STRIPE_WH_${SUFFIX}"; SECRET_STRIPE_WEBHOOK="${!WH_VAR}"
           else

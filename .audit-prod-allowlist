@@ -122,6 +122,28 @@
 # is blocked in .deps-upgrade-blocklist per the wider migration plan.
 # Not exploitable here: every define:vars site in packages/www/src uses
 # internally-derived values (currentLang, pathWithoutLang, sitemap data)
-# — no untrusted input reaches the escape path. Revisit when astro 6
+# -- no untrusted input reaches the escape path. Revisit when astro 6
 # unblocks.
 1116896
+
+# fast-xml-parser XMLBuilder XML Comment / CDATA injection via unescaped
+# delimiters (GHSA-gh4j-gqv2-49f6, <=5.5.x). Same transitive chain as
+# 1114772/1114952/1115134 above (@astrojs/rss build tool, no runtime exposure).
+1116957
+
+# @xmldom/xmldom 0.8.x: uncontrolled recursion DoS in serialization,
+# XML injection via unvalidated DocumentType / processing instruction /
+# comment serialization (GHSA-2v35-w6hq-6mfw, GHSA-f6ww-3ggp-fr8h,
+# GHSA-x6wf-f3px-wcqx, GHSA-j759-j44w-7fr8). Transitive via
+# electron-builder > app-builder-lib > plist > @xmldom/xmldom@0.8.12 and
+# marp-core > mathjax-full > speech-rule-engine. electron-builder 26.x
+# pins plist which pins xmldom 0.8.x; bumping is blocked (major electron
+# migration). Build-time only, never parses untrusted XML.
+1116959
+1116960
+1116962
+1116963
+1116965
+1116966
+1116968
+1116969

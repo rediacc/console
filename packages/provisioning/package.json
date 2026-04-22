@@ -1,6 +1,6 @@
 {
   "name": "@rediacc/provisioning",
-  "version": "0.4.49",
+  "version": "0.0.0-dev",
   "private": true,
   "type": "module",
   "scripts": {

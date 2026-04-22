@@ -272,13 +272,19 @@ if [[ -d "$CLI_DIR" ]]; then
 
     # Upload to versioned path (permanent link). Versioned URLs are
     # immutable -- the same URL never serves different content -- so
-    # CF can cache aggressively for end-user install perf.
-    for binary in "$CLI_DIR"/rdc-*; do
-        [[ -f "$binary" ]] || continue
-        local_name="$(basename "$binary")"
-        r2_cp "$binary" "$(r2_versioned_path "cli/v${VERSION}/${local_name}")" "$CACHE_CONTROL_IMMUTABLE"
-        ((UPLOADED++)) || true
-    done
+    # CF can cache aggressively for end-user install perf. Only release
+    # channels (stable/edge) may write here; PR/dryrun writes would
+    # clobber cli/v${VERSION}/manifest.json with dev-named artifacts that
+    # install.sh and Homebrew would fetch as "v${VERSION}".
+    # Allowed channels are set in .github/workflows/ci.yml:115-122.
+    if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
+        for binary in "$CLI_DIR"/rdc-*; do
+            [[ -f "$binary" ]] || continue
+            local_name="$(basename "$binary")"
+            r2_cp "$binary" "$(r2_versioned_path "cli/v${VERSION}/${local_name}")" "$CACHE_CONTROL_IMMUTABLE"
+            ((UPLOADED++)) || true
+        done
+    fi
 
     # Upload to channel path
     for binary in "$CLI_DIR"/rdc-*; do
@@ -292,7 +298,11 @@ if [[ -d "$CLI_DIR" ]]; then
     # Write latest.json LAST to avoid race conditions
     r2_put "{\"version\":\"${VERSION}\"}" "$(r2_path "cli" "latest.json")"
 
-    log_info "CLI: uploaded to cli/v${VERSION}/ + cli/${CHANNEL}/"
+    if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
+        log_info "CLI: uploaded to cli/v${VERSION}/ + cli/${CHANNEL}/"
+    else
+        log_info "CLI: uploaded to cli/${CHANNEL}/ (versioned path skipped; not a release channel)"
+    fi
 
     # Track CLI versions for retention cleanup (production channels only)
     if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
@@ -338,14 +348,21 @@ if [[ -d "$DESKTOP_DIR" ]]; then
         local_name="$(basename "$artifact")"
         [[ "$local_name" == "builder-debug.yml" ]] && continue
 
-        # Versioned path is immutable; channel path is overwritten per release
-        # so it must revalidate against R2 every time.
-        r2_cp "$artifact" "$(r2_versioned_path "desktop/v${VERSION}/${local_name}")" "$CACHE_CONTROL_IMMUTABLE"
-        ((UPLOADED++)) || true
+        # Versioned path is immutable; only release channels may write here.
+        # Channel path is overwritten per release and must revalidate against
+        # R2 every time. See CLI section above for the gating rationale.
+        if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
+            r2_cp "$artifact" "$(r2_versioned_path "desktop/v${VERSION}/${local_name}")" "$CACHE_CONTROL_IMMUTABLE"
+            ((UPLOADED++)) || true
+        fi
         r2_cp "$artifact" "$(r2_path "desktop" "${local_name}")"
     done
 
-    log_info "Desktop: uploaded to desktop/v${VERSION}/ + desktop/${CHANNEL}/"
+    if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
+        log_info "Desktop: uploaded to desktop/v${VERSION}/ + desktop/${CHANNEL}/"
+    else
+        log_info "Desktop: uploaded to desktop/${CHANNEL}/ (versioned path skipped; not a release channel)"
+    fi
 
     # Track Desktop versions for retention cleanup (production channels only)
     if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then

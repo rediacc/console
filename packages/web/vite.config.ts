@@ -106,7 +106,7 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.NODE_ENV': JSON.stringify(mode),
       'import.meta.env.VITE_APP_VERSION': JSON.stringify(
-        process.env.TAG || process.env.VITE_APP_VERSION || 'dev'
+        process.env.VITE_APP_VERSION || '0.0.0-dev'
       ),
       'import.meta.env.VITE_BUILD_TYPE': JSON.stringify(
         process.env.REDIACC_BUILD_TYPE || (mode === 'production' ? 'RELEASE' : 'DEBUG')

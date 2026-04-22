@@ -410,16 +410,30 @@ jobs:
       - name: Tag submodules
         if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
         run: |
+          set -euo pipefail
           VERSION="${{ needs.init.outputs.next_version }}"
           for sub in private/renet private/middleware; do
-            if [[ -d "$sub/.git" ]] || [[ -f "$sub/.git" ]]; then
-              cd "$sub"
-              git config user.name "github-actions[bot]"
-              git config user.email "github-actions[bot]@users.noreply.github.com"
-              git tag -a "v${VERSION}" -m "v${VERSION}" 2>/dev/null || echo "Tag v${VERSION} already exists in $(basename $sub)"
-              git push origin "v${VERSION}" 2>/dev/null || echo "Tag v${VERSION} already pushed in $(basename $sub)"
-              cd "$GITHUB_WORKSPACE"
+            if [[ ! -d "$sub/.git" ]] && [[ ! -f "$sub/.git" ]]; then
+              echo "::notice::Skipping $sub (not initialized)"
+              continue
             fi
+            cd "$sub"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            head_sha="$(git rev-parse HEAD)"
+            existing_sha="$(git rev-list -n1 "v${VERSION}" 2>/dev/null || true)"
+            if [[ -n "$existing_sha" ]]; then
+              if [[ "$existing_sha" != "$head_sha" ]]; then
+                echo "::error::Submodule $sub tag v${VERSION} already points to $existing_sha but HEAD is $head_sha. Drift must be resolved manually before this release can proceed."
+                exit 1
+              fi
+              echo "::notice::Submodule $sub tag v${VERSION} already at HEAD ($head_sha); reusing"
+            else
+              git tag -a "v${VERSION}" -m "v${VERSION}"
+            fi
+            # Push is idempotent for existing tags pointing at the same SHA.
+            git push origin "v${VERSION}"
+            cd "$GITHUB_WORKSPACE"
           done
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
@@ -603,7 +617,7 @@ jobs:
           echo "- ghcr.io/rediacc/server:${{ needs.init.outputs.next_version }} + :latest (on-prem)" >> $GITHUB_STEP_SUMMARY
 
   # Install validation moved to CI (pre-publish). CI validates on all 6 platforms
-  # BEFORE publish, so broken artifacts never reach production.
+  # BEFORE publish, so broken artifacts never reach the edge or stable channel.
 
   # ============================================================================
   # DEPLOY EDGE - Marketing + per-region account workers
@@ -614,13 +628,27 @@ jobs:
     if: >-
       success() &&
       needs.init.outputs.skip_release != 'true'
-    uses: ./.github/workflows/cd-deploy-marketing.yml
+    uses: ./.github/workflows/cd-deploy-worker.yml
     with:
       target: edge
       ref: ${{ needs.init.outputs.ci_sha }}
+      version: ${{ needs.init.outputs.next_version }}
     secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
+      ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+      ACCOUNT_X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
+      ACCOUNT_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
+      ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+      ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
+      STRIPE_SECRET_KEY_EU: ${{ secrets.STRIPE_SECRET_KEY_EU }}
+      STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET_EU: ${{ secrets.STRIPE_WEBHOOK_SECRET_EU }}
+      STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
+      AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
+      AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
+      TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
   deploy-account-edge:
     name: Deploy edge Account (all regions)
@@ -658,25 +686,39 @@ jobs:
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
   # ============================================================================
-  # DEPLOY PRODUCTION (hotfix only) - Marketing + per-region account workers
+  # DEPLOY STABLE (hotfix only) - Marketing + per-region account workers
   # ============================================================================
-  deploy-marketing-production:
-    name: Deploy production Marketing (hotfix)
+  deploy-marketing-stable:
+    name: Deploy stable Marketing (hotfix)
     needs: [init, publish, smoke-test]
     if: >-
       success() &&
       needs.init.outputs.skip_release != 'true' &&
       inputs.publish_stable == true
-    uses: ./.github/workflows/cd-deploy-marketing.yml
+    uses: ./.github/workflows/cd-deploy-worker.yml
     with:
-      target: production
+      target: stable
       ref: ${{ needs.init.outputs.workers_only == 'true' && needs.init.outputs.ci_sha || format('v{0}', needs.init.outputs.next_version) }}
+      version: ${{ needs.init.outputs.next_version }}
     secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
+      ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+      ACCOUNT_X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
+      ACCOUNT_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
+      ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+      ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
+      STRIPE_SECRET_KEY_EU: ${{ secrets.STRIPE_SECRET_KEY_EU }}
+      STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET_EU: ${{ secrets.STRIPE_WEBHOOK_SECRET_EU }}
+      STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
+      AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
+      AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
+      TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
-  deploy-account-production:
-    name: Deploy production Account (hotfix, all regions)
+  deploy-account-stable:
+    name: Deploy stable Account (hotfix, all regions)
     needs: [init, publish, smoke-test]
     if: >-
       success() &&
@@ -684,7 +726,7 @@ jobs:
       inputs.publish_stable == true
     uses: ./.github/workflows/cd-deploy-account.yml
     with:
-      target: production
+      target: stable
       ref: ${{ needs.init.outputs.workers_only == 'true' && needs.init.outputs.ci_sha || format('v{0}', needs.init.outputs.next_version) }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
@@ -748,6 +790,38 @@ jobs:
             exit 1
           fi
           echo "  marketing (install.ps1): OK (channel=edge)"
+
+          # Worker-fingerprint checks. These assert that the NEW Worker bundle
+          # from workers/www/ is actually serving — not a stale deploy of the
+          # old workers/marketing/ code (which has no redirect table, no
+          # html_handling=drop-trailing-slash, and no asset-path guard).
+          # Cache-busting query strings ensure we hit the Worker, not a cached
+          # response.
+          RNDA=$RANDOM$RANDOM; RNDB=$RANDOM$RANDOM; RNDC=$RANDOM$RANDOM
+          S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/about?cb=$RNDA")
+          [[ "$S" == "410" ]] || { echo "::error::edge /about expected 410 (curated redirect table), got $S — old worker bundle likely live"; exit 1; }
+          echo "  worker fingerprint (redirect table): OK (/about=410)"
+
+          S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/en?cb=$RNDB")
+          [[ "$S" == "200" ]] || { echo "::error::edge /en expected 200 (html_handling=drop-trailing-slash), got $S"; exit 1; }
+          echo "  worker fingerprint (html_handling): OK (/en=200, no 307)"
+
+          S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/fonts/inter/Inter-Regular.woff2?cb=$RNDC")
+          [[ "$S" == "200" ]] || { echo "::error::edge mixed-case font expected 200 (asset-path guard), got $S"; exit 1; }
+          echo "  worker fingerprint (asset-path guard): OK (Inter-Regular.woff2=200)"
+
+          # Footer version assertion: confirm the Astro build baked the
+          # expected semver into the rendered HTML. Catches regressions in
+          # APP_VERSION propagation (cd-deploy-worker.yml -> astro.config.mjs).
+          if [[ "${{ needs.init.outputs.workers_only }}" != "true" ]]; then
+            FOOTER_HTML=$(curl -fsSL https://edge.rediacc.com/en/)
+            if ! echo "$FOOTER_HTML" | grep -qE "footer-version[^<]*>v${VERSION}<"; then
+              echo "::error::edge.rediacc.com footer does not render v${VERSION}"
+              echo "$FOOTER_HTML" | grep -oE 'footer-version[^<]*>[^<]*<' | head -3 || true
+              exit 1
+            fi
+            echo "  marketing (footer version): OK (v${VERSION})"
+          fi
 
           # R2 backstop: the per-channel copy at releases.rediacc.com/cli/edge/
           # is the fallback serving path (not worker-rewritten). It must also
@@ -847,91 +921,5 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
-  # ============================================================================
-  # HOUSEKEEPING - Cleanup old releases, tags, packages, and Stripe orphans
-  # Runs after each successful release instead of a nightly schedule.
-  # ============================================================================
-  housekeeping:
-    name: Housekeeping
-    runs-on: ubuntu-slim
-    needs: [init, publish, deploy-marketing-edge, deploy-account-edge, deploy-marketing-production, deploy-account-production, smoke-test]
-    if: >-
-      success() &&
-      needs.init.outputs.skip_release != 'true'
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          app-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: housekeeping
-          repositories: console,renet,middleware,elite,account
-
-      - name: Cleanup old releases, tags, and packages
-        run: .ci/scripts/housekeeping/cleanup-versions.sh
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Cleanup R2 staging artifacts
-        run: |
-          # Keep last 3 staging snapshots, delete older ones
-          STAGING_DIRS=$(aws s3 ls "s3://${RELEASES_BUCKET}/staging/" --endpoint-url "${R2_ENDPOINT}" 2>/dev/null \
-            | awk '{print $2}' | sort -r | tail -n +4)
-          for dir in $STAGING_DIRS; do
-            echo "Deleting staging/${dir}..."
-            aws s3 rm "s3://${RELEASES_BUCKET}/staging/${dir}" --endpoint-url "${R2_ENDPOINT}" --recursive --quiet || true
-          done
-          echo "R2 staging cleanup done"
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          RELEASES_BUCKET: rediacc-releases
-
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build shared packages
-        run: npm run build:packages
-
-      - uses: ./.github/actions/app-token
-        id: app-token-stripe
-        with:
-          app-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: ci
-          repositories: console,account
-
-      - name: Initialize account submodule
-        run: git submodule update --init private/account
-
-      - name: Install account dependencies
-        run: npm install
-        working-directory: private/account
-
-      - name: Cleanup orphaned Stripe sandbox resources
-        run: npx tsx scripts/cleanup-orphans.ts
-        working-directory: private/account
-        env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Verify Stripe sandbox webhook endpoints (per-region)
-        if: needs.init.outputs.workers_only != 'true'
-        run: |
-          jq -r '.regions[] | .edgeDomain' regions.json | while read domain; do
-            echo "Verifying sandbox webhook for ${domain}..."
-            npx tsx private/account/scripts/verify-webhook.ts --sandbox --expected-url "https://${domain}/account/api/v1/webhooks/stripe"
-          done
-        env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+  # Housekeeping moved to ci.yml so cleanup runs on every successful push to
+  # main (not only when a release ships). See housekeeping job in ci.yml.
