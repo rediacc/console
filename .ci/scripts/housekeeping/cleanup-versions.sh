@@ -998,6 +998,9 @@ cleanup_r2() {
     # Metadata (Packages.gz, Release*, InRelease, APKINDEX.tar.gz, repodata/,
     # *.db.tar.gz, latest-*.yml, manifest.json, gpg.key, rediacc-cli-latest.tgz)
     # is left alone; next release rewrites it.
+    # Retention is PER-SEMVER (not per-file): keep if semver is among the top
+    # R2_PACKAGE_KEEP_VERSIONS OR any file of that semver is <R2_PACKAGE_KEEP_DAYS
+    # old. 0.0.0-dev files are always deleted (pre-version-injection pollution).
     log_step "  8f: channel artifact retention (keep ${R2_PACKAGE_KEEP_VERSIONS}v or ${R2_PACKAGE_KEEP_DAYS}d; zap 0.0.0-dev)"
     local pkg_keep_age=$((R2_PACKAGE_KEEP_DAYS * 86400))
     local pkg_deleted=0
@@ -1005,8 +1008,6 @@ cleanup_r2() {
         for channel in stable edge; do
             local channel_root="${fmt}/${channel}/"
             [[ -z "$(r2_ls_prefix "$channel_root")" ]] && continue
-            # listing format: "<iso-ts>|<semver>|<is_dev>|<s3-key>", sorted
-            # by semver desc. is_dev=1 for rediacc-desktop-0.0.0-dev-* etc.
             local listing
             listing="$(aws s3 ls "s3://${R2_BUCKET}/${channel_root}" --recursive \
                 --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
@@ -1020,23 +1021,46 @@ cleanup_r2() {
                         is_dev = (semver == "0.0.0" && after ~ /^-dev/) ? 1 : 0;
                         print $1"T"$2"Z""|"semver"|"is_dev"|"$4
                     }
-                }' | sort -t'|' -k2,2 -V -r)"
+                }')"
             [[ -z "$listing" ]] && continue
-            local idx=0
+            # Top-N non-dev semvers (per-semver rank, not per-file).
+            local top_versions
+            top_versions="$(echo "$listing" | awk -F'|' '$3 == 0 {print $2}' | sort -u -V -r | head -n "$R2_PACKAGE_KEEP_VERSIONS")"
+            # Newest-file-ts (epoch) per semver, for 10-day override.
+            local newest_ts_by_ver
+            newest_ts_by_ver="$(echo "$listing" | awk -F'|' '
+                {
+                    "date -u -d \""$1"\" +%s" | getline e;
+                    if (e > seen[$2]) seen[$2] = e
+                }
+                END { for (v in seen) print v"|"seen[v] }')"
             while IFS='|' read -r ts semver is_dev key; do
                 [[ -z "$key" ]] && continue
                 local ts_epoch
                 ts_epoch="$(date -u -d "$ts" +%s 2>/dev/null || echo 0)"
                 local age=$((now_epoch - ts_epoch))
-                # Always delete 0.0.0-dev pollution regardless of rank/age.
-                if [[ "$is_dev" != "1" ]]; then
-                    if ((idx < R2_PACKAGE_KEEP_VERSIONS)) || ((age < pkg_keep_age)); then
-                        idx=$((idx + 1))
-                        continue
+                if [[ "$is_dev" == "1" ]]; then
+                    local tag="0.0.0-dev pollution, $((age / 86400))d"
+                    if [[ "$DRY_RUN" == "true" ]]; then
+                        log_warn "  [DRY-RUN] Would delete s3://${R2_BUCKET}/${key} (${tag})"
+                    else
+                        aws s3 rm "s3://${R2_BUCKET}/${key}" --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null || true
+                        log_info "  Deleted ${key} (${tag})"
                     fi
+                    pkg_deleted=$((pkg_deleted + 1))
+                    continue
                 fi
-                local tag="v${semver}, $((age / 86400))d"
-                [[ "$is_dev" == "1" ]] && tag="0.0.0-dev pollution, $((age / 86400))d"
+                # Keep if semver is in top-N
+                if echo "$top_versions" | grep -qxF "$semver"; then
+                    continue
+                fi
+                # Keep if newest file of this semver is < pkg_keep_age old
+                local newest
+                newest="$(echo "$newest_ts_by_ver" | awk -F'|' -v v="$semver" '$1 == v {print $2}')"
+                if [[ -n "$newest" ]] && ((now_epoch - newest < pkg_keep_age)); then
+                    continue
+                fi
+                local tag="v${semver}, $((age / 86400))d, outside top-${R2_PACKAGE_KEEP_VERSIONS}"
                 if [[ "$DRY_RUN" == "true" ]]; then
                     log_warn "  [DRY-RUN] Would delete s3://${R2_BUCKET}/${key} (${tag})"
                 else
@@ -1044,7 +1068,6 @@ cleanup_r2() {
                     log_info "  Deleted ${key} (${tag})"
                 fi
                 pkg_deleted=$((pkg_deleted + 1))
-                idx=$((idx + 1))
             done <<<"$listing"
         done
     done

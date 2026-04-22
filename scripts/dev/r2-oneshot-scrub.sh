@@ -318,12 +318,15 @@ stage2d() {
     set +e
     log_step "Stage 2d: channel artifact retention (keep 7v or 10d; zap 0.0.0-dev)"
     # Patterns:
-    #   apt/<ch>/rediacc-cli_<ver>_<arch>.deb
+    #   apt/<ch>/.../rediacc-cli_<ver>_<arch>.deb
     #   rpm/<ch>/rediacc-cli-<ver>.<arch>.rpm
     #   apk/<ch>/rediacc-cli-<ver>.apk
     #   archlinux/<ch>/rediacc-cli-<ver>-<arch>.pkg.tar.zst
     #   npm/<ch>/rediacc-cli-<ver>.tgz
     #   desktop/<ch>/rediacc-desktop-<ver>-<platform>.<ext>(+.blockmap)
+    # Retention is PER-SEMVER (not per-file): keep if semver is among the top
+    # R2_PACKAGE_KEEP_VERSIONS OR any file of that semver is <R2_PACKAGE_KEEP_DAYS
+    # old. 0.0.0-dev files are always deleted (pre-version-injection pollution).
     # Metadata (Packages.gz, Release*, APKINDEX, repodata/, *.db.tar.gz,
     # latest-*.yml, manifest.json, gpg.key, rediacc-cli-latest.tgz) stays.
     local keep_versions=7
@@ -348,26 +351,51 @@ stage2d() {
                         is_dev = (semver == "0.0.0" && after ~ /^-dev/) ? 1 : 0;
                         print $1"T"$2"Z""|"semver"|"is_dev"|"$4
                     }
-                }' | sort -t'|' -k2,2 -V -r || true)"
+                }')"
             if [[ -z "$listing" ]]; then
                 log_info "    empty or no artifact files"
                 continue
             fi
-            local idx=0
+            # Top-7 non-dev semvers (per-semver rank, not per-file). Dev is
+            # handled below and deliberately excluded from the rank window.
+            local top_versions
+            top_versions="$(echo "$listing" | awk -F'|' '$3 == 0 {print $2}' | sort -u -V -r | head -n "$keep_versions")"
+            # Newest file ts (epoch) per semver, for the 10-day override.
+            local newest_ts_by_ver
+            newest_ts_by_ver="$(echo "$listing" | awk -F'|' '
+                {
+                    "date -u -d \""$1"\" +%s" | getline e;
+                    if (e > seen[$2]) seen[$2] = e
+                }
+                END { for (v in seen) print v"|"seen[v] }')"
             while IFS='|' read -r ts semver is_dev key; do
                 [[ -z "$key" ]] && continue
                 local ts_epoch
                 ts_epoch="$(date -u -d "$ts" +%s 2>/dev/null || echo 0)"
                 local age=$((now_epoch - ts_epoch))
-                if [[ "$is_dev" != "1" ]]; then
-                    if ((idx < keep_versions)) || ((age < keep_age)); then
-                        log_info "    keep v${semver} ($((age / 86400))d, rank $idx) -> ${key}"
-                        idx=$((idx + 1))
-                        continue
+                # Always delete 0.0.0-dev pollution
+                if [[ "$is_dev" == "1" ]]; then
+                    local tag="0.0.0-dev pollution, $((age / 86400))d"
+                    if $DRY_RUN; then
+                        log_warn "    [DRY-RUN] Would delete ${key} (${tag})"
+                    else
+                        aws s3 rm "s3://${BUCKET}/${key}" --endpoint-url "$R2_ENDPOINT" --quiet
+                        log_info "    deleted ${key} (${tag})"
                     fi
+                    deleted=$((deleted + 1))
+                    continue
                 fi
-                local tag="v${semver}, $((age / 86400))d"
-                [[ "$is_dev" == "1" ]] && tag="0.0.0-dev pollution, $((age / 86400))d"
+                # Keep if semver is in top-N
+                if echo "$top_versions" | grep -qxF "$semver"; then
+                    continue
+                fi
+                # Keep if newest file of this semver is < keep_age old
+                local newest
+                newest="$(echo "$newest_ts_by_ver" | awk -F'|' -v v="$semver" '$1 == v {print $2}')"
+                if [[ -n "$newest" ]] && ((now_epoch - newest < keep_age)); then
+                    continue
+                fi
+                local tag="v${semver}, $((age / 86400))d, outside top-${keep_versions}"
                 if $DRY_RUN; then
                     log_warn "    [DRY-RUN] Would delete ${key} (${tag})"
                 elif confirm "Delete ${key} (${tag})?"; then
@@ -375,7 +403,6 @@ stage2d() {
                     log_info "    deleted ${key} (${tag})"
                 fi
                 deleted=$((deleted + 1))
-                idx=$((idx + 1))
             done <<<"$listing"
         done
     done
