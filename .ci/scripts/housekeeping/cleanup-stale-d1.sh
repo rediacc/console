@@ -2,9 +2,11 @@
 # Delete orphaned migration-test D1 databases
 # Usage: cleanup-stale-d1.sh [--dry-run] [--max-age <minutes>]
 #
-# Finds D1 databases matching "account-db-migration-test-*" that are older
-# than --max-age (default: 60 minutes) and deletes them. Defense-in-depth
-# for the migration-test CI job, which normally cleans up via trap EXIT.
+# Finds D1 databases matching "migration-test-*" that are older than --max-age
+# (default: 60 minutes) and deletes them. Defense-in-depth for the
+# migration-test CI job, which normally cleans up via trap EXIT. Runs as a
+# pre-reap step on every migration-test job (see ci.yml), so orphans from an
+# interrupted prior run get cleared before the new run creates its DBs.
 #
 # Requires: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
 
@@ -20,7 +22,7 @@ parse_args "$@"
 
 DRY_RUN="${ARG_DRY_RUN:-false}"
 MAX_AGE_MINUTES="${ARG_MAX_AGE:-60}"
-PREFIX="account-db-migration-test-"
+PREFIX="migration-test-"
 
 # =============================================================================
 # PREREQUISITES

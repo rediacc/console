@@ -221,7 +221,13 @@ main() {
   else
     BINARY_NAME="rdc-${PLATFORM}-${ARCH}"
   fi
-  DOWNLOAD_URL="${RELEASES_URL}/cli/v${VERSION}/${BINARY_NAME}"
+  # Release channels (stable/edge) serve from the immutable versioned path.
+  # PR/preview channels only exist under the channel path (see upload-to-r2.sh).
+  if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
+    DOWNLOAD_URL="${RELEASES_URL}/cli/v${VERSION}/${BINARY_NAME}"
+  else
+    DOWNLOAD_URL="${RELEASES_URL}/cli/${CHANNEL}/${BINARY_NAME}"
+  fi
   CHECKSUM_URL="${DOWNLOAD_URL}.sha256"
 
   # Create directories

@@ -213,3 +213,64 @@ describe('fetch handler — 404 recovery integration', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('fetch handler — static asset paths (case-preserving)', () => {
+  // Regression: normalizePath used to lowercase hashed asset filenames
+  // (client.BzZdRM54.js, Inter-Regular.woff2), 301-redirecting to paths that
+  // don't exist on disk. The asset-path guard must forward to ASSETS with the
+  // exact case intact.
+
+  function capture(pathname: string, expectedUrl: string) {
+    const captured: string[] = [];
+    const env = mkEnv((req) => {
+      captured.push(new URL(req.url).pathname);
+      return new Response('asset', { status: 200 });
+    });
+    return { env, captured, run: () => hit(pathname, env).then((r) => ({ res: r, captured, expectedUrl })) };
+  }
+
+  test('/assets/<mixed-case-hash>.js preserves case', async () => {
+    const { run } = capture('/assets/client.BzZdRM54.js', '/assets/client.BzZdRM54.js');
+    const { res, captured } = await run();
+    expect(res.status).toBe(200);
+    expect(captured).toEqual(['/assets/client.BzZdRM54.js']);
+  });
+
+  test('/fonts/inter/Inter-Regular.woff2 preserves case', async () => {
+    const { run } = capture('/fonts/inter/Inter-Regular.woff2', '/fonts/inter/Inter-Regular.woff2');
+    const { res, captured } = await run();
+    expect(res.status).toBe(200);
+    expect(captured).toEqual(['/fonts/inter/Inter-Regular.woff2']);
+  });
+
+  test('/fonts/jetbrains-mono/JetBrainsMono-Bold.woff2 preserves case', async () => {
+    const path = '/fonts/jetbrains-mono/JetBrainsMono-Bold.woff2';
+    const { run } = capture(path, path);
+    const { res, captured } = await run();
+    expect(res.status).toBe(200);
+    expect(captured).toEqual([path]);
+  });
+
+  test('/_astro/<hashed>.css preserves case', async () => {
+    const { run } = capture('/_astro/index.ABC123.css', '/_astro/index.ABC123.css');
+    const { res, captured } = await run();
+    expect(res.status).toBe(200);
+    expect(captured).toEqual(['/_astro/index.ABC123.css']);
+  });
+
+  test('/scripts/main.js is served directly (not normalized)', async () => {
+    const { run } = capture('/scripts/main.js', '/scripts/main.js');
+    const { res, captured } = await run();
+    expect(res.status).toBe(200);
+    expect(captured).toEqual(['/scripts/main.js']);
+  });
+
+  test('content paths are still normalized (guard does not over-broaden)', async () => {
+    // /FOO is not under an asset directory — normalizePath must still lowercase it.
+    const env = mkEnv(() => new Response('not found', { status: 404 }));
+    const res = await hit('/FOO', env);
+    expect(res.status).toBe(301);
+    expect(res.headers.get('Location')).toBe('https://www.rediacc.com/foo');
+    expect(res.headers.get('X-Redirect-Reason')).toBe('canonicalize');
+  });
+});

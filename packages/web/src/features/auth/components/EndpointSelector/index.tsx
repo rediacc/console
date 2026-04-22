@@ -7,9 +7,9 @@ import apiClient from '@/api/client';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
 import { apiConnectionService, Endpoint, endpointService } from '@/services/api';
-import { versionService } from '@/services/versionService';
 import { showMessage } from '@/utils/messages';
 import { ApiOutlined, DeleteOutlined, LoadingOutlined, PlusOutlined } from '@/utils/optimizedIcons';
+import { formatAppVersion } from '@/utils/version';
 
 interface EndpointHealth {
   isHealthy: boolean;
@@ -19,6 +19,18 @@ interface EndpointHealth {
 }
 
 const HEALTH_INDICATOR_SYMBOL = '●';
+const HEALTH_CACHE_DURATION = 10000; // 10 seconds
+const HEALTH_CHECK_TIMEOUT = 2500; // 2.5 seconds
+
+// Resolved once at module load — all inputs are build-time constants.
+const VERSION_DISPLAY = (() => {
+  const formatted = formatAppVersion(import.meta.env.VITE_APP_VERSION);
+  if (formatted === 'Development') return 'Development';
+  const buildType =
+    (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? DEFAULTS.EDITION.BUILD_TYPE;
+  const buildLabel = buildType === 'RELEASE' ? 'Release' : 'Development';
+  return `${buildLabel} - ${formatted}`;
+})();
 
 const EndpointSelector: React.FC = () => {
   const { t } = useTranslation('auth');
@@ -31,34 +43,6 @@ const EndpointSelector: React.FC = () => {
   const [healthStatus, setHealthStatus] = useState<Record<string, EndpointHealth>>({});
   const healthStatusRef = useRef(healthStatus);
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
-  const [versionDisplay, setVersionDisplay] = useState<string>('');
-
-  const HEALTH_CACHE_DURATION = 10000; // 10 seconds
-  const HEALTH_CHECK_TIMEOUT = 2500; // 2.5 seconds
-
-  // Fetch version info on mount
-  useEffect(() => {
-    const fetchVersion = async () => {
-      try {
-        const versionInfo = await versionService.getVersion();
-        const formattedVersion = versionService.formatVersion(versionInfo.version);
-
-        if (formattedVersion === 'Development') {
-          setVersionDisplay('Development');
-        } else {
-          const buildType =
-            (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? DEFAULTS.EDITION.BUILD_TYPE;
-          const buildLabel = buildType === 'RELEASE' ? 'Release' : 'Development';
-          setVersionDisplay(`${buildLabel} - ${formattedVersion}`);
-        }
-      } catch (error) {
-        console.warn('Failed to fetch version information', error);
-        setVersionDisplay('Development');
-      }
-    };
-
-    void fetchVersion();
-  }, []);
 
   /**
    * Check health for a single endpoint
@@ -334,7 +318,7 @@ const EndpointSelector: React.FC = () => {
         {selectedEndpoint && (
           <Typography.Text>
             {selectedEndpoint.url}
-            {versionDisplay && ` - ${versionDisplay}`}
+            {VERSION_DISPLAY && ` - ${VERSION_DISPLAY}`}
             {isCheckingHealth && (
               <Flex align="center" className="inline-flex">
                 <LoadingOutlined />

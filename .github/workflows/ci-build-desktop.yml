@@ -62,7 +62,7 @@ jobs:
       - run: .ci/scripts/build/build-web.sh --type RELEASE
         shell: bash
         env:
-          VITE_APP_VERSION: ${{ github.sha }}
+          VITE_APP_VERSION: ${{ inputs.next_version || '0.0.0-dev' }}
       - name: Build Electron
         working-directory: packages/desktop
         run: npm run build

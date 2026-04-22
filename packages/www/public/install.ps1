@@ -62,7 +62,13 @@ function Install-RDC {
 
     Write-Host "Latest version: v$Version"
 
-    $DownloadUrl = "$ReleasesUrl/cli/v$Version/$BinaryName"
+    # Release channels serve from the immutable versioned path. PR/preview
+    # channels only exist under the channel path (see upload-to-r2.sh).
+    if ($Channel -eq 'stable' -or $Channel -eq 'edge') {
+        $DownloadUrl = "$ReleasesUrl/cli/v$Version/$BinaryName"
+    } else {
+        $DownloadUrl = "$ReleasesUrl/cli/$Channel/$BinaryName"
+    }
     $ChecksumUrl = "$DownloadUrl.sha256"
 
     # Create directories

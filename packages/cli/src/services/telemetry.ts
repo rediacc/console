@@ -25,6 +25,7 @@ import {
   generateSessionId,
 } from '@rediacc/shared/telemetry';
 
+import { VERSION as CLI_VERSION } from '../version.js';
 import { buildUserAttributes, flattenAttributes } from './telemetry-attrs.js';
 import { setupOtelSdk } from './telemetry-setup.js';
 
@@ -32,9 +33,6 @@ import {
   startProfiling as startProfilingImpl,
   stopProfiling as stopProfilingImpl,
 } from './profiling.js';
-
-// Package version (will be replaced by bundler or read from package.json)
-const CLI_VERSION = '0.3.6';
 
 /**
  * Pure env-var check for whether the user has opted out of telemetry.

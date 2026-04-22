@@ -2,9 +2,10 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import { execSync } from 'child_process';
-// Version from env (CI injects APP_VERSION from git tags) or git tag, fallback to dev
-const version = process.env.APP_VERSION
-  || (() => { try { return execSync('git describe --tags --abbrev=0 2>/dev/null').toString().trim().replace(/^v/, ''); } catch { return 'dev'; } })();
+// Version is injected by CI via APP_VERSION (resolved from git tags).
+// Local dev shows 0.0.0-dev. No git-describe fallback — version resolution
+// is the caller's job, not the build's.
+const version = process.env.APP_VERSION || '0.0.0-dev';
 
 import react from '@astrojs/react';
 import sitemap, { ChangeFreqEnum } from '@astrojs/sitemap';

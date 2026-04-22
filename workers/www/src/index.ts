@@ -15,14 +15,14 @@ interface Env {
 // ---------------------------------------------------------------------------
 // Preview origin rewriting
 // ---------------------------------------------------------------------------
-// On non-production hostnames (e.g. pr-397.rediacc.workers.dev), rewrite
+// On non-stable hostnames (edge.rediacc.com, pr-397.rediacc.workers.dev), rewrite
 // https://www.rediacc.com → the current origin in all text responses so that
 // install commands, canonical URLs, sitemaps, etc. reflect the preview domain.
-// Production traffic is unaffected — the worker only handles /account/* routes
-// in production (via run_worker_first), so this code path is never reached.
+// Stable (www.rediacc.com) traffic is unaffected — on that hostname isPreview
+// is false and rewriteOrigin() is skipped.
 // ---------------------------------------------------------------------------
 
-const PRODUCTION_ORIGIN = 'https://www.rediacc.com';
+const WWW_ORIGIN = 'https://www.rediacc.com';
 
 export const REWRITABLE_TYPES = [
   'text/html',
@@ -59,9 +59,9 @@ export async function rewriteOrigin(response: Response, url: URL, channel: strin
   let body = await response.text();
   const origin = url.origin;
 
-  // Rewrite production origin -> preview origin
-  if (body.includes(PRODUCTION_ORIGIN)) {
-    body = body.replaceAll(PRODUCTION_ORIGIN, origin);
+  // Rewrite canonical www origin -> current preview origin
+  if (body.includes(WWW_ORIGIN)) {
+    body = body.replaceAll(WWW_ORIGIN, origin);
   }
 
   // Rewrite install script defaults so CLI uses the preview channel
@@ -217,6 +217,15 @@ export default {
         const response = await env.ASSETS.fetch(spaRequest);
         return isPreview ? rewriteOrigin(response, url, channel) : response;
       }
+      const response = await env.ASSETS.fetch(request);
+      return isPreview ? rewriteOrigin(response, url, channel) : response;
+    }
+
+    // Static-asset paths are case-sensitive (Vite hashes like client.BzZdRM54.js,
+    // fonts like Inter-Regular.woff2). normalizePath() below would lowercase
+    // them and 301 to a filename that doesn't exist on disk — breaking CSS,
+    // fonts, and dynamic imports. Serve directly from ASSETS before normalizing.
+    if (/^\/(assets|fonts|images|videos|scripts|styles|_astro)\//.test(url.pathname)) {
       const response = await env.ASSETS.fetch(request);
       return isPreview ? rewriteOrigin(response, url, channel) : response;
     }

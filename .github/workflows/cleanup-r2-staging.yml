@@ -20,7 +20,7 @@ jobs:
           CHANNEL="pr-${PR_NUM}"
           echo "Cleaning up R2 channel: ${CHANNEL}..."
 
-          for dir in cli desktop apt rpm apk archlinux; do
+          for dir in cli desktop npm apt rpm apk archlinux; do
             aws s3 rm "s3://${RELEASES_BUCKET}/${dir}/${CHANNEL}/" \
               --recursive \
               --endpoint-url "$R2_ENDPOINT" 2>/dev/null || true

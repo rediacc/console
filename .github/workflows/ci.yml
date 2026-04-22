@@ -180,6 +180,12 @@ jobs:
       - name: Install wrangler
         run: npm install -g wrangler
 
+      - name: Reap stale migration-test D1 databases
+        run: .ci/scripts/housekeeping/cleanup-stale-d1.sh --max-age 60
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
       - name: Test migrations against all regional production clones
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -1250,3 +1256,78 @@ jobs:
           fi
           echo "All CI jobs passed successfully!"
 
+  # ============================================================================
+  # HOUSEKEEPING
+  # Cleanup old releases, tags, GHCR packages, deployments, CF Pages,
+  # preview environments, D1 dbs, Turnstile widgets, R2 orphans, stale branches,
+  # and Stripe sandbox orphans. Runs on every successful push to main so
+  # retention never blocks on a release actually shipping.
+  # ============================================================================
+  housekeeping:
+    name: Housekeeping
+    runs-on: ubuntu-slim
+    needs: [ci-complete]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ci-complete.result == 'success'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: housekeeping
+          repositories: console,renet,middleware,elite,account
+
+      - name: Cleanup old releases, tags, packages, previews, R2 orphans, branches
+        run: .ci/scripts/housekeeping/cleanup-versions.sh
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - uses: ./.github/actions/app-token
+        id: app-token-stripe
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console,account
+
+      - name: Initialize account submodule
+        run: git submodule update --init private/account
+
+      - name: Install account dependencies
+        run: npm install
+        working-directory: private/account
+
+      - name: Cleanup orphaned Stripe sandbox resources
+        run: npx tsx scripts/cleanup-orphans.ts
+        working-directory: private/account
+        env:
+          STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Verify Stripe sandbox webhook endpoints (per-region)
+        run: |
+          jq -r '.regions[] | .edgeDomain' regions.json | while read domain; do
+            echo "Verifying sandbox webhook for ${domain}..."
+            npx tsx private/account/scripts/verify-webhook.ts --sandbox --expected-url "https://${domain}/account/api/v1/webhooks/stripe"
+          done
+        env:
+          STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}

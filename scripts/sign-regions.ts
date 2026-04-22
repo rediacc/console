@@ -5,7 +5,7 @@
  * signs the payload with the Ed25519 private key, and outputs a SignedSubscriptionBlob.
  *
  * Usage:
- *   ED25519_PRIVATE_KEY=... npx tsx scripts/sign-regions.ts > workers/marketing/dist/regions.json
+ *   ED25519_PRIVATE_KEY=... npx tsx scripts/sign-regions.ts > workers/www/dist/regions.json
  *
  * The output is served as /regions.json on the marketing site. The CLI fetches it,
  * verifies the Ed25519 signature with the hardcoded public key, and presents the

@@ -54,6 +54,25 @@ RELEASE_REPO="rediacc/console"
 # Cloudflare Pages project for preview deployments
 CF_PAGES_PROJECT="rediacc"
 
+# R2 cleanup
+R2_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"
+R2_RETENTION_DAYS=7
+R2_FORMAT_DIRS=("cli" "desktop" "npm" "apt" "rpm" "apk" "archlinux")
+# Orphan v*/ under cli/ and desktop/ older than this are deletable. Conservative
+# double of R2_RETENTION_DAYS so a real release whose tag was pruned still has
+# time to be noticed before its R2 bytes are reaped.
+R2_ORPHAN_VERSION_AGE_DAYS=14
+# pr-N/ under any format dir older than this is reaped regardless of PR state.
+# A new push on the PR regenerates artifacts via CI, so this only affects
+# stale open PRs that nobody touches.
+R2_PR_MAX_AGE_DAYS=3
+# Package-manager channel retention (apt/, rpm/, apk/, archlinux/).
+# Each aws s3 sync during release adds new rediacc-cli-<semver>.<ext> without
+# deleting predecessors -- without retention the channel dir grows unbounded.
+# Keep if rank < R2_PACKAGE_KEEP_VERSIONS OR age < R2_PACKAGE_KEEP_DAYS.
+R2_PACKAGE_KEEP_VERSIONS=7
+R2_PACKAGE_KEEP_DAYS=10
+
 # =============================================================================
 # PREREQUISITES
 # =============================================================================
@@ -61,6 +80,7 @@ CF_PAGES_PROJECT="rediacc"
 require_cmd gh
 require_cmd jq
 require_cmd curl
+require_cmd aws
 require_var GH_TOKEN
 
 # =============================================================================
@@ -780,14 +800,316 @@ cleanup_orphan_turnstile_widgets() {
 }
 
 # =============================================================================
-# PHASE 8: STALE BRANCHES
+# PHASE 8: R2 ORPHANS
+# Reap R2 state the other phases do not cover:
+#   - dryrun-<sha>/ prefixes older than R2_RETENTION_DAYS across every format
+#     dir (left behind by workflow_dispatch / nightly dryruns)
+#   - pr-N/ prefixes whose PR is closed + older than a 24h grace window
+#     (belt-and-braces over cleanup-r2-staging.yml; also catches the
+#     pre-fix npm/pr-N/ accumulation)
+#   - Legacy dead top-level prefixes (staging/, packages/, cli/latest/) --
+#     unconditional noop delete each run, protects against regression writes
+#   - v<semver>/ under cli/ and desktop/ that is neither in the authoritative
+#     versions.json tracker nor a git tag, AND older than
+#     R2_ORPHAN_VERSION_AGE_DAYS (reaps PR-pollution such as v1.0.3/ that
+#     was never released)
+# =============================================================================
+
+# List immediate children of a prefix (returns "PRE dir/" lines unchanged).
+r2_ls_prefix() {
+    local prefix="$1"
+    aws s3 ls "s3://${R2_BUCKET}/${prefix}" \
+        --endpoint-url "$R2_ENDPOINT" 2>/dev/null || true
+}
+
+# Return LastModified (ISO8601) of the first object under a prefix; empty if
+# the prefix is empty or unreadable.
+r2_prefix_last_modified() {
+    local prefix="$1"
+    aws s3 ls "s3://${R2_BUCKET}/${prefix}" --recursive \
+        --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
+        awk 'NR==1 {print $1"T"$2"Z"; exit}'
+}
+
+# Delete a prefix recursively, or log the intent in dry-run.
+r2_rm_recursive() {
+    local prefix="$1" label="${2:-}"
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_warn "  [DRY-RUN] Would delete s3://${R2_BUCKET}/${prefix}${label:+ ($label)}"
+        return 0
+    fi
+    aws s3 rm "s3://${R2_BUCKET}/${prefix}" --recursive \
+        --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null || true
+    log_info "  Deleted s3://${R2_BUCKET}/${prefix}${label:+ ($label)}"
+}
+
+cleanup_r2() {
+    log_step "Phase 8: Cleaning up R2 orphans"
+
+    # Skip if R2 creds unset; housekeeping job in ci.yml provides them, but
+    # local invocations without them should not blow up.
+    if [[ -z "${R2_ACCESS_KEY_ID:-}" ]] || [[ -z "${R2_SECRET_ACCESS_KEY:-}" ]] || [[ -z "${R2_ENDPOINT:-}" ]]; then
+        log_warn "  R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_ENDPOINT not set, skipping R2 cleanup"
+        return 0
+    fi
+
+    export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
+    export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+    export AWS_DEFAULT_REGION="auto"
+
+    # Relax set -e inside the phase -- many aws|awk pipes here have SIGPIPE
+    # edge cases that would otherwise kill the whole housekeeping job silently.
+    # Every destructive call has its own || true / 2>/dev/null guard.
+    set +e
+
+    local now_epoch
+    now_epoch="$(date -u +%s)"
+    local dryrun_max_age=$((R2_RETENTION_DAYS * 86400))
+    local orphan_ver_max_age=$((R2_ORPHAN_VERSION_AGE_DAYS * 86400))
+
+    # 8a. Dryrun reaper ------------------------------------------------------
+    log_step "  8a: dryrun-*/ older than ${R2_RETENTION_DAYS}d"
+    local dryrun_deleted=0
+    for dir in "${R2_FORMAT_DIRS[@]}"; do
+        while IFS= read -r line; do
+            local sub
+            sub="$(echo "$line" | awk '/^[[:space:]]*PRE[[:space:]]dryrun-/ {print $2}')"
+            [[ -z "$sub" ]] && continue
+            local prefix="${dir}/${sub}"
+            local last
+            last="$(r2_prefix_last_modified "$prefix")"
+            [[ -z "$last" ]] && continue
+            local last_epoch
+            last_epoch="$(date -u -d "$last" +%s 2>/dev/null || echo 0)"
+            [[ "$last_epoch" -eq 0 ]] && continue
+            if ((now_epoch - last_epoch > dryrun_max_age)); then
+                r2_rm_recursive "$prefix" "dryrun $(((now_epoch - last_epoch) / 86400))d old"
+                dryrun_deleted=$((dryrun_deleted + 1))
+            fi
+        done < <(r2_ls_prefix "${dir}/")
+    done
+    log_info "  8a: processed ${#R2_FORMAT_DIRS[@]} format dirs, deleted $dryrun_deleted dryrun prefix(es)"
+
+    # 8b. PR channel reaper --------------------------------------------------
+    # Deletes pr-N/ when EITHER condition holds:
+    #   * PR state != OPEN (no grace -- cleanup-r2-staging.yml on PR close
+    #     also runs; this sweep is just a backstop)
+    #   * last-modified > R2_PR_MAX_AGE_DAYS regardless of PR state
+    # The age cap catches stale bytes on long-lived open PRs; next push on
+    # the PR regenerates artifacts via CI.
+    log_step "  8b: pr-N/ closed or older than ${R2_PR_MAX_AGE_DAYS}d"
+    local pr_deleted=0
+    local pr_age_max=$((R2_PR_MAX_AGE_DAYS * 86400))
+    for dir in "${R2_FORMAT_DIRS[@]}"; do
+        while IFS= read -r line; do
+            local sub
+            sub="$(echo "$line" | awk '/^[[:space:]]*PRE[[:space:]]pr-[0-9]+\// {print $2}')"
+            [[ -z "$sub" ]] && continue
+            local pr_num="${sub#pr-}"
+            pr_num="${pr_num%/}"
+            local prefix="${dir}/${sub}"
+            local last
+            last="$(r2_prefix_last_modified "$prefix")"
+            [[ -z "$last" ]] && continue
+            local last_epoch
+            last_epoch="$(date -u -d "$last" +%s 2>/dev/null || echo 0)"
+            [[ "$last_epoch" -eq 0 ]] && continue
+            local age=$((now_epoch - last_epoch))
+            local reason=""
+            if ((age > pr_age_max)); then
+                reason="stale $((age / 86400))d"
+            else
+                local state
+                state="$(gh pr view "$pr_num" --repo "$RELEASE_REPO" --json state --jq '.state' 2>/dev/null || echo "UNKNOWN")"
+                if [[ "$state" != "OPEN" ]]; then
+                    reason="PR #${pr_num} ${state}"
+                fi
+            fi
+            if [[ -n "$reason" ]]; then
+                r2_rm_recursive "$prefix" "$reason"
+                pr_deleted=$((pr_deleted + 1))
+            fi
+        done < <(r2_ls_prefix "${dir}/")
+    done
+    log_info "  8b: deleted $pr_deleted PR channel prefix(es)"
+
+    # 8c. Legacy dead prefixes ----------------------------------------------
+    log_step "  8c: legacy dead prefixes"
+    for dead in "staging/" "packages/" "cli/latest/"; do
+        # Only log when there's actually something there, to avoid noise.
+        if [[ -n "$(r2_ls_prefix "$dead")" ]]; then
+            r2_rm_recursive "$dead" "legacy"
+        fi
+    done
+
+    # 8d. Orphan v<semver>/ under cli/ and desktop/ --------------------------
+    log_step "  8d: orphan v<semver>/ with no tracker entry and no git tag"
+    local git_tags
+    git_tags="$(gh api "repos/${RELEASE_REPO}/tags" --paginate --jq '.[].name' 2>/dev/null | grep -E '^v[0-9]' || true)"
+    local orphan_ver_deleted=0
+    for dir in "cli" "desktop"; do
+        local tracker
+        tracker="$(aws s3 cp "s3://${R2_BUCKET}/${dir}/versions.json" - \
+            --endpoint-url "$R2_ENDPOINT" 2>/dev/null || echo "[]")"
+        [[ -z "$tracker" ]] && tracker="[]"
+        while IFS= read -r line; do
+            local sub
+            sub="$(echo "$line" | awk '/^[[:space:]]*PRE[[:space:]]v[0-9]+\./ {print $2}')"
+            [[ -z "$sub" ]] && continue
+            local ver="${sub#v}"
+            ver="${ver%/}"
+            local tag="v${ver}"
+            # Keep if in tracker
+            if echo "$tracker" | jq -e --arg v "$ver" 'index($v) != null' >/dev/null 2>&1; then
+                continue
+            fi
+            # Keep if a git tag exists
+            if echo "$git_tags" | grep -qxF "$tag"; then
+                continue
+            fi
+            local prefix="${dir}/${sub}"
+            local last
+            last="$(r2_prefix_last_modified "$prefix")"
+            [[ -z "$last" ]] && continue
+            local last_epoch
+            last_epoch="$(date -u -d "$last" +%s 2>/dev/null || echo 0)"
+            [[ "$last_epoch" -eq 0 ]] && continue
+            if ((now_epoch - last_epoch > orphan_ver_max_age)); then
+                r2_rm_recursive "$prefix" "orphan ${tag} (not in versions.json, no git tag)"
+                orphan_ver_deleted=$((orphan_ver_deleted + 1))
+            fi
+        done < <(r2_ls_prefix "${dir}/")
+    done
+    log_info "  8d: deleted $orphan_ver_deleted orphan versioned prefix(es)"
+
+    # 8f. Channel artifact retention ----------------------------------------
+    # Every release appends to <fmt>/<channel>/ without ever removing the
+    # previous file (aws s3 sync runs without --delete). Accumulating
+    # filename patterns:
+    #   apt/<channel>/     -> rediacc-cli_<ver>_<arch>.deb (underscore sep)
+    #   rpm/<channel>/     -> rediacc-cli-<ver>.<arch>.rpm
+    #   apk/<channel>/     -> rediacc-cli-<ver>.apk
+    #   archlinux/<ch>/    -> rediacc-cli-<ver>-<arch>.pkg.tar.zst
+    #   npm/<channel>/     -> rediacc-cli-<ver>.tgz
+    #   desktop/<channel>/ -> rediacc-desktop-<ver>-<platform>.<ext> (+.blockmap)
+    # Retention: keep if rank < R2_PACKAGE_KEEP_VERSIONS OR age < KEEP_DAYS.
+    # Special case: rediacc-desktop-0.0.0-dev-* are PR CI pollution from
+    # before the version-injection fix; always delete.
+    # Metadata (Packages.gz, Release*, InRelease, APKINDEX.tar.gz, repodata/,
+    # *.db.tar.gz, latest-*.yml, manifest.json, gpg.key, rediacc-cli-latest.tgz)
+    # is left alone; next release rewrites it.
+    # Retention is PER-SEMVER, strict top-N. No age grace because
+    # promote-stable.yml resets LastModified on every file at promotion, so
+    # an age rule keeps everything on stable forever.
+    # 0.0.0-dev files are always deleted (pre-version-injection pollution).
+    log_step "  8f: channel artifact retention (keep top ${R2_PACKAGE_KEEP_VERSIONS} semvers; zap 0.0.0-dev)"
+    local pkg_deleted=0
+    for fmt in apt rpm apk archlinux npm desktop; do
+        for channel in stable edge; do
+            local channel_root="${fmt}/${channel}/"
+            [[ -z "$(r2_ls_prefix "$channel_root")" ]] && continue
+            local listing
+            listing="$(aws s3 ls "s3://${R2_BUCKET}/${channel_root}" --recursive \
+                --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
+                awk '{
+                    n = split($4, p, "/"); fname = p[n];
+                    if (fname !~ /^rediacc-(cli|desktop)[-_]/) next
+                    rest = fname; sub(/^rediacc-(cli|desktop)[-_]/, "", rest);
+                    if (match(rest, /^[0-9]+\.[0-9]+\.[0-9]+/)) {
+                        semver = substr(rest, 1, RLENGTH);
+                        after = substr(rest, RLENGTH + 1);
+                        is_dev = (semver == "0.0.0" && after ~ /^-dev/) ? 1 : 0;
+                        print $1"T"$2"Z""|"semver"|"is_dev"|"$4
+                    }
+                }')"
+            [[ -z "$listing" ]] && continue
+            # Top-N non-dev semvers (per-semver rank, not per-file).
+            local top_versions
+            top_versions="$(echo "$listing" | awk -F'|' '$3 == 0 {print $2}' | sort -u -V -r | head -n "$R2_PACKAGE_KEEP_VERSIONS")"
+            while IFS='|' read -r ts semver is_dev key; do
+                [[ -z "$key" ]] && continue
+                local ts_epoch
+                ts_epoch="$(date -u -d "$ts" +%s 2>/dev/null || echo 0)"
+                local age=$((now_epoch - ts_epoch))
+                if [[ "$is_dev" == "1" ]]; then
+                    local tag="0.0.0-dev pollution, $((age / 86400))d"
+                    if [[ "$DRY_RUN" == "true" ]]; then
+                        log_warn "  [DRY-RUN] Would delete s3://${R2_BUCKET}/${key} (${tag})"
+                    else
+                        aws s3 rm "s3://${R2_BUCKET}/${key}" --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null || true
+                        log_info "  Deleted ${key} (${tag})"
+                    fi
+                    pkg_deleted=$((pkg_deleted + 1))
+                    continue
+                fi
+                # Keep if semver is in top-N
+                if echo "$top_versions" | grep -qxF "$semver"; then
+                    continue
+                fi
+                local tag="v${semver}, outside top-${R2_PACKAGE_KEEP_VERSIONS}"
+                if [[ "$DRY_RUN" == "true" ]]; then
+                    log_warn "  [DRY-RUN] Would delete s3://${R2_BUCKET}/${key} (${tag})"
+                else
+                    aws s3 rm "s3://${R2_BUCKET}/${key}" --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null || true
+                    log_info "  Deleted ${key} (${tag})"
+                fi
+                pkg_deleted=$((pkg_deleted + 1))
+            done <<<"$listing"
+        done
+    done
+    log_info "  8f: deleted $pkg_deleted stale artifact(s) across apt/rpm/apk/archlinux/npm/desktop"
+
+    # 8e. Abort abandoned multipart uploads ---------------------------------
+    # Successful multiparts complete in minutes; anything older than 24h is
+    # an abandoned CI/promote run leaking storage until aborted.
+    log_step "  8e: abort multipart uploads older than 24h"
+    local uploads
+    uploads="$(aws s3api list-multipart-uploads --bucket "$R2_BUCKET" \
+        --endpoint-url "$R2_ENDPOINT" \
+        --query 'Uploads[].{Key:Key,UploadId:UploadId,Initiated:Initiated}' \
+        --output json 2>/dev/null || echo "[]")"
+    local mpu_count
+    mpu_count="$(echo "$uploads" | jq 'length')"
+    if [[ "$mpu_count" -eq 0 ]]; then
+        log_info "  8e: no ongoing multipart uploads"
+    else
+        local mpu_aborted=0
+        local mpu_max_age=$((24 * 3600))
+        while IFS=$'\t' read -r key upload_id initiated; do
+            [[ -z "$key" ]] && continue
+            local init_epoch
+            init_epoch="$(date -u -d "$initiated" +%s 2>/dev/null || echo 0)"
+            [[ "$init_epoch" -eq 0 ]] && continue
+            if ((now_epoch - init_epoch <= mpu_max_age)); then
+                continue
+            fi
+            if [[ "$DRY_RUN" == "true" ]]; then
+                log_warn "  [DRY-RUN] Would abort multipart: $key (age $(((now_epoch - init_epoch) / 3600))h)"
+                mpu_aborted=$((mpu_aborted + 1))
+                continue
+            fi
+            aws s3api abort-multipart-upload \
+                --bucket "$R2_BUCKET" --key "$key" --upload-id "$upload_id" \
+                --endpoint-url "$R2_ENDPOINT" 2>/dev/null || continue
+            log_info "  Aborted multipart: $key"
+            mpu_aborted=$((mpu_aborted + 1))
+        done < <(echo "$uploads" | jq -r '.[] | "\(.Key)\t\(.UploadId)\t\(.Initiated)"')
+        log_info "  8e: aborted $mpu_aborted of $mpu_count (held $((mpu_count - mpu_aborted)) under 24h grace)"
+    fi
+
+    # Restore strict mode for the remaining phases.
+    set -e
+}
+
+# =============================================================================
+# PHASE 9: STALE BRANCHES
 # Delete branches with no open PR and no commits in the last N days.
 # Runs across all org repos to prevent accumulation from merged PRs,
 # bot-created branches, and abandoned feature branches.
 # =============================================================================
 
 cleanup_stale_branches() {
-    log_step "Phase 8: Cleaning up stale branches (>${BRANCH_MAX_AGE_DAYS} days, no open PR)"
+    log_step "Phase 9: Cleaning up stale branches (>${BRANCH_MAX_AGE_DAYS} days, no open PR)"
 
     local now_epoch
     now_epoch="$(date +%s)"
@@ -889,6 +1211,8 @@ echo ""
 cleanup_d1_databases
 echo ""
 cleanup_orphan_turnstile_widgets
+echo ""
+cleanup_r2
 echo ""
 cleanup_stale_branches
 
