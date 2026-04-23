@@ -1,10 +1,10 @@
 #!/bin/bash
 # Rediacc CLI Installer
 #
-# Install layout (since PR #458): single $INSTALL_DIR/rdc + $BIN_DIR/rdc
-# symlink. Rollback slot is $INSTALL_DIR/rdc.old (one file, no per-version
-# dirs). Previous layout used $HOME/.local/share/rediacc/versions/<V>/rdc
-# and is unconditionally removed on every re-install.
+# Install layout: single $INSTALL_DIR/rdc + $BIN_DIR/rdc symlink.
+# Rollback slot is $INSTALL_DIR/rdc.old (one file, no per-version dirs).
+# Previous layout used $HOME/.local/share/rediacc/versions/<V>/rdc and is
+# unconditionally removed on every re-install.
 #
 # Quick install (downloads and runs this script):
 #   curl -fsSL https://www.rediacc.com/install.sh | bash
