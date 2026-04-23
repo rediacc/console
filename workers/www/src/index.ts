@@ -1,14 +1,8 @@
 import { findSmartRedirect } from './smart-redirect';
 import { applyRedirect } from './redirect-aliases';
-import { drizzle } from 'drizzle-orm/d1';
-import { createApp } from '../../../private/account/src/app.js';
-import * as schema from '../../../private/account/src/db/schema.js';
-import { envSchema } from '../../../private/account/src/types/env.js';
-import type { Database } from '../../../private/account/src/db/index.js';
 
 interface Env {
   ASSETS: Fetcher;
-  DB: D1Database;
   [key: string]: unknown;
 }
 
@@ -98,16 +92,11 @@ export function buildDisallowRobots(): Response {
   });
 }
 
-const accountApp = createApp(
-  (c) => {
-    const ctx = c as { env: Record<string, unknown> };
-    return envSchema.parse(ctx.env);
-  },
-  (c) => {
-    const ctx = c as { env: Env };
-    return drizzle(ctx.env.DB, { schema }) as unknown as Database;
-  }
-);
+// The embedded account server was removed post multi-region migration.
+// /account/api/* on edge.rediacc.com is dead; real traffic goes through
+// edge-{eu,us,asia}.rediacc.com (edge-rediacc-account-* workers). The
+// marketing worker now serves marketing + static assets only, and the
+// D1 "DB" binding is gone from wrangler.edge.toml.
 
 // ---------------------------------------------------------------------------
 // 404 recovery — normalization + curated redirect table
@@ -199,9 +188,14 @@ export default {
       return buildDisallowRobots();
     }
 
-    // Handle account API requests directly (account server embedded)
+    // Account API on the marketing worker is dead post multi-region.
+    // Return 410 so clients stop probing and fall through to the regional
+    // endpoint discovery path (RegionPickerModal in the SPA).
     if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
-      return accountApp.fetch(request, env);
+      return new Response(
+        'Account API is served by regional workers (edge-{eu,us,asia}.rediacc.com).\n',
+        { status: 410, headers: { 'content-type': 'text/plain; charset=utf-8' } }
+      );
     }
 
     // Serve account SPA for /account/* routes
