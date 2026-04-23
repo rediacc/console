@@ -32,6 +32,8 @@
     "check:ci-e2e-coverage": ".ci/scripts/quality/check-e2e-coverage.sh",
     "check:ci-npmrc": ".ci/scripts/quality/check-npmrc.sh",
     "check:ci-peer-deps": ".ci/scripts/quality/check-peer-deps.sh",
+    "check:ci-overrides-reasons": "tsx scripts/check-overrides-reasons.ts",
+    "check:ci-syncpack-reasons": "tsx scripts/check-syncpack-reasons.ts",
     "check:ci-quality-gates": ".ci/scripts/test/run-all.sh",
     "check:ci-security-audit": ".ci/scripts/security/audit.sh",
     "check:ci-shell-commands": ".ci/scripts/security/check-commands.sh",
@@ -161,5 +163,25 @@
     "@hono/node-server": ">=1.19.13",
     "vite": ">=6.4.2 <8",
     "follow-redirects": "^1.16.0"
+  },
+  "_overridesReasons": {
+    "glob": "BLOCKER: force glob ^11 everywhere to avoid deprecated transitive glob <9 chain pulled in via old eslint/electron paths",
+    "rimraf": "BLOCKER: force rimraf ^6 to avoid unmaintained v2/v3 transitive chains from older tooling (electron-builder plist, etc.)",
+    "inflight": "BLOCKER: replace unmaintained inflight with @isaacs/inflight; original package is unsupported and leaks memory",
+    "@npmcli/move-file": "BLOCKER: redirect to @npmcli/fs which is the supported successor; bare package archived since npm 7",
+    "rollup": "BLOCKER: pin rollup ^4.59 to ensure all workspaces resolve the same native binary set and avoid platform-specific optional-dep drift",
+    "fast-xml-parser": "BLOCKER: pin 5.7.1 to carry CDATA/comment injection fix (GHSA-gh4j-gqv2-49f6); @astrojs/rss otherwise holds tree at <=5.5.x",
+    "flatted": "BLOCKER: force >=3.4.2 to pick up prototype pollution fix landed after vitest/@vitest transitive pin held older versions",
+    "smol-toml": "BLOCKER: force >=1.6.1 to pick up DoS-via-commented-lines fix; astro toolchain otherwise pulls older transitive versions",
+    "h3": "BLOCKER: force >=1.15.9 to include SSE carriage-return sanitization + path traversal fixes; upstream astro/nitro transitives lag",
+    "yaml": "BLOCKER: force >=2.8.3 to include stack-overflow-on-deeply-nested-collections fix; astro transitive chain otherwise holds tree at older version",
+    "lodash": "BLOCKER: force >=4.17.22 to pick up latest prototype-pollution defensive patches; upstream lodash is effectively unmaintained",
+    "svgo": "BLOCKER: pin ^4.0.1 to avoid the multiple older v2/v3 transitive versions pulled in via astro icon pipeline",
+    "devalue": "BLOCKER: pin ^5.6.4 to match the version astro and sveltekit both ship; older transitives lack XSS hardening",
+    "dayjs": "BLOCKER: pin ^1.11.20 to match antd pro-components internal expectations and avoid transitive version drift",
+    "hono": "BLOCKER: force >=4.12.12 to carry JSX attribute injection fix (GHSA-458j-xx4x-4375); @modelcontextprotocol/sdk transitively pulls older hono",
+    "@hono/node-server": "BLOCKER: force >=1.19.13 to pair with hono >=4.12.12 override; pre-1.19 cannot start against hono 4.12.x",
+    "vite": "BLOCKER: bound >=6.4.2 <8 to capture dev-server path-traversal + fs.deny fixes while staying compatible with vitest/@vitest 3.x and the astro stack; vite 8 release is a breaking major we have not planned for",
+    "follow-redirects": "BLOCKER: force ^1.16.0 to include GHSA-r4q5-vmmm-2653 fix; axios 1.15.0 range ^1.15.11 permits 1.16.0 but the lockfile would otherwise freeze at 1.15.11"
   }
 }

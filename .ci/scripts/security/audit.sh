@@ -22,6 +22,9 @@ source "$SCRIPT_DIR/../lib/emit-advisory.sh"
 # shellcheck source=../lib/blocker-validator.sh
 # BLOCKER: shared BLOCKER parser + quality validator used by every suppression gate
 source "$SCRIPT_DIR/../lib/blocker-validator.sh"
+# shellcheck source=../lib/age-check.sh
+# BLOCKER: age-based rot detection for allowlist entries; warns at 180 days, fails at 365
+source "$SCRIPT_DIR/../lib/age-check.sh"
 
 # Advisory metadata populated by build_advisory_map, keyed by source ID
 declare -A ADV_URL ADV_TITLE ADV_SEVERITY ADV_GHSA
@@ -223,6 +226,21 @@ main() {
     verify_all_blockers ".audit-allowlist" BLOCKER_DEV || blockers_ok=1
     if [[ $blockers_ok -ne 0 ]]; then
         log_error "Allowlist entries must include a quality '# BLOCKER: <reason>' — strict gate enforced"
+        exit 1
+    fi
+
+    # Age-based rot check: warn on entries > 180 days, fail on > 365 days.
+    # Forces a re-review cadence on long-lived suppressions.
+    log_info "Checking allowlist entry ages"
+    local age_fail=0 id
+    for id in "${!ALLOWED_PROD[@]}"; do
+        check_entry_age ".audit-prod-allowlist" "$id" "$id" "audit-prod-allowlist entry" || age_fail=1
+    done
+    for id in "${!ALLOWED_DEV[@]}"; do
+        check_entry_age ".audit-allowlist" "$id" "$id" "audit-allowlist entry" || age_fail=1
+    done
+    if [[ $age_fail -ne 0 ]]; then
+        log_error "Allowlist entries older than $AGE_FAIL_DAYS days must be re-reviewed — strict age gate enforced"
         exit 1
     fi
 

@@ -24,6 +24,7 @@ import https from 'node:https';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BLUE, GREEN, NC, RED, YELLOW } from './utils/console.js';
+import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
@@ -153,38 +154,28 @@ function isMajorUpgrade(current: string, latest: string): boolean {
 }
 
 /**
- * Load and parse the blocklist file
+ * Load and parse the blocklist file. Uses the shared BLOCKER-aware parser
+ * and fails loudly if any entry is missing a substantive "# BLOCKER: <reason>"
+ * comment (the same rules enforced across every other suppression mechanism
+ * in the repo — see scripts/lib/blocker-validator.ts).
  */
 function loadBlocklist(): Map<string, BlocklistEntry> {
   const blocklist = new Map<string, BlocklistEntry>();
+  if (!fs.existsSync(BLOCKLIST_FILE)) return blocklist;
 
-  if (!fs.existsSync(BLOCKLIST_FILE)) {
-    return blocklist;
+  const entries = parseBlockeredList(BLOCKLIST_FILE);
+  const failures = verifyAllBlockers(entries, BLOCKLIST_FILE);
+  if (failures.length > 0) {
+    console.error(`${RED}✗${NC} BLOCKER validation failed for ${BLOCKLIST_FILE}:`);
+    for (const f of failures) console.error(f);
+    console.error(
+      `\n${RED}✗${NC} Blocklist entries must carry a substantive '# BLOCKER: <reason>' — strict gate enforced`,
+    );
+    process.exit(1);
   }
-
-  const content = fs.readFileSync(BLOCKLIST_FILE, 'utf-8');
-  const lines = content.split('\n');
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // Skip empty lines and comments
-    if (!trimmed || trimmed.startsWith('#')) {
-      continue;
-    }
-
-    // Parse: package-name # reason
-    const commentIndex = trimmed.indexOf('#');
-    const packageName = commentIndex >= 0 ? trimmed.slice(0, commentIndex).trim() : trimmed;
-    const reason = commentIndex >= 0 ? trimmed.slice(commentIndex + 1).trim() : '';
-
-    if (!packageName) {
-      continue;
-    }
-
-    blocklist.set(packageName, { reason });
+  for (const { entry, blocker } of entries) {
+    blocklist.set(entry, { reason: blocker });
   }
-
   return blocklist;
 }
 

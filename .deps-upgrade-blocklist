@@ -1,40 +1,42 @@
-# Packages blocked from auto-upgrade (require manual migration)
+# Packages blocked from auto-upgrade (require manual migration).
 #
-# Format: package-name # reason
-# These packages will NOT be upgraded automatically.
-# To upgrade, remove from this list and run: npm run check:deps -- --upgrade
+# Format: package-name  # BLOCKER: <substantive reason>
 #
-# Example:
-# some-package # Reason for blocking
+# The BLOCKER convention is enforced by scripts/lib/blocker-validator.ts
+# (invoked from scripts/check-deps.ts): each line needs a 30+ char reason
+# that does not match the banned-phrase list. Blank line = end of group.
+#
+# To upgrade a blocked package: remove its line from this file and run
+#   npm run check:deps -- --upgrade
 
-# Ant Design ecosystem - v6.x is a major CSS/component rewrite
-antd # v6.x requires CSS-in-JS removal, component API changes, extensive migration
-@ant-design/icons # Must match antd major version
-@ant-design/pro-components # React 19 compatibility issues
+# Ant Design ecosystem — v6.x is a major CSS/component rewrite
+antd  # BLOCKER: v6.x requires CSS-in-JS removal and component API changes across all pages
+@ant-design/icons  # BLOCKER: must match antd major version; blocked until antd v6 migration lands
+@ant-design/pro-components  # BLOCKER: React 19 compatibility issues in 3.x; revisit after React 19 canonical adoption
 
-# Electron - v40.x has native module compatibility issues (cpu-features, nan)
-electron # v40.x breaks native module rebuild with nan library errors
+# Electron — v40.x has native module compatibility issues
+electron  # BLOCKER: v40.x breaks native module rebuild with nan library errors in our CLI bridge native addon
 
-# ESLint v10 - blocked until typescript-eslint, eslint-plugin-import, eslint-plugin-react support v10
-@eslint/js # v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support
+# ESLint v10 — blocked until typescript-eslint, eslint-plugin-import, eslint-plugin-react support v10
+@eslint/js  # BLOCKER: v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support
 
-# @astrojs/react - 5.0.3 won't install due to npm lock file + electron-builder conflict
-@astrojs/react # npm workspace lock resolution prevents 5.0.3; clean npm install breaks electron-builder
+# Astro/React integration
+@astrojs/react  # BLOCKER: 5.0.3 won't install; npm workspace lock + electron-builder conflict prevents clean install
 
-# Cloudflare workers-types - npm latest tag lags behind wrangler peer dep
-@cloudflare/workers-types # Pinned to match wrangler peerOptional; npm latest tag trails behind
+# Cloudflare workers-types
+@cloudflare/workers-types  # BLOCKER: pinned to match wrangler peerOptional; npm latest tag trails behind wrangler's runtime expectation
 
-# react-syntax-highlighter - npm workspace hoisting bug with transitive deps
-react-syntax-highlighter # ^16.1.1 spec causes workspace-level install, losing transitive deps (lowlight, highlight.js, etc)
+# react-syntax-highlighter
+react-syntax-highlighter  # BLOCKER: ^16.1.1 spec causes workspace-level install, losing transitive deps lowlight/highlight.js in hoisted tree
 
-# better-sqlite3 v12 - major version, newly adopted dep
-better-sqlite3 # v12.x requires native binding rebuild, potential API changes
+# better-sqlite3 v12 — major version, newly adopted dep
+better-sqlite3  # BLOCKER: v12.x requires native binding rebuild; potential API changes need audit before adopting across packages
 
-# Zod v4 - major rewrite with different API surface
-zod # v4.x requires schema migration, different error handling
+# Zod v4 — major rewrite with different API surface
+zod  # BLOCKER: v4.x requires schema migration and different error handling; large-touch migration not scheduled
 
-# inquirer v13.3.x - npm publishes are broken (missing dist/ directory)
-inquirer # v13.3.1 and v13.3.2 published without dist/ folder
+# inquirer — npm publishes were broken at 13.3.x
+inquirer  # BLOCKER: v13.3.1 and v13.3.2 shipped without dist folder; stay on last known-good until upstream republishes
 
 # @types/node major must match Node engine version (22.x)
-@types/node # v25+ is for Node 25; project uses Node 22
+@types/node  # BLOCKER: v25+ targets Node 25 APIs; our engines field and CI runners are on Node 22
