@@ -1,8 +1,9 @@
 #!/bin/bash
 # Deploy the edge Worker to Cloudflare (edge.rediacc.com)
 #
-# Applies migrations to edge-account-db, then deploys the edge Worker.
-# Uses wrangler.edge.toml for edge-specific config (separate D1, domain).
+# Uses wrangler.edge.toml for edge-specific config (domain, assets).
+# No D1 migrations -- the monolithic edge-account-db is gone; account API
+# is served by regional workers (edge-rediacc-account-{eu,us,asia}).
 #
 # Usage:
 #   deploy-edge.sh
@@ -36,28 +37,9 @@ fi
 
 log_step "Deploying edge worker (edge.rediacc.com)..."
 
-# Apply migrations to edge D1 (idempotent). Skip gracefully only when the DB
-# genuinely does not exist (CF API 7404) -- edge-account-db is the pre-
-# multi-region monolithic edge DB; after the regional rollout
-# (account-db-{eu,us,asia}, edge-account-db-{eu,us,asia}) the monolithic DB
-# may have been deleted. Auth/network errors still fail the deploy so they
-# are not silently swallowed.
-log_step "Checking edge-account-db existence..."
-D1_INFO_STDERR="$(mktemp)"
-trap 'rm -f "$D1_INFO_STDERR"' EXIT
-if npx wrangler d1 info edge-account-db --config wrangler.edge.toml >/dev/null 2>"$D1_INFO_STDERR"; then
-    log_step "Applying migrations to edge-account-db..."
-    npx wrangler d1 migrations apply edge-account-db --remote --config wrangler.edge.toml
-    log_info "Migrations applied to edge-account-db"
-elif grep -qE 'code:[[:space:]]*7404|could not be found|Couldn.t find a DB' "$D1_INFO_STDERR"; then
-    log_warn "edge-account-db not found on this account (7404); skipping migrations (deploy continues)"
-    log_warn "Follow-up: recreate the DB or remove the binding from workers/www/wrangler.edge.toml"
-else
-    log_error "wrangler d1 info failed for a non-404 reason; aborting to avoid silent deploy on auth/network error:"
-    cat "$D1_INFO_STDERR" >&2
-    exit 1
-fi
-
-# Deploy edge worker
+# No D1 migration step -- wrangler.edge.toml no longer binds a D1 database
+# after the multi-region migration dropped the monolithic edge-account-db.
+# The marketing worker serves marketing + static assets only; account API
+# traffic goes through edge-rediacc-account-{eu,us,asia}.
 npx wrangler deploy --config wrangler.edge.toml
 log_info "Edge worker deployed"

@@ -29,11 +29,13 @@ not_found_handling = "404-page"
 html_handling = "drop-trailing-slash"
 run_worker_first = ["/*"]
 
-[[d1_databases]]
-binding = "DB"
-database_name = "edge-account-db"
-database_id = "edaa5c46-44c7-430d-9740-20a55d89ea51"
-migrations_dir = "../../private/account/drizzle"
+# D1 binding removed post multi-region migration. The monolithic
+# edge-account-db no longer exists on the CF account; account API traffic
+# now routes through the regional workers (edge-{eu,us,asia}.rediacc.com ->
+# edge-rediacc-account-* bound to edge-account-db-{eu,us,asia}). The
+# marketing worker at edge.rediacc.com only serves static marketing + asset
+# paths; it does not handle /account/api/* anymore -- removed in
+# workers/www/src/index.ts at the same time.
 
 [[r2_buckets]]
 binding = "CONFIG_BUCKET"
