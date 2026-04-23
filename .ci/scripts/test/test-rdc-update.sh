@@ -1,7 +1,8 @@
 #!/bin/bash
 # End-to-end integration tests for `rdc update` + install.sh lifecycle.
 # See PR #458 test-plan for the covered scenarios. Seven scenarios run
-# against a local Python fixture server; RDC_BINARY supplies the binary.
+# against a local Python fixture server; RDC_BINARY supplies the binary
+# (CI sources it from the build-cli-linux-x64 artifact).
 #
 # Runs the real rdc binary against a local Python HTTP fixture server that
 # serves controlled manifest.json / latest.json / binary / .sha256 under
