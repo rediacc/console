@@ -112,14 +112,24 @@ jobs:
       - name: Generate channel context
         id: staging
         run: |
+          # Only push and pull_request events write to R2. merge_group (merge
+          # queue) and schedule (nightly) get empty channel -> stage-artifacts
+          # still runs for validation but every R2/GHCR upload step self-gates
+          # on channel != ''. Prior design set dryrun-<sha> here and produced
+          # ~5 GB of orphan R2 bytes per merge-queue check and per nightly run.
           if [[ "${{ github.event_name }}" == "push" ]]; then
             CHANNEL="edge"
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             CHANNEL="pr-${{ github.event.pull_request.number }}"
           else
-            CHANNEL="dryrun-${{ github.sha }}"
+            CHANNEL=""
           fi
           echo "channel=${CHANNEL}" >> $GITHUB_OUTPUT
+
+      - name: Assert channel matches event
+        # Guard against someone reintroducing a dryrun-<sha> fallthrough
+        # for merge_group/schedule events.
+        run: .ci/scripts/ci/assert-channel-for-event.sh "${{ github.event_name }}" "${{ steps.staging.outputs.channel }}"
 
       # Upload CI tags as artifact for debugging
       - name: Upload CI Tags
@@ -548,6 +558,22 @@ jobs:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   # ============================================================================
+  # UPDATE FLOW E2E
+  # Validates install.sh + `rdc update` lifecycle (findings B, C, D, E, F).
+  # Consumes the rdc-linux-x64 artifact built by build-cli; runs a local
+  # Python fixture server that impersonates releases.rediacc.com and drives
+  # install/update/rollback scenarios.
+  # ============================================================================
+  update-flow-test:
+    name: Tests + Infra / Update Flow
+    needs: [initialize, build-cli]
+    if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.build-cli.result == 'success' && needs.initialize.outputs.is_fork != 'true'
+    uses: ./.github/workflows/ct-update-flow.yml
+    with:
+      cli_artifact_name: build-cli-linux-x64-${{ github.sha }}
+      cli_artifact_binary: rdc-linux-x64
+
+  # ============================================================================
   # COLUMN 3A: LINUX PACKAGE TESTS
   # Uses dummy binary — validates packaging scripts, Docker install tests
   # Dependencies: quality (lightweight, runs in parallel with builds)
@@ -585,7 +611,7 @@ jobs:
       id-token: write      # OIDC token for Sigstore signing
       attestations: write  # Store attestations on GitHub
     if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-desktop.result == 'success' && needs.build-cli.result == 'success' && (needs.stripe-sandbox.result == 'success' || needs.stripe-sandbox.result == 'skipped')
-    uses: ./.github/workflows/cd-dryrun.yml
+    uses: ./.github/workflows/cd-stage.yml
     with:
       upload_pages: ${{ github.event_name == 'pull_request' }}
       channel: ${{ needs.initialize.outputs.channel }}
@@ -1281,7 +1307,13 @@ jobs:
     name: Housekeeping
     runs-on: ubuntu-slim
     needs: [ci-complete]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ci-complete.result == 'success'
+    # always() prefix is load-bearing. ci-complete transitively needs
+    # deploy-preview + smoke-test-preview, which are pull_request-only
+    # and skip on push-to-main. GHA propagates the skip through the
+    # needs chain to any downstream job that omits always(), so without
+    # it this job silently skips on every push regardless of the
+    # needs.ci-complete.result check.
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ci-complete.result == 'success'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -1345,3 +1377,21 @@ jobs:
           done
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+
+  # ============================================================================
+  # ASSERT HOUSEKEEPING RAN
+  # Sentinel that fails loudly if the housekeeping job silently skipped on
+  # push-to-main. Guards against the GHA transitive-skip propagation bug:
+  # deploy-preview/smoke-test-preview are pull_request-only, so a missing
+  # always() on housekeeping's if: used to let every push-to-main skip it.
+  # This check runs after housekeeping and fails fast if it didn't succeed.
+  # ============================================================================
+  assert-housekeeping-ran:
+    name: Assert Housekeeping Ran
+    runs-on: ubuntu-slim
+    needs: [housekeeping]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - name: Check housekeeping conclusion
+        run: .ci/scripts/ci/assert-job-succeeded.sh housekeeping "${{ needs.housekeeping.result }}"

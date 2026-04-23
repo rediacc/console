@@ -297,7 +297,7 @@ jobs:
           .ci/scripts/docker/retag-image.sh --image web --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
           .ci/scripts/docker/retag-image.sh --image cli --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
           # On-prem server image lives at ghcr.io/rediacc/server (outside elite/),
-          # so PUBLISH_DOCKER_REGISTRY can't reach it. cd-dryrun stages :CHANNEL.
+          # so PUBLISH_DOCKER_REGISTRY can't reach it. cd-stage stages :CHANNEL.
           .ci/scripts/docker/retag-image.sh --image-path ghcr.io/rediacc/server --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
 
       # -----------------------------------------------------------------------
@@ -370,7 +370,7 @@ jobs:
       # smoke-test succeed. Keeping them there prevents orphan tags
       # pointing at a broken release.
 
-      # Package repos + R2 edge upload already handled by CI (cd-dryrun.yml).
+      # Package repos + R2 edge upload already handled by CI (cd-stage.yml).
       # CI builds self-contained repos and uploads to {format}/edge/ on push-to-main.
       # No rebuild or re-upload needed here -- one code path, tested in PR CI.
 
@@ -430,7 +430,7 @@ jobs:
             PURGE_URLS+=("https://releases.rediacc.com/${file}")
           done
 
-          # Re-bake install scripts: cd-dryrun.yml baked 'edge' into
+          # Re-bake install scripts: cd-stage.yml baked 'edge' into
           # cli/edge/install.{sh,ps1}; the raw copy above carried that into
           # cli/stable/. Rewrite back to stable. Channel-pointer scripts
           # are mutable.
@@ -732,7 +732,7 @@ jobs:
 
           # R2 backstop: the per-channel copy at releases.rediacc.com/cli/edge/
           # is the fallback serving path (not worker-rewritten). It must also
-          # be channel-baked (done at upload time in cd-dryrun.yml). This
+          # be channel-baked (done at upload time in cd-stage.yml). This
           # cross-check catches R2 upload regressions.
           if [[ "${{ needs.init.outputs.workers_only }}" != "true" ]]; then
             R2_SH=$(curl -fsSL https://releases.rediacc.com/cli/edge/install.sh)
@@ -894,11 +894,17 @@ jobs:
   cleanup-on-failure:
     name: Cleanup (on failure)
     runs-on: ubuntu-latest
-    needs: [init, publish]
+    needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test]
+    # Fire when any pre-tag release stage fails. Once tag-and-release
+    # succeeds the versioned paths are legitimately published and must
+    # not be scrubbed, so tag-and-release is deliberately NOT in needs.
     if: |
       always() &&
       needs.init.outputs.skip_release != 'true' &&
-      needs.publish.result == 'failure'
+      (needs.publish.result == 'failure' ||
+       needs.deploy-marketing-edge.result == 'failure' ||
+       needs.deploy-account-edge.result == 'failure' ||
+       needs.smoke-test.result == 'failure')
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -918,6 +924,7 @@ jobs:
           password: ${{ github.token }}
 
       - name: Cleanup channel Docker tags
+        if: needs.publish.result == 'failure'
         run: |
           CHANNEL="${{ needs.init.outputs.channel }}"
           echo "## Cleanup Channel Tags (Failure)" >> $GITHUB_STEP_SUMMARY
@@ -931,6 +938,40 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Cleanup R2 versioned paths
+        # Scrub cli/v${next_version}/ + desktop/v${next_version}/ so the
+        # next retry can re-upload past the write-once guard. Only runs
+        # on pre-tag failure -- tag-and-release success never triggers
+        # this job so legitimate releases stay intact.
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          NEXT_VERSION: ${{ needs.init.outputs.next_version }}
+          RELEASES_BUCKET: rediacc-releases
+        run: |
+          if [[ -z "${NEXT_VERSION:-}" ]]; then
+            echo "::warning::next_version not set; skipping R2 versioned-path cleanup"
+            exit 0
+          fi
+
+          echo "## Cleanup R2 Versioned Paths (Failure)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Purging \`cli/v${NEXT_VERSION}/\` and \`desktop/v${NEXT_VERSION}/\` so the next retry can re-upload." >> $GITHUB_STEP_SUMMARY
+
+          for prefix in "cli/v${NEXT_VERSION}/" "desktop/v${NEXT_VERSION}/"; do
+            count=$(aws s3 ls "s3://${RELEASES_BUCKET}/${prefix}" --recursive \
+              --endpoint-url "$R2_ENDPOINT" 2>/dev/null | wc -l)
+            if [[ "$count" -eq 0 ]]; then
+              echo "  \`${prefix}\` already empty" >> $GITHUB_STEP_SUMMARY
+              continue
+            fi
+            aws s3 rm "s3://${RELEASES_BUCKET}/${prefix}" --recursive \
+              --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null || true
+            echo "  Deleted \`${prefix}\` (${count} objects)" >> $GITHUB_STEP_SUMMARY
+          done
 
   # Housekeeping moved to ci.yml so cleanup runs on every successful push to
   # main (not only when a release ships). See housekeeping job in ci.yml.

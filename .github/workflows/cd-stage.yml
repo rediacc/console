@@ -1,14 +1,18 @@
-name: CD - Dry Run (Reusable)
+name: CD - Stage Artifacts (Reusable)
 
-# Reusable workflow for dry-run validation
-# Used by ci.yml (PR validation) for staging artifacts and install validation
+# Reusable workflow that stages release artifacts to production R2 + GHCR
+# and validates them pre-publish. Called from ci.yml for every event that
+# resolves to a non-empty channel (push -> edge, pull_request -> pr-N).
+# merge_group and schedule events get an empty channel and skip all upload
+# + GHCR retag steps; the builds + validation still run for merge-queue
+# coverage.
 # - Downloads all build artifacts
 # - Builds Linux packages (DEB/RPM) ONCE
 # - Generates CLI manifest ONCE
 # - Builds Pages bundle (www + apt/rpm metadata)
-# - Stages Docker images
+# - Stages Docker images (skipped on empty channel)
 # - Validates all artifacts
-# - Uploads staging artifacts (when push-to-main)
+# - Uploads to R2 (skipped on empty channel)
 
 on:
   workflow_call:
@@ -42,7 +46,7 @@ on:
     outputs:
       validation_passed:
         description: 'Whether all validation passed'
-        value: ${{ jobs.dry-run.outputs.passed }}
+        value: ${{ jobs.stage.outputs.passed }}
     secrets:
       APP_PRIVATE_KEY:
         required: true
@@ -66,8 +70,8 @@ permissions:
   attestations: write  # Store attestations on GitHub
 
 jobs:
-  dry-run:
-    name: Dry-Run Validation
+  stage:
+    name: Stage Artifacts
     runs-on: ubuntu-latest
     outputs:
       passed: ${{ steps.validate.outputs.passed }}
@@ -196,7 +200,7 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       # -----------------------------------------------------------------------
-      # Step 5: Stage Docker images (dry-run validates existence)
+      # Step 5: Stage Docker images (validates existence + retag to channel)
       # -----------------------------------------------------------------------
       - name: Login to GHCR
         uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
@@ -206,6 +210,11 @@ jobs:
           password: ${{ github.token }}
 
       - name: Stage Docker images
+        # Skip on empty channel (merge_group / schedule events). retag-image.sh
+        # uses `set -euo pipefail` and would fail loudly on an empty target
+        # tag; gating here is cheaper than erroring the job for validation-
+        # only runs that deliberately don't publish.
+        if: inputs.channel != ''
         run: |
           CHANNEL="${{ inputs.channel }}"
 
@@ -232,8 +241,8 @@ jobs:
       - name: Validate artifacts
         id: validate
         run: |
-          MODE="${{ github.event_name != 'push' && '(DRY-RUN) ' || '' }}"
-          echo "## ${MODE}Dry-Run Validation Results" >> $GITHUB_STEP_SUMMARY
+          MODE="${{ github.event_name != 'push' && '(no-publish) ' || '' }}"
+          echo "## ${MODE}Stage Artifacts Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           DESKTOP_COUNT=$(find dist/desktop -type f 2>/dev/null | wc -l)
@@ -316,7 +325,7 @@ jobs:
       # Install validation handled by validate-install job in ci.yml (6 platforms).
 
       # -----------------------------------------------------------------------
-      # Upload preview pages artifact (dry-run mode for PR preview deploys)
+      # Upload preview pages artifact (for PR preview deploys)
       # -----------------------------------------------------------------------
       - name: Upload preview pages artifact
         if: ${{ inputs.upload_pages && github.event_name != 'push' }}
@@ -427,6 +436,21 @@ jobs:
             printf '%s\n' "${PURGE_URLS[@]}" \
               | .ci/scripts/deploy/cf-purge-urls.sh --zone "$CLOUDFLARE_ZONE_ID"
           fi
+
+      # -----------------------------------------------------------------------
+      # Assert the versioned-path sentinel is actually sealed after upload.
+      # Replaces the dead key-based sentinel check in upload-to-r2.sh (which
+      # looked for cli/v${V}/manifest.json -- a file nothing ever wrote).
+      # If this step ever fails on a stable/edge push, it means the CLI loop
+      # changed and the sentinel is silently absent again.
+      # -----------------------------------------------------------------------
+      - name: Assert R2 versioned sentinel exists
+        if: inputs.channel == 'stable' || inputs.channel == 'edge'
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+        run: .ci/scripts/test/assert-r2-sentinel.sh "${{ inputs.channel }}" "${{ inputs.next_version }}"
 
       # -----------------------------------------------------------------------
       # Attest staging artifacts (Sigstore provenance for supply chain integrity)

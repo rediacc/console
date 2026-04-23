@@ -108,6 +108,11 @@ async function downloadAndStage(
 /**
  * Entry point when `--background-update` is detected. Runs in a detached process.
  * Fetches manifest, downloads binary, verifies SHA256, stages for next launch.
+ *
+ * The acquired lock covers the entire download+verify+rename sequence in
+ * downloadAndStage(). Previously only applyPendingUpdate() held the lock, so
+ * a concurrent reinstall (install.sh mv) could race against the worker's
+ * fs.rename into staged-update/. Holding the lock here serializes the two.
  */
 export async function runBackgroundUpdateWorker(): Promise<void> {
   const safetyTimer = setTimeout(() => process.exit(1), WORKER_TIMEOUT_MS);

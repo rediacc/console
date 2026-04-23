@@ -192,27 +192,33 @@ r2_rm() {
         --endpoint-url "$R2_ENDPOINT" 2>/dev/null || true
 }
 
-# Helper: abort if a versioned-path sentinel already exists on R2.
+# Abort if any object already exists under a versioned prefix on R2.
 # `cli/v${X}/*` and `desktop/v${X}/*` are cache-controlled immutable; writing
 # new bytes at a URL that has already served content breaks that promise and
 # pollutes long-lived CDN caches. resolve-version.sh should always bump
 # next_version past any previously-sealed tag; this is a safety net that
 # refuses the deploy if something upstream drifts.
+#
+# Prefix-based (not key-based). The previous key-sentinel variant checked
+# `cli/v${X}/manifest.json` which is never actually written under the CLI
+# loop -- the sentinel stayed absent forever, so the guard silently let
+# retries overwrite binaries. Listing the prefix is robust to which
+# specific files the loop happens to write.
 write_once_guard() {
-    local full_key="$1"
+    local prefix="$1"
     local context="$2"
 
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "[DRY-RUN] write-once guard would check s3://${RELEASES_BUCKET}/${full_key} (${context})"
+        log_info "[DRY-RUN] write-once guard would check s3://${RELEASES_BUCKET}/${prefix} (${context})"
         return 0
     fi
 
-    if aws s3api head-object \
-        --bucket "${RELEASES_BUCKET}" \
-        --key "${full_key}" \
-        --endpoint-url "$R2_ENDPOINT" >/dev/null 2>&1; then
-        log_error "Write-once guard blocked: s3://${RELEASES_BUCKET}/${full_key} already exists."
-        log_error "  A previous deploy of ${context} sealed this path; overwriting would break"
+    local listing
+    listing="$(aws s3 ls "s3://${RELEASES_BUCKET}/${prefix}" \
+        --endpoint-url "$R2_ENDPOINT" 2>/dev/null | head -1)"
+    if [[ -n "$listing" ]]; then
+        log_error "Write-once guard blocked: s3://${RELEASES_BUCKET}/${prefix} is non-empty."
+        log_error "  A previous deploy of ${context} sealed this prefix; overwriting would break"
         log_error "  the immutable-URL promise and poison long-lived CDN caches."
         log_error "  resolve-version.sh should have bumped next_version. If you truly need to"
         log_error "  replace the artifact, scrub it via scripts/dev/r2-oneshot-scrub.sh first."
@@ -305,7 +311,7 @@ if [[ -d "$CLI_DIR" ]]; then
     # manifest.json sentinel aborts the deploy if the path is already sealed.
     # Allowed channels are set in .github/workflows/ci.yml:115-122.
     if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
-        write_once_guard "cli/v${VERSION}/manifest.json" "cli v${VERSION}"
+        write_once_guard "cli/v${VERSION}/" "cli v${VERSION}"
         for binary in "$CLI_DIR"/rdc-*; do
             [[ -f "$binary" ]] || continue
             local_name="$(basename "$binary")"
@@ -371,10 +377,10 @@ fi
 if [[ -d "$DESKTOP_DIR" ]]; then
     log_step "Uploading Desktop artifacts"
 
-    # Write-once guard on desktop's sentinel once per run, before the loop
-    # so an aborted deploy does not leave a half-sealed versioned path.
+    # Write-once guard on desktop's versioned prefix once per run, before the
+    # loop, so an aborted deploy does not leave a half-sealed versioned path.
     if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
-        write_once_guard "desktop/v${VERSION}/latest-linux.yml" "desktop v${VERSION}"
+        write_once_guard "desktop/v${VERSION}/" "desktop v${VERSION}"
     fi
 
     for artifact in "$DESKTOP_DIR"/*; do

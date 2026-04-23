@@ -1,0 +1,63 @@
+name: Console CT - Update Flow
+
+# End-to-end tests for install.sh + `rdc update` lifecycle. Runs the
+# real rdc binary against a local Python HTTP fixture server that serves
+# controlled manifest.json / latest.json / binary / .sha256 under
+# /cli/<channel>/... . Validates:
+#   - install.sh lays down the single-bin/rdc layout
+#   - `rdc update` swaps binary, creates .old, updates state
+#   - check-only, sha256 mismatch, rollback, channel switch semantics
+#   - re-install migrates legacy versions/ + cleans staged-update
+#
+# Reusable so the caller workflow (ci.yml) can decide when to run it.
+# Expects a rdc binary built upstream; consumed via actions/download-artifact.
+
+on:
+  workflow_call:
+    inputs:
+      cli_artifact_name:
+        description: 'Name of the uploaded artifact containing the rdc binary'
+        required: true
+        type: string
+      cli_artifact_binary:
+        description: 'Filename of the rdc binary inside the artifact (e.g., rdc-linux-x64)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  # Linux x64 is the primary matrix cell because it covers the full install.sh
+  # code path + the most common rdc binary. macOS / Windows parity are
+  # follow-up work tracked in the PR plan.
+  test-linux-x64:
+    name: Update flow (Linux x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - name: Download rdc binary
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+        with:
+          name: ${{ inputs.cli_artifact_name }}
+          path: /tmp/rdc-artifact
+
+      - name: Locate rdc
+        id: rdc
+        run: |
+          RDC="/tmp/rdc-artifact/${{ inputs.cli_artifact_binary }}"
+          if [[ ! -f "$RDC" ]]; then
+            echo "::error::rdc binary not found at $RDC"
+            ls -la /tmp/rdc-artifact || true
+            exit 1
+          fi
+          chmod +x "$RDC"
+          echo "path=$RDC" >> "$GITHUB_OUTPUT"
+
+      - name: Run update-flow scenarios
+        env:
+          RDC_BINARY: ${{ steps.rdc.outputs.path }}
+        run: |
+          .ci/scripts/test/test-rdc-update.sh all

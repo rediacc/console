@@ -15,9 +15,18 @@ set -euo pipefail
 RELEASES_URL="${REDIACC_RELEASES_URL:-https://releases.rediacc.com}"
 CHANNEL="${REDIACC_CHANNEL:-stable}"
 SERVER_URL="${REDIACC_SERVER_URL:-}"
-INSTALL_DIR="${HOME}/.local/bin"
-VERSIONS_DIR="${HOME}/.local/share/rediacc/versions"
-MAX_VERSIONS=5
+
+# Install layout: single binary at ${INSTALL_PREFIX}/bin/rdc, symlinked from
+# ${BIN_DIR}/rdc so ${BIN_DIR} on $PATH reaches it. rdc update replaces the
+# binary in place; rollback keeps a single ${INSTALL_PREFIX}/bin/rdc.old
+# sibling. No per-version dirs. Historical installs used versions/<V>/rdc
+# with a "keep last 5" prune loop; that feature was never surfaced to users
+# and caused dir-name / binary-version divergence after each rdc update.
+INSTALL_PREFIX="${HOME}/.local/share/rediacc"
+INSTALL_DIR="${INSTALL_PREFIX}/bin"
+BIN_DIR="${HOME}/.local/bin"
+LEGACY_VERSIONS_DIR="${INSTALL_PREFIX}/versions"
+STAGED_UPDATE_DIR="${HOME}/.cache/rediacc/staged-update"
 
 # Colors for output (only if terminal supports it)
 if [ -t 1 ]; then
@@ -66,7 +75,7 @@ detect_arch() {
 # Detect C library (musl vs glibc) on Linux
 detect_libc() {
   if [ "$(uname -s)" != "Linux" ]; then echo ""; return; fi
-  # ldd is linked against the system libc — its --version output identifies it
+  # ldd is linked against the system libc -- its --version output identifies it
   if ldd --version 2>&1 | grep -qi musl; then echo "musl"; return; fi
   echo ""
 }
@@ -99,11 +108,30 @@ sha256() {
   fi
 }
 
+# Clean up artefacts from the pre-collapse layout and from any in-flight
+# background update the previous install might have staged. This is
+# unconditional: a fresh install should always produce exactly the new
+# layout. Historical concerns:
+#   - ${LEGACY_VERSIONS_DIR} held per-version dirs with stale .old siblings
+#     that were never pruned because the old prune loop only touched dirs.
+#   - ${STAGED_UPDATE_DIR} can hold a pending binary from a prior channel
+#     that applyPendingUpdate() would auto-apply on next CLI launch,
+#     silently overwriting the fresh install.
+cleanup_legacy_state() {
+  if [[ -d "$LEGACY_VERSIONS_DIR" ]]; then
+    rm -rf "$LEGACY_VERSIONS_DIR"
+    echo "Removed legacy ${LEGACY_VERSIONS_DIR}"
+  fi
+  if [[ -d "$STAGED_UPDATE_DIR" ]]; then
+    rm -rf "$STAGED_UPDATE_DIR"
+  fi
+}
+
 # Persist channel + server config so `rdc update` honors the channel this
 # install came from. We write server.json when EITHER a specific server was
 # requested OR the channel differs from the default. Writing on channel-alone
 # is the fail-safe for cases where a preview host rewrites CHANNEL but fails
-# to rewrite SERVER_URL — without this, `rdc update` would silently drift
+# to rewrite SERVER_URL -- without this, `rdc update` would silently drift
 # back to stable on every update.
 #
 # Reads: CHANNEL, SERVER_URL, RELEASES_URL, REDIACC_CHANNEL, HOME, XDG_CONFIG_HOME
@@ -132,7 +160,7 @@ write_install_config() {
         # Auto-detect channel from server ONLY when the script is still on
         # the default channel. A channel baked by the worker rewrite (e.g.
         # :-pr-443 on a preview host) or set explicitly via REDIACC_CHANNEL
-        # env var must NOT be overwritten by server-info — the user asked
+        # env var must NOT be overwritten by server-info -- the user asked
         # for a specific channel by picking that host or setting the env.
         if [[ -z "${REDIACC_CHANNEL:-}" && "$CHANNEL" == "$default_channel" ]]; then
           local detected_channel
@@ -147,7 +175,7 @@ write_install_config() {
     fi
   fi
 
-  # accountServer defaults to production when unknown — matches what
+  # accountServer defaults to production when unknown -- matches what
   # `rdc update --channel <x>` writes when no server was previously set
   # (packages/cli/src/commands/update.ts:35).
   local account_server="${SERVER_URL:-https://www.rediacc.com}"
@@ -179,6 +207,7 @@ main() {
   echo ""
 
   check_requirements
+  cleanup_legacy_state
 
   PLATFORM=$(detect_platform)
   ARCH=$(detect_arch)
@@ -231,7 +260,7 @@ main() {
   CHECKSUM_URL="${DOWNLOAD_URL}.sha256"
 
   # Create directories
-  mkdir -p "$INSTALL_DIR" "$VERSIONS_DIR/$VERSION"
+  mkdir -p "$INSTALL_DIR" "$BIN_DIR"
 
   # Download binary
   echo "Downloading rdc v$VERSION..."
@@ -256,47 +285,33 @@ main() {
 
   echo "Checksum verified."
 
-  # Install binary
+  # Install binary atomically. A previous install's .old sibling is removed
+  # first so rollback always refers to the binary rdc update itself left
+  # behind, never a stale pre-install copy.
   chmod +x "$TEMP_FILE"
-  mv "$TEMP_FILE" "$VERSIONS_DIR/$VERSION/rdc"
+  rm -f "${INSTALL_DIR}/rdc.old"
+  mv "$TEMP_FILE" "${INSTALL_DIR}/rdc"
 
-  # Create symlink to current version
-  ln -sf "$VERSIONS_DIR/$VERSION/rdc" "$INSTALL_DIR/rdc"
-
-  # Cleanup old versions (keep last MAX_VERSIONS)
-  # Version directories use semver naming (e.g., "0.4.59"). We sort them by
-  # version number (newest first) and delete the oldest ones beyond MAX_VERSIONS.
-  if [[ -d "$VERSIONS_DIR" ]]; then
-    local version_count=0
-    # Use find + sort for cross-platform (Linux/macOS) version sorting
-    # -t. -k1,1nr -k2,2nr -k3,3nr sorts by major.minor.patch descending
-    while IFS= read -r dir; do
-      [[ -z "$dir" ]] && continue
-      version_count=$((version_count + 1))
-      if [[ $version_count -gt $MAX_VERSIONS ]]; then
-        rm -rf "$dir" 2>/dev/null || true
-      fi
-    done < <(find "$VERSIONS_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while read -r d; do
-      basename "$d"
-    done | sort -t. -k1,1nr -k2,2nr -k3,3nr | while read -r v; do
-      echo "$VERSIONS_DIR/$v"
-    done)
-  fi
+  # Refresh the PATH-friendly symlink. `ln -sf` will not replace an existing
+  # regular file (older install layouts stored the binary directly here);
+  # rm first to guarantee the symlink lands.
+  rm -f "${BIN_DIR}/rdc"
+  ln -s "${INSTALL_DIR}/rdc" "${BIN_DIR}/rdc"
 
   # Success message
   echo ""
   success "Rediacc CLI successfully installed!"
   echo ""
   echo "  Version:  v$VERSION"
-  echo "  Location: $INSTALL_DIR/rdc"
+  echo "  Location: ${BIN_DIR}/rdc -> ${INSTALL_DIR}/rdc"
   echo ""
   echo "  Next:   Run 'rdc --help' to get started"
   echo "  Update: Run 'rdc update' to update to the latest version"
 
   # PATH check
-  if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+  if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
     echo ""
-    warn "Note: $INSTALL_DIR is not in your PATH"
+    warn "Note: $BIN_DIR is not in your PATH"
     echo ""
     echo "  Add it by running:"
     echo ""

@@ -13,10 +13,18 @@ $ErrorActionPreference = "Stop"
 # Configuration (can be overridden via environment variables)
 $ReleasesUrl = if ($env:REDIACC_RELEASES_URL) { $env:REDIACC_RELEASES_URL } else { "https://releases.rediacc.com" }
 $Channel = if ($env:REDIACC_CHANNEL) { $env:REDIACC_CHANNEL } else { "stable" }
+$ServerUrl = if ($env:REDIACC_SERVER_URL) { $env:REDIACC_SERVER_URL } else { "" }
 $UserAgent = "Rediacc-Installer/1.0"
+
+# Install layout: single binary at ${InstallDir}\rdc.exe. rdc update
+# replaces the binary in place; rollback keeps a single rdc.old.exe sibling.
+# No per-version dirs (previous layout stored versions\<V>\rdc.exe with a
+# "keep last 5" prune that was never surfaced to users and caused version
+# dir / binary version divergence after each rdc update).
 $InstallDir = "$env:LOCALAPPDATA\rediacc\bin"
-$VersionsDir = "$env:LOCALAPPDATA\rediacc\versions"
-$MaxVersions = 5
+$LegacyVersionsDir = "$env:LOCALAPPDATA\rediacc\versions"
+$StagedUpdateDir = "$env:LOCALAPPDATA\rediacc\cache\staged-update"
+$ConfigDir = "$env:APPDATA\rediacc"
 
 function Write-ColorOutput {
     param(
@@ -36,9 +44,88 @@ function Get-Arch {
     throw "Unsupported architecture: 32-bit systems are not supported"
 }
 
+# Clean up artefacts from the pre-collapse layout and from any in-flight
+# background update the previous install might have staged. Unconditional
+# to guarantee a fresh install produces exactly the new layout. Mirrors
+# install.sh's cleanup_legacy_state.
+function Remove-LegacyState {
+    if (Test-Path $LegacyVersionsDir) {
+        Remove-Item -Recurse -Force -Path $LegacyVersionsDir -ErrorAction SilentlyContinue
+        Write-Host "Removed legacy $LegacyVersionsDir"
+    }
+    if (Test-Path $StagedUpdateDir) {
+        Remove-Item -Recurse -Force -Path $StagedUpdateDir -ErrorAction SilentlyContinue
+    }
+}
+
+# Persist channel + server config so `rdc update` honors the channel this
+# install came from. Mirrors install.sh::write_install_config. Writes when
+# EITHER a specific server was requested OR the channel differs from default.
+# Windows config dir is %APPDATA%\rediacc per @rediacc/shared/paths getConfigDir().
+function Write-InstallConfig {
+    $DefaultChannel = "stable"
+    if ([string]::IsNullOrEmpty($ServerUrl) -and $Channel -eq $DefaultChannel) {
+        return
+    }
+
+    if (-not (Test-Path $ConfigDir)) {
+        New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null
+    }
+
+    # Discover E2E public key and update channel from server (only when we
+    # have a server to ask).
+    $E2eKey = ""
+    if (-not [string]::IsNullOrEmpty($ServerUrl)) {
+        try {
+            $Headers = @{"User-Agent" = $UserAgent}
+            $ServerInfo = Invoke-RestMethod -Uri "$ServerUrl/account/api/v1/.well-known/server-info" -Headers $Headers -UseBasicParsing
+            if ($ServerInfo.e2e.keys -and $ServerInfo.e2e.keys[0].publicKeySpki) {
+                $E2eKey = $ServerInfo.e2e.keys[0].publicKeySpki
+            }
+            # Auto-detect channel from server ONLY when still on the default
+            # channel AND REDIACC_CHANNEL env var was not explicitly set.
+            # A channel baked by the worker rewrite (e.g. edge on a preview
+            # host) or set explicitly must NOT be overridden.
+            if ([string]::IsNullOrEmpty($env:REDIACC_CHANNEL) -and $Channel -eq $DefaultChannel) {
+                if ($ServerInfo.updateChannel) {
+                    $Channel = $ServerInfo.updateChannel
+                    $script:Channel = $Channel
+                }
+            }
+        } catch {
+            # server-info unreachable; proceed without e2e key / detected channel
+        }
+    }
+
+    $AccountServer = if (-not [string]::IsNullOrEmpty($ServerUrl)) { $ServerUrl } else { "https://www.rediacc.com" }
+    $ConfigHash = [ordered]@{
+        accountServer = $AccountServer
+        updateChannel = $Channel
+    }
+    if (-not [string]::IsNullOrEmpty($E2eKey)) {
+        $ConfigHash["e2ePublicKey"] = $E2eKey
+    }
+    if ($ReleasesUrl -ne "https://releases.rediacc.com") {
+        $ConfigHash["releasesUrl"] = $ReleasesUrl
+    }
+    $ConfigJson = $ConfigHash | ConvertTo-Json -Compress
+    $ConfigPath = Join-Path $ConfigDir "server.json"
+    Set-Content -Path $ConfigPath -Value $ConfigJson -NoNewline
+
+    Write-Host ""
+    if (-not [string]::IsNullOrEmpty($ServerUrl)) {
+        $ServerHost = [Uri]::new($ServerUrl).Host
+        Write-ColorOutput "Configured for: $ServerHost (channel: $Channel)" -Color Green
+    } else {
+        Write-ColorOutput "Channel pinned: $Channel" -Color Green
+    }
+}
+
 function Install-RDC {
     Write-Host "Setting up Rediacc CLI..."
     Write-Host ""
+
+    Remove-LegacyState
 
     $Arch = Get-Arch
     $BinaryName = "rdc-win-$Arch.exe"
@@ -71,9 +158,8 @@ function Install-RDC {
     }
     $ChecksumUrl = "$DownloadUrl.sha256"
 
-    # Create directories
+    # Create install dir
     New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
-    New-Item -ItemType Directory -Force -Path "$VersionsDir\$Version" | Out-Null
 
     # Download binary
     Write-Host "Downloading rdc v$Version..."
@@ -107,28 +193,19 @@ function Install-RDC {
 
     Write-Host "Checksum verified."
 
-    # Install binary
-    $VersionPath = "$VersionsDir\$Version\rdc.exe"
-    Move-Item -Force $TempFile $VersionPath
-
-    # Copy to install directory (symlinks require admin on Windows)
-    Copy-Item -Force $VersionPath "$InstallDir\rdc.exe"
-
-    # Cleanup old versions (keep last MaxVersions)
-    $OldVersions = Get-ChildItem $VersionsDir -Directory -ErrorAction SilentlyContinue |
-        Sort-Object CreationTime -Descending |
-        Select-Object -Skip $MaxVersions
-
-    foreach ($OldVersion in $OldVersions) {
-        Remove-Item -Path $OldVersion.FullName -Recurse -Force -ErrorAction SilentlyContinue
-    }
+    # Install binary atomically. Remove a stale .old sibling first so
+    # `rdc update --rollback` cannot point at a pre-install binary.
+    $BinaryPath = Join-Path $InstallDir "rdc.exe"
+    $OldPath = Join-Path $InstallDir "rdc.old.exe"
+    Remove-Item -Path $OldPath -Force -ErrorAction SilentlyContinue
+    Move-Item -Force $TempFile $BinaryPath
 
     # Success message
     Write-Host ""
     Write-ColorOutput "Rediacc CLI successfully installed!" -Color Green
     Write-Host ""
     Write-Host "  Version:  v$Version"
-    Write-Host "  Location: $InstallDir\rdc.exe"
+    Write-Host "  Location: $BinaryPath"
     Write-Host ""
     Write-Host "  Next:   Run 'rdc --help' to get started"
     Write-Host "  Update: Run 'rdc update' to update to the latest version"
@@ -143,6 +220,8 @@ function Install-RDC {
         Write-Host ""
         Write-Host "  `$env:PATH += `";$InstallDir`"; [Environment]::SetEnvironmentVariable('PATH', `$env:PATH, 'User')"
     }
+
+    Write-InstallConfig
 
     Write-Host ""
     Write-ColorOutput "Installation complete!" -Color Green
