@@ -13327,7 +13327,7 @@
   "regionPicker": {
     "channelEdge": "Edge",
     "channelStable": "Kararlı",
-    "edgeHint": "En yeni özellikler, 2 kat ücretsiz limitler. Ücretli plan yok.",
+    "edgeHint": "Sürekli dağıtılan üretim ortamı. Soak süresince 2 kat ücretsiz limitler.",
     "footer": "Size en yakın bölgeyi veya kuruluşunuzun gerektirdiği bölgeyi seçin. Kayıt sonrası değiştirilemez.",
     "locations": {
       "asia": "Tokyo, Japonya",

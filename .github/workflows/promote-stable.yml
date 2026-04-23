@@ -126,43 +126,121 @@ jobs:
           CC_MUTABLE="no-cache"
 
           PURGE_URLS=()
-          # Copy all channel artifacts from edge to stable
-          # R2 doesn't support GetObjectTagging, so download+reupload via local tmp
+          # Promote edge -> stable with two-phase upload to prevent clients
+          # from seeing a "new version" signal (metadata) before the binaries
+          # it references finish uploading.
+          #
+          # Phase 1: upload bytes (binaries, packages) -- slow, minutes.
+          #   Client-visible metadata at stable/ still points at the OLD version.
+          # Phase 2: upload metadata (Packages.gz, Release, latest-*.yml,
+          #   manifest.json, APKINDEX.tar.gz, *.db.tar.gz, install scripts, ...).
+          #   Advancement becomes visible at this boundary -- seconds, not minutes.
+          # Within phase 2, split signed/hashed-of metadata from inner metadata
+          # so the Release/InRelease hash of Packages.gz never disagrees with
+          # the bytes on R2.
+          #
+          # Channel-specific rewrites (install.sh / .repo / .conf) happen on
+          # the local tmp copy BEFORE phase 2 upload, eliminating a second
+          # re-upload race that the old sequential version had.
           for dir in cli desktop apt rpm apk archlinux; do
-            echo "Promoting ${dir}/edge/ -> ${dir}/stable/"
+            echo "Promoting ${dir}/edge/ -> ${dir}/stable/ (2-phase)"
             TMP="/tmp/promote-${dir}"
             aws s3 cp "s3://${BUCKET}/${dir}/edge/" "$TMP/" $EP --recursive --quiet
-            aws s3 cp "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --recursive --quiet \
-              --cache-control "$CC_MUTABLE"
+
+            # Per-dir channel rewrites -- apply to local copy, uploaded in phase 2.
+            case "$dir" in
+              cli)
+                for f in "$TMP/install.sh" "$TMP/install.ps1"; do
+                  [[ -f "$f" ]] || continue
+                  sed -i \
+                    -e 's|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-stable|g' \
+                    -e 's|} else { "edge" }|} else { "stable" }|g' \
+                    "$f"
+                done
+                ;;
+              rpm)
+                [[ -f "$TMP/rediacc.repo" ]] && sed -i 's|/edge/|/stable/|g' "$TMP/rediacc.repo"
+                ;;
+              archlinux)
+                [[ -f "$TMP/rediacc.conf" ]] && sed -i 's|/edge/|/stable/|g' "$TMP/rediacc.conf"
+                ;;
+            esac
+
+            META_EXCLUDES=(
+              --exclude 'Packages*' --exclude 'Release*' --exclude 'InRelease'
+              --exclude 'repodata/*'
+              --exclude 'APKINDEX.tar.gz'
+              --exclude '*.db.tar.gz' --exclude '*.files.tar.gz'
+              --exclude 'rediacc.db' --exclude 'rediacc.files'
+              --exclude 'latest*.yml' --exclude 'latest.json' --exclude 'manifest.json'
+              --exclude 'install.sh' --exclude 'install.ps1'
+              --exclude '*.repo' --exclude '*.conf'
+              --exclude 'rediacc-cli-latest.tgz'
+              --exclude 'versions.json'
+            )
+
+            # ----- Phase 1: binaries / packages (slow, no metadata) -----
+            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+              --cache-control "$CC_MUTABLE" "${META_EXCLUDES[@]}"
+
+            # ----- Phase 2: metadata (fast, flips client view to new version) -----
+            case "$dir" in
+              apt)
+                # 2a: Packages / Packages.gz (hashes of .deb files in phase 1).
+                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+                  --cache-control "$CC_MUTABLE" \
+                  --exclude '*' --include 'Packages*'
+                # 2b: Release / InRelease / Release.gpg (hash of phase 2a).
+                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+                  --cache-control "$CC_MUTABLE" \
+                  --exclude '*' --include 'Release*' --include 'InRelease'
+                ;;
+              rpm)
+                # 2a: primary / filelists / other (hashed in 2b repomd).
+                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+                  --cache-control "$CC_MUTABLE" \
+                  --exclude '*' --include 'repodata/primary*' \
+                  --include 'repodata/filelists*' --include 'repodata/other*'
+                # 2b: repomd.xml + signatures + rediacc.repo (config).
+                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+                  --cache-control "$CC_MUTABLE" \
+                  --exclude '*' --include 'repodata/repomd.xml*' \
+                  --include '*.repo'
+                ;;
+              apk)
+                # APKINDEX references .apk files in same dir (phase 1).
+                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+                  --cache-control "$CC_MUTABLE" \
+                  --exclude '*' --include 'APKINDEX.tar.gz'
+                ;;
+              archlinux)
+                # .db/.files reference .pkg.tar.zst in same dir (phase 1).
+                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+                  --cache-control "$CC_MUTABLE" \
+                  --exclude '*' --include '*.db.tar.gz' --include '*.files.tar.gz' \
+                  --include 'rediacc.db' --include 'rediacc.files' \
+                  --include '*.conf'
+                ;;
+              cli)
+                # manifest + latest.json + rebaked install scripts.
+                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+                  --cache-control "$CC_MUTABLE" \
+                  --exclude '*' --include 'manifest.json' --include 'latest.json' \
+                  --include 'install.sh' --include 'install.ps1' \
+                  --include 'versions.json'
+                ;;
+              desktop)
+                # latest-*.yml references rediacc-desktop-* by name (phase 1).
+                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+                  --cache-control "$CC_MUTABLE" \
+                  --exclude '*' --include 'latest*.yml' --include 'versions.json'
+                ;;
+            esac
+
             while IFS= read -r f; do
               PURGE_URLS+=("https://releases.rediacc.com/${dir}/stable/${f#$TMP/}")
             done < <(find "$TMP" -type f)
             rm -rf "$TMP"
-          done
-
-          # Fix channel-specific config files (they reference 'edge' in URLs)
-          for file in rpm/stable/rediacc.repo archlinux/stable/rediacc.conf; do
-            echo "Fixing channel in ${file}..."
-            aws s3 cp "s3://${BUCKET}/${file}" /tmp/config $EP --quiet
-            sed -i 's|/edge/|/stable/|g' /tmp/config
-            aws s3 cp /tmp/config "s3://${BUCKET}/${file}" $EP --quiet \
-              --cache-control "$CC_MUTABLE"
-            PURGE_URLS+=("https://releases.rediacc.com/${file}")
-          done
-
-          # Re-bake install scripts so the stable copies default to stable.
-          # cd-dryrun.yml baked 'edge' into cli/edge/install.{sh,ps1}; the raw
-          # copy above propagated that to cli/stable/. Undo it.
-          for file in cli/stable/install.sh cli/stable/install.ps1; do
-            echo "Re-baking channel in ${file}..."
-            aws s3 cp "s3://${BUCKET}/${file}" /tmp/script $EP --quiet
-            sed -i \
-              -e 's|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-stable|g' \
-              -e 's|} else { "edge" }|} else { "stable" }|g' \
-              /tmp/script
-            aws s3 cp /tmp/script "s3://${BUCKET}/${file}" $EP --quiet \
-              --cache-control "$CC_MUTABLE"
-            PURGE_URLS+=("https://releases.rediacc.com/${file}")
           done
 
           echo "R2 promotion complete: edge v${{ steps.edge.outputs.version }} -> stable"

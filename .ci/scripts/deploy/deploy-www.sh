@@ -1,10 +1,7 @@
 #!/bin/bash
-# Deploy the www Worker to Cloudflare
-#
-# Handles both production and preview deployments.
-# Both use the same index.ts entry point which embeds the account server directly.
-# - Production: uses wrangler.toml as-is, applies migrations
-# - Preview: creates per-PR D1 database, applies migrations, deploys with preview config
+# Deploy the www marketing Worker to Cloudflare (www.rediacc.com).
+# Production: wrangler.toml as-is (no D1 -- account API served by regional workers).
+# Preview: mints per-PR account-db-pr-N, applies migrations, deploys wrangler.preview.toml.
 #
 # Usage:
 #   deploy-www.sh                  # production
@@ -138,12 +135,7 @@ TOML
     rm -f wrangler.preview.toml
 else
     # ---- PRODUCTION DEPLOYMENT ----
+    # No D1 on www; account API is served by rediacc-account-{eu,us,asia}.
     log_step "Deploying www production worker..."
-
-    # Apply migrations (idempotent — skips already-applied)
-    log_step "Applying migrations to account-db..."
-    npx wrangler d1 migrations apply account-db --remote
-    log_info "Migrations applied to account-db"
-
     npx wrangler deploy
 fi

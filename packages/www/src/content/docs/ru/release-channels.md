@@ -4,8 +4,8 @@ description: "Обзор каналов релизов Edge и Stable, их ра
 category: "Concepts"
 order: 2
 language: ru
-sourceHash: "b0f431fd1bcc22c1"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "d6ff18f9265392d2"
+sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
 ---
 
 Rediacc публикует обновления через два канала релизов: **Stable** и **Edge**. Каждый канал ориентирован на разную аудиторию и имеет свои компромиссы.
