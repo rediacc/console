@@ -40,7 +40,9 @@ source "$SCRIPT_DIR/lib/cf-auth.sh"
 ACCOUNT_ID="fa51e4a18d553c30e1633288e9733d04"
 BACKUP_DIR="$ROOT_DIR/.backups"
 
-# Regional D1 databases to back up (post multi-region rollout).
+# Regional D1 databases to back up (post multi-region rollout). Three
+# regions today (eu/us/asia); add new regions to this array when they
+# come online in regions.json.
 REGIONS=("eu" "us" "asia")
 PROD_DB_PREFIX="account-db"
 EDGE_DB_PREFIX="edge-account-db"
