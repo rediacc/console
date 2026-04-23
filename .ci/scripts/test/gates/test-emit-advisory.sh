@@ -11,12 +11,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/test-helpers.sh
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/test-*.sh
-source "$SCRIPT_DIR/lib/test-helpers.sh"
+source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
 test_ci_mode_prefix() {
     local out
     out=$(CI=true bash -c "
-        source '$SCRIPT_DIR/../lib/emit-advisory.sh'
+        source '$SCRIPT_DIR/../../lib/emit-advisory.sh'
         declare -A ADV_SEVERITY=() ADV_TITLE=() ADV_GHSA=() ADV_URL=()
         declare -A ADV_VULN_RANGE=() ADV_PATCHED_VERSION=() ADV_DESC_PREVIEW=()
         emit_advisory error 'testid' 'testpkg' 'test fix hint'
@@ -29,7 +29,7 @@ test_ci_mode_prefix() {
 test_non_ci_mode_glyph() {
     local out
     out=$(env -u CI bash -c "
-        source '$SCRIPT_DIR/../lib/emit-advisory.sh'
+        source '$SCRIPT_DIR/../../lib/emit-advisory.sh'
         declare -A ADV_SEVERITY=() ADV_TITLE=() ADV_GHSA=() ADV_URL=()
         declare -A ADV_VULN_RANGE=() ADV_PATCHED_VERSION=() ADV_DESC_PREVIEW=()
         emit_advisory warn 'testid' 'testpkg' 'test fix hint'
@@ -42,7 +42,7 @@ test_non_ci_mode_glyph() {
 test_full_metadata_renders_all_lines() {
     local out
     out=$(CI=true bash -c "
-        source '$SCRIPT_DIR/../lib/emit-advisory.sh'
+        source '$SCRIPT_DIR/../../lib/emit-advisory.sh'
         declare -A ADV_SEVERITY=(['id1']='critical')
         declare -A ADV_TITLE=(['id1']='Test title')
         declare -A ADV_GHSA=(['id1']='GHSA-xxxx-yyyy-zzzz')
@@ -70,7 +70,7 @@ test_emit_returns_zero_even_with_empty_hints() {
     local out rc
     out=$(CI=true bash -c "
         set -euo pipefail
-        source '$SCRIPT_DIR/../lib/emit-advisory.sh'
+        source '$SCRIPT_DIR/../../lib/emit-advisory.sh'
         declare -A ADV_SEVERITY=() ADV_TITLE=() ADV_GHSA=() ADV_URL=()
         declare -A ADV_VULN_RANGE=() ADV_PATCHED_VERSION=() ADV_DESC_PREVIEW=()
         emit_advisory warn 'testid' 'testpkg' ''

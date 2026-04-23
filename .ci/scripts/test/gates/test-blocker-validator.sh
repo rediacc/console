@@ -13,10 +13,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/test-helpers.sh
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/test-*.sh
-source "$SCRIPT_DIR/lib/test-helpers.sh"
+source "$SCRIPT_DIR/../lib/test-helpers.sh"
 # shellcheck source=../lib/blocker-validator.sh
 # BLOCKER: the subject under test — load the library we are exercising
-source "$SCRIPT_DIR/../lib/blocker-validator.sh"
+source "$SCRIPT_DIR/../../lib/blocker-validator.sh"
 
 test_parse_empty_file() {
     local TEMP

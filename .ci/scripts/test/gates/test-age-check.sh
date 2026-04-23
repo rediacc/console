@@ -9,10 +9,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/test-helpers.sh
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/test-*.sh
-source "$SCRIPT_DIR/lib/test-helpers.sh"
+source "$SCRIPT_DIR/../lib/test-helpers.sh"
 # shellcheck source=../lib/age-check.sh
 # BLOCKER: the subject under test — load the library we are exercising
-source "$SCRIPT_DIR/../lib/age-check.sh"
+source "$SCRIPT_DIR/../../lib/age-check.sh"
 
 make_fixture() {
     local dir="$1" age_days="$2" content="$3"
