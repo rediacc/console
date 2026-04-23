@@ -1,8 +1,10 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import worker, { normalizePath, detectLanguage } from '../index';
 
-// Minimal Env stub — Worker only touches ASSETS + DB for the code paths we exercise.
-function mkEnv(assetResponder: (req: Request) => Response): { ASSETS: Fetcher; DB: unknown } {
+// Minimal Env stub -- the worker touches ASSETS for the code paths we
+// exercise here; DB is only needed when /account/api/* is called. Tests
+// that don't exercise that path omit DB to mirror the edge deploy shape.
+function mkEnv(assetResponder: (req: Request) => Response): { ASSETS: Fetcher; DB?: unknown } {
   const ASSETS: Fetcher = {
     fetch: vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const req = input instanceof Request ? input : new Request(input, init);
@@ -10,7 +12,7 @@ function mkEnv(assetResponder: (req: Request) => Response): { ASSETS: Fetcher; D
     }) as unknown as Fetcher['fetch'],
     connect: vi.fn() as unknown as Fetcher['connect'],
   };
-  return { ASSETS, DB: {} };
+  return { ASSETS };
 }
 
 function hit(path: string, env: ReturnType<typeof mkEnv>, host = 'www.rediacc.com'): Promise<Response> {

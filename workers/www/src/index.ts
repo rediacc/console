@@ -8,7 +8,12 @@ import type { Database } from '../../../private/account/src/db/index.js';
 
 interface Env {
   ASSETS: Fetcher;
-  DB: D1Database;
+  // Present on stable (wrangler.toml -> account-db) and PR previews
+  // (deploy-www.sh mints a per-PR DB). Absent on edge (the monolithic
+  // edge-account-db was deleted post multi-region rollout; account API
+  // on edge.rediacc.com now returns 410 Gone). The /account/api/* branch
+  // below checks for DB at runtime.
+  DB?: D1Database;
   [key: string]: unknown;
 }
 
@@ -105,6 +110,9 @@ const accountApp = createApp(
   },
   (c) => {
     const ctx = c as { env: Env };
+    if (!ctx.env.DB) {
+      throw new Error('DB binding not configured on this worker; /account/api is not served here');
+    }
     return drizzle(ctx.env.DB, { schema }) as unknown as Database;
   }
 );
@@ -199,8 +207,24 @@ export default {
       return buildDisallowRobots();
     }
 
-    // Handle account API requests directly (account server embedded)
+    // Account API:
+    //  - stable (www.rediacc.com -> account-db) and PR previews (per-PR DB
+    //    minted by deploy-www.sh) serve via the embedded account server.
+    //  - edge (edge.rediacc.com) no longer has a DB binding after the
+    //    monolithic edge-account-db was deleted; return 410 so callers stop
+    //    probing. Consumers: CI preview gate + tunnel smoke test hit
+    //    /account/api/v1/health; ContactForm/NewsletterSignup post to
+    //    /account/api/v1/*. All of those run against stable/PR, not edge.
     if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
+      if (!env.DB) {
+        return new Response(
+          JSON.stringify({
+            error: 'gone',
+            message: 'Account API is served by regional workers (eu/us/asia.rediacc.com).',
+          }),
+          { status: 410, headers: { 'content-type': 'application/json; charset=utf-8' } }
+        );
+      }
       return accountApp.fetch(request, env);
     }
 
