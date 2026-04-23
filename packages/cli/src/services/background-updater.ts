@@ -331,8 +331,16 @@ async function handleSwapError(
  * Called at startup before CLI runs. If a staged binary exists and passes
  * SHA256 verification, atomically replaces the current binary.
  * Returns true if an update was applied.
+ *
+ * Short-circuits when the invocation is a rollback request. prepareApply()
+ * unconditionally runs cleanupOldBinary() to reap stale .old files, but the
+ * rollback handler *needs* the .old file to exist. Without this early exit,
+ * `rdc update --rollback` always fails with "No previous version found"
+ * because startup deletes the .old before the command handler can read it.
  */
 export async function applyPendingUpdate(): Promise<boolean> {
+  if (process.argv.includes('--rollback')) return false;
+
   const state = await prepareApply();
   if (!state?.pendingUpdate) return false;
 
