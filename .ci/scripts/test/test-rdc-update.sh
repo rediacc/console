@@ -1,9 +1,11 @@
 #!/bin/bash
 # End-to-end integration tests for `rdc update` + install.sh lifecycle.
-# Seven scenarios run against a local Python fixture server; RDC_BINARY
-# supplies the binary (CI sources it from build-cli-linux-x64). Scenarios:
-# happy / check-only / sha256-mismatch / rollback / rollback-empty /
-# channel-switch / reinstall.
+# Seven scenarios run against a local Python fixture server. RDC_BINARY
+# supplies the binary (CI sources it from build-cli-linux-x64).
+#
+# Scenarios:
+#   happy / check-only / sha256-mismatch / rollback / rollback-empty /
+#   channel-switch / reinstall.
 #
 # Runs the real rdc binary against a local Python HTTP fixture server that
 # serves controlled manifest.json / latest.json / binary / .sha256 under
