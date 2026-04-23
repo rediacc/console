@@ -31,22 +31,11 @@ not_found_handling = "404-page"
 html_handling = "drop-trailing-slash"
 run_worker_first = ["/*"]
 
-<<<<<<< HEAD
 # No D1 or R2 bindings. Account API + config storage on www.rediacc.com
 # are served by the regional workers (eu/us/asia.rediacc.com ->
 # rediacc-account-{eu,us,asia}); this worker serves marketing + static
 # assets only. PR previews get their own DB via deploy-www.sh ->
 # wrangler.preview.toml.
-=======
-# No D1 binding. Account API on www.rediacc.com is served by the regional
-# workers (eu/us/asia.rediacc.com -> rediacc-account-{eu,us,asia}); this
-# worker serves marketing + static assets only. PR previews get their own
-# DB via deploy-www.sh -> wrangler.preview.toml.
-
-[[r2_buckets]]
-binding = "CONFIG_BUCKET"
-bucket_name = "rediacc-configs"
->>>>>>> origin/main
 
 # All account env vars set via `wrangler secret put` in CI.
 # See org secrets: ACCOUNT_*, AWS_SES_*, STRIPE_*
