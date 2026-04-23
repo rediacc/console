@@ -36,9 +36,13 @@ fresh_home() {
 
 # Source install.sh with source-only mode. Resets variables that were
 # already evaluated at source time and re-sources if HOME changed.
+# XDG_CONFIG_HOME is unset so every test assertion can look at
+# $HOME/.config/rediacc/server.json deterministically (some CI runners
+# set XDG_CONFIG_HOME which would redirect the write).
 source_install() {
     export HOME="$1"
     export REDIACC_INSTALL_SH_SOURCE_ONLY=1
+    unset XDG_CONFIG_HOME
     # shellcheck disable=SC1090
     source "$INSTALL_SH"
 }
