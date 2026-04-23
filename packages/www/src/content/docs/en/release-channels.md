@@ -21,7 +21,7 @@ Stable is the default channel for all users. Releases are promoted from Edge aft
 
 Edge receives every change immediately after it merges to main. It is the latest version of the software, deployed continuously.
 
-- Latest features and fixes, deployed on every merge
+- Continuously deployed production, released on every merge to main
 - 2X Community plan limits (see table below)
 - Free forever. No paid plans available on Edge.
 - Separate accounts from Stable. Data does not transfer between channels.
@@ -32,11 +32,11 @@ Edge receives every change immediately after it merges to main. It is the latest
 | | Stable | Edge |
 |---|---|---|
 | **Deploy cadence** | After 7-day soak | Every merge to main |
-| **Stability** | Tested for 7 days | Latest code, less soak time |
+| **Stability** | Tested for 7 days | Production, continuously deployed |
 | **Community plan limits** | 10 GB repos, 500 issuances/month, 2 machines | 20 GB repos, 1,000 issuances/month, 4 machines |
 | **Paid plans** | Available (Professional, Business, Enterprise) | Not available |
 | **Accounts** | Independent | Independent (separate from Stable) |
-| **Best for** | Production, paid workloads | Testing, evaluation, side projects, early access |
+| **Best for** | Production, paid workloads | Production, side projects, early access |
 
 ## Edge 2X Limits
 

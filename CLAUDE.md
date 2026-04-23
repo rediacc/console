@@ -167,9 +167,9 @@ Version source of truth: **git tags** (e.g., `v0.8.3`). No version bump commits.
 
 ## Release Channels
 
-The CLI supports two release channels:
+The CLI supports two release channels, both production-quality:
 - **stable** (default): Promoted from edge after 7-day soak. Downloaded from `cli/stable/`.
-- **edge**: Published on every merge to main. Downloaded from `cli/edge/`.
+- **edge**: Continuously deployed production. Tagged + released on every merge to main. Downloaded from `cli/edge/`.
 
 R2 structure: `rediacc-releases/cli/{edge,stable}/{manifest.json,latest.json,rdc-*}`
 

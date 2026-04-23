@@ -269,7 +269,10 @@ const RegionPickerModal: React.FC = () => {
                 'regionPicker.stableHint',
                 'Reliable releases, promoted from edge after 7-day soak.'
               )
-            : t('regionPicker.edgeHint', 'Latest features, 2X free limits. Recommended.')}
+            : t(
+                'regionPicker.edgeHint',
+                'Continuously deployed production. 2X free limits during soak period.'
+              )}
           <br />
           <span className="region-picker-channel-hint-note">
             {t('regionPicker.regionNote', "Region can't be changed after sign-up.")}

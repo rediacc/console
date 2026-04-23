@@ -18,8 +18,8 @@ source "$SCRIPT_DIR/../../config/constants.sh"
 
 parse_args "$@"
 
-RETENTION_DAYS="${ARG_DAYS:-10}"
-KEEP_VERSIONS="${ARG_VERSIONS:-10}"
+RETENTION_DAYS="${ARG_DAYS:-14}"
+KEEP_VERSIONS="${ARG_VERSIONS:-20}"
 DRY_RUN="${ARG_DRY_RUN:-false}"
 
 # GitHub organization
@@ -70,8 +70,8 @@ R2_PR_MAX_AGE_DAYS=3
 # Each aws s3 sync during release adds new rediacc-cli-<semver>.<ext> without
 # deleting predecessors -- without retention the channel dir grows unbounded.
 # Keep if rank < R2_PACKAGE_KEEP_VERSIONS OR age < R2_PACKAGE_KEEP_DAYS.
-R2_PACKAGE_KEEP_VERSIONS=7
-R2_PACKAGE_KEEP_DAYS=10
+R2_PACKAGE_KEEP_VERSIONS=20
+R2_PACKAGE_KEEP_DAYS=7
 
 # =============================================================================
 # PREREQUISITES

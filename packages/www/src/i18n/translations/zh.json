@@ -13271,7 +13271,7 @@
   "regionPicker": {
     "channelEdge": "Edge",
     "channelStable": "稳定版",
-    "edgeHint": "最新功能，免费额度翻倍。无付费计划。",
+    "edgeHint": "持续部署的生产环境。浸泡期内免费额度翻倍。",
     "footer": "选择离您最近的区域，或您的组织所要求的区域。注册后无法更改。",
     "locations": {
       "asia": "东京，日本",

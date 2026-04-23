@@ -475,7 +475,7 @@
     },
     "channelEdge": "Edge",
     "channelStable": "Stable",
-    "edgeHint": "Latest features, 2X free limits. No paid plans.",
+    "edgeHint": "Continuously deployed production. 2X free limits during soak period.",
     "stableHint": "Reliable releases, promoted from edge after 7-day soak.",
     "regionNote": "Region can't be changed after sign-up."
   },
