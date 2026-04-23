@@ -1,9 +1,6 @@
 #!/bin/bash
-# Deploy the edge Worker to Cloudflare (edge.rediacc.com)
-#
-# Uses wrangler.edge.toml for edge-specific config (domain, assets).
-# No D1 migrations -- the monolithic edge-account-db is gone; account API
-# is served by regional workers (edge-rediacc-account-{eu,us,asia}).
+# Deploy the edge marketing Worker to Cloudflare (edge.rediacc.com).
+# No D1; account API is served by edge-rediacc-account-{eu,us,asia}.
 #
 # Usage:
 #   deploy-edge.sh
@@ -36,10 +33,5 @@ if [[ ! -d "node_modules" ]]; then
 fi
 
 log_step "Deploying edge worker (edge.rediacc.com)..."
-
-# No D1 migration step -- wrangler.edge.toml no longer binds a D1 database
-# after the multi-region migration dropped the monolithic edge-account-db.
-# The marketing worker serves marketing + static assets only; account API
-# traffic goes through edge-rediacc-account-{eu,us,asia}.
 npx wrangler deploy --config wrangler.edge.toml
 log_info "Edge worker deployed"

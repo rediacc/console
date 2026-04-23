@@ -19,12 +19,6 @@
 #   .backups/production/account-db-<region>-YYYY-MM-DDTHH-MM-SS.sql
 #   .backups/edge/edge-account-db-<region>-YYYY-MM-DDTHH-MM-SS.sql
 #
-# Notes:
-#   Post multi-region migration, the monolithic account-db / edge-account-db
-#   DBs are gone. Data lives in account-db-{eu,us,asia} (stable) and
-#   edge-account-db-{eu,us,asia} (edge), so this script now backs up each
-#   regional DB independently.
-#
 # Exit codes:
 #   0 - Success
 #   1 - Error
@@ -43,9 +37,8 @@ BACKUP_DIR="$ROOT_DIR/.backups"
 # consistent name prefix and can be rotated/grouped as a single run.
 RUN_TIMESTAMP="$(date -u +"%Y-%m-%dT%H-%M-%S")"
 
-# Regional D1 databases to back up (post multi-region rollout). Three
-# regions today (eu/us/asia); add new regions to this array when they
-# come online in regions.json.
+# Regions to back up. Add a new entry when a region is onboarded in
+# regions.json.
 REGIONS=("eu" "us" "asia")
 PROD_DB_PREFIX="account-db"
 EDGE_DB_PREFIX="edge-account-db"

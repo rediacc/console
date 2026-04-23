@@ -186,15 +186,20 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Test migrations against all regional production clones
+      - name: Test migrations against all regional clones (edge first, then stable)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
 
-          # Test migrations against each regional production database
-          REGIONS=$(jq -r '.regions[] | .d1.name' regions.json)
+          # Collect every regional DB: edges first (they are the release
+          # soak environment -- catch migration regressions there before
+          # they can propagate to stable on the next promotion), then
+          # the stable clones.
+          mapfile -t EDGE_DBS < <(jq -r '.regions[].edgeD1.name' regions.json)
+          mapfile -t STABLE_DBS < <(jq -r '.regions[].d1.name' regions.json)
+          ALL_DBS=("${EDGE_DBS[@]}" "${STABLE_DBS[@]}")
           CLEANUP_DBS=()
 
           cleanup() {
@@ -207,12 +212,21 @@ jobs:
           }
           trap cleanup EXIT
 
-          for SOURCE_DB in $REGIONS; do
+          for SOURCE_DB in "${ALL_DBS[@]}"; do
+            # REGION_ID strips either account-db- or edge-account-db- prefix.
             REGION_ID="${SOURCE_DB#account-db-}"
-            DB_NAME="migration-test-${REGION_ID}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            REGION_ID="${REGION_ID#edge-account-db-}"
+            # Tag the test DB name so edge vs stable clones are visible in logs
+            # and any leaked test DB is trivially attributable to its source.
+            if [[ "$SOURCE_DB" == edge-account-db-* ]]; then
+              CHANNEL_TAG="edge"
+            else
+              CHANNEL_TAG="stable"
+            fi
+            DB_NAME="migration-test-${CHANNEL_TAG}-${REGION_ID}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
             CLEANUP_DBS+=("$DB_NAME")
 
-            echo "::group::Test migrations against $SOURCE_DB ($REGION_ID)"
+            echo "::group::Test migrations against $SOURCE_DB (${CHANNEL_TAG}/${REGION_ID})"
 
             npx wrangler d1 create "$DB_NAME" --location eeur
             DB_UUID="$(npx wrangler d1 info "$DB_NAME" --json 2>/dev/null \
@@ -244,11 +258,11 @@ jobs:
             rm -f wrangler-migration-test.toml
             cd "$GITHUB_WORKSPACE"
 
-            echo "  $SOURCE_DB: migrations applied successfully"
+            echo "  $SOURCE_DB (${CHANNEL_TAG}/${REGION_ID}): migrations applied successfully"
             echo "::endgroup::"
           done
 
-          echo "All regional migration tests passed"
+          echo "All ${#ALL_DBS[@]} regional migration tests passed (${#EDGE_DBS[@]} edge + ${#STABLE_DBS[@]} stable)"
 
   cancel-watchdog:
     name: CI Watchdog

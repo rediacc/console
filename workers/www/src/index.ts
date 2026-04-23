@@ -8,15 +8,10 @@ import type { Database } from '../../../private/account/src/db/index.js';
 
 interface Env {
   ASSETS: Fetcher;
-  // Absent on both stable (www.rediacc.com) and edge (edge.rediacc.com)
-  // after the multi-region rollout: the monolithic account-db and
-  // edge-account-db were deleted once the regional DBs took over
-  // (account-db-{eu,us,asia} / edge-account-db-{eu,us,asia}). Real
-  // account API traffic goes through eu/us/asia.rediacc.com or
-  // edge-{eu,us,asia}.rediacc.com. The marketing worker's /account/api/*
-  // branch below 410s in production and only serves when a DB is bound
-  // at deploy time (PR preview -- deploy-www.sh mints per-PR account-db-pr-N
-  // and injects the binding via wrangler.preview.toml).
+  // Only bound in PR previews (deploy-www.sh mints account-db-pr-N and
+  // injects the binding via wrangler.preview.toml). On stable / edge,
+  // /account/api/* is served by the regional workers, so DB is absent
+  // here and the branch below 410s.
   DB?: D1Database;
   [key: string]: unknown;
 }
@@ -211,16 +206,9 @@ export default {
       return buildDisallowRobots();
     }
 
-    // Account API:
-    //  - PR preview deploys mint account-db-pr-N and inject the binding
-    //    via wrangler.preview.toml, so env.DB is present and we serve
-    //    via the embedded account server. CI preview gate and tunnel
-    //    smoke test both hit /account/api/v1/health on preview workers.
-    //  - Production stable and edge no longer bind a DB (monolithic
-    //    account-db / edge-account-db were deleted post multi-region
-    //    rollout). Return 410 so callers stop probing and the SPA's
-    //    region picker routes real account traffic to a regional worker
-    //    (eu/us/asia.rediacc.com or edge-{eu,us,asia}.rediacc.com).
+    // Account API: served here only on PR previews (env.DB bound by
+    // deploy-www.sh). On stable / edge the regional workers serve it;
+    // 410 JSON here so callers route through the SPA region picker.
     if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
       if (!env.DB) {
         return new Response(
