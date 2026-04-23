@@ -204,7 +204,10 @@ fresh_install() {
 
     # install.sh expects HOME to exist
     mkdir -p "$home_dir"
-    REDIACC_RELEASES_URL="http://127.0.0.1:$FIXTURE_PORT" \
+    # Unset XDG_* so install.sh's path resolution uses our isolated HOME
+    # (matches what test-install-script.sh does in its source_install harness).
+    env -u XDG_CONFIG_HOME -u XDG_STATE_HOME -u XDG_CACHE_HOME -u XDG_DATA_HOME \
+        REDIACC_RELEASES_URL="http://127.0.0.1:$FIXTURE_PORT" \
         REDIACC_CHANNEL="$channel" \
         HOME="$home_dir" \
         bash "$INSTALL_SH" >/dev/null 2>&1
@@ -222,7 +225,12 @@ fresh_install() {
 run_rdc() {
     local home_dir="$1"
     shift
+    # Unset XDG_* so rdc's getConfigDir/getStateDir/getCacheDir all resolve
+    # relative to our isolated HOME (getLinuxDirs prefers XDG_* when set).
+    # Without this, channel-switch scenario's server.json ends up at the
+    # runner's XDG_CONFIG_HOME and the test asserts on $home/.config/... .
     env -u CI -u GITHUB_ACTIONS -u GITHUB_RUN_ID -u RUNNER_OS \
+        -u XDG_CONFIG_HOME -u XDG_STATE_HOME -u XDG_CACHE_HOME -u XDG_DATA_HOME \
         HOME="$home_dir" \
         REDIACC_RELEASES_URL="http://127.0.0.1:$FIXTURE_PORT" \
         RDC_DISABLE_AUTOUPDATE="0" \
@@ -257,7 +265,12 @@ scenario_happy() {
     prep_fixture "$serve_root" edge 1.0.4 "$PLATFORM_KEY" "$BINARY_NAME"
 
     local out
-    out="$(run_rdc "$home" update 2>&1)" || log_fail "rdc update non-zero exit: $out"
+    # --force bypasses the compareVersions short-circuit. The rdc binary's
+    # baked-in CLI_VERSION (set at build time in CI) is often >= fixture's
+    # served version, which would otherwise cause performUpdate() to return
+    # success without swapping. The test is exercising swap mechanics, not
+    # the version-comparison logic.
+    out="$(run_rdc "$home" update --force 2>&1)" || log_fail "rdc update non-zero exit: $out"
 
     assert_file_exists "$home/.local/share/rediacc/bin/rdc"
     assert_file_exists "$home/.local/share/rediacc/bin/rdc.old"
@@ -314,7 +327,10 @@ scenario_sha256_mismatch() {
     # Manifest declares a bogus sha; binary bytes unchanged
     prep_fixture "$serve_root" edge 1.0.4 "$PLATFORM_KEY" "$BINARY_NAME" "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 
-    if run_rdc "$home" update >/dev/null 2>&1; then
+    # --force bypasses the version short-circuit so rdc actually attempts
+    # the download and hits the sha256 verification path that this scenario
+    # is exercising.
+    if run_rdc "$home" update --force >/dev/null 2>&1; then
         log_fail "sha mismatch should have failed update"
     fi
     assert_file_absent "$home/.local/share/rediacc/bin/rdc.old"
@@ -337,7 +353,9 @@ scenario_rollback() {
     fresh_install "$home" edge 1.0.3
     rm -rf "$serve_root/cli/edge" "$serve_root/cli/v1.0.3"
     prep_fixture "$serve_root" edge 1.0.4 "$PLATFORM_KEY" "$BINARY_NAME"
-    run_rdc "$home" update >/dev/null 2>&1 || log_fail "update prerequisite failed"
+    # --force bypasses the version short-circuit so the swap actually happens
+    # and creates rdc.old which the subsequent --rollback step consumes.
+    run_rdc "$home" update --force >/dev/null 2>&1 || log_fail "update prerequisite failed"
     assert_file_exists "$home/.local/share/rediacc/bin/rdc.old"
     run_rdc "$home" update --rollback >/dev/null 2>&1 || log_fail "rollback non-zero"
     assert_file_absent "$home/.local/share/rediacc/bin/rdc.old"
