@@ -1,8 +1,19 @@
 import { findSmartRedirect } from './smart-redirect';
 import { applyRedirect } from './redirect-aliases';
+import { drizzle } from 'drizzle-orm/d1';
+import { createApp } from '../../../private/account/src/app.js';
+import * as schema from '../../../private/account/src/db/schema.js';
+import { envSchema } from '../../../private/account/src/types/env.js';
+import type { Database } from '../../../private/account/src/db/index.js';
 
 interface Env {
   ASSETS: Fetcher;
+  // Present on stable (wrangler.toml -> account-db) and PR previews
+  // (deploy-www.sh mints a per-PR DB). Absent on edge (the monolithic
+  // edge-account-db was deleted post multi-region rollout; account API
+  // on edge.rediacc.com now returns 410 Gone). The /account/api/* branch
+  // below checks for DB at runtime.
+  DB?: D1Database;
   [key: string]: unknown;
 }
 
@@ -92,11 +103,19 @@ export function buildDisallowRobots(): Response {
   });
 }
 
-// The embedded account server was removed post multi-region migration.
-// /account/api/* on edge.rediacc.com is dead; real traffic goes through
-// edge-{eu,us,asia}.rediacc.com (edge-rediacc-account-* workers). The
-// marketing worker now serves marketing + static assets only, and the
-// D1 "DB" binding is gone from wrangler.edge.toml.
+const accountApp = createApp(
+  (c) => {
+    const ctx = c as { env: Record<string, unknown> };
+    return envSchema.parse(ctx.env);
+  },
+  (c) => {
+    const ctx = c as { env: Env };
+    if (!ctx.env.DB) {
+      throw new Error('DB binding not configured on this worker; /account/api is not served here');
+    }
+    return drizzle(ctx.env.DB, { schema }) as unknown as Database;
+  }
+);
 
 // ---------------------------------------------------------------------------
 // 404 recovery — normalization + curated redirect table
@@ -188,14 +207,25 @@ export default {
       return buildDisallowRobots();
     }
 
-    // Account API on the marketing worker is dead post multi-region.
-    // Return 410 so clients stop probing and fall through to the regional
-    // endpoint discovery path (RegionPickerModal in the SPA).
+    // Account API:
+    //  - stable (www.rediacc.com -> account-db) and PR previews (per-PR DB
+    //    minted by deploy-www.sh) serve via the embedded account server.
+    //  - edge (edge.rediacc.com) no longer has a DB binding after the
+    //    monolithic edge-account-db was deleted; return 410 so callers stop
+    //    probing. Consumers: CI preview gate + tunnel smoke test hit
+    //    /account/api/v1/health; ContactForm/NewsletterSignup post to
+    //    /account/api/v1/*. All of those run against stable/PR, not edge.
     if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
-      return new Response(
-        'Account API is served by regional workers (edge-{eu,us,asia}.rediacc.com).\n',
-        { status: 410, headers: { 'content-type': 'text/plain; charset=utf-8' } }
-      );
+      if (!env.DB) {
+        return new Response(
+          JSON.stringify({
+            error: 'gone',
+            message: 'Account API is served by regional workers (eu/us/asia.rediacc.com).',
+          }),
+          { status: 410, headers: { 'content-type': 'application/json; charset=utf-8' } }
+        );
+      }
+      return accountApp.fetch(request, env);
     }
 
     // Serve account SPA for /account/* routes

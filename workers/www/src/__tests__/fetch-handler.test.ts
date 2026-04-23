@@ -1,10 +1,10 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import worker, { normalizePath, detectLanguage } from '../index';
 
-// Minimal Env stub -- the worker only touches ASSETS for the code paths we
-// exercise. The embedded account server (and its DB binding) was removed
-// post multi-region migration.
-function mkEnv(assetResponder: (req: Request) => Response): { ASSETS: Fetcher } {
+// Minimal Env stub -- the worker touches ASSETS for the code paths we
+// exercise here; DB is only needed when /account/api/* is called. Tests
+// that don't exercise that path omit DB to mirror the edge deploy shape.
+function mkEnv(assetResponder: (req: Request) => Response): { ASSETS: Fetcher; DB?: unknown } {
   const ASSETS: Fetcher = {
     fetch: vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const req = input instanceof Request ? input : new Request(input, init);
