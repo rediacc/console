@@ -4,8 +4,8 @@ description: "Comprendre les canaux de publication Edge et Stable, leurs différ
 category: "Concepts"
 order: 2
 language: fr
-sourceHash: "b0f431fd1bcc22c1"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "d6ff18f9265392d2"
+sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
 ---
 
 Rediacc publie les mises à jour via deux canaux de publication : **Stable** et **Edge**. Chaque canal s'adresse à un public différent et implique des compromis distincts.
