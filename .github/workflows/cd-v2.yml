@@ -90,7 +90,7 @@ jobs:
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
           repositories: console,middleware,renet,account,homebrew-tap,elite,sql
@@ -257,7 +257,7 @@ jobs:
         if: needs.init.outputs.workers_only != 'true'
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
           repositories: console,middleware,renet,account,homebrew-tap,elite,sql
@@ -805,7 +805,7 @@ jobs:
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
           repositories: console,middleware,renet,account,homebrew-tap,elite,sql
@@ -918,7 +918,7 @@ jobs:
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
           repositories: console

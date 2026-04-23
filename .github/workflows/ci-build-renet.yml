@@ -45,7 +45,7 @@ jobs:
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -81,7 +81,7 @@ jobs:
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -121,7 +121,7 @@ jobs:
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -201,7 +201,7 @@ jobs:
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
 

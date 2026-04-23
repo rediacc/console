@@ -93,7 +93,7 @@ jobs:
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
           repositories: console,middleware,renet,account
@@ -158,7 +158,7 @@ jobs:
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
           repositories: console,account
