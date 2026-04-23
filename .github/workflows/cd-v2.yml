@@ -715,11 +715,16 @@ jobs:
           # Footer version assertion: confirm the Astro build baked the
           # expected semver into the rendered HTML. Catches regressions in
           # APP_VERSION propagation (cd-deploy-worker.yml -> astro.config.mjs).
+          # Astro SSR inserts React text-boundary comment nodes, so the
+          # rendered HTML is `<p class="footer-version">v<!-- -->1.0.4</p>`
+          # -- the regex collapses any HTML comments between the "v" and
+          # the semver before matching.
           if [[ "${{ needs.init.outputs.workers_only }}" != "true" ]]; then
             FOOTER_HTML=$(curl -fsSL https://edge.rediacc.com/en/)
-            if ! echo "$FOOTER_HTML" | grep -qE "footer-version[^<]*>v${VERSION}<"; then
+            FOOTER_NORMALIZED=$(echo "$FOOTER_HTML" | sed 's/<!--[^>]*-->//g')
+            if ! echo "$FOOTER_NORMALIZED" | grep -qE "footer-version[^<]*>v${VERSION}<"; then
               echo "::error::edge.rediacc.com footer does not render v${VERSION}"
-              echo "$FOOTER_HTML" | grep -oE 'footer-version[^<]*>[^<]*<' | head -3 || true
+              echo "$FOOTER_HTML" | grep -oE 'footer-version[^<]*>[^<]*<[^>]*>[^<]*<' | head -3 || true
               exit 1
             fi
             echo "  marketing (footer version): OK (v${VERSION})"
