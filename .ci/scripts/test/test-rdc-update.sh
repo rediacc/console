@@ -215,13 +215,18 @@ fresh_install() {
 }
 
 # Run rdc from the fresh install, using the isolated HOME. Rdc sees the
-# fixture server as its releases URL. Disables telemetry during tests.
+# fixture server as its releases URL. Unsets CI / GITHUB_ACTIONS so
+# rdc's isUpdateDisabled() doesn't short-circuit the check (it auto-
+# disables updates when CI=true to avoid mutating the runner's state).
+# The tests ARE exercising rdc update; isolated HOME makes it safe.
 run_rdc() {
     local home_dir="$1"
     shift
-    HOME="$home_dir" \
+    env -u CI -u GITHUB_ACTIONS -u GITHUB_RUN_ID -u RUNNER_OS \
+        HOME="$home_dir" \
         REDIACC_RELEASES_URL="http://127.0.0.1:$FIXTURE_PORT" \
         RDC_DISABLE_AUTOUPDATE="0" \
+        RDC_DISABLE_TELEMETRY=1 \
         "$home_dir/.local/bin/rdc" "$@"
 }
 
