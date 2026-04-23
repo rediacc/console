@@ -41,6 +41,12 @@ fi
 
 log_info "Checking job-level if: blocks for always()/!cancelled() on needs.*.result references"
 
+# pyyaml is absent from ubuntu-slim by default; install locally if missing.
+python3 -c "import yaml" 2>/dev/null || pip install --user --quiet pyyaml >/dev/null 2>&1 || pip3 install --user --quiet pyyaml >/dev/null 2>&1 || {
+    log_error "Unable to install pyyaml (needed for workflow parsing)"
+    exit 2
+}
+
 python3 - "$WORKFLOWS_DIR" <<'PYEOF'
 import os
 import re
