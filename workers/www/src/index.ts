@@ -8,11 +8,15 @@ import type { Database } from '../../../private/account/src/db/index.js';
 
 interface Env {
   ASSETS: Fetcher;
-  // Present on stable (wrangler.toml -> account-db) and PR previews
-  // (deploy-www.sh mints a per-PR DB). Absent on edge (the monolithic
-  // edge-account-db was deleted post multi-region rollout; account API
-  // on edge.rediacc.com now returns 410 Gone). The /account/api/* branch
-  // below checks for DB at runtime.
+  // Absent on both stable (www.rediacc.com) and edge (edge.rediacc.com)
+  // after the multi-region rollout: the monolithic account-db and
+  // edge-account-db were deleted once the regional DBs took over
+  // (account-db-{eu,us,asia} / edge-account-db-{eu,us,asia}). Real
+  // account API traffic goes through eu/us/asia.rediacc.com or
+  // edge-{eu,us,asia}.rediacc.com. The marketing worker's /account/api/*
+  // branch below 410s in production and only serves when a DB is bound
+  // at deploy time (PR preview -- deploy-www.sh mints per-PR account-db-pr-N
+  // and injects the binding via wrangler.preview.toml).
   DB?: D1Database;
   [key: string]: unknown;
 }
@@ -208,13 +212,15 @@ export default {
     }
 
     // Account API:
-    //  - stable (www.rediacc.com -> account-db) and PR previews (per-PR DB
-    //    minted by deploy-www.sh) serve via the embedded account server.
-    //  - edge (edge.rediacc.com) no longer has a DB binding after the
-    //    monolithic edge-account-db was deleted; return 410 so callers stop
-    //    probing. Consumers: CI preview gate + tunnel smoke test hit
-    //    /account/api/v1/health; ContactForm/NewsletterSignup post to
-    //    /account/api/v1/*. All of those run against stable/PR, not edge.
+    //  - PR preview deploys mint account-db-pr-N and inject the binding
+    //    via wrangler.preview.toml, so env.DB is present and we serve
+    //    via the embedded account server. CI preview gate and tunnel
+    //    smoke test both hit /account/api/v1/health on preview workers.
+    //  - Production stable and edge no longer bind a DB (monolithic
+    //    account-db / edge-account-db were deleted post multi-region
+    //    rollout). Return 410 so callers stop probing and the SPA's
+    //    region picker routes real account traffic to a regional worker
+    //    (eu/us/asia.rediacc.com or edge-{eu,us,asia}.rediacc.com).
     if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
       if (!env.DB) {
         return new Response(

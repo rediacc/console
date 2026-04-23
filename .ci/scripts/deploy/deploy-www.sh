@@ -139,11 +139,9 @@ TOML
 else
     # ---- PRODUCTION DEPLOYMENT ----
     log_step "Deploying www production worker..."
-
-    # Apply migrations (idempotent — skips already-applied)
-    log_step "Applying migrations to account-db..."
-    npx wrangler d1 migrations apply account-db --remote
-    log_info "Migrations applied to account-db"
-
+    # No D1 migration step -- wrangler.toml no longer binds the monolithic
+    # account-db (deleted from CF post multi-region rollout). Account API
+    # on www.rediacc.com returns 410 and regional workers serve real
+    # traffic (rediacc-account-{eu,us,asia}).
     npx wrangler deploy
 fi

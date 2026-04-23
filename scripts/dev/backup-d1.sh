@@ -12,12 +12,18 @@
 #
 # Flags:
 #   --dry-run        Show what would be done without exporting
-#   --self-destruct  Delete CF_MANAGEMENT_TOKEN after backup (off by default for backups)
+#   --self-destruct  Delete CF_MANAGEMENT_TOKEN after backup (off by default)
 #   production|edge  Only back up one environment
 #
 # Outputs:
-#   .backups/production/account-db-YYYY-MM-DDTHH-MM-SS.sql
-#   .backups/edge/edge-account-db-YYYY-MM-DDTHH-MM-SS.sql
+#   .backups/production/account-db-<region>-YYYY-MM-DDTHH-MM-SS.sql
+#   .backups/edge/edge-account-db-<region>-YYYY-MM-DDTHH-MM-SS.sql
+#
+# Notes:
+#   Post multi-region migration, the monolithic account-db / edge-account-db
+#   DBs are gone. Data lives in account-db-{eu,us,asia} (stable) and
+#   edge-account-db-{eu,us,asia} (edge), so this script now backs up each
+#   regional DB independently.
 #
 # Exit codes:
 #   0 - Success
@@ -26,15 +32,18 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=../../.ci/scripts/lib/common.sh
 source "$ROOT_DIR/.ci/scripts/lib/common.sh"
+# shellcheck source=./lib/cf-auth.sh
 source "$SCRIPT_DIR/lib/cf-auth.sh"
 
 ACCOUNT_ID="fa51e4a18d553c30e1633288e9733d04"
 BACKUP_DIR="$ROOT_DIR/.backups"
 
-# D1 databases to back up
-PROD_DB="account-db"
-EDGE_DB="edge-account-db"
+# Regional D1 databases to back up (post multi-region rollout).
+REGIONS=("eu" "us" "asia")
+PROD_DB_PREFIX="account-db"
+EDGE_DB_PREFIX="edge-account-db"
 
 # =============================================================================
 # ARGUMENT PARSING
@@ -112,17 +121,21 @@ backup_database() {
 # MAIN
 # =============================================================================
 
-log_step "D1 Database Backup"
+log_step "D1 Database Backup (per-region)"
 if [[ "$DRY_RUN" == "true" ]]; then
     log_warn "DRY-RUN mode: no exports will be performed"
 fi
 
 if [[ -z "$TARGET" || "$TARGET" == "production" ]]; then
-    backup_database "production" "$PROD_DB"
+    for region in "${REGIONS[@]}"; do
+        backup_database "production" "${PROD_DB_PREFIX}-${region}"
+    done
 fi
 
 if [[ -z "$TARGET" || "$TARGET" == "edge" ]]; then
-    backup_database "edge" "$EDGE_DB"
+    for region in "${REGIONS[@]}"; do
+        backup_database "edge" "${EDGE_DB_PREFIX}-${region}"
+    done
 fi
 
 log_info "Backup complete"

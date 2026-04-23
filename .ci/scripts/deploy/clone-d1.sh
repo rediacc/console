@@ -6,8 +6,8 @@
 # imports into the target database, and verifies FK integrity.
 #
 # Usage:
-#   clone-d1.sh --source account-db --target edge-account-db
-#   clone-d1.sh --source account-db --target account-db-pr-42 --wrangler-config wrangler.preview.toml
+#   clone-d1.sh --source account-db-eu --target edge-account-db-eu
+#   clone-d1.sh --source account-db-eu --target account-db-pr-42 --wrangler-config wrangler.preview.toml
 #
 # Requires: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
 

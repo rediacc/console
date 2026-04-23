@@ -31,11 +31,15 @@ not_found_handling = "404-page"
 html_handling = "drop-trailing-slash"
 run_worker_first = ["/*"]
 
-[[d1_databases]]
-binding = "DB"
-database_name = "account-db"
-database_id = "198e819d-8dfe-4304-a6be-3e1ca1f2c22b"
-migrations_dir = "../../private/account/drizzle"
+# D1 binding removed post multi-region migration. The monolithic account-db
+# (UUID 198e819d-...) was deleted from the CF account; account traffic now
+# routes through the regional workers (eu/us/asia.rediacc.com ->
+# rediacc-account-{eu,us,asia} bound to account-db-{eu,us,asia}). The
+# marketing worker serves marketing + static assets only; /account/api/*
+# on www.rediacc.com returns 410 and relies on the SPA region picker to
+# direct real API traffic to a regional worker. Symmetric with
+# wrangler.edge.toml. Per-PR preview deploys create their own DB via
+# deploy-www.sh and bind it in wrangler.preview.toml at deploy time.
 
 [[r2_buckets]]
 binding = "CONFIG_BUCKET"
