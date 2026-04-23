@@ -37,6 +37,12 @@ log_info() { echo -e "→ $1"; }
 ci_error() { [[ "${CI:-}" == "true" ]] && echo "::error::$1" || log_error "$1"; }
 ci_warn() { [[ "${CI:-}" == "true" ]] && echo "::warning::$1" || log_warn "$1"; }
 
+# Declare the optional metadata arrays so emit_advisory's defaulted reads are
+# safe under `set -u` even when the caller hasn't populated any entries.
+# Re-declaring a pre-existing array preserves its contents.
+declare -A ADV_URL ADV_TITLE ADV_SEVERITY ADV_GHSA 2>/dev/null || true
+declare -A ADV_VULN_RANGE ADV_PATCHED_VERSION ADV_DESC_PREVIEW 2>/dev/null || true
+
 # emit_advisory <level> <id> <name> <fix_hint> [action_hint]
 #
 # Level: error | warn
