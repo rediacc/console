@@ -39,6 +39,9 @@ source "$SCRIPT_DIR/lib/cf-auth.sh"
 
 ACCOUNT_ID="fa51e4a18d553c30e1633288e9733d04"
 BACKUP_DIR="$ROOT_DIR/.backups"
+# One timestamp per script invocation so the regional backup set shares a
+# consistent name prefix and can be rotated/grouped as a single run.
+RUN_TIMESTAMP="$(date -u +"%Y-%m-%dT%H-%M-%S")"
 
 # Regional D1 databases to back up (post multi-region rollout). Three
 # regions today (eu/us/asia); add new regions to this array when they
@@ -95,10 +98,8 @@ export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT_ID"
 
 backup_database() {
     local env_name="$1" db_name="$2"
-    local timestamp
-    timestamp=$(date -u +"%Y-%m-%dT%H-%M-%S")
     local out_dir="$BACKUP_DIR/$env_name"
-    local out_file="$out_dir/${db_name}-${timestamp}.sql"
+    local out_file="$out_dir/${db_name}-${RUN_TIMESTAMP}.sql"
 
     log_step "Backing up $env_name: $db_name"
 
