@@ -29,13 +29,6 @@ not_found_handling = "404-page"
 html_handling = "drop-trailing-slash"
 run_worker_first = ["/*"]
 
-# No D1 binding. Account API on edge.rediacc.com is served by the regional
-# edge workers (edge-{eu,us,asia}.rediacc.com -> edge-rediacc-account-*
-# bound to edge-account-db-{eu,us,asia}); this worker serves marketing +
-# static assets only.
-
-[[r2_buckets]]
-binding = "CONFIG_BUCKET"
-bucket_name = "edge-rediacc-configs"
-
-# Secrets set via deploy-edge.sh (same crypto keys as production, sandbox Stripe)
+# No D1 or R2 bindings. Account API + config storage on edge.rediacc.com
+# are served by the regional edge workers (edge-{eu,us,asia}.rediacc.com ->
+# edge-rediacc-account-*); this worker serves marketing + static assets only.
