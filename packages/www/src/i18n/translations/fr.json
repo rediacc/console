@@ -13341,7 +13341,7 @@
   "regionPicker": {
     "channelEdge": "Edge",
     "channelStable": "Stable",
-    "edgeHint": "Dernières fonctionnalités, limites gratuites doublées. Pas de plans payants.",
+    "edgeHint": "Production déployée en continu. Limites gratuites doublées pendant la période de rodage.",
     "footer": "Choisissez la région la plus proche de vous ou celle exigée par votre organisation. Ce choix ne peut pas être modifié après l'inscription.",
     "locations": {
       "asia": "Tokyo, Japon",

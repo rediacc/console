@@ -4,8 +4,8 @@ description: Authentification, tokens API, gestion des sessions et modèle de pe
 category: Guides
 order: 13
 language: fr
-sourceHash: "009d0d8033c591a3"
-sourceCommit: "dabe1a33844b3b7ec8a2c4ab44dc2de6683283c9"
+sourceHash: "c4e24e7a3494b6f6"
+sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
 ---
 
 ### Authentification

@@ -13335,7 +13335,7 @@
   "regionPicker": {
     "channelEdge": "Edge",
     "channelStable": "Stabil",
-    "edgeHint": "Neueste Funktionen, doppelte kostenlose Limits. Keine kostenpflichtigen Pläne.",
+    "edgeHint": "Produktion, kontinuierlich bereitgestellt. Doppelte kostenlose Limits während der Einlaufphase.",
     "footer": "Wählen Sie die Region, die Ihnen am nächsten liegt, oder die Ihre Organisation erfordert. Dies kann nach der Registrierung nicht mehr geändert werden.",
     "locations": {
       "asia": "Tokio, Japan",

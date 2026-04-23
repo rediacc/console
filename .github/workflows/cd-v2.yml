@@ -128,18 +128,15 @@ jobs:
           fi
           echo "::notice::Workers-only deploy from SHA: ${CI_SHA} (${BEHIND} commits behind HEAD)"
 
-      # Check if the merged PR has the 'release' label (opt-in to CD pipeline)
-      # Without the label, CD is skipped — prevents accidental releases from chore PRs.
-      #
-      # Manual workflow_dispatch: release_mode determines behavior
-      #   - retry (default): re-deploy current version without bumping
-      #   - patch/minor/major: create new version bump
-      - name: Check for release label
+      # Edge is production: every push to main auto-releases a new patch.
+      # `bump-minor` / `bump-major` labels on the merged PR escalate the bump.
+      # workflow_dispatch: release_mode controls retry vs new bump.
+      - name: Decide release mode
         id: skip-check
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Workers-only: skip version bump, release label check, just deploy Workers
+          # Workers-only: deploy Workers without version bump (emergency path).
           if [[ "${{ inputs.deploy_workers_only }}" == "true" ]]; then
             echo "skip_release=false" >> $GITHUB_OUTPUT
             echo "retry_mode=false" >> $GITHUB_OUTPUT
@@ -149,52 +146,25 @@ jobs:
           fi
           echo "workers_only=false" >> $GITHUB_OUTPUT
 
+          # Manual dispatch respects release_mode.
           if [[ "${{ github.event_name }}" != "workflow_run" ]]; then
             RELEASE_MODE="${{ inputs.release_mode }}"
             if [[ "$RELEASE_MODE" != "retry" ]]; then
               echo "skip_release=false" >> $GITHUB_OUTPUT
               echo "retry_mode=false" >> $GITHUB_OUTPUT
-              echo "::notice::Release mode: ${RELEASE_MODE} bump — will create new release"
+              echo "::notice::Release mode: ${RELEASE_MODE} bump -- will create new release"
             else
               echo "skip_release=false" >> $GITHUB_OUTPUT
               echo "retry_mode=true" >> $GITHUB_OUTPUT
-              echo "::notice::Retry mode — will re-deploy current version without bumping"
+              echo "::notice::Retry mode -- will re-deploy current version without bumping"
             fi
             exit 0
           fi
 
+          # workflow_run path: auto-release on every main CI success.
           echo "retry_mode=false" >> $GITHUB_OUTPUT
-
-          CI_SHA="${{ steps.resolve.outputs.ci_sha }}"
-          COMMIT_MSG=$(git log -1 --format="%B" "$CI_SHA" 2>/dev/null || true)
-          PR_NUM=$(echo "$COMMIT_MSG" | grep -oE '\(#[0-9]+\)' | grep -oE '[0-9]+' | head -1 || true)
-
-          # Fallback: if commit has no PR ref (hotfix, --admin merge), find the most
-          # recent merged PR with 'release' label that was merged after the last tag.
-          if [[ -z "$PR_NUM" ]]; then
-            echo "No PR number in commit message, searching recent merged PRs..."
-            LAST_TAG_DATE=$(git log -1 --format=%aI "$(git describe --tags --abbrev=0 2>/dev/null || echo HEAD~50)" 2>/dev/null || echo "2000-01-01T00:00:00+00:00")
-            PR_NUM=$(gh pr list --repo "${{ github.repository }}" --state merged --base main \
-              --label release --limit 5 --json number,mergedAt \
-              --jq "[.[] | select(.mergedAt > \"${LAST_TAG_DATE}\")] | .[0].number // empty" 2>/dev/null || true)
-            if [[ -n "$PR_NUM" ]]; then
-              echo "Found release PR #$PR_NUM via label search"
-            fi
-          fi
-
-          if [[ -z "$PR_NUM" ]]; then
-            echo "No release PR found, skipping release"
-            echo "skip_release=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          LABELS=$(gh pr view "$PR_NUM" --repo "${{ github.repository }}" --json labels --jq '.labels[].name' 2>/dev/null || true)
-          if echo "$LABELS" | grep -qx "release"; then
-            echo "skip_release=false" >> $GITHUB_OUTPUT
-          else
-            echo "::notice::Skipping release — PR #$PR_NUM does not have 'release' label"
-            echo "skip_release=true" >> $GITHUB_OUTPUT
-          fi
+          echo "skip_release=false" >> $GITHUB_OUTPUT
+          echo "::notice::Auto-release: every merge to main produces a new edge release"
 
       # Retry/workers-only mode: use current version from latest tag without bumping
       - name: Resolve version (retry/workers-only mode)
@@ -395,78 +365,10 @@ jobs:
             echo "::warning::Some artifacts lack attestation — this is expected during the transition period"
           fi
 
-      # Tag-based versioning: create git tag instead of version bump commit.
-      # No file changes needed -- version is injected at build time.
-      - name: Create version tag
-        if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
-        run: |
-          VERSION="${{ needs.init.outputs.next_version }}"
-          git config user.name "${{ vars.GIT_BOT_NAME }}"
-          git config user.email "${{ vars.GIT_BOT_EMAIL }}"
-          git tag -a "v${VERSION}" -m "v${VERSION}"
-          git push origin "v${VERSION}"
-          echo "::notice::Created tag v${VERSION}"
-
-      - name: Tag submodules
-        if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
-        run: |
-          set -euo pipefail
-          VERSION="${{ needs.init.outputs.next_version }}"
-          for sub in private/renet private/middleware; do
-            if [[ ! -d "$sub/.git" ]] && [[ ! -f "$sub/.git" ]]; then
-              echo "::notice::Skipping $sub (not initialized)"
-              continue
-            fi
-            cd "$sub"
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            head_sha="$(git rev-parse HEAD)"
-            existing_sha="$(git rev-list -n1 "v${VERSION}" 2>/dev/null || true)"
-            if [[ -n "$existing_sha" ]]; then
-              if [[ "$existing_sha" != "$head_sha" ]]; then
-                echo "::error::Submodule $sub tag v${VERSION} already points to $existing_sha but HEAD is $head_sha. Drift must be resolved manually before this release can proceed."
-                exit 1
-              fi
-              echo "::notice::Submodule $sub tag v${VERSION} already at HEAD ($head_sha); reusing"
-            else
-              git tag -a "v${VERSION}" -m "v${VERSION}"
-            fi
-            # Push is idempotent for existing tags pointing at the same SHA.
-            git push origin "v${VERSION}"
-            cd "$GITHUB_WORKSPACE"
-          done
-        env:
-          GITHUB_PAT: ${{ steps.app-token.outputs.token }}
-
-      - name: Update Homebrew formula
-        if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
-        run: |
-          .ci/scripts/release/update-homebrew-tap.sh \
-            --version ${{ needs.init.outputs.next_version }} \
-            --local-checksums dist/cli \
-            --push
-        env:
-          GITHUB_PAT: ${{ steps.app-token.outputs.token }}
-          GIT_BOT_NAME: ${{ vars.GIT_BOT_NAME }}
-          GIT_BOT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
-
-      # -----------------------------------------------------------------------
-      # Step 3: Create GitHub Release (upload packages + binaries)
-      # -----------------------------------------------------------------------
-      - name: Create Release
-        if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b  # v2
-        with:
-          tag_name: v${{ needs.init.outputs.next_version }}
-          name: v${{ needs.init.outputs.next_version }}
-          target_commitish: ${{ github.sha }}
-          files: |
-            dist/desktop/**/*
-            dist/cli/**/*
-            dist/packages/**/*
-          draft: false
-          prerelease: false
-          generate_release_notes: true
+      # Tag creation + GitHub Release + Homebrew update moved to the
+      # `tag-and-release` job below, which runs after edge deploys +
+      # smoke-test succeed. Keeping them there prevents orphan tags
+      # pointing at a broken release.
 
       # Package repos + R2 edge upload already handled by CI (cd-dryrun.yml).
       # CI builds self-contained repos and uploads to {format}/edge/ on push-to-main.
@@ -690,7 +592,7 @@ jobs:
   # ============================================================================
   deploy-marketing-stable:
     name: Deploy stable Marketing (hotfix)
-    needs: [init, publish, smoke-test]
+    needs: [init, publish, smoke-test, tag-and-release]
     if: >-
       success() &&
       needs.init.outputs.skip_release != 'true' &&
@@ -719,7 +621,7 @@ jobs:
 
   deploy-account-stable:
     name: Deploy stable Account (hotfix, all regions)
-    needs: [init, publish, smoke-test]
+    needs: [init, publish, smoke-test, tag-and-release]
     if: >-
       success() &&
       needs.init.outputs.skip_release != 'true' &&
@@ -876,6 +778,110 @@ jobs:
             exit 1
           fi
           echo "Smoke test passed"
+
+  # ============================================================================
+  # TAG & GITHUB RELEASE - Runs AFTER edge deploys + smoke-test succeed.
+  # Creates the git tag, tags submodules, updates Homebrew formula, publishes
+  # the GitHub Release. Ordering this last means a failed deploy does not
+  # leave an orphan tag pointing at a broken release.
+  # ============================================================================
+  tag-and-release:
+    name: Tag & GitHub Release
+    runs-on: ubuntu-latest
+    needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test]
+    if: >-
+      success() &&
+      needs.init.outputs.skip_release != 'true' &&
+      needs.init.outputs.retry_mode != 'true' &&
+      needs.init.outputs.workers_only != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: cd
+          repositories: console,middleware,renet,account,homebrew-tap,elite,sql
+
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          fetch-depth: 0
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+        with:
+          name: release-artifacts-${{ needs.init.outputs.ci_sha }}
+          path: dist/
+          run-id: ${{ needs.init.outputs.ci_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Create version tag
+        run: |
+          VERSION="${{ needs.init.outputs.next_version }}"
+          git config user.name "${{ vars.GIT_BOT_NAME }}"
+          git config user.email "${{ vars.GIT_BOT_EMAIL }}"
+          git tag -a "v${VERSION}" -m "v${VERSION}"
+          git push origin "v${VERSION}"
+          echo "::notice::Created tag v${VERSION}"
+
+      - name: Tag submodules
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.init.outputs.next_version }}"
+          for sub in private/renet private/middleware; do
+            if [[ ! -d "$sub/.git" ]] && [[ ! -f "$sub/.git" ]]; then
+              echo "::notice::Skipping $sub (not initialized)"
+              continue
+            fi
+            cd "$sub"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            head_sha="$(git rev-parse HEAD)"
+            existing_sha="$(git rev-list -n1 "v${VERSION}" 2>/dev/null || true)"
+            if [[ -n "$existing_sha" ]]; then
+              if [[ "$existing_sha" != "$head_sha" ]]; then
+                echo "::error::Submodule $sub tag v${VERSION} already points to $existing_sha but HEAD is $head_sha. Drift must be resolved manually before this release can proceed."
+                exit 1
+              fi
+              echo "::notice::Submodule $sub tag v${VERSION} already at HEAD ($head_sha); reusing"
+            else
+              git tag -a "v${VERSION}" -m "v${VERSION}"
+            fi
+            # Push is idempotent for existing tags pointing at the same SHA.
+            git push origin "v${VERSION}"
+            cd "$GITHUB_WORKSPACE"
+          done
+        env:
+          GITHUB_PAT: ${{ steps.app-token.outputs.token }}
+
+      - name: Update Homebrew formula
+        run: |
+          .ci/scripts/release/update-homebrew-tap.sh \
+            --version ${{ needs.init.outputs.next_version }} \
+            --local-checksums dist/cli \
+            --push
+        env:
+          GITHUB_PAT: ${{ steps.app-token.outputs.token }}
+          GIT_BOT_NAME: ${{ vars.GIT_BOT_NAME }}
+          GIT_BOT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b  # v2
+        with:
+          tag_name: v${{ needs.init.outputs.next_version }}
+          name: v${{ needs.init.outputs.next_version }}
+          target_commitish: ${{ github.sha }}
+          files: |
+            dist/desktop/**/*
+            dist/cli/**/*
+            dist/packages/**/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
 
   # ============================================================================
   # CLEANUP ON FAILURE - Remove channel artifacts if publish fails

@@ -160,8 +160,8 @@ Rediacc uses a channel-based release system. The channel determines which versio
 
 | Channel | Description | When updated |
 |---------|-------------|--------------|
-| `stable` | Production-ready releases | Promoted from edge after 7-day soak |
-| `edge` | Latest features and fixes | Every merge to main |
+| `stable` | Production, promoted from edge after 7-day soak | Weekly soak promotion |
+| `edge` | Continuously deployed production | Every merge to main |
 | `pr-N` | PR preview builds | Automatically per pull request |
 
 ### Switching channels

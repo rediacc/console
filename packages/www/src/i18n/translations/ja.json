@@ -13331,7 +13331,7 @@
   "regionPicker": {
     "channelEdge": "Edge",
     "channelStable": "安定版",
-    "edgeHint": "最新機能、無料枠2倍。有料プランなし。",
+    "edgeHint": "本番環境、継続的にデプロイ。ソーク期間中は無料枠2倍。",
     "footer": "最寄りのリージョン、または組織が必要とするリージョンを選択してください。登録後は変更できません。",
     "locations": {
       "asia": "東京、日本",

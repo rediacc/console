@@ -204,7 +204,7 @@ Shows current version, update channel, and auto-update configuration.
 #### Release Channels
 
 ```bash
-rdc update --channel edge      # Latest features, updated frequently
-rdc update --channel stable    # Production-ready releases (default)
+rdc update --channel edge      # Continuously deployed production updates
+rdc update --channel stable    # Promoted from edge after 7-day soak (default)
 rdc update --status            # Show current channel and version info
 ```

@@ -4,8 +4,8 @@ description: "Edge- und Stable-Release-Kanäle verstehen, ihre Unterschiede und 
 category: "Concepts"
 order: 2
 language: de
-sourceHash: "b0f431fd1bcc22c1"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "d6ff18f9265392d2"
+sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
 ---
 
 Rediacc veröffentlicht Updates über zwei Release-Kanäle: **Stable** und **Edge**. Jeder Kanal richtet sich an eine andere Zielgruppe und bietet unterschiedliche Kompromisse.

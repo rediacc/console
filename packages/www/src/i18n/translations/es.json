@@ -13333,7 +13333,7 @@
   "regionPicker": {
     "channelEdge": "Edge",
     "channelStable": "Estable",
-    "edgeHint": "Últimas funciones, el doble de límites gratuitos. Sin planes de pago.",
+    "edgeHint": "Producción desplegada continuamente. Doble de límites gratuitos durante el periodo de prueba.",
     "footer": "Elige la región más cercana a ti o la que requiera tu organización. No se puede cambiar después del registro.",
     "locations": {
       "asia": "Tokio, Japon",

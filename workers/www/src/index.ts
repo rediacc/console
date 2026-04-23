@@ -8,11 +8,10 @@ import type { Database } from '../../../private/account/src/db/index.js';
 
 interface Env {
   ASSETS: Fetcher;
-  // Present on stable (wrangler.toml -> account-db) and PR previews
-  // (deploy-www.sh mints a per-PR DB). Absent on edge (the monolithic
-  // edge-account-db was deleted post multi-region rollout; account API
-  // on edge.rediacc.com now returns 410 Gone). The /account/api/* branch
-  // below checks for DB at runtime.
+  // Only bound in PR previews (deploy-www.sh mints account-db-pr-N and
+  // injects the binding via wrangler.preview.toml). On stable / edge,
+  // /account/api/* is served by the regional workers, so DB is absent
+  // here and the branch below 410s.
   DB?: D1Database;
   [key: string]: unknown;
 }
@@ -207,14 +206,9 @@ export default {
       return buildDisallowRobots();
     }
 
-    // Account API:
-    //  - stable (www.rediacc.com -> account-db) and PR previews (per-PR DB
-    //    minted by deploy-www.sh) serve via the embedded account server.
-    //  - edge (edge.rediacc.com) no longer has a DB binding after the
-    //    monolithic edge-account-db was deleted; return 410 so callers stop
-    //    probing. Consumers: CI preview gate + tunnel smoke test hit
-    //    /account/api/v1/health; ContactForm/NewsletterSignup post to
-    //    /account/api/v1/*. All of those run against stable/PR, not edge.
+    // Account API: served here only on PR previews (env.DB bound by
+    // deploy-www.sh). On stable / edge the regional workers serve it;
+    // 410 JSON here so callers route through the SPA region picker.
     if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
       if (!env.DB) {
         return new Response(
