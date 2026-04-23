@@ -355,9 +355,12 @@ scenario_rollback() {
     prep_fixture "$serve_root" edge 1.0.4 "$PLATFORM_KEY" "$BINARY_NAME"
     # --force bypasses the version short-circuit so the swap actually happens
     # and creates rdc.old which the subsequent --rollback step consumes.
-    run_rdc "$home" update --force >/dev/null 2>&1 || log_fail "update prerequisite failed"
+    local update_out rollback_out
+    update_out="$(run_rdc "$home" update --force 2>&1)" ||
+        log_fail "update prerequisite failed: $update_out"
     assert_file_exists "$home/.local/share/rediacc/bin/rdc.old"
-    run_rdc "$home" update --rollback >/dev/null 2>&1 || log_fail "rollback non-zero"
+    rollback_out="$(run_rdc "$home" update --rollback 2>&1)" ||
+        log_fail "rollback non-zero: $rollback_out"
     assert_file_absent "$home/.local/share/rediacc/bin/rdc.old"
     stop_fixture
     rm -rf "$tmp"
