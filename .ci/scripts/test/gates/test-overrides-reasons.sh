@@ -18,11 +18,12 @@ run_validator_with_pkg() {
     local pkg_content="$1"
     local TEMP
     TEMP="$(mktemp -d)"
+    # BLOCKER: expanding TEMP now captures the specific temp path into the trap at set-time so RETURN fires the correct rm -rf even if TEMP is reassigned
     # shellcheck disable=SC2064
     # BLOCKER: capture TEMP at trap-set time, not at expansion time — we want
     # the specific path bound to the trap
     trap "rm -rf '$TEMP'" RETURN
-    echo "$pkg_content" > "$TEMP/package.json"
+    echo "$pkg_content" >"$TEMP/package.json"
     # Validator reads package.json relative to its own CONSOLE_ROOT calculation,
     # which is scripts/../ — so we need to copy scripts/ into TEMP.
     cp -r "$REPO_ROOT/scripts" "$TEMP/scripts"

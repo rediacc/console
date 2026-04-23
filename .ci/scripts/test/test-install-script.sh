@@ -43,6 +43,7 @@ source_install() {
     export HOME="$1"
     export REDIACC_INSTALL_SH_SOURCE_ONLY=1
     unset XDG_CONFIG_HOME
+    # BLOCKER: INSTALL_SH is the user-facing install script under test; its path is a dynamic variable by design so shellcheck cannot follow it statically
     # shellcheck disable=SC1090
     source "$INSTALL_SH"
 }

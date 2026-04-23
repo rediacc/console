@@ -40,6 +40,7 @@ done
 
 cd "$GATES_DIR"
 shopt -s nullglob
+# BLOCKER: intentional glob expansion of user-supplied $PATTERN into the TEST_FILES array; quoting would prevent shopt nullglob from filtering non-matches
 # shellcheck disable=SC2206
 # BLOCKER: intentional glob expansion of user-supplied $PATTERN
 TEST_FILES=($PATTERN)

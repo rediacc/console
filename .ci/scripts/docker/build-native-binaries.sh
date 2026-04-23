@@ -132,7 +132,7 @@ build_criu() {
 
     local build_dir
     build_dir=$(mktemp -d)
-    # We intentionally expand $build_dir now to capture the temp directory path
+    # BLOCKER: expanding $build_dir now captures the specific temp-dir path into the trap handler at trap-set time; deferred expansion would read a different (or unset) value when the trap eventually fires
     # shellcheck disable=SC2064
     trap "rm -rf '$build_dir'" EXIT
 
@@ -183,7 +183,7 @@ build_rsync() {
 
     local build_dir
     build_dir=$(mktemp -d)
-    # We intentionally expand $build_dir now to capture the temp directory path
+    # BLOCKER: expanding $build_dir now captures the specific temp-dir path into the trap handler at trap-set time; deferred expansion would read a different (or unset) value when the trap eventually fires
     # shellcheck disable=SC2064
     trap "rm -rf '$build_dir'" EXIT
 
@@ -239,7 +239,7 @@ build_rsync_cross() {
 
     local build_dir
     build_dir=$(mktemp -d)
-    # We intentionally expand $build_dir now to capture the temp directory path
+    # BLOCKER: expanding $build_dir now captures the specific temp-dir path into the trap handler at trap-set time; deferred expansion would read a different (or unset) value when the trap eventually fires
     # shellcheck disable=SC2064
     trap "rm -rf '$build_dir'" EXIT
 

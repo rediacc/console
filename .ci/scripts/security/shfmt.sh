@@ -43,11 +43,13 @@ main() {
 
     # Check all shell scripts in .ci directory
     log_info "Checking .ci/**/*.sh"
+    # BLOCKER: SHFMT_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shfmt receives each flag as its own argv entry
     # shellcheck disable=SC2086
     find .ci -name "*.sh" -type f -exec shfmt $SHFMT_OPTS {} +
 
     # Check the main run.sh script
     log_info "Checking ./run.sh"
+    # BLOCKER: SHFMT_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shfmt receives each flag as its own argv entry
     # shellcheck disable=SC2086
     shfmt $SHFMT_OPTS ./run.sh
 
@@ -58,6 +60,7 @@ main() {
     for dir in scripts/dev scripts/docker; do
         if [[ -d "$dir" ]]; then
             log_info "Checking $dir/**/*.sh"
+            # BLOCKER: SHFMT_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shfmt receives each flag as its own argv entry
             # shellcheck disable=SC2086
             find "$dir" -name "*.sh" -type f -exec shfmt $SHFMT_OPTS {} +
         fi

@@ -59,8 +59,10 @@ readonly BLOCKER_MIN_LENGTH=30
 # comment_char defaults to '#'; pass '//' for JSON-sidecar-style files.
 parse_blockered_list() {
     local file="$1"
-    # shellcheck disable=SC2178  # namerefs to associative arrays
+    # BLOCKER: nameref-to-assoc-array pattern — shellcheck SC2178 mis-reads the alias as a string assignment
+    # shellcheck disable=SC2178
     local -n _allowed_ref="$2"
+    # BLOCKER: same nameref-to-assoc-array pattern as _allowed_ref above
     # shellcheck disable=SC2178
     local -n _blocker_ref="$3"
     local comment_char="${4:-#}"
@@ -142,7 +144,8 @@ validate_blocker_quality() {
 # non-zero if any entry lacks a BLOCKER OR its BLOCKER is low-effort.
 verify_all_blockers() {
     local file="$1"
-    # shellcheck disable=SC2178  # nameref to an associative array
+    # BLOCKER: nameref-to-assoc-array — shellcheck SC2178 misclassifies the alias
+    # shellcheck disable=SC2178
     local -n _blocker_ref="$2"
     local id missing=0
     for id in "${!_blocker_ref[@]}"; do

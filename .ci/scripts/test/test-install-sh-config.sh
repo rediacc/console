@@ -53,6 +53,7 @@ run_case() {
     tmp_home=$(mktemp -d)
     local config_file="$tmp_home/.config/rediacc/server.json"
 
+    # BLOCKER: test runs install.sh in a subshell via source-only mode; the path is a dynamic variable so shellcheck cannot statically resolve the source target
     # shellcheck disable=SC1090
     (
         export HOME="$tmp_home"

@@ -68,6 +68,7 @@ with_temp_dir() {
     shift
     local TEMP
     TEMP="$(mktemp -d)"
+    # BLOCKER: expanding TEMP now is intentional — we want the specific temp path bound into the trap handler, not a reference that would read an empty variable after the function returns
     # shellcheck disable=SC2064
     # BLOCKER: expanding TEMP now is intentional — we want the specific path
     # captured in the trap, not the variable's later value
