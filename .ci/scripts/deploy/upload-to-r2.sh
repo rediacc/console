@@ -213,10 +213,18 @@ write_once_guard() {
         return 0
     fi
 
-    local listing
-    listing="$(aws s3 ls "s3://${RELEASES_BUCKET}/${prefix}" \
-        --endpoint-url "$R2_ENDPOINT" 2>/dev/null | head -1)"
-    if [[ -n "$listing" ]]; then
+    # Existence check via list-objects-v2 with --max-items 1. More efficient
+    # than `aws s3 ls` which can fetch a full page before `head -1` sees the
+    # first line; matters for prefixes that could contain many objects.
+    local count
+    count="$(aws s3api list-objects-v2 \
+        --bucket "${RELEASES_BUCKET}" \
+        --prefix "${prefix}" \
+        --max-items 1 \
+        --endpoint-url "$R2_ENDPOINT" \
+        --query 'KeyCount' \
+        --output text 2>/dev/null || echo 0)"
+    if [[ "$count" != "0" && "$count" != "None" ]]; then
         log_error "Write-once guard blocked: s3://${RELEASES_BUCKET}/${prefix} is non-empty."
         log_error "  A previous deploy of ${context} sealed this prefix; overwriting would break"
         log_error "  the immutable-URL promise and poison long-lived CDN caches."

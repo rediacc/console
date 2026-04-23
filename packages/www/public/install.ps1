@@ -110,7 +110,14 @@ function Write-InstallConfig {
     }
     $ConfigJson = $ConfigHash | ConvertTo-Json -Compress
     $ConfigPath = Join-Path $ConfigDir "server.json"
-    Set-Content -Path $ConfigPath -Value $ConfigJson -NoNewline
+    $TempConfigPath = Join-Path $ConfigDir "server.json.tmp"
+    # Atomic write: tmp + Move-Item so an interrupted install cannot leave a
+    # half-written server.json. UTF-8 no-BOM matches what the CLI reads
+    # (server-config.ts uses JSON.parse on utf-8); Windows PowerShell 5.1's
+    # default Set-Content encoding is UTF-16 which the CLI would reject.
+    $Utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($TempConfigPath, $ConfigJson, $Utf8NoBom)
+    Move-Item -Path $TempConfigPath -Destination $ConfigPath -Force
 
     Write-Host ""
     if (-not [string]::IsNullOrEmpty($ServerUrl)) {

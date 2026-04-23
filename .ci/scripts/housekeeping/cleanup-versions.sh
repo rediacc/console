@@ -1412,9 +1412,14 @@ cleanup_workflow_artifacts() {
 cleanup_actions_cache() {
     log_step "Phase 12: Cleaning up Actions cache (target <= ${GH_CACHE_KEEP_GB} GB)"
 
+    # Paginate fully -- a single 100-entry page would underreport total bytes
+    # and silently skip eviction when usage exceeds the ceiling. The active
+    # cache endpoint is capped at 10 GB so ~40-50 entries is typical, but a
+    # repository could have more and we must not miss any.
     local caches
-    caches="$(gh api "repos/$RELEASE_REPO/actions/caches?per_page=100&sort=last_accessed_at&direction=asc" \
-        --jq '[.actions_caches[] | {id: .id, key: .key, ref: .ref, size: .size_in_bytes, last_accessed_at: .last_accessed_at}]' 2>/dev/null || echo "[]")"
+    caches="$(gh api --paginate "repos/$RELEASE_REPO/actions/caches?per_page=100&sort=last_accessed_at&direction=asc" \
+        --jq '.actions_caches[] | {id: .id, key: .key, ref: .ref, size: .size_in_bytes, last_accessed_at: .last_accessed_at}' 2>/dev/null |
+        jq -s 'sort_by(.last_accessed_at)' || echo "[]")"
 
     local total
     total="$(echo "$caches" | jq 'length')"

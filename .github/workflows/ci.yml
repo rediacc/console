@@ -1238,7 +1238,7 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, stage-artifacts, validate-install, validate-promote, tests, standalone-run-test, elite-run-test, ops-tests, migration-test, deploy-preview, smoke-test-preview]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, stage-artifacts, validate-install, validate-promote, tests, standalone-run-test, elite-run-test, ops-tests, migration-test, update-flow-test, deploy-preview, smoke-test-preview]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -1268,6 +1268,7 @@ jobs:
           [[ "${{ needs.elite-run-test.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.ops-tests.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.migration-test.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.update-flow-test.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.deploy-preview.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.smoke-test-preview.result }}" == "failure" ]] && FAILED=true
 
@@ -1290,6 +1291,7 @@ jobs:
             echo "  elite-run-test: ${{ needs.elite-run-test.result }}"
             echo "  ops-tests: ${{ needs.ops-tests.result }}"
             echo "  migration-test: ${{ needs.migration-test.result }}"
+            echo "  update-flow-test: ${{ needs.update-flow-test.result }}"
             echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
             echo "  smoke-test-preview: ${{ needs.smoke-test-preview.result }}"
             exit 1

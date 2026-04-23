@@ -63,23 +63,26 @@ cat "$TEMP/guard.sh" >>"$TEMP/guard-bundle.sh"
 # Run guard in a subshell so that a `exit 1` from the guard doesn't
 # terminate the test driver. We check status with "|| true".
 
+# list-objects-v2 --query 'KeyCount' --output text prints "0" (no objects),
+# "1" (at least one object), or "None" (bucket missing or access denied).
+# Treat "0" and "None" as empty; any other value aborts the guard.
 test_empty_prefix_passes() {
-    FAKE_AWS_OUTPUT="" FAKE_AWS_RC=0 \
+    FAKE_AWS_OUTPUT="0" FAKE_AWS_RC=0 \
         bash -c "set -e; source '$TEMP/guard-bundle.sh'; write_once_guard 'cli/v0.0.0/' 'test'" ||
-        log_fail "empty prefix should pass; guard returned non-zero"
+        log_fail "empty prefix (KeyCount=0) should pass; guard returned non-zero"
     log_pass "empty prefix returns 0"
 }
 
 test_nonempty_prefix_aborts() {
-    FAKE_AWS_OUTPUT="2026-04-23 12:00:00 1234 cli/v0.0.0/rdc-linux-x64" FAKE_AWS_RC=0 \
+    FAKE_AWS_OUTPUT="1" FAKE_AWS_RC=0 \
         bash -c "set -e; source '$TEMP/guard-bundle.sh'; write_once_guard 'cli/v0.0.0/' 'test'" \
         2>/dev/null &&
-        log_fail "non-empty prefix should abort; guard returned zero"
+        log_fail "non-empty prefix (KeyCount=1) should abort; guard returned zero"
     log_pass "non-empty prefix aborts (exit 1)"
 }
 
 test_dry_run_skips() {
-    FAKE_AWS_OUTPUT="2026-04-23 12:00:00 1234 cli/v0.0.0/rdc-linux-x64" FAKE_AWS_RC=0 \
+    FAKE_AWS_OUTPUT="1" FAKE_AWS_RC=0 \
         DRY_RUN=true \
         bash -c "set -e; DRY_RUN=true; source '$TEMP/guard-bundle.sh'; write_once_guard 'cli/v0.0.0/' 'test'" ||
         log_fail "DRY_RUN=true should pass regardless of prefix state"
