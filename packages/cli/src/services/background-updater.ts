@@ -332,20 +332,48 @@ async function handleSwapError(
   }
 }
 
+// Set when applyPendingUpdate() successfully replaces the current binary at
+// startup. The `update` command checks this so it does not re-download the
+// version that was just applied — without this signal, the in-memory VERSION
+// constant (baked into the now-replaced binary) is stale and looks "outdated"
+// vs the manifest, so handleUpdate would download + selfReplace AGAIN, ending
+// with current AND .old both at the new version. That kills `--rollback`
+// (rollback swaps two identical binaries and silently no-ops).
+let _appliedAtStartup: string | null = null;
+
+/**
+ * Returns the version that applyPendingUpdate() applied during this process,
+ * or null if it never ran or applied nothing. Consumed by the `update`
+ * command so its "is there a newer version?" comparison can use the effective
+ * post-apply version instead of the stale in-memory VERSION constant.
+ */
+export function getAppliedAtStartup(): string | null {
+  return _appliedAtStartup;
+}
+
+/** Test hook: clears the in-process apply signal. Production code never calls this. */
+export function resetAppliedAtStartupForTests(): void {
+  _appliedAtStartup = null;
+}
+
 /**
  * Called at startup before CLI runs. If a staged binary exists and passes
  * SHA256 verification, atomically replaces the current binary.
- * Returns true if an update was applied.
+ *
+ * Returns the applied version (e.g. "1.2.3") on success, or null when nothing
+ * was applied (no pending update, not SEA, lock contention, validation
+ * failure, etc.). The version return is consumed by the `update` command to
+ * short-circuit a redundant download in the same invocation.
  *
  * Short-circuits on `--rollback` so the command handler can read a clean
- * state without contending with a partial swap, but the .old file is now
+ * state without contending with a partial swap, and the .old file is now
  * preserved across all invocations (prepareApply no longer reaps it).
  */
-export async function applyPendingUpdate(): Promise<boolean> {
-  if (process.argv.includes('--rollback')) return false;
+export async function applyPendingUpdate(): Promise<string | null> {
+  if (process.argv.includes('--rollback')) return null;
 
   const state = await prepareApply();
-  if (!state?.pendingUpdate) return false;
+  if (!state?.pendingUpdate) return null;
 
   const { version, stagedPath } = state.pendingUpdate;
   const attempts = (state.pendingUpdate.applyAttempts ?? 0) + 1;
@@ -355,11 +383,11 @@ export async function applyPendingUpdate(): Promise<boolean> {
   if (attempts > MAX_APPLY_ATTEMPTS) {
     telemetryService.trackEvent('update.apply.skipped_max_retries', { version, attempts });
     await clearPendingUpdate(state, `Update apply failed after ${MAX_APPLY_ATTEMPTS} attempts`);
-    return false;
+    return null;
   }
 
   const releaseLock = await acquireUpdateLock();
-  if (!releaseLock) return false;
+  if (!releaseLock) return null;
 
   try {
     await atomicBinarySwap(stagedPath);
@@ -370,10 +398,11 @@ export async function applyPendingUpdate(): Promise<boolean> {
 
     telemetryService.trackEvent('update.apply.success', { from: VERSION, to: version });
     process.stderr.write(`${t('commands.update.autoApplied', { version, from: VERSION })}\n`);
-    return true;
+    _appliedAtStartup = version;
+    return version;
   } catch (err) {
     await handleSwapError(state, err, version, attempts);
-    return false;
+    return null;
   } finally {
     await releaseLock();
   }
