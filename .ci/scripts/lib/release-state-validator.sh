@@ -45,18 +45,18 @@ rsv_list_sentinels() {
         --prefix "${product}/v" \
         --endpoint-url "$R2_ENDPOINT" \
         --query "Contents[?ends_with(Key, \`/${RSV_SENTINEL_KEY}\`)].Key" \
-        --output text 2>/dev/null \
-        | tr '\t' '\n' \
-        | sed -n "s|^${product}/\(v[0-9][0-9.]*\)/${RSV_SENTINEL_KEY}\$|\1|p" \
-        | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
-        | sort -uV
+        --output text 2>/dev/null |
+        tr '\t' '\n' |
+        sed -n "s|^${product}/\(v[0-9][0-9.]*\)/${RSV_SENTINEL_KEY}\$|\1|p" |
+        grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+        sort -uV
 }
 
 # List every strict-semver git tag (v${X}.${Y}.${Z}); pre-release tags skipped.
 rsv_list_git_tags() {
-    git tag -l 'v*' \
-        | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
-        | sort -uV
+    git tag -l 'v*' |
+        grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+        sort -uV
 }
 
 # `0` if the R2 prefix contains at least one object.
@@ -89,8 +89,8 @@ rsv_sentinel_exists() {
 rsv_is_orphan() {
     local product="${1:?product required}"
     local version="${2:?version required}"
-    rsv_prefix_nonempty "${product}/${version}/" \
-        && ! rsv_sentinel_exists "$product" "$version"
+    rsv_prefix_nonempty "${product}/${version}/" &&
+        ! rsv_sentinel_exists "$product" "$version"
 }
 
 # Fetch and emit the JSON payload of `${product}/${version}/.released`.
@@ -129,22 +129,24 @@ rsv_assert_bijection() {
     local in_flight="${4:-}"
 
     local all drift=0
-    all="$(printf '%s\n%s\n%s\n' "$cli_versions" "$desktop_versions" "$tag_versions" \
-        | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
-        | sort -uV)"
+    all="$(printf '%s\n%s\n%s\n' "$cli_versions" "$desktop_versions" "$tag_versions" |
+        grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+        sort -uV)"
 
     local version has_cli has_desktop has_tag
     while IFS= read -r version; do
         [[ -z "$version" ]] && continue
         [[ -n "$in_flight" && "$version" == "$in_flight" ]] && continue
 
-        has_cli=0; has_desktop=0; has_tag=0
+        has_cli=0
+        has_desktop=0
+        has_tag=0
         grep -qxF "$version" <<<"$cli_versions" && has_cli=1
         grep -qxF "$version" <<<"$desktop_versions" && has_desktop=1
         grep -qxF "$version" <<<"$tag_versions" && has_tag=1
 
-        if (( has_cli != has_tag )); then
-            if (( has_cli )); then
+        if ((has_cli != has_tag)); then
+            if ((has_cli)); then
                 echo "DRIFT ${version}: cli sentinel present, git tag missing"
                 echo "  remediation: re-run CD to tag/release ${version}, or scrub the sentinel via scripts/dev/scrub-sentinel.sh ${version}"
             else
@@ -154,14 +156,14 @@ rsv_assert_bijection() {
             drift=1
         fi
 
-        if (( has_desktop && !has_cli )); then
+        if ((has_desktop && !has_cli)); then
             echo "DRIFT ${version}: desktop sentinel present, cli sentinel missing"
             echo "  remediation: inspect desktop/${version}/.released payload and reconcile; desktop should never release without cli"
             drift=1
         fi
     done <<<"$all"
 
-    if (( drift == 0 )); then
+    if ((drift == 0)); then
         echo "OK: release-state bijection holds (excluding in-flight ${in_flight:-<none>})"
         return 0
     fi

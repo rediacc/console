@@ -980,23 +980,23 @@ cleanup_r2() {
             local sub
             sub="$(echo "$line" | awk '/^[[:space:]]*PRE[[:space:]]v[0-9]+\./ {print $2}')"
             [[ -z "$sub" ]] && continue
-            local ver="${sub%/}"                 # v1.2.3
+            local ver="${sub%/}" # v1.2.3
             [[ "$ver" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
 
             local has_sentinel=0 has_tag=0
             rsv_sentinel_exists "$dir" "$ver" && has_sentinel=1
             grep -qxF "$ver" <<<"$git_tags" && has_tag=1
 
-            if (( has_sentinel && has_tag )); then
-                continue  # committed release
+            if ((has_sentinel && has_tag)); then
+                continue # committed release
             fi
-            if (( !has_sentinel && !has_tag )); then
+            if ((!has_sentinel && !has_tag)); then
                 r2_rm_recursive "${dir}/${ver}/" "orphan ${dir}/${ver} (no .released sentinel, no git tag)"
                 orphan_ver_deleted=$((orphan_ver_deleted + 1))
                 continue
             fi
             # Drift: exactly one of sentinel/tag is present. Do not auto-heal.
-            if (( has_sentinel )); then
+            if ((has_sentinel)); then
                 log_error "drift: ${dir}/${ver}/.released exists but git tag ${ver} missing"
                 log_error "  remediation: re-run CD to tag/release ${ver}, or scrub via scripts/dev/scrub-sentinel.sh ${ver} --execute"
             else
@@ -1007,7 +1007,7 @@ cleanup_r2() {
         done < <(r2_ls_prefix "${dir}/")
     done
     log_info "  8d: deleted $orphan_ver_deleted orphan versioned prefix(es); found $drift_count drift finding(s)"
-    if (( drift_count > 0 )); then
+    if ((drift_count > 0)); then
         log_error "  8d: release-state drift detected; housekeeping refuses to auto-heal"
         log_error "  8d: see drift lines above for remediation"
         return 1

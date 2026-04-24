@@ -43,17 +43,41 @@ INCLUDE_DESKTOP=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --version) VERSION="${2:-}"; shift 2 ;;
-        --channel) CHANNEL="${2:-}"; shift 2 ;;
-        --commit-sha) COMMIT_SHA="${2:-}"; shift 2 ;;
-        --desktop) INCLUDE_DESKTOP=true; shift ;;
-        *) log_error "unknown flag: $1"; exit 2 ;;
+        --version)
+            VERSION="${2:-}"
+            shift 2
+            ;;
+        --channel)
+            CHANNEL="${2:-}"
+            shift 2
+            ;;
+        --commit-sha)
+            COMMIT_SHA="${2:-}"
+            shift 2
+            ;;
+        --desktop)
+            INCLUDE_DESKTOP=true
+            shift
+            ;;
+        *)
+            log_error "unknown flag: $1"
+            exit 2
+            ;;
     esac
 done
 
-[[ -z "$VERSION" ]] && { log_error "--version required"; exit 2; }
-[[ -z "$CHANNEL" ]] && { log_error "--channel required"; exit 2; }
-[[ -z "$COMMIT_SHA" ]] && { log_error "--commit-sha required"; exit 2; }
+[[ -z "$VERSION" ]] && {
+    log_error "--version required"
+    exit 2
+}
+[[ -z "$CHANNEL" ]] && {
+    log_error "--channel required"
+    exit 2
+}
+[[ -z "$COMMIT_SHA" ]] && {
+    log_error "--commit-sha required"
+    exit 2
+}
 if [[ "$CHANNEL" != "edge" && "$CHANNEL" != "stable" ]]; then
     log_error "sentinel write is only valid on release channels (edge|stable); got: $CHANNEL"
     exit 2
@@ -101,8 +125,8 @@ write_sentinel() {
     payload="$(build_payload "$product")"
 
     log_step "writing sentinel: s3://${RSV_BUCKET}/${key}"
-    echo -n "$payload" \
-        | aws s3 cp - "s3://${RSV_BUCKET}/${key}" \
+    echo -n "$payload" |
+        aws s3 cp - "s3://${RSV_BUCKET}/${key}" \
             --endpoint-url "$R2_ENDPOINT" \
             --cache-control "no-cache" \
             --content-type "application/json"

@@ -44,10 +44,16 @@ for arg in "$@"; do
             exit 0
             ;;
         v[0-9]*)
-            [[ -n "$VERSION" ]] && { log_error "only one version argument"; exit 2; }
+            [[ -n "$VERSION" ]] && {
+                log_error "only one version argument"
+                exit 2
+            }
             VERSION="$arg"
             ;;
-        *) log_error "unknown argument: $arg"; exit 2 ;;
+        *)
+            log_error "unknown argument: $arg"
+            exit 2
+            ;;
     esac
 done
 
@@ -91,7 +97,10 @@ if git -C "$REPO_ROOT" rev-parse --verify "refs/tags/${VERSION}" >/dev/null 2>&1
     log_warn "  reconsider re-running CD for ${VERSION} instead"
     if [[ "$EXECUTE" == "true" && "$SKIP_CONFIRM" == "false" ]]; then
         read -r -p "type 'YES I UNDERSTAND' to proceed: " confirm
-        [[ "$confirm" == "YES I UNDERSTAND" ]] || { log_error "aborted"; exit 1; }
+        [[ "$confirm" == "YES I UNDERSTAND" ]] || {
+            log_error "aborted"
+            exit 1
+        }
     fi
 fi
 
@@ -102,7 +111,10 @@ fi
 
 if [[ "$SKIP_CONFIRM" != "true" ]]; then
     read -r -p "delete the listed prefixes? [y/N] " ack
-    [[ "$ack" == "y" || "$ack" == "Y" ]] || { log_error "aborted"; exit 1; }
+    [[ "$ack" == "y" || "$ack" == "Y" ]] || {
+        log_error "aborted"
+        exit 1
+    }
 fi
 
 for product in cli desktop; do

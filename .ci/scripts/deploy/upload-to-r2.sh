@@ -219,8 +219,8 @@ r2_rm() {
 source "$SCRIPT_DIR/../lib/release-state-validator.sh"
 
 write_once_guard() {
-    local prefix="$1"    # e.g. "cli/v1.0.5/"
-    local context="$2"   # human label, e.g. "cli v1.0.5"
+    local prefix="$1"  # e.g. "cli/v1.0.5/"
+    local context="$2" # human label, e.g. "cli v1.0.5"
 
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] sentinel-aware guard would check s3://${RELEASES_BUCKET}/${prefix} (${context})"

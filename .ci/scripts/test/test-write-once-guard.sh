@@ -19,7 +19,10 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-log_fail() { echo -e "${RED}FAIL:${NC} $*" >&2; exit 1; }
+log_fail() {
+    echo -e "${RED}FAIL:${NC} $*" >&2
+    exit 1
+}
 log_pass() { echo -e "${GREEN}PASS:${NC} $*"; }
 
 TEMP="$(mktemp -d)"
@@ -86,39 +89,39 @@ run_guard() {
 
 test_sealed_prefix_aborts() {
     reset_log
-    SENTINEL_EXISTS=true PREFIX_KEYCOUNT=1 run_guard "cli/v0.0.0/" \
-        && log_fail "sealed prefix (sentinel present) should abort; guard returned zero"
-    grep -q "s3api head-object" "$TEMP/aws.log" \
-        || log_fail "guard should have checked head-object for the sentinel"
-    grep -q "s3 rm" "$TEMP/aws.log" \
-        && log_fail "guard must NOT scrub when the sentinel is present"
+    SENTINEL_EXISTS=true PREFIX_KEYCOUNT=1 run_guard "cli/v0.0.0/" &&
+        log_fail "sealed prefix (sentinel present) should abort; guard returned zero"
+    grep -q "s3api head-object" "$TEMP/aws.log" ||
+        log_fail "guard should have checked head-object for the sentinel"
+    grep -q "s3 rm" "$TEMP/aws.log" &&
+        log_fail "guard must NOT scrub when the sentinel is present"
     log_pass "sealed prefix aborts (sentinel-aware)"
 }
 
 test_empty_prefix_passes() {
     reset_log
-    SENTINEL_EXISTS=false PREFIX_KEYCOUNT=0 run_guard "cli/v0.0.0/" \
-        || log_fail "empty prefix + no sentinel should pass; guard returned non-zero"
-    grep -q "s3 rm" "$TEMP/aws.log" \
-        && log_fail "guard must NOT scrub an empty prefix"
+    SENTINEL_EXISTS=false PREFIX_KEYCOUNT=0 run_guard "cli/v0.0.0/" ||
+        log_fail "empty prefix + no sentinel should pass; guard returned non-zero"
+    grep -q "s3 rm" "$TEMP/aws.log" &&
+        log_fail "guard must NOT scrub an empty prefix"
     log_pass "empty prefix returns 0 (clean slate)"
 }
 
 test_orphan_prefix_scrubs_and_passes() {
     reset_log
-    SENTINEL_EXISTS=false PREFIX_KEYCOUNT=1 run_guard "cli/v0.0.0/" \
-        || log_fail "orphan prefix should scrub and pass; guard returned non-zero"
-    grep -q "s3 rm .*cli/v0.0.0/ --endpoint-url .*--recursive" "$TEMP/aws.log" \
-        || log_fail "guard must invoke 'aws s3 rm --recursive' to scrub the orphan"
+    SENTINEL_EXISTS=false PREFIX_KEYCOUNT=1 run_guard "cli/v0.0.0/" ||
+        log_fail "orphan prefix should scrub and pass; guard returned non-zero"
+    grep -q "s3 rm .*cli/v0.0.0/ --endpoint-url .*--recursive" "$TEMP/aws.log" ||
+        log_fail "guard must invoke 'aws s3 rm --recursive' to scrub the orphan"
     log_pass "orphan prefix scrubs and returns 0 (recovery path)"
 }
 
 test_dry_run_skips() {
     reset_log
-    SENTINEL_EXISTS=true PREFIX_KEYCOUNT=1 DRY_RUN=true run_guard "cli/v0.0.0/" \
-        || log_fail "DRY_RUN=true should pass regardless of state"
-    grep -q "s3api head-object" "$TEMP/aws.log" \
-        && log_fail "DRY_RUN must not call aws at all"
+    SENTINEL_EXISTS=true PREFIX_KEYCOUNT=1 DRY_RUN=true run_guard "cli/v0.0.0/" ||
+        log_fail "DRY_RUN=true should pass regardless of state"
+    grep -q "s3api head-object" "$TEMP/aws.log" &&
+        log_fail "DRY_RUN must not call aws at all"
     log_pass "DRY_RUN=true skips all checks"
 }
 
