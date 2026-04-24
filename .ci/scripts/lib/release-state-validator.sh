@@ -36,27 +36,34 @@ RSV_SENTINEL_KEY=".released"
 # =============================================================================
 
 # List every `.released` sentinel under `${product}/v*/` on R2.
-# Emits one `v${VERSION}` per line, semver-sorted.
+# Emits one `v${VERSION}` per line, semver-sorted. Empty stdout when there
+# are no sentinels yet (callers under `set -euo pipefail` would otherwise
+# trip on grep's exit-1-on-no-match through the pipefail option).
 # Requires: AWS env + R2_ENDPOINT.
 rsv_list_sentinels() {
     local product="${1:?product (cli|desktop) required}"
-    aws s3api list-objects-v2 \
-        --bucket "$RSV_BUCKET" \
-        --prefix "${product}/v" \
-        --endpoint-url "$R2_ENDPOINT" \
-        --query "Contents[?ends_with(Key, \`/${RSV_SENTINEL_KEY}\`)].Key" \
-        --output text 2>/dev/null |
-        tr '\t' '\n' |
-        sed -n "s|^${product}/\(v[0-9][0-9.]*\)/${RSV_SENTINEL_KEY}\$|\1|p" |
-        grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
-        sort -uV
+    {
+        aws s3api list-objects-v2 \
+            --bucket "$RSV_BUCKET" \
+            --prefix "${product}/v" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --query "Contents[?ends_with(Key, \`/${RSV_SENTINEL_KEY}\`)].Key" \
+            --output text 2>/dev/null |
+            tr '\t' '\n' |
+            sed -n "s|^${product}/\(v[0-9][0-9.]*\)/${RSV_SENTINEL_KEY}\$|\1|p" |
+            grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+            sort -uV
+    } || true
 }
 
 # List every strict-semver git tag (v${X}.${Y}.${Z}); pre-release tags skipped.
+# Empty stdout if no semver tags exist (avoids tripping pipefail).
 rsv_list_git_tags() {
-    git tag -l 'v*' |
-        grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
-        sort -uV
+    {
+        git tag -l 'v*' |
+            grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+            sort -uV
+    } || true
 }
 
 # `0` if the R2 prefix contains at least one object.
