@@ -192,45 +192,67 @@ r2_rm() {
         --endpoint-url "$R2_ENDPOINT" 2>/dev/null || true
 }
 
-# Abort if any object already exists under a versioned prefix on R2.
-# `cli/v${X}/*` and `desktop/v${X}/*` are cache-controlled immutable; writing
-# new bytes at a URL that has already served content breaks that promise and
-# pollutes long-lived CDN caches. resolve-version.sh should always bump
-# next_version past any previously-sealed tag; this is a safety net that
-# refuses the deploy if something upstream drifts.
+# Sentinel-aware write-once guard.
 #
-# Prefix-based (not key-based). The previous key-sentinel variant checked
-# `cli/v${X}/manifest.json` which is never actually written under the CLI
-# loop -- the sentinel stayed absent forever, so the guard silently let
-# retries overwrite binaries. Listing the prefix is robust to which
-# specific files the loop happens to write.
+# A versioned prefix (cli/v${X}/ or desktop/v${X}/) is COMMITTED iff a
+# `.released` sentinel exists under it. The sentinel is written by
+# write-release-sentinel.sh in the finalize-release-sentinel CI job, only
+# after every CI gate passes. See .ci/scripts/lib/release-state-validator.sh
+# for the invariant.
+#
+# Pre-upload logic:
+#   sentinel present       → hard fail (version is sealed; must bump)
+#   prefix empty           → proceed (clean slate)
+#   prefix non-empty + no sentinel → orphan from a cancelled prior run; the
+#                                     invariant says nothing downstream points
+#                                     at it, so we scrub and proceed. This is
+#                                     the recovery path for the #458 drift
+#                                     class where the prior guard would burn
+#                                     the version number forever.
+#
+# The older prefix-existence guard was overbroad: it counted byte uploads as
+# "committed," so a CI cancel between the first upload and the true commit
+# marker permanently blocked the version. The sentinel contract closes that
+# hole — bytes are cheap, the sentinel is the authoritative commit.
+#
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/../lib/release-state-validator.sh"
+
 write_once_guard() {
-    local prefix="$1"
-    local context="$2"
+    local prefix="$1"  # e.g. "cli/v1.0.5/"
+    local context="$2" # human label, e.g. "cli v1.0.5"
 
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "[DRY-RUN] write-once guard would check s3://${RELEASES_BUCKET}/${prefix} (${context})"
+        log_info "[DRY-RUN] sentinel-aware guard would check s3://${RELEASES_BUCKET}/${prefix} (${context})"
         return 0
     fi
 
-    # Existence check via list-objects-v2 with --max-items 1. More efficient
-    # than `aws s3 ls` which can fetch a full page before `head -1` sees the
-    # first line; matters for prefixes that could contain many objects.
-    local count
-    count="$(aws s3api list-objects-v2 \
-        --bucket "${RELEASES_BUCKET}" \
-        --prefix "${prefix}" \
-        --max-items 1 \
-        --endpoint-url "$R2_ENDPOINT" \
-        --query 'KeyCount' \
-        --output text 2>/dev/null || echo 0)"
-    if [[ "$count" != "0" && "$count" != "None" ]]; then
-        log_error "Write-once guard blocked: s3://${RELEASES_BUCKET}/${prefix} is non-empty."
-        log_error "  A previous deploy of ${context} sealed this prefix; overwriting would break"
-        log_error "  the immutable-URL promise and poison long-lived CDN caches."
-        log_error "  resolve-version.sh should have bumped next_version. If you truly need to"
-        log_error "  replace the artifact, scrub it via scripts/dev/r2-oneshot-scrub.sh first."
+    # Parse product and version from prefix like "cli/v1.0.5/" → product=cli, version=v1.0.5.
+    local product version
+    product="${prefix%%/*}"
+    version="${prefix#*/}"
+    version="${version%/}"
+
+    if rsv_sentinel_exists "$product" "$version"; then
+        log_error "Write-once guard blocked: s3://${RELEASES_BUCKET}/${prefix} is sealed."
+        log_error "  A prior run completed the full release flow for ${context} and wrote the"
+        log_error "  .released sentinel. Overwriting would break the immutable-URL promise and"
+        log_error "  poison long-lived CDN caches."
+        log_error "  resolve-version.sh should have bumped next_version past this tag. If you"
+        log_error "  truly need to replace this release, scrub it via"
+        log_error "  scripts/dev/scrub-sentinel.sh ${version} --execute."
         exit 1
+    fi
+
+    # No sentinel — either a clean prefix or an orphan from a cancelled run.
+    if rsv_prefix_nonempty "$prefix"; then
+        log_warn "Orphan prefix detected at s3://${RELEASES_BUCKET}/${prefix} (no .released sentinel)."
+        log_warn "  A prior CI run uploaded bytes here but was cancelled before finalize"
+        log_warn "  sealed the version. Scrubbing orphan bytes so this run can upload cleanly."
+        aws s3 rm "s3://${RELEASES_BUCKET}/${prefix}" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --recursive
+        log_info "  orphan bytes removed; proceeding with upload"
     fi
 }
 

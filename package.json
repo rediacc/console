@@ -40,6 +40,7 @@
     "check:ci-shell-format": ".ci/scripts/security/shfmt.sh",
     "check:ci-shell-lint": ".ci/scripts/security/shellcheck.sh",
     "check:ci-workflows": ".ci/scripts/quality/check-workflows.sh",
+    "check:ci-release-state": ".ci/scripts/quality/check-release-state.sh",
     "check:ci-account-portal": ".ci/scripts/quality/check-account-portal.sh",
     "check:ci-account-layer-isolation": "eslint private/account/src/routes/ --max-warnings 0",
     "check:ci-account-no-admin-role": "! grep -rn \"enum.*customer.*admin\\|enum.*admin.*customer\" private/account/src/db/schema.ts private/account/src/types/user.ts 2>/dev/null; echo 'OK: no admin user role'",
