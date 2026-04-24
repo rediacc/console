@@ -33,7 +33,7 @@ test.describe
 
     test.beforeAll(async () => {
       test.setTimeout(E2E.SETUP_TIMEOUT);
-      test.skip(!config.enabled, 'E2E VMs not configured: bridge-test VM_DEPLOYMENT=true required to provision real VMs');
+      test.skip(!config.enabled, 'E2E VMs not configured');
       ssh1 = new SSHValidator(config.vm1Ip, config.sshUser, config.sshKeyPath);
       cleanup = await setupE2EEnvironment(ctxName);
 
@@ -52,7 +52,7 @@ test.describe
     });
 
     test('repository_unmount - should unmount repository filesystem', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('repository_unmount', E2E.MACHINE_VM1, {
@@ -67,7 +67,7 @@ test.describe
     });
 
     test('repository_mount - should remount repository filesystem', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('repository_mount', E2E.MACHINE_VM1, {
@@ -82,7 +82,7 @@ test.describe
     });
 
     test('repository_down - should stop repository services', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('repository_down', E2E.MACHINE_VM1, {
@@ -98,7 +98,7 @@ test.describe
     });
 
     test('repository_up - should start repository services', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('repository_up', E2E.MACHINE_VM1, {
@@ -113,7 +113,7 @@ test.describe
     });
 
     test('repository_resize - should reject resize for unencrypted repos', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       // Resize requires unmounted repo
@@ -146,7 +146,7 @@ test.describe
     });
 
     test('repository_expand - should handle expand for unencrypted repos', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       // For unencrypted directory repos, expand may not apply since there's no
@@ -162,7 +162,7 @@ test.describe
     });
 
     test('repository_validate - should validate repository integrity', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('repository_validate', E2E.MACHINE_VM1, {
@@ -174,7 +174,7 @@ test.describe
     });
 
     test('repository_ownership - should set repository ownership', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('repository_ownership', E2E.MACHINE_VM1, {
@@ -191,7 +191,7 @@ test.describe
     });
 
     test('repository_fork - should create independent copy of repository', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       // Write a test file into the source repo first
@@ -224,7 +224,7 @@ test.describe
     });
 
     test('repository_autostart_enable - should enable autostart for repository', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('repository_autostart_enable', E2E.MACHINE_VM1, {
@@ -236,7 +236,7 @@ test.describe
     });
 
     test('repository_autostart_list - should list autostart repositories', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('repository_autostart_list', E2E.MACHINE_VM1, {
@@ -247,7 +247,7 @@ test.describe
     });
 
     test('repository_autostart_disable - should disable autostart for repository', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('repository_autostart_disable', E2E.MACHINE_VM1, {
@@ -259,7 +259,7 @@ test.describe
     });
 
     test('repository_autostart_enable_all - should enable autostart for all repositories', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('repository_autostart_enable_all', E2E.MACHINE_VM1, {
@@ -270,7 +270,7 @@ test.describe
     });
 
     test('repository_autostart_disable_all - should disable autostart for all repositories', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('repository_autostart_disable_all', E2E.MACHINE_VM1, {
@@ -281,7 +281,7 @@ test.describe
     });
 
     test('repository_up_all - should start all repository services', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('repository_up_all', E2E.MACHINE_VM1, {

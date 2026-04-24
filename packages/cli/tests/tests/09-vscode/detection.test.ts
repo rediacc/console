@@ -153,10 +153,10 @@ test.describe('VS Code Detection @vscode @standalone @detection', () => {
     test('should detect all VS Code installations on Windows', async () => {
       const platform = getPlatform();
 
-      test.skip(
-        platform !== 'windows',
-        'Multi-installation VS Code detection is Windows-specific; this host is running a non-Windows platform so the registry/filesystem probes have no analog',
-      );
+      if (platform !== 'windows') {
+        test.skip();
+        return;
+      }
 
       const installations = await findAllVSCodeInstallations();
 
@@ -183,10 +183,10 @@ test.describe('VS Code Detection @vscode @standalone @detection', () => {
       const platform = getPlatform();
 
       // This test is meaningful only on Windows without WSL
-      test.skip(
-        platform !== 'windows',
-        'WSL graceful-fallback is meaningful only on Windows; non-Windows hosts have no WSL integration so the code path cannot be exercised',
-      );
+      if (platform !== 'windows') {
+        test.skip();
+        return;
+      }
 
       const installations = await findAllVSCodeInstallations();
 
