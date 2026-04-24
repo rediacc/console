@@ -962,45 +962,56 @@ cleanup_r2() {
         fi
     done
 
-    # 8d. Orphan v<semver>/ under cli/ and desktop/ --------------------------
-    log_step "  8d: orphan v<semver>/ with no tracker entry and no git tag"
-    local git_tags
-    git_tags="$(gh api "repos/${RELEASE_REPO}/tags" --paginate --jq '.[].name' 2>/dev/null | grep -E '^v[0-9]' || true)"
-    local orphan_ver_deleted=0
+    # 8d. Sentinel-aware orphan v<semver>/ sweep + drift detection ------------
+    # Source of truth: cli/v${V}/.released sentinel (see
+    # .ci/scripts/lib/release-state-validator.sh). Rules:
+    #   sentinel AND git tag → committed release, keep.
+    #   no sentinel AND no git tag → orphan from a cancelled CI run, delete.
+    #   sentinel XOR git tag → drift, do NOT auto-delete. Emit a GHA error
+    #     annotation so humans investigate; the drift gate (runs per push)
+    #     would have caught this too, but housekeeping double-checks.
+    log_step "  8d: sentinel-aware orphan sweep + drift detection"
+    # shellcheck source=../lib/release-state-validator.sh
+    source "${SCRIPT_DIR}/../lib/release-state-validator.sh"
+    local git_tags drift_count=0 orphan_ver_deleted=0
+    git_tags="$(gh api "repos/${RELEASE_REPO}/tags" --paginate --jq '.[].name' 2>/dev/null | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)"
     for dir in "cli" "desktop"; do
-        local tracker
-        tracker="$(aws s3 cp "s3://${R2_BUCKET}/${dir}/versions.json" - \
-            --endpoint-url "$R2_ENDPOINT" 2>/dev/null || echo "[]")"
-        [[ -z "$tracker" ]] && tracker="[]"
         while IFS= read -r line; do
             local sub
             sub="$(echo "$line" | awk '/^[[:space:]]*PRE[[:space:]]v[0-9]+\./ {print $2}')"
             [[ -z "$sub" ]] && continue
-            local ver="${sub#v}"
-            ver="${ver%/}"
-            local tag="v${ver}"
-            # Keep if in tracker
-            if echo "$tracker" | jq -e --arg v "$ver" 'index($v) != null' >/dev/null 2>&1; then
-                continue
+            local ver="${sub%/}"                 # v1.2.3
+            [[ "$ver" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
+
+            local has_sentinel=0 has_tag=0
+            rsv_sentinel_exists "$dir" "$ver" && has_sentinel=1
+            grep -qxF "$ver" <<<"$git_tags" && has_tag=1
+
+            if (( has_sentinel && has_tag )); then
+                continue  # committed release
             fi
-            # Keep if a git tag exists
-            if echo "$git_tags" | grep -qxF "$tag"; then
-                continue
-            fi
-            local prefix="${dir}/${sub}"
-            local last
-            last="$(r2_prefix_last_modified "$prefix")"
-            [[ -z "$last" ]] && continue
-            local last_epoch
-            last_epoch="$(date -u -d "$last" +%s 2>/dev/null || echo 0)"
-            [[ "$last_epoch" -eq 0 ]] && continue
-            if ((now_epoch - last_epoch > orphan_ver_max_age)); then
-                r2_rm_recursive "$prefix" "orphan ${tag} (not in versions.json, no git tag)"
+            if (( !has_sentinel && !has_tag )); then
+                r2_rm_recursive "${dir}/${ver}/" "orphan ${dir}/${ver} (no .released sentinel, no git tag)"
                 orphan_ver_deleted=$((orphan_ver_deleted + 1))
+                continue
             fi
+            # Drift: exactly one of sentinel/tag is present. Do not auto-heal.
+            if (( has_sentinel )); then
+                log_error "drift: ${dir}/${ver}/.released exists but git tag ${ver} missing"
+                log_error "  remediation: re-run CD to tag/release ${ver}, or scrub via scripts/dev/scrub-sentinel.sh ${ver} --execute"
+            else
+                log_error "drift: git tag ${ver} exists but ${dir}/${ver}/.released missing"
+                log_error "  remediation: re-run CI for ${ver}, or delete tag ${ver}"
+            fi
+            drift_count=$((drift_count + 1))
         done < <(r2_ls_prefix "${dir}/")
     done
-    log_info "  8d: deleted $orphan_ver_deleted orphan versioned prefix(es)"
+    log_info "  8d: deleted $orphan_ver_deleted orphan versioned prefix(es); found $drift_count drift finding(s)"
+    if (( drift_count > 0 )); then
+        log_error "  8d: release-state drift detected; housekeeping refuses to auto-heal"
+        log_error "  8d: see drift lines above for remediation"
+        return 1
+    fi
 
     # 8f. Channel artifact retention ----------------------------------------
     # Every release appends to <fmt>/<channel>/ without ever removing the
