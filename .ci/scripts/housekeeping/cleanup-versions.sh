@@ -975,7 +975,18 @@ cleanup_r2() {
     source "${SCRIPT_DIR}/../lib/release-state-validator.sh"
     local git_tags drift_count=0 orphan_ver_deleted=0
     git_tags="$(gh api "repos/${RELEASE_REPO}/tags" --paginate --jq '.[].name' 2>/dev/null | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)"
+    # Pre-load sentinel and tag sets into associative arrays for O(1) lookup —
+    # otherwise rsv_sentinel_exists per version issues an aws head-object for
+    # every prefix (N+1 calls), and grep-per-version is O(N^2).
+    declare -A tag_set
+    while IFS= read -r t; do
+        [[ -n "$t" ]] && tag_set["$t"]=1
+    done <<<"$git_tags"
     for dir in "cli" "desktop"; do
+        declare -A sentinel_set=()
+        while IFS= read -r s; do
+            [[ -n "$s" ]] && sentinel_set["$s"]=1
+        done < <(rsv_list_sentinels "$dir")
         while IFS= read -r line; do
             local sub
             sub="$(echo "$line" | awk '/^[[:space:]]*PRE[[:space:]]v[0-9]+\./ {print $2}')"
@@ -984,8 +995,8 @@ cleanup_r2() {
             [[ "$ver" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
 
             local has_sentinel=0 has_tag=0
-            rsv_sentinel_exists "$dir" "$ver" && has_sentinel=1
-            grep -qxF "$ver" <<<"$git_tags" && has_tag=1
+            [[ -n "${sentinel_set[$ver]:-}" ]] && has_sentinel=1
+            [[ -n "${tag_set[$ver]:-}" ]] && has_tag=1
 
             if ((has_sentinel && has_tag)); then
                 continue # committed release

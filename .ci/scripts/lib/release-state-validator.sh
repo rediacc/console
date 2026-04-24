@@ -133,6 +133,20 @@ rsv_assert_bijection() {
         grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
         sort -uV)"
 
+    # Associative-array sets give O(1) membership tests; grep-per-version
+    # scaled as O(N^2) across the full release history.
+    declare -A cli_set=() desktop_set=() tag_set=()
+    local v
+    while IFS= read -r v; do
+        [[ -n "$v" ]] && cli_set["$v"]=1
+    done <<<"$cli_versions"
+    while IFS= read -r v; do
+        [[ -n "$v" ]] && desktop_set["$v"]=1
+    done <<<"$desktop_versions"
+    while IFS= read -r v; do
+        [[ -n "$v" ]] && tag_set["$v"]=1
+    done <<<"$tag_versions"
+
     local version has_cli has_desktop has_tag
     while IFS= read -r version; do
         [[ -z "$version" ]] && continue
@@ -141,9 +155,9 @@ rsv_assert_bijection() {
         has_cli=0
         has_desktop=0
         has_tag=0
-        grep -qxF "$version" <<<"$cli_versions" && has_cli=1
-        grep -qxF "$version" <<<"$desktop_versions" && has_desktop=1
-        grep -qxF "$version" <<<"$tag_versions" && has_tag=1
+        [[ -n "${cli_set[$version]:-}" ]] && has_cli=1
+        [[ -n "${desktop_set[$version]:-}" ]] && has_desktop=1
+        [[ -n "${tag_set[$version]:-}" ]] && has_tag=1
 
         if ((has_cli != has_tag)); then
             if ((has_cli)); then

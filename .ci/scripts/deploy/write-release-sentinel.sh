@@ -125,7 +125,9 @@ write_sentinel() {
     payload="$(build_payload "$product")"
 
     log_step "writing sentinel: s3://${RSV_BUCKET}/${key}"
-    echo -n "$payload" |
+    # printf '%s' over echo -n for portability: echo -n handling varies by
+    # shell/platform, printf is POSIX-guaranteed.
+    printf '%s' "$payload" |
         aws s3 cp - "s3://${RSV_BUCKET}/${key}" \
             --endpoint-url "$R2_ENDPOINT" \
             --cache-control "no-cache" \
