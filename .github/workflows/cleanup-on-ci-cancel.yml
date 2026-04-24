@@ -41,20 +41,17 @@ jobs:
           RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
-          # The initialize job emits next_version as a step output; grab it from the
-          # run's jobs API. If we cannot resolve it (e.g. initialize didn't run),
-          # fall back to what resolve-version.sh would compute from tags — that is
-          # the same version stage-artifacts would have used.
-          next_version=""
-          jobs_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/jobs" --paginate 2>/dev/null || echo '{}')"
-          if command -v jq >/dev/null; then
-            next_version=$(echo "$jobs_json" \
-              | jq -r '.jobs[]? | select(.name == "Initialize") | .steps[]? | select(.name | test("initialize|next_version|Resolve version"; "i")) | .conclusion' 2>/dev/null \
-              | head -1 || echo "")
-          fi
-          if [[ -z "$next_version" ]]; then
-            next_version="$(.ci/scripts/version/resolve-version.sh --bump-type patch 2>/dev/null || echo '')"
-          fi
+          # The initialize job's next_version is a JOB OUTPUT, not a step
+          # output, and isn't exposed via the jobs API in a structured way.
+          # Just compute it locally — resolve-version.sh from the cancelled
+          # run's commit produces the same number stage-artifacts would have
+          # used (latest semver tag + 1).
+          #
+          # The earlier implementation tried to grab it from a step's
+          # `.conclusion` field (literally extracting the string "success"
+          # from the API), then surfaced "vsuccess" as the version tag and
+          # quietly scrubbed nothing.
+          next_version="$(.ci/scripts/version/resolve-version.sh --bump-type patch 2>/dev/null || echo '')"
           if [[ -z "$next_version" ]]; then
             echo "::warning::could not resolve next_version; skipping scrub"
             echo "skip=true" >> "$GITHUB_OUTPUT"
