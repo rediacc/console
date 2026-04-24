@@ -1382,11 +1382,14 @@ jobs:
 
   # ============================================================================
   # ASSERT HOUSEKEEPING RAN
-  # Sentinel that fails loudly if the housekeeping job silently skipped on
+  # Sentinel that fails loudly if the housekeeping job silently SKIPPED on
   # push-to-main. Guards against the GHA transitive-skip propagation bug:
   # deploy-preview/smoke-test-preview are pull_request-only, so a missing
   # always() on housekeeping's if: used to let every push-to-main skip it.
-  # This check runs after housekeeping and fails fast if it didn't succeed.
+  # Only 'skipped' trips this sentinel. 'cancelled' (watchdog force-cancel,
+  # concurrent-push supersession, manual cancel) and 'failure' (housekeeping
+  # already surfaced its own failure) are passed through; see
+  # .ci/scripts/ci/assert-job-succeeded.sh for the full state table.
   # ============================================================================
   assert-housekeeping-ran:
     name: Assert Housekeeping Ran

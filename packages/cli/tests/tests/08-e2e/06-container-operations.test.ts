@@ -45,7 +45,7 @@ test.describe
 
     test.beforeAll(async () => {
       test.setTimeout(E2E.SETUP_TIMEOUT);
-      test.skip(!config.enabled, 'E2E VMs not configured');
+      test.skip(!config.enabled, 'E2E VMs not configured: bridge-test VM_DEPLOYMENT=true required to provision real VMs');
       ssh1 = new SSHValidator(config.vm1Ip, config.sshUser, config.sshKeyPath);
       cleanup = await setupE2EEnvironment(ctxName);
 
@@ -106,7 +106,7 @@ test.describe
     });
 
     test('container_start - should start container', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('container_start', E2E.MACHINE_VM1, {
@@ -124,7 +124,7 @@ test.describe
     });
 
     test('container_list - should list running containers', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('container_list', E2E.MACHINE_VM1, {
@@ -139,7 +139,7 @@ test.describe
     });
 
     test('container_stats - should show container resource usage', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('container_stats', E2E.MACHINE_VM1, {
@@ -154,7 +154,7 @@ test.describe
     });
 
     test('container_logs - should retrieve container logs', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('container_logs', E2E.MACHINE_VM1, {
@@ -166,7 +166,7 @@ test.describe
     });
 
     test('container_inspect - should return container configuration', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('container_inspect', E2E.MACHINE_VM1, {
@@ -181,7 +181,7 @@ test.describe
     });
 
     test('container_exec - should execute command inside container', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('container_exec', E2E.MACHINE_VM1, {
@@ -198,7 +198,7 @@ test.describe
     });
 
     test('container_pause - should pause running container', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('container_pause', E2E.MACHINE_VM1, {
@@ -216,7 +216,7 @@ test.describe
     });
 
     test('container_unpause - should unpause container', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('container_unpause', E2E.MACHINE_VM1, {
@@ -234,7 +234,7 @@ test.describe
     });
 
     test('container_stop - should stop running container', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('container_stop', E2E.MACHINE_VM1, {
@@ -254,7 +254,7 @@ test.describe
     });
 
     test('container_restart - should restart stopped container', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('container_restart', E2E.MACHINE_VM1, {
@@ -274,7 +274,7 @@ test.describe
     });
 
     test('container_kill - should forcefully stop container', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('container_kill', E2E.MACHINE_VM1, {
@@ -294,7 +294,7 @@ test.describe
     });
 
     test('container_remove - should remove stopped container', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('container_remove', E2E.MACHINE_VM1, {

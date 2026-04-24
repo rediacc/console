@@ -28,6 +28,7 @@ import { seoRequireImgAlt } from './eslint-rules/seo-require-img-alt.js';
 import { seoNoHashBreadcrumbUrl } from './eslint-rules/seo-no-hash-breadcrumb-url.js';
 import { seoNoTrailingSlashInternalLink } from './eslint-rules/seo-no-trailing-slash-internal-link.js';
 import { noUnawaitedDrizzleTerminator } from './eslint-rules/no-unawaited-drizzle-terminator.js';
+import { testSkipBlocker } from './eslint-rules/test-skip-blocker.js';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import { i18nJsonPlugin, i18nSourcePlugin } from './eslint-rules/i18n/index.js';
 
@@ -244,6 +245,7 @@ export default tseslint.config(
           'seo-no-hash-breadcrumb-url': seoNoHashBreadcrumbUrl,
           'seo-no-trailing-slash-internal-link': seoNoTrailingSlashInternalLink,
           'no-unawaited-drizzle-terminator': noUnawaitedDrizzleTerminator,
+          'test-skip-blocker': testSkipBlocker,
         },
       },
     },
@@ -820,6 +822,9 @@ export default tseslint.config(
       // --- General test file rules ---
       'max-lines': 'off',
       'max-nested-callbacks': ['error', 5],
+
+      // --- Conditional .skip() reasons must pass the BLOCKER gate ---
+      'custom/test-skip-blocker': 'error',
 
       // --- Disable production-only rules ---
       'custom/require-translation': 'off',

@@ -58,7 +58,7 @@ test.describe
     });
 
     test('setup - create repos and test data on both VMs', async () => {
-      test.skip(!config.enabled || !config.vm2Ip, 'E2E not configured');
+      test.skip(!config.enabled || !config.vm2Ip, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.SETUP_TIMEOUT);
 
       // Create repo on vm1
@@ -74,7 +74,7 @@ test.describe
     });
 
     test('backup_push - should push repository to second machine', async () => {
-      test.skip(!config.enabled || !config.vm2Ip, 'E2E not configured');
+      test.skip(!config.enabled || !config.vm2Ip, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.SETUP_TIMEOUT);
 
       const extraMachineEntry = `${E2E.MACHINE_VM2}:${config.vm2Ip}:${config.sshUser}`;
@@ -98,7 +98,7 @@ test.describe
     });
 
     test('backup_push incremental - should push changes to second machine', async () => {
-      test.skip(!config.enabled || !config.vm2Ip, 'E2E not configured');
+      test.skip(!config.enabled || !config.vm2Ip, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.SETUP_TIMEOUT);
 
       // Write second file on vm1
@@ -128,7 +128,7 @@ test.describe
     });
 
     test('backup_pull - should pull repository from second machine', async () => {
-      test.skip(!config.enabled || !config.vm2Ip, 'E2E not configured');
+      test.skip(!config.enabled || !config.vm2Ip, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.SETUP_TIMEOUT);
 
       // Delete files on vm1 to verify pull restores them

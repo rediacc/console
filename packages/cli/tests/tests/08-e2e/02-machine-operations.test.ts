@@ -25,7 +25,7 @@ test.describe
     const ctxName = `e2e-phase1-${Date.now()}`;
 
     test.beforeAll(async () => {
-      test.skip(!config.enabled, 'E2E VMs not configured');
+      test.skip(!config.enabled, 'E2E VMs not configured: bridge-test VM_DEPLOYMENT=true required to provision real VMs');
       ssh1 = new SSHValidator(config.vm1Ip, config.sshUser, config.sshKeyPath);
       cleanup = await setupE2EEnvironment(ctxName);
     });
@@ -35,7 +35,7 @@ test.describe
     });
 
     test('machine_ping - should ping VM successfully', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('machine_ping', E2E.MACHINE_VM1, {
@@ -46,7 +46,7 @@ test.describe
     });
 
     test('machine_ssh_test - should verify SSH connectivity', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('machine_ssh_test', E2E.MACHINE_VM1, {
@@ -62,7 +62,7 @@ test.describe
     });
 
     test('machine_version - should return renet version', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('machine_version', E2E.MACHINE_VM1, {
@@ -77,7 +77,7 @@ test.describe
     });
 
     test('machine_uninstall - should remove renet from VM', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(E2E.SETUP_TIMEOUT);
 
       const result = await runLocalFunction('machine_uninstall', E2E.MACHINE_VM1, {

@@ -203,7 +203,10 @@ test.describe('Image Validation @image @validate', () => {
     // eslint-disable-next-line @typescript-eslint/require-await
     test(`${image.name} should be valid qcow2`, async () => {
       const exists = helper.customImageExists(image.name);
-      test.skip(!exists, `Image not built: ${image.name}`);
+      test.skip(
+        !exists,
+        `Image '${image.name}' has not been built in this env; bridge-test image-build pipeline must run before qcow2 validation can succeed`,
+      );
 
       const imagePath = helper.getCustomImagePath(image.name);
       const validation = helper.validateImage(imagePath);
@@ -250,7 +253,7 @@ test.describe('Distro Family Coverage @image @coverage', () => {
 
     // eslint-disable-next-line no-console
     console.log(`Debian family: ${builtCount}/${DISTRO_FAMILIES.debian.length} built`);
-    test.skip(builtCount === 0, 'No Debian images built yet');
+    test.skip(builtCount === 0, 'No Debian images built yet: bridge-test image-build pipeline has not produced Debian variants in this env');
 
     expect(builtCount).toBeGreaterThan(0);
   });
@@ -263,7 +266,7 @@ test.describe('Distro Family Coverage @image @coverage', () => {
 
     // eslint-disable-next-line no-console
     console.log(`RHEL family: ${builtCount}/${DISTRO_FAMILIES.rhel.length} built`);
-    test.skip(builtCount === 0, 'No RHEL images built yet');
+    test.skip(builtCount === 0, 'No RHEL images built yet: bridge-test image-build pipeline has not produced RHEL variants in this env');
 
     expect(builtCount).toBeGreaterThan(0);
   });
@@ -276,7 +279,7 @@ test.describe('Distro Family Coverage @image @coverage', () => {
 
     // eslint-disable-next-line no-console
     console.log(`SUSE family: ${builtCount}/${DISTRO_FAMILIES.suse.length} built`);
-    test.skip(builtCount === 0, 'No SUSE images built yet');
+    test.skip(builtCount === 0, 'No SUSE images built yet: bridge-test image-build pipeline has not produced SUSE variants in this env');
 
     expect(builtCount).toBeGreaterThan(0);
   });
@@ -304,7 +307,10 @@ test.describe('Distro Family Coverage @image @coverage', () => {
     }
 
     // Skip if not all images are built (this is an aspirational test)
-    test.skip(summary.built < summary.total, `Missing ${summary.missing.length} images`);
+    test.skip(
+      summary.built < summary.total,
+      `Bridge-test image coverage aspirational: ${summary.missing.length} image(s) still missing; full coverage requires the image-build pipeline to succeed for every variant`,
+    );
 
     expect(summary.built).toBe(summary.total);
   });

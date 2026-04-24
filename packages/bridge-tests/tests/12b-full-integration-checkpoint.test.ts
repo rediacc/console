@@ -56,19 +56,19 @@ test.describe
 
     // Daemon setup - required for checkpoint operations (creates Docker socket)
     test('2a. daemon_setup: set up daemon service', async () => {
-      if (!criuAvailable) {
-        test.skip();
-        return;
-      }
+      test.skip(
+        !criuAvailable,
+        'CRIU not available on this host — kernel-level userspace checkpoint/restore support is required for bridge-test checkpoint workflow',
+      );
       const result = await runner.daemonSetup(DEFAULT_NETWORK_ID.toString());
       expect(runner.isSuccess(result)).toBe(true);
     });
 
     test('2b. daemon_start: start daemon service', async () => {
-      if (!criuAvailable) {
-        test.skip();
-        return;
-      }
+      test.skip(
+        !criuAvailable,
+        'CRIU not available on this host — kernel-level userspace checkpoint/restore support is required for bridge-test checkpoint workflow',
+      );
       const result = await runner.daemonStart(
         repositoryName,
         datastorePath,
@@ -79,10 +79,10 @@ test.describe
 
     // Checkpoint workflow - requires CRIU
     test('3. create initial checkpoint', async () => {
-      if (!criuAvailable) {
-        test.skip();
-        return;
-      }
+      test.skip(
+        !criuAvailable,
+        'CRIU not available on this host — kernel-level userspace checkpoint/restore support is required for bridge-test checkpoint workflow',
+      );
       const result = await runner.checkpointCreate(
         repositoryName,
         checkpoint1,
@@ -93,19 +93,19 @@ test.describe
     });
 
     test('4. start services (make changes)', async () => {
-      if (!criuAvailable) {
-        test.skip();
-        return;
-      }
+      test.skip(
+        !criuAvailable,
+        'CRIU not available on this host — kernel-level userspace checkpoint/restore support is required for bridge-test checkpoint workflow',
+      );
       const result = await runner.repositoryUp(repositoryName, datastorePath);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
     test('5. create checkpoint after changes', async () => {
-      if (!criuAvailable) {
-        test.skip();
-        return;
-      }
+      test.skip(
+        !criuAvailable,
+        'CRIU not available on this host — kernel-level userspace checkpoint/restore support is required for bridge-test checkpoint workflow',
+      );
       const result = await runner.checkpointCreate(
         repositoryName,
         checkpoint2,
@@ -116,19 +116,19 @@ test.describe
     });
 
     test('6. stop services', async () => {
-      if (!criuAvailable) {
-        test.skip();
-        return;
-      }
+      test.skip(
+        !criuAvailable,
+        'CRIU not available on this host — kernel-level userspace checkpoint/restore support is required for bridge-test checkpoint workflow',
+      );
       const result = await runner.repositoryDown(repositoryName, datastorePath);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
     test('7. restore to initial checkpoint', async () => {
-      if (!criuAvailable) {
-        test.skip();
-        return;
-      }
+      test.skip(
+        !criuAvailable,
+        'CRIU not available on this host — kernel-level userspace checkpoint/restore support is required for bridge-test checkpoint workflow',
+      );
       const result = await runner.checkpointRestore(
         repositoryName,
         checkpoint1,
