@@ -126,7 +126,7 @@ async function handleUpdate(force: boolean): Promise<void> {
   // staged version (e.g. startup applied 1.0.7, manifest now at 1.0.8) is
   // not silently missed. The decision uses the effective post-apply version
   // (`appliedAtStartup ?? VERSION`) instead of the stale in-memory VERSION.
-  const appliedAtStartup = !force ? getAppliedAtStartup() : null;
+  const appliedAtStartup = force ? null : getAppliedAtStartup();
   if (!force && !appliedAtStartup && (await tryApplyPending())) return;
 
   outputService.info(t('commands.update.checking'));
