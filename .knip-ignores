@@ -1,0 +1,84 @@
+# Sidecar for knip `ignoreDependencies`. Source of truth for every
+# workspace-scoped dep that knip flags as "unused" but that IS actually
+# needed by the monorepo. Read at runtime by scripts/run-knip.ts, which
+# merges these entries into knip.json's ignoreDependencies.
+#
+# Rules:
+#   - Every entry must carry a substantive `# BLOCKER: <reason>` above it
+#     (or inline, per scripts/lib/blocker-validator.ts semantics).
+#   - Blank lines reset the tracked BLOCKER so one comment can cover a
+#     grouped list of related packages.
+#   - Reasons must pass the BLOCKER quality gate (>= 30 chars, no banned
+#     phrases). The validator runs on every `check:unused` invocation.
+#
+# When a dep is added here, document WHY knip's per-workspace scan cannot
+# see the import: cross-package re-exports, dynamic imports, subpath-only
+# consumption, runtime plugin loading, platform-optional bindings, etc.
+
+# BLOCKER: OpenTelemetry subpackages are declared per-workspace to document each workspace's telemetry surface; the actual imports happen in packages/shared/src/telemetry and are re-exported from @rediacc/shared. Knip's per-workspace scan cannot follow the hoisted-install re-export chain. The .syncpackrc.json pins these packages across workspaces; see .deps-upgrade-blocklist for the upgrade policy.
+@opentelemetry/context-zone
+@opentelemetry/core
+@opentelemetry/instrumentation
+@opentelemetry/instrumentation-*
+@opentelemetry/sdk-node
+@opentelemetry/sdk-trace-web
+
+# BLOCKER: @aws-sdk/client-s3 is used by private/sql/coordinator/src/services/storage.service.ts and packages/cli/src/services/s3-client.ts; it is declared in downstream workspaces (desktop, e2e, bridge-tests) to document the runtime dependency on the hoisted install. Knip does not follow the cross-workspace chain.
+@aws-sdk/client-s3
+
+# BLOCKER: @pyroscope/nodejs is loaded dynamically in packages/cli/src/services/profiling.ts behind a runtime env-gate so CLI binaries without profiling enabled don't pay the cost. Knip's static scanner cannot see dynamic require() behind conditionals.
+@pyroscope/nodejs
+
+# BLOCKER: jsdom is used by packages/web's vitest config as the test environment; vitest loads it by name from the config rather than via an import statement, so knip's import-scan misses it.
+jsdom
+
+# BLOCKER: @types/* declaration packages are install-only; TypeScript picks them up via automatic type resolution but they are never imported by name. Keeping per-workspace @types declarations documents which workspace's type surface needs what.
+@types/*
+
+# BLOCKER: astro is the framework binary driving packages/www's build; it is referenced by the astro CLI and config (astro.config.mjs) rather than imported in TS source, so knip misses it.
+astro
+
+# BLOCKER: astro-seo is a component package used via <SEO/> in .astro layout files; knip's TS-import scan does not parse .astro component imports and therefore flags it as unused.
+astro-seo
+
+# BLOCKER: fast-xml-parser is used by packages/www's sitemap/feed generators executed at build time via npm scripts; knip's entry-point detection doesn't include those script files.
+fast-xml-parser
+
+# BLOCKER: @electron-toolkit/preload is loaded by electron's preload-script mechanism via a path resolved at runtime by electron-builder; it never appears as a direct import in source.
+@electron-toolkit/preload
+
+# BLOCKER: node-pty is a platform-optional native binding for terminal emulation; loaded dynamically in packages/shared-desktop/src/ssh/pty.ts so installations without build tooling don't fail on install. Knip can't see the dynamic require.
+node-pty
+
+# BLOCKER: ssh2 is used transitively by packages/shared-desktop/src/ssh for SFTP and shell access; declared in downstream workspaces to document the runtime dep on the hoisted install. Knip's workspace scan doesn't follow cross-package consumption.
+ssh2
+
+# BLOCKER: @rediacc/shared is the internal workspace package re-exported across every consumer; knip lists it as unused in workspaces that use it via the re-export barrel rather than direct imports.
+@rediacc/shared
+
+# BLOCKER: loupe is a vitest internal helper exposed via subpath; vitest loads it at runtime for diff formatting without us importing it. Declared in test workspaces to keep the hoisted install deterministic.
+loupe
+
+# BLOCKER: vitest subpackages are loaded by vitest's own runner at test time based on config (reporter, coverage provider, UI); declared per-workspace to keep the install deterministic but not imported directly by our source.
+@vitest/runner
+@vitest/utils
+@vitest/coverage-v8
+@vitest/ui
+
+# BLOCKER: unist-util-visit is consumed by remark/rehype MDX pipeline plugins loaded by configuration in astro.config.mjs and mdx-remark-plugins; knip does not parse those plugin chains.
+unist-util-visit
+
+# BLOCKER: zod is used extensively in packages/shared (81+ imports per grep); declared in downstream workspaces (bridge-tests, e2e, desktop) to document runtime dependency on the hoisted install. Knip's workspace-local scan can't follow the re-export chain.
+zod
+
+# BLOCKER: glob is declared as a peer of workspace scripts executed at build time (e.g., shared's tsc build pipeline); knip's entry-point detection doesn't enumerate build-time scripts.
+glob
+
+# BLOCKER: react-i18next is imported 192+ times in packages/web and re-exported via packages/shared/src/i18n; declared in non-web workspaces (bridge-tests, e2e, cli, desktop) because the hoisted install needs a consistent version. Knip doesn't see the re-export chain.
+react-i18next
+
+# BLOCKER: tiny-typed-emitter is used by packages/shared-desktop's SSH session class; declared in packages/desktop for the runtime dep on the hoisted install. Knip's workspace scan doesn't follow the consumer.
+tiny-typed-emitter
+
+# BLOCKER: asciinema-player is loaded via <script> tag on the tutorial player page (packages/www/src/layouts/tutorial.astro); never imported in TS, so knip flags it even though it's required at page-load time.
+asciinema-player

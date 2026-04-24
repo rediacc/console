@@ -87,5 +87,16 @@ Fixes #(issue number)
 - [ ] New and existing unit tests pass locally
 - [ ] Any dependent changes have been merged
 
+## Bypass justification
+<!--
+If this PR applies any of the CI bypass labels (no-cancel-push, no-cancel-failure,
+no-auto-retry, no-gemini-review, no-external-quality), you MUST include one line
+per applied label here, each with a BLOCKER-quality reason (>= 30 chars, no
+banned phrases like "tbd", "no fix", "ok"). Otherwise CI will fail.
+
+Example:
+  - no-cancel-push: investigating flaky R2 upload race; need serial reruns to triage without interference
+-->
+
 ## Additional Notes
 <!-- Any additional information that reviewers should know -->

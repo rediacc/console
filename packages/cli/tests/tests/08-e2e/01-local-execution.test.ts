@@ -53,7 +53,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
 
   test.describe('Basic Execution', () => {
     test('should execute ping on real VM', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(300000);
 
       const result = await runLocalFunction('machine_ping', 'vm1', {
@@ -69,7 +69,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
     });
 
     test('should show execution duration', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(300000);
 
       const result = await runLocalFunction('machine_ping', 'vm1', {
@@ -87,7 +87,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
     });
 
     test('should handle debug flag', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(300000);
 
       const result = await runLocalFunction('machine_ping', 'vm1', {
@@ -107,7 +107,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
 
   test.describe('Error Handling', () => {
     test('should handle non-existent machine', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
 
       const result = await runLocalFunction('machine_ping', 'nonexistent-machine', { contextName });
 
@@ -116,7 +116,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
     });
 
     test('should handle unknown function', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
 
       const result = await runLocalFunction('unknown_function_xyz_123', 'vm1', { contextName });
 
@@ -131,7 +131,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
     });
 
     test('should handle SSH connection timeout', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(60000);
 
       const runner = new CliTestRunner();
@@ -177,7 +177,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
 
   test.describe('Parameter Passing', () => {
     test('should pass parameters to function', async () => {
-      test.skip(!config.enabled, 'E2E not configured');
+      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
       test.setTimeout(300000);
 
       const result = await runLocalFunction('machine_ping', 'vm1', {
@@ -226,7 +226,7 @@ test.describe('E2E Context Switching @cli @e2e', () => {
   let runner: CliTestRunner;
 
   test.beforeAll(async () => {
-    test.skip(!config.enabled, 'E2E not configured');
+    test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
 
     runner = new CliTestRunner();
 
@@ -264,7 +264,7 @@ test.describe('E2E Context Switching @cli @e2e', () => {
   });
 
   test('should detect adapter correctly', async () => {
-    test.skip(!config.enabled, 'E2E not configured');
+    test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
 
     // Local config (with --ssh-key) shows adapter: 'local'
     const localRunner = CliTestRunner.withContext(localContext);
@@ -279,7 +279,7 @@ test.describe('E2E Context Switching @cli @e2e', () => {
   });
 
   test('should execute with context override', async () => {
-    test.skip(!config.enabled, 'E2E not configured');
+    test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
     test.setTimeout(300000);
 
     const localRunner = CliTestRunner.withContext(localContext);
@@ -301,7 +301,7 @@ test.describe('E2E Renet Availability @cli @e2e', () => {
   const config = getE2EConfig();
 
   test('should verify renet is available', async () => {
-    test.skip(!config.enabled, 'E2E not configured');
+    test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
     test.setTimeout(300000);
 
     const runner = new CliTestRunner();

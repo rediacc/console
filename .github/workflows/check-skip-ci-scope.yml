@@ -1,0 +1,85 @@
+name: skip-ci scope gate
+
+# GitHub platform note:
+#   Workflows triggered by `push` or `pull_request` are SKIPPED when the
+#   commit message contains [skip ci] / [ci skip] / [no ci]. We therefore
+#   cannot validate scope at push time from those events. Instead, this
+#   workflow runs on a daily schedule (plus manual dispatch) to sweep
+#   recent commits on main for skip-ci scope violations.
+#
+#   Local development is also covered: `npm run check:ci-skip-ci-scope`
+#   invokes the same validator against HEAD, and is included in
+#   `npm run ci` so authors catch violations before push.
+
+on:
+  schedule:
+    # Daily at 06:13 UTC — off-peak, staggered away from hourly boundaries
+    # so the sweeper doesn't pile onto other scheduled tasks.
+    - cron: '13 6 * * *'
+  workflow_dispatch:
+    inputs:
+      since:
+        description: 'How many recent commits on main to scan (default 50)'
+        required: false
+        default: '50'
+
+permissions:
+  contents: read
+  issues: write   # to open an issue on violation
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 100
+          ref: main
+
+      - name: Scan recent commits for skip-ci scope violations
+        id: scan
+        env:
+          SINCE: ${{ inputs.since || '50' }}
+        run: |
+          set -euo pipefail
+          violations_file=$(mktemp)
+          scanned=0
+          # Walk the last N commits on main. For every commit whose message
+          # contains a skip-ci marker, run the scope validator. Collect
+          # violating SHAs into $violations_file.
+          while read -r sha; do
+            scanned=$((scanned + 1))
+            msg=$(git log -1 --format=%B "$sha")
+            if echo "$msg" | grep -qiE '\[(skip ci|ci skip|no ci)\]'; then
+              if ! .ci/scripts/quality/check-skip-ci-scope.sh "$sha" > /tmp/scope-out 2>&1; then
+                {
+                  echo "### $sha"
+                  cat /tmp/scope-out
+                  echo ""
+                } >> "$violations_file"
+              fi
+            fi
+          done < <(git log -n "$SINCE" --format=%H main)
+          echo "scanned=$scanned" >> "$GITHUB_OUTPUT"
+          if [[ -s "$violations_file" ]]; then
+            echo "has_violations=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "## skip-ci scope violations"
+              echo ""
+              echo "Scanned $scanned recent commits on main."
+              echo ""
+              cat "$violations_file"
+            } > "$GITHUB_STEP_SUMMARY"
+            echo "report_path=$violations_file" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "has_violations=false" >> "$GITHUB_OUTPUT"
+          echo "Scanned $scanned commits; no skip-ci scope violations found." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open issue on violation
+        if: failure() && steps.scan.outputs.has_violations == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        env:
+          REPORT_PATH: ${{ steps.scan.outputs.report_path }}
+        with:
+          script: return await require('./.ci/scripts/ci/open-skip-ci-violation-issue.cjs')({github, context, core})

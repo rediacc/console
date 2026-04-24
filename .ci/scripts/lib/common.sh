@@ -31,17 +31,32 @@ else
     NC=''
 fi
 
-# Logging functions
+# Logging functions.
+#
+# In CI, log_error / log_warn emit GitHub Actions annotations
+# (`::error::` / `::warning::`) so failures surface in the PR Files-changed
+# UI and are AI-navigable. Locally, they fall back to coloured output.
+# This matches the contract of .ci/scripts/lib/emit-advisory.sh so both
+# logging families (common.sh and emit-advisory.sh) produce consistent
+# output shape in CI.
 log_info() {
     echo -e "${GREEN}✓${NC} $*" >&2
 }
 
 log_warn() {
-    echo -e "${YELLOW}⚠${NC} $*" >&2
+    if [[ "${CI:-}" == "true" ]]; then
+        echo "::warning::$*" >&2
+    else
+        echo -e "${YELLOW}⚠${NC} $*" >&2
+    fi
 }
 
 log_error() {
-    echo -e "${RED}✗${NC} $*" >&2
+    if [[ "${CI:-}" == "true" ]]; then
+        echo "::error::$*" >&2
+    else
+        echo -e "${RED}✗${NC} $*" >&2
+    fi
 }
 
 log_step() {
