@@ -10,6 +10,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # shellcheck source=../lib/test-helpers.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
+# Clear the grandfather baseline before sourcing so the production default
+# does not silently exclude versions we use in test fixtures. Individual
+# grandfather cases set the env var explicitly.
+export RSV_GRANDFATHER_BEFORE=""
 # shellcheck source=../../lib/release-state-validator.sh
 source "$REPO_ROOT/.ci/scripts/lib/release-state-validator.sh"
 
@@ -150,6 +154,38 @@ test_prerelease_tags_ignored() {
     log_pass "prerelease-filtered"
 }
 
+test_grandfather_excludes_old_tags() {
+    log_test "tags <= RSV_GRANDFATHER_BEFORE are excluded (rollout grace)"
+    # Under live config, every pre-rollout tag (v0.9.x, v1.0.0-1.0.4) lacks
+    # the new sentinel. With grandfather=v1.0.4, those drifts must NOT fire,
+    # but a fresh tag (v1.0.5+) without a sentinel still must.
+    local out rc=0
+    out="$(RSV_GRANDFATHER_BEFORE="v1.0.4" rsv_assert_bijection \
+        "" \
+        "" \
+        "$(printf 'v0.9.5\nv1.0.0\nv1.0.4\n')" \
+        "" 2>&1)" || rc=$?
+    assert_exit_code 0 "$rc" "grandfathered tags must not trigger drift"
+    assert_not_contains "$out" "DRIFT v0.9.5" "v0.9.5 is grandfathered"
+    assert_not_contains "$out" "DRIFT v1.0.0" "v1.0.0 is grandfathered"
+    assert_not_contains "$out" "DRIFT v1.0.4" "v1.0.4 (== baseline) is grandfathered"
+    log_pass "grandfather-excludes-old-tags"
+}
+
+test_grandfather_does_not_mask_post_rollout_drift() {
+    log_test "tags > RSV_GRANDFATHER_BEFORE still subject to bijection"
+    local out rc=0
+    out="$(RSV_GRANDFATHER_BEFORE="v1.0.4" rsv_assert_bijection \
+        "" \
+        "" \
+        "$(printf 'v1.0.0\nv1.0.5\n')" \
+        "" 2>&1)" || rc=$?
+    assert_exit_code 1 "$rc" "post-rollout drift must still fire"
+    assert_contains "$out" "DRIFT v1.0.5" "v1.0.5 is past baseline; drift fires"
+    assert_not_contains "$out" "DRIFT v1.0.0" "v1.0.0 is grandfathered"
+    log_pass "grandfather-does-not-mask"
+}
+
 test_all_committed_passes
 test_empty_state_passes
 test_orphan_prefix_not_flagged
@@ -160,5 +196,7 @@ test_desktop_missing_is_fine
 test_in_flight_excluded
 test_in_flight_does_not_mask_other_drift
 test_prerelease_tags_ignored
+test_grandfather_excludes_old_tags
+test_grandfather_does_not_mask_post_rollout_drift
 
 log_pass "all release-state-consistency cases"
