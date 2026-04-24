@@ -5,7 +5,7 @@ import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { isCooldownExpired } from '@rediacc/shared/update';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { applyPendingUpdate } from '../services/background-updater.js';
+import { applyPendingUpdate, getAppliedAtStartup } from '../services/background-updater.js';
 import { outputService } from '../services/output.js';
 import { getSubscriptionServerUrl } from '../services/subscription-auth.js';
 import { resolveChannel } from '../services/updater.js';
@@ -74,11 +74,9 @@ async function tryApplyPending(): Promise<boolean> {
   outputService.info(t('commands.update.downloading', { version: state.pendingUpdate.version }));
   const applied = await applyPendingUpdate();
   if (applied) {
-    outputService.success(
-      t('commands.update.success', { from: VERSION, to: state.pendingUpdate.version })
-    );
+    outputService.success(t('commands.update.success', { from: VERSION, to: applied }));
   }
-  return applied;
+  return applied !== null;
 }
 
 /**
@@ -116,7 +114,23 @@ async function handleUpdateResult(
  * Handle the update execution flow.
  */
 async function handleUpdate(force: boolean): Promise<void> {
-  if (!force && (await tryApplyPending())) return;
+  // If applyPendingUpdate already applied a staged binary at startup
+  // (index.ts:62), the on-disk binary is now the newer version but the
+  // in-memory VERSION constant is still the old one (it was baked into the
+  // binary that just got replaced). Re-running the check + download flow
+  // would compare in-memory VERSION (old) to the manifest (newer) and decide
+  // to "update again" — selfReplace would then overwrite .old with the same
+  // new version, leaving current and .old at the same bytes and making
+  // `--rollback` a silent no-op. Short-circuit instead.
+  if (!force) {
+    const appliedAtStartup = getAppliedAtStartup();
+    if (appliedAtStartup) {
+      // The autoApplied message already printed from background-updater.
+      // Nothing further to do — the new binary will run on next invocation.
+      return;
+    }
+    if (await tryApplyPending()) return;
+  }
 
   outputService.info(t('commands.update.checking'));
   const checkResult = await checkForUpdate();
