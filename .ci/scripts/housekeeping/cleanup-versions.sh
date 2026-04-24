@@ -1006,6 +1006,24 @@ cleanup_r2() {
                 orphan_ver_deleted=$((orphan_ver_deleted + 1))
                 continue
             fi
+            # Grandfather: pre-rollout tags (<= RSV_GRANDFATHER_BEFORE) lack a
+            # `.released` sentinel because the contract was introduced after
+            # them. Drift on those is expected and not actionable. Same logic
+            # as the drift gate (rsv_assert_bijection).
+            if [[ -n "${RSV_GRANDFATHER_BEFORE:-}" ]]; then
+                local newer
+                newer="$(printf '%s\n%s\n' "$RSV_GRANDFATHER_BEFORE" "$ver" | sort -V | tail -1)"
+                if [[ "$ver" == "$RSV_GRANDFATHER_BEFORE" || "$newer" != "$ver" ]]; then
+                    continue # grandfathered; not drift
+                fi
+            fi
+            # In-flight: housekeeping runs between finalize-release-sentinel
+            # (writes the sentinel) and cd-v2 (creates the tag). The just-
+            # written version legitimately appears as "sentinel without tag"
+            # for that window. IN_FLIGHT_VERSION is set by ci.yml.
+            if [[ -n "${IN_FLIGHT_VERSION:-}" && "$ver" == "$IN_FLIGHT_VERSION" ]]; then
+                continue # in-flight; tag will be created by CD shortly
+            fi
             # Drift: exactly one of sentinel/tag is present. Do not auto-heal.
             if ((has_sentinel)); then
                 log_error "drift: ${dir}/${ver}/.released exists but git tag ${ver} missing"
