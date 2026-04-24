@@ -132,6 +132,7 @@ build_plugin() {
     log_info "Building multi-arch image for platforms: ${platforms}"
 
     # Build
+    # BLOCKER: tag_flags is a space-separated set of --tag arguments produced earlier; word-splitting is intentional so docker receives each tag as a separate argv entry
     # shellcheck disable=SC2086
     if ! docker buildx build \
         --platform "${platforms}" \

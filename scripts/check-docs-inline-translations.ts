@@ -71,6 +71,33 @@ function resolveKeyPath(
 }
 
 /**
+ * Locale cache: parsed JSON files keyed by absolute path. Avoids the
+ * ~213k repeated reads+parses that would otherwise happen in the nested
+ * loop (11871 key usages × 9 langs × 2 locale dirs).
+ * Sentinel `null` = file does not exist.
+ * Sentinel `false` = file exists but failed to parse (error surfaced once).
+ */
+const localeCache = new Map<string, Record<string, unknown> | null | false>();
+
+function loadLocale(localePath: string): Record<string, unknown> | null | false {
+  const cached = localeCache.get(localePath);
+  if (cached !== undefined) return cached;
+
+  if (!fs.existsSync(localePath)) {
+    localeCache.set(localePath, null);
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(localePath, 'utf-8')) as Record<string, unknown>;
+    localeCache.set(localePath, parsed);
+    return parsed;
+  } catch {
+    localeCache.set(localePath, false);
+    return false;
+  }
+}
+
+/**
  * CHECK 1: Validate each key exists in locales (web + CLI, all 9 languages)
  *
  * Searches web locales first, then CLI locales as fallback.
@@ -87,24 +114,18 @@ function validateKeyInLocales(
   ];
 
   for (const localePath of paths) {
-    if (!fs.existsSync(localePath)) continue;
-    try {
-      const translations = JSON.parse(
-        fs.readFileSync(localePath, 'utf-8')
-      ) as Record<string, unknown>;
-      const value = resolveKeyPath(translations, keyPath);
+    const loaded = loadLocale(localePath);
+    if (loaded === null) continue;
+    if (loaded === false) return `Failed to parse ${localePath}`;
 
-      if (value === undefined) continue;
+    const value = resolveKeyPath(loaded, keyPath);
+    if (value === undefined) continue;
 
-      if (typeof value !== 'string') {
-        return `Key '${namespace}.${keyPath}' in ${lang} is not a string (got ${typeof value})`;
-      }
-
-      return null; // found and valid
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      return `Failed to parse ${localePath}: ${message}`;
+    if (typeof value !== 'string') {
+      return `Key '${namespace}.${keyPath}' in ${lang} is not a string (got ${typeof value})`;
     }
+
+    return null; // found and valid
   }
 
   return `Key '${namespace}.${keyPath}' not found in ${lang} (checked web + CLI locales)`;

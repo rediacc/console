@@ -73,6 +73,26 @@ R2_PR_MAX_AGE_DAYS=3
 R2_PACKAGE_KEEP_VERSIONS=20
 R2_PACKAGE_KEEP_DAYS=7
 
+# Phase 10: Workflow runs. Keep N newest per workflow -- a global top-N
+# would starve rarely-fired workflows like Release while letting the
+# Claude Code workflow (fires on every comment) eat the quota.
+GH_RUNS_KEEP_PER_WORKFLOW=100
+GH_RUNS_RETENTION_DAYS=30
+# Bound cost per invocation: ~25 workflows * 10 pages * 100 runs = 25k candidates
+# max. At the 5000 req/h REST bucket, DELETEs for ~2500 eligible runs eat half
+# the budget; everything else in the housekeeping job is order-of-magnitude
+# cheaper so this cap is comfortable.
+GH_RUNS_MAX_PAGES_PER_WORKFLOW=10
+
+# Phase 11: Workflow artifacts. Tighter than GH's 90d auto-expiry because
+# artifacts dominate storage cost and any rerun regenerates them.
+GH_ARTIFACTS_RETENTION_DAYS=14
+GH_ARTIFACTS_MAX_PAGES=30
+
+# Phase 12: Actions cache. Keep headroom under the 10 GB free-tier ceiling
+# so a large CI run does not evict freshly-warmed caches.
+GH_CACHE_KEEP_GB=5
+
 # =============================================================================
 # PREREQUISITES
 # =============================================================================
@@ -1186,6 +1206,290 @@ cleanup_stale_branches() {
 }
 
 # =============================================================================
+# PHASE 10: WORKFLOW RUNS
+# Per-workflow retention: keep_per_workflow newest OR within retention window.
+# Iterates each active workflow so that rarely-fired workflows (Release) are
+# not starved by chatty ones (Claude Code).
+# =============================================================================
+
+cleanup_workflow_runs() {
+    log_step "Phase 10: Cleaning up completed workflow runs"
+
+    local workflows
+    workflows="$(gh api "repos/$RELEASE_REPO/actions/workflows?per_page=100" \
+        --jq '[.workflows[] | select(.state == "active") | {id: .id, name: .name}]' 2>/dev/null || echo "[]")"
+
+    local wf_count
+    wf_count="$(echo "$workflows" | jq 'length')"
+
+    if [[ "$wf_count" -eq 0 ]]; then
+        log_warn "  No active workflows listed (API error?); skipping phase"
+        return 0
+    fi
+
+    local now_epoch
+    now_epoch="$(date -u +%s)"
+    local retention_seconds=$((GH_RUNS_RETENTION_DAYS * 86400))
+
+    local total_seen=0
+    local total_deleted=0
+
+    while IFS= read -r wf; do
+        [[ -z "$wf" ]] && continue
+        local wf_id wf_name
+        wf_id="$(echo "$wf" | jq -r '.id')"
+        wf_name="$(echo "$wf" | jq -r '.name')"
+
+        log_step "  Workflow: $wf_name (id=$wf_id)"
+
+        local page=1
+        local wf_index=0
+        local wf_deleted=0
+        local wf_seen=0
+        local consecutive_failures=0
+
+        while [[ "$page" -le "$GH_RUNS_MAX_PAGES_PER_WORKFLOW" ]]; do
+            local runs
+            runs="$(gh api "repos/$RELEASE_REPO/actions/workflows/$wf_id/runs?status=completed&per_page=100&page=$page" \
+                --jq '[.workflow_runs[] | {id: .id, created_at: .created_at, conclusion: .conclusion}]' 2>/dev/null || echo "[]")"
+
+            local page_count
+            page_count="$(echo "$runs" | jq 'length')"
+            [[ "$page_count" -eq 0 ]] && break
+
+            while IFS= read -r run; do
+                [[ -z "$run" ]] && continue
+                local run_id created_at
+                run_id="$(echo "$run" | jq -r '.id')"
+                created_at="$(echo "$run" | jq -r '.created_at')"
+                wf_seen=$((wf_seen + 1))
+
+                # Keep if within top-N per workflow
+                if [[ "$wf_index" -lt "$GH_RUNS_KEEP_PER_WORKFLOW" ]]; then
+                    wf_index=$((wf_index + 1))
+                    continue
+                fi
+
+                # Keep if within retention window. Unparseable date -> keep.
+                local created_epoch
+                created_epoch="$(date -u -d "$created_at" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "$created_at" +%s 2>/dev/null || echo 0)"
+                if [[ "$created_epoch" -eq 0 ]] || ((now_epoch - created_epoch < retention_seconds)); then
+                    wf_index=$((wf_index + 1))
+                    continue
+                fi
+
+                if [[ "$DRY_RUN" == "true" ]]; then
+                    log_warn "  [DRY-RUN] Would delete run: $run_id ($wf_name, $created_at)"
+                    wf_deleted=$((wf_deleted + 1))
+                else
+                    if retry_with_backoff 3 2 gh api -X DELETE "repos/$RELEASE_REPO/actions/runs/$run_id" 2>/dev/null; then
+                        log_debug "  Deleted run: $run_id ($wf_name)"
+                        wf_deleted=$((wf_deleted + 1))
+                        consecutive_failures=0
+                    else
+                        consecutive_failures=$((consecutive_failures + 1))
+                        log_warn "  Failed to delete run: $run_id ($wf_name)"
+                        if [[ "$consecutive_failures" -ge 5 ]]; then
+                            log_warn "  Skipping remaining runs for $wf_name after $consecutive_failures consecutive failures"
+                            break 2
+                        fi
+                    fi
+                fi
+                wf_index=$((wf_index + 1))
+            done < <(echo "$runs" | jq -c '.[]')
+
+            [[ "$page_count" -lt 100 ]] && break
+            page=$((page + 1))
+        done
+
+        total_seen=$((total_seen + wf_seen))
+        total_deleted=$((total_deleted + wf_deleted))
+
+        if [[ "$wf_deleted" -gt 0 ]]; then
+            local verb="deleted"
+            [[ "$DRY_RUN" == "true" ]] && verb="would delete"
+            log_info "  $wf_name: $verb $wf_deleted of $wf_seen (kept top $GH_RUNS_KEEP_PER_WORKFLOW + within ${GH_RUNS_RETENTION_DAYS}d)"
+        fi
+    done < <(echo "$workflows" | jq -c '.[]')
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "  Workflow runs: would delete $total_deleted of $total_seen (across $wf_count workflows)"
+    else
+        log_info "  Workflow runs: deleted $total_deleted of $total_seen (across $wf_count workflows)"
+    fi
+}
+
+# =============================================================================
+# PHASE 11: WORKFLOW ARTIFACTS
+# Deletes artifacts flagged expired by GH or older than GH_ARTIFACTS_RETENTION_DAYS.
+# Still useful alongside Phase 10 (which cascades artifacts on run deletion)
+# because run retention is longer than artifact retention -- most storage sits on
+# still-valid runs.
+# =============================================================================
+
+cleanup_workflow_artifacts() {
+    log_step "Phase 11: Cleaning up workflow artifacts"
+
+    local now_epoch
+    now_epoch="$(date -u +%s)"
+    local retention_seconds=$((GH_ARTIFACTS_RETENTION_DAYS * 86400))
+
+    local page=1
+    local seen=0
+    local deleted=0
+    local expired_count=0
+    local consecutive_failures=0
+
+    while [[ "$page" -le "$GH_ARTIFACTS_MAX_PAGES" ]]; do
+        local artifacts
+        artifacts="$(gh api "repos/$RELEASE_REPO/actions/artifacts?per_page=100&page=$page" \
+            --jq '[.artifacts[] | {id: .id, created_at: .created_at, expired: .expired, size: .size_in_bytes}]' 2>/dev/null || echo "[]")"
+
+        local page_count
+        page_count="$(echo "$artifacts" | jq 'length')"
+        [[ "$page_count" -eq 0 ]] && break
+
+        while IFS= read -r artifact; do
+            [[ -z "$artifact" ]] && continue
+            local id created_at expired
+            id="$(echo "$artifact" | jq -r '.id')"
+            created_at="$(echo "$artifact" | jq -r '.created_at')"
+            expired="$(echo "$artifact" | jq -r '.expired')"
+            seen=$((seen + 1))
+
+            local should_delete="false"
+            if [[ "$expired" == "true" ]]; then
+                should_delete="true"
+                expired_count=$((expired_count + 1))
+            else
+                local created_epoch
+                created_epoch="$(date -u -d "$created_at" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "$created_at" +%s 2>/dev/null || echo 0)"
+                if [[ "$created_epoch" -ne 0 ]] && ((now_epoch - created_epoch >= retention_seconds)); then
+                    should_delete="true"
+                fi
+            fi
+
+            [[ "$should_delete" == "false" ]] && continue
+
+            if [[ "$DRY_RUN" == "true" ]]; then
+                log_warn "  [DRY-RUN] Would delete artifact: $id (created: $created_at, expired: $expired)"
+                deleted=$((deleted + 1))
+            else
+                if retry_with_backoff 3 2 gh api -X DELETE "repos/$RELEASE_REPO/actions/artifacts/$id" 2>/dev/null; then
+                    log_debug "  Deleted artifact: $id"
+                    deleted=$((deleted + 1))
+                    consecutive_failures=0
+                else
+                    consecutive_failures=$((consecutive_failures + 1))
+                    log_warn "  Failed to delete artifact: $id"
+                    if [[ "$consecutive_failures" -ge 5 ]]; then
+                        log_warn "  Stopping artifact cleanup after $consecutive_failures consecutive failures"
+                        break 2
+                    fi
+                fi
+            fi
+        done < <(echo "$artifacts" | jq -c '.[]')
+
+        [[ "$page_count" -lt 100 ]] && break
+        page=$((page + 1))
+    done
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "  Artifacts: would delete $deleted of $seen ($expired_count already expired, retention: ${GH_ARTIFACTS_RETENTION_DAYS}d)"
+    else
+        log_info "  Artifacts: deleted $deleted of $seen ($expired_count already expired, retention: ${GH_ARTIFACTS_RETENTION_DAYS}d)"
+    fi
+}
+
+# =============================================================================
+# PHASE 12: ACTIONS CACHE
+# LRU eviction: delete oldest-accessed entries until the surviving total is
+# at or below GH_CACHE_KEEP_GB. GH's own 10 GB ceiling is enforced per-ref
+# with opaque eviction; setting our own lower bound keeps that enforcement
+# from hitting fresh caches mid-CI.
+# =============================================================================
+
+cleanup_actions_cache() {
+    log_step "Phase 12: Cleaning up Actions cache (target <= ${GH_CACHE_KEEP_GB} GB)"
+
+    # Paginate fully -- a single 100-entry page would underreport total bytes
+    # and silently skip eviction when usage exceeds the ceiling. The active
+    # cache endpoint is capped at 10 GB so ~40-50 entries is typical, but a
+    # repository could have more and we must not miss any.
+    local caches
+    caches="$(gh api --paginate "repos/$RELEASE_REPO/actions/caches?per_page=100&sort=last_accessed_at&direction=asc" \
+        --jq '.actions_caches[] | {id: .id, key: .key, ref: .ref, size: .size_in_bytes, last_accessed_at: .last_accessed_at}' 2>/dev/null |
+        jq -s 'sort_by(.last_accessed_at)' || echo "[]")"
+
+    local total
+    total="$(echo "$caches" | jq 'length')"
+
+    if [[ "$total" -eq 0 ]]; then
+        log_info "  No Actions cache entries found"
+        return 0
+    fi
+
+    local total_bytes
+    total_bytes="$(echo "$caches" | jq '[.[].size] | add // 0')"
+    local ceiling_bytes=$((GH_CACHE_KEEP_GB * 1024 * 1024 * 1024))
+
+    log_debug "  Total: $total entries, $((total_bytes / 1024 / 1024)) MB"
+
+    if [[ "$total_bytes" -le "$ceiling_bytes" ]]; then
+        log_info "  Actions cache: $((total_bytes / 1024 / 1024)) MB <= ceiling, nothing to evict"
+        return 0
+    fi
+
+    local running=$total_bytes
+    local deleted=0
+    local freed=0
+    local consecutive_failures=0
+
+    while IFS= read -r entry; do
+        [[ -z "$entry" ]] && continue
+        # Stop once surviving total is at or below ceiling.
+        if [[ "$running" -le "$ceiling_bytes" ]]; then
+            break
+        fi
+
+        local id key ref size last
+        id="$(echo "$entry" | jq -r '.id')"
+        key="$(echo "$entry" | jq -r '.key')"
+        ref="$(echo "$entry" | jq -r '.ref')"
+        size="$(echo "$entry" | jq -r '.size')"
+        last="$(echo "$entry" | jq -r '.last_accessed_at')"
+
+        if [[ "$DRY_RUN" == "true" ]]; then
+            log_warn "  [DRY-RUN] Would delete cache: id=$id size=$((size / 1024 / 1024))MB last_accessed=$last ref=$ref key=${key:0:40}..."
+            deleted=$((deleted + 1))
+            freed=$((freed + size))
+            running=$((running - size))
+        else
+            if retry_with_backoff 3 2 gh api -X DELETE "repos/$RELEASE_REPO/actions/caches/$id" 2>/dev/null; then
+                log_debug "  Deleted cache: id=$id ($((size / 1024 / 1024)) MB)"
+                deleted=$((deleted + 1))
+                freed=$((freed + size))
+                running=$((running - size))
+                consecutive_failures=0
+            else
+                consecutive_failures=$((consecutive_failures + 1))
+                log_warn "  Failed to delete cache: id=$id"
+                if [[ "$consecutive_failures" -ge 5 ]]; then
+                    log_warn "  Stopping cache cleanup after $consecutive_failures consecutive failures"
+                    break
+                fi
+            fi
+        fi
+    done < <(echo "$caches" | jq -c '.[]')
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "  Actions cache: would delete $deleted of $total, freeing ~$((freed / 1024 / 1024)) MB (surviving: ~$((running / 1024 / 1024)) MB / ceiling ${GH_CACHE_KEEP_GB} GB)"
+    else
+        log_info "  Actions cache: deleted $deleted of $total, freed ~$((freed / 1024 / 1024)) MB (surviving: ~$((running / 1024 / 1024)) MB / ceiling ${GH_CACHE_KEEP_GB} GB)"
+    fi
+}
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
@@ -1215,6 +1519,12 @@ echo ""
 cleanup_r2
 echo ""
 cleanup_stale_branches
+echo ""
+cleanup_workflow_runs
+echo ""
+cleanup_workflow_artifacts
+echo ""
+cleanup_actions_cache
 
 echo ""
 log_info "Housekeeping complete"

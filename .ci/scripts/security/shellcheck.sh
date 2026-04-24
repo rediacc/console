@@ -47,16 +47,19 @@ main() {
 
     # Check all shell scripts in .ci directory
     log_info "Checking .ci/**/*.sh"
+    # BLOCKER: SHELLCHECK_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shellcheck receives each flag as its own argv entry
     # shellcheck disable=SC2086
     find .ci -name "*.sh" -type f -exec shellcheck $SHELLCHECK_OPTS {} +
 
     # Check the main run.sh script
     log_info "Checking ./run.sh"
+    # BLOCKER: SHELLCHECK_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shellcheck receives each flag as its own argv entry
     # shellcheck disable=SC2086
     shellcheck $SHELLCHECK_OPTS ./run.sh
 
     # Check shell scripts under scripts/ (dev helpers, docker helpers, etc.)
     log_info "Checking scripts/**/*.sh"
+    # BLOCKER: SHELLCHECK_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shellcheck receives each flag as its own argv entry
     # shellcheck disable=SC2086
     find scripts -name "*.sh" -type f -exec shellcheck $SHELLCHECK_OPTS {} +
 

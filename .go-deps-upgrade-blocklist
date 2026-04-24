@@ -1,16 +1,14 @@
-# Go packages blocked from auto-upgrade (require manual migration)
+# Go packages blocked from auto-upgrade (require manual migration).
 #
-# Format: module/path # reason
-# These packages will NOT be upgraded automatically.
-# Minor and patch updates that are not blocked will fail CI.
-# Major updates are always reported but never auto-upgraded regardless of this list.
+# Format: module/path  # BLOCKER: <substantive reason>
 #
-# Example:
-# github.com/some/package # Reason for blocking
+# The BLOCKER convention is enforced by .ci/scripts/quality/check-go-deps.sh
+# (see parse_blockered_list in .ci/scripts/lib/blocker-validator.sh): each
+# line needs a 30+ char reason that does not match the banned-phrase list.
+#
+# Minor/patch updates for non-blocked packages will fail CI. Major updates
+# are always reported but never auto-upgraded regardless of this list.
 
-# Docker SDK - v26+ has major API and package path changes (e.g., client.NewClientWithOpts signature)
-github.com/docker/docker # v26+ has breaking API changes requiring migration
-
-# go-connections v0.7.0 removed sockets.DialPipe which docker/docker v25 still
-# uses. Locked to v0.6.0 until the docker/docker upgrade above happens.
-github.com/docker/go-connections # v0.7.0 removed sockets.DialPipe; pinned by docker SDK
+# Docker SDK — v26+ has major API and package path changes
+github.com/docker/docker  # BLOCKER: v26+ breaks client.NewClientWithOpts signature and renames several packages; requires rewrite of renet docker client
+github.com/docker/go-connections  # BLOCKER: v0.7.0 removed sockets.DialPipe which docker/docker v25 still uses; pinned to v0.6.0 until docker SDK upgrade

@@ -59,7 +59,7 @@ jobs:
       # jobs (quality, standalone, elite) on push-to-main since PR already validated.
       full_suite: ${{ github.event_name != 'push' }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           persist-credentials: false
           fetch-tags: true
@@ -77,7 +77,7 @@ jobs:
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
@@ -85,13 +85,13 @@ jobs:
       # PR Validation (PR events only)
       - name: Validate PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: return await require('./.ci/scripts/ci/validate-pr.cjs')({github, context, core})
 
       # Login to GHCR for registry cache check
       - name: Login to GHCR
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -112,14 +112,24 @@ jobs:
       - name: Generate channel context
         id: staging
         run: |
+          # Only push and pull_request events write to R2. merge_group (merge
+          # queue) and schedule (nightly) get empty channel -> stage-artifacts
+          # still runs for validation but every R2/GHCR upload step self-gates
+          # on channel != ''. Prior design set dryrun-<sha> here and produced
+          # ~5 GB of orphan R2 bytes per merge-queue check and per nightly run.
           if [[ "${{ github.event_name }}" == "push" ]]; then
             CHANNEL="edge"
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             CHANNEL="pr-${{ github.event.pull_request.number }}"
           else
-            CHANNEL="dryrun-${{ github.sha }}"
+            CHANNEL=""
           fi
           echo "channel=${CHANNEL}" >> $GITHUB_OUTPUT
+
+      - name: Assert channel matches event
+        # Guard against someone reintroducing a dryrun-<sha> fallthrough
+        # for merge_group/schedule events.
+        run: .ci/scripts/ci/assert-channel-for-event.sh "${{ github.event_name }}" "${{ steps.staging.outputs.channel }}"
 
       # Upload CI tags as artifact for debugging
       - name: Upload CI Tags
@@ -131,7 +141,7 @@ jobs:
           plugins_tag=${{ steps.init.outputs.plugins_tag }}
           web_tag=${{ steps.init.outputs.web_tag }}
           EOF
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: steps.init.outputs.is_bot != 'true'
         with:
           name: ci-tags-${{ github.sha }}
@@ -154,26 +164,26 @@ jobs:
       needs.initialize.outputs.is_fork != 'true' &&
       needs.initialize.result == 'success'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           sparse-checkout: .github/actions
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
           repositories: console,account
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Init account submodule
         run: git submodule update --init --depth 1 private/account
 
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
 
@@ -275,7 +285,7 @@ jobs:
     # Use !cancelled() so force-cancel from newer runs can stop this job
     if: ${{ !cancelled() && needs.initialize.result == 'success' }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           sparse-checkout: |
             .ci/scripts
@@ -290,7 +300,7 @@ jobs:
         run: .ci/scripts/ci/cancel-older-runs.sh --timeout 60 --poll-interval 10
 
       - name: Monitor all jobs and cancel on failure
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         env:
           WATCHDOG_EXCLUDE_PATTERNS: 'Watchdog,CI Complete'
           WATCHDOG_NO_RETRY_PATTERNS: 'Quality,Review Gate'
@@ -332,7 +342,7 @@ jobs:
     runs-on: ubuntu-slim
     if: needs.initialize.outputs.is_bot != 'true' && github.event_name == 'pull_request' && needs.initialize.outputs.is_fork != 'true'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           sparse-checkout: |
             .ci/scripts
@@ -340,7 +350,7 @@ jobs:
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
           repositories: console
@@ -388,26 +398,26 @@ jobs:
     outputs:
       account_server_url: ${{ steps.deploy.outputs.account_server_url }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           sparse-checkout: .github/actions
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
           repositories: console,account
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Initialize account submodule
         run: git submodule update --init --depth 1 private/account
 
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -548,6 +558,22 @@ jobs:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   # ============================================================================
+  # UPDATE FLOW E2E
+  # Validates install.sh + `rdc update` lifecycle (findings B, C, D, E, F).
+  # Consumes the rdc-linux-x64 artifact built by build-cli; runs a local
+  # Python fixture server that impersonates releases.rediacc.com and drives
+  # install/update/rollback scenarios.
+  # ============================================================================
+  update-flow-test:
+    name: Tests + Infra / Update Flow
+    needs: [initialize, build-cli]
+    if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.build-cli.result == 'success' && needs.initialize.outputs.is_fork != 'true'
+    uses: ./.github/workflows/ct-update-flow.yml
+    with:
+      cli_artifact_name: build-cli-linux-x64-${{ github.sha }}
+      cli_artifact_binary: rdc-linux-x64
+
+  # ============================================================================
   # COLUMN 3A: LINUX PACKAGE TESTS
   # Uses dummy binary — validates packaging scripts, Docker install tests
   # Dependencies: quality (lightweight, runs in parallel with builds)
@@ -559,7 +585,7 @@ jobs:
     timeout-minutes: 20
     if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && needs.initialize.outputs.is_fork != 'true'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Install packaging tools
         run: |
@@ -585,7 +611,7 @@ jobs:
       id-token: write      # OIDC token for Sigstore signing
       attestations: write  # Store attestations on GitHub
     if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-desktop.result == 'success' && needs.build-cli.result == 'success' && (needs.stripe-sandbox.result == 'success' || needs.stripe-sandbox.result == 'skipped')
-    uses: ./.github/workflows/cd-dryrun.yml
+    uses: ./.github/workflows/cd-stage.yml
     with:
       upload_pages: ${{ github.event_name == 'pull_request' }}
       channel: ${{ needs.initialize.outputs.channel }}
@@ -699,20 +725,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           persist-credentials: false
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
 
       - name: Checkout with Submodules
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: recursive
           token: ${{ steps.app-token.outputs.token }}
@@ -792,19 +818,19 @@ jobs:
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           sparse-checkout: .github/actions
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
           repositories: console,account
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           token: ${{ steps.app-token.outputs.token }}
           submodules: false
@@ -812,7 +838,7 @@ jobs:
       - name: Initialize account submodule
         run: git submodule update --init --depth 1 private/account
 
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -832,7 +858,7 @@ jobs:
         working-directory: workers/www
 
       - name: Download preview pages artifact
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: preview-pages-${{ github.sha }}
           path: workers/www/dist/
@@ -975,7 +1001,7 @@ jobs:
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           sparse-checkout: |
             .github/actions
@@ -991,12 +1017,12 @@ jobs:
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
           repositories: console
 
-      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -1073,7 +1099,7 @@ jobs:
     env:
       CHANNEL: ${{ needs.initialize.outputs.channel }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Simulate promotion (copy + sed-fix)
         run: |
@@ -1212,7 +1238,7 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, stage-artifacts, validate-install, validate-promote, tests, standalone-run-test, elite-run-test, ops-tests, migration-test, deploy-preview, smoke-test-preview]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, stage-artifacts, validate-install, validate-promote, tests, standalone-run-test, elite-run-test, ops-tests, migration-test, update-flow-test, deploy-preview, smoke-test-preview]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -1242,6 +1268,7 @@ jobs:
           [[ "${{ needs.elite-run-test.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.ops-tests.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.migration-test.result }}" == "failure" ]] && FAILED=true
+          [[ "${{ needs.update-flow-test.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.deploy-preview.result }}" == "failure" ]] && FAILED=true
           [[ "${{ needs.smoke-test-preview.result }}" == "failure" ]] && FAILED=true
 
@@ -1264,6 +1291,7 @@ jobs:
             echo "  elite-run-test: ${{ needs.elite-run-test.result }}"
             echo "  ops-tests: ${{ needs.ops-tests.result }}"
             echo "  migration-test: ${{ needs.migration-test.result }}"
+            echo "  update-flow-test: ${{ needs.update-flow-test.result }}"
             echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
             echo "  smoke-test-preview: ${{ needs.smoke-test-preview.result }}"
             exit 1
@@ -1281,14 +1309,20 @@ jobs:
     name: Housekeeping
     runs-on: ubuntu-slim
     needs: [ci-complete]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ci-complete.result == 'success'
+    # always() prefix is load-bearing. ci-complete transitively needs
+    # deploy-preview + smoke-test-preview, which are pull_request-only
+    # and skip on push-to-main. GHA propagates the skip through the
+    # needs chain to any downstream job that omits always(), so without
+    # it this job silently skips on every push regardless of the
+    # needs.ci-complete.result check.
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ci-complete.result == 'success'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: housekeeping
           repositories: console,renet,middleware,elite,account
@@ -1303,7 +1337,7 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
 
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
 
@@ -1316,7 +1350,7 @@ jobs:
       - uses: ./.github/actions/app-token
         id: app-token-stripe
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
           repositories: console,account
@@ -1345,3 +1379,21 @@ jobs:
           done
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+
+  # ============================================================================
+  # ASSERT HOUSEKEEPING RAN
+  # Sentinel that fails loudly if the housekeeping job silently skipped on
+  # push-to-main. Guards against the GHA transitive-skip propagation bug:
+  # deploy-preview/smoke-test-preview are pull_request-only, so a missing
+  # always() on housekeeping's if: used to let every push-to-main skip it.
+  # This check runs after housekeeping and fails fast if it didn't succeed.
+  # ============================================================================
+  assert-housekeeping-ran:
+    name: Assert Housekeeping Ran
+    runs-on: ubuntu-slim
+    needs: [housekeeping]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - name: Check housekeeping conclusion
+        run: .ci/scripts/ci/assert-job-succeeded.sh housekeeping "${{ needs.housekeeping.result }}"

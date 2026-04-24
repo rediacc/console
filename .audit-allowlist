@@ -8,27 +8,37 @@
 # Rules:
 #   - NEVER add production dependency advisories here; they cannot be allowlisted.
 #   - Only add dev-dependency advisories after confirming no upgrade path exists.
-#   - Format: ADVISORY_ID   # short description (GHSA-xxx)
+#   - Each group MUST have a "# BLOCKER: <reason>" line; the audit script
+#     enforces this strictly. Blank lines separate groups.
 
-# tar — electron-builder dependency chain, tar@8+ has breaking ESM changes
-1112329   # race condition with Unicode ligatures (GHSA-r6q2-hw4h-h46w)
-1112659   # hardlink path traversal (GHSA-34x7-hfp2-rc4v)
-1113300   # arbitrary overwrite/symlink poisoning (GHSA-8qq5-rm4j-mr97)
-1113375   # hardlink target escape through symlink chain (GHSA-83g3-92jg-28cx)
-1113992   # drive-relative hardlink traversal (GHSA-qffp-2rhf-9h96)
+# tar — electron-builder dependency chain
+# GHSA-r6q2-hw4h-h46w, GHSA-34x7-hfp2-rc4v, GHSA-8qq5-rm4j-mr97,
+# GHSA-83g3-92jg-28cx, GHSA-qffp-2rhf-9h96
+# BLOCKER: electron-builder transitive; tar@8+ has breaking ESM changes; fix requires electron-builder major migration
+1112329
+1112659
+1113300
+1113375
+1113992
 
 # minimatch ReDoS — transitive across eslint/electron-builder chains
-1113545   # matchOne() combinatorial backtracking via GLOBSTAR (GHSA-7r86-cg39-jmmj)
-1113553   # nested *() extglobs catastrophic backtracking (GHSA-23c5-xmqv-rm74)
+# GHSA-7r86-cg39-jmmj (matchOne GLOBSTAR), GHSA-23c5-xmqv-rm74 (nested *() extglobs)
+# BLOCKER: transitive dep; fix requires eslint v10 major / electron-builder major upgrade
+1113545
+1113553
 
-# yauzl — electron → extract-zip → yauzl, no upstream fix
-1114530   # off-by-one error (GHSA-gmq8-994r-jv83)
+# yauzl — electron → extract-zip → yauzl
+# GHSA-gmq8-994r-jv83 (off-by-one)
+# BLOCKER: electron transitive; no upstream fix published
+1114530
 
-# brace-expansion — transitive via eslint/electron chains, fix requires eslint v10 major upgrade
-1115432   # zero-step sequence process hang and memory exhaustion (GHSA-f886-m6hf-6m8v)
-1115496   # superseded advisory, same brace-expansion root cause
-1115497   # superseded advisory, same brace-expansion root cause
-1115499   # superseded advisory, same brace-expansion root cause
-1115540   # superseded advisory, same brace-expansion root cause
-1115541   # superseded advisory, same brace-expansion root cause
-1115543   # superseded advisory, same brace-expansion root cause
+# brace-expansion zero-step hang + related superseded advisories
+# GHSA-f886-m6hf-6m8v and sibling advisories sharing the same root cause
+# BLOCKER: transitive via eslint/electron chains; fix requires eslint v10 major upgrade
+1115432
+1115496
+1115497
+1115499
+1115540
+1115541
+1115543

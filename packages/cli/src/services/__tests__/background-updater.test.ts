@@ -639,4 +639,83 @@ describe('services/background-updater', () => {
       stderrSpy.mockRestore();
     });
   });
+
+  // ==========================================================================
+  // Lock contention during background staging (finding D + hardening)
+  //
+  // runBackgroundUpdateWorker acquires the update lock BEFORE touching state
+  // or downloading. If another process already holds the lock, the worker
+  // must exit silently without mutating state. This test guards the
+  // invariant so a regression (e.g. moving lock acquisition inside
+  // downloadAndStage so it happens after state read) would be caught.
+  // ==========================================================================
+  describe('runBackgroundUpdateWorker — lock contention', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      mockPlatform.acquireUpdateLock.mockResolvedValue(mockReleaseLock);
+      mockSharedUpdate.isCooldownExpired.mockReturnValue(true);
+      mockUpdateState.readUpdateState.mockResolvedValue(makeState());
+    });
+
+    it('returns silently when the update lock is busy', async () => {
+      mockPlatform.acquireUpdateLock.mockResolvedValueOnce(null);
+
+      await runBackgroundUpdateWorker();
+
+      expect(mockUpdater.fetchManifest).not.toHaveBeenCalled();
+      expect(mockUpdateState.writeUpdateState).not.toHaveBeenCalled();
+      expect(mockFs.rename).not.toHaveBeenCalled();
+    });
+
+    it('releases the lock in finally even when fetchManifest throws', async () => {
+      mockUpdater.fetchManifest.mockRejectedValueOnce(new Error('network timeout'));
+
+      await runBackgroundUpdateWorker();
+
+      expect(mockReleaseLock).toHaveBeenCalled();
+    });
+  });
+
+  // ==========================================================================
+  // applyPendingUpdate — staged binary missing
+  //
+  // When the staged file is missing at apply time, the updater must clear
+  // pendingUpdate and return false. Without this, a stale staged-update
+  // pointer could loop the apply path indefinitely on next startups.
+  // ==========================================================================
+  describe('applyPendingUpdate — staged binary missing', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      mockPlatform.acquireUpdateLock.mockResolvedValue(mockReleaseLock);
+      mockUpdater.compareVersions.mockReturnValue(-1);
+      mockPlatform.isSEA.mockReturnValue(true);
+      mockPlatform.isUpdateDisabled.mockReturnValue(false);
+    });
+
+    it('clears pendingUpdate when staged binary is absent', async () => {
+      mockUpdateState.readUpdateState.mockResolvedValue(
+        makeState({
+          pendingUpdate: {
+            version: '0.5.0',
+            stagedPath: '/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0',
+            sha256: 'abc',
+            platformKey: 'linux-x64',
+            downloadedAt: new Date().toISOString(),
+          },
+        })
+      );
+      const enoent = new Error('ENOENT') as NodeJS.ErrnoException;
+      enoent.code = 'ENOENT';
+      mockFs.access.mockRejectedValueOnce(enoent);
+
+      const result = await applyPendingUpdate();
+
+      expect(result).toBe(false);
+      // State write should have cleared pendingUpdate via clearPendingUpdate
+      const writeCall = mockUpdateState.writeUpdateState.mock.calls.find(
+        ([state]: [CliUpdateState]) => state.pendingUpdate === null
+      );
+      expect(writeCall).toBeDefined();
+    });
+  });
 });

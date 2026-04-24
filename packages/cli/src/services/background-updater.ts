@@ -108,6 +108,11 @@ async function downloadAndStage(
 /**
  * Entry point when `--background-update` is detected. Runs in a detached process.
  * Fetches manifest, downloads binary, verifies SHA256, stages for next launch.
+ *
+ * The acquired lock covers the entire download+verify+rename sequence in
+ * downloadAndStage(). Previously only applyPendingUpdate() held the lock, so
+ * a concurrent reinstall (install.sh mv) could race against the worker's
+ * fs.rename into staged-update/. Holding the lock here serializes the two.
  */
 export async function runBackgroundUpdateWorker(): Promise<void> {
   const safetyTimer = setTimeout(() => process.exit(1), WORKER_TIMEOUT_MS);
@@ -326,8 +331,16 @@ async function handleSwapError(
  * Called at startup before CLI runs. If a staged binary exists and passes
  * SHA256 verification, atomically replaces the current binary.
  * Returns true if an update was applied.
+ *
+ * Short-circuits when the invocation is a rollback request. prepareApply()
+ * unconditionally runs cleanupOldBinary() to reap stale .old files, but the
+ * rollback handler *needs* the .old file to exist. Without this early exit,
+ * `rdc update --rollback` always fails with "No previous version found"
+ * because startup deletes the .old before the command handler can read it.
  */
 export async function applyPendingUpdate(): Promise<boolean> {
+  if (process.argv.includes('--rollback')) return false;
+
   const state = await prepareApply();
   if (!state?.pendingUpdate) return false;
 
