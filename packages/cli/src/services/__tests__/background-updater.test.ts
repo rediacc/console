@@ -343,7 +343,7 @@ describe('services/background-updater', () => {
 
       const result = await applyPendingUpdate();
 
-      expect(result).toBe(false);
+      expect(result).toBeNull();
     });
 
     it('returns false when not SEA', async () => {
@@ -351,7 +351,7 @@ describe('services/background-updater', () => {
 
       const result = await applyPendingUpdate();
 
-      expect(result).toBe(false);
+      expect(result).toBeNull();
     });
 
     it('skips when staged version is not newer than current', async () => {
@@ -369,7 +369,7 @@ describe('services/background-updater', () => {
 
       const result = await applyPendingUpdate();
 
-      expect(result).toBe(false);
+      expect(result).toBeNull();
       // Should clear the stale pending update
       expect(mockUpdateState.writeUpdateState).toHaveBeenCalledWith(
         expect.objectContaining({ pendingUpdate: null })
@@ -393,7 +393,7 @@ describe('services/background-updater', () => {
 
       const result = await applyPendingUpdate();
 
-      expect(result).toBe(false);
+      expect(result).toBeNull();
       expect(mockUpdateState.writeUpdateState).toHaveBeenCalledWith(
         expect.objectContaining({
           pendingUpdate: null,
@@ -420,7 +420,7 @@ describe('services/background-updater', () => {
 
       const result = await applyPendingUpdate();
 
-      expect(result).toBe(false);
+      expect(result).toBeNull();
       // Staged binary should be deleted
       expect(mockFs.unlink).toHaveBeenCalled();
       // pendingUpdate should be cleared
@@ -455,7 +455,7 @@ describe('services/background-updater', () => {
 
       const result = await applyPendingUpdate();
 
-      expect(result).toBe(false);
+      expect(result).toBeNull();
       // Should clear pendingUpdate after exceeding max attempts
       expect(mockUpdateState.writeUpdateState).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -524,7 +524,7 @@ describe('services/background-updater', () => {
 
       const result = await applyPendingUpdate();
 
-      expect(result).toBe(false);
+      expect(result).toBeNull();
       // EBUSY path returns false without clearing pendingUpdate
       // writeUpdateState should NOT have been called with pendingUpdate: null and lastError
       const writeCalls = mockUpdateState.writeUpdateState.mock.calls;
@@ -554,7 +554,7 @@ describe('services/background-updater', () => {
 
       const result = await applyPendingUpdate();
 
-      expect(result).toBe(true);
+      expect(result).toBe('0.5.0');
       expect(mockFs.copyFile).toHaveBeenCalled();
       expect(mockFs.rename).toHaveBeenCalled();
       expect(mockUpdateState.writeUpdateState).toHaveBeenCalledWith(
@@ -596,7 +596,7 @@ describe('services/background-updater', () => {
 
       const result = await applyPendingUpdate();
 
-      expect(result).toBe(false);
+      expect(result).toBeNull();
       // Third rename call should be the rollback (oldPath → execPath)
       expect(mockFs.rename).toHaveBeenCalledTimes(3);
     });
@@ -634,7 +634,7 @@ describe('services/background-updater', () => {
       const result = await applyPendingUpdate();
 
       // First rename: 2 EBUSY + 1 success = 3 calls, second rename: 1 success = 1 call
-      expect(result).toBe(true);
+      expect(result).toBe('0.5.0');
       expect(renameCallCount).toBe(4);
       stderrSpy.mockRestore();
     });
@@ -710,7 +710,7 @@ describe('services/background-updater', () => {
 
       const result = await applyPendingUpdate();
 
-      expect(result).toBe(false);
+      expect(result).toBeNull();
       // State write should have cleared pendingUpdate via clearPendingUpdate
       const writeCall = mockUpdateState.writeUpdateState.mock.calls.find(
         ([state]: [CliUpdateState]) => state.pendingUpdate === null

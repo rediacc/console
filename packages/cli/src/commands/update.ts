@@ -5,12 +5,12 @@ import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { isCooldownExpired } from '@rediacc/shared/update';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { applyPendingUpdate } from '../services/background-updater.js';
+import { applyPendingUpdate, getAppliedAtStartup } from '../services/background-updater.js';
 import { outputService } from '../services/output.js';
 import { getSubscriptionServerUrl } from '../services/subscription-auth.js';
 import { resolveChannel } from '../services/updater.js';
 import { readUpdateState, writeUpdateState } from '../services/update-state.js';
-import { checkForUpdate, performUpdate } from '../services/updater.js';
+import { checkForUpdate, compareVersions, performUpdate } from '../services/updater.js';
 import { handleError } from '../utils/errors.js';
 import {
   getInstallMethod,
@@ -74,11 +74,9 @@ async function tryApplyPending(): Promise<boolean> {
   outputService.info(t('commands.update.downloading', { version: state.pendingUpdate.version }));
   const applied = await applyPendingUpdate();
   if (applied) {
-    outputService.success(
-      t('commands.update.success', { from: VERSION, to: state.pendingUpdate.version })
-    );
+    outputService.success(t('commands.update.success', { from: VERSION, to: applied }));
   }
-  return applied;
+  return applied !== null;
 }
 
 /**
@@ -116,13 +114,35 @@ async function handleUpdateResult(
  * Handle the update execution flow.
  */
 async function handleUpdate(force: boolean): Promise<void> {
-  if (!force && (await tryApplyPending())) return;
+  // applyPendingUpdate may already have replaced the on-disk binary at
+  // startup (index.ts:62). When that happened, the in-memory VERSION constant
+  // is the OLD version (baked into the binary that just got replaced), so a
+  // naive "VERSION vs manifest" comparison would falsely decide we are still
+  // outdated and run selfReplace again — that overwrites .old with the same
+  // new version, leaving `current` and `.old` at the same bytes and turning
+  // `rdc update --rollback` into a silent no-op.
+  //
+  // We still call checkForUpdate() so that a release published AFTER the
+  // staged version (e.g. startup applied 1.0.7, manifest now at 1.0.8) is
+  // not silently missed. The decision uses the effective post-apply version
+  // (`appliedAtStartup ?? VERSION`) instead of the stale in-memory VERSION.
+  const appliedAtStartup = force ? null : getAppliedAtStartup();
+  if (!force && !appliedAtStartup && (await tryApplyPending())) return;
 
   outputService.info(t('commands.update.checking'));
   const checkResult = await checkForUpdate();
 
-  if (!force && !checkResult.updateAvailable) {
-    outputService.success(t('commands.update.upToDate', { version: VERSION }));
+  // Effective current = post-apply version if applyPendingUpdate ran this
+  // process; otherwise the binary's compiled-in VERSION. checkResult's
+  // updateAvailable was computed against the stale in-memory VERSION, so
+  // recompute against the effective one — this is what catches "manifest is
+  // newer than what we just applied" without re-installing the same version.
+  const effectiveCurrent = appliedAtStartup ?? VERSION;
+  const newerAvailable =
+    !!checkResult.latestVersion && compareVersions(effectiveCurrent, checkResult.latestVersion) < 0;
+
+  if (!force && !newerAvailable) {
+    outputService.success(t('commands.update.upToDate', { version: effectiveCurrent }));
     return;
   }
 
