@@ -341,7 +341,12 @@ async function handleSwapError(
 // (rollback swaps two identical binaries and silently no-ops).
 let _appliedAtStartup: string | null = null;
 
-/** Test hook: returns the version applied by applyPendingUpdate this process. */
+/**
+ * Returns the version that applyPendingUpdate() applied during this process,
+ * or null if it never ran or applied nothing. Consumed by the `update`
+ * command so its "is there a newer version?" comparison can use the effective
+ * post-apply version instead of the stale in-memory VERSION constant.
+ */
 export function getAppliedAtStartup(): string | null {
   return _appliedAtStartup;
 }

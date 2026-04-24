@@ -69,6 +69,7 @@ describe('handleUpdate short-circuit on appliedAtStartup', () => {
     checkForUpdate: ReturnType<typeof vi.fn>;
     performUpdate: ReturnType<typeof vi.fn>;
     resolveChannel: ReturnType<typeof vi.fn>;
+    compareVersions: (a: string, b: string) => number;
   };
   let bgMocks: {
     applyPendingUpdate: ReturnType<typeof vi.fn>;
@@ -89,6 +90,15 @@ describe('handleUpdate short-circuit on appliedAtStartup', () => {
         .fn()
         .mockResolvedValue({ success: true, fromVersion: '1.0.6', toVersion: '1.0.7' }),
       resolveChannel: vi.fn().mockReturnValue('edge'),
+      // Real semver comparison; the short-circuit decision depends on it.
+      compareVersions: (a: string, b: string) => {
+        const pa = a.split('.').map((n) => Number.parseInt(n, 10));
+        const pb = b.split('.').map((n) => Number.parseInt(n, 10));
+        for (let i = 0; i < 3; i++) {
+          if (pa[i] !== pb[i]) return pa[i] < pb[i] ? -1 : 1;
+        }
+        return 0;
+      },
     };
     bgMocks = {
       applyPendingUpdate: vi.fn().mockResolvedValue(null),
@@ -148,14 +158,36 @@ describe('handleUpdate short-circuit on appliedAtStartup', () => {
     await program.parseAsync(['node', 'rdc', 'update']);
   }
 
-  it('does NOT call checkForUpdate / performUpdate when appliedAtStartup is set', async () => {
+  it('does NOT call performUpdate when appliedAtStartup matches manifest (already at latest)', async () => {
+    // Startup applied 1.0.7; manifest says latest is 1.0.7 → no further work.
     bgMocks.getAppliedAtStartup.mockReturnValue('1.0.7');
+    updaterMocks.checkForUpdate.mockResolvedValue({
+      updateAvailable: true, // stale flag; computed against in-memory VERSION 1.0.6
+      latestVersion: '1.0.7',
+    });
 
     await runUpdateCommand();
 
-    // Critical invariant: short-circuit fires before any check/download.
-    expect(updaterMocks.checkForUpdate).not.toHaveBeenCalled();
+    // checkForUpdate IS called (so we can detect a NEWER release; see next test).
+    expect(updaterMocks.checkForUpdate).toHaveBeenCalled();
+    // performUpdate is NOT — we are already at the latest after startup apply.
     expect(updaterMocks.performUpdate).not.toHaveBeenCalled();
+  });
+
+  it('DOES call performUpdate when manifest is newer than appliedAtStartup', async () => {
+    // Catches the case where a release lands AFTER the staged version was
+    // downloaded: startup applied 1.0.7, but a 1.0.8 release dropped while
+    // we were running. We must not silently leave the user one release behind.
+    bgMocks.getAppliedAtStartup.mockReturnValue('1.0.7');
+    updaterMocks.checkForUpdate.mockResolvedValue({
+      updateAvailable: true,
+      latestVersion: '1.0.8',
+    });
+
+    await runUpdateCommand();
+
+    expect(updaterMocks.checkForUpdate).toHaveBeenCalled();
+    expect(updaterMocks.performUpdate).toHaveBeenCalled();
   });
 
   it('runs checkForUpdate when appliedAtStartup is null (normal path)', async () => {
@@ -168,15 +200,23 @@ describe('handleUpdate short-circuit on appliedAtStartup', () => {
 
   it('does NOT print a redundant "Updated to ..." success message when short-circuiting', async () => {
     // The autoApplied message is printed by applyPendingUpdate to stderr at
-    // startup; the update command must NOT additionally print success on the
-    // same invocation when it short-circuits, which would be the duplicate
-    // line the user observed in their terminal.
+    // startup; the update command should print "up to date" rather than
+    // re-emitting an "Updated to ..." line, which was the duplicate the user
+    // observed.
     bgMocks.getAppliedAtStartup.mockReturnValue('1.0.7');
+    updaterMocks.checkForUpdate.mockResolvedValue({
+      updateAvailable: true,
+      latestVersion: '1.0.7',
+    });
 
     await runUpdateCommand();
 
-    // No success message from the update command itself.
-    expect(outputMocks.success).not.toHaveBeenCalled();
+    // The "up to date" success line uses the post-apply version (1.0.7), not
+    // the stale in-memory VERSION (1.0.6).
+    const successCalls = outputMocks.success.mock.calls;
+    expect(successCalls.length).toBeGreaterThan(0);
+    expect(JSON.stringify(successCalls)).toContain('1.0.7');
+    expect(JSON.stringify(successCalls)).not.toContain('1.0.6');
   });
 
   it('does not change behavior on --force (force still bypasses short-circuit)', async () => {
@@ -192,5 +232,6 @@ describe('handleUpdate short-circuit on appliedAtStartup', () => {
     // --force is the operator override; we do still run the check/download
     // flow even when an apply just happened.
     expect(updaterMocks.checkForUpdate).toHaveBeenCalled();
+    expect(updaterMocks.performUpdate).toHaveBeenCalled();
   });
 });
