@@ -6,7 +6,6 @@ import { isCooldownExpired } from '@rediacc/shared/update';
 import { t } from '../i18n/index.js';
 import {
   acquireUpdateLock,
-  cleanupOldBinary,
   getOldBinaryPath,
   getPlatformKey,
   isSEA,
@@ -273,7 +272,13 @@ async function prepareApply(): Promise<CliUpdateState | null> {
     return null;
   }
 
-  await cleanupOldBinary();
+  // Do NOT cleanupOldBinary() here — the .old file is the operator's only
+  // recovery path for `rdc update --rollback`. Both update paths
+  // (selfReplace in updater.ts + atomicBinarySwap below) already unlink the
+  // pre-existing .old before renaming the current binary in its place, so
+  // there is nothing to "reap" on every startup. Reaping here means: any
+  // intervening rdc invocation between an `rdc update` and `rdc update
+  // --rollback` silently destroys the rollback target.
   if (!state.pendingUpdate) return null;
 
   // Downgrade protection
@@ -332,11 +337,9 @@ async function handleSwapError(
  * SHA256 verification, atomically replaces the current binary.
  * Returns true if an update was applied.
  *
- * Short-circuits when the invocation is a rollback request. prepareApply()
- * unconditionally runs cleanupOldBinary() to reap stale .old files, but the
- * rollback handler *needs* the .old file to exist. Without this early exit,
- * `rdc update --rollback` always fails with "No previous version found"
- * because startup deletes the .old before the command handler can read it.
+ * Short-circuits on `--rollback` so the command handler can read a clean
+ * state without contending with a partial swap, but the .old file is now
+ * preserved across all invocations (prepareApply no longer reaps it).
  */
 export async function applyPendingUpdate(): Promise<boolean> {
   if (process.argv.includes('--rollback')) return false;
