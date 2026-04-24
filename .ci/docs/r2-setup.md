@@ -98,7 +98,7 @@ gh variable set CLOUDFLARE_ZONE_ID \
   --visibility selected --repos console
 ```
 
-Used by `.ci/scripts/deploy/cf-purge-urls.sh` (belt-and-suspenders cache purge after every upload in cd-dryrun / cd-v2 / promote-stable / ci.yml Validate Promotion). With the Cache Rule active the purge is a no-op, but kept so that if someone disables the Cache Rule we still evict stale entries.
+Used by `.ci/scripts/deploy/cf-purge-urls.sh` (belt-and-suspenders cache purge after every upload in cd-stage / cd-v2 / promote-stable / ci.yml Validate Promotion). With the Cache Rule active the purge is a no-op, but kept so that if someone disables the Cache Rule we still evict stale entries.
 
 ## 7. Verification
 

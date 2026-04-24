@@ -102,12 +102,14 @@ log_step "Preparing import with FK safety wrapper"
 
 # Step 4: Import into target database
 log_step "Importing into D1 database: $TARGET_DB"
+# BLOCKER: CONFIG_FLAG may be empty OR "--env=X" depending on cloneSource; word-splitting is intentional so wrangler receives no flag vs a single flag correctly
 # shellcheck disable=SC2086
 npx wrangler d1 execute "$TARGET_DB" --remote $CONFIG_FLAG --file="$TMPDIR/import.sql"
 log_info "Import complete"
 
 # Step 5: Verify FK integrity
 log_step "Verifying foreign key integrity"
+# BLOCKER: CONFIG_FLAG may be empty OR "--env=X"; word-splitting is intentional so wrangler receives no flag vs a single flag correctly
 # shellcheck disable=SC2086
 FK_RESULT=$(npx wrangler d1 execute "$TARGET_DB" --remote $CONFIG_FLAG --command="PRAGMA foreign_key_check" --json 2>/dev/null || true)
 FK_COUNT=$(echo "$FK_RESULT" | jq '.[0].results | length' 2>/dev/null || echo "0")

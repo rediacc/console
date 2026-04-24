@@ -1,37 +1,51 @@
 # Production dependency vulnerability allowlist
-# Only for upstream issues with no available fix.
-# Each line: advisory source ID (from npm audit --json)
-# Review periodically and remove when upstream publishes a fix.
+# Only for upstream issues with no available fix or legitimate blockers.
+# Each numeric line: advisory source ID (from npm audit --json).
+# Each group MUST have a "# BLOCKER: <reason>" line in its comment block;
+# the audit script (.ci/scripts/security/audit.sh) enforces this strictly.
 
-# fast-xml-parser <=5.5.5 (used by @astrojs/rss build tool, not runtime-exposed)
-# @astrojs/rss pins exact version 5.4.1, no override possible
+# fast-xml-parser entity/numeric expansion family
+# (@astrojs/rss pins fast-xml-parser exactly at 5.4.1, no override possible)
 # Tracking: https://github.com/nicbarker/fast-xml-parser/issues
+# BLOCKER: build-time only via @astrojs/rss RSS generator; no runtime untrusted XML parse
 1114772
-# fast-xml-parser entity expansion bypass (same root cause, extended range <=5.5.6)
 1114952
-# fast-xml-parser numeric entity expansion bypass (incomplete fix for CVE-2026-26278, <=5.5.5)
 1115134
-# flatted prototype pollution via parse() (devDep via @vitest/ui, not runtime-exposed)
+
+# flatted prototype pollution via parse()
+# BLOCKER: transitive via @vitest/ui devDep; not reachable from runtime code paths
 1114934
-# h3 SSE event injection via unsanitized carriage return (transitive dep, no fix available)
-1115114
-# h3 double decoding path traversal bypass in serveStatic (transitive dep, no fix available)
-1115117
-# flatted prototype pollution via parse() (devDep via @vitest/ui, supersedes 1114934)
 1115357
-# fast-xml-parser entity expansion limits bypassed when set to zero (transitive dep, no fix)
+
+# h3 SSE event injection + double-decoding path traversal bypass in serveStatic
+# BLOCKER: transitive dep via astro/nitro; no upstream fix published yet
+1115114
+1115117
+
+# fast-xml-parser entity expansion limits bypass when set to zero
+# BLOCKER: same @astrojs/rss build-time chain as 1114772 family; no runtime exposure
 1115359
-# yaml stack overflow via deeply nested collections (transitive dep, no fix available)
+
+# yaml stack overflow via deeply nested collections
+# BLOCKER: transitive dep via astro; no upstream fix published yet
 1115369
-# picomatch ReDoS via extglob quantifiers (transitive dep, no fix available)
+
+# picomatch ReDoS via extglob quantifiers
+# BLOCKER: transitive dep (micromatch chain); no upstream fix published yet
 1115382
 1115384
-# smol-toml DoS via thousands of consecutive commented lines (transitive dep, no fix)
+
+# smol-toml DoS via thousands of consecutive commented lines
+# BLOCKER: transitive dep via astro toolchain; no upstream fix published yet
 1115393
-# picomatch method injection in POSIX character classes (transitive dep, no fix available)
+
+# picomatch method injection in POSIX character classes
+# BLOCKER: transitive dep; no upstream fix published yet
 1115394
 1115396
-# picomatch method injection + ReDoS (superseded advisories, same root cause, no fix)
+
+# picomatch method injection + ReDoS (superseded advisories, same root cause)
+# BLOCKER: transitive dep; no upstream fix published yet (waiting on micromatch bump)
 1115490
 1115492
 1115493
@@ -40,105 +54,24 @@
 1115551
 1115552
 1115554
-# path-to-regexp backtracking regex (transitive dep via @ant-design/pro-layout, no fix in v2.x)
+
+# path-to-regexp backtracking regex family
+# (GHSA-9wv6-86v2-598j for 1101848; GHSA-j3q9-mxjg-w52f + GHSA-27v5-c462-wpq7 for 1115573/1115582)
+# @ant-design/pro-layout 7.22.7 pins path-to-regexp exactly at 8.2.0 and a
+# workspace-side npm override does not propagate (verified). The older 2.0-3.2
+# chain (1101848) is also via the same pro-layout pin.
+# BLOCKER: @ant-design/pro-layout pins path-to-regexp exactly; build-time router compile only, input is operator-controlled
 1101848
-# path-to-regexp ReDoS via sequential optional groups/wildcards (transitive dep, no fix)
 1115573
 1115582
-# xmldom CDATA injection (transitive dep via electron-builder/plist and marp/mathjax, no fix)
+
+# @xmldom/xmldom 0.8.x: uncontrolled recursion DoS + XML injection
+# (GHSA-2v35-w6hq-6mfw, GHSA-f6ww-3ggp-fr8h, GHSA-x6wf-f3px-wcqx, GHSA-j759-j44w-7fr8)
+# Transitive via electron-builder > app-builder-lib > plist > @xmldom/xmldom@0.8.12
+# AND marp-core > mathjax-full > speech-rule-engine.
+# BLOCKER: electron-builder 26.x pins plist > xmldom 0.8.x; major electron migration required; build-time only, no untrusted XML parse
 1115764
 1115765
-# lodash / lodash-es Code Injection via _.template imports key names (transitive prod dep, no fix)
-1115805
-1115806
-# lodash / lodash-es Prototype Pollution via array path bypass in _.unset/_.omit (no fix)
-1115809
-1115810
-# vite path traversal in optimized deps .map handling (dev tool, not runtime-exposed)
-1116005
-1116006
-1116123
-1116124
-# vite server.fs.deny bypass with queries (dev tool, not runtime-exposed)
-1116008
-1116126
-# vite arbitrary file read via dev server WebSocket (dev tool, not runtime-exposed)
-1116010
-1116011
-1116099
-1116100
-# axios NO_PROXY hostname normalization bypass leading to SSRF (transitive dep, no fix available)
-1116365
-# axios cloud metadata exfiltration via header injection chain (transitive dep, no fix available)
-1116425
-1116473
-# follow-redirects leaks Custom Authentication Headers to Cross-Domain Redirect Targets
-# (GHSA-r4q5-vmmm-2653, <=1.15.11; 1.15.11 is latest, no upstream fix yet; transitive
-# via axios in packages/cli/, not runtime-exposed for CLI-only auth flows)
-1116560
-
-# hono Improperly Handles JSX Attribute Names Allows HTML Injection in hono/jsx SSR
-# (GHSA-458j-xx4x-4375, <4.12.14; transitive via @modelcontextprotocol/sdk's
-# server-side hono router, not used for SSR in our build path. Upgrade is
-# blocked by @hono/node-server pinning hono ^4 — npm refuses to override the
-# pinned 4.12.12 transitive without breaking the lockfile in CI; revisit when
-# @modelcontextprotocol/sdk bumps its hono dep)
-1116669
-
-# path-to-regexp ReDoS via sequential optional groups / multiple wildcards
-# (GHSA-j3q9-mxjg-w52f and GHSA-27v5-c462-wpq7, 8.0-8.3; @ant-design/pro-layout
-# 7.22.7 pins path-to-regexp to exactly 8.2.0 and a workspace-side npm override
-# does not propagate (verified). Build-time router compile only — bundled
-# into the React app where backtracking pathological input is operator-controlled.
-# Revisit when pro-layout bumps the pin.)
-1115573
-1115582
-# Transitive cousin (path-to-regexp 2.0-3.2 chain via the same pro-layout pin)
-1101848
-
-# protobufjs arbitrary code execution via malicious decode input
-# (GHSA-xq3m-2v4x-88gg and sibling advisory for protobufjs 8.0.0).
-# 1116756 / 1116832: protobufjs <7.5.5 — transitive via @grpc/proto-loader
-#   0.8.0 (pulled in by @opentelemetry/exporter-logs-otlp-grpc) which pins
-#   protobufjs ^7.5.3 and is not yet bumped to 7.5.5 upstream.
-# 1116757 / 1116833: protobufjs 8.0.0 — transitive via
-#   @opentelemetry/otlp-transformer 0.211.x (pulled in by
-#   @opentelemetry/sdk-node 0.211.x, which is deliberately pinned in
-#   .syncpackrc.json at ^0.211.0 — the 0.215.0 OTel bump that would take
-#   us to protobufjs 8.0.1 is gated by the pin).
-# Both advisories are not reachable at runtime: the OTLP exporters only
-# serialize our own telemetry to our own collector endpoint, there is no
-# untrusted protobuf decode path. Revisit either when @grpc/proto-loader
-# ships 7.5.5 (removes 1116756 / 1116832) or when the syncpack pin is
-# lifted to 0.215.x and the tree moves to protobufjs 8.0.1 (removes
-# 1116757 / 1116833).
-1116756
-1116757
-1116832
-1116833
-
-# astro <6.1.6 XSS in define:vars via incomplete </script> sanitization
-# (GHSA-j687-52p2-xcff). Fix requires Astro 6.x (semver-major), which
-# is blocked in .deps-upgrade-blocklist per the wider migration plan.
-# Not exploitable here: every define:vars site in packages/www/src uses
-# internally-derived values (currentLang, pathWithoutLang, sitemap data)
-# -- no untrusted input reaches the escape path. Revisit when astro 6
-# unblocks.
-1116896
-
-# fast-xml-parser XMLBuilder XML Comment / CDATA injection via unescaped
-# delimiters (GHSA-gh4j-gqv2-49f6, <=5.5.x). Same transitive chain as
-# 1114772/1114952/1115134 above (@astrojs/rss build tool, no runtime exposure).
-1116957
-
-# @xmldom/xmldom 0.8.x: uncontrolled recursion DoS in serialization,
-# XML injection via unvalidated DocumentType / processing instruction /
-# comment serialization (GHSA-2v35-w6hq-6mfw, GHSA-f6ww-3ggp-fr8h,
-# GHSA-x6wf-f3px-wcqx, GHSA-j759-j44w-7fr8). Transitive via
-# electron-builder > app-builder-lib > plist > @xmldom/xmldom@0.8.12 and
-# marp-core > mathjax-full > speech-rule-engine. electron-builder 26.x
-# pins plist which pins xmldom 0.8.x; bumping is blocked (major electron
-# migration). Build-time only, never parses untrusted XML.
 1116959
 1116960
 1116962
@@ -147,3 +80,67 @@
 1116966
 1116968
 1116969
+
+# lodash / lodash-es Code Injection via _.template imports key names
+# BLOCKER: transitive prod dep; no upstream fix published yet (lodash effectively unmaintained)
+1115805
+1115806
+
+# lodash / lodash-es Prototype Pollution via array path bypass in _.unset/_.omit
+# BLOCKER: transitive prod dep; no upstream fix published yet
+1115809
+1115810
+
+# vite path traversal in optimized deps .map handling
+# BLOCKER: dev tool only; not runtime-exposed (vite dev server is never shipped)
+1116005
+1116006
+1116123
+1116124
+
+# vite server.fs.deny bypass with queries
+# BLOCKER: dev tool only; not runtime-exposed
+1116008
+1116126
+
+# vite arbitrary file read via dev server WebSocket
+# BLOCKER: dev tool only; not runtime-exposed
+1116010
+1116011
+1116099
+1116100
+
+# axios NO_PROXY hostname normalization bypass leading to SSRF
+# BLOCKER: transitive dep (packages/cli axios); no upstream fix published yet, not reachable in CLI auth flows
+1116365
+
+# axios cloud metadata exfiltration via header injection chain
+# BLOCKER: transitive dep (packages/cli axios); no upstream fix published yet, not reachable in CLI auth flows
+1116425
+1116473
+
+# hono Improperly Handles JSX Attribute Names Allows HTML Injection in hono/jsx SSR
+# (GHSA-458j-xx4x-4375, <4.12.14; transitive via @modelcontextprotocol/sdk)
+# BLOCKER: @hono/node-server pins hono ^4; not used for SSR in our build path; revisit when @modelcontextprotocol/sdk bumps hono
+1116669
+
+# protobufjs arbitrary code execution via malicious decode input
+# (GHSA-xq3m-2v4x-88gg and sibling for protobufjs 8.0.0)
+# 1116756/1116832: <7.5.5 via @grpc/proto-loader 0.8.0 (pinned at ^7.5.3 upstream).
+# 1116757/1116833: 8.0.0 via @opentelemetry/otlp-transformer 0.211.x, deliberately
+# pinned in .syncpackrc.json at ^0.211.0 (bumping to 0.215.x would take the fix).
+# BLOCKER: OTLP exporters only serialize our own telemetry to our own collector; no untrusted protobuf decode path; OTel pin is deliberate
+1116756
+1116757
+1116832
+1116833
+
+# astro <6.1.6 XSS in define:vars via incomplete </script> sanitization
+# (GHSA-j687-52p2-xcff; fix requires Astro 6.x major)
+# BLOCKER: astro 6 major blocked in .deps-upgrade-blocklist; all define:vars sites use internally-derived values (currentLang, pathWithoutLang, sitemap data), no untrusted input reaches escape path
+1116896
+
+# fast-xml-parser XMLBuilder XML Comment / CDATA injection via unescaped delimiters
+# (GHSA-gh4j-gqv2-49f6, <=5.5.x; same chain as 1114772 family)
+# BLOCKER: build-time only via @astrojs/rss; no runtime exposure
+1116957

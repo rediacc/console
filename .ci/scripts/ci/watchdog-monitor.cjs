@@ -2,7 +2,9 @@
 // Polls every 15 seconds, exits when the workflow completes or a failure requires action.
 //
 // On first failure: AI classifies logs as transient or code-change.
-//   - Transient: dispatches rerun-failed.yml, keeps monitoring (other jobs continue).
+//   - Transient: dispatches rerun-failed.yml AND EXITS. rerun-failed.yml
+//     waits for the original run to complete, then reruns every failed job
+//     from that attempt -- no need for the watchdog to keep monitoring.
 //   - Code-change: force-cancels immediately (no point waiting for other jobs).
 //   - AI unavailable: falls back to retry (same as transient).
 // On attempt 2+: force-cancels without retry.
@@ -45,8 +47,6 @@ module.exports = async ({ github, context, core }) => {
   // Jobs that should not trigger auto-retry (failures are never transient)
   const noRetryPatterns = process.env.WATCHDOG_NO_RETRY_PATTERNS.split(',').map(s => s.trim());
 
-  // Track whether a retry has been dispatched this run
-  let rerunDispatched = false;
   // Track jobs already handled to avoid re-logging the same failure every poll
   const handledJobs = new Set();
 
@@ -348,22 +348,11 @@ module.exports = async ({ github, context, core }) => {
         await forceCancel(failureMsg);
         return;
       }
-      // 5. Already dispatched retry -- still classify new failures
-      // If a subsequent failure is code-change, force-cancel (retry won't help)
-      else if (rerunDispatched) {
-        console.log(`Additional failure: "${job.name}" (retry already dispatched) -- classifying...`);
-        const ai = await classifyFailure(job);
-        if (ai.classification === 'code-change' && ai.confidence >= AI_CONFIDENCE_THRESHOLD) {
-          console.log(`[AI] "${job.name}" -> code-change (${ai.confidence}): ${ai.reason}`);
-          console.log('Code-change detected after retry dispatched -- force-cancelling');
-          await forceCancel(failureMsg);
-          return;
-        }
-        console.log(`[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`);
-        core.setFailed(failureMsg);
-        // DON'T return -- keep monitoring
-      }
-      // 6. First failure: AI classifies
+      // 5. First failure: AI classifies.
+      // Transient -> dispatch rerun and exit. rerun-failed.yml waits for the
+      // original run to complete and reruns every failed job from that attempt,
+      // so the watchdog does not need to stay up monitoring for more failures.
+      // Code-change -> force-cancel now, retry would be pointless.
       else {
         const ai = await classifyFailure(job);
         if (ai.classification === 'code-change' && ai.confidence >= AI_CONFIDENCE_THRESHOLD) {
@@ -372,11 +361,10 @@ module.exports = async ({ github, context, core }) => {
           return;
         } else {
           console.log(`[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`);
-          console.log('Dispatching auto-retry, continuing to monitor...');
+          console.log('Dispatching auto-retry and exiting watchdog (rerun-failed.yml waits for run completion and picks up every failed job).');
           await dispatchRerun();
-          rerunDispatched = true;
           core.setFailed(failureMsg);
-          // DON'T return -- keep monitoring other jobs
+          return;
         }
       }
     }

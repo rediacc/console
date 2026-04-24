@@ -21,16 +21,31 @@ source "$SCRIPT_DIR/../lib/common.sh"
 
 REPO_ROOT="$(get_repo_root)"
 
-# Load blocklist: one module path per line, strip comments and whitespace
+# Load blocklist via shared BLOCKER-aware parser; fail loudly if any entry
+# lacks a substantive "# BLOCKER: <reason>" annotation.
+# shellcheck source=../lib/blocker-validator.sh
+# BLOCKER: shared BLOCKER parser + quality validator used by every suppression gate
+source "$SCRIPT_DIR/../lib/blocker-validator.sh"
+# shellcheck source=../lib/age-check.sh
+# BLOCKER: age-based rot detection for blocklist entries; forces yearly re-review
+source "$SCRIPT_DIR/../lib/age-check.sh"
+
 BLOCKLIST_FILE="$REPO_ROOT/.go-deps-upgrade-blocklist"
-declare -A BLOCKED_MODULES=()
+declare -A BLOCKED_MODULES=() BLOCKED_MODULE_REASONS=()
 if [[ -f "$BLOCKLIST_FILE" ]]; then
-    while IFS= read -r line; do
-        line="${line%%#*}"
-        line="${line//[[:space:]]/}"
-        [[ -z "$line" ]] && continue
-        BLOCKED_MODULES["$line"]=1
-    done <"$BLOCKLIST_FILE"
+    parse_blockered_list "$BLOCKLIST_FILE" BLOCKED_MODULES BLOCKED_MODULE_REASONS
+    if ! verify_all_blockers "$BLOCKLIST_FILE" BLOCKED_MODULE_REASONS; then
+        log_error "Go deps blocklist entries must include quality '# BLOCKER: <reason>' — strict gate enforced"
+        exit 1
+    fi
+    age_fail=0
+    for mod in "${!BLOCKED_MODULES[@]}"; do
+        check_entry_age "$BLOCKLIST_FILE" "$mod" "$mod" "go-deps-blocklist entry" || age_fail=1
+    done
+    if [[ $age_fail -ne 0 ]]; then
+        log_error "Go deps blocklist entries older than $AGE_FAIL_DAYS days must be re-reviewed"
+        exit 1
+    fi
 fi
 
 # Determine major version of a semver string (handles v1.2.3, v1+incompatible, etc.)

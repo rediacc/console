@@ -55,11 +55,11 @@ jobs:
     name: CLI
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -77,7 +77,7 @@ jobs:
           cp packages/cli/dist/cli-bundle.cjs bundle/
           cp packages/cli/package.json bundle/
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: cli-bundle${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: bundle/
@@ -97,7 +97,7 @@ jobs:
           CLI_PKG=$(ls rediacc-cli-*.tgz 2>/dev/null | head -1)
           [ -n "$CLI_PKG" ] && cp "$CLI_PKG" rediacc-cli-latest.tgz
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: cli-npm${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: /tmp/cli-npm/
@@ -107,8 +107,8 @@ jobs:
     name: Web
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -118,7 +118,7 @@ jobs:
         env:
           VITE_APP_VERSION: ${{ inputs.web_tag || 'dev' }}
           VITE_BASE_PATH: /console/
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: build-web${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: packages/web/dist/
@@ -128,8 +128,8 @@ jobs:
     name: WWW
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -138,7 +138,7 @@ jobs:
       - run: .ci/scripts/build/build-www.sh
         env:
           APP_VERSION: ${{ inputs.next_version || 'dev' }}
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: build-www${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: packages/www/dist/
@@ -149,17 +149,17 @@ jobs:
     runs-on: ubuntu-slim
     if: "!inputs.test_images_only"
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/build/build-json.sh
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: build-json${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: packages/json/dist/
@@ -171,7 +171,7 @@ jobs:
     timeout-minutes: 45
     if: "!inputs.test_images_only"
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
@@ -182,7 +182,7 @@ jobs:
       - name: Validate plugin images
         run: .ci/scripts/build/build-plugins.sh --dry-run
 
-      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -239,39 +239,39 @@ jobs:
       matrix:
         variant: [cloud, onprem]
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: build-web${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: web-assets/
 
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: build-www${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: www-assets/
 
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: cli-npm${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: cli-npm/
 
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: renet-binaries-${{ github.sha }}
           path: binaries/
 
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -285,7 +285,7 @@ jobs:
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -331,39 +331,39 @@ jobs:
       matrix:
         variant: [cloud, onprem]
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: build-web${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: web-assets/
 
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: build-www${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: www-assets/
 
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: cli-npm${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: cli-npm/
 
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: renet-binaries-${{ github.sha }}
           path: binaries/
 
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -377,7 +377,7 @@ jobs:
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -426,11 +426,11 @@ jobs:
       matrix:
         variant: [cloud, onprem]
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -470,16 +470,16 @@ jobs:
     needs: [build-cli]
     if: "!inputs.test_images_only && inputs.cli_exists != 'true'"
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: cli-bundle${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: bundle/
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -542,14 +542,14 @@ jobs:
           --health-retries 10
           --health-start-period 60s
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
@@ -558,7 +558,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
 
-      - uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309  # v5
+      - uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7  # v5.2.0
         with:
           dotnet-version: 9.0.x
 
@@ -581,7 +581,7 @@ jobs:
           GITHUB_BASE_REF: ${{ github.base_ref }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: build-middleware-coverage-amd64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
@@ -632,7 +632,7 @@ jobs:
             cp -r ./* ../publish-final/
           fi
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: inputs.api_exists != 'true'
         with:
           name: middleware-publish-amd64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
@@ -647,14 +647,14 @@ jobs:
     timeout-minutes: 25
     if: "!inputs.test_images_only"
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
@@ -663,7 +663,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
 
-      - uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309  # v5
+      - uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7  # v5.2.0
         with:
           dotnet-version: 9.0.x
 
@@ -714,7 +714,7 @@ jobs:
             cp -r ./* ../publish-final/
           fi
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: inputs.api_exists != 'true'
         with:
           name: middleware-publish-arm64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
@@ -733,24 +733,24 @@ jobs:
       needs.build-middleware-amd64.result == 'success' &&
       (inputs.test_images_only || needs.build-middleware-arm64.result == 'success')
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: middleware-publish-amd64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: publish/amd64/
 
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         if: "!inputs.test_images_only"
         with:
           name: middleware-publish-arm64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
@@ -758,7 +758,7 @@ jobs:
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -814,32 +814,32 @@ jobs:
     timeout-minutes: 15
     if: inputs.bridge_exists != 'true'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
       # Download full renet binaries (with embedded CRIU/rsync) from unified build
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: renet-binaries-${{ github.sha }}
           path: binaries/
 
       # Download native CRIU/rsync binaries (also from unified build)
       # These are copied to /opt/ in Docker image for remote machine distribution
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: native-amd64-${{ github.sha }}
           path: binaries/
 
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: native-arm64-${{ github.sha }}
           path: binaries/
@@ -850,7 +850,7 @@ jobs:
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -901,11 +901,11 @@ jobs:
     timeout-minutes: 30
     if: "!inputs.test_images_only"
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -918,7 +918,7 @@ jobs:
           echo "date_tag=${DATE_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294  # v7
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f  # v7.1.0
         with:
           context: .devcontainer/
           file: .devcontainer/Dockerfile
@@ -934,11 +934,11 @@ jobs:
     timeout-minutes: 45
     if: "!inputs.test_images_only"
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -951,7 +951,7 @@ jobs:
           echo "date_tag=${DATE_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294  # v7
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f  # v7.1.0
         with:
           context: .devcontainer/
           file: .devcontainer/Dockerfile
@@ -969,7 +969,7 @@ jobs:
     steps:
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

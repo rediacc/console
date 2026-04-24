@@ -296,3 +296,60 @@ cd /path/to/console && git add -A && git commit -m "fix: ..." && git push
 - **Release workflow** (`cd-v2.yml`): Uses **real org secrets** from GitHub for production deployment.
 - Generated secrets are masked via `::add-mask::` in `ci-env.sh`.
 
+## Suppression mechanisms and the BLOCKER convention
+
+Every escape hatch in the repo (allowlists, blocklists, overrides, ignore lists) must carry a substantive `BLOCKER:` comment. CI enforces the presence and quality of each BLOCKER through a shared validator; this is the single escape mechanism — no lazy `# no fix` or `# tbd` suppressions.
+
+### Current sites
+
+| Mechanism | File | Reader |
+|---|---|---|
+| Prod npm audit allowlist | `.audit-prod-allowlist` | `.ci/scripts/security/audit.sh` |
+| Dev npm audit allowlist | `.audit-allowlist` | same |
+| npm dep upgrade blocklist | `.deps-upgrade-blocklist` | `scripts/check-deps.ts` |
+| Go dep upgrade blocklist | `.go-deps-upgrade-blocklist` | `.ci/scripts/quality/check-go-deps.sh` |
+| `package.json` overrides | `package.json`: `overrides` + `_overridesReasons` | `scripts/check-overrides-reasons.ts` |
+
+### Format
+
+**Comment-friendly files** (shell / conf / txt):
+```
+# BLOCKER: <reason explaining who pins what / why fix cannot be taken / when to revisit>
+<entry>
+```
+A blank line resets the tracked BLOCKER, so a single BLOCKER covers a grouped list until the next blank line.
+
+**Inline** (`.deps-upgrade-blocklist` / `.go-deps-upgrade-blocklist`):
+```
+package-name  # BLOCKER: <reason>
+```
+
+**JSON files** (no comment support) use a parallel `_reasons` object with identical keys:
+```jsonc
+"overrides":         { "follow-redirects": "^1.16.0" },
+"_overridesReasons": { "follow-redirects": "BLOCKER: axios pins <1.16.0; 1.16.0 fixes GHSA-r4q5-vmmm-2653" }
+```
+
+### Quality rules
+
+A BLOCKER reason must be at least 30 characters (after normalization) and must not match any phrase in the banned-phrase list (`no fix`, `tbd`, `todo`, `ok`, `ack`, `later`, `will fix`, `dev only`, etc.).
+
+Full banned list + implementation: `.ci/scripts/lib/blocker-validator.sh` (bash) / `scripts/lib/blocker-validator.ts` (TypeScript). Keep the two in sync when modifying.
+
+### Adding / extending
+
+- **New entry to an existing list**: prepend a `# BLOCKER: <reason>` line. The validator tells you exactly what to add when the gate fails.
+- **New suppression mechanism**: (a) parse the list via the shared library's `parse_blockered_list` / `parseBlockeredList`; (b) validate via `verify_all_blockers` / `verifyAllBlockers`; (c) add a gate test under `.ci/scripts/test/gates/test-<mechanism>.sh` modelled on `test-overrides-reasons.sh`.
+
+### Age policy (planned, not yet enforced)
+
+The shared library `.ci/scripts/lib/age-check.sh` provides `check_entry_age` which warns at 180 days and fails at 365 days. Not yet wired into every reader — planned for a follow-up.
+
+### Running the gate tests locally
+
+```bash
+npm run test:quality-gates   # runs every .ci/scripts/test/gates/test-*.sh
+npm run check:ci-security-audit       # the BLOCKER-gated npm audit
+npm run check:ci-overrides-reasons    # the BLOCKER-gated package.json overrides
+```
+

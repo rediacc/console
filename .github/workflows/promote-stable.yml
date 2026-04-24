@@ -26,7 +26,7 @@ jobs:
       promoted: ${{ steps.result.outputs.promoted }}
       version: ${{ steps.edge.outputs.version }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Check edge manifest
         id: edge
@@ -253,7 +253,7 @@ jobs:
 
       - name: Login to GHCR
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -359,7 +359,7 @@ jobs:
     if: needs.promote.outputs.promoted == 'true'
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           sparse-checkout: regions.json
           sparse-checkout-cone-mode: false

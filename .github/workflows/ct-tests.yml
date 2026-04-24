@@ -61,24 +61,24 @@ jobs:
     outputs:
       image-name: ${{ steps.build.outputs.image-name }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
         with:
           go-version: 'stable'
           cache: true
@@ -126,7 +126,7 @@ jobs:
           echo "Built image: $IMAGE_NAME ($(du -h "$IMAGE_PATH" | cut -f1))"
 
       - name: Upload VM Image Artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: vm-disk-image
           path: |
@@ -148,7 +148,7 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           sparse-checkout: .ci/scripts
       - name: Wait for tunnel-url artifact
@@ -174,24 +174,24 @@ jobs:
       WEB_TAG: ${{ inputs.web_tag }}
     steps:
       - name: Checkout Console Repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
         with:
           go-version: 'stable'
           cache: true
@@ -289,7 +289,7 @@ jobs:
       - name: Upload Cloudflare Tunnel URL
         if: steps.tunnel.outputs.tunnel-url != ''
         run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: steps.tunnel.outputs.tunnel-url != ''
         with:
           name: tunnel-url-attempt-${{ github.run_attempt }}
@@ -302,7 +302,7 @@ jobs:
         run: |
           mkdir -p ${{ runner.temp }}/pinggy-artifact
           echo "${{ steps.pinggy-tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/pinggy-artifact/tunnel-url.txt
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: steps.pinggy-tunnel.outputs.tunnel-url != ''
         with:
           name: tunnel-url-pinggy-attempt-${{ github.run_attempt }}
@@ -311,7 +311,7 @@ jobs:
           overwrite: true
 
       # Bridge tests
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -330,7 +330,7 @@ jobs:
 
       # Login to Docker Hub to avoid rate limiting
       - name: Login to Docker Hub
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -341,7 +341,7 @@ jobs:
       # Download pre-built VM image (built in build-disk-image job)
       - name: Download VM Image Artifact
         if: inputs.provision_vms
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: vm-disk-image
           path: ${{ runner.temp }}/vm-image
@@ -382,7 +382,7 @@ jobs:
 
       - name: Upload Backend Logs
         if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: infra-backend-logs-${{ github.sha }}
           path: ${{ runner.temp }}/backend-logs/
@@ -409,15 +409,15 @@ jobs:
     name: Unit
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/setup/build-packages.sh
       - run: .ci/scripts/test/run-unit.sh --coverage
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: test-unit-coverage-${{ github.sha }}
@@ -432,8 +432,8 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -450,7 +450,7 @@ jobs:
         run: npx playwright test --config tests/playwright.config.ts tests/tests/09-vscode/detection.test.ts
         env:
           PLAYWRIGHT_SKIP_GLOBAL_SETUP: 'true'
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: failure()
         with:
           name: test-vscode-${{ matrix.os }}-${{ github.sha }}
@@ -476,8 +476,8 @@ jobs:
       REDIACC_TEST_EMAIL: admin@rediacc.io
       REDIACC_TEST_PASSWORD: admin
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -520,14 +520,14 @@ jobs:
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "cli-${{ matrix.platform }}" --status ${{ job.status }}
         shell: bash
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: test-complete-cli-${{ matrix.platform }}-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/complete.txt
           retention-days: 3
           overwrite: true
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: test-cli-report-${{ matrix.platform }}-${{ github.sha }}
@@ -540,8 +540,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -578,14 +578,14 @@ jobs:
       - name: Create Completion Signal
         if: always()
         run: .ci/scripts/signal/create-complete.sh --name "e2e-chromium" --status ${{ job.status }}
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: test-complete-e2e-chromium-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/complete.txt
           retention-days: 3
           overwrite: true
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: test-e2e-report-${{ github.sha }}
@@ -593,7 +593,7 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
       # Upload e2e test videos for documentation embedding
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: e2e-videos-${{ github.sha }}
@@ -628,8 +628,8 @@ jobs:
             project: electron-windows-arm64
             install: npx playwright install chromium
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -686,7 +686,7 @@ jobs:
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "e2e-${{ matrix.project }}" --status ${{ job.status }}
         shell: bash
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: test-complete-e2e-${{ matrix.project }}-attempt-${{ github.run_attempt }}
@@ -722,36 +722,36 @@ jobs:
       VM_CEPH_NODES: ''
       VM_IMAGE: ${{ matrix.os-image }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
         with:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -810,7 +810,7 @@ jobs:
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "bridge-workers-${{ matrix.os-image }}" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: test-bridge-workers-${{ matrix.os-image }}-${{ github.sha }}
@@ -833,36 +833,36 @@ jobs:
       VM_CEPH_NODES: '21 22 23'
       CEPH_MODE: 'true'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
         with:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -912,7 +912,7 @@ jobs:
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "bridge-ceph" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: test-bridge-ceph-${{ github.sha }}
@@ -932,36 +932,36 @@ jobs:
       VM_NET_BASE: '192.168.111'
       REDIACC_SKIP_MACHINE_ACTIVATION: '1'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
         with:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -1050,7 +1050,7 @@ jobs:
         run: .ci/scripts/test/run-cli-local.sh
 
       # Artifacts
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: test-cli-local-${{ github.sha }}
@@ -1068,29 +1068,29 @@ jobs:
       VM_WORKERS: ''
       VM_CEPH_NODES: '21 22 23'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
         with:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -1183,7 +1183,7 @@ jobs:
         run: .ci/scripts/test/run-cli-local.sh -- tests/tests/08-e2e/09-ceph-operations.test.ts
 
       # Artifacts
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: test-cli-local-ceph-${{ github.sha }}
@@ -1196,19 +1196,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
         with:
           go-version: 'stable'
           cache: true
@@ -1216,7 +1216,7 @@ jobs:
 
       # Login to Docker Hub to avoid rate limiting
       - name: Login to Docker Hub
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -1227,7 +1227,7 @@ jobs:
       - name: Run renet tests
         run: .ci/scripts/private/run-renet.sh test
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: test-renet-coverage-${{ github.sha }}
@@ -1235,7 +1235,7 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: test-renet-results-${{ github.sha }}
@@ -1253,7 +1253,7 @@ jobs:
       - name: Run integration tests
         run: sudo .ci/scripts/private/renet-integration.sh --no-cleanup
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: test-renet-integration-${{ github.sha }}
@@ -1270,20 +1270,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       # Login to Docker Hub to avoid rate limiting
       - name: Login to Docker Hub
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -1310,26 +1310,26 @@ jobs:
       VM_CEPH_NODES: ''
       VM_BRIDGE: ''
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       # Login to Docker Hub to avoid rate limiting
       - name: Login to Docker Hub
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -1337,7 +1337,7 @@ jobs:
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
 
       # Build renet for VM provisioning
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
         with:
           go-version: 'stable'
           cache: true
@@ -1423,18 +1423,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
+          client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -1459,7 +1459,7 @@ jobs:
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
           STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
       - name: Upload E2E report
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: failure()
         with:
           name: account-e2e-report-${{ github.sha }}

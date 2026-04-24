@@ -1,0 +1,11 @@
+{
+  "$comment": "Per-versionGroup BLOCKER reasons for .syncpackrc.json. Keys match the `label` field exactly. Enforced by scripts/check-syncpack-reasons.ts. Lives in a sidecar because syncpack's config schema rejects unknown fields.",
+  "Workspace dependencies should use wildcard": "BLOCKER: cross-workspace @rediacc/* deps must resolve to the local workspace copy via '*'; any fixed version would break the workspace graph",
+  "Pin @types/node to latest": "BLOCKER: @types/node major must match the Node engine (22.x); v25+ targets Node 25 APIs we do not ship and would introduce unused type surface",
+  "Pin OpenTelemetry packages to compatible versions": "BLOCKER: the OTel exporter + instrumentation chain must move in lockstep with the SDK; drift between 0.211.x and 0.215.x causes runtime incompatibility in the browser auto-instrumentation path (see audit allowlist BLOCKER for protobufjs 1116832/1116833)",
+  "Pin OpenTelemetry sdk-node for CLI": "BLOCKER: sdk-node version must match the exporter/instrumentation 0.211 pin; 0.215+ would force protobufjs 8.0.x which is not yet accepted by @grpc/proto-loader in our tree",
+  "Pin OpenTelemetry resources to compatible version": "BLOCKER: @opentelemetry/resources 2.5.x is the last line that pairs cleanly with the 0.211 sdk-node; moving to 2.6+ requires coordinated OTel bump that is gated by the protobufjs audit BLOCKER",
+  "Pin i18next to web version": "BLOCKER: packages/web pins i18next ^25.7.2; other workspaces must follow or react-i18next peer-dep resolution fragments into multiple copies and keys stop resolving",
+  "Pin vite-tsconfig-paths to latest": "BLOCKER: vite-tsconfig-paths 6.0.x is required for Vite 6 compatibility; older 5.x silently breaks path alias resolution at build time",
+  "Ensure consistent dependency versions across packages": "BLOCKER: sameRange policy for prod+dev deps is a global consistency rule, not a pin; ensures cross-workspace ranges never diverge (no per-dep reason applies)"
+}

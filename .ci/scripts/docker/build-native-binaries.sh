@@ -132,7 +132,7 @@ build_criu() {
 
     local build_dir
     build_dir=$(mktemp -d)
-    # We intentionally expand $build_dir now to capture the temp directory path
+    # BLOCKER: expanding $build_dir now captures the specific temp-dir path into the trap handler at trap-set time; deferred expansion would read a different (or unset) value when the trap eventually fires
     # shellcheck disable=SC2064
     trap "rm -rf '$build_dir'" EXIT
 
@@ -183,7 +183,7 @@ build_rsync() {
 
     local build_dir
     build_dir=$(mktemp -d)
-    # We intentionally expand $build_dir now to capture the temp directory path
+    # BLOCKER: expanding $build_dir now captures the specific temp-dir path into the trap handler at trap-set time; deferred expansion would read a different (or unset) value when the trap eventually fires
     # shellcheck disable=SC2064
     trap "rm -rf '$build_dir'" EXIT
 
@@ -210,7 +210,7 @@ build_rsync() {
         "https://download.samba.org/pub/rsync/rsync-${RSYNC_VERSION}.tar.gz"
     tar -xzf "rsync-${RSYNC_VERSION}.tar.gz"
     retry_with_backoff 3 5 curl -fsSL -o security_fix.patch \
-        "https://www.linuxfromscratch.org/patches/blfs/svn/rsync-3.4.1-security_fix-1.patch"
+        "https://www.linuxfromscratch.org/patches/blfs/svn/rsync-3.4.1-security_fix-2.patch"
 
     cd "rsync-${RSYNC_VERSION}"
     patch -Np1 -i ../security_fix.patch
@@ -239,7 +239,7 @@ build_rsync_cross() {
 
     local build_dir
     build_dir=$(mktemp -d)
-    # We intentionally expand $build_dir now to capture the temp directory path
+    # BLOCKER: expanding $build_dir now captures the specific temp-dir path into the trap handler at trap-set time; deferred expansion would read a different (or unset) value when the trap eventually fires
     # shellcheck disable=SC2064
     trap "rm -rf '$build_dir'" EXIT
 
@@ -299,7 +299,7 @@ EOF'
         "https://download.samba.org/pub/rsync/rsync-${RSYNC_VERSION}.tar.gz"
     tar -xzf "rsync-${RSYNC_VERSION}.tar.gz"
     retry_with_backoff 3 5 curl -fsSL -o security_fix.patch \
-        "https://www.linuxfromscratch.org/patches/blfs/svn/rsync-3.4.1-security_fix-1.patch"
+        "https://www.linuxfromscratch.org/patches/blfs/svn/rsync-3.4.1-security_fix-2.patch"
 
     cd "rsync-${RSYNC_VERSION}"
     patch -Np1 -i ../security_fix.patch

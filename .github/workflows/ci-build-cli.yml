@@ -72,19 +72,19 @@ jobs:
           echo "::notice::Skipping win-arm64 CLI build (PR mode)"
           exit 0
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         if: env.SKIP_THIS != 'true'
 
       # Download full renet binaries (with embedded CRIU/rsync) from unified build
       - name: Download renet binaries
         if: env.SKIP_THIS != 'true'
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: renet-binaries-${{ github.sha }}
           path: private/bin/
 
       # Native build steps (skip for musl — handled inside Docker)
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         if: env.SKIP_THIS != 'true' && matrix.platform != 'linux-musl'
         with:
           node-version: '22'
@@ -112,7 +112,7 @@ jobs:
         env:
           CLI_VERSION: ${{ inputs.next_version || '0.0.0-dev' }}
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: env.SKIP_THIS != 'true'
         with:
           name: build-cli-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.sha }}
