@@ -114,7 +114,7 @@ test.describe
     // --- Datastore Init ---
 
     test('datastore_ceph_init - should initialize ceph-backed datastore', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.SETUP_TIMEOUT);
 
       const result = await runLocalFunction('datastore_ceph_init', E2E.MACHINE_VM1, {
@@ -140,7 +140,7 @@ test.describe
     });
 
     test('datastore_status - should show ceph backend info', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('datastore_status', E2E.MACHINE_VM1, {
@@ -155,7 +155,7 @@ test.describe
     });
 
     test('write test data to datastore', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       // Write a marker file to verify fork can read it
@@ -171,7 +171,7 @@ test.describe
     // --- Fork ---
 
     test('datastore_ceph_fork - should create instant fork', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.SETUP_TIMEOUT);
 
       const result = await runLocalFunction('datastore_ceph_fork', E2E.MACHINE_VM1, {
@@ -202,7 +202,7 @@ test.describe
     });
 
     test('fork isolation - writes on fork should not affect source', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       // Write to fork
@@ -224,7 +224,7 @@ test.describe
     // --- Unfork ---
 
     test('datastore_ceph_unfork - should clean up fork', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.skip(!snapshotName, 'Fork did not produce a snapshot name');
       test.setTimeout(E2E.SETUP_TIMEOUT);
 
@@ -258,7 +258,7 @@ test.describe
     // --- Cleanup ---
 
     test('cleanup - should remove ceph datastore', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.SETUP_TIMEOUT);
 
       // Unmount and clean up via SSH (no dedicated cleanup bridge function yet)

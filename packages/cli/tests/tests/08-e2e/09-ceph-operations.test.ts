@@ -83,7 +83,7 @@ test.describe
     // --- Image operations ---
 
     test('ceph_image_create - should create RBD image', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_image_create', E2E.MACHINE_VM1, {
@@ -99,7 +99,7 @@ test.describe
     });
 
     test('ceph_image_list - should list RBD images', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_image_list', E2E.MACHINE_VM1, {
@@ -114,7 +114,7 @@ test.describe
     });
 
     test('ceph_image_info - should show image details', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_image_info', E2E.MACHINE_VM1, {
@@ -129,7 +129,7 @@ test.describe
     });
 
     test('ceph_image_resize - should resize RBD image', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_image_resize', E2E.MACHINE_VM1, {
@@ -145,7 +145,7 @@ test.describe
     });
 
     test('ceph_image_format - should format RBD image', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_image_format', E2E.MACHINE_VM1, {
@@ -159,7 +159,7 @@ test.describe
     // --- CephFS client operations (image exists, formatted, not yet mapped) ---
 
     test('ceph_client_mount - should mount RBD image via client', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_client_mount', E2E.MACHINE_VM1, {
@@ -175,7 +175,7 @@ test.describe
     });
 
     test('ceph_client_unmount - should unmount RBD image via client', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_client_unmount', E2E.MACHINE_VM1, {
@@ -190,7 +190,7 @@ test.describe
     });
 
     test('ceph_image_map - should map RBD image to block device', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_image_map', E2E.MACHINE_VM1, {
@@ -208,7 +208,7 @@ test.describe
     // --- Snapshot operations ---
 
     test('ceph_snapshot_create - should create snapshot', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_snapshot_create', E2E.MACHINE_VM1, {
@@ -225,7 +225,7 @@ test.describe
     });
 
     test('ceph_snapshot_list - should list snapshots', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_snapshot_list', E2E.MACHINE_VM1, {
@@ -240,7 +240,7 @@ test.describe
     });
 
     test('ceph_snapshot_protect - should protect snapshot', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_snapshot_protect', E2E.MACHINE_VM1, {
@@ -259,7 +259,7 @@ test.describe
     // --- Clone operations ---
 
     test('ceph_clone_image - should clone from snapshot', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_clone_image', E2E.MACHINE_VM1, {
@@ -280,7 +280,7 @@ test.describe
     });
 
     test('ceph_clone_list - should list clones', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_clone_list', E2E.MACHINE_VM1, {
@@ -295,7 +295,7 @@ test.describe
     });
 
     test('ceph_clone_mount - should mount clone', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_clone_mount', E2E.MACHINE_VM1, {
@@ -316,7 +316,7 @@ test.describe
     });
 
     test('ceph_clone_unmount - should unmount clone', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_clone_unmount', E2E.MACHINE_VM1, {
@@ -335,7 +335,7 @@ test.describe
     });
 
     test('ceph_clone_flatten - should flatten clone (make independent)', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_clone_flatten', E2E.MACHINE_VM1, {
@@ -352,7 +352,7 @@ test.describe
     });
 
     test('ceph_clone_delete - should delete clone', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_clone_delete', E2E.MACHINE_VM1, {
@@ -370,7 +370,7 @@ test.describe
     // --- Continue snapshot operations (cleanup order) ---
 
     test('ceph_snapshot_unprotect - should unprotect snapshot', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_snapshot_unprotect', E2E.MACHINE_VM1, {
@@ -382,7 +382,7 @@ test.describe
     });
 
     test('ceph_snapshot_rollback - should rollback image to snapshot', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_snapshot_rollback', E2E.MACHINE_VM1, {
@@ -394,7 +394,7 @@ test.describe
     });
 
     test('ceph_snapshot_delete - should delete snapshot', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_snapshot_delete', E2E.MACHINE_VM1, {
@@ -413,7 +413,7 @@ test.describe
     // --- Image cleanup operations ---
 
     test('ceph_image_unmap - should unmap RBD image', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_image_unmap', E2E.MACHINE_VM1, {
@@ -429,7 +429,7 @@ test.describe
     });
 
     test('ceph_image_delete - should delete RBD image', async () => {
-      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured: VM_CEPH_NODES empty or RustFS S3 endpoint unavailable in this env');
+      test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runLocalFunction('ceph_image_delete', E2E.MACHINE_VM1, {

@@ -27,7 +27,7 @@ test.describe
     const repoMountPath = `${E2E.REPO_MOUNTS_BASE}/${E2E.TEST_REPO}`;
 
     test.beforeAll(async () => {
-      test.skip(!config.enabled, 'E2E VMs not configured: bridge-test VM_DEPLOYMENT=true required to provision real VMs');
+      test.skip(!config.enabled, 'E2E VMs not configured');
       ssh1 = new SSHValidator(config.vm1Ip, config.sshUser, config.sshKeyPath);
       cleanup = await setupE2EEnvironment(ctxName);
 
@@ -41,7 +41,7 @@ test.describe
     });
 
     test('repository_template_apply - should apply template to repository', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       // Create a minimal template — Base64-encoded JSON

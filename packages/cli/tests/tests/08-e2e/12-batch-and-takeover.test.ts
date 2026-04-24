@@ -14,7 +14,7 @@ test.describe
     const ctxName = `e2e-phase8-${Date.now()}`;
 
     test.beforeAll(async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       cleanup = await setupE2EEnvironment(ctxName);
     });
 
@@ -23,7 +23,7 @@ test.describe
     });
 
     test('repository_down_all - should stop all repositories on machine', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       // repository_down_all is a batch operation that stops all repos.
       // On a clean VM with no running repos, it should succeed as a no-op.
       const result = await runLocalFunction('repository_down_all', E2E.MACHINE_VM1, {
@@ -34,7 +34,7 @@ test.describe
     });
 
     test('repository_takeover - should require a fork repository', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       // repository_takeover requires a valid fork repo. Without one, it should
       // fail with a meaningful error rather than crash.
       const result = await runLocalFunction('repository_takeover', E2E.MACHINE_VM1, {

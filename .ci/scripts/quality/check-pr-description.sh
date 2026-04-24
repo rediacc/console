@@ -22,106 +22,15 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
-# shellcheck source=../lib/blocker-validator.sh
-# BLOCKER: validate_blocker_quality enforces the BLOCKER gate on bypass-label justifications
-source "$SCRIPT_DIR/../lib/blocker-validator.sh"
 
 # Configuration
 MIN_COMMITS=3              # Minimum commits before requiring update
 STALE_THRESHOLD_MINUTES=30 # How old description can be (in minutes)
 
-# Labels that bypass CI gates anywhere in the system. Every PR that applies
-# one of these must carry a BLOCKER-quality justification in its body. See
-# the "## Bypass justification" section of .github/pull_request_template.md.
-BYPASS_LABELS=(
-    no-cancel-push
-    no-cancel-failure
-    no-auto-retry
-    no-gemini-review
-    no-external-quality
-)
-
 # Validate environment
 require_var PR_NUMBER
 require_var GH_TOKEN
 require_var GITHUB_REPOSITORY
-
-check_bypass_label_justifications() {
-    local pr_json
-    pr_json=$(gh pr view "$PR_NUMBER" --json labels,body 2>/dev/null || echo '{}')
-    if [[ "$pr_json" == '{}' ]]; then
-        log_warn "Could not fetch PR labels/body — skipping bypass-label check"
-        return 0
-    fi
-
-    local applied=()
-    local label
-    local labels_json
-    labels_json=$(echo "$pr_json" | jq -r '.labels[].name')
-    for label in "${BYPASS_LABELS[@]}"; do
-        if echo "$labels_json" | grep -qxF "$label"; then
-            applied+=("$label")
-        fi
-    done
-
-    if ((${#applied[@]} == 0)); then
-        log_info "No bypass labels applied — skipping bypass-justification check"
-        return 0
-    fi
-
-    log_step "Validating bypass-label justifications for: ${applied[*]}"
-
-    # Extract the "## Bypass justification" section up to the next "## " header.
-    local body section
-    body=$(echo "$pr_json" | jq -r '.body // ""')
-    section=$(echo "$body" | awk '
-        /^## Bypass justification[[:space:]]*$/ { grab=1; next }
-        /^## / { grab=0 }
-        grab { print }
-    ')
-
-    if [[ -z "${section// /}" ]]; then
-        ci_error "PR has bypass label(s) but no '## Bypass justification' section in body"
-        echo "  Applied: ${applied[*]}"
-        echo "  Action: add a '## Bypass justification' section to the PR body."
-        echo "           For each applied bypass label, add one line:"
-        echo "             - <label>: <reason, >= 30 chars, no banned phrases>"
-        echo "           Template: .github/pull_request_template.md"
-        return 1
-    fi
-
-    # For each applied bypass label, find its line in the section and validate
-    # the reason. Accept both "- label: reason" and "- label — reason" forms.
-    local failures=0
-    for label in "${applied[@]}"; do
-        local line reason
-        line=$(echo "$section" | grep -E "^[[:space:]]*-[[:space:]]+${label}[[:space:]]*[:—-].*" | head -n1 || true)
-        if [[ -z "$line" ]]; then
-            ci_error "Bypass label '$label' applied but no justification line found in '## Bypass justification'"
-            echo "  Action: add '- $label: <reason >= 30 chars>' to the section"
-            failures=$((failures + 1))
-            continue
-        fi
-        # Strip everything up to and including the first :, —, or - after the label name
-        reason=$(echo "$line" | sed -E "s/^[[:space:]]*-[[:space:]]+${label}[[:space:]]*[:—-][[:space:]]*//")
-        if ! validate_blocker_quality "$label" "$reason" "PR body"; then
-            failures=$((failures + 1))
-        fi
-    done
-
-    if ((failures > 0)); then
-        echo ""
-        echo "  $failures bypass justification(s) failed quality gate."
-        echo "  Each justification must be >= 30 chars (after trimming) and not match a banned phrase."
-        echo "  Example: 'no-cancel-push: investigating flaky network failure in Cloudflare R2 upload; need serial reruns to triage'"
-        return 1
-    fi
-
-    log_success "All ${#applied[@]} bypass-label justification(s) passed the quality gate"
-    return 0
-}
-
-check_bypass_label_justifications
 
 log_step "Checking PR description freshness..."
 

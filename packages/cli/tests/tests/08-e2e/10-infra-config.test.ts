@@ -68,7 +68,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
 
   test.describe('Set Infra Config', () => {
     test('should set infrastructure config for a machine', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
 
       const result = await runner.run([
         'config',
@@ -92,7 +92,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
     });
 
     test('should show infrastructure config', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
 
       const result = await runner.run(['config', 'infra', 'show', '-m', 'vm1']);
 
@@ -105,7 +105,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
     });
 
     test('should merge infra config on update', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
 
       // Update only baseDomain
       const updateResult = await runner.run([
@@ -133,7 +133,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
     });
 
     test('should warn when no options provided', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
 
       const result = await runner.run(['config', 'infra', 'set', '-m', 'vm1']);
       // Should not fail, but warn
@@ -144,7 +144,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
 
   test.describe('Push Infra Config', () => {
     test('should push infra config to remote machine', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(300_000);
 
       // Set infra config with test values before push
@@ -177,7 +177,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
     });
 
     test('should generate config.env on remote', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
 
       const exists = await ssh.fileExists('/opt/rediacc/proxy/config.env');
       expect(exists).toBe(true);
@@ -188,7 +188,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
     });
 
     test('should generate router.env on remote', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
 
       const exists = await ssh.fileExists('/etc/rediacc/router.env');
       expect(exists).toBe(true);
@@ -200,7 +200,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
     });
 
     test('should generate docker-compose.override.yml on remote', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
 
       const exists = await ssh.fileExists('/opt/rediacc/proxy/docker-compose.override.yml');
       expect(exists).toBe(true);
@@ -223,7 +223,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
     });
 
     test('should be idempotent', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(300_000);
 
       // Make this test self-contained. The describe-level beforeAll only
@@ -276,7 +276,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
 
   test.describe('Partial Config', () => {
     test('should handle partial infra config (only baseDomain)', async () => {
-      test.skip(!config.enabled, 'E2E not configured: RDC_E2E_ENABLED unset or bridge-test env missing required secrets');
+      test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(300_000);
 
       // Create a new context with minimal infra
