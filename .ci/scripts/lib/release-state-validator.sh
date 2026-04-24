@@ -31,6 +31,13 @@ readonly __RELEASE_STATE_VALIDATOR_SH_SOURCED=1
 RSV_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"
 RSV_SENTINEL_KEY=".released"
 
+# Grandfather: tags <= this baseline predate the sentinel contract and are
+# excluded from the bijection check. The contract was introduced after v1.0.4
+# (PR #459); every prior release was sealed by the older prefix-based guard
+# and has no `.released` marker. Override via RSV_GRANDFATHER_BEFORE if a
+# follow-up backfill seeds sentinels for old tags.
+RSV_GRANDFATHER_BEFORE="${RSV_GRANDFATHER_BEFORE-v1.0.4}"
+
 # =============================================================================
 # Live probes (AWS + git)
 # =============================================================================
@@ -134,6 +141,30 @@ rsv_assert_bijection() {
     local desktop_versions="$2"
     local tag_versions="$3"
     local in_flight="${4:-}"
+
+    # Filter out grandfathered versions (<= RSV_GRANDFATHER_BEFORE).
+    # `sort -V` orders strict-semver tags correctly so we can drop everything
+    # at or below the baseline by comparing each candidate to the sorted list.
+    local grandfather="${RSV_GRANDFATHER_BEFORE:-}"
+    rsv_drop_grandfathered() {
+        local input="$1"
+        if [[ -z "$grandfather" ]]; then
+            printf '%s\n' "$input"
+            return 0
+        fi
+        local v
+        while IFS= read -r v; do
+            [[ -z "$v" ]] && continue
+            # Keep v iff (v != grandfather) AND (v sorts AFTER grandfather).
+            [[ "$v" == "$grandfather" ]] && continue
+            local newer
+            newer="$(printf '%s\n%s\n' "$grandfather" "$v" | sort -V | tail -1)"
+            [[ "$newer" == "$v" ]] && printf '%s\n' "$v"
+        done <<<"$input"
+    }
+    cli_versions="$(rsv_drop_grandfathered "$cli_versions")"
+    desktop_versions="$(rsv_drop_grandfathered "$desktop_versions")"
+    tag_versions="$(rsv_drop_grandfathered "$tag_versions")"
 
     local all drift=0
     all="$(printf '%s\n%s\n%s\n' "$cli_versions" "$desktop_versions" "$tag_versions" |
