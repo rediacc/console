@@ -598,19 +598,53 @@ jobs:
         run: .ci/scripts/test/test-linux-packages.sh
 
   # ============================================================================
+  # COLUMN 3A-BIS: RELEASE-STATE DRIFT GATE
+  # BLOCKER gate that enforces the sentinel-based release contract defined in
+  # .ci/scripts/lib/release-state-validator.sh. Fails loud if R2 `.released`
+  # sentinels and git release tags are not in bijection. Runs before
+  # stage-artifacts so drift from a prior cancelled run is caught before any
+  # new bytes are uploaded. Only blocks release channels on push-to-main;
+  # PR/fork runs skip because they never write versioned prefixes.
+  # ============================================================================
+  check-release-state:
+    name: Check Release State
+    needs: [initialize]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: >-
+      always() &&
+      needs.initialize.result == 'success' &&
+      needs.initialize.outputs.is_fork != 'true' &&
+      needs.initialize.outputs.is_bot != 'true' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      (needs.initialize.outputs.channel == 'edge' || needs.initialize.outputs.channel == 'stable')
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0  # need full tag history for bijection check
+      - name: Assert release-state bijection
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          IN_FLIGHT_VERSION: v${{ needs.initialize.outputs.next_version }}
+        run: .ci/scripts/quality/check-release-state.sh
+
+  # ============================================================================
   # COLUMN 3B: DEPLOY DRY-RUN
   # Jobs: stage-artifacts (reusable workflow)
-  # Dependencies: build-docker, build-desktop, build-cli
+  # Dependencies: build-docker, build-desktop, build-cli, check-release-state
   # ============================================================================
   stage-artifacts:
     name: Stage Artifacts
-    needs: [initialize, build-docker, build-desktop, build-cli, stripe-sandbox]
+    needs: [initialize, build-docker, build-desktop, build-cli, stripe-sandbox, check-release-state]
     permissions:
       contents: read
       packages: write      # GHCR pull for validation
       id-token: write      # OIDC token for Sigstore signing
       attestations: write  # Store attestations on GitHub
-    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-desktop.result == 'success' && needs.build-cli.result == 'success' && (needs.stripe-sandbox.result == 'success' || needs.stripe-sandbox.result == 'skipped')
+    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-desktop.result == 'success' && needs.build-cli.result == 'success' && (needs.stripe-sandbox.result == 'success' || needs.stripe-sandbox.result == 'skipped') && (needs.check-release-state.result == 'success' || needs.check-release-state.result == 'skipped')
     uses: ./.github/workflows/cd-stage.yml
     with:
       upload_pages: ${{ github.event_name == 'pull_request' }}
@@ -1297,6 +1331,70 @@ jobs:
             exit 1
           fi
           echo "All CI jobs passed successfully!"
+
+  # ============================================================================
+  # FINALIZE RELEASE SENTINEL
+  # Atomic commit point of the release pipeline. Writes `.released` sentinels
+  # to cli/v${V}/ and desktop/v${V}/ on R2 — only after every CI gate upstream
+  # has passed. The sentinel seals the version: from here on, write_once_guard
+  # refuses to overwrite, and the drift gate requires a matching git tag.
+  #
+  # See .ci/scripts/lib/release-state-validator.sh for the invariant and
+  # .ci/scripts/deploy/write-release-sentinel.sh for the writer.
+  #
+  # always() prefix is load-bearing (same reason as housekeeping): ci-complete
+  # transitively needs deploy-preview / smoke-test-preview which are
+  # pull_request-only and skip on push-to-main.
+  # ============================================================================
+  finalize-release-sentinel:
+    name: Finalize Release Sentinel
+    runs-on: ubuntu-slim
+    needs: [initialize, ci-complete]
+    if: >-
+      always() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.ci-complete.result == 'success' &&
+      needs.initialize.result == 'success' &&
+      (needs.initialize.outputs.channel == 'edge' || needs.initialize.outputs.channel == 'stable')
+    timeout-minutes: 5
+    concurrency:
+      group: finalize-release-v${{ needs.initialize.outputs.next_version }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - name: Install jq
+        run: command -v jq >/dev/null || sudo apt-get install -y -qq jq
+      - name: Write release sentinels
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+        run: |
+          .ci/scripts/deploy/write-release-sentinel.sh \
+            --version "${{ needs.initialize.outputs.next_version }}" \
+            --channel "${{ needs.initialize.outputs.channel }}" \
+            --commit-sha "${{ github.sha }}" \
+            --desktop
+
+  # Sentinel that fails loudly if the finalize job silently skipped on
+  # push-to-main. Mirrors assert-housekeeping-ran. If the finalize job result
+  # is 'skipped' on a release-channel push-to-main, transitive-skip
+  # propagation is back — fix by adding always() to finalize's if:.
+  assert-finalize-sentinel-ran:
+    name: Assert Finalize Sentinel Ran
+    runs-on: ubuntu-slim
+    needs: [initialize, finalize-release-sentinel]
+    if: >-
+      always() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.initialize.result == 'success' &&
+      (needs.initialize.outputs.channel == 'edge' || needs.initialize.outputs.channel == 'stable')
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - name: Check finalize-release-sentinel conclusion
+        run: .ci/scripts/ci/assert-job-succeeded.sh finalize-release-sentinel "${{ needs.finalize-release-sentinel.result }}"
 
   # ============================================================================
   # HOUSEKEEPING

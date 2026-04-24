@@ -46,7 +46,7 @@ case "$RESULT" in
         log_error "  have caught this; investigate why it did not."
         exit 1
         ;;
-    cancelled|failure)
+    cancelled | failure)
         log_warn "${JOB_LABEL} result=${RESULT}; treating as externally-imposed or already-surfaced."
         log_warn "  Sentinel only fails on 'skipped' (the transitive-skip propagation signature)."
         log_warn "  cancelled => CI watchdog, concurrent-push auto-cancel, or manual cancel."
