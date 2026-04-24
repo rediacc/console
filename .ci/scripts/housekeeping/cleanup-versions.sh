@@ -1196,9 +1196,15 @@ cleanup_stale_branches() {
             [[ -z "$branch" ]] && continue
             [[ "$branch" == "main" ]] && continue
 
-            # Check for open PR targeting this branch as head
+            # Check for open PR targeting this branch as head.
+            # On 403 (e.g. app-token preset lacks pulls:read for some repo)
+            # gh prints the JSON error body to stdout AND exits non-zero, but
+            # `|| echo 0` only catches the exit code -- the body still leaks
+            # through. Coerce to 0 if open_prs is not strictly numeric so the
+            # later `-gt 0` test does not blow up the script in a tight loop.
             local open_prs
             open_prs="$(gh api "repos/$full_repo/pulls?head=$GITHUB_ORG:$branch&state=open&per_page=1" --jq 'length' 2>/dev/null || echo "0")"
+            [[ "$open_prs" =~ ^[0-9]+$ ]] || open_prs=0
 
             if [[ "$open_prs" -gt 0 ]]; then
                 log_debug "    Keeping $branch (has open PR)"
