@@ -179,7 +179,14 @@ async function prepareSyncConnection(
 }
 
 function isRsyncNotFoundError(err: unknown): boolean {
-  return err instanceof Error && err.message.includes('rsync not found');
+  if (!(err instanceof Error)) return false;
+  if (err.message.includes('rsync not found')) return true;
+  // Older rsync (<3.2.3) doesn't recognize --mkpath; treat that as a
+  // "fallback to SFTP" signal rather than failing the upload outright.
+  // The error surface from rsync is an unrecognized-option message on
+  // stderr which carries through to the wrapped Error.message.
+  if (err.message.includes('--mkpath')) return true;
+  return false;
 }
 
 function displaySftpDryRunResult(result: {

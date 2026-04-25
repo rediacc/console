@@ -145,19 +145,33 @@ describe('buildSyncRemotePaths', () => {
     expect(r.sftpRemotePath).toBe('etc/config/app.toml');
   });
 
-  it('file mode with undefined subpath documents degenerate output', () => {
-    // Validation should reject this earlier; this test pins the boundary.
+  it('file mode with undefined subpath returns base path with no trailing slash', () => {
+    // Single-file mode against a missing subpath returns the base directly
+    // (no trailing slash) so rsync sees a file-target rather than dir-target.
     const r = buildSyncRemotePaths(base, undefined, true);
-    expect(r.remotePath).toBe(`${base}/`);
+    expect(r.remotePath).toBe(base);
     expect(r.sftpRemotePath).toBe('');
   });
 
-  it('directory mode preserves caller-provided trailing slash via concatenation', () => {
-    // Caller passes `sub/`; the helper appends another, yielding `sub//`. Document this so
-    // upstream callers know to strip trailing slashes before passing in.
+  it('directory mode strips caller-provided trailing slash to avoid `path//`', () => {
+    // Bug fix: previously the helper concatenated `sub/` + `/` producing
+    // `sub//`, which broke rsync semantics on some hosts. Now it
+    // normalizes the caller's input by stripping leading + trailing slashes.
     const r = buildSyncRemotePaths(base, 'sub/', false);
-    expect(r.remotePath).toBe(`${base}/sub//`);
-    expect(r.sftpRemotePath).toBe('sub//');
+    expect(r.remotePath).toBe(`${base}/sub/`);
+    expect(r.sftpRemotePath).toBe('sub/');
+  });
+
+  it('directory mode strips both leading and trailing slashes', () => {
+    const r = buildSyncRemotePaths(base, '/sub/nested/', false);
+    expect(r.remotePath).toBe(`${base}/sub/nested/`);
+    expect(r.sftpRemotePath).toBe('sub/nested/');
+  });
+
+  it('file mode strips slashes around the subpath', () => {
+    const r = buildSyncRemotePaths(base, '/etc/file.txt/', true);
+    expect(r.remotePath).toBe(`${base}/etc/file.txt`);
+    expect(r.sftpRemotePath).toBe('etc/file.txt');
   });
 });
 

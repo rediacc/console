@@ -118,10 +118,12 @@ describe('sftpUploadFile', () => {
     expect(opts.stdin).toBe(Buffer.from('hello world').toString('base64'));
   });
 
-  it('applies sudo chown when universalUser is set', async () => {
+  it('applies sudo chown -h when universalUser is set (no symlink dereference)', async () => {
     await sftpUploadFile(localFile, 'a/b.bin', config, { universalUser: 'svc' });
     const cmds = mockExec.mock.calls.map(([cmd]) => cmd as string);
-    expect(cmds.some((c) => c.startsWith(`sudo chown 'svc:svc' 'a/b.bin'`))).toBe(true);
+    // -h prevents chown from following symlinks: uploading a symlink like
+    // `link -> /etc/passwd` must NOT change ownership of the target.
+    expect(cmds.some((c) => c.startsWith(`sudo chown -h 'svc:svc' 'a/b.bin'`))).toBe(true);
   });
 
   it('non-zero exit code -> success false, error message includes code', async () => {

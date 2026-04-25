@@ -4,7 +4,7 @@
 
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'node:path';
-import { isExcluded } from './sftp-patterns.js';
+import { type CompiledPattern, compilePatterns, isExcludedCompiled } from './sftp-patterns.js';
 
 export interface SftpUploadSource {
   /** Absolute path to a local file or directory. */
@@ -61,7 +61,7 @@ async function readFileEntry(absolutePath: string, relativePath: string): Promis
 
 interface DirEntryCtx {
   basePath: string;
-  exclude: string[];
+  exclude: CompiledPattern[];
   result: WalkResult;
 }
 
@@ -74,21 +74,38 @@ async function visitEntry(
 ): Promise<void> {
   const relativePath = path.relative(ctx.basePath, absolutePath).replaceAll('\\', '/');
   if (isSym) {
-    if (isExcluded(relativePath, false, ctx.exclude)) return;
+    if (isExcludedCompiled(relativePath, false, ctx.exclude)) return;
     ctx.result.symlinks.push(await readSymlink(absolutePath, relativePath));
     return;
   }
   if (isDir) {
-    if (isExcluded(relativePath, true, ctx.exclude)) return;
-    const sub = await walkLocalDir(absolutePath, ctx.basePath, ctx.exclude);
+    if (isExcludedCompiled(relativePath, true, ctx.exclude)) return;
+    const sub = await walkSubdir(absolutePath, ctx);
     ctx.result.files.push(...sub.files);
     ctx.result.symlinks.push(...sub.symlinks);
     return;
   }
   if (isFile) {
-    if (isExcluded(relativePath, false, ctx.exclude)) return;
+    if (isExcludedCompiled(relativePath, false, ctx.exclude)) return;
     ctx.result.files.push(await readFileEntry(absolutePath, relativePath));
   }
+}
+
+async function walkSubdir(dirPath: string, parentCtx: DirEntryCtx): Promise<WalkResult> {
+  const result: WalkResult = { files: [], symlinks: [] };
+  const ctx: DirEntryCtx = { basePath: parentCtx.basePath, exclude: parentCtx.exclude, result };
+  const entries = await fsPromises.readdir(dirPath, { withFileTypes: true });
+  for (const entry of entries) {
+    const absolutePath = path.join(dirPath, entry.name);
+    await visitEntry(
+      absolutePath,
+      entry.isSymbolicLink(),
+      entry.isDirectory(),
+      entry.isFile(),
+      ctx
+    );
+  }
+  return result;
 }
 
 export async function walkLocalDir(
@@ -96,8 +113,12 @@ export async function walkLocalDir(
   basePath: string,
   exclude: string[]
 ): Promise<WalkResult> {
+  // Compile excludes once for the entire walk; recompiling per-entry was a
+  // hot-loop allocation (one regex object per pattern per file/dir), which
+  // mattered on repos with thousands of files.
+  const compiled = compilePatterns(exclude);
   const result: WalkResult = { files: [], symlinks: [] };
-  const ctx: DirEntryCtx = { basePath, exclude, result };
+  const ctx: DirEntryCtx = { basePath, exclude: compiled, result };
   const entries = await fsPromises.readdir(dirPath, { withFileTypes: true });
   for (const entry of entries) {
     const absolutePath = path.join(dirPath, entry.name);

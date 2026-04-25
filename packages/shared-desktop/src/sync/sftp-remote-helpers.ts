@@ -66,6 +66,11 @@ export async function chownRemote(
   errors: string[]
 ): Promise<void> {
   if (paths.length === 0) return;
+  // -h/--no-dereference: when a path is a symlink, change the link's
+  // ownership (not the target's). Without this, uploading a symlink
+  // like `link -> /etc/passwd` would chown the dereferenced target —
+  // a privilege-escalation vector when the SFTP fallback handles
+  // user-controlled link targets.
   const ownerSpec = shellQuote(`${user}:${user}`);
   const chunkSize = 100;
   for (let i = 0; i < paths.length; i += chunkSize) {
@@ -74,7 +79,7 @@ export async function chownRemote(
       .map(shellQuote)
       .join(' ');
     try {
-      await sftp.exec(`sudo chown ${ownerSpec} ${chunk}`);
+      await sftp.exec(`sudo chown -h ${ownerSpec} ${chunk}`);
     } catch (err) {
       errors.push(`chown: ${err instanceof Error ? err.message : String(err)}`);
     }

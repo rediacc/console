@@ -9,7 +9,7 @@
  *  - Trailing `/` matches directories only.
  */
 
-interface CompiledPattern {
+export interface CompiledPattern {
   regex: RegExp;
   dirOnly: boolean;
 }
@@ -76,12 +76,33 @@ function compilePattern(pattern: string): CompiledPattern {
   return { regex: new RegExp(wrapped), dirOnly };
 }
 
-export function isExcluded(relativePath: string, isDir: boolean, patterns: string[]): boolean {
+/**
+ * Compile a pattern set once. Pass the result to `isExcludedCompiled`
+ * for every file/dir during a walk to avoid recompiling regexes on each
+ * entry — a hot loop in large repositories.
+ */
+export function compilePatterns(patterns: string[]): CompiledPattern[] {
+  return patterns.map(compilePattern);
+}
+
+export function isExcludedCompiled(
+  relativePath: string,
+  isDir: boolean,
+  compiled: CompiledPattern[]
+): boolean {
   const normalized = relativePath.replaceAll('\\', '/');
-  for (const raw of patterns) {
-    const compiled = compilePattern(raw);
-    if (compiled.dirOnly && !isDir) continue;
-    if (compiled.regex.test(normalized)) return true;
+  for (const c of compiled) {
+    if (c.dirOnly && !isDir) continue;
+    if (c.regex.test(normalized)) return true;
   }
   return false;
+}
+
+/**
+ * Convenience wrapper that compiles patterns on every call. Kept for
+ * one-shot callers. Hot paths (filesystem walks) should call
+ * `compilePatterns` once then `isExcludedCompiled` per entry.
+ */
+export function isExcluded(relativePath: string, isDir: boolean, patterns: string[]): boolean {
+  return isExcludedCompiled(relativePath, isDir, compilePatterns(patterns));
 }

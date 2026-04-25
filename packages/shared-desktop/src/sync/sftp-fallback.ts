@@ -343,17 +343,27 @@ async function listRemoteFiles(
   sftp: SFTPClient,
   normalizedRemote: string
 ): Promise<RemoteFileInfo[]> {
+  // The primary `find -printf '%P'` already emits paths relative to the
+  // search root, no sed strip needed. The fallback `find -exec stat` is
+  // for systems without GNU find's -printf; we strip the prefix in JS to
+  // avoid shell injection (the previous sed-based strip interpolated
+  // normalizedRemote unquoted into a `s|...|` expression, which broke on
+  // paths containing `|` and was injection-vulnerable for callers passing
+  // attacker-controlled paths). An empty normalizedRemote (e.g. root `/`)
+  // would also have produced a no-op sed expression; the JS strip handles
+  // that correctly.
   const findOutput = await sftp.exec(
     `find ${shellQuote(normalizedRemote)} -type f -printf '%P\\t%s\\n' 2>/dev/null || ` +
-      `find ${shellQuote(normalizedRemote)} -type f -exec stat -c '%n\\t%s' {} \\; 2>/dev/null | ` +
-      `sed "s|^${normalizedRemote}/||"`
+      `find ${shellQuote(normalizedRemote)} -type f -exec stat -c '%n\\t%s' {} \\; 2>/dev/null`
   );
+  const prefix = normalizedRemote.endsWith('/') ? normalizedRemote : `${normalizedRemote}/`;
   return findOutput
     .trim()
     .split('\n')
     .filter(Boolean)
     .map((line) => {
-      const [relativePath, sizeStr] = line.split('\t');
+      const [absOrRel, sizeStr] = line.split('\t');
+      const relativePath = absOrRel.startsWith(prefix) ? absOrRel.slice(prefix.length) : absOrRel;
       return { relativePath, size: Number.parseInt(sizeStr || '0', 10) };
     });
 }
