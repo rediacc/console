@@ -67,7 +67,7 @@ export interface SftpTransferOptions {
 async function writeRemoteFile(
   sftp: SFTPClient,
   remotePath: string,
-  data: Buffer,
+  data: Buffer
 ): Promise<number> {
   return await sftp.execStreaming(`base64 -d > ${shellQuote(remotePath)}`, {
     stdin: data.toString('base64'),
@@ -78,7 +78,7 @@ async function maybeChmod(
   sftp: SFTPClient,
   remotePath: string,
   mode: number,
-  errors: string[],
+  errors: string[]
 ): Promise<void> {
   try {
     await chmodRemote(sftp, remotePath, mode);
@@ -92,7 +92,7 @@ async function maybeVerify(
   remotePath: string,
   data: Buffer,
   result: SftpTransferResult,
-  label: string,
+  label: string
 ): Promise<void> {
   try {
     const expected = sha256Hex(data);
@@ -100,13 +100,11 @@ async function maybeVerify(
     if (!ok) {
       result.verifyFailures++;
       result.errors.push(
-        `${label}: verify mismatch (expected ${expected}, got ${actual ?? STATUS_DEFAULTS.UNKNOWN_PLACEHOLDER})`,
+        `${label}: verify mismatch (expected ${expected}, got ${actual ?? STATUS_DEFAULTS.UNKNOWN_PLACEHOLDER})`
       );
     }
   } catch (err) {
-    result.errors.push(
-      `verify ${label}: ${err instanceof Error ? err.message : String(err)}`,
-    );
+    result.errors.push(`verify ${label}: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
@@ -144,7 +142,7 @@ async function uploadOneFile(ctx: SingleFileUploadCtx): Promise<boolean> {
  */
 async function statLocalFile(
   localFilePath: string,
-  result: SftpTransferResult,
+  result: SftpTransferResult
 ): Promise<Stats | null> {
   try {
     return await fsPromises.stat(localFilePath);
@@ -157,7 +155,7 @@ async function statLocalFile(
 async function ensureFileParent(
   sftp: SFTPClient,
   remoteFilePath: string,
-  errors: string[],
+  errors: string[]
 ): Promise<void> {
   const remoteDir = path.posix.dirname(remoteFilePath);
   if (remoteDir && remoteDir !== '.' && remoteDir !== '/') {
@@ -169,7 +167,7 @@ export async function sftpUploadFile(
   localFilePath: string,
   remoteFilePath: string,
   config: SFTPClientConfig,
-  options?: SftpTransferOptions,
+  options?: SftpTransferOptions
 ): Promise<SftpTransferResult> {
   const startTime = Date.now();
   const result = newResult();
@@ -249,7 +247,7 @@ async function uploadFileEntry(file: SftpFileEntry, ctx: MultiUploadCtx): Promis
     ctx.options?.onProgress?.(file.remoteRelative, ctx.result.bytesTransferred, ctx.totalBytes);
   } catch (err) {
     ctx.result.errors.push(
-      `${file.remoteRelative}: ${err instanceof Error ? err.message : String(err)}`,
+      `${file.remoteRelative}: ${err instanceof Error ? err.message : String(err)}`
     );
   }
 }
@@ -261,7 +259,7 @@ async function uploadSymlinkEntry(link: SftpSymlinkEntry, ctx: MultiUploadCtx): 
     ctx.writtenPaths.push(remoteLinkPath);
   } catch (err) {
     ctx.result.errors.push(
-      `symlink ${link.remoteRelative}: ${err instanceof Error ? err.message : String(err)}`,
+      `symlink ${link.remoteRelative}: ${err instanceof Error ? err.message : String(err)}`
     );
   }
 }
@@ -285,7 +283,7 @@ export async function sftpUploadPaths(
   sources: SftpUploadSource[],
   remoteDir: string,
   config: SFTPClientConfig,
-  options?: SftpTransferOptions,
+  options?: SftpTransferOptions
 ): Promise<SftpTransferResult> {
   const startTime = Date.now();
   const result = newResult();
@@ -341,11 +339,14 @@ interface RemoteFileInfo {
   size: number;
 }
 
-async function listRemoteFiles(sftp: SFTPClient, normalizedRemote: string): Promise<RemoteFileInfo[]> {
+async function listRemoteFiles(
+  sftp: SFTPClient,
+  normalizedRemote: string
+): Promise<RemoteFileInfo[]> {
   const findOutput = await sftp.exec(
     `find ${shellQuote(normalizedRemote)} -type f -printf '%P\\t%s\\n' 2>/dev/null || ` +
       `find ${shellQuote(normalizedRemote)} -type f -exec stat -c '%n\\t%s' {} \\; 2>/dev/null | ` +
-      `sed "s|^${normalizedRemote}/||"`,
+      `sed "s|^${normalizedRemote}/||"`
   );
   return findOutput
     .trim()
@@ -383,7 +384,7 @@ async function downloadOneFile(file: RemoteFileInfo, ctx: DirDownloadCtx): Promi
       if (actual.toLowerCase() !== expected.toLowerCase()) {
         ctx.result.verifyFailures++;
         ctx.result.errors.push(
-          `${file.relativePath}: verify mismatch (expected ${expected}, got ${actual || STATUS_DEFAULTS.UNKNOWN_PLACEHOLDER})`,
+          `${file.relativePath}: verify mismatch (expected ${expected}, got ${actual || STATUS_DEFAULTS.UNKNOWN_PLACEHOLDER})`
         );
       }
     }
@@ -393,7 +394,7 @@ async function downloadOneFile(file: RemoteFileInfo, ctx: DirDownloadCtx): Promi
     ctx.options?.onProgress?.(file.relativePath, ctx.result.bytesTransferred, ctx.totalBytes);
   } catch (err) {
     ctx.result.errors.push(
-      `${file.relativePath}: ${err instanceof Error ? err.message : String(err)}`,
+      `${file.relativePath}: ${err instanceof Error ? err.message : String(err)}`
     );
   }
 }
@@ -405,7 +406,7 @@ export async function sftpDownloadDirectory(
   remotePath: string,
   localPath: string,
   config: SFTPClientConfig,
-  options?: SftpTransferOptions,
+  options?: SftpTransferOptions
 ): Promise<SftpTransferResult> {
   const startTime = Date.now();
   const result = newResult();
@@ -447,7 +448,7 @@ export async function sftpDownloadDirectory(
 
 async function fetchRemoteSize(sftp: SFTPClient, remotePath: string): Promise<number> {
   const sizeOut = await sftp.exec(
-    `stat -c '%s' ${shellQuote(remotePath)} 2>/dev/null || wc -c < ${shellQuote(remotePath)}`,
+    `stat -c '%s' ${shellQuote(remotePath)} 2>/dev/null || wc -c < ${shellQuote(remotePath)}`
   );
   return Number.parseInt(sizeOut.trim(), 10) || 0;
 }
@@ -460,7 +461,7 @@ export async function sftpDownloadFile(
   remoteFilePath: string,
   localDir: string,
   config: SFTPClientConfig,
-  options?: SftpTransferOptions,
+  options?: SftpTransferOptions
 ): Promise<SftpTransferResult> {
   const startTime = Date.now();
   const result = newResult();

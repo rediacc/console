@@ -65,7 +65,13 @@ interface DirEntryCtx {
   result: WalkResult;
 }
 
-async function visitEntry(absolutePath: string, isSym: boolean, isDir: boolean, isFile: boolean, ctx: DirEntryCtx): Promise<void> {
+async function visitEntry(
+  absolutePath: string,
+  isSym: boolean,
+  isDir: boolean,
+  isFile: boolean,
+  ctx: DirEntryCtx
+): Promise<void> {
   const relativePath = path.relative(ctx.basePath, absolutePath).replaceAll('\\', '/');
   if (isSym) {
     if (isExcluded(relativePath, false, ctx.exclude)) return;
@@ -100,7 +106,7 @@ export async function walkLocalDir(
       entry.isSymbolicLink(),
       entry.isDirectory(),
       entry.isFile(),
-      ctx,
+      ctx
     );
   }
   return result;

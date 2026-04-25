@@ -109,11 +109,7 @@ describe('sftpUploadFile', () => {
 
     const execCmds = mockExec.mock.calls.map(([cmd]) => cmd as string);
     expect(execCmds).toContainEqual(expect.stringMatching(/^mkdir -p 'a\/b'$/));
-    expect(
-      execCmds.some(
-        (c) => c.startsWith('chmod ') && c.endsWith(`'a/b/c.bin'`),
-      ),
-    ).toBe(true);
+    expect(execCmds.some((c) => c.startsWith('chmod ') && c.endsWith(`'a/b/c.bin'`))).toBe(true);
     expect(execCmds.some((c) => c.startsWith('sudo chown'))).toBe(false);
 
     expect(mockExecStreaming).toHaveBeenCalledTimes(1);
