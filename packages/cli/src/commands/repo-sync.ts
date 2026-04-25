@@ -9,6 +9,7 @@ import {
   type RsyncExecutorOptions,
   sftpDownloadDirectory,
   sftpDownloadFile,
+  sftpUploadFile,
   sftpUploadPaths,
   type SftpUploadSource,
 } from '@rediacc/shared-desktop/sync';
@@ -27,13 +28,14 @@ import { auditService } from '../services/audit.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import {
+  buildSyncRemotePaths,
   formatBytes,
   handleConfirmMode,
   handleDryRun,
-  resolveUploadLocalPaths,
   type SyncDownloadOptions,
   type SyncUploadOptions,
   validateDownloadOptions,
+  validateUploadOptions,
   withTrailingSlash,
 } from './repo-sync-helpers.js';
 
@@ -88,7 +90,7 @@ function displaySyncResult(
 async function executeSyncWithProgress(
   rsyncOptions: RsyncExecutorOptions,
   mode: 'upload' | 'download'
-): Promise<void> {
+): Promise<{ filesTransferred: number; bytesTransferred: number }> {
   const spinner = ora(t(`commands.sync.${mode}.starting`)).start();
 
   rsyncOptions.onProgress = (progress: SyncProgress) => {
@@ -101,6 +103,10 @@ async function executeSyncWithProgress(
 
   const result = await executeRsync(rsyncOptions);
   displaySyncResult(result, spinner, mode);
+  return {
+    filesTransferred: result.filesTransferred,
+    bytesTransferred: result.bytesTransferred,
+  };
 }
 
 interface ValidatedSyncOptions {
@@ -128,11 +134,12 @@ async function validateSyncOptions(
 
   await assertCommandPolicy(command, opts.repository);
   if (options.remote) validateRemotePath(options.remote);
+  if (options.remoteFile) validateRemotePath(options.remoteFile);
 
   return { team: opts.team, machine: opts.machine, repository: opts.repository };
 }
 
-interface SyncConnectionContext {
+export interface SyncConnectionContext {
   details: Awaited<ReturnType<typeof getSSHConnectionDetails>>;
   remotePath: string;
   sftpRemotePath: string;
@@ -154,17 +161,11 @@ async function prepareSyncConnection(
   const baseRemotePath =
     details.workingDirectory ?? `${details.datastore}/mounts/${validated.repository}`;
 
-  let remotePath: string;
-  let sftpRemotePath: string;
-  if (opts.isFile) {
-    // Single-file mode: no trailing slash so rsync treats source/dest as a file.
-    const sub = remoteSubPath ?? '';
-    remotePath = `${baseRemotePath}/${sub}`;
-    sftpRemotePath = sub;
-  } else {
-    remotePath = remoteSubPath ? `${baseRemotePath}/${remoteSubPath}/` : `${baseRemotePath}/`;
-    sftpRemotePath = remoteSubPath ? `${remoteSubPath}/` : '.';
-  }
+  const { remotePath, sftpRemotePath } = buildSyncRemotePaths(
+    baseRemotePath,
+    remoteSubPath,
+    opts.isFile ?? false
+  );
 
   const sftpConfig = {
     host: details.host,
@@ -178,7 +179,14 @@ async function prepareSyncConnection(
 }
 
 function isRsyncNotFoundError(err: unknown): boolean {
-  return err instanceof Error && err.message.includes('rsync not found');
+  if (!(err instanceof Error)) return false;
+  if (err.message.includes('rsync not found')) return true;
+  // Older rsync (<3.2.3) doesn't recognize --mkpath; treat that as a
+  // "fallback to SFTP" signal rather than failing the upload outright.
+  // The error surface from rsync is an unrecognized-option message on
+  // stderr which carries through to the wrapped Error.message.
+  if (err.message.includes('--mkpath')) return true;
+  return false;
 }
 
 function displaySftpDryRunResult(result: {
@@ -231,25 +239,42 @@ async function executeSyncWithSftpFallback(
     duration: number;
     errors: string[];
   }>
-): Promise<void> {
+): Promise<{ filesTransferred: number; bytesTransferred: number }> {
   try {
-    await executeSyncWithProgress(rsyncOptions, mode);
+    return await executeSyncWithProgress(rsyncOptions, mode);
   } catch (err: unknown) {
     if (!isRsyncNotFoundError(err)) throw err;
     const spinner = ora('rsync not available, using SFTP transfer (no delta sync)...').start();
     const result = await sftpTransfer(spinner);
     displaySyncResult(result, spinner, mode);
+    return {
+      filesTransferred: result.filesTransferred,
+      bytesTransferred: result.bytesTransferred,
+    };
   }
+}
+
+/**
+ * Dispatch single-file vs multi-source upload via SFTP. Exported for tests.
+ */
+export function sftpUploadTransfer(
+  isFileMode: boolean,
+  sftpSources: SftpUploadSource[],
+  ctx: SyncConnectionContext,
+  sftpOptions: Parameters<typeof sftpUploadPaths>[3]
+): ReturnType<typeof sftpUploadPaths> {
+  return isFileMode
+    ? sftpUploadFile(sftpSources[0].path, ctx.sftpRemotePath, ctx.sftpConfig, sftpOptions)
+    : sftpUploadPaths(sftpSources, ctx.sftpRemotePath, ctx.sftpConfig, sftpOptions);
 }
 
 async function syncUpload(options: SyncUploadOptions): Promise<void> {
   const startTime = Date.now();
   const validated = await validateSyncOptions(options, CMD.REPO_SYNC_UPLOAD);
-  const sources = resolveUploadLocalPaths(options.local);
-  if (options.mirror && sources.some((s) => s.isFile)) {
-    throw new Error(t('errors.sync.mirrorWithFile'));
-  }
-  const ctx = await prepareSyncConnection(validated, options.remote);
+  const { isFileMode, sources } = validateUploadOptions(options);
+  const ctx = await prepareSyncConnection(validated, options.remoteFile ?? options.remote, {
+    isFile: isFileMode,
+  });
 
   // rsync accepts either a single source string (dir with trailing slash or a file)
   // or an array of sources when the user passes multiple --local paths.
@@ -262,6 +287,8 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
 
   let success = true;
   let error: string | undefined;
+  let filesTransferred: number | undefined;
+  let bytesTransferred: number | undefined;
   try {
     await withTempSshFiles(ctx.details, async (keyFilePath, knownHostsPath) => {
       const rsyncOptions: RsyncExecutorOptions = {
@@ -273,6 +300,7 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
         exclude: options.exclude,
         universalUser: ctx.details.universalUser,
         isUpload: true,
+        mkpath: isFileMode,
       };
 
       const shouldContinue = await handleConfirmMode(rsyncOptions, options);
@@ -280,22 +308,28 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
 
       if (options.dryRun) {
         await handleDryRunWithSftpFallback(rsyncOptions, () =>
-          sftpUploadPaths(sftpSources, ctx.sftpRemotePath, ctx.sftpConfig, {
+          sftpUploadTransfer(isFileMode, sftpSources, ctx, {
             exclude: options.exclude,
+            verify: options.verify,
+            universalUser: ctx.details.universalUser,
             dryRun: true,
           })
         );
         return;
       }
 
-      await executeSyncWithSftpFallback(rsyncOptions, 'upload', (spinner) =>
-        sftpUploadPaths(sftpSources, ctx.sftpRemotePath, ctx.sftpConfig, {
+      const counts = await executeSyncWithSftpFallback(rsyncOptions, 'upload', (spinner) =>
+        sftpUploadTransfer(isFileMode, sftpSources, ctx, {
           exclude: options.exclude,
+          verify: options.verify,
+          universalUser: ctx.details.universalUser,
           onProgress: (file) => {
             spinner.text = `Uploading: ${file}`;
           },
         })
       );
+      filesTransferred = counts.filesTransferred;
+      bytesTransferred = counts.bytesTransferred;
     });
   } catch (err) {
     success = false;
@@ -311,12 +345,17 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
         exitCode: success ? 0 : 1,
         durationMs: Date.now() - startTime,
         error,
+        filesTransferred,
+        bytesTransferred,
       });
     }
   }
 }
 
-function sftpDownloadTransfer(
+/**
+ * Dispatch single-file vs directory download via SFTP. Exported for tests.
+ */
+export function sftpDownloadTransfer(
   isFileMode: boolean,
   ctx: SyncConnectionContext,
   localPath: string,
@@ -338,6 +377,8 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
 
   let success = true;
   let error: string | undefined;
+  let filesTransferred: number | undefined;
+  let bytesTransferred: number | undefined;
   try {
     await withTempSshFiles(ctx.details, async (keyFilePath, knownHostsPath) => {
       const rsyncOptions: RsyncExecutorOptions = {
@@ -355,18 +396,24 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
 
       if (options.dryRun) {
         await handleDryRunWithSftpFallback(rsyncOptions, () =>
-          sftpDownloadTransfer(isFileMode, ctx, localPath, { dryRun: true })
+          sftpDownloadTransfer(isFileMode, ctx, localPath, {
+            verify: options.verify,
+            dryRun: true,
+          })
         );
         return;
       }
 
-      await executeSyncWithSftpFallback(rsyncOptions, 'download', (spinner) =>
+      const counts = await executeSyncWithSftpFallback(rsyncOptions, 'download', (spinner) =>
         sftpDownloadTransfer(isFileMode, ctx, localPath, {
+          verify: options.verify,
           onProgress: (file) => {
             spinner.text = `Downloading: ${file}`;
           },
         })
       );
+      filesTransferred = counts.filesTransferred;
+      bytesTransferred = counts.bytesTransferred;
     });
   } catch (err) {
     success = false;
@@ -380,6 +427,8 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
         repoName: validated.repository,
         success,
         exitCode: success ? 0 : 1,
+        filesTransferred,
+        bytesTransferred,
         durationMs: Date.now() - startTime,
         error,
       });
@@ -401,7 +450,9 @@ export function registerRepoSyncCommands(repoCommand: Command): void {
     `
 ${t('help.examples')}
   $ rdc repo sync upload -m server-1 -r my-app --local ./src  ${t('help.sync.upload')}
+  $ rdc repo sync upload -m server-1 -r my-app --local ./config.toml --remote-file etc/config.toml
   $ rdc repo sync download -m server-1 -r my-app --local ./data  ${t('help.sync.download')}
+  $ rdc repo sync download -m server-1 -r my-app --local ./out --remote-file etc/config.toml
 `
   );
 
@@ -415,6 +466,7 @@ ${t('help.examples')}
     .option('-r, --repository <name>', t('options.repository'))
     .option('--local <paths...>', t('options.localPaths'))
     .option('--remote <path>', t('options.remotePath'))
+    .option('--remote-file <path>', t('options.remoteFileUpload'))
     .option('--mirror', t('options.mirrorUpload'))
     .option('--verify', t('options.verifyChecksum'))
     .option('--confirm', t('options.confirmSync'))

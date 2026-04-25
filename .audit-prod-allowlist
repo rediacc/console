@@ -129,11 +129,17 @@
 # 1116756/1116832: <7.5.5 via @grpc/proto-loader 0.8.0 (pinned at ^7.5.3 upstream).
 # 1116757/1116833: 8.0.0 via @opentelemetry/otlp-transformer 0.211.x, deliberately
 # pinned in .syncpackrc.json at ^0.211.0 (bumping to 0.215.x would take the fix).
+# 1117042/1117043: same advisory re-issued under new IDs after the GitHub
+# Advisory Database split. Same chain (proto-loader + otlp-transformer), same
+# rationale; needs to be allowlisted because npm overrides for protobufjs ranges
+# don't propagate cleanly across both 7.x and 8.x consumers.
 # BLOCKER: OTLP exporters only serialize our own telemetry to our own collector; no untrusted protobuf decode path; OTel pin is deliberate
 1116756
 1116757
 1116832
 1116833
+1117042
+1117043
 
 # astro <6.1.6 XSS in define:vars via incomplete </script> sanitization
 # (GHSA-j687-52p2-xcff; fix requires Astro 6.x major)

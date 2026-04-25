@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1877,
+    "keyCount": 1879,
     "sourceCommit": "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
   },
   "hashes": {
@@ -1630,6 +1630,7 @@
     "errors.sync.pathTraversalBlocked": "b252e3ff",
     "errors.sync.remoteAndRemoteFile": "90129347",
     "errors.sync.remoteFileLocalNotDir": "db805163",
+    "errors.sync.remoteFileRequiresSingleFile": "75b06174",
     "errors.teamRequired": "0bdc6d69",
     "errors.term.connectivityFailed": "f87c9121",
     "errors.term.dockerComposeForbidden": "e3d3e2d5",
@@ -1791,6 +1792,7 @@
     "options.rawVault": "b571bf40",
     "options.region": "7a9b91f8",
     "options.remoteFile": "41eba6d0",
+    "options.remoteFileUpload": "5a9ba131",
     "options.remotePath": "43ce68ce",
     "options.renetPath": "67afd253",
     "options.repository": "1ef7cee9",

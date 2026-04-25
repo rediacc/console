@@ -2607,6 +2607,12 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--remote-file <path>",
+                  "descriptionKey": "options.remoteFileUpload",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--mirror",
                   "descriptionKey": "options.mirrorUpload",
                   "mandatory": false,
