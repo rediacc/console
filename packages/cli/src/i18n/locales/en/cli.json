@@ -2217,7 +2217,8 @@
       "pathTraversalBlocked": "The --remote path must not contain \"..\" path traversal. Use a path within the repository.",
       "mirrorWithFile": "Cannot use --mirror when a source is a file: it would delete sibling files in the destination directory.",
       "remoteAndRemoteFile": "Cannot use --remote and --remote-file together. Pick one.",
-      "remoteFileLocalNotDir": "When --remote-file is set, --local must be an existing directory: {{path}}"
+      "remoteFileLocalNotDir": "When --remote-file is set, --local must be an existing directory: {{path}}",
+      "remoteFileRequiresSingleFile": "--remote-file requires exactly one --local path that points at a file."
     },
     "subscription": {
       "notLoggedIn": "Not logged in. Humans should run `rdc subscription login`. Automation should run `rdc subscription login --token <token>` or set `REDIACC_SUBSCRIPTION_TOKEN`.",
@@ -2407,6 +2408,7 @@
     "localPaths": "One or more local file or directory paths (default: current directory)",
     "remotePath": "Remote subdirectory path within repository",
     "remoteFile": "Remote file path within repository (alternative to --remote for single-file transfers)",
+    "remoteFileUpload": "Single remote file path (relative to repo root) to upload to. Mutually exclusive with --remote.",
     "mirrorUpload": "Mirror mode - delete remote files not present locally",
     "mirrorDownload": "Mirror mode - delete local files not present on remote",
     "verifyChecksum": "Verify files using checksums after sync",

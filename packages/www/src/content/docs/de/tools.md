@@ -4,8 +4,8 @@ description: 'Dateisynchronisation, Terminalzugriff, VS Code-Unterstützung und 
 category: Guides
 order: 9
 language: de
-sourceHash: "530a1f5d5db06fb2"
-sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
+sourceHash: "d089cea510a69bfb"
+sourceCommit: "1b6c53f52954d63959d8176bfa70a91405a2a87f"
 ---
 
 # Werkzeuge

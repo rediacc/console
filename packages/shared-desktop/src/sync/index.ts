@@ -28,9 +28,10 @@ export {
 } from './pathConverter.js';
 // SFTP fallback (for systems without rsync)
 export {
+  isExcluded as sftpIsExcluded,
   sftpDownloadDirectory,
   sftpDownloadFile,
-  sftpUploadDirectory,
+  sftpUploadFile,
   sftpUploadPaths,
 } from './sftp-fallback.js';
 export type {

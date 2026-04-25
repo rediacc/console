@@ -6,7 +6,7 @@ order: 2
 language: es
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/es/cli.json
-sourceHash: "2095fc514f88d10f"
+sourceHash: "1c66a5f957671837"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1888,6 +1888,7 @@ rdc repo sync upload [options]
 | `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--local <paths...>` | {{t:cli.options.localPaths}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--remote <path>` | {{t:cli.options.remotePath}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--remote-file <path>` | {{t:cli.options.remoteFileUpload}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--mirror` | {{t:cli.options.mirrorUpload}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--verify` | {{t:cli.options.verifyChecksum}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--confirm` | {{t:cli.options.confirmSync}} | {{t:cli.docs.optionLabels.no}} | - |

@@ -16,6 +16,7 @@ export interface SyncUploadOptions {
   repository?: string;
   local?: string[];
   remote?: string;
+  remoteFile?: string;
   mirror?: boolean;
   verify?: boolean;
   confirm?: boolean;
@@ -52,6 +53,35 @@ export function withTrailingSlash(p: string): string {
   return p.endsWith('/') ? p : `${p}/`;
 }
 
+export interface SyncRemotePaths {
+  /** rsync destination path. File mode: no trailing slash. Dir mode: trailing slash. */
+  remotePath: string;
+  /** SFTP-relative path. File mode: subpath as given (no slash). Dir mode: subpath with trailing slash, or '.' when undefined. */
+  sftpRemotePath: string;
+}
+
+export function buildSyncRemotePaths(
+  baseRemotePath: string,
+  remoteSubPath: string | undefined,
+  isFile: boolean
+): SyncRemotePaths {
+  // Strip leading + trailing slashes from the user-provided sub-path so
+  // we never produce `path//` or `//path` even if the caller passes a
+  // pre-slashed value. In single-file mode the result has no trailing
+  // slash; in directory mode we add exactly one.
+  const sub = (remoteSubPath ?? '').replaceAll(/^\/+|\/+$/g, '');
+  if (isFile) {
+    return {
+      remotePath: sub ? `${baseRemotePath}/${sub}` : baseRemotePath,
+      sftpRemotePath: sub,
+    };
+  }
+  return {
+    remotePath: sub ? `${baseRemotePath}/${sub}/` : `${baseRemotePath}/`,
+    sftpRemotePath: sub ? `${sub}/` : '.',
+  };
+}
+
 export function resolveUploadLocalPaths(local: string[] | undefined): ResolvedLocalSource[] {
   const inputs = local && local.length > 0 ? local : [process.cwd()];
   return inputs.map((p) => {
@@ -86,6 +116,35 @@ export function validateDownloadOptions(options: SyncDownloadOptions): {
     }
   }
   return { localPath, isFileMode: Boolean(options.remoteFile) };
+}
+
+/**
+ * Validate upload options: remote/remote-file exclusivity, mirror+file guards,
+ * and require a single-file local source when --remote-file is set.
+ *
+ * Returns the resolved local sources alongside `isFileMode` so callers can
+ * thread both into rsync source construction and the SFTP dispatcher.
+ */
+export function validateUploadOptions(options: SyncUploadOptions): {
+  isFileMode: boolean;
+  sources: ResolvedLocalSource[];
+} {
+  if (options.remote && options.remoteFile) {
+    throw new Error(t('errors.sync.remoteAndRemoteFile'));
+  }
+  if (options.remoteFile && options.mirror) {
+    throw new Error(t('errors.sync.mirrorWithFile'));
+  }
+  const sources = resolveUploadLocalPaths(options.local);
+  if (options.mirror && sources.some((s) => s.isFile)) {
+    throw new Error(t('errors.sync.mirrorWithFile'));
+  }
+  if (options.remoteFile) {
+    if (sources.length !== 1 || !sources[0].isFile) {
+      throw new Error(t('errors.sync.remoteFileRequiresSingleFile'));
+    }
+  }
+  return { isFileMode: Boolean(options.remoteFile), sources };
 }
 
 export function formatBytes(bytes: number): string {

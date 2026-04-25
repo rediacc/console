@@ -241,6 +241,8 @@ export function buildRsyncArgs(
     remoteRsyncPath?: string;
     /** True when syncing local → remote (upload). Enables --chown on remote. */
     isUpload?: boolean;
+    /** Auto-create the destination's parent directories (rsync 3.2.3+). */
+    mkpath?: boolean;
   },
   sshCommand: string,
   universalUser?: string,
@@ -253,6 +255,8 @@ export function buildRsyncArgs(
   } else {
     args.push('--verbose', '--inplace', '--no-whole-file', '--progress');
   }
+
+  if (options.mkpath) args.push('--mkpath');
 
   args.push('-e', sshCommand);
 
@@ -284,6 +288,8 @@ export interface RsyncExecutorOptions {
   universalUser?: string;
   /** True when syncing local → remote (upload). Enables --chown on remote. */
   isUpload?: boolean;
+  /** Auto-create the destination's parent directories (rsync 3.2.3+). */
+  mkpath?: boolean;
   /** Verbose logging - outputs full rsync command before execution */
   verbose?: boolean;
   /** Callback for progress updates */
@@ -318,6 +324,7 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
       exclude: options.exclude,
       remoteRsyncPath: options.remoteRsyncPath,
       isUpload: options.isUpload,
+      mkpath: options.mkpath,
     },
     sshCommand,
     options.universalUser,
@@ -455,6 +462,7 @@ export async function getRsyncPreview(options: RsyncExecutorOptions): Promise<Rs
       exclude: options.exclude,
       remoteRsyncPath: options.remoteRsyncPath,
       isUpload: options.isUpload,
+      mkpath: options.mkpath,
     },
     sshCommand,
     options.universalUser,

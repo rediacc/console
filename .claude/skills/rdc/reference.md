@@ -764,6 +764,7 @@ Upload files to a repository via rsync over SSH (delta transfer). Use --mirror t
 - `-r, --repository <name>` — Repository name (connects to repository environment)
 - `--local <paths...>` — One or more local file or directory paths (default: current directory)
 - `--remote <path>` — Remote subdirectory path within repository
+- `--remote-file <path>` — Single remote file path (relative to repo root) to upload to. Mutually exclusive with --remote.
 - `--mirror` — Mirror mode - delete remote files not present locally
 - `--verify` — Verify files using checksums after sync
 - `--confirm` — Preview changes and ask for confirmation before syncing

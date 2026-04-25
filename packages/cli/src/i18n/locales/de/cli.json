@@ -2340,7 +2340,8 @@
       "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert",
       "pathTraversalBlocked": "Der --remote-Pfad darf keine \"..\" Pfadtraversierung enthalten. Verwenden Sie einen Pfad innerhalb des Repositorys.",
       "remoteAndRemoteFile": "--remote und --remote-file können nicht zusammen verwendet werden. Wählen Sie eine Option.",
-      "remoteFileLocalNotDir": "Wenn --remote-file gesetzt ist, muss --local ein vorhandenes Verzeichnis sein: {{path}}"
+      "remoteFileLocalNotDir": "Wenn --remote-file gesetzt ist, muss --local ein vorhandenes Verzeichnis sein: {{path}}",
+      "remoteFileRequiresSingleFile": "--remote-file erfordert genau einen --local Pfad, der auf eine Datei verweist."
     },
     "teamRequired": "Team-Name erforderlich. Verwenden Sie --team oder stellen Sie den Kontext ein.",
     "term": {
@@ -2527,6 +2528,7 @@
     "rawVault": "Raw Vault JSON (für Scripts/CI)",
     "region": "Regionsname",
     "remoteFile": "Pfad einer entfernten Datei im Repository (Alternative zu --remote für Einzeldatei-Transfers)",
+    "remoteFileUpload": "Einzelner entfernter Dateipfad (relativ zum Repository-Root) als Upload-Ziel. Schließt --remote aus.",
     "remotePath": "Remote-Unterverzichnis-Pfad innerhalb des Repository",
     "renetPath": "Pfad zur renet-Binärdatei (Standard: renet in PATH)",
     "repository": "Repository-Name (verbindet sich mit Repository-Umgebung)",

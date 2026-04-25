@@ -57,9 +57,13 @@ rdc term connect -m <machine> -c "command"
 # Deploy/update a repository
 rdc repo up --name <repo> -m <machine>
 
-# File sync
+# File sync (directory)
 rdc repo sync upload -m <machine> -r <repo> --local ./local-path
 rdc repo sync download -m <machine> -r <repo> --local ./local-path
+
+# File sync (single file — explicit remote path)
+rdc repo sync upload -m <machine> -r <repo> --local ./config.toml --remote-file etc/config.toml
+rdc repo sync download -m <machine> -r <repo> --local ./out --remote-file etc/config.toml
 
 # VS Code remote
 rdc vscode connect -m <machine> -r <repo>

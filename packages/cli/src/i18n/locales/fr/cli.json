@@ -2340,7 +2340,8 @@
       "noPrivateKey": "L'équipe '{{team}}' n'a pas de clé privée SSH configurée",
       "pathTraversalBlocked": "Le chemin --remote ne doit pas contenir de traversée de chemin \"..\". Utilisez un chemin à l'intérieur du dépôt.",
       "remoteAndRemoteFile": "--remote et --remote-file ne peuvent pas être utilisés ensemble. Choisissez-en un.",
-      "remoteFileLocalNotDir": "Lorsque --remote-file est défini, --local doit être un répertoire existant : {{path}}"
+      "remoteFileLocalNotDir": "Lorsque --remote-file est défini, --local doit être un répertoire existant : {{path}}",
+      "remoteFileRequiresSingleFile": "--remote-file requiert exactement un chemin --local pointant sur un fichier."
     },
     "teamRequired": "Le nom de l'équipe est requis. Utilisez --team ou définissez un contexte.",
     "term": {
@@ -2527,6 +2528,7 @@
     "rawVault": "JSON du coffre brut (pour scripts/CI)",
     "region": "Nom de la région",
     "remoteFile": "Chemin d'un fichier distant dans le dépôt (alternative à --remote pour les transferts de fichier unique)",
+    "remoteFileUpload": "Chemin unique d'un fichier distant (relatif à la racine du dépôt) comme cible du téléversement. Mutuellement exclusif avec --remote.",
     "remotePath": "Chemin du sous-répertoire distant dans le dépôt",
     "renetPath": "Chemin vers le binaire renet (par défaut : renet dans PATH)",
     "repository": "Nom du dépôt (se connecte à l'environnement du dépôt)",

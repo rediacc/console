@@ -24,6 +24,9 @@ export interface AuditEvent {
     durationMs: number;
     cliVersion: string;
     error?: string;
+    /** Optional transfer counts for sync_upload / sync_download events. */
+    filesTransferred?: number;
+    bytesTransferred?: number;
   };
 }
 
@@ -79,6 +82,8 @@ class AuditService {
     exitCode: number;
     durationMs: number;
     error?: string;
+    filesTransferred?: number;
+    bytesTransferred?: number;
   }): void {
     this.record({
       type: functionNameToEventType(opts.functionName),
@@ -91,6 +96,8 @@ class AuditService {
         durationMs: opts.durationMs,
         cliVersion: VERSION,
         error: opts.error?.slice(0, 500),
+        filesTransferred: opts.filesTransferred,
+        bytesTransferred: opts.bytesTransferred,
       },
     });
   }

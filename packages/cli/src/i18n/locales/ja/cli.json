@@ -2340,7 +2340,8 @@
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
       "pathTraversalBlocked": "--remote パスに \"..\" パストラバーサルを含めることはできません。リポジトリ内のパスを使用してください。",
       "remoteAndRemoteFile": "--remote と --remote-file は併用できません。どちらか一方を選択してください。",
-      "remoteFileLocalNotDir": "--remote-file を指定した場合、--local は既存のディレクトリである必要があります: {{path}}"
+      "remoteFileLocalNotDir": "--remote-file を指定した場合、--local は既存のディレクトリである必要があります: {{path}}",
+      "remoteFileRequiresSingleFile": "--remote-file には、ファイルを指す --local パスが正確に 1 つ必要です。"
     },
     "teamRequired": "チーム名が必要です。--team を使用するか、コンテキストを設定してください。",
     "term": {
@@ -2527,6 +2528,7 @@
     "rawVault": "未加工ボルト JSON (スクリプト/CI 用)",
     "region": "リージョン名",
     "remoteFile": "リポジトリ内のリモートファイルパス（単一ファイル転送時の --remote の代替）",
+    "remoteFileUpload": "アップロード先となる単一のリモートファイルパス（リポジトリのルート相対）。--remote とは併用できません。",
     "remotePath": "リポジトリ内のリモートサブディレクトリパス",
     "renetPath": "renet バイナリへのパス (デフォルト: PATH の renet)",
     "repository": "リポジトリ名 (リポジトリ環境に接続)",
