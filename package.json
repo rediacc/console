@@ -164,7 +164,8 @@
     "@hono/node-server": ">=1.19.13",
     "vite": ">=6.4.2 <8",
     "follow-redirects": "^1.16.0",
-    "postcss": ">=8.5.10"
+    "postcss": ">=8.5.10",
+    "protobufjs": ">=7.5.5 <8 || >=8.0.1"
   },
   "_overridesReasons": {
     "glob": "BLOCKER: force glob ^11 everywhere to avoid deprecated transitive glob <9 chain pulled in via old eslint/electron paths",
@@ -185,6 +186,7 @@
     "@hono/node-server": "BLOCKER: force >=1.19.13 to pair with hono >=4.12.12 override; pre-1.19 cannot start against hono 4.12.x",
     "vite": "BLOCKER: bound >=6.4.2 <8 to capture dev-server path-traversal + fs.deny fixes while staying compatible with vitest/@vitest 3.x and the astro stack; vite 8 release is a breaking major we have not planned for",
     "follow-redirects": "BLOCKER: force ^1.16.0 to include GHSA-r4q5-vmmm-2653 fix; axios 1.15.0 range ^1.15.11 permits 1.16.0 but the lockfile would otherwise freeze at 1.15.11",
-    "postcss": "BLOCKER: force >=8.5.10 to include GHSA-qx2v-qp2m-jg93 XSS-via-unescaped-style-tag fix; vite/marpit transitives otherwise hold tree at 8.5.8"
+    "postcss": "BLOCKER: force >=8.5.10 to include GHSA-qx2v-qp2m-jg93 XSS-via-unescaped-style-tag fix; vite/marpit transitives otherwise hold tree at 8.5.8",
+    "protobufjs": "BLOCKER: cover GHSA-xq3m-2v4x-88gg (protobufjs <7.5.5 OR ==8.0.0). Bound spans both 7.x and 8.x to satisfy @grpc/proto-loader (^7) and @opentelemetry/otlp-transformer (^8) without forcing a major bump"
   }
 }
