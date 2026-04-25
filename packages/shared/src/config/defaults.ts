@@ -204,6 +204,9 @@ export const STATUS_DEFAULTS = {
   /** Unknown status fallback (uppercase) */
   UNKNOWN_UPPERCASE: 'UNKNOWN',
 
+  /** Placeholder for an unparseable / missing checksum or short value in error messages */
+  UNKNOWN_PLACEHOLDER: '?',
+
   /** Current version identifier */
   CURRENT: 'Current',
 

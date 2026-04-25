@@ -2340,7 +2340,8 @@
       "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada",
       "pathTraversalBlocked": "La ruta --remote no debe contener recorrido de ruta \"..\". Use una ruta dentro del repositorio.",
       "remoteAndRemoteFile": "--remote y --remote-file no se pueden usar juntos. Elige uno.",
-      "remoteFileLocalNotDir": "Cuando se establece --remote-file, --local debe ser un directorio existente: {{path}}"
+      "remoteFileLocalNotDir": "Cuando se establece --remote-file, --local debe ser un directorio existente: {{path}}",
+      "remoteFileRequiresSingleFile": "--remote-file requiere exactamente una ruta --local que apunte a un archivo."
     },
     "teamRequired": "Nombre de equipo requerido. Use --team o establezca contexto.",
     "term": {
@@ -2527,6 +2528,7 @@
     "rawVault": "JSON de bóveda sin procesar (para scripts/CI)",
     "region": "Nombre de región",
     "remoteFile": "Ruta del archivo remoto en el repositorio (alternativa a --remote para transferencias de un solo archivo)",
+    "remoteFileUpload": "Ruta única de archivo remoto (relativa a la raíz del repositorio) como destino de subida. Mutuamente excluyente con --remote.",
     "remotePath": "Ruta de subdirectorio remoto dentro del repositorio",
     "renetPath": "Ruta al binario renet (predeterminado: renet en PATH)",
     "repository": "Nombre de repositorio (conecta a entorno de repositorio)",

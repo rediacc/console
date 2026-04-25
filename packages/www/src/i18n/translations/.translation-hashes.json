@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 7783,
-    "sourceCommit": "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
+    "sourceCommit": "1b6c53f52954d63959d8176bfa70a91405a2a87f"
   },
   "hashes": {
     "announcement.link": "0cc49471",

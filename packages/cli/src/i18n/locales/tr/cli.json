@@ -2340,7 +2340,8 @@
       "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok",
       "pathTraversalBlocked": "--remote yolu \"..\" yol geçişi içermemelidir. Depo içinde bir yol kullanın.",
       "remoteAndRemoteFile": "--remote ve --remote-file birlikte kullanılamaz. Birini seçin.",
-      "remoteFileLocalNotDir": "--remote-file ayarlandığında, --local var olan bir dizin olmalıdır: {{path}}"
+      "remoteFileLocalNotDir": "--remote-file ayarlandığında, --local var olan bir dizin olmalıdır: {{path}}",
+      "remoteFileRequiresSingleFile": "--remote-file için, bir dosyaya işaret eden tam olarak bir --local yolu gerekir."
     },
     "teamRequired": "Takım adı gerekli. --team kullanın veya bağlamı ayarlayın.",
     "term": {
@@ -2527,6 +2528,7 @@
     "rawVault": "Ham kasa JSON'u (komut dosyaları/CI için)",
     "region": "Bölge adı",
     "remoteFile": "Depodaki uzak dosya yolu (tek dosya aktarımları için --remote yerine kullanılır)",
+    "remoteFileUpload": "Yüklenecek tek uzak dosya yolu (depo köküne göre). --remote ile birlikte kullanılamaz.",
     "remotePath": "Depo içinde uzak alt dizin yolu",
     "renetPath": "Renet ikili dosyasının yolu (varsayılan: PATH'te renet)",
     "repository": "Depo adı (depo ortamına bağlanır)",

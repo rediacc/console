@@ -2340,7 +2340,8 @@
       "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
       "pathTraversalBlocked": "يجب ألا يحتوي مسار --remote على اجتياز المسار \"..\". استخدم مساراً داخل المستودع.",
       "remoteAndRemoteFile": "لا يمكن استخدام --remote و --remote-file معاً. اختر واحداً منهما.",
-      "remoteFileLocalNotDir": "عند تعيين --remote-file، يجب أن يكون --local مجلداً موجوداً: {{path}}"
+      "remoteFileLocalNotDir": "عند تعيين --remote-file، يجب أن يكون --local مجلداً موجوداً: {{path}}",
+      "remoteFileRequiresSingleFile": "‫يتطلب --remote-file مسار --local واحدًا بالضبط يشير إلى ملف."
     },
     "teamRequired": "اسم الفريق مطلوب. استخدم --team أو اضبط السياق.",
     "term": {
@@ -2527,6 +2528,7 @@
     "rawVault": "خزينة JSON أولية (للنصوص البرمجية/CI)",
     "region": "اسم المنطقة",
     "remoteFile": "مسار الملف البعيد داخل المستودع (بديل لـ --remote لنقل ملف واحد)",
+    "remoteFileUpload": "‫مسار ملف بعيد واحد (نسبي إلى جذر المستودع) للرفع إليه. لا يمكن استخدامه مع --remote.",
     "remotePath": "مسار المجلد الفرعي البعيد ضمن المستودع",
     "renetPath": "المسار إلى ثنائي renet (افتراضي: renet في PATH)",
     "repository": "اسم المستودع (يتصل ببيئة المستودع)",
