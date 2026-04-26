@@ -4,8 +4,8 @@ description: 几分钟内在您的服务器上运行容器化服务。
 category: Guides
 order: -1
 language: zh
-sourceHash: "a06ed41ca6a9c5ed"
-sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
+sourceHash: "71da41d42b1a6b4e"
+sourceCommit: "62f6c6e20c424566749c15efca685c8dc136f09b"
 ---
 
 # 快速开始

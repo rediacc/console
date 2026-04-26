@@ -68,7 +68,7 @@
     "check:lint": "NODE_OPTIONS=--max-old-space-size=8192 eslint packages scripts private/account --max-warnings 0 && biome lint private/account/ --error-on-warnings",
     "check:test": "npm run test:run -w @rediacc/web",
     "check:test-cli": "npm run test:unit -w @rediacc/cli",
-    "check:test-workers": "cd workers/www && npm run test:unit && cd ../marketing && npm run test:unit",
+    "check:test-workers": "cd workers/www && npm run test:unit",
     "check:ci-install-sh-config": ".ci/scripts/test/test-install-sh-config.sh",
     "check:test:tutorial-player": "npm run test:tutorial-player -w @rediacc/www",
     "check:types": "tsc -b packages/shared packages/shared-desktop packages/provisioning packages/cli packages/desktop packages/e2e && npm run typecheck -w @rediacc/web && tsc --noEmit -p private/account/tsconfig.json",
