@@ -4,8 +4,8 @@ description: Lancez un service conteneurisé sur votre serveur en quelques minut
 category: Guides
 order: -1
 language: fr
-sourceHash: "a06ed41ca6a9c5ed"
-sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
+sourceHash: "71da41d42b1a6b4e"
+sourceCommit: "62f6c6e20c424566749c15efca685c8dc136f09b"
 ---
 
 # Démarrage rapide
@@ -158,9 +158,9 @@ rdc repo sync download -m my-server -r my-app --local ./backup --dry-run        
 
 **Tunnel (redirection de port SSH vers un conteneur) :**
 ```bash
-rdc repo tunnel -m my-server -r my-app  # Détection automatique du conteneur et du port
-rdc repo tunnel -m my-server -r my-app --port 5432  # Tunnel vers Postgres
-rdc repo tunnel -m my-server -r my-app --port 5432 --local 15432  # Port local personnalisé
+rdc repo tunnel -m my-server -r my-app -c app  # Détection automatique du port pour le conteneur app
+rdc repo tunnel -m my-server -r my-app -c db --port 5432  # Tunnel vers Postgres
+rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # Port local personnalisé
 ```
 
 Lancez le tunnel → ouvrez `localhost:3000` dans le navigateur → application en direct depuis le serveur distant.
