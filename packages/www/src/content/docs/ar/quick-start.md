@@ -158,9 +158,9 @@ rdc repo sync download -m my-server -r my-app --local ./backup --dry-run        
 
 **النفق (تحويل منفذ SSH إلى الحاوية):**
 ```bash
-rdc repo tunnel -m my-server -r my-app  # كشف تلقائي للحاوية والمنفذ
-rdc repo tunnel -m my-server -r my-app --port 5432  # نفق Postgres
-rdc repo tunnel -m my-server -r my-app --port 5432 --local 15432  # منفذ محلي مخصص
+rdc repo tunnel -m my-server -r my-app -c app  # كشف تلقائي للمنفذ لحاوية app
+rdc repo tunnel -m my-server -r my-app -c db --port 5432  # نفق Postgres
+rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # منفذ محلي مخصص
 ```
 
 شغّل النفق ثم افتح `localhost:3000` في المتصفح ثم شاهد التطبيق الحي من الخادم البعيد.

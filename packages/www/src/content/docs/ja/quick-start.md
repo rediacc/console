@@ -158,9 +158,9 @@ rdc repo sync download -m my-server -r my-app --local ./backup --dry-run        
 
 **トンネル（コンテナへのSSHポートフォワーディング）:**
 ```bash
-rdc repo tunnel -m my-server -r my-app  # コンテナとポートを自動検出
-rdc repo tunnel -m my-server -r my-app --port 5432  # Postgresをトンネル
-rdc repo tunnel -m my-server -r my-app --port 5432 --local 15432  # カスタムローカルポート
+rdc repo tunnel -m my-server -r my-app -c app  # app コンテナのポートを自動検出
+rdc repo tunnel -m my-server -r my-app -c db --port 5432  # Postgresをトンネル
+rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # カスタムローカルポート
 ```
 
 トンネルを実行 → ブラウザで `localhost:3000` を開く → リモートサーバーのライブアプリが表示されます。

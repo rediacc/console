@@ -158,9 +158,9 @@ rdc repo sync download -m my-server -r my-app --local ./backup --dry-run        
 
 **隧道（SSH 端口转发到容器）：**
 ```bash
-rdc repo tunnel -m my-server -r my-app  # 自动检测容器和端口
-rdc repo tunnel -m my-server -r my-app --port 5432  # 隧道连接 Postgres
-rdc repo tunnel -m my-server -r my-app --port 5432 --local 15432  # 自定义本地端口
+rdc repo tunnel -m my-server -r my-app -c app  # 自动检测 app 容器的端口
+rdc repo tunnel -m my-server -r my-app -c db --port 5432  # 隧道连接 Postgres
+rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # 自定义本地端口
 ```
 
 运行隧道 → 在浏览器中打开 `localhost:3000` → 从远程服务器访问实时应用。

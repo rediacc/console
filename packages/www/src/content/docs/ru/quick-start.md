@@ -158,9 +158,9 @@ rdc repo sync download -m my-server -r my-app --local ./backup --dry-run        
 
 **Туннель (SSH-проброс порта к контейнеру):**
 ```bash
-rdc repo tunnel -m my-server -r my-app  # Автоопределение контейнера и порта
-rdc repo tunnel -m my-server -r my-app --port 5432  # Туннель к Postgres
-rdc repo tunnel -m my-server -r my-app --port 5432 --local 15432  # Свой локальный порт
+rdc repo tunnel -m my-server -r my-app -c app  # Автоопределение порта для контейнера app
+rdc repo tunnel -m my-server -r my-app -c db --port 5432  # Туннель к Postgres
+rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # Свой локальный порт
 ```
 
 Запустите туннель -> откройте `localhost:3000` в браузере -> живое приложение с удалённого сервера.

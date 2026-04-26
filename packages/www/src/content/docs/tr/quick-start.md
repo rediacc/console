@@ -158,9 +158,9 @@ rdc repo sync download -m my-server -r my-app --local ./backup --dry-run        
 
 **Tünel (Konteynere SSH port yönlendirme):**
 ```bash
-rdc repo tunnel -m my-server -r my-app  # Konteyner ve portu otomatik algıla
-rdc repo tunnel -m my-server -r my-app --port 5432  # Postgres tüneli
-rdc repo tunnel -m my-server -r my-app --port 5432 --local 15432  # Özel yerel port
+rdc repo tunnel -m my-server -r my-app -c app  # app konteynerinin portunu otomatik algıla
+rdc repo tunnel -m my-server -r my-app -c db --port 5432  # Postgres tüneli
+rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # Özel yerel port
 ```
 
 Tünel çalıştırın → tarayıcıda `localhost:3000` açın → uzak sunucudan canlı uygulama.
