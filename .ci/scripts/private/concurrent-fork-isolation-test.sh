@@ -82,8 +82,26 @@ log_step "Forking parent into '$FORK_TAG' (parent stays running)"
 rdc repo fork --parent "$PARENT_REPO" --tag "$FORK_TAG" -m "$MACHINE_NAME"
 log_step "Bringing fork up — must succeed (renet#60 regression guard)"
 if ! rdc repo up --name "$FORK_REPO" -m "$MACHINE_NAME"; then
-    log_error "rdc repo up '$FORK_REPO' failed — renet#60 race regressed"
-    log_error "(parent's postgres likely captured 0.0.0.0:5432 unrewritten)"
+    log_error "rdc repo up '$FORK_REPO' failed"
+    log_error "Diagnostic dump follows — db logs + cgroup state + listening sockets"
+
+    log_step "[diag] cgroup hierarchy under /sys/fs/cgroup/rediacc.slice"
+    _ssh "sudo find /sys/fs/cgroup/rediacc.slice -maxdepth 4 -type d | head -50" || true
+
+    log_step "[diag] postgres binds on host (any source port :5432)"
+    _ssh "sudo ss -tlnp4 'sport = :5432' 2>&1" || true
+
+    log_step "[diag] db container logs (parent + fork sockets)"
+    _ssh "sudo bash -c '
+      for sock in /var/run/rediacc/docker-*.sock; do
+        echo \"=== \$sock ===\"
+        docker -H unix://\$sock ps -a --format \"{{.ID}} {{.Names}} {{.Status}}\" 2>/dev/null || true
+        cid=\$(docker -H unix://\$sock ps -a --filter name=db --format \"{{.ID}}\" 2>/dev/null | head -1)
+        [ -n \"\$cid\" ] && docker -H unix://\$sock logs --tail 50 \"\$cid\" 2>&1 || true
+      done
+    '" || true
+
+    log_error "(see diagnostic dump above)"
     exit 1
 fi
 
