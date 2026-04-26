@@ -145,26 +145,25 @@ log_step "Asserting fork daemon has no foreign-project containers (renet#59)"
 parent_project=$(_ssh "basename /mnt/rediacc/mounts/${PARENT_REPO} 2>/dev/null" || echo "$PARENT_REPO")
 fork_project=$(_ssh "basename /mnt/rediacc/mounts/${FORK_REPO} 2>/dev/null" || echo "${FORK_REPO//:/_}")
 
-# Each per-network socket — count parent-project containers in any socket
-# whose containers don't include a fork-project entry.
-foreign=$(_ssh '
-sudo bash -c "
+# For each per-network socket, count fork-project + parent-project containers
+# via docker --filter (exact label match, not substring of the Labels column —
+# parent name is a prefix of fork name, so substring matching false-positives).
+# A socket owning both means renet#59 regressed.
+foreign=$(_ssh "
+sudo bash -c '
 set -e
 for sock in /var/run/rediacc/docker-*.sock; do
     [ -S \"\$sock\" ] || continue
-    labels=\$(docker -H unix://\$sock ps -a --format \"{{.Labels}}\" 2>/dev/null || true)
-    fork_match=\$(echo \"\$labels\" | grep -c \"com.docker.compose.project='"$fork_project"'\" || true)
-    parent_match=\$(echo \"\$labels\" | grep -c \"com.docker.compose.project='"$parent_project"'\" || true)
-    # If this socket owns any fork containers AND ALSO any parent containers,
-    # that\s the renet#59 leak.
+    fork_match=\$(docker -H unix://\$sock ps -a --filter \"label=com.docker.compose.project=$fork_project\" -q 2>/dev/null | wc -l)
+    parent_match=\$(docker -H unix://\$sock ps -a --filter \"label=com.docker.compose.project=$parent_project\" -q 2>/dev/null | wc -l)
     if [ \"\$fork_match\" -gt 0 ] && [ \"\$parent_match\" -gt 0 ]; then
         echo \"\$parent_match\"
         exit 0
     fi
 done
 echo 0
-"
-' 2>/dev/null || echo 0)
+'
+")
 
 if [[ "${foreign:-0}" -gt 0 ]]; then
     log_error "fork daemon contains $foreign parent-project containers — renet#59 regressed"
