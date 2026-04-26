@@ -91,13 +91,24 @@ if ! rdc repo up --name "$FORK_REPO" -m "$MACHINE_NAME"; then
     log_step "[diag] postgres binds on host (any source port :5432)"
     _ssh "sudo ss -tlnp4 'sport = :5432' 2>&1" || true
 
+    log_step "[diag] cgroup_configs BPF map contents (pinned at /sys/fs/bpf/rediacc/cgroup_configs)"
+    _ssh "sudo bpftool map dump pinned /sys/fs/bpf/rediacc/cgroup_configs 2>&1 | head -60" || true
+
+    log_step "[diag] BPF programs attached to rediacc.slice"
+    _ssh "sudo bpftool cgroup tree /sys/fs/cgroup/rediacc.slice 2>&1 | head -30" || true
+
     log_step "[diag] db container logs (parent + fork sockets)"
     _ssh "sudo bash -c '
       for sock in /var/run/rediacc/docker-*.sock; do
         echo \"=== \$sock ===\"
         docker -H unix://\$sock ps -a --format \"{{.ID}} {{.Names}} {{.Status}}\" 2>/dev/null || true
         cid=\$(docker -H unix://\$sock ps -a --filter name=db --format \"{{.ID}}\" 2>/dev/null | head -1)
-        [ -n \"\$cid\" ] && docker -H unix://\$sock logs --tail 50 \"\$cid\" 2>&1 || true
+        if [ -n \"\$cid\" ]; then
+          echo \"--- inspect cgroup ---\"
+          docker -H unix://\$sock inspect --format \"{{.HostConfig.CgroupParent}}\" \"\$cid\" 2>&1 || true
+          echo \"--- logs ---\"
+          docker -H unix://\$sock logs --tail 50 \"\$cid\" 2>&1 || true
+        fi
       done
     '" || true
 
