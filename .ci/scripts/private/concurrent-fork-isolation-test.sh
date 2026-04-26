@@ -96,9 +96,13 @@ fi
 # distinct 127.0.x.x:5432 entries, no 0.0.0.0:5432.
 log_step "Reading postgres binds on worker (sport = :5432)"
 binds_raw=$(_ssh "ss -Hltnp4 'sport = :5432' 2>/dev/null | awk '{print \$4}'" || true)
-mapfile -t binds < <(printf '%s\n' "$binds_raw" | sed '/^[[:space:]]*$/d')
+binds=()
+while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    binds+=("$line")
+done < <(printf '%s\n' "$binds_raw")
 
-log_step "Found $(printf '%s\n' "${binds[@]:-}" | wc -l) listener(s):"
+log_step "Found ${#binds[@]} listener(s):"
 for b in "${binds[@]:-}"; do
     log_step "  $b"
 done
@@ -120,7 +124,11 @@ for b in "${binds[@]}"; do
 done
 
 # Distinct addresses
-mapfile -t unique_ips < <(printf '%s\n' "${binds[@]}" | sort -u)
+unique_ips=()
+while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    unique_ips+=("$line")
+done < <(printf '%s\n' "${binds[@]}" | sort -u)
 if [[ ${#unique_ips[@]} -lt 2 ]]; then
     log_error "all binds collapsed to a single IP (${binds[0]}) — isolation violated"
     exit 1
