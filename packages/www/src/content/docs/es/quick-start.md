@@ -4,8 +4,8 @@ description: Ejecute un servicio en contenedores en su servidor en minutos.
 category: Guides
 order: -1
 language: es
-sourceHash: "a06ed41ca6a9c5ed"
-sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
+sourceHash: "71da41d42b1a6b4e"
+sourceCommit: "62f6c6e20c424566749c15efca685c8dc136f09b"
 ---
 
 # Inicio rápido
@@ -158,9 +158,9 @@ rdc repo sync download -m my-server -r my-app --local ./backup --dry-run        
 
 **Túnel (reenvío de puertos SSH al contenedor):**
 ```bash
-rdc repo tunnel -m my-server -r my-app  # Auto-detectar contenedor y puerto
-rdc repo tunnel -m my-server -r my-app --port 5432  # Túnel a Postgres
-rdc repo tunnel -m my-server -r my-app --port 5432 --local 15432  # Puerto local personalizado
+rdc repo tunnel -m my-server -r my-app -c app  # Auto-detectar puerto para el contenedor app
+rdc repo tunnel -m my-server -r my-app -c db --port 5432  # Túnel a Postgres
+rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # Puerto local personalizado
 ```
 
 Ejecute tunnel → abra `localhost:3000` en el navegador → app en vivo desde el servidor remoto.

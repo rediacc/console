@@ -13,7 +13,7 @@ source "$ROOT_DIR/.ci/lib/local-common.sh"
 
 check_node_version "$NODE_VERSION_MIN"
 
-if [[ "$REDIACC_SKIP_MACHINE_ACTIVATION" == "1" ]]; then
+if [[ "${REDIACC_SKIP_MACHINE_ACTIVATION:-0}" == "1" ]]; then
     # Self-register as 'rdc' in ~/.local/bin so it's accessible from any terminal
     _local_bin="$HOME/.local/bin"
     mkdir -p "$_local_bin"
@@ -76,7 +76,7 @@ else
     export REDIACC_ENVIRONMENT=development
     export REDIACC_SUBSCRIPTION_TOKEN_FILE="$ROOT_DIR/.rdc-dev/api-token.json"
 
-    if [[ "$REDIACC_SKIP_MACHINE_ACTIVATION" != "1" ]]; then
+    if [[ "${REDIACC_SKIP_MACHINE_ACTIVATION:-0}" != "1" ]]; then
         log_info "Renet available at: $renet_bin_dir/renet"
     fi
 
@@ -88,7 +88,7 @@ else
         set +a
     fi
 
-    if [[ "$REDIACC_SKIP_MACHINE_ACTIVATION" != "1" ]]; then
+    if [[ "${REDIACC_SKIP_MACHINE_ACTIVATION:-0}" != "1" ]]; then
         log_step "Starting CLI (dev mode)"
     fi
 fi

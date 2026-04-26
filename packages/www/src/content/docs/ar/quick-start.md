@@ -4,8 +4,8 @@ description: تشغيل خدمة حاويات على خادمك في دقائق.
 category: Guides
 order: -1
 language: ar
-sourceHash: "a06ed41ca6a9c5ed"
-sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
+sourceHash: "71da41d42b1a6b4e"
+sourceCommit: "62f6c6e20c424566749c15efca685c8dc136f09b"
 ---
 
 # البدء السريع
@@ -158,9 +158,9 @@ rdc repo sync download -m my-server -r my-app --local ./backup --dry-run        
 
 **النفق (تحويل منفذ SSH إلى الحاوية):**
 ```bash
-rdc repo tunnel -m my-server -r my-app  # كشف تلقائي للحاوية والمنفذ
-rdc repo tunnel -m my-server -r my-app --port 5432  # نفق Postgres
-rdc repo tunnel -m my-server -r my-app --port 5432 --local 15432  # منفذ محلي مخصص
+rdc repo tunnel -m my-server -r my-app -c app  # كشف تلقائي للمنفذ لحاوية app
+rdc repo tunnel -m my-server -r my-app -c db --port 5432  # نفق Postgres
+rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # منفذ محلي مخصص
 ```
 
 شغّل النفق ثم افتح `localhost:3000` في المتصفح ثم شاهد التطبيق الحي من الخادم البعيد.

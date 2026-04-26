@@ -156,9 +156,9 @@ rdc repo sync download -m my-server -r my-app --local ./backup --dry-run        
 
 **Tunnel (SSH port-forwarding to container):**
 ```bash
-rdc repo tunnel -m my-server -r my-app  # Auto-detect container & port
-rdc repo tunnel -m my-server -r my-app --port 5432  # Tunnel Postgres
-rdc repo tunnel -m my-server -r my-app --port 5432 --local 15432  # Custom local port
+rdc repo tunnel -m my-server -r my-app -c app  # Auto-detect port for the app container
+rdc repo tunnel -m my-server -r my-app -c db --port 5432  # Tunnel Postgres
+rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # Custom local port
 ```
 
 Run tunnel → open `localhost:3000` in browser → live app from remote server.

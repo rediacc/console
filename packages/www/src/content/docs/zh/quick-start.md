@@ -4,8 +4,8 @@ description: 几分钟内在您的服务器上运行容器化服务。
 category: Guides
 order: -1
 language: zh
-sourceHash: "a06ed41ca6a9c5ed"
-sourceCommit: "9fbdf33aa443d362590f37b30636c50015cc77a0"
+sourceHash: "71da41d42b1a6b4e"
+sourceCommit: "62f6c6e20c424566749c15efca685c8dc136f09b"
 ---
 
 # 快速开始
@@ -158,9 +158,9 @@ rdc repo sync download -m my-server -r my-app --local ./backup --dry-run        
 
 **隧道（SSH 端口转发到容器）：**
 ```bash
-rdc repo tunnel -m my-server -r my-app  # 自动检测容器和端口
-rdc repo tunnel -m my-server -r my-app --port 5432  # 隧道连接 Postgres
-rdc repo tunnel -m my-server -r my-app --port 5432 --local 15432  # 自定义本地端口
+rdc repo tunnel -m my-server -r my-app -c app  # 自动检测 app 容器的端口
+rdc repo tunnel -m my-server -r my-app -c db --port 5432  # 隧道连接 Postgres
+rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # 自定义本地端口
 ```
 
 运行隧道 → 在浏览器中打开 `localhost:3000` → 从远程服务器访问实时应用。
