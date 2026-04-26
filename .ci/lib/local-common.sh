@@ -147,6 +147,15 @@ ensure_deps() {
         return 0
     fi
 
+    # cpu-features (ssh2 optional dep) generates buildcheck.gypi via its npm
+    # install script. Desktop's postinstall runs electron-builder install-app-deps
+    # which calls node-gyp directly, bypassing npm lifecycle scripts — so if the
+    # gypi is missing the rebuild fails before the install script can re-run.
+    local cpu_features_dir="$node_modules_dir/cpu-features"
+    if [[ -f "$cpu_features_dir/buildcheck.js" ]] && [[ ! -f "$cpu_features_dir/buildcheck.gypi" ]]; then
+        (cd "$cpu_features_dir" && node buildcheck.js > buildcheck.gypi)
+    fi
+
     log_step "Installing dependencies..."
     (cd "$LOCAL_ROOT_DIR" && npm install)
     write_stamp_hash "$stamp_file" "$current_hash"
