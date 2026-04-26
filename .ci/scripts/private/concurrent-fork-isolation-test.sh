@@ -46,9 +46,9 @@ _ssh() {
 
 cleanup() {
     log_step "Cleanup (best-effort)"
-    rdc repo down --name "$FORK_REPO"   -m "$MACHINE_NAME" 2>/dev/null || true
+    rdc repo down --name "$FORK_REPO" -m "$MACHINE_NAME" 2>/dev/null || true
     rdc repo down --name "$PARENT_REPO" -m "$MACHINE_NAME" 2>/dev/null || true
-    rdc repo delete --name "$FORK_REPO"   -m "$MACHINE_NAME" --force 2>/dev/null || true
+    rdc repo delete --name "$FORK_REPO" -m "$MACHINE_NAME" --force 2>/dev/null || true
     rdc repo delete --name "$PARENT_REPO" -m "$MACHINE_NAME" --force 2>/dev/null || true
 }
 trap cleanup EXIT
@@ -58,8 +58,8 @@ trap cleanup EXIT
 # -------------------------------------------------------------------------
 log_step "Registering worker $VM_IP as machine '$MACHINE_NAME'"
 rdc config ssh set --key "$SSH_KEY" >/dev/null
-rdc config machine add --name "$MACHINE_NAME" --ip "$VM_IP" --user "$SSH_USER" 2>/dev/null \
-    || log_warn "Machine '$MACHINE_NAME' already registered (continuing)"
+rdc config machine add --name "$MACHINE_NAME" --ip "$VM_IP" --user "$SSH_USER" 2>/dev/null ||
+    log_warn "Machine '$MACHINE_NAME' already registered (continuing)"
 log_step "Provisioning renet on worker (rdc config machine setup)"
 rdc config machine setup --name "$MACHINE_NAME"
 
