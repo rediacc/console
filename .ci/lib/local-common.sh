@@ -153,7 +153,7 @@ ensure_deps() {
     # gypi is missing the rebuild fails before the install script can re-run.
     local cpu_features_dir="$node_modules_dir/cpu-features"
     if [[ -f "$cpu_features_dir/buildcheck.js" ]] && [[ ! -f "$cpu_features_dir/buildcheck.gypi" ]]; then
-        (cd "$cpu_features_dir" && node buildcheck.js > buildcheck.gypi)
+        (cd "$cpu_features_dir" && node buildcheck.js >buildcheck.gypi)
     fi
 
     log_step "Installing dependencies..."
