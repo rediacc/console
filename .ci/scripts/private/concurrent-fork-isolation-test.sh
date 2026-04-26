@@ -136,28 +136,26 @@ fi
 log_info "✓ ${#unique_ips[@]} distinct loopback binds — isolation holds"
 
 # -------------------------------------------------------------------------
-# Phase 4 — renet#59 regression guard: fork's daemon has no parent containers
+# Phase 4 — renet#59 regression guard: no per-network daemon hosts >1 project
 # -------------------------------------------------------------------------
 # Each repo has its own dockerd at /var/run/rediacc/docker-<networkID>.sock.
-# Find the fork's socket by scanning containers; assert no compose-project
-# label points at the parent's project (basename of parent's mount).
-log_step "Asserting fork daemon has no foreign-project containers (renet#59)"
-parent_project=$(_ssh "basename /mnt/rediacc/mounts/${PARENT_REPO} 2>/dev/null" || echo "$PARENT_REPO")
-fork_project=$(_ssh "basename /mnt/rediacc/mounts/${FORK_REPO} 2>/dev/null" || echo "${FORK_REPO//:/_}")
-
-# For each per-network socket, count fork-project + parent-project containers
-# via docker --filter (exact label match, not substring of the Labels column —
-# parent name is a prefix of fork name, so substring matching false-positives).
-# A socket owning both means renet#59 regressed.
+# A correctly-isolated fork has its daemon owning exactly one
+# com.docker.compose.project. Without #59, the fork's daemon inherits the
+# parent's containers and ends up with two distinct project labels. We don't
+# try to reconstruct the project name (docker compose normalises mount-path
+# basenames into project names, stripping :, etc.) — instead, we count
+# distinct project labels per socket: >1 = leak.
+log_step "Asserting no per-network daemon hosts more than one compose-project (renet#59)"
 foreign=$(_ssh "
 sudo bash -c '
 set -e
 for sock in /var/run/rediacc/docker-*.sock; do
     [ -S \"\$sock\" ] || continue
-    fork_match=\$(docker -H unix://\$sock ps -a --filter \"label=com.docker.compose.project=$fork_project\" -q 2>/dev/null | wc -l)
-    parent_match=\$(docker -H unix://\$sock ps -a --filter \"label=com.docker.compose.project=$parent_project\" -q 2>/dev/null | wc -l)
-    if [ \"\$fork_match\" -gt 0 ] && [ \"\$parent_match\" -gt 0 ]; then
-        echo \"\$parent_match\"
+    projects=\$(docker -H unix://\$sock ps -a --format \"{{index .Labels \\\"com.docker.compose.project\\\"}}\" 2>/dev/null | sort -u | grep -v \"^\$\" || true)
+    project_count=\$(echo \"\$projects\" | grep -c . || true)
+    if [ \"\$project_count\" -gt 1 ]; then
+        echo \"\$sock owns \$project_count projects: \$projects\" >&2
+        echo \"\$project_count\"
         exit 0
     fi
 done
@@ -165,10 +163,10 @@ echo 0
 '
 ")
 
-if [[ "${foreign:-0}" -gt 0 ]]; then
-    log_error "fork daemon contains $foreign parent-project containers — renet#59 regressed"
+if [[ "${foreign:-0}" -gt 1 ]]; then
+    log_error "a per-network daemon hosts $foreign compose projects — renet#59 regressed"
     exit 1
 fi
-log_info "✓ no parent-project containers in fork daemon"
+log_info "✓ each per-network daemon hosts at most one compose project"
 
 log_info "PASS: parent + fork running, distinct binds, no foreign containers"
