@@ -263,17 +263,19 @@ EOF
 
     # Create CI override for rustfs:
     #  - user "0": rustfs runs as non-root but can't write to fresh Docker named volumes
-    #  - healthcheck: rustfs returns 403 on /minio/health/live, use TCP check instead
+    #  - healthcheck: rustfs:latest dropped nc from its image (started failing on
+    #    2026-04-26 main runs). /proc/net/tcp is always present and grep-able
+    #    even on distroless variants. Port 9000 hex = 2328, LISTEN state = 0A.
     _ssh "$coord_ip" "cat > ${REMOTE_SQL_DIR}/coordinator/docker-compose.override.yml" <<'OVERRIDE'
 services:
   rustfs:
     user: "0"
     healthcheck:
-      test: ["CMD", "sh", "-c", "nc -z 127.0.0.1 9000"]
+      test: ["CMD-SHELL", "awk '$2 ~ /:2328$/ && $4 == \"0A\" { found=1 } END { exit !found }' /proc/net/tcp"]
       interval: 5s
       timeout: 3s
-      retries: 10
-      start_period: 10s
+      retries: 12
+      start_period: 15s
 OVERRIDE
 
     # Start coordinator via docker-compose (builds image, starts rustfs + coordinator)
