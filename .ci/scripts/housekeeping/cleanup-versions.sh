@@ -93,6 +93,20 @@ GH_ARTIFACTS_MAX_PAGES=30
 # so a large CI run does not evict freshly-warmed caches.
 GH_CACHE_KEEP_GB=5
 
+# Phase-spanning delete budget. Each successful destructive op (gh api -X DELETE,
+# gh release delete, aws s3 rm, CF API delete, etc) increments DELETES_THIS_RUN
+# via record_delete. Once it hits the cap, every remaining loop short-circuits
+# and logs the residual backlog. The next housekeeping run drains the next
+# MAX_DELETES_PER_RUN items — cleanup is idempotent so this converges. The
+# bound is single global, not per-phase, because the real ceiling is GitHub's
+# 5000 req/h REST quota (shared across all gh api calls).
+#
+# Default 1000 derives from the last successful run baseline: run
+# #24930845566 (job 73010472970) completed 1305 deletes in 12m50s. Prorating
+# 1305 × (10 / 13) ≈ 1004 keeps each invocation under a 10-minute wall-clock
+# budget, comfortably below the ~15-minute cancel-older-runs window.
+MAX_DELETES_PER_RUN="${MAX_DELETES_PER_RUN:-1000}"
+
 # =============================================================================
 # PREREQUISITES
 # =============================================================================
@@ -106,6 +120,22 @@ require_var GH_TOKEN
 # =============================================================================
 # HELPERS
 # =============================================================================
+
+# Phase-spanning delete budget counter — incremented by record_delete after
+# every successful destructive op. Read by deletes_budget_ok in each loop.
+DELETES_THIS_RUN=0
+
+# Returns 0 if the global delete budget still has headroom, 1 if exhausted.
+# Call inside every destructive loop before the actual delete.
+deletes_budget_ok() {
+    [[ $DELETES_THIS_RUN -lt $MAX_DELETES_PER_RUN ]]
+}
+
+# Increments the global delete counter. Call after every successful
+# destructive op (gh api -X DELETE, gh release delete, aws s3 rm, etc).
+record_delete() {
+    DELETES_THIS_RUN=$((DELETES_THIS_RUN + 1))
+}
 
 # Cloudflare API request helper
 # Usage: cf_api <method> <endpoint>
@@ -177,6 +207,10 @@ cleanup_releases() {
         if should_retain "$created_at" "$index"; then
             log_debug "Keeping release: $tag (index=$index)"
         else
+            if ! deletes_budget_ok; then
+                log_warn "Phase 1: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining releases deferred to next run"
+                break
+            fi
             if [[ "$DRY_RUN" == "true" ]]; then
                 log_warn "[DRY-RUN] Would delete release: $tag (created: $created_at)"
             else
@@ -187,6 +221,7 @@ cleanup_releases() {
                 if retry_with_backoff 3 2 gh release delete "$tag" --repo "$RELEASE_REPO" --yes; then
                     log_debug "Deleted release: $tag"
                     deleted=$((deleted + 1))
+                    record_delete
                     # Best-effort tag cleanup (may already be gone)
                     gh api -X DELETE "repos/$RELEASE_REPO/git/refs/tags/$tag" 2>/dev/null || true
                 else
@@ -277,12 +312,17 @@ cleanup_tags() {
             if should_retain "$tag_date" "$index"; then
                 log_debug "  Keeping tag: $tag_name"
             else
+                if ! deletes_budget_ok; then
+                    log_warn "  Phase 2: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining tags deferred to next run"
+                    break
+                fi
                 if [[ "$DRY_RUN" == "true" ]]; then
                     log_warn "  [DRY-RUN] Would delete tag: $tag_name ($tag_date)"
                 else
                     if retry_with_backoff 3 2 gh api -X DELETE "repos/$full_repo/git/refs/tags/$tag_name" 2>/dev/null; then
                         log_debug "  Deleted tag: $tag_name"
                         deleted=$((deleted + 1))
+                        record_delete
                     else
                         log_warn "  Failed to delete tag: $tag_name"
                     fi
@@ -351,6 +391,10 @@ cleanup_packages() {
             if should_retain "$created_at" "$index"; then
                 log_debug "  Keeping version: $version_id (tags: $tags)"
             else
+                if ! deletes_budget_ok; then
+                    log_warn "  Phase 3: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining versions deferred to next run"
+                    break
+                fi
                 if [[ "$DRY_RUN" == "true" ]]; then
                     log_warn "  [DRY-RUN] Would delete version: $version_id (tags: $tags, created: $created_at)"
                 else
@@ -361,6 +405,7 @@ cleanup_packages() {
                     if [[ $api_exit -eq 0 ]]; then
                         log_debug "  Deleted version: $version_id (tags: $tags)"
                         deleted=$((deleted + 1))
+                        record_delete
                         consecutive_failures=0
                     else
                         consecutive_failures=$((consecutive_failures + 1))
@@ -432,6 +477,10 @@ cleanup_deployments() {
 
             while IFS= read -r dep; do
                 [[ -z "$dep" ]] && continue
+                if ! deletes_budget_ok; then
+                    log_warn "  Phase 4: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining deployments deferred to next run"
+                    break 2
+                fi
                 local dep_id created_at
                 dep_id="$(echo "$dep" | jq -r '.id')"
                 created_at="$(echo "$dep" | jq -r '.created_at')"
@@ -450,6 +499,7 @@ cleanup_deployments() {
                     if retry_with_backoff 3 2 gh api -X DELETE "repos/$full_repo/deployments/$dep_id" 2>/dev/null; then
                         log_debug "  Deleted: $dep_id ($env)"
                         deleted=$((deleted + 1))
+                        record_delete
                     fi
                 fi
             done <<<"$to_delete"
@@ -539,6 +589,10 @@ cleanup_cf_pages() {
         if should_retain "$created_on" "$index"; then
             log_debug "  Keeping deployment: $dep_id (branch: $branch)"
         else
+            if ! deletes_budget_ok; then
+                log_warn "  Phase 5: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining CF Pages deployments deferred to next run"
+                break
+            fi
             if [[ "$DRY_RUN" == "true" ]]; then
                 log_warn "  [DRY-RUN] Would delete CF deployment: $dep_id (branch: $branch, created: $created_on)"
             else
@@ -550,6 +604,7 @@ cleanup_cf_pages() {
                 if [[ "$del_success" == "true" ]]; then
                     log_debug "  Deleted CF deployment: $dep_id (branch: $branch)"
                     deleted=$((deleted + 1))
+                    record_delete
                 else
                     log_warn "  Failed to delete CF deployment: $dep_id (branch: $branch)"
                 fi
@@ -611,6 +666,10 @@ cleanup_environments() {
                 continue
             fi
 
+            if ! deletes_budget_ok; then
+                log_warn "  Phase 6: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining environments deferred to next run"
+                break
+            fi
             if [[ "$DRY_RUN" == "true" ]]; then
                 log_warn "  [DRY-RUN] Would delete environment: $env_name (PR #$pr_number state: $pr_state)"
                 deleted=$((deleted + 1))
@@ -618,6 +677,7 @@ cleanup_environments() {
                 if gh api -X DELETE "repos/$full_repo/environments/$env_name" 2>/dev/null; then
                     log_debug "  Deleted environment: $env_name (PR #$pr_number state: $pr_state)"
                     deleted=$((deleted + 1))
+                    record_delete
                 else
                     log_warn "  Failed to delete environment: $env_name"
                 fi
@@ -690,6 +750,10 @@ cleanup_d1_databases() {
             continue
         fi
 
+        if ! deletes_budget_ok; then
+            log_warn "  Phase 7: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining D1 databases deferred to next run"
+            break
+        fi
         if [[ "$DRY_RUN" == "true" ]]; then
             log_warn "  [DRY-RUN] Would delete D1 database: $db_name (PR #$pr_number state: $pr_state)"
             deleted=$((deleted + 1))
@@ -702,6 +766,7 @@ cleanup_d1_databases() {
             if [[ "$del_success" == "true" ]]; then
                 log_info "  Deleted D1 database: $db_name (PR #$pr_number state: $pr_state)"
                 deleted=$((deleted + 1))
+                record_delete
             else
                 log_warn "  Failed to delete D1 database: $db_name"
             fi
@@ -794,6 +859,10 @@ cleanup_orphan_turnstile_widgets() {
             continue
         fi
 
+        if ! deletes_budget_ok; then
+            log_warn "  Phase 7b: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining Turnstile widgets deferred to next run"
+            break
+        fi
         if [[ "$DRY_RUN" == "true" ]]; then
             log_warn "  [DRY-RUN] Would delete Turnstile widget: $widget_name (PR #$pr_number state: $pr_state)"
             deleted=$((deleted + 1))
@@ -806,6 +875,7 @@ cleanup_orphan_turnstile_widgets() {
             if [[ "$del_success" == "true" ]]; then
                 log_info "  Deleted Turnstile widget: $widget_name (PR #$pr_number state: $pr_state)"
                 deleted=$((deleted + 1))
+                record_delete
             else
                 log_warn "  Failed to delete Turnstile widget: $widget_name"
             fi
@@ -852,6 +922,9 @@ r2_prefix_last_modified() {
 }
 
 # Delete a prefix recursively, or log the intent in dry-run.
+# Counts as a single record_delete unit even though --recursive may
+# remove many underlying keys; the GitHub REST quota is what dominates,
+# and R2 deletes are cheap by comparison.
 r2_rm_recursive() {
     local prefix="$1" label="${2:-}"
     if [[ "$DRY_RUN" == "true" ]]; then
@@ -860,6 +933,7 @@ r2_rm_recursive() {
     fi
     aws s3 rm "s3://${R2_BUCKET}/${prefix}" --recursive \
         --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null || true
+    record_delete
     log_info "  Deleted s3://${R2_BUCKET}/${prefix}${label:+ ($label)}"
 }
 
@@ -892,6 +966,10 @@ cleanup_r2() {
     local dryrun_deleted=0
     for dir in "${R2_FORMAT_DIRS[@]}"; do
         while IFS= read -r line; do
+            if ! deletes_budget_ok; then
+                log_warn "  Phase 8a: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining R2 dryrun prefixes deferred to next run"
+                break 2
+            fi
             local sub
             sub="$(echo "$line" | awk '/^[[:space:]]*PRE[[:space:]]dryrun-/ {print $2}')"
             [[ -z "$sub" ]] && continue
@@ -922,6 +1000,10 @@ cleanup_r2() {
     local pr_age_max=$((R2_PR_MAX_AGE_DAYS * 86400))
     for dir in "${R2_FORMAT_DIRS[@]}"; do
         while IFS= read -r line; do
+            if ! deletes_budget_ok; then
+                log_warn "  Phase 8b: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining R2 PR prefixes deferred to next run"
+                break 2
+            fi
             local sub
             sub="$(echo "$line" | awk '/^[[:space:]]*PRE[[:space:]]pr-[0-9]+\// {print $2}')"
             [[ -z "$sub" ]] && continue
@@ -991,6 +1073,10 @@ cleanup_r2() {
             local sub
             sub="$(echo "$line" | awk '/^[[:space:]]*PRE[[:space:]]v[0-9]+\./ {print $2}')"
             [[ -z "$sub" ]] && continue
+            if ! deletes_budget_ok; then
+                log_warn "  Phase 8d: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining orphan versioned prefixes deferred to next run"
+                break 2
+            fi
             local ver="${sub%/}" # v1.2.3
             [[ "$ver" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
 
@@ -1088,6 +1174,10 @@ cleanup_r2() {
             top_versions="$(echo "$listing" | awk -F'|' '$3 == 0 {print $2}' | sort -u -V -r | head -n "$R2_PACKAGE_KEEP_VERSIONS")"
             while IFS='|' read -r ts semver is_dev key; do
                 [[ -z "$key" ]] && continue
+                if ! deletes_budget_ok; then
+                    log_warn "  Phase 8f: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining R2 stale package files deferred to next run"
+                    break 3
+                fi
                 local ts_epoch
                 ts_epoch="$(date -u -d "$ts" +%s 2>/dev/null || echo 0)"
                 local age=$((now_epoch - ts_epoch))
@@ -1097,6 +1187,7 @@ cleanup_r2() {
                         log_warn "  [DRY-RUN] Would delete s3://${R2_BUCKET}/${key} (${tag})"
                     else
                         aws s3 rm "s3://${R2_BUCKET}/${key}" --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null || true
+                        record_delete
                         log_info "  Deleted ${key} (${tag})"
                     fi
                     pkg_deleted=$((pkg_deleted + 1))
@@ -1111,6 +1202,7 @@ cleanup_r2() {
                     log_warn "  [DRY-RUN] Would delete s3://${R2_BUCKET}/${key} (${tag})"
                 else
                     aws s3 rm "s3://${R2_BUCKET}/${key}" --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null || true
+                    record_delete
                     log_info "  Deleted ${key} (${tag})"
                 fi
                 pkg_deleted=$((pkg_deleted + 1))
@@ -1143,6 +1235,10 @@ cleanup_r2() {
             if ((now_epoch - init_epoch <= mpu_max_age)); then
                 continue
             fi
+            if ! deletes_budget_ok; then
+                log_warn "  Phase 8e: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining multipart uploads deferred to next run"
+                break
+            fi
             if [[ "$DRY_RUN" == "true" ]]; then
                 log_warn "  [DRY-RUN] Would abort multipart: $key (age $(((now_epoch - init_epoch) / 3600))h)"
                 mpu_aborted=$((mpu_aborted + 1))
@@ -1151,6 +1247,7 @@ cleanup_r2() {
             aws s3api abort-multipart-upload \
                 --bucket "$R2_BUCKET" --key "$key" --upload-id "$upload_id" \
                 --endpoint-url "$R2_ENDPOINT" 2>/dev/null || continue
+            record_delete
             log_info "  Aborted multipart: $key"
             mpu_aborted=$((mpu_aborted + 1))
         done < <(echo "$uploads" | jq -r '.[] | "\(.Key)\t\(.UploadId)\t\(.Initiated)"')
@@ -1234,6 +1331,10 @@ cleanup_stale_branches() {
 
             local age_days=$((age_seconds / 86400))
 
+            if ! deletes_budget_ok; then
+                log_warn "    Phase 9: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining stale branches deferred to next run"
+                break
+            fi
             if [[ "$DRY_RUN" == "true" ]]; then
                 log_warn "    [DRY-RUN] Would delete $branch (${age_days} days old, no open PR)"
                 deleted=$((deleted + 1))
@@ -1241,6 +1342,7 @@ cleanup_stale_branches() {
                 if gh api -X DELETE "repos/$full_repo/git/refs/heads/$branch" 2>/dev/null; then
                     log_info "    Deleted $branch (${age_days} days old)"
                     deleted=$((deleted + 1))
+                    record_delete
                 else
                     log_warn "    Failed to delete $branch"
                 fi
@@ -1305,6 +1407,13 @@ cleanup_workflow_runs() {
 
             while IFS= read -r run; do
                 [[ -z "$run" ]] && continue
+                # break 3 (not 2): exits per-run + per-page + per-workflow loops cleanly
+                # so we don't fetch a fresh page of runs for each remaining workflow only
+                # to immediately re-trip the gate.
+                if ! deletes_budget_ok; then
+                    log_warn "  Phase 10: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining workflow runs deferred to next run"
+                    break 3
+                fi
                 local run_id created_at
                 run_id="$(echo "$run" | jq -r '.id')"
                 created_at="$(echo "$run" | jq -r '.created_at')"
@@ -1331,6 +1440,7 @@ cleanup_workflow_runs() {
                     if retry_with_backoff 3 2 gh api -X DELETE "repos/$RELEASE_REPO/actions/runs/$run_id" 2>/dev/null; then
                         log_debug "  Deleted run: $run_id ($wf_name)"
                         wf_deleted=$((wf_deleted + 1))
+                        record_delete
                         consecutive_failures=0
                     else
                         consecutive_failures=$((consecutive_failures + 1))
@@ -1397,6 +1507,10 @@ cleanup_workflow_artifacts() {
 
         while IFS= read -r artifact; do
             [[ -z "$artifact" ]] && continue
+            if ! deletes_budget_ok; then
+                log_warn "  Phase 11: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining artifacts deferred to next run"
+                break 2
+            fi
             local id created_at expired
             id="$(echo "$artifact" | jq -r '.id')"
             created_at="$(echo "$artifact" | jq -r '.created_at')"
@@ -1424,6 +1538,7 @@ cleanup_workflow_artifacts() {
                 if retry_with_backoff 3 2 gh api -X DELETE "repos/$RELEASE_REPO/actions/artifacts/$id" 2>/dev/null; then
                     log_debug "  Deleted artifact: $id"
                     deleted=$((deleted + 1))
+                    record_delete
                     consecutive_failures=0
                 else
                     consecutive_failures=$((consecutive_failures + 1))
@@ -1493,6 +1608,10 @@ cleanup_actions_cache() {
 
     while IFS= read -r entry; do
         [[ -z "$entry" ]] && continue
+        if ! deletes_budget_ok; then
+            log_warn "  Phase 12: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining cache entries deferred to next run"
+            break
+        fi
         # Stop once surviving total is at or below ceiling.
         if [[ "$running" -le "$ceiling_bytes" ]]; then
             break
@@ -1516,6 +1635,7 @@ cleanup_actions_cache() {
                 deleted=$((deleted + 1))
                 freed=$((freed + size))
                 running=$((running - size))
+                record_delete
                 consecutive_failures=0
             else
                 consecutive_failures=$((consecutive_failures + 1))
@@ -1573,4 +1693,5 @@ echo ""
 cleanup_actions_cache
 
 echo ""
+log_info "Total deletes this run: $DELETES_THIS_RUN / $MAX_DELETES_PER_RUN"
 log_info "Housekeeping complete"
