@@ -292,6 +292,8 @@ OVERRIDE
     done
     if ! $build_ok; then
         log_error "  Coordinator build failed after 3 attempts"
+        log_step "  Dumping rustfs and coordinator logs for diagnosis..."
+        _ssh "$coord_ip" "cd ${REMOTE_SQL_DIR}/coordinator && docker compose logs --tail 100 rustfs 2>&1; echo '---'; docker compose logs --tail 50 rustfs-init 2>&1; echo '---'; docker compose logs --tail 50 coordinator 2>&1" || true
         return 1
     fi
 
