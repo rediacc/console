@@ -263,13 +263,20 @@ EOF
 
     # Create CI override for rustfs:
     #  - user "0": rustfs runs as non-root but can't write to fresh Docker named volumes
-    #  - healthcheck: rustfs:latest dropped nc from its image (started failing on
-    #    2026-04-26 main runs). /proc/net/tcp is always present and grep-able
-    #    even on distroless variants. Port 9000 hex = 2328, LISTEN state = 0A.
+    #  - RUSTFS_UNSAFE_BYPASS_DISK_CHECK: rustfs added a safety check (see
+    #    upstream FATAL: "local erasure endpoints must use distinct physical
+    #    disks") that fails when all 4 named volumes resolve to the same
+    #    physical disk (typical in CI). Bypass is documented for CI use.
+    #  - healthcheck: rustfs:latest dropped nc from its image (started failing
+    #    on 2026-04-26 main runs). /proc/net/tcp is always present and
+    #    grep-able even on distroless variants. Port 9000 hex = 2328,
+    #    LISTEN state = 0A.
     _ssh "$coord_ip" "cat > ${REMOTE_SQL_DIR}/coordinator/docker-compose.override.yml" <<'OVERRIDE'
 services:
   rustfs:
     user: "0"
+    environment:
+      RUSTFS_UNSAFE_BYPASS_DISK_CHECK: "true"
     healthcheck:
       test: ["CMD-SHELL", "awk '$2 ~ /:2328$/ && $4 == \"0A\" { found=1 } END { exit !found }' /proc/net/tcp"]
       interval: 5s
