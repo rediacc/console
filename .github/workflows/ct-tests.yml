@@ -1058,6 +1058,139 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
+  test-fork-isolation:
+    name: Concurrent Fork Isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      VM_NET_BASE: '192.168.111'
+      VM_BRIDGE: '1'
+      VM_WORKERS: '11'
+      VM_CEPH_NODES: ''
+      REDIACC_SKIP_MACHINE_ACTIVATION: '1'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Login to GHCR
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-cli.sh
+      - name: Install CLI Globally
+        run: .ci/scripts/setup/install-cli-global.sh
+
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
+      - name: Build renet
+        run: .ci/scripts/infra/build-renet.sh --nolicense
+      - name: Add renet to PATH
+        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+
+      - name: Setup KVM Host
+        run: sudo $RENET_BINARY ops host setup
+      - name: Generate SSH keypair
+        run: |
+          ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -q
+          cp ~/.ssh/id_ed25519 ~/.ssh/id_rsa
+          cp ~/.ssh/id_ed25519.pub ~/.ssh/id_rsa.pub
+      - name: Provision VM
+        run: sudo -E $RENET_BINARY ops up --force --parallel
+        env:
+          VM_NET_BASE: ${{ env.VM_NET_BASE }}
+          VM_WORKERS: '11'
+          VM_CEPH_NODES: ''
+          VM_BRIDGE: '1'
+      - name: Fix renet data dir ownership
+        run: sudo chown -R $USER:$USER $RUNNER_TEMP/renet
+      - name: Wait for VM SSH readiness
+        run: |
+          for vm in ${VM_NET_BASE}.1 ${VM_NET_BASE}.11; do
+            echo "Waiting for $vm as $USER..."
+            for i in {1..30}; do
+              if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 $USER@$vm echo ready 2>/dev/null; then
+                echo "VM $vm is SSH-ready"
+                ssh-keyscan $vm >> ~/.ssh/known_hosts 2>/dev/null
+                break
+              fi
+              echo "Waiting for VM $vm SSH... ($i/30)"
+              sleep 5
+              if [[ $i -eq 30 ]]; then
+                echo "VM $vm SSH not ready after 150s"
+                exit 1
+              fi
+            done
+          done
+
+      - name: Run concurrent-fork isolation test
+        run: .ci/scripts/private/concurrent-fork-isolation-test.sh
+        env:
+          VM_NET_BASE: ${{ env.VM_NET_BASE }}
+          VM_WORKERS: '11'
+          SSH_USER: ${{ env.USER }}
+
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "fork-isolation" --status ${{ job.status }}
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: always()
+        with:
+          name: test-fork-isolation-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/complete.txt
+          retention-days: 3
+          if-no-files-found: ignore
+
   test-cli-local-ceph:
     name: CLI Local Ceph
     runs-on: ubuntu-latest

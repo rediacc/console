@@ -155,9 +155,13 @@ async function configureVSCodeAndSettings(
       // Per-repo server install path so VS Code runs separate server instances.
       // VS Code shares servers by resolved hostname — without separate paths,
       // the second repo would reuse the first repo's sandboxed server.
-      const serverPath = repositoryName
-        ? `${connectionDetails.datastore}/.interim/sandbox/${repositoryName}`
-        : connectionDetails.datastore;
+      // Uses the GUID-based mount path (colon-free) because VS Code rejects
+      // serverInstallPath values containing ':' (parsed as PATH-style separator),
+      // which breaks fork aliases like "<parent>:<tag>".
+      const serverPath =
+        repositoryName && connectionDetails.repositoryGuid
+          ? `${connectionDetails.datastore}/mounts/${connectionDetails.repositoryGuid}`
+          : connectionDetails.datastore;
       setHostServerInstallPath(connectionName, serverPath, isInsiders);
     }
 
@@ -181,8 +185,8 @@ async function provisionAndPrepare(
     );
   }
 
-  if (repositoryName && connectionDetails.datastore) {
-    await preparePerRepoVSCodeServer(connectionDetails, repositoryName, teamKey);
+  if (repositoryName && connectionDetails.datastore && connectionDetails.repositoryGuid) {
+    await preparePerRepoVSCodeServer(connectionDetails, teamKey);
   }
 }
 
@@ -193,10 +197,9 @@ async function provisionAndPrepare(
  */
 async function preparePerRepoVSCodeServer(
   connectionDetails: ConnectionDetails,
-  repositoryName: string,
   teamKey: string
 ): Promise<void> {
-  const sandboxServerPath = `${connectionDetails.datastore}/.interim/sandbox/${repositoryName}/.vscode-server`;
+  const sandboxServerPath = `${connectionDetails.datastore}/mounts/${connectionDetails.repositoryGuid}/.vscode-server`;
   const sharedServerPath = `${connectionDetails.datastore}/.vscode-server`;
   const sshConn = new SSHConnection(teamKey, connectionDetails.known_hosts, {
     port: connectionDetails.port,
@@ -237,9 +240,10 @@ async function setupRemoteEnvironment(
     { port: connectionDetails.port }
   );
 
-  const serverInstallPath = repositoryName
-    ? `${connectionDetails.datastore}/.interim/sandbox/${repositoryName}`
-    : connectionDetails.datastore;
+  const serverInstallPath =
+    repositoryName && connectionDetails.repositoryGuid
+      ? `${connectionDetails.datastore}/mounts/${connectionDetails.repositoryGuid}`
+      : connectionDetails.datastore;
 
   try {
     await sshConnection.setup();
