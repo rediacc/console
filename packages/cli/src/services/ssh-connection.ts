@@ -20,6 +20,7 @@ export interface ConnectionDetails {
   workingDirectory?: string;
   repositoryPath?: string;
   networkId?: string;
+  repositoryGuid?: string;
 }
 
 interface BaseConnectionInfo {
@@ -73,9 +74,11 @@ function buildRepositoryEnvFromVault(
   workingDirectory: string;
   repositoryPath: string;
   networkId: string;
+  repositoryGuid: string;
 } {
   const repositoryPath = (repoVault.path ?? `/home/${repositoryName}`) as string;
   const networkId = (repoVault.networkId ?? '') as string;
+  const repositoryGuid = (repoVault.repositoryGuid ?? '') as string;
   const networkMode = (repoVault.networkMode ??
     machineVault.networkMode ??
     DEFAULTS.REPOSITORY.NETWORK_MODE) as string;
@@ -110,7 +113,7 @@ function buildRepositoryEnvFromVault(
       : {}),
   };
 
-  return { environment, workingDirectory, repositoryPath, networkId };
+  return { environment, workingDirectory, repositoryPath, networkId, repositoryGuid };
 }
 
 function buildMachineEnvFromVault(
@@ -153,6 +156,7 @@ export async function getSSHConnectionDetails(
     workingDirectory: string;
     repositoryPath?: string;
     networkId?: string;
+    repositoryGuid?: string;
   };
 
   if (repositoryName) {
@@ -211,5 +215,6 @@ export async function getSSHConnectionDetails(
     workingDirectory: envData.workingDirectory,
     repositoryPath: envData.repositoryPath,
     networkId: envData.networkId,
+    repositoryGuid: envData.repositoryGuid,
   };
 }

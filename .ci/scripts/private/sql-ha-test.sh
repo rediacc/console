@@ -263,17 +263,26 @@ EOF
 
     # Create CI override for rustfs:
     #  - user "0": rustfs runs as non-root but can't write to fresh Docker named volumes
-    #  - healthcheck: rustfs returns 403 on /minio/health/live, use TCP check instead
+    #  - RUSTFS_UNSAFE_BYPASS_DISK_CHECK: rustfs added a safety check (see
+    #    upstream FATAL: "local erasure endpoints must use distinct physical
+    #    disks") that fails when all 4 named volumes resolve to the same
+    #    physical disk (typical in CI). Bypass is documented for CI use.
+    #  - healthcheck: rustfs:latest dropped nc from its image (started failing
+    #    on 2026-04-26 main runs). /proc/net/tcp is always present and
+    #    grep-able even on distroless variants. Port 9000 hex = 2328,
+    #    LISTEN state = 0A.
     _ssh "$coord_ip" "cat > ${REMOTE_SQL_DIR}/coordinator/docker-compose.override.yml" <<'OVERRIDE'
 services:
   rustfs:
     user: "0"
+    environment:
+      RUSTFS_UNSAFE_BYPASS_DISK_CHECK: "true"
     healthcheck:
-      test: ["CMD", "sh", "-c", "nc -z 127.0.0.1 9000"]
+      test: ["CMD-SHELL", "awk '$2 ~ /:2328$/ && $4 == \"0A\" { found=1 } END { exit !found }' /proc/net/tcp"]
       interval: 5s
       timeout: 3s
-      retries: 10
-      start_period: 10s
+      retries: 12
+      start_period: 15s
 OVERRIDE
 
     # Start coordinator via docker-compose (builds image, starts rustfs + coordinator)
@@ -290,6 +299,8 @@ OVERRIDE
     done
     if ! $build_ok; then
         log_error "  Coordinator build failed after 3 attempts"
+        log_step "  Dumping rustfs and coordinator logs for diagnosis..."
+        _ssh "$coord_ip" "cd ${REMOTE_SQL_DIR}/coordinator && docker compose logs --tail 100 rustfs 2>&1; echo '---'; docker compose logs --tail 50 rustfs-init 2>&1; echo '---'; docker compose logs --tail 50 coordinator 2>&1" || true
         return 1
     fi
 
