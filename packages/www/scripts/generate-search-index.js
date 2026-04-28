@@ -372,7 +372,7 @@ function splitIntoSections(markdown, fallbackHeading) {
       currentBody.push(line);
       continue;
     }
-    const headingMatch = !inFence && line.match(/^(#{1,3})\s+(.+?)\s*#*\s*$/);
+    const headingMatch = !inFence && line.match(/^(#{2,3})\s+(.+?)\s*#*\s*$/);
     if (headingMatch) {
       flush();
       currentHeading = headingMatch[2].trim();

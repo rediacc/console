@@ -69,6 +69,14 @@ for (const file of committedFiles) {
 }
 
 const restore = () => {
+  // Sweep any new index files the generator just produced (e.g. for a freshly
+  // added locale) so the check is truly non-destructive in dev — otherwise
+  // those files would persist after the script exits, polluting git status.
+  for (const file of readdirSync(PUBLIC_DIR)) {
+    if (INDEX_PATTERN.test(file) && !committedFiles.includes(file)) {
+      rmSync(path.join(PUBLIC_DIR, file), { force: true });
+    }
+  }
   for (const file of committedFiles) {
     copyFileSync(backupPaths.get(file)!, path.join(PUBLIC_DIR, file));
   }
