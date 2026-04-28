@@ -144,6 +144,9 @@ export default tseslint.config(
       'packages/*/tests/**/*.js.map',
       // Ignore public config files
       'packages/web/public/**',
+      // Ignore www public assets — the search-index-*.json files are large
+      // generated artifacts that don't need linting and slow eslint to a crawl.
+      'packages/www/public/**',
       // Ignore desktop build output
       'packages/desktop/out/**',
       // Ignore custom eslint rules (plain JS)

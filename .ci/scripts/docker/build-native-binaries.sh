@@ -207,7 +207,7 @@ build_rsync() {
     # Download rsync source
     log_info "Downloading rsync source..."
     retry_with_backoff 3 5 curl -fsSL -o "rsync-${RSYNC_VERSION}.tar.gz" \
-        "https://download.samba.org/pub/rsync/rsync-${RSYNC_VERSION}.tar.gz"
+        "https://download.samba.org/pub/rsync/src/rsync-${RSYNC_VERSION}.tar.gz"
     tar -xzf "rsync-${RSYNC_VERSION}.tar.gz"
     retry_with_backoff 3 5 curl -fsSL -o security_fix.patch \
         "https://www.linuxfromscratch.org/patches/blfs/svn/rsync-3.4.1-security_fix-2.patch"
@@ -296,7 +296,7 @@ EOF'
     # Download rsync source
     log_info "Downloading rsync source..."
     retry_with_backoff 3 5 curl -fsSL -o "rsync-${RSYNC_VERSION}.tar.gz" \
-        "https://download.samba.org/pub/rsync/rsync-${RSYNC_VERSION}.tar.gz"
+        "https://download.samba.org/pub/rsync/src/rsync-${RSYNC_VERSION}.tar.gz"
     tar -xzf "rsync-${RSYNC_VERSION}.tar.gz"
     retry_with_backoff 3 5 curl -fsSL -o security_fix.patch \
         "https://www.linuxfromscratch.org/patches/blfs/svn/rsync-3.4.1-security_fix-2.patch"

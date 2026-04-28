@@ -49,11 +49,48 @@ function generateSearchIndex() {
       fs.mkdirSync(publicDir, { recursive: true });
     }
 
-    // Write search index
-    const outputPath = path.join(projectRoot, 'public/search-index.json');
-    fs.writeFileSync(outputPath, `${JSON.stringify(searchIndex, null, 2)}\n`);
+    // Group entries by language and write one JSON per locale. The runtime
+    // fetches /search-index-<lang>.json so visitors only download their own
+    // locale (~10x smaller than the combined file). search-index.json is kept
+    // as a byte-identical copy of the English file for backward compat.
+    const byLang = new Map();
+    for (const entry of searchIndex) {
+      const lang = entry.language || 'en';
+      if (!byLang.has(lang)) byLang.set(lang, []);
+      byLang.get(lang).push(entry);
+    }
 
-    console.log(`✓ Search index generated: ${searchIndex.length} items`);
+    // Stale per-locale files left over from a previous generation would
+    // pollute git status and confuse the freshness check. Sweep before write.
+    for (const file of fs.readdirSync(publicDir)) {
+      if (/^search-index(-[a-z]{2})?\.json$/.test(file)) {
+        fs.unlinkSync(path.join(publicDir, file));
+      }
+    }
+
+    const langs = [...byLang.keys()].sort();
+    for (const lang of langs) {
+      const entries = byLang.get(lang);
+      const outPath = path.join(publicDir, `search-index-${lang}.json`);
+      fs.writeFileSync(outPath, `${JSON.stringify(entries, null, 2)}\n`);
+      console.log(`  → ${path.relative(projectRoot, outPath)}: ${entries.length} items`);
+    }
+
+    // Backward-compat fallback: any consumer that hardcoded the legacy URL
+    // gets English content rather than a 404.
+    const enPath = path.join(publicDir, 'search-index-en.json');
+    const fallbackPath = path.join(publicDir, 'search-index.json');
+    if (fs.existsSync(enPath)) {
+      fs.copyFileSync(enPath, fallbackPath);
+    } else {
+      // No English content was indexed (would happen only if src/content/docs/en/ vanished).
+      // Write an empty array so the runtime fetch still succeeds.
+      fs.writeFileSync(fallbackPath, '[]\n');
+    }
+
+    console.log(
+      `✓ Search index generated: ${searchIndex.length} items across ${langs.length} locales`
+    );
     return true;
   } catch (error) {
     console.error('✗ Failed to generate search index:', error.message);
@@ -194,45 +231,27 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
             });
           }
 
-          // Extract and index headings from markdown content
-          const headingRegex = /^#+\s+(.+)$/gm;
-          let match;
+          // Walk the markdown body section by section (split on H2/H3).
+          // Each section produces ONE index entry whose `body` is the full
+          // stripped section text — that's what makes buried terms searchable.
           const slug = file.replace(/\.md$/, '');
+          const sections = splitIntoSections(content, frontmatter.title || slug);
 
-          while ((match = headingRegex.exec(content)) !== null) {
-            const headingText = match[1].trim();
-            if (headingText.length > 0) {
-              searchIndex.push({
-                id: `search-${idCounter++}`,
-                content: headingText,
-                excerpt: headingText,
-                category: category,
-                page: `/${langDir}/${urlPrefix}/${slug}`,
-                path: `${urlPrefix}.${slug}.content`,
-                priority: 2,
-                language: langDir,
-              });
-            }
-          }
+          for (const section of sections) {
+            const body = stripMarkdown(section.body);
+            if (!section.heading && !body) continue;
 
-          // Index markdown content (first 300 chars of first paragraph)
-          const paragraphs = content.split('\n\n').filter((p) => p.trim() && !p.startsWith('#'));
-
-          if (paragraphs.length > 0) {
-            const contentSnippet = paragraphs[0].replace(/#+/g, '').replace(/[*_]/g, '').trim();
-
-            if (contentSnippet.length > 0) {
-              searchIndex.push({
-                id: `search-${idCounter++}`,
-                content: contentSnippet,
-                excerpt: truncateExcerpt(contentSnippet, 150),
-                category: category,
-                page: `/${langDir}/${urlPrefix}/${slug}`,
-                path: `${urlPrefix}.${slug}.content`,
-                priority: 3,
-                language: langDir,
-              });
-            }
+            searchIndex.push({
+              id: `search-${idCounter++}`,
+              content: section.heading,
+              body,
+              excerpt: truncateExcerpt(body || section.heading, 150),
+              category: category,
+              page: `/${langDir}/${urlPrefix}/${slug}`,
+              path: `${urlPrefix}.${slug}.content`,
+              priority: 2,
+              language: langDir,
+            });
           }
         });
       });
@@ -326,6 +345,68 @@ function calculatePriority(keyPath) {
 function truncateExcerpt(text, maxLength = 150) {
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength).trim() + '...';
+}
+
+/**
+ * Split a markdown body into sections at H2 and H3 boundaries. Content that
+ * appears before the first heading becomes an "intro" section labeled with
+ * the doc's frontmatter title.
+ */
+function splitIntoSections(markdown, fallbackHeading) {
+  const lines = markdown.split('\n');
+  const sections = [];
+  let currentHeading = fallbackHeading;
+  let currentBody = [];
+  let inFence = false;
+
+  const flush = () => {
+    const body = currentBody.join('\n').trim();
+    if (currentHeading || body) {
+      sections.push({ heading: currentHeading, body });
+    }
+  };
+
+  for (const line of lines) {
+    if (/^```/.test(line)) {
+      inFence = !inFence;
+      currentBody.push(line);
+      continue;
+    }
+    const headingMatch = !inFence && line.match(/^(#{2,3})\s+(.+?)\s*#*\s*$/);
+    if (headingMatch) {
+      flush();
+      currentHeading = headingMatch[2].trim();
+      currentBody = [];
+    } else {
+      currentBody.push(line);
+    }
+  }
+  flush();
+
+  return sections;
+}
+
+/**
+ * Strip markdown syntax while preserving identifier text. Code-block contents
+ * are kept (env vars and CLI snippets often live there); only the fences,
+ * link/image syntax, and emphasis markers are removed.
+ */
+function stripMarkdown(text) {
+  if (!text) return '';
+  return text
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/^```.*$/gm, ' ')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/^\s*>\s?/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/^\s*\d+\.\s+/gm, '')
+    .replace(/\*\*([^*\n]+)\*\*/g, '$1')
+    .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '$1')
+    .replace(/~~([^~\n]+)~~/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 // Run generator

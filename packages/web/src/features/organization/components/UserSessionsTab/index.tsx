@@ -68,16 +68,20 @@ const UserSessionsTab: React.FC = () => {
   );
   /* eslint-enable react-hooks/preserve-manual-memoization */
 
-  const filteredSessions = sessions.filter((session: GetUserRequests_ResultSet1) => {
-    const searchLower = searchTerm.toLowerCase();
-    const searchFields = [
-      session.userEmail,
-      session.ipAddress,
-      session.sessionName,
-      session.userAgent,
-    ];
-    return searchFields.some((field) => field?.toLowerCase().includes(searchLower));
-  });
+  const filteredSessions = useMemo(
+    () =>
+      sessions.filter((session: GetUserRequests_ResultSet1) => {
+        const searchLower = searchTerm.toLowerCase();
+        const searchFields = [
+          session.userEmail,
+          session.ipAddress,
+          session.sessionName,
+          session.userAgent,
+        ];
+        return searchFields.some((field) => field?.toLowerCase().includes(searchLower));
+      }),
+    [sessions, searchTerm]
+  );
 
   const activeSessions = sessions.filter((session: GetUserRequests_ResultSet1) => session.isActive);
 
