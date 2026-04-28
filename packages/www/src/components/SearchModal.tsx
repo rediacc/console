@@ -56,9 +56,17 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
   // Per-locale Fuse cache. The combined index was 1.6 MB gzipped; per-locale
   // files are ~167-247 KB. We fetch on first modal open for the current
-  // locale, then cache so locale switches don't re-pay the cost. Stored in
-  // state so a successful load triggers a re-render; in-flight tracking is a
-  // ref because it's only read inside the effect, never during render.
+  // locale, then cache so locale switches don't re-pay the cost.
+  //
+  // Three pieces of locale-keyed state, each with a distinct job:
+  //   - fuseByLang (state)     — drives `fuse` for handleSearch (must be reactive).
+  //   - loadingLocales (state) — drives the "Searching…" UI state and suppresses
+  //                              the no-results message during the in-flight fetch
+  //                              (must be reactive).
+  //   - inFlight (ref)         — prevents duplicate fetches when the load effect
+  //                              re-runs synchronously between fetch start and
+  //                              setFuseByLang completion. Read-only inside the
+  //                              effect, so a ref is fine and avoids an extra render.
   const [fuseByLang, setFuseByLang] = useState<Map<Language, Fuse<SearchItem>>>(() => new Map());
   const [loadingLocales, setLoadingLocales] = useState<Set<Language>>(() => new Set());
   const inFlight = useRef<Map<Language, Promise<void>>>(new Map());
