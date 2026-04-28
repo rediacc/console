@@ -1,21 +1,45 @@
-import Fuse from 'fuse.js';
+import Fuse, { type FuseResultMatch } from 'fuse.js';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
+import type { Language } from '../i18n/types';
 
 interface SearchItem {
   id: string;
   content: string;
+  body?: string;
   excerpt: string;
   category: string;
   page: string;
   path: string;
   priority: number;
+  language?: string;
 }
 
 interface SearchModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+const EXCERPT_RADIUS = 60;
+const EXCERPT_MAX = 160;
+
+// When a Fuse match lands in the body field, replace the pre-computed excerpt
+// with a window centered on the first match — so users see the relevant
+// paragraph for buried terms (e.g. REDIACC_ALLOW_GRAND_REPO) instead of the
+// section's opening sentence.
+function buildResultExcerpt(item: SearchItem, matches?: readonly FuseResultMatch[]): SearchItem {
+  if (!item.body || !matches?.length) return item;
+  const bodyMatch = matches.find((m) => m.key === 'body');
+  if (!bodyMatch?.indices?.length) return item;
+  const [start, end] = bodyMatch.indices[0];
+  const before = Math.max(0, start - EXCERPT_RADIUS);
+  const after = Math.min(item.body.length, end + 1 + EXCERPT_RADIUS);
+  let excerpt = item.body.slice(before, after);
+  if (before > 0) excerpt = '…' + excerpt;
+  if (after < item.body.length) excerpt = excerpt + '…';
+  if (excerpt.length > EXCERPT_MAX) excerpt = excerpt.slice(0, EXCERPT_MAX - 1) + '…';
+  return { ...item, excerpt };
 }
 
 const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
@@ -24,44 +48,65 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [fuse, setFuse] = useState<Fuse<SearchItem> | null>(null);
   const currentLang = useLanguage();
   const { t } = useTranslation(currentLang);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsContainerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Load search index once
+  // Per-locale Fuse cache. The combined index was 1.6 MB gzipped; per-locale
+  // files are ~167-247 KB. We fetch on first modal open for the current
+  // locale, then cache so locale switches don't re-pay the cost.
+  const fuseCache = useRef<Map<Language, Fuse<SearchItem>>>(new Map());
+  const inFlight = useRef<Map<Language, Promise<void>>>(new Map());
+  const [, bumpCacheVersion] = useState(0);
+  const fuse = fuseCache.current.get(currentLang) ?? null;
+
+  // Lazy-load the locale-specific index the first time the user opens search
+  // for that locale. No fetch happens for visitors who never open search.
   useEffect(() => {
-    const loadSearchData = async () => {
+    if (!isOpen) return;
+    if (fuseCache.current.has(currentLang)) {
+      setHasError(false);
+      return;
+    }
+    if (inFlight.current.has(currentLang)) return;
+
+    const lang = currentLang;
+    const promise = (async () => {
       try {
         setHasError(false);
-        const response = await fetch('/search-index.json');
+        const response = await fetch(`/search-index-${lang}.json`);
         if (!response.ok) {
           throw new Error(`Failed to fetch search index: ${response.status}`);
         }
         const data: SearchItem[] = await response.json();
-
-        // Initialize Fuse.js with the data
         const fuseInstance = new Fuse<SearchItem>(data, {
-          keys: ['content', 'excerpt', 'category'],
+          keys: [
+            { name: 'content', weight: 0.5 },
+            { name: 'body', weight: 0.4 },
+            { name: 'category', weight: 0.1 },
+          ],
           threshold: 0.3,
           minMatchCharLength: 2,
           shouldSort: true,
           includeScore: true,
+          includeMatches: true,
+          ignoreLocation: true,
         });
-        setFuse(fuseInstance);
+        fuseCache.current.set(lang, fuseInstance);
+        bumpCacheVersion((v) => v + 1);
       } catch (error) {
         setHasError(true);
-        // Log error in development mode only
         if (import.meta.env.DEV) {
-          console.error('Failed to load search index:', error);
+          console.error(`Failed to load search index for ${lang}:`, error);
         }
+      } finally {
+        inFlight.current.delete(lang);
       }
-    };
-
-    void loadSearchData();
-  }, []);
+    })();
+    inFlight.current.set(lang, promise);
+  }, [isOpen, currentLang]);
 
   // Handle search input changes
   const handleSearch = useCallback(
@@ -76,10 +121,17 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
       setIsLoading(true);
       try {
-        const searchResults = fuse
-          .search(value)
-          .slice(0, 50) // Limit to 50 results
-          .map((result) => result.item);
+        // Each per-locale file is pre-filtered, so no language check needed
+        // here — we only dedupe by page and slice to 50.
+        const seenPages = new Set<string>();
+        const searchResults: SearchItem[] = [];
+        for (const result of fuse.search(value)) {
+          const item = result.item;
+          if (seenPages.has(item.page)) continue;
+          seenPages.add(item.page);
+          searchResults.push(buildResultExcerpt(item, result.matches));
+          if (searchResults.length >= 50) break;
+        }
         setResults(searchResults);
         if (value.trim().length >= 2) {
           window.plausible?.('search_query', {
@@ -95,6 +147,16 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     },
     [fuse]
   );
+
+  // Re-run the active query when the user switches locale (e.g. via the
+  // language picker triggering an astro:after-swap View Transition). Reads
+  // query from a ref so this effect only fires when handleSearch's identity
+  // changes (when fuse loads or currentLang changes).
+  const queryRef = useRef(query);
+  queryRef.current = query;
+  useEffect(() => {
+    if (queryRef.current.trim()) handleSearch(queryRef.current);
+  }, [handleSearch]);
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
