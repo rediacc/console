@@ -34,6 +34,7 @@ const ALLOWLISTED_DOMAINS = new Set([
   'www.pipc.go.kr',    // South Korea PIPC - extremely slow, times out in CI
   'www.legislation.gov.au', // Australia legislation - intermittent timeouts from CI runners
   'www.iso.org',       // ISO standards - returns 403 to non-browser User-Agent (anti-scraping)
+  'www.meity.gov.in',  // India MeitY - intermittent fetch failures from CI runners (Azure US-East), reachable from browsers
   // Own infrastructure -- only available after releases, not during CI
   'releases.rediacc.com',
 ]);

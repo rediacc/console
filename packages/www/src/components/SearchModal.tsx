@@ -1,21 +1,45 @@
-import Fuse from 'fuse.js';
+import Fuse, { type FuseResultMatch } from 'fuse.js';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
+import type { Language } from '../i18n/types';
 
 interface SearchItem {
   id: string;
   content: string;
+  body?: string;
   excerpt: string;
   category: string;
   page: string;
   path: string;
   priority: number;
+  language?: string;
 }
 
 interface SearchModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+const EXCERPT_RADIUS = 60;
+const EXCERPT_MAX = 160;
+
+// When a Fuse match lands in the body field, replace the pre-computed excerpt
+// with a window centered on the first match — so users see the relevant
+// paragraph for buried terms (e.g. REDIACC_ALLOW_GRAND_REPO) instead of the
+// section's opening sentence.
+function buildResultExcerpt(item: SearchItem, matches?: readonly FuseResultMatch[]): SearchItem {
+  if (!item.body || !matches?.length) return item;
+  const bodyMatch = matches.find((m) => m.key === 'body');
+  if (!bodyMatch?.indices.length) return item;
+  const [start, end] = bodyMatch.indices[0];
+  const before = Math.max(0, start - EXCERPT_RADIUS);
+  const after = Math.min(item.body.length, end + 1 + EXCERPT_RADIUS);
+  let excerpt = item.body.slice(before, after);
+  if (before > 0) excerpt = `…${excerpt}`;
+  if (after < item.body.length) excerpt = `${excerpt}…`;
+  if (excerpt.length > EXCERPT_MAX) excerpt = `${excerpt.slice(0, EXCERPT_MAX - 1)}…`;
+  return { ...item, excerpt };
 }
 
 const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
@@ -24,44 +48,87 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [fuse, setFuse] = useState<Fuse<SearchItem> | null>(null);
   const currentLang = useLanguage();
   const { t } = useTranslation(currentLang);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsContainerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Load search index once
+  // Per-locale Fuse cache. The combined index was 1.6 MB gzipped; per-locale
+  // files are ~167-247 KB. We fetch on first modal open for the current
+  // locale, then cache so locale switches don't re-pay the cost.
+  //
+  // Three pieces of locale-keyed state, each with a distinct job:
+  //   - fuseByLang (state)     — drives `fuse` for handleSearch (must be reactive).
+  //   - loadingLocales (state) — drives the "Searching…" UI state and suppresses
+  //                              the no-results message during the in-flight fetch
+  //                              (must be reactive).
+  //   - inFlight (ref)         — prevents duplicate fetches when the load effect
+  //                              re-runs synchronously between fetch start and
+  //                              setFuseByLang completion. Read-only inside the
+  //                              effect, so a ref is fine and avoids an extra render.
+  const [fuseByLang, setFuseByLang] = useState<Map<Language, Fuse<SearchItem>>>(() => new Map());
+  const [loadingLocales, setLoadingLocales] = useState<Set<Language>>(() => new Set());
+  const inFlight = useRef<Map<Language, Promise<void>>>(new Map());
+  const fuse = fuseByLang.get(currentLang) ?? null;
+  const isLoadingIndex = loadingLocales.has(currentLang);
+
+  // Lazy-load the locale-specific index the first time the user opens search
+  // for that locale. No fetch happens for visitors who never open search.
+  // While the fetch is in flight we mark the locale as loading so the UI
+  // shows "Searching…" instead of a misleading "No results" if the user
+  // types ahead of the network round-trip.
   useEffect(() => {
-    const loadSearchData = async () => {
+    if (!isOpen) return;
+    if (fuseByLang.has(currentLang)) return;
+    if (inFlight.current.has(currentLang)) return;
+
+    const lang = currentLang;
+    setLoadingLocales((prev) => {
+      if (prev.has(lang)) return prev;
+      const next = new Set(prev);
+      next.add(lang);
+      return next;
+    });
+    const promise = (async () => {
       try {
         setHasError(false);
-        const response = await fetch('/search-index.json');
+        const response = await fetch(`/search-index-${lang}.json`);
         if (!response.ok) {
           throw new Error(`Failed to fetch search index: ${response.status}`);
         }
         const data: SearchItem[] = await response.json();
-
-        // Initialize Fuse.js with the data
         const fuseInstance = new Fuse<SearchItem>(data, {
-          keys: ['content', 'excerpt', 'category'],
+          keys: [
+            { name: 'content', weight: 0.5 },
+            { name: 'body', weight: 0.4 },
+            { name: 'category', weight: 0.1 },
+          ],
           threshold: 0.3,
           minMatchCharLength: 2,
           shouldSort: true,
           includeScore: true,
+          includeMatches: true,
+          ignoreLocation: true,
         });
-        setFuse(fuseInstance);
+        setFuseByLang((prev) => new Map(prev).set(lang, fuseInstance));
       } catch (error) {
         setHasError(true);
-        // Log error in development mode only
         if (import.meta.env.DEV) {
-          console.error('Failed to load search index:', error);
+          console.error(`Failed to load search index for ${lang}:`, error);
         }
+      } finally {
+        inFlight.current.delete(lang);
+        setLoadingLocales((prev) => {
+          if (!prev.has(lang)) return prev;
+          const next = new Set(prev);
+          next.delete(lang);
+          return next;
+        });
       }
-    };
-
-    void loadSearchData();
-  }, []);
+    })();
+    inFlight.current.set(lang, promise);
+  }, [isOpen, currentLang, fuseByLang]);
 
   // Handle search input changes
   const handleSearch = useCallback(
@@ -76,10 +143,17 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
       setIsLoading(true);
       try {
-        const searchResults = fuse
-          .search(value)
-          .slice(0, 50) // Limit to 50 results
-          .map((result) => result.item);
+        // Each per-locale file is pre-filtered, so no language check needed
+        // here — we only dedupe by page and slice to 50.
+        const seenPages = new Set<string>();
+        const searchResults: SearchItem[] = [];
+        for (const result of fuse.search(value)) {
+          const item = result.item;
+          if (seenPages.has(item.page)) continue;
+          seenPages.add(item.page);
+          searchResults.push(buildResultExcerpt(item, result.matches));
+          if (searchResults.length >= 50) break;
+        }
         setResults(searchResults);
         if (value.trim().length >= 2) {
           window.plausible?.('search_query', {
@@ -95,6 +169,20 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     },
     [fuse]
   );
+
+  // Re-run the active query when the user switches locale OR when the
+  // locale's Fuse index lands (so a query typed during the first fetch
+  // gets results as soon as the index arrives). Uses the previous-value
+  // pattern in render so we don't trip react-hooks/set-state-in-effect —
+  // calling handleSearch during render is legitimate derived state, the
+  // cycle converges in one extra render.
+  const [prevLang, setPrevLang] = useState(currentLang);
+  const [prevFuse, setPrevFuse] = useState<Fuse<SearchItem> | null>(fuse);
+  if (prevLang !== currentLang || prevFuse !== fuse) {
+    setPrevLang(currentLang);
+    setPrevFuse(fuse);
+    if (query.trim()) handleSearch(query);
+  }
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -302,13 +390,13 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
             </div>
           )}
 
-          {isLoading && !hasError && (
+          {(isLoading || isLoadingIndex) && !hasError && (
             <div className="search-modal-loading" role="status" aria-live="polite">
               {t('common.search.searching')}
             </div>
           )}
 
-          {!isLoading && !hasError && query.trim() && results.length === 0 && (
+          {!isLoading && !isLoadingIndex && !hasError && query.trim() && results.length === 0 && (
             <div className="search-modal-no-results" role="status" aria-live="polite">
               <h3>
                 {t('common.search.noResults')} for &quot;{query}&quot;
