@@ -88,7 +88,9 @@ function generateSearchIndex() {
       fs.writeFileSync(fallbackPath, '[]\n');
     }
 
-    console.log(`✓ Search index generated: ${searchIndex.length} items across ${langs.length} locales`);
+    console.log(
+      `✓ Search index generated: ${searchIndex.length} items across ${langs.length} locales`
+    );
     return true;
   } catch (error) {
     console.error('✗ Failed to generate search index:', error.message);

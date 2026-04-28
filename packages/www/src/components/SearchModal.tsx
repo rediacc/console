@@ -31,14 +31,14 @@ const EXCERPT_MAX = 160;
 function buildResultExcerpt(item: SearchItem, matches?: readonly FuseResultMatch[]): SearchItem {
   if (!item.body || !matches?.length) return item;
   const bodyMatch = matches.find((m) => m.key === 'body');
-  if (!bodyMatch?.indices?.length) return item;
+  if (!bodyMatch?.indices.length) return item;
   const [start, end] = bodyMatch.indices[0];
   const before = Math.max(0, start - EXCERPT_RADIUS);
   const after = Math.min(item.body.length, end + 1 + EXCERPT_RADIUS);
   let excerpt = item.body.slice(before, after);
-  if (before > 0) excerpt = '…' + excerpt;
-  if (after < item.body.length) excerpt = excerpt + '…';
-  if (excerpt.length > EXCERPT_MAX) excerpt = excerpt.slice(0, EXCERPT_MAX - 1) + '…';
+  if (before > 0) excerpt = `…${excerpt}`;
+  if (after < item.body.length) excerpt = `${excerpt}…`;
+  if (excerpt.length > EXCERPT_MAX) excerpt = `${excerpt.slice(0, EXCERPT_MAX - 1)}…`;
   return { ...item, excerpt };
 }
 
@@ -56,20 +56,18 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
   // Per-locale Fuse cache. The combined index was 1.6 MB gzipped; per-locale
   // files are ~167-247 KB. We fetch on first modal open for the current
-  // locale, then cache so locale switches don't re-pay the cost.
-  const fuseCache = useRef<Map<Language, Fuse<SearchItem>>>(new Map());
+  // locale, then cache so locale switches don't re-pay the cost. Stored in
+  // state so a successful load triggers a re-render; in-flight tracking is a
+  // ref because it's only read inside the effect, never during render.
+  const [fuseByLang, setFuseByLang] = useState<Map<Language, Fuse<SearchItem>>>(() => new Map());
   const inFlight = useRef<Map<Language, Promise<void>>>(new Map());
-  const [, bumpCacheVersion] = useState(0);
-  const fuse = fuseCache.current.get(currentLang) ?? null;
+  const fuse = fuseByLang.get(currentLang) ?? null;
 
   // Lazy-load the locale-specific index the first time the user opens search
   // for that locale. No fetch happens for visitors who never open search.
   useEffect(() => {
     if (!isOpen) return;
-    if (fuseCache.current.has(currentLang)) {
-      setHasError(false);
-      return;
-    }
+    if (fuseByLang.has(currentLang)) return;
     if (inFlight.current.has(currentLang)) return;
 
     const lang = currentLang;
@@ -94,8 +92,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
           includeMatches: true,
           ignoreLocation: true,
         });
-        fuseCache.current.set(lang, fuseInstance);
-        bumpCacheVersion((v) => v + 1);
+        setFuseByLang((prev) => new Map(prev).set(lang, fuseInstance));
       } catch (error) {
         setHasError(true);
         if (import.meta.env.DEV) {
@@ -106,7 +103,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
       }
     })();
     inFlight.current.set(lang, promise);
-  }, [isOpen, currentLang]);
+  }, [isOpen, currentLang, fuseByLang]);
 
   // Handle search input changes
   const handleSearch = useCallback(
@@ -149,14 +146,15 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   );
 
   // Re-run the active query when the user switches locale (e.g. via the
-  // language picker triggering an astro:after-swap View Transition). Reads
-  // query from a ref so this effect only fires when handleSearch's identity
-  // changes (when fuse loads or currentLang changes).
-  const queryRef = useRef(query);
-  queryRef.current = query;
-  useEffect(() => {
-    if (queryRef.current.trim()) handleSearch(queryRef.current);
-  }, [handleSearch]);
+  // language picker triggering an astro:after-swap View Transition). Uses
+  // the previous-value-in-render pattern so we don't trip
+  // react-hooks/set-state-in-effect — calling handleSearch during render is
+  // legitimate derived state, the cycle converges in one extra render.
+  const [prevLang, setPrevLang] = useState(currentLang);
+  if (prevLang !== currentLang) {
+    setPrevLang(currentLang);
+    if (query.trim()) handleSearch(query);
+  }
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
