@@ -60,17 +60,28 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   // state so a successful load triggers a re-render; in-flight tracking is a
   // ref because it's only read inside the effect, never during render.
   const [fuseByLang, setFuseByLang] = useState<Map<Language, Fuse<SearchItem>>>(() => new Map());
+  const [loadingLocales, setLoadingLocales] = useState<Set<Language>>(() => new Set());
   const inFlight = useRef<Map<Language, Promise<void>>>(new Map());
   const fuse = fuseByLang.get(currentLang) ?? null;
+  const isLoadingIndex = loadingLocales.has(currentLang);
 
   // Lazy-load the locale-specific index the first time the user opens search
   // for that locale. No fetch happens for visitors who never open search.
+  // While the fetch is in flight we mark the locale as loading so the UI
+  // shows "Searching…" instead of a misleading "No results" if the user
+  // types ahead of the network round-trip.
   useEffect(() => {
     if (!isOpen) return;
     if (fuseByLang.has(currentLang)) return;
     if (inFlight.current.has(currentLang)) return;
 
     const lang = currentLang;
+    setLoadingLocales((prev) => {
+      if (prev.has(lang)) return prev;
+      const next = new Set(prev);
+      next.add(lang);
+      return next;
+    });
     const promise = (async () => {
       try {
         setHasError(false);
@@ -100,6 +111,12 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
         }
       } finally {
         inFlight.current.delete(lang);
+        setLoadingLocales((prev) => {
+          if (!prev.has(lang)) return prev;
+          const next = new Set(prev);
+          next.delete(lang);
+          return next;
+        });
       }
     })();
     inFlight.current.set(lang, promise);
@@ -145,14 +162,17 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     [fuse]
   );
 
-  // Re-run the active query when the user switches locale (e.g. via the
-  // language picker triggering an astro:after-swap View Transition). Uses
-  // the previous-value-in-render pattern so we don't trip
-  // react-hooks/set-state-in-effect — calling handleSearch during render is
-  // legitimate derived state, the cycle converges in one extra render.
+  // Re-run the active query when the user switches locale OR when the
+  // locale's Fuse index lands (so a query typed during the first fetch
+  // gets results as soon as the index arrives). Uses the previous-value
+  // pattern in render so we don't trip react-hooks/set-state-in-effect —
+  // calling handleSearch during render is legitimate derived state, the
+  // cycle converges in one extra render.
   const [prevLang, setPrevLang] = useState(currentLang);
-  if (prevLang !== currentLang) {
+  const [prevFuse, setPrevFuse] = useState<Fuse<SearchItem> | null>(fuse);
+  if (prevLang !== currentLang || prevFuse !== fuse) {
     setPrevLang(currentLang);
+    setPrevFuse(fuse);
     if (query.trim()) handleSearch(query);
   }
 
@@ -362,13 +382,13 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
             </div>
           )}
 
-          {isLoading && !hasError && (
+          {(isLoading || isLoadingIndex) && !hasError && (
             <div className="search-modal-loading" role="status" aria-live="polite">
               {t('common.search.searching')}
             </div>
           )}
 
-          {!isLoading && !hasError && query.trim() && results.length === 0 && (
+          {!isLoading && !isLoadingIndex && !hasError && query.trim() && results.length === 0 && (
             <div className="search-modal-no-results" role="status" aria-live="polite">
               <h3>
                 {t('common.search.noResults')} for &quot;{query}&quot;
