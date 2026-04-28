@@ -143,8 +143,15 @@
 
 # astro <6.1.6 XSS in define:vars via incomplete </script> sanitization
 # (GHSA-j687-52p2-xcff; fix requires Astro 6.x major)
-# BLOCKER: astro 6 major blocked in .deps-upgrade-blocklist; all define:vars sites use internally-derived values (currentLang, pathWithoutLang, sitemap data), no untrusted input reaches escape path
+# 1116896 + 1117141 are sibling re-issues of the same advisory across the
+# GitHub Advisory Database split; same vuln, two source IDs.
+# BLOCKER: astro 6 is a major migration tracked separately; the marketing site
+# is statically pre-rendered (output: 'static') and only the locale-prefixed
+# routes from getStaticPaths() are emitted, so define:vars in BaseLayout.astro
+# never serializes a runtime-attacker-controlled pathname — Cloudflare Workers
+# returns 404 for any path Astro didn't bake at build time
 1116896
+1117141
 
 # fast-xml-parser XMLBuilder XML Comment / CDATA injection via unescaped delimiters
 # (GHSA-gh4j-gqv2-49f6, <=5.5.x; same chain as 1114772 family)
