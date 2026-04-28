@@ -29,6 +29,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 const GENERATOR = path.join(REPO_ROOT, 'packages/www/scripts/generate-search-index.js');
 const PUBLIC_DIR = path.join(REPO_ROOT, 'packages/www/public');
+// Matches the legacy combined file (`search-index.json`, kept as a byte-
+// identical copy of the English file for backward compat) plus every
+// per-locale file (`search-index-<lang>.json`). Restricted to lowercase
+// 2-letter codes so unrelated public/ artifacts aren't swept by mistake.
 const INDEX_PATTERN = /^search-index(?:-[a-z]{2})?\.json$/;
 
 function fail(msg: string): never {
