@@ -62,9 +62,13 @@ if (currentLang) {
   });
 }
 
-// Generate table of contents from rendered HTML using shared utility (respecting toc frontmatter flag).
-// Astro.slots.render returns HTML for both .md and .mdx content, so we use the HTML parser.
-const toc = frontmatter.toc !== false ? generateTOCFromHtml(await Astro.slots.render('default')) : [];
+// Render the default slot once and reuse the HTML for both TOC extraction
+// and the article body, avoiding the double-render that would happen if we
+// called Astro.slots.render('default') *and* used <slot /> in the template.
+// Works uniformly for .md and .mdx because slots.render returns HTML in both
+// cases.
+const articleHtml = await Astro.slots.render('default');
+const toc = frontmatter.toc !== false ? generateTOCFromHtml(articleHtml) : [];
 ---
 
 <BaseLayout
@@ -141,7 +145,7 @@ const toc = frontmatter.toc !== false ? generateTOCFromHtml(await Astro.slots.re
       )}
 
       <main class="article-content">
-        <slot />
+        <Fragment set:html={articleHtml} />
 
         {isBlogPost && (
           <div class="blog-newsletter-cta">
@@ -298,9 +302,20 @@ const toc = frontmatter.toc !== false ? generateTOCFromHtml(await Astro.slots.re
     }
 
     @media (max-width: 48rem) {
-      /* 768px */
-      .article-container {
+      /* 768px. Match the specificity of .article-container.with-toc so the
+         mobile single-column layout actually wins. Without these compound
+         selectors the two-class .with-toc rule above keeps the 250px sidebar
+         track on phones and crushes the article body. */
+      .article-container,
+      .article-container.with-toc,
+      .article-container.no-toc {
         grid-template-columns: 1fr;
+      }
+
+      .article-container.with-toc .article-content,
+      .article-container.with-toc .toc-sidebar {
+        grid-column: 1;
+        grid-row: auto;
       }
 
       .toc-sidebar {

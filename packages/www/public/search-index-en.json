@@ -62,8 +62,8 @@
   {
     "id": "search-48",
     "content": "I Tested Rediacc Against the PocketOS Incident",
-    "body": "import YouTubeEmbed from '../../../components/YouTubeEmbed.astro'; TL;DR. An AI agent deleted PocketOS's production database in 9 seconds last week. I tried to make my own infrastructure fail the same way. Six guardrails held; one honest gap remains. 128 GB production fork, end to end: 7.2 seconds. The CoW reflink itself: 2.3 seconds. The agent was blocked from grand (production) repositories, blocked from setting its own override, and dropped into a kernel sandbox (unprivileged user, separate mount namespace, scoped Docker socket) when access was authorized. What Rediacc does not isolate: external SaaS credentials in your repository data. A fork inherits them. That part is the developer's job to handle, via Rediaccfile lifecycle hooks. <YouTubeEmbed videoId=\"o-Bst9rO9Fk\" title=\"I Tested Rediacc Against the PocketOS Incident\" /> Last weekend, Jer Crane published a 30-hour postmortem. A Cursor agent running Anthropic's Claude Opus 4.6 deleted his production database on Railway. The deletion was a single GraphQL call. It took 9 seconds. Railway's volume backups went with it because Railway stores them inside the same volume. His company, PocketOS, builds software that car rental businesses use to run their daily operations. Some of those businesses have been on PocketOS for five years. Saturday morning, customers came in to pick up vehicles and the rental businesses had no records of who they were. Three months of bookings, gone. Jer spent the day rebuilding what he could from Stripe payment histories and email confirmations. I read his post twice. The Register, Tom's Hardware, and Business Standard all picked it up. The Hacker News thread hit 874 comments. I build a different kind of infrastructure platform. We call it Rediacc. The whole point of how it is built is to make this exact scenario harder. So I sat down and ran the test. This post is what I found. The numbers are real. The error messages are quoted from the CLI. And the one place Rediacc does not protect at all is in here too. Pretending otherwise is what gets people in trouble.",
-    "excerpt": "import YouTubeEmbed from '../../../components/YouTubeEmbed.astro'; TL;DR. An AI agent deleted PocketOS's production database in 9 seconds last week. I...",
+    "body": "TL;DR. An AI agent deleted PocketOS's production database in 9 seconds last week. I tried to make my own infrastructure fail the same way. Six guardrails held; one honest gap remains. 128 GB production fork, end to end: 7.2 seconds. The CoW reflink itself: 2.3 seconds. The agent was blocked from grand (production) repositories, blocked from setting its own override, and dropped into a kernel sandbox (unprivileged user, separate mount namespace, scoped Docker socket) when access was authorized. What Rediacc does not isolate: external SaaS credentials in your repository data. A fork inherits them. That part is the developer's job to handle, via Rediaccfile lifecycle hooks. Last weekend, Jer Crane published a 30-hour postmortem. A Cursor agent running Anthropic's Claude Opus 4.6 deleted his production database on Railway. The deletion was a single GraphQL call. It took 9 seconds. Railway's volume backups went with it because Railway stores them inside the same volume. His company, PocketOS, builds software that car rental businesses use to run their daily operations. Some of those businesses have been on PocketOS for five years. Saturday morning, customers came in to pick up vehicles and the rental businesses had no records of who they were. Three months of bookings, gone. Jer spent the day rebuilding what he could from Stripe payment histories and email confirmations. I read his post twice. The Register, Tom's Hardware, and Business Standard all picked it up. The Hacker News thread hit 874 comments. I build a different kind of infrastructure platform. We call it Rediacc. The whole point of how it is built is to make this exact scenario harder. So I sat down and ran the test. This post is what I found. The numbers are real. The error messages are quoted from the CLI. And the one place Rediacc does not protect at all is in here too. Pretending otherwise is what gets people in trouble.",
+    "excerpt": "TL;DR. An AI agent deleted PocketOS's production database in 9 seconds last week. I tried to make my own infrastructure fail the same way. Six guardra...",
     "category": "Blog",
     "page": "/en/blog/i-tested-rediacc-against-the-pocketos-incident",
     "path": "blog.i-tested-rediacc-against-the-pocketos-incident.content",
@@ -992,8 +992,8 @@
   {
     "id": "search-2580",
     "content": "Node.js",
-    "body": "import { execFileSync } from 'child_process'; const raw = execFileSync('rdc', ['machine', 'query', '--name', 'prod-1', '-o', 'json'], { encoding: 'utf-8' }); const { success, data, errors } = JSON.parse(raw); if (!success) { const { message, retryable, guidance } = errors[0]; throw new Error(${message} (retryable: ${retryable}, fix: ${guidance})); }",
-    "excerpt": "import { execFileSync } from 'child_process'; const raw = execFileSync('rdc', ['machine', 'query', '--name', 'prod-1', '-o', 'json'], { encoding: 'utf...",
+    "body": "const raw = execFileSync('rdc', ['machine', 'query', '--name', 'prod-1', '-o', 'json'], { encoding: 'utf-8' }); const { success, data, errors } = JSON.parse(raw); if (!success) { const { message, retryable, guidance } = errors[0]; throw new Error(${message} (retryable: ${retryable}, fix: ${guidance})); }",
+    "excerpt": "const raw = execFileSync('rdc', ['machine', 'query', '--name', 'prod-1', '-o', 'json'], { encoding: 'utf-8' }); const { success, data, errors } = JSON...",
     "category": "Documentation",
     "page": "/en/docs/ai-agents-json-output",
     "path": "docs.ai-agents-json-output.content",
@@ -1371,7 +1371,7 @@
   {
     "id": "search-2615",
     "content": "The `REDIACC_ALLOW_CONFIG_EDIT` override",
-    "body": "Some operations: the interactive editor, --apply, field rotate: exist for humans and have no agent-safe path. If you actively want an agent to do one of them, you set: export REDIACC_ALLOW_CONFIG_EDIT='*' # full bypass # or export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId' # (comma-separated scope globs: * wildcards allowed per segment) …and the agent inherits it. Crucial detail: the override must appear in a process above the agent in the ancestry chain. If the agent sets it in its own environment (or in a subshell it spawned), the CLI refuses and tells you so: Interactive editor is blocked in agent environments (REDIACC_ALLOW_CONFIG_EDIT was set but ancestry verification failed: the override must be set by your shell, not by an agent). The effect: an agent can't talk its way past a guardrail by running export REDIACC_ALLOW_CONFIG_EDIT='*' mid-session. Only a parent process (you, in your terminal, before launching the agent) can open that door.",
+    "body": "Some operations: the interactive editor, --apply, field rotate: exist for humans and have no agent-safe path. If you actively want an agent to do one of them, you set: # or # (comma-separated scope globs: * wildcards allowed per segment) …and the agent inherits it. Crucial detail: the override must appear in a process above the agent in the ancestry chain. If the agent sets it in its own environment (or in a subshell it spawned), the CLI refuses and tells you so: Interactive editor is blocked in agent environments (REDIACC_ALLOW_CONFIG_EDIT was set but ancestry verification failed: the override must be set by your shell, not by an agent). The effect: an agent can't talk its way past a guardrail by running export REDIACC_ALLOW_CONFIG_EDIT='*' mid-session. Only a parent process (you, in your terminal, before launching the agent) can open that door.",
     "excerpt": "Some operations: the interactive editor, --apply, field rotate: exist for humans and have no agent-safe path. If you actively want an agent to do one...",
     "category": "Documentation",
     "page": "/en/docs/ai-agents-safety",
@@ -1459,8 +1459,8 @@
   {
     "id": "search-2623",
     "content": "Let an agent rotate a single cloud token",
-    "body": "# As you, before starting the agent: export REDIACC_ALLOW_CONFIG_EDIT='/credentials/cfDnsApiToken' claude-code # or cursor, gemini, etc. Now the agent can config field rotate /credentials/cfDnsApiToken --new … but still can't edit /credentials/ssh/privateKey or open the interactive editor.",
-    "excerpt": "# As you, before starting the agent: export REDIACC_ALLOW_CONFIG_EDIT='/credentials/cfDnsApiToken' claude-code # or cursor, gemini, etc. Now the agent...",
+    "body": "# As you, before starting the agent: claude-code # or cursor, gemini, etc. Now the agent can config field rotate /credentials/cfDnsApiToken --new … but still can't edit /credentials/ssh/privateKey or open the interactive editor.",
+    "excerpt": "# As you, before starting the agent: claude-code # or cursor, gemini, etc. Now the agent can config field rotate /credentials/cfDnsApiToken --new … bu...",
     "category": "Documentation",
     "page": "/en/docs/ai-agents-safety",
     "path": "docs.ai-agents-safety.content",
@@ -1470,8 +1470,8 @@
   {
     "id": "search-2624",
     "content": "Let an agent do one broad config edit session",
-    "body": "export REDIACC_ALLOW_CONFIG_EDIT='*' claude-code The agent can open rdc config edit, use --reveal, and run field rotate. Every action is still audit-logged with actor.kind: agent and the CLAUDECODE signal.",
-    "excerpt": "export REDIACC_ALLOW_CONFIG_EDIT='*' claude-code The agent can open rdc config edit, use --reveal, and run field rotate. Every action is still audit-l...",
+    "body": "claude-code The agent can open rdc config edit, use --reveal, and run field rotate. Every action is still audit-logged with actor.kind: agent and the CLAUDECODE signal.",
+    "excerpt": "claude-code The agent can open rdc config edit, use --reveal, and run field rotate. Every action is still audit-logged with actor.kind: agent and the...",
     "category": "Documentation",
     "page": "/en/docs/ai-agents-safety",
     "path": "docs.ai-agents-safety.content",
@@ -5602,8 +5602,8 @@
   {
     "id": "search-3002",
     "content": "Linux and macOS",
-    "body": "curl -fsSL https://www.rediacc.com/install.sh | bash This downloads the rdc binary to $HOME/.local/bin/. Make sure this directory is in your PATH: export PATH=\"$HOME/.local/bin:$PATH\" Add this line to your shell profile (~/.bashrc, ~/.zshrc, etc.) to make it permanent.",
-    "excerpt": "curl -fsSL https://www.rediacc.com/install.sh | bash This downloads the rdc binary to $HOME/.local/bin/. Make sure this directory is in your PATH: exp...",
+    "body": "curl -fsSL https://www.rediacc.com/install.sh | bash This downloads the rdc binary to $HOME/.local/bin/. Make sure this directory is in your PATH: Add this line to your shell profile (~/.bashrc, ~/.zshrc, etc.) to make it permanent.",
+    "excerpt": "curl -fsSL https://www.rediacc.com/install.sh | bash This downloads the rdc binary to $HOME/.local/bin/. Make sure this directory is in your PATH: Add...",
     "category": "Documentation",
     "page": "/en/docs/installation",
     "path": "docs.installation.content",
@@ -10505,7 +10505,7 @@
   {
     "id": "search-3453",
     "content": "How Licensing Works",
-    "body": "account is the source of truth for plans, contract overrides, machine slot state, and monthly repo license issuances. rdc runs on your workstation. It logs you into the account server, requests the licenses it needs, and installs them on remote machines over SSH. When you run a repository command, rdc ensures the required licenses are in place and validates them on the machine at runtime. The normal flow looks like this: You authenticate with rdc subscription login You run a repository command such as rdc repo create, rdc repo up, or rdc repo down If the required license is missing or expired, rdc requests it from account rdc writes the signed license to the machine The license is validated locally on the machine and the operation continues See rdc vs renet for the workstation-vs-server split, and Repositories for the repository lifecycle itself. For automation and AI agents, use a scoped subscription token instead of browser login: rdc subscription login --token \"$REDIACC_SUBSCRIPTION_TOKEN\" You can also inject the token directly through the environment so the CLI can issue and refresh repo licenses without any interactive login step: export REDIACC_SUBSCRIPTION_TOKEN=\"rdt_...\" export REDIACC_ACCOUNT_SERVER=\"https://www.rediacc.com/account\"",
+    "body": "account is the source of truth for plans, contract overrides, machine slot state, and monthly repo license issuances. rdc runs on your workstation. It logs you into the account server, requests the licenses it needs, and installs them on remote machines over SSH. When you run a repository command, rdc ensures the required licenses are in place and validates them on the machine at runtime. The normal flow looks like this: You authenticate with rdc subscription login You run a repository command such as rdc repo create, rdc repo up, or rdc repo down If the required license is missing or expired, rdc requests it from account rdc writes the signed license to the machine The license is validated locally on the machine and the operation continues See rdc vs renet for the workstation-vs-server split, and Repositories for the repository lifecycle itself. For automation and AI agents, use a scoped subscription token instead of browser login: rdc subscription login --token \"$REDIACC_SUBSCRIPTION_TOKEN\" You can also inject the token directly through the environment so the CLI can issue and refresh repo licenses without any interactive login step:",
     "excerpt": "account is the source of truth for plans, contract overrides, machine slot state, and monthly repo license issuances. rdc runs on your workstation. It...",
     "category": "Documentation",
     "page": "/en/docs/subscription-licensing",

@@ -62,8 +62,8 @@
   {
     "id": "search-6",
     "content": "اختبرتُ Rediacc في مواجهة حادثة PocketOS",
-    "body": "import YouTubeEmbed from '../../../components/YouTubeEmbed.astro'; خلاصة سريعة. حذف وكيل ذكاء اصطناعي قاعدة بيانات PocketOS الإنتاجية في 9 ثوانٍ الأسبوع الماضي. حاولتُ أن أجعل بنيتي التحتية تفشل بالطريقة نفسها. صمدت ست حواجز حماية؛ وبقيت ثغرة واحدة بصدق. تفريع إنتاجي بحجم 128 جيجابايت من البداية إلى النهاية: 7.2 ثانية. أما رابط CoW reflink نفسه فاستغرق 2.3 ثانية. مُنع الوكيل من المستودعات الكبرى (الإنتاجية)، ومُنع من ضبط تجاوزه الخاص، وأُسقط داخل صندوق رمل على مستوى النواة (مستخدم غير ممتاز، فضاء أسماء تحميل منفصل، مقبس Docker محصور النطاق) عند منحه الإذن. ما لا يعزله Rediacc: بيانات اعتماد خدمات SaaS الخارجية الموجودة في بيانات مستودعك. التفريع يرثها. وهذا الجزء من مهمة المطور التعامل معه عبر خطافات دورة حياة Rediaccfile. <YouTubeEmbed videoId=\"o-Bst9rO9Fk\" title=\"اختبرتُ Rediacc في مواجهة حادثة PocketOS\" /> في عطلة الأسبوع الماضي، نشر Jer Crane تحليلاً مفصلاً لحادثة استمرت 30 ساعة. وكيل Cursor يعمل على نموذج Claude Opus 4.6 من Anthropic حذف قاعدة بياناته الإنتاجية على Railway. كان الحذف عبارة عن استدعاء GraphQL واحد، استغرق 9 ثوانٍ. ذهبت معه نسخ Railway الاحتياطية للتخزين، لأن Railway تخزّنها داخل التخزين نفسه. شركته PocketOS تبني برنامجاً تستخدمه شركات تأجير السيارات لإدارة عملياتها اليومية. بعض هذه الشركات تستخدم PocketOS منذ خمس سنوات. صباح السبت، جاء العملاء لاستلام مركباتهم، ولم يكن لدى شركات التأجير أي سجل عن هويتهم. ثلاثة أشهر من الحجوزات، اختفت. أمضى Jer اليوم في إعادة بناء ما استطاع من سجلات مدفوعات Stripe ورسائل تأكيد البريد الإلكتروني. قرأتُ منشوره مرتين. التقطته كل من The Register وTom's Hardware وBusiness Standard. وبلغ نقاش Hacker News 874 تعليقاً. أنا أبني نوعاً مختلفاً من منصات البنية التحتية. نسميه Rediacc. وكل الفكرة من بنائه هي جعل هذا السيناريو بالذات أصعب. فجلستُ وأجريتُ الاختبار. هذا المنشور هو ما وجدته. الأرقام حقيقية. ورسائل الخطأ مقتبسة حرفياً من واجهة سطر الأوامر. والمكان الوحيد الذي لا يحمي فيه Rediacc إطلاقاً مذكور هنا أيضاً. التظاهر بعكس ذلك هو ما يوقع الناس في المشاكل.",
-    "excerpt": "import YouTubeEmbed from '../../../components/YouTubeEmbed.astro'; خلاصة سريعة. حذف وكيل ذكاء اصطناعي قاعدة بيانات PocketOS الإنتاجية في 9 ثوانٍ الأسب...",
+    "body": "خلاصة سريعة. حذف وكيل ذكاء اصطناعي قاعدة بيانات PocketOS الإنتاجية في 9 ثوانٍ الأسبوع الماضي. حاولتُ أن أجعل بنيتي التحتية تفشل بالطريقة نفسها. صمدت ست حواجز حماية؛ وبقيت ثغرة واحدة بصدق. تفريع إنتاجي بحجم 128 جيجابايت من البداية إلى النهاية: 7.2 ثانية. أما رابط CoW reflink نفسه فاستغرق 2.3 ثانية. مُنع الوكيل من المستودعات الكبرى (الإنتاجية)، ومُنع من ضبط تجاوزه الخاص، وأُسقط داخل صندوق رمل على مستوى النواة (مستخدم غير ممتاز، فضاء أسماء تحميل منفصل، مقبس Docker محصور النطاق) عند منحه الإذن. ما لا يعزله Rediacc: بيانات اعتماد خدمات SaaS الخارجية الموجودة في بيانات مستودعك. التفريع يرثها. وهذا الجزء من مهمة المطور التعامل معه عبر خطافات دورة حياة Rediaccfile. في عطلة الأسبوع الماضي، نشر Jer Crane تحليلاً مفصلاً لحادثة استمرت 30 ساعة. وكيل Cursor يعمل على نموذج Claude Opus 4.6 من Anthropic حذف قاعدة بياناته الإنتاجية على Railway. كان الحذف عبارة عن استدعاء GraphQL واحد، استغرق 9 ثوانٍ. ذهبت معه نسخ Railway الاحتياطية للتخزين، لأن Railway تخزّنها داخل التخزين نفسه. شركته PocketOS تبني برنامجاً تستخدمه شركات تأجير السيارات لإدارة عملياتها اليومية. بعض هذه الشركات تستخدم PocketOS منذ خمس سنوات. صباح السبت، جاء العملاء لاستلام مركباتهم، ولم يكن لدى شركات التأجير أي سجل عن هويتهم. ثلاثة أشهر من الحجوزات، اختفت. أمضى Jer اليوم في إعادة بناء ما استطاع من سجلات مدفوعات Stripe ورسائل تأكيد البريد الإلكتروني. قرأتُ منشوره مرتين. التقطته كل من The Register وTom's Hardware وBusiness Standard. وبلغ نقاش Hacker News 874 تعليقاً. أنا أبني نوعاً مختلفاً من منصات البنية التحتية. نسميه Rediacc. وكل الفكرة من بنائه هي جعل هذا السيناريو بالذات أصعب. فجلستُ وأجريتُ الاختبار. هذا المنشور هو ما وجدته. الأرقام حقيقية. ورسائل الخطأ مقتبسة حرفياً من واجهة سطر الأوامر. والمكان الوحيد الذي لا يحمي فيه Rediacc إطلاقاً مذكور هنا أيضاً. التظاهر بعكس ذلك هو ما يوقع الناس في المشاكل.",
+    "excerpt": "خلاصة سريعة. حذف وكيل ذكاء اصطناعي قاعدة بيانات PocketOS الإنتاجية في 9 ثوانٍ الأسبوع الماضي. حاولتُ أن أجعل بنيتي التحتية تفشل بالطريقة نفسها. صمدت س...",
     "category": "Blog",
     "page": "/ar/blog/i-tested-rediacc-against-the-pocketos-incident",
     "path": "blog.i-tested-rediacc-against-the-pocketos-incident.content",
@@ -981,8 +981,8 @@
   {
     "id": "search-259",
     "content": "Node.js",
-    "body": "import { execFileSync } from 'child_process'; const raw = execFileSync('rdc', ['machine', 'query', 'prod-1', '-o', 'json'], { encoding: 'utf-8' }); const { success, data, errors } = JSON.parse(raw); if (!success) { const { message, retryable, guidance } = errors[0]; throw new Error(${message} (retryable: ${retryable}, fix: ${guidance})); }",
-    "excerpt": "import { execFileSync } from 'child_process'; const raw = execFileSync('rdc', ['machine', 'query', 'prod-1', '-o', 'json'], { encoding: 'utf-8' }); co...",
+    "body": "const raw = execFileSync('rdc', ['machine', 'query', 'prod-1', '-o', 'json'], { encoding: 'utf-8' }); const { success, data, errors } = JSON.parse(raw); if (!success) { const { message, retryable, guidance } = errors[0]; throw new Error(${message} (retryable: ${retryable}, fix: ${guidance})); }",
+    "excerpt": "const raw = execFileSync('rdc', ['machine', 'query', 'prod-1', '-o', 'json'], { encoding: 'utf-8' }); const { success, data, errors } = JSON.parse(raw...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-json-output",
     "path": "docs.ai-agents-json-output.content",
@@ -1349,8 +1349,8 @@
   {
     "id": "search-293",
     "content": "التجاوز `REDIACC_ALLOW_CONFIG_EDIT`",
-    "body": "بعض العمليات: المحرر التفاعلي، --apply، field rotate: موجودة للبشر وليس لها مسار آمن للوكلاء. إذا كنت تريد بنشاط أن يقوم وكيل بإحداها، تضبط: export REDIACC_ALLOW_CONFIG_EDIT='*' # تجاوز كامل # أو export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId' # (نطاقات glob مفصولة بفواصل: أحرف * البدل مسموحة لكل شريحة) …ويرث الوكيل هذا. تفصيل حاسم: يجب أن يظهر التجاوز في عملية فوق الوكيل في سلسلة السلف. إذا ضبطه الوكيل في بيئته الخاصة (أو في shell فرعي أنشأه)، ترفض واجهة سطر الأوامر وتعلمك بذلك: Interactive editor is blocked in agent environments (REDIACC_ALLOW_CONFIG_EDIT was set but ancestry verification failed: the override must be set by your shell, not by an agent). الأثر: لا يستطيع الوكيل تجاوز ضمانة بتشغيل export REDIACC_ALLOW_CONFIG_EDIT='*' في منتصف الجلسة. فقط عملية أصل (أنت، في طرفيتك، قبل تشغيل الوكيل) يمكنها فتح ذلك الباب.",
-    "excerpt": "بعض العمليات: المحرر التفاعلي، --apply، field rotate: موجودة للبشر وليس لها مسار آمن للوكلاء. إذا كنت تريد بنشاط أن يقوم وكيل بإحداها، تضبط: export RE...",
+    "body": "بعض العمليات: المحرر التفاعلي، --apply، field rotate: موجودة للبشر وليس لها مسار آمن للوكلاء. إذا كنت تريد بنشاط أن يقوم وكيل بإحداها، تضبط: # أو # (نطاقات glob مفصولة بفواصل: أحرف * البدل مسموحة لكل شريحة) …ويرث الوكيل هذا. تفصيل حاسم: يجب أن يظهر التجاوز في عملية فوق الوكيل في سلسلة السلف. إذا ضبطه الوكيل في بيئته الخاصة (أو في shell فرعي أنشأه)، ترفض واجهة سطر الأوامر وتعلمك بذلك: Interactive editor is blocked in agent environments (REDIACC_ALLOW_CONFIG_EDIT was set but ancestry verification failed: the override must be set by your shell, not by an agent). الأثر: لا يستطيع الوكيل تجاوز ضمانة بتشغيل export REDIACC_ALLOW_CONFIG_EDIT='*' في منتصف الجلسة. فقط عملية أصل (أنت، في طرفيتك، قبل تشغيل الوكيل) يمكنها فتح ذلك الباب.",
+    "excerpt": "بعض العمليات: المحرر التفاعلي، --apply، field rotate: موجودة للبشر وليس لها مسار آمن للوكلاء. إذا كنت تريد بنشاط أن يقوم وكيل بإحداها، تضبط: # أو # (ن...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
     "path": "docs.ai-agents-safety.content",
@@ -1437,8 +1437,8 @@
   {
     "id": "search-301",
     "content": "السماح لوكيل بتدوير رمز سحابي واحد",
-    "body": "# بوصفك أنت، قبل بدء الوكيل: export REDIACC_ALLOW_CONFIG_EDIT='/credentials/cfDnsApiToken' claude-code # أو cursor أو gemini إلخ الآن يستطيع الوكيل تشغيل config field rotate /credentials/cfDnsApiToken --new … لكنه لا يزال غير قادر على تحرير /credentials/ssh/privateKey أو فتح المحرر التفاعلي.",
-    "excerpt": "# بوصفك أنت، قبل بدء الوكيل: export REDIACC_ALLOW_CONFIG_EDIT='/credentials/cfDnsApiToken' claude-code # أو cursor أو gemini إلخ الآن يستطيع الوكيل تش...",
+    "body": "# بوصفك أنت، قبل بدء الوكيل: claude-code # أو cursor أو gemini إلخ الآن يستطيع الوكيل تشغيل config field rotate /credentials/cfDnsApiToken --new … لكنه لا يزال غير قادر على تحرير /credentials/ssh/privateKey أو فتح المحرر التفاعلي.",
+    "excerpt": "# بوصفك أنت، قبل بدء الوكيل: claude-code # أو cursor أو gemini إلخ الآن يستطيع الوكيل تشغيل config field rotate /credentials/cfDnsApiToken --new … لكن...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
     "path": "docs.ai-agents-safety.content",
@@ -1448,8 +1448,8 @@
   {
     "id": "search-302",
     "content": "السماح لوكيل بجلسة تحرير إعدادات واسعة",
-    "body": "export REDIACC_ALLOW_CONFIG_EDIT='*' claude-code يستطيع الوكيل فتح rdc config edit واستخدام --reveal وتشغيل field rotate. كل إجراء لا يزال مُسجَّلاً في سجل التدقيق مع actor.kind: agent وإشارة CLAUDECODE.",
-    "excerpt": "export REDIACC_ALLOW_CONFIG_EDIT='*' claude-code يستطيع الوكيل فتح rdc config edit واستخدام --reveal وتشغيل field rotate. كل إجراء لا يزال مُسجَّلاً ف...",
+    "body": "claude-code يستطيع الوكيل فتح rdc config edit واستخدام --reveal وتشغيل field rotate. كل إجراء لا يزال مُسجَّلاً في سجل التدقيق مع actor.kind: agent وإشارة CLAUDECODE.",
+    "excerpt": "claude-code يستطيع الوكيل فتح rdc config edit واستخدام --reveal وتشغيل field rotate. كل إجراء لا يزال مُسجَّلاً في سجل التدقيق مع actor.kind: agent وإ...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
     "path": "docs.ai-agents-safety.content",
@@ -5569,7 +5569,7 @@
   {
     "id": "search-679",
     "content": "Linux و macOS",
-    "body": "curl -fsSL https://www.rediacc.com/install.sh | bash يقوم هذا الأمر بتنزيل ملف rdc الثنائي إلى $HOME/.local/bin/. تأكد من أن هذا المجلد موجود في PATH الخاص بك: export PATH=\"$HOME/.local/bin:$PATH\" أضف هذا السطر إلى ملف تعريف shell الخاص بك (~/.bashrc، ~/.zshrc، إلخ) لجعله دائمًا.",
+    "body": "curl -fsSL https://www.rediacc.com/install.sh | bash يقوم هذا الأمر بتنزيل ملف rdc الثنائي إلى $HOME/.local/bin/. تأكد من أن هذا المجلد موجود في PATH الخاص بك: أضف هذا السطر إلى ملف تعريف shell الخاص بك (~/.bashrc، ~/.zshrc، إلخ) لجعله دائمًا.",
     "excerpt": "curl -fsSL https://www.rediacc.com/install.sh | bash يقوم هذا الأمر بتنزيل ملف rdc الثنائي إلى $HOME/.local/bin/. تأكد من أن هذا المجلد موجود في PATH...",
     "category": "Documentation",
     "page": "/ar/docs/installation",
@@ -10450,7 +10450,7 @@
   {
     "id": "search-1128",
     "content": "كيف يعمل الترخيص",
-    "body": "account هو مصدر الحقيقة للخطط وتجاوزات العقود وحالة تفعيل الجهاز وإصدارات تراخيص المستودع الشهرية. rdc يعمل على محطة العمل الخاصة بك. يُسجّل دخولك إلى خادم الحساب، ويطلب التراخيص اللازمة، ويُثبّتها على الأجهزة البعيدة عبر SSH. عند تشغيل أمر مستودع، يضمن rdc وجود التراخيص المطلوبة ويتحقق منها على الجهاز أثناء التشغيل. يبدو التدفق الطبيعي كما يلي: تُصادق باستخدام rdc subscription login تُشغّل أمر مستودع مثل rdc repo create أو rdc repo up أو rdc repo down إذا كان الترخيص المطلوب مفقوداً أو منتهي الصلاحية، يطلبه rdc من account يكتب rdc الترخيص الموقَّع على الجهاز يُتحقق من الترخيص محلياً على الجهاز وتستمر العملية راجع rdc vs renet للتعرف على تقسيم محطة العمل مقابل الخادم، والمستودعات لدورة حياة المستودع نفسها. للأتمتة ووكلاء الذكاء الاصطناعي، استخدم رمز اشتراك محدد النطاق بدلاً من تسجيل الدخول عبر المتصفح: rdc subscription login --token \"$REDIACC_SUBSCRIPTION_TOKEN\" يمكنك أيضاً حقن الرمز مباشرةً عبر البيئة حتى يتمكن CLI من إصدار وتجديد تراخيص المستودع دون أي خطوة تسجيل دخول تفاعلية: export REDIACC_SUBSCRIPTION_TOKEN=\"rdt_...\" export REDIACC_ACCOUNT_SERVER=\"https://www.rediacc.com/account\"",
+    "body": "account هو مصدر الحقيقة للخطط وتجاوزات العقود وحالة تفعيل الجهاز وإصدارات تراخيص المستودع الشهرية. rdc يعمل على محطة العمل الخاصة بك. يُسجّل دخولك إلى خادم الحساب، ويطلب التراخيص اللازمة، ويُثبّتها على الأجهزة البعيدة عبر SSH. عند تشغيل أمر مستودع، يضمن rdc وجود التراخيص المطلوبة ويتحقق منها على الجهاز أثناء التشغيل. يبدو التدفق الطبيعي كما يلي: تُصادق باستخدام rdc subscription login تُشغّل أمر مستودع مثل rdc repo create أو rdc repo up أو rdc repo down إذا كان الترخيص المطلوب مفقوداً أو منتهي الصلاحية، يطلبه rdc من account يكتب rdc الترخيص الموقَّع على الجهاز يُتحقق من الترخيص محلياً على الجهاز وتستمر العملية راجع rdc vs renet للتعرف على تقسيم محطة العمل مقابل الخادم، والمستودعات لدورة حياة المستودع نفسها. للأتمتة ووكلاء الذكاء الاصطناعي، استخدم رمز اشتراك محدد النطاق بدلاً من تسجيل الدخول عبر المتصفح: rdc subscription login --token \"$REDIACC_SUBSCRIPTION_TOKEN\" يمكنك أيضاً حقن الرمز مباشرةً عبر البيئة حتى يتمكن CLI من إصدار وتجديد تراخيص المستودع دون أي خطوة تسجيل دخول تفاعلية:",
     "excerpt": "account هو مصدر الحقيقة للخطط وتجاوزات العقود وحالة تفعيل الجهاز وإصدارات تراخيص المستودع الشهرية. rdc يعمل على محطة العمل الخاصة بك. يُسجّل دخولك إلى...",
     "category": "Documentation",
     "page": "/ar/docs/subscription-licensing",

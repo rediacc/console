@@ -393,20 +393,30 @@ function splitIntoSections(markdown, fallbackHeading) {
  */
 function stripMarkdown(text) {
   if (!text) return '';
-  return text
-    .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(/^```.*$/gm, ' ')
-    .replace(/`([^`]+)`/g, '$1')
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/^\s*>\s?/gm, '')
-    .replace(/^\s*[-*+]\s+/gm, '')
-    .replace(/^\s*\d+\.\s+/gm, '')
-    .replace(/\*\*([^*\n]+)\*\*/g, '$1')
-    .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '$1')
-    .replace(/~~([^~\n]+)~~/g, '$1')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return (
+    text
+      .replace(/<!--[\s\S]*?-->/g, ' ')
+      // MDX: strip top-of-file ESM imports/exports so they do not pollute the
+      // search index with module paths and identifiers.
+      .replace(/^\s*import\s+[\s\S]*?from\s+['"][^'"]+['"];?\s*$/gm, ' ')
+      .replace(/^\s*export\s+(?:default\s+)?[\s\S]*?;?\s*$/gm, ' ')
+      // MDX: strip JSX components (capitalised tag names) so component names
+      // and prop values do not leak into search results.
+      .replace(/<[A-Z][A-Za-z0-9]*\b[^>]*\/>/g, ' ')
+      .replace(/<[A-Z][A-Za-z0-9]*\b[^>]*>[\s\S]*?<\/[A-Z][A-Za-z0-9]*>/g, ' ')
+      .replace(/^```.*$/gm, ' ')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+      .replace(/^\s*>\s?/gm, '')
+      .replace(/^\s*[-*+]\s+/gm, '')
+      .replace(/^\s*\d+\.\s+/gm, '')
+      .replace(/\*\*([^*\n]+)\*\*/g, '$1')
+      .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '$1')
+      .replace(/~~([^~\n]+)~~/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
 }
 
 // Run generator
