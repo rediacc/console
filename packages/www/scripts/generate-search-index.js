@@ -372,6 +372,11 @@ function splitIntoSections(markdown, fallbackHeading) {
       currentBody.push(line);
       continue;
     }
+    // Drop MDX ESM imports/exports at the source so they never appear in any
+    // section body — defence in depth alongside stripMarkdown's later pass.
+    if (!inFence && /^\s*(?:import|export)\s+/.test(line)) {
+      continue;
+    }
     const headingMatch = !inFence && line.match(/^(#{2,3})\s+(.+?)\s*#*\s*$/);
     if (headingMatch) {
       flush();
