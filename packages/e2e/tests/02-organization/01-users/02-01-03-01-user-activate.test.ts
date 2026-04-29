@@ -39,14 +39,7 @@ test.describe('User Activation Tests', () => {
 
     const userTable = page.getByTestId(UserPageIDs.systemUserTable);
     const listContainer = page.getByTestId('resource-list-container');
-    await expect
-      .poll(
-        async () =>
-          (await userTable.isVisible().catch(() => false)) ||
-          (await listContainer.isVisible().catch(() => false)),
-        { timeout: 10000 }
-      )
-      .toBe(true);
+    await expect(userTable.or(listContainer)).toBeVisible({ timeout: 10000 });
     await filterUsersList(page, newUserEmail);
     testReporter.completeStep('Navigate to Users section', 'passed');
 
@@ -77,9 +70,7 @@ test.describe('User Activation Tests', () => {
         await expect(inactiveTag).toBeVisible({ timeout: 10000 });
       }
       await clickListAction(page, newUserEmail, 'activate');
-      await expect
-        .poll(async () => activeTag.isVisible().catch(() => false), { timeout: 10000 })
-        .toBe(true);
+      await expect(activeTag).toBeVisible({ timeout: 10000 });
     }
 
     await testDataManager.updateCreatedUserActivation(newUserEmail, true);

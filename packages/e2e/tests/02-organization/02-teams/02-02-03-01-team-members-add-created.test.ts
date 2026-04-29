@@ -2,7 +2,6 @@ import { test, expect } from '@/base/BaseTest';
 import { NavigationHelper } from '@/helpers/NavigationHelper';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
-import { UserPageIDs } from '@/pages/user/UserPageIDs';
 import {
   selectUserInAddMemberTab,
   openTeamMembersDialog,
@@ -10,22 +9,7 @@ import {
   waitForTeamsPage,
   fillResourceSearch,
 } from '@/test-helpers/team-helpers';
-import { createUserViaUI } from '@/test-helpers/user-helpers';
-import { confirmYes } from '@/test-helpers/ui-helpers';
-import type { Page } from '@playwright/test';
-
-const ensureUserActive = async (page: Page, email: string): Promise<void> => {
-  const nav = new NavigationHelper(page);
-  await nav.goToOrganizationUsers();
-
-  await fillResourceSearch(page, email);
-
-  const activateButton = page.getByTestId(UserPageIDs.systemUserActivateButton(email));
-  if (await activateButton.isVisible().catch(() => false)) {
-    await activateButton.click();
-    await confirmYes(page);
-  }
-};
+import { createUserViaUI, ensureUserActive } from '@/test-helpers/user-helpers';
 
 test.describe('Team Members - Add Created User Tests', () => {
   test.describe.configure({ timeout: 60000 });
@@ -58,7 +42,6 @@ test.describe('Team Members - Add Created User Tests', () => {
     testReporter.startStep('Navigate to Teams section');
 
     // Navigate to Organization > Teams
-    await dismissCreateUserModal(page);
     const nav = new NavigationHelper(page);
     await nav.goToOrganizationTeams();
     await waitForTeamsPage(page);

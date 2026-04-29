@@ -39,6 +39,8 @@ export const filterUsersList = async (page: Page, email: string): Promise<void> 
     await searchInput.fill('');
     await searchInput.fill(email);
     await searchInput.press('Enter');
+    // Wait for search results to update
+    await page.waitForLoadState('networkidle').catch(() => {});
   }
 };
 
