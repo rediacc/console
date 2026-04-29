@@ -5,7 +5,6 @@ import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import {
   selectUserInAddMemberTab,
   openTeamMembersDialog,
-  dismissCreateUserModal,
   waitForTeamsPage,
   fillResourceSearch,
 } from '@/test-helpers/team-helpers';
@@ -32,7 +31,6 @@ test.describe('Team Members - Add Specific User Tests', () => {
     testDataManager,
   }) => {
     const userToAdd = await createUserViaUI(page, testDataManager);
-    await dismissCreateUserModal(page);
     const teamName = 'Private Team';
 
     await ensureUserActive(page, userToAdd.email);
