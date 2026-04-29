@@ -4,8 +4,8 @@ description: 'Cree, gestione y opere repositorios cifrados con LUKS en máquinas
 category: Guides
 order: 4
 language: es
-sourceHash: "83f2c9fa5ae53864"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: "689a84ee2873fe00"
+sourceCommit: "8165b06e0d06dd07530fff343b0df6ecb1697a47"
 ---
 
 # Repositorios
@@ -81,6 +81,8 @@ rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
 Las bifurcaciones usan el modelo name:tag: la bifurcación resultante se llama `my-app:staging`. Esto crea una nueva copia cifrada con su propio GUID e ID de red, compartiendo el nombre del repositorio padre. La bifurcación comparte la misma credencial LUKS que el repositorio padre.
+
+> Las bifurcaciones comparten los datos del padre mediante reflink de BTRFS, incluyendo cualquier credencial almacenada en disco. Consulte [Lo que Rediacc no aísla](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate) para conocer las implicaciones cuando esas credenciales autorizan servicios externos como Stripe, AWS o Railway.
 
 ## Validar
 

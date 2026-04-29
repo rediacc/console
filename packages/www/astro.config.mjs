@@ -8,6 +8,9 @@ import { execSync } from 'child_process';
 const version = process.env.APP_VERSION || '0.0.0-dev';
 
 import react from '@astrojs/react';
+// @astrojs/mdx is pinned at 4.x to track astro 5.x. v5 of the integration
+// requires astro 6 — see .deps-upgrade-blocklist.
+import mdx from '@astrojs/mdx';
 import sitemap, { ChangeFreqEnum } from '@astrojs/sitemap';
 import { remarkResolveTranslations } from './src/plugins/remark-resolve-translations.ts';
 import { remarkTutorialEmbed } from './src/plugins/remark-tutorial-embed.ts';
@@ -36,6 +39,7 @@ export default defineConfig({
   trailingSlash: 'never',
   integrations: [
     react(),
+    mdx(),
     sitemap({
       // Default values (will be overridden by serialize function)
       changefreq: 'weekly',

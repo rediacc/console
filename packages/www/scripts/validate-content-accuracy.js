@@ -226,7 +226,9 @@ function validateUrls(urls, errors) {
 
 function listMarkdownFiles(dir) {
   if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir).filter((f) => f.endsWith('.md') && !EXCLUDED_DOC_SLUGS.has(f));
+  return fs
+    .readdirSync(dir)
+    .filter((f) => (f.endsWith('.md') || f.endsWith('.mdx')) && !EXCLUDED_DOC_SLUGS.has(f));
 }
 
 function groupByRule(errors) {

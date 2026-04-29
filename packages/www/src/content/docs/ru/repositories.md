@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 4
 language: ru
-sourceHash: "83f2c9fa5ae53864"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: "689a84ee2873fe00"
+sourceCommit: "8165b06e0d06dd07530fff343b0df6ecb1697a47"
 ---
 
 # Репозитории
@@ -83,6 +83,8 @@ rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
 Форки используют модель name:tag: результирующий форк называется `my-app:staging`. Эта команда создаёт новую зашифрованную копию с собственным GUID и идентификатором сети, разделяя имя родительского репозитория. Форк использует те же учётные данные LUKS, что и родительский репозиторий.
+
+> Форки разделяют данные родителя через BTRFS reflink, включая любые учётные данные, хранящиеся на диске. См. [Что Rediacc не изолирует](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate) для понимания последствий, когда эти учётные данные авторизуют внешние сервисы, такие как Stripe, AWS или Railway.
 
 ## Проверка целостности
 

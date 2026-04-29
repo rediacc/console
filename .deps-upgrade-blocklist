@@ -22,6 +22,7 @@ electron  # BLOCKER: v40.x breaks native module rebuild with nan library errors 
 
 # Astro/React integration
 @astrojs/react  # BLOCKER: 5.0.3 won't install; npm workspace lock + electron-builder conflict prevents clean install
+@astrojs/mdx  # BLOCKER: v5.x requires astro@^6.0.0; we are on astro 5.x and astro v6 migration is not scheduled
 
 # Cloudflare workers-types
 @cloudflare/workers-types  # BLOCKER: pinned to match wrangler peerOptional; npm latest tag trails behind wrangler's runtime expectation

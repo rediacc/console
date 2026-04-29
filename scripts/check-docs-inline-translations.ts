@@ -203,7 +203,7 @@ function validateCrossMdConsistency(errors: string[]): void {
     const langDir = path.join(DOCS_DIR, lang);
     if (!fs.existsSync(langDir)) continue;
 
-    const files = globSync(`${langDir}/**/*.md`);
+    const files = globSync(`${langDir}/**/*.{md,mdx}`);
 
     for (const file of files) {
       const relativePath = getBaseSlug(file, langDir);
@@ -332,7 +332,7 @@ function main(): void {
   // CHECK 1: Validate all keys exist in web locales
   console.log('Checking inline translation keys in documentation...\n');
 
-  const mdFiles = globSync(`${DOCS_DIR}/**/*.md`);
+  const mdFiles = globSync(`${DOCS_DIR}/**/*.{md,mdx}`);
 
   for (const file of mdFiles) {
     const content = fs.readFileSync(file, 'utf-8');

@@ -1,11 +1,11 @@
 ---
 title: AI Ajan Güvenliği ve Koruma Önlemleri
-description: 'Rediacc CLI''ının AI kodlama asistanlarının sırları sızdırmasını, kimlik bilgilerinin üzerine yazmasını veya ayrıcalıkları yükseltmesini nasıl önlediği: bilgi kapıları, gizleme, soy ağacı doğrulamalı geçersiz kılmalar ve karma zincirli denetim kaydı.'
+description: 'Rediacc CLI''ı, AI kodlama asistanlarının sırları sızdırmasını, kimlik bilgilerinin üzerine yazmasını veya ayrıcalıkları yükseltmesini nasıl önler. Bilgi kapıları, gizleme, soy ağacı doğrulamalı geçersiz kılmalar ve karma zincirli denetim kaydı.'
 category: Concepts
 order: 35
 language: tr
-sourceHash: "6a4f4ccd6ae806ee"
-sourceCommit: "4bef9a170fb07db00a4ee2ef504aa27706bcd15a"
+sourceHash: "7ffb57b820c05367"
+sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
 ---
 
 Claude Code, Cursor, Gemini CLI, Copilot CLI veya başka bir AI kodlama asistanı `rdc` komutunu yönettiğinde, CLI onu klavye başındaki bir insandan farklı ele alır. Bu sayfa ajanın yapabileceklerini, yapamayacaklarını ve ajan koruma önlemlerini atlatmaya çalışsa bile bunların nasıl geçerli kaldığını açıklar.
@@ -107,6 +107,16 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 Efekt: bir ajan oturum ortasında `export REDIACC_ALLOW_CONFIG_EDIT='*'` çalıştırarak bir koruma önlemini aşamaz. Yalnızca bir üst işlem (ajanı başlatmadan önce terminalinizdeki siz) o kapıyı açabilir.
 
+## Platform desteği: geçersiz kılmalar yalnızca Linux
+
+`REDIACC_ALLOW_CONFIG_EDIT` ve `REDIACC_ALLOW_GRAND_REPO`, geçersiz kılmanın ajan tarafından enjekte edilmediğini, sizin tarafınızdan ayarlandığını kanıtlamak için soy ağacı doğrulamasına dayanır. Doğrulama, zincir boyunca her işlem için `/proc/<pid>/environ` dosyasını okur. Bu dosya çekirdek tarafından exec sırasında ayarlanır ve işlemin kendisi tarafından değiştirilemez; bu nedenle üst kabuğun ortamı kurcalanamaz bir tanıktır.
+
+Bu dosya macOS veya Windows'ta yoktur. Meşruiyeti doğrulamanın bir yolu olmadığında CLI kapalı şekilde başarısız olur. Ajanı başlatmadan önce kabuğunuzda geçersiz kılmayı doğru bir şekilde ayarlamış olsanız bile, geçersiz kılma reddedilir. Hata mesajı tam olarak ne yapmanız gerektiğini söyler:
+
+> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+
+Pratikte, Linux dışı kullanıcıların önce-fork iş akışından kaçış yolu yoktur. Bu kasıtlıdır. Ajanlar, nasıl yönlendirilmiş olurlarsa olsunlar, arkasına geçemeyecekleri bir sandbox üzerinden çalıştırılır. Geçersiz kılmaya ihtiyacınız varsa ajanınızı WSL, bir Linux konteyneri veya bir Linux VM içinde çalıştırın; aksi takdirde bir fork üzerinde çalışın.
+
 ## Denetim kaydı
 
 Her değişiklik, her red, her `--reveal` izni `~/.config/rediacc/audit.log.jsonl` dosyasına (mod `0600`, 10 MB'ta döndürülür) bir JSONL satırı yazar. Her satır karma ile zincirlenmiştir: `prevHash` alanı `sha256("<önceki satır>")` değeridir. Herhangi bir satırı değiştirmek, sonraki tüm satırlarda zinciri bozar.
@@ -154,6 +164,27 @@ Ajan koruma önlemleri **davranışsaldır, kriptografik değil**. Yapılandırm
 Gerçek kriptografik zorunluluk için [şifreli yapılandırma deposunu](/tr/docs/config-storage) kullanın: sırlar sunucu tarafında yaşar, her hassas alan alan başına bir HMAC taahhüdü taşır ve hesap çalışanı depolananla karma eşleşmesi yapmayan `--current` ön koşullu yazmaları reddeder. Sunucu hiçbir zaman düz metni görmez: sıfır bilgi: ama kapıyı zorlar.
 
 Yerel dosya yolu "kolay yol güvenlidir". Uzak depo yolu "zor yol da zordur".
+
+## Rediacc'in izole etmediği şeyler
+
+Bu sayfadaki ajan koruma önlemleri Rediacc'in kendi altyapısını korur: yapılandırma dosyası, depo başına Docker daemon'u, LUKS ile şifrelenmiş depo verileri, kapsamlanmış SSH sandbox'ı. Bunlar, deponuzun kimlik bilgilerini tuttuğu harici servisleri korumaz.
+
+Bir depo çatalı, üst birimin BTRFS reflink'idir. Üst birimde diskte yaşayan her şey, çatalda bayt bayt aynıdır: kod, veri ve `.env` dosyaları. Deponuz bir `STRIPE_LIVE_KEY`, bir `AWS_ACCESS_KEY_ID`, bir Railway API token'ı veya üçüncü taraf bir servis için herhangi bir uzun ömürlü kimlik bilgisi içeriyorsa, çatal bunu devralır. Çatalın sandbox'ında çalışan bir ajan o dosyayı okuyabilir, değeri sızdırabilir veya üçüncü taraf API'sini çağırmak için kullanabilir. Üçüncü taraf servisin, çağrının üretim yerine bir çataldan geldiğini bilmesinin bir yolu yoktur.
+
+Bu, paylaşılan sorumluluk çizgisidir:
+
+| Sınır | Sahibi |
+|---|---|
+| Depo verileri, mount ad alanı, Docker kapsamı, ajan korumaları, denetim kaydı | Rediacc |
+| Harici servis etki yarıçapı (Stripe, AWS, Railway, GitHub vb.) | Depo geliştiricisi |
+
+Geliştirici tarafında boşluğu kapatan üç desen vardır:
+
+1. **Üretim harici servis kimlik bilgilerini hiç depoda saklamayın.** Konteyner başlangıcında bunları harici bir sır yöneticisinden (HashiCorp Vault, AWS Secrets Manager, 1Password Connect) getirin. Çatalın konteynerleri, kendilerini farklı şekilde tanımladıkları için tasarım gereği sandbox kapsamlı kimlik bilgileri getirir.
+2. **Rediaccfile `up()` kancası aracılığıyla çatallama sırasında kimlik bilgilerini çıkarın veya değiştirin.** Bir çatalın `up()` işlevi, üst depodan farklı bir depo GUID'i üzerinde çalışır. Bunu tespit edin, ardından `.env` dosyasını sandbox değerleriyle yeniden yazın, çatal başına Stripe sandbox hesabı sağlayın, veritabanı bağlantı dizelerini çatal başına test örneğine yönlendirin vb. Yaşam döngüsü kanca referansı için [Servisler](/en/docs/services) bölümüne bakın.
+3. **eBPF egress filtreleme ile çatalın giden ağını kısıtlayın** böylece çatal yalnızca localhost ve açık sandbox uç noktalarına ulaşabilir. Rediacc'in depo başına ağ izolasyonu temeldir; çatal başına egress izin listeleri bugün yapılmamıştır, ancak yol açıktır.
+
+Rediacc, ajan güvenliğinin altyapı yarısını yönetir. Harici servis yarısı Rediaccfile'ınızda yaşar.
 
 ## Hızlı tarifler
 

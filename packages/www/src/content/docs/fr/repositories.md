@@ -4,8 +4,8 @@ description: 'Créez, gérez et opérez des dépôts chiffrés LUKS sur des mach
 category: Guides
 order: 4
 language: fr
-sourceHash: "83f2c9fa5ae53864"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: "689a84ee2873fe00"
+sourceCommit: "8165b06e0d06dd07530fff343b0df6ecb1697a47"
 ---
 
 # Dépôts
@@ -81,6 +81,8 @@ rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
 Les forks utilisent le modèle name:tag : le fork résultant est nommé `my-app:staging`. Ceci crée une nouvelle copie chiffrée avec son propre GUID et ID réseau, tout en partageant le nom du parent. La copie partage le même identifiant LUKS que le parent.
+
+> Les forks partagent les données du parent via reflink BTRFS, y compris tous les identifiants stockés sur disque. Consultez [Ce que Rediacc n'isole pas](/fr/docs/ai-agents-safety#ce-que-rediacc-nisole-pas) pour les implications lorsque ces identifiants autorisent des services externes comme Stripe, AWS ou Railway.
 
 ## Valider
 

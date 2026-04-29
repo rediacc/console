@@ -174,7 +174,7 @@ function extractDocsKeys(): Set<string> {
     return keys;
   }
 
-  const mdFiles = globSync(`${DOCS_DIR}/**/*.md`);
+  const mdFiles = globSync(`${DOCS_DIR}/**/*.{md,mdx}`);
   const pattern = /\{\{t:([a-zA-Z]+)\.([a-zA-Z0-9_.]+)\}\}/g;
 
   for (const file of mdFiles) {

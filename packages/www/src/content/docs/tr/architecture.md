@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: tr
-sourceHash: "b41d8631ce30c981"
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "e2087964f996186f"
+sourceCommit: c6db1fb9ec9979425e22578d31c3c188bc7e73f9
 ---
 
 # Mimari
@@ -98,6 +98,8 @@ Bu şu anlama gelir:
 - Ana bilgisayarın Docker daemon'u (varsa) tamamen ayrıdır
 
 Rediaccfile fonksiyonlarında `DOCKER_HOST` otomatik olarak doğru sokete ayarlanır.
+
+Bir AI ajanı `rdc term connect -r <repo>` aracılığıyla bir depoya girdiğinde aynı izolasyon geçerlidir: oturum, ayrıcalıksız `rediacc` kullanıcısı (UID 7111) olarak, ayrı bir mount ad alanında ve `DOCKER_HOST` yalnızca o tek deponun daemon soketine kapsamlanmış şekilde çalışır. Önce-fork iş akışı bu çalışma zamanı izolasyonunu CoW klon ilkel işlemiyle birleştirir: ajan, asla ana (üretim) depolar üzerinde değil, görev başına bir fork üzerinde çalışır. Tam sandbox modeli, geçersiz kılma anlamları ve harici servis kimlik bilgileri için geliştirici sorumluluk sınırı için [AI Ajan Güvenliği ve Koruma Önlemleri](/en/docs/ai-agents-safety) bölümüne bakın.
 
 ### Daemon Yol Düzeni
 

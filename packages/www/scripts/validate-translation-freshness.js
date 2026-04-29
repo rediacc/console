@@ -12,7 +12,7 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 
 export const SUPPORTED_LANGUAGES = ['de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'];
 const COLLECTIONS = ['docs', 'blog'];
-const SOURCE_PREFIX_RE = /^packages\/www\/src\/content\/(docs|blog)\/en\/.+\.md$/;
+const SOURCE_PREFIX_RE = /^packages\/www\/src\/content\/(docs|blog)\/en\/.+\.mdx?$/;
 // The cli/ directory is auto-generated from CLI --help output and cannot be
 // translated line-by-line, so it stays excluded. NO other entries belong
 // here: every other English doc must have full translations in all
@@ -191,7 +191,7 @@ function getAllEnglishContentPaths(repoRoot) {
           stack.push(nextRel);
           continue;
         }
-        if (!entry.name.endsWith('.md')) {
+        if (!entry.name.endsWith('.md') && !entry.name.endsWith('.mdx')) {
           continue;
         }
         result.push(`packages/www/src/content/${collection}/en/${nextRel.replaceAll('\\', '/')}`);
@@ -430,7 +430,7 @@ function findOrphanedTranslations(repoRoot, languages) {
             stack.push(nextRel);
             continue;
           }
-          if (!entry.name.endsWith('.md')) continue;
+          if (!entry.name.endsWith('.md') && !entry.name.endsWith('.mdx')) continue;
 
           const enPath = path.join(repoRoot, 'src', 'content', collection, 'en', nextRel);
           if (!fs.existsSync(enPath)) {

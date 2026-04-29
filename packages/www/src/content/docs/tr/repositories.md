@@ -4,8 +4,8 @@ description: 'Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yön
 category: Guides
 order: 4
 language: tr
-sourceHash: "83f2c9fa5ae53864"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: "689a84ee2873fe00"
+sourceCommit: "8165b06e0d06dd07530fff343b0df6ecb1697a47"
 ---
 
 # Depolar
@@ -81,6 +81,8 @@ rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
 Çatallar name:tag modelini kullanır: ortaya çıkan çatal `my-app:staging` olarak adlandırılır. Bu, kendi GUID'i ve ağ kimliğine sahip yeni bir şifrelenmiş kopya oluşturur ve üst deponun adını paylaşır. Çatal, üst depo ile aynı LUKS kimlik bilgisini paylaşır.
+
+> Çatallar, disk üzerinde saklanan tüm kimlik bilgileri dahil olmak üzere üst deponun verilerini BTRFS reflink aracılığıyla paylaşır. Bu kimlik bilgileri Stripe, AWS veya Railway gibi harici servislere yetki verdiğinde ortaya çıkan etkiler için [Rediacc'in izole etmediği şeyler](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate) bölümüne bakın.
 
 ## Doğrulama
 

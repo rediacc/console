@@ -1,11 +1,11 @@
 ---
 title: Sécurité et garde-fous pour les agents IA
-description: 'Comment la CLI de Rediacc empêche les assistants de codage IA de divulguer des secrets, d''écraser des identifiants ou d''escalader des privilèges: compuertas de connaissance, rédaction, substitutions vérifiées par ascendance et un journal d''audit enchaîné par hash.'
+description: 'Comment la CLI de Rediacc empêche les assistants de codage IA de divulguer des secrets, d''écraser des identifiants ou d''escalader des privilèges. Compuertas de connaissance, rédaction, substitutions vérifiées par ascendance et un journal d''audit enchaîné par hash.'
 category: Concepts
 order: 35
 language: fr
-sourceHash: "6a4f4ccd6ae806ee"
-sourceCommit: "4bef9a170fb07db00a4ee2ef504aa27706bcd15a"
+sourceHash: "7ffb57b820c05367"
+sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
 ---
 
 Lorsque Claude Code, Cursor, Gemini CLI, Copilot CLI ou tout autre assistant de codage IA pilote `rdc`, la CLI le traite différemment d'un humain au clavier. Cette page explique ce que l'agent peut faire, ce qu'il ne peut pas faire, et comment les garde-fous tiennent même lorsque l'agent essaie de les contourner.
@@ -107,6 +107,16 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 L'effet : un agent ne peut pas se frayer un chemin au-delà d'un garde-fou en exécutant `export REDIACC_ALLOW_CONFIG_EDIT='*'` en cours de session. Seul un processus parent (vous, dans votre terminal, avant de lancer l'agent) peut ouvrir cette porte.
 
+## Prise en charge des plateformes : Linux uniquement pour les substitutions
+
+`REDIACC_ALLOW_CONFIG_EDIT` et `REDIACC_ALLOW_GRAND_REPO` reposent tous deux sur la vérification d'ascendance pour prouver que la substitution a été définie par vous et non injectée par l'agent. La vérification lit `/proc/<pid>/environ` pour chaque processus de la chaîne. Ce fichier est défini par le noyau au moment de l'exec et ne peut pas être modifié par le processus lui-même, de sorte que l'environnement du shell parent est un témoin inviolable.
+
+Ce fichier n'existe pas sur macOS ou Windows. Sans moyen de vérifier la légitimité, la CLI échoue en sécurité. Même si vous définissez correctement la substitution dans votre shell avant de lancer l'agent, la substitution est rejetée. Le message d'erreur vous indique exactement quoi faire :
+
+> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+
+En pratique, les utilisateurs non-Linux n'ont aucune issue de secours hors du flux fork-first. C'est intentionnel. Les agents sont poussés à travers un bac à sable qu'ils ne peuvent pas contourner, quelle que soit la façon dont ils ont été instruits. Exécutez votre agent dans WSL, un conteneur Linux ou une VM Linux si vous avez besoin de la substitution ; sinon, travaillez sur un fork.
+
 ## Journal d'audit
 
 Chaque mutation, chaque refus, chaque autorisation `--reveal` écrit une ligne JSONL dans `~/.config/rediacc/audit.log.jsonl` (mode `0600`, pivoté à 10 Mo). Chaque ligne est enchaînée par hash : son champ `prevHash` est `sha256("<ligne précédente>")`. Altérer une ligne brise la chaîne sur toutes les lignes suivantes.
@@ -154,6 +164,27 @@ Les garde-fous de l'agent sont **comportementaux, pas cryptographiques**. Un age
 Pour une application cryptographique réelle, utilisez le [magasin de configuration chiffré](/fr/docs/config-storage) : les secrets résident côté serveur, chaque champ sensible porte un engagement HMAC par champ, et le worker de compte refuse les écritures dont la précondition `--current` ne correspond pas par hash à ce qu'il a stocké. Le serveur ne voit jamais le texte brut: zero-knowledge: mais il applique bien la compuerta.
 
 Le chemin du fichier local est « le chemin facile est sûr ». Le chemin du magasin distant est « le chemin difficile est difficile aussi ».
+
+## Ce que Rediacc n'isole pas
+
+Les garde-fous des agents décrits sur cette page protègent l'infrastructure propre à Rediacc : le fichier de configuration, le démon Docker par dépôt, les données de dépôt chiffrées par LUKS, le bac à sable SSH limité. Ils ne protègent pas les services externes pour lesquels votre dépôt détient des identifiants.
+
+Un fork de dépôt est un reflink BTRFS du volume du parent. Tout ce qui se trouve sur disque dans le parent est identique octet pour octet dans le fork : le code, les données et les fichiers `.env` indifféremment. Si votre dépôt contient une `STRIPE_LIVE_KEY`, un `AWS_ACCESS_KEY_ID`, un token API Railway ou tout autre identifiant à longue durée de vie pour un service tiers, le fork en hérite. Un agent opérant dans le bac à sable du fork peut lire ce fichier, exfiltrer la valeur ou l'utiliser pour appeler l'API tierce. Le service tiers n'a aucun moyen de savoir que l'appel provenait d'un fork plutôt que de la production.
+
+Voici la ligne de responsabilité partagée :
+
+| Frontière | Propriétaire |
+|---|---|
+| Données du dépôt, espace de noms de montage, périmètre Docker, garde-fous des agents, journal d'audit | Rediacc |
+| Rayon d'impact des services externes (Stripe, AWS, Railway, GitHub, etc.) | Développeur du dépôt |
+
+Trois patterns comblent le fossé côté développeur :
+
+1. **Ne stockez pas du tout les identifiants externes de production dans le dépôt.** Récupérez-les depuis un gestionnaire de secrets externe (HashiCorp Vault, AWS Secrets Manager, 1Password Connect) au démarrage du conteneur. Les conteneurs du fork récupèrent par conception des identifiants limités au bac à sable, car ils s'identifient différemment.
+2. **Supprimez ou échangez les identifiants au moment du fork via le hook `up()` du Rediaccfile.** Le `up()` d'un fork s'exécute avec un GUID de dépôt différent de celui du parent. Détectez cela, puis réécrivez `.env` avec des valeurs de bac à sable, provisionnez un compte Stripe sandbox par fork, dirigez les chaînes de connexion à la base vers une instance de test par fork, et ainsi de suite. Consultez [Services](/fr/docs/services) pour la référence des hooks de cycle de vie.
+3. **Restreignez le réseau sortant du fork avec un filtrage egress eBPF** afin que le fork ne puisse atteindre que localhost et les points de terminaison sandbox explicites. L'isolation réseau par dépôt de Rediacc en est la fondation ; les listes d'autorisation egress par fork ne sont pas implémentées aujourd'hui, mais la voie est ouverte.
+
+Rediacc gère la moitié infrastructure de la sécurité des agents. La moitié services externes vit dans votre Rediaccfile.
 
 ## Recettes rapides
 

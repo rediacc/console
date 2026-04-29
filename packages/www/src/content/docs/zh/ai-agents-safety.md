@@ -1,11 +1,11 @@
 ---
 title: AI 智能体安全与防护机制
-description: 'Rediacc CLI 如何防止 AI 编程助手泄露密钥、覆盖凭据或提升权限::知识门控、脱敏处理、祖先验证覆盖以及哈希链接审计日志。'
+description: 'Rediacc CLI 如何防止 AI 编程助手泄露密钥、覆盖凭据或提升权限。知识门控、脱敏处理、祖先验证覆盖以及哈希链接审计日志。'
 category: Concepts
 order: 35
 language: zh
-sourceHash: "6a4f4ccd6ae806ee"
-sourceCommit: "4bef9a170fb07db00a4ee2ef504aa27706bcd15a"
+sourceHash: "7ffb57b820c05367"
+sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
 ---
 
 当 Claude Code、Cursor、Gemini CLI、Copilot CLI 或其他任何 AI 编程助手驱动 `rdc` 时，CLI 对其的处理方式与坐在键盘前的人类不同。本页说明智能体能做什么、不能做什么，以及即使智能体试图绕过防护机制，这些机制依然有效的原因。
@@ -107,6 +107,16 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 效果：智能体不能通过在会话中途运行 `export REDIACC_ALLOW_CONFIG_EDIT='*'` 来绕过防护机制。只有父进程（在启动智能体之前，你在终端中的操作）才能打开那扇门。
 
+## 平台支持：覆盖仅限 Linux
+
+`REDIACC_ALLOW_CONFIG_EDIT` 和 `REDIACC_ALLOW_GRAND_REPO` 都依赖祖先验证来证明覆盖是由你设置的，而不是由智能体注入的。验证会读取祖先链中每个进程的 `/proc/<pid>/environ`。该文件由内核在 exec 时设置，进程自身无法修改，因此父 shell 的环境变量是一个防篡改的证据。
+
+该文件在 macOS 或 Windows 上不存在。由于无法验证合法性，CLI 会安全地拒绝执行。即使你在启动智能体之前在 shell 中正确设置了覆盖，覆盖仍会被拒绝。错误信息会明确告知你应当如何处理：
+
+> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+
+实际上，非 Linux 用户没有从 fork 优先工作流中逃脱的途径。这是有意为之的。无论智能体收到怎样的提示，它们都会被推入一个无法触及背后的沙箱。如果你需要使用覆盖，请在 WSL、Linux 容器或 Linux 虚拟机中运行智能体；否则，请在 fork 上工作。
+
 ## 审计日志
 
 每次变更、每次拒绝、每次 `--reveal` 授予都会向 `~/.config/rediacc/audit.log.jsonl`（模式 `0600`，10 MB 时轮换）写入一行 JSONL。每行都经过哈希链接：其 `prevHash` 字段为 `sha256("<上一行>")`。篡改任何一行都会破坏此后所有行的链。
@@ -154,6 +164,27 @@ rdc config audit verify
 如需真正的密码学强制，请使用[加密配置存储](/zh/docs/config-storage)：密钥存储在服务器端，每个敏感字段携带字段级别的 HMAC 承诺，账户 Worker 会拒绝 `--current` 前提条件与存储哈希不匹配的写入。服务器永远不会看到明文::零知识::但门控仍然被强制执行。
 
 本地文件路径是"轻松的路也是安全的"。远程存储路径是"困难的路也是困难的"。
+
+## Rediacc 不隔离的内容
+
+本页所述的智能体防护机制保护的是 Rediacc 自身的基础设施：配置文件、每个仓库的 Docker 守护进程、LUKS 加密的仓库数据、限定范围的 SSH 沙箱。它们并不保护你的仓库为之保存凭据的外部服务。
+
+仓库 fork 是父仓库卷的 BTRFS reflink。父仓库磁盘上的所有内容在 fork 中字节相同：代码、数据以及 `.env` 文件都一样。如果你的仓库包含 `STRIPE_LIVE_KEY`、`AWS_ACCESS_KEY_ID`、Railway API 令牌或任何其他第三方服务的长期凭据，fork 都会继承它们。在 fork 沙箱中操作的智能体可以读取该文件、外泄该值，或使用它调用第三方 API。第三方服务无从得知该调用是来自 fork 而不是生产环境。
+
+这就是责任共担的边界：
+
+| 边界 | 责任方 |
+|---|---|
+| 仓库数据、挂载命名空间、Docker 范围、智能体防护、审计日志 | Rediacc |
+| 外部服务的影响半径（Stripe、AWS、Railway、GitHub 等） | 仓库开发者 |
+
+开发者侧有三种模式可以填补这一缺口：
+
+1. **完全不要在仓库中存储生产环境的外部凭据。** 在容器启动时从外部密钥管理器（HashiCorp Vault、AWS Secrets Manager、1Password Connect）获取它们。fork 的容器在设计上会获取沙箱范围的凭据，因为它们以不同的身份标识自己。
+2. **通过 Rediaccfile 的 `up()` 钩子在 fork 时剥离或替换凭据。** fork 的 `up()` 在与父仓库不同的仓库 GUID 下运行。检测到这一点后，使用沙箱值重写 `.env`、为每个 fork 配置一个 Stripe 沙箱账户、将数据库连接字符串指向每个 fork 的测试实例，等等。生命周期钩子参考请参阅 [服务](/zh/docs/services)。
+3. **通过 eBPF 出站过滤限制 fork 的出站网络**，使 fork 仅能访问 localhost 和明确的沙箱端点。Rediacc 的每个仓库的网络隔离是基础；每个 fork 的出站允许列表目前尚未构建，但路径已经打开。
+
+Rediacc 处理智能体安全的基础设施一半。外部服务的另一半存在于你的 Rediaccfile 中。
 
 ## 快速方案
 
