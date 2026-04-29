@@ -1,0 +1,29 @@
+import { test, expect } from '@/base/BaseTest';
+import { LoginPage } from '@/pages/auth/LoginPage';
+
+test.describe('Login - Navigate to Registration Tests', () => {
+  let loginPage: LoginPage;
+
+  test.beforeEach(({ page }) => {
+    loginPage = new LoginPage(page);
+  });
+
+  test('should navigate to registration page @auth', async ({ page, testReporter }) => {
+    testReporter.startStep('Navigate to login page');
+    await loginPage.navigate();
+    testReporter.completeStep('Navigate to login page', 'passed');
+
+    testReporter.startStep('Click register link');
+
+    await loginPage.clickRegister();
+
+    // Verify registration form is visible
+    await expect(
+      page.locator('[data-testid="registration-organization-input"]')
+    ).toBeVisible();
+
+    testReporter.completeStep('Click register link', 'passed');
+
+    await testReporter.finalizeTest();
+  });
+});
