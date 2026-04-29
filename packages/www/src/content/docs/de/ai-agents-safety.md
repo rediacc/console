@@ -1,11 +1,11 @@
 ---
 title: KI-Agent-Sicherheit & Schutzmaßnahmen
-description: 'Wie Rediaccss CLI verhindert, dass KI-Coding-Assistenten Geheimnisse preisgeben, Anmeldedaten überschreiben oder Berechtigungen eskalieren: Wissenstores, Schwärzung, abstammungsverifizierte Überschreibungen und ein hash-verkettetes Audit-Log.'
+description: 'Wie Rediaccs CLI KI-Coding-Assistenten daran hindert, Geheimnisse preiszugeben, Anmeldedaten zu überschreiben oder Berechtigungen zu eskalieren. Wissens-Gates, Schwärzung, abstammungsverifizierte Überschreibungen und ein hash-verkettetes Audit-Log.'
 category: Concepts
 order: 35
 language: de
-sourceHash: "6a4f4ccd6ae806ee"
-sourceCommit: "4bef9a170fb07db00a4ee2ef504aa27706bcd15a"
+sourceHash: "7ffb57b820c05367"
+sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
 ---
 
 Wenn Claude Code, Cursor, Gemini CLI, Copilot CLI oder ein anderer KI-Coding-Assistent `rdc` steuert, behandelt die CLI ihn anders als einen Menschen an der Tastatur. Diese Seite erklärt, was der Agent tun kann, was er nicht tun kann, und wie die Schutzmaßnahmen auch dann greifen, wenn der Agent versucht, sie zu umgehen.
@@ -107,6 +107,16 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 Der Effekt: Ein Agent kann eine Schutzmaßnahme nicht umgehen, indem er mitten in einer Sitzung `export REDIACC_ALLOW_CONFIG_EDIT='*'` ausführt. Nur ein übergeordneter Prozess (Sie, in Ihrem Terminal, vor dem Start des Agents) kann diese Tür öffnen.
 
+## Plattformunterstützung: Linux-only für die Überschreibungen
+
+`REDIACC_ALLOW_CONFIG_EDIT` und `REDIACC_ALLOW_GRAND_REPO` stützen sich beide auf die Abstammungsverifizierung, um zu beweisen, dass die Überschreibung von Ihnen gesetzt wurde und nicht vom Agent injiziert wurde. Die Verifizierung liest `/proc/<pid>/environ` für jeden Prozess in der Kette. Diese Datei wird vom Kernel zur Exec-Zeit gesetzt und kann vom Prozess selbst nicht modifiziert werden, sodass die Umgebung der übergeordneten Shell ein manipulationssicherer Zeuge ist.
+
+Diese Datei existiert auf macOS oder Windows nicht. Ohne Möglichkeit, die Legitimität zu verifizieren, schlägt die CLI sicher fehl. Selbst wenn Sie die Überschreibung in Ihrer Shell vor dem Start des Agents korrekt setzen, wird die Überschreibung abgelehnt. Die Fehlermeldung sagt Ihnen genau, was zu tun ist:
+
+> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+
+In der Praxis haben Nicht-Linux-Benutzer keinen Notausstieg aus dem Fork-First-Workflow. Das ist beabsichtigt. Agents werden durch eine Sandbox geschoben, hinter die sie nicht greifen können, unabhängig davon, wie sie aufgefordert wurden. Führen Sie Ihren Agent in WSL, einem Linux-Container oder einer Linux-VM aus, wenn Sie die Überschreibung benötigen; andernfalls arbeiten Sie auf einem Fork.
+
 ## Audit-Log
 
 Jede Mutation, jede Verweigerung, jede `--reveal`-Gewährung schreibt eine JSONL-Zeile in `~/.config/rediacc/audit.log.jsonl` (Modus `0600`, rotiert bei 10 MB). Jede Zeile ist hash-verkettet: Ihr `prevHash`-Feld ist `sha256("<vorherige Zeile>")`. Das Manipulieren einer Zeile bricht die Kette in allen nachfolgenden Zeilen.
@@ -154,6 +164,27 @@ Die Agent-Schutzmaßnahmen sind **verhaltensbasiert, nicht kryptografisch**. Ein
 Für echte kryptografische Durchsetzung verwenden Sie den [verschlüsselten Config-Speicher](/de/docs/config-storage): Geheimnisse liegen serverseitig, jedes sensible Feld trägt eine Feld-spezifische HMAC-Bindung, und der Account-Worker verweigert Schreibvorgänge, deren `--current`-Vorbedingung nicht mit dem gespeicherten Hash übereinstimmt. Der Server sieht niemals den Klartext: Zero-Knowledge: aber er erzwingt das Gate.
 
 Der lokale Datei-Pfad ist „einfacher Weg ist sicher". Der Remote-Store-Pfad ist „schwieriger Weg ist auch schwierig".
+
+## Was Rediacc nicht isoliert
+
+Die Agent-Schutzmaßnahmen auf dieser Seite schützen Rediaccs eigene Infrastruktur: die Konfigurationsdatei, den Pro-Repository-Docker-Daemon, die LUKS-verschlüsselten Repository-Daten, die abgegrenzte SSH-Sandbox. Sie schützen keine externen Dienste, für die Ihr Repository Anmeldedaten enthält.
+
+Ein Repository-Fork ist ein BTRFS-Reflink des Volumes des übergeordneten Repositories. Was auch immer auf der Festplatte des übergeordneten Repositories liegt, ist im Fork byteidentisch: Code, Daten und `.env`-Dateien gleichermaßen. Wenn Ihr Repository einen `STRIPE_LIVE_KEY`, eine `AWS_ACCESS_KEY_ID`, ein Railway-API-Token oder eine andere langlebige Anmeldedaten für einen Drittanbieter-Dienst enthält, erbt der Fork sie. Ein Agent, der in der Sandbox des Forks arbeitet, kann diese Datei lesen, den Wert exfiltrieren oder ihn verwenden, um die Drittanbieter-API aufzurufen. Der Drittanbieter-Dienst hat keine Möglichkeit zu wissen, dass der Aufruf von einem Fork und nicht von der Produktion kam.
+
+Dies ist die Linie der gemeinsamen Verantwortung:
+
+| Grenze | Eigentümer |
+|---|---|
+| Repository-Daten, Mount-Namespace, Docker-Geltungsbereich, Agent-Schutzmaßnahmen, Audit-Log | Rediacc |
+| Wirkungsbereich externer Dienste (Stripe, AWS, Railway, GitHub, etc.) | Repository-Entwickler |
+
+Drei Muster schließen die Lücke auf der Entwicklerseite:
+
+1. **Speichern Sie Produktions-Anmeldedaten externer Dienste überhaupt nicht im Repository.** Holen Sie sie beim Start des Containers von einem externen Secrets-Manager (HashiCorp Vault, AWS Secrets Manager, 1Password Connect) ab. Die Container des Forks holen per Design Sandbox-Anmeldedaten ab, weil sie sich anders identifizieren.
+2. **Entfernen oder tauschen Sie Anmeldedaten zur Fork-Zeit über den Rediaccfile-Hook `up()`.** Das `up()` eines Forks läuft gegen eine andere Repository-GUID als das übergeordnete. Erkennen Sie das, schreiben Sie dann `.env` mit Sandbox-Werten um, stellen Sie ein Stripe-Sandbox-Konto pro Fork bereit, lassen Sie Datenbankverbindungszeichenfolgen auf eine Testinstanz pro Fork zeigen und so weiter. Siehe [Services](/de/docs/services) für die Lifecycle-Hook-Referenz.
+3. **Beschränken Sie das ausgehende Netzwerk des Forks mit eBPF-Egress-Filterung**, sodass der Fork nur Localhost und explizite Sandbox-Endpunkte erreichen kann. Rediaccs Pro-Repository-Netzwerkisolation ist die Grundlage; Egress-Allowlists pro Fork sind heute noch nicht eingebaut, aber der Weg ist offen.
+
+Rediacc kümmert sich um die Infrastrukturhälfte der Agent-Sicherheit. Die Hälfte für externe Dienste lebt in Ihrem Rediaccfile.
 
 ## Schnellrezepte
 

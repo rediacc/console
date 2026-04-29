@@ -177,7 +177,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
 
         const files = fs.readdirSync(langPath);
         files.forEach((file) => {
-          if (!file.endsWith('.md')) return;
+          if (!file.endsWith('.md') && !file.endsWith('.mdx')) return;
 
           totalFiles++;
           const filePath = path.join(langPath, file);
@@ -186,7 +186,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
 
           // Index frontmatter title
           if (frontmatter.title) {
-            const slug = file.replace(/\.md$/, '');
+            const slug = file.replace(/\.mdx?$/, '');
             searchIndex.push({
               id: `search-${idCounter++}`,
               content: frontmatter.title,
@@ -201,7 +201,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
 
           // Index frontmatter description
           if (frontmatter.description) {
-            const slug = file.replace(/\.md$/, '');
+            const slug = file.replace(/\.mdx?$/, '');
             searchIndex.push({
               id: `search-${idCounter++}`,
               content: frontmatter.description,
@@ -216,7 +216,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
 
           // Index tags/keywords
           if (frontmatter.tags && Array.isArray(frontmatter.tags)) {
-            const slug = file.replace(/\.md$/, '');
+            const slug = file.replace(/\.mdx?$/, '');
             frontmatter.tags.forEach((tag) => {
               searchIndex.push({
                 id: `search-${idCounter++}`,
@@ -234,7 +234,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
           // Walk the markdown body section by section (split on H2/H3).
           // Each section produces ONE index entry whose `body` is the full
           // stripped section text — that's what makes buried terms searchable.
-          const slug = file.replace(/\.md$/, '');
+          const slug = file.replace(/\.mdx?$/, '');
           const sections = splitIntoSections(content, frontmatter.title || slug);
 
           for (const section of sections) {
@@ -259,7 +259,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
       // Flat structure (backward compatibility)
       const files = fs.readdirSync(collectionDir);
       files.forEach((file) => {
-        if (!file.endsWith('.md')) return;
+        if (!file.endsWith('.md') && !file.endsWith('.mdx')) return;
 
         totalFiles++;
         const filePath = path.join(collectionDir, file);
@@ -268,7 +268,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
 
         // Index frontmatter title
         if (frontmatter.title) {
-          const slug = file.replace(/\.md$/, '');
+          const slug = file.replace(/\.mdx?$/, '');
           searchIndex.push({
             id: `search-${idCounter++}`,
             content: frontmatter.title,

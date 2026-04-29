@@ -1,11 +1,11 @@
 ---
 title: Seguridad y salvaguardas para agentes de IA
-description: 'Cómo la CLI de Rediacc evita que los asistentes de codificación con IA filtren secretos, sobreescriban credenciales o escalen privilegios: compuertas de conocimiento, redacción, anulaciones verificadas por ascendencia y un registro de auditoría encadenado por hash.'
+description: 'Cómo la CLI de Rediacc evita que los asistentes de codificación con IA filtren secretos, sobreescriban credenciales o escalen privilegios. Compuertas de conocimiento, redacción, anulaciones verificadas por ascendencia y un registro de auditoría encadenado por hash.'
 category: Concepts
 order: 35
 language: es
-sourceHash: "6a4f4ccd6ae806ee"
-sourceCommit: "4bef9a170fb07db00a4ee2ef504aa27706bcd15a"
+sourceHash: "7ffb57b820c05367"
+sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
 ---
 
 Cuando Claude Code, Cursor, Gemini CLI, Copilot CLI o cualquier otro asistente de codificación con IA maneja `rdc`, la CLI lo trata de forma diferente a un humano en el teclado. Esta página explica qué puede hacer el agente, qué no puede hacer y cómo las salvaguardas se mantienen incluso cuando el agente intenta sortearlas.
@@ -107,6 +107,16 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 El efecto: un agente no puede eludir una salvaguarda ejecutando `export REDIACC_ALLOW_CONFIG_EDIT='*'` a mitad de sesión. Solo un proceso padre (tú, en tu terminal, antes de lanzar el agente) puede abrir esa puerta.
 
+## Soporte de plataforma: las anulaciones solo en Linux
+
+`REDIACC_ALLOW_CONFIG_EDIT` y `REDIACC_ALLOW_GRAND_REPO` se basan en la verificación de ascendencia para demostrar que la anulación la estableciste tú y no la inyectó el agente. La verificación lee `/proc/<pid>/environ` para cada proceso a lo largo de la cadena. Ese archivo lo establece el kernel en el momento de la ejecución y el propio proceso no puede modificarlo, por lo que el entorno del shell padre es un testigo a prueba de manipulaciones.
+
+Ese archivo no existe en macOS ni en Windows. Sin forma de verificar la legitimidad, la CLI falla cerrada. Incluso cuando estableces la anulación correctamente en tu shell antes de lanzar el agente, la anulación se rechaza. El mensaje de error te dice exactamente qué hacer:
+
+> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+
+En la práctica, los usuarios que no son de Linux no tienen vía de escape del flujo de trabajo basado en bifurcación. Esto es intencional. Los agentes son empujados a través de un sandbox al que no pueden acceder por detrás, sin importar cómo se les haya indicado. Ejecuta tu agente dentro de WSL, un contenedor Linux o una VM Linux si necesitas la anulación; de lo contrario, trabaja sobre una bifurcación.
+
 ## Registro de auditoría
 
 Cada mutación, cada rechazo, cada concesión de `--reveal` escribe una línea JSONL en `~/.config/rediacc/audit.log.jsonl` (modo `0600`, rotado a los 10 MB). Cada línea está encadenada por hash: su campo `prevHash` es `sha256("<línea anterior>")`. Manipular cualquier línea rompe la cadena en todas las líneas siguientes.
@@ -154,6 +164,27 @@ Las salvaguardas del agente son **de comportamiento, no criptográficas**. Un ag
 Para una aplicación criptográfica real, usa el [almacén de configuración cifrado](/es/docs/config-storage): los secretos viven en el lado del servidor, cada campo sensible lleva un compromiso HMAC por campo, y el account worker rechaza escrituras cuya precondición `--current` no coincida por hash con lo que tiene almacenado. El servidor nunca ve el texto plano: zero-knowledge: pero sí aplica la compuerta.
 
 La ruta de archivo local es "el camino fácil es seguro". La ruta del almacén remoto es "el camino difícil también es difícil".
+
+## Lo que Rediacc no aísla
+
+Las salvaguardas para agentes de esta página protegen la propia infraestructura de Rediacc: el archivo de configuración, el daemon Docker por repositorio, los datos del repositorio cifrados con LUKS, el sandbox SSH limitado. No protegen los servicios externos para los que tu repositorio guarda credenciales.
+
+Una bifurcación de repositorio es un reflink BTRFS del volumen del padre. Lo que vive en disco en el padre es idéntico byte a byte en la bifurcación: código, datos y archivos `.env` por igual. Si tu repositorio contiene un `STRIPE_LIVE_KEY`, un `AWS_ACCESS_KEY_ID`, un token de API de Railway o cualquier otra credencial de larga duración para un servicio de terceros, la bifurcación la hereda. Un agente que opera en el sandbox de la bifurcación puede leer ese archivo, exfiltrar el valor o usarlo para llamar a la API del tercero. El servicio de terceros no tiene forma de saber que la llamada vino de una bifurcación en lugar de producción.
+
+Esta es la línea de responsabilidad compartida:
+
+| Frontera | Responsable |
+|---|---|
+| Datos del repositorio, espacio de nombres de montaje, alcance de Docker, salvaguardas del agente, registro de auditoría | Rediacc |
+| Radio de impacto en servicios externos (Stripe, AWS, Railway, GitHub, etc.) | Desarrollador del repositorio |
+
+Tres patrones cierran la brecha del lado del desarrollador:
+
+1. **No almacenes credenciales externas de producción en el repositorio en absoluto.** Recupéralas desde un gestor de secretos externo (HashiCorp Vault, AWS Secrets Manager, 1Password Connect) al iniciar el contenedor. Los contenedores de la bifurcación recuperan credenciales acotadas al sandbox por diseño porque se identifican de manera diferente.
+2. **Elimina o sustituye credenciales en el momento de la bifurcación mediante el hook `up()` del Rediaccfile.** El `up()` de una bifurcación se ejecuta contra un GUID de repositorio diferente al del padre. Detéctalo, y luego reescribe `.env` con valores de sandbox, aprovisiona una cuenta de sandbox de Stripe por bifurcación, apunta las cadenas de conexión a la base de datos a una instancia de prueba por bifurcación, etc. Consulta [Servicios](/es/docs/services) para la referencia del hook de ciclo de vida.
+3. **Restringe la red saliente de la bifurcación con filtrado de egreso eBPF** para que la bifurcación solo pueda alcanzar localhost y endpoints de sandbox explícitos. El aislamiento de red por repositorio de Rediacc es la base; las listas de permitidos de egreso por bifurcación no están construidas hoy, pero el camino está abierto.
+
+Rediacc maneja la mitad de infraestructura de la seguridad del agente. La mitad del servicio externo vive en tu Rediaccfile.
 
 ## Recetas rápidas
 

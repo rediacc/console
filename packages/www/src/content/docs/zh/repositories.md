@@ -4,8 +4,8 @@ description: 在远程机器上创建、管理和操作 LUKS 加密仓库。
 category: Guides
 order: 4
 language: zh
-sourceHash: "83f2c9fa5ae53864"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: "689a84ee2873fe00"
+sourceCommit: "8165b06e0d06dd07530fff343b0df6ecb1697a47"
 ---
 
 # 仓库
@@ -81,6 +81,8 @@ rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
 复刻使用 name:tag 模型：生成的复刻命名为 `my-app:staging`。此命令创建一个具有独立 GUID 和网络 ID 的新加密副本，同时共享父仓库的名称。复刻仓库与源仓库共享相同的 LUKS 凭据。
+
+> 复刻通过 BTRFS reflink 共享父仓库的数据，包括磁盘上存储的任何凭据。当这些凭据用于授权 Stripe、AWS 或 Railway 等外部服务时，请参阅 [Rediacc 不隔离的内容](/zh/docs/ai-agents-safety#rediacc-不隔离的内容) 了解相关影响。
 
 ## 验证
 

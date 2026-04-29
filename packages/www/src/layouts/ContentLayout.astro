@@ -5,7 +5,7 @@ import NewsletterSignup from '../components/NewsletterSignup';
 import BlogStickyBar from '../components/BlogStickyBar';
 import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
-import { generateTOCFromMarkdown } from '../utils/sidebar-behavior';
+import { generateTOCFromHtml } from '../utils/sidebar-behavior';
 import '../styles/sidebar-shared.css';
 import '../styles/article-content.css';
 
@@ -62,8 +62,9 @@ if (currentLang) {
   });
 }
 
-// Generate table of contents from markdown using shared utility (respecting toc frontmatter flag)
-const toc = frontmatter.toc !== false ? generateTOCFromMarkdown(await Astro.slots.render('default')) : [];
+// Generate table of contents from rendered HTML using shared utility (respecting toc frontmatter flag).
+// Astro.slots.render returns HTML for both .md and .mdx content, so we use the HTML parser.
+const toc = frontmatter.toc !== false ? generateTOCFromHtml(await Astro.slots.render('default')) : [];
 ---
 
 <BaseLayout
@@ -74,7 +75,7 @@ const toc = frontmatter.toc !== false ? generateTOCFromMarkdown(await Astro.slot
   <Fragment slot="head">
     <slot name="head" />
   </Fragment>
-  <article class="content-article">
+  <article class={`content-article ${toc.length > 0 ? 'has-toc' : ''}`}>
     {breadcrumbItems.length > 0 && (
       <Breadcrumb items={breadcrumbItems} />
     )}
@@ -123,7 +124,7 @@ const toc = frontmatter.toc !== false ? generateTOCFromMarkdown(await Astro.slot
       )}
     </header>
 
-    <div class="article-container">
+    <div class={`article-container ${toc.length > 0 ? 'with-toc' : 'no-toc'}`}>
       {toc.length > 0 && (
         <aside class="sidebar-base sidebar-toc toc-sidebar">
           <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label={t('common.aria.tableOfContents')}>
@@ -166,6 +167,14 @@ const toc = frontmatter.toc !== false ? generateTOCFromMarkdown(await Astro.slot
       max-width: var(--container-md);
       margin: 0 auto;
       padding: calc(var(--nav-height) + var(--space-8)) var(--space-4) var(--space-8);
+    }
+
+    /* When a TOC is present, give the article column more room. With container-md
+       (800px), TOC + gap + padding leaves only ~470px for the article body, which
+       is too cramped for code blocks. Container-xl (1200px) yields ~870px article
+       column, comfortable for both prose and terminal output. */
+    .content-article.has-toc {
+      max-width: var(--container-xl);
     }
 
     .article-header {
@@ -233,8 +242,27 @@ const toc = frontmatter.toc !== false ? generateTOCFromMarkdown(await Astro.slot
 
     .article-container {
       display: grid;
-      grid-template-columns: 1fr 250px;
       gap: var(--space-12);
+    }
+
+    .article-container.with-toc {
+      grid-template-columns: 1fr 250px;
+    }
+
+    /* DOM order is aside (toc) → main (article); explicitly place article in
+       the wide 1fr column and TOC in the narrow 250px column. */
+    .article-container.with-toc .article-content {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .article-container.with-toc .toc-sidebar {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .article-container.no-toc {
+      grid-template-columns: 1fr;
     }
 
     /* TOC Sidebar - ContentLayout specific positioning */

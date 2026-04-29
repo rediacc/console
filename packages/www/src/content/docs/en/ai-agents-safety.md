@@ -108,6 +108,16 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 The effect: an agent can't talk its way past a guardrail by running `export REDIACC_ALLOW_CONFIG_EDIT='*'` mid-session. Only a parent process (you, in your terminal, before launching the agent) can open that door.
 
+## Platform support: Linux only for the overrides
+
+`REDIACC_ALLOW_CONFIG_EDIT` and `REDIACC_ALLOW_GRAND_REPO` both rely on ancestry verification to prove the override was set by you and not injected by the agent. The verification reads `/proc/<pid>/environ` for every process up the chain. That file is set by the kernel at exec time and cannot be modified by the process itself, so the parent shell's environment is a tamperproof witness.
+
+That file does not exist on macOS or Windows. With no way to verify legitimacy, the CLI fails closed. Even when you set the override correctly in your shell before launching the agent, the override is rejected. The error message tells you exactly what to do:
+
+> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+
+In practice, non-Linux users have no escape hatch from the fork-first workflow. That is intentional. Agents are pushed through a sandbox they cannot reach behind, regardless of how they were prompted. Run your agent inside WSL, a Linux container, or a Linux VM if you need the override; otherwise, work on a fork.
+
 ## Audit log
 
 Every mutation, every refusal, every `--reveal` grant writes a JSONL line to `~/.config/rediacc/audit.log.jsonl` (mode `0600`, rotated at 10 MB). Each line is hash-chained: its `prevHash` field is `sha256("<previous line>")`. Tampering with any line breaks the chain on every following line.
@@ -155,6 +165,27 @@ The agent guardrails are **behavioral, not cryptographic**. A determined or prom
 For real cryptographic enforcement, use the [encrypted config store](/en/docs/config-storage): secrets live on the server side, each sensitive field carries a per-field HMAC commitment, and the account worker refuses writes whose `--current` precondition doesn't hash-match what it has stored. The server never sees the plaintext: zero-knowledge: but it does enforce the gate.
 
 The local-file path is "easy path is safe". The remote-store path is "hard path is hard too".
+
+## What Rediacc does not isolate
+
+The agent guardrails on this page protect Rediacc's own infrastructure: the config file, the per-repo Docker daemon, the LUKS-encrypted repository data, the scoped SSH sandbox. They do not protect external services that your repository holds credentials for.
+
+A repository fork is a BTRFS reflink of the parent's volume. Whatever lives on disk in the parent is byte-identical in the fork: code, data, and `.env` files alike. If your repository contains a `STRIPE_LIVE_KEY`, an `AWS_ACCESS_KEY_ID`, a Railway API token, or any other long-lived credential for a third-party service, the fork inherits it. An agent operating in the fork's sandbox can read that file, exfiltrate the value, or use it to call the third-party API. The third-party service has no way to know the call came from a fork instead of production.
+
+This is the shared-responsibility line:
+
+| Boundary | Owner |
+|---|---|
+| Repository data, mount namespace, Docker scope, agent guards, audit log | Rediacc |
+| External-service blast radius (Stripe, AWS, Railway, GitHub, etc.) | Repository developer |
+
+Three patterns close the gap on the developer side:
+
+1. **Do not store production external credentials in the repository at all.** Fetch them from an external secrets manager (HashiCorp Vault, AWS Secrets Manager, 1Password Connect) at container startup. The fork's containers fetch sandbox-scoped credentials by design because they identify themselves differently.
+2. **Strip or swap credentials at fork time via the Rediaccfile `up()` hook.** A fork's `up()` runs against a different repository GUID than the parent. Detect that, then rewrite `.env` with sandbox values, provision a per-fork Stripe sandbox account, point database connection strings at a per-fork test instance, and so on. See [Services](/en/docs/services) for the lifecycle hook reference.
+3. **Constrain the fork's outbound network with eBPF egress filtering** so the fork can only reach localhost and explicit sandbox endpoints. Rediacc's per-repo network isolation is the foundation; per-fork egress allowlists are not built today, but the path is open.
+
+Rediacc handles the infrastructure half of agent safety. The external-service half lives in your Rediaccfile.
 
 ## Quick recipes
 
