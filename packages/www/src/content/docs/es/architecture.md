@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: es
-sourceHash: "b41d8631ce30c981"
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "e2087964f996186f"
+sourceCommit: c6db1fb9ec9979425e22578d31c3c188bc7e73f9
 ---
 
 # Arquitectura
@@ -98,6 +98,8 @@ Esto significa:
 - El daemon Docker del host (si existe) está completamente separado
 
 Las funciones del Rediaccfile tienen automáticamente `DOCKER_HOST` configurado al socket correcto.
+
+Cuando un agente de IA entra en un repositorio mediante `rdc term connect -r <repo>`, se aplica el mismo aislamiento: la sesión se ejecuta como el usuario sin privilegios `rediacc` (UID 7111), en un espacio de nombres de montaje distinto, con `DOCKER_HOST` limitado al socket del daemon de ese único repositorio. El flujo de trabajo basado en bifurcación combina este aislamiento en tiempo de ejecución con una primitiva de clonación CoW: el agente opera sobre una bifurcación por tarea, nunca sobre repositorios grand (de producción). Consulte [Seguridad y salvaguardas para agentes de IA](/es/docs/ai-agents-safety) para conocer el modelo completo de sandbox, la semántica de las anulaciones y el límite de responsabilidad del desarrollador respecto a las credenciales de servicios externos.
 
 ### Estructura de Rutas del Daemon
 

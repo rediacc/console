@@ -4,8 +4,8 @@ description: リモートマシン上のLUKS暗号化リポジトリの作成、
 category: Guides
 order: 4
 language: ja
-sourceHash: "83f2c9fa5ae53864"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: "689a84ee2873fe00"
+sourceCommit: "8165b06e0d06dd07530fff343b0df6ecb1697a47"
 ---
 
 # リポジトリ
@@ -81,6 +81,8 @@ rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
 フォークはname:tagモデルを使用します：結果のフォークは`my-app:staging`と命名されます。これにより、独自のGUIDとネットワークIDを持つ新しい暗号化コピーが作成されますが、親の名前を共有します。フォークは親と同じLUKSクレデンシャルを共有します。
+
+> フォークはBTRFS reflinkを介して親のデータを共有します。これにはディスク上に保存されたあらゆる認証情報が含まれます。これらの認証情報がStripe、AWS、Railwayなどの外部サービスを認可している場合の影響については、[Rediaccが分離しないもの](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate)を参照してください。
 
 ## 検証
 

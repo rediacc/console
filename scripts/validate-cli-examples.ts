@@ -32,7 +32,7 @@ const ROOT = path.resolve(__dirname, '..');
 const TARGET_GLOBS = [
   // Root project docs
   'CLAUDE.md',
-  'docs/**/*.md',
+  'docs/**/*.{md,mdx}',
   '.claude/skills/rdc/*.md',
 
   // CLI source (help text strings)
@@ -57,9 +57,9 @@ const TARGET_GLOBS = [
   // www: AGENTS.md, marp presentations, Astro components, templates
   // (www docs markdown is covered by validate-docs-cli-usage.js in the www package)
   'packages/www/public/AGENTS.md',
-  'packages/www/src/marp/**/*.md',
+  'packages/www/src/marp/**/*.{md,mdx}',
   'packages/www/src/components/**/*.astro',
-  'packages/json/templates/**/*.md',
+  'packages/json/templates/**/*.{md,mdx}',
 ];
 
 /**

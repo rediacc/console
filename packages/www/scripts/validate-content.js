@@ -86,7 +86,7 @@ function getFilesForLanguage(collection, lang) {
 
       if (entry.isDirectory()) {
         walkDir(path.join(dir, entry.name), entryPath);
-      } else if (entry.name.endsWith('.md')) {
+      } else if (entry.name.endsWith('.md') || entry.name.endsWith('.mdx')) {
         files.push({
           filename: entry.name,
           relativePath: entryPath,

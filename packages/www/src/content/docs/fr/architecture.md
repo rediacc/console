@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: fr
-sourceHash: "b41d8631ce30c981"
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "e2087964f996186f"
+sourceCommit: c6db1fb9ec9979425e22578d31c3c188bc7e73f9
 ---
 
 # Architecture
@@ -98,6 +98,8 @@ Cela signifie :
 - Le démon Docker de l'hôte (s'il existe) est complètement séparé
 
 Les fonctions du Rediaccfile ont automatiquement `DOCKER_HOST` configuré avec le socket correct.
+
+Lorsqu'un agent IA entre dans un dépôt via `rdc term connect -r <repo>`, la même isolation s'applique : la session s'exécute en tant qu'utilisateur non privilégié `rediacc` (UID 7111), dans un espace de noms de montage distinct, avec `DOCKER_HOST` limité au socket du démon de ce seul dépôt. Le flux fork-first combine cette isolation à l'exécution avec une primitive de clonage CoW : l'agent opère sur un fork dédié à la tâche, jamais sur les dépôts grand (production). Consultez [Sécurité et garde-fous pour les agents IA](/fr/docs/ai-agents-safety) pour le modèle de bac à sable complet, la sémantique des substitutions et la frontière de responsabilité du développeur pour les identifiants des services externes.
 
 ### Structure des chemins du daemon
 

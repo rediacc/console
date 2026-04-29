@@ -165,7 +165,7 @@ const colors = {
 
 function listMarkdownFiles(dir) {
   if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir).filter((file) => file.endsWith('.md'));
+  return fs.readdirSync(dir).filter((file) => file.endsWith('.md') || file.endsWith('.mdx'));
 }
 
 function getTargetSlugs() {

@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: de
-sourceHash: "b41d8631ce30c981"
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "e2087964f996186f"
+sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
 ---
 
 # Architektur
@@ -98,6 +98,8 @@ Das bedeutet:
 - Der Docker-Daemon des Hosts (falls vorhanden) ist vollständig getrennt
 
 Rediaccfile-Funktionen haben automatisch `DOCKER_HOST` auf den korrekten Socket gesetzt.
+
+Wenn ein KI-Agent über `rdc term connect -r <repo>` ein Repository betritt, gilt dieselbe Isolation: Die Sitzung läuft als unprivilegierter `rediacc`-Benutzer (UID 7111), in einem eigenen Mount-Namespace, mit `DOCKER_HOST`, das auf den Daemon-Socket dieses einen Repositories beschränkt ist. Der Fork-First-Workflow kombiniert diese Laufzeitisolation mit einer CoW-Klon-Primitive: Der Agent arbeitet auf einem Fork pro Aufgabe, niemals auf Grand-Repositories (Produktion). Siehe [KI-Agent-Sicherheit & Schutzmaßnahmen](/de/docs/ai-agents-safety) für das vollständige Sandbox-Modell, die Überschreibungssemantik und die Entwicklerverantwortungsgrenze für Anmeldedaten externer Dienste.
 
 ### Daemon-Pfadstruktur
 

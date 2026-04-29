@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 4
 language: de
-sourceHash: "83f2c9fa5ae53864"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: "689a84ee2873fe00"
+sourceCommit: "8165b06e0d06dd07530fff343b0df6ecb1697a47"
 ---
 
 # Repositories
@@ -83,6 +83,8 @@ rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
 Forks verwenden das Name:Tag-Modell: Der resultierende Fork heißt `my-app:staging`. Dies erstellt eine neue verschlüsselte Kopie mit eigener GUID und Netzwerk-ID, wobei der Name des übergeordneten Repositories geteilt wird. Der Fork teilt sich das gleiche LUKS-Credential wie das übergeordnete Repository.
+
+> Forks teilen die Daten des übergeordneten Repositories über BTRFS-Reflink, einschließlich aller auf der Festplatte gespeicherten Anmeldedaten. Siehe [Was Rediacc nicht isoliert](/de/docs/ai-agents-safety#was-rediacc-nicht-isoliert) für die Auswirkungen, wenn diese Anmeldedaten externe Dienste wie Stripe, AWS oder Railway autorisieren.
 
 ## Validieren
 

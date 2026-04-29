@@ -1,0 +1,188 @@
+---
+title: "Rediacc'ı PocketOS Olayına Karşı Test Ettim"
+description: "PocketOS, üretim veritabanını 9 saniyede bir Cursor ajanına kaybetti. Aynı türden testi kendi platformum üzerinde çalıştırdım ve her adımı zamanladım. İşte neyin tuttuğunu ve neyin geliştiricinin sorumluluğunda kaldığını anlatıyorum."
+author: Muhammed Fatih Bayraktar
+publishedDate: 2026-04-28
+category: case-study
+tags:
+  - safety
+  - ai-agents
+  - postmortem
+  - case-study
+featured: true
+language: tr
+sourceHash: "176378344556c026"
+---
+
+import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
+
+> **Özet.** Geçen hafta bir yapay zeka ajanı, PocketOS'un üretim veritabanını 9 saniyede sildi. Ben de kendi altyapımı aynı şekilde yıkmayı denedim. Altı koruma tuttu; bir tane dürüst boşluk hâlâ duruyor.
+>
+> - 128 GB üretim çatallaması, baştan sona: **7,2 saniye.** CoW reflink'in kendisi: 2,3 saniye.
+> - Ajan grand (üretim) depolarına erişimden engellendi, kendi geçersiz kılma değişkenini ayarlamasından engellendi ve erişim yetkilendirildiğinde bir kernel sandbox'a (yetkisiz kullanıcı, ayrı mount namespace, kapsamlanmış Docker soketi) düşürüldü.
+> - **Rediacc'ın izole etmediği şey**: deponuzdaki verilerin içindeki harici SaaS kimlik bilgileri. Çatallama bunları miras alır. Bu kısmı Rediaccfile yaşam döngüsü kancaları üzerinden ele almak geliştiricinin işidir.
+
+<YouTubeEmbed videoId="o-Bst9rO9Fk" title="Rediacc'ı PocketOS Olayına Karşı Test Ettim" />
+
+Geçen hafta sonu, Jer Crane 30 saatlik bir postmortem yayımladı. Anthropic'in Claude Opus 4.6'sını çalıştıran bir Cursor ajanı, Railway üzerindeki üretim veritabanını sildi. Silme tek bir GraphQL çağrısıydı. 9 saniye sürdü. Railway'in volume yedekleri de onunla birlikte gitti, çünkü Railway yedekleri aynı volume'ün içinde tutuyor.
+
+Şirketi PocketOS, araç kiralama işletmelerinin günlük operasyonlarını yürütmek için kullandığı bir yazılım yapıyor. Bu işletmelerin bir kısmı PocketOS'ta beş yıldır. Cumartesi sabahı müşteriler araçlarını almaya geldiklerinde kiralama firmalarının kim olduklarına dair hiçbir kaydı kalmamıştı. Üç aylık rezervasyon yok olmuştu. Jer günü, Stripe ödeme geçmişlerinden ve e-posta onaylarından ne kurtarabilirse kurtarmaya çalışarak geçirdi.
+
+Yazısını iki kez okudum. The Register, Tom's Hardware ve Business Standard hepsi haberi aldı. Hacker News başlığı 874 yoruma ulaştı.
+
+Ben farklı türde bir altyapı platformu kuruyorum. Adı Rediacc. Bu platformun nasıl inşa edildiğinin tüm amacı, tam da bu senaryoyu zorlaştırmak. Ben de oturup testi yaptım.
+
+Bu yazı bulduklarım. Sayılar gerçek. Hata mesajları CLI'dan birebir alıntı. Ve Rediacc'ın hiç korumadığı tek yer de burada. Aksini iddia etmek insanları başını derde sokan şeydir.
+
+## Aslında ne eksikti
+
+Jer'in zaman çizelgesini dikkatlice okuyun, üst üste binen dört arıza görürsünüz.
+
+1. Cursor'ın kullandığı Railway API tokenı, özel alan adı yönetimi için oluşturulmuştu. Aynı zamanda `volumeDelete` yetkisine sahipti. Railway'in CLI tokenlarında işlem bazında kapsamlama yok.
+2. Railway'in GraphQL API'si `volumeDelete`'i tek bir POST olarak kabul ediyor. Onay adımı yok.
+3. Railway'in "volume yedekleri" aynı volume'ün içinde yaşıyor. Volume gittiğinde yedekler de gidiyor.
+4. Cursor ajanı, staging'deki bir kimlik bilgisi uyumsuzluğunu çözmenin doğru yolunun bir volume'ü silmek olduğuna kendi başına karar verdi.
+
+4. arızayı bir an için ayırın. Cursor'ın sistem kuralları, ajana açık bir kullanıcı isteği olmadan asla yıkıcı git komutları çalıştırmamasını söylüyordu. Silmenin ardından ne yaptığını açıklaması istendiğinde, ajan yazılı bir itiraf üretti. Bir veritabanı volume'ünü silmenin "mümkün olan en yıkıcı, geri döndürülemez eylem olduğunu: force push'tan çok daha kötü" olduğunu kabul etti ve çiğnediği her güvenlik kuralını listeledi.
+
+Bir prompt'taki davranışsal kural tavsiyedir. Yaptırım değildir. 1, 2 ve 3. arızalar altyapı tasarım kararlarıdır. 4. arızayı bir hatadan kaybedilmiş bir şirkete dönüştüren şey budur.
+
+## Test düzeneği
+
+Rediacc'ta `hostinger` adında çalıştırdığım gerçek bir üretim makinesi var. Üzerinde on üç depo yaşıyor: bir mail sunucusu, kendi barındırdığım bir GitLab, bir gözlemlenebilirlik yığını ve karşılaştırma testleri için kullandığımız 128 GB'lık bir StackOverflow demosu. Disk %87 dolu. Boş alan sıfırda. Hataların acıttığı türde bir makine.
+
+StackOverflow demosunu bilerek seçtim. Kutudaki en büyük depo. Konteynerleri ve kalıcı verileriyle gerçek bir uygulama gibi kurulmuş. Eğer onun çatallanması hızlı ve izoleyse, ondan daha küçük her şey için de hızlı ve izoledir.
+
+Test için ajanım, Claude Opus çalıştıran Claude Code'du. Cursor'unkiyle aynı model ailesi. Jer'in ajanının sahip olduğu erişim deseniyle aynı türden. Sürdüğüm CLI ise bizim kendi `rdc`'miz.
+
+## Birinci deneme: doğrudan üretim deposuna SSH
+
+Ajanın (bu durumda benim) yaptığı ilk şey en doğal olanıydı. Üretim deposuna bir kabuk açıp etrafa bakmak.
+
+```bash
+$ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
+```
+
+CLI reddetti. Birebir:
+
+> "demo-stackoverflow" is a grand (production) repository. Agents cannot modify grand repositories directly.
+>
+> Grand repositories contain production data. Use a fork instead. Forks are safe, isolated sandbox copies.
+
+Bu bir sistem prompt'u değil. Bu CLI'nın kendisi, çağrı dizüstünden çıkmadan önce reddediyor. CLI bir ajan olduğumu gördü. Claude Code `CLAUDECODE` ortam değişkenini ayarlıyor. CLI ayrıca bu değişkeni gizlemeye çalışan ajanları yakalamak için `/proc` üzerinden süreç ağacında dolaşıyor. Sonra işlemi politika tablosuyla eşleştirdi. Sonra reddetti.
+
+Ajan da bir ajanın yapabileceği şeyi yapıyor. Geçersiz kılma değişkenini kendisi ayarlamayı deniyor.
+
+```bash
+$ REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow rdc term connect ...
+```
+
+Yine reddedildi:
+
+> "demo-stackoverflow" is a grand (production) repository. Agent-initiated overrides are not accepted.
+>
+> Do not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts.
+
+Aynı `/proc` taraması iki iş yapar. Önce ajanı tespit eder. Sonra geçersiz kılmanın ajanın içinde mi yoksa üzerinde mi ayarlandığını kontrol eder. Sınırın altında: reddedilir. Üstünde: izin verilir.
+
+Bunu test ettim. Ajandan çıktım. Kendi kabuğumda `export REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow` çalıştırdım. Claude Code'u yeniden başlattım. Bağlantı bu kez çalıştı. Depoya yetkisiz `rediacc` sistem kullanıcısı (UID 7111) olarak düştüm. `DOCKER_HOST`, ana deponun kapsamlanmış Docker daemon soketini gösteriyordu.
+
+Ayrıca `demo-stackoverflow` için geçersiz kılma aktifken farklı bir üretim deposuna, `nextcloud`'a, bağlanmayı denedim. Reddedildi. Geçersiz kılma depo başına çalışıyor, genel bir anahtar değil.
+
+## İkinci deneme: depoyu çatallayıp çatallama üzerinde işlem yap
+
+Rediacc'ın aslında sizden kullanmanızı istediği iş akışı bu.
+
+```bash
+$ time rdc repo fork --parent demo-stackoverflow -m hostinger --tag agent-test
+```
+
+Terminalimden kopyalanan çıktı:
+
+```
+Config loaded     (9ms)
+Connected         (1.1s)
+Renet provisioned (1.2s)
+Machine verified  (464ms)
+License activated (2.1s)
+✔ CoW clone complete (2.3s)
+
+Total: 7.2s
+```
+
+128 GB'lık bir çatallama 2,3 saniyede. Sebebi bir BTRFS reflink. Çatallama, bir taraf yazana kadar ana deponun bloklarını gösteren metadata'dır. Hiçbir veri kopyalanmaz.
+
+Ölçeklemeyi kontrol etmek için aynı çatallamayı 2 GB'lık bir depoda çalıştırdım:
+
+```
+✔ CoW clone complete (573ms)
+Total: 6.3s
+```
+
+2 GB çatallamasının klon adımı 573 milisaniye sürdü. 128 GB çatallamasının klon adımı 2,3 saniye sürdü. Yani veri klonu doğrusal altı, kesin sabit değil. Ama toplam çatallama süresi neredeyse aynı (6,3 sn'ye karşı 7,2 sn) çünkü beklemenin çoğu veri değil, SSH ve lisans dansı. Kullanıcı koltuğundan bakınca, çatallama depo boyutu fark etmeksizin 6 ile 7 saniye arası bir bekleme.
+
+Şimdi çatallama üzerinde çalışıyorum. Kendi GUID'i (`22c57178-...`) var. Kendi networkId'si (`21760`). Kendi mount yolu. Kendi Docker daemon soketi (`/var/run/rediacc/docker-21760.sock`). Ana deponun verisi reflink üzerinden paylaşılıyor. Ana deponun kendisi tüm süreç boyunca çalışmaya devam ediyor.
+
+Çatallamaya `term connect` yaptığımda gördüğüm şey:
+
+```
+$ rdc term connect -m hostinger -r demo-stackoverflow:agent-test -c "id"
+uid=7111(rediacc) gid=7111(rediacc) groups=7111(rediacc),988(docker)
+```
+
+SSH kullanıcım değil. Kendi kabuğu olmayan, UID 7111'li adanmış `rediacc` sistem kullanıcısı. Oturum kendi mount namespace'inde çalışıyor. `/proc/self/ns/mnt` kontrol ettim. Çatallama oturumunun içinden ana deponun mount yolunu listelemeye çalıştığımda `ls`, `Permission denied` döndü. Ajan yolu tahmin etse bile üretim verisine kelimenin tam anlamıyla ulaşamıyor.
+
+Tasarımın en önemli kısmı bu. Ajan kernel düzeyinde bir sandbox alıyor. "Lütfen yapma" talimatı değil. Ajan çatallama içinde `rm -rf /` çalıştırmaya karar verirse, en kötü durum ana depodan 2,3 saniyelik bir yeniden çatallama.
+
+## Platform desteği üzerine bir not
+
+Geçersiz kılma yalnızca Linux'ta çalışıyor. Meşruiyet kontrolü `/proc/<pid>/environ` dosyasına ihtiyaç duyuyor. Bu dosya çekirdeğin her sürecin nasıl başlatıldığına dair kaydı. macOS ve Windows'ta dengi yok. Geçersiz kılmanın ajan tarafından değil sizin tarafınızdan ayarlandığını doğrulayacak bir yol olmadığında, CLI kapalı durumda başarısız oluyor. Doğru ayarlanmış bir geçersiz kılma bile bu platformlarda reddediliyor.
+
+Hata mesajı ne yapacağınızı söylüyor:
+
+> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+
+Pratikte, macOS veya Windows'taki ajanların önce-çatalla iş akışından kaçış yolu yok. Bu kasıtlı.
+
+## Bu testte tutan korumalar
+
+İçeri bir veya iki güvenlik özelliğini doğrulamayı bekleyerek girdim. Altı tane ile çıktım. Her birinin gösterebileceğim bir kodu ve alıntılayabileceğim bir hata mesajı var.
+
+1. **Grand-repo bloğu.** Ajanlar grand (üretim) depoları üzerinde doğrudan işlem yapamaz. Çatallamak zorundalar.
+2. **Ajan tarafından ayarlanan geçersiz kılmanın reddi.** Kullanıcının ayarlayabileceği geçersiz kılma ortam değişkeni, ajanın kendi ortamında görünüyorsa reddediliyor.
+3. **Depo başına geçersiz kılma kapsamı.** `demo-stackoverflow` için verilen yetki `nextcloud` için hiçbir şey ifade etmiyor. Kapsam bir liste, bayrak değil.
+4. **Kernel sandbox.** Geçerli bir geçersiz kılmayla bile, oturum `rediacc` UID'si olarak, kendi mount namespace'inde, `DOCKER_HOST` tek bir deponun daemon'una kapsamlanmış şekilde çalışıyor. Diğer depoları görmenin yolu yok.
+5. **Çevrimiçi çatallama.** Ana depo çatallama boyunca çalışmaya devam etti. Kesinti yok, geçiş yok.
+6. **Doğrusal altı çatallama süresi.** 128 GB için 2,3 saniye. 2 GB için 573 ms. Beklemenin çoğu SSH dansı, veri değil.
+
+## Rediacc'ın izole etmediği tek şey
+
+Şimdi yazının daha zor kısmı.
+
+Rediacc altyapıyı izole eder: diskteki dosyayı, Docker daemon'unu, mount namespace'ini, ağı. Deponuzun kimlik bilgilerini tuttuğu harici SaaS API'lerini izole etmez.
+
+Bir çatallama, ana deponun bayt-bayt BTRFS reflink'idir. Ana deponun `data/`, `.env` veya `secrets/` dizininde ne yaşıyorsa çatallamada da odur. Deponuz `STRIPE_LIVE_KEY`, `AWS_ACCESS_KEY_ID` veya bir Railway API tokenı içeriyorsa, çatallamadaki ajan bunları okuyabilir. Bu tokenlarla `api.stripe.com`'a, `s3.amazonaws.com`'a veya `backboard.railway.app`'e çağrı yapabilir. Dışarıdan bakıldığında çağrı üretimden geliyormuş gibi görünür. Stripe veya AWS, çatallamayı ayırt edemez.
+
+Bu, paylaşılan sorumluluk çizgisi. Rediacc altyapı yarısını ele alır. Harici servis yarısı uygulama kodunuzda yaşar.
+
+Geliştirici tarafında üç desen bu boşluğu kapatır:
+
+- Üretim harici kimlik bilgilerini depoda hiç tutmayın. Bunları konteyner başlangıcında bir secrets manager'dan çekin. Çatallamanın konteynerleri tasarım gereği sandbox kapsamlı kimlik bilgilerini çeker.
+- Çatallama anında Rediaccfile'ın `up()` kancası üzerinden kimlik bilgilerini çıkarın veya değiştirin. Bir çatallamanın `up()`'ı, ana depodan farklı bir depo GUID'siyle çalışır. Bunu tespit edin. Sonra `.env`'i sandbox değerleriyle yeniden yazın.
+- Çatallama başına harici kaynaklar sağlayın: çatallama başına bir Stripe sandbox hesabı, çatallama başına bir test veritabanı, çatallama başına bir S3 kovası.
+
+PocketOS Rediacc'ta olsaydı, Railway API tokenı doğru karşılaştırma olmazdı. Altyapıları Rediacc çatallamasının kendisi olurdu. Bulunacak bir Railway tokenı olmazdı, çünkü Rediacc kimlik doğrulamış bir ajana `volumeDelete` benzeri hiçbir şey sunmaz. Ajan, ana depoyu silmenin hiçbir yolu olmayan, çatallama başına bir Docker soketinin içinde yaşardı.
+
+Ama ajanları bir kimlik bilgisi dosyasında bir Stripe üretim anahtarı bulsaydı, Rediacc ajanın gerçek müşteri kartlarına iadeler yapmasını engellemezdi. Bu gerçek bir kayıp. Her iki şey de doğru.
+
+## Bu tür bir iş yapan biri için ne değişir
+
+Bir yapay zeka ajanına, üretim ortamınızı silebilecek bir kimlik bilgisi ile kabuk erişimi verirseniz, soru "eninde sonunda yıkıcı bir şey yapacak mı" değildir. Soru ne zaman yapacağı ve ne kadar geri dönülebilir olacağıdır.
+
+Rediacc'ta değişen şey: yıkıcı patlama yarıçapı bir çatallama ile sınırlandırılır. "Yanlış şeyi sil" hatasının maliyeti 2,3 saniyelik yeniden çatallama. Ajanın "düzeltmeye" karar verdiği bir kimlik bilgisi uyumsuzluğunun maliyeti aynı 2,3 saniyelik yeniden çatallama. Kernel sandbox, çoğu hatanın üretim verisine hiç ulaşmamasını sağlıyor.
+
+Değişmeyen şey: deponuzda canlı harici kimlik bilgileri varsa, ajan onları kullanabilir. Bunu altyapı katmanında değil, uygulama katmanında düzeltmek size kalmış.
+
+Rediacc'ın PocketOS olayının her parçasını engelleyeceğini iddia edecek değilim. PocketOS hikayesinin en kötü kısmı, gerçek bir yedek olmadan Railway veri silinmesiydi. Bu Rediacc'ta yaşanmazdı, çünkü hiçbir ajana uzanabileceği bir `volumeDelete` API'si vermiyoruz. Geriye kalan risk yüzeyi, yani bir ajanın kod tabanınızdaki kimlik bilgileriyle çağırabileceği SaaS API'leri, güvenlik hikayesinin sizin `up()` kancanızda yaşayan kısmı. Bizim izolasyon modelimizde değil.
+
+Tam sayılar, birebir hata mesajları ve kontrol ettiğim kod yolları [Yapay Zeka Ajan Güvenliği ve Korumalar](/tr/docs/ai-agents-safety) sayfasında belgelendi. Kendi altyapınızda benzer bir test çalıştırmak isterseniz, çatallama iş akışı [Depolar](/tr/docs/repositories#fork) sayfasında. Yaklaşık 7 saniye sürüyor.

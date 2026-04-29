@@ -62,7 +62,7 @@ function extractDocsKeys(): Set<string> {
     return keys;
   }
 
-  const mdFiles = globSync(`${DOCS_DIR}/**/*.md`);
+  const mdFiles = globSync(`${DOCS_DIR}/**/*.{md,mdx}`);
 
   for (const file of mdFiles) {
     const content = fs.readFileSync(file, 'utf-8');

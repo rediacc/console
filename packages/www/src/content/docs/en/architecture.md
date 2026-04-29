@@ -97,6 +97,8 @@ This means:
 
 Rediaccfile functions automatically have `DOCKER_HOST` set to the correct socket.
 
+When an AI agent enters a repository via `rdc term connect -r <repo>`, the same isolation applies: the session runs as the unprivileged `rediacc` user (UID 7111), in a distinct mount namespace, with `DOCKER_HOST` scoped to that single repo's daemon socket. The fork-first workflow combines this runtime isolation with a CoW clone primitive: the agent operates on a per-task fork, never on grand (production) repositories. See [AI Agent Safety & Guardrails](/en/docs/ai-agents-safety) for the full sandbox model, the override semantics, and the developer-responsibility boundary for external service credentials.
+
 ### Daemon Path Layout
 
 Docker data and configuration are stored inside the repository's mount, keeping each daemon fully isolated from the host and from other repositories.

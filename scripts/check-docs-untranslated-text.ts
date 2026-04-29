@@ -554,7 +554,7 @@ function main(): void {
       continue;
     }
 
-    const mdFiles = globSync(`${langDir}/**/*.md`);
+    const mdFiles = globSync(`${langDir}/**/*.{md,mdx}`);
     let langPatternIssues = 0;
 
     for (const file of mdFiles) {

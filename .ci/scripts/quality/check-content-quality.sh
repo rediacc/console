@@ -280,7 +280,7 @@ else
         if [[ -d "$dir" ]]; then
             while IFS= read -r f; do
                 FILES+=("$f")
-            done < <(find "$dir" -name '*.md' -type f)
+            done < <(find "$dir" \( -name '*.md' -o -name '*.mdx' \) -type f)
         fi
     done
 fi
