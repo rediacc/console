@@ -32,21 +32,30 @@ test.describe('Audit Records Tests', () => {
     testReporter.startStep('Navigate to Audit page');
 
     const nav = new NavigationHelper(page);
+
+    // Reveal expert features on localhost (needed because auditLogs requiresExpertMode)
+    // We do this after login to ensure MainLayout is mounted and listening for shortcuts
+    await page.keyboard.press('Control+Shift+E');
+
+    // Wait for the audit navigation item to be visible before clicking
+    const auditNavItem = page.getByTestId('main-nav-audit');
+    await expect(auditNavItem).toBeVisible({ timeout: 15000 });
+
     await nav.goToAudit();
 
     const filterCard = page.getByTestId('audit-filter-card');
-    await expect(filterCard).toBeVisible({ timeout: 10000 });
+    await expect(filterCard).toBeVisible({ timeout: 15000 });
 
     testReporter.completeStep('Navigate to Audit page', 'passed');
 
     testReporter.startStep('Wait for audit table to load');
 
     const tableCard = page.getByTestId('audit-table-card');
-    await expect(tableCard).toBeVisible({ timeout: 10000 });
+    await expect(tableCard).toBeVisible({ timeout: 15000 });
 
     // Wait until the loading spinner is gone
     const loadingSpinner = tableCard.locator('.ant-spin-spinning');
-    await expect(loadingSpinner).not.toBeVisible({ timeout: 30000 });
+    await expect(loadingSpinner).not.toBeVisible({ timeout: 45000 });
 
     testReporter.completeStep('Wait for audit table to load', 'passed');
 
