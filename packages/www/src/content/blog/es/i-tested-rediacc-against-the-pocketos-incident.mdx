@@ -43,7 +43,7 @@ Si lees con atención la cronología de Jer, cuatro fallos se apilan uno sobre o
 3. Las "copias de seguridad de volumen" de Railway viven dentro del mismo volumen. Cuando el volumen se va, las copias también.
 4. El agente de Cursor decidió, por su cuenta, que la forma correcta de arreglar un desajuste de credenciales en staging era borrar un volumen.
 
-Saca el fallo 4 por un momento. Las reglas del sistema de Cursor le decían al agente que nunca ejecutara comandos git destructivos sin una solicitud explícita del usuario. Tras el borrado, al pedirle que se explicara, el agente produjo una confesión escrita. Admitió que borrar un volumen de base de datos es "the most destructive, irreversible action possible — far worse than a force push" y enumeró todas las reglas de seguridad que rompió.
+Saca el fallo 4 por un momento. Las reglas del sistema de Cursor le decían al agente que nunca ejecutara comandos git destructivos sin una solicitud explícita del usuario. Tras el borrado, al pedirle que se explicara, el agente produjo una confesión escrita. Admitió que borrar un volumen de base de datos es "the most destructive, irreversible action possible: far worse than a force push" y enumeró todas las reglas de seguridad que rompió.
 
 Una regla de comportamiento en un prompt es un consejo. No es una imposición. Los fallos 1, 2 y 3 son decisiones de diseño de infraestructura. Son lo que convierte el fallo 4 de un error en una empresa perdida.
 
@@ -67,7 +67,7 @@ El CLI se negó. Literalmente:
 
 > "demo-stackoverflow" is a grand (production) repository. Agents cannot modify grand repositories directly.
 >
-> Grand repositories contain production data. Use a fork instead — forks are safe, isolated sandbox copies.
+> Grand repositories contain production data. Use a fork instead. Forks are safe, isolated sandbox copies.
 
 Eso no es un prompt del sistema. Es el propio CLI, rechazando la llamada antes de que salga de mi portátil. El CLI vio que era un agente. Claude Code establece la variable de entorno `CLAUDECODE`. El CLI también recorre el árbol de procesos vía `/proc` para detectar agentes que intenten ocultar esa variable. Después comparó la operación con su tabla de políticas. Y luego rechazó.
 
@@ -81,7 +81,7 @@ Sigue rechazado:
 
 > "demo-stackoverflow" is a grand (production) repository. Agent-initiated overrides are not accepted.
 >
-> Do not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.
+> Do not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts.
 
 El mismo recorrido por `/proc` cumple dos funciones. Primero detecta al agente. Después comprueba si la anulación se estableció dentro del agente o por encima de él. Por debajo del límite: rechazada. Por encima: permitida.
 

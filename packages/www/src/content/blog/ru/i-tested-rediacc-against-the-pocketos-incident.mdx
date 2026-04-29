@@ -67,7 +67,7 @@ CLI отказал. Дословно:
 
 > "demo-stackoverflow" is a grand (production) repository. Agents cannot modify grand repositories directly.
 >
-> Grand repositories contain production data. Use a fork instead — forks are safe, isolated sandbox copies.
+> Grand repositories contain production data. Use a fork instead. Forks are safe, isolated sandbox copies.
 
 Это не системный промпт. Это сам CLI отказывается от вызова ещё до того, как тот покинет мой ноутбук. CLI увидел, что я агент. Claude Code устанавливает переменную окружения `CLAUDECODE`. CLI также проходит по дереву процессов через `/proc`, чтобы поймать агентов, которые пытаются скрыть эту переменную. Затем он сопоставил операцию с таблицей политик. Затем отказал.
 
@@ -81,7 +81,7 @@ $ REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow rdc term connect ...
 
 > "demo-stackoverflow" is a grand (production) repository. Agent-initiated overrides are not accepted.
 >
-> Do not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.
+> Do not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts.
 
 Тот же проход по `/proc` делает две работы. Сначала он распознаёт агента. Затем проверяет, был ли override установлен внутри агента или над ним. Ниже границы: отклонено. Выше: разрешено.
 

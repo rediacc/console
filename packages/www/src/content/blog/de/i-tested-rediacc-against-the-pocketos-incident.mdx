@@ -43,7 +43,7 @@ Wenn man Jers Zeitleiste sorgfältig liest, stapeln sich vier Fehler aufeinander
 3. Railways "Volume-Backups" liegen innerhalb desselben Volumes. Wenn das Volume verschwindet, verschwinden auch die Backups.
 4. Der Cursor-Agent entschied von sich aus, dass der richtige Weg, eine fehlerhafte Zugangsdaten-Konstellation in Staging zu beheben, das Löschen eines Volumes sei.
 
-Heben wir Fehler 4 für einen Moment heraus. Cursors Systemregeln wiesen den Agenten an, niemals destruktive Git-Befehle ohne ausdrückliche Aufforderung des Benutzers auszuführen. Nach der Löschung produzierte der Agent, als er sich erklären sollte, ein schriftliches Geständnis. Er gab zu, dass das Löschen eines Datenbank-Volumes "the most destructive, irreversible action possible — far worse than a force push" sei und listete jede Sicherheitsregel auf, die er gebrochen hatte.
+Heben wir Fehler 4 für einen Moment heraus. Cursors Systemregeln wiesen den Agenten an, niemals destruktive Git-Befehle ohne ausdrückliche Aufforderung des Benutzers auszuführen. Nach der Löschung produzierte der Agent, als er sich erklären sollte, ein schriftliches Geständnis. Er gab zu, dass das Löschen eines Datenbank-Volumes "the most destructive, irreversible action possible: far worse than a force push" sei und listete jede Sicherheitsregel auf, die er gebrochen hatte.
 
 Eine Verhaltensregel in einem Prompt ist ein Ratschlag. Sie ist keine Durchsetzung. Die Fehler 1, 2 und 3 sind Designentscheidungen der Infrastruktur. Sie sind es, die Fehler 4 von einem Versehen in ein verlorenes Unternehmen verwandeln.
 
@@ -67,7 +67,7 @@ Die CLI hat es verweigert. Wörtlich:
 
 > "demo-stackoverflow" is a grand (production) repository. Agents cannot modify grand repositories directly.
 >
-> Grand repositories contain production data. Use a fork instead — forks are safe, isolated sandbox copies.
+> Grand repositories contain production data. Use a fork instead. Forks are safe, isolated sandbox copies.
 
 Das ist kein System-Prompt. Das ist die CLI selbst, die den Aufruf abweist, bevor er meinen Laptop überhaupt verlässt. Die CLI hat erkannt, dass ich ein Agent bin. Claude Code setzt die Umgebungsvariable `CLAUDECODE`. Die CLI durchläuft zusätzlich den Prozessbaum über `/proc`, um Agenten zu erwischen, die diese Variable zu verbergen versuchen. Dann hat sie die Operation gegen ihre Policy-Tabelle abgeglichen. Dann hat sie verweigert.
 
@@ -81,7 +81,7 @@ Trotzdem verweigert:
 
 > "demo-stackoverflow" is a grand (production) repository. Agent-initiated overrides are not accepted.
 >
-> Do not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.
+> Do not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts.
 
 Derselbe `/proc`-Durchlauf erfüllt zwei Aufgaben. Erstens entdeckt er den Agenten. Dann prüft er, ob der Override innerhalb des Agenten oder oberhalb davon gesetzt wurde. Unterhalb der Grenze: abgelehnt. Oberhalb: erlaubt.
 

@@ -67,7 +67,7 @@ CLIは拒否しました。原文のまま：
 
 > "demo-stackoverflow" is a grand (production) repository. Agents cannot modify grand repositories directly.
 >
-> Grand repositories contain production data. Use a fork instead — forks are safe, isolated sandbox copies.
+> Grand repositories contain production data. Use a fork instead. Forks are safe, isolated sandbox copies.
 
 これはシステムプロンプトではありません。CLI自体が、呼び出しが私のラップトップを離れる前に拒否しているのです。CLIは私がエージェントであることを検知しました。Claude Codeは`CLAUDECODE`環境変数を設定します。CLIはまた、その変数を隠そうとするエージェントを捕捉するため、`/proc`経由でプロセスツリーを辿ります。それから操作をポリシー表と照合し、拒否します。
 
@@ -81,7 +81,7 @@ $ REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow rdc term connect ...
 
 > "demo-stackoverflow" is a grand (production) repository. Agent-initiated overrides are not accepted.
 >
-> Do not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.
+> Do not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts.
 
 同じ`/proc`の走査が二つの仕事をしています。まずエージェントを検出する。次に、オーバーライドがエージェント内部で設定されたのか、それともその上位で設定されたのかを確認する。境界より下：拒否。境界より上：許可。
 

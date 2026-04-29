@@ -67,7 +67,7 @@ CLI 直接拒绝了。原文如下：
 
 > "demo-stackoverflow" is a grand (production) repository. Agents cannot modify grand repositories directly.
 >
-> Grand repositories contain production data. Use a fork instead — forks are safe, isolated sandbox copies.
+> Grand repositories contain production data. Use a fork instead. Forks are safe, isolated sandbox copies.
 
 这不是系统提示词，而是 CLI 本身在调用离开我笔记本之前就拒绝了它。CLI 看到了我是一个智能体。Claude Code 会设置 `CLAUDECODE` 环境变量。CLI 同时还会通过 `/proc` 遍历进程树，抓那些试图把这个变量藏起来的智能体。然后它把操作和策略表对照一遍，再做出拒绝。
 
@@ -81,7 +81,7 @@ $ REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow rdc term connect ...
 
 > "demo-stackoverflow" is a grand (production) repository. Agent-initiated overrides are not accepted.
 >
-> Do not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.
+> Do not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts.
 
 同一次 `/proc` 遍历做了两件事。先识别出是不是智能体，再判断这个覆盖开关是在智能体内部设置的，还是在它之上设置的。在边界以下：拒绝。在边界以上：放行。
 

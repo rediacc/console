@@ -42,7 +42,7 @@ Read carefully through Jer's timeline and four failures stack on top of each oth
 3. Railway's "volume backups" live inside the same volume. When the volume goes, the backups go too.
 4. The Cursor agent decided, on its own, that the right way to fix a credential mismatch in staging was to delete a volume.
 
-Pull failure 4 out for a second. Cursor's system rules told the agent never to run destructive git commands without an explicit user request. After the deletion, asked to explain itself, the agent produced a written confession. It admitted that deleting a database volume is "the most destructive, irreversible action possible — far worse than a force push" and listed every safety rule it broke.
+Pull failure 4 out for a second. Cursor's system rules told the agent never to run destructive git commands without an explicit user request. After the deletion, asked to explain itself, the agent produced a written confession. It admitted that deleting a database volume is "the most destructive, irreversible action possible: far worse than a force push" and listed every safety rule it broke.
 
 A behavioral rule in a prompt is advice. It is not enforcement. Failures 1, 2, and 3 are infrastructure design choices. They are what turn failure 4 from a mistake into a lost company.
 
@@ -66,7 +66,7 @@ The CLI refused. Verbatim:
 
 > "demo-stackoverflow" is a grand (production) repository. Agents cannot modify grand repositories directly.
 >
-> Grand repositories contain production data. Use a fork instead — forks are safe, isolated sandbox copies.
+> Grand repositories contain production data. Use a fork instead. Forks are safe, isolated sandbox copies.
 
 That is not a system prompt. That is the CLI itself, refusing the call before it ever leaves my laptop. The CLI saw I was an agent. Claude Code sets the `CLAUDECODE` env var. The CLI also walks the process tree via `/proc` to catch agents that try to hide that var. Then it matched the operation against its policy table. Then it refused.
 
@@ -80,7 +80,7 @@ Still refused:
 
 > "demo-stackoverflow" is a grand (production) repository. Agent-initiated overrides are not accepted.
 >
-> Do not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.
+> Do not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts.
 
 The same `/proc` walk does two jobs. First it spots the agent. Then it checks whether the override was set inside the agent or above it. Below the boundary: rejected. Above: allowed.
 

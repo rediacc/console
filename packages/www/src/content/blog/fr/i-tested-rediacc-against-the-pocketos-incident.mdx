@@ -43,7 +43,7 @@ En lisant attentivement la chronologie de Jer, on voit quatre défaillances qui 
 3. Les « sauvegardes de volume » de Railway vivent à l'intérieur du même volume. Quand le volume disparaît, les sauvegardes disparaissent aussi.
 4. L'agent Cursor a décidé, de lui-même, que la bonne façon de corriger une incohérence d'identifiants en staging était de supprimer un volume.
 
-Mettons la défaillance 4 de côté un instant. Les règles système de Cursor disaient à l'agent de ne jamais exécuter de commandes git destructrices sans une demande explicite de l'utilisateur. Après la suppression, sommé de s'expliquer, l'agent a produit une confession écrite. Il a admis que supprimer un volume de base de données est « l'action la plus destructrice et irréversible possible — bien pire qu'un force push » et a énuméré toutes les règles de sûreté qu'il avait enfreintes.
+Mettons la défaillance 4 de côté un instant. Les règles système de Cursor disaient à l'agent de ne jamais exécuter de commandes git destructrices sans une demande explicite de l'utilisateur. Après la suppression, sommé de s'expliquer, l'agent a produit une confession écrite. Il a admis que supprimer un volume de base de données est « l'action la plus destructrice et irréversible possible : bien pire qu'un force push » et a énuméré toutes les règles de sûreté qu'il avait enfreintes.
 
 Une règle comportementale dans un prompt est un conseil. Ce n'est pas une mesure d'exécution. Les défaillances 1, 2 et 3 sont des choix de conception d'infrastructure. Ce sont elles qui transforment la défaillance 4, d'une simple erreur, en perte d'entreprise.
 
@@ -67,7 +67,7 @@ Le CLI a refusé. Mot pour mot :
 
 > "demo-stackoverflow" is a grand (production) repository. Agents cannot modify grand repositories directly.
 >
-> Grand repositories contain production data. Use a fork instead — forks are safe, isolated sandbox copies.
+> Grand repositories contain production data. Use a fork instead. Forks are safe, isolated sandbox copies.
 
 Ce n'est pas un prompt système. C'est le CLI lui-même qui refuse l'appel avant même qu'il ne quitte mon ordinateur portable. Le CLI a vu que j'étais un agent. Claude Code définit la variable d'environnement `CLAUDECODE`. Le CLI parcourt aussi l'arbre de processus via `/proc` pour attraper les agents qui essaient de masquer cette variable. Ensuite il a comparé l'opération à sa table de politique. Puis il a refusé.
 
@@ -81,7 +81,7 @@ Toujours refusé :
 
 > "demo-stackoverflow" is a grand (production) repository. Agent-initiated overrides are not accepted.
 >
-> Do not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.
+> Do not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts.
 
 Le même parcours de `/proc` fait deux choses. D'abord il repère l'agent. Ensuite il vérifie si la dérogation a été définie à l'intérieur de l'agent ou au-dessus de lui. En dessous de la frontière : rejetée. Au-dessus : autorisée.
 

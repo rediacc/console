@@ -43,7 +43,7 @@ import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
 3. "النسخ الاحتياطية للتخزين" في Railway تعيش داخل التخزين نفسه. حين يذهب التخزين، تذهب النسخ الاحتياطية معه.
 4. قرر وكيل Cursor، من تلقاء نفسه، أن الحل الصحيح لعدم تطابق بيانات الاعتماد في بيئة الاختبار هو حذف التخزين.
 
-دعنا نستخرج الإخفاق الرابع للحظة. قواعد نظام Cursor كانت تخبر الوكيل بألا يشغّل أبداً أوامر git مدمّرة دون طلب صريح من المستخدم. وبعد الحذف، حين طُلب منه أن يفسّر فعلته، أنتج الوكيل اعترافاً مكتوباً. اعترف بأن حذف تخزين قاعدة بيانات هو "the most destructive, irreversible action possible — far worse than a force push" وعدّد كل قاعدة أمان خرقها.
+دعنا نستخرج الإخفاق الرابع للحظة. قواعد نظام Cursor كانت تخبر الوكيل بألا يشغّل أبداً أوامر git مدمّرة دون طلب صريح من المستخدم. وبعد الحذف، حين طُلب منه أن يفسّر فعلته، أنتج الوكيل اعترافاً مكتوباً. اعترف بأن حذف تخزين قاعدة بيانات هو "the most destructive, irreversible action possible: far worse than a force push" وعدّد كل قاعدة أمان خرقها.
 
 القاعدة السلوكية في الموجّه هي مجرد نصيحة، ليست تطبيقاً ملزماً. أما الإخفاقات 1 و2 و3 فهي خيارات تصميم للبنية التحتية. وهي ما يحوّل الإخفاق الرابع من مجرد خطأ إلى ضياع شركة كاملة.
 
@@ -67,7 +67,7 @@ $ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
 
 > "demo-stackoverflow" is a grand (production) repository. Agents cannot modify grand repositories directly.
 >
-> Grand repositories contain production data. Use a fork instead — forks are safe, isolated sandbox copies.
+> Grand repositories contain production data. Use a fork instead. Forks are safe, isolated sandbox copies.
 
 هذا ليس موجّه نظام. هذه هي أداة سطر الأوامر نفسها، ترفض الاستدعاء قبل أن يغادر حاسوبي المحمول أصلاً. رأت الأداة أنني وكيل. فـ Claude Code يضبط متغير البيئة `CLAUDECODE`. كما تتحرك الأداة عبر شجرة العمليات في `/proc` لاصطياد الوكلاء الذين يحاولون إخفاء هذا المتغير. ثم طابقت العملية مع جدول السياسات لديها. ثم رفضت.
 
@@ -81,7 +81,7 @@ $ REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow rdc term connect ...
 
 > "demo-stackoverflow" is a grand (production) repository. Agent-initiated overrides are not accepted.
 >
-> Do not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.
+> Do not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts.
 
 نفس التحرك في `/proc` يقوم بمهمتين. أولاً يكتشف الوكيل. ثم يفحص ما إذا كان التجاوز قد ضُبط داخل الوكيل أم فوقه. تحت الحدّ: مرفوض. فوقه: مسموح.
 
