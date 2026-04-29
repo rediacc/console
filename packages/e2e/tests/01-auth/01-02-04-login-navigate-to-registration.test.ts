@@ -18,9 +18,7 @@ test.describe('Login - Navigate to Registration Tests', () => {
     await loginPage.clickRegister();
 
     // Verify registration form is visible
-    await expect(
-      page.locator('[data-testid="registration-organization-input"]')
-    ).toBeVisible();
+    await expect(page.locator('[data-testid="registration-organization-input"]')).toBeVisible();
 
     testReporter.completeStep('Click register link', 'passed');
 
