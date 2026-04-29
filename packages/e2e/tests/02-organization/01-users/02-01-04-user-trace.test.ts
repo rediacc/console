@@ -5,6 +5,7 @@ import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { UserPageIDs } from '@/pages/user/UserPageIDs';
 import { ensureDrawerIsClosed } from '@/test-helpers/team-helpers';
 import { ensureCreatedUser } from '@/test-helpers/user-helpers';
+import { filterUsersList } from '@/test-helpers/ui-helpers';
 import { E2E_DEFAULTS } from '@/utils/constants';
 
 test.describe('Team Trace Tests', () => {
@@ -47,14 +48,9 @@ test.describe('Team Trace Tests', () => {
       // Additional CI-specific wait for DOM stability
       await page.waitForLoadState('domcontentloaded').catch(() => {});
 
-      const searchInput = page.getByTestId('resource-list-search');
-      if (await searchInput.isVisible().catch(() => false)) {
-        await searchInput.fill('');
-        await searchInput.fill(createdUser.email);
-        await searchInput.press('Enter');
-        // Wait for search results to update
-        await page.waitForLoadState('networkidle').catch(() => {});
-      }
+      await filterUsersList(page, createdUser.email);
+      // Wait for search results to update
+      await page.waitForLoadState('networkidle').catch(() => {});
 
       // Check both list and table views with multiple strategies
       const listItem = page.getByTestId(UserPageIDs.resourceListItem(createdUser.email));
