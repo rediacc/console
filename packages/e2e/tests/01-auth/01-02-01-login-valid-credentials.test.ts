@@ -31,7 +31,7 @@ test.describe('Login - Valid Credentials Tests', () => {
     await loginPage.waitForLoginCompletion();
     await dashboardPage.verifyDashboardLoaded();
 
-    expect(page.url()).toContain('/machines');
+    await expect(page).toHaveURL(/\/machines/);
 
     testReporter.completeStep('Verify successful login', 'passed');
 

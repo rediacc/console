@@ -74,9 +74,7 @@ test.describe('User Activation Tests', () => {
       const inactiveTag = listItem.getByText('Inactive', { exact: true });
       if (await activeTag.isVisible().catch(() => false)) {
         await clickListAction(page, newUserEmail, 'deactivate');
-        await expect
-          .poll(async () => inactiveTag.isVisible().catch(() => false), { timeout: 10000 })
-          .toBe(true);
+        await expect(inactiveTag).toBeVisible({ timeout: 10000 });
       }
       await clickListAction(page, newUserEmail, 'activate');
       await expect
