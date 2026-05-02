@@ -2173,6 +2173,7 @@
     "invalidPriorityMin": "Invalid priority-min value. Must be between 1 and 5.",
     "invalidPriorityMax": "Invalid priority-max value. Must be between 1 and 5.",
     "passwordsMismatch": "Passwords do not match",
+    "repoNotDeployed": "Repository \"{{repository}}\" is not deployed on {{machine}}.\n\nDeploy it first:\n  rdc repo up --name {{repository}} -m <machine-name>",
     "repositoryAlreadyMounted": "Repository \"{{name}}\" is already mounted on \"{{machine}}\". Migrating over a live repo would corrupt it. Run first: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "Repository \"{{name}}\" not found",
     "cannotDeleteGrandRepo": "Cannot delete grand repository: {{reason}}",
@@ -2249,8 +2250,7 @@
       "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault",
       "noIpAddress": "Machine '{{machine}}' does not have an IP address configured",
       "noPrivateKey": "Team '{{team}}' does not have an SSH private key configured",
-      "notFound": "VS Code not found.\n\nPlease install from: https://code.visualstudio.com/\nOr set REDIACC_VSCODE_PATH environment variable.",
-      "repoNotDeployed": "Repository \"{{repository}}\" is not deployed on {{machine}}.\n\nDeploy it first:\n  rdc repo up --name {{repository}} -m <machine-name>"
+      "notFound": "VS Code not found.\n\nPlease install from: https://code.visualstudio.com/\nOr set REDIACC_VSCODE_PATH environment variable."
     },
     "tokenExpired": "Token expired. Please login again.",
     "unexpectedError": "Unexpected error: {{message}}",

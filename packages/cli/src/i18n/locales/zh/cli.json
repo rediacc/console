@@ -2315,6 +2315,7 @@
     "regionRequired": "需要区域名称。使用 --region 或设置上下文。",
     "registrationFailed": "注册失败",
     "remoteNotFound": "\"{{name}}\"不是已知的机器或存储。机器: {{machines}}。存储: {{storages}}",
+    "repoNotDeployed": "仓库 \"{{repository}}\" 未部署在 {{machine}} 上。\n\n请先部署：\n  rdc repo up --name {{repository}} -m <机器名>",
     "repositoryAlreadyMounted": "仓库 \"{{name}}\" 已挂载在 \"{{machine}}\" 上。对活跃仓库进行迁移会导致数据损坏。请先执行: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "仓库 \"{{name}}\" 未找到",
     "repositoryRequired": "需要仓库名称。使用 --repository <name>。",
@@ -2374,8 +2375,7 @@
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
-      "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。",
-      "repoNotDeployed": "仓库 \"{{repository}}\" 未部署在 {{machine}} 上。\n\n请先部署：\n  rdc repo up --name {{repository}} -m <机器名>"
+      "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。"
     }
   },
   "help": {

@@ -2315,6 +2315,7 @@
     "regionRequired": "Требуется имя региона. Используйте --region или установите контекст.",
     "registrationFailed": "Регистрация не удалась",
     "remoteNotFound": "\"{{name}}\" не является известной машиной или хранилищем. Машины: {{machines}}. Хранилища: {{storages}}",
+    "repoNotDeployed": "Репозиторий \"{{repository}}\" не развёрнут на {{machine}}.\n\nСначала разверните:\n  rdc repo up --name {{repository}} -m <имя-машины>",
     "repositoryAlreadyMounted": "Репозиторий \"{{name}}\" уже смонтирован на \"{{machine}}\". Миграция поверх активного репозитория приведёт к его повреждению. Сначала выполните: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "Репозиторий \"{{name}}\" не найден",
     "repositoryRequired": "Требуется имя репозитория. Используйте --repository <name>.",
@@ -2374,8 +2375,7 @@
       "noHostKey": "Машина '{{machine}}' не имеет настроенного ключа хоста в хранилище",
       "noIpAddress": "Машина '{{machine}}' не имеет настроенного IP-адреса",
       "noPrivateKey": "Команда '{{team}}' не имеет настроенного SSH приватного ключа",
-      "notFound": "VS Code не найден.\n\nПожалуйста, установите из: https://code.visualstudio.com/\nИли установите переменную окружения REDIACC_VSCODE_PATH.",
-      "repoNotDeployed": "Репозиторий \"{{repository}}\" не развёрнут на {{machine}}.\n\nСначала разверните:\n  rdc repo up --name {{repository}} -m <имя-машины>"
+      "notFound": "VS Code не найден.\n\nПожалуйста, установите из: https://code.visualstudio.com/\nИли установите переменную окружения REDIACC_VSCODE_PATH."
     }
   },
   "help": {

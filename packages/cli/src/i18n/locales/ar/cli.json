@@ -2315,6 +2315,7 @@
     "regionRequired": "اسم المنطقة مطلوب. استخدم --region أو اضبط السياق.",
     "registrationFailed": "فشل التسجيل",
     "remoteNotFound": "\"{{name}}\" ليس جهازاً أو تخزيناً معروفاً. الأجهزة: {{machines}}. التخزينات: {{storages}}",
+    "repoNotDeployed": "المستودع \"{{repository}}\" غير منشور على {{machine}}.\n\nانشره أولاً:\n  rdc repo up --name {{repository}} -m <اسم-الجهاز>",
     "repositoryAlreadyMounted": "المستودع \"{{name}}\" مُركَّب بالفعل على \"{{machine}}\". ترحيل مستودع نشط سيؤدي إلى تلفه. نفّذ أولاً: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "لم يتم العثور على المستودع \"{{name}}\"",
     "repositoryRequired": "اسم المستودع مطلوب. استخدم --repository <name>.",
@@ -2374,8 +2375,7 @@
       "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
       "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
-      "notFound": "لم يتم العثور على VS Code.\n\nالرجاء التثبيت من: https://code.visualstudio.com/\nأو قم بتعيين متغير البيئة REDIACC_VSCODE_PATH.",
-      "repoNotDeployed": "المستودع \"{{repository}}\" غير منشور على {{machine}}.\n\nانشره أولاً:\n  rdc repo up --name {{repository}} -m <اسم-الجهاز>"
+      "notFound": "لم يتم العثور على VS Code.\n\nالرجاء التثبيت من: https://code.visualstudio.com/\nأو قم بتعيين متغير البيئة REDIACC_VSCODE_PATH."
     }
   },
   "help": {
