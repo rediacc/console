@@ -2315,6 +2315,7 @@
     "regionRequired": "Bölge adı gerekli. --region kullanın veya bağlamı ayarlayın.",
     "registrationFailed": "Kayıt başarısız",
     "remoteNotFound": "\"{{name}}\" bilinen bir makine veya depolama değil. Makineler: {{machines}}. Depolamalar: {{storages}}",
+    "repoNotDeployed": "Depo \"{{repository}}\" {{machine}} üzerinde dağıtılmamış.\n\nÖnce dağıtın:\n  rdc repo up --name {{repository}} -m <makine-adı>",
     "repositoryAlreadyMounted": "\"{{name}}\" deposu zaten \"{{machine}}\" üzerinde bağlı. Aktif bir depo üzerinde taşıma işlemi veri bozulmasına yol açar. Önce şunu çalıştırın: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "\"{{name}}\" deposu bulunamadı",
     "repositoryRequired": "Depo adı gerekli. --repository <name> kullanın.",
@@ -2374,8 +2375,7 @@
       "noHostKey": "\"{{machine}}\" makinesinin kasada yapılandırılmış bir ana bilgisayar anahtarı yok",
       "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",
       "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok",
-      "notFound": "VS Code bulunamadı.\n\nLütfen buradan yükleyin: https://code.visualstudio.com/\nVeya REDIACC_VSCODE_PATH ortam değişkenini ayarlayın.",
-      "repoNotDeployed": "Depo \"{{repository}}\" {{machine}} üzerinde dağıtılmamış.\n\nÖnce dağıtın:\n  rdc repo up --name {{repository}} -m <makine-adı>"
+      "notFound": "VS Code bulunamadı.\n\nLütfen buradan yükleyin: https://code.visualstudio.com/\nVeya REDIACC_VSCODE_PATH ortam değişkenini ayarlayın."
     }
   },
   "help": {

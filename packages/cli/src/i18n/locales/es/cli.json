@@ -2315,6 +2315,7 @@
     "regionRequired": "Nombre de región requerido. Use --region o establezca contexto.",
     "registrationFailed": "Falló el registro",
     "remoteNotFound": "\"{{name}}\" no es una máquina o almacenamiento conocido. Máquinas: {{machines}}. Almacenamientos: {{storages}}",
+    "repoNotDeployed": "El repositorio \"{{repository}}\" no está desplegado en {{machine}}.\n\nDespliéguelo primero:\n  rdc repo up --name {{repository}} -m <nombre-máquina>",
     "repositoryAlreadyMounted": "El repositorio \"{{name}}\" ya está montado en \"{{machine}}\". Migrar sobre un repositorio activo lo corrompería. Ejecute primero: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "Repositorio \"{{name}}\" no encontrado",
     "repositoryRequired": "Nombre de repositorio requerido. Use --repository <name>.",
@@ -2374,8 +2375,7 @@
       "noHostKey": "Máquina '{{machine}}' no tiene clave de host configurada en la bóveda",
       "noIpAddress": "Máquina '{{machine}}' no tiene dirección IP configurada",
       "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada",
-      "notFound": "VS Code no encontrado.\n\nInstale desde: https://code.visualstudio.com/\nO establezca la variable de entorno REDIACC_VSCODE_PATH.",
-      "repoNotDeployed": "El repositorio \"{{repository}}\" no está desplegado en {{machine}}.\n\nDespliéguelo primero:\n  rdc repo up --name {{repository}} -m <nombre-máquina>"
+      "notFound": "VS Code no encontrado.\n\nInstale desde: https://code.visualstudio.com/\nO establezca la variable de entorno REDIACC_VSCODE_PATH."
     }
   },
   "help": {

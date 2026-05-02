@@ -2315,6 +2315,7 @@
     "regionRequired": "リージョン名が必要です。--region を使用するか、コンテキストを設定してください。",
     "registrationFailed": "登録に失敗しました",
     "remoteNotFound": "\"{{name}}\"は既知のマシンまたはストレージではありません。マシン: {{machines}}。ストレージ: {{storages}}",
+    "repoNotDeployed": "リポジトリ \"{{repository}}\" は {{machine}} にデプロイされていません。\n\n先にデプロイしてください：\n  rdc repo up --name {{repository}} -m <マシン名>",
     "repositoryAlreadyMounted": "リポジトリ \"{{name}}\" は既に \"{{machine}}\" にマウントされています。稼働中のリポジトリに対する移行はデータを破損させます。先に実行してください: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "リポジトリ \"{{name}}\" が見つかりません",
     "repositoryRequired": "リポジトリ名が必要です。--repository <name> を使用してください。",
@@ -2374,8 +2375,7 @@
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
-      "notFound": "VS Code が見つかりません。\n\nhttps://code.visualstudio.com/ からインストールしてください\nまたは REDIACC_VSCODE_PATH 環境変数を設定してください。",
-      "repoNotDeployed": "リポジトリ \"{{repository}}\" は {{machine}} にデプロイされていません。\n\n先にデプロイしてください：\n  rdc repo up --name {{repository}} -m <マシン名>"
+      "notFound": "VS Code が見つかりません。\n\nhttps://code.visualstudio.com/ からインストールしてください\nまたは REDIACC_VSCODE_PATH 環境変数を設定してください。"
     }
   },
   "help": {

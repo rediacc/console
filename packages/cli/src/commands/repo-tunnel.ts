@@ -12,6 +12,7 @@ import { configService } from '../services/config-resources.js';
 import { fetchMachineStatus } from '../services/machine-status.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
+import { assertRepoMountedOnMachine } from '../services/repo-mount-check.js';
 import { getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
@@ -170,16 +171,21 @@ async function tunnelConnect(options: TunnelOptions): Promise<void> {
   const repoName = opts.repository;
   const teamName = opts.team ?? '';
 
+  // Resolve repo name → GUID (configService handles fork name:tag correctly)
+  const repoConfig = await configService.getRepository(repoName);
+  const repoGuidOverride = repoConfig?.repositoryGuid;
+
+  if (repoGuidOverride) {
+    await assertRepoMountedOnMachine(repoName, repoGuidOverride, machineName);
+  }
+
   // Fetch container info from remote machine
   const listResult = await withSpinner(
     t('commands.repo.tunnel.fetching', { machine: machineName }),
     () => fetchMachineStatus(machineName, { sections: ['containers'] })
   );
 
-  // Resolve repo name → GUID (configService handles fork name:tag correctly)
   const guidMap = await loadGuidMap();
-  const repoConfig = await configService.getRepository(repoName);
-  const repoGuidOverride = repoConfig?.repositoryGuid;
 
   // Find the target container, IP, and port
   const target = resolveContainerTarget(listResult, repoName, guidMap, repoGuidOverride, {
