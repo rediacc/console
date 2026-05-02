@@ -38,7 +38,7 @@ import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh
 import { assertAgentMachineAccess } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import {
   displayActiveConnections,
@@ -326,10 +326,9 @@ async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
   // Deploy per-repo SSH public key to remote authorized_keys (uses team key)
   if (repositoryName) {
     const repoConfig = await configService.getRepository(repositoryName);
-    if (!repoConfig) {
-      throw new ValidationError(t('errors.repositoryNotFound', { name: repositoryName }));
+    if (repoConfig) {
+      await assertRepoMountedOnMachine(repositoryName, repoConfig.repositoryGuid, machineName);
     }
-    await assertRepoMountedOnMachine(repositoryName, repoConfig.repositoryGuid, machineName);
     await deployRepoKeyIfNeeded(repositoryName, machineName);
   }
 

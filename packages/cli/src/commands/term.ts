@@ -267,10 +267,9 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
 
   if (repositoryName) {
     const repoConfig = await configService.getRepository(repositoryName);
-    if (!repoConfig) {
-      throw new ValidationError(t('errors.repositoryNotFound', { name: repositoryName }));
+    if (repoConfig) {
+      await assertRepoMountedOnMachine(repositoryName, repoConfig.repositoryGuid, machineName);
     }
-    await assertRepoMountedOnMachine(repositoryName, repoConfig.repositoryGuid, machineName);
     await deployRepoKeyIfNeeded(repositoryName, machineName);
   }
 

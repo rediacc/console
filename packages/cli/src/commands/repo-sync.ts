@@ -26,7 +26,7 @@ import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.
 import { getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
 import { auditService } from '../services/audit.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import {
   buildSyncRemotePaths,
@@ -155,14 +155,13 @@ async function prepareSyncConnection(
   await ensureRenetProvisioned(validated.machine);
 
   const repoConfig = await configService.getRepository(validated.repository);
-  if (!repoConfig) {
-    throw new ValidationError(t('errors.repositoryNotFound', { name: validated.repository }));
+  if (repoConfig) {
+    await assertRepoMountedOnMachine(
+      validated.repository,
+      repoConfig.repositoryGuid,
+      validated.machine
+    );
   }
-  await assertRepoMountedOnMachine(
-    validated.repository,
-    repoConfig.repositoryGuid,
-    validated.machine
-  );
 
   await deployRepoKeyIfNeeded(validated.repository, validated.machine);
 
