@@ -38,7 +38,7 @@ export async function assertRepoMountedOnMachine(
     return;
   }
 
-  const entry = repos.find((r) => r?.guid === repoGuid);
+  const entry = repos.find((r) => r.guid === repoGuid);
   if (entry?.mounted !== true) {
     throw new ValidationError(
       t('errors.repoNotDeployed', { repository: repoName, machine: machineName })
