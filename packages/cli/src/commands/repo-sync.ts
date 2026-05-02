@@ -21,11 +21,12 @@ import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
+import { assertRepoMountedOnMachine } from '../services/repo-mount-check.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import { getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
 import { auditService } from '../services/audit.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import {
   buildSyncRemotePaths,
@@ -152,6 +153,17 @@ async function prepareSyncConnection(
   opts: { isFile?: boolean } = {}
 ): Promise<SyncConnectionContext> {
   await ensureRenetProvisioned(validated.machine);
+
+  const repoConfig = await configService.getRepository(validated.repository);
+  if (!repoConfig) {
+    throw new ValidationError(t('errors.repositoryNotFound', { name: validated.repository }));
+  }
+  await assertRepoMountedOnMachine(
+    validated.repository,
+    repoConfig.repositoryGuid,
+    validated.machine
+  );
+
   await deployRepoKeyIfNeeded(validated.repository, validated.machine);
 
   const details = await withSpinner(t('commands.sync.fetchingDetails'), () =>

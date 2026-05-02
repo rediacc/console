@@ -33,11 +33,12 @@ import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
+import { assertRepoMountedOnMachine } from '../services/repo-mount-check.js';
 import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { assertAgentMachineAccess } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import {
   displayActiveConnections,
@@ -324,6 +325,11 @@ async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
 
   // Deploy per-repo SSH public key to remote authorized_keys (uses team key)
   if (repositoryName) {
+    const repoConfig = await configService.getRepository(repositoryName);
+    if (!repoConfig) {
+      throw new ValidationError(t('errors.repositoryNotFound', { name: repositoryName }));
+    }
+    await assertRepoMountedOnMachine(repositoryName, repoConfig.repositoryGuid, machineName);
     await deployRepoKeyIfNeeded(repositoryName, machineName);
   }
 

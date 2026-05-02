@@ -9,6 +9,7 @@ import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
+import { assertRepoMountedOnMachine } from '../services/repo-mount-check.js';
 import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { assertAgentMachineAccess, isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
@@ -265,6 +266,11 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
   await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {});
 
   if (repositoryName) {
+    const repoConfig = await configService.getRepository(repositoryName);
+    if (!repoConfig) {
+      throw new ValidationError(t('errors.repositoryNotFound', { name: repositoryName }));
+    }
+    await assertRepoMountedOnMachine(repositoryName, repoConfig.repositoryGuid, machineName);
     await deployRepoKeyIfNeeded(repositoryName, machineName);
   }
 
