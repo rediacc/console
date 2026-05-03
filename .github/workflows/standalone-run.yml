@@ -198,7 +198,15 @@ jobs:
       # first, then in the next step wipe everything around it.
       - name: Pre-build renet (so harden can wipe source while keeping the binary)
         if: inputs.enable-debug || inputs.desktop-environment != 'none'
-        run: .ci/scripts/infra/build-renet.sh
+        run: |
+          # renet's eBPF generator (pkg/ebpf/gen.go) shells out to clang +
+          # llvm-strip + needs libbpf headers. provision-vms installs these
+          # later, but we have to compile renet *before* harden, which is
+          # before that step — so install them here. apt is idempotent so
+          # the redundant install in provision-vms is a cheap no-op.
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+          .ci/scripts/infra/build-renet.sh
 
       - name: Harden runner for debug access
         if: inputs.enable-debug || inputs.desktop-environment != 'none'
