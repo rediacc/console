@@ -190,14 +190,52 @@ jobs:
       - name: Install sqlcmd (go-sqlcmd)
         run: sudo private/middleware/scripts/install-sqlcmd.sh
 
+      # When debug or desktop is enabled we will strip private/renet/ down to
+      # just bin/renet so a tmate/vnc user cannot read the source. Provision
+      # VMs (further down) only needs the compiled binary at
+      # private/renet/bin/renet — see ci-provision-start.sh and build-renet.sh,
+      # which both no-op cleanly once that file already exists. So compile
+      # first, then in the next step wipe everything around it.
+      - name: Pre-build renet (so harden can wipe source while keeping the binary)
+        if: inputs.enable-debug || inputs.desktop-environment != 'none'
+        run: .ci/scripts/infra/build-renet.sh
+
       - name: Harden runner for debug access
         if: inputs.enable-debug || inputs.desktop-environment != 'none'
         run: |
-          # Remove app token from git config (prevents cloning private repos)
-          git config --global --unset-all 'url.https://x-access-token' || true
+          # 1. Strip the app token from git config. The previous form
+          #    `--unset-all 'url.https://x-access-token'` doesn't match because
+          #    the actual key looks like
+          #      url.https://x-access-token:<TOKEN>@github.com/.insteadOf
+          #    so we list all keys under the url.https://x-access-token prefix
+          #    and unset each. The `|| true` keeps a (legitimate) "no entries"
+          #    case from failing the step.
+          git config --global --get-regexp '^url\.https://x-access-token' \
+            | awk '{print $1}' \
+            | while read -r key; do
+                git config --global --unset "$key" || true
+              done
+          git config --global --get-regexp '^url\.https://x-access-token' \
+            && { echo "::error::Failed to remove app-token git config entries"; exit 1; } \
+            || true
 
-          # Remove renet source code from disk
-          rm -rf private/renet
+          # 2. Wipe renet source files but keep bin/renet so VM provisioning
+          #    (which still runs after tmate) can exec the binary. -mindepth 1
+          #    avoids deleting the directory itself; -maxdepth 1 keeps us from
+          #    descending into bin/.
+          find private/renet -mindepth 1 -maxdepth 1 ! -name 'bin' \
+            -exec rm -rf {} +
+
+          # 3. Wipe the submodule's git directory. Without this,
+          #    .git/modules/private/renet/ holds the full source history of
+          #    the private repo even though private/renet/.git was removed.
+          rm -rf .git/modules/private/renet
+
+          # 4. Strip the ELF symbol table from the binary. Best-effort scrub
+          #    of source-hint metadata; Go's runtime keeps some package-name
+          #    strings, so this is partial protection. Full opacity needs
+          #    -ldflags='-s -w' -trimpath in renet's build.sh dev path.
+          strip private/renet/bin/renet 2>/dev/null || true
 
       - name: Create Debug Session
         if: inputs.enable-debug
@@ -209,8 +247,10 @@ jobs:
 
       # SECURITY NOTE: Debug sessions are hardened before tmate starts:
       # 1. App token removed from git config (no cloning private repos)
-      # 2. private/renet source removed from disk
-      # 3. GITHUB_TOKEN not present (images pre-pulled, no auth needed from here)
+      # 2. private/renet source removed from disk; only bin/renet remains
+      # 3. .git/modules/private/renet removed (no source via git history)
+      # 4. ELF symbol table stripped from the renet binary
+      # 5. GITHUB_TOKEN not present (images pre-pulled, no auth needed from here)
 
       - name: Start Backend Services
         id: backend
