@@ -101,11 +101,15 @@ GH_CACHE_KEEP_GB=5
 # bound is single global, not per-phase, because the real ceiling is GitHub's
 # 5000 req/h REST quota (shared across all gh api calls).
 #
-# Default 1000 derives from the last successful run baseline: run
-# #24930845566 (job 73010472970) completed 1305 deletes in 12m50s. Prorating
-# 1305 × (10 / 13) ≈ 1004 keeps each invocation under a 10-minute wall-clock
-# budget, comfortably below the ~15-minute cancel-older-runs window.
-MAX_DELETES_PER_RUN="${MAX_DELETES_PER_RUN:-1000}"
+# Default 1500 covers Phase 10 (workflow runs, ~285) + Phase 11 (artifacts,
+# ~705) + Phase 12 (Actions cache eviction toward the 5 GB ceiling, ~50-250)
+# without starving the cache phase. The earlier 1000 ceiling was set before
+# Phase 12 existed and produced the pathology where Phase 11 ate the entire
+# budget and Phase 12 immediately tripped deletes_budget_ok with zero deletes,
+# leaving the cache permanently stuck at GitHub's 10 GB hard cap. 1500 stays
+# well inside the 5000 req/h GitHub REST quota and the ~15-minute
+# cancel-older-runs window (extrapolated 1500 × 13/1305 ≈ 14m wall-clock).
+MAX_DELETES_PER_RUN="${MAX_DELETES_PER_RUN:-1500}"
 
 # =============================================================================
 # PREREQUISITES
@@ -1255,7 +1259,7 @@ cleanup_r2() {
             record_delete
             log_info "  Aborted multipart: $key"
             mpu_aborted=$((mpu_aborted + 1))
-        done < <(echo "$uploads" | jq -r '.[] | "\(.Key)\t\(.UploadId)\t\(.Initiated)"')
+        done < <(echo "$uploads" | jq -r '.[] | "\(.Key)\t\(.UploadId)\t\(.Initiated)"' 2>/dev/null)
         log_info "  8e: aborted $mpu_aborted of $mpu_count (held $((mpu_count - mpu_aborted)) under 24h grace)"
     fi
 
@@ -1457,7 +1461,7 @@ cleanup_workflow_runs() {
                     fi
                 fi
                 wf_index=$((wf_index + 1))
-            done < <(echo "$runs" | jq -c '.[]')
+            done < <(echo "$runs" | jq -c '.[]' 2>/dev/null)
 
             [[ "$page_count" -lt 100 ]] && break
             page=$((page + 1))
@@ -1554,7 +1558,7 @@ cleanup_workflow_artifacts() {
                     fi
                 fi
             fi
-        done < <(echo "$artifacts" | jq -c '.[]')
+        done < <(echo "$artifacts" | jq -c '.[]' 2>/dev/null)
 
         [[ "$page_count" -lt 100 ]] && break
         page=$((page + 1))
@@ -1651,7 +1655,7 @@ cleanup_actions_cache() {
                 fi
             fi
         fi
-    done < <(echo "$caches" | jq -c '.[]')
+    done < <(echo "$caches" | jq -c '.[]' 2>/dev/null)
 
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "  Actions cache: would delete $deleted of $total, freeing ~$((freed / 1024 / 1024)) MB (surviving: ~$((running / 1024 / 1024)) MB / ceiling ${GH_CACHE_KEEP_GB} GB)"
