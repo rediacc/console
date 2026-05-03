@@ -1406,14 +1406,27 @@ jobs:
   housekeeping:
     name: Housekeeping
     runs-on: ubuntu-slim
-    needs: [initialize, ci-complete]
+    needs: [initialize, ci-complete, finalize-release-sentinel]
     # always() prefix is load-bearing. ci-complete transitively needs
     # deploy-preview + smoke-test-preview, which are pull_request-only
     # and skip on push-to-main. GHA propagates the skip through the
     # needs chain to any downstream job that omits always(), so without
     # it this job silently skips on every push regardless of the
     # needs.ci-complete.result check.
-    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ci-complete.result == 'success'
+    #
+    # finalize-release-sentinel is in needs (not just transitively gated)
+    # because Phase 8d's orphan sweep classifies cli/v${V}/ as orphan when
+    # bytes are uploaded but the .released sentinel hasn't been written yet.
+    # Running housekeeping in parallel with finalize lets it delete the
+    # just-uploaded versioned binaries before they're sealed. Wait for the
+    # sentinel write so the bytes are committed before any sweeping happens.
+    # On non-release-channel pushes finalize is `skipped`; the explicit
+    # success-or-skipped check below keeps housekeeping running for those.
+    if: >-
+      always() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.ci-complete.result == 'success' &&
+      (needs.finalize-release-sentinel.result == 'success' ||
+       needs.finalize-release-sentinel.result == 'skipped')
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
