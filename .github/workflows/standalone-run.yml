@@ -245,6 +245,46 @@ jobs:
           #    -ldflags='-s -w' -trimpath in renet's build.sh dev path.
           strip private/renet/bin/renet 2>/dev/null || true
 
+          # 5. Scrub actions/checkout's GitHub credentials so a tmate user
+          #    can't re-clone private repos. The credential storage uses an
+          #    indirection: .git/config holds an `includeIf gitdir:...` entry
+          #    pointing at /home/runner/work/_temp/git-credentials-<uuid>.config,
+          #    which holds the actual `Authorization: basic <base64>`
+          #    extraheader (where base64 = x-access-token:<TOKEN>). The
+          #    actions/checkout post-step normally cleans both halves, but
+          #    that runs at the end of the job — long after tmate gets shell.
+          #    Scrub all three layers (defensive: extraheader, includeIf, file).
+          git config --local --unset http.https://github.com/.extraheader 2>/dev/null || true
+          git submodule foreach --recursive \
+            'git config --local --unset http.https://github.com/.extraheader 2>/dev/null || true' \
+            2>/dev/null || true
+          for cfg in .git/config $(find .git/modules -maxdepth 4 -name config -type f 2>/dev/null); do
+            git config --file "$cfg" --get-regexp '^includeIf' 2>/dev/null \
+              | awk '{print $1}' \
+              | while read -r key; do
+                  git config --file "$cfg" --unset "$key" 2>/dev/null || true
+                done
+          done
+          rm -f /home/runner/work/_temp/git-credentials-*.config
+
+          # 6. Sanity check: any of the above failing silently is worse than
+          #    a loud failure here, because a half-cleaned runner that *looks*
+          #    hardened is the worst kind of leak. Fail the job if a
+          #    `Authorization: basic` header survives anywhere or any
+          #    git-credentials-*.config file is still on disk.
+          if git config --list --show-origin 2>/dev/null \
+              | grep -i 'authorization: basic' >/dev/null; then
+            echo "::error::extraheader credentials still present after harden"
+            git config --list --show-origin | grep -i 'authorization: basic' || true
+            exit 1
+          fi
+          if find /home/runner/work/_temp -maxdepth 1 -name 'git-credentials-*' \
+              -print 2>/dev/null | grep -q .; then
+            echo "::error::git-credentials temp files still on disk after harden"
+            exit 1
+          fi
+          echo "Harden complete: no GitHub credentials reachable from this runner."
+
       - name: Create Debug Session
         if: inputs.enable-debug
         id: tmate
