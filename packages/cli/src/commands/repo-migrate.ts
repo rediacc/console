@@ -115,8 +115,9 @@ async function assertNotMountedOnTarget(
   if (!targetCheck.success || !targetCheck.stdout) return;
   try {
     const repos = JSON.parse(targetCheck.stdout);
-    const mounted = (repos as { guid: string; mounted: boolean }[]).find(
-      (r) => r.guid === repoGuid && r.mounted
+    // renet's `list repositories --json` keys repos by GUID under `name` and has no `guid` field.
+    const mounted = (repos as { name: string; mounted: boolean }[]).find(
+      (r) => r.name === repoGuid && r.mounted
     );
     if (mounted) {
       throw new ValidationError(

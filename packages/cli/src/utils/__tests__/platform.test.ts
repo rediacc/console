@@ -32,6 +32,9 @@ vi.mock('node:os', () => ({
   homedir: () => '/home/testuser',
 }));
 
+const versionMock = vi.hoisted(() => ({ VERSION: '1.2.3' }));
+vi.mock('../../version.js', () => versionMock);
+
 describe('utils/platform', () => {
   const originalExecPath = process.execPath;
   const originalPlatform = process.platform;
@@ -90,6 +93,7 @@ describe('utils/platform', () => {
       delete process.env.RDC_DISABLE_AUTOUPDATE;
       delete process.env.CI;
       Object.defineProperty(process, 'execPath', { value: '/usr/local/bin/rdc', writable: true });
+      versionMock.VERSION = '1.2.3';
     });
 
     it('returns true when RDC_DISABLE_AUTOUPDATE=1', () => {
@@ -123,6 +127,16 @@ describe('utils/platform', () => {
         value: '/home/user/project/build/rdc',
         writable: true,
       });
+      expect(isUpdateDisabled()).toBe(true);
+    });
+
+    it('returns true when VERSION is 0.0.0-dev (locally-built SEA)', () => {
+      versionMock.VERSION = '0.0.0-dev';
+      expect(isUpdateDisabled()).toBe(true);
+    });
+
+    it('returns true when VERSION ends with -dev', () => {
+      versionMock.VERSION = '1.0.13-dev';
       expect(isUpdateDisabled()).toBe(true);
     });
 

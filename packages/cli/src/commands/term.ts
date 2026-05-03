@@ -119,6 +119,7 @@ async function validateAndGetConnectionDetails(opts: {
   team?: string;
   machine?: string;
   repository?: string;
+  quiet?: boolean;
 }) {
   const provider = await getStateProvider();
   if (provider.isCloud && !opts.team) {
@@ -129,17 +130,22 @@ async function validateAndGetConnectionDetails(opts: {
   }
 
   const teamName = opts.team ?? '';
-  const connectionDetails = await withSpinner(t('commands.term.fetchingDetails'), () =>
-    getSSHConnectionDetails(teamName, opts.machine!, opts.repository)
-  );
+  const machineName = opts.machine;
+  const connectionDetails = opts.quiet
+    ? await getSSHConnectionDetails(teamName, machineName, opts.repository)
+    : await withSpinner(t('commands.term.fetchingDetails'), () =>
+        getSSHConnectionDetails(teamName, machineName, opts.repository)
+      );
 
-  const connectivityResult = await withSpinner(
-    t('commands.term.testingConnectivity', {
-      host: connectionDetails.host,
-      port: connectionDetails.port,
-    }),
-    () => testSSHConnectivity(connectionDetails.host, connectionDetails.port, 10000)
-  );
+  const connectivityResult = opts.quiet
+    ? await testSSHConnectivity(connectionDetails.host, connectionDetails.port, 10000)
+    : await withSpinner(
+        t('commands.term.testingConnectivity', {
+          host: connectionDetails.host,
+          port: connectionDetails.port,
+        }),
+        () => testSSHConnectivity(connectionDetails.host, connectionDetails.port, 10000)
+      );
 
   if (!connectivityResult.success) {
     throw new Error(
@@ -154,7 +160,7 @@ async function validateAndGetConnectionDetails(opts: {
   return {
     connectionDetails,
     teamName,
-    machineName: opts.machine,
+    machineName,
     repositoryName: opts.repository,
   };
 }
@@ -226,10 +232,11 @@ async function executeSSH(
   remoteCommand: string | undefined,
   title: string,
   connectionDetails: ConnectionDetails,
-  useExternal: boolean
+  useExternal: boolean,
+  quiet: boolean
 ): Promise<void> {
   if (!useExternal) {
-    await runInlineSSH(sshConnection, destination, remoteCommand, title, connectionDetails);
+    await runInlineSSH(sshConnection, destination, remoteCommand, title, connectionDetails, quiet);
     return;
   }
 
@@ -245,7 +252,7 @@ async function executeSSH(
     debugLog(
       `External terminal failed: ${error instanceof Error ? error.message : String(error)}, falling back to inline SSH`
     );
-    await runInlineSSH(sshConnection, destination, remoteCommand, title, connectionDetails);
+    await runInlineSSH(sshConnection, destination, remoteCommand, title, connectionDetails, quiet);
   }
 }
 
@@ -254,8 +261,14 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
   const opts = await configService.applyDefaults(options);
   await enforceTermPolicy(opts);
 
+  // Non-interactive command mode (`-c "..."`) prints only the command's output:
+  // skip spinners + the "Connecting to..." line, and don't force a remote TTY
+  // (the remote sandbox banner is gated by `[ -t 1 ]`, and ssh prints
+  // "Connection to ... closed." only when -t allocates a PTY).
+  const quiet = !!opts.command;
+
   const { connectionDetails, teamName, machineName, repositoryName } =
-    await validateAndGetConnectionDetails(opts);
+    await validateAndGetConnectionDetails({ ...opts, quiet });
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
@@ -276,7 +289,7 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
   const sshConnection = new SSHConnection(
     connectionDetails.privateKey,
     connectionDetails.known_hosts,
-    { port: connectionDetails.port, forceTTY: true }
+    { port: connectionDetails.port, forceTTY: !quiet }
   );
 
   let success = true;
@@ -297,7 +310,8 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
       remoteCommand,
       title,
       connectionDetails,
-      shouldUseExternalTerminal(options)
+      shouldUseExternalTerminal(options),
+      quiet
     );
   } catch (err) {
     success = false;
@@ -383,10 +397,12 @@ async function runInlineSSH(
   destination: string,
   remoteCommand: string | undefined,
   title: string,
-  connectionDetails: ConnectionDetails
+  connectionDetails: ConnectionDetails,
+  quiet: boolean
 ): Promise<void> {
-  // eslint-disable-next-line no-console
-  console.log(t('commands.term.connectingTo', { title }));
+  if (!quiet) {
+    process.stdout.write(`${t('commands.term.connectingTo', { title })}\n`);
+  }
 
   const child = spawnSSH(destination, sshConnection.sshOptions, remoteCommand, {
     env: { ...process.env, ...connectionDetails.environment },

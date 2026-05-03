@@ -11,6 +11,77 @@ ROOT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)"
 source "$ROOT_DIR/.ci/config/constants.sh"
 source "$ROOT_DIR/.ci/lib/local-common.sh"
 
+# --override-local: rebuild the SEA from local source and install it over the
+# user's rdc binary at ~/.local/share/rediacc/bin/rdc. Useful when iterating on
+# CLI internals that aren't reachable through the dev-mode `node cli-bundle.cjs`
+# path (e.g. SEA-only behaviors, embedded renet, auto-update gating). The dev
+# SEA self-disables auto-update via the VERSION === "0.0.0-dev" gate in
+# packages/cli/src/utils/platform.ts::isUpdateDisabled, so it won't be clobbered
+# on the next invocation.
+#
+# Steps performed (must match the manual sequence documented in CLAUDE.md):
+#   1. Cross-build renet into private/bin/renet-linux-<arch> with -tags
+#      nolicense so license checks are off (CI does the same for dev SEAs).
+#      This is the slot the SEA's embedded provisioner reads from.
+#   2. Run .ci/scripts/build/build-cli-executables.sh --platform $P --arch $A
+#      to assemble the SEA at dist/cli/rdc-$P-$A.
+#   3. Back up the existing user binary to *.old and replace it.
+if [[ "${1:-}" == "--override-local" ]]; then
+    shift
+    # Detect platform + arch from uname.
+    case "$(uname -s)" in
+        Linux)  _ovr_platform="linux" ;;
+        Darwin) _ovr_platform="mac" ;;
+        MINGW*|MSYS*|CYGWIN*) _ovr_platform="win" ;;
+        *) log_error "Unsupported platform $(uname -s) for --override-local"; exit 1 ;;
+    esac
+    case "$(uname -m)" in
+        x86_64|amd64) _ovr_arch="x64"; _ovr_goarch="amd64" ;;
+        aarch64|arm64) _ovr_arch="arm64"; _ovr_goarch="arm64" ;;
+        *) log_error "Unsupported arch $(uname -m) for --override-local"; exit 1 ;;
+    esac
+    # The SEA bundler resolves shared-desktop / shared / provisioning through
+    # their published dist/ outputs. Without rebuilding them first, edits to
+    # those packages get silently dropped from the bundle.
+    check_node_version "$NODE_VERSION_MIN"
+    ensure_deps
+    ensure_packages_built
+    # The build-cli-executables script's slot for renet:
+    #   private/bin/renet-${platform-key}-${goarch}  (linux only — that's
+    #   what gets embedded; the SEA only ever runs on linux/mac/win but
+    #   embeds a linux renet for remote provisioning).
+    _ovr_embed_renet="$ROOT_DIR/private/bin/renet-linux-${_ovr_goarch}"
+    log_step "Cross-building renet → $_ovr_embed_renet"
+    mkdir -p "$ROOT_DIR/private/bin"
+    (cd "$ROOT_DIR/private/renet" && \
+        CGO_ENABLED=0 GOOS=linux GOARCH="$_ovr_goarch" go build \
+            -tags nolicense \
+            -ldflags="-s -w -X main.Version=0.0.0-dev" \
+            -o "$_ovr_embed_renet" \
+            ./cmd/renet)
+    log_step "Building SEA for $_ovr_platform/$_ovr_arch"
+    bash "$ROOT_DIR/.ci/scripts/build/build-cli-executables.sh" \
+        --platform "$_ovr_platform" --arch "$_ovr_arch"
+    _ovr_built="$ROOT_DIR/dist/cli/rdc-${_ovr_platform}-${_ovr_arch}"
+    if [[ ! -f "$_ovr_built" ]]; then
+        log_error "Built SEA not found at $_ovr_built"
+        exit 1
+    fi
+    _ovr_dest="$HOME/.local/share/rediacc/bin/rdc"
+    if [[ ! -d "$(dirname "$_ovr_dest")" ]]; then
+        log_error "Install dir $(dirname "$_ovr_dest") does not exist — is rdc installed?"
+        exit 1
+    fi
+    if [[ -f "$_ovr_dest" ]]; then
+        cp -f "$_ovr_dest" "${_ovr_dest}.old"
+    fi
+    cp -f "$_ovr_built" "$_ovr_dest"
+    chmod +x "$_ovr_dest"
+    log_step "Installed dev SEA → $_ovr_dest (backup at ${_ovr_dest}.old)"
+    "$_ovr_dest" --version
+    exit 0
+fi
+
 check_node_version "$NODE_VERSION_MIN"
 
 if [[ "${REDIACC_SKIP_MACHINE_ACTIVATION:-0}" == "1" ]]; then
