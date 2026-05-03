@@ -200,7 +200,11 @@ class OutputService {
 
   info(message: string): void {
     if (this._quiet) return;
-    console.error(this.colorEnabled ? chalk.blue(message) : message);
+    // chalk.blueBright (ANSI 12) reads cleanly on both light and dark
+    // terminal backgrounds. The default chalk.blue (ANSI 4) renders as a
+    // dark navy on standard 16-color palettes and was reported unreadable
+    // against black backgrounds (see `rdc repo template list` output).
+    console.error(this.colorEnabled ? chalk.blueBright(message) : message);
   }
 
   dim(text: string): string {
