@@ -266,7 +266,7 @@ async function executeSSH(
 //   ssh prints "Connection to HOST closed." only when -t allocated a PTY.
 //   Exception: container exec/terminal wrap the command in `docker exec -it`,
 //   which requires a real TTY upstream — keep forceTTY for those.
-function resolveTermOutputMode(opts: TermConnectOptions): {
+export function resolveTermOutputMode(opts: TermConnectOptions): {
   quietOutput: boolean;
   noTTY: boolean;
 } {
