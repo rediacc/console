@@ -36,8 +36,6 @@ on:
         options:
           - retry
           - patch
-          - minor
-          - major
         default: retry
       publish_stable:
         description: 'Also publish to stable channel (hotfix deployment)'
@@ -76,8 +74,8 @@ jobs:
     outputs:
       ci_run_id: ${{ steps.resolve.outputs.ci_run_id }}
       ci_sha: ${{ steps.resolve.outputs.ci_sha }}
-      next_version: ${{ steps.override.outputs.next_version || steps.version.outputs.next_version || steps.init.outputs.next_version }}
-      bump_type: ${{ steps.override.outputs.bump_type || steps.version.outputs.bump_type || steps.init.outputs.bump_type }}
+      next_version: ${{ steps.version.outputs.next_version || steps.init.outputs.next_version }}
+      bump_type: ${{ steps.version.outputs.bump_type || steps.init.outputs.bump_type }}
       channel: ${{ steps.channel.outputs.channel }}
       skip_release: ${{ steps.skip-check.outputs.skip_release }}
       retry_mode: ${{ steps.skip-check.outputs.retry_mode }}
@@ -130,7 +128,10 @@ jobs:
 
       # Edge is production: every push to main auto-releases a new patch.
       # `bump-minor` / `bump-major` labels on the merged PR escalate the bump.
-      # workflow_dispatch: release_mode controls retry vs new bump.
+      # workflow_dispatch: release_mode is retry (re-publish current tag) or
+      # patch (auto-bump from PR labels — same path as push-to-main). The
+      # bump-type detection in CI's initialize step is the single source of
+      # truth so R2 manifest, Docker tags, git tag, and Homebrew never drift.
       - name: Decide release mode
         id: skip-check
         env:
@@ -192,21 +193,6 @@ jobs:
         run: |
           .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
 
-      # Manual dispatch: override the auto-detected bump type with release_mode
-      - name: Override bump type (manual dispatch)
-        id: override
-        if: >-
-          github.event_name == 'workflow_dispatch' &&
-          inputs.release_mode != 'retry' &&
-          inputs.release_mode != 'patch' &&
-          inputs.deploy_workers_only != true
-        run: |
-          BUMP="${{ inputs.release_mode }}"
-          NEXT=$(.ci/scripts/version/resolve-version.sh --bump-type "${BUMP}")
-          echo "bump_type=${BUMP}" >> $GITHUB_OUTPUT
-          echo "next_version=${NEXT}" >> $GITHUB_OUTPUT
-          echo "::notice::Manual bump override: ${BUMP} -> v${NEXT}"
-
       - name: Generate channel
         if: steps.skip-check.outputs.skip_release != 'true'
         id: channel
@@ -222,7 +208,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          VERSION="${{ steps.override.outputs.next_version || steps.init.outputs.next_version }}"
+          VERSION="${{ steps.init.outputs.next_version }}"
           git fetch --tags --quiet
           if git tag -l "v${VERSION}" | grep -q .; then
             echo "::error::Git tag v${VERSION} already exists. Aborting to prevent duplicate publish."
