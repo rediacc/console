@@ -15,6 +15,7 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
+import { parseRepositoryListOutput } from './repo-list-parser.js';
 import { outputService } from '../services/output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
@@ -114,11 +115,13 @@ async function assertNotMountedOnTarget(
   });
   if (!targetCheck.success || !targetCheck.stdout) return;
   try {
-    const repos = JSON.parse(targetCheck.stdout);
     // renet's `list repositories --json` keys repos by GUID under `name` and has no `guid` field.
-    const mounted = (repos as { name: string; mounted: boolean }[]).find(
-      (r) => r.name === repoGuid && r.mounted
-    );
+    // parseRepositoryListOutput tolerates log-prefixed / non-array stdout.
+    const repos = parseRepositoryListOutput(targetCheck.stdout) as {
+      name: string;
+      mounted: boolean;
+    }[];
+    const mounted = repos.find((r) => r.name === repoGuid && r.mounted);
     if (mounted) {
       throw new ValidationError(
         t('errors.repositoryAlreadyMounted', { name: repoName, machine: targetMachine })

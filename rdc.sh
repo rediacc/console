@@ -28,11 +28,14 @@ source "$ROOT_DIR/.ci/lib/local-common.sh"
 #   3. Back up the existing user binary to *.old and replace it.
 if [[ "${1:-}" == "--override-local" ]]; then
     shift
-    # Detect platform + arch from uname.
+    # Detect platform + arch + executable suffix from uname. The .exe suffix
+    # matters because build-cli-executables.sh emits rdc-win-<arch>.exe and
+    # the auto-update housekeeping in packages/cli/src/utils/platform.ts
+    # expects the backup at <base>.old<ext> (rdc.old / rdc.old.exe).
     case "$(uname -s)" in
-        Linux)  _ovr_platform="linux" ;;
-        Darwin) _ovr_platform="mac" ;;
-        MINGW*|MSYS*|CYGWIN*) _ovr_platform="win" ;;
+        Linux)  _ovr_platform="linux"; _ovr_exe="" ;;
+        Darwin) _ovr_platform="mac"; _ovr_exe="" ;;
+        MINGW*|MSYS*|CYGWIN*) _ovr_platform="win"; _ovr_exe=".exe" ;;
         *) log_error "Unsupported platform $(uname -s) for --override-local"; exit 1 ;;
     esac
     case "$(uname -m)" in
@@ -62,22 +65,26 @@ if [[ "${1:-}" == "--override-local" ]]; then
     log_step "Building SEA for $_ovr_platform/$_ovr_arch"
     bash "$ROOT_DIR/.ci/scripts/build/build-cli-executables.sh" \
         --platform "$_ovr_platform" --arch "$_ovr_arch"
-    _ovr_built="$ROOT_DIR/dist/cli/rdc-${_ovr_platform}-${_ovr_arch}"
+    _ovr_built="$ROOT_DIR/dist/cli/rdc-${_ovr_platform}-${_ovr_arch}${_ovr_exe}"
     if [[ ! -f "$_ovr_built" ]]; then
         log_error "Built SEA not found at $_ovr_built"
         exit 1
     fi
-    _ovr_dest="$HOME/.local/share/rediacc/bin/rdc"
+    _ovr_dest="$HOME/.local/share/rediacc/bin/rdc${_ovr_exe}"
     if [[ ! -d "$(dirname "$_ovr_dest")" ]]; then
         log_error "Install dir $(dirname "$_ovr_dest") does not exist — is rdc installed?"
         exit 1
     fi
+    # Backup naming matches getOldBinaryPath() in
+    # packages/cli/src/utils/platform.ts so cleanupOldBinary() finds it:
+    # rdc.old on Linux/macOS, rdc.old.exe on Windows.
+    _ovr_backup="${_ovr_dest%${_ovr_exe}}.old${_ovr_exe}"
     if [[ -f "$_ovr_dest" ]]; then
-        cp -f "$_ovr_dest" "${_ovr_dest}.old"
+        cp -f "$_ovr_dest" "$_ovr_backup"
     fi
     cp -f "$_ovr_built" "$_ovr_dest"
     chmod +x "$_ovr_dest"
-    log_step "Installed dev SEA → $_ovr_dest (backup at ${_ovr_dest}.old)"
+    log_step "Installed dev SEA → $_ovr_dest (backup at $_ovr_backup)"
     "$_ovr_dest" --version
     exit 0
 fi

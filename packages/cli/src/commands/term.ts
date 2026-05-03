@@ -256,19 +256,39 @@ async function executeSSH(
   }
 }
 
+// Determines client-side output suppression and remote-TTY allocation for a
+// connectTerminal invocation.
+//
+// - quietOutput: skip the spinners and the "Connecting to..." stderr line so
+//   `term -c "..."` stdout stays clean (also applies to container modes since
+//   the user is asking for a specific docker action, not a shell session).
+// - noTTY: disable ssh -tt. Remote sandbox banner is gated by `[ -t 1 ]`, and
+//   ssh prints "Connection to HOST closed." only when -t allocated a PTY.
+//   Exception: container exec/terminal wrap the command in `docker exec -it`,
+//   which requires a real TTY upstream — keep forceTTY for those.
+function resolveTermOutputMode(opts: TermConnectOptions): {
+  quietOutput: boolean;
+  noTTY: boolean;
+} {
+  const isContainerInteractive =
+    !!opts.container &&
+    (opts.containerAction === 'exec' ||
+      opts.containerAction === 'terminal' ||
+      opts.containerAction === undefined);
+  const quietOutput = !!opts.command || !!opts.container;
+  const noTTY = !!opts.command && !isContainerInteractive;
+  return { quietOutput, noTTY };
+}
+
 async function connectTerminal(options: TermConnectOptions): Promise<void> {
   const startTime = Date.now();
   const opts = await configService.applyDefaults(options);
   await enforceTermPolicy(opts);
 
-  // Non-interactive command mode (`-c "..."`) prints only the command's output:
-  // skip spinners + the "Connecting to..." line, and don't force a remote TTY
-  // (the remote sandbox banner is gated by `[ -t 1 ]`, and ssh prints
-  // "Connection to ... closed." only when -t allocates a PTY).
-  const quiet = !!opts.command;
+  const { quietOutput, noTTY } = resolveTermOutputMode(opts);
 
   const { connectionDetails, teamName, machineName, repositoryName } =
-    await validateAndGetConnectionDetails({ ...opts, quiet });
+    await validateAndGetConnectionDetails({ ...opts, quiet: quietOutput });
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
@@ -289,7 +309,7 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
   const sshConnection = new SSHConnection(
     connectionDetails.privateKey,
     connectionDetails.known_hosts,
-    { port: connectionDetails.port, forceTTY: !quiet }
+    { port: connectionDetails.port, forceTTY: !noTTY }
   );
 
   let success = true;
@@ -311,7 +331,7 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
       title,
       connectionDetails,
       shouldUseExternalTerminal(options),
-      quiet
+      quietOutput
     );
   } catch (err) {
     success = false;
@@ -401,7 +421,10 @@ async function runInlineSSH(
   quiet: boolean
 ): Promise<void> {
   if (!quiet) {
-    process.stdout.write(`${t('commands.term.connectingTo', { title })}\n`);
+    // Progress message on stderr — keeps stdout reserved for command output
+    // when -c piping is in play, matching the Unix convention used by ssh's
+    // own progress / banner messages.
+    process.stderr.write(`${t('commands.term.connectingTo', { title })}\n`);
   }
 
   const child = spawnSSH(destination, sshConnection.sshOptions, remoteCommand, {
