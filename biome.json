@@ -78,6 +78,7 @@
       "!**/*.generated.ts",
       "!**/queue-vault/data/*.schema.ts",
       "!**/search-index.json",
+      "!**/search-index-*.json",
       "!**/*.astro",
       "private/account/src/**/*.ts",
       "private/account/tests/**/*.ts",
