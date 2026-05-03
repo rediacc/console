@@ -1080,6 +1080,18 @@ cleanup_r2() {
             local ver="${sub%/}" # v1.2.3
             [[ "$ver" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
 
+            # In-flight short-circuit MUST run before any classification.
+            # Stage Artifacts uploads ${dir}/${ver}/ bytes minutes before
+            # finalize-release-sentinel writes the sentinel; during that
+            # window the prefix has no sentinel AND no tag, so the orphan
+            # arm below would incorrectly delete the just-uploaded bytes.
+            # The job-level needs:[finalize-release-sentinel] in ci.yml is
+            # the primary defense; this is belt-and-suspenders so any future
+            # ordering regression cannot revive the deletion race.
+            if [[ -n "${IN_FLIGHT_VERSION:-}" && "$ver" == "$IN_FLIGHT_VERSION" ]]; then
+                continue # in-flight; sentinel/tag will appear shortly
+            fi
+
             local has_sentinel=0 has_tag=0
             [[ -n "${sentinel_set[$ver]:-}" ]] && has_sentinel=1
             [[ -n "${tag_set[$ver]:-}" ]] && has_tag=1
@@ -1102,13 +1114,6 @@ cleanup_r2() {
                 if [[ "$ver" == "$RSV_GRANDFATHER_BEFORE" || "$newer" != "$ver" ]]; then
                     continue # grandfathered; not drift
                 fi
-            fi
-            # In-flight: housekeeping runs between finalize-release-sentinel
-            # (writes the sentinel) and cd-v2 (creates the tag). The just-
-            # written version legitimately appears as "sentinel without tag"
-            # for that window. IN_FLIGHT_VERSION is set by ci.yml.
-            if [[ -n "${IN_FLIGHT_VERSION:-}" && "$ver" == "$IN_FLIGHT_VERSION" ]]; then
-                continue # in-flight; tag will be created by CD shortly
             fi
             # Drift: exactly one of sentinel/tag is present. Do not auto-heal.
             if ((has_sentinel)); then
