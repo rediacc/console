@@ -341,6 +341,41 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'term repo': { grandGuard: true },
   'vscode repo': { grandGuard: true },
 
+  // Per-repo secrets — V2 write-only model.
+  //
+  // No `grandGuard`: with `get` returning digest only (never plaintext),
+  // there's no read-attack to gate. The mutation-gate is the actual safety
+  // property; symmetric for humans and agents.
+  //
+  // Group-level `mcpExcludeReason` satisfies the coverage gate (registry
+  // only enumerates 2-word subcommand paths; per-subcommand 3-word
+  // exclusions come back as "stale"). Per-subcommand `mcp:` blocks below
+  // still take effect via the tool factory which walks the live commander
+  // tree, so `repo_secret_list` and `repo_secret_get` are still exposed.
+  // Writes (`set`/`unset`) intentionally have no `mcp:` block — the
+  // `--current` / `--rotate-secret` precondition ceremony requires human
+  // eyes-on; exposing as MCP would invite blind-retry loops.
+  'repo secret': {
+    mcpExcludeReason:
+      'Writes (set/unset) require --current/--rotate-secret ceremony — CLI-only. Reads (list/get) ARE exposed as repo_secret_list and repo_secret_get MCP tools.',
+  },
+  'repo secret list': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read' as const,
+      excludeOptions: ['debug'],
+    },
+  },
+  'repo secret get': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read' as const,
+      excludeOptions: ['debug'],
+    },
+  },
+
   // ══════════════════════════════════════════════════════════════════════
   // MCP-excluded commands (with documented reasons)
   // ══════════════════════════════════════════════════════════════════════

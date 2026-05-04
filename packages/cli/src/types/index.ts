@@ -15,6 +15,8 @@ export type {
   StorageConfig,
   RepositoryConfig,
   ArchivedRepository,
+  SecretEntry,
+  SecretMode,
   InfraConfig,
   BackupDestination,
   BackupDestination as BackupStrategyDestination,

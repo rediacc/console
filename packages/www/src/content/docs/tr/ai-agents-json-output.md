@@ -6,7 +6,7 @@ description: >-
 category: Reference
 order: 51
 language: tr
-sourceHash: 43cdbf89d4314d73
+sourceHash: "18996ab708715227"
 ---
 
 Tüm `rdc` komutları, AI ajanları ve betikler tarafından programatik tüketim için yapılandırılmış JSON çıktısını destekler.

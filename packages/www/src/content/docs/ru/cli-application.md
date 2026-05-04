@@ -6,7 +6,7 @@ order: 2
 language: ru
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ru/cli.json
-sourceHash: "1c66a5f957671837"
+sourceHash: "b65787fa4ac50a2f"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -103,8 +103,27 @@ rdc agent generate-reference
 
 {{t:cli.docs.supplements.config.afterDescription}}
 
+<a id="cli-local-config-prune"></a>
+### 2.1 prune
+
+{{t:cli.commands.config.prune.description}}
+
+```bash
+rdc config prune [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--dry-run` | {{t:cli.commands.config.prune.dryRunOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--certs-only` | {{t:cli.commands.config.prune.certsOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--archives-only` | {{t:cli.commands.config.prune.archivesOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--refs-only` | {{t:cli.commands.config.prune.refsOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--purge-archived` | {{t:cli.commands.config.prune.purgeArchivedOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--grace-days <days>` | {{t:cli.commands.config.prune.graceDaysOption}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-config-init"></a>
-### 2.1 init
+### 2.2 init
 
 {{t:cli.commands.config.init.description}}
 
@@ -125,7 +144,7 @@ rdc config init [options]
 
 
 <a id="cli-local-config-list"></a>
-### 2.2 list
+### 2.3 list
 
 {{t:cli.commands.config.list.description}}
 
@@ -134,7 +153,7 @@ rdc config list
 ```
 
 <a id="cli-local-config-show"></a>
-### 2.3 show
+### 2.4 show
 
 {{t:cli.commands.config.show.description}}
 
@@ -148,7 +167,7 @@ rdc config show [options]
 
 
 <a id="cli-local-config-delete"></a>
-### 2.4 delete
+### 2.5 delete
 
 {{t:cli.commands.config.delete.description}}
 
@@ -162,7 +181,7 @@ rdc config delete [options]
 
 
 <a id="cli-local-config-set"></a>
-### 2.5 set
+### 2.6 set
 
 {{t:cli.commands.config.set.description}}
 
@@ -179,7 +198,7 @@ rdc config set [options]
 > **{{t:cli.docs.admonitions.tip}}**: {{t:cli.docs.supplements.config.set.tip}}
 
 <a id="cli-local-config-clear"></a>
-### 2.6 clear
+### 2.7 clear
 
 {{t:cli.commands.config.clear.description}}
 
@@ -193,7 +212,7 @@ rdc config clear [options]
 
 
 <a id="cli-local-config-recover"></a>
-### 2.7 recover
+### 2.8 recover
 
 {{t:cli.commands.config.recover.description}}
 
@@ -208,7 +227,7 @@ rdc config recover [options]
 
 
 <a id="cli-local-config-set-ssh"></a>
-### 2.8 set-ssh
+### 2.9 set-ssh
 
 {{t:cli.commands.config.setSsh.description}}
 
@@ -217,7 +236,7 @@ rdc config set-ssh
 ```
 
 <a id="cli-local-config-set-renet"></a>
-### 2.9 set-renet
+### 2.10 set-renet
 
 {{t:cli.commands.config.setRenet.description}}
 
@@ -226,7 +245,7 @@ rdc config set-renet
 ```
 
 <a id="cli-local-config-ssh"></a>
-### 2.10 ssh
+### 2.11 ssh
 
 {{t:cli.commands.config.ssh.description}}
 
@@ -264,7 +283,7 @@ rdc config ssh remove
 ```
 
 <a id="cli-local-config-remote"></a>
-### 2.11 remote
+### 2.12 remote
 
 {{t:cli.commands.config.remote.description}}
 
@@ -311,7 +330,7 @@ rdc config remote refresh
 ```
 
 <a id="cli-local-config-machine"></a>
-### 2.12 machine
+### 2.13 machine
 
 {{t:cli.commands.config.machine.description}}
 
@@ -405,7 +424,7 @@ rdc config machine set-ceph [options]
 
 
 <a id="cli-local-config-repository"></a>
-### 2.13 repository
+### 2.14 repository
 
 {{t:cli.commands.config.repository.description}}
 
@@ -484,7 +503,7 @@ rdc config repository purge-archived
 ```
 
 <a id="cli-local-config-provider"></a>
-### 2.14 provider
+### 2.15 provider
 
 {{t:cli.commands.config.provider.description}}
 
@@ -543,7 +562,7 @@ rdc config provider list
 ```
 
 <a id="cli-local-config-storage"></a>
-### 2.15 storage
+### 2.16 storage
 
 {{t:cli.commands.config.storage.description}}
 
@@ -586,7 +605,7 @@ rdc config storage list
 ```
 
 <a id="cli-local-config-infra"></a>
-### 2.16 infra
+### 2.17 infra
 
 {{t:cli.commands.config.infra.description}}
 
@@ -641,7 +660,7 @@ rdc config infra push [options]
 
 
 <a id="cli-local-config-cert-cache"></a>
-### 2.17 cert-cache
+### 2.18 cert-cache
 
 {{t:cli.commands.config.certCache.description}}
 
@@ -695,7 +714,7 @@ rdc config cert-cache clear
 ```
 
 <a id="cli-local-config-field"></a>
-### 2.18 field
+### 2.19 field
 
 {{t:cli.commands.config.field.description}}
 
@@ -776,7 +795,7 @@ rdc config field list [options]
 
 
 <a id="cli-local-config-edit"></a>
-### 2.19 edit
+### 2.20 edit
 
 {{t:cli.commands.config.edit.description}}
 
@@ -794,7 +813,7 @@ rdc config edit [options]
 
 
 <a id="cli-local-config-audit"></a>
-### 2.20 audit
+### 2.21 audit
 
 {{t:cli.commands.config.audit.description}}
 
@@ -833,7 +852,7 @@ rdc config audit verify
 ```
 
 <a id="cli-local-config-backup-strategy"></a>
-### 2.21 backup-strategy
+### 2.22 backup-strategy
 
 {{t:cli.commands.config.backupStrategy.description}}
 
@@ -1347,6 +1366,8 @@ rdc machine prune [options]
 | `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--dry-run` | {{t:cli.commands.machine.prune.dryRunOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--orphaned-repos` | {{t:cli.commands.machine.prune.orphanedReposOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--prune-unknown` | {{t:cli.commands.machine.prune.pruneUnknownOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--force-delete-mounted` | {{t:cli.commands.machine.prune.forceDeleteMountedOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.options.force}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--grace-days <days>` | {{t:cli.options.graceDays}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1844,6 +1865,7 @@ rdc repo backup list [options]
 | `--from <remote>` | {{t:cli.commands.repo.pull.optionFrom}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--from-machine <machine>` | — | {{t:cli.docs.optionLabels.no}} | - |
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--path <subdir>` | {{t:cli.commands.repo.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-w, --watch` | {{t:cli.options.watch}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1989,6 +2011,76 @@ rdc repo tunnel [options]
 | `--local <port>` | {{t:cli.commands.repo.tunnel.localOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-repo-secret"></a>
+### 6.25 secret
+
+{{t:cli.commands.repo.secret.description}}
+
+<a id="cli-local-repo-secret-get"></a>
+#### get
+
+{{t:cli.commands.repo.secret.get.description}}
+
+```bash
+rdc repo secret get [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--name <repository>` | {{t:cli.commands.repo.secret.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--key <KEY>` | {{t:cli.commands.repo.secret.keyOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+
+
+<a id="cli-local-repo-secret-list"></a>
+#### list
+
+{{t:cli.commands.repo.secret.list.description}}
+
+```bash
+rdc repo secret list [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--name <repository>` | {{t:cli.commands.repo.secret.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+
+
+<a id="cli-local-repo-secret-set"></a>
+#### set
+
+{{t:cli.commands.repo.secret.set.description}}
+
+```bash
+rdc repo secret set [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--name <repository>` | {{t:cli.commands.repo.secret.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--key <KEY>` | {{t:cli.commands.repo.secret.keyOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--value <value>` | {{t:cli.commands.repo.secret.valueOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--mode <mode>` | {{t:cli.commands.repo.secret.modeOption}} | {{t:cli.docs.optionLabels.no}} | `file` |
+| `--current <value>` | {{t:cli.commands.repo.secret.currentOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--rotate-secret` | {{t:cli.commands.repo.secret.rotateOption}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-repo-secret-unset"></a>
+#### unset
+
+{{t:cli.commands.repo.secret.unset.description}}
+
+```bash
+rdc repo secret unset [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--name <repository>` | {{t:cli.commands.repo.secret.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--key <KEY>` | {{t:cli.commands.repo.secret.keyOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--current <value>` | {{t:cli.commands.repo.secret.currentOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--rotate-secret` | {{t:cli.commands.repo.secret.rotateOption}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 ---
 
 <a id="cli-local-group-storage"></a>
@@ -2097,9 +2189,10 @@ rdc storage prune [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.storage.prune.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.options.force}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--force-delete-mounted` | {{t:cli.commands.storage.prune.forceDeleteMountedOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--grace-days <days>` | {{t:cli.options.graceDays}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |

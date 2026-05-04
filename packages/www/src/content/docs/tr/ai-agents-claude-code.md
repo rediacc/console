@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 31
 language: tr
-sourceHash: "c03ab4a60b844efb"
+sourceHash: "1cb28ab2dc3ac39f"
 ---
 
 Claude Code, `rdc` CLI aracılığıyla Rediacc ile doğal olarak çalışır. Bu kılavuz kurulumu, izinleri ve yaygın iş akışlarını kapsar.

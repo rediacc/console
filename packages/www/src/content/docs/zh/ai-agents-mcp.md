@@ -4,7 +4,7 @@ description: 使用模型上下文协议 (MCP) 服务器将 AI 代理连接到 R
 category: Guides
 order: 33
 language: zh
-sourceHash: "db970e1793f0b024"
+sourceHash: "0b98f5640252bd23"
 sourceCommit: "5bffc959d9ddd689bfe8e7815270d800d9dca662"
 ---
 

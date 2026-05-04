@@ -22,6 +22,22 @@ Quick reference for the most common `rdc` commands. Run any command with `--help
 | `rdc repo takeover --name <repo> -m <machine>` | Take ownership of an existing repository |
 | `rdc config repository list` | List all repositories with name and GUID |
 
+## Per-repo Secrets
+
+Write-only deploy-time credentials. `get` returns the digest only. The value is never returned. See [Repositories § Secrets](/en/docs/repositories#secrets) for the full guide.
+
+| Command | Description |
+|---------|-------------|
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> [--mode env\|file] --current ""` | Create a new secret (`--current ""` for first-write) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --current <prev>` | Overwrite an existing secret (passwd-style precondition) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --rotate-secret` | Overwrite without verifying prior value (audited as rotation) |
+| `rdc repo secret list --name <repo>` | List secret names + delivery modes (never values, never digests) |
+| `rdc repo secret get --name <repo> --key <KEY>` | Show secret digest + mode (no plaintext value, ever) |
+| `rdc repo secret unset --name <repo> --key <KEY> --current <prev>` | Delete a secret |
+| `rdc repo secret unset --name <repo> --key <KEY> --rotate-secret` | Delete without verifying prior value |
+
+> Forks inherit no secrets. Set them on the fork explicitly with `rdc repo secret set --name <repo>:<tag>`.
+
 ## Backup and Restore
 
 | Command | Description |

@@ -183,13 +183,15 @@ Cancel a running backup on a remote machine
 
 ### rdc machine prune
 
-Remove orphaned datastore resources and stale snapshots from a machine
+Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from your local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.
 
 **Options:**
 
 - `--name <name>` — Resource name
 - `--dry-run` — Show what would be removed without making changes
-- `--orphaned-repos` — Also prune repo images not in any config
+- `--orphaned-repos` — Delete every repo image on the machine that is not in your local CLI config. Coarse — also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror.
+- `--prune-unknown` — Delete only repos the renet .interim/state mirror cannot classify (not in local config AND no fork-marked mirror). Strictly narrower than --orphaned-repos: forks-without-config are preserved when the mirror identifies them. Pre-mirror legacy orphans and stale grands whose config entry was deleted both fall in this bucket.
+- `--force-delete-mounted` — Override the mount-safety preflight and delete repos even if they are currently mounted or have running Docker containers. Distinct from --force (which only overrides the archive grace period). Applies to both --orphaned-repos and --prune-unknown.
 - `--force` — Skip confirmation prompts
 - `--grace-days <days>` — Grace period in days for recently archived repos (default: 7)
 - `--debug` — Enable debug output
@@ -278,14 +280,15 @@ Browse files in a storage system
 
 ### rdc storage prune
 
-Delete orphaned backups from storage that are no longer in any config. Multi-config safe with grace period protection.
+Delete orphaned backups from storage that are no longer in any config. Multi-config safe with grace period protection. The rclone calls run on --machine (the executor), not on your laptop, so clients don't need rclone installed locally; --machine is the executor, not the source of truth.
 
 **Options:**
 
 - `--name <name>` — Resource name
-- `-m, --machine <name>` — Machine name
+- `-m, --machine <name>` — Executor machine — runs the rclone list/delete calls against the storage. Required because clients aren't expected to have rclone installed locally; storage credentials still come from your local config.
 - `--dry-run` — Show what would be done without making changes
 - `--force` — Skip confirmation prompts
+- `--force-delete-mounted` — Override the mount-safety check and delete cloud backups even if the source GUID is currently mounted or has a running container on the executor machine. Distinct from --force (which only overrides the grace period for archived repos).
 - `--grace-days <days>` — Grace period in days for recently archived repos (default: 7)
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
@@ -715,13 +718,14 @@ Pull repository from a remote (machine or storage). Omit name to pull all repos.
 
 ### rdc repo backup list
 
-List available backups on a remote (machine or storage)
+List available backups on a remote (machine or storage). Without --path, hot/ and cold/ subfolders are merged into a single table with a Mode column.
 
 **Options:**
 
 - `--from <remote>` — Source machine or storage name (auto-detected from config)
 - `--from-machine <machine>` — 
 - `-m, --machine <name>` — Machine name
+- `--path <subdir>` — Subdirectory within the storage root. When omitted, both hot/ and cold/ are listed and merged.
 - `-w, --watch` — Watch for changes
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
@@ -819,6 +823,51 @@ Create an SSH port-forward tunnel to a container's port on a remote machine. Aut
 - `--local <port>` — Local port (defaults to same as remote port)
 
 > agent: fork-only | MCP excluded: Interactive SSH tunnel — blocks until Ctrl+C
+
+### rdc repo secret get
+
+Show the SHA-256 digest of a secret. The plaintext value is never returned by design (write-only). Use --current on a subsequent set/unset to verify a value you already know, or rotate via `set --rotate-secret`.
+
+**Options:**
+
+- `--name <repository>` — Repository name (e.g. mail, mail:staging). Without a tag, defaults to :latest.
+- `--key <KEY>` — Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode.
+
+> MCP tool
+
+### rdc repo secret list
+
+List secret keys and modes (never values, never digests).
+
+**Options:**
+
+- `--name <repository>` — Repository name (e.g. mail, mail:staging). Without a tag, defaults to :latest.
+
+> MCP tool
+
+### rdc repo secret set
+
+Set or overwrite a secret. Forks do not inherit; set on the fork explicitly. Under agent context, requires --current digest match (passwd-style).
+
+**Options:**
+
+- `--name <repository>` — Repository name (e.g. mail, mail:staging). Without a tag, defaults to :latest.
+- `--key <KEY>` — Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode.
+- `--value <value>` — Secret value. Pass `-` to read from stdin (avoids shell-history exposure).
+- `--mode <mode>` — Delivery mode: 'env' (visible in container env, docker inspect) or 'file' (tmpfs file, never in env). Default: file. (default: file)
+- `--current <value>` — Previous plaintext value (passwd-style precondition). Required for overwrite/unset; mutually exclusive with --rotate-secret.
+- `--rotate-secret` — Acknowledge rotation; skip --current precondition (audited as rotation). Use when intentionally rotating without verifying the prior value.
+
+### rdc repo secret unset
+
+Delete a secret. Under agent context, requires --current digest match.
+
+**Options:**
+
+- `--name <repository>` — Repository name (e.g. mail, mail:staging). Without a tag, defaults to :latest.
+- `--key <KEY>` — Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode.
+- `--current <value>` — Previous plaintext value (passwd-style precondition). Required for overwrite/unset; mutually exclusive with --rotate-secret.
+- `--rotate-secret` — Acknowledge rotation; skip --current precondition (audited as rotation). Use when intentionally rotating without verifying the prior value.
 
 ## Tools
 
@@ -923,6 +972,19 @@ Show backup strategy details
 **Options:**
 
 - `--name <name>` — Strategy name (shows all if omitted)
+
+### rdc config prune
+
+Remove dead weight from the local config file at ~/.config/rediacc/<config>.json. Three buckets are cleaned, all pure-local (no SSH/renet calls): (1) ACME cert-cache entries whose anchor GUID/repo/machine is no longer in the active config; (2) archived repositories whose grace period has expired (default 7 days, see defaults.pruneGraceDays); (3) dangling cross-references (machine→strategy, strategy→repo). Resources still in use, credentials, storage tokens, and known-hosts are never touched. Default behavior is to apply changes; pass --dry-run to preview only.
+
+**Options:**
+
+- `--dry-run` — Preview what would be removed without modifying the config file. Mirrors the default-off semantics of the other prune commands.
+- `--certs-only` — Restrict to the ACME cert-cache bucket. Skips archive purging and cross-reference cleanup. Mutually exclusive with --archives-only and --refs-only.
+- `--archives-only` — Restrict to expired-archive purging. Skips cert-cache and cross-reference cleanup. Mutually exclusive with --certs-only and --refs-only.
+- `--refs-only` — Restrict to dangling cross-references (machine→strategy, strategy→repo excludes/includes). Skips cert-cache and archives. Mutually exclusive with --certs-only and --archives-only.
+- `--purge-archived` — Drop ALL archived repositories regardless of age, not just those past grace. Equivalent to running `rdc config repository purge-archived`. Use only when you're sure you don't need any of the stashed credentials for restore.
+- `--grace-days <days>` — Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set.
 
 ### rdc config machine add
 

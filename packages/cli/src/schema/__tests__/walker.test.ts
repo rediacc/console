@@ -47,6 +47,10 @@ describe('walker', () => {
         'app:latest': {
           repositoryGuid: '00000000-0000-0000-0000-aaaaaaaaaaaa',
           credential: 'luks-passphrase',
+          secrets: {
+            STRIPE_KEY: { mode: 'env' as const, value: 'sk_live_xxx' },
+            DKIM_PRIVATE: { mode: 'file' as const, value: '-----BEGIN KEY-----\nABC\n' },
+          },
         },
       },
     },
@@ -162,5 +166,50 @@ describe('walker', () => {
     expect(buildPointer([])).toBe('');
     expect(buildPointer(['a', 'b'])).toBe('/a/b');
     expect(buildPointer(['a/b', 'c~d'])).toBe('/a~1b/c~0d');
+  });
+
+  it('per-repo secret values walk as kind=secret; modes walk as kind=public', () => {
+    const entries = Array.from(walkSensitive(sampleConfig));
+    const stripeValue = entries.find(
+      (e) => e.pointer === '/resources/repositories/app:latest/secrets/STRIPE_KEY/value'
+    );
+    const stripeMode = entries.find(
+      (e) => e.pointer === '/resources/repositories/app:latest/secrets/STRIPE_KEY/mode'
+    );
+    expect(stripeValue?.meta.kind).toBe('secret');
+    expect(stripeMode?.meta.kind).toBe('public');
+  });
+
+  it('redactClone redacts secret values but leaves modes plaintext', () => {
+    const redacted = redactClone(sampleConfig);
+    const repo = redacted.resources.repositories['app:latest'];
+    expect(repo.secrets.STRIPE_KEY.value).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
+    expect(repo.secrets.STRIPE_KEY.mode).toBe('env');
+    expect(repo.secrets.DKIM_PRIVATE.value).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
+    expect(repo.secrets.DKIM_PRIVATE.mode).toBe('file');
+  });
+
+  it('pathsToCommit includes secret values, excludes modes (public)', () => {
+    const paths = pathsToCommit(sampleConfig);
+    expect(paths).toContain('/resources/repositories/app:latest/secrets/STRIPE_KEY/value');
+    expect(paths).not.toContain('/resources/repositories/app:latest/secrets/STRIPE_KEY/mode');
+  });
+
+  it('digestForPointer is stable for nested secret pointers', () => {
+    const a = digestForPointer(
+      sampleConfig,
+      '/resources/repositories/app:latest/secrets/STRIPE_KEY/value'
+    );
+    const b = digestForPointer(
+      sampleConfig,
+      '/resources/repositories/app:latest/secrets/STRIPE_KEY/value'
+    );
+    expect(a).toBe(b);
+    expect(a).toMatch(/^[0-9a-f]{64}$/);
+    const other = digestForPointer(
+      sampleConfig,
+      '/resources/repositories/app:latest/secrets/DKIM_PRIVATE/value'
+    );
+    expect(a).not.toBe(other);
   });
 });

@@ -374,8 +374,15 @@ class ConfigService extends ConfigServiceBase {
     const repos = state.getRepositories();
     if (!(repoName in repos)) throw new Error(`Repository "${repoName}" not found`);
 
+    // Scrub `secrets` from the archived entry. Archives exist to preserve
+    // identity (repositoryGuid + LUKS credential for backup decryption);
+    // deploy-time secrets are out of scope and would otherwise survive a
+    // delete-then-restore cycle. ArchivedRepositorySchema.omit({secrets})
+    // mirrors this at the schema layer.
+    const { secrets: _scrubbed, ...rest } = repos[repoName];
+    void _scrubbed;
     const archived: ArchivedRepository = {
-      ...repos[repoName],
+      ...rest,
       name: repoName,
       deletedAt: new Date().toISOString(),
     };

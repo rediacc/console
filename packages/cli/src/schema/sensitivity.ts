@@ -89,6 +89,9 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/repositories/*/grandGuid': { kind: 'identifier' },
   '/resources/repositories/*/parentGuid': { kind: 'identifier' },
   '/resources/repositories/*/sshPrivateKey': { kind: 'credential' },
+  '/resources/repositories/*/sshPublicKey': { kind: 'public' },
+  '/resources/repositories/*/secrets/*/value': { kind: 'secret' },
+  '/resources/repositories/*/secrets/*/mode': { kind: 'public' },
 
   // ── Deleted (archived) repositories ──────────────────────────────────────
   '/resources/deletedRepositories/*/repositoryGuid': { kind: 'identifier' },
@@ -96,6 +99,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/deletedRepositories/*/grandGuid': { kind: 'identifier' },
   '/resources/deletedRepositories/*/parentGuid': { kind: 'identifier' },
   '/resources/deletedRepositories/*/sshPrivateKey': { kind: 'credential' },
+  '/resources/deletedRepositories/*/sshPublicKey': { kind: 'public' },
 
   // ── Cloud providers ──────────────────────────────────────────────────────
   '/resources/cloudProviders/*/apiToken': { kind: 'secret' },

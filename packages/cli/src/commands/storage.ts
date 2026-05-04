@@ -12,8 +12,8 @@ import { outputService } from '../services/output.js';
 import { storageBrowserService } from '../services/storage-browser.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
 import { handleError } from '../utils/errors.js';
-import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { withSpinner } from '../utils/spinner.js';
+import { parseRepositoryListOutput } from './repo-list-parser.js';
 
 function formatFileName(f: RemoteFile): string {
   if (f.isDirectory) return `${f.name}/`;
@@ -32,9 +32,43 @@ interface StoragePruneOptions {
   machine: string;
   dryRun?: boolean;
   force?: boolean;
+  forceDeleteMounted?: boolean;
   graceDays?: number;
   debug?: boolean;
   skipRouterRestart?: boolean;
+}
+
+/** Build a set of GUIDs that are currently live (mounted or running) on the
+ *  machine. Used as a safety preflight before deleting cloud backups. */
+async function fetchLiveGuids(options: StoragePruneOptions): Promise<Set<string>> {
+  const result = await localExecutorService.execute({
+    functionName: 'repository_list',
+    machineName: options.machine,
+    params: {},
+    debug: options.debug,
+    captureOutput: true,
+    skipRouterRestart: options.skipRouterRestart,
+  });
+  if (!result.success) {
+    // Probe failure is non-fatal — surface it but don't block the operator;
+    // the delete loop still has the analyzePrune protections.
+    outputService.warn(`Could not list machine repositories for safety check: ${result.error}`);
+    return new Set();
+  }
+  const repos = parseRepositoryListOutput(result.stdout ?? '[]') as {
+    name?: string;
+    guid?: string;
+    mounted?: boolean;
+    docker_running?: boolean;
+  }[];
+  const live = new Set<string>();
+  for (const r of repos) {
+    if (r.mounted || r.docker_running) {
+      const guid = r.guid ?? r.name;
+      if (typeof guid === 'string') live.add(guid);
+    }
+  }
+  return live;
 }
 
 /** Parse backup GUIDs from executor output. */
@@ -52,7 +86,120 @@ function parseBackupGuids(stdout: string): string[] {
   return (parsed.entries ?? []).filter((e) => !e.isDirectory).map((e) => e.name);
 }
 
-/** Execute the storage prune workflow. */
+/** Storage layout — scheduled backups split into these subpaths. */
+const STORAGE_MODES = ['hot', 'cold'] as const;
+type StorageMode = (typeof STORAGE_MODES)[number];
+
+/** List GUIDs under one subpath. Returns empty on failure (e.g. mode not yet
+ *  populated) so a missing `cold/` doesn't kill the whole prune. */
+async function listGuidsAtPath(
+  storageName: string,
+  subpath: StorageMode,
+  options: StoragePruneOptions
+): Promise<string[]> {
+  const result = await localExecutorService.execute({
+    functionName: 'backup_list',
+    machineName: options.machine,
+    params: { sourceType: 'storage', from: storageName, path: subpath },
+    debug: options.debug,
+    captureOutput: true,
+    skipRouterRestart: options.skipRouterRestart,
+  });
+  if (!result.success) return [];
+  return parseBackupGuids(result.stdout ?? '');
+}
+
+async function collectGuidsByMode(
+  storageName: string,
+  options: StoragePruneOptions
+): Promise<{ remoteGuids: string[]; guidLocations: Map<string, StorageMode[]> }> {
+  const perMode = await Promise.all(
+    STORAGE_MODES.map(async (mode) => ({
+      mode,
+      guids: await listGuidsAtPath(storageName, mode, options),
+    }))
+  );
+  const guidLocations = new Map<string, StorageMode[]>();
+  for (const { mode, guids } of perMode) {
+    for (const guid of guids) {
+      const existing = guidLocations.get(guid) ?? [];
+      existing.push(mode);
+      guidLocations.set(guid, existing);
+    }
+  }
+  return { remoteGuids: [...guidLocations.keys()], guidLocations };
+}
+
+async function applyMountSafety<T extends { guid: string }>(
+  orphans: T[],
+  options: StoragePruneOptions
+): Promise<T[]> {
+  if (orphans.length === 0) return orphans;
+  const liveGuids = await fetchLiveGuids(options);
+  const mounted = orphans.filter((o) => liveGuids.has(o.guid));
+  if (mounted.length === 0) return orphans;
+  if (options.forceDeleteMounted) {
+    outputService.warn(
+      `--force-delete-mounted: proceeding with ${mounted.length} mounted/running orphan(s)`
+    );
+    return orphans;
+  }
+  for (const m of mounted) {
+    outputService.warn(
+      `Skipping ${m.guid.slice(0, 8)}…: currently mounted or running on "${options.machine}". Pass --force-delete-mounted to override.`
+    );
+  }
+  const mountedSet = new Set(mounted.map((m) => m.guid));
+  return orphans.filter((o) => !mountedSet.has(o.guid));
+}
+
+function partitionOrphansByMode<T extends { guid: string }>(
+  orphans: T[],
+  guidLocations: Map<string, StorageMode[]>
+): Map<StorageMode, string[]> {
+  const orphanGuids = new Set(orphans.map((o) => o.guid));
+  const byMode = new Map<StorageMode, string[]>();
+  for (const guid of orphanGuids) {
+    for (const mode of guidLocations.get(guid) ?? []) {
+      const list = byMode.get(mode) ?? [];
+      list.push(guid);
+      byMode.set(mode, list);
+    }
+  }
+  return byMode;
+}
+
+async function deleteOrphansByMode(
+  byMode: Map<StorageMode, string[]>,
+  storageName: string,
+  options: StoragePruneOptions
+): Promise<void> {
+  let firstCall = true;
+  for (const [mode, guids] of byMode) {
+    outputService.info(`Deleting ${guids.length} orphan(s) from ${mode}/`);
+    const deleteResult = await localExecutorService.execute({
+      functionName: 'backup_delete',
+      machineName: options.machine,
+      params: {
+        repository: guids[0],
+        repositories: guids.join(','),
+        sourceType: 'storage',
+        from: storageName,
+        path: mode,
+      },
+      debug: options.debug,
+      skipRouterRestart: options.skipRouterRestart,
+      quietSpinners: !firstCall,
+    });
+    firstCall = false;
+    if (!deleteResult.success) {
+      outputService.error(
+        `Failed to delete from ${mode}/: ${deleteResult.error} (${guids.length} GUID(s) attempted)`
+      );
+    }
+  }
+}
+
 async function executeStoragePrune(
   storageName: string,
   options: StoragePruneOptions
@@ -61,23 +208,8 @@ async function executeStoragePrune(
     '../services/prune.js'
   );
 
-  // List backups in storage via renet
   outputService.info(t('commands.storage.prune.listing', { storage: storageName }));
-  const listResult = await localExecutorService.execute({
-    functionName: 'backup_list',
-    machineName: options.machine,
-    params: { sourceType: 'storage', from: storageName },
-    debug: options.debug,
-    captureOutput: true,
-    skipRouterRestart: options.skipRouterRestart,
-  });
-
-  if (!listResult.success) {
-    renderLocalExecutionFailure(listResult, t('commands.storage.prune.listFailed'));
-    return;
-  }
-
-  const remoteGuids = parseBackupGuids(listResult.stdout ?? '');
+  const { remoteGuids, guidLocations } = await collectGuidsByMode(storageName, options);
 
   if (remoteGuids.length === 0) {
     outputService.info(t('commands.storage.prune.noBackups'));
@@ -86,40 +218,20 @@ async function executeStoragePrune(
 
   outputService.info(t('commands.storage.prune.found', { count: remoteGuids.length }));
 
-  // Analyze
   const analysis = await analyzePrune(remoteGuids, {
     force: options.force,
     graceDays: options.graceDays,
   });
-  printPruneAnalysis(analysis, options.dryRun ?? true);
 
-  // Delete orphaned backups
-  if (!options.dryRun && analysis.orphaned.length > 0) {
-    for (const item of analysis.orphaned) {
-      outputService.info(`Deleting ${item.guid.slice(0, 8)}…`);
-      const deleteResult = await localExecutorService.execute({
-        functionName: 'backup_delete',
-        machineName: options.machine,
-        params: {
-          repository: item.guid,
-          sourceType: 'storage',
-          from: storageName,
-        },
-        debug: options.debug,
-        skipRouterRestart: options.skipRouterRestart,
-      });
-      if (!deleteResult.success) {
-        outputService.error(`Failed to delete ${item.guid}: ${deleteResult.error}`);
-      }
-    }
-    outputService.success(
-      t('commands.storage.prune.completed', {
-        count: analysis.orphaned.length,
-      })
-    );
+  const orphansToDelete = await applyMountSafety(analysis.orphaned, options);
+  printPruneAnalysis({ ...analysis, orphaned: orphansToDelete }, Boolean(options.dryRun));
+
+  if (!options.dryRun && orphansToDelete.length > 0) {
+    const byMode = partitionOrphansByMode(orphansToDelete, guidLocations);
+    await deleteOrphansByMode(byMode, storageName, options);
+    outputService.success(t('commands.storage.prune.completed', { count: orphansToDelete.length }));
   }
 
-  // Auto-purge expired archives
   await purgeExpiredArchives(options.graceDays);
 }
 
@@ -211,9 +323,10 @@ export function registerStorageCommands(program: Command): void {
     .summary(t('commands.storage.prune.descriptionShort'))
     .description(t('commands.storage.prune.description'))
     .requiredOption('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .requiredOption('-m, --machine <name>', t('commands.storage.prune.machineOption'))
     .option('--dry-run', t('options.dryRun'))
     .option('--force', t('options.force'))
+    .option('--force-delete-mounted', t('commands.storage.prune.forceDeleteMountedOption'))
     .option('--grace-days <days>', t('options.graceDays'), Number.parseInt)
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))

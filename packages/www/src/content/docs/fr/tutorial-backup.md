@@ -7,8 +7,8 @@ description: >-
 category: Tutorials
 order: 6
 language: fr
-sourceHash: b91d408984abfc75
-sourceCommit: 2223eabccb947ee9da79f1afcef075e163797d13
+sourceHash: "828979d18c6d73f2"
+sourceCommit: 21df1395c849109d6449b46f9092012c66801960
 ---
 
 # Comment configurer les sauvegardes et le réseau avec Rediacc
@@ -50,6 +50,8 @@ rdc config backup-strategy set --name daily-azure --destination azure-backup --c
 ```
 
 Ceci planifie des sauvegardes quotidiennes à 2h du matin vers `my-s3` et à 6h du matin vers `azure-backup`. Chaque destination a sa propre planification. Les planifications sont stockées dans votre configuration et peuvent être déployées sur les machines en tant que minuteurs systemd.
+
+> **Disposition hot vs cold.** Lorsqu'une stratégie utilise `--mode hot`, les sauvegardes atterrissent dans `<bucket>/<folder>/hot/<guid>` sur le stockage ; les stratégies `--mode cold` écrivent dans `<bucket>/<folder>/cold/<guid>`. Le modèle canonique est une stratégie hot horaire plus une stratégie cold hebdomadaire. Voir [Sauvegarde et restauration. Disposition du stockage](/fr/docs/backup-restore#storage-layout) pour tous les détails.
 
 ### Étape 3 : Voir la planification de sauvegarde
 

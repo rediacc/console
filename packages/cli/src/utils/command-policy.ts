@@ -44,6 +44,11 @@ export const CMD = {
   REPO_EXPAND: 'repo expand',
   REPO_TAKEOVER: 'repo takeover',
   REPO_TUNNEL: 'repo tunnel',
+  // NOTE: `repo secret` subcommands intentionally have no CMD entries.
+  // The V2 write-only model removed grandGuard from secret commands —
+  // mutation-gate is the safety property, not a command-level policy.
+  // If a future need arises (e.g. an entirely new agent gate), reintroduce
+  // CMD.REPO_SECRET_* and add a metadata entry that references it.
   TERM_REPO: 'term repo',
   VSCODE_REPO: 'vscode repo',
   RUN: 'run',

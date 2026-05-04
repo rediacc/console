@@ -391,7 +391,7 @@
         "bannerRotateLine1": "要轮换秘密:用新的明文值替换其占位符 — 您将在",
         "bannerRotateLine2": "关闭编辑器后被要求确认每次轮换。",
         "bannerStrip": "以 // 开头的行在保存时会被删除。",
-        "bannerTitle": "rdc config edit — {{name}} (v{{version}})",
+        "bannerTitle": "正在编辑配置 \"{{name}}\"（v{{version}}）",
         "description": "在 $EDITOR 中以脱敏后的 JSONC 投影打开当前配置。仅限人工;拒绝代理。",
         "noChanges": "未保存任何更改;正在中止。",
         "optionApply": "应用已编辑的 JSONC 文件(跳过启动 $EDITOR)",
@@ -555,6 +555,25 @@
           "description": "移除云服务提供商配置",
           "success": "已移除云提供商 \"{{name}}\""
         }
+      },
+      "prune": {
+        "archivesOnlyOption": "限制为过期归档清除。跳过证书缓存和交叉引用清理。与 --certs-only 和 --refs-only 互斥。",
+        "certsOnlyOption": "限制为 ACME 证书缓存桶。跳过归档清除和交叉引用清理。与 --archives-only 和 --refs-only 互斥。",
+        "completed": "已从本地配置中清理 {{count}} 个过时条目。",
+        "description": "从 ~/.config/rediacc/<config>.json 中的本地配置文件中移除无用内容。清理三类内容，全部为纯本地操作（无 SSH/renet 调用）：（1）锚点 GUID/仓库/机器不再存在于活动配置中的 ACME 证书缓存条目；（2）宽限期已过期的归档仓库（默认 7 天，参见 defaults.pruneGraceDays）；（3）悬空的交叉引用（machine→strategy、strategy→repo）。在用资源、凭据、存储令牌和 known-hosts 永远不会被触及。默认行为是应用更改；使用 --dry-run 仅预览。",
+        "descriptionShort": "清理本地配置文件中的过时残留",
+        "droppedRefs": "{{count}} 个悬空交叉引用{{verb}}移除：",
+        "dryRun": "试运行：将应用 {{count}} 项更改。不带 --dry-run 重新运行以提交。",
+        "dryRunOption": "预览将要移除的内容，但不修改配置文件。镜像其他 prune 命令的默认关闭语义。",
+        "graceDaysOption": "覆盖此调用的归档宽限窗口（以天为单位）。回退到配置中的 defaults.pruneGraceDays，如果都未设置则回退到 7。",
+        "keptArchivesInGrace": "保留仍在宽限期内的归档仓库（可通过 'rdc config repository restore-archived' 恢复）：",
+        "nothingToPrune": "无需清理，配置已经干净。",
+        "purgeArchivedOption": "无论年龄如何，删除所有归档仓库，而不仅仅是超过宽限期的仓库。等同于运行 'rdc config repository purge-archived'。仅在确定不需要任何存储的凭据进行恢复时使用。",
+        "purgedArchives": "{{count}} 个过期归档仓库{{verb}}移除：",
+        "refsOnlyOption": "限制为悬空交叉引用（machine→strategy、strategy→repo 排除/包含）。跳过证书缓存和归档。与 --certs-only 和 --archives-only 互斥。",
+        "removedCerts": "{{count}} 个证书缓存条目{{verb}}移除：",
+        "scanning": "正在扫描本地配置中的过时残留...",
+        "tooManyOnlyFlags": "最多传递 --certs-only / --archives-only / --refs-only 中的一个。"
       },
       "recover": {
         "confirm": "从备份恢复配置 \"{{name}}\"？",
@@ -911,11 +930,14 @@
         "description": "从机器中移除孤立的数据存储资源和过期快照",
         "descriptionShort": "清理孤立资源和过期快照",
         "dryRunOption": "显示将被移除的内容，但不做实际更改",
+        "forceDeleteMountedOption": "覆盖挂载安全预检并删除仓库，即使它们当前已挂载或有正在运行的 Docker 容器。与 --force 不同（后者仅覆盖归档宽限期）。适用于 --orphaned-repos 和 --prune-unknown。",
         "noReposFound": "在机器上未找到仓库",
         "noStaleSnapshots": "未找到过期快照",
+        "noUnknownRepos": "未找到未知仓库，每个机器仓库要么在本地配置中，要么有 renet 镜像",
         "orphanedReposCompleted": "已清理 {{count}} 个孤立仓库",
         "orphanedReposOption": "同时清理不在任何配置中的仓库镜像",
         "orphanedReposStarting": "正在扫描 {{machine}} 上的孤立仓库...",
+        "pruneUnknownOption": "仅删除 renet .interim/state 镜像无法分类的仓库（不在本地配置中且没有标记为 fork 的镜像）。比 --orphaned-repos 严格更窄：镜像识别时保留没有配置的 fork。镜像前的遗留孤儿和配置条目已删除的过时 grands 都属于此类别。",
         "snapshotDeleted": "已删除 {{name}}",
         "snapshotDeleting": "正在删除 {{name}}...",
         "snapshotInUse": "跳过 {{name}}（正在使用中）",
@@ -923,7 +945,10 @@
         "snapshotsOnlyOption": "仅清理过期快照",
         "snapshotStale": "过期: {{name}} ({{size}})",
         "startingDatastore": "正在扫描 {{machine}} 上的孤立数据存储资源...",
-        "startingSnapshots": "正在扫描 {{machine}} 上的过期快照..."
+        "startingSnapshots": "正在扫描 {{machine}} 上的过期快照...",
+        "unknownCompleted": "已清理 {{count}} 个未知仓库",
+        "unknownFound": "找到 {{count}} 个未知仓库（挂载安全检查后 {{deletable}} 个可删除）",
+        "unknownStarting": "正在 {{machine}} 上扫描未知仓库（不在本地配置中 + 没有标记为 fork 的镜像）..."
       },
       "query": {
         "connection": "连接",
@@ -1298,7 +1323,10 @@
           "description": "列出远程（机器或存储）上的可用备份",
           "listing": "正在列出备份...",
           "optionFrom": "源机器或存储名称（从配置中自动检测）",
-          "sourceRequired": "请指定 --from <remote>（配置中的机器或存储名称）"
+          "optionPath": "存储根内的子目录。省略时，hot/ 和 cold/ 都会被列出并合并。",
+          "sourceRequired": "请指定 --from <remote>（配置中的机器或存储名称）",
+          "descriptionShort": "列出远程上可用的备份",
+          "localOnly": "repo backup list 仅在本地适配器模式下受支持"
         }
       },
       "batchConfirm": "{{action}} \"{{machine}}\" 上的所有 {{count}} 个仓库？ [y/N]",
@@ -1463,6 +1491,37 @@
         "failed": "大小调整失败",
         "sizeOption": "新的仓库大小（例如 10G、100G、1T）",
         "starting": "正在 \"{{machine}}\" 上将 \"{{repository}}\" 调整为 {{size}}..."
+      },
+      "secret": {
+        "currentOption": "SHA-256 digest of the previous value (passwd-style precondition). Required for overwrite under agent context; optional for first-write.",
+        "description": "Manage per-repo secrets injected at deploy time. Two modes: env (REDIACC_SECRET_<KEY> via compose ${VAR} interpolation) and file (host tmpfs at /var/run/rediacc/secrets/<networkId>/<KEY>, mounted via Docker compose `secrets:` block). Secrets never enter the encrypted LUKS image, so forks inherit none — externals see the fork as a different principal.",
+        "descriptionShort": "管理每仓库部署时密钥 (env / file)",
+        "get": {
+          "description": "Read a single secret. Returns a redacted stub (`<redacted:secret>:<digest8>`) under agent context regardless of policy.",
+          "descriptionShort": "显示密钥摘要 (永不返回值)",
+          "notFound": "在仓库 \"{{repository}}\" 中未找到密钥 \"{{key}}\"",
+          "repoNotFound": "未找到仓库 \"{{repository}}\""
+        },
+        "keyOption": "UPPER_SNAKE_CASE 格式的密钥（最多 64 个字符）。在 env 模式下作为 REDIACC_SECRET_<KEY> 暴露，在 file 模式下作为容器中的 /run/secrets/<key>。",
+        "list": {
+          "description": "列出密钥的键和模式（绝不显示值，绝不显示摘要）。",
+          "descriptionShort": "列出仓库密钥及其模式",
+          "empty": "在 \"{{repository}}\" 上未定义密钥"
+        },
+        "modeOption": "传递模式：'env'（在容器环境中可见，docker inspect）或 'file'（tmpfs 文件，永不出现在 env 中）。默认：file。",
+        "nameOption": "仓库名称（例如 mail、mail:staging）。未指定标签时默认为 :latest。",
+        "rotateOption": "确认轮换；跳过 --current 前置条件（作为轮换审计）。在不验证先前值的情况下故意轮换时使用。",
+        "set": {
+          "description": "设置或覆盖一个密钥。Fork 不继承；请在 fork 上显式设置。在代理上下文中，需要 --current 摘要匹配（passwd 风格）。",
+          "descriptionShort": "设置或覆盖仓库密钥",
+          "success": "已在 \"{{repository}}\" 上设置密钥 \"{{key}}\"（{{mode}}）"
+        },
+        "unset": {
+          "description": "删除一个密钥。在代理上下文中，需要 --current 摘要匹配。",
+          "descriptionShort": "删除仓库密钥",
+          "success": "已从 \"{{repository}}\" 中移除密钥 \"{{key}}\""
+        },
+        "valueOption": "密钥值。传递 `-` 以从 stdin 读取（避免在 shell 历史记录中暴露）。"
       },
       "snapshot": {
         "create": {
@@ -1704,9 +1763,11 @@
         "completed": "已清理 {{count}} 个孤立备份",
         "description": "删除存储中不在任何配置中的孤立备份。多配置安全，带宽限期保护。",
         "descriptionShort": "删除存储中的孤立备份",
+        "forceDeleteMountedOption": "覆盖挂载安全检查，即使源 GUID 当前在执行机器上已挂载或有正在运行的容器，也删除云备份。与 --force 不同（后者仅覆盖已归档仓库的宽限期）。",
         "found": "在存储中找到 {{count}} 个备份",
         "listFailed": "获取存储备份列表失败",
         "listing": "正在列出 \"{{storage}}\" 中的备份...",
+        "machineOption": "执行机器：对存储运行 rclone list/delete 调用。必需，因为客户端不应在本地安装 rclone；存储凭据仍来自你的本地配置。",
         "noBackups": "存储中未找到备份"
       },
       "pull": {
@@ -1796,7 +1857,7 @@
         "status": {
           "description": "显示机器上已安装的仓库许可证",
           "empty": "  未安装仓库许可证",
-          "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+          "entry": "  - {{repositoryGuid}}：{{freshness}}{{hardExpirySuffix}}",
           "freshness": {
             "hardExpired": "已过期",
             "refreshRecommended": "建议刷新",
@@ -2297,6 +2358,19 @@
       "kindMismatch": "值类型已更改(已存储:{{stored}},声明:{{claimed}})",
       "mismatch": "{{count}} 条路径前置条件失败:\n{{details}}",
       "missing": "敏感路径需要 --current(或 --rotate-secret)",
+      "next": {
+        "options": {
+          "confirm": {
+            "description": "重读当前摘要,然后使用 --current 重试",
+            "run": "rdc repo secret get --name {{repository}} --key {{key}}"
+          },
+          "rotate": {
+            "description": "跳过前置条件 (轮换,有审计)",
+            "run": "<原始命令> --rotate-secret"
+          }
+        },
+        "summary": "提供当前值或确认轮换。"
+      },
       "rotationRequiresTty": "{{pointer}}:轮换确认需要交互式 TTY(或使用 --current-secrets)",
       "stubStillStub": "{{pointer}}:编辑后的值仍像脱敏占位符,但不匹配当前摘要"
     },
@@ -2315,6 +2389,13 @@
     "regionRequired": "需要区域名称。使用 --region 或设置上下文。",
     "registrationFailed": "注册失败",
     "remoteNotFound": "\"{{name}}\"不是已知的机器或存储。机器: {{machines}}。存储: {{storages}}",
+    "repo": {
+      "secret": {
+        "badMode": "无效的 --mode \"{{mode}}\"。允许：env、file。",
+        "emptyValue": "密钥值不能为空（stdin 未产生任何字节）。",
+        "mutuallyExclusive": "--current 和 --rotate-secret 互斥。选择一个：--current 用于验证先前的值，或 --rotate-secret 用于不验证轮换。"
+      }
+    },
     "repoNotDeployed": "仓库 \"{{repository}}\" 未部署在 {{machine}} 上。\n\n请先部署：\n  rdc repo up --name {{repository}} -m <机器名>",
     "repositoryAlreadyMounted": "仓库 \"{{name}}\" 已挂载在 \"{{machine}}\" 上。对活跃仓库进行迁移会导致数据损坏。请先执行: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "仓库 \"{{name}}\" 未找到",

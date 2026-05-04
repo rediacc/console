@@ -137,10 +137,12 @@ export interface RepositoryInfo {
   docker_running: boolean;
   external_volume_names: string[];
   external_volumes: number;
+  grand_guid?: string;
   has_rediaccfile: boolean;
   has_services: boolean;
   image_path: string;
   internal_volumes: number;
+  is_fork?: boolean;
   modified: number;
   modified_human: string;
   mount_path: string;

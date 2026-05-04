@@ -19,9 +19,11 @@ import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
 >
 > - 128 GB production fork, end to end: **7.2 seconds.** The CoW reflink itself: 2.3 seconds.
 > - The agent was blocked from grand (production) repositories, blocked from setting its own override, and dropped into a kernel sandbox (unprivileged user, separate mount namespace, scoped Docker socket) when access was authorized.
-> - **What Rediacc does not isolate**: external SaaS credentials in your repository data. A fork inherits them. That part is the developer's job to handle, via Rediaccfile lifecycle hooks.
+> - **What Rediacc does not isolate**: external SaaS credentials in your repository data. A fork inherits them. *(Update. May 2026: `rdc repo secret` now lets you keep credentials out of the repo image entirely. See the new closing section "Update: the gap is now closeable" for the full story.)* That part is the developer's job to handle, via Rediaccfile lifecycle hooks.
 
 <YouTubeEmbed videoId="o-Bst9rO9Fk" title="I Tested Rediacc Against the PocketOS Incident" />
+
+> **Update. May 2026.** Since this post was published, Rediacc shipped first-class **per-repo secrets** (`rdc repo secret`). The "honest gap" described below. External SaaS credentials baked into your repository. Now has a built-in answer that keeps secrets out of the LUKS image entirely, so forks inherit none of them by default. Jump to the new closing section [Update: the gap is now closeable](#update-the-gap-is-now-closeable) for what shipped, what changed, and what residual risk remains.
 
 Last weekend, Jer Crane published a 30-hour postmortem. A Cursor agent running Anthropic's Claude Opus 4.6 deleted his production database on Railway. The deletion was a single GraphQL call. It took 9 seconds. Railway's volume backups went with it because Railway stores them inside the same volume.
 
@@ -173,6 +175,24 @@ Three patterns close the gap on the developer side:
 If PocketOS had been on Rediacc, the Railway API token would not have been the right comparison. Their infrastructure would have been the Rediacc fork itself. There would have been no Railway token to find, because Rediacc does not expose any equivalent of `volumeDelete` to an authenticated agent. The agent would have lived inside a per-fork Docker socket with no path to delete the parent.
 
 But if their agent had found a Stripe production key in a credential file, Rediacc would not have stopped the agent from issuing refunds against real customer cards. That is a real loss. Both things are true.
+
+## Update: the gap is now closeable
+
+I left the section above as I originally wrote it. The honesty held its weight at the time. Since publishing, we shipped the missing piece, and the gap is now closeable. Not by changing how forks behave, but by adding a place to put credentials that lives outside the encrypted repo image.
+
+The mechanism is `rdc repo secret`. It is modeled on GitHub Actions secrets. Two things matter about how it is built.
+
+**Secrets do not live inside the LUKS image.** They live in a separate plane on disk: env-mode secrets reach containers as `${REDIACC_SECRET_<KEY>}` interpolation in your compose file, file-mode secrets reach containers as a tmpfs file at `/run/secrets/<key>` via Docker compose's `secrets:` block. Either way, the value is never written into the repository's encrypted image. The fork's BTRFS reflink copies the image. It does not copy what was never in the image. A fresh fork's secret list is empty. Its containers boot with no production credentials, so no production calls are even possible to make.
+
+**The model is write-only.** `rdc repo secret get` returns a SHA-256 digest, not the value. There is no way to read a secret back through the CLI, by design. That closes the leak surface of terminal recordings, shell history, and accidental redirects. Rotation is `--current <previous-value>` to verify the prior value, or `--rotate-secret` to skip the precondition when you do not have the prior value (audited as a rotation). Symmetric for humans and agents. Both gates apply equally.
+
+What this means for the PocketOS scenario: had they been on Rediacc with secrets adopted, the agent inside the fork would not have found `STRIPE_LIVE_KEY` in a credential file. The fork's secret map would have been empty. There would have been nothing to call Stripe with from inside the sandbox. The "real loss" qualifier from the original section above shrinks to "real loss for repos that bake credentials into the image". And the fix for those repos is a one-time migration into the new mechanism.
+
+The honest residual gap. Secrets that you wrote into the repo image before adopting `rdc repo secret`. A `.env` committed into a volume, a credential persisted into a database, a YAML file with a token. Are still part of the image's data. CoW reflink propagates them as before. The mechanism gives you somewhere safe to put them; it does not retroactively remove what is already on disk inside the encrypted volume. The fix is a manual lift today (read the value, set it via `rdc repo secret`, scrub it from the image source). A first-class `rdc repo secret lift --from .env` is on the roadmap.
+
+For the agent threat model specifically, two side effects of this design are worth calling out. First, `repo secret list` and `repo secret get` are exposed as MCP tools (read-safe. Names and digests, never values), so an agent helping you set up an app can discover what is configured without seeing what it is. Second, when a write fails the precondition, the JSON error envelope includes a structured `next.options[].run` field with concrete commands the agent should relay verbatim to the human. Including the rotation escape hatch for "I forgot the prior value." See [AI Agent Safety](/en/docs/ai-agents-safety) for the full model.
+
+The full how-to lives in [Repositories § Secrets](/en/docs/repositories#secrets). The recipe is short: `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""` to seed, `${REDIACC_SECRET_<KEY>}` in compose to consume, `rdc repo fork` and check that the fork's secret list is empty.
 
 ## What this changes for someone doing this kind of work
 

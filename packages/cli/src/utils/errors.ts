@@ -4,7 +4,7 @@ import { CliApiError } from '../services/api.js';
 import { AuthError } from '../services/auth.js';
 import { outputService } from '../services/output.js';
 import { telemetryService } from '../services/telemetry.js';
-import { type CliError, ValidationError } from '../types/errors.js';
+import { type CliError, ERROR_CODES, type NextAction, ValidationError } from '../types/errors.js';
 import { EXIT_CODES, httpStatusToExitCode, type OutputFormat } from '../types/index.js';
 
 // Global output format (set by main program before command execution)
@@ -62,6 +62,7 @@ function outputJsonError(cliError: CliError): void {
         ...(cliError.details?.length && { details: cliError.details }),
         retryable: isRetryable(cliError),
         guidance: getGuidance(cliError),
+        ...(cliError.next && { next: cliError.next }),
       },
     ],
     warnings: outputService.getWarnings(),
@@ -73,12 +74,19 @@ function outputJsonError(cliError: CliError): void {
 /** Output error in text format */
 function outputTextError(cliError: CliError): void {
   outputService.error(`Error: ${cliError.message}`);
-  if (!cliError.details?.length) {
-    return;
+  if (cliError.details?.length) {
+    for (const detail of cliError.details) {
+      if (detail !== cliError.message) {
+        outputService.error(`  - ${detail}`);
+      }
+    }
   }
-  for (const detail of cliError.details) {
-    if (detail !== cliError.message) {
-      outputService.error(`  - ${detail}`);
+  if (cliError.next) {
+    outputService.error('');
+    outputService.error(`What to do: ${cliError.next.summary}`);
+    for (const opt of cliError.next.options ?? []) {
+      outputService.error(`  • ${opt.description}`);
+      outputService.error(`      ${opt.run}`);
     }
   }
 }
@@ -115,6 +123,23 @@ export function handleError(error: unknown): never {
 }
 
 /**
+ * Validation error that carries a structured `next` action hint.
+ * Use this (instead of plain ValidationError) when you can suggest
+ * concrete commands the user/agent can run to resolve the failure.
+ */
+export class PreconditionValidationError extends ValidationError {
+  readonly next: NextAction;
+  readonly code: string;
+  constructor(message: string, next: NextAction, code: string = ERROR_CODES.PRECONDITION_MISMATCH) {
+    super(message);
+    // ValidationError's `name` is a read-only literal; instanceof PreconditionValidationError
+    // is sufficient discriminator. Don't reassign.
+    this.next = next;
+    this.code = code;
+  }
+}
+
+/**
  * Normalize various error types into a consistent CliError structure.
  */
 function normalizeError(error: unknown): CliError {
@@ -143,15 +168,25 @@ function normalizeError(error: unknown): CliError {
 
   if (error instanceof AuthError) {
     return {
-      code: 'AUTH_REQUIRED',
+      code: ERROR_CODES.AUTH_REQUIRED,
       message: error.message,
       exitCode: error.exitCode,
     };
   }
 
+  // PreconditionValidationError must come BEFORE ValidationError since it extends.
+  if (error instanceof PreconditionValidationError) {
+    return {
+      code: error.code,
+      message: error.message,
+      exitCode: EXIT_CODES.INVALID_ARGUMENTS,
+      next: error.next,
+    };
+  }
+
   if (error instanceof ValidationError) {
     return {
-      code: 'VALIDATION_ERROR',
+      code: ERROR_CODES.VALIDATION_ERROR,
       message: error.message,
       exitCode: EXIT_CODES.INVALID_ARGUMENTS,
     };
@@ -159,7 +194,7 @@ function normalizeError(error: unknown): CliError {
 
   // Unknown error
   return {
-    code: 'GENERAL_ERROR',
+    code: ERROR_CODES.GENERAL_ERROR,
     message: error instanceof Error ? error.message : String(error),
     exitCode: EXIT_CODES.GENERAL_ERROR,
   };

@@ -6,8 +6,8 @@ description: >-
 category: Tutorials
 order: 3
 language: tr
-sourceHash: 46c155563808d0b7
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "6d218fe2779ce0cf"
+sourceCommit: "21df1395c849109d6449b46f9092012c66801960"
 ---
 
 # Rediacc ile Depoları Dağıtma ve Yönetme
@@ -42,7 +42,7 @@ Yeni deponun kullanılabilir olduğunu doğrulayın.
 rdc repo list -m server-1
 ```
 
-Makinedeki tüm depoları boyutları, bağlama durumları ve şifreleme durumlarıyla birlikte gösterir.
+Makinedeki tüm depoları boyutları, bağlama durumları, şifreleme durumlarıyla birlikte ve her birini `grand` (en üst düzey), `fork` (başka bir deponun CoW kopyası) veya `unknown` (köken belirlenemiyor) olarak sınıflandıran bir `Type` sütunu ile birlikte gösterir. Tüm sınıflandırma kuralları için bkz. [Depolar. Type sütunu ve durum aynası](/tr/docs/repositories#type-sutunu-ve-durum-aynasi).
 
 ### Adım 3: Bağlama yolunu inceleyin
 

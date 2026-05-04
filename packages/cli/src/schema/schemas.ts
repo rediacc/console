@@ -169,6 +169,28 @@ export const StorageConfigSchema = z.object({
 // Repository (and archived repository)
 // =============================================================================
 
+// Per-repo secrets. Two delivery modes:
+//   env  → injected as REDIACC_SECRET_<KEY> in the renet shell (compose `${VAR}`).
+//   file → tmpfs file at /var/run/rediacc/secrets/<networkId>/<KEY> on the
+//          target machine, referenced by Docker compose `secrets:` block.
+// Fork isolation: registerFork does NOT copy `secrets`; a fork's map is empty.
+const SECRET_KEY_REGEX = /^[A-Z][A-Z0-9_]*$/;
+const SECRET_VALUE_MAX_BYTES = 10 * 1024 * 1024;
+
+export const SecretEntrySchema = z.object({
+  mode: z.enum(['env', 'file']),
+  value: z
+    .string()
+    .min(1, 'Secret value cannot be empty')
+    .max(SECRET_VALUE_MAX_BYTES, 'Secret value exceeds 10 MB cap'),
+});
+
+export const SecretKeySchema = z
+  .string()
+  .min(1)
+  .max(64, 'Secret key must be 64 characters or fewer')
+  .regex(SECRET_KEY_REGEX, 'Secret key must be UPPER_SNAKE_CASE');
+
 export const RepositoryConfigSchema = z.object({
   repositoryGuid: uuid,
   tag: z.string().optional(),
@@ -178,9 +200,11 @@ export const RepositoryConfigSchema = z.object({
   parentGuid: z.string().optional(),
   sshPrivateKey: z.string().optional(),
   sshPublicKey: z.string().optional(),
+  secrets: z.record(SecretKeySchema, SecretEntrySchema).optional(),
 });
 
-export const ArchivedRepositorySchema = RepositoryConfigSchema.extend({
+// Archives intentionally OMIT secrets — archiveRepository scrubs them.
+export const ArchivedRepositorySchema = RepositoryConfigSchema.omit({ secrets: true }).extend({
   name: z.string(),
   deletedAt: z.string(),
 });
@@ -343,6 +367,8 @@ export type MachineConfig = z.infer<typeof MachineConfigSchema>;
 export type StorageConfig = z.infer<typeof StorageConfigSchema>;
 export type RepositoryConfig = z.infer<typeof RepositoryConfigSchema>;
 export type ArchivedRepository = z.infer<typeof ArchivedRepositorySchema>;
+export type SecretEntry = z.infer<typeof SecretEntrySchema>;
+export type SecretMode = SecretEntry['mode'];
 export type InfraConfig = z.infer<typeof InfraConfigSchema>;
 export type BackupDestination = z.infer<typeof BackupDestinationSchema>;
 export type BackupStrategyConfig = z.infer<typeof BackupStrategyConfigSchema>;
