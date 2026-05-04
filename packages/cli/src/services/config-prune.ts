@@ -240,34 +240,48 @@ export async function analyzeConfigPrune(
   // Deep-clone so the analysis pass leaves the in-memory config untouched —
   // the apply path re-runs the same logic via `configFileStorage.update`.
   const clone = JSON.parse(JSON.stringify(config)) as RdcConfig;
-  const anchors = buildConfigAnchors(clone);
   const graceDays = options.graceDays ?? clone.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
 
-  const staleCerts = wantCerts ? pruneCertCacheBuckets(clone, anchors) : [];
+  // Apply archive removal to the clone FIRST so cert anchors are computed
+  // against the post-prune resource set; otherwise certs whose anchor is in
+  // expiredArchives would be classified as live and survive the run.
+  const arch = wantArchives
+    ? mutateAndExtractArchives(clone, graceDays, Boolean(options.purgeArchived))
+    : { expired: [] as ArchivedRepository[], inGrace: [] as ArchiveGraceEntry[] };
 
-  let expiredArchives: ArchivedRepository[] = [];
-  let graceArchives: ArchiveGraceEntry[] = [];
-  if (wantArchives) {
-    const all = clone.resources?.deletedRepositories ?? [];
-    if (options.purgeArchived) {
-      expiredArchives = all;
-      graceArchives = [];
-    } else {
-      const cls = classifyArchives(all, graceDays);
-      expiredArchives = cls.expired;
-      graceArchives = cls.inGrace;
+  const anchors = buildConfigAnchors(clone);
+  const staleCerts = wantCerts ? pruneCertCacheBuckets(clone, anchors) : [];
+  const refs = wantRefs
+    ? pruneDanglingRefs(clone)
+    : { dropped: [] as DroppedRef[], warnings: [] as string[] };
+
+  return {
+    staleCerts,
+    expiredArchives: arch.expired,
+    graceArchives: arch.inGrace,
+    droppedRefs: refs.dropped,
+    warnings: refs.warnings,
+  };
+}
+
+/** Classify and remove expired archives from `cfg` in-place; return both lists. */
+function mutateAndExtractArchives(
+  cfg: RdcConfig,
+  graceDays: number,
+  purgeAll: boolean
+): { expired: ArchivedRepository[]; inGrace: ArchiveGraceEntry[] } {
+  const all = cfg.resources?.deletedRepositories ?? [];
+  const cls = purgeAll
+    ? { expired: all, inGrace: [] as ArchiveGraceEntry[] }
+    : classifyArchives(all, graceDays);
+  if (cfg.resources && cls.expired.length > 0) {
+    const expiredGuids = new Set(cls.expired.map((e) => e.repositoryGuid));
+    cfg.resources.deletedRepositories = all.filter((a) => !expiredGuids.has(a.repositoryGuid));
+    if (cfg.resources.deletedRepositories.length === 0) {
+      delete cfg.resources.deletedRepositories;
     }
   }
-
-  let droppedRefs: DroppedRef[] = [];
-  let warnings: string[] = [];
-  if (wantRefs) {
-    const refs = pruneDanglingRefs(clone);
-    droppedRefs = refs.dropped;
-    warnings = refs.warnings;
-  }
-
-  return { staleCerts, expiredArchives, graceArchives, droppedRefs, warnings };
+  return cls;
 }
 
 /**
@@ -292,32 +306,18 @@ export async function applyConfigPrune(
     warnings: [],
   };
 
-  function applyArchivePrune(
-    cfg: RdcConfig,
-    graceDays: number
-  ): { expired: ArchivedRepository[]; inGrace: ArchiveGraceEntry[] } {
-    const all = cfg.resources?.deletedRepositories ?? [];
-    const cls = options.purgeArchived
-      ? { expired: all, inGrace: [] as ArchiveGraceEntry[] }
-      : classifyArchives(all, graceDays);
-    if (cfg.resources && cls.expired.length > 0) {
-      const expiredGuids = new Set(cls.expired.map((e) => e.repositoryGuid));
-      cfg.resources.deletedRepositories = all.filter((a) => !expiredGuids.has(a.repositoryGuid));
-      if (cfg.resources.deletedRepositories.length === 0) {
-        delete cfg.resources.deletedRepositories;
-      }
-    }
-    return cls;
-  }
-
   await configFileStorage.update(configName, (cfg) => {
-    const anchors = buildConfigAnchors(cfg);
     const graceDays = options.graceDays ?? cfg.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
 
-    const staleCerts = wantCerts ? pruneCertCacheBuckets(cfg, anchors) : [];
+    // Prune archives FIRST so the cert-anchor pass below sees the post-prune
+    // resource set. If we built anchors from the pre-prune config, certs
+    // anchored to repositories about to be purged would survive the run as
+    // "live" and need a second invocation to be removed.
     const arch = wantArchives
-      ? applyArchivePrune(cfg, graceDays)
+      ? mutateAndExtractArchives(cfg, graceDays, Boolean(options.purgeArchived))
       : { expired: [] as ArchivedRepository[], inGrace: [] as ArchiveGraceEntry[] };
+    const anchors = buildConfigAnchors(cfg);
+    const staleCerts = wantCerts ? pruneCertCacheBuckets(cfg, anchors) : [];
     const refs = wantRefs
       ? pruneDanglingRefs(cfg)
       : { dropped: [] as DroppedRef[], warnings: [] as string[] };

@@ -379,10 +379,10 @@ class ConfigService extends ConfigServiceBase {
     // deploy-time secrets are out of scope and would otherwise survive a
     // delete-then-restore cycle. ArchivedRepositorySchema.omit({secrets})
     // mirrors this at the schema layer.
-    const { secrets: _scrubbed, ...rest } = repos[repoName];
-    void _scrubbed;
+    const scrubbed = { ...repos[repoName] };
+    delete scrubbed.secrets;
     const archived: ArchivedRepository = {
-      ...rest,
+      ...scrubbed,
       name: repoName,
       deletedAt: new Date().toISOString(),
     };

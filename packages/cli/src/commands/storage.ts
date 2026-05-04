@@ -90,8 +90,12 @@ function parseBackupGuids(stdout: string): string[] {
 const STORAGE_MODES = ['hot', 'cold'] as const;
 type StorageMode = (typeof STORAGE_MODES)[number];
 
-/** List GUIDs under one subpath. Returns empty on failure (e.g. mode not yet
- *  populated) so a missing `cold/` doesn't kill the whole prune. */
+/** List GUIDs under one subpath. Returns empty when the subpath is
+ *  legitimately missing (a fresh storage that hasn't seen the cold/ tier
+ *  yet, for example) but throws on real failures so a broken SSH/renet/
+ *  storage path can't be silently treated as "no backups, nothing to do".
+ *  The previous swallow-all-errors behavior was a P1 hazard: it could leave
+ *  orphans in place while reporting success. */
 async function listGuidsAtPath(
   storageName: string,
   subpath: StorageMode,
@@ -105,7 +109,16 @@ async function listGuidsAtPath(
     captureOutput: true,
     skipRouterRestart: options.skipRouterRestart,
   });
-  if (!result.success) return [];
+  if (!result.success) {
+    const stderr = (result.error ?? '').toString();
+    // rclone reports a missing remote subpath as "directory not found".
+    // Anything else is a real error — surface it.
+    if (/(directory not found|no such (file|directory))/i.test(stderr)) {
+      return [];
+    }
+    const reason = result.error ?? (stderr.length > 0 ? stderr : 'no error message captured');
+    throw new Error(`backup_list failed for ${storageName}/${subpath}: ${reason}`);
+  }
   return parseBackupGuids(result.stdout ?? '');
 }
 
