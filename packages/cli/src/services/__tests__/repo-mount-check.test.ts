@@ -29,7 +29,7 @@ function cloudProvider() {
   return { isCloud: true };
 }
 
-function listResultStdout(repos: { guid: string; mounted: boolean }[]): string {
+function listResultStdout(repos: { name: string; mounted: boolean }[]): string {
   return JSON.stringify(repos);
 }
 
@@ -44,8 +44,8 @@ describe('assertRepoMountedOnMachine', () => {
       success: true,
       exitCode: 0,
       stdout: listResultStdout([
-        { guid: 'other-guid', mounted: true },
-        { guid: REPO_GUID, mounted: true },
+        { name: 'other-guid', mounted: true },
+        { name: REPO_GUID, mounted: true },
       ]),
     });
 
@@ -59,7 +59,7 @@ describe('assertRepoMountedOnMachine', () => {
     mockExecute.mockResolvedValue({
       success: true,
       exitCode: 0,
-      stdout: listResultStdout([{ guid: REPO_GUID, mounted: false }]),
+      stdout: listResultStdout([{ name: REPO_GUID, mounted: false }]),
     });
 
     await expect(assertRepoMountedOnMachine(REPO_NAME, REPO_GUID, MACHINE)).rejects.toBeInstanceOf(
@@ -71,7 +71,7 @@ describe('assertRepoMountedOnMachine', () => {
     mockExecute.mockResolvedValue({
       success: true,
       exitCode: 0,
-      stdout: listResultStdout([{ guid: 'someone-else', mounted: true }]),
+      stdout: listResultStdout([{ name: 'someone-else', mounted: true }]),
     });
 
     await expect(assertRepoMountedOnMachine(REPO_NAME, REPO_GUID, MACHINE)).rejects.toBeInstanceOf(
