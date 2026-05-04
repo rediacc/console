@@ -38,7 +38,8 @@ export async function assertRepoMountedOnMachine(
     return;
   }
 
-  const entry = repos.find((r) => r.guid === repoGuid);
+  // renet's `list repositories --json` keys repos by GUID under `name` and has no `guid` field.
+  const entry = repos.find((r) => r.name === repoGuid);
   if (entry?.mounted !== true) {
     throw new ValidationError(
       t('errors.repoNotDeployed', { repository: repoName, machine: machineName })

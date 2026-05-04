@@ -1,4 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// First-time module evaluation in CI runners can exceed the 5s default test
+// timeout (this file mocks 30+ deps before importing backup-schedule). Pull
+// the import into a single beforeAll with a generous timeout; the per-test
+// `await import` calls that follow then hit vitest's module cache and return
+// instantly. Cheaper than bumping every individual test's timeout.
+beforeAll(async () => {
+  await import('../backup-schedule.js');
+}, 30000);
 
 const mockExecStreaming = vi.fn();
 const mockConnect = vi.fn().mockResolvedValue(undefined);

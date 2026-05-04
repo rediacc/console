@@ -150,6 +150,14 @@ cd packages/www && npm run build
 cd packages/www && npm run dev
 ```
 
+### Iterating on a local SEA (`./rdc.sh --override-local`)
+
+`./rdc.sh --override-local` rebuilds the CLI SEA from local source and installs it over `~/.local/share/rediacc/bin/rdc`. Use it when iterating on SEA-only behaviors (embedded renet, auto-update gating) that the dev-mode `cli-bundle.cjs` path doesn't exercise.
+
+The flag runs `ensure_deps` + `ensure_packages_built` first, so edits to `packages/shared`, `packages/shared-desktop`, or `packages/provisioning` are picked up by the bundler — those packages resolve through their own `dist/` outputs, and forgetting to rebuild them was a silent footgun. Auto-update is short-circuited via the `VERSION === '0.0.0-dev'` guard in `packages/cli/src/utils/platform.ts::isUpdateDisabled`, so the override binary survives the next `rdc` invocation.
+
+The previous binary is preserved as a backup matching `getOldBinaryPath()` (`<base>.old<ext>` — `rdc.old` on Linux/macOS, `rdc.old.exe` on Windows) so `cleanupOldBinary()` removes it on the next successful update.
+
 ## Versioning
 
 Version source of truth: **git tags** (e.g., `v0.8.3`). No version bump commits.

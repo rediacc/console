@@ -1202,8 +1202,11 @@ cleanup_r2() {
                     pkg_deleted=$((pkg_deleted + 1))
                     continue
                 fi
-                # Keep if semver is in top-N
-                if echo "$top_versions" | grep -qxF "$semver"; then
+                # Keep if semver is in top-N. Herestring avoids the
+                # `echo | grep -q` pipe: grep -q exits on the first match,
+                # SIGPIPE-ing echo and leaking "write error: Broken pipe"
+                # to stderr once per kept version (~6/run on this codebase).
+                if grep -qxF "$semver" <<<"$top_versions"; then
                     continue
                 fi
                 local tag="v${semver}, outside top-${R2_PACKAGE_KEEP_VERSIONS}"

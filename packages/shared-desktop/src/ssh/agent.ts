@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { commandExists, getPlatform } from '../utils/platform.js';
+import { decodeSSHKey } from './keyManager.js';
 
 /**
  * Default timeout for SSH agent operations in milliseconds (10 seconds)
@@ -132,9 +133,14 @@ export async function addKeyToAgent(
     `key-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
   );
 
+  // ssh-add uses libcrypto's stricter PEM parser — CRLF line endings or a
+  // missing trailing newline cause "error in libcrypto" even on keys that
+  // `ssh -i` accepts. Normalize before writing.
+  const normalizedKey = decodeSSHKey(privateKey);
+
   try {
     // Write the key to temp file with proper permissions
-    writeFileSync(tempKeyPath, privateKey, { mode: 0o600 });
+    writeFileSync(tempKeyPath, normalizedKey, { mode: 0o600 });
 
     await new Promise<void>((resolve, reject) => {
       let timedOut = false;

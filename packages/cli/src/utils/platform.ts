@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { getCacheDir, getStateDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
+import { VERSION } from '../version.js';
 
 export const STAGED_UPDATE_DIR = join(getCacheDir(), 'staged-update');
 export const UPDATE_STATE_FILE = join(getStateDir(), 'update-state.json');
@@ -58,6 +59,14 @@ export function isUpdateDisabled(): boolean {
 
   // CI environments
   if (process.env.CI === 'true') return true;
+
+  // Dev / pre-release builds. A locally-built SEA carries 0.0.0-dev (or any
+  // -dev suffix) and is sitting somewhere like ~/.local/share/rediacc/bin/rdc.
+  // Auto-update would clobber it with the latest stable on every invocation,
+  // making local renet/CLI iteration impossible. The version constant is
+  // injected at build time, so this short-circuits identically across all
+  // platforms.
+  if (VERSION === '0.0.0-dev' || VERSION.endsWith('-dev')) return true;
 
   // Binary in build/dist/node_modules path
   const execDir = dirname(process.execPath);
