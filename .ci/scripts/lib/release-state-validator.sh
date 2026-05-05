@@ -57,10 +57,12 @@ RSV_GRANDFATHER_BEFORE="${RSV_GRANDFATHER_BEFORE-v1.0.4}"
 #      sealing a never-built version.
 #   3. Once backfilled, drop the version from RSV_EXEMPT_VERSIONS.
 #
-# v1.1.2 default: temporary, unblocks CD until the backfill workflow is
-# dispatched against the merged main. Removed in the immediate follow-up
-# commit after the backfill run confirms cli/v1.1.2/.released is present.
-RSV_EXEMPT_VERSIONS="${RSV_EXEMPT_VERSIONS-v1.1.2}"
+# Default empty: every version since the rollout floor is subject to the
+# bijection check unless an operator explicitly sets RSV_EXEMPT_VERSIONS for
+# a one-off scenario. The v1.1.2 transitional default was dropped on
+# 2026-05-05 once the Backfill Release Sentinel workflow re-sealed
+# cli/v1.1.2/.released and desktop/v1.1.2/.released (run 25360147930).
+RSV_EXEMPT_VERSIONS="${RSV_EXEMPT_VERSIONS-}"
 
 # =============================================================================
 # Live probes (AWS + git)
