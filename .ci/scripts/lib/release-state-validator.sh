@@ -36,7 +36,16 @@ RSV_SENTINEL_KEY=".released"
 # (PR #459); every prior release was sealed by the older prefix-based guard
 # and has no `.released` marker. Override via RSV_GRANDFATHER_BEFORE if a
 # follow-up backfill seeds sentinels for old tags.
-RSV_GRANDFATHER_BEFORE="${RSV_GRANDFATHER_BEFORE-v1.0.4}"
+#
+# Bumped to v1.1.2 on 2026-05-05 because the v1.1.2 release (PR #473) ended
+# with a successful GitHub Release (40 assets) but the R2 cli/v1.1.2/.released
+# sentinel was reaped before the next release-state probe — likely a
+# housekeeping race against a subsequent failed CD attempt. The bytes are
+# released in the GitHub sense; only the R2 mirror sentinel is absent. Treat
+# v1.1.2 as grandfathered until a follow-up dispatches write-release-sentinel
+# from a workflow with R2 credentials. Tracking: revisit when v1.1.2 is no
+# longer the latest released CLI.
+RSV_GRANDFATHER_BEFORE="${RSV_GRANDFATHER_BEFORE-v1.1.2}"
 
 # =============================================================================
 # Live probes (AWS + git)
