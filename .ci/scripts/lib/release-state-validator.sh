@@ -36,16 +36,21 @@ RSV_SENTINEL_KEY=".released"
 # (PR #459); every prior release was sealed by the older prefix-based guard
 # and has no `.released` marker. Override via RSV_GRANDFATHER_BEFORE if a
 # follow-up backfill seeds sentinels for old tags.
+RSV_GRANDFATHER_BEFORE="${RSV_GRANDFATHER_BEFORE-v1.0.4}"
+
+# Per-version exemptions. Newline-separated list of versions to exclude from
+# the bijection check WITHOUT widening the grandfather floor. Use this when a
+# specific post-rollout release lost its sentinel for an external reason
+# (housekeeping race, manual scrub) and you do not want to suppress drift on
+# every other release between the grandfather floor and that version.
 #
-# Bumped to v1.1.2 on 2026-05-05 because the v1.1.2 release (PR #473) ended
-# with a successful GitHub Release (40 assets) but the R2 cli/v1.1.2/.released
-# sentinel was reaped before the next release-state probe — likely a
-# housekeeping race against a subsequent failed CD attempt. The bytes are
-# released in the GitHub sense; only the R2 mirror sentinel is absent. Treat
-# v1.1.2 as grandfathered until a follow-up dispatches write-release-sentinel
-# from a workflow with R2 credentials. Tracking: revisit when v1.1.2 is no
-# longer the latest released CLI.
-RSV_GRANDFATHER_BEFORE="${RSV_GRANDFATHER_BEFORE-v1.1.2}"
+# v1.1.2: GitHub Release shipped with 40 assets; the R2 cli/v1.1.2/.released
+# sentinel was reaped before the next release-state probe (housekeeping race
+# against a subsequent failed CD attempt). The bytes are released in the
+# GitHub sense; only the R2 mirror sentinel is absent. Will be removed once
+# a workflow_dispatch is wired up that backfills the sentinel via
+# write-release-sentinel.sh with R2 credentials.
+RSV_EXEMPT_VERSIONS="${RSV_EXEMPT_VERSIONS-v1.1.2}"
 
 # =============================================================================
 # Live probes (AWS + git)
@@ -155,18 +160,27 @@ rsv_assert_bijection() {
     # `sort -V` orders strict-semver tags correctly so we can drop everything
     # at or below the baseline by comparing each candidate to the sorted list.
     local grandfather="${RSV_GRANDFATHER_BEFORE:-}"
+    # Per-version exempt set (post-rollout sentinel anomalies), built from
+    # RSV_EXEMPT_VERSIONS. Newline OR whitespace separated; matched as exact
+    # tag strings so v1.1.20 does not match v1.1.2.
+    declare -A exempt_set=()
+    local _ev
+    for _ev in ${RSV_EXEMPT_VERSIONS:-}; do
+        [[ -n "$_ev" ]] && exempt_set["$_ev"]=1
+    done
     rsv_drop_grandfathered() {
         local input="$1"
-        if [[ -z "$grandfather" ]]; then
-            printf '%s\n' "$input"
-            return 0
-        fi
-        local v
+        local v newer
         while IFS= read -r v; do
             [[ -z "$v" ]] && continue
+            # Drop exempt versions outright.
+            [[ -n "${exempt_set[$v]:-}" ]] && continue
+            if [[ -z "$grandfather" ]]; then
+                printf '%s\n' "$v"
+                continue
+            fi
             # Keep v iff (v != grandfather) AND (v sorts AFTER grandfather).
             [[ "$v" == "$grandfather" ]] && continue
-            local newer
             newer="$(printf '%s\n%s\n' "$grandfather" "$v" | sort -V | tail -1)"
             [[ "$newer" == "$v" ]] && printf '%s\n' "$v"
         done <<<"$input"
