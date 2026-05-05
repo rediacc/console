@@ -68,12 +68,23 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 10
     steps:
+      # Sparse-checkout the action source first; the local app-token action
+      # cannot resolve until it exists on disk.
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions
+
       - name: Generate app token
         id: app-token
         uses: ./.github/actions/app-token
         with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: readonly
+          repositories: console
 
+      # Full checkout with tags so we can resolve commit_sha from the version
+      # tag and verify ancestry against origin/main.
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           token: ${{ steps.app-token.outputs.token }}
