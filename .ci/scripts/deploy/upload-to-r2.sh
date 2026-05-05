@@ -249,10 +249,29 @@ write_once_guard() {
         log_warn "Orphan prefix detected at s3://${RELEASES_BUCKET}/${prefix} (no .released sentinel)."
         log_warn "  A prior CI run uploaded bytes here but was cancelled before finalize"
         log_warn "  sealed the version. Scrubbing orphan bytes so this run can upload cleanly."
+
+        # Defensive recheck immediately before the destructive delete: if a
+        # sentinel appeared in the milliseconds between the initial probe and
+        # this scrub (concurrent finalize-release-sentinel write, eventual
+        # consistency, etc.), abort rather than nuke the freshly-sealed
+        # release. Pair with the --exclude '.released' below as belt-and-
+        # suspenders: the orphan case has no `.released` by definition, so
+        # the exclude is a no-op in the legitimate path but a safety net
+        # against any race we haven't enumerated.
+        if rsv_sentinel_exists "$product" "$version"; then
+            log_error "Sentinel ${product}/${version}/.released appeared during the orphan check — refusing to scrub."
+            log_error "  This race is benign for the upload caller: the version is now sealed,"
+            log_error "  so writes here would have been blocked anyway. Bump next_version past"
+            log_error "  ${version} and re-dispatch CI."
+            exit 1
+        fi
+
         aws s3 rm "s3://${RELEASES_BUCKET}/${prefix}" \
             --endpoint-url "$R2_ENDPOINT" \
-            --recursive
-        log_info "  orphan bytes removed; proceeding with upload"
+            --recursive \
+            --exclude '*.released' \
+            --exclude '.released'
+        log_info "  orphan bytes removed (sentinel files excluded); proceeding with upload"
     fi
 }
 
