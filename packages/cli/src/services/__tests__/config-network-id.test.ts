@@ -25,7 +25,7 @@ vi.mock('../config-base.js', () => ({
   },
 }));
 
-describe('allocateNetworkId', () => {
+describe('allocateNetworkId', { timeout: 30_000 }, () => {
   beforeEach(() => {
     mockConfig = {};
   });

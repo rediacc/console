@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "14cf2fb4ac3dc4d6"
-sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
+sourceHash: "eae6eedb1a1298f2"
+sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -84,6 +84,41 @@ Bir depolama konumundaki mevcut yedekleri görüntüleyin:
 ```bash
 rdc repo backup list --from my-storage -m server-1
 ```
+
+Çıktı, hem [zamanlanmış yedekleme klasörlerini](#zamanlanmis-yedeklemeler) (`hot/` ve `cold/`) birleştiren birleşik bir tablodur; böylece her yedeği tek bir görünümde görebilirsiniz:
+
+| Sütun | Anlamı |
+|---|---|
+| `Mode` | `hot` veya `cold`. Bu girişin hangi zamanlanmış yedekleme klasöründe yer aldığı |
+| `Name` | Yerel yapılandırmanızdan çözümlenen depo adı (yapılandırmada olmayan depolar için GUID'e geri döner) |
+| `GUID` | Disk üzerindeki depo GUID'i |
+| `Size` | Yedekleme dosyasının okunabilir boyutu |
+| `Modified` | Depolama arka ucundan UTC zaman damgası |
+
+Tek bir moda inmek için `--path` geçirin:
+
+```bash
+rdc repo backup list --from my-storage -m server-1 --path hot
+rdc repo backup list --from my-storage -m server-1 --path cold
+```
+
+### Depolama düzeni
+
+Zamanlanmış yedeklemeler, depolamanın yapılandırılmış klasörünün içinde mod başına alt klasörlere iner; böylece aynı depolama hem saatlik hem de haftalık akışları karıştırmadan temiz biçimde barındırır:
+
+```text
+<bucket>/<folder>/
+├── hot/
+│   ├── <guid-1>
+│   ├── <guid-2>
+│   └── ...
+└── cold/
+    ├── <guid-1>
+    ├── <guid-3>
+    └── ...
+```
+
+Bir depo hem `hot/` hem de `cold/` altında görünebilir (saatlik zamanlama anlık görüntüsünü alır; haftalık zamanlama tekrar alır). Birleşik liste her iki satırı da gösterir, böylece hangi akışların hangi depoları kapsadığı net olur.
 
 ## Toplu Senkronizasyon
 
@@ -201,6 +236,8 @@ Bu varsayılan davranış kasıtlıdır. Aynı datastore'a karşı iki soğuk ye
 
 ### Strateji Tanımlama
 
+Standart varsayılan, iki stratejili bir bölüştürmedir: her depoyu yakalayan hızlı bir saatlik sıcak akış ve uygulama tutarlı anlık görüntüler alan daha yavaş bir haftalık soğuk akış. İki strateji farklı depolama alt klasörlerine (`hot/` ve `cold/`) yazar, böylece yedeklemeler asla karışmaz.
+
 ```bash
 rdc config backup-strategy set \
   --name hourly-hot \
@@ -213,14 +250,15 @@ rdc config backup-strategy set \
 
 ```bash
 rdc config backup-strategy set \
-  --name nightly-cold \
+  --name weekly-cold \
   --destination my-storage \
-  --cron "0 2 * * *" \
+  --cron "15 3 * * 0" \
   --mode cold \
-  --include "*.db" \
-  --exclude "tmp/**" \
+  --exclude very-large-repo \
   --enable
 ```
+
+Soğuk strateji üzerindeki `--exclude` filtresi, haftalık bakım pencerenize sığmayan çok büyük depolar için önerilen kaçış noktasıdır. Saatlik sıcak strateji onları yine de kapsar; soğuk yalnızca atlar. `--exclude` içindeki depo adları yerel yapılandırma depo adıyla eşleşir (`:tag` olmadan).
 
 | Seçenek | Açıklama |
 |---------|----------|
@@ -237,13 +275,13 @@ rdc config backup-strategy set \
 
 ```bash
 rdc config backup-strategy list
-rdc config backup-strategy show --name nightly-cold
+rdc config backup-strategy show --name weekly-cold
 ```
 
 ### Strateji Kaldırma
 
 ```bash
-rdc config backup-strategy remove --name nightly-cold
+rdc config backup-strategy remove --name weekly-cold
 ```
 
 ### Stratejileri Makineye Bağlama
@@ -254,7 +292,7 @@ Yapılandırmanızda bir veya daha fazla strateji adını bir makineye bağlayı
 {
   "machines": {
     "hostinger": {
-      "backupStrategies": ["hourly-hot", "nightly-cold"]
+      "backupStrategies": ["hourly-hot", "weekly-cold"]
     }
   }
 }
@@ -285,7 +323,7 @@ Zamanlayıcıyı beklemeden hemen yedekleme başlatın. `systemd-run` kullanarak
 
 ```bash
 rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy nightly-cold
+rdc machine backup now -m server-1 --strategy weekly-cold
 ```
 
 ### Yedekleme Durumunu Görüntüleme
@@ -301,7 +339,7 @@ rdc machine backup status -m server-1 --strategy hourly-hot
 
 ```bash
 rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy nightly-cold
+rdc machine backup cancel -m server-1 --strategy weekly-cold
 ```
 
 ## Depo Migrasyonu

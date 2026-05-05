@@ -6,8 +6,8 @@ description: >-
 category: Tutorials
 order: 6
 language: ar
-sourceHash: b91d408984abfc75
-sourceCommit: 2223eabccb947ee9da79f1afcef075e163797d13
+sourceHash: "828979d18c6d73f2"
+sourceCommit: "21df1395c849109d6449b46f9092012c66801960"
 ---
 
 # كيفية تكوين النسخ الاحتياطي والشبكات مع Rediacc
@@ -49,6 +49,8 @@ rdc config backup-strategy set --name daily-azure --destination azure-backup --c
 ```
 
 يقوم هذا بجدولة نسخ احتياطية يومية في الساعة 2 صباحاً إلى `my-s3` وفي الساعة 6 صباحاً إلى `azure-backup`. كل وجهة لها جدولها الخاص. تُحفظ الجداول في تكوينك ويمكن نشرها على الأجهزة كمؤقتات systemd.
+
+> **التخطيط الساخن مقابل البارد.** عندما تستخدم استراتيجية `--mode hot`، تُحفظ النسخ الاحتياطية في `<bucket>/<folder>/hot/<guid>` على وحدة التخزين؛ بينما تكتب استراتيجيات `--mode cold` إلى `<bucket>/<folder>/cold/<guid>`. النمط القياسي هو استراتيجية ساخنة واحدة كل ساعة بالإضافة إلى استراتيجية باردة واحدة أسبوعية. راجع [النسخ الاحتياطي والاستعادة. تخطيط التخزين](/ar/docs/backup-restore#storage-layout) للاطلاع على التفاصيل الكاملة.
 
 ### الخطوة 3: عرض جدول النسخ الاحتياطي
 

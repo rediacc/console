@@ -6,8 +6,8 @@ description: >-
 category: Tutorials
 order: 6
 language: tr
-sourceHash: b91d408984abfc75
-sourceCommit: 2223eabccb947ee9da79f1afcef075e163797d13
+sourceHash: "828979d18c6d73f2"
+sourceCommit: "21df1395c849109d6449b46f9092012c66801960"
 ---
 
 # Rediacc ile Yedekleme ve Ağ Nasıl Yapılandırılır
@@ -49,6 +49,8 @@ rdc config backup-strategy set --name daily-azure --destination azure-backup --c
 ```
 
 Bu, sabah 2'de `my-s3`'e ve sabah 6'da `azure-backup`'a günlük yedeklemeler zamanlar. Her hedef kendi zamanlamasına sahiptir. Zamanlamalar yapılandırmanızda saklanır ve makinelere systemd zamanlayıcıları olarak dağıtılabilir.
+
+> **Sıcak ve soğuk düzen.** Bir strateji `--mode hot` kullandığında, yedeklemeler depolamada `<bucket>/<folder>/hot/<guid>` konumuna iner; `--mode cold` stratejileri ise `<bucket>/<folder>/cold/<guid>` konumuna yazar. Standart desen, bir saatlik sıcak strateji artı bir haftalık soğuk stratejidir. Tüm ayrıntılar için bkz. [Yedekleme ve Geri Yükleme. Depolama düzeni](/tr/docs/backup-restore#depolama-duzeni).
 
 ### Adım 3: Yedekleme zamanlamasını görüntüleyin
 

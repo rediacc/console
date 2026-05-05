@@ -11,7 +11,7 @@ tags:
   - case-study
 featured: true
 language: zh
-sourceHash: "176378344556c026"
+sourceHash: "92e468286c279cc0"
 ---
 
 import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
@@ -20,9 +20,11 @@ import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
 >
 > - 128 GB 生产仓库的端到端 fork：**7.2 秒**。其中 CoW reflink 本身：2.3 秒。
 > - 智能体被阻止操作 grand（生产）仓库，被阻止自行设置覆盖开关；当访问被授权时，会被丢进一个内核级沙箱（非特权用户、独立挂载命名空间、范围受限的 Docker socket）。
-> - **Rediacc 不隔离的部分**：你仓库数据里的外部 SaaS 凭证。fork 会继承它们。这部分要由开发者通过 Rediaccfile 生命周期钩子来处理。
+> - **Rediacc 不隔离的部分**：你仓库数据里的外部 SaaS 凭证。fork 会继承它们。*（更新. 2026 年 5 月：`rdc repo secret` 现在可以让你把凭证完全留在仓库镜像之外。完整说明见新增的结尾章节"更新：这个缺口现在可以补上了"。）* 这部分要由开发者通过 Rediaccfile 生命周期钩子来处理。
 
 <YouTubeEmbed videoId="o-Bst9rO9Fk" title="我用 PocketOS 事故场景测试了 Rediacc" />
+
+> **更新. 2026 年 5 月。** 自这篇文章发布以来，Rediacc 推出了一等公民式的**按仓库密钥**（`rdc repo secret`）。下文描述的那个"诚实的缺口". 烘焙在你仓库里的外部 SaaS 凭证. 现在有了内建答案：把密钥完全留在 LUKS 镜像之外，因此 fork 默认不会继承其中任何一个。直接跳到新增的结尾章节 [更新：这个缺口现在可以补上了](#update-the-gap-is-now-closeable)，看看交付了什么、改变了什么、还剩多少残余风险。
 
 上周末，Jer Crane 发布了一篇耗时 30 小时的事后复盘。一个跑着 Anthropic Claude Opus 4.6 的 Cursor 智能体删掉了他在 Railway 上的生产数据库。这次删除只是一次 GraphQL 调用，耗时 9 秒。Railway 的卷备份也一起没了，因为 Railway 把备份就放在同一个卷里。
 
@@ -174,6 +176,24 @@ fork 是父仓库的逐字节 BTRFS reflink。父仓库 `data/`、`.env` 或 `se
 如果 PocketOS 跑在 Rediacc 上，Railway API 令牌就不再是恰当的对照对象。他们的基础设施本身就是 Rediacc 的 fork。压根不会有 Railway 令牌让人去找，因为 Rediacc 不会向已认证的智能体暴露任何等价于 `volumeDelete` 的接口。智能体会被关在按 fork 限定的 Docker socket 里，没有任何路径能删掉父仓库。
 
 但如果他们的智能体在某个凭证文件里翻到一把 Stripe 生产密钥，Rediacc 阻挡不了它给真实顾客的银行卡发起退款。这是真实的损失。两件事都成立。
+
+## 更新：这个缺口现在可以补上了
+
+上面那一节我保留了原貌。当时那份诚实是站得住脚的。自发布以来，我们交付了缺失的那一块，缺口现在可以补上了. 不是靠改变 fork 的行为，而是靠新增一处放凭证的地方，让它住在加密的仓库镜像之外。
+
+机制就是 `rdc repo secret`。它的设计参照了 GitHub Actions secrets。它的实现里有两点很关键。
+
+**密钥不住在 LUKS 镜像里面。** 它们住在磁盘上的另一个独立平面：env 模式的密钥以 `${REDIACC_SECRET_<KEY>}` 插值方式在你的 compose 文件里到达容器；file 模式的密钥则通过 Docker compose 的 `secrets:` 块以 tmpfs 文件 `/run/secrets/<key>` 的形式到达容器。无论哪种方式，值都不会被写进仓库的加密镜像。fork 的 BTRFS reflink 复制的是镜像。它不会复制从未在镜像里的东西。一份新鲜 fork 的密钥列表是空的。它的容器启动时没有任何生产凭证，因此连发起一次生产调用都不可能。
+
+**这个模型是只写的。** `rdc repo secret get` 返回的是 SHA-256 摘要，不是值。CLI 设计上就没有任何方式可以把密钥读回来. 这就关上了终端录像、shell 历史和意外重定向带来的泄露面。轮换的方式是 `--current <previous-value>` 来校验前一个值，或者在你不知道前一个值的时候用 `--rotate-secret` 跳过前置条件（会作为一次轮换被审计）。对人类和智能体是对称的。两道关卡同样适用。
+
+这对 PocketOS 那个场景意味着什么：如果他们用的是 Rediacc 并采纳了密钥机制，fork 里的智能体就不会在某个凭证文件里翻到 `STRIPE_LIVE_KEY`。fork 的密钥映射会是空的。沙箱内根本没有任何东西能用来调用 Stripe。上面原文里"真实的损失"这一保留语，会缩小为"对那些把凭证烘焙进镜像的仓库来说是真实的损失". 而那些仓库的修复方式，是一次性把它们迁移到新机制里。
+
+诚实地说，残余的缺口在这里。在采用 `rdc repo secret` 之前你已经写进仓库镜像的密钥. 提交到某个卷里的 `.env`、被持久化进数据库的凭证、带 token 的 YAML 文件. 仍然是镜像数据的一部分。CoW reflink 会照旧把它们传播下去。这套机制给了你一个安全的存放位置；它不会回溯式地把已经在加密卷磁盘上的东西清掉。今天的修复方式是手动迁移一次（读出值，用 `rdc repo secret` 写入，再从镜像源里清除）。一个一等公民式的 `rdc repo secret lift --from .env` 在路线图上。
+
+针对智能体威胁模型，这个设计有两个值得专门指出来的副作用。第一，`repo secret list` 和 `repo secret get` 作为 MCP 工具暴露出来（读安全. 只给名字和摘要，绝不给值），所以一个帮你搭应用的智能体可以发现配置了什么，而不会看到具体是什么。第二，当一次写操作未通过前置条件时，JSON 错误信封里包含一个结构化的 `next.options[].run` 字段，列出智能体应当原样转交给人类的具体命令. 包括针对"我忘了前一个值"的轮换逃生口。完整模型见 [AI 智能体安全](/zh/docs/ai-agents-safety)。
+
+完整的操作指引见 [仓库 § 密钥](/zh/docs/repositories#secrets)。配方很短：用 `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""` 播种，用 compose 里的 `${REDIACC_SECRET_<KEY>}` 消费，再 `rdc repo fork` 然后检查 fork 的密钥列表是空的。
 
 ## 这对做这类工作的人意味着什么
 

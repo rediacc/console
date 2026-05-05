@@ -9,13 +9,15 @@ import type { BridgeFunctionName, FunctionParamsMap } from './functions.generate
 // Zod schemas for runtime validation
 // ============================================
 
-/** Delete a backup from storage or machine */
+/** Delete one or more backups from storage or machine */
 export const BackupDeleteParamsSchema = z.object({
   sourceType: z
     .enum(['machine', 'storage'])
     .default('storage')
     .describe('Target type: machine or storage'),
   from: z.string().min(1).describe('Target machine or storage name'),
+  path: z.string().optional().describe('Subdirectory within the storage root (e.g., \'hot\' or \'cold\')'),
+  repositories: z.array(z.string()).optional().describe('Optional list of repository GUIDs to delete in a single call. When set, supersedes the single `repository` requirement.'),
 });
 
 /** List available backups on storage or machine */
@@ -25,6 +27,7 @@ export const BackupListParamsSchema = z.object({
     .default('storage')
     .describe('Source type: machine or storage'),
   from: z.string().min(1).describe('Source machine or storage name'),
+  path: z.string().optional().describe('Subdirectory within the storage root (e.g., \'hot\' or \'cold\')'),
 });
 
 /** Pull repository from remote source (machine or storage) */

@@ -64,6 +64,8 @@ Open Settings → MCP Servers → Add Server:
 | `config_show_infra` | Show infrastructure configuration for a machine (base domain, public IPs, TLS, Cloudflare zone) |
 | `config_providers` | List configured cloud providers for machine provisioning |
 | `agent_capabilities` | List all available rdc CLI commands with their arguments and options |
+| `repo_secret_list` | List secret names + delivery modes for a repository (never values, never digests). Read-safe. |
+| `repo_secret_get` | Get a secret's SHA-256 digest + delivery mode. Plaintext value is never returned by design. Use this to verify a secret exists or has been rotated. |
 
 ### Write Tools (destructive)
 
@@ -114,6 +116,8 @@ The MCP server enforces two layers of protection:
 ### Fork-only mode (default)
 
 By default, the server runs in **fork-only mode**, write tools (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) can only operate on fork repositories. Grand (original) repositories are protected from agent modifications.
+
+> **Per-repo secrets are CLI-only by design.** `repo_secret_set` and `repo_secret_unset` are intentionally **not** exposed as MCP tools. Writes require a `--current <previous-value>` precondition (or `--rotate-secret` to acknowledge an unverified rotation), and that ceremony needs human eyes-on. Agents that need to suggest a secret rotation should call `repo_secret_get` to confirm the digest, then relay the operator-facing CLI command to the user via the structured `next.options[].run` field in the JSON error envelope. See [AI Agent Safety](/en/docs/ai-agents-safety#structured-next-action-hints) for the full pattern, and [Repositories § Secrets](/en/docs/repositories#secrets) for the user-facing how-to.
 
 To allow an agent to modify grand repos, start with `--allow-grand`:
 

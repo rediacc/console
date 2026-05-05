@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: es
-sourceHash: "14cf2fb4ac3dc4d6"
-sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
+sourceHash: "eae6eedb1a1298f2"
+sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
 ---
 
 # Respaldo y Restauración
@@ -84,6 +84,41 @@ Ver los respaldos disponibles en una ubicación de almacenamiento:
 ```bash
 rdc repo backup list --from my-storage -m server-1
 ```
+
+La salida es una tabla unificada que combina ambas [carpetas de respaldos programados](#respaldos-programados) (`hot/` y `cold/`) para que vea cada respaldo en una sola vista:
+
+| Columna | Significado |
+|---|---|
+| `Mode` | `hot` o `cold`. En qué carpeta de respaldos programados vive esta entrada |
+| `Name` | Nombre del repositorio resuelto desde su configuración local (recurre al GUID para repositorios no presentes en la configuración) |
+| `GUID` | El GUID del repositorio en disco |
+| `Size` | Tamaño legible del archivo de respaldo |
+| `Modified` | Marca de tiempo UTC del backend de almacenamiento |
+
+Para profundizar en un solo modo, pase `--path`:
+
+```bash
+rdc repo backup list --from my-storage -m server-1 --path hot
+rdc repo backup list --from my-storage -m server-1 --path cold
+```
+
+### Disposición de almacenamiento
+
+Los respaldos programados se escriben en subcarpetas por modo dentro de la carpeta configurada del almacenamiento, así el mismo almacenamiento aloja limpiamente tanto el flujo horario como el semanal sin mezclarlos:
+
+```text
+<bucket>/<folder>/
+├── hot/
+│   ├── <guid-1>
+│   ├── <guid-2>
+│   └── ...
+└── cold/
+    ├── <guid-1>
+    ├── <guid-3>
+    └── ...
+```
+
+Un repositorio puede aparecer tanto en `hot/` como en `cold/` (el cronograma horario lo captura; el cronograma semanal lo vuelve a capturar), y el listado combinado muestra ambas filas para que quede claro qué flujos cubren qué repositorios.
 
 ## Sincronización Masiva
 
@@ -201,6 +236,8 @@ Este comportamiento predeterminado es deliberado. Ejecutar dos respaldos en frí
 
 ### Definir una Estrategia
 
+El valor predeterminado canónico es una división en dos estrategias: un flujo hot horario rápido que captura todos los repositorios, y un flujo cold semanal más lento que toma snapshots consistentes a nivel de aplicación. Las dos estrategias escriben en subcarpetas distintas del almacenamiento (`hot/` y `cold/`) por lo que los respaldos nunca se mezclan.
+
 ```bash
 rdc config backup-strategy set \
   --name hourly-hot \
@@ -213,14 +250,15 @@ rdc config backup-strategy set \
 
 ```bash
 rdc config backup-strategy set \
-  --name nightly-cold \
+  --name weekly-cold \
   --destination my-storage \
-  --cron "0 2 * * *" \
+  --cron "15 3 * * 0" \
   --mode cold \
-  --include "*.db" \
-  --exclude "tmp/**" \
+  --exclude very-large-repo \
   --enable
 ```
+
+El filtro `--exclude` en la estrategia cold es la vía de escape recomendada para repositorios muy grandes que no caben en su ventana de mantenimiento semanal. La estrategia hot horaria los sigue cubriendo; cold simplemente los omite. Los nombres de repositorio en `--exclude` coinciden con el nombre de repositorio de la configuración local (sin `:tag`).
 
 | Opción | Descripción |
 |--------|-------------|
@@ -237,13 +275,13 @@ rdc config backup-strategy set \
 
 ```bash
 rdc config backup-strategy list
-rdc config backup-strategy show --name nightly-cold
+rdc config backup-strategy show --name weekly-cold
 ```
 
 ### Eliminar una Estrategia
 
 ```bash
-rdc config backup-strategy remove --name nightly-cold
+rdc config backup-strategy remove --name weekly-cold
 ```
 
 ### Vincular Estrategias a una Maquina
@@ -254,7 +292,7 @@ En su configuración, vincule uno o más nombres de estrategia a una máquina:
 {
   "machines": {
     "hostinger": {
-      "backupStrategies": ["hourly-hot", "nightly-cold"]
+      "backupStrategies": ["hourly-hot", "weekly-cold"]
     }
   }
 }
@@ -285,7 +323,7 @@ Ejecute un respaldo inmediatamente sin esperar el temporizador. Funciona incluso
 
 ```bash
 rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy nightly-cold
+rdc machine backup now -m server-1 --strategy weekly-cold
 ```
 
 ### Ver Estado del Respaldo
@@ -301,7 +339,7 @@ rdc machine backup status -m server-1 --strategy hourly-hot
 
 ```bash
 rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy nightly-cold
+rdc machine backup cancel -m server-1 --strategy weekly-cold
 ```
 
 ## Migración de Repositorios

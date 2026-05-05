@@ -52,7 +52,7 @@ function currentDigest(pointer: string): string {
   return d;
 }
 
-describe('MutationGate — human TTY', () => {
+describe('MutationGate — human (symmetric with agent)', () => {
   beforeEach(() => {
     agentEnvMock.mockReturnValue(false);
     overrideScopeMock.mockReturnValue(null);
@@ -61,7 +61,7 @@ describe('MutationGate — human TTY', () => {
     vi.clearAllMocks();
   });
 
-  it('allows any mutation without knowledge claim', () => {
+  it('refuses sensitive mutation without knowledge (symmetric — was bypassed pre-V2)', () => {
     const entries: MutationEntry[] = [
       {
         pointer: '/credentials/cfDnsApiToken',
@@ -69,9 +69,64 @@ describe('MutationGate — human TTY', () => {
         newValue: 'new-cf-token',
       },
     ];
+    expect(() => evaluateMutations(entries, { previousConfig: v2Config })).toThrow(
+      PreconditionMismatchError
+    );
+  });
+
+  it('allows sensitive mutation with correct --current digest', () => {
+    const entries: MutationEntry[] = [
+      {
+        pointer: '/credentials/cfDnsApiToken',
+        previousValue: 'old-cf-token',
+        newValue: 'new-cf-token',
+      },
+    ];
+    const decisions = evaluateMutations(entries, {
+      previousConfig: v2Config,
+      knowledge: { '/credentials/cfDnsApiToken': currentDigest('/credentials/cfDnsApiToken') },
+    });
+    expect(decisions[0].action).toBe('allowed');
+    expect(decisions[0].reason).toBe('knowledge verified');
+  });
+
+  it('allows rotation when --rotate-secret acknowledged', () => {
+    const entries: MutationEntry[] = [
+      {
+        pointer: '/credentials/cfDnsApiToken',
+        previousValue: 'old-cf-token',
+        newValue: 'new-cf-token',
+      },
+    ];
+    const decisions = evaluateMutations(entries, {
+      previousConfig: v2Config,
+      rotateAcknowledged: new Set(['/credentials/cfDnsApiToken']),
+    });
+    expect(decisions[0].action).toBe('allowed');
+    expect(decisions[0].reason).toBe('rotate acknowledged');
+  });
+
+  it('REDIACC_ALLOW_CONFIG_EDIT does NOT bypass for humans (agent-only override)', () => {
+    overrideScopeMock.mockReturnValue('*');
+    const entries: MutationEntry[] = [
+      {
+        pointer: '/credentials/cfDnsApiToken',
+        previousValue: 'old-cf-token',
+        newValue: 'new-cf-token',
+      },
+    ];
+    // Even with override scope set, humans don't get the agent-only branch
+    // (overrideScope is only consulted when isAgentEnvironment() is true).
+    // Without knowledge or rotation, refusal is expected.
+    expect(() => evaluateMutations(entries, { previousConfig: v2Config })).toThrow(
+      PreconditionMismatchError
+    );
+  });
+
+  it('public fields still pass without knowledge', () => {
+    const entries: MutationEntry[] = [{ pointer: '/version', previousValue: 1, newValue: 2 }];
     const decisions = evaluateMutations(entries, { previousConfig: v2Config });
     expect(decisions[0].action).toBe('allowed');
-    expect(decisions[0].reason).toBe('human tty');
   });
 });
 

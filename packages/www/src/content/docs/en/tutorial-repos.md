@@ -38,7 +38,7 @@ Confirm the new repository is available.
 rdc repo list -m server-1
 ```
 
-Shows all repositories on the machine with their size, mount status, and encryption state.
+Shows all repositories on the machine with their size, mount status, encryption state, and a `Type` column that classifies each as `grand` (top-level), `fork` (CoW copy of another repo), or `unknown` (lineage cannot be determined). See [Repositories. Type column and the state mirror](/en/docs/repositories#type-column-and-the-state-mirror) for the full classification rules.
 
 ### Step 3: Inspect the mount path
 

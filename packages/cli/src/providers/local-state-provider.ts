@@ -236,11 +236,30 @@ class LocalVaultProvider implements VaultProvider {
       const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
       machineVault.dockerHost = `unix:///var/run/rediacc/docker-${repoConfig.networkId}.sock`;
       machineVault.dockerSocket = `/var/run/rediacc/docker-${repoConfig.networkId}.sock`;
+
+      // Resolve per-repo secrets into the two delivery channels:
+      //   env  → REDIACC_SECRET_<NAME> in the SSH/renet shell; compose
+      //          interpolation picks them up via existing ${REDIACC_*} allowlist.
+      //   file → tmpfs file at /var/run/rediacc/secrets/<networkId>/<NAME>
+      //          (materialized by renet at repo-up time). Carried in vault
+      //          but never leaked into the SSH session env.
+      const envSecrets: Record<string, string> = {};
+      const secretFiles: { name: string; value: string }[] = [];
+      for (const [name, entry] of Object.entries(repoConfig.secrets ?? {})) {
+        if (entry.mode === 'env') {
+          envSecrets[`REDIACC_SECRET_${name}`] = entry.value;
+        } else {
+          secretFiles.push({ name, value: entry.value });
+        }
+      }
+
       repositoryVault = {
         repositoryGuid: repoConfig.repositoryGuid,
         networkId: repoConfig.networkId,
         path: `/home/${repositoryName}`,
         workingDirectory: `${datastore}/mounts/${repoConfig.repositoryGuid}`,
+        environment: envSecrets,
+        secretFiles,
       };
     }
 

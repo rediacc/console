@@ -11,7 +11,7 @@ tags:
   - case-study
 featured: true
 language: fr
-sourceHash: "176378344556c026"
+sourceHash: "92e468286c279cc0"
 ---
 
 import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
@@ -20,9 +20,11 @@ import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
 >
 > - Fork de production de 128 Go, de bout en bout : **7,2 secondes.** Le reflink CoW lui-même : 2,3 secondes.
 > - L'agent a été bloqué sur les dépôts grand (production), bloqué dans sa tentative de définir lui-même la dérogation, et placé dans un bac à sable noyau (utilisateur non privilégié, espace de noms de montage séparé, socket Docker à portée limitée) lorsque l'accès était autorisé.
-> - **Ce que Rediacc n'isole pas** : les identifiants SaaS externes contenus dans les données de votre dépôt. Un fork en hérite. Cette partie revient au développeur, via les hooks de cycle de vie du Rediaccfile.
+> - **Ce que Rediacc n'isole pas** : les identifiants SaaS externes contenus dans les données de votre dépôt. Un fork en hérite. *(Mise à jour. Mai 2026 : `rdc repo secret` permet désormais de garder les identifiants entièrement hors de l'image du dépôt. Voir la nouvelle section finale « Mise à jour : la lacune est désormais comblable » pour l'histoire complète.)* Cette partie revient au développeur, via les hooks de cycle de vie du Rediaccfile.
 
 <YouTubeEmbed videoId="o-Bst9rO9Fk" title="J'ai testé Rediacc face à l'incident PocketOS" />
+
+> **Mise à jour. Mai 2026.** Depuis la publication de cet article, Rediacc a livré la fonctionnalité **secrets par dépôt** de première classe (`rdc repo secret`). La « lacune honnête » décrite plus bas. Les identifiants SaaS externes intégrés dans votre dépôt. Dispose maintenant d'une réponse native qui garde les secrets entièrement hors de l'image LUKS, de sorte que les forks n'en héritent par défaut d'aucun. Rendez-vous à la nouvelle section finale [Mise à jour : la lacune est désormais comblable](#mise-à-jour--la-lacune-est-désormais-comblable) pour découvrir ce qui a été livré, ce qui a changé et le risque résiduel qui subsiste.
 
 Le week-end dernier, Jer Crane a publié un post-mortem de 30 heures. Un agent Cursor exécutant Claude Opus 4.6 d'Anthropic a supprimé sa base de données de production sur Railway. La suppression a tenu en un seul appel GraphQL. Cela a pris 9 secondes. Les sauvegardes de volume Railway ont disparu avec, parce que Railway les stocke dans le même volume.
 
@@ -174,6 +176,24 @@ Trois schémas comblent l'écart côté développeur :
 Si PocketOS avait été sur Rediacc, le jeton API Railway n'aurait pas été la bonne comparaison. Leur infrastructure aurait été le fork Rediacc lui-même. Il n'y aurait eu aucun jeton Railway à trouver, parce que Rediacc n'expose aucun équivalent de `volumeDelete` à un agent authentifié. L'agent aurait vécu à l'intérieur d'un socket Docker par fork, sans aucun chemin pour supprimer le parent.
 
 Mais si leur agent avait trouvé une clé Stripe de production dans un fichier d'identifiants, Rediacc n'aurait pas empêché l'agent d'émettre des remboursements sur de vraies cartes clients. C'est une perte réelle. Les deux choses sont vraies.
+
+## Mise à jour : la lacune est désormais comblable
+
+J'ai laissé la section ci-dessus telle que je l'avais écrite à l'origine. L'honnêteté valait son pesant à l'époque. Depuis la publication, nous avons livré la pièce manquante, et la lacune est désormais comblable. Non pas en changeant le comportement des forks, mais en ajoutant un endroit où placer les identifiants qui vit hors de l'image chiffrée du dépôt.
+
+Le mécanisme est `rdc repo secret`. Il est calqué sur les secrets de GitHub Actions. Deux choses comptent dans sa conception.
+
+**Les secrets ne vivent pas à l'intérieur de l'image LUKS.** Ils vivent sur un plan séparé du disque : les secrets en mode env atteignent les conteneurs sous forme d'interpolation `${REDIACC_SECRET_<KEY>}` dans votre fichier compose, les secrets en mode file atteignent les conteneurs sous forme de fichier tmpfs à `/run/secrets/<key>` via le bloc `secrets:` de Docker compose. Dans les deux cas, la valeur n'est jamais écrite dans l'image chiffrée du dépôt. Le reflink BTRFS du fork copie l'image. Il ne copie pas ce qui n'a jamais été dans l'image. La liste de secrets d'un fork frais est vide. Ses conteneurs démarrent sans aucun identifiant de production, donc aucun appel de production n'est même possible.
+
+**Le modèle est en écriture seule.** `rdc repo secret get` renvoie un condensé SHA-256, pas la valeur. Il n'existe aucun moyen de relire un secret via le CLI, par conception. Ce qui ferme la surface de fuite des enregistrements de terminal, de l'historique du shell et des redirections accidentelles. La rotation se fait avec `--current <previous-value>` pour vérifier la valeur précédente, ou avec `--rotate-secret` pour passer outre la précondition lorsque vous n'avez pas l'ancienne valeur (audité comme une rotation). Symétrique pour les humains et les agents. Les deux garde-fous s'appliquent de la même façon.
+
+Ce que cela signifie pour le scénario PocketOS : s'ils avaient été sur Rediacc avec les secrets adoptés, l'agent à l'intérieur du fork n'aurait pas trouvé de `STRIPE_LIVE_KEY` dans un fichier d'identifiants. La carte des secrets du fork aurait été vide. Il n'y aurait rien eu pour appeler Stripe depuis l'intérieur du bac à sable. Le qualificatif « perte réelle » de la section originale ci-dessus se réduit à « perte réelle pour les dépôts qui intègrent les identifiants dans l'image ». Et le correctif pour ces dépôts est une migration unique vers le nouveau mécanisme.
+
+La lacune résiduelle honnête. Les secrets que vous avez écrits dans l'image du dépôt avant d'adopter `rdc repo secret`. Un `.env` validé dans un volume, un identifiant persisté dans une base de données, un fichier YAML avec un jeton. Font toujours partie des données de l'image. Le reflink CoW les propage comme avant. Le mécanisme vous donne un endroit sûr où les placer ; il ne supprime pas rétroactivement ce qui se trouve déjà sur disque dans le volume chiffré. Le correctif est aujourd'hui un transfert manuel (lire la valeur, la définir via `rdc repo secret`, la nettoyer de la source de l'image). Une commande de première classe `rdc repo secret lift --from .env` est sur la feuille de route.
+
+Pour le modèle de menace agent en particulier, deux effets secondaires de cette conception méritent d'être soulignés. Premièrement, `repo secret list` et `repo secret get` sont exposés comme outils MCP (sûrs en lecture. Noms et condensés, jamais les valeurs), de sorte qu'un agent qui vous aide à configurer une application peut découvrir ce qui est configuré sans voir ce que c'est. Deuxièmement, lorsqu'une écriture échoue à la précondition, l'enveloppe d'erreur JSON inclut un champ structuré `next.options[].run` avec les commandes concrètes que l'agent doit relayer mot pour mot à l'humain. Y compris l'échappatoire de rotation pour « j'ai oublié la valeur précédente ». Voir [Sûreté des agents IA](/fr/docs/ai-agents-safety) pour le modèle complet.
+
+Le mode d'emploi complet vit dans [Dépôts § Secrets](/fr/docs/repositories#secrets). La recette est courte : `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""` pour amorcer, `${REDIACC_SECRET_<KEY>}` dans compose pour consommer, `rdc repo fork` puis vérifier que la liste de secrets du fork est vide.
 
 ## Ce que cela change pour quelqu'un faisant ce genre de travail
 

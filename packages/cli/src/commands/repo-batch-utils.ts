@@ -315,6 +315,7 @@ export async function handleRepoList(options: {
             tag: rc.config.tag,
           });
         }
+        const { classifyRepoType } = await import('../utils/repo-classify.js');
         const compact = resolved.map((r) => {
           const guid = (r.guid ?? r.name) as string;
           const cfg = configLookup.get(guid);
@@ -323,7 +324,7 @@ export async function handleRepoList(options: {
           return {
             name: baseName,
             tag: cfg?.tag ?? parsedTag,
-            type: cfg?.grandGuid ? 'fork' : 'grand',
+            type: classifyRepoType({ is_fork: Boolean(r.is_fork) }, cfg),
             size: r.size_human,
             mounted: r.mounted ? 'Yes' : 'No',
             docker: r.docker_running ? 'Yes' : 'No',

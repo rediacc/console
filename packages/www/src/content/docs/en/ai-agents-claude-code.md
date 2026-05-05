@@ -8,7 +8,7 @@ language: en
 
 Claude Code works natively with Rediacc through the `rdc` CLI. This guide covers setup, permissions, and common workflows.
 
-> **Safety first**: Before wiring an agent into anything that touches secrets, read [AI Agent Safety & Guardrails](/en/docs/ai-agents-safety). Claude Code running under `rdc` is detected as an agent and sensitive mutations require the knowledge-gate (`--current` flag). Interactive editor, `--reveal`, and direct machine SSH are refused by default unless you explicitly open them via `REDIACC_ALLOW_CONFIG_EDIT`.
+> **Safety first**: Before wiring an agent into anything that touches secrets, read [AI Agent Safety & Guardrails](/en/docs/ai-agents-safety). Claude Code running under `rdc` is detected as an agent. Sensitive mutations require either `--current <previous-value>` (passwd-style precondition) or `--rotate-secret` (acknowledged rotation, audited). Symmetric for humans and agents. Interactive editor, `--reveal`, and direct machine SSH are refused by default unless you explicitly open them via `REDIACC_ALLOW_CONFIG_EDIT`. When a precondition fails, the JSON envelope's `errors[].next.options[].run` field tells the agent the exact CLI command to suggest the user run. Relay it verbatim.
 
 ## Quick Setup
 

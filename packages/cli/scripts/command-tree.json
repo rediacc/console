@@ -1170,6 +1170,18 @@
               "defaultValue": null
             },
             {
+              "flags": "--prune-unknown",
+              "descriptionKey": "commands.machine.prune.pruneUnknownOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--force-delete-mounted",
+              "descriptionKey": "commands.machine.prune.forceDeleteMountedOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--force",
               "descriptionKey": "options.force",
               "mandatory": false,
@@ -2449,6 +2461,12 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--path <subdir>",
+                  "descriptionKey": "commands.repo.backup.list.optionPath",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "-w, --watch",
                   "descriptionKey": "options.watch",
                   "mandatory": false,
@@ -2803,6 +2821,124 @@
           ],
           "arguments": [],
           "subcommands": []
+        },
+        {
+          "name": "secret",
+          "descriptionKey": "commands.repo.secret.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "get",
+              "descriptionKey": "commands.repo.secret.get.description",
+              "options": [
+                {
+                  "flags": "--name <repository>",
+                  "descriptionKey": "commands.repo.secret.nameOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--key <KEY>",
+                  "descriptionKey": "commands.repo.secret.keyOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "list",
+              "descriptionKey": "commands.repo.secret.list.description",
+              "options": [
+                {
+                  "flags": "--name <repository>",
+                  "descriptionKey": "commands.repo.secret.nameOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "set",
+              "descriptionKey": "commands.repo.secret.set.description",
+              "options": [
+                {
+                  "flags": "--name <repository>",
+                  "descriptionKey": "commands.repo.secret.nameOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--key <KEY>",
+                  "descriptionKey": "commands.repo.secret.keyOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--value <value>",
+                  "descriptionKey": "commands.repo.secret.valueOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--mode <mode>",
+                  "descriptionKey": "commands.repo.secret.modeOption",
+                  "mandatory": false,
+                  "defaultValue": "file"
+                },
+                {
+                  "flags": "--current <value>",
+                  "descriptionKey": "commands.repo.secret.currentOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--rotate-secret",
+                  "descriptionKey": "commands.repo.secret.rotateOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "unset",
+              "descriptionKey": "commands.repo.secret.unset.description",
+              "options": [
+                {
+                  "flags": "--name <repository>",
+                  "descriptionKey": "commands.repo.secret.nameOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--key <KEY>",
+                  "descriptionKey": "commands.repo.secret.keyOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--current <value>",
+                  "descriptionKey": "commands.repo.secret.currentOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--rotate-secret",
+                  "descriptionKey": "commands.repo.secret.rotateOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
         }
       ]
     },
@@ -3014,7 +3150,7 @@
             },
             {
               "flags": "-m, --machine <name>",
-              "descriptionKey": "options.machine",
+              "descriptionKey": "commands.storage.prune.machineOption",
               "mandatory": true,
               "defaultValue": null
             },
@@ -3027,6 +3163,12 @@
             {
               "flags": "--force",
               "descriptionKey": "options.force",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--force-delete-mounted",
+              "descriptionKey": "commands.storage.prune.forceDeleteMountedOption",
               "mandatory": false,
               "defaultValue": null
             },
@@ -4918,6 +5060,50 @@
               "subcommands": []
             }
           ]
+        },
+        {
+          "name": "prune",
+          "descriptionKey": "commands.config.prune.description",
+          "options": [
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "commands.config.prune.dryRunOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--certs-only",
+              "descriptionKey": "commands.config.prune.certsOnlyOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--archives-only",
+              "descriptionKey": "commands.config.prune.archivesOnlyOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--refs-only",
+              "descriptionKey": "commands.config.prune.refsOnlyOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--purge-archived",
+              "descriptionKey": "commands.config.prune.purgeArchivedOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--grace-days <days>",
+              "descriptionKey": "commands.config.prune.graceDaysOption",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
         },
         {
           "name": "machine",

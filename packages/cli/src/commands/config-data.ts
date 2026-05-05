@@ -7,7 +7,7 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
-import type { OutputFormat, RepositoryConfig } from '../types/index.js';
+import type { OutputFormat } from '../types/index.js';
 import { assertResourceName, parseConfig, RepositoryConfigSchema } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 
@@ -51,7 +51,7 @@ export function registerRepositoryCommands(config: Command, program: Command): v
             networkId,
           },
           'repository config'
-        ) as RepositoryConfig;
+        );
 
         await configService.addRepository(name, repoConfig);
         outputService.success(

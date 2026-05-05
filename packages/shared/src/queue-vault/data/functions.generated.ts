@@ -6,12 +6,16 @@
 // Type-safe parameter interfaces
 // ============================================
 
-/** Delete a backup from storage or machine */
+/** Delete one or more backups from storage or machine */
 export interface BackupDeleteParams {
   /** Target type: machine or storage */
   sourceType: string;
   /** Target machine or storage name */
   from: string;
+  /** Subdirectory within the storage root (e.g., 'hot' or 'cold') */
+  path?: string;
+  /** Optional list of repository GUIDs to delete in a single call. When set, supersedes the single `repository` requirement. */
+  repositories?: string[];
 }
 
 /** List available backups on storage or machine */
@@ -20,6 +24,8 @@ export interface BackupListParams {
   sourceType: string;
   /** Source machine or storage name */
   from: string;
+  /** Subdirectory within the storage root (e.g., 'hot' or 'cold') */
+  path?: string;
 }
 
 /** Pull repository from remote source (machine or storage) */
@@ -1038,6 +1044,14 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
         help: 'Target machine or storage name',
         minLength: 1,
       },
+      path: {
+        type: 'string',
+        help: 'Subdirectory within the storage root (e.g., \'hot\' or \'cold\')',
+      },
+      repositories: {
+        type: 'array',
+        help: 'Optional list of repository GUIDs to delete in a single call. When set, supersedes the single `repository` requirement.',
+      },
     },
   },
   'backup_list': {
@@ -1060,6 +1074,10 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
         required: true,
         help: 'Source machine or storage name',
         minLength: 1,
+      },
+      path: {
+        type: 'string',
+        help: 'Subdirectory within the storage root (e.g., \'hot\' or \'cold\')',
       },
     },
   },

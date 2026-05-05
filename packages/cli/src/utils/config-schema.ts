@@ -86,6 +86,36 @@ export const MachineConfigSchema = z.object({
   datastore: absolutePath.optional(),
 });
 
+// ── Per-repo secrets ──────────────────────────────────────────────
+//
+// Stored in config; resolved at deploy time. Two delivery modes:
+//   env  → exposed as REDIACC_SECRET_<KEY> in the renet shell, picked up
+//          by `renet compose --` interpolation in user compose YAML.
+//   file → materialized as a tmpfs file at /var/run/rediacc/secrets/<networkId>/<KEY>
+//          on the target machine, referenced via Docker compose `secrets:` block.
+//
+// Fork isolation: `registerFork` does not copy `secrets`, so a fork's map is
+// always empty. Externals see the fork as a different principal.
+//
+// Key format mirrors POSIX env-var identifiers so `REDIACC_SECRET_<KEY>` is
+// always a valid shell variable name.
+const SECRET_KEY_REGEX = /^[A-Z][A-Z0-9_]*$/;
+const SECRET_VALUE_MAX_BYTES = 10 * 1024 * 1024;
+
+export const SecretEntrySchema = z.object({
+  mode: z.enum(['env', 'file']),
+  value: z
+    .string()
+    .min(1, 'Secret value cannot be empty')
+    .max(SECRET_VALUE_MAX_BYTES, 'Secret value exceeds 10 MB cap'),
+});
+
+export const SecretKeySchema = z
+  .string()
+  .min(1)
+  .max(64, 'Secret key must be 64 characters or fewer')
+  .regex(SECRET_KEY_REGEX, 'Secret key must be UPPER_SNAKE_CASE (uppercase letter then [A-Z0-9_])');
+
 export const RepositoryConfigSchema = z.object({
   repositoryGuid: z.uuid('Must be a valid UUID'),
   tag: z.string().optional(),
@@ -93,6 +123,9 @@ export const RepositoryConfigSchema = z.object({
   networkId: z.number().int().optional(),
   grandGuid: z.string().optional(),
   parentGuid: z.string().optional(),
+  sshPrivateKey: z.string().optional(),
+  sshPublicKey: z.string().optional(),
+  secrets: z.record(SecretKeySchema, SecretEntrySchema).optional(),
 });
 
 // ── Repository name:tag utilities ──────────────────────────────────────────

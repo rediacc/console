@@ -391,7 +391,7 @@
         "bannerRotateLine1": "Pour changer un secret : remplacez son marqueur par la nouvelle valeur en clair — il vous sera",
         "bannerRotateLine2": "demandé de confirmer chaque rotation après la fermeture de l'éditeur.",
         "bannerStrip": "Les lignes commençant par // sont supprimées lors de l'enregistrement.",
-        "bannerTitle": "rdc config edit — {{name}} (v{{version}})",
+        "bannerTitle": "Édition de la configuration \"{{name}}\" (v{{version}})",
         "description": "Ouvre la configuration active dans $EDITOR comme projection JSONC caviardée. Humains uniquement ; les agents sont refusés.",
         "noChanges": "Aucun changement enregistré ; abandon.",
         "optionApply": "Appliquer un fichier JSONC modifié (saute le lancement de $EDITOR)",
@@ -555,6 +555,25 @@
           "description": "Supprimer la configuration d'un fournisseur cloud",
           "success": "Fournisseur cloud \"{{name}}\" supprimé"
         }
+      },
+      "prune": {
+        "archivesOnlyOption": "Limite à la purge des archives expirées. Ignore le cache de certificats et le nettoyage de références croisées. Exclusif avec --certs-only et --refs-only.",
+        "certsOnlyOption": "Limite au bucket du cache de certificats ACME. Ignore la purge d'archives et le nettoyage de références croisées. Mutuellement exclusif avec --archives-only et --refs-only.",
+        "completed": "{{count}} entrée(s) obsolète(s) nettoyée(s) de la configuration locale.",
+        "description": "Supprime le poids mort du fichier de configuration local dans ~/.config/rediacc/<config>.json. Trois catégories sont nettoyées, toutes purement locales (aucun appel SSH/renet) : (1) les entrées du cache de certificats ACME dont l'ancre GUID/repo/machine n'est plus dans la configuration active ; (2) les dépôts archivés dont la période de grâce a expiré (7 jours par défaut, voir defaults.pruneGraceDays) ; (3) les références croisées orphelines (machine→strategy, strategy→repo). Les ressources actives, identifiants, jetons de stockage et known-hosts ne sont jamais touchés. Le comportement par défaut applique les changements ; passez --dry-run pour prévisualiser uniquement.",
+        "descriptionShort": "Nettoyer les résidus obsolètes du fichier de configuration local",
+        "droppedRefs": "{{count}} référence(s) croisée(s) orpheline(s) {{verb}} supprimée(s) :",
+        "dryRun": "Essai à blanc : {{count}} changement(s) seraient appliqués. Réexécutez sans --dry-run pour valider.",
+        "dryRunOption": "Prévisualise ce qui serait supprimé sans modifier le fichier de configuration. Reflète la sémantique désactivée par défaut des autres commandes prune.",
+        "graceDaysOption": "Remplace la fenêtre de grâce d'archive (en jours) pour cette invocation. Repli sur defaults.pruneGraceDays dans la configuration, puis sur 7 si aucun n'est défini.",
+        "keptArchivesInGrace": "Dépôts archivés encore en période de grâce conservés (récupérables via 'rdc config repository restore-archived') :",
+        "nothingToPrune": "Rien à nettoyer, la configuration est déjà propre.",
+        "purgeArchivedOption": "Supprime TOUS les dépôts archivés indépendamment de l'âge, pas seulement ceux après la grâce. Équivalent à exécuter 'rdc config repository purge-archived'. À n'utiliser que si vous êtes sûr de ne plus avoir besoin des identifiants stockés pour la restauration.",
+        "purgedArchives": "{{count}} dépôt(s) archivé(s) expiré(s) {{verb}} supprimé(s) :",
+        "refsOnlyOption": "Limite aux références croisées orphelines (machine→strategy, strategy→repo excludes/includes). Ignore le cache de certificats et les archives. Exclusif avec --certs-only et --archives-only.",
+        "removedCerts": "{{count}} entrée(s) de cache de certificats {{verb}} supprimée(s) :",
+        "scanning": "Analyse de la configuration locale à la recherche de résidus obsolètes...",
+        "tooManyOnlyFlags": "Passez au maximum un de --certs-only / --archives-only / --refs-only."
       },
       "recover": {
         "confirm": "Restaurer la configuration \"{{name}}\" depuis la sauvegarde ?",
@@ -911,11 +930,14 @@
         "description": "Supprimer les ressources orphelines du datastore et les instantanés périmés d'une machine",
         "descriptionShort": "Nettoyer les ressources orphelines et les instantanés périmés",
         "dryRunOption": "Afficher ce qui serait supprimé sans effectuer de modifications",
+        "forceDeleteMountedOption": "Remplace la vérification de sécurité de montage et supprime les dépôts même s'ils sont actuellement montés ou ont des conteneurs Docker en cours. Distinct de --force (qui ne remplace que la période de grâce d'archive). S'applique à la fois à --orphaned-repos et à --prune-unknown.",
         "noReposFound": "Aucun dépôt trouvé sur la machine",
         "noStaleSnapshots": "Aucun instantané périmé trouvé",
+        "noUnknownRepos": "Aucun dépôt inconnu trouvé, chaque dépôt de machine est soit dans la configuration locale soit possède un miroir renet",
         "orphanedReposCompleted": "{{count}} dépôts orphelins supprimés",
         "orphanedReposOption": "Supprimer aussi les images de dépôts absents de toute configuration",
         "orphanedReposStarting": "Recherche des dépôts orphelins sur {{machine}}...",
+        "pruneUnknownOption": "Supprime uniquement les dépôts que le miroir renet .interim/state ne peut pas classer (pas dans la configuration locale ET pas de miroir marqué fork). Strictement plus restreint que --orphaned-repos : les forks sans configuration sont préservés quand le miroir les identifie. Les orphelins hérités pré-miroir et les grands obsolètes dont l'entrée de configuration a été supprimée tombent tous dans cette catégorie.",
         "snapshotDeleted": "{{name}} supprimé",
         "snapshotDeleting": "Suppression de {{name}}...",
         "snapshotInUse": "{{name}} ignoré (en cours d'utilisation)",
@@ -923,7 +945,10 @@
         "snapshotsOnlyOption": "Nettoyer uniquement les instantanés périmés",
         "snapshotStale": "Périmé : {{name}} ({{size}})",
         "startingDatastore": "Recherche des ressources orphelines du datastore sur {{machine}}...",
-        "startingSnapshots": "Recherche des instantanés périmés sur {{machine}}..."
+        "startingSnapshots": "Recherche des instantanés périmés sur {{machine}}...",
+        "unknownCompleted": "{{count}} dépôts inconnus nettoyés",
+        "unknownFound": "{{count}} dépôt(s) inconnu(s) trouvé(s) ({{deletable}} supprimables après vérification de sécurité de montage)",
+        "unknownStarting": "Recherche de dépôts inconnus sur {{machine}} (pas dans la configuration locale + pas de miroir marqué fork)..."
       },
       "query": {
         "connection": "Connexion",
@@ -1298,7 +1323,10 @@
           "description": "Lister les sauvegardes disponibles sur un distant (machine ou stockage)",
           "listing": "Listage des sauvegardes...",
           "optionFrom": "Nom de la machine ou du stockage source (détecté automatiquement depuis la configuration)",
-          "sourceRequired": "Spécifiez --from <remote> (nom de machine ou stockage depuis la configuration)"
+          "optionPath": "Sous-répertoire dans la racine du stockage. Lorsqu'omis, hot/ et cold/ sont listés et fusionnés.",
+          "sourceRequired": "Spécifiez --from <remote> (nom de machine ou stockage depuis la configuration)",
+          "descriptionShort": "Lister les sauvegardes disponibles sur un distant",
+          "localOnly": "repo backup list n'est supporté qu'en mode adaptateur local"
         }
       },
       "batchConfirm": "{{action}} les {{count}} dépôts sur \"{{machine}}\" ? [y/N]",
@@ -1463,6 +1491,37 @@
         "failed": "Échec du redimensionnement",
         "sizeOption": "Nouvelle taille du dépôt (ex. 10G, 100G, 1T)",
         "starting": "Redimensionnement de \"{{repository}}\" à {{size}} sur \"{{machine}}\"..."
+      },
+      "secret": {
+        "currentOption": "SHA-256 digest of the previous value (passwd-style precondition). Required for overwrite under agent context; optional for first-write.",
+        "description": "Manage per-repo secrets injected at deploy time. Two modes: env (REDIACC_SECRET_<KEY> via compose ${VAR} interpolation) and file (host tmpfs at /var/run/rediacc/secrets/<networkId>/<KEY>, mounted via Docker compose `secrets:` block). Secrets never enter the encrypted LUKS image, so forks inherit none — externals see the fork as a different principal.",
+        "descriptionShort": "Gérer les secrets de déploiement par dépôt (env / file)",
+        "get": {
+          "description": "Read a single secret. Returns a redacted stub (`<redacted:secret>:<digest8>`) under agent context regardless of policy.",
+          "descriptionShort": "Afficher le digest d'un secret (la valeur n'est jamais renvoyée)",
+          "notFound": "Secret \"{{key}}\" introuvable dans le dépôt \"{{repository}}\"",
+          "repoNotFound": "Dépôt \"{{repository}}\" introuvable"
+        },
+        "keyOption": "Clé secrète en UPPER_SNAKE_CASE (max 64 caractères). Sera exposée comme REDIACC_SECRET_<KEY> pour le mode env ou /run/secrets/<key> dans les conteneurs pour le mode file.",
+        "list": {
+          "description": "Liste les clés et modes de secret (jamais les valeurs, jamais les digests).",
+          "descriptionShort": "Lister les clés et modes de secrets du dépôt",
+          "empty": "Aucun secret défini sur \"{{repository}}\""
+        },
+        "modeOption": "Mode de livraison : 'env' (visible dans l'environnement du conteneur, docker inspect) ou 'file' (fichier tmpfs, jamais dans env). Défaut : file.",
+        "nameOption": "Nom du dépôt (p. ex. mail, mail:staging). Sans tag, défaut :latest.",
+        "rotateOption": "Reconnaître la rotation ; ignorer la précondition --current (audité comme rotation). À utiliser lors d'une rotation intentionnelle sans vérifier la valeur précédente.",
+        "set": {
+          "description": "Définir ou écraser un secret. Les forks n'héritent pas ; définissez explicitement sur le fork. Dans un contexte d'agent, nécessite une correspondance de digest --current (style passwd).",
+          "descriptionShort": "Définir ou écraser un secret de dépôt",
+          "success": "Secret \"{{key}}\" ({{mode}}) défini sur \"{{repository}}\""
+        },
+        "unset": {
+          "description": "Supprime un secret. Dans un contexte d'agent, nécessite une correspondance de digest --current.",
+          "descriptionShort": "Supprimer un secret de dépôt",
+          "success": "Secret \"{{key}}\" supprimé de \"{{repository}}\""
+        },
+        "valueOption": "Valeur du secret. Passez `-` pour lire depuis stdin (évite l'exposition dans l'historique du shell)."
       },
       "snapshot": {
         "create": {
@@ -1704,9 +1763,11 @@
         "completed": "{{count}} sauvegardes orphelines supprimées",
         "description": "Supprimer les sauvegardes orphelines du stockage qui ne sont plus dans aucune configuration. Sécurisé multi-configuration avec protection par période de grâce.",
         "descriptionShort": "Supprimer les sauvegardes orphelines du stockage",
+        "forceDeleteMountedOption": "Remplace la vérification de sécurité de montage et supprime les sauvegardes cloud même si le GUID source est actuellement monté ou a un conteneur en cours sur la machine exécutrice. Distinct de --force (qui ne remplace que la période de grâce pour les dépôts archivés).",
         "found": "{{count}} sauvegardes trouvées dans le stockage",
         "listFailed": "Échec du listage des sauvegardes du stockage",
         "listing": "Listage des sauvegardes dans \"{{storage}}\"...",
+        "machineOption": "Machine exécutrice : exécute les appels list/delete de rclone vers le stockage. Requise car les clients ne sont pas censés avoir rclone installé localement ; les identifiants de stockage proviennent toujours de votre configuration locale.",
         "noBackups": "Aucune sauvegarde trouvée dans le stockage"
       },
       "pull": {
@@ -1796,7 +1857,7 @@
         "status": {
           "description": "Afficher les licences de dépôts installées sur une machine",
           "empty": "  Aucune licence de dépôt installée",
-          "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+          "entry": "  - {{repositoryGuid}} : {{freshness}}{{hardExpirySuffix}}",
           "freshness": {
             "hardExpired": "expiré définitivement",
             "refreshRecommended": "actualisation recommandée",
@@ -2297,6 +2358,19 @@
       "kindMismatch": "Le type de valeur a changé (stocké : {{stored}}, revendiqué : {{claimed}})",
       "mismatch": "Précondition échouée pour {{count}} chemin(s) :\n{{details}}",
       "missing": "Le chemin sensible nécessite --current (ou --rotate-secret)",
+      "next": {
+        "options": {
+          "confirm": {
+            "description": "Relisez le digest actuel, puis réessayez avec --current",
+            "run": "rdc repo secret get --name {{repository}} --key {{key}}"
+          },
+          "rotate": {
+            "description": "Ignorer la précondition (rotation, auditée)",
+            "run": "<commande d'origine> --rotate-secret"
+          }
+        },
+        "summary": "Fournissez la valeur actuelle ou acquiescez la rotation."
+      },
       "rotationRequiresTty": "{{pointer}} : la confirmation de rotation nécessite un TTY interactif (ou utilisez --current-secrets)",
       "stubStillStub": "{{pointer}} : la valeur modifiée ressemble encore à un marqueur de caviardage mais ne correspond pas à l'empreinte actuelle"
     },
@@ -2315,6 +2389,13 @@
     "regionRequired": "Le nom de la région est requis. Utilisez --region ou définissez un contexte.",
     "registrationFailed": "L'enregistrement a échoué",
     "remoteNotFound": "\"{{name}}\" n'est ni une machine ni un stockage connu. Machines : {{machines}}. Stockages : {{storages}}",
+    "repo": {
+      "secret": {
+        "badMode": "--mode invalide \"{{mode}}\". Autorisés : env, file.",
+        "emptyValue": "La valeur du secret ne peut pas être vide (stdin n'a produit aucun octet).",
+        "mutuallyExclusive": "--current et --rotate-secret sont mutuellement exclusifs. Choisissez l'un : --current pour vérifier la valeur précédente, ou --rotate-secret pour effectuer une rotation sans vérification."
+      }
+    },
     "repoNotDeployed": "Le dépôt \"{{repository}}\" n'est pas déployé sur {{machine}}.\n\nDéployez-le d'abord :\n  rdc repo up --name {{repository}} -m <nom-machine>",
     "repositoryAlreadyMounted": "Le dépôt \"{{name}}\" est déjà monté sur \"{{machine}}\". Migrer par-dessus un dépôt actif le corromprait. Exécutez d'abord : rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "Dépôt \"{{name}}\" non trouvé",

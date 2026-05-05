@@ -3,12 +3,17 @@
  *
  * Responsibilities:
  *   1. Detect which sensitive paths are being mutated (by diffing previous vs new).
- *   2. For each sensitive path, enforce the knowledge-gates-capability rule:
- *      - Agent context: require matching `--current` digest OR explicit rotate OR
- *        REDIACC_ALLOW_CONFIG_EDIT scope override.
- *      - Human interactive TTY: bypass (human owns the file).
+ *   2. For each sensitive path, enforce knowledge-gates-capability symmetrically
+ *      for both humans and agents: require matching `--current` digest OR
+ *      explicit `rotateAcknowledged` (the `--rotate-secret` / `--rotate` flag) OR,
+ *      for agents only, REDIACC_ALLOW_CONFIG_EDIT scope override.
  *   3. Emit audit log entries for every decision.
  *   4. Fail fast (before any network or disk write) with PreconditionMismatchError.
+ *
+ * Symmetric-by-design: humans don't get a TTY bypass. The "I'm at the
+ * keyboard" claim was theatre — the gate prevents typos and accidents
+ * regardless of who's driving, and removes a divergent code path that
+ * had no integration coverage.
  *
  * The gate is DATA-SHAPE-AGNOSTIC: it operates on JSON-Pointer+value pairs
  * produced by the schema walker, so it doesn't care whether the config is in
@@ -82,10 +87,17 @@ interface SingleMutationResult {
 }
 
 /**
- * Evaluate a single sensitive-path mutation in agent context.
- * Covers override scope, rotate-acknowledged, and knowledge-digest checks.
+ * Evaluate a single sensitive-path mutation. Applied symmetrically to
+ * humans and agents. The four allow paths in order of precedence:
+ *
+ *   1. Override scope match (REDIACC_ALLOW_CONFIG_EDIT) — agent-only;
+ *      humans get null overrideScope so this branch is skipped naturally.
+ *   2. Explicit rotation acknowledgement (rotateAcknowledged Set
+ *      populated by `--rotate-secret` / `--rotate`).
+ *   3. Knowledge claim against a previously-empty path (new field).
+ *   4. Knowledge claim matching the stored digest.
  */
-function evaluateAgentMutation(
+function evaluateSensitiveMutation(
   entry: MutationEntry,
   meta: SensitivityMeta,
   overrideScope: string | null,
@@ -176,14 +188,10 @@ export function evaluateMutations(
       continue;
     }
 
-    // Non-agent: human TTY owns the file, pass.
-    if (!agent) {
-      decisions.push({ pointer: entry.pointer, meta, action: 'allowed', reason: 'human tty' });
-      continue;
-    }
-
-    // Agent path: delegate to helper to keep complexity low.
-    const { decision, failure } = evaluateAgentMutation(entry, meta, overrideScope, context);
+    // Symmetric path: humans and agents both go through the same evaluator.
+    // Humans get a null overrideScope (REDIACC_ALLOW_CONFIG_EDIT only takes
+    // effect under agent context), so they cannot bypass via that branch.
+    const { decision, failure } = evaluateSensitiveMutation(entry, meta, overrideScope, context);
     decisions.push(decision);
     if (failure) failures.push(failure);
   }

@@ -11,7 +11,7 @@ tags:
   - case-study
 featured: true
 language: de
-sourceHash: "176378344556c026"
+sourceHash: "92e468286c279cc0"
 ---
 
 import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
@@ -20,9 +20,11 @@ import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
 >
 > - 128 GB Produktions-Fork, von Anfang bis Ende: **7,2 Sekunden.** Der CoW-Reflink selbst: 2,3 Sekunden.
 > - Der Agent wurde an Grand-Repositories (Produktion) gehindert, daran gehindert, seinen eigenen Override zu setzen, und in eine Kernel-Sandbox (unprivilegierter Benutzer, separater Mount-Namespace, eingegrenzter Docker-Socket) abgelegt, sobald der Zugriff autorisiert war.
-> - **Was Rediacc nicht isoliert**: externe SaaS-Zugangsdaten in Ihren Repository-Daten. Ein Fork erbt sie. Dieser Teil ist Aufgabe des Entwicklers und wird über Rediaccfile-Lifecycle-Hooks gehandhabt.
+> - **Was Rediacc nicht isoliert**: externe SaaS-Zugangsdaten in Ihren Repository-Daten. Ein Fork erbt sie. *(Update. Mai 2026: `rdc repo secret` erlaubt es Ihnen jetzt, Zugangsdaten vollständig aus dem Repository-Image herauszuhalten. Den vollständigen Zusammenhang finden Sie im neuen Schlussabschnitt "Update: Die Lücke ist jetzt schließbar".)* Dieser Teil ist Aufgabe des Entwicklers und wird über Rediaccfile-Lifecycle-Hooks gehandhabt.
 
 <YouTubeEmbed videoId="o-Bst9rO9Fk" title="Ich habe Rediacc gegen den PocketOS Vorfall getestet" />
+
+> **Update. Mai 2026.** Seit der Veröffentlichung dieses Beitrags hat Rediacc erstklassige **Per-Repo-Secrets** (`rdc repo secret`) ausgeliefert. Die unten beschriebene "ehrliche Lücke". Externe SaaS-Zugangsdaten, die in Ihr Repository eingebacken sind. Hat jetzt eine eingebaute Antwort, die Secrets vollständig aus dem LUKS-Image heraushält, sodass Forks standardmäßig keinen davon erben. Springen Sie zum neuen Schlussabschnitt [Update: Die Lücke ist jetzt schließbar](#update-die-lücke-ist-jetzt-schließbar), um zu erfahren, was ausgeliefert wurde, was sich geändert hat und welches Restrisiko bleibt.
 
 Letztes Wochenende veröffentlichte Jer Crane ein 30-stündiges Postmortem. Ein Cursor-Agent, der Anthropics Claude Opus 4.6 ausführte, löschte seine Produktionsdatenbank auf Railway. Die Löschung war ein einziger GraphQL-Aufruf. Sie dauerte 9 Sekunden. Railways Volume-Backups verschwanden mit, weil Railway sie innerhalb desselben Volumes speichert.
 
@@ -174,6 +176,24 @@ Drei Muster schließen die Lücke auf der Entwicklerseite:
 Wäre PocketOS auf Rediacc gewesen, wäre das Railway-API-Token nicht der richtige Vergleich gewesen. Ihre Infrastruktur wäre der Rediacc-Fork selbst gewesen. Es hätte kein Railway-Token zum Finden gegeben, weil Rediacc keinem authentifizierten Agenten ein Äquivalent zu `volumeDelete` aussetzt. Der Agent hätte in einem Docker-Socket pro Fork gelebt, ohne Pfad, das Elternteil zu löschen.
 
 Aber wenn ihr Agent in einer Zugangsdaten-Datei einen produktiven Stripe-Schlüssel gefunden hätte, hätte Rediacc den Agenten nicht daran gehindert, Rückerstattungen gegen echte Kundenkarten auszuführen. Das ist ein realer Verlust. Beides ist wahr.
+
+## Update: Die Lücke ist jetzt schließbar
+
+Ich habe den Abschnitt oben so stehen lassen, wie ich ihn ursprünglich geschrieben habe. Die Ehrlichkeit hatte zu jenem Zeitpunkt ihr Gewicht. Seit der Veröffentlichung haben wir das fehlende Teil ausgeliefert, und die Lücke ist jetzt schließbar. Nicht indem wir das Verhalten von Forks ändern, sondern indem wir einen Ort hinzufügen, an dem Zugangsdaten leben können, der außerhalb des verschlüsselten Repository-Images liegt.
+
+Der Mechanismus heißt `rdc repo secret`. Er orientiert sich an den Secrets von GitHub Actions. Zwei Dinge sind an seiner Bauweise wichtig.
+
+**Secrets leben nicht im Inneren des LUKS-Images.** Sie leben in einer separaten Ebene auf der Festplatte: Env-Mode-Secrets erreichen Container als `${REDIACC_SECRET_<KEY>}`-Interpolation in Ihrer Compose-Datei, File-Mode-Secrets erreichen Container als tmpfs-Datei unter `/run/secrets/<key>` über den `secrets:`-Block von Docker Compose. So oder so wird der Wert niemals in das verschlüsselte Image des Repositorys geschrieben. Der BTRFS-Reflink des Forks kopiert das Image. Er kopiert nicht, was nie im Image war. Die Secret-Liste eines frischen Forks ist leer. Seine Container starten ohne Produktions-Zugangsdaten, sodass keine Produktionsaufrufe überhaupt möglich sind.
+
+**Das Modell ist write-only.** `rdc repo secret get` liefert einen SHA-256-Digest zurück, nicht den Wert. Es gibt bewusst keinen Weg, ein Secret über die CLI zurückzulesen. Das schließt die Leak-Fläche aus Terminal-Aufzeichnungen, Shell-History und versehentlichen Umleitungen. Rotation erfolgt mit `--current <previous-value>`, um den vorherigen Wert zu verifizieren, oder mit `--rotate-secret`, um die Vorbedingung zu überspringen, wenn Sie den vorherigen Wert nicht haben (auditiert als Rotation). Symmetrisch für Menschen und Agenten. Beide Gates gelten gleichermaßen.
+
+Was das für das PocketOS-Szenario bedeutet: Wären sie auf Rediacc gewesen und hätten Secrets übernommen, hätte der Agent im Fork keinen `STRIPE_LIVE_KEY` in einer Zugangsdaten-Datei gefunden. Die Secret-Map des Forks wäre leer gewesen. Es hätte aus der Sandbox heraus nichts gegeben, womit man Stripe hätte aufrufen können. Der "realer Verlust"-Vorbehalt aus dem Originalabschnitt oben schrumpft zu "realer Verlust für Repos, die Zugangsdaten ins Image einbacken". Und der Fix für diese Repos ist eine einmalige Migration in den neuen Mechanismus.
+
+Die ehrliche Restlücke. Secrets, die Sie vor der Übernahme von `rdc repo secret` in das Repository-Image geschrieben haben. Eine in ein Volume committete `.env`, eine in einer Datenbank persistierte Zugangsdatei, eine YAML-Datei mit einem Token. Sind weiterhin Teil der Daten des Images. CoW-Reflink propagiert sie wie zuvor. Der Mechanismus gibt Ihnen einen sicheren Ort, sie abzulegen; er entfernt nicht rückwirkend, was bereits auf der Festplatte im verschlüsselten Volume liegt. Der Fix ist heute eine manuelle Hebearbeit (Wert lesen, über `rdc repo secret` setzen, aus der Image-Quelle scrubben). Ein erstklassiges `rdc repo secret lift --from .env` steht auf der Roadmap.
+
+Für das Bedrohungsmodell rund um Agenten sind speziell zwei Nebeneffekte dieses Designs erwähnenswert. Erstens werden `repo secret list` und `repo secret get` als MCP-Tools bereitgestellt (lesesicher. Namen und Digests, niemals Werte), sodass ein Agent, der Ihnen beim Einrichten einer Anwendung hilft, herausfinden kann, was konfiguriert ist, ohne zu sehen, was es ist. Zweitens enthält die JSON-Fehlerantwort beim Fehlschlagen einer Vorbedingung eines Schreibvorgangs ein strukturiertes `next.options[].run`-Feld mit konkreten Befehlen, die der Agent wörtlich an den Menschen weitergeben soll. Einschließlich des Rotations-Notausgangs für "Ich habe den vorherigen Wert vergessen". Das vollständige Modell finden Sie unter [Sicherheit für KI-Agenten](/de/docs/ai-agents-safety).
+
+Die vollständige Anleitung finden Sie unter [Repositories § Secrets](/de/docs/repositories#secrets). Das Rezept ist kurz: `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""` zum Anlegen, `${REDIACC_SECRET_<KEY>}` in Compose zum Konsumieren, `rdc repo fork` und prüfen, dass die Secret-Liste des Forks leer ist.
 
 ## Was sich für jemanden ändert, der diese Art von Arbeit macht
 

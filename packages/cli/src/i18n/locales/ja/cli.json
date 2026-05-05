@@ -391,7 +391,7 @@
         "bannerRotateLine1": "シークレットをローテーションするには、そのスタブを新しい平文に置き換えます。エディタを閉じた後、",
         "bannerRotateLine2": "各ローテーションの確認を求められます。",
         "bannerStrip": "// で始まる行は保存時に削除されます。",
-        "bannerTitle": "rdc config edit — {{name}} (v{{version}})",
+        "bannerTitle": "設定 \"{{name}}\" を編集中 (v{{version}})",
         "description": "アクティブな設定を秘匿された JSONC プロジェクションとして $EDITOR で開きます。人間のみ、エージェントは拒否されます。",
         "noChanges": "変更は保存されませんでした。中止します。",
         "optionApply": "編集済み JSONC ファイルを適用($EDITOR 起動をスキップ)",
@@ -555,6 +555,25 @@
           "description": "クラウドプロバイダー設定を削除する",
           "success": "クラウドプロバイダー \"{{name}}\" を削除しました"
         }
+      },
+      "prune": {
+        "archivesOnlyOption": "期限切れアーカイブのパージに制限します。証明書キャッシュとクロスリファレンスのクリーンアップをスキップします。--certs-only および --refs-only と排他的。",
+        "certsOnlyOption": "ACME 証明書キャッシュバケットに制限します。アーカイブのパージとクロスリファレンスのクリーンアップをスキップします。--archives-only および --refs-only と相互排他的。",
+        "completed": "ローカル設定から {{count}} 件の古いエントリをクリーンアップしました。",
+        "description": "~/.config/rediacc/<config>.json にあるローカル設定ファイルから不要な要素を削除します。3つのバケットがクリーンアップされ、すべて純粋にローカルです（SSH/renet 呼び出しなし）：(1) アンカー GUID/repo/machine がアクティブな設定にない ACME 証明書キャッシュエントリ；(2) 猶予期間が経過したアーカイブ済みリポジトリ（デフォルト 7 日、defaults.pruneGraceDays 参照）；(3) ぶら下がりクロスリファレンス（machine→strategy、strategy→repo）。使用中のリソース、認証情報、ストレージトークン、known-hosts は触れません。デフォルトでは変更が適用されます；--dry-run でプレビューのみ。",
+        "descriptionShort": "ローカル設定ファイルから古い残留物を一掃する",
+        "droppedRefs": "{{count}} 件のぶら下がりクロスリファレンスが{{verb}}削除されました：",
+        "dryRun": "ドライラン: {{count}} 件の変更が適用されます。コミットするには --dry-run なしで再実行してください。",
+        "dryRunOption": "設定ファイルを変更せずに削除される内容をプレビューします。他の prune コマンドのデフォルトオフセマンティクスを反映します。",
+        "graceDaysOption": "この呼び出しのアーカイブ猶予期間（日数）を上書きします。設定の defaults.pruneGraceDays にフォールバックし、どちらも設定されていない場合は 7 にフォールバックします。",
+        "keptArchivesInGrace": "猶予期間内のアーカイブ済みリポジトリを保持（'rdc config repository restore-archived' で復元可能）：",
+        "nothingToPrune": "クリーンアップするものはありません。設定はすでにクリーンです。",
+        "purgeArchivedOption": "年齢に関係なく、猶予期間を過ぎたもののみではなくすべてのアーカイブ済みリポジトリを破棄します。'rdc config repository purge-archived' を実行することと同等です。復元のために保存された認証情報のいずれも不要であることが確実な場合のみ使用してください。",
+        "purgedArchives": "{{count}} 件の期限切れアーカイブ済みリポジトリが{{verb}}削除されました：",
+        "refsOnlyOption": "ぶら下がりクロスリファレンス（machine→strategy、strategy→repo excludes/includes）に制限します。証明書キャッシュとアーカイブをスキップします。--certs-only および --archives-only と排他的。",
+        "removedCerts": "{{count}} 件の証明書キャッシュエントリが{{verb}}削除されました：",
+        "scanning": "古い残留物のためにローカル設定をスキャンしています...",
+        "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only のうち最大 1 つを渡してください。"
       },
       "recover": {
         "confirm": "設定 \"{{name}}\" をバックアップから復元しますか？",
@@ -911,11 +930,14 @@
         "description": "孤立したデータストアリソースと古いスナップショットをマシンから削除する",
         "descriptionShort": "孤立したリソースと古いスナップショットを整理する",
         "dryRunOption": "変更を加えずに削除される内容を表示する",
+        "forceDeleteMountedOption": "マウント安全プリフライトを上書きし、現在マウントされているか実行中の Docker コンテナがあってもリポジトリを削除します。--force（アーカイブ猶予期間のみを上書き）とは異なります。--orphaned-repos と --prune-unknown の両方に適用されます。",
         "noReposFound": "マシン上にリポジトリが見つかりません",
         "noStaleSnapshots": "古いスナップショットは見つかりませんでした",
+        "noUnknownRepos": "不明なリポジトリは見つかりませんでした。すべてのマシンリポジトリはローカル設定にあるか、renet ミラーを持っています",
         "orphanedReposCompleted": "{{count}} 件の孤立したリポジトリを削除しました",
         "orphanedReposOption": "どの設定にも存在しないリポジトリイメージも削除する",
         "orphanedReposStarting": "{{machine}} 上の孤立したリポジトリをスキャン中...",
+        "pruneUnknownOption": "renet .interim/state ミラーが分類できないリポジトリのみを削除します（ローカル設定になく、かつフォークマークされたミラーがない）。--orphaned-repos より厳密に狭い：ミラーがそれらを識別する場合、設定なしのフォークは保持されます。プレミラーレガシー孤児と設定エントリが削除された古い grands は両方ともこのバケットに入ります。",
         "snapshotDeleted": "{{name}} を削除しました",
         "snapshotDeleting": "{{name}} を削除中...",
         "snapshotInUse": "{{name}} をスキップ (使用中)",
@@ -923,7 +945,10 @@
         "snapshotsOnlyOption": "古いスナップショットのみを整理する",
         "snapshotStale": "古い: {{name}} ({{size}})",
         "startingDatastore": "{{machine}} 上の孤立したデータストアリソースをスキャン中...",
-        "startingSnapshots": "{{machine}} 上の古いスナップショットをスキャン中..."
+        "startingSnapshots": "{{machine}} 上の古いスナップショットをスキャン中...",
+        "unknownCompleted": "{{count}} 件の不明なリポジトリをクリーンアップしました",
+        "unknownFound": "{{count}} 件の不明なリポジトリが見つかりました（マウント安全チェック後に {{deletable}} 件削除可能）",
+        "unknownStarting": "{{machine}} で不明なリポジトリをスキャンしています（ローカル設定になし + フォークマークされたミラーなし）..."
       },
       "query": {
         "connection": "接続",
@@ -1298,7 +1323,10 @@
           "description": "リモート（マシンまたはストレージ）の利用可能なバックアップを一覧表示",
           "listing": "バックアップを一覧表示中...",
           "optionFrom": "ソースマシンまたはストレージ名（設定から自動検出）",
-          "sourceRequired": "--from <remote> を指定してください（設定からのマシンまたはストレージ名）"
+          "optionPath": "ストレージルート内のサブディレクトリ。省略すると、hot/ と cold/ の両方がリストされ、マージされます。",
+          "sourceRequired": "--from <remote> を指定してください（設定からのマシンまたはストレージ名）",
+          "descriptionShort": "リモート上の利用可能なバックアップを一覧表示",
+          "localOnly": "repo backup list はローカルアダプターモードでのみサポートされています"
         }
       },
       "batchConfirm": "\"{{machine}}\"上のすべての{{count}}リポジトリを{{action}}しますか？ [y/N]",
@@ -1463,6 +1491,37 @@
         "failed": "リサイズに失敗しました",
         "sizeOption": "新しいリポジトリサイズ（例: 10G、100G、1T）",
         "starting": "\"{{machine}}\" で \"{{repository}}\" を {{size}} にリサイズ中..."
+      },
+      "secret": {
+        "currentOption": "SHA-256 digest of the previous value (passwd-style precondition). Required for overwrite under agent context; optional for first-write.",
+        "description": "Manage per-repo secrets injected at deploy time. Two modes: env (REDIACC_SECRET_<KEY> via compose ${VAR} interpolation) and file (host tmpfs at /var/run/rediacc/secrets/<networkId>/<KEY>, mounted via Docker compose `secrets:` block). Secrets never enter the encrypted LUKS image, so forks inherit none — externals see the fork as a different principal.",
+        "descriptionShort": "リポジトリ単位のデプロイ時シークレットを管理 (env / file)",
+        "get": {
+          "description": "Read a single secret. Returns a redacted stub (`<redacted:secret>:<digest8>`) under agent context regardless of policy.",
+          "descriptionShort": "シークレットのダイジェストを表示 (値は決して返されない)",
+          "notFound": "リポジトリ \"{{repository}}\" にシークレット \"{{key}}\" が見つかりません",
+          "repoNotFound": "リポジトリ \"{{repository}}\" が見つかりません"
+        },
+        "keyOption": "UPPER_SNAKE_CASE 形式のシークレットキー（最大 64 文字）。env モードでは REDIACC_SECRET_<KEY> として、file モードではコンテナ内の /run/secrets/<key> として公開されます。",
+        "list": {
+          "description": "シークレットのキーとモードを一覧表示（値もダイジェストも決して返しません）。",
+          "descriptionShort": "リポジトリのシークレットキーとモードを一覧",
+          "empty": "\"{{repository}}\" にシークレットは定義されていません"
+        },
+        "modeOption": "配信モード: 'env'（コンテナ環境、docker inspect で表示）または 'file'（tmpfs ファイル、env には決して入らない）。デフォルト: file。",
+        "nameOption": "リポジトリ名（例: mail、mail:staging）。タグなしの場合、デフォルトは :latest。",
+        "rotateOption": "ローテーションを承認；--current 前提条件をスキップ（ローテーションとして監査）。前の値を確認せずに意図的にローテーションする場合に使用。",
+        "set": {
+          "description": "シークレットを設定または上書き。フォークは継承しません。フォーク上に明示的に設定してください。エージェントコンテキストでは --current ダイジェスト一致が必要です（passwd スタイル）。",
+          "descriptionShort": "リポジトリのシークレットを設定または上書き",
+          "success": "シークレット \"{{key}}\"（{{mode}}）を \"{{repository}}\" に設定しました"
+        },
+        "unset": {
+          "description": "シークレットを削除します。エージェントコンテキストでは --current ダイジェスト一致が必要です。",
+          "descriptionShort": "リポジトリのシークレットを削除",
+          "success": "\"{{repository}}\" からシークレット \"{{key}}\" を削除しました"
+        },
+        "valueOption": "シークレット値。`-` を渡して stdin から読み取ります（シェル履歴への露出を回避）。"
       },
       "snapshot": {
         "create": {
@@ -1704,9 +1763,11 @@
         "completed": "{{count}} 件の孤立したバックアップを削除しました",
         "description": "どの設定にも存在しなくなった孤立したバックアップをストレージから削除します。マルチ設定対応で猶予期間による保護付き。",
         "descriptionShort": "ストレージから孤立したバックアップを削除",
+        "forceDeleteMountedOption": "マウント安全チェックを上書きし、ソース GUID が現在実行マシンにマウントされているか実行中のコンテナを持っていてもクラウドバックアップを削除します。--force（アーカイブ済みリポジトリの猶予期間のみを上書き）とは異なります。",
         "found": "ストレージに {{count}} 件のバックアップが見つかりました",
         "listFailed": "ストレージバックアップのリスト表示に失敗しました",
         "listing": "\"{{storage}}\" のバックアップをリスト表示中...",
+        "machineOption": "実行マシン、rclone のリスト/削除呼び出しをストレージに対して実行します。クライアントはローカルに rclone がインストールされていることが期待されないため必須です；ストレージの認証情報は引き続きローカル設定から取得されます。",
         "noBackups": "ストレージにバックアップが見つかりません"
       },
       "pull": {
@@ -2297,6 +2358,19 @@
       "kindMismatch": "値の種類が変わりました(保存: {{stored}}、申告: {{claimed}})",
       "mismatch": "{{count}} パスで事前条件失敗:\n{{details}}",
       "missing": "機密パスには --current(または --rotate-secret)が必要です",
+      "next": {
+        "options": {
+          "confirm": {
+            "description": "現在のダイジェストを再読し、--currentで再試行",
+            "run": "rdc repo secret get --name {{repository}} --key {{key}}"
+          },
+          "rotate": {
+            "description": "前提条件をスキップ (ローテーション、監査記録)",
+            "run": "<元のコマンド> --rotate-secret"
+          }
+        },
+        "summary": "現在の値を提供するか、ローテーションを承認してください。"
+      },
       "rotationRequiresTty": "{{pointer}}: ローテーションの確認には対話型 TTY が必要です(または --current-secrets を使用)",
       "stubStillStub": "{{pointer}}: 編集された値は秘匿スタブのように見えますが、現在のダイジェストと一致しません"
     },
@@ -2315,6 +2389,13 @@
     "regionRequired": "リージョン名が必要です。--region を使用するか、コンテキストを設定してください。",
     "registrationFailed": "登録に失敗しました",
     "remoteNotFound": "\"{{name}}\"は既知のマシンまたはストレージではありません。マシン: {{machines}}。ストレージ: {{storages}}",
+    "repo": {
+      "secret": {
+        "badMode": "無効な --mode \"{{mode}}\"。許可: env、file。",
+        "emptyValue": "シークレット値は空にできません（stdin がバイトを生成しませんでした）。",
+        "mutuallyExclusive": "--current と --rotate-secret は相互排他的です。1 つ選んでください: --current は前の値を確認するため、--rotate-secret は確認なしでローテーションするため。"
+      }
+    },
     "repoNotDeployed": "リポジトリ \"{{repository}}\" は {{machine}} にデプロイされていません。\n\n先にデプロイしてください：\n  rdc repo up --name {{repository}} -m <マシン名>",
     "repositoryAlreadyMounted": "リポジトリ \"{{name}}\" は既に \"{{machine}}\" にマウントされています。稼働中のリポジトリに対する移行はデータを破損させます。先に実行してください: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "リポジトリ \"{{name}}\" が見つかりません",

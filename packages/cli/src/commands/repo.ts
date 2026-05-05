@@ -18,6 +18,7 @@ import { executeRepoFunction } from '../utils/repo-executor.js';
 import { formatStepDuration } from '../utils/timeline.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
+import { registerRepoSecretCommands } from './repo-secret.js';
 import {
   handleDownAll,
   handleRepoList,
@@ -510,4 +511,5 @@ export function registerRepoCommands(program: Command): void {
   registerRepoMigrateCommand(repo);
   registerRepoSyncCommands(repo);
   registerRepoTunnelCommand(repo);
+  registerRepoSecretCommands(repo);
 }

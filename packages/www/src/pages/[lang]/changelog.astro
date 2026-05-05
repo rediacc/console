@@ -16,10 +16,22 @@ const breadcrumbItems = [
   { name: t('pages.changelog.breadcrumb.changelog'), url: `/${lang}/changelog` },
 ];
 
-// Changelog entries — will be sourced from GitHub releases later
+// Changelog entries are date-anchored, not version-anchored — the published
+// product is on its own version track (e.g. 1.1.1+) and tying entries to a
+// specific number is more maintenance than it's worth.
 const releases = [
   {
-    version: '0.9.0',
+    date: '2026-05-04',
+    highlights: [
+      'New [`rdc config prune`](/docs/pruning#config-prune) command — sweeps stale leftovers from the local config file: ACME cert-cache entries whose anchor is gone, expired archived repositories past their grace window, and dangling cross-references between machines/strategies/repos. Pure-local, no SSH calls.',
+      'New `rdc machine prune --prune-unknown` flag — surgical alternative to `--orphaned-repos`. Deletes only repos that both the local config and the renet `.interim/state` mirror fail to classify, so legitimate forks created by other tools are preserved. See [Pruning — Phase 3](/docs/pruning#phase-3---prune-unknown-surgical).',
+      'Mount-safety preflight on `rdc storage prune` and `rdc machine prune --prune-unknown` — refuses to delete cloud backups or machine images of GUIDs currently mounted or running on the executor. Override with `--force-delete-mounted` (distinct from `--force` so the two escape hatches stay separate).',
+      '`rdc repo backup list` now auto-merges hot and cold backup folders into a single table with `Mode` / `Name` / `GUID` / `Size` / `Modified` columns. `--path <hot|cold>` drills into a single mode. Names resolve from local config; sizes are human-readable; modified timestamps come from the storage backend.',
+      '`rdc repo list -m` adds a tristate `Type` column (`grand` / `fork` / `unknown`) sourced from the new [`.interim/state` mirror](/docs/repositories#type-column-and-the-state-mirror). The mirror is written at every mount and at fork-creation time, so unmounted forks are correctly identified without unlocking the LUKS volume.',
+      'Scheduled-backup storage layout split into `hot/` and `cold/` subfolders so the two streams never mix; per-mode delete is now batched into a single rclone call regardless of how many GUIDs.',
+    ],
+  },
+  {
     date: '2026-04-21',
     highlights: [
       'Enterprise config-edit surface: pointer-addressed `rdc config field {get,set,unset,rotate,list}` plus validated `rdc config edit` with a redacted JSONC projection',
@@ -31,7 +43,6 @@ const releases = [
     ],
   },
   {
-    version: '0.4.0',
     date: '2026-02-28',
     highlights: [
       'Newsletter subscription and lead capture system',
@@ -41,7 +52,6 @@ const releases = [
     ],
   },
   {
-    version: '0.3.0',
     date: '2026-02-15',
     highlights: [
       'Homepage redesign with feature showcase tabs',
@@ -51,7 +61,6 @@ const releases = [
     ],
   },
   {
-    version: '0.2.0',
     date: '2026-01-20',
     highlights: [
       'Solution pages for all use cases',
@@ -61,7 +70,6 @@ const releases = [
     ],
   },
   {
-    version: '0.1.0',
     date: '2025-12-01',
     highlights: [
       'Initial release of Rediacc Console',
@@ -101,18 +109,19 @@ const releases = [
 
       <div class="changelog-timeline">
         {releases.map((release) => (
-          <article class="changelog-entry" id={`v${release.version}`}>
+          <article class="changelog-entry" id={release.date}>
             <div class="changelog-entry-marker" />
             <div class="changelog-entry-content">
               <div class="changelog-entry-header">
-                <h2 class="changelog-version">v{release.version}</h2>
-                <time class="changelog-date" datetime={release.date}>
-                  {new Date(release.date).toLocaleDateString(lang === 'en' ? 'en-US' : lang, {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </time>
+                <h2 class="changelog-date-heading">
+                  <time datetime={release.date}>
+                    {new Date(release.date).toLocaleDateString(lang === 'en' ? 'en-US' : lang, {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </time>
+                </h2>
               </div>
               <ul class="changelog-highlights">
                 {release.highlights.map((item) => (
@@ -197,16 +206,11 @@ const releases = [
     flex-wrap: wrap;
   }
 
-  .changelog-version {
+  .changelog-date-heading {
     font-size: var(--font-size-xl);
     font-weight: var(--font-weight-semibold);
     color: var(--color-text);
-    font-family: var(--font-family-mono);
-  }
-
-  .changelog-date {
-    font-size: var(--font-size-sm);
-    color: var(--color-text-secondary);
+    margin: 0;
   }
 
   .changelog-highlights {

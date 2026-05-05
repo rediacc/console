@@ -286,5 +286,66 @@ describe('buildLocalVault', () => {
       const vault = JSON.parse(buildLocalVault(opts));
       expect(vault.repositories.myrepo.network_id).toBeUndefined();
     });
+
+    // ── secret_files (file-mode) — single-repo path ──────────────────
+    //
+    // This is the contract that makes `repo migrate` and `repo push --up`
+    // automatically carry secrets across machines. Both invoke `repo up` on
+    // the target machine through this exact code path; the repo entry in
+    // local config travels with all its secrets baked in.
+
+    it('emits secret_files in single-repo entry when repositoryConfigs has them', () => {
+      const opts = {
+        ...baseOpts(),
+        repositoryConfigs: {
+          myrepo: {
+            guid: 'guid-123',
+            name: 'myrepo',
+            networkId: 2816,
+            secretFiles: [
+              { name: 'STRIPE_KEY', value: 'sk_live_x' },
+              { name: 'DKIM', value: '----PEM----' },
+            ],
+          },
+        },
+      };
+      opts.params = { repository: 'myrepo' };
+      const vault = JSON.parse(buildLocalVault(opts));
+      expect(vault.repositories.myrepo.secret_files).toEqual([
+        { name: 'STRIPE_KEY', value: 'sk_live_x' },
+        { name: 'DKIM', value: '----PEM----' },
+      ]);
+    });
+
+    it('omits secret_files when repo has none (cleaner JSON)', () => {
+      const opts = {
+        ...baseOpts(),
+        repositoryConfigs: {
+          myrepo: { guid: 'guid-123', name: 'myrepo', networkId: 2816 },
+        },
+      };
+      opts.params = { repository: 'myrepo' };
+      const vault = JSON.parse(buildLocalVault(opts));
+      expect(vault.repositories.myrepo.secret_files).toBeUndefined();
+    });
+
+    it('emits secret_files per-repo in multi-repo (up-all / migrate-all) mode', () => {
+      const opts = {
+        ...baseOpts(),
+        repositoryConfigs: {
+          a: {
+            guid: 'guid-a',
+            name: 'a',
+            networkId: 1024,
+            secretFiles: [{ name: 'A_KEY', value: 'a-val' }],
+          },
+          b: { guid: 'guid-b', name: 'b', networkId: 1025 },
+        },
+      };
+      // No params.repository → multi-repo branch in buildRepositories
+      const vault = JSON.parse(buildLocalVault(opts));
+      expect(vault.repositories.a.secret_files).toEqual([{ name: 'A_KEY', value: 'a-val' }]);
+      expect(vault.repositories.b.secret_files).toBeUndefined();
+    });
   });
 });
