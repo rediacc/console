@@ -64,7 +64,10 @@ test.describe
     // creation. Mark the suite as skipped until that lands so CI is not
     // gated on infrastructure that does not exist yet.
     test.beforeAll(async () => {
-      test.skip(true, 'pending E2E helper that registers repo in local config; unit tests cover the flow');
+      test.skip(
+        true,
+        'pending E2E helper that registers repo in local config; unit tests cover the flow'
+      );
       test.skip(!config.enabled, 'E2E VMs not configured');
       ssh1 = new SSHValidator(config.vm1Ip, config.sshUser, config.sshKeyPath);
       cleanup = await setupE2EEnvironment(ctxName);
