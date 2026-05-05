@@ -4,8 +4,8 @@ description: 'Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yön
 category: Guides
 order: 4
 language: tr
-sourceHash: "689a84ee2873fe00"
-sourceCommit: "8165b06e0d06dd07530fff343b0df6ecb1697a47"
+sourceHash: "1a8650ef7f8f3090"
+sourceCommit: "962514155bcc56421efb0b89299246854847b31c"
 ---
 
 # Depolar
@@ -61,6 +61,18 @@ rdc repo status --name my-app -m server-1
 rdc repo list -m server-1
 ```
 
+### Type sütunu ve durum aynası
+
+Çıktı tablosu üç değer içeren bir `Type` sütunu içerir:
+
+- **`grand`**. Yerel CLI yapılandırmanızda üst depo olmadan kayıtlı en üst düzey bir depo. Temel durum.
+- **`fork`**. Başka bir deponun kopyala-yaz çatalı. Yerel yapılandırmadaki `grandGuid` üzerinden **veya** makinedeki renet `.interim/state` aynası üzerinden tanımlanır. İki kaynak da yetkilidir; ayna doldurulduktan sonra ikisi de aynı sonucu vermelidir.
+- **`unknown`**. Hiçbir sinyal depoyu sınıflandıramıyor. Çoğunlukla ayna öncesi eski bir çatal (ayna kodu yayınlanmadan önce oluşturulmuş ve o zamandan beri yeniden bağlanmamış) ya da yerel yapılandırma girişi yanlışlıkla silinmiş bayat bir `grand`. CLI tahmin etmeyi reddeder; operatör [ayna doldurma işlemini](/tr/docs/pruning#tasima-durum-aynasi-doldurma) çalıştırmalı veya gerçekten sahipsizse dizini kaldırmalıdır.
+
+`.interim/state/<guid>/.rediacc.json` aynası, LUKS ile şifrelenmiş birimin **dışına** yazılan küçük bir yan dosyadır; böylece yedekleme araçları ve `repo list` her imajın kilidini açmadan çatal kökenini okuyabilir. Birim içindeki `.rediacc.json` ile aynı şekle sahiptir (`is_fork`, `grand_guid`, `name`, vb.) ve her `Repository.SaveState` çağrısında. Yani her bağlamada ve her durum mutasyonunda. Yenilenir. Zamanlanmış yedeklemelerde çatal tespitinin doğruluk kaynağıdır: aynası `is_fork: true` olan bağlanmamış bir çatal, `cold` ve `hot` yüklemelerden doğru şekilde atlanır.
+
+`unknown` girişlerinin rutin temizliği için bkz. [`rdc machine prune --prune-unknown`](/tr/docs/pruning#3-aşama---prune-unknown-cerrahi).
+
 ## Yeniden Boyutlandırma
 
 Depoyu tam bir boyuta ayarlayın veya belirli bir miktar genişletin:
@@ -82,7 +94,9 @@ rdc repo fork --parent my-app --tag staging -m server-1
 
 Çatallar name:tag modelini kullanır: ortaya çıkan çatal `my-app:staging` olarak adlandırılır. Bu, kendi GUID'i ve ağ kimliğine sahip yeni bir şifrelenmiş kopya oluşturur ve üst deponun adını paylaşır. Çatal, üst depo ile aynı LUKS kimlik bilgisini paylaşır.
 
-> Çatallar, disk üzerinde saklanan tüm kimlik bilgileri dahil olmak üzere üst deponun verilerini BTRFS reflink aracılığıyla paylaşır. Bu kimlik bilgileri Stripe, AWS veya Railway gibi harici servislere yetki verdiğinde ortaya çıkan etkiler için [Rediacc'in izole etmediği şeyler](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate) bölümüne bakın.
+> Çatallar, disk üzerinde saklanan tüm kimlik bilgileri dahil olmak üzere üst deponun verilerini BTRFS reflink aracılığıyla paylaşır. Bu kimlik bilgileri Stripe, AWS veya Railway gibi harici servislere yetki verdiğinde ortaya çıkan etkiler için [Rediacc'in izole etmediği şeyler](/tr/docs/ai-agents-safety#what-rediacc-does-not-isolate) bölümüne bakın.
+
+Çatal oluşturma sırasında `repo fork`, [durum aynası yan dosyasını](#type-sutunu-ve-durum-aynasi) `<datastore>/.interim/state/<fork-guid>/.rediacc.json` konumuna birim kilidini açmadan anında yazar; böylece yeni çatal oluşturulduğu andan itibaren `is_fork: true` olarak doğru şekilde tanımlanır. Bu, hiç bağlanmamış olsa bile zamanlanmış yedeklemelerin onu atlamasını sağlar (çatallar varsayılan olarak yükleme hattının dışında tutulur). Bir çatalın çatalı oluşturulduğunda, `grand_guid` doğru zincirlenir: yeni çatalın aynası ara çatala değil, orijinal grand üst deponun GUID'ine işaret eder.
 
 ## Doğrulama
 

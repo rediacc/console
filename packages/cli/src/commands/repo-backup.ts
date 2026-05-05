@@ -17,6 +17,12 @@ import {
   traceAction,
   validateFunctionParams,
 } from './queue.js';
+import {
+  type BackupListEntry,
+  fetchBackupList,
+  renderBackupList,
+  type TaggedBackupEntry,
+} from './repo-backup-list.js';
 import { runBatchOperation } from './repo-batch-utils.js';
 
 interface BackupRunOptions {
@@ -423,30 +429,55 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
 
   backup
     .command('list')
+    .summary(t('commands.repo.backup.list.descriptionShort'))
     .description(t('commands.repo.backup.list.description'))
     .option('--from <remote>', t('commands.repo.backup.list.optionFrom'))
     .addOption(new Option('--from-machine <machine>').hideHelp())
     .requiredOption('-m, --machine <name>', t('options.machine'))
+    .option('--path <subdir>', t('commands.repo.backup.list.optionPath'))
     .option('-w, --watch', t('options.watch'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (options) => {
       try {
-        const params: Record<string, unknown> = {};
+        const baseParams: Record<string, unknown> = {};
 
         if (options.fromMachine) {
-          params.sourceType = 'machine';
-          params.from = options.fromMachine;
+          baseParams.sourceType = 'machine';
+          baseParams.from = options.fromMachine;
         } else if (options.from) {
           const resolved = await resolveRemoteName(options.from as string);
-          params.sourceType = resolved.type;
-          params.from = resolved.name;
+          baseParams.sourceType = resolved.type;
+          baseParams.from = resolved.name;
         } else {
           throw new ValidationError(t('commands.repo.backup.list.sourceRequired'));
         }
 
         outputService.info(t('commands.repo.backup.list.listing'));
-        await executeFunction(`backup_list`, params, options, repoCommand);
+
+        const explicitPath =
+          typeof options.path === 'string' && options.path.trim().length > 0
+            ? options.path.trim()
+            : undefined;
+
+        const tagged: TaggedBackupEntry[] = explicitPath
+          ? (await fetchBackupList({ ...baseParams, path: explicitPath }, options)).map((e) => ({
+              ...e,
+              mode: explicitPath,
+            }))
+          : (
+              await Promise.all(
+                ['hot', 'cold'].map(async (mode) => {
+                  const entries = await fetchBackupList(
+                    { ...baseParams, path: mode },
+                    options
+                  ).catch(() => [] as BackupListEntry[]);
+                  return entries.map((e) => ({ ...e, mode }));
+                })
+              )
+            ).flat();
+
+        await renderBackupList(tagged);
       } catch (error) {
         handleError(error);
       }

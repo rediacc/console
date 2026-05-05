@@ -46,6 +46,8 @@ rdc config backup-strategy set --name daily-azure --destination azure-backup --c
 
 This schedules daily backups at 2 AM to `my-s3` and at 6 AM to `azure-backup`. Each destination gets its own schedule. The schedules are stored in your config and can be deployed to machines as systemd timers.
 
+> **Hot vs cold layout.** When a strategy uses `--mode hot`, backups land in `<bucket>/<folder>/hot/<guid>` on the storage; `--mode cold` strategies write to `<bucket>/<folder>/cold/<guid>`. The canonical pattern is one hourly hot strategy plus one weekly cold strategy. See [Backup & Restore. Storage layout](/en/docs/backup-restore#storage-layout) for the full details.
+
 ### Step 3: View backup schedule
 
 Verify the schedule was applied.

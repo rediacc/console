@@ -16,6 +16,7 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { t } from '../i18n/index.js';
 import type { AcmeCertCache } from '../types/index.js';
+import { parseCertAnchor } from '../utils/cert-anchor.js';
 import { configService } from './config-resources.js';
 import { outputService } from './output.js';
 import { readSSHKey } from './renet-execution.js';
@@ -285,6 +286,91 @@ function isCertPastCutoff(expiryIso: string | undefined, cutoffMs: number): bool
   const expiryMs = Date.parse(expiryIso);
   if (Number.isNaN(expiryMs)) return false;
   return expiryMs < cutoffMs;
+}
+
+/**
+ * The set of "live anchors" against which a cert name is considered
+ * load-bearing. Names whose anchor isn't in this set are stale.
+ *
+ * Built once per `config prune` invocation from the operator's active
+ * config — see `services/config-prune.ts::buildConfigAnchors`.
+ */
+export interface ConfigAnchors {
+  /** Live + in-grace-archived repository GUIDs. */
+  guids: ReadonlySet<string>;
+  /** Repository names (without `:tag`) — both live and archived-by-name. */
+  repoNames: ReadonlySet<string>;
+  /** Machine names from `resources.machines`. */
+  machines: ReadonlySet<string>;
+}
+
+/**
+ * Decide whether a single cert domain name is stale relative to the live
+ * config. Pure function so it's easy to unit-test independently of the
+ * `AcmeJson` traversal. Returns `null` if the cert is load-bearing (or we
+ * can't classify it confidently); returns a short reason string when it's
+ * stale and should be dropped.
+ */
+function isCertStaleByAnchor(
+  name: string,
+  baseDomain: string,
+  anchors: ConfigAnchors
+): string | null {
+  const a = parseCertAnchor(name, baseDomain);
+
+  switch (a.kind) {
+    case 'guid':
+      return anchors.guids.has(a.anchor!) ? null : `unknown GUID ${a.anchor}`;
+    case 'repo-name':
+      // Wildcard `*.<X>.<machine>.<baseDomain>` where X isn't a GUID. It's
+      // stale only when the machine itself is unknown — the head label could
+      // legitimately be a service subdomain (e.g. `*.erp.<machine>.<base>`),
+      // so we keep it as long as the machine is alive.
+      return anchors.machines.has(a.machine!) ? null : `unknown machine ${a.machine}`;
+    case 'service':
+      return anchors.machines.has(a.machine!) ? null : `unknown machine ${a.machine}`;
+    case 'machine':
+      return anchors.machines.has(a.anchor!) ? null : `unknown machine ${a.anchor}`;
+    case 'top-level':
+    case 'root':
+    case 'apex':
+    case 'opaque':
+      // No per-resource anchor we can evaluate; leave alone.
+      return null;
+  }
+}
+
+/**
+ * Remove cert entries whose anchor (GUID / repo name / machine) is no longer
+ * in the active config. Mirrors the shape of `pruneStaleAcmeCerts` and
+ * `pruneExpiredCerts` so callers can compose them in any order.
+ *
+ * `data[]` blobs are NOT touched here — they're regenerated from
+ * `Certificates[]` on the next `config cert-cache pull`, so manual blob
+ * surgery would risk dropping a chain that still covers a kept name.
+ */
+export function pruneCertsByAnchor(
+  acme: AcmeJson,
+  baseDomain: string,
+  anchors: ConfigAnchors
+): { cleaned: AcmeJson; removedCount: number; removed: { name: string; reason: string }[] } {
+  const removed: { name: string; reason: string }[] = [];
+
+  for (const resolver of Object.values(acme)) {
+    if (!resolver.Certificates) continue;
+    const kept: AcmeCertEntry[] = [];
+    for (const cert of resolver.Certificates) {
+      const reason = isCertStaleByAnchor(cert.domain.main, baseDomain, anchors);
+      if (reason) {
+        removed.push({ name: cert.domain.main, reason });
+      } else {
+        kept.push(cert);
+      }
+    }
+    resolver.Certificates = kept;
+  }
+
+  return { cleaned: acme, removedCount: removed.length, removed };
 }
 
 export function pruneExpiredCerts(

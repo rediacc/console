@@ -85,10 +85,46 @@ Failed commands return structured errors with recovery hints:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `code` | `string` | Machine-readable error code |
+| `code` | `string` | Machine-readable error code (see `ERROR_CODES` constants for the canonical list) |
 | `message` | `string` | Human-readable description |
 | `retryable` | `boolean` | Whether retrying the same command may succeed |
-| `guidance` | `string` | Suggested next action to resolve the error |
+| `guidance` | `string` | Free-text hint (legacy. Prefer `next` for structured action data) |
+| `next` | `object?` | Structured next-action hint (when present). See below |
+
+### Structured `next` action hints
+
+For high-value error codes (e.g. `PRECONDITION_MISMATCH`), errors carry a structured `next` field telling the agent exactly what command to suggest the user run. **Agents should relay `next.options[].run` verbatim to the human rather than synthesizing their own command**. This avoids the "agent invents a command that doesn't exist" failure mode.
+
+```json
+{
+  "errors": [{
+    "code": "PRECONDITION_MISMATCH",
+    "message": "--current digest mismatch (expected 3264f8ee…, got 611dfd8a…)",
+    "next": {
+      "summary": "Provide the current value or acknowledge rotation.",
+      "options": [
+        {
+          "description": "Re-read current digest, then retry with --current",
+          "run": "rdc repo secret get --name mail --key STRIPE_KEY"
+        },
+        {
+          "description": "Skip the precondition (rotation, audited)",
+          "run": "rdc repo secret set --name mail --key STRIPE_KEY --value <new> --mode file --rotate-secret"
+        }
+      ]
+    }
+  }]
+}
+```
+
+Schema:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `next.summary` | `string` | One-line description of what the user needs to decide |
+| `next.options[]` | `array` | Concrete actions; each is an alternative the user can pick |
+| `next.options[].description` | `string` | Human-readable explanation of this option |
+| `next.options[].run` | `string` | Exact CLI command. Relay verbatim to the user |
 
 ### Retryable Errors
 

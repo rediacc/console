@@ -82,6 +82,41 @@ View available backups in a storage location:
 rdc repo backup list --from my-storage -m server-1
 ```
 
+The output is a unified table that merges both [scheduled-backup folders](#scheduled-backups) (`hot/` and `cold/`) so you see every backup in one view:
+
+| Column | Meaning |
+|---|---|
+| `Mode` | `hot` or `cold`. Which scheduled-backup folder this entry lives in |
+| `Name` | Repository name resolved from your local config (falls back to GUID for repos not in config) |
+| `GUID` | The on-disk repository GUID |
+| `Size` | Human-readable size of the backup file |
+| `Modified` | UTC timestamp from the storage backend |
+
+To drill into a single mode, pass `--path`:
+
+```bash
+rdc repo backup list --from my-storage -m server-1 --path hot
+rdc repo backup list --from my-storage -m server-1 --path cold
+```
+
+### Storage layout
+
+Scheduled backups land under per-mode subfolders inside the storage's configured folder, so the same storage cleanly hosts both the hourly and the weekly streams without mixing them:
+
+```text
+<bucket>/<folder>/
+├── hot/
+│   ├── <guid-1>
+│   ├── <guid-2>
+│   └── ...
+└── cold/
+    ├── <guid-1>
+    ├── <guid-3>
+    └── ...
+```
+
+A repo can appear in both `hot/` and `cold/` (the hourly schedule snapshots it; the weekly schedule snapshots it again). The merged listing surfaces both rows so it's clear which streams cover which repos.
+
 ## Bulk Sync
 
 Push or pull all repositories at once:
@@ -198,6 +233,8 @@ This default is deliberate. Running two cold backups in parallel against the sam
 
 ### Define a Strategy
 
+The canonical default is a two-strategy split: a fast hourly hot stream that captures every repo, and a slower weekly cold stream that takes app-consistent snapshots. The two strategies write to different storage subfolders (`hot/` and `cold/`) so backups never mix.
+
 ```bash
 rdc config backup-strategy set \
   --name hourly-hot \
@@ -210,14 +247,15 @@ rdc config backup-strategy set \
 
 ```bash
 rdc config backup-strategy set \
-  --name nightly-cold \
+  --name weekly-cold \
   --destination my-storage \
-  --cron "0 2 * * *" \
+  --cron "15 3 * * 0" \
   --mode cold \
-  --include "*.db" \
-  --exclude "tmp/**" \
+  --exclude very-large-repo \
   --enable
 ```
+
+The `--exclude` filter on the cold strategy is the recommended escape hatch for very-large repos that don't fit in your weekly maintenance window. The hourly hot strategy still covers them; cold simply skips. Repository names in `--exclude` match the local-config repo name (no `:tag`).
 
 | Option | Description |
 |--------|-------------|
@@ -234,13 +272,13 @@ rdc config backup-strategy set \
 
 ```bash
 rdc config backup-strategy list
-rdc config backup-strategy show --name nightly-cold
+rdc config backup-strategy show --name weekly-cold
 ```
 
 ### Remove a Strategy
 
 ```bash
-rdc config backup-strategy remove --name nightly-cold
+rdc config backup-strategy remove --name weekly-cold
 ```
 
 ### Bind Strategies to a Machine
@@ -251,7 +289,7 @@ In your config, bind one or more strategy names to a machine:
 {
   "machines": {
     "hostinger": {
-      "backupStrategies": ["hourly-hot", "nightly-cold"]
+      "backupStrategies": ["hourly-hot", "weekly-cold"]
     }
   }
 }
@@ -282,7 +320,7 @@ Trigger a backup immediately without waiting for the timer. Works even if no tim
 
 ```bash
 rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy nightly-cold
+rdc machine backup now -m server-1 --strategy weekly-cold
 ```
 
 ### View Backup Status
@@ -298,7 +336,7 @@ rdc machine backup status -m server-1 --strategy hourly-hot
 
 ```bash
 rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy nightly-cold
+rdc machine backup cancel -m server-1 --strategy weekly-cold
 ```
 
 ## Repository Migration

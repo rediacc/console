@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 31
 language: de
-sourceHash: "c03ab4a60b844efb"
+sourceHash: "1cb28ab2dc3ac39f"
 ---
 
 Claude Code funktioniert nativ mit Rediacc über die `rdc` CLI. Diese Anleitung behandelt Einrichtung, Berechtigungen und gaengige Workflows.

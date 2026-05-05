@@ -104,6 +104,7 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
       ownership: { modes: SELF_HOSTED_MODES },
       template: { modes: SELF_HOSTED_MODES },
       tunnel: { modes: SELF_HOSTED_MODES },
+      secret: { modes: SELF_HOSTED_MODES },
     },
   },
 

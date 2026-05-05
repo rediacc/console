@@ -6,7 +6,7 @@ description: >-
 category: Reference
 order: 51
 language: de
-sourceHash: 43cdbf89d4314d73
+sourceHash: "18996ab708715227"
 ---
 
 Alle `rdc`-Befehle unterstützen strukturierte JSON-Ausgabe für die programmatische Nutzung durch KI-Agenten und Skripte.

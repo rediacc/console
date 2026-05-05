@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: fr
-sourceHash: "14cf2fb4ac3dc4d6"
-sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
+sourceHash: "eae6eedb1a1298f2"
+sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
 ---
 
 # Sauvegarde et restauration
@@ -84,6 +84,41 @@ Affichez les sauvegardes disponibles dans un emplacement de stockage :
 ```bash
 rdc repo backup list --from my-storage -m server-1
 ```
+
+La sortie est un tableau unifié qui fusionne les deux [dossiers de sauvegardes planifiées](#sauvegardes-planifiées) (`hot/` et `cold/`) afin que vous voyiez toutes les sauvegardes en une seule vue :
+
+| Colonne | Signification |
+|---|---|
+| `Mode` | `hot` ou `cold`. Dans quel dossier de sauvegarde planifiée cette entrée se trouve |
+| `Name` | Nom du dépôt résolu depuis votre configuration locale (retombe sur le GUID pour les dépôts absents de la configuration) |
+| `GUID` | Le GUID du dépôt sur disque |
+| `Size` | Taille lisible de la sauvegarde |
+| `Modified` | Horodatage UTC du backend de stockage |
+
+Pour zoomer sur un seul mode, passez `--path` :
+
+```bash
+rdc repo backup list --from my-storage -m server-1 --path hot
+rdc repo backup list --from my-storage -m server-1 --path cold
+```
+
+### Disposition du stockage
+
+Les sauvegardes planifiées atterrissent dans des sous-dossiers par mode à l'intérieur du dossier configuré du stockage, de sorte que le même stockage héberge proprement les flux horaires et hebdomadaires sans les mélanger :
+
+```text
+<bucket>/<folder>/
+├── hot/
+│   ├── <guid-1>
+│   ├── <guid-2>
+│   └── ...
+└── cold/
+    ├── <guid-1>
+    ├── <guid-3>
+    └── ...
+```
+
+Un dépôt peut apparaître dans `hot/` et dans `cold/` (la planification horaire le capture ; la planification hebdomadaire le capture également). Le listing fusionné fait remonter les deux lignes pour qu'il soit clair quels flux couvrent quels dépôts.
 
 ## Synchronisation en masse
 
@@ -201,6 +236,8 @@ Ce comportement par défaut est délibéré. Exécuter deux sauvegardes froides 
 
 ### Définir une stratégie
 
+Le défaut canonique est un partage en deux stratégies : un flux hot horaire rapide qui capture chaque dépôt, et un flux cold hebdomadaire plus lent qui prend des snapshots cohérents au niveau applicatif. Les deux stratégies écrivent dans des sous-dossiers de stockage différents (`hot/` et `cold/`) afin que les sauvegardes ne se mélangent jamais.
+
 ```bash
 rdc config backup-strategy set \
   --name hourly-hot \
@@ -213,14 +250,15 @@ rdc config backup-strategy set \
 
 ```bash
 rdc config backup-strategy set \
-  --name nightly-cold \
+  --name weekly-cold \
   --destination my-storage \
-  --cron "0 2 * * *" \
+  --cron "15 3 * * 0" \
   --mode cold \
-  --include "*.db" \
-  --exclude "tmp/**" \
+  --exclude very-large-repo \
   --enable
 ```
+
+Le filtre `--exclude` sur la stratégie cold est l'échappatoire recommandée pour les dépôts très volumineux qui n'entrent pas dans votre fenêtre de maintenance hebdomadaire. La stratégie hot horaire les couvre toujours ; cold les ignore simplement. Les noms de dépôt dans `--exclude` correspondent au nom de dépôt de la configuration locale (sans `:tag`).
 
 | Option | Description |
 |--------|-------------|
@@ -237,13 +275,13 @@ rdc config backup-strategy set \
 
 ```bash
 rdc config backup-strategy list
-rdc config backup-strategy show --name nightly-cold
+rdc config backup-strategy show --name weekly-cold
 ```
 
 ### Supprimer une stratégie
 
 ```bash
-rdc config backup-strategy remove --name nightly-cold
+rdc config backup-strategy remove --name weekly-cold
 ```
 
 ### Associer des stratégies à une machine
@@ -254,7 +292,7 @@ Dans votre configuration, associez un ou plusieurs noms de stratégie à une mac
 {
   "machines": {
     "hostinger": {
-      "backupStrategies": ["hourly-hot", "nightly-cold"]
+      "backupStrategies": ["hourly-hot", "weekly-cold"]
     }
   }
 }
@@ -285,7 +323,7 @@ Déclenchez une sauvegarde immédiatement sans attendre le timer. Fonctionne mê
 
 ```bash
 rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy nightly-cold
+rdc machine backup now -m server-1 --strategy weekly-cold
 ```
 
 ### Voir le statut de la sauvegarde
@@ -301,7 +339,7 @@ rdc machine backup status -m server-1 --strategy hourly-hot
 
 ```bash
 rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy nightly-cold
+rdc machine backup cancel -m server-1 --strategy weekly-cold
 ```
 
 ## Migration de dépôt

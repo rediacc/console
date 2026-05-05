@@ -4,8 +4,8 @@ description: 在远程机器上创建、管理和操作 LUKS 加密仓库。
 category: Guides
 order: 4
 language: zh
-sourceHash: "689a84ee2873fe00"
-sourceCommit: "8165b06e0d06dd07530fff343b0df6ecb1697a47"
+sourceHash: "1a8650ef7f8f3090"
+sourceCommit: "962514155bcc56421efb0b89299246854847b31c"
 ---
 
 # 仓库
@@ -61,6 +61,18 @@ rdc repo status --name my-app -m server-1
 rdc repo list -m server-1
 ```
 
+### Type 列与状态镜像
+
+输出表中包含一个 `Type` 列，有三种值：
+
+- **`grand`**. 在本地 CLI 配置中注册且没有父级的顶层仓库。基础情形。
+- **`fork`**. 另一个仓库的写时复制复刻。可通过本地配置中的 `grandGuid` **或**机器上的 renet `.interim/state` 镜像识别。两种来源都具权威性；一旦镜像填充完毕，两者应保持一致。
+- **`unknown`**. 两种信号都无法对该仓库进行分类。最常见情形是镜像之前的遗留复刻（在镜像代码发布之前创建，且此后从未重新挂载），或者本地配置条目被误删的过期 `grand`。CLI 拒绝猜测；操作员应运行[镜像回填](/zh/docs/pruning#migration-state-mirror-backfill)，或者如果该目录确实是孤立的则将其删除。
+
+`.interim/state/<guid>/.rediacc.json` 镜像是写在 LUKS 加密卷**外部**的小型边车文件，因此备份工具和 `repo list` 无需解锁每个映像即可读取复刻血缘。它的结构与卷内的 `.rediacc.json` 相同（`is_fork`、`grand_guid`、`name` 等），并在每次 `Repository.SaveState` 时刷新, , 即每次挂载和每次状态变更。它是计划备份中复刻检测的真实来源：一个未挂载的复刻，如果镜像中显示 `is_fork: true`，则会被正确地从 `cold` 和 `hot` 上传中跳过。
+
+要例行清理 unknown 条目，参见 [`rdc machine prune --prune-unknown`](/zh/docs/pruning#phase-3---prune-unknown-surgical)。
+
 ## 调整大小
 
 将仓库设置为指定大小或扩展指定容量：
@@ -83,6 +95,8 @@ rdc repo fork --parent my-app --tag staging -m server-1
 复刻使用 name:tag 模型：生成的复刻命名为 `my-app:staging`。此命令创建一个具有独立 GUID 和网络 ID 的新加密副本，同时共享父仓库的名称。复刻仓库与源仓库共享相同的 LUKS 凭据。
 
 > 复刻通过 BTRFS reflink 共享父仓库的数据，包括磁盘上存储的任何凭据。当这些凭据用于授权 Stripe、AWS 或 Railway 等外部服务时，请参阅 [Rediacc 不隔离的内容](/zh/docs/ai-agents-safety#rediacc-不隔离的内容) 了解相关影响。
+
+在复刻创建时，`repo fork` 会立即在 `<datastore>/.interim/state/<fork-guid>/.rediacc.json` 写入[状态镜像边车](#type-列与状态镜像), , 无需解锁卷, , 这样新复刻从创建起就被正确识别为 `is_fork: true`。这让计划备份能够跳过它（默认情况下复刻被排除在上传管道之外），即使它从未被挂载过。当对复刻再次进行复刻时，`grand_guid` 会正确链接：新复刻的镜像指向最初的祖父（grand）父级 GUID，而不是中间的复刻。
 
 ## 验证
 

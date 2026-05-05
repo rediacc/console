@@ -43,17 +43,42 @@ Detection runs once per process and is cached. It cannot be disabled.
 
 ## The knowledge-gate model
 
-Sensitive mutations follow the `passwd(1)` convention: to change a secret, prove you already knew it.
+Sensitive mutations follow the `passwd(1)` convention: to change a secret, prove you already knew it. **Symmetric for humans and agents**. Both go through the same gate. There is no "I'm at the keyboard" bypass.
 
 - You want to rotate an API token stored at `/credentials/cfDnsApiToken`?
 - The CLI asks: "what's the current value?"
-- The agent supplies the plaintext via `--current "$OLD"`. The CLI hashes `$OLD` with SHA-256 and compares against the digest of the currently-stored value. Match → write goes through. Mismatch → refused, audited.
+- The agent (or human) supplies the plaintext via `--current "$OLD"`. The CLI hashes `$OLD` with SHA-256 and compares against the digest of the currently-stored value. Match → write goes through. Mismatch → refused, audited.
+- To rotate without verifying the prior value, pass `--rotate-secret` (mutually exclusive with `--current`). This is loudly audited as a rotation.
 
-The model is simple but closes three attack surfaces:
+The model closes three attack surfaces:
 
-1. **Silent rotation**: an agent without prior access to `$OLD` cannot replace it with a value of its own.
+1. **Silent rotation**: a caller (agent or human) without prior access to `$OLD` cannot replace it with a value of its own.
 2. **Exfiltration via probing**: the digest response never contains plaintext; even a compromised audit log shows `expected abc12345…, got deadbeef…`, not the underlying values.
-3. **Accidental stepping on the user's config**: requires deliberate `--current` each time; no auto-overwrite on `set`.
+3. **Accidental stepping on production config**: requires deliberate `--current` each time, even at a TTY. Catches the "I meant to set STRIPE_TEST but I'm in the prod shell" mistake.
+
+### Structured next-action hints
+
+When the precondition fails, the JSON envelope (`--output json`) carries a structured `errors[].next` field telling agents exactly what to suggest the human do:
+
+```json
+{
+  "errors": [{
+    "code": "PRECONDITION_MISMATCH",
+    "message": "...",
+    "next": {
+      "summary": "Provide the current value or acknowledge rotation.",
+      "options": [
+        { "description": "Re-read current digest, then retry with --current",
+          "run": "rdc repo secret get --name mail --key STRIPE_KEY" },
+        { "description": "Skip the precondition (rotation, audited)",
+          "run": "rdc repo secret set --name mail --key STRIPE_KEY --value <new> --mode file --rotate-secret" }
+      ]
+    }
+  }]
+}
+```
+
+**Agents should relay `next.options[].run` verbatim to the human rather than synthesizing their own commands.** This avoids the "agent invents a command that doesn't exist" failure mode and keeps the operator in control of the actual action.
 
 ### Worked example
 
@@ -176,16 +201,19 @@ This is the shared-responsibility line:
 
 | Boundary | Owner |
 |---|---|
-| Repository data, mount namespace, Docker scope, agent guards, audit log | Rediacc |
-| External-service blast radius (Stripe, AWS, Railway, GitHub, etc.) | Repository developer |
+| Repository data, mount namespace, Docker scope, agent guards, audit log, deploy-time secret injection | Rediacc |
+| Application code that uses those secrets, and any credentials baked into the image at build time | Repository developer |
 
-Three patterns close the gap on the developer side:
+The primary mitigation is built in: **[per-repo secrets](/en/docs/repositories#secrets)** are stored in a separate plane from the encrypted repository image and are not copied across the fork boundary. A fork's containers boot with an empty secrets map and identify themselves as a different external principal than the parent. Set them with `rdc repo secret set` (env-mode for compose interpolation, file-mode for tmpfs `secrets:` blocks). The mutation gate is symmetric. Humans and agents alike must supply `--current` (passwd-style precondition) or `--rotate-secret` (audited rotation) to overwrite or delete an existing value.
 
-1. **Do not store production external credentials in the repository at all.** Fetch them from an external secrets manager (HashiCorp Vault, AWS Secrets Manager, 1Password Connect) at container startup. The fork's containers fetch sandbox-scoped credentials by design because they identify themselves differently.
-2. **Strip or swap credentials at fork time via the Rediaccfile `up()` hook.** A fork's `up()` runs against a different repository GUID than the parent. Detect that, then rewrite `.env` with sandbox values, provision a per-fork Stripe sandbox account, point database connection strings at a per-fork test instance, and so on. See [Services](/en/docs/services) for the lifecycle hook reference.
-3. **Constrain the fork's outbound network with eBPF egress filtering** so the fork can only reach localhost and explicit sandbox endpoints. Rediacc's per-repo network isolation is the foundation; per-fork egress allowlists are not built today, but the path is open.
+**Cross-repo isolation is enforced.** A malicious or careless compose file in repo B cannot reference repo A's secrets directory. Renet's compose validator hard-rejects any `secrets: file:`, `configs: file:`, or `env_file:` path that points outside the current repo's `${REDIACC_NETWORK_ID}` directory, and the rejection is NOT overridable by `--unsafe`. Defense-in-depth: the Landlock sandbox around the Rediaccfile bash subprocess scopes filesystem reads to the current network's secrets directory only, so a `cat /var/run/rediacc/secrets/<other>/X` from a malicious Rediaccfile fails with EACCES at the kernel layer.
 
-Rediacc handles the infrastructure half of agent safety. The external-service half lives in your Rediaccfile.
+Two additional patterns close edge cases:
+
+1. **Do not bake production credentials into the repository's filesystem itself.** A `.env` file committed into the image, or a credential persisted into a volume during `up()`, is reflinked into the fork. The per-repo secrets feature only protects values you keep in the secrets plane. It cannot retroactively protect bytes that already live inside the LUKS image. For existing repos with baked-in `.env` files, lift them into per-repo secrets manually.
+2. **Constrain the fork's outbound network with eBPF egress filtering** so the fork can only reach localhost and explicit sandbox endpoints. Rediacc's per-repo network isolation is the foundation; per-fork egress allowlists are not built today, but the path is open.
+
+Rediacc handles the deploy-time injection, the cross-fork isolation, and the cross-repo isolation. The "don't bake it into the image" half is on you.
 
 ## Quick recipes
 

@@ -391,7 +391,7 @@
         "bannerRotateLine1": "لتدوير سر: استبدل قالبه بالقيمة الصريحة الجديدة — سيُطلب منك",
         "bannerRotateLine2": "تأكيد كل عملية تدوير بعد إغلاق المحرر.",
         "bannerStrip": "الأسطر التي تبدأ بـ // تُحذف عند الحفظ.",
-        "bannerTitle": "rdc config edit — {{name}} (v{{version}})",
+        "bannerTitle": "تحرير التكوين \"{{name}}\" (الإصدار {{version}})",
         "description": "فتح التكوين الحالي في $EDITOR كإسقاط JSONC مُخفى. للمستخدمين البشريين فقط؛ يُرفض العملاء.",
         "noChanges": "لم يتم حفظ أي تغييرات؛ الإلغاء.",
         "optionApply": "تطبيق ملف JSONC معدّل (يتخطى إطلاق $EDITOR)",
@@ -555,6 +555,25 @@
           "description": "إزالة تكوين مزود سحابي",
           "success": "تمت إزالة مزوّد السحابة \"{{name}}\""
         }
+      },
+      "prune": {
+        "archivesOnlyOption": "تقييد لتطهير الأرشيف المنتهي. يتخطى ذاكرة التخزين المؤقت للشهادات وتنظيف المراجع المتقاطعة. حصري مع --certs-only و --refs-only.",
+        "certsOnlyOption": "تقييد ذاكرة التخزين المؤقت لشهادات ACME. يتخطى تطهير الأرشيف وتنظيف المراجع المتقاطعة. حصري بشكل متبادل مع --archives-only و --refs-only.",
+        "completed": "تم تنظيف {{count}} إدخال/إدخالات قديمة من التكوين المحلي.",
+        "description": "إزالة الأوزان الميتة من ملف التكوين المحلي في ~/.config/rediacc/<config>.json. يتم تنظيف ثلاث مجموعات، جميعها محلية بحتة (بدون مكالمات SSH/renet): (1) إدخالات ذاكرة التخزين المؤقت لشهادات ACME التي لم يعد المرسى GUID/repo/machine الخاص بها موجوداً في التكوين النشط؛ (2) المستودعات المؤرشفة التي انتهت فترة سماحها (افتراضياً 7 أيام، انظر defaults.pruneGraceDays)؛ (3) المراجع المتقاطعة المعلقة (machine→strategy، strategy→repo). الموارد المستخدمة وبيانات الاعتماد ورموز التخزين والمضيفات المعروفة لا تُلمس أبداً. السلوك الافتراضي هو تطبيق التغييرات؛ مرر --dry-run للمعاينة فقط.",
+        "descriptionShort": "تنظيف البقايا القديمة من ملف التكوين المحلي",
+        "droppedRefs": "{{count}} مرجع/مراجع متقاطعة معلقة {{verb}} إزالتها:",
+        "dryRun": "تشغيل تجريبي: سيتم تطبيق {{count}} تغيير(ات). أعد التشغيل بدون --dry-run للالتزام.",
+        "dryRunOption": "معاينة ما سيتم إزالته دون تعديل ملف التكوين. يعكس دلالات الإيقاف الافتراضية لأوامر التنظيف الأخرى.",
+        "graceDaysOption": "تجاوز نافذة سماح الأرشيف (بالأيام) لهذا الاستدعاء. يعود إلى defaults.pruneGraceDays في التكوين، ثم إلى 7 إذا لم يتم تعيين أي منهما.",
+        "keptArchivesInGrace": "تم الاحتفاظ بالمستودعات المؤرشفة في فترة السماح (يمكن استعادتها عبر 'rdc config repository restore-archived'):",
+        "nothingToPrune": "لا شيء للتنظيف، التكوين نظيف بالفعل.",
+        "purgeArchivedOption": "إسقاط جميع المستودعات المؤرشفة بغض النظر عن العمر، ليس فقط تلك التي تجاوزت السماح. مكافئ لتشغيل 'rdc config repository purge-archived'. استخدم فقط عندما تكون متأكداً من أنك لا تحتاج إلى أي من بيانات الاعتماد المخزنة للاستعادة.",
+        "purgedArchives": "{{count}} مستودع/مستودعات مؤرشفة منتهية الصلاحية {{verb}} إزالتها:",
+        "refsOnlyOption": "تقييد للمراجع المتقاطعة المعلقة (machine→strategy، استثناءات/تضمينات strategy→repo). يتخطى ذاكرة التخزين المؤقت للشهادات والأرشيف. حصري مع --certs-only و --archives-only.",
+        "removedCerts": "{{count}} إدخال/إدخالات ذاكرة التخزين المؤقت للشهادات {{verb}} إزالتها:",
+        "scanning": "جارٍ فحص التكوين المحلي بحثاً عن البقايا القديمة...",
+        "tooManyOnlyFlags": "مرر على الأكثر واحداً من --certs-only / --archives-only / --refs-only."
       },
       "recover": {
         "confirm": "استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية؟",
@@ -911,11 +930,14 @@
         "description": "إزالة موارد مخزن البيانات المعزولة واللقطات القديمة من جهاز",
         "descriptionShort": "تنظيف الموارد المعزولة واللقطات القديمة",
         "dryRunOption": "عرض ما سيتم إزالته دون إجراء تغييرات",
+        "forceDeleteMountedOption": "تجاوز فحص أمان التركيب وحذف المستودعات حتى لو كانت مركبة حالياً أو تحتوي على حاويات Docker قيد التشغيل. مختلف عن --force (الذي يتجاوز فترة السماح للأرشيف فقط). ينطبق على كل من --orphaned-repos و --prune-unknown.",
         "noReposFound": "لم يتم العثور على مستودعات على الجهاز",
         "noStaleSnapshots": "لم يتم العثور على لقطات قديمة",
+        "noUnknownRepos": "لم يتم العثور على مستودعات غير معروفة، كل مستودع آلة إما في التكوين المحلي أو لديه مرآة renet",
         "orphanedReposCompleted": "تم تنظيف {{count}} مستودعات معزولة",
         "orphanedReposOption": "تنظيف صور المستودعات غير الموجودة في أي تكوين أيضًا",
         "orphanedReposStarting": "جارٍ البحث عن المستودعات المعزولة على {{machine}}...",
+        "pruneUnknownOption": "حذف فقط المستودعات التي لا يستطيع مرآة renet .interim/state تصنيفها (ليست في التكوين المحلي ولا تحتوي على مرآة موسومة بالشوكة). أضيق بشكل صارم من --orphaned-repos: تتم المحافظة على الشوكات بدون تكوين عندما تحددها المرآة. المتبقيات القديمة قبل المرآة والأجداد القدامى الذين تم حذف إدخال التكوين الخاص بهم يقعون كلاهما في هذه الفئة.",
         "snapshotDeleted": "تم حذف {{name}}",
         "snapshotDeleting": "جارٍ حذف {{name}}...",
         "snapshotInUse": "تخطي {{name}} (قيد الاستخدام النشط)",
@@ -923,7 +945,10 @@
         "snapshotsOnlyOption": "تنظيف اللقطات القديمة فقط",
         "snapshotStale": "قديمة: {{name}} ({{size}})",
         "startingDatastore": "جارٍ البحث عن موارد مخزن البيانات المعزولة على {{machine}}...",
-        "startingSnapshots": "جارٍ البحث عن اللقطات القديمة على {{machine}}..."
+        "startingSnapshots": "جارٍ البحث عن اللقطات القديمة على {{machine}}...",
+        "unknownCompleted": "تم تنظيف {{count}} مستودعات غير معروفة",
+        "unknownFound": "تم العثور على {{count}} مستودع/مستودعات غير معروفة ({{deletable}} قابلة للحذف بعد فحص أمان التركيب)",
+        "unknownStarting": "جارٍ المسح بحثاً عن مستودعات غير معروفة على {{machine}} (ليست في التكوين المحلي وبدون مرآة موسومة بالشوكة)..."
       },
       "query": {
         "connection": "اتصال",
@@ -1298,7 +1323,10 @@
           "description": "عرض قائمة النسخ الاحتياطية المتاحة على جهاز بعيد (جهاز أو تخزين)",
           "listing": "جارٍ سرد النسخ الاحتياطية...",
           "optionFrom": "اسم الجهاز أو التخزين المصدر (يتم الكشف تلقائياً من الإعدادات)",
-          "sourceRequired": "حدد --from <remote> (اسم جهاز أو تخزين من الإعدادات)"
+          "optionPath": "دليل فرعي داخل جذر التخزين. عند الحذف، يتم عرض كل من hot/ و cold/ ودمجهما.",
+          "sourceRequired": "حدد --from <remote> (اسم جهاز أو تخزين من الإعدادات)",
+          "descriptionShort": "سرد النسخ الاحتياطية المتاحة على جهاز بعيد",
+          "localOnly": "repo backup list مدعوم فقط في وضع المحول المحلي"
         }
       },
       "batchConfirm": "{{action}} جميع المستودعات {{count}} على \"{{machine}}\"؟ [y/N]",
@@ -1463,6 +1491,37 @@
         "failed": "فشل تغيير الحجم",
         "sizeOption": "حجم المستودع الجديد (مثلاً 10G، 100G، 1T)",
         "starting": "جارٍ تغيير حجم \"{{repository}}\" إلى {{size}} على \"{{machine}}\"..."
+      },
+      "secret": {
+        "currentOption": "SHA-256 digest of the previous value (passwd-style precondition). Required for overwrite under agent context; optional for first-write.",
+        "description": "Manage per-repo secrets injected at deploy time. Two modes: env (REDIACC_SECRET_<KEY> via compose ${VAR} interpolation) and file (host tmpfs at /var/run/rediacc/secrets/<networkId>/<KEY>, mounted via Docker compose `secrets:` block). Secrets never enter the encrypted LUKS image, so forks inherit none — externals see the fork as a different principal.",
+        "descriptionShort": "إدارة أسرار وقت النشر لكل مستودع (env / file)",
+        "get": {
+          "description": "Read a single secret. Returns a redacted stub (`<redacted:secret>:<digest8>`) under agent context regardless of policy.",
+          "descriptionShort": "إظهار بصمة سر (لا تُعاد القيمة أبدًا)",
+          "notFound": "لم يتم العثور على السر \"{{key}}\" في المستودع \"{{repository}}\"",
+          "repoNotFound": "لم يتم العثور على المستودع \"{{repository}}\""
+        },
+        "keyOption": "مفتاح السر بصيغة UPPER_SNAKE_CASE (بحد أقصى 64 حرفاً). سيتم عرضه كـ REDIACC_SECRET_<KEY> لوضع env أو /run/secrets/<key> في الحاويات لوضع file.",
+        "list": {
+          "description": "سرد مفاتيح وأوضاع السر (لا قيم أبداً، ولا ملخصات).",
+          "descriptionShort": "سرد مفاتيح وأنماط أسرار المستودع",
+          "empty": "لا توجد أسرار محددة على \"{{repository}}\""
+        },
+        "modeOption": "وضع التسليم: 'env' (مرئي في بيئة الحاوية، docker inspect) أو 'file' (ملف tmpfs، ليس في البيئة أبداً). الافتراضي: file.",
+        "nameOption": "اسم المستودع (مثل mail، mail:staging). بدون علامة، الافتراضي :latest.",
+        "rotateOption": "الإقرار بالتدوير؛ تخطي شرط --current المسبق (مدقق كتدوير). استخدم عند التدوير المتعمد دون التحقق من القيمة السابقة.",
+        "set": {
+          "description": "تعيين أو الكتابة فوق سر. الشوكات لا ترث؛ عيّن على الشوكة بشكل صريح. تحت سياق الوكيل، يتطلب تطابق ملخص --current (نمط passwd).",
+          "descriptionShort": "تعيين أو الكتابة فوق سر مستودع",
+          "success": "تم تعيين السر \"{{key}}\" ({{mode}}) على \"{{repository}}\""
+        },
+        "unset": {
+          "description": "حذف سر. تحت سياق الوكيل، يتطلب تطابق ملخص --current.",
+          "descriptionShort": "حذف سر مستودع",
+          "success": "تمت إزالة السر \"{{key}}\" من \"{{repository}}\""
+        },
+        "valueOption": "قيمة السر. مرر `-` للقراءة من stdin (يتجنب التعرض في سجل الصدفة)."
       },
       "snapshot": {
         "create": {
@@ -1704,9 +1763,11 @@
         "completed": "تم تنظيف {{count}} نسخة احتياطية معزولة",
         "description": "حذف النسخ الاحتياطية المعزولة من التخزين غير الموجودة في أي تكوين. آمن مع التكوينات المتعددة مع حماية فترة السماح.",
         "descriptionShort": "حذف النسخ الاحتياطية المعزولة من التخزين",
+        "forceDeleteMountedOption": "تجاوز فحص أمان التركيب وحذف النسخ الاحتياطية السحابية حتى لو كان GUID المصدر مركباً حالياً أو لديه حاوية قيد التشغيل على آلة المنفذ. مختلف عن --force (الذي يتجاوز فترة السماح للمستودعات المؤرشفة فقط).",
         "found": "تم العثور على {{count}} نسخة احتياطية في التخزين",
         "listFailed": "فشل عرض النسخ الاحتياطية في التخزين",
         "listing": "جارٍ عرض النسخ الاحتياطية في \"{{storage}}\"...",
+        "machineOption": "آلة المنفذ، تشغل مكالمات قائمة/حذف rclone مقابل التخزين. مطلوبة لأن العملاء لا يُتوقع منهم تثبيت rclone محلياً؛ بيانات اعتماد التخزين لا تزال تأتي من تكوينك المحلي.",
         "noBackups": "لم يتم العثور على نسخ احتياطية في التخزين"
       },
       "pull": {
@@ -2297,6 +2358,19 @@
       "kindMismatch": "تغيّر نوع القيمة (المخزّن: {{stored}}، المُدَّعى: {{claimed}})",
       "mismatch": "فشلت الشروط المسبقة لـ {{count}} مسار:\n{{details}}",
       "missing": "المسار الحساس يتطلب --current (أو --rotate-secret)",
+      "next": {
+        "options": {
+          "confirm": {
+            "description": "أعد قراءة البصمة الحالية ثم أعد المحاولة باستخدام --current",
+            "run": "rdc repo secret get --name {{repository}} --key {{key}}"
+          },
+          "rotate": {
+            "description": "تجاوز الشرط (تدوير، مدقق)",
+            "run": "<الأمر الأصلي> --rotate-secret"
+          }
+        },
+        "summary": "قدم القيمة الحالية أو أقر بالتدوير."
+      },
       "rotationRequiresTty": "{{pointer}}: تأكيد التدوير يتطلب طرفية تفاعلية (أو استخدم --current-secrets)",
       "stubStillStub": "{{pointer}}: لا تزال القيمة المعدَّلة تبدو قالب إخفاء لكنها لا تطابق التلخيص الحالي"
     },
@@ -2315,6 +2389,13 @@
     "regionRequired": "اسم المنطقة مطلوب. استخدم --region أو اضبط السياق.",
     "registrationFailed": "فشل التسجيل",
     "remoteNotFound": "\"{{name}}\" ليس جهازاً أو تخزيناً معروفاً. الأجهزة: {{machines}}. التخزينات: {{storages}}",
+    "repo": {
+      "secret": {
+        "badMode": "--mode غير صالح \"{{mode}}\". المسموح: env، file.",
+        "emptyValue": "قيمة السر لا يمكن أن تكون فارغة (لم تنتج stdin أي بايتات).",
+        "mutuallyExclusive": "--current و --rotate-secret حصريان بشكل متبادل. اختر واحداً: --current للتحقق من القيمة السابقة، أو --rotate-secret للتدوير دون التحقق."
+      }
+    },
     "repoNotDeployed": "المستودع \"{{repository}}\" غير منشور على {{machine}}.\n\nانشره أولاً:\n  rdc repo up --name {{repository}} -m <اسم-الجهاز>",
     "repositoryAlreadyMounted": "المستودع \"{{name}}\" مُركَّب بالفعل على \"{{machine}}\". ترحيل مستودع نشط سيؤدي إلى تلفه. نفّذ أولاً: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "لم يتم العثور على المستودع \"{{name}}\"",

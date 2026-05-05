@@ -11,7 +11,7 @@ tags:
   - case-study
 featured: true
 language: tr
-sourceHash: "176378344556c026"
+sourceHash: "92e468286c279cc0"
 ---
 
 import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
@@ -20,9 +20,11 @@ import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
 >
 > - 128 GB üretim çatallaması, baştan sona: **7,2 saniye.** CoW reflink'in kendisi: 2,3 saniye.
 > - Ajan grand (üretim) depolarına erişimden engellendi, kendi geçersiz kılma değişkenini ayarlamasından engellendi ve erişim yetkilendirildiğinde bir kernel sandbox'a (yetkisiz kullanıcı, ayrı mount namespace, kapsamlanmış Docker soketi) düşürüldü.
-> - **Rediacc'ın izole etmediği şey**: deponuzdaki verilerin içindeki harici SaaS kimlik bilgileri. Çatallama bunları miras alır. Bu kısmı Rediaccfile yaşam döngüsü kancaları üzerinden ele almak geliştiricinin işidir.
+> - **Rediacc'ın izole etmediği şey**: deponuzdaki verilerin içindeki harici SaaS kimlik bilgileri. Çatallama bunları miras alır. *(Güncelleme. Mayıs 2026: `rdc repo secret` artık kimlik bilgilerini depo imajının tamamen dışında tutmanıza olanak tanıyor. Tüm hikaye için yeni kapanış bölümüne bakın: "Güncelleme: boşluk artık kapatılabilir".)* Bu kısmı Rediaccfile yaşam döngüsü kancaları üzerinden ele almak geliştiricinin işidir.
 
 <YouTubeEmbed videoId="o-Bst9rO9Fk" title="Rediacc'ı PocketOS Olayına Karşı Test Ettim" />
+
+> **Güncelleme. Mayıs 2026.** Bu yazı yayımlandığından bu yana, Rediacc birinci sınıf **depo başına gizli anahtarlar** (`rdc repo secret`) yayımladı. Aşağıda anlatılan "dürüst boşluk". Depoya gömülmüş harici SaaS kimlik bilgileri. Artık gizli anahtarları LUKS imajının tamamen dışında tutan ve böylece çatallamaların varsayılan olarak hiçbirini miras almasına izin vermeyen yerleşik bir yanıta sahip. Neyin yayımlandığını, neyin değiştiğini ve hangi artık riskin kaldığını görmek için yeni kapanış bölümüne atlayın: [Güncelleme: boşluk artık kapatılabilir](#güncelleme-boşluk-artık-kapatılabilir).
 
 Geçen hafta sonu, Jer Crane 30 saatlik bir postmortem yayımladı. Anthropic'in Claude Opus 4.6'sını çalıştıran bir Cursor ajanı, Railway üzerindeki üretim veritabanını sildi. Silme tek bir GraphQL çağrısıydı. 9 saniye sürdü. Railway'in volume yedekleri de onunla birlikte gitti, çünkü Railway yedekleri aynı volume'ün içinde tutuyor.
 
@@ -174,6 +176,24 @@ Geliştirici tarafında üç desen bu boşluğu kapatır:
 PocketOS Rediacc'ta olsaydı, Railway API tokenı doğru karşılaştırma olmazdı. Altyapıları Rediacc çatallamasının kendisi olurdu. Bulunacak bir Railway tokenı olmazdı, çünkü Rediacc kimlik doğrulamış bir ajana `volumeDelete` benzeri hiçbir şey sunmaz. Ajan, ana depoyu silmenin hiçbir yolu olmayan, çatallama başına bir Docker soketinin içinde yaşardı.
 
 Ama ajanları bir kimlik bilgisi dosyasında bir Stripe üretim anahtarı bulsaydı, Rediacc ajanın gerçek müşteri kartlarına iadeler yapmasını engellemezdi. Bu gerçek bir kayıp. Her iki şey de doğru.
+
+## Güncelleme: boşluk artık kapatılabilir
+
+Yukarıdaki bölümü ilk yazdığım haliyle bıraktım. O zamanki dürüstlüğü ağırlığını taşıyordu. Yayımladığımdan bu yana eksik parçayı ekledik ve boşluk artık kapatılabilir. Çatallamaların davranışını değiştirerek değil, kimlik bilgilerini şifreli depo imajının dışında yaşayan bir yere koyarak.
+
+Mekanizma `rdc repo secret`. GitHub Actions secrets üzerine modellendi. Nasıl inşa edildiğine dair iki şey önemli.
+
+**Gizli anahtarlar LUKS imajının içinde yaşamaz.** Diskte ayrı bir düzlemde yaşıyorlar: env modundaki gizli anahtarlar konteynerlere compose dosyanızdaki `${REDIACC_SECRET_<KEY>}` interpolasyonu olarak ulaşır, file modundaki gizli anahtarlar ise Docker compose'un `secrets:` bloğu üzerinden `/run/secrets/<key>` yolundaki bir tmpfs dosyası olarak konteynerlere ulaşır. Her iki durumda da değer asla deponun şifreli imajına yazılmaz. Çatallamanın BTRFS reflink'i imajı kopyalar. İmajda hiç olmayan şeyi kopyalamaz. Yeni bir çatallamanın gizli anahtar listesi boştur. Konteynerleri üretim kimlik bilgisi olmadan başlar, yani üretim çağrılarını yapmak bile mümkün değildir.
+
+**Model yalnızca-yazılabilir.** `rdc repo secret get` değer yerine bir SHA-256 özetini döner. CLI üzerinden bir gizli anahtarı geri okumanın yolu yok. Tasarım gereği. Bu, terminal kayıtlarının, kabuk geçmişinin ve kazara yönlendirmelerin sızıntı yüzeyini kapatır. Rotasyon, önceki değeri doğrulamak için `--current <önceki-değer>` veya önceki değere sahip olmadığınızda ön koşulu atlamak için `--rotate-secret` (rotasyon olarak denetlenir). İnsanlar ve ajanlar için simetrik. Her iki kapı da eşit şekilde uygulanır.
+
+Bunun PocketOS senaryosu için anlamı: Rediacc üzerinde olsalardı ve gizli anahtarları benimsemiş olsalardı, çatallama içindeki ajan bir kimlik bilgisi dosyasında `STRIPE_LIVE_KEY` bulamazdı. Çatallamanın gizli anahtar haritası boş olurdu. Sandbox içinden Stripe'a çağrı yapmak için ortada bir şey kalmazdı. Yukarıdaki orijinal bölümün "gerçek kayıp" niteleyicisi "kimlik bilgilerini imaja gömen depolar için gerçek kayıp" haline gelir. Ve bu depolar için çözüm, yeni mekanizmaya tek seferlik bir geçiş.
+
+Dürüst artık boşluk. `rdc repo secret`'ı benimsemeden önce depo imajına yazdığınız gizli anahtarlar. Bir volume'e commit edilmiş bir `.env`, bir veritabanına kalıcılaştırılmış bir kimlik bilgisi, içinde token olan bir YAML dosyası. Hâlâ imajın verisinin parçası. CoW reflink onları eskisi gibi taşır. Mekanizma, onları koymak için güvenli bir yer verir; şifreli volume'ün içinde diskte zaten olan şeyi geriye dönük olarak kaldırmaz. Düzeltme bugün manuel bir taşıma (değeri okuyun, `rdc repo secret` ile ayarlayın, imaj kaynağından temizleyin). Birinci sınıf bir `rdc repo secret lift --from .env` yol haritasında.
+
+Özellikle ajan tehdit modeli için bu tasarımın iki yan etkisi öne çıkıyor. Birincisi, `repo secret list` ve `repo secret get` MCP araçları olarak açığa çıkar (okumaya güvenli. Adlar ve özetler, asla değerler), böylece bir uygulama kurmanıza yardım eden bir ajan, ne olduğunu görmeden neyin yapılandırıldığını keşfedebilir. İkincisi, bir yazma işlemi ön koşulu sağlamadığında, JSON hata zarfı, ajanın insana birebir aktarması gereken somut komutları içeren yapılandırılmış bir `next.options[].run` alanı içerir. "önceki değeri unuttum" durumu için rotasyon kaçış kapısı dahil. Tam model için [Yapay Zeka Ajan Güvenliği](/tr/docs/ai-agents-safety) sayfasına bakın.
+
+Tam nasıl-yapılır rehberi [Depolar § Gizli Anahtarlar](/tr/docs/repositories#secrets) sayfasında. Tarif kısa: tohumlamak için `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""`, tüketmek için compose'da `${REDIACC_SECRET_<KEY>}`, sonra `rdc repo fork` ve çatallamanın gizli anahtar listesinin boş olduğunu doğrulayın.
 
 ## Bu tür bir iş yapan biri için ne değişir
 

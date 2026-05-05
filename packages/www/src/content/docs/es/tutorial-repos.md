@@ -6,8 +6,8 @@ description: >-
 category: Tutorials
 order: 3
 language: es
-sourceHash: 46c155563808d0b7
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "6d218fe2779ce0cf"
+sourceCommit: 21df1395c849109d6449b46f9092012c66801960
 ---
 
 # Cómo desplegar y gestionar repositorios con Rediacc
@@ -42,7 +42,7 @@ Confirma que el nuevo repositorio está disponible.
 rdc repo list -m server-1
 ```
 
-Muestra todos los repositorios en la máquina con su tamaño, estado de montaje y estado de cifrado.
+Muestra todos los repositorios en la máquina con su tamaño, estado de montaje, estado de cifrado y una columna `Type` que clasifica cada uno como `grand` (de nivel superior), `fork` (copia CoW de otro repositorio) o `unknown` (el linaje no puede determinarse). Consulta [Repositorios. Columna Type y el espejo de estado](/es/docs/repositories#columna-type-y-el-espejo-de-estado) para conocer las reglas completas de clasificación.
 
 ### Paso 3: Inspeccionar la ruta de montaje
 

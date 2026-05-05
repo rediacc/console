@@ -7,8 +7,8 @@ description: >-
 category: Guides
 order: 7
 language: ru
-sourceHash: "14cf2fb4ac3dc4d6"
-sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
+sourceHash: "eae6eedb1a1298f2"
+sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
 ---
 
 # Резервное копирование и восстановление
@@ -85,6 +85,41 @@ Pull всегда проверяет, смонтирован ли целевой
 ```bash
 rdc repo backup list --from my-storage -m server-1
 ```
+
+Вывод представляет собой объединённую таблицу, которая сводит обе [папки запланированных резервных копий](#запланированное-резервное-копирование) (`hot/` и `cold/`), так что вы видите каждую резервную копию в одном представлении:
+
+| Колонка | Значение |
+|---|---|
+| `Mode` | `hot` или `cold`. В какой папке запланированных резервных копий находится эта запись |
+| `Name` | Имя репозитория, разрешённое из вашей локальной конфигурации (для репозиториев не из конфигурации используется GUID) |
+| `GUID` | GUID репозитория на диске |
+| `Size` | Удобочитаемый размер файла резервной копии |
+| `Modified` | Метка времени UTC от хранилища |
+
+Чтобы перейти к одному режиму, передайте `--path`:
+
+```bash
+rdc repo backup list --from my-storage -m server-1 --path hot
+rdc repo backup list --from my-storage -m server-1 --path cold
+```
+
+### Раскладка хранилища
+
+Запланированные резервные копии попадают в подпапки по режиму внутри настроенной папки хранилища, поэтому одно и то же хранилище аккуратно содержит как почасовой, так и еженедельный потоки, не смешивая их:
+
+```text
+<bucket>/<folder>/
+├── hot/
+│   ├── <guid-1>
+│   ├── <guid-2>
+│   └── ...
+└── cold/
+    ├── <guid-1>
+    ├── <guid-3>
+    └── ...
+```
+
+Репозиторий может появляться и в `hot/`, и в `cold/` (почасовое расписание делает его снимок; еженедельное расписание делает его снимок снова). Объединённый список показывает обе строки, чтобы было ясно, какие потоки покрывают какие репозитории.
 
 ## Массовая синхронизация
 
@@ -202,6 +237,8 @@ concurrency = min(repoCount, max(2, NumCPU/2), 8)
 
 ### Определение стратегии
 
+Каноническое значение по умолчанию. Это разделение на две стратегии: быстрый почасовой hot-поток, охватывающий каждый репозиторий, и более медленный еженедельный cold-поток, делающий согласованные на уровне приложения снимки. Две стратегии пишут в разные подпапки хранилища (`hot/` и `cold/`), так что резервные копии никогда не смешиваются.
+
 ```bash
 rdc config backup-strategy set \
   --name hourly-hot \
@@ -214,14 +251,15 @@ rdc config backup-strategy set \
 
 ```bash
 rdc config backup-strategy set \
-  --name nightly-cold \
+  --name weekly-cold \
   --destination my-storage \
-  --cron "0 2 * * *" \
+  --cron "15 3 * * 0" \
   --mode cold \
-  --include "*.db" \
-  --exclude "tmp/**" \
+  --exclude very-large-repo \
   --enable
 ```
+
+Фильтр `--exclude` в cold-стратегии. Рекомендуемый запасной вариант для очень больших репозиториев, не помещающихся в ваше еженедельное окно обслуживания. Почасовая hot-стратегия по-прежнему их охватывает; cold их просто пропускает. Имена репозиториев в `--exclude` совпадают с именем репозитория в локальной конфигурации (без `:tag`).
 
 | Опция | Описание |
 |-------|----------|
@@ -238,13 +276,13 @@ rdc config backup-strategy set \
 
 ```bash
 rdc config backup-strategy list
-rdc config backup-strategy show --name nightly-cold
+rdc config backup-strategy show --name weekly-cold
 ```
 
 ### Удаление стратегии
 
 ```bash
-rdc config backup-strategy remove --name nightly-cold
+rdc config backup-strategy remove --name weekly-cold
 ```
 
 ### Привязка стратегий к машине
@@ -255,7 +293,7 @@ rdc config backup-strategy remove --name nightly-cold
 {
   "machines": {
     "hostinger": {
-      "backupStrategies": ["hourly-hot", "nightly-cold"]
+      "backupStrategies": ["hourly-hot", "weekly-cold"]
     }
   }
 }
@@ -286,7 +324,7 @@ rdc machine backup schedule -m server-1 --dry-run
 
 ```bash
 rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy nightly-cold
+rdc machine backup now -m server-1 --strategy weekly-cold
 ```
 
 ### Просмотр статуса резервного копирования
@@ -302,7 +340,7 @@ rdc machine backup status -m server-1 --strategy hourly-hot
 
 ```bash
 rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy nightly-cold
+rdc machine backup cancel -m server-1 --strategy weekly-cold
 ```
 
 ## Миграция репозитория

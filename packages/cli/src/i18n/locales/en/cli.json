@@ -363,7 +363,26 @@
     },
     "config": {
       "descriptionShort": "Manage config files, machines, and SSH connections",
-      "description": "Manage CLI configuration files stored at ~/.config/rediacc/. CRUD operations for machines, repositories, storage backends, and SSH keys within a config. Key subcommands: init (create named config), show, list, ssh (manage keys), recover (from backup). Nested groups: config machine, config repository, config storage, config infra.",
+      "description": "Manage CLI configuration files stored at ~/.config/rediacc/. CRUD operations for machines, repositories, storage backends, and SSH keys within a config. Key subcommands: init (create named config), show, list, ssh (manage keys), recover (from backup), prune (sweep stale leftovers). Nested groups: config machine, config repository, config storage, config infra.",
+      "prune": {
+        "descriptionShort": "Sweep stale leftovers from the local config file",
+        "description": "Remove dead weight from the local config file at ~/.config/rediacc/<config>.json. Three buckets are cleaned, all pure-local (no SSH/renet calls): (1) ACME cert-cache entries whose anchor GUID/repo/machine is no longer in the active config; (2) archived repositories whose grace period has expired (default 7 days, see defaults.pruneGraceDays); (3) dangling cross-references (machine→strategy, strategy→repo). Resources still in use, credentials, storage tokens, and known-hosts are never touched. Default behavior is to apply changes; pass --dry-run to preview only.",
+        "dryRunOption": "Preview what would be removed without modifying the config file. Mirrors the default-off semantics of the other prune commands.",
+        "certsOnlyOption": "Restrict to the ACME cert-cache bucket. Skips archive purging and cross-reference cleanup. Mutually exclusive with --archives-only and --refs-only.",
+        "archivesOnlyOption": "Restrict to expired-archive purging. Skips cert-cache and cross-reference cleanup. Mutually exclusive with --certs-only and --refs-only.",
+        "refsOnlyOption": "Restrict to dangling cross-references (machine→strategy, strategy→repo excludes/includes). Skips cert-cache and archives. Mutually exclusive with --certs-only and --archives-only.",
+        "purgeArchivedOption": "Drop ALL archived repositories regardless of age, not just those past grace. Equivalent to running 'rdc config repository purge-archived'. Use only when you're sure you don't need any of the stashed credentials for restore.",
+        "graceDaysOption": "Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set.",
+        "tooManyOnlyFlags": "Pass at most one of --certs-only / --archives-only / --refs-only.",
+        "scanning": "Scanning local config for stale leftovers...",
+        "removedCerts": "{{count}} cert cache entry/entries {{verb}} removed:",
+        "purgedArchives": "{{count}} expired archived repository/repositories {{verb}} removed:",
+        "keptArchivesInGrace": "Kept archived repositories still in grace (recoverable via 'rdc config repository restore-archived'):",
+        "droppedRefs": "{{count}} dangling cross-reference(s) {{verb}} removed:",
+        "nothingToPrune": "Nothing to prune — config is already clean.",
+        "dryRun": "Dry run: {{count}} change(s) would be applied. Re-run without --dry-run to commit.",
+        "completed": "Pruned {{count}} stale entry/entries from local config."
+      },
       "init": {
         "description": "Create a new named config file",
         "optionMasterPassword": "Encrypt resources with a master password",
@@ -697,7 +716,7 @@
         "optionApply": "Apply an edited JSONC file (skips $EDITOR launch)",
         "optionCurrentSecrets": "JSON file mapping pointer→old plaintext for knowledge-gate on --apply",
         "optionEditor": "Editor command override (follows git precedence: flag > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
-        "bannerTitle": "rdc config edit — {{name}} (v{{version}})",
+        "bannerTitle": "Editing config \"{{name}}\" (v{{version}})",
         "bannerStrip": "Lines beginning with // are stripped on save.",
         "bannerReveal": "--reveal active: SENSITIVE VALUES VISIBLE. Audited.",
         "bannerRedacted": "Sensitive fields shown as <redacted:KIND>:DIGEST stubs that round-trip safely.",
@@ -970,7 +989,7 @@
         }
       },
       "prune": {
-        "description": "Remove orphaned datastore resources and stale snapshots from a machine",
+        "description": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from your local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.",
         "descriptionShort": "Prune orphaned resources and stale snapshots",
         "dryRunOption": "Show what would be removed without making changes",
         "snapshotsOnlyOption": "Only prune stale snapshots",
@@ -986,10 +1005,16 @@
         "snapshotDeleted": "Deleted {{name}}",
         "noStaleSnapshots": "No stale snapshots found",
         "snapshotsCompleted": "Snapshot prune: {{deleted}} deleted, {{skipped}} skipped",
-        "orphanedReposOption": "Also prune repo images not in any config",
+        "orphanedReposOption": "Delete every repo image on the machine that is not in your local CLI config. Coarse — also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror.",
         "orphanedReposStarting": "Scanning for orphaned repositories on {{machine}}...",
         "orphanedReposCompleted": "Pruned {{count}} orphaned repositories",
         "noReposFound": "No repositories found on machine",
+        "pruneUnknownOption": "Delete only repos the renet .interim/state mirror cannot classify (not in local config AND no fork-marked mirror). Strictly narrower than --orphaned-repos: forks-without-config are preserved when the mirror identifies them. Pre-mirror legacy orphans and stale grands whose config entry was deleted both fall in this bucket.",
+        "forceDeleteMountedOption": "Override the mount-safety preflight and delete repos even if they are currently mounted or have running Docker containers. Distinct from --force (which only overrides the archive grace period). Applies to both --orphaned-repos and --prune-unknown.",
+        "unknownStarting": "Scanning for unknown repositories on {{machine}} (not in local config + no fork-marked mirror)...",
+        "unknownFound": "Found {{count}} unknown repository/repositories ({{deletable}} deletable after mount-safety check)",
+        "unknownCompleted": "Pruned {{count}} unknown repositories",
+        "noUnknownRepos": "No unknown repositories found — every machine repo is either in local config or has a renet mirror",
         "completed": "Prune completed"
       }
     },
@@ -1597,10 +1622,13 @@
       "backup": {
         "description": "Manage repository backups",
         "list": {
-          "description": "List available backups on a remote (machine or storage)",
+          "descriptionShort": "List available backups on a remote",
+          "description": "List available backups on a remote (machine or storage). Without --path, hot/ and cold/ subfolders are merged into a single table with a Mode column.",
           "optionFrom": "Source machine or storage name (auto-detected from config)",
+          "optionPath": "Subdirectory within the storage root. When omitted, both hot/ and cold/ are listed and merged.",
           "sourceRequired": "Specify --from <remote> (machine or storage name from config)",
-          "listing": "Listing backups..."
+          "listing": "Listing backups...",
+          "localOnly": "repo backup list is only supported in local adapter mode"
         }
       },
       "sync": {
@@ -1666,6 +1694,37 @@
         "noPorts": "No exposed ports found on container \"{{container}}\". Specify --port",
         "multiplePorts": "Multiple ports exposed on \"{{container}}\". Specify --port:\n{{list}}",
         "noServiceIP": "Container \"{{container}}\" has no service IP assigned"
+      },
+      "secret": {
+        "description": "Manage per-repo secrets injected at deploy time. Write-only: get returns digest only (never plaintext), set/unset require --current digest match or --rotate-secret. Two delivery modes: env (REDIACC_SECRET_<KEY>) and file (tmpfs at /var/run/rediacc/secrets/<networkId>/<KEY> via compose `secrets:`). Secrets never enter the encrypted LUKS image; forks inherit none.",
+        "descriptionShort": "Manage per-repo deploy-time secrets (env / file)",
+        "nameOption": "Repository name (e.g. mail, mail:staging). Without a tag, defaults to :latest.",
+        "keyOption": "Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode.",
+        "valueOption": "Secret value. Pass `-` to read from stdin (avoids shell-history exposure).",
+        "modeOption": "Delivery mode: 'env' (visible in container env, docker inspect) or 'file' (tmpfs file, never in env). Default: file.",
+        "currentOption": "Previous plaintext value (passwd-style precondition). Required for overwrite/unset; mutually exclusive with --rotate-secret.",
+        "rotateOption": "Acknowledge rotation; skip --current precondition (audited as rotation). Use when intentionally rotating without verifying the prior value.",
+        "get": {
+          "descriptionShort": "Show digest of a secret (value never returned)",
+          "description": "Show the SHA-256 digest of a secret. The plaintext value is never returned by design (write-only). Use --current on a subsequent set/unset to verify a value you already know, or rotate via `set --rotate-secret`.",
+          "notFound": "Secret \"{{key}}\" not found on repository \"{{repository}}\"",
+          "repoNotFound": "Repository \"{{repository}}\" not found"
+        },
+        "list": {
+          "descriptionShort": "List per-repo secret keys and modes",
+          "description": "List secret keys and modes (never values, never digests).",
+          "empty": "No secrets defined on \"{{repository}}\""
+        },
+        "set": {
+          "descriptionShort": "Set or overwrite a per-repo secret",
+          "description": "Set or overwrite a secret. Forks do not inherit; set on the fork explicitly. Under agent context, requires --current digest match (passwd-style).",
+          "success": "Set secret \"{{key}}\" ({{mode}}) on \"{{repository}}\""
+        },
+        "unset": {
+          "descriptionShort": "Delete a per-repo secret",
+          "description": "Delete a secret. Under agent context, requires --current digest match.",
+          "success": "Removed secret \"{{key}}\" from \"{{repository}}\""
+        }
       }
     },
     "backup": {
@@ -1704,8 +1763,10 @@
         "failed": "Failed to list files: {{error}}"
       },
       "prune": {
-        "description": "Delete orphaned backups from storage that are no longer in any config. Multi-config safe with grace period protection.",
+        "description": "Delete orphaned backups from storage that are no longer in any config. Multi-config safe with grace period protection. The rclone calls run on --machine (the executor), not on your laptop, so clients don't need rclone installed locally; --machine is the executor, not the source of truth.",
         "descriptionShort": "Delete orphaned backups from storage",
+        "machineOption": "Executor machine — runs the rclone list/delete calls against the storage. Required because clients aren't expected to have rclone installed locally; storage credentials still come from your local config.",
+        "forceDeleteMountedOption": "Override the mount-safety check and delete cloud backups even if the source GUID is currently mounted or has a running container on the executor machine. Distinct from --force (which only overrides the grace period for archived repos).",
         "listing": "Listing backups in \"{{storage}}\"...",
         "listFailed": "Failed to list storage backups",
         "noBackups": "No backups found in storage",
@@ -2221,6 +2282,13 @@
       "remoteFileLocalNotDir": "When --remote-file is set, --local must be an existing directory: {{path}}",
       "remoteFileRequiresSingleFile": "--remote-file requires exactly one --local path that points at a file."
     },
+    "repo": {
+      "secret": {
+        "emptyValue": "Secret value cannot be empty (stdin produced no bytes).",
+        "badMode": "Invalid --mode \"{{mode}}\". Allowed: env, file.",
+        "mutuallyExclusive": "--current and --rotate-secret are mutually exclusive. Pick one: --current to verify the prior value, or --rotate-secret to rotate without verification."
+      }
+    },
     "subscription": {
       "notLoggedIn": "Not logged in. Humans should run `rdc subscription login`. Automation should run `rdc subscription login --token <token>` or set `REDIACC_SUBSCRIPTION_TOKEN`.",
       "tokenRequired": "Subscription token required. Either set REDIACC_SUBSCRIPTION_TOKEN env var, or run `rdc subscription login` in your terminal.",
@@ -2291,7 +2359,20 @@
       "digestMismatch": "--current digest mismatch (expected {{expected}}…, got {{got}}…)",
       "currentSecretsRequired": "{{pointer}}: sensitive field changed without --current; supply --current-secrets <file> mapping pointer→old-value",
       "stubStillStub": "{{pointer}}: edited value still looks like a redaction stub but does not match the current digest",
-      "rotationRequiresTty": "{{pointer}}: rotation confirmation requires an interactive TTY (or use --current-secrets)"
+      "rotationRequiresTty": "{{pointer}}: rotation confirmation requires an interactive TTY (or use --current-secrets)",
+      "next": {
+        "summary": "Provide the current value or acknowledge rotation.",
+        "options": {
+          "confirm": {
+            "description": "Re-read current digest, then retry with --current",
+            "run": "rdc repo secret get --name {{repository}} --key {{key}}"
+          },
+          "rotate": {
+            "description": "Skip the precondition (rotation, audited)",
+            "run": "<original command> --rotate-secret"
+          }
+        }
+      }
     },
     "editor": {
       "notFound": "No editor configured. Set $GIT_EDITOR, git config core.editor, $VISUAL, or $EDITOR, or pass --editor.",

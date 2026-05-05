@@ -7,8 +7,8 @@ description: >-
 category: Tutorials
 order: 6
 language: es
-sourceHash: b91d408984abfc75
-sourceCommit: 2223eabccb947ee9da79f1afcef075e163797d13
+sourceHash: "828979d18c6d73f2"
+sourceCommit: 21df1395c849109d6449b46f9092012c66801960
 ---
 
 # Cómo configurar copias de seguridad y redes con Rediacc
@@ -50,6 +50,8 @@ rdc config backup-strategy set --name daily-azure --destination azure-backup --c
 ```
 
 Esto programa copias de seguridad diarias a las 2 AM en `my-s3` y a las 6 AM en `azure-backup`. Cada destino tiene su propio cronograma. Los cronogramas se guardan en su configuración y pueden desplegarse en máquinas como temporizadores systemd.
+
+> **Disposición hot vs cold.** Cuando una estrategia usa `--mode hot`, las copias se escriben en `<bucket>/<folder>/hot/<guid>` en el almacenamiento; las estrategias con `--mode cold` se escriben en `<bucket>/<folder>/cold/<guid>`. El patrón canónico es una estrategia hot horaria más una estrategia cold semanal. Consulta [Copia de seguridad y restauración. Disposición de almacenamiento](/es/docs/backup-restore#disposición-de-almacenamiento) para todos los detalles.
 
 ### Paso 3: Ver programación de copias
 

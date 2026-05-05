@@ -133,7 +133,7 @@ The IP for a service is calculated from the repository's network ID and the serv
 |--------|---------|---------|
 | .0 | `127.0.11.0` | Network address (reserved) |
 | .1 | `127.0.11.1` | Gateway (reserved) |
-| .2 – .62 | `127.0.11.2` – `127.0.11.62` | Services (`slot + 2`) |
+| .2. .62 | `127.0.11.2`. `127.0.11.62` | Services (`slot + 2`) |
 | .63 | `127.0.11.63` | Broadcast (reserved) |
 
 **Example** for network ID `2816` (`0x0B00`), base address `127.0.11.0`:
@@ -408,3 +408,31 @@ rdc repo up --name webapp -m prod-1
 ```bash
 rdc repo autostart enable --name webapp -m prod-1
 ```
+
+## Using per-repo secrets in compose
+
+The `POSTGRES_PASSWORD: changeme` placeholder above is fine for a tutorial, but real apps need real credentials, and committing them into the compose file (or a `.env` file inside the repo) means a fork inherits them too. For deploy-time credentials, use `rdc repo secret`. Values live outside the encrypted repo image, so forks start with an empty secrets map.
+
+Two delivery modes work in compose:
+
+**`env` mode**. Interpolate via `${REDIACC_SECRET_<KEY>}` in any `environment:` value. The renet wrapper passes the value into the container's environment at deploy time.
+
+**`file` mode**. The value lands in a host-side tmpfs file at `/var/run/rediacc/secrets/<networkID>/<KEY>`, and you mount it into the container via Docker compose's standard `secrets:` block. Container reads `/run/secrets/<key>`. Prefer this mode for anything sensitive. Values never appear in `docker inspect` or `/proc/<pid>/environ`.
+
+```yaml
+services:
+  api:
+    image: myregistry/api:latest
+    environment:
+      DATABASE_URL: ${REDIACC_SECRET_DATABASE_URL}
+    secrets:
+      - stripe_live_key
+
+secrets:
+  stripe_live_key:
+    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+```
+
+Seed the values with `rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""` and the file-mode equivalent. See [Repositories § Secrets](/en/docs/repositories#secrets) for the full how-to and [Per-repo secrets](/en/docs/rdc-cheat-sheet#per-repo-secrets) on the cheat sheet for the command reference.
+
+> **Cross-repo paths are rejected at validate time.** A compose `secrets: file:` (or `configs: file:`, or `env_file:`) that points at another repo's `/var/run/rediacc/secrets/<other-networkID>/` directory is hard-rejected by the renet wrapper before docker compose runs. `--unsafe` does NOT override. Defense-in-depth: the Landlock sandbox around the Rediaccfile shell scopes reads to the current network's secrets dir, so a `cat /var/run/rediacc/secrets/<other>/X` from Rediaccfile bash fails with EACCES even if it bypasses the YAML validator. You don't need to opt in; this is on by default for every `repo up`.

@@ -7,6 +7,7 @@ import type { OutputFormat, RdcConfig } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { registerBackupStrategyCommands } from './config-backup-strategy.js';
+import { registerPruneCommand as registerConfigPruneCommand } from './config-prune-cmd.js';
 import { registerAuditCommands } from './config/audit.js';
 import { registerEditCommands } from './config/edit.js';
 import { registerFieldCommands } from './config/field.js';
@@ -460,6 +461,7 @@ ${t('help.examples')}
     });
 
   registerBackupStrategyCommands(config);
+  registerConfigPruneCommand(config);
 
   // Register nested sub-command groups
   registerMachineCommands(config, program);

@@ -170,4 +170,43 @@ describe('getSSHConnectionDetails', () => {
     expect(result.repositoryPath).toBe('/home/my-app');
     expect(result.environment?.REDIACC_REPOSITORY).toBe('my-app');
   });
+
+  it('env-mode secrets from repositoryVault.environment splat into the SSH env', async () => {
+    mockGetConnectionVaults.mockResolvedValue({
+      machineVault: baseMachineVault,
+      teamVault: baseTeamVault,
+      repositoryVault: {
+        ...baseRepoVault,
+        environment: {
+          REDIACC_SECRET_STRIPE_KEY: 'sk_live_x',
+          REDIACC_SECRET_DB_URL: 'postgres://h/d',
+        },
+      },
+    });
+
+    const result = await getSSHConnectionDetails('team1', 'server-1', 'my-app');
+    expect(result.environment?.REDIACC_SECRET_STRIPE_KEY).toBe('sk_live_x');
+    expect(result.environment?.REDIACC_SECRET_DB_URL).toBe('postgres://h/d');
+  });
+
+  it('file-mode secretFiles do NOT propagate into the SSH session env', async () => {
+    // secretFiles ride the vault stdin to renet (Step 6) so they reach a
+    // tmpfs file via Docker compose secrets — they must NEVER leak into the
+    // interactive shell, where they would be visible to docker exec, ps,
+    // and accidental shell logging.
+    mockGetConnectionVaults.mockResolvedValue({
+      machineVault: baseMachineVault,
+      teamVault: baseTeamVault,
+      repositoryVault: {
+        ...baseRepoVault,
+        environment: {},
+        secretFiles: [{ name: 'STRIPE', value: 'sk_live_should_not_appear' }],
+      },
+    });
+
+    const result = await getSSHConnectionDetails('team1', 'server-1', 'my-app');
+    const envJson = JSON.stringify(result.environment);
+    expect(envJson).not.toContain('sk_live_should_not_appear');
+    expect(envJson).not.toContain('STRIPE');
+  });
 });

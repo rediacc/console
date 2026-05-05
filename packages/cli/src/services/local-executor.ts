@@ -16,6 +16,7 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import type { RepositoryConfig } from '../types/index.js';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { t } from '../i18n/index.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
@@ -162,24 +163,44 @@ async function loadContextStorages(): Promise<
   }
 }
 
+interface LoadedRepoEntry {
+  guid: string;
+  name: string;
+  networkId?: number;
+  secretFiles?: { name: string; value: string }[];
+}
+
+/**
+ * Build a single LoadedRepoEntry. Extracts file-mode secrets only;
+ * env-mode rides the shell prefix (resolveEnvSecrets), not the vault.
+ */
+function buildLoadedRepoEntry(name: string, config: RepositoryConfig): LoadedRepoEntry {
+  const secretFiles: { name: string; value: string }[] = [];
+  for (const [secretName, entry] of Object.entries(config.secrets ?? {})) {
+    if (entry.mode === 'file') secretFiles.push({ name: secretName, value: entry.value });
+  }
+  return {
+    guid: config.repositoryGuid,
+    name,
+    networkId: config.networkId,
+    ...(secretFiles.length > 0 ? { secretFiles } : {}),
+  };
+}
+
 async function loadContextRepositories(): Promise<{
   credentials: Record<string, string> | undefined;
-  configs: Record<string, { guid: string; name: string; networkId?: number }> | undefined;
+  configs: Record<string, LoadedRepoEntry> | undefined;
 }> {
   try {
     const repoList = await configService.listRepositories();
     if (repoList.length === 0) return { credentials: undefined, configs: undefined };
     const credentials: Record<string, string> = {};
-    const configs: Record<string, { guid: string; name: string; networkId?: number }> = {};
+    const configs: Record<string, LoadedRepoEntry> = {};
     for (const r of repoList) {
       if (r.config.credential) {
         credentials[r.config.repositoryGuid] = r.config.credential;
       }
-      const entry = {
-        guid: r.config.repositoryGuid,
-        name: r.name,
-        networkId: r.config.networkId,
-      };
+      const entry = buildLoadedRepoEntry(r.name, r.config);
       configs[r.name] = entry;
       // Also add bare name alias for :latest repos so lookups by bare name work.
       // NOTE: Only handles the default ":latest" tag. If custom tags for grand repos
@@ -479,8 +500,15 @@ export function buildRenetEnvPrefix(params: {
   isDevelopment: boolean;
   telemetryDisabled: boolean;
   otlpCreds?: { user: string; pass: string } | null;
+  /**
+   * Per-repo env-mode secrets, already prefixed `REDIACC_SECRET_<NAME>`.
+   * Renet's `propagateDevEnvVars` forwards this prefix into the bash
+   * preamble, and the `renet compose --` wrapper interpolates them into
+   * `${REDIACC_SECRET_*}` references in the user's compose YAML.
+   */
+  envSecrets?: Record<string, string>;
 }): string {
-  const { isDevelopment, telemetryDisabled, otlpCreds } = params;
+  const { isDevelopment, telemetryDisabled, otlpCreds, envSecrets } = params;
   const envParts: string[] = [];
   if (isDevelopment) {
     envParts.push('REDIACC_ENVIRONMENT=development');
@@ -495,6 +523,11 @@ export function buildRenetEnvPrefix(params: {
   } else if (otlpCreds) {
     envParts.push(`REDIACC_OTLP_USER=${shellQuote(otlpCreds.user)}`);
     envParts.push(`REDIACC_OTLP_PASS=${shellQuote(otlpCreds.pass)}`);
+  }
+  if (envSecrets) {
+    for (const [k, v] of Object.entries(envSecrets)) {
+      envParts.push(`${k}=${shellQuote(v)}`);
+    }
   }
   return envParts.length > 0 ? `env ${envParts.join(' ')} ` : '';
 }
@@ -517,6 +550,7 @@ export function buildRemoteRenetCommand(params: {
   isDevelopment: boolean;
   telemetryDisabled: boolean;
   otlpCreds?: { user: string; pass: string } | null;
+  envSecrets?: Record<string, string>;
 }): string {
   const { remoteRenetPath, eventsMode, ...envParams } = params;
   const eventsFlag = eventsMode ? ' --events' : '';
@@ -893,7 +927,8 @@ class LocalExecutorService {
   private buildRemoteCommand(
     remoteRenetPath: string,
     eventsMode?: boolean,
-    otlpCreds?: { user: string; pass: string } | null
+    otlpCreds?: { user: string; pass: string } | null,
+    envSecrets?: Record<string, string>
   ): string {
     return buildRemoteRenetCommand({
       remoteRenetPath,
@@ -901,7 +936,32 @@ class LocalExecutorService {
       isDevelopment: this.detectEnvironment() === 'development',
       telemetryDisabled: isTelemetryDisabled(),
       otlpCreds,
+      envSecrets,
     });
+  }
+
+  /**
+   * Resolve env-mode per-repo secrets for the focal repository, prefixed
+   * `REDIACC_SECRET_<NAME>`. Returns undefined when no repo is targeted.
+   * File-mode secrets are out of band — they ride the vault stdin (Step 6),
+   * not the shell prefix, so they never appear in `ps`.
+   */
+  private async resolveEnvSecrets(
+    repoRef: string | undefined
+  ): Promise<Record<string, string> | undefined> {
+    if (!repoRef) return undefined;
+    try {
+      const repoConfig = await configService.getRepository(repoRef);
+      const secrets = repoConfig?.secrets;
+      if (!secrets) return undefined;
+      const out: Record<string, string> = {};
+      for (const [name, entry] of Object.entries(secrets)) {
+        if (entry.mode === 'env') out[`REDIACC_SECRET_${name}`] = entry.value;
+      }
+      return Object.keys(out).length > 0 ? out : undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   private async runRemoteExecution(
@@ -916,7 +976,15 @@ class LocalExecutorService {
     // memory to accidentally propagate downstream. `buildRemoteCommand`
     // still injects `REDIACC_TELEMETRY_DISABLED=1` for the remote end.
     const otlpCreds = isTelemetryDisabled() ? null : await fetchOtlpCredentials();
-    const command = this.buildRemoteCommand(remoteRenetPath, options.eventsMode, otlpCreds);
+    const repoRef =
+      typeof options.params?.repository === 'string' ? options.params.repository : undefined;
+    const envSecrets = await this.resolveEnvSecrets(repoRef);
+    const command = this.buildRemoteCommand(
+      remoteRenetPath,
+      options.eventsMode,
+      otlpCreds,
+      envSecrets
+    );
     let stdout = '';
     let stderr = '';
     const stdoutHandler = createStdoutHandler(options);

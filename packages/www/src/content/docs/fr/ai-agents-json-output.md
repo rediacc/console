@@ -6,7 +6,7 @@ description: >-
 category: Reference
 order: 51
 language: fr
-sourceHash: 43cdbf89d4314d73
+sourceHash: "18996ab708715227"
 ---
 
 Toutes les commandes `rdc` prennent en charge la sortie JSON structurée pour la consommation programmatique par les agents IA et les scripts.

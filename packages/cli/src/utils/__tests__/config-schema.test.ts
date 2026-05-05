@@ -31,6 +31,8 @@ import {
   parseConfig,
   RepositoryConfigSchema,
   resourceName,
+  SecretEntrySchema,
+  SecretKeySchema,
   stringifyConfig,
 } from '../config-schema.js';
 
@@ -172,6 +174,76 @@ describe('config-schema', () => {
           networkId: 2816,
         }).success
       ).toBe(true);
+    });
+
+    it('accepts repo with valid secrets map', () => {
+      const result = RepositoryConfigSchema.safeParse({
+        repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
+        secrets: {
+          STRIPE_KEY: { mode: 'env', value: 'sk_live_x' },
+          DKIM_KEY: { mode: 'file', value: 'pem-content' },
+        },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects secrets map with invalid key shape', () => {
+      const result = RepositoryConfigSchema.safeParse({
+        repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
+        secrets: { 'lowercase-key': { mode: 'env', value: 'x' } },
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('SecretKeySchema', () => {
+    it.each([['STRIPE_KEY'], ['DB_2'], ['X'], ['A_B_C_123'], ['Z9']])('accepts %s', (key) => {
+      expect(SecretKeySchema.safeParse(key).success).toBe(true);
+    });
+
+    it.each([
+      ['stripe_key'],
+      ['STRIPE-KEY'],
+      ['9KEY'],
+      ['_LEAD'],
+      [''],
+      ['HAS SPACE'],
+      ['HAS.DOT'],
+      ['a'.repeat(65)],
+    ])('rejects %s', (key) => {
+      expect(SecretKeySchema.safeParse(key).success).toBe(false);
+    });
+  });
+
+  describe('SecretEntrySchema', () => {
+    it('accepts env-mode entry', () => {
+      expect(SecretEntrySchema.safeParse({ mode: 'env', value: 'x' }).success).toBe(true);
+    });
+
+    it('accepts file-mode entry', () => {
+      expect(SecretEntrySchema.safeParse({ mode: 'file', value: 'x' }).success).toBe(true);
+    });
+
+    it('rejects unknown mode', () => {
+      expect(SecretEntrySchema.safeParse({ mode: 'tmpfs', value: 'x' }).success).toBe(false);
+    });
+
+    it('rejects missing mode', () => {
+      expect(SecretEntrySchema.safeParse({ value: 'x' }).success).toBe(false);
+    });
+
+    it('rejects empty value', () => {
+      expect(SecretEntrySchema.safeParse({ mode: 'env', value: '' }).success).toBe(false);
+    });
+
+    it('rejects value over 10 MB', () => {
+      const tooBig = 'a'.repeat(10 * 1024 * 1024 + 1);
+      expect(SecretEntrySchema.safeParse({ mode: 'env', value: tooBig }).success).toBe(false);
+    });
+
+    it('accepts value of exactly 10 MB', () => {
+      const atCap = 'a'.repeat(10 * 1024 * 1024);
+      expect(SecretEntrySchema.safeParse({ mode: 'env', value: atCap }).success).toBe(true);
     });
   });
 

@@ -391,7 +391,7 @@
         "bannerRotateLine1": "Bir sırrı döndürmek için: stub'ı yeni açık metin değerle değiştir — editörü kapattıktan",
         "bannerRotateLine2": "sonra her döndürmeyi onaylamanız istenecektir.",
         "bannerStrip": "// ile başlayan satırlar kaydedilirken kaldırılır.",
-        "bannerTitle": "rdc config edit — {{name}} (v{{version}})",
+        "bannerTitle": "Yapılandırma \"{{name}}\" düzenleniyor (v{{version}})",
         "description": "Aktif yapılandırmayı $EDITOR içinde redakte edilmiş JSONC yansıması olarak aç. Yalnızca insan; ajanlar reddedilir.",
         "noChanges": "Değişiklik kaydedilmedi; iptal ediliyor.",
         "optionApply": "Düzenlenmiş JSONC dosyasını uygula ($EDITOR başlatmayı atlar)",
@@ -555,6 +555,25 @@
           "description": "Bulut sağlayıcı yapılandırmasını kaldır",
           "success": "\"{{name}}\" bulut sağlayıcısı kaldırıldı"
         }
+      },
+      "prune": {
+        "archivesOnlyOption": "Süresi dolmuş arşiv temizlemeyle sınırla. Sertifika önbelleği ve çapraz referans temizliğini atlar. --certs-only ve --refs-only ile dışlayıcıdır.",
+        "certsOnlyOption": "ACME sertifika önbellek kovasına sınırla. Arşiv temizliğini ve çapraz referans temizliğini atlar. --archives-only ve --refs-only ile karşılıklı dışlayıcıdır.",
+        "completed": "Yerel yapılandırmadan {{count}} eski giriş temizlendi.",
+        "description": "~/.config/rediacc/<config>.json dosyasındaki yerel yapılandırmadaki ölü ağırlığı kaldırır. Üç kategori temizlenir, hepsi yerel (SSH/renet çağrısı yok): (1) çapası GUID/repo/makine artık etkin yapılandırmada olmayan ACME sertifika önbellek girişleri; (2) erteleme süresi dolmuş arşivlenmiş depolar (varsayılan 7 gün, defaults.pruneGraceDays bakın); (3) askıdaki çapraz referanslar (machine→strategy, strategy→repo). Kullanımdaki kaynaklar, kimlik bilgileri, depolama belirteçleri ve known-hosts asla dokunulmaz. Varsayılan davranış değişiklikleri uygulamaktır; sadece önizleme için --dry-run kullanın.",
+        "descriptionShort": "Yerel yapılandırma dosyasındaki eski kalıntıları temizle",
+        "droppedRefs": "{{count}} askıdaki çapraz referans {{verb}} kaldırıldı:",
+        "dryRun": "Kuru çalıştırma: {{count}} değişiklik uygulanacaktır. Kaydetmek için --dry-run olmadan yeniden çalıştırın.",
+        "dryRunOption": "Yapılandırma dosyasını değiştirmeden neyin kaldırılacağını önizler. Diğer prune komutlarının varsayılan-kapalı semantiğini yansıtır.",
+        "graceDaysOption": "Bu çağrı için arşiv erteleme penceresini (gün cinsinden) geçersiz kıl. Yapılandırmadaki defaults.pruneGraceDays değerine geri döner, hiçbiri ayarlanmazsa 7'ye düşer.",
+        "keptArchivesInGrace": "Hâlâ erteleme süresinde olan arşivlenmiş depolar saklandı ('rdc config repository restore-archived' ile kurtarılabilir):",
+        "nothingToPrune": "Temizlenecek bir şey yok, yapılandırma zaten temiz.",
+        "purgeArchivedOption": "Yaştan bağımsız olarak TÜM arşivlenmiş depoları düşür, yalnızca erteleme süresini aşmış olanları değil. 'rdc config repository purge-archived' çalıştırmaya eşdeğerdir. Yalnızca depolanan kimlik bilgilerinden hiçbirinin geri yüklemek için gerekli olmadığından emin olduğunuzda kullanın.",
+        "purgedArchives": "{{count}} süresi dolmuş arşivlenmiş depo {{verb}} kaldırıldı:",
+        "refsOnlyOption": "Askıdaki çapraz referanslarla (machine→strategy, strategy→repo excludes/includes) sınırla. Sertifika önbelleği ve arşivleri atlar. --certs-only ve --archives-only ile dışlayıcıdır.",
+        "removedCerts": "{{count}} sertifika önbellek girişi {{verb}} kaldırıldı:",
+        "scanning": "Yerel yapılandırma eski kalıntılar için taranıyor...",
+        "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only seçeneklerinden en fazla birini geçirin."
       },
       "recover": {
         "confirm": "\"{{name}}\" yapılandırması yedekten geri yüklensin mi?",
@@ -911,11 +930,14 @@
         "description": "Bir makineden sahipsiz veri deposu kaynaklarını ve eski anlık görüntüleri kaldır",
         "descriptionShort": "Sahipsiz kaynakları ve eski anlık görüntüleri temizle",
         "dryRunOption": "Değişiklik yapmadan nelerin kaldırılacağını göster",
+        "forceDeleteMountedOption": "Bağlama güvenlik ön kontrolünü geçersiz kıl ve şu anda bağlı olsalar veya çalışan Docker konteynerleri olsalar bile depoları sil. --force seçeneğinden farklıdır (yalnızca arşiv erteleme süresini geçersiz kılar). Hem --orphaned-repos hem de --prune-unknown seçeneklerine uygulanır.",
         "noReposFound": "Makinede depo bulunamadı",
         "noStaleSnapshots": "Eski anlık görüntü bulunamadı",
+        "noUnknownRepos": "Bilinmeyen depo bulunamadı, her makine deposu ya yerel yapılandırmada ya da bir renet aynasına sahip",
         "orphanedReposCompleted": "{{count}} sahipsiz depo temizlendi",
         "orphanedReposOption": "Hiçbir yapılandırmada bulunmayan depo görüntülerini de temizle",
         "orphanedReposStarting": "{{machine}} üzerinde sahipsiz depolar taranıyor...",
+        "pruneUnknownOption": "Sadece renet .interim/state aynasının sınıflandıramadığı depoları sil (yerel yapılandırmada yok VE fork işaretli ayna yok). --orphaned-repos seçeneğinden kesinlikle daha dardır: ayna onları tanımladığında yapılandırması olmayan fork'lar korunur. Pre-mirror eski yetimler ve yapılandırma girişi silinmiş eski grands ikisi de bu kovaya düşer.",
         "snapshotDeleted": "{{name}} silindi",
         "snapshotDeleting": "{{name}} siliniyor...",
         "snapshotInUse": "{{name}} atlanıyor (aktif kullanımda)",
@@ -923,7 +945,10 @@
         "snapshotsOnlyOption": "Yalnızca eski anlık görüntüleri temizle",
         "snapshotStale": "Eski: {{name}} ({{size}})",
         "startingDatastore": "{{machine}} üzerinde sahipsiz veri deposu kaynakları taranıyor...",
-        "startingSnapshots": "{{machine}} üzerinde eski anlık görüntüler taranıyor..."
+        "startingSnapshots": "{{machine}} üzerinde eski anlık görüntüler taranıyor...",
+        "unknownCompleted": "{{count}} bilinmeyen depo temizlendi",
+        "unknownFound": "{{count}} bilinmeyen depo bulundu (bağlama güvenlik kontrolünden sonra {{deletable}} silinebilir)",
+        "unknownStarting": "{{machine}} üzerinde bilinmeyen depolar taranıyor (yerel yapılandırmada yok + fork işaretli ayna yok)..."
       },
       "query": {
         "connection": "Bağlantı",
@@ -1298,7 +1323,10 @@
           "description": "Uzak hedefteki (makine veya depolama) mevcut yedekleri listele",
           "listing": "Yedekler listeleniyor...",
           "optionFrom": "Kaynak makine veya depolama adı (yapılandırmadan otomatik algılanır)",
-          "sourceRequired": "--from <remote> belirtin (yapılandırmadaki makine veya depolama adı)"
+          "optionPath": "Depolama kökü içindeki alt dizin. Atlandığında hem hot/ hem de cold/ listelenir ve birleştirilir.",
+          "sourceRequired": "--from <remote> belirtin (yapılandırmadaki makine veya depolama adı)",
+          "descriptionShort": "Bir uzakta mevcut yedekleri listele",
+          "localOnly": "repo backup list yalnızca yerel adaptör modunda desteklenir"
         }
       },
       "batchConfirm": "\"{{machine}}\" üzerindeki tüm {{count}} depoyu {{action}} yap? [y/N]",
@@ -1463,6 +1491,37 @@
         "failed": "Yeniden boyutlandırma başarısız",
         "sizeOption": "Yeni depo boyutu (ör. 10G, 100G, 1T)",
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" {{size}} olarak yeniden boyutlandırılıyor..."
+      },
+      "secret": {
+        "currentOption": "SHA-256 digest of the previous value (passwd-style precondition). Required for overwrite under agent context; optional for first-write.",
+        "description": "Manage per-repo secrets injected at deploy time. Two modes: env (REDIACC_SECRET_<KEY> via compose ${VAR} interpolation) and file (host tmpfs at /var/run/rediacc/secrets/<networkId>/<KEY>, mounted via Docker compose `secrets:` block). Secrets never enter the encrypted LUKS image, so forks inherit none — externals see the fork as a different principal.",
+        "descriptionShort": "Depo başına dağıtım sırrı yönetimi (env / file)",
+        "get": {
+          "description": "Read a single secret. Returns a redacted stub (`<redacted:secret>:<digest8>`) under agent context regardless of policy.",
+          "descriptionShort": "Sırrın özetini göster (değer asla döndürülmez)",
+          "notFound": "\"{{repository}}\" deposunda \"{{key}}\" gizli anahtarı bulunamadı",
+          "repoNotFound": "\"{{repository}}\" deposu bulunamadı"
+        },
+        "keyOption": "UPPER_SNAKE_CASE biçiminde gizli anahtar (maks 64 karakter). env modu için REDIACC_SECRET_<KEY> olarak veya file modu için konteynerlerde /run/secrets/<key> olarak gösterilecek.",
+        "list": {
+          "description": "Gizli anahtarları ve modları listele (asla değer, asla özet).",
+          "descriptionShort": "Depo sırrı anahtarlarını ve modlarını listele",
+          "empty": "\"{{repository}}\" üzerinde tanımlı gizli anahtar yok"
+        },
+        "modeOption": "Teslim modu: 'env' (konteyner ortamında görünür, docker inspect) veya 'file' (tmpfs dosyası, asla env'de değil). Varsayılan: file.",
+        "nameOption": "Depo adı (örn. mail, mail:staging). Etiket olmadan :latest varsayılan olur.",
+        "rotateOption": "Döndürmeyi onayla; --current ön koşulunu atla (döndürme olarak denetlenir). Önceki değeri doğrulamadan kasıtlı olarak döndürürken kullanın.",
+        "set": {
+          "description": "Bir gizli anahtarı ayarla veya üzerine yaz. Fork'lar miras almaz; fork üzerinde açıkça ayarla. Aracı bağlamı altında, --current özet eşleşmesi gerektirir (passwd tarzı).",
+          "descriptionShort": "Depo sırrını ayarla veya üzerine yaz",
+          "success": "\"{{repository}}\" üzerinde \"{{key}}\" ({{mode}}) gizli anahtarı ayarlandı"
+        },
+        "unset": {
+          "description": "Bir gizli anahtarı sil. Aracı bağlamı altında, --current özet eşleşmesi gerektirir.",
+          "descriptionShort": "Depo sırrını sil",
+          "success": "\"{{repository}}\" deposundan \"{{key}}\" gizli anahtarı kaldırıldı"
+        },
+        "valueOption": "Gizli değer. stdin'den okumak için `-` geçin (kabuk geçmişine maruz kalmayı önler)."
       },
       "snapshot": {
         "create": {
@@ -1704,9 +1763,11 @@
         "completed": "{{count}} sahipsiz yedek temizlendi",
         "description": "Hiçbir yapılandırmada bulunmayan sahipsiz yedekleri depolamadan sil. Çoklu yapılandırma güvenli, ek süre korumalı.",
         "descriptionShort": "Sahipsiz yedekleri depolamadan sil",
+        "forceDeleteMountedOption": "Bağlama güvenlik kontrolünü geçersiz kıl ve kaynak GUID şu anda yürütücü makinede bağlı olsa veya çalışan bir konteyneri olsa bile bulut yedeklerini sil. --force seçeneğinden farklıdır (yalnızca arşivlenmiş depolar için erteleme süresini geçersiz kılar).",
         "found": "Depolamada {{count}} yedek bulundu",
         "listFailed": "Depolama yedekleri listelenemedi",
         "listing": "\"{{storage}}\" içindeki yedekler listeleniyor...",
+        "machineOption": "Yürütücü makine: depoya karşı rclone list/delete çağrılarını çalıştırır. Müşterilerin yerel olarak rclone'un kurulu olması beklenmediği için gereklidir; depolama kimlik bilgileri yine yerel yapılandırmanızdan gelir.",
         "noBackups": "Depolamada yedek bulunamadı"
       },
       "pull": {
@@ -2297,6 +2358,19 @@
       "kindMismatch": "Değer türü değişti (saklanan: {{stored}}, iddia edilen: {{claimed}})",
       "mismatch": "{{count}} yol için önkoşul başarısız:\n{{details}}",
       "missing": "Hassas yol --current (veya --rotate-secret) gerektirir",
+      "next": {
+        "options": {
+          "confirm": {
+            "description": "Mevcut özeti yeniden okuyun, --current ile tekrar deneyin",
+            "run": "rdc repo secret get --name {{repository}} --key {{key}}"
+          },
+          "rotate": {
+            "description": "Önkoşulu atla (rotasyon, denetlenir)",
+            "run": "<orijinal komut> --rotate-secret"
+          }
+        },
+        "summary": "Mevcut değeri sağlayın veya rotasyonu onaylayın."
+      },
       "rotationRequiresTty": "{{pointer}}: döndürme onayı etkileşimli TTY gerektirir (veya --current-secrets kullanın)",
       "stubStillStub": "{{pointer}}: düzenlenmiş değer hâlâ bir redaksiyon stub'u gibi görünüyor ancak mevcut özetle eşleşmiyor"
     },
@@ -2315,6 +2389,13 @@
     "regionRequired": "Bölge adı gerekli. --region kullanın veya bağlamı ayarlayın.",
     "registrationFailed": "Kayıt başarısız",
     "remoteNotFound": "\"{{name}}\" bilinen bir makine veya depolama değil. Makineler: {{machines}}. Depolamalar: {{storages}}",
+    "repo": {
+      "secret": {
+        "badMode": "Geçersiz --mode \"{{mode}}\". İzin verilen: env, file.",
+        "emptyValue": "Gizli değer boş olamaz (stdin hiç bayt üretmedi).",
+        "mutuallyExclusive": "--current ve --rotate-secret karşılıklı dışlayıcıdır. Birini seçin: önceki değeri doğrulamak için --current veya doğrulama olmadan döndürmek için --rotate-secret."
+      }
+    },
     "repoNotDeployed": "Depo \"{{repository}}\" {{machine}} üzerinde dağıtılmamış.\n\nÖnce dağıtın:\n  rdc repo up --name {{repository}} -m <makine-adı>",
     "repositoryAlreadyMounted": "\"{{name}}\" deposu zaten \"{{machine}}\" üzerinde bağlı. Aktif bir depo üzerinde taşıma işlemi veri bozulmasına yol açar. Önce şunu çalıştırın: rdc repo down --name {{name}} -m {{machine}} --unmount",
     "repositoryNotFound": "\"{{name}}\" deposu bulunamadı",

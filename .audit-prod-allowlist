@@ -157,3 +157,9 @@
 # (GHSA-gh4j-gqv2-49f6, <=5.5.x; same chain as 1114772 family)
 # BLOCKER: build-time only via @astrojs/rss; no runtime exposure
 1116957
+
+# protobufjs arbitrary code execution via unsafe codegen on crafted JSON descriptor
+# (GHSA-xq3m-2v4x-88gg, >=8.0.0 <8.0.1)
+# BLOCKER: transitive via @opentelemetry/otlp-transformer pinned 8.0.0 exact; the .syncpackrc opentelemetry pin holds sdk-node back, override fights with strict pin (npm leaves both versions installed). All otel telemetry payloads are static internal schemas under our control, not crafted JSON descriptors from untrusted sources, so the codegen attack vector is not reachable at runtime.
+1117571
+1117572

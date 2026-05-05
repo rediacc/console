@@ -235,6 +235,19 @@ export async function verifyMachineSetup(
   }
 }
 
+interface RepoEntryConfig {
+  guid: string;
+  name: string;
+  networkId?: number;
+  /**
+   * File-mode secrets to materialize on the host at deploy time. Renet's
+   * repository_up reads these from the vault payload and writes them to
+   * /var/run/rediacc/secrets/<networkID>/<NAME>. Tmpfs only; never enters
+   * the LUKS image; never inherited by forks.
+   */
+  secretFiles?: { name: string; value: string }[];
+}
+
 interface BuildLocalVaultOptions {
   functionName: string;
   machineName: string;
@@ -246,7 +259,7 @@ interface BuildLocalVaultOptions {
   extraMachines?: Record<string, { ip: string; port?: number; user: string; datastore?: string }>;
   storages?: Record<string, { vaultContent: Record<string, unknown> }>;
   repositoryCredentials?: Record<string, string>;
-  repositoryConfigs?: Record<string, { guid: string; name: string; networkId?: number }>;
+  repositoryConfigs?: Record<string, RepoEntryConfig>;
 }
 
 function buildExtraMachines(
@@ -314,7 +327,7 @@ function buildStorageSystems(
 function buildSingleRepoEntry(
   repoName: string,
   params: Record<string, unknown>,
-  repositoryConfigs?: Record<string, { guid: string; name: string; networkId?: number }>
+  repositoryConfigs?: Record<string, RepoEntryConfig>
 ): Record<string, unknown> {
   const repoConfig = repositoryConfigs?.[repoName];
   const repoEntry: Record<string, unknown> = {
@@ -325,12 +338,15 @@ function buildSingleRepoEntry(
   if (networkId !== undefined && networkId !== '' && networkId !== 0) {
     repoEntry.network_id = typeof networkId === 'number' ? networkId : Number(networkId);
   }
+  if (repoConfig?.secretFiles && repoConfig.secretFiles.length > 0) {
+    repoEntry.secret_files = repoConfig.secretFiles;
+  }
   return repoEntry;
 }
 
 /** Build repository entries for all repos in config (multi-repo mode). */
 function buildAllRepoEntries(
-  repositoryConfigs: Record<string, { guid: string; name: string; networkId?: number }>
+  repositoryConfigs: Record<string, RepoEntryConfig>
 ): Record<string, unknown> {
   const repositories: Record<string, unknown> = {};
   for (const [name, config] of Object.entries(repositoryConfigs)) {
@@ -341,6 +357,9 @@ function buildAllRepoEntries(
     if (config.networkId !== undefined && config.networkId !== 0) {
       repoEntry.network_id = config.networkId;
     }
+    if (config.secretFiles && config.secretFiles.length > 0) {
+      repoEntry.secret_files = config.secretFiles;
+    }
     repositories[name] = repoEntry;
   }
   return repositories;
@@ -348,7 +367,7 @@ function buildAllRepoEntries(
 
 function buildRepositories(
   params: Record<string, unknown>,
-  repositoryConfigs?: Record<string, { guid: string; name: string; networkId?: number }>
+  repositoryConfigs?: Record<string, RepoEntryConfig>
 ): { repoName: string; repositories: Record<string, unknown> } {
   const repoName = (params.repository ?? '') as string;
 

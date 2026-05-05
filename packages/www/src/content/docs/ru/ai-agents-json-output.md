@@ -6,7 +6,7 @@ description: >-
 category: Reference
 order: 51
 language: ru
-sourceHash: 43cdbf89d4314d73
+sourceHash: "18996ab708715227"
 ---
 
 Все команды `rdc` поддерживают структурированный JSON-вывод для программного использования AI-агентами и скриптами.

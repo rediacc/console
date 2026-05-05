@@ -6,8 +6,8 @@ description: >-
 category: Tutorials
 order: 3
 language: de
-sourceHash: 46c155563808d0b7
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "6d218fe2779ce0cf"
+sourceCommit: "21df1395c849109d6449b46f9092012c66801960"
 ---
 
 # So stellen Sie Repositories mit Rediacc bereit und verwalten sie
@@ -42,7 +42,7 @@ Bestätigen Sie, dass das neue Repository verfügbar ist.
 rdc repo list -m server-1
 ```
 
-Zeigt alle Repositories auf der Maschine mit ihrer Größe, Mount-Status und Verschlüsselungsstatus.
+Zeigt alle Repositories auf der Maschine mit ihrer Größe, Mount-Status, Verschlüsselungsstatus und einer `Type`-Spalte, die jedes als `grand` (oberste Ebene), `fork` (CoW-Kopie eines anderen Repos) oder `unknown` (Abstammung kann nicht bestimmt werden) klassifiziert. Die vollständigen Klassifizierungsregeln finden Sie unter [Repositories. Type-Spalte und der State-Mirror](/de/docs/repositories#type-column-and-the-state-mirror).
 
 ### Schritt 3: Mount-Pfad inspizieren
 

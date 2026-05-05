@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: "14cf2fb4ac3dc4d6"
-sourceCommit: "35b53352026ae87fb6800c7fed10b793223ca1da"
+sourceHash: "eae6eedb1a1298f2"
+sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
 ---
 
 # النسخ الاحتياطي والاستعادة
@@ -84,6 +84,41 @@ rdc repo pull --name my-app -m server-1 --from my-storage
 ```bash
 rdc repo backup list --from my-storage -m server-1
 ```
+
+الإخراج عبارة عن جدول موحَّد يدمج كلا مجلدَي [النسخ الاحتياطية المجدولة](#scheduled-backups) (`hot/` و `cold/`) لرؤية كل نسخة احتياطية في عرض واحد:
+
+| العمود | المعنى |
+|---|---|
+| `Mode` | `hot` أو `cold`. مجلد النسخ الاحتياطي المجدول الذي يقع فيه هذا الإدخال |
+| `Name` | اسم المستودع المُحلَّل من الإعدادات المحلية (يعود إلى GUID للمستودعات غير الموجودة في الإعدادات) |
+| `GUID` | GUID المستودع على القرص |
+| `Size` | حجم ملف النسخة الاحتياطية بصيغة قابلة للقراءة |
+| `Modified` | الطابع الزمني UTC من وحدة التخزين الخلفية |
+
+للتنقيب في وضع واحد، مرّر `--path`:
+
+```bash
+rdc repo backup list --from my-storage -m server-1 --path hot
+rdc repo backup list --from my-storage -m server-1 --path cold
+```
+
+### تخطيط التخزين
+
+تُحفظ النسخ الاحتياطية المجدولة ضمن مجلدات فرعية لكل وضع داخل المجلد المُكوَّن للتخزين، بحيث يستضيف نفس التخزين كلاً من تدفق الساعة وتدفق الأسبوع بشكل نظيف دون اختلاطهما:
+
+```text
+<bucket>/<folder>/
+├── hot/
+│   ├── <guid-1>
+│   ├── <guid-2>
+│   └── ...
+└── cold/
+    ├── <guid-1>
+    ├── <guid-3>
+    └── ...
+```
+
+يمكن أن يظهر المستودع في كلا `hot/` و `cold/` (يلتقطه الجدول الساعي ويلتقطه الجدول الأسبوعي مرة أخرى). يُظهر الإدراج المدموج كلا الصفين بحيث يكون من الواضح أي تدفقات تغطي أي مستودعات.
 
 ## المزامنة المجمّعة
 
@@ -201,6 +236,8 @@ concurrency = min(repoCount, max(2, NumCPU/2), 8)
 
 ### تعريف استراتيجية
 
+الإعداد الافتراضي القياسي هو تقسيم باستراتيجيتين: تدفق ساخن سريع كل ساعة يلتقط كل مستودع، وتدفق بارد أسبوعي أبطأ يأخذ لقطات متسقة على مستوى التطبيق. تكتب الاستراتيجيتان إلى مجلدات فرعية مختلفة في التخزين (`hot/` و `cold/`) بحيث لا تختلط النسخ الاحتياطية أبداً.
+
 ```bash
 rdc config backup-strategy set \
   --name hourly-hot \
@@ -213,14 +250,15 @@ rdc config backup-strategy set \
 
 ```bash
 rdc config backup-strategy set \
-  --name nightly-cold \
+  --name weekly-cold \
   --destination my-storage \
-  --cron "0 2 * * *" \
+  --cron "15 3 * * 0" \
   --mode cold \
-  --include "*.db" \
-  --exclude "tmp/**" \
+  --exclude very-large-repo \
   --enable
 ```
+
+مرشح `--exclude` على الاستراتيجية الباردة هو منفذ الهروب الموصى به للمستودعات الكبيرة جداً التي لا تتسع في نافذة الصيانة الأسبوعية لديك. لا تزال الاستراتيجية الساخنة الساعية تغطيها؛ والباردة تتخطاها فحسب. تتطابق أسماء المستودعات في `--exclude` مع اسم المستودع في الإعدادات المحلية (بدون `:tag`).
 
 | الخيار | الوصف |
 |--------|-------|
@@ -237,13 +275,13 @@ rdc config backup-strategy set \
 
 ```bash
 rdc config backup-strategy list
-rdc config backup-strategy show --name nightly-cold
+rdc config backup-strategy show --name weekly-cold
 ```
 
 ### إزالة استراتيجية
 
 ```bash
-rdc config backup-strategy remove --name nightly-cold
+rdc config backup-strategy remove --name weekly-cold
 ```
 
 ### ربط الاستراتيجيات بجهاز
@@ -254,7 +292,7 @@ rdc config backup-strategy remove --name nightly-cold
 {
   "machines": {
     "hostinger": {
-      "backupStrategies": ["hourly-hot", "nightly-cold"]
+      "backupStrategies": ["hourly-hot", "weekly-cold"]
     }
   }
 }
@@ -285,7 +323,7 @@ rdc machine backup schedule -m server-1 --dry-run
 
 ```bash
 rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy nightly-cold
+rdc machine backup now -m server-1 --strategy weekly-cold
 ```
 
 ### عرض حالة النسخ الاحتياطي
@@ -301,7 +339,7 @@ rdc machine backup status -m server-1 --strategy hourly-hot
 
 ```bash
 rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy nightly-cold
+rdc machine backup cancel -m server-1 --strategy weekly-cold
 ```
 
 ## ترحيل المستودعات

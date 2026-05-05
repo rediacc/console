@@ -6,8 +6,8 @@ description: >-
 category: Tutorials
 order: 3
 language: fr
-sourceHash: 46c155563808d0b7
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "6d218fe2779ce0cf"
+sourceCommit: 21df1395c849109d6449b46f9092012c66801960
 ---
 
 # Comment déployer et gérer des dépôts avec Rediacc
@@ -17,7 +17,7 @@ Les dépôts sont l'unité de déploiement principale dans Rediacc, chacun est u
 ## Prérequis
 
 - Le CLI `rdc` installé avec une configuration initialisée
-- Une machine provisionnée (voir [Tutoriel : Configuration de machine](/en/docs/tutorial-setup))
+- Une machine provisionnée (voir [Tutoriel : Configuration de machine](/fr/docs/tutorial-setup))
 - Une application simple avec un `Rediaccfile` et un `docker-compose.yml`
 
 ## Enregistrement interactif
@@ -42,7 +42,7 @@ Confirmez que le nouveau dépôt est disponible.
 rdc repo list -m server-1
 ```
 
-Affiche tous les dépôts sur la machine avec leur taille, état de montage et état de chiffrement.
+Affiche tous les dépôts sur la machine avec leur taille, état de montage, état de chiffrement, et une colonne `Type` qui classe chacun comme `grand` (de premier niveau), `fork` (copie CoW d'un autre dépôt) ou `unknown` (lignée indéterminable). Voir [Dépôts. Colonne Type et le miroir d'état](/fr/docs/repositories#type-column-and-the-state-mirror) pour les règles complètes de classification.
 
 ### Étape 3 : Inspecter le chemin de montage
 
@@ -115,6 +115,6 @@ La phrase de passe LUKS est dérivée de la configuration. Vérifiez que vous ut
 
 Vous avez créé un dépôt chiffré, déployé une application, inspecté les conteneurs et nettoyé. Pour surveiller vos déploiements :
 
-- [Services](/en/docs/services), référence Rediaccfile, réseaux de services, démarrage automatique et configurations multi-services
-- [Tutoriel : Surveillance et diagnostic](/en/docs/tutorial-monitoring), vérifications de santé, inspection de conteneurs et diagnostic
-- [Outils](/en/docs/tools), terminal, synchronisation de fichiers et intégration VS Code
+- [Services](/fr/docs/services), référence Rediaccfile, réseaux de services, démarrage automatique et configurations multi-services
+- [Tutoriel : Surveillance et diagnostic](/fr/docs/tutorial-monitoring), vérifications de santé, inspection de conteneurs et diagnostic
+- [Outils](/fr/docs/tools), terminal, synchronisation de fichiers et intégration VS Code

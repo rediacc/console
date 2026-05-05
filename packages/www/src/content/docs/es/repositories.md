@@ -4,8 +4,8 @@ description: 'Cree, gestione y opere repositorios cifrados con LUKS en máquinas
 category: Guides
 order: 4
 language: es
-sourceHash: "689a84ee2873fe00"
-sourceCommit: "8165b06e0d06dd07530fff343b0df6ecb1697a47"
+sourceHash: "1a8650ef7f8f3090"
+sourceCommit: "962514155bcc56421efb0b89299246854847b31c"
 ---
 
 # Repositorios
@@ -61,6 +61,18 @@ rdc repo status --name my-app -m server-1
 rdc repo list -m server-1
 ```
 
+### Columna Type y el espejo de estado
+
+La tabla de salida incluye una columna `Type` con tres valores:
+
+- **`grand`**. Un repositorio de nivel superior registrado en tu configuración local del CLI sin un padre. El caso base.
+- **`fork`**. Una bifurcación copy-on-write de otro repositorio. Identificado mediante `grandGuid` en la configuración local **o** mediante el espejo `.interim/state` de renet en la máquina. Cualquiera de las dos fuentes es autoritativa; ambas deberían coincidir una vez que el espejo esté poblado.
+- **`unknown`**. Ninguna señal puede clasificar el repositorio. Más a menudo, una bifurcación heredada previa al espejo (creada antes de que se desplegara el código del espejo y nunca remontada desde entonces), o un `grand` obsoleto cuya entrada de configuración local fue eliminada por error. El CLI se niega a adivinar; el operador debe ejecutar [el backfill del espejo](/es/docs/pruning#backfill-del-espejo-de-estado-de-migración) o eliminar el directorio si está realmente huérfano.
+
+El espejo `.interim/state/<guid>/.rediacc.json` es un pequeño archivo sidecar escrito **fuera** del volumen cifrado con LUKS para que las herramientas de copia de seguridad y `repo list` puedan leer el linaje de las bifurcaciones sin desbloquear cada imagen. Tiene la misma forma que el `.rediacc.json` interno del volumen (`is_fork`, `grand_guid`, `name`, etc.) y se actualiza en cada `Repository.SaveState`, es decir, en cada montaje y en cada mutación de estado. Es la fuente de la verdad para la detección de bifurcaciones en las copias de seguridad programadas: una bifurcación desmontada con un espejo que dice `is_fork: true` se omite correctamente de las cargas `cold` y `hot`.
+
+Para la limpieza rutinaria de entradas unknown, consulta [`rdc machine prune --prune-unknown`](/es/docs/pruning#fase-3---prune-unknown-quirúrgico).
+
 ## Redimensionar
 
 Establezca el repositorio a un tamaño exacto o expanda una cantidad dada:
@@ -83,6 +95,8 @@ rdc repo fork --parent my-app --tag staging -m server-1
 Las bifurcaciones usan el modelo name:tag: la bifurcación resultante se llama `my-app:staging`. Esto crea una nueva copia cifrada con su propio GUID e ID de red, compartiendo el nombre del repositorio padre. La bifurcación comparte la misma credencial LUKS que el repositorio padre.
 
 > Las bifurcaciones comparten los datos del padre mediante reflink de BTRFS, incluyendo cualquier credencial almacenada en disco. Consulte [Lo que Rediacc no aísla](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate) para conocer las implicaciones cuando esas credenciales autorizan servicios externos como Stripe, AWS o Railway.
+
+En el momento de creación de la bifurcación, `repo fork` escribe el [sidecar del espejo de estado](#columna-type-y-el-espejo-de-estado) en `<datastore>/.interim/state/<fork-guid>/.rediacc.json` inmediatamente, sin desbloquear el volumen, por lo que la nueva bifurcación se identifica correctamente como `is_fork: true` desde el momento de su creación. Esto permite que las copias de seguridad programadas la omitan (las bifurcaciones se excluyen de la canalización de carga por defecto) incluso si nunca se monta. Al bifurcar una bifurcación, `grand_guid` se encadena correctamente: el espejo de la nueva bifurcación apunta al GUID del padre original `grand`, no a la bifurcación intermedia.
 
 ## Validar
 

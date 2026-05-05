@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 4
 language: de
-sourceHash: "689a84ee2873fe00"
-sourceCommit: "8165b06e0d06dd07530fff343b0df6ecb1697a47"
+sourceHash: "1a8650ef7f8f3090"
+sourceCommit: "962514155bcc56421efb0b89299246854847b31c"
 ---
 
 # Repositories
@@ -63,6 +63,18 @@ rdc repo status --name my-app -m server-1
 rdc repo list -m server-1
 ```
 
+### Type-Spalte und der State-Mirror
+
+Die Ausgabetabelle enthält eine `Type`-Spalte mit drei Werten:
+
+- **`grand`**. Ein Repository der obersten Ebene, das ohne übergeordnetes Element in Ihrer lokalen CLI-Konfiguration registriert ist. Der Basisfall.
+- **`fork`**. Ein Copy-on-Write-Fork eines anderen Repos. Wird entweder über `grandGuid` in der lokalen Konfiguration **oder** über den renet-Mirror unter `.interim/state` auf der Maschine identifiziert. Beide Quellen sind autoritativ; sobald der Mirror befüllt ist, sollten beide übereinstimmen.
+- **`unknown`**. Keines der Signale kann das Repo klassifizieren. Meistens ein Pre-Mirror-Legacy-Fork (vor Auslieferung des Mirror-Codes erstellt und seitdem nie wieder gemountet), oder ein veraltetes `grand`, dessen lokaler Konfigurationseintrag versehentlich gelöscht wurde. Die CLI rät nicht; der Operator sollte [den Mirror-Backfill](/de/docs/pruning#migration-state-mirror-backfill) ausführen oder das Verzeichnis entfernen, falls es tatsächlich verwaist ist.
+
+Der Mirror unter `.interim/state/<guid>/.rediacc.json` ist eine kleine Sidecar-Datei, die **außerhalb** des LUKS-verschlüsselten Volumes geschrieben wird, damit Backup-Tools und `repo list` die Fork-Abstammung lesen können, ohne jedes Image entsperren zu müssen. Sie hat dieselbe Struktur wie die `.rediacc.json` im Volume (`is_fork`, `grand_guid`, `name`, etc.) und wird bei jedem `Repository.SaveState` aktualisiert. Also bei jedem Mount und jeder Statusänderung. Sie ist die Quelle der Wahrheit für die Fork-Erkennung in geplanten Backups: Ein nicht eingebundener Fork mit einem Mirror, der `is_fork: true` angibt, wird korrekt von `cold`- und `hot`-Uploads ausgeschlossen.
+
+Für die routinemäßige Bereinigung von Unknown-Einträgen siehe [`rdc machine prune --prune-unknown`](/de/docs/pruning#phase-3---prune-unknown-surgical).
+
 ## Größe ändern
 
 Das Repository auf eine exakte Größe setzen oder um einen bestimmten Betrag erweitern:
@@ -85,6 +97,8 @@ rdc repo fork --parent my-app --tag staging -m server-1
 Forks verwenden das Name:Tag-Modell: Der resultierende Fork heißt `my-app:staging`. Dies erstellt eine neue verschlüsselte Kopie mit eigener GUID und Netzwerk-ID, wobei der Name des übergeordneten Repositories geteilt wird. Der Fork teilt sich das gleiche LUKS-Credential wie das übergeordnete Repository.
 
 > Forks teilen die Daten des übergeordneten Repositories über BTRFS-Reflink, einschließlich aller auf der Festplatte gespeicherten Anmeldedaten. Siehe [Was Rediacc nicht isoliert](/de/docs/ai-agents-safety#was-rediacc-nicht-isoliert) für die Auswirkungen, wenn diese Anmeldedaten externe Dienste wie Stripe, AWS oder Railway autorisieren.
+
+Beim Erstellen eines Forks schreibt `repo fork` sofort die [State-Mirror-Sidecar-Datei](#type-spalte-und-der-state-mirror) unter `<datastore>/.interim/state/<fork-guid>/.rediacc.json`. Ohne das Volume zu entsperren. Sodass der neue Fork von Beginn an korrekt als `is_fork: true` erkannt wird. So können geplante Backups ihn überspringen (Forks sind standardmäßig von der Upload-Pipeline ausgeschlossen), selbst wenn er nie eingebunden wird. Beim Forken eines Forks wird `grand_guid` korrekt verkettet: Der Mirror des neuen Forks verweist auf die GUID des ursprünglichen Grand-Parents, nicht auf den dazwischenliegenden Fork.
 
 ## Validieren
 

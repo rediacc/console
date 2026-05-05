@@ -4,8 +4,8 @@ description: 'Créez, gérez et opérez des dépôts chiffrés LUKS sur des mach
 category: Guides
 order: 4
 language: fr
-sourceHash: "689a84ee2873fe00"
-sourceCommit: "8165b06e0d06dd07530fff343b0df6ecb1697a47"
+sourceHash: "1a8650ef7f8f3090"
+sourceCommit: "962514155bcc56421efb0b89299246854847b31c"
 ---
 
 # Dépôts
@@ -61,6 +61,18 @@ rdc repo status --name my-app -m server-1
 rdc repo list -m server-1
 ```
 
+### Colonne Type et le miroir d'état
+
+Le tableau de sortie inclut une colonne `Type` avec trois valeurs :
+
+- **`grand`**. Un dépôt de premier niveau enregistré dans votre configuration CLI locale sans parent. Le cas de base.
+- **`fork`**. Un fork copy-on-write d'un autre dépôt. Identifié soit via `grandGuid` dans la configuration locale, **soit** via le miroir renet `.interim/state` sur la machine. Chaque source fait autorité ; les deux doivent concorder une fois le miroir peuplé.
+- **`unknown`**. Aucun signal ne permet de classifier le dépôt. Le plus souvent un fork hérité pré-miroir (créé avant le déploiement du code de miroir et jamais remonté depuis), ou un `grand` obsolète dont l'entrée de configuration locale a été supprimée par erreur. La CLI refuse de deviner ; l'opérateur devrait exécuter [le backfill du miroir](/fr/docs/pruning#migration-state-mirror-backfill) ou supprimer le répertoire s'il est réellement orphelin.
+
+Le miroir `.interim/state/<guid>/.rediacc.json` est un petit fichier sidecar écrit **en dehors** du volume chiffré LUKS, afin que les outils de sauvegarde et `repo list` puissent lire la lignée des forks sans déverrouiller chaque image. Il porte la même structure que le `.rediacc.json` interne au volume (`is_fork`, `grand_guid`, `name`, etc.) et est rafraîchi à chaque `Repository.SaveState`. C'est-à-dire à chaque montage et à chaque mutation d'état. C'est la source de vérité pour la détection de fork dans les sauvegardes planifiées : un fork démonté dont le miroir indique `is_fork: true` est correctement exclu des téléversements `cold` et `hot`.
+
+Pour le nettoyage de routine des entrées unknown, voir [`rdc machine prune --prune-unknown`](/fr/docs/pruning#phase-3---prune-unknown-surgical).
+
 ## Redimensionner
 
 Définissez une taille exacte pour le dépôt ou ajoutez un montant donné :
@@ -83,6 +95,8 @@ rdc repo fork --parent my-app --tag staging -m server-1
 Les forks utilisent le modèle name:tag : le fork résultant est nommé `my-app:staging`. Ceci crée une nouvelle copie chiffrée avec son propre GUID et ID réseau, tout en partageant le nom du parent. La copie partage le même identifiant LUKS que le parent.
 
 > Les forks partagent les données du parent via reflink BTRFS, y compris tous les identifiants stockés sur disque. Consultez [Ce que Rediacc n'isole pas](/fr/docs/ai-agents-safety#ce-que-rediacc-nisole-pas) pour les implications lorsque ces identifiants autorisent des services externes comme Stripe, AWS ou Railway.
+
+À la création du fork, `repo fork` écrit immédiatement le [sidecar du miroir d'état](#colonne-type-et-le-miroir-detat) dans `<datastore>/.interim/state/<fork-guid>/.rediacc.json`. Sans déverrouiller le volume. Afin que le nouveau fork soit correctement identifié comme `is_fork: true` dès sa création. Cela permet aux sauvegardes planifiées de l'ignorer (les forks sont exclus du pipeline de téléversement par défaut) même s'il n'est jamais monté. Lorsqu'on fork un fork, `grand_guid` chaîne correctement : le miroir du nouveau fork pointe vers le GUID du grand parent d'origine, pas vers le fork intermédiaire.
 
 ## Valider
 

@@ -4,8 +4,8 @@ description: リモートマシン上のLUKS暗号化リポジトリの作成、
 category: Guides
 order: 4
 language: ja
-sourceHash: "689a84ee2873fe00"
-sourceCommit: "8165b06e0d06dd07530fff343b0df6ecb1697a47"
+sourceHash: "1a8650ef7f8f3090"
+sourceCommit: "962514155bcc56421efb0b89299246854847b31c"
 ---
 
 # リポジトリ
@@ -61,6 +61,18 @@ rdc repo status --name my-app -m server-1
 rdc repo list -m server-1
 ```
 
+### Type カラムと状態ミラー
+
+出力テーブルには、3 つの値を取る `Type` カラムが含まれます。
+
+- **`grand`**. ローカル CLI 設定に親なしで登録された最上位リポジトリ。基本ケースです。
+- **`fork`**. 別のリポジトリのコピーオンライトフォーク。ローカル設定の `grandGuid` か、マシン上の renet `.interim/state` ミラーのいずれかで識別されます。どちらのソースも信頼できる情報源であり、ミラーが populated されている場合は両者が一致するはずです。
+- **`unknown`**. どちらのシグナルでもリポジトリを分類できないケース。多くの場合、ミラー以前のレガシーフォーク（ミラーコードが導入される前に作成され、その後再マウントされていないもの）か、ローカル設定エントリが誤って削除された古い `grand` です。CLI は推測を行いません。オペレータは [ミラーバックフィル](/ja/docs/pruning#migration-state-mirror-backfill) を実行するか、本当に孤立しているのであればディレクトリを削除してください。
+
+`.interim/state/<guid>/.rediacc.json` ミラーは LUKS 暗号化ボリュームの **外側** に書き込まれる小さなサイドカーファイルで、バックアップツールや `repo list` が各イメージをアンロックすることなくフォーク系統を読み取れるようにします。ボリューム内の `.rediacc.json`（`is_fork`、`grand_guid`、`name` など）と同じ形を持ち、`Repository.SaveState` のたび、つまりすべてのマウントとすべての状態変更で更新されます。スケジュールされたバックアップにおけるフォーク検出の信頼できる情報源です。アンマウントされたフォークでミラーが `is_fork: true` と示しているものは、`cold` および `hot` のアップロードから正しくスキップされます。
+
+unknown エントリの定常的なクリーンアップについては、[`rdc machine prune --prune-unknown`](/ja/docs/pruning#phase-3---prune-unknown-surgical) を参照してください。
+
 ## リサイズ
 
 リポジトリを正確なサイズに設定するか、指定した量だけ拡張します：
@@ -83,6 +95,8 @@ rdc repo fork --parent my-app --tag staging -m server-1
 フォークはname:tagモデルを使用します：結果のフォークは`my-app:staging`と命名されます。これにより、独自のGUIDとネットワークIDを持つ新しい暗号化コピーが作成されますが、親の名前を共有します。フォークは親と同じLUKSクレデンシャルを共有します。
 
 > フォークはBTRFS reflinkを介して親のデータを共有します。これにはディスク上に保存されたあらゆる認証情報が含まれます。これらの認証情報がStripe、AWS、Railwayなどの外部サービスを認可している場合の影響については、[Rediaccが分離しないもの](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate)を参照してください。
+
+フォーク作成時、`repo fork` は `<datastore>/.interim/state/<fork-guid>/.rediacc.json` に [状態ミラーサイドカー](#type-カラムと状態ミラー) を即座に書き込みます。これはボリュームをアンロックすることなく行われるため、新しいフォークは作成された瞬間から `is_fork: true` として正しく識別されます。これにより、たとえ一度もマウントされなくても、スケジュールされたバックアップは正しくスキップできます（フォークはデフォルトでアップロードパイプラインから除外されます）。フォークをフォークする場合、`grand_guid` は正しく連鎖します。新しいフォークのミラーは中間フォークではなく、元の grand 親の GUID を指します。
 
 ## 検証
 
