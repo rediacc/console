@@ -1,5 +1,5 @@
 {
-  "_note": "Auto-populated by .ci/scripts/housekeeping/cleanup-versions.sh on every successful housekeeping run. The first run after this stub lands sees `cli: []` and `desktop: []` as the prior snapshot — that means everything currently in R2 looks ADDED (non-fatal, additions are never flagged), and the run writes the real list back. From then on the diff is meaningful. Do NOT hand-edit version arrays here; they exist only as a derived audit trail.",
+  "_note": "Auto-populated by .ci/scripts/housekeeping/cleanup-versions.sh on every successful housekeeping run. The first run after this stub lands sees `cli: []` and `desktop: []` as the prior snapshot, which means everything currently in R2 looks ADDED (non-fatal; additions are never flagged) and the run writes the real list back. From then on the diff is meaningful. Do NOT hand-edit version arrays here; they exist only as a derived audit trail.",
   "captured_at": "",
   "captured_by_run": "",
   "captured_by_commit": "",
