@@ -1457,7 +1457,10 @@ jobs:
       # turns a silent disappearance into a loud failure on the *next* run;
       # for that to work, the previous run must commit its observation.
       # [skip ci] on the snapshot commit prevents the bot push from
-      # triggering its own CI cycle.
+      # triggering its own CI cycle. The push uses the housekeeping app
+      # token (preset has contents:write); the default GITHUB_TOKEN that
+      # actions/checkout configured at job start only has contents:read,
+      # so we rewrite the origin URL to use x-access-token:${app_token}.
       - name: Commit sentinel snapshot if changed
         if: success()
         run: |
@@ -1468,12 +1471,17 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${APP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git add .ci/state/sentinel-snapshot.json
           git commit -m "chore(housekeeping): update sentinel snapshot [skip ci]" \
                      -m "Captured by run ${GITHUB_RUN_ID} (commit ${GITHUB_SHA})."
+          # Pull-with-rebase guards against the rare race where a parallel
+          # housekeeping push lands first; without it, `git push` rejects
+          # for non-fast-forward.
+          git pull --rebase origin main || true
           git push origin HEAD:main
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_RUN_ID: ${{ github.run_id }}
 
