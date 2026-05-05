@@ -1,8 +1,8 @@
 {
-  "captured_at": "2026-05-05T03:24:00Z",
-  "captured_by_run": "25355300821",
-  "captured_by_commit": "1e6b2d040",
-  "_note": "Initial snapshot seeded from the Check Release State output of run 25355300821. v1.1.0 desktop sentinel has been missing for some time; v1.1.2 cli + desktop sentinels are missing post-housekeeping race. Both observations carry forward as the baseline so the next sentinel disappearance is unambiguously distinguishable from the baseline anomaly.",
+  "captured_at": "2026-05-05T05:50:46Z",
+  "captured_by_run": "25360147930",
+  "captured_by_commit": "ff47696d4",
+  "_note": "Snapshot seeded from observed R2 state plus the v1.1.2 backfill performed by Backfill Release Sentinel run 25360147930. v1.1.0 desktop is still absent; that's pre-existing (CLI sentinel without desktop is allowed by the validator). The next housekeeping run (>=ff47696d4) will overwrite this file via the new Phase 8c.5 commit-back step.",
   "cli": [
     "v1.0.5",
     "v1.0.6",
@@ -15,7 +15,8 @@
     "v1.0.13",
     "v1.0.14",
     "v1.1.0",
-    "v1.1.1"
+    "v1.1.1",
+    "v1.1.2"
   ],
   "desktop": [
     "v1.0.5",
@@ -28,6 +29,7 @@
     "v1.0.12",
     "v1.0.13",
     "v1.0.14",
-    "v1.1.1"
+    "v1.1.1",
+    "v1.1.2"
   ]
 }
