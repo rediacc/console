@@ -1,28 +1,16 @@
 name: Release
 
-# Publish workflow -- called from CI on push-to-main, or manually.
-# Promotes Docker images, creates git tag + GitHub Release, deploys edge worker.
-# Version comes from git tags (no version bump commits).
+# Publish workflow -- dispatched from CI's finalize-release-sentinel job
+# (right after the sentinel is sealed), or manually. Promotes Docker images,
+# creates git tag + GitHub Release, deploys edge worker.
+#
+# We dispatch from finalize (rather than firing on workflow_run) so a CI
+# run that gets force-cancelled mid-housekeeping after the sentinel was
+# already written cannot strand a sealed version without a tag. The
+# sentinel write IS the atomic commit point; this workflow only runs once
+# the sentinel is committed.
 
 on:
-  workflow_run:
-    workflows: ["Console CI"]
-    types: [completed]
-    branches: [main]
-  workflow_call:
-    inputs:
-      next_version:
-        description: 'Version to publish (calculated from git tags)'
-        required: true
-        type: string
-      bump_type:
-        description: 'Bump type (patch, minor, major)'
-        required: true
-        type: string
-      channel:
-        description: 'Release channel (Docker tag + R2 channel path)'
-        required: true
-        type: string
   workflow_dispatch:
     inputs:
       ci_run_id:
@@ -66,11 +54,6 @@ jobs:
   init:
     name: Initialize
     runs-on: ubuntu-latest
-    if: >-
-      (github.event_name == 'workflow_dispatch') ||
-      (github.event_name == 'workflow_run'
-        && github.event.workflow_run.conclusion == 'success'
-        && github.event.workflow_run.event == 'push')
     outputs:
       ci_run_id: ${{ steps.resolve.outputs.ci_run_id }}
       ci_sha: ${{ steps.resolve.outputs.ci_sha }}
@@ -100,21 +83,15 @@ jobs:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      # Resolve CI run context from workflow_call inputs or workflow_dispatch input
       - name: Resolve CI run context
         id: resolve
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
-            echo "ci_run_id=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
-            echo "ci_sha=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
-          else
-            CI_RUN_ID="${{ inputs.ci_run_id || github.run_id }}"
-            CI_SHA=$(gh api "repos/${{ github.repository }}/actions/runs/${CI_RUN_ID}" --jq '.head_sha' 2>/dev/null || echo "${{ github.sha }}")
-            echo "ci_run_id=${CI_RUN_ID}" >> $GITHUB_OUTPUT
-            echo "ci_sha=${CI_SHA}" >> $GITHUB_OUTPUT
-          fi
+          CI_RUN_ID="${{ inputs.ci_run_id || github.run_id }}"
+          CI_SHA=$(gh api "repos/${{ github.repository }}/actions/runs/${CI_RUN_ID}" --jq '.head_sha' 2>/dev/null || echo "${{ github.sha }}")
+          echo "ci_run_id=${CI_RUN_ID}" >> $GITHUB_OUTPUT
+          echo "ci_sha=${CI_SHA}" >> $GITHUB_OUTPUT
 
       - name: Stale ref check (workers-only)
         if: inputs.deploy_workers_only == true
@@ -126,18 +103,13 @@ jobs:
           fi
           echo "::notice::Workers-only deploy from SHA: ${CI_SHA} (${BEHIND} commits behind HEAD)"
 
-      # Edge is production: every push to main auto-releases a new patch.
-      # `bump-minor` / `bump-major` labels on the merged PR escalate the bump.
-      # workflow_dispatch: release_mode is retry (re-publish current tag) or
-      # patch (auto-bump from PR labels — same path as push-to-main). The
-      # bump-type detection in CI's initialize step is the single source of
-      # truth so R2 manifest, Docker tags, git tag, and Homebrew never drift.
+      # release_mode=patch (default for finalize-dispatched runs and manual
+      # bumps) recomputes next_version from PR labels + git tags. release_mode=retry
+      # re-deploys the latest tag without bumping. Workers-only is the emergency
+      # path that skips version bump and publish entirely.
       - name: Decide release mode
         id: skip-check
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          # Workers-only: deploy Workers without version bump (emergency path).
           if [[ "${{ inputs.deploy_workers_only }}" == "true" ]]; then
             echo "skip_release=false" >> $GITHUB_OUTPUT
             echo "retry_mode=false" >> $GITHUB_OUTPUT
@@ -147,25 +119,16 @@ jobs:
           fi
           echo "workers_only=false" >> $GITHUB_OUTPUT
 
-          # Manual dispatch respects release_mode.
-          if [[ "${{ github.event_name }}" != "workflow_run" ]]; then
-            RELEASE_MODE="${{ inputs.release_mode }}"
-            if [[ "$RELEASE_MODE" != "retry" ]]; then
-              echo "skip_release=false" >> $GITHUB_OUTPUT
-              echo "retry_mode=false" >> $GITHUB_OUTPUT
-              echo "::notice::Release mode: ${RELEASE_MODE} bump -- will create new release"
-            else
-              echo "skip_release=false" >> $GITHUB_OUTPUT
-              echo "retry_mode=true" >> $GITHUB_OUTPUT
-              echo "::notice::Retry mode -- will re-deploy current version without bumping"
-            fi
-            exit 0
+          RELEASE_MODE="${{ inputs.release_mode }}"
+          if [[ "$RELEASE_MODE" == "retry" ]]; then
+            echo "skip_release=false" >> $GITHUB_OUTPUT
+            echo "retry_mode=true" >> $GITHUB_OUTPUT
+            echo "::notice::Retry mode -- will re-deploy current version without bumping"
+          else
+            echo "skip_release=false" >> $GITHUB_OUTPUT
+            echo "retry_mode=false" >> $GITHUB_OUTPUT
+            echo "::notice::Release mode: ${RELEASE_MODE} bump -- will create new release"
           fi
-
-          # workflow_run path: auto-release on every main CI success.
-          echo "retry_mode=false" >> $GITHUB_OUTPUT
-          echo "skip_release=false" >> $GITHUB_OUTPUT
-          echo "::notice::Auto-release: every merge to main produces a new edge release"
 
       # Retry/workers-only mode: use current version from latest tag without bumping
       - name: Resolve version (retry/workers-only mode)

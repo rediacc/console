@@ -941,120 +941,6 @@ r2_rm_recursive() {
     log_info "  Deleted s3://${R2_BUCKET}/${prefix}${label:+ ($label)}"
 }
 
-# Path to the checked-in snapshot of the most recently observed R2 sentinel
-# set. Phase 8c.5 reads this to detect disappearances; persist_sentinel_snapshot
-# writes it after Phase 8d completes successfully.
-SENTINEL_SNAPSHOT_PATH="${SCRIPT_DIR}/../../state/sentinel-snapshot.json"
-
-# Compare the live R2 sentinel set against the prior snapshot. Versions in
-# the prior snapshot but not in the live listing are "disappeared". A
-# disappearance for a version that still has a git tag is a loud failure
-# (hardcoded recovery path: the Backfill Release Sentinel workflow).
-# Disappearances paired with deleted tags are warnings only — they're the
-# expected output of a planned scrub-sentinel.sh + tag delete.
-#
-# Side effects:
-#   - Sets globals SENTINEL_LIVE_CLI / SENTINEL_LIVE_DESKTOP for later
-#     persistence. Both are space-separated v<semver> strings.
-#   - Returns non-zero if any tagged version's sentinel is missing.
-sentinel_diff_phase() {
-    log_step "  8c.5: sentinel-set diff vs prior snapshot"
-    local cli_live desktop_live cli_prev desktop_prev
-    cli_live="$(rsv_list_sentinels cli | sort -V | tr '\n' ' ' | sed 's/ *$//')"
-    desktop_live="$(rsv_list_sentinels desktop | sort -V | tr '\n' ' ' | sed 's/ *$//')"
-    SENTINEL_LIVE_CLI="$cli_live"
-    SENTINEL_LIVE_DESKTOP="$desktop_live"
-
-    if [[ ! -f "$SENTINEL_SNAPSHOT_PATH" ]]; then
-        log_warn "  8c.5: no prior snapshot at $SENTINEL_SNAPSHOT_PATH; nothing to diff (will write at end of phase)"
-        return 0
-    fi
-
-    cli_prev="$(jq -r '.cli // [] | join(" ")' "$SENTINEL_SNAPSHOT_PATH" 2>/dev/null || echo "")"
-    desktop_prev="$(jq -r '.desktop // [] | join(" ")' "$SENTINEL_SNAPSHOT_PATH" 2>/dev/null || echo "")"
-
-    local prev_run prev_commit prev_at
-    prev_run="$(jq -r '.captured_by_run // ""' "$SENTINEL_SNAPSHOT_PATH" 2>/dev/null)"
-    prev_commit="$(jq -r '.captured_by_commit // ""' "$SENTINEL_SNAPSHOT_PATH" 2>/dev/null)"
-    prev_at="$(jq -r '.captured_at // ""' "$SENTINEL_SNAPSHOT_PATH" 2>/dev/null)"
-
-    local removed_count=0 fatal=0
-    local product prev_versions live_versions v lv found
-    for product in cli desktop; do
-        if [[ "$product" == "cli" ]]; then
-            prev_versions="$cli_prev"
-            live_versions="$cli_live"
-        else
-            prev_versions="$desktop_prev"
-            live_versions="$desktop_live"
-        fi
-        for v in $prev_versions; do
-            found=0
-            for lv in $live_versions; do
-                if [[ "$v" == "$lv" ]]; then
-                    found=1
-                    break
-                fi
-            done
-            if ((!found)); then
-                removed_count=$((removed_count + 1))
-                # Loud failure when a tagged version's sentinel disappears.
-                # Probe via gh because git ls-remote is the source of truth
-                # for "tag exists on origin", not the local clone.
-                if gh api "repos/${RELEASE_REPO}/git/refs/tags/$v" --silent 2>/dev/null; then
-                    log_error "  8c.5: ${product}/${v}/.released DISAPPEARED since run ${prev_run:-<unknown>} (${prev_at:-?}, commit ${prev_commit:-?})"
-                    log_error "  8c.5: tag $v still exists on origin — recovery: dispatch Backfill Release Sentinel workflow with version=$v"
-                    echo "::error title=Sentinel disappeared::${product}/${v}/.released vanished since run ${prev_run:-?}; tag $v still exists; dispatch backfill-release-sentinel.yml"
-                    fatal=1
-                else
-                    log_warn "  8c.5: ${product}/${v}/.released disappeared and tag $v also gone (planned scrub assumed)"
-                fi
-            fi
-        done
-    done
-
-    log_info "  8c.5: snapshot age=${prev_at:-?} (run ${prev_run:-?}, commit ${prev_commit:-?})"
-    log_info "  8c.5: removed=$removed_count cli_live=$(echo "$cli_live" | wc -w) desktop_live=$(echo "$desktop_live" | wc -w)"
-
-    if ((fatal)); then
-        log_error "  8c.5: a sentinel for a still-tagged version disappeared since the last run"
-        log_error "  8c.5: NOT writing snapshot (next run will diff against the same prior to keep evidence)"
-        return 1
-    fi
-    return 0
-}
-
-# Write the live sentinel set to the snapshot file so the next housekeeping
-# run has a comparison baseline. Only call after Phase 8d completes cleanly;
-# if the diff phase flagged a fatal disappearance, leave the snapshot stale
-# so the evidence survives until manually resolved.
-persist_sentinel_snapshot() {
-    [[ -z "${SENTINEL_LIVE_CLI:-}${SENTINEL_LIVE_DESKTOP:-}" ]] && return 0
-    if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "  [DRY-RUN] would persist sentinel snapshot at $SENTINEL_SNAPSHOT_PATH"
-        return 0
-    fi
-    local commit_sha="${GITHUB_SHA:-$(git rev-parse HEAD 2>/dev/null || echo "")}"
-    local run_id="${GITHUB_RUN_ID:-}"
-    local out_dir
-    out_dir="$(dirname "$SENTINEL_SNAPSHOT_PATH")"
-    mkdir -p "$out_dir"
-    jq -n \
-        --arg run "$run_id" \
-        --arg sha "$commit_sha" \
-        --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-        --arg cli "${SENTINEL_LIVE_CLI:-}" \
-        --arg desktop "${SENTINEL_LIVE_DESKTOP:-}" \
-        '{
-          captured_at: $at,
-          captured_by_run: $run,
-          captured_by_commit: $sha,
-          cli: ($cli | split(" ") | map(select(length > 0))),
-          desktop: ($desktop | split(" ") | map(select(length > 0)))
-        }' >"$SENTINEL_SNAPSHOT_PATH"
-    log_info "  8c.5: snapshot written → $SENTINEL_SNAPSHOT_PATH"
-}
-
 cleanup_r2() {
     log_step "Phase 8: Cleaning up R2 orphans"
 
@@ -1161,26 +1047,6 @@ cleanup_r2() {
             r2_rm_recursive "$dead" "legacy"
         fi
     done
-
-    # 8c.5 Sentinel-set diff vs prior run --------------------------------------
-    # The release-state validator probes R2 every push but has no memory of
-    # what it saw last time, so a sentinel that disappears between runs is
-    # silent until the *next* push trips the bijection gate. We snapshot the
-    # set into a checked-in JSON file at the end of every successful
-    # housekeeping run; on the next run we diff the live listing against the
-    # snapshot. Disappearances of versions that still have a git tag are a
-    # loud failure with full forensic context (prior run id + commit) so
-    # whoever is on call can immediately reach for the Backfill Release
-    # Sentinel workflow.
-    #
-    # Sourcing the validator is idempotent — Phase 8d already does it below,
-    # but the diff phase needs rsv_list_sentinels too and runs first.
-    # shellcheck source=../lib/release-state-validator.sh
-    source "${SCRIPT_DIR}/../lib/release-state-validator.sh"
-    if ! sentinel_diff_phase; then
-        log_error "  8c.5: sentinel diff failed; aborting Phase 8 cleanup"
-        return 1
-    fi
 
     # 8d. Sentinel-aware orphan v<semver>/ sweep + drift detection ------------
     # Source of truth: cli/v${V}/.released sentinel (see
@@ -1402,12 +1268,6 @@ cleanup_r2() {
 
     # Restore strict mode for the remaining phases.
     set -e
-
-    # Persist the sentinel snapshot now that Phase 8 finished cleanly. We
-    # only get here if 8c.5 (diff) didn't trip a fatal disappearance and
-    # 8d (orphan sweep / drift detection) completed without drift findings,
-    # so the live state is "current authoritative" by definition.
-    persist_sentinel_snapshot
 }
 
 # =============================================================================

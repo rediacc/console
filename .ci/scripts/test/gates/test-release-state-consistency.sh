@@ -186,51 +186,6 @@ test_grandfather_does_not_mask_post_rollout_drift() {
     log_pass "grandfather-does-not-mask"
 }
 
-test_exempt_versions_skip_listed_only() {
-    log_test "RSV_EXEMPT_VERSIONS skips ONLY the named versions, not a range"
-    # Drift on v1.1.2 (exempted) AND v1.1.3 (not exempted) — only v1.1.3
-    # should fire. Exempt list is whitespace separated.
-    local out rc=0
-    out="$(RSV_GRANDFATHER_BEFORE="v1.0.4" RSV_EXEMPT_VERSIONS="v1.1.2" rsv_assert_bijection \
-        "" \
-        "" \
-        "$(printf 'v1.0.5\nv1.1.2\nv1.1.3\n')" \
-        "" 2>&1)" || rc=$?
-    assert_exit_code 1 "$rc" "non-exempt drift must still fire"
-    assert_not_contains "$out" "DRIFT v1.1.2" "v1.1.2 is exempt"
-    assert_contains "$out" "DRIFT v1.1.3" "v1.1.3 is NOT exempt; drift fires"
-    assert_contains "$out" "DRIFT v1.0.5" "v1.0.5 is NOT exempt; drift fires"
-    log_pass "exempt-versions-targeted"
-}
-
-test_exempt_does_not_match_prefix() {
-    log_test "RSV_EXEMPT_VERSIONS exact match — v1.1.2 must NOT match v1.1.20"
-    local out rc=0
-    out="$(RSV_GRANDFATHER_BEFORE="v1.0.4" RSV_EXEMPT_VERSIONS="v1.1.2" rsv_assert_bijection \
-        "" \
-        "" \
-        "$(printf 'v1.1.20\n')" \
-        "" 2>&1)" || rc=$?
-    assert_exit_code 1 "$rc" "v1.1.20 must not be matched by v1.1.2 exemption"
-    assert_contains "$out" "DRIFT v1.1.20" "v1.1.20 still flagged"
-    log_pass "exempt-exact-match"
-}
-
-test_exempt_handles_multiple() {
-    log_test "RSV_EXEMPT_VERSIONS supports multiple values (whitespace separated)"
-    local out rc=0
-    out="$(RSV_GRANDFATHER_BEFORE="v1.0.4" RSV_EXEMPT_VERSIONS="v1.1.2 v1.1.5" rsv_assert_bijection \
-        "" \
-        "" \
-        "$(printf 'v1.1.2\nv1.1.5\nv1.1.7\n')" \
-        "" 2>&1)" || rc=$?
-    assert_exit_code 1 "$rc" "v1.1.7 (not exempt) still drifts"
-    assert_not_contains "$out" "DRIFT v1.1.2" "v1.1.2 is exempt"
-    assert_not_contains "$out" "DRIFT v1.1.5" "v1.1.5 is exempt"
-    assert_contains "$out" "DRIFT v1.1.7" "v1.1.7 is not exempt; drift fires"
-    log_pass "exempt-multiple"
-}
-
 test_all_committed_passes
 test_empty_state_passes
 test_orphan_prefix_not_flagged
@@ -243,8 +198,5 @@ test_in_flight_does_not_mask_other_drift
 test_prerelease_tags_ignored
 test_grandfather_excludes_old_tags
 test_grandfather_does_not_mask_post_rollout_drift
-test_exempt_versions_skip_listed_only
-test_exempt_does_not_match_prefix
-test_exempt_handles_multiple
 
 log_pass "all release-state-consistency cases"
