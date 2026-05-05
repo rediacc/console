@@ -1,0 +1,216 @@
+name: Backfill Release Sentinel
+
+# Admin-triggered recovery for a missing R2 .released sentinel. Use when the
+# Check Release State gate flags "DRIFT v<X.Y.Z>: git tag present, cli sentinel
+# missing" — the version was published (git tag + GitHub Release) but the R2
+# sentinel was lost (housekeeping race, manual scrub, etc.). This workflow
+# re-runs `.ci/scripts/deploy/write-release-sentinel.sh` for the named version
+# so the bijection check stops failing without re-running the entire CI
+# pipeline.
+#
+# The writer is idempotent (write_once_guard short-circuits if the sentinel
+# already exists), so re-running is safe.
+#
+# Guards (refuse to write unless ALL pass):
+#   1. Version matches strict semver (`v[0-9]+\.[0-9]+\.[0-9]+`).
+#   2. A GitHub Release with the version tag exists AND has at least one CLI
+#      asset attached. Prevents sealing a version that was never built.
+#   3. The git tag points at a commit reachable from `origin/main`.
+#   4. dry_run defaults to true; --execute requires the operator to set
+#      I_UNDERSTAND_THIS_WRITES_TO_R2=yes as an extra confirmation input.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to backfill (e.g. v1.1.2). Strict semver with leading v.'
+        required: true
+        type: string
+      commit_sha:
+        description: 'Commit SHA to record in the sentinel payload. Optional; defaults to the commit pointed at by the tag.'
+        required: false
+        type: string
+        default: ''
+      channel:
+        description: 'Release channel.'
+        required: true
+        type: choice
+        options:
+          - edge
+          - stable
+        default: edge
+      include_desktop:
+        description: 'Also write the desktop sentinel.'
+        required: true
+        type: boolean
+        default: true
+      dry_run:
+        description: 'Dry run — print what would be written without touching R2.'
+        required: true
+        type: boolean
+        default: true
+      confirmation:
+        description: 'Required for non-dry-run: type exactly "I_UNDERSTAND_THIS_WRITES_TO_R2=yes" to proceed.'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backfill-release-sentinel-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    name: Backfill ${{ inputs.version }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    steps:
+      - name: Generate app token
+        id: app-token
+        uses: ./.github/actions/app-token
+        with:
+          preset: readonly
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install jq
+        run: command -v jq >/dev/null || sudo apt-get install -y -qq jq
+
+      - name: Validate version format
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version '$VERSION' (expected strict semver, e.g. v1.0.5)"
+            exit 1
+          fi
+          echo "✓ version format OK"
+
+      - name: Resolve commit SHA from tag
+        id: resolve
+        env:
+          VERSION: ${{ inputs.version }}
+          INPUT_SHA: ${{ inputs.commit_sha }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$INPUT_SHA" ]]; then
+            SHA="$INPUT_SHA"
+            echo "→ using operator-supplied commit_sha: $SHA"
+          else
+            SHA="$(git rev-list -n1 "$VERSION" 2>/dev/null || true)"
+            if [[ -z "$SHA" ]]; then
+              echo "::error::tag $VERSION not found in this checkout; pass commit_sha explicitly"
+              exit 1
+            fi
+            echo "→ resolved $VERSION → $SHA"
+          fi
+          # Reachability check: tag must point at something on main.
+          if ! git merge-base --is-ancestor "$SHA" origin/main 2>/dev/null; then
+            echo "::error::commit $SHA is not reachable from origin/main"
+            echo "::error::refusing to backfill a sentinel for a detached tag"
+            exit 1
+          fi
+          echo "commit_sha=$SHA" >>"$GITHUB_OUTPUT"
+          echo "✓ commit reachable from origin/main"
+
+      - name: Verify GitHub Release exists with CLI assets
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$VERSION" --repo "${GITHUB_REPOSITORY}" --json tagName,assets >/tmp/release.json 2>/tmp/release.err; then
+            echo "::error::no GitHub Release found for $VERSION"
+            cat /tmp/release.err
+            exit 1
+          fi
+          # Count CLI assets (rdc-*). Filename pattern matches the existing
+          # release flow's artifact naming.
+          asset_count="$(jq '[.assets[] | select(.name | startswith("rdc-"))] | length' /tmp/release.json)"
+          if [[ "$asset_count" -lt 1 ]]; then
+            echo "::error::Release $VERSION has no rdc-* CLI assets"
+            echo "::error::refusing to seal a version that was never built/published"
+            jq '.assets | map(.name)' /tmp/release.json
+            exit 1
+          fi
+          echo "✓ Release $VERSION has $asset_count rdc-* CLI asset(s)"
+
+      - name: Confirm non-dry-run
+        if: ${{ inputs.dry_run == false }}
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          if [[ "$CONFIRMATION" != "I_UNDERSTAND_THIS_WRITES_TO_R2=yes" ]]; then
+            echo "::error::dry_run=false requires confirmation input set to exactly:"
+            echo "::error::  I_UNDERSTAND_THIS_WRITES_TO_R2=yes"
+            echo "::error::got: '${CONFIRMATION:-<empty>}'"
+            exit 1
+          fi
+          echo "✓ confirmation OK; will write to R2"
+
+      - name: Write sentinel
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          VERSION: ${{ inputs.version }}
+          CHANNEL: ${{ inputs.channel }}
+          COMMIT_SHA: ${{ steps.resolve.outputs.commit_sha }}
+          INCLUDE_DESKTOP: ${{ inputs.include_desktop }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          # Strip leading v for the writer (it expects 1.1.2, not v1.1.2).
+          NUMERIC_VERSION="${VERSION#v}"
+          ARGS=(
+            --version "$NUMERIC_VERSION"
+            --channel "$CHANNEL"
+            --commit-sha "$COMMIT_SHA"
+          )
+          if [[ "$INCLUDE_DESKTOP" == "true" ]]; then
+            ARGS+=(--desktop)
+          fi
+          if [[ "$DRY_RUN" == "true" ]]; then
+            echo "→ DRY RUN — would invoke:"
+            printf '   .ci/scripts/deploy/write-release-sentinel.sh'
+            printf ' %q' "${ARGS[@]}"
+            printf '\n'
+            echo "→ no R2 mutation performed"
+            exit 0
+          fi
+          echo "→ writing sentinel(s) for $VERSION on channel $CHANNEL (commit $COMMIT_SHA)"
+          .ci/scripts/deploy/write-release-sentinel.sh "${ARGS[@]}"
+
+      - name: Re-probe R2 sentinel state
+        if: ${{ inputs.dry_run == false }}
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          VERSION: ${{ inputs.version }}
+          INCLUDE_DESKTOP: ${{ inputs.include_desktop }}
+        run: |
+          set -euo pipefail
+          source .ci/scripts/lib/release-state-validator.sh
+          export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
+          export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+          export AWS_DEFAULT_REGION=auto
+          missing=0
+          for product in cli $([[ "$INCLUDE_DESKTOP" == "true" ]] && echo desktop); do
+            if rsv_sentinel_exists "$product" "$VERSION"; then
+              echo "✓ $product/$VERSION/.released present in R2"
+            else
+              echo "::error::$product/$VERSION/.released NOT present after write"
+              missing=1
+            fi
+          done
+          [[ $missing -eq 0 ]]
