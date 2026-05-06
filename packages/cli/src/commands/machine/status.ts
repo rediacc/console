@@ -404,8 +404,8 @@ export function registerQueryCommand(machine: Command, program: Command): void {
         // post-deploy convergence without hand-parsing the JSON.
         // Exit code 2 matches the precedent in machine/health.ts (0 = clean,
         // 1 = warn, 2 = error).
-        if (options.strict && (listResult?.health_drift?.entries?.length ?? 0) > 0) {
-          const count = listResult.health_drift?.entries?.length ?? 0;
+        if (options.strict && (listResult.health_drift?.entries.length ?? 0) > 0) {
+          const count = listResult.health_drift?.entries.length ?? 0;
           process.stderr.write(`\n${t('commands.machine.query.strictDriftDetected', { count })}\n`);
           process.exitCode = 2;
         }
