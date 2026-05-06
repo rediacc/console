@@ -734,15 +734,39 @@ jobs:
           echo "Smoke test passed"
 
   # ============================================================================
-  # TAG & GITHUB RELEASE - Runs AFTER edge deploys + smoke-test succeed.
-  # Creates the git tag, tags submodules, updates Homebrew formula, publishes
-  # the GitHub Release. Ordering this last means a failed deploy does not
-  # leave an orphan tag pointing at a broken release.
+  # POST-PUBLISH INSTALL VALIDATION - Reuses ct-install-methods.yml against
+  # the live channel. Symmetric with ci.yml's pre-publish validate-install
+  # (same workflow, same script). Catches state corruption between staging
+  # validation and live R2 (CDN purge bugs, R2 outage, accidental scrubs).
+  # The `quick` install method runs `install.sh | bash` end-to-end inside
+  # Ubuntu/Debian containers — it would have failed loud if v1.1.4's
+  # versioned R2 path was empty.
+  # ============================================================================
+  validate-install-published:
+    name: Validate Install (post-publish)
+    needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test]
+    if: >-
+      success() &&
+      needs.init.outputs.skip_release != 'true' &&
+      needs.init.outputs.workers_only != 'true'
+    uses: ./.github/workflows/ct-install-methods.yml
+    with:
+      version: ${{ needs.init.outputs.next_version }}
+      repo_channel: ${{ needs.init.outputs.channel }}
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+
+  # ============================================================================
+  # TAG & GITHUB RELEASE - Runs AFTER edge deploys + smoke-test + post-publish
+  # install validation succeed. Creates the git tag, tags submodules, updates
+  # Homebrew formula, publishes the GitHub Release. Ordering this last means a
+  # failed deploy or broken install does not leave an orphan tag pointing at a
+  # broken release.
   # ============================================================================
   tag-and-release:
     name: Tag & GitHub Release
     runs-on: ubuntu-latest
-    needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test]
+    needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test, validate-install-published]
     if: >-
       success() &&
       needs.init.outputs.skip_release != 'true' &&
@@ -845,15 +869,19 @@ jobs:
             "${files[@]}"
 
   # ============================================================================
-  # CLEANUP ON FAILURE - Remove channel artifacts if publish fails
+  # CLEANUP ON FAILURE - Remove the channel-tagged GHCR Docker image when a
+  # pre-tag release stage fails. Scope is intentionally narrow: under the new
+  # architecture (finalize-release-sentinel writes the R2 sentinel BEFORE
+  # cd-v2 runs), the .released sentinel + cli/v${V}/ bytes are the atomic
+  # commit point — sealed before this workflow even starts. Scrubbing them on
+  # failure is destructive (a previous version of this job did that and wiped
+  # cli/v1.1.4/ during a retry-mode npm-install ECONNRESET). Channel Docker
+  # tags are mutable, so cleaning them up here is fine.
   # ============================================================================
   cleanup-on-failure:
     name: Cleanup (on failure)
     runs-on: ubuntu-latest
     needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test]
-    # Fire when any pre-tag release stage fails. Once tag-and-release
-    # succeeds the versioned paths are legitimately published and must
-    # not be scrubbed, so tag-and-release is deliberately NOT in needs.
     if: |
       always() &&
       needs.init.outputs.skip_release != 'true' &&
@@ -894,40 +922,6 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-
-      - name: Cleanup R2 versioned paths
-        # Scrub cli/v${next_version}/ + desktop/v${next_version}/ so the
-        # next retry can re-upload past the write-once guard. Only runs
-        # on pre-tag failure -- tag-and-release success never triggers
-        # this job so legitimate releases stay intact.
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: auto
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          NEXT_VERSION: ${{ needs.init.outputs.next_version }}
-          RELEASES_BUCKET: rediacc-releases
-        run: |
-          if [[ -z "${NEXT_VERSION:-}" ]]; then
-            echo "::warning::next_version not set; skipping R2 versioned-path cleanup"
-            exit 0
-          fi
-
-          echo "## Cleanup R2 Versioned Paths (Failure)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Purging \`cli/v${NEXT_VERSION}/\` and \`desktop/v${NEXT_VERSION}/\` so the next retry can re-upload." >> $GITHUB_STEP_SUMMARY
-
-          for prefix in "cli/v${NEXT_VERSION}/" "desktop/v${NEXT_VERSION}/"; do
-            count=$(aws s3 ls "s3://${RELEASES_BUCKET}/${prefix}" --recursive \
-              --endpoint-url "$R2_ENDPOINT" 2>/dev/null | wc -l)
-            if [[ "$count" -eq 0 ]]; then
-              echo "  \`${prefix}\` already empty" >> $GITHUB_STEP_SUMMARY
-              continue
-            fi
-            aws s3 rm "s3://${RELEASES_BUCKET}/${prefix}" --recursive \
-              --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null || true
-            echo "  Deleted \`${prefix}\` (${count} objects)" >> $GITHUB_STEP_SUMMARY
-          done
 
   # Housekeeping moved to ci.yml so cleanup runs on every successful push to
   # main (not only when a release ships). See housekeeping job in ci.yml.
