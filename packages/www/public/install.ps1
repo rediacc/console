@@ -12,7 +12,6 @@ $ErrorActionPreference = "Stop"
 
 # Configuration (can be overridden via environment variables)
 $ReleasesUrl = if ($env:REDIACC_RELEASES_URL) { $env:REDIACC_RELEASES_URL } else { "https://releases.rediacc.com" }
-$Channel = if ($env:REDIACC_CHANNEL) { $env:REDIACC_CHANNEL } else { "stable" }
 $ServerUrl = if ($env:REDIACC_SERVER_URL) { $env:REDIACC_SERVER_URL } else { "" }
 $UserAgent = "Rediacc-Installer/1.0"
 
@@ -25,6 +24,23 @@ $InstallDir = "$env:LOCALAPPDATA\rediacc\bin"
 $LegacyVersionsDir = "$env:LOCALAPPDATA\rediacc\versions"
 $StagedUpdateDir = "$env:LOCALAPPDATA\rediacc\cache\staged-update"
 $ConfigDir = "$env:APPDATA\rediacc"
+
+# Channel resolution. Order:
+#   1. REDIACC_CHANNEL env var (explicit caller intent - wins).
+#   2. Existing server.json::updateChannel (the channel `rdc update` uses).
+#   3. Default 'stable'.
+# Reading server.json on a re-install avoids the trap where install.ps1 picks
+# `stable` while `rdc update` reads server.json::updateChannel=edge and jumps
+# the binary on the very next invocation. Both paths now agree by default.
+$Channel = if ($env:REDIACC_CHANNEL) {
+    $env:REDIACC_CHANNEL
+} else {
+    $serverJson = Join-Path $ConfigDir "server.json"
+    $existing = if (Test-Path $serverJson) {
+        try { (Get-Content $serverJson -Raw | ConvertFrom-Json).updateChannel } catch { $null }
+    } else { $null }
+    if ($existing) { $existing } else { "stable" }
+}
 
 function Write-ColorOutput {
     param(

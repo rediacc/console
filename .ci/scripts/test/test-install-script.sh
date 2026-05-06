@@ -152,6 +152,64 @@ test_no_versions_constant() {
     log_pass "legacy VERSIONS_DIR / MAX_VERSIONS constants removed"
 }
 
+# Channel resolution (env > server.json::updateChannel > 'stable').
+# Asymmetry between install.sh defaulting to stable and `rdc update` reading
+# server.json caused a real user-visible bug: stable install followed by an
+# immediate "update" jumping to edge. These tests pin the unified contract.
+
+test_channel_default_stable_when_unset() {
+    HOME="$(fresh_home)"
+    unset REDIACC_CHANNEL
+    source_install "$HOME"
+    [[ "$CHANNEL" == "stable" ]] || log_fail "no env, no server.json -> CHANNEL must be stable, got: $CHANNEL"
+    log_pass "no env, no server.json -> stable"
+}
+
+test_channel_inherits_from_server_json() {
+    HOME="$(fresh_home)"
+    unset REDIACC_CHANNEL
+    mkdir -p "$HOME/.config/rediacc"
+    cat >"$HOME/.config/rediacc/server.json" <<'EOF'
+{"accountServer":"https://eu.rediacc.com","updateChannel":"edge"}
+EOF
+    source_install "$HOME"
+    [[ "$CHANNEL" == "edge" ]] || log_fail "server.json updateChannel=edge must be inherited, got: $CHANNEL"
+    log_pass "no env + server.json updateChannel=edge -> edge"
+}
+
+test_channel_env_overrides_server_json() {
+    HOME="$(fresh_home)"
+    mkdir -p "$HOME/.config/rediacc"
+    cat >"$HOME/.config/rediacc/server.json" <<'EOF'
+{"updateChannel":"edge"}
+EOF
+    REDIACC_CHANNEL=stable source_install "$HOME"
+    [[ "$CHANNEL" == "stable" ]] || log_fail "REDIACC_CHANNEL=stable must override server.json edge, got: $CHANNEL"
+    log_pass "env REDIACC_CHANNEL=stable overrides server.json edge"
+}
+
+test_channel_malformed_server_json_falls_back() {
+    HOME="$(fresh_home)"
+    unset REDIACC_CHANNEL
+    mkdir -p "$HOME/.config/rediacc"
+    printf 'not even valid json {{{' >"$HOME/.config/rediacc/server.json"
+    source_install "$HOME"
+    [[ "$CHANNEL" == "stable" ]] || log_fail "malformed server.json must fall back to stable, got: $CHANNEL"
+    log_pass "malformed server.json -> stable fallback"
+}
+
+test_channel_server_json_without_updateChannel() {
+    HOME="$(fresh_home)"
+    unset REDIACC_CHANNEL
+    mkdir -p "$HOME/.config/rediacc"
+    cat >"$HOME/.config/rediacc/server.json" <<'EOF'
+{"accountServer":"https://eu.rediacc.com","region":"eu"}
+EOF
+    source_install "$HOME"
+    [[ "$CHANNEL" == "stable" ]] || log_fail "server.json without updateChannel must default to stable, got: $CHANNEL"
+    log_pass "server.json without updateChannel -> stable"
+}
+
 test_detect_platform
 test_detect_arch
 test_write_install_config_default_noop
@@ -160,6 +218,11 @@ test_write_install_config_custom_releases
 test_cleanup_legacy_state_removes_versions_dir
 test_cleanup_legacy_state_removes_staged_update
 test_no_versions_constant
+test_channel_default_stable_when_unset
+test_channel_inherits_from_server_json
+test_channel_env_overrides_server_json
+test_channel_malformed_server_json_falls_back
+test_channel_server_json_without_updateChannel
 
 echo ""
 log_pass "all install.sh unit cases"

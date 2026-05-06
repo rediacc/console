@@ -18,8 +18,28 @@ set -euo pipefail
 
 # Configuration (can be overridden via environment variables)
 RELEASES_URL="${REDIACC_RELEASES_URL:-https://releases.rediacc.com}"
-CHANNEL="${REDIACC_CHANNEL:-stable}"
 SERVER_URL="${REDIACC_SERVER_URL:-}"
+
+# Channel resolution. Order:
+#   1. REDIACC_CHANNEL env var (explicit caller intent — wins).
+#   2. Existing server.json::updateChannel (the channel `rdc update` uses).
+#   3. Default 'stable'.
+# Reading server.json on a re-install avoids the trap where install.sh picks
+# `stable` while `rdc update` reads server.json::updateChannel=edge and jumps
+# the binary on the very next invocation. Both paths now agree by default.
+SERVER_JSON="${XDG_CONFIG_HOME:-$HOME/.config}/rediacc/server.json"
+if [[ -z "${REDIACC_CHANNEL:-}" && -f "$SERVER_JSON" ]]; then
+    # Best-effort grep+sed (jq not assumed). Matches "updateChannel": "value".
+    # Trailing `|| true` keeps a no-match (most users, who never set a channel)
+    # from tripping `set -o pipefail`. Empty result falls through to the
+    # 'stable' default below.
+    EXISTING_CHANNEL=$( { grep -oE '"updateChannel"[[:space:]]*:[[:space:]]*"[^"]+"' "$SERVER_JSON" 2>/dev/null \
+        | sed -E 's/.*"([^"]+)"$/\1/' | head -1; } || true)
+    if [[ -n "${EXISTING_CHANNEL:-}" ]]; then
+        REDIACC_CHANNEL="$EXISTING_CHANNEL"
+    fi
+fi
+CHANNEL="${REDIACC_CHANNEL:-stable}"
 
 # Install layout: single binary at ${INSTALL_PREFIX}/bin/rdc, symlinked from
 # ${BIN_DIR}/rdc so ${BIN_DIR} on $PATH reaches it. rdc update replaces the
