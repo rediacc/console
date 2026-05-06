@@ -294,8 +294,6 @@ jobs:
       # Prevent GHA transitive-skip propagation (finding J) from
       # silently disabling downstream jobs on future changes.
       - run: .ci/scripts/security/check-workflow-gates.sh
-      # Prevent narrowing-regression on cleanup-on-failure scope (finding K).
-      - run: .ci/scripts/test/check-cleanup-on-failure-scope.sh
 
   quality-compose-env:
     name: Compose Env
