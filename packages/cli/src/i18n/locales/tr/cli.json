@@ -959,7 +959,7 @@
         "infrastructure": "Altyapı",
         "noData": "Durum verisi mevcut değil",
         "storageHealthHint": "İpucu: BTRFS parçalanmasını ve repo başına reflink tasarrufunu görmek için --storage-health ile çalıştırın",
-        "strictDriftDetected": "--strict: {{count}} container(s) past drift threshold; exiting non-zero",
+        "strictDriftDetected": "--strict: {{count}} konteyner sapma eşiğini aştı; sıfır olmayan koduyla çıkılıyor",
         "syncCertsFailed": "Sertifika önbelleği senkronizasyonu başarısız: {{error}}"
       },
       "rename": {
@@ -2604,7 +2604,7 @@
     "queryRepositories": "Yalnızca depoları dahil et",
     "queryServices": "Yalnızca servisleri dahil et",
     "queryStorageHealth": "Depo başına BTRFS parçalanma ve reflink tasarruflarını göster",
-    "queryStrict": "Exit non-zero (code 2) if any container has crossed the health-drift threshold",
+    "queryStrict": "Herhangi bir konteyner sağlık sapma eşiğini aştıysa sıfır olmayan kodla (kod 2) çık",
     "querySyncCerts": "Sorgu sonrasında makineden ACME sertifika önbelleğini de çek",
     "querySystem": "Yalnızca sistem bilgilerini dahil et",
     "quiet": "Bilgilendirme çıkışını bastır",

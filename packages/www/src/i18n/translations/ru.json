@@ -316,14 +316,7 @@
     }
   },
   "logoWall": {
-    "categories": [
-      "Git",
-      "CI/CD",
-      "Контейнеры",
-      "Базы данных",
-      "Мониторинг",
-      "Хранилище"
-    ],
+    "categories": ["Git", "CI/CD", "Контейнеры", "Базы данных", "Мониторинг", "Хранилище"],
     "title": "Работает с вашей инфраструктурой"
   },
   "metrics": {
@@ -590,16 +583,12 @@
           "title": "5. Наш подход к аналитике"
         },
         "changes": {
-          "content": [
-            "При введении дополнительных cookie мы обновим эту политику."
-          ],
+          "content": ["При введении дополнительных cookie мы обновим эту политику."],
           "id": "changes",
           "title": "7. Изменения в этой Политике"
         },
         "cookiesWeUse": {
-          "content": [
-            "Мы используем только один файл cookie:"
-          ],
+          "content": ["Мы используем только один файл cookie:"],
           "id": "cookies-we-use",
           "subsections": {
             "languageCookie": {
@@ -641,9 +630,7 @@
           "title": "2. Что такое файлы cookie?"
         },
         "whatWeDontUse": {
-          "content": [
-            "Следующие технологии <strong>не</strong> используются на нашем сайте:"
-          ],
+          "content": ["Следующие технологии <strong>не</strong> используются на нашем сайте:"],
           "content2": [
             "Примечание: Данная Политика использования файлов cookie распространяется на маркетинговый сайт Rediacc. Наши программные продукты (Веб-приложение, CLI, Middleware, Bridge) собирают отдельную телеметрию использования, которая не использует файлы cookie. Подробнее о телеметрии продукта см. в нашей <a href=\"telemetry-policy\">Политике телеметрии</a>."
           ],
@@ -800,9 +787,7 @@
                 "Стандартная реализация (9 999 долларов США) или многоуровневые пакеты (маленький 7 499 долларов США · Средний 14 999 долларов США · Большой 29 999 долларов США · Специальный корпоративный пакет)",
                 "Участие в реагировании на чрезвычайные ситуации (29 999 долларов США по запросу)"
               ],
-              "included": [
-                "Документация для самообслуживания, видеоуроки и форум сообщества."
-              ],
+              "included": ["Документация для самообслуживания, видеоуроки и форум сообщества."],
               "planId": "сообщество"
             },
             {
@@ -1094,10 +1079,7 @@
       },
       "trust": {
         "heading": "Безопасность и надежность корпоративного уровня",
-        "items": [
-          "Шифрование на уровне банка",
-          "Обеспеченность бесперебойной работой 99,9 %"
-        ]
+        "items": ["Шифрование на уровне банка", "Обеспеченность бесперебойной работой 99,9 %"]
       },
       "ui": {
         "anchor": "Стратегический якорь",
@@ -1542,11 +1524,7 @@
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": [
-              "rdc repo up",
-              "JSON",
-              "Done"
-            ],
+            "newSteps": ["rdc repo up", "JSON", "Done"],
             "oldLabel": "Традиционная инфраструктура",
             "oldSteps": [
               {
@@ -1768,11 +1746,7 @@
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": [
-              "$204/мес",
-              "Фикс.",
-              "Ваше"
-            ],
+            "newSteps": ["$204/мес", "Фикс.", "Ваше"],
             "oldLabel": "Облачная инфраструктура",
             "oldSteps": [
               {
@@ -1962,73 +1936,31 @@
           "features": [
             {
               "name": "Собственное размещение / on-premises",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Иммутабельность на уровне файловой системы",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Мгновенное восстановление (<5 мин)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "check", "rediacc"]
             },
             {
               "name": "Снапшоты без копирования (CoW)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Тарификация по машинам (без поюзерной)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Автоматическая верификация восстановления",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Без привязки к вендору",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "КОНКУРЕНТНЫЙ ЛАНДШАФТ",
@@ -2071,11 +2003,7 @@
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": [
-              "Обнаружение",
-              "Откат",
-              "<5 мин"
-            ],
+            "newSteps": ["Обнаружение", "Откат", "<5 мин"],
             "oldLabel": "Традиционное аварийное восстановление",
             "oldSteps": [
               {
@@ -2369,11 +2297,7 @@
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": [
-              "rdc ceph snapshot create",
-              "52s",
-              "Готово"
-            ],
+            "newSteps": ["rdc ceph snapshot create", "52s", "Готово"],
             "oldLabel": "Старый способ",
             "oldSteps": [
               {
@@ -2842,9 +2766,7 @@
                 "Стандартная реализация (9 999 долларов США) или многоуровневые пакеты (маленький 7 499 долларов США · Средний 14 999 долларов США · Большой 29 999 долларов США · Специальный корпоративный пакет)",
                 "Участие в реагировании на чрезвычайные ситуации (29 999 долларов США по запросу)"
               ],
-              "included": [
-                "Документация для самообслуживания, видеоуроки и форум сообщества."
-              ],
+              "included": ["Документация для самообслуживания, видеоуроки и форум сообщества."],
               "planId": "сообщество"
             },
             {
@@ -3131,10 +3053,7 @@
       },
       "trust": {
         "heading": "Безопасность и надежность корпоративного уровня",
-        "items": [
-          "Шифрование на уровне банка",
-          "Обеспеченность бесперебойной работой 99,9 %"
-        ]
+        "items": ["Шифрование на уровне банка", "Обеспеченность бесперебойной работой 99,9 %"]
       },
       "trustSection": {
         "heading": "Ваша инфраструктура. Ваши правила.",
@@ -3255,9 +3174,7 @@
           "title": "10. Изменения в этой Политике"
         },
         "childrenPrivacy": {
-          "content": [
-            "Наши услуги не предназначены для лиц младше 16 лет."
-          ],
+          "content": ["Наши услуги не предназначены для лиц младше 16 лет."],
           "id": "children-privacy",
           "title": "9. Конфиденциальность детей"
         },
@@ -3278,9 +3195,7 @@
           "title": "7. Безопасность данных"
         },
         "dataSharing": {
-          "content": [
-            "Мы не продаём и не сдаём в аренду ваши персональные данные третьим лицам."
-          ],
+          "content": ["Мы не продаём и не сдаём в аренду ваши персональные данные третьим лицам."],
           "id": "data-sharing",
           "items": [
             "<strong>Поставщики услуг</strong>, помогающие нам в работе платформы",
@@ -3291,9 +3206,7 @@
           "title": "4. Обмен данными и третьи стороны"
         },
         "howWeUseInformation": {
-          "content": [
-            "Мы используем собранную информацию для следующих целей:"
-          ],
+          "content": ["Мы используем собранную информацию для следующих целей:"],
           "id": "how-we-use-information",
           "items": [
             "Ответ на ваши запросы",
@@ -3307,9 +3220,7 @@
           "title": "3. Как мы используем вашу информацию"
         },
         "informationWeCollect": {
-          "content": [
-            "Мы собираем минимум информации, необходимой для предоставления услуг."
-          ],
+          "content": ["Мы собираем минимум информации, необходимой для предоставления услуг."],
           "id": "information-we-collect",
           "subsections": {
             "accountData": {
@@ -3362,9 +3273,7 @@
           "title": "1. Введение"
         },
         "yourRights": {
-          "content": [
-            "В зависимости от юрисдикции вы можете иметь следующие права:"
-          ],
+          "content": ["В зависимости от юрисдикции вы можете иметь следующие права:"],
           "content2": [
             "Свяжитесь с нами по адресу <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> для реализации ваших прав."
           ],
@@ -3435,9 +3344,7 @@
       },
       "sections": {
         "changes": {
-          "content": [
-            "Мы можем время от времени обновлять эту Политику возврата средств."
-          ],
+          "content": ["Мы можем время от времени обновлять эту Политику возврата средств."],
           "id": "changes",
           "title": "7. Изменения в этой Политике"
         },
@@ -3445,9 +3352,7 @@
           "content": [
             "Отправьте письмо на <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> с указанием:"
           ],
-          "content2": [
-            "Мы ответим в течение 5 рабочих дней."
-          ],
+          "content2": ["Мы ответим в течение 5 рабочих дней."],
           "id": "how-to-request",
           "items": [
             "Адрес электронной почты вашей учётной записи",
@@ -3458,9 +3363,7 @@
           "title": "4. Как запросить возврат"
         },
         "nonRefundable": {
-          "content": [
-            "Следующее не подлежит возврату:"
-          ],
+          "content": ["Следующее не подлежит возврату:"],
           "id": "non-refundable",
           "items": [
             "Подписки, отменённые после 14-дневного периода",
@@ -3479,9 +3382,7 @@
           "title": "1. Обзор"
         },
         "platformSubscriptions": {
-          "content": [
-            "Rediacc предлагает несколько уровней подписки:"
-          ],
+          "content": ["Rediacc предлагает несколько уровней подписки:"],
           "id": "platform-subscriptions",
           "subsections": {
             "annualSubscriptions": {
@@ -3491,9 +3392,7 @@
               "title": "2.3 Годовые подписки"
             },
             "freeTier": {
-              "content": [
-                "Уровень Community бесплатен навсегда."
-              ],
+              "content": ["Уровень Community бесплатен навсегда."],
               "title": "2.1 Бесплатный уровень"
             },
             "paidTiers": {
@@ -3512,9 +3411,7 @@
           "title": "2. Подписки на платформу"
         },
         "professionalServices": {
-          "content": [
-            "Профессиональные услуги оплачиваются почасово ($400–$1 200/час):"
-          ],
+          "content": ["Профессиональные услуги оплачиваются почасово ($400–$1 200/час):"],
           "id": "professional-services",
           "items": [
             "<strong>До начала работы:</strong> Полный возврат",
@@ -3875,11 +3772,7 @@
           ],
           "timeline": {
             "newLabel": "С REDIACC",
-            "newSteps": [
-              "Запустить пентест",
-              "47s",
-              "7 уязвимостей найдено"
-            ],
+            "newSteps": ["Запустить пентест", "47s", "7 уязвимостей найдено"],
             "oldLabel": "ЕЖЕГОДНОЕ ПЕНТЕСТИРОВАНИЕ",
             "oldSteps": [
               {
@@ -4129,122 +4022,38 @@
           "features": [
             {
               "name": "Защищённые от подмены аудиторские логи",
-              "refs": [
-                0,
-                2,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 2, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Криптографическая подпись (SHA-256)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Мгновенная генерация отчётов (CLI)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Базовое логирование операций",
-              "refs": [
-                3,
-                4,
-                5,
-                6,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [3, 4, 5, 6, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Атрибуция пользователя для каждого действия",
-              "refs": [
-                7,
-                8,
-                9,
-                10,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [7, 8, 9, 10, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Отслеживание ротации ключей",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Собственное размещение / ваша инфраструктура",
-              "refs": [
-                11,
-                12,
-                13,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [11, 12, 13, 0, 0],
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -4426,11 +4235,7 @@
           ],
           "timeline": {
             "newLabel": "С REDIACC",
-            "newSteps": [
-              "Запустить аудит",
-              "Мгновенно",
-              "Полный отчёт"
-            ],
+            "newSteps": ["Запустить аудит", "Мгновенно", "Полный отчёт"],
             "oldLabel": "СТАРЫЙ ПОДХОД",
             "oldSteps": [
               {
@@ -4688,122 +4493,38 @@
           "features": [
             {
               "name": "Автоматическая верификация восстановления",
-              "refs": [
-                4,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [4, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Полная проверка работоспособности сервисов",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Ежедневное автоматическое тестирование",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Клон с нулевым хранилищем для тестирования",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Проверка контрольных сумм / целостности файлов",
-              "refs": [
-                5,
-                6,
-                7,
-                8,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [5, 6, 7, 8, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Интеграция оповещений",
-              "refs": [
-                9,
-                10,
-                11,
-                12,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [9, 10, 11, 12, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Собственное размещение / ваша инфраструктура",
-              "refs": [
-                13,
-                14,
-                15,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [13, 14, 15, 0, 0],
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -4986,11 +4707,7 @@
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": [
-              "Бэкап",
-              "47s",
-              "Проверено"
-            ],
+            "newSteps": ["Бэкап", "47s", "Проверено"],
             "oldLabel": "Старый подход",
             "oldSteps": [
               {
@@ -5288,122 +5005,38 @@
           "features": [
             {
               "name": "Кросс-облачная репликация",
-              "refs": [
-                0,
-                4,
-                5,
-                6,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 4, 5, 6, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Переключение менее 30 секунд",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Только инкрементальная передача (98% экономии)",
-              "refs": [
-                0,
-                7,
-                8,
-                9,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 7, 8, 9, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Переключение между любыми провайдерами",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Собственное размещение, без облачного агента",
-              "refs": [
-                0,
-                10,
-                11,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 10, 11, 0, 0],
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Автоматическое переключение DNS",
-              "refs": [
-                0,
-                0,
-                12,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 12, 0, 0],
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Репликация полного стека (приложение + БД)",
-              "refs": [
-                0,
-                13,
-                14,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 13, 14, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -5587,11 +5220,7 @@
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": [
-              "Обнаружение",
-              "<30s",
-              "Онлайн"
-            ],
+            "newSteps": ["Обнаружение", "<30s", "Онлайн"],
             "oldLabel": "Старый подход",
             "oldSteps": [
               {
@@ -5986,12 +5615,7 @@
               },
               {
                 "footer": "Continuous improvement · automated",
-                "items": [
-                  "W1: ████████ 23",
-                  "W2: ████ 12",
-                  "W3: ██ 7",
-                  "W4: █ 3"
-                ],
+                "items": ["W1: ████████ 23", "W2: ████ 12", "W3: ██ 7", "W4: █ 3"],
                 "status": "-87%",
                 "title": "Тренд за 4 недели"
               }
@@ -6046,11 +5670,7 @@
           ],
           "timeline": {
             "newLabel": "С REDIACC",
-            "newSteps": [
-              "Ежедневные сканы",
-              "0 дней",
-              "Нулевые слепые зоны"
-            ],
+            "newSteps": ["Ежедневные сканы", "0 дней", "Нулевые слепые зоны"],
             "oldLabel": "ЕЖЕГОДНОЕ ПЕНТЕСТИРОВАНИЕ",
             "oldSteps": [
               {
@@ -6283,122 +5903,38 @@
           "features": [
             {
               "name": "Ключи шифрования у клиента",
-              "refs": [
-                3,
-                4,
-                5,
-                6,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [3, 4, 5, 6, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Архитектура нулевого знания",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Самостоятельная ротация ключей",
-              "refs": [
-                7,
-                8,
-                9,
-                10,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [7, 8, 9, 10, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Шифрование AES-256 при хранении",
-              "refs": [
-                11,
-                12,
-                13,
-                14,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [11, 12, 13, 14, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Изоляция ключей по репозиториям",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Шифрование при передаче",
-              "refs": [
-                15,
-                16,
-                17,
-                18,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [15, 16, 17, 18, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Собственное размещение / ваша инфраструктура",
-              "refs": [
-                19,
-                20,
-                21,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [19, 20, 21, 0, 0],
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -6580,11 +6116,7 @@
           ],
           "timeline": {
             "newLabel": "С REDIACC",
-            "newSteps": [
-              "Ваш ключ",
-              "AES-256",
-              "Zero-knowledge"
-            ],
+            "newSteps": ["Ваш ключ", "AES-256", "Zero-knowledge"],
             "oldLabel": "СТАРЫЙ ПОДХОД",
             "oldSteps": [
               {
@@ -6880,117 +6412,33 @@
           "features": [
             {
               "name": "Клонирование приложений",
-              "refs": [
-                3,
-                4,
-                5,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [3, 4, 5, 0, 0, 0],
+              "values": ["check", "check", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Клонирование баз данных",
-              "refs": [
-                0,
-                0,
-                0,
-                6,
-                7,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 6, 7, 0],
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Совместный клон приложения + БД",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Любой движок БД",
-              "refs": [
-                0,
-                0,
-                0,
-                8,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 8, 0, 0],
+              "values": ["cross", "cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Время развёртывания",
-              "refs": [
-                9,
-                10,
-                11,
-                12,
-                13,
-                0
-              ],
-              "values": [
-                "Minutes",
-                "Minutes",
-                "Minutes",
-                "Minutes",
-                "Seconds",
-                "<60s"
-              ]
+              "refs": [9, 10, 11, 12, 13, 0],
+              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"]
             },
             {
               "name": "Данные, идентичные продакшну",
-              "refs": [
-                0,
-                0,
-                0,
-                14,
-                15,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 14, 15, 0],
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -7177,11 +6625,7 @@
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": [
-              "Run",
-              "60s",
-              "Done"
-            ],
+            "newSteps": ["Run", "60s", "Done"],
             "oldLabel": "Старый подход",
             "oldSteps": [
               {
@@ -7466,122 +6910,38 @@
           "features": [
             {
               "name": "Тест переключения полного стека",
-              "refs": [
-                0,
-                0,
-                2,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 2, 0, 0],
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Нулевое влияние на продакшн",
-              "refs": [
-                0,
-                3,
-                4,
-                5,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 3, 4, 5, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Менее 5 минут",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Автоматический отчёт о прохождении/непрохождении",
-              "refs": [
-                0,
-                6,
-                7,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 6, 7, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Интеграция CI/CD",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Кросс-облачное тестирование",
-              "refs": [
-                0,
-                8,
-                9,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 8, 9, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Собственное размещение / ваша инфраструктура",
-              "refs": [
-                0,
-                10,
-                11,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 10, 11, 0, 0],
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -7764,11 +7124,7 @@
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": [
-              "Запустить тест",
-              "4 min",
-              "Отчёт"
-            ],
+            "newSteps": ["Запустить тест", "4 min", "Отчёт"],
             "oldLabel": "Старый подход",
             "oldSteps": [
               {
@@ -8046,136 +7402,38 @@
           "features": [
             {
               "name": "Неизменяемые бэкапы",
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [4, 5, 6, 7, 0, 0],
+              "values": ["check", "check", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Защита на уровне файловой системы",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Автоматическая ежедневная проверка восстановления",
-              "refs": [
-                8,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [8, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Хранилище с нулевым копированием (CoW)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Мгновенный клон для тестирования",
-              "refs": [
-                9,
-                10,
-                11,
-                12,
-                13,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [9, 10, 11, 12, 13, 0],
+              "values": ["cross", "check", "cross", "cross", "check", "rediacc"]
             },
             {
               "name": "Время восстановления",
-              "refs": [
-                14,
-                15,
-                16,
-                17,
-                18,
-                0
-              ],
-              "values": [
-                "Minutes",
-                "Minutes",
-                "Hours",
-                "Hours",
-                "Seconds",
-                "<5 min"
-              ]
+              "refs": [14, 15, 16, 17, 18, 0],
+              "values": ["Minutes", "Minutes", "Hours", "Hours", "Seconds", "<5 min"]
             },
             {
               "name": "Собственное размещение / без зависимости от облака",
-              "refs": [
-                19,
-                20,
-                21,
-                0,
-                22,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [19, 20, 21, 0, 22, 0],
+              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -8358,11 +7616,7 @@
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": [
-              "Бэкап",
-              "Запечатан",
-              "Проверен"
-            ],
+            "newSteps": ["Бэкап", "Запечатан", "Проверен"],
             "oldLabel": "Старый подход",
             "oldSteps": [
               {
@@ -8681,105 +7935,33 @@
           "features": [
             {
               "name": "Хранилище с нулевым копированием (CoW)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Автоудаление по настраиваемому TTL",
-              "refs": [
-                4,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [4, 0, 0, 0, 0],
+              "values": ["check", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Полные данные продакшна в клоне",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Многосервисные среды",
-              "refs": [
-                0,
-                5,
-                0,
-                6,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 5, 0, 6, 0],
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Собственное размещение / без посеатной оплаты",
-              "refs": [
-                0,
-                7,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 7, 0, 0, 0],
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Развёртывание менее 60 секунд",
-              "refs": [
-                0,
-                0,
-                8,
-                9,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 8, 9, 0],
+              "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -8952,11 +8134,7 @@
           ],
           "timeline": {
             "newLabel": "С REDIACC",
-            "newSteps": [
-              "Запуск",
-              "$0 простоя",
-              "Автоочистка"
-            ],
+            "newSteps": ["Запуск", "$0 простоя", "Автоочистка"],
             "oldLabel": "ПОСТОЯННО РАБОТАЮЩИЕ СРЕДЫ",
             "oldSteps": [
               {
@@ -9216,122 +8394,38 @@
           "features": [
             {
               "name": "Полное восстановление среды (не только файлов)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Восстановление менее 5 минут",
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [4, 5, 6, 7, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Автоматические проверки после восстановления",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Гранулярность снимков по точке во времени",
-              "refs": [
-                8,
-                9,
-                10,
-                11,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [8, 9, 10, 11, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Клон без накладных расходов (без доп. хранилища)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Восстановление одной командой",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Собственное размещение / ваша инфраструктура",
-              "refs": [
-                12,
-                13,
-                14,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [12, 13, 14, 0, 0],
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -9514,11 +8608,7 @@
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": [
-              "Запустить восстановление",
-              "3m 47s",
-              "Работает"
-            ],
+            "newSteps": ["Запустить восстановление", "3m 47s", "Работает"],
             "oldLabel": "Старый подход",
             "oldSteps": [
               {
@@ -9810,105 +8900,33 @@
           "features": [
             {
               "name": "Данные продакшна в CI-клонах",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Интеграция одной строкой вебхука",
-              "refs": [
-                3,
-                0,
-                4,
-                5,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [3, 0, 4, 5, 0],
+              "values": ["check", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Многосервисная CI-среда",
-              "refs": [
-                0,
-                6,
-                0,
-                7,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 6, 0, 7, 0],
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Автоудаление после пайплайна",
-              "refs": [
-                8,
-                0,
-                9,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [8, 0, 9, 0, 0],
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Без пользовательских скриптов развёртывания",
-              "refs": [
-                0,
-                0,
-                10,
-                11,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 10, 11, 0],
+              "values": ["cross", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Собственное размещение / без привязки к вендору",
-              "refs": [
-                0,
-                12,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 12, 0, 0, 0],
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -9992,31 +9010,19 @@
             "cards": [
               {
                 "footer": "webhook → rdc",
-                "items": [
-                  "branch: feature/auth-v2",
-                  "commit: a3f7b2c",
-                  "author: sarah"
-                ],
+                "items": ["branch: feature/auth-v2", "commit: a3f7b2c", "author: sarah"],
                 "status": "Триггер",
                 "title": "Git Push"
               },
               {
                 "footer": "ci-auth-v2",
-                "items": [
-                  "gitlab · nextcloud",
-                  "mariadb · mailcow",
-                  "380 GB → 2.1 GB"
-                ],
+                "items": ["gitlab · nextcloud", "mariadb · mailcow", "380 GB → 2.1 GB"],
                 "status": "CoW",
                 "title": "Clone"
               },
               {
                 "footer": "285 passed",
-                "items": [
-                  "247 unit tests ✓",
-                  "38 integration ✓",
-                  "auto-cleanup ✓"
-                ],
+                "items": ["247 unit tests ✓", "38 integration ✓", "auto-cleanup ✓"],
                 "status": "Пройдены",
                 "title": "Тесты"
               }
@@ -10071,11 +9077,7 @@
           ],
           "timeline": {
             "newLabel": "С REDIACC",
-            "newSteps": [
-              "git push",
-              "Auto",
-              "Реальные данные"
-            ],
+            "newSteps": ["git push", "Auto", "Реальные данные"],
             "oldLabel": "ПОЛЬЗОВАТЕЛЬСКИЕ CI-СКРИПТЫ",
             "oldSteps": [
               {
@@ -10355,122 +9357,38 @@
           "features": [
             {
               "name": "Миграция без расшифрования",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Ключи у клиента при передаче",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Атомарная миграция конфигурации + данных",
-              "refs": [
-                0,
-                0,
-                5,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 5, 0, 0],
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Проверка целостности после передачи",
-              "refs": [
-                6,
-                7,
-                8,
-                9,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [6, 7, 8, 9, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Миграция одной командой",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Любой источник — любой приёмник",
-              "refs": [
-                10,
-                11,
-                12,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [10, 11, 12, 0, 0],
+              "values": ["check", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Автоматический откат при сбое",
-              "refs": [
-                0,
-                0,
-                13,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 13, 0, 0],
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -10653,11 +9571,7 @@
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": [
-              "Запустить миграцию",
-              "0 раскрытия",
-              "Проверено"
-            ],
+            "newSteps": ["Запустить миграцию", "0 раскрытия", "Проверено"],
             "oldLabel": "Традиционная миграция",
             "oldSteps": [
               {
@@ -10948,122 +9862,38 @@
           "features": [
             {
               "name": "Полный клон данных продакшна",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Проверка идентичности ОС и библиотек",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Любой движок БД (MariaDB, Postgres, Mongo)",
-              "refs": [
-                0,
-                4,
-                0,
-                5,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 4, 0, 5, 0],
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Многосервисный клон (приложение + БД + почта + хранилище)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Хранилище с нулевым копированием (CoW)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Собственное размещение / без привязки к вендору",
-              "refs": [
-                0,
-                6,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 6, 0, 0, 0],
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Развёртывание менее 60 секунд",
-              "refs": [
-                0,
-                0,
-                7,
-                8,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 7, 8, 0],
+              "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -11236,11 +10066,7 @@
           ],
           "timeline": {
             "newLabel": "С REDIACC",
-            "newSteps": [
-              "Запустить клон",
-              "47s",
-              "100% совпадение"
-            ],
+            "newSteps": ["Запустить клон", "47s", "100% совпадение"],
             "oldLabel": "ТРАДИЦИОННЫЕ СРЕДЫ РАЗРАБОТКИ",
             "oldSteps": [
               {
@@ -11508,117 +10334,33 @@
           "features": [
             {
               "name": "Восстановление полной среды",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                4,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 4, 0],
+              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
             },
             {
               "name": "Восстановление менее 5 минут",
-              "refs": [
-                5,
-                6,
-                7,
-                8,
-                9,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [5, 6, 7, 8, 9, 0],
+              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
             },
             {
               "name": "Точка во времени (поминутно)",
-              "refs": [
-                10,
-                11,
-                12,
-                13,
-                14,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [10, 11, 12, 13, 14, 0],
+              "values": ["check", "check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Автоматическая верификация восстановления",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Без необходимости передачи данных",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Собственное размещение / без зависимости от облака",
-              "refs": [
-                15,
-                16,
-                17,
-                0,
-                18,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [15, 16, 17, 0, 18, 0],
+              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -11801,11 +10543,7 @@
           ],
           "timeline": {
             "newLabel": "С REDIACC",
-            "newSteps": [
-              "Обнаружение",
-              "<5 min",
-              "Онлайн"
-            ],
+            "newSteps": ["Обнаружение", "<5 min", "Онлайн"],
             "oldLabel": "СТАРЫЙ ПОДХОД",
             "oldSteps": [
               {
@@ -12081,122 +10819,38 @@
           "features": [
             {
               "name": "Настраиваемые политики хранения",
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [4, 5, 6, 7, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Автоматическая очистка жизненного цикла",
-              "refs": [
-                8,
-                9,
-                10,
-                11,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [8, 9, 10, 11, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Верификация хранимых бэкапов",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Мгновенные отчёты, готовые к аудиту",
-              "refs": [
-                12,
-                13,
-                14,
-                15,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [12, 13, 14, 15, 0],
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Поддержка нескольких фреймворков",
-              "refs": [
-                16,
-                17,
-                18,
-                19,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [16, 17, 18, 19, 0],
+              "values": ["cross", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Собственное размещение / ваша инфраструктура",
-              "refs": [
-                20,
-                21,
-                22,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [20, 21, 22, 0, 0],
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "CLI / автоматизация прежде всего",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -12380,11 +11034,7 @@
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": [
-              "Задать политику",
-              "Auto",
-              "Готовы к аудиту"
-            ],
+            "newSteps": ["Задать политику", "Auto", "Готовы к аудиту"],
             "oldLabel": "Старый подход",
             "oldSteps": [
               {
@@ -12712,122 +11362,38 @@
           "features": [
             {
               "name": "Клон полного стека для тестирования",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Создание клона менее 60 секунд",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Изолированная сеть на каждый клон",
-              "refs": [
-                4,
-                0,
-                5,
-                6,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [4, 0, 5, 6, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Нулевое дополнительное хранилище (CoW)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Автопроверка после обновления",
-              "refs": [
-                7,
-                8,
-                9,
-                10,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [7, 8, 9, 10, 0],
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Собственное размещение, без зависимости от облака",
-              "refs": [
-                11,
-                12,
-                13,
-                14,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [11, 12, 13, 14, 0],
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Рабочий процесс одной командой",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -13010,11 +11576,7 @@
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": [
-              "Clone",
-              "60s",
-              "Обновить и проверить"
-            ],
+            "newSteps": ["Clone", "60s", "Обновить и проверить"],
             "oldLabel": "Старый подход",
             "oldSteps": [
               {
@@ -13313,122 +11875,38 @@
           "features": [
             {
               "name": "Кросс-провайдерная миграция",
-              "refs": [
-                0,
-                4,
-                5,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 4, 5, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Миграция менее часа",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Нулевые проприетарные форматы",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Только инкрементальная передача",
-              "refs": [
-                0,
-                6,
-                7,
-                8,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 6, 7, 8, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Без вендорного агента",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Миграция полного стека (приложение + БД)",
-              "refs": [
-                0,
-                9,
-                10,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 9, 10, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Миграция с нулевым простоем",
-              "refs": [
-                0,
-                0,
-                11,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 11, 0, 0],
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "РАЗРЫВ",
@@ -13611,11 +12089,7 @@
           ],
           "timeline": {
             "newLabel": "С REDIACC",
-            "newSteps": [
-              "Snapshot",
-              "<1hr",
-              "Live"
-            ],
+            "newSteps": ["Snapshot", "<1hr", "Live"],
             "oldLabel": "СТАРЫЙ ПОДХОД",
             "oldSteps": [
               {
@@ -14022,12 +12496,7 @@
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": [
-              "Клон + патч",
-              "<4 min",
-              "Проверено",
-              "Развёрнуто"
-            ],
+            "newSteps": ["Клон + патч", "<4 min", "Проверено", "Развёрнуто"],
             "oldLabel": "Традиционное патчирование",
             "oldSteps": [
               {
@@ -14326,9 +12795,7 @@
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": [
-                "Bridge собирает следующие категории данных:"
-              ],
+              "content": ["Bridge собирает следующие категории данных:"],
               "items": [
                 "<strong>Операции с очередями:</strong> идентификатор задачи, уровень приоритета, тип операции, длительность выполнения, статус успеха или неудачи",
                 "<strong>SSH-операции:</strong> целевой хост, имя пользователя, номер порта, код выхода, длительность выполнения (содержимое команд и вывод не собираются)",
@@ -14375,9 +12842,7 @@
           "id": "cli",
           "subsections": {
             "cliDataCollected": {
-              "content": [
-                "CLI собирает следующие категории данных:"
-              ],
+              "content": ["CLI собирает следующие категории данных:"],
               "items": [
                 "<strong>Использование команд:</strong> имя команды, версия CLI, код выхода, статус успеха или неудачи",
                 "<strong>Анонимизированные аргументы:</strong> параметры команды с удалёнными конфиденциальными значениями — пароли, токены, секреты, API-ключи и учётные данные заменяются на <code>[REDACTED]</code>",
@@ -14449,9 +12914,7 @@
           "id": "middleware",
           "subsections": {
             "middlewareDataCollected": {
-              "content": [
-                "Middleware собирает следующие категории данных:"
-              ],
+              "content": ["Middleware собирает следующие категории данных:"],
               "items": [
                 "<strong>Информация о системе:</strong> имя хоста, версия операционной системы, версия среды выполнения .NET",
                 "<strong>API-вызовы:</strong> HTTP-метод, путь конечной точки, код статуса ответа, длительность запроса",
@@ -14473,9 +12936,7 @@
           "title": "6. Телеметрия Middleware"
         },
         "principles": {
-          "content": [
-            "Весь сбор телеметрии в Rediacc следует этим принципам:"
-          ],
+          "content": ["Весь сбор телеметрии в Rediacc следует этим принципам:"],
           "id": "principles",
           "items": [
             "<strong>Конфиденциальность по умолчанию:</strong> Персональные идентификаторы анонимизируются перед передачей. Адреса электронной почты сокращаются до домена, идентификаторы пользователей хешируются (SHA-256) и усекаются, пароли и секреты никогда не собираются.",
@@ -14493,9 +12954,7 @@
           "id": "web-app",
           "subsections": {
             "webDataCollected": {
-              "content": [
-                "Веб-приложение собирает следующие категории данных:"
-              ],
+              "content": ["Веб-приложение собирает следующие категории данных:"],
               "items": [
                 "<strong>Информация о браузере:</strong> название и версия браузера, предпочтительный язык, платформа (например, Windows, macOS, Linux), разрешение экрана, глубина цвета, строка user agent, память устройства (если доступна), тип сетевого подключения",
                 "<strong>Контекст пользователя:</strong> идентификатор сеанса (генерируется случайным образом для каждого сеанса), только домен электронной почты (локальная часть скрыта, например, <code>***@example.com</code>), название организации, название команды",
@@ -14509,9 +12968,7 @@
               "title": "4.1 Собираемые данные"
             },
             "webNotCollected": {
-              "content": [
-                "Веб-приложение не собирает:"
-              ],
+              "content": ["Веб-приложение не собирает:"],
               "items": [
                 "Полные адреса электронной почты (локальная часть всегда скрыта)",
                 "Пароли, токены или учётные данные аутентификации",
@@ -14707,9 +13164,7 @@
               "title": "6.1 Installation and Machine Access"
             },
             "restrictions": {
-              "content": [
-                "Вы не имеете права:"
-              ],
+              "content": ["Вы не имеете права:"],
               "items": [
                 "Осуществлять обратный инжиниринг, декомпиляцию, дизассемблирование или иным образом пытаться получить исходный код бинарного файла Bridge или любого компонента Локального ПО, не являющегося открытым исходным кодом",
                 "Распространять, сублицензировать, сдавать в аренду, лизинг или передавать во временное пользование Локальное ПО любым третьим лицам",

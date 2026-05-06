@@ -959,7 +959,7 @@
         "infrastructure": "基础设施",
         "noData": "无可用状态数据",
         "storageHealthHint": "提示：使用 --storage-health 运行可查看每个仓库的 BTRFS 碎片化情况和 reflink 节省量",
-        "strictDriftDetected": "--strict: {{count}} container(s) past drift threshold; exiting non-zero",
+        "strictDriftDetected": "--strict: {{count}} 个容器超过漂移阈值；以非零状态退出",
         "syncCertsFailed": "证书缓存同步失败：{{error}}"
       },
       "rename": {
@@ -2604,7 +2604,7 @@
     "queryRepositories": "仅包含仓库",
     "queryServices": "仅包含服务",
     "queryStorageHealth": "显示每个仓库的 BTRFS 碎片化和 reflink 节省量",
-    "queryStrict": "Exit non-zero (code 2) if any container has crossed the health-drift threshold",
+    "queryStrict": "如果任何容器超过健康漂移阈值，以非零（代码 2）退出",
     "querySyncCerts": "查询后也从机器拉取 ACME 证书缓存",
     "querySystem": "仅包含系统信息",
     "quiet": "抑制信息性输出",

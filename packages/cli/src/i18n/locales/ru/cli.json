@@ -959,7 +959,7 @@
         "infrastructure": "Инфраструктура",
         "noData": "Данные о статусе недоступны",
         "storageHealthHint": "Совет: Запустите с --storage-health, чтобы увидеть фрагментацию BTRFS и экономию reflink для каждого репозитория",
-        "strictDriftDetected": "--strict: {{count}} container(s) past drift threshold; exiting non-zero",
+        "strictDriftDetected": "--strict: {{count}} контейнер(ов) превысили порог отклонения; выход с ненулевым кодом",
         "syncCertsFailed": "Ошибка синхронизации кэша сертификатов: {{error}}"
       },
       "rename": {
@@ -2604,7 +2604,7 @@
     "queryRepositories": "Включить только репозитории",
     "queryServices": "Включить только сервисы",
     "queryStorageHealth": "Показать фрагментацию BTRFS и экономию reflink по репозиториям",
-    "queryStrict": "Exit non-zero (code 2) if any container has crossed the health-drift threshold",
+    "queryStrict": "Завершиться с ненулевым кодом (код 2), если какой-либо контейнер превысил порог отклонения здоровья",
     "querySyncCerts": "Также получить кэш сертификатов ACME с машины после запроса",
     "querySystem": "Включить только информацию о системе",
     "quiet": "Подавить информационный вывод",

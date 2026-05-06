@@ -959,7 +959,7 @@
         "infrastructure": "البنية التحتية",
         "noData": "لا تتوفر بيانات حالة",
         "storageHealthHint": "تلميح: شغّل مع --storage-health لعرض تجزئة BTRFS وتوفير reflink لكل مستودع",
-        "strictDriftDetected": "--strict: {{count}} container(s) past drift threshold; exiting non-zero",
+        "strictDriftDetected": "--strict: {{count}} حاوية تجاوزت عتبة الانحراف؛ الخروج بقيمة غير صفرية",
         "syncCertsFailed": "فشلت مزامنة ذاكرة التخزين المؤقت للشهادات: {{error}}"
       },
       "rename": {
@@ -2604,7 +2604,7 @@
     "queryRepositories": "تضمين المستودعات فقط",
     "queryServices": "تضمين الخدمات فقط",
     "queryStorageHealth": "عرض تجزئة BTRFS ووفورات reflink لكل مستودع",
-    "queryStrict": "Exit non-zero (code 2) if any container has crossed the health-drift threshold",
+    "queryStrict": "الخروج بقيمة غير صفرية (الكود 2) إذا تجاوزت أي حاوية عتبة انحراف الصحة",
     "querySyncCerts": "اسحب أيضًا ذاكرة التخزين المؤقت لشهادات ACME من الجهاز بعد الاستعلام",
     "querySystem": "تضمين معلومات النظام فقط",
     "quiet": "إخفاء المخرجات المعلوماتية",

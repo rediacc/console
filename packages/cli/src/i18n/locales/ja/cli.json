@@ -959,7 +959,7 @@
         "infrastructure": "インフラストラクチャ",
         "noData": "ステータスデータがありません",
         "storageHealthHint": "ヒント: --storage-health を付けて実行すると、リポジトリごとの BTRFS フラグメンテーションと reflink の節約量を確認できます",
-        "strictDriftDetected": "--strict: {{count}} container(s) past drift threshold; exiting non-zero",
+        "strictDriftDetected": "--strict: {{count}} 個のコンテナがドリフトしきい値を超えました。ゼロ以外で終了します",
         "syncCertsFailed": "証明書キャッシュの同期に失敗しました: {{error}}"
       },
       "rename": {
@@ -2604,7 +2604,7 @@
     "queryRepositories": "リポジトリのみを含める",
     "queryServices": "サービスのみを含める",
     "queryStorageHealth": "リポジトリごとのBTRFSフラグメンテーションとreflink節約量を表示",
-    "queryStrict": "Exit non-zero (code 2) if any container has crossed the health-drift threshold",
+    "queryStrict": "いずれかのコンテナがヘルスドリフトしきい値を超えた場合、ゼロ以外（コード 2）で終了します",
     "querySyncCerts": "クエリ後にマシンから ACME 証明書キャッシュも取得します",
     "querySystem": "システム情報のみを含める",
     "quiet": "情報出力を抑制する",

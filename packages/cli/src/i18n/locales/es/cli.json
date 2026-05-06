@@ -959,7 +959,7 @@
         "infrastructure": "Infraestructura",
         "noData": "No hay datos de estado disponibles",
         "storageHealthHint": "Consejo: Ejecuta con --storage-health para ver la fragmentación de BTRFS y el ahorro de reflink por repo",
-        "strictDriftDetected": "--strict: {{count}} container(s) past drift threshold; exiting non-zero",
+        "strictDriftDetected": "--strict: {{count}} contenedor(es) ha(n) superado el umbral de desviación; saliendo con código distinto de cero",
         "syncCertsFailed": "Falló la sincronización de la caché de certificados: {{error}}"
       },
       "rename": {
@@ -2604,7 +2604,7 @@
     "queryRepositories": "Incluir solo repositorios",
     "queryServices": "Incluir solo servicios",
     "queryStorageHealth": "Mostrar fragmentación BTRFS y ahorro reflink por repositorio",
-    "queryStrict": "Exit non-zero (code 2) if any container has crossed the health-drift threshold",
+    "queryStrict": "Salir con código distinto de cero (código 2) si algún contenedor ha superado el umbral de desviación de salud",
     "querySyncCerts": "También descargar la caché de certificados ACME de la máquina tras consultar",
     "querySystem": "Incluir solo información del sistema",
     "quiet": "Suprimir salida informativa",

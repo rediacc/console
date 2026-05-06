@@ -959,7 +959,7 @@
         "infrastructure": "Infrastruktur",
         "noData": "Keine Statusdaten verfügbar",
         "storageHealthHint": "Tipp: Mit --storage-health ausführen, um BTRFS-Fragmentierung und reflink-Einsparungen pro Repo anzuzeigen",
-        "strictDriftDetected": "--strict: {{count}} container(s) past drift threshold; exiting non-zero",
+        "strictDriftDetected": "--strict: {{count}} Container haben den Drift-Schwellenwert überschritten; Beenden mit Nicht-Null-Code",
         "syncCertsFailed": "Zertifikats-Cache-Sync fehlgeschlagen: {{error}}"
       },
       "rename": {
@@ -2604,7 +2604,7 @@
     "queryRepositories": "Nur Repositories einbeziehen",
     "queryServices": "Nur Dienste einbeziehen",
     "queryStorageHealth": "BTRFS-Fragmentierung und reflink-Einsparungen pro Repository anzeigen",
-    "queryStrict": "Exit non-zero (code 2) if any container has crossed the health-drift threshold",
+    "queryStrict": "Mit Nicht-Null-Code (Code 2) beenden, wenn ein Container den Health-Drift-Schwellenwert überschritten hat",
     "querySyncCerts": "Auch den ACME-Zertifikats-Cache nach einer Abfrage von der Maschine abrufen",
     "querySystem": "Nur Systeminformationen einbeziehen",
     "quiet": "Informationsausgabe unterdrücken",
