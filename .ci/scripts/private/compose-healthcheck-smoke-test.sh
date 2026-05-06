@@ -86,7 +86,7 @@ log_step "Polling db healthcheck (timeout ${TIMEOUT_SECS}s)"
 # Find the per-repo Docker socket. Network IDs are integers but their
 # allocation is not stable across runs, so glob and pick the youngest
 # socket that owns a container named 'db'.
-deadline=$(( $(date +%s) + TIMEOUT_SECS ))
+deadline=$(($(date +%s) + TIMEOUT_SECS))
 status="unknown"
 streak=""
 while [[ $(date +%s) -lt $deadline ]]; do
