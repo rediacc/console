@@ -102,6 +102,7 @@ Show full machine status (infra, system, repos with name/guid, containers with r
 - `--licenses` — Include repository license statuses
 - `--storage-health` — Show BTRFS fragmentation and reflink savings per repository
 - `--sync-certs` — Also pull the ACME cert cache from the machine after querying
+- `--strict` — Exit non-zero (code 2) if any container has crossed the health-drift threshold
 
 > MCP tool
 
@@ -983,7 +984,7 @@ Remove dead weight from the local config file at ~/.config/rediacc/<config>.json
 - `--certs-only` — Restrict to the ACME cert-cache bucket. Skips archive purging and cross-reference cleanup. Mutually exclusive with --archives-only and --refs-only.
 - `--archives-only` — Restrict to expired-archive purging. Skips cert-cache and cross-reference cleanup. Mutually exclusive with --certs-only and --refs-only.
 - `--refs-only` — Restrict to dangling cross-references (machine→strategy, strategy→repo excludes/includes). Skips cert-cache and archives. Mutually exclusive with --certs-only and --archives-only.
-- `--purge-archived` — Drop ALL archived repositories regardless of age, not just those past grace. Equivalent to running `rdc config repository purge-archived`. Use only when you're sure you don't need any of the stashed credentials for restore.
+- `--purge-archived` — Drop ALL archived repositories regardless of age, not just those past grace. Equivalent to running 'rdc config repository purge-archived'. Use only when you're sure you don't need any of the stashed credentials for restore.
 - `--grace-days <days>` — Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set.
 
 ### rdc config machine add

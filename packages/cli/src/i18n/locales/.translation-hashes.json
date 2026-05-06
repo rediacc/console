@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1936,
-    "sourceCommit": "4ccc41fadb6a5389c6b74c42358aaf2595521967"
+    "keyCount": 1938,
+    "sourceCommit": "1e6b2d0400cac5fdcf537bfb1cf349dbc3180f52"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -659,6 +659,7 @@
     "commands.machine.query.infrastructure": "1c4dc948",
     "commands.machine.query.noData": "a0674b1e",
     "commands.machine.query.storageHealthHint": "9a3dcc0d",
+    "commands.machine.query.strictDriftDetected": "1b653a74",
     "commands.machine.query.syncCertsFailed": "7f2dfa5a",
     "commands.machine.rename.description": "a4fc274f",
     "commands.machine.repos.description": "b667158e",
@@ -1843,6 +1844,7 @@
     "options.queryRepositories": "cd24c5c2",
     "options.queryServices": "db782e15",
     "options.queryStorageHealth": "9ef915bb",
+    "options.queryStrict": "fd7d8e0a",
     "options.querySyncCerts": "785a8c1b",
     "options.querySystem": "72cab8d1",
     "options.quiet": "403afde7",

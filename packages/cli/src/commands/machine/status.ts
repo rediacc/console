@@ -240,6 +240,7 @@ interface QueryOptions {
   blockDevices?: boolean;
   licenses?: boolean;
   storageHealth?: boolean;
+  strict?: boolean;
 }
 
 function printStorageSummary(sys: SystemInfo | undefined): void {
@@ -350,6 +351,7 @@ export function registerQueryCommand(machine: Command, program: Command): void {
     .option('--licenses', t('options.queryLicenses'))
     .option('--storage-health', t('options.queryStorageHealth'))
     .option('--sync-certs', t('options.querySyncCerts'))
+    .option('--strict', t('options.queryStrict'))
     .action(async (options: QueryOptions & { name: string; syncCerts?: boolean }) => {
       try {
         const machineName = options.name;
@@ -395,6 +397,19 @@ export function registerQueryCommand(machine: Command, program: Command): void {
         // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)
         if (!options.storageHealth) {
           process.stderr.write(`\n${t('commands.machine.query.storageHealthHint')}\n`);
+        }
+
+        // --strict: exit non-zero when any container has crossed the
+        // health-drift threshold. Lets CI scripts gate deploys on
+        // post-deploy convergence without hand-parsing the JSON.
+        // Exit code 2 matches the precedent in machine/health.ts (0 = clean,
+        // 1 = warn, 2 = error).
+        if (options.strict && (listResult?.health_drift?.entries?.length ?? 0) > 0) {
+          const count = listResult.health_drift?.entries?.length ?? 0;
+          process.stderr.write(
+            `\n${t('commands.machine.query.strictDriftDetected', { count })}\n`
+          );
+          process.exitCode = 2;
         }
 
         if (options.syncCerts) {

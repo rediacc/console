@@ -959,6 +959,7 @@
         "infrastructure": "基础设施",
         "noData": "无可用状态数据",
         "storageHealthHint": "提示：使用 --storage-health 运行可查看每个仓库的 BTRFS 碎片化情况和 reflink 节省量",
+        "strictDriftDetected": "--strict: {{count}} container(s) past drift threshold; exiting non-zero",
         "syncCertsFailed": "证书缓存同步失败：{{error}}"
       },
       "rename": {
@@ -1321,12 +1322,12 @@
         "description": "管理仓库备份",
         "list": {
           "description": "列出远程（机器或存储）上的可用备份",
+          "descriptionShort": "列出远程上可用的备份",
           "listing": "正在列出备份...",
+          "localOnly": "repo backup list 仅在本地适配器模式下受支持",
           "optionFrom": "源机器或存储名称（从配置中自动检测）",
           "optionPath": "存储根内的子目录。省略时，hot/ 和 cold/ 都会被列出并合并。",
-          "sourceRequired": "请指定 --from <remote>（配置中的机器或存储名称）",
-          "descriptionShort": "列出远程上可用的备份",
-          "localOnly": "repo backup list 仅在本地适配器模式下受支持"
+          "sourceRequired": "请指定 --from <remote>（配置中的机器或存储名称）"
         }
       },
       "batchConfirm": "{{action}} \"{{machine}}\" 上的所有 {{count}} 个仓库？ [y/N]",
@@ -2603,6 +2604,7 @@
     "queryRepositories": "仅包含仓库",
     "queryServices": "仅包含服务",
     "queryStorageHealth": "显示每个仓库的 BTRFS 碎片化和 reflink 节省量",
+    "queryStrict": "Exit non-zero (code 2) if any container has crossed the health-drift threshold",
     "querySyncCerts": "查询后也从机器拉取 ACME 证书缓存",
     "querySystem": "仅包含系统信息",
     "quiet": "抑制信息性输出",

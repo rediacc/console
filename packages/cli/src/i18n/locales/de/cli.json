@@ -959,6 +959,7 @@
         "infrastructure": "Infrastruktur",
         "noData": "Keine Statusdaten verfügbar",
         "storageHealthHint": "Tipp: Mit --storage-health ausführen, um BTRFS-Fragmentierung und reflink-Einsparungen pro Repo anzuzeigen",
+        "strictDriftDetected": "--strict: {{count}} container(s) past drift threshold; exiting non-zero",
         "syncCertsFailed": "Zertifikats-Cache-Sync fehlgeschlagen: {{error}}"
       },
       "rename": {
@@ -1321,12 +1322,12 @@
         "description": "Repository-Backups verwalten",
         "list": {
           "description": "Verfügbare Backups auf einem Remote (Rechner oder Speicher) auflisten",
+          "descriptionShort": "Verfügbare Backups auf einem Remote auflisten",
           "listing": "Backups werden aufgelistet...",
+          "localOnly": "repo backup list wird nur im lokalen Adapter-Modus unterstützt",
           "optionFrom": "Name des Quellrechners oder Speichers (wird automatisch aus der Konfiguration erkannt)",
           "optionPath": "Unterverzeichnis innerhalb des Speicher-Roots. Bei Auslassung werden sowohl hot/ als auch cold/ aufgelistet und zusammengeführt.",
-          "sourceRequired": "Geben Sie --from <remote> an (Rechner- oder Speichername aus der Konfiguration)",
-          "descriptionShort": "Verfügbare Backups auf einem Remote auflisten",
-          "localOnly": "repo backup list wird nur im lokalen Adapter-Modus unterstützt"
+          "sourceRequired": "Geben Sie --from <remote> an (Rechner- oder Speichername aus der Konfiguration)"
         }
       },
       "batchConfirm": "{{action}} für alle {{count}} Repos auf \"{{machine}}\"? [y/N]",
@@ -2603,6 +2604,7 @@
     "queryRepositories": "Nur Repositories einbeziehen",
     "queryServices": "Nur Dienste einbeziehen",
     "queryStorageHealth": "BTRFS-Fragmentierung und reflink-Einsparungen pro Repository anzeigen",
+    "queryStrict": "Exit non-zero (code 2) if any container has crossed the health-drift threshold",
     "querySyncCerts": "Auch den ACME-Zertifikats-Cache nach einer Abfrage von der Maschine abrufen",
     "querySystem": "Nur Systeminformationen einbeziehen",
     "quiet": "Informationsausgabe unterdrücken",

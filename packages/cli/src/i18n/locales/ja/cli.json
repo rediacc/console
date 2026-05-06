@@ -959,6 +959,7 @@
         "infrastructure": "インフラストラクチャ",
         "noData": "ステータスデータがありません",
         "storageHealthHint": "ヒント: --storage-health を付けて実行すると、リポジトリごとの BTRFS フラグメンテーションと reflink の節約量を確認できます",
+        "strictDriftDetected": "--strict: {{count}} container(s) past drift threshold; exiting non-zero",
         "syncCertsFailed": "証明書キャッシュの同期に失敗しました: {{error}}"
       },
       "rename": {
@@ -1321,12 +1322,12 @@
         "description": "リポジトリバックアップを管理する",
         "list": {
           "description": "リモート（マシンまたはストレージ）の利用可能なバックアップを一覧表示",
+          "descriptionShort": "リモート上の利用可能なバックアップを一覧表示",
           "listing": "バックアップを一覧表示中...",
+          "localOnly": "repo backup list はローカルアダプターモードでのみサポートされています",
           "optionFrom": "ソースマシンまたはストレージ名（設定から自動検出）",
           "optionPath": "ストレージルート内のサブディレクトリ。省略すると、hot/ と cold/ の両方がリストされ、マージされます。",
-          "sourceRequired": "--from <remote> を指定してください（設定からのマシンまたはストレージ名）",
-          "descriptionShort": "リモート上の利用可能なバックアップを一覧表示",
-          "localOnly": "repo backup list はローカルアダプターモードでのみサポートされています"
+          "sourceRequired": "--from <remote> を指定してください（設定からのマシンまたはストレージ名）"
         }
       },
       "batchConfirm": "\"{{machine}}\"上のすべての{{count}}リポジトリを{{action}}しますか？ [y/N]",
@@ -2603,6 +2604,7 @@
     "queryRepositories": "リポジトリのみを含める",
     "queryServices": "サービスのみを含める",
     "queryStorageHealth": "リポジトリごとのBTRFSフラグメンテーションとreflink節約量を表示",
+    "queryStrict": "Exit non-zero (code 2) if any container has crossed the health-drift threshold",
     "querySyncCerts": "クエリ後にマシンから ACME 証明書キャッシュも取得します",
     "querySystem": "システム情報のみを含める",
     "quiet": "情報出力を抑制する",

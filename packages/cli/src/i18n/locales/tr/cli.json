@@ -959,6 +959,7 @@
         "infrastructure": "Altyapı",
         "noData": "Durum verisi mevcut değil",
         "storageHealthHint": "İpucu: BTRFS parçalanmasını ve repo başına reflink tasarrufunu görmek için --storage-health ile çalıştırın",
+        "strictDriftDetected": "--strict: {{count}} container(s) past drift threshold; exiting non-zero",
         "syncCertsFailed": "Sertifika önbelleği senkronizasyonu başarısız: {{error}}"
       },
       "rename": {
@@ -1321,12 +1322,12 @@
         "description": "Depo yedeklerini yönet",
         "list": {
           "description": "Uzak hedefteki (makine veya depolama) mevcut yedekleri listele",
+          "descriptionShort": "Bir uzakta mevcut yedekleri listele",
           "listing": "Yedekler listeleniyor...",
+          "localOnly": "repo backup list yalnızca yerel adaptör modunda desteklenir",
           "optionFrom": "Kaynak makine veya depolama adı (yapılandırmadan otomatik algılanır)",
           "optionPath": "Depolama kökü içindeki alt dizin. Atlandığında hem hot/ hem de cold/ listelenir ve birleştirilir.",
-          "sourceRequired": "--from <remote> belirtin (yapılandırmadaki makine veya depolama adı)",
-          "descriptionShort": "Bir uzakta mevcut yedekleri listele",
-          "localOnly": "repo backup list yalnızca yerel adaptör modunda desteklenir"
+          "sourceRequired": "--from <remote> belirtin (yapılandırmadaki makine veya depolama adı)"
         }
       },
       "batchConfirm": "\"{{machine}}\" üzerindeki tüm {{count}} depoyu {{action}} yap? [y/N]",
@@ -2603,6 +2604,7 @@
     "queryRepositories": "Yalnızca depoları dahil et",
     "queryServices": "Yalnızca servisleri dahil et",
     "queryStorageHealth": "Depo başına BTRFS parçalanma ve reflink tasarruflarını göster",
+    "queryStrict": "Exit non-zero (code 2) if any container has crossed the health-drift threshold",
     "querySyncCerts": "Sorgu sonrasında makineden ACME sertifika önbelleğini de çek",
     "querySystem": "Yalnızca sistem bilgilerini dahil et",
     "quiet": "Bilgilendirme çıkışını bastır",

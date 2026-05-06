@@ -959,6 +959,7 @@
         "infrastructure": "Инфраструктура",
         "noData": "Данные о статусе недоступны",
         "storageHealthHint": "Совет: Запустите с --storage-health, чтобы увидеть фрагментацию BTRFS и экономию reflink для каждого репозитория",
+        "strictDriftDetected": "--strict: {{count}} container(s) past drift threshold; exiting non-zero",
         "syncCertsFailed": "Ошибка синхронизации кэша сертификатов: {{error}}"
       },
       "rename": {
@@ -1321,12 +1322,12 @@
         "description": "Управление резервными копиями репозиториев",
         "list": {
           "description": "Показать доступные резервные копии на удалённом ресурсе (машине или хранилище)",
+          "descriptionShort": "Список доступных резервных копий на удалённом",
           "listing": "Получение списка резервных копий...",
+          "localOnly": "repo backup list поддерживается только в режиме локального адаптера",
           "optionFrom": "Имя исходной машины или хранилища (определяется автоматически из конфигурации)",
           "optionPath": "Подкаталог внутри корня хранилища. При отсутствии перечисляются и объединяются и hot/, и cold/.",
-          "sourceRequired": "Укажите --from <remote> (имя машины или хранилища из конфигурации)",
-          "descriptionShort": "Список доступных резервных копий на удалённом",
-          "localOnly": "repo backup list поддерживается только в режиме локального адаптера"
+          "sourceRequired": "Укажите --from <remote> (имя машины или хранилища из конфигурации)"
         }
       },
       "batchConfirm": "{{action}} все {{count}} репозиториев на \"{{machine}}\"? [y/N]",
@@ -2603,6 +2604,7 @@
     "queryRepositories": "Включить только репозитории",
     "queryServices": "Включить только сервисы",
     "queryStorageHealth": "Показать фрагментацию BTRFS и экономию reflink по репозиториям",
+    "queryStrict": "Exit non-zero (code 2) if any container has crossed the health-drift threshold",
     "querySyncCerts": "Также получить кэш сертификатов ACME с машины после запроса",
     "querySystem": "Включить только информацию о системе",
     "quiet": "Подавить информационный вывод",

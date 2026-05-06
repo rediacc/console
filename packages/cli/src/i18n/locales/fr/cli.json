@@ -959,6 +959,7 @@
         "infrastructure": "Infrastructure",
         "noData": "Aucune donnée de statut disponible",
         "storageHealthHint": "Astuce : Exécutez avec --storage-health pour voir la fragmentation BTRFS et les économies reflink par repo",
+        "strictDriftDetected": "--strict: {{count}} container(s) past drift threshold; exiting non-zero",
         "syncCertsFailed": "Échec de la synchronisation du cache de certificats : {{error}}"
       },
       "rename": {
@@ -1321,12 +1322,12 @@
         "description": "Gérer les sauvegardes de dépôts",
         "list": {
           "description": "Lister les sauvegardes disponibles sur un distant (machine ou stockage)",
+          "descriptionShort": "Lister les sauvegardes disponibles sur un distant",
           "listing": "Listage des sauvegardes...",
+          "localOnly": "repo backup list n'est supporté qu'en mode adaptateur local",
           "optionFrom": "Nom de la machine ou du stockage source (détecté automatiquement depuis la configuration)",
           "optionPath": "Sous-répertoire dans la racine du stockage. Lorsqu'omis, hot/ et cold/ sont listés et fusionnés.",
-          "sourceRequired": "Spécifiez --from <remote> (nom de machine ou stockage depuis la configuration)",
-          "descriptionShort": "Lister les sauvegardes disponibles sur un distant",
-          "localOnly": "repo backup list n'est supporté qu'en mode adaptateur local"
+          "sourceRequired": "Spécifiez --from <remote> (nom de machine ou stockage depuis la configuration)"
         }
       },
       "batchConfirm": "{{action}} les {{count}} dépôts sur \"{{machine}}\" ? [y/N]",
@@ -2603,6 +2604,7 @@
     "queryRepositories": "Inclure uniquement les dépôts",
     "queryServices": "Inclure uniquement les services",
     "queryStorageHealth": "Afficher la fragmentation BTRFS et les économies reflink par dépôt",
+    "queryStrict": "Exit non-zero (code 2) if any container has crossed the health-drift threshold",
     "querySyncCerts": "Récupère aussi le cache de certificats ACME de la machine après la requête",
     "querySystem": "Inclure uniquement les informations système",
     "quiet": "Supprimer la sortie informative",
