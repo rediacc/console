@@ -5,6 +5,16 @@
 //   script: return await require('./.ci/scripts/ci/validate-pr.cjs')({github, context, core})
 
 module.exports = async ({ github, context, core }) => {
+  // Pin to the latest stable GitHub REST API version. Without this,
+  // octokit defaults to 2022-11-28 and emits a per-call deprecation
+  // warning (that version sunsets 2028-03-10). pulls.listFiles has no
+  // breaking changes in 2026-03-10. See:
+  //   https://docs.github.com/en/rest/about-the-rest-api/api-versions
+  github.hook.before('request', (options) => {
+    options.headers ??= {};
+    options.headers['x-github-api-version'] ||= '2026-03-10';
+  });
+
   const pr = context.payload.pull_request;
   const errors = [];
   const warnings = [];
