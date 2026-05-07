@@ -875,7 +875,8 @@
         "infrastructure": "Infrastructure",
         "connection": "Connection",
         "storageHealthHint": "Tip: Run with --storage-health to see BTRFS fragmentation and reflink savings per repo",
-        "syncCertsFailed": "Cert cache sync failed: {{error}}"
+        "syncCertsFailed": "Cert cache sync failed: {{error}}",
+        "strictDriftDetected": "--strict: {{count}} container(s) past drift threshold; exiting non-zero"
       },
       "vaultStatus": {
         "description": "Show parsed vault status for a machine",
@@ -2463,6 +2464,7 @@
     "queryLicenses": "Include repository license statuses",
     "queryStorageHealth": "Show BTRFS fragmentation and reflink savings per repository",
     "querySyncCerts": "Also pull the ACME cert cache from the machine after querying",
+    "queryStrict": "Exit non-zero (code 2) if any container has crossed the health-drift threshold",
     "extraMachine": "Extra machine for multi-machine ops (name:ip:user)",
     "pollInterval": "Poll interval in milliseconds",
     "folder": "Remote folder path to open",

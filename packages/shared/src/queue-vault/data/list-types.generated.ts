@@ -249,10 +249,28 @@ export interface ScrubInfo {
   uncorrectable: number;
 }
 
+/** One drifting container in the watchdog registry */
+export interface HealthDriftEntry {
+  container: string;
+  failing_streak: number;
+  first_seen: string;
+  last_seen: string;
+  network_id?: string;
+  repo?: string;
+  status: string;
+}
+
+/** Watchdog-maintained registry of containers whose healthchecks have been failing past the drift threshold */
+export interface HealthDriftSummary {
+  entries: HealthDriftEntry[];
+  updated_at: string;
+}
+
 /** Complete machine status from 'renet list all --json' */
 export interface ListResult {
   block_devices: BlockDevice[];
   containers?: ContainersResult;
+  health_drift?: HealthDriftSummary;
   license_statuses?: LicenseStatusEntry[];
   network?: NetworkInfo;
   repositories: RepositoryInfo[];
