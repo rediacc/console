@@ -25,6 +25,24 @@
 //   script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
 
 module.exports = async ({ github, context, core }) => {
+  // Pin the GitHub REST API version on every request from this Octokit
+  // instance. Without an explicit X-GitHub-Api-Version header, requests
+  // default to 2022-11-28 and emit a per-call deprecation warning (that
+  // version sunsets 2028-03-10). Pinning to the latest stable version
+  // silences the warning and locks us to a known surface until we
+  // deliberately bump. See:
+  //   https://docs.github.com/en/rest/about-the-rest-api/api-versions
+  //   https://docs.github.com/en/rest/overview/breaking-changes
+  // The endpoints used here (createWorkflowDispatch, listJobsForWorkflowRun,
+  // getWorkflowRun, force-cancel, cancel, downloadJobLogsForWorkflowRun) have
+  // no breaking changes between 2022-11-28 and 2026-03-10 that affect us;
+  // createWorkflowDispatch returns 200 with run details instead of 204, but
+  // we await without reading the body.
+  github.hook.before('request', (options) => {
+    options.headers ??= {};
+    options.headers['x-github-api-version'] ||= '2026-03-10';
+  });
+
   const pollInterval = 15000;  // 15 seconds
   const maxRuntime = 10800000; // 3 hours
   const minRuntime = 30000;    // 30 seconds minimum before allowing exit
