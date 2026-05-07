@@ -120,9 +120,14 @@ export async function provisionRenetToRemote(
     localBinaryPath = resolveRenetPath(config.renetPath);
   }
 
-  // Service restarts are opt-in for versioned remote installs.
+  // Auto-restart rediacc-router after a binary update so the
+  // long-running router daemon picks up new code without manual
+  // `systemctl restart`. systemctl try-restart is a no-op when the
+  // unit is not running, so this is safe on machines without the
+  // router daemon. Opt out via skipRouterRestart=true or
+  // RDC_SKIP_ROUTER_RESTART=1.
   const skipRestart = options.skipRouterRestart ?? !!process.env.RDC_SKIP_ROUTER_RESTART;
-  const restartServices = skipRestart ? false : (options.restartServices ?? false);
+  const restartServices = skipRestart ? false : (options.restartServices ?? true);
 
   const start = Date.now();
   const result = await renetProvisioner.provision(

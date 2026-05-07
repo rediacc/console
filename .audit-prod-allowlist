@@ -163,3 +163,9 @@
 # BLOCKER: transitive via @opentelemetry/otlp-transformer pinned 8.0.0 exact; the .syncpackrc opentelemetry pin holds sdk-node back, override fights with strict pin (npm leaves both versions installed). All otel telemetry payloads are static internal schemas under our control, not crafted JSON descriptors from untrusted sources, so the codegen attack vector is not reachable at runtime.
 1117571
 1117572
+
+# ip-address Address6 HTML-emitting methods XSS
+# (GHSA-v2v4-37r5-5v8g; ip-address@10.1.0)
+# Two transitive paths: (a) @modelcontextprotocol/sdk -> express-rate-limit -> ip-address, and (b) electron-builder -> @electron/rebuild -> ... -> socks -> ip-address. Both are server-side / build-tool consumers that parse IP strings; neither calls the Address6 HTML-emitting methods (toRFC5952String/toLink/etc) that the advisory targets.
+# BLOCKER: transitive prod dep used only for IP parsing in MCP rate-limit middleware and electron-builder's npm fetch path; the vulnerable HTML-emitting methods are never called and we never render Address6 output to a browser
+1117683

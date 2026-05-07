@@ -80,6 +80,21 @@ jobs:
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
 
+      # eBPF socket-isolation behavioral tests. These load the production
+      # BPF objects, attach to a fresh test cgroup, and exercise real
+      # bind/connect rewrites. Loading cgroup_sock_addr programs requires
+      # root + CAP_BPF, which the GitHub runner has via sudo.
+      #
+      # Regression coverage for the dual-stack [::] healthcheck bug
+      # (private/renet/docs/NETWORK_ISOLATION.md): TestEBPF_Bind6DualStackReachableFromV4
+      # fails if a future change re-introduces a [::] -> specific-v6
+      # rewrite that breaks v4 healthchecks.
+      - name: "Test: eBPF socket-isolation behavior"
+        run: |
+          cd private/renet
+          sudo -E env "PATH=$PATH" "GOPATH=$(go env GOPATH)" "GOCACHE=$(go env GOCACHE)" \
+            go test -tags=ebpf_e2e -v -run TestEBPF_ -timeout 2m ./pkg/ebpf/...
+
       - name: Build CLI
         # OTLP credentials are fetched at runtime after `rdc subscription
         # login` — no longer baked into the bundle (renet#51).

@@ -959,6 +959,7 @@
         "infrastructure": "Infraestructura",
         "noData": "No hay datos de estado disponibles",
         "storageHealthHint": "Consejo: Ejecuta con --storage-health para ver la fragmentación de BTRFS y el ahorro de reflink por repo",
+        "strictDriftDetected": "--strict: {{count}} contenedor(es) ha(n) superado el umbral de desviación; saliendo con código distinto de cero",
         "syncCertsFailed": "Falló la sincronización de la caché de certificados: {{error}}"
       },
       "rename": {
@@ -1321,12 +1322,12 @@
         "description": "Gestionar respaldos de repositorios",
         "list": {
           "description": "Listar respaldos disponibles en un remoto (máquina o almacenamiento)",
+          "descriptionShort": "Listar copias de seguridad disponibles en un remoto",
           "listing": "Listando respaldos...",
+          "localOnly": "repo backup list solo está soportado en modo adaptador local",
           "optionFrom": "Nombre de la máquina o almacenamiento de origen (detectado automáticamente desde la configuración)",
           "optionPath": "Subdirectorio dentro de la raíz de almacenamiento. Cuando se omite, se listan y combinan hot/ y cold/.",
-          "sourceRequired": "Especifique --from <remote> (nombre de máquina o almacenamiento de la configuración)",
-          "descriptionShort": "Listar copias de seguridad disponibles en un remoto",
-          "localOnly": "repo backup list solo está soportado en modo adaptador local"
+          "sourceRequired": "Especifique --from <remote> (nombre de máquina o almacenamiento de la configuración)"
         }
       },
       "batchConfirm": "¿{{action}} todos los {{count}} repos en \"{{machine}}\"? [y/N]",
@@ -2603,6 +2604,7 @@
     "queryRepositories": "Incluir solo repositorios",
     "queryServices": "Incluir solo servicios",
     "queryStorageHealth": "Mostrar fragmentación BTRFS y ahorro reflink por repositorio",
+    "queryStrict": "Salir con código distinto de cero (código 2) si algún contenedor ha superado el umbral de desviación de salud",
     "querySyncCerts": "También descargar la caché de certificados ACME de la máquina tras consultar",
     "querySystem": "Incluir solo información del sistema",
     "quiet": "Suprimir salida informativa",

@@ -1179,6 +1179,19 @@ jobs:
           VM_WORKERS: '11'
           SSH_USER: ${{ env.USER }}
 
+      # Curated-repo healthcheck convergence smoke test. Deploys
+      # app-postgres on the worker and asserts the db container's
+      # pg_isready healthcheck (probing localhost) reaches `healthy`.
+      # Catches integration regressions that pure unit-level eBPF
+      # tests can miss — the class of bug that hid nextcloud-talk's
+      # 3-day silent failure.
+      - name: Run compose healthcheck smoke test
+        run: .ci/scripts/private/compose-healthcheck-smoke-test.sh
+        env:
+          VM_NET_BASE: ${{ env.VM_NET_BASE }}
+          VM_WORKERS: '11'
+          SSH_USER: ${{ env.USER }}
+
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "fork-isolation" --status ${{ job.status }}
 
