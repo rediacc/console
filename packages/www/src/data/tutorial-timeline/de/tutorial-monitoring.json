@@ -7,14 +7,14 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "c60db76dda8432068d999f9f1ce7955c4acf75b9e11c9046d3c0f84ae22f0688",
+  "transcriptHash": "d31539edc22e9dc301f6fc6acb2e89123529354a552f6ec5c7f668f3aebe6417",
   "steps": [
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
       "replayStartSec": 102.949897,
       "replayEndSec": 114.069314,
-      "narrationText": "Wir beginnen mit der Systemansicht. rdc machine query mit dem system-Filter zeigt Uptime, Festplattennutzung und Speicherstatus. Wenn etwas nicht stimmt, meldet der Bericht es.",
+      "narrationText": "Wir beginnen mit der Systemansicht. Der Machine-Query-Befehl mit dem system-Filter zeigt Uptime, Festplattennutzung und Speicherstatus. Wenn etwas nicht stimmt, meldet der Bericht es.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-monitoring/tutorial-monitoring-01.ced8ca49.mp3",
       "audioDurationSec": 13.635918,
       "wordTimings": [
@@ -258,7 +258,7 @@
           "endChar": 112
         },
         {
-          "startSec": 8.0,
+          "startSec": 8,
           "endSec": 8.64,
           "startChar": 114,
           "endChar": 120
@@ -277,7 +277,7 @@
         },
         {
           "startSec": 11.76,
-          "endSec": 12.0,
+          "endSec": 12,
           "startChar": 146,
           "endChar": 150
         },
@@ -443,7 +443,7 @@
       "markerIndex": 3,
       "replayStartSec": 138.182721,
       "replayEndSec": 149.8205,
-      "narrationText": "rdc machine query gibt Ihnen alles auf einmal. Systeminformationen, Container, Repositories, alles zusammen. Einmal ausführen und Sie haben das vollständige Bild.",
+      "narrationText": "Der Machine-Query-Befehl gibt Ihnen alles auf einmal. Systeminformationen, Container, Repositories, alles zusammen. Einmal ausführen und Sie haben das vollständige Bild.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-monitoring/tutorial-monitoring-04.8fc6f60d.mp3",
       "audioDurationSec": 12.199184,
       "wordTimings": [
@@ -472,7 +472,7 @@
           "endChar": 22
         },
         {
-          "startSec": 2.0,
+          "startSec": 2,
           "endSec": 2.32,
           "startChar": 23,
           "endChar": 28
@@ -503,7 +503,7 @@
         },
         {
           "startSec": 5.2,
-          "endSec": 6.0,
+          "endSec": 6,
           "startChar": 68,
           "endChar": 77
         },
@@ -574,7 +574,7 @@
       "markerIndex": 4,
       "replayStartSec": 149.8205,
       "replayEndSec": 198.111981,
-      "narrationText": "Und schließlich rdc doctor für eine lokale Plausibilitätsprüfung auf Ihrem Laptop. Node, SSH-Schlüssel, renet, Docker, alles, wovon die CLI selbst abhängt. Das ist die vollständige Serie. Von der Installation bis zum Monitoring, alles aus Ihrem Terminal.",
+      "narrationText": "Und schließlich die Diagnoseprüfung für eine lokale Plausibilitätsprüfung auf Ihrem Laptop. Node, SSH-Schlüssel, renet, Docker, alles, wovon die CLI selbst abhängt. Das ist die vollständige Serie. Von der Installation bis zum Monitoring, alles aus Ihrem Terminal.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-monitoring/tutorial-monitoring-05.d2eea660.mp3",
       "audioDurationSec": 21.080816,
       "wordTimings": [
@@ -604,7 +604,7 @@
         },
         {
           "startSec": 5.84,
-          "endSec": 6.0,
+          "endSec": 6,
           "startChar": 239,
           "endChar": 244
         },

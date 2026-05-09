@@ -7,14 +7,14 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "46d2ecaaba278cce47913a7e9abfaccbc3d3bb40bef641b256e861d14a5143c1",
+  "transcriptHash": "b16857984a13347a509e6265b8d7e7d57418c116ed7393165a15b3f57705e9ae",
   "steps": [
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
       "replayStartSec": 93.14728,
       "replayEndSec": 103.393386,
-      "narrationText": "First, the tunnel command. The app runs on the server, not your laptop. rdc repo tunnel forwards a container port over SSH so you can open it at localhost in your browser.",
+      "narrationText": "First, the tunnel command. The app runs on the server, not your laptop. The tunnel command forwards a container port over SSH so you can open it at localhost in your browser.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-01.c2ea15f5.mp3",
       "audioDurationSec": 12.512653,
       "wordTimings": [
@@ -217,7 +217,7 @@
       "markerIndex": 1,
       "replayStartSec": 103.393386,
       "replayEndSec": 120.858492,
-      "narrationText": "Second, the term command. rdc term connect drops you into the repo sandbox, the same isolated view as VS Code. Run any command against this repo Docker daemon without leaving your terminal.",
+      "narrationText": "Second, the term command. The terminal connect command drops you into the repo sandbox, the same isolated view as VS Code. Run any command against this repo Docker daemon without leaving your terminal.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-02.a4eaccba.mp3",
       "audioDurationSec": 12.669388,
       "wordTimings": [
@@ -265,12 +265,12 @@
         },
         {
           "startSec": 3.84,
-          "endSec": 4.0,
+          "endSec": 4,
           "startChar": 49,
           "endChar": 52
         },
         {
-          "startSec": 4.0,
+          "startSec": 4,
           "endSec": 4.16,
           "startChar": 53,
           "endChar": 57
@@ -391,12 +391,12 @@
         },
         {
           "startSec": 11.6,
-          "endSec": 12.0,
+          "endSec": 12,
           "startChar": 167,
           "endChar": 174
         },
         {
-          "startSec": 12.0,
+          "startSec": 12,
           "endSec": 12.08,
           "startChar": 175,
           "endChar": 179
@@ -581,7 +581,7 @@
       "markerIndex": 3,
       "replayStartSec": 137.357072,
       "replayEndSec": 192.201374,
-      "narrationText": "And the upload for real. rdc repo sync upload moves files from your laptop into the repo over SSH, with rsync delta compression. Tunnel, term, sync. Three commands cover the daily loop.",
+      "narrationText": "And the upload for real. The sync upload command moves files from your laptop into the repo over SSH, with rsync delta compression. Tunnel, term, sync. Three commands cover the daily loop.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-04.0ada53e9.mp3",
       "audioDurationSec": 14.28898,
       "wordTimings": [
@@ -671,12 +671,12 @@
         },
         {
           "startSec": 5.76,
-          "endSec": 6.0,
+          "endSec": 6,
           "startChar": 75,
           "endChar": 79
         },
         {
-          "startSec": 6.0,
+          "startSec": 6,
           "endSec": 6.08,
           "startChar": 80,
           "endChar": 83

@@ -7,7 +7,7 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "d48fd4e05c521e21f9490879f7e9fb07bd7963d3b844152f5c6ed250baa69f40",
+  "transcriptHash": "2dd15631c0695e026309b6a6629b422034716b1143fba789d8b8edd2b0e36abc",
   "steps": [
     {
       "id": "tutorial-backup-restore-01",
@@ -128,7 +128,7 @@
         },
         {
           "startSec": 9.68,
-          "endSec": 10.0,
+          "endSec": 10,
           "startChar": 141,
           "endChar": 149
         },
@@ -157,7 +157,7 @@
           "endChar": 174
         },
         {
-          "startSec": 12.0,
+          "startSec": 12,
           "endSec": 12.08,
           "startChar": 176,
           "endChar": 180
@@ -205,7 +205,7 @@
       "markerIndex": 1,
       "replayStartSec": 73.743501,
       "replayEndSec": 82.843959,
-      "narrationText": "Listons les stockages que rdc connaît maintenant. Chaque stockage est une destination vers laquelle nous pouvons pousser des sauvegardes.",
+      "narrationText": "Listons les stockages que l'outil connaît maintenant. Chaque stockage est une destination vers laquelle nous pouvons pousser des sauvegardes.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-backup-restore/tutorial-backup-restore-02.ad0ea00d.mp3",
       "audioDurationSec": 8.280816,
       "wordTimings": [
@@ -283,12 +283,12 @@
         },
         {
           "startSec": 5.84,
-          "endSec": 6.0,
+          "endSec": 6,
           "startChar": 86,
           "endChar": 90
         },
         {
-          "startSec": 6.0,
+          "startSec": 6,
           "endSec": 6.48,
           "startChar": 91,
           "endChar": 99
@@ -521,7 +521,7 @@
       "markerIndex": 3,
       "replayStartSec": 94.515541,
       "replayEndSec": 131.818198,
-      "narrationText": "Listons les sauvegardes disponibles sur ce stockage. À partir de là, la restauration sur un tout nouveau serveur se fait en une seule commande : rdc repo pull. Mêmes données, mêmes conteneurs, machine différente.",
+      "narrationText": "Listons les sauvegardes disponibles sur ce stockage. À partir de là, la restauration sur un tout nouveau serveur se fait en une seule commande : la commande de restauration de dépôt. Mêmes données, mêmes conteneurs, machine différente.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-backup-restore/tutorial-backup-restore-04.104db7b5.mp3",
       "audioDurationSec": 15.386122,
       "wordTimings": [
@@ -575,12 +575,12 @@
         },
         {
           "startSec": 3.6,
-          "endSec": 4.0,
+          "endSec": 4,
           "startChar": 55,
           "endChar": 61
         },
         {
-          "startSec": 4.0,
+          "startSec": 4,
           "endSec": 4.08,
           "startChar": 62,
           "endChar": 64
@@ -611,12 +611,12 @@
         },
         {
           "startSec": 5.84,
-          "endSec": 6.0,
+          "endSec": 6,
           "startChar": 89,
           "endChar": 91
         },
         {
-          "startSec": 6.0,
+          "startSec": 6,
           "endSec": 6.24,
           "startChar": 92,
           "endChar": 96
@@ -689,12 +689,12 @@
         },
         {
           "startSec": 11.76,
-          "endSec": 12.0,
+          "endSec": 12,
           "startChar": 160,
           "endChar": 164
         },
         {
-          "startSec": 12.0,
+          "startSec": 12,
           "endSec": 12.4,
           "startChar": 166,
           "endChar": 173

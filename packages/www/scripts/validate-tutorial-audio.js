@@ -118,6 +118,23 @@ function validatePair({ lang, transcriptPath, timelinePath, errors }) {
   const relativeTimeline = path.relative(ROOT, timelinePath);
 
   if (!fs.existsSync(timelinePath)) {
+    // Translation can land before TTS generation finishes. Treat the missing
+    // timeline as a WIP state — rather than an error — when audio for this
+    // (lang, tutorial) is absent or incomplete (fewer mp3s than transcript
+    // events). Only error once the audio set matches the transcript event
+    // count, which is the point at which the timeline really is overdue.
+    const castKey = path.basename(transcriptPath, '.json');
+    const audioDir = path.join(ROOT, 'public', 'assets', 'tutorials', 'audio', lang, castKey);
+    if (!fs.existsSync(audioDir)) {
+      return;
+    }
+    const audioCount = fs
+      .readdirSync(audioDir)
+      .filter((f) => f.toLowerCase().endsWith('.mp3')).length;
+    const eventCount = Array.isArray(transcript.events) ? transcript.events.length : 0;
+    if (audioCount < eventCount) {
+      return;
+    }
     pushError(
       errors,
       relativeTimeline,

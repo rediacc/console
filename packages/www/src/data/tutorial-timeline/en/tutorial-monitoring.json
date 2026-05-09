@@ -7,14 +7,14 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "aa5b5cc673b4eb95ebf1c64f2a9ea20a2d87ab2c088e175087df7d8fa9d2fe2f",
+  "transcriptHash": "872e6feac628105bbd768a51d15215413f99580d0746a38316a33470aeb300e2",
   "steps": [
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
       "replayStartSec": 102.949897,
       "replayEndSec": 114.069314,
-      "narrationText": "Let us start with the system view. rdc machine query with the system filter shows uptime, disk usage, and storage status.",
+      "narrationText": "Let us start with the system view. The machine query command with the system filter shows uptime, disk usage, and storage status.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-01.1d6f8ee4.mp3",
       "audioDurationSec": 8.437551,
       "wordTimings": [
@@ -109,7 +109,7 @@
           "endChar": 88
         },
         {
-          "startSec": 6.0,
+          "startSec": 6,
           "endSec": 6.32,
           "startChar": 90,
           "endChar": 94
@@ -419,7 +419,7 @@
       "markerIndex": 3,
       "replayStartSec": 138.182721,
       "replayEndSec": 149.8205,
-      "narrationText": "rdc machine query with no filters gives you everything in one shot. System info, containers, repositories, all together.",
+      "narrationText": "The machine query command with no filters gives you everything in one shot. System info, containers, repositories, all together.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-04.59968665.mp3",
       "audioDurationSec": 9.404082,
       "wordTimings": [
@@ -485,12 +485,12 @@
         },
         {
           "startSec": 3.76,
-          "endSec": 4.0,
+          "endSec": 4,
           "startChar": 58,
           "endChar": 61
         },
         {
-          "startSec": 4.0,
+          "startSec": 4,
           "endSec": 4.4,
           "startChar": 62,
           "endChar": 66
@@ -508,14 +508,14 @@
           "endChar": 79
         },
         {
-          "startSec": 6.0,
+          "startSec": 6,
           "endSec": 6.8,
           "startChar": 81,
           "endChar": 91
         },
         {
           "startSec": 6.96,
-          "endSec": 8.0,
+          "endSec": 8,
           "startChar": 93,
           "endChar": 105
         },
@@ -538,7 +538,7 @@
       "markerIndex": 4,
       "replayStartSec": 149.8205,
       "replayEndSec": 198.111981,
-      "narrationText": "And finally rdc doctor for a local sanity check on your laptop. Node, SSH key, renet, Docker. All the things rdc itself depends on. That is the full series. From install to monitoring, all from your terminal.",
+      "narrationText": "And finally the diagnostic check for a local sanity check on your laptop. Node, SSH key, renet, Docker. All the things the CLI itself depends on. That is the full series. From install to monitoring, all from your terminal.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-05.cbe5850c.mp3",
       "audioDurationSec": 17.162449,
       "wordTimings": [

@@ -1,0 +1,61 @@
+{
+  "cast": "/assets/tutorials/tutorial-forking.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "8c6fcafe311d579e8286a9d9d290e4629f4cdbd9d9dc414ac891d006502412ec",
+  "steps": [
+    {
+      "id": "tutorial-forking-01",
+      "markerIndex": 0,
+      "replayStartSec": 108.099445,
+      "replayEndSec": 142.355671,
+      "narrationText": "コマンド1つでリポジトリをフォークします。アプリ、データベース、設定ファイルすべてがクローンされました。しかも数秒で完了します。リポジトリのサイズに関係なく同じです。1ギガバイトでも、100ギガバイトでも、1テラバイトでも、常に同じ時間がかかります。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-forking/tutorial-forking-01.b731bfe8.mp3"
+    },
+    {
+      "id": "tutorial-forking-02",
+      "markerIndex": 1,
+      "replayStartSec": 142.355671,
+      "replayEndSec": 158.262452,
+      "narrationText": "両方のリポジトリが並存しています。同じマシン、同じディスク、完全に独立した2つの環境です。フォークは独自のコンテナ、独自のファイルシステム、独自の Docker デーモンを持っています。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-forking/tutorial-forking-02.3c59b841.mp3"
+    },
+    {
+      "id": "tutorial-forking-03",
+      "markerIndex": 2,
+      "replayStartSec": 158.262452,
+      "replayEndSec": 176.185047,
+      "narrationText": "分離を証明しましょう。元のリポジトリでは、マーカーファイルがそのままあります。フォークの存在は親に何も変化をもたらしていません。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-forking/tutorial-forking-03.ed5ff7d8.mp3"
+    },
+    {
+      "id": "tutorial-forking-04",
+      "markerIndex": 3,
+      "replayStartSec": 176.185047,
+      "replayEndSec": 195.030667,
+      "narrationText": "では、フォーク内だけでそのファイルを削除します。フォーク内では消えました。破壊的な変更を行いましたが、フォーク内に留まりました。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-forking/tutorial-forking-04.bc661cf8.mp3"
+    },
+    {
+      "id": "tutorial-forking-05",
+      "markerIndex": 4,
+      "replayStartSec": 195.030667,
+      "replayEndSec": 212.971596,
+      "narrationText": "元のリポジトリに戻ります。マーカーファイルはここにあり、手つかずのままです。元のリポジトリは何も起きたことを知りません。同じイメージ、別の Docker デーモン、別のファイルシステムです。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-forking/tutorial-forking-05.4a6b7a1a.mp3"
+    },
+    {
+      "id": "tutorial-forking-06",
+      "markerIndex": 5,
+      "replayStartSec": 212.971596,
+      "replayEndSec": 222.971596,
+      "narrationText": "作業が終わったら、フォークを削除するだけです。元のリポジトリはまったく変わりません。フォークして、実験して、壊して、削除する。リスクゼロです。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-forking/tutorial-forking-06.899cb15e.mp3"
+    }
+  ]
+}

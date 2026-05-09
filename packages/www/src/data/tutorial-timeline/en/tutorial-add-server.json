@@ -7,7 +7,7 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "5bc0347b6c961ad3780e0968dccf371179dbfc9133ef9a150479fea6f32f60b5",
+  "transcriptHash": "5243296efb5be250f16c1ce28d2e13c217f481ad3094fe92896a3cfccb1f6ec3",
   "steps": [
     {
       "id": "tutorial-add-server-01",
@@ -115,7 +115,7 @@
       "markerIndex": 1,
       "replayStartSec": 11.160728,
       "replayEndSec": 23.457976,
-      "narrationText": "Now we register the server with rdc, providing its name, IP address, and SSH user. Host keys are scanned automatically for trusted access.",
+      "narrationText": "Now we register the server from the command line, providing its name, IP address, and SSH user. Host keys are scanned automatically for trusted access.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-02.4d15ca29.mp3",
       "audioDurationSec": 10.44898,
       "wordTimings": [
@@ -294,7 +294,7 @@
         },
         {
           "startSec": 1.52,
-          "endSec": 2.0,
+          "endSec": 2,
           "startChar": 22,
           "endChar": 28
         },
@@ -347,7 +347,7 @@
       "markerIndex": 3,
       "replayStartSec": 39.717449,
       "replayEndSec": 48.157549,
-      "narrationText": "Server is ready. Let's verify what rdc knows about the configuration. Machines, SSH key, infrastructure, everything we just set up appears here.",
+      "narrationText": "Server is ready. Let's verify what the CLI knows about the configuration. Machines, SSH key, infrastructure, everything we just set up appears here.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-04.42344a3a.mp3",
       "audioDurationSec": 10.187755,
       "wordTimings": [
@@ -526,12 +526,12 @@
         },
         {
           "startSec": 1.68,
-          "endSec": 2.0,
+          "endSec": 2,
           "startChar": 31,
           "endChar": 36
         },
         {
-          "startSec": 2.0,
+          "startSec": 2,
           "endSec": 2.08,
           "startChar": 37,
           "endChar": 39
@@ -556,7 +556,7 @@
         },
         {
           "startSec": 3.6,
-          "endSec": 4.0,
+          "endSec": 4,
           "startChar": 55,
           "endChar": 61
         },
@@ -586,12 +586,12 @@
         },
         {
           "startSec": 5.84,
-          "endSec": 6.0,
+          "endSec": 6,
           "startChar": 85,
           "endChar": 88
         },
         {
-          "startSec": 6.0,
+          "startSec": 6,
           "endSec": 6.08,
           "startChar": 89,
           "endChar": 92

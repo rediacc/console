@@ -7,14 +7,14 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "7da92d93569249db52b9b654cce9f5cbbcc6a5e3dc8d7413e69a5b395a634d6c",
+  "transcriptHash": "e7bf46a11cee2d3d94a4ddca3d74046ac2a1e7e77c1c2a0be60b603a321a20ff",
   "steps": [
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
       "replayStartSec": 27.859436,
       "replayEndSec": 41.958746,
-      "narrationText": "Step two. We tell rdc the public IP, the base domain, the certificate email, and the Cloudflare API token. The cert email and the token are shared across all your machines, so you only set them once.",
+      "narrationText": "Step two. We set the public IP, the base domain, the certificate email, and the Cloudflare API token from the command line. The cert email and the token are shared across all your machines, so you only set them once.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-01.0ce95063.mp3",
       "audioDurationSec": 13.949388,
       "wordTimings": [
@@ -50,7 +50,7 @@
         },
         {
           "startSec": 1.92,
-          "endSec": 2.0,
+          "endSec": 2,
           "startChar": 22,
           "endChar": 25
         },
@@ -199,7 +199,7 @@
           "endChar": 171
         },
         {
-          "startSec": 12.0,
+          "startSec": 12,
           "endSec": 12.48,
           "startChar": 173,
           "endChar": 175
@@ -670,12 +670,12 @@
         },
         {
           "startSec": 3.2,
-          "endSec": 4.0,
+          "endSec": 4,
           "startChar": 54,
           "endChar": 67
         },
         {
-          "startSec": 4.0,
+          "startSec": 4,
           "endSec": 4.16,
           "startChar": 68,
           "endChar": 71
@@ -718,12 +718,12 @@
         },
         {
           "startSec": 7.92,
-          "endSec": 8.0,
+          "endSec": 8,
           "startChar": 126,
           "endChar": 128
         },
         {
-          "startSec": 8.0,
+          "startSec": 8,
           "endSec": 8.24,
           "startChar": 129,
           "endChar": 131

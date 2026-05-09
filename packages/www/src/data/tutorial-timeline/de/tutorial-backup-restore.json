@@ -7,7 +7,7 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "c31b2334c615efc576a33add99573fe0b58a01b343bb669985f4696589c49266",
+  "transcriptHash": "6ae1e4d383a8b2378da429c75fa841a79f4c0a4421852ec783d81cc175536224",
   "steps": [
     {
       "id": "tutorial-backup-restore-01",
@@ -217,12 +217,12 @@
         },
         {
           "startSec": 3.76,
-          "endSec": 4.0,
+          "endSec": 4,
           "startChar": 54,
           "endChar": 59
         },
         {
-          "startSec": 4.0,
+          "startSec": 4,
           "endSec": 4.48,
           "startChar": 60,
           "endChar": 68
@@ -317,7 +317,7 @@
           "endChar": 28
         },
         {
-          "startSec": 2.0,
+          "startSec": 2,
           "endSec": 2.24,
           "startChar": 29,
           "endChar": 32
@@ -336,12 +336,12 @@
         },
         {
           "startSec": 3.84,
-          "endSec": 4.0,
+          "endSec": 4,
           "startChar": 55,
           "endChar": 58
         },
         {
-          "startSec": 4.0,
+          "startSec": 4,
           "endSec": 4.48,
           "startChar": 59,
           "endChar": 66
@@ -366,7 +366,7 @@
         },
         {
           "startSec": 7.36,
-          "endSec": 8.0,
+          "endSec": 8,
           "startChar": 95,
           "endChar": 102
         },
@@ -479,7 +479,7 @@
       "markerIndex": 3,
       "replayStartSec": 94.515541,
       "replayEndSec": 131.818198,
-      "narrationText": "Wir listen die auf diesem Speicher verfügbaren Backups auf. Von hier aus ist die Wiederherstellung auf einem neuen Server ein einziger Befehl: rdc repo pull. Gleiche Daten, gleiche Container, andere Maschine.",
+      "narrationText": "Wir listen die auf diesem Speicher verfügbaren Backups auf. Von hier aus ist die Wiederherstellung auf einem neuen Server ein einziger Befehl: der Repo-Pull-Befehl. Gleiche Daten, gleiche Container, andere Maschine.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-backup-restore/tutorial-backup-restore-04.6815a526.mp3",
       "audioDurationSec": 15.960816,
       "wordTimings": [
@@ -599,7 +599,7 @@
         },
         {
           "startSec": 7.76,
-          "endSec": 8.0,
+          "endSec": 8,
           "startChar": 122,
           "endChar": 125
         },

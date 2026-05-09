@@ -7,14 +7,14 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "5197484017c75b57aff349826fb82d4b3772979a3715be02b3e7403c6932485e",
+  "transcriptHash": "572731341ebc59f14099aff0092466a1138ad3ef96864ad86774204ee5930ad3",
   "steps": [
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
       "replayStartSec": 56.862064,
       "replayEndSec": 97.750961,
-      "narrationText": "Wir starten die App im Produktionsmodus vom Laptop aus. rdc repo up ruft dieselbe up-Funktion auf, die wir während der Entwicklung verwendet haben, läuft aber getrennt. Sie können Ihren Laptop zuklappen und die App läuft weiter.",
+      "narrationText": "Wir starten die App im Produktionsmodus vom Laptop aus. Der Deployment-Befehl ruft dieselbe up-Funktion auf, die wir während der Entwicklung verwendet haben, läuft aber getrennt. Sie können Ihren Laptop zuklappen und die App läuft weiter.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-production-mode/tutorial-production-mode-01.e93de52f.mp3",
       "audioDurationSec": 15.307755,
       "wordTimings": [
@@ -158,12 +158,12 @@
         },
         {
           "startSec": 9.6,
-          "endSec": 10.0,
+          "endSec": 10,
           "startChar": 148,
           "endChar": 153
         },
         {
-          "startSec": 10.0,
+          "startSec": 10,
           "endSec": 10.24,
           "startChar": 154,
           "endChar": 158
@@ -211,7 +211,7 @@
           "endChar": 206
         },
         {
-          "startSec": 14.0,
+          "startSec": 14,
           "endSec": 14.16,
           "startChar": 207,
           "endChar": 210
@@ -301,12 +301,12 @@
         },
         {
           "startSec": 7.68,
-          "endSec": 8.0,
+          "endSec": 8,
           "startChar": 119,
           "endChar": 125
         },
         {
-          "startSec": 8.0,
+          "startSec": 8,
           "endSec": 8.4,
           "startChar": 126,
           "endChar": 130
@@ -509,12 +509,12 @@
         },
         {
           "startSec": 3.84,
-          "endSec": 4.0,
+          "endSec": 4,
           "startChar": 67,
           "endChar": 70
         },
         {
-          "startSec": 4.0,
+          "startSec": 4,
           "endSec": 4.4,
           "startChar": 71,
           "endChar": 77

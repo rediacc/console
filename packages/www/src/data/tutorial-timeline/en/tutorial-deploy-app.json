@@ -7,7 +7,7 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "c6a7dd14efbb248e2e3b04dcecb87bf993208f9016716c1f4ba555b259597d36",
+  "transcriptHash": "857c93cbbb15e4dd75af0b5cca4b0ac459c9f282468bbb9b08df1fe6d2b7a8dd",
   "steps": [
     {
       "id": "tutorial-deploy-app-01",
@@ -50,12 +50,12 @@
         },
         {
           "startSec": 1.84,
-          "endSec": 2.0,
+          "endSec": 2,
           "startChar": 23,
           "endChar": 26
         },
         {
-          "startSec": 2.0,
+          "startSec": 2,
           "endSec": 2.4,
           "startChar": 27,
           "endChar": 36
@@ -67,7 +67,7 @@
           "endChar": 46
         },
         {
-          "startSec": 4.0,
+          "startSec": 4,
           "endSec": 4.32,
           "startChar": 56,
           "endChar": 61
@@ -283,12 +283,12 @@
         },
         {
           "startSec": 11.68,
-          "endSec": 12.0,
+          "endSec": 12,
           "startChar": 159,
           "endChar": 162
         },
         {
-          "startSec": 12.0,
+          "startSec": 12,
           "endSec": 12.32,
           "startChar": 163,
           "endChar": 167
@@ -306,7 +306,7 @@
       "markerIndex": 2,
       "replayStartSec": 79.070004,
       "replayEndSec": 123.719014,
-      "narrationText": "Step three. Bring the repo up. rdc starts the containers, mounts the encrypted volume, and wires up the isolated Docker daemon.",
+      "narrationText": "Step three. Bring the repo up. The CLI starts the containers, mounts the encrypted volume, and wires up the isolated Docker daemon.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-03.7fe8b873.mp3",
       "audioDurationSec": 8.515918,
       "wordTimings": [
@@ -426,12 +426,12 @@
         },
         {
           "startSec": 7.68,
-          "endSec": 8.0,
+          "endSec": 8,
           "startChar": 113,
           "endChar": 119
         },
         {
-          "startSec": 8.0,
+          "startSec": 8,
           "endSec": 8.48,
           "startChar": 120,
           "endChar": 126
@@ -515,12 +515,12 @@
         },
         {
           "startSec": 3.76,
-          "endSec": 4.0,
+          "endSec": 4,
           "startChar": 57,
           "endChar": 61
         },
         {
-          "startSec": 4.0,
+          "startSec": 4,
           "endSec": 4.32,
           "startChar": 62,
           "endChar": 66
@@ -587,7 +587,7 @@
         },
         {
           "startSec": 7.6,
-          "endSec": 8.0,
+          "endSec": 8,
           "startChar": 125,
           "endChar": 132
         },
@@ -617,12 +617,12 @@
         },
         {
           "startSec": 9.76,
-          "endSec": 10.0,
+          "endSec": 10,
           "startChar": 162,
           "endChar": 166
         },
         {
-          "startSec": 10.0,
+          "startSec": 10,
           "endSec": 10.16,
           "startChar": 167,
           "endChar": 171

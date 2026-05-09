@@ -1,0 +1,581 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "e1bd85c3d04c9094dde5882e490113deebcb3722c08e231e088c94211da4ac7e",
+  "steps": [
+    {
+      "id": "tutorial-installation-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.509194,
+      "replayEndSec": 9.435981,
+      "narrationText": "まず、CLI がパスに追加されているか確認します。バージョンフラグを付けて CLI を実行すると、インストールされているバージョンが表示され、インストールが正常に完了したことを確認できます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-installation/tutorial-installation-01.cae2b422.mp3",
+      "audioDurationSec": 14.680816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.04,
+          "startChar": 3,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.6,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.0,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.16,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.48,
+          "startChar": 11,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.64,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.72,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 2.96,
+          "startChar": 16,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.2,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.6,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.68,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.0,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.2,
+          "startChar": 25,
+          "endChar": 30
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.52,
+          "startChar": 30,
+          "endChar": 33
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.6,
+          "startChar": 33,
+          "endChar": 34
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.76,
+          "startChar": 34,
+          "endChar": 36
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.0,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 7.04,
+          "startChar": 38,
+          "endChar": 41
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.12,
+          "startChar": 42,
+          "endChar": 43
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.52,
+          "startChar": 43,
+          "endChar": 45
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.68,
+          "startChar": 45,
+          "endChar": 47
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.92,
+          "startChar": 47,
+          "endChar": 48
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.96,
+          "startChar": 49,
+          "endChar": 55
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.12,
+          "startChar": 55,
+          "endChar": 56
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.2,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.36,
+          "startChar": 57,
+          "endChar": 58
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.52,
+          "startChar": 58,
+          "endChar": 60
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 10.0,
+          "startChar": 60,
+          "endChar": 65
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.08,
+          "startChar": 65,
+          "endChar": 66
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.48,
+          "startChar": 66,
+          "endChar": 68
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.64,
+          "startChar": 68,
+          "endChar": 69
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 10.88,
+          "startChar": 69,
+          "endChar": 70
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.84,
+          "startChar": 71,
+          "endChar": 77
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.16,
+          "startChar": 77,
+          "endChar": 78
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.64,
+          "startChar": 78,
+          "endChar": 80
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 12.8,
+          "startChar": 80,
+          "endChar": 81
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.2,
+          "startChar": 81,
+          "endChar": 83
+        },
+        {
+          "startSec": 13.2,
+          "endSec": 13.28,
+          "startChar": 83,
+          "endChar": 84
+        },
+        {
+          "startSec": 13.28,
+          "endSec": 13.44,
+          "startChar": 84,
+          "endChar": 85
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.68,
+          "startChar": 85,
+          "endChar": 87
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 13.76,
+          "startChar": 87,
+          "endChar": 88
+        },
+        {
+          "startSec": 13.76,
+          "endSec": 14.16,
+          "startChar": 88,
+          "endChar": 90
+        },
+        {
+          "startSec": 14.16,
+          "endSec": 14.32,
+          "startChar": 90,
+          "endChar": 92
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.56,
+          "startChar": 92,
+          "endChar": 94
+        }
+      ]
+    },
+    {
+      "id": "tutorial-installation-02",
+      "markerIndex": 1,
+      "replayStartSec": 9.435981,
+      "replayEndSec": 18.745045,
+      "narrationText": "次に、CLI の doctor コマンドを実行します。Node、SSH など、CLI が必要とする依存関係を順番にチェックし、不足しているものを報告します。問題なければサーバーを追加する準備が整っています。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-installation/tutorial-installation-02.aa2bd27e.mp3",
+      "audioDurationSec": 15.960816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 3,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.68,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.64,
+          "startChar": 16,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.72,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.12,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.28,
+          "startChar": 23,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.6,
+          "startChar": 24,
+          "endChar": 26
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.32,
+          "startChar": 27,
+          "endChar": 31
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.52,
+          "startChar": 32,
+          "endChar": 35
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.84,
+          "startChar": 36,
+          "endChar": 38
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.56,
+          "startChar": 39,
+          "endChar": 42
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 6.88,
+          "startChar": 43,
+          "endChar": 44
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.28,
+          "startChar": 44,
+          "endChar": 46
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.36,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.68,
+          "startChar": 47,
+          "endChar": 49
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.92,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.4,
+          "startChar": 51,
+          "endChar": 53
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.48,
+          "startChar": 53,
+          "endChar": 54
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.96,
+          "startChar": 54,
+          "endChar": 56
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.12,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.44,
+          "startChar": 57,
+          "endChar": 61
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.68,
+          "startChar": 61,
+          "endChar": 62
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.48,
+          "startChar": 63,
+          "endChar": 65
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.56,
+          "startChar": 65,
+          "endChar": 66
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.72,
+          "startChar": 66,
+          "endChar": 67
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.88,
+          "startChar": 67,
+          "endChar": 69
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.12,
+          "startChar": 69,
+          "endChar": 71
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 11.52,
+          "startChar": 72,
+          "endChar": 74
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.68,
+          "startChar": 74,
+          "endChar": 75
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 12.0,
+          "startChar": 75,
+          "endChar": 77
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 12.88,
+          "startChar": 78,
+          "endChar": 80
+        },
+        {
+          "startSec": 12.88,
+          "endSec": 13.12,
+          "startChar": 80,
+          "endChar": 83
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.36,
+          "startChar": 83,
+          "endChar": 84
+        },
+        {
+          "startSec": 13.36,
+          "endSec": 13.84,
+          "startChar": 84,
+          "endChar": 88
+        },
+        {
+          "startSec": 13.84,
+          "endSec": 14.0,
+          "startChar": 88,
+          "endChar": 89
+        },
+        {
+          "startSec": 14.0,
+          "endSec": 14.32,
+          "startChar": 89,
+          "endChar": 91
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.56,
+          "startChar": 91,
+          "endChar": 93
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 14.88,
+          "startChar": 93,
+          "endChar": 95
+        },
+        {
+          "startSec": 14.88,
+          "endSec": 15.04,
+          "startChar": 95,
+          "endChar": 96
+        },
+        {
+          "startSec": 15.04,
+          "endSec": 15.36,
+          "startChar": 96,
+          "endChar": 98
+        },
+        {
+          "startSec": 15.36,
+          "endSec": 15.52,
+          "startChar": 98,
+          "endChar": 99
+        },
+        {
+          "startSec": 15.52,
+          "endSec": 15.6,
+          "startChar": 99,
+          "endChar": 100
+        },
+        {
+          "startSec": 15.6,
+          "endSec": 15.84,
+          "startChar": 100,
+          "endChar": 102
+        }
+      ]
+    }
+  ]
+}

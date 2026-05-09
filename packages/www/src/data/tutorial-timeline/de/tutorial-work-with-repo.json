@@ -7,14 +7,14 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "3c3cc2ec0cb98256334a8ed325d0936c392e36d49bfb23eb2e6db66993fc2b9a",
+  "transcriptHash": "fd77edbf9d2935b3bbb7d47bcf15c3f8e58be97c198927cf84b157d7c6c9e909",
   "steps": [
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
       "replayStartSec": 93.14728,
       "replayEndSec": 103.393386,
-      "narrationText": "Zuerst der tunnel-Befehl. Die App läuft auf dem Server, nicht auf Ihrem Laptop. rdc repo tunnel leitet den Port eines Containers über SSH weiter, sodass Sie ihn unter localhost in Ihrem Browser öffnen können.",
+      "narrationText": "Zuerst der tunnel-Befehl. Die App läuft auf dem Server, nicht auf Ihrem Laptop. Der Tunnel-Befehl leitet den Port eines Containers über SSH weiter, sodass Sie ihn unter localhost in Ihrem Browser öffnen können.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-work-with-repo/tutorial-work-with-repo-01.f46e5124.mp3",
       "audioDurationSec": 13.479184,
       "wordTimings": [
@@ -145,7 +145,7 @@
           "endChar": 144
         },
         {
-          "startSec": 10.0,
+          "startSec": 10,
           "endSec": 10.08,
           "startChar": 146,
           "endChar": 148
@@ -217,7 +217,7 @@
       "markerIndex": 1,
       "replayStartSec": 103.393386,
       "replayEndSec": 120.858492,
-      "narrationText": "Zweitens der term-Befehl. rdc term connect bringt Sie in die Sandbox des Repos, dieselbe isolierte Ansicht wie in VS Code. Führen Sie beliebige Befehle gegen den Docker-Daemon dieses Repos aus, ohne das Terminal zu verlassen.",
+      "narrationText": "Zweitens der term-Befehl. Der Terminal-Connect-Befehl bringt Sie in die Sandbox des Repos, dieselbe isolierte Ansicht wie in VS Code. Führen Sie beliebige Befehle gegen den Docker-Daemon dieses Repos aus, ohne das Terminal zu verlassen.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-work-with-repo/tutorial-work-with-repo-02.3d1becc2.mp3",
       "audioDurationSec": 16.770612,
       "wordTimings": [
@@ -324,7 +324,7 @@
           "endChar": 121
         },
         {
-          "startSec": 10.0,
+          "startSec": 10,
           "endSec": 10.4,
           "startChar": 123,
           "endChar": 129
@@ -391,12 +391,12 @@
         },
         {
           "startSec": 15.6,
-          "endSec": 16.0,
+          "endSec": 16,
           "startChar": 203,
           "endChar": 211
         },
         {
-          "startSec": 16.0,
+          "startSec": 16,
           "endSec": 16.16,
           "startChar": 212,
           "endChar": 214
@@ -486,12 +486,12 @@
         },
         {
           "startSec": 5.84,
-          "endSec": 6.0,
+          "endSec": 6,
           "startChar": 73,
           "endChar": 76
         },
         {
-          "startSec": 6.0,
+          "startSec": 6,
           "endSec": 6.32,
           "startChar": 77,
           "endChar": 82
@@ -599,7 +599,7 @@
       "markerIndex": 3,
       "replayStartSec": 137.357072,
       "replayEndSec": 192.201374,
-      "narrationText": "Jetzt führen wir den Upload durch. rdc repo sync upload verschiebt Dateien von Ihrem Laptop ins Repo über SSH mit rsync-Delta-Kompression. Tunnel, term, sync: drei Befehle decken den täglichen Ablauf ab.",
+      "narrationText": "Jetzt führen wir den Upload durch. Der Sync-Upload-Befehl verschiebt Dateien von Ihrem Laptop ins Repo über SSH mit rsync-Delta-Kompression. Tunnel, term, sync: drei Befehle decken den täglichen Ablauf ab.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-work-with-repo/tutorial-work-with-repo-04.1c154754.mp3",
       "audioDurationSec": 14.28898,
       "wordTimings": [
@@ -712,7 +712,7 @@
           "endChar": 192
         },
         {
-          "startSec": 14.0,
+          "startSec": 14,
           "endSec": 14.16,
           "startChar": 200,
           "endChar": 202

@@ -7,7 +7,7 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "99376cbb809ec518b3f03b2104f8075dde36f92021c24483bb706b097cc9d109",
+  "transcriptHash": "9709bee010394ad7680f6d6afaa71fd5b5d62c28f214f0f661b88c1417b85d05",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
@@ -44,12 +44,12 @@
         },
         {
           "startSec": 1.68,
-          "endSec": 2.0,
+          "endSec": 2,
           "startChar": 27,
           "endChar": 30
         },
         {
-          "startSec": 2.0,
+          "startSec": 2,
           "endSec": 4.08,
           "startChar": 31,
           "endChar": 38
@@ -103,7 +103,7 @@
           "endChar": 90
         },
         {
-          "startSec": 12.0,
+          "startSec": 12,
           "endSec": 12.16,
           "startChar": 108,
           "endChar": 111
@@ -151,7 +151,7 @@
           "endChar": 144
         },
         {
-          "startSec": 14.0,
+          "startSec": 14,
           "endSec": 14.32,
           "startChar": 145,
           "endChar": 150
@@ -295,12 +295,12 @@
         },
         {
           "startSec": 7.68,
-          "endSec": 8.0,
+          "endSec": 8,
           "startChar": 108,
           "endChar": 113
         },
         {
-          "startSec": 8.0,
+          "startSec": 8,
           "endSec": 8.32,
           "startChar": 114,
           "endChar": 118
@@ -348,7 +348,7 @@
       "markerIndex": 2,
       "replayStartSec": 16.253995,
       "replayEndSec": 24.863027,
-      "narrationText": "Step three. Now we register the key with rdc. From here on, every rdc command authenticates with this key.",
+      "narrationText": "Step three. Now we register the key with the CLI. From here on, every command authenticates with this key.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-03.eeb02363.mp3",
       "audioDurationSec": 7.392653,
       "wordTimings": [
@@ -378,12 +378,12 @@
         },
         {
           "startSec": 1.6,
-          "endSec": 2.0,
+          "endSec": 2,
           "startChar": 19,
           "endChar": 27
         },
         {
-          "startSec": 2.0,
+          "startSec": 2,
           "endSec": 2.08,
           "startChar": 28,
           "endChar": 31
@@ -539,7 +539,7 @@
         },
         {
           "startSec": 3.44,
-          "endSec": 4.0,
+          "endSec": 4,
           "startChar": 62,
           "endChar": 71
         }
