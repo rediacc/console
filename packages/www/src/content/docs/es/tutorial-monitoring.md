@@ -1,6 +1,6 @@
 ---
-title: "Monitoreo"
-description: "Comprueba el estado de tus servidores y repos desde tu laptop con los comandos rdc machine."
+title: "Supervisión del sistema"
+description: "Comprueba el estado de salud de tus servidores y repositorios desde tu portátil con los comandos rdc machine."
 category: "Tutorials"
 subcategory: advanced
 order: 12

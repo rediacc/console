@@ -1,6 +1,6 @@
 ---
-title: "Ajouter votre premier serveur"
-description: "Enregistrez votre premier serveur avec rdc, provisionnez-le et comprenez l'architecture rdc + renet."
+title: "Ajouter votre première machine"
+description: "Enregistrez votre première machine avec rdc, préparez-la et découvrez l'architecture rdc et renet."
 category: "Tutorials"
 subcategory: essentials
 order: 3

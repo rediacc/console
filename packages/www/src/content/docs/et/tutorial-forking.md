@@ -1,6 +1,6 @@
 ---
-title: "Repositooriumi forki tegemine"
-description: "Kloneeri terve repositoorium (rakendus, andmebaas, failid) sekunditega. Suvaline suurus. Null lisaruumi kettal."
+title: "Repositooriumi hargnemine"
+description: "Klooni terve repositoorium (rakendus, andmebaas, failid) sekunditega. Ükskõik milline suurus. Null lisakettaruumi."
 category: "Tutorials"
 subcategory: advanced
 order: 7

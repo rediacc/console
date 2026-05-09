@@ -1,6 +1,6 @@
 ---
-title: "Trabajar con tu repo"
-description: "Tuneliza un puerto hacia tu navegador, ejecuta comandos dentro del sandbox y sincroniza archivos entre tu laptop y el repo."
+title: "Cómo trabajar con tu repositorio"
+description: "Abre un túnel hacia tu navegador, ejecuta comandos dentro del entorno aislado y sincroniza archivos entre tu portátil y el repositorio."
 category: "Tutorials"
 subcategory: essentials
 order: 6

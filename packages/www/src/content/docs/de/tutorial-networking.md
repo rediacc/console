@@ -1,6 +1,6 @@
 ---
-title: "Netzwerk und Domains"
-description: "Machen Sie Ihre App mit einer Domain, automatischem TLS und einem Traefik-Reverse-Proxy im Internet erreichbar."
+title: "Netzwerk und Domänen"
+description: "Machen Sie Ihre App über eine Domäne, automatisches TLS und einen Traefik-Reverse-Proxy öffentlich erreichbar."
 category: "Tutorials"
 subcategory: advanced
 order: 9

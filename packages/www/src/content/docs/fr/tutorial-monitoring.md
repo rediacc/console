@@ -57,7 +57,7 @@ Cela affiche chaque dépôt avec sa taille, son état de montage, l'état du dae
 time rdc machine query --name my-server
 ```
 
-Informations système, dépôts, conteneurs, tout en une seule commande. La même commande `query` sans filtres retourne le tableau complet ; avec `--system`, `--containers`, `--repositories`, `--services`, `--network` ou `--block-devices`, elle se limite à cette seule section.
+Informations système, dépôts, conteneurs, tout en une seule commande. Sans filtre, `query` retourne le tableau complet ; ajoutez `--system`, `--containers`, `--repositories`, `--services`, `--network` ou `--block-devices` pour cibler une rubrique précise.
 
 ## Vérification locale
 

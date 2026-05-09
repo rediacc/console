@@ -1,6 +1,6 @@
 ---
-title: "Esimese rakenduse juurutamine"
-description: "Juuruta konteineriseeritud rakendus sisseehitatud mallist kasutades renet dev up."
+title: "Esimese rakenduse käivitamine"
+description: "Käivita konteineriseeritud rakendus sisseehitatud malli abil, kasutades renet dev up."
 category: "Tutorials"
 subcategory: essentials
 order: 5

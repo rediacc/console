@@ -1,6 +1,6 @@
 ---
-title: "Ihre erste App deployen"
-description: "Deployen Sie eine containerisierte App aus einer integrierten Vorlage mit renet dev up."
+title: "Ihre erste App ausführen"
+description: "Führen Sie eine containerisierte App aus einer eingebetteten Vorlage mit renet dev up aus."
 category: "Tutorials"
 subcategory: essentials
 order: 5

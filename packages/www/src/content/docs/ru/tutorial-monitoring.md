@@ -57,7 +57,7 @@ time rdc machine query --name my-server --repositories
 time rdc machine query --name my-server
 ```
 
-Системная информация, репозитории, контейнеры — всё в одной команде. Та же команда `query` без фильтров возвращает полную картину; с `--system`, `--containers`, `--repositories`, `--services`, `--network` или `--block-devices` сужается до нужного раздела.
+Системная информация, репозитории, контейнеры: всё в одной команде. Та же команда `query` без фильтров возвращает полную картину; с `--system`, `--containers`, `--repositories`, `--services`, `--network` или `--block-devices` сужается до нужного раздела.
 
 ## Локальная проверка
 
