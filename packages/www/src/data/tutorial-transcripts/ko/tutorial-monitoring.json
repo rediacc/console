@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-monitoring.cast",
+  "language": "ko",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-monitoring-01",
+      "markerIndex": 0,
+      "at": 102.949897,
+      "text": "시스템 뷰부터 시작합니다. rdc machine query에 --system 필터를 사용하면 가동 시간, 디스크 사용량, 스토리지 상태를 확인할 수 있습니다."
+    },
+    {
+      "id": "tutorial-monitoring-02",
+      "markerIndex": 1,
+      "at": 114.069314,
+      "text": "이번에는 컨테이너 뷰입니다. 머신의 모든 저장소에서 실행 중인 컨테이너를 나열합니다. 이름, 상태, 헬스, CPU, 메모리, 그리고 각 컨테이너를 소유한 저장소 정보가 표시됩니다."
+    },
+    {
+      "id": "tutorial-monitoring-03",
+      "markerIndex": 2,
+      "at": 126.082986,
+      "text": "그리고 저장소 뷰입니다. 크기, 마운트 상태, Docker 데몬 상태, 디스크 사용량을 확인합니다. 각 격리된 환경에 대해 알아야 할 모든 정보가 여기에 있습니다."
+    },
+    {
+      "id": "tutorial-monitoring-04",
+      "markerIndex": 3,
+      "at": 138.182721,
+      "text": "필터 없이 rdc machine query를 실행하면 모든 정보를 한 번에 볼 수 있습니다. 시스템 정보, 컨테이너, 저장소가 모두 함께 표시됩니다."
+    },
+    {
+      "id": "tutorial-monitoring-05",
+      "markerIndex": 4,
+      "at": 149.8205,
+      "text": "마지막으로 노트북에서 로컬 상태를 점검하는 rdc doctor입니다. Node, SSH 키, renet, Docker 등 rdc가 의존하는 모든 항목을 확인합니다. 이것으로 전체 시리즈가 완료됩니다. 설치부터 모니터링까지, 모두 터미널에서 진행됩니다."
+    }
+  ]
+}

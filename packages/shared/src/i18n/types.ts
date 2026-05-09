@@ -56,7 +56,21 @@ export type { TranslationKey };
 /**
  * Supported languages in the application.
  */
-export const SUPPORTED_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'] as const;
+export const SUPPORTED_LANGUAGES = [
+  'en',
+  'de',
+  'es',
+  'fr',
+  'ja',
+  'ar',
+  'ru',
+  'tr',
+  'zh',
+  'et',
+  'ko',
+  'pt',
+  'it',
+] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 /**

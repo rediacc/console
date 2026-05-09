@@ -1,0 +1,49 @@
+{
+  "cast": "/assets/tutorials/tutorial-production-mode.cast",
+  "language": "en",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "63b7e054ddf6674925e87e7120ee6903fae2ebdb1988795ea76aa9ee7e6cf18c",
+  "steps": [
+    {
+      "id": "tutorial-production-mode-01",
+      "markerIndex": 0,
+      "replayStartSec": 56.862064,
+      "replayEndSec": 97.750961,
+      "narrationText": "Time to start the app in production mode from the laptop. rdc repo up calls the same up function we used during development, but it runs detached. Close your laptop and the app keeps going.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-01.1d4b70c7.mp3",
+      "audioDurationSec": 10.605714
+    },
+    {
+      "id": "tutorial-production-mode-02",
+      "markerIndex": 1,
+      "replayStartSec": 97.750961,
+      "replayEndSec": 125.443493,
+      "narrationText": "Now enable autostart so the app survives a server reboot. From here on, if the server restarts, this repo comes back automatically.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-02.a95a695b.mp3",
+      "audioDurationSec": 8.986122
+    },
+    {
+      "id": "tutorial-production-mode-03",
+      "markerIndex": 2,
+      "replayStartSec": 125.443493,
+      "replayEndSec": 141.09184,
+      "narrationText": "Let us list which repositories have autostart enabled. Confirms our app is in the boot list.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-03.8e112d4f.mp3",
+      "audioDurationSec": 6.347755
+    },
+    {
+      "id": "tutorial-production-mode-04",
+      "markerIndex": 3,
+      "replayStartSec": 141.09184,
+      "replayEndSec": 196.903183,
+      "narrationText": "And to stop the app, one command from the laptop. One command up, one command down. All from your terminal.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-04.53853699.mp3",
+      "audioDurationSec": 7.000816
+    }
+  ]
+}

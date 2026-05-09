@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/tutorial-networking.cast",
+  "language": "en",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "7da92d93569249db52b9b654cce9f5cbbcc6a5e3dc8d7413e69a5b395a634d6c",
+  "steps": [
+    {
+      "id": "tutorial-networking-01",
+      "markerIndex": 0,
+      "replayStartSec": 27.859436,
+      "replayEndSec": 41.958746,
+      "narrationText": "Step two. We tell rdc the public IP, the base domain, the certificate email, and the Cloudflare API token. The cert email and the token are shared across all your machines, so you only set them once.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-01.0ce95063.mp3",
+      "audioDurationSec": 13.949388
+    },
+    {
+      "id": "tutorial-networking-02",
+      "markerIndex": 1,
+      "replayStartSec": 41.958746,
+      "replayEndSec": 51.564603,
+      "narrationText": "Let us confirm the infrastructure settings were stored. Public IP, base domain, certificate email, all visible.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-02.a3483804.mp3",
+      "audioDurationSec": 7.967347
+    },
+    {
+      "id": "tutorial-networking-03",
+      "markerIndex": 2,
+      "replayStartSec": 51.564603,
+      "replayEndSec": 70.626849,
+      "narrationText": "Step three. Push the configuration to the server. This creates the DNS records on Cloudflare automatically and prepares the proxy configuration.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-03.e7c596fd.mp3",
+      "audioDurationSec": 9.639184
+    },
+    {
+      "id": "tutorial-networking-04",
+      "markerIndex": 3,
+      "replayStartSec": 70.626849,
+      "replayEndSec": 97.243945,
+      "narrationText": "Step four begins. Create a small repo named infra. This is where the proxy will live, isolated from the application repos.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-04.a6ab91e2.mp3",
+      "audioDurationSec": 8.359184
+    },
+    {
+      "id": "tutorial-networking-05",
+      "markerIndex": 4,
+      "replayStartSec": 97.243945,
+      "replayEndSec": 112.494613,
+      "narrationText": "Apply the proxy template. It carries Traefik plus the configuration for Let's Encrypt and Cloudflare DNS-01 challenges, ready to go.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-05.b54597e8.mp3",
+      "audioDurationSec": 8.280816
+    },
+    {
+      "id": "tutorial-networking-06",
+      "markerIndex": 5,
+      "replayStartSec": 112.494613,
+      "replayEndSec": 150.444961,
+      "narrationText": "And bring the proxy up. Traefik discovers your containers every five seconds. TLS certificates come from Let's Encrypt automatically. Your app is now reachable on the internet over HTTPS.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-06.890d95b5.mp3",
+      "audioDurationSec": 12.277551
+    }
+  ]
+}

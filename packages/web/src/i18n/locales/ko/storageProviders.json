@@ -1,0 +1,1604 @@
+{
+  "common": {
+    "additionalProviders": "추가로 사용 가능한 제공업체: iCloud Drive, Amazon Cloud Drive (지원 종료), Citrix Files 및 기타 전문 제공업체.",
+    "authentication": {
+      "apiKey": "이 제공업체는 API 키 인증을 사용합니다. 제공업체의 콘솔에서 키를 생성하세요.",
+      "oauth": "이 제공업체는 OAuth 인증을 사용합니다. 액세스 권한을 승인하셔야 합니다.",
+      "password": "이 제공업체는 비밀번호 인증을 사용합니다. 앱 전용 비밀번호 사용을 권장합니다.",
+      "serviceAccount": "이 제공업체는 서버 애플리케이션을 위한 서비스 계정 인증을 지원합니다."
+    },
+    "errors": {
+      "connectionFailed": "연결에 실패했습니다. 네트워크 및 제공업체 설정을 확인해 주세요.",
+      "invalidCredentials": "인증 정보가 올바르지 않습니다. 인증 세부 정보를 확인해 주세요.",
+      "permissionDenied": "권한이 거부되었습니다. 액세스 권한 및 인증을 확인해 주세요.",
+      "quotaExceeded": "저장 용량 할당량이 초과되었습니다. 공간을 확보하거나 플랜을 업그레이드하세요."
+    },
+    "noVersioning": {
+      "helpText": "공간 절약을 위해 이 스토리지의 파일 버전 관리를 비활성화합니다",
+      "label": "버전 관리 비활성화"
+    },
+    "parameters": {
+      "helpText": "고급 설정을 위한 추가 rclone 매개변수",
+      "label": "추가 매개변수",
+      "placeholder": "--transfers 4 --checkers 8"
+    },
+    "tips": "도움말"
+  },
+  "storageProviders": {
+    "azureblob": {
+      "description": "Microsoft Azure 블롭 스토리지 서비스",
+      "fields": {
+        "account": {
+          "helpText": "Azure 스토리지 계정 이름",
+          "label": "스토리지 계정 이름",
+          "placeholder": "myaccount"
+        },
+        "endpoint": {
+          "helpText": "Azure 스토리지의 사용자 지정 엔드포인트",
+          "label": "엔드포인트",
+          "placeholder": "https://myaccount.blob.core.windows.net"
+        },
+        "key": {
+          "helpText": "Azure 포털의 기본 키 또는 보조 키",
+          "label": "스토리지 계정 키",
+          "placeholder": "계정 키를 입력하세요"
+        },
+        "sas_url": {
+          "helpText": "제한된 액세스를 위한 공유 액세스 서명 URL",
+          "label": "SAS URL",
+          "placeholder": "SAS URL을 사용하는 경우 입력하세요"
+        }
+      },
+      "helpText": "비정형 데이터를 위한 Azure Blob Storage입니다. 여러 인증 방법을 지원합니다.",
+      "name": "Azure 블롭 스토리지",
+      "tips": [
+        "임시 액세스에는 SAS 토큰을 사용하세요",
+        "비용 최적화를 위해 적절한 스토리지 계층을 선택하세요",
+        "데이터 보호를 위해 일시 삭제를 활성화하세요",
+        "Azure 리소스에는 관리 ID 사용을 고려하세요"
+      ]
+    },
+    "b2": {
+      "description": "Backblaze B2 클라우드 스토리지 서비스",
+      "fields": {
+        "account": {
+          "helpText": "B2 계정 ID 또는 애플리케이션 키 ID",
+          "label": "계정 ID 또는 애플리케이션 키 ID",
+          "placeholder": "000000000000000000000000"
+        },
+        "endpoint": {
+          "helpText": "B2용 사용자 지정 S3 호환 엔드포인트",
+          "label": "사용자 지정 엔드포인트",
+          "placeholder": "s3.us-west-000.backblazeb2.com"
+        },
+        "hard_delete": {
+          "helpText": "파일을 숨기는 대신 영구적으로 삭제합니다. 주의해서 사용하세요",
+          "label": "영구 삭제"
+        },
+        "key": {
+          "helpText": "B2 콘솔의 애플리케이션 키입니다. 마스터 키 대신 애플리케이션 키를 사용하세요",
+          "label": "애플리케이션 키",
+          "placeholder": "애플리케이션 키를 입력하세요"
+        }
+      },
+      "helpText": "Backblaze B2는 저렴한 클라우드 백업 서비스입니다. 인증에 애플리케이션 키를 사용합니다.",
+      "name": "Backblaze B2 스토리지",
+      "tips": [
+        "보안을 위해 제한된 권한을 가진 애플리케이션 키를 생성하세요",
+        "B2는 10GB 무료 스토리지와 하루 1GB 다운로드를 제공합니다",
+        "숨겨진 파일도 스토리지 할당량에 포함됩니다",
+        "이전 버전을 자동으로 삭제하려면 수명 주기 규칙 사용을 고려하세요"
+      ]
+    },
+    "box": {
+      "description": "Box 클라우드 스토리지",
+      "fields": {
+        "client_id": {
+          "helpText": "Box 앱 설정의 OAuth 2.0 클라이언트 ID",
+          "label": "OAuth 클라이언트 ID",
+          "placeholder": "클라이언트 ID를 입력하세요"
+        },
+        "client_secret": {
+          "helpText": "OAuth 2.0 클라이언트 시크릿입니다. 안전하게 보관하세요",
+          "label": "OAuth 클라이언트 시크릿",
+          "placeholder": "클라이언트 시크릿을 입력하세요"
+        },
+        "root_folder_id": {
+          "helpText": "루트 폴더의 ID입니다. '0'은 Box의 루트를 의미합니다",
+          "label": "루트 폴더 ID",
+          "placeholder": "0"
+        },
+        "token": {
+          "helpText": "Box 인증을 통해 획득한 OAuth2 토큰",
+          "label": "OAuth 토큰"
+        }
+      },
+      "helpText": "Box 엔터프라이즈 클라우드 스토리지 및 협업 플랫폼입니다. OAuth 2.0 인증을 사용합니다.",
+      "name": "Box",
+      "tips": [
+        "Box는 업로드 파일 크기 제한이 15GB입니다",
+        "엔터프라이즈 계정에는 추가 기능이 있을 수 있습니다",
+        "서버 사이드 애플리케이션에는 앱 토큰을 사용하세요",
+        "Box는 엄격한 API 속도 제한이 있습니다"
+      ]
+    },
+    "cloudflare-r2": {
+      "description": "Cloudflare R2 오브젝트 스토리지",
+      "fields": {
+        "access_key_id": {
+          "helpText": "R2 액세스 키 ID",
+          "label": "액세스 키 ID",
+          "placeholder": "액세스 키를 입력하세요"
+        },
+        "account_id": {
+          "helpText": "Cloudflare 계정 ID",
+          "label": "계정 ID",
+          "placeholder": "계정 ID를 입력하세요"
+        },
+        "endpoint": {
+          "helpText": "R2 엔드포인트 URL",
+          "label": "엔드포인트",
+          "placeholder": "https://ACCOUNT_ID.r2.cloudflarestorage.com"
+        },
+        "secret_access_key": {
+          "helpText": "R2 시크릿 액세스 키",
+          "label": "시크릿 액세스 키",
+          "placeholder": "시크릿 키를 입력하세요"
+        }
+      },
+      "helpText": "Cloudflare R2는 송신 비용이 없는 S3 호환 오브젝트 스토리지입니다.",
+      "name": "Cloudflare R2 스토리지",
+      "tips": [
+        "송신 비용 없음",
+        "S3 호환 API",
+        "자동 복제",
+        "Cloudflare CDN과 통합"
+      ]
+    },
+    "drive": {
+      "description": "Google Drive 클라우드 스토리지",
+      "fields": {
+        "client_id": {
+          "helpText": "Google Cloud Console의 OAuth 2.0 클라이언트 ID",
+          "label": "OAuth 클라이언트 ID",
+          "placeholder": "123456789012-abcdef.apps.googleusercontent.com"
+        },
+        "client_secret": {
+          "helpText": "OAuth 2.0 클라이언트 시크릿입니다. 안전하게 보관하세요",
+          "label": "OAuth 클라이언트 시크릿",
+          "placeholder": "클라이언트 시크릿을 입력하세요"
+        },
+        "impersonate": {
+          "helpText": "서비스 계정 사용 시 대행할 사용자의 이메일",
+          "label": "사용자 대행",
+          "placeholder": "user@domain.com"
+        },
+        "root_folder_id": {
+          "helpText": "사용할 루트 폴더의 ID입니다. 비워두면 드라이브 루트를 사용합니다",
+          "label": "루트 폴더 ID",
+          "placeholder": "0AOa0a0a0a0a0Uk9PVA"
+        },
+        "scope": {
+          "helpText": "Google Drive 액세스에 대한 권한 범위입니다. 'drive'는 전체 액세스를 부여합니다",
+          "label": "액세스 범위"
+        },
+        "service_account_file": {
+          "helpText": "서버 사이드 인증을 위한 서비스 계정 JSON 파일 내용 (base64 인코딩)",
+          "label": "서비스 계정 파일",
+          "placeholder": "Base64 인코딩된 JSON 파일"
+        },
+        "team_drive": {
+          "helpText": "사용할 팀 드라이브(공유 드라이브)의 ID",
+          "label": "팀 드라이브 ID",
+          "placeholder": "팀 드라이브 ID를 입력하세요"
+        },
+        "token": {
+          "helpText": "인증 흐름을 통해 획득한 OAuth2 토큰",
+          "label": "OAuth 토큰"
+        }
+      },
+      "helpText": "Google Drive 개인 클라우드 스토리지입니다. OAuth 인증 또는 서비스 계정이 필요합니다.",
+      "name": "Google 드라이브",
+      "tips": [
+        "서버 사이드 애플리케이션에는 서비스 계정을 사용하세요",
+        "팀 드라이브는 개인 드라이브와 다른 권한을 가집니다",
+        "Google에는 일일 업로드/다운로드 할당량이 있습니다",
+        "대용량 파일은 업로드 후 표시되는 데 시간이 걸릴 수 있습니다"
+      ]
+    },
+    "dropbox": {
+      "description": "Dropbox 클라우드 스토리지",
+      "fields": {
+        "client_id": {
+          "helpText": "Dropbox 앱 콘솔의 앱 키",
+          "label": "OAuth 클라이언트 ID",
+          "placeholder": "앱 키를 입력하세요"
+        },
+        "client_secret": {
+          "helpText": "Dropbox 앱 콘솔의 앱 시크릿",
+          "label": "OAuth 클라이언트 시크릿",
+          "placeholder": "앱 시크릿을 입력하세요"
+        },
+        "token": {
+          "helpText": "Dropbox 인증을 통해 획득한 OAuth2 토큰",
+          "label": "OAuth 토큰"
+        }
+      },
+      "helpText": "Dropbox 개인 및 비즈니스 클라우드 스토리지입니다. 파일 이름은 대소문자를 구분하지 않습니다.",
+      "name": "Dropbox",
+      "tips": [
+        "Dropbox는 대소문자를 구분하지 않으므로 유사한 파일 이름을 사용하지 마세요",
+        "업로드 파일 최대 크기는 150GB입니다",
+        "일괄 작업이 더 효율적입니다",
+        "팀 기능을 위해 Dropbox Business 사용을 고려하세요"
+      ]
+    },
+    "fichier": {
+      "description": "1Fichier 파일 호스팅",
+      "fields": {
+        "api_key": {
+          "helpText": "1Fichier 계정의 API 키",
+          "label": "API 키",
+          "placeholder": "API 키를 입력하세요"
+        },
+        "shared_folder": {
+          "helpText": "공유 폴더 ID (선택 사항)",
+          "label": "공유 폴더 ID",
+          "placeholder": "폴더 ID를 입력하세요"
+        }
+      },
+      "helpText": "1Fichier는 무료 및 프리미엄 스토리지를 제공하는 프랑스 파일 호스팅 서비스입니다.",
+      "name": "1Fichier",
+      "tips": [
+        "프리미엄 사용자는 파일 크기 제한이 없습니다",
+        "FTP 액세스 가능",
+        "빠른 다운로드를 위한 CDN 지원",
+        "비공개 폴더 옵션 제공"
+      ]
+    },
+    "filefabric": {
+      "description": "엔터프라이즈 File Fabric",
+      "fields": {
+        "permanent_token": {
+          "helpText": "영구 인증 토큰",
+          "label": "영구 토큰",
+          "placeholder": "영구 토큰을 입력하세요"
+        },
+        "root_folder_id": {
+          "helpText": "루트 폴더 ID (선택 사항)",
+          "label": "루트 폴더 ID",
+          "placeholder": "폴더 ID를 입력하세요"
+        },
+        "url": {
+          "helpText": "FileFabric 인스턴스 URL",
+          "label": "URL",
+          "placeholder": "https://yourorganization.filefabric.com"
+        }
+      },
+      "helpText": "FileFabric은 기업을 위한 멀티 클라우드 데이터 관리 플랫폼을 제공합니다.",
+      "name": "FileFabric",
+      "tips": [
+        "멀티 클라우드 게이트웨이 솔루션",
+        "온프레미스 배포 가능",
+        "엔터프라이즈 보안 기능",
+        "규정 준수 및 거버넌스 도구"
+      ]
+    },
+    "filescom": {
+      "description": "Files.com 클라우드 FTP",
+      "fields": {
+        "api_key": {
+          "helpText": "API 키 (비밀번호 대안)",
+          "label": "API 키",
+          "placeholder": "API 키를 입력하세요"
+        },
+        "password": {
+          "helpText": "Files.com 비밀번호",
+          "label": "비밀번호",
+          "placeholder": "비밀번호를 입력하세요"
+        },
+        "site": {
+          "helpText": "Files.com 서브도메인",
+          "label": "사이트 서브도메인",
+          "placeholder": "myorganization"
+        },
+        "username": {
+          "helpText": "Files.com 사용자 이름",
+          "label": "사용자 이름",
+          "placeholder": "사용자 이름을 입력하세요"
+        }
+      },
+      "helpText": "Files.com은 고급 자동화 및 보안 기능을 갖춘 클라우드 FTP/SFTP 서비스입니다.",
+      "name": "Files.com",
+      "tips": [
+        "엔터프라이즈급 보안",
+        "자동화 워크플로우",
+        "상세한 감사 로그",
+        "HIPAA 및 SOC2 준수"
+      ]
+    },
+    "ftp": {
+      "description": "파일 전송 프로토콜",
+      "fields": {
+        "explicit_tls": {
+          "helpText": "명시적 FTPS 사용 (암묵적 방식보다 권장)",
+          "label": "명시적 TLS"
+        },
+        "host": {
+          "helpText": "FTP 서버 호스트명 또는 IP 주소",
+          "label": "호스트",
+          "placeholder": "ftp.example.com"
+        },
+        "pass": {
+          "helpText": "FTP 비밀번호",
+          "label": "비밀번호",
+          "placeholder": "비밀번호를 입력하세요"
+        },
+        "port": {
+          "helpText": "FTP 포트 (기본값: 21)",
+          "label": "포트",
+          "placeholder": "21"
+        },
+        "tls": {
+          "helpText": "암호화를 위해 TLS/SSL 기반 FTP를 사용합니다",
+          "label": "FTPS 사용"
+        },
+        "user": {
+          "helpText": "FTP 사용자 이름",
+          "label": "사용자 이름",
+          "placeholder": "username"
+        }
+      },
+      "helpText": "전통적인 파일 전송 프로토콜입니다. 보안을 위해 FTPS 사용을 권장합니다.",
+      "name": "FTP",
+      "tips": [
+        "FTP는 보안이 취약합니다. 가능하면 FTPS 또는 SFTP를 사용하세요",
+        "일부 방화벽은 FTP 패시브 모드를 차단할 수 있습니다",
+        "서버가 FTPS를 지원하는지 확인하세요",
+        "더 안전한 대안으로 SFTP를 고려하세요"
+      ]
+    },
+    "gcs": {
+      "description": "Google 클라우드 스토리지 서비스",
+      "fields": {
+        "bucket_policy_only": {
+          "helpText": "균일한 버킷 수준 액세스 제어 사용",
+          "label": "버킷 정책만 사용"
+        },
+        "location": {
+          "helpText": "새 버킷의 기본 위치",
+          "label": "기본 위치",
+          "placeholder": "US"
+        },
+        "project_number": {
+          "helpText": "GCP 프로젝트 번호 (프로젝트 ID 아님)",
+          "label": "프로젝트 번호",
+          "placeholder": "123456789012"
+        },
+        "service_account_file": {
+          "helpText": "서비스 계정 JSON 키 파일 (base64 인코딩)",
+          "label": "서비스 계정 파일",
+          "placeholder": "Base64 인코딩된 JSON 파일"
+        },
+        "storage_class": {
+          "helpText": "오브젝트의 기본 스토리지 클래스",
+          "label": "스토리지 클래스"
+        }
+      },
+      "helpText": "오브젝트 및 블롭을 위한 Google Cloud Storage입니다. Google Drive와는 다릅니다.",
+      "name": "Google 클라우드 스토리지",
+      "tips": [
+        "인증에는 서비스 계정을 사용하세요",
+        "액세스 빈도에 따라 스토리지 클래스를 선택하세요",
+        "중요한 데이터에는 버전 관리를 활성화하세요",
+        "비용 관리를 위해 수명 주기 정책을 설정하세요"
+      ]
+    },
+    "gofile": {
+      "description": "GoFile 익명 파일 공유",
+      "fields": {
+        "account_id": {
+          "helpText": "GoFile 계정 ID (선택 사항)",
+          "label": "계정 ID",
+          "placeholder": "계정 ID를 입력하세요"
+        },
+        "root_folder_id": {
+          "helpText": "업로드를 위한 루트 폴더 ID",
+          "label": "루트 폴더 ID",
+          "placeholder": "루트 폴더 ID를 입력하세요"
+        }
+      },
+      "helpText": "GoFile은 익명 업로드를 지원하는 무료 파일 공유 및 스토리지 플랫폼입니다.",
+      "name": "GoFile",
+      "tips": [
+        "기본 사용에는 회원가입이 필요하지 않습니다",
+        "무제한 대역폭",
+        "무료 사용자의 파일은 보존 기간이 제한됩니다",
+        "프리미엄 계정은 영구 스토리지를 제공합니다"
+      ]
+    },
+    "googlephotos": {
+      "description": "Google Photos 스토리지 서비스",
+      "fields": {
+        "client_id": {
+          "helpText": "Google Cloud Console의 OAuth 2.0 클라이언트 ID",
+          "label": "OAuth 클라이언트 ID",
+          "placeholder": "123456789012-abcdef.apps.googleusercontent.com"
+        },
+        "client_secret": {
+          "helpText": "OAuth 2.0 클라이언트 시크릿",
+          "label": "OAuth 클라이언트 시크릿",
+          "placeholder": "클라이언트 시크릿을 입력하세요"
+        },
+        "read_only": {
+          "helpText": "Google Photos API는 대부분의 작업에서 읽기 전용입니다",
+          "label": "읽기 전용"
+        },
+        "token": {
+          "helpText": "photos.readonly 범위를 가진 OAuth2 토큰",
+          "label": "OAuth 토큰"
+        }
+      },
+      "helpText": "Google Photos 백업 및 동기화 서비스입니다. 사진 및 동영상 작업만 지원됩니다.",
+      "name": "Google 포토",
+      "tips": [
+        "Google Photos API는 쓰기 기능이 제한됩니다",
+        "Google Photos에서 사진을 백업하는 데 가장 적합합니다",
+        "원본 화질은 Google Drive 스토리지 용량에 포함됩니다",
+        "앨범 및 메타데이터를 보존할 수 있습니다"
+      ]
+    },
+    "hdfs": {
+      "description": "Hadoop 분산 파일 시스템",
+      "fields": {
+        "data_transfer_protection": {
+          "helpText": "데이터 전송 보호 수준",
+          "label": "데이터 전송 보호"
+        },
+        "namenode": {
+          "helpText": "HDFS 네임노드 URL",
+          "label": "네임노드 URL",
+          "placeholder": "http://namenode:9870"
+        },
+        "service_principal_name": {
+          "helpText": "Kerberos 서비스 주체 이름",
+          "label": "서비스 주체",
+          "placeholder": "hdfs/namenode.example.com@EXAMPLE.COM"
+        },
+        "username": {
+          "helpText": "HDFS 사용자 이름",
+          "label": "사용자 이름",
+          "placeholder": "hadoop"
+        }
+      },
+      "helpText": "HDFS는 Apache Hadoop의 일부로, 범용 하드웨어에서 실행되도록 설계된 분산 파일 시스템입니다.",
+      "name": "HDFS",
+      "tips": [
+        "빅데이터 워크로드에 최적화",
+        "높은 처리량 액세스",
+        "복제를 통한 내결함성",
+        "대용량 파일에 적합"
+      ]
+    },
+    "hidrive": {
+      "description": "STRATO HiDrive 클라우드 스토리지",
+      "fields": {
+        "pass": {
+          "helpText": "HiDrive 비밀번호",
+          "label": "비밀번호",
+          "placeholder": "비밀번호를 입력하세요"
+        },
+        "protocol": {
+          "helpText": "사용할 프로토콜 (webdav 또는 smb)",
+          "label": "프로토콜"
+        },
+        "root": {
+          "helpText": "사용할 루트 경로",
+          "label": "루트 경로",
+          "placeholder": "/"
+        },
+        "user": {
+          "helpText": "HiDrive 사용자 이름",
+          "label": "사용자 이름",
+          "placeholder": "username"
+        }
+      },
+      "helpText": "HiDrive는 STRATO의 클라우드 스토리지 서비스로, 독일에서 인기가 있습니다.",
+      "name": "HiDrive",
+      "tips": [
+        "독일 및 유럽에서 인기",
+        "WebDAV 및 SMB 프로토콜 지원",
+        "GDPR 준수 데이터 스토리지",
+        "협업 기능 포함"
+      ]
+    },
+    "http": {
+      "description": "HTTP/HTTPS 원격",
+      "fields": {
+        "headers": {
+          "helpText": "추가 HTTP 헤더 (한 줄에 하나씩)",
+          "label": "HTTP 헤더",
+          "placeholder": "Header: value"
+        },
+        "no_head": {
+          "helpText": "HEAD 요청을 사용하지 않습니다",
+          "label": "HEAD 비사용"
+        },
+        "no_slash": {
+          "helpText": "URL에 후행 슬래시를 추가하지 않습니다",
+          "label": "슬래시 없음"
+        },
+        "url": {
+          "helpText": "HTTP 서버의 기본 URL",
+          "label": "URL",
+          "placeholder": "https://example.com/path/"
+        }
+      },
+      "helpText": "HTTP/HTTPS 프로토콜을 통해 파일에 액세스합니다. 웹 서버에 대한 읽기 전용 액세스입니다.",
+      "name": "HTTP",
+      "tips": [
+        "읽기 전용 액세스",
+        "공개 파일 액세스에 적합",
+        "디렉터리 목록 파싱 가능",
+        "기본 인증 지원"
+      ]
+    },
+    "internetarchive": {
+      "description": "Internet Archive 스토리지",
+      "fields": {
+        "access_key_id": {
+          "helpText": "Internet Archive의 S3 유사 액세스 키",
+          "label": "액세스 키",
+          "placeholder": "액세스 키를 입력하세요"
+        },
+        "endpoint": {
+          "helpText": "Internet Archive S3 엔드포인트",
+          "label": "엔드포인트",
+          "placeholder": "https://s3.us.archive.org"
+        },
+        "front_endpoint": {
+          "helpText": "공개 액세스를 위한 프론트엔드 URL",
+          "label": "프론트엔드 엔드포인트",
+          "placeholder": "https://archive.org"
+        },
+        "secret_access_key": {
+          "helpText": "S3 유사 시크릿 키",
+          "label": "시크릿 키",
+          "placeholder": "시크릿 키를 입력하세요"
+        }
+      },
+      "helpText": "Internet Archive는 디지털화된 자료 컬렉션에 무료로 액세스할 수 있는 비영리 디지털 도서관입니다.",
+      "name": "인터넷 아카이브",
+      "tips": [
+        "공용 도메인 콘텐츠는 무료 스토리지",
+        "비공개 항목에는 특별 액세스가 필요합니다",
+        "아카이빙 및 보존에 가장 적합",
+        "메타데이터 및 컬렉션 지원"
+      ]
+    },
+    "jottacloud": {
+      "description": "노르웨이 클라우드 스토리지 서비스",
+      "fields": {
+        "device": {
+          "helpText": "기기 이름 (보통 Jotta)",
+          "label": "기기 이름",
+          "placeholder": "Jotta"
+        },
+        "mountpoint": {
+          "helpText": "사용할 마운트 포인트 (Archive, Sync 또는 Backup)",
+          "label": "마운트 포인트",
+          "placeholder": "Archive"
+        },
+        "pass": {
+          "helpText": "Jottacloud 비밀번호",
+          "label": "비밀번호",
+          "placeholder": "비밀번호를 입력하세요"
+        },
+        "user": {
+          "helpText": "Jottacloud 사용자 이름",
+          "label": "사용자 이름",
+          "placeholder": "username"
+        }
+      },
+      "helpText": "Jottacloud는 프라이버시에 중점을 둔 북유럽 국가에서 인기 있는 클라우드 스토리지 서비스입니다.",
+      "name": "Jottacloud",
+      "tips": [
+        "개인 플랜은 무제한 스토리지 제공",
+        "데이터가 노르웨이에 저장됨 (EU 개인정보 보호법 준수)",
+        "파일 버전 관리 지원",
+        "사진 및 동영상 백업에 적합"
+      ]
+    },
+    "koofr": {
+      "description": "유럽 클라우드 스토리지 서비스",
+      "fields": {
+        "pass": {
+          "helpText": "Koofr 비밀번호",
+          "label": "비밀번호",
+          "placeholder": "비밀번호를 입력하세요"
+        },
+        "provider": {
+          "helpText": "Koofr 제공업체 (koofr, digistorage 또는 기타)",
+          "label": "제공업체"
+        },
+        "user": {
+          "helpText": "Koofr 계정 이메일",
+          "label": "이메일",
+          "placeholder": "user@example.com"
+        }
+      },
+      "helpText": "Koofr는 다른 클라우드 스토리지 계정에도 연결할 수 있는 유럽 클라우드 스토리지 서비스입니다.",
+      "name": "Koofr",
+      "tips": [
+        "여러 클라우드 계정 연결 가능",
+        "EU에 데이터 저장 (GDPR 준수)",
+        "WebDAV 액세스 지원",
+        "데스크톱 앱 및 클라이언트 제공"
+      ]
+    },
+    "linkbox": {
+      "description": "Linkbox 클라우드 스토리지",
+      "fields": {
+        "token": {
+          "helpText": "Linkbox 설정의 API 토큰",
+          "label": "API 토큰",
+          "placeholder": "API 토큰을 입력하세요"
+        }
+      },
+      "helpText": "Linkbox는 사용 편의성과 공유 기능에 중점을 둔 클라우드 스토리지를 제공합니다.",
+      "name": "Linkbox",
+      "tips": [
+        "간단한 공유 옵션",
+        "직접 다운로드 링크",
+        "클라이언트 앱 제공",
+        "합리적인 가격 구성"
+      ]
+    },
+    "local": {
+      "description": "로컬 파일 시스템 스토리지",
+      "fields": {
+        "nounc": {
+          "helpText": "Windows에서 UNC (\\\\server\\share) 경로를 비활성화합니다",
+          "label": "UNC 비활성화"
+        },
+        "path": {
+          "helpText": "로컬 디렉터리의 절대 경로",
+          "label": "경로",
+          "placeholder": "/mnt/backup"
+        }
+      },
+      "helpText": "로컬 또는 마운트된 파일 시스템에 직접 액세스합니다.",
+      "name": "로컬 파일 시스템",
+      "tips": [
+        "경로가 존재하고 적절한 권한이 있는지 확인하세요",
+        "상대 경로가 아닌 절대 경로를 사용하세요",
+        "네트워크 공유는 먼저 마운트해야 합니다",
+        "대용량 파일에 대한 파일 시스템 제한 사항을 고려하세요"
+      ]
+    },
+    "mailru": {
+      "description": "Mail.ru 클라우드 스토리지 서비스",
+      "fields": {
+        "pass": {
+          "helpText": "Mail.ru 비밀번호",
+          "label": "비밀번호",
+          "placeholder": "비밀번호를 입력하세요"
+        },
+        "speedup_enable": {
+          "helpText": "속도 향상 (병렬 업로드) 기능 활성화",
+          "label": "속도 향상 활성화"
+        },
+        "user": {
+          "helpText": "Mail.ru 이메일 주소",
+          "label": "사용자 이름",
+          "placeholder": "user@mail.ru"
+        }
+      },
+      "helpText": "Mail.ru Cloud (현재 VK Cloud의 일부)는 러시아에서 인기 있는 클라우드 스토리지 서비스입니다.",
+      "name": "Mail.ru Cloud",
+      "tips": [
+        "무료 플랜에 8GB 스토리지 포함",
+        "러시아어권 국가에서 인기",
+        "대용량 파일 업로드 지원",
+        "여러 플랫폼용 동기화 앱 제공"
+      ]
+    },
+    "mega": {
+      "description": "Mega 클라우드 스토리지",
+      "fields": {
+        "hard_delete": {
+          "helpText": "파일을 휴지통으로 이동하는 대신 영구 삭제합니다",
+          "label": "영구 삭제"
+        },
+        "pass": {
+          "helpText": "MEGA 계정 비밀번호 (암호화되어 저장됩니다)",
+          "label": "비밀번호",
+          "placeholder": "비밀번호를 입력하세요"
+        },
+        "use_https": {
+          "helpText": "전송에 HTTPS 사용 (권장)",
+          "label": "HTTPS 사용"
+        },
+        "user": {
+          "helpText": "MEGA 계정 이메일 주소",
+          "label": "이메일",
+          "placeholder": "user@example.com"
+        }
+      },
+      "helpText": "MEGA는 클라이언트 사이드 암호화 클라우드 스토리지를 제공합니다. 로그인 속도 제한이 엄격합니다.",
+      "name": "Mega",
+      "tips": [
+        "MEGA는 속도 제한이 엄격합니다. 잦은 로그인을 피하세요",
+        "모든 파일은 클라이언트 사이드 암호화됩니다",
+        "무료 계정에 20GB 스토리지 제공",
+        "보안 강화를 위해 앱 비밀번호 사용을 고려하세요"
+      ]
+    },
+    "netstorage": {
+      "description": "Akamai NetStorage CDN 스토리지",
+      "fields": {
+        "account": {
+          "helpText": "NetStorage 계정 이름",
+          "label": "계정",
+          "placeholder": "계정을 입력하세요"
+        },
+        "host": {
+          "helpText": "NetStorage 호스트",
+          "label": "호스트",
+          "placeholder": "xxxxx.akamaihd.net"
+        },
+        "secret": {
+          "helpText": "NetStorage 시크릿/키",
+          "label": "시크릿",
+          "placeholder": "시크릿을 입력하세요"
+        }
+      },
+      "helpText": "Akamai NetStorage는 미디어 전송에 최적화된 전 세계에 분산된 클라우드 스토리지 솔루션입니다.",
+      "name": "Akamai 넷스토리지",
+      "tips": [
+        "CDN 전송에 최적화",
+        "전 세계 엣지 위치",
+        "미디어 스트리밍 지원",
+        "엔터프라이즈급 성능"
+      ]
+    },
+    "onedrive": {
+      "description": "Microsoft OneDrive 클라우드 스토리지",
+      "fields": {
+        "drive_id": {
+          "helpText": "사용할 특정 드라이브 ID입니다. 기본값을 사용하려면 비워두세요",
+          "label": "드라이브 ID",
+          "placeholder": "b!Ei1XXXXXXXXXX"
+        },
+        "drive_type": {
+          "helpText": "OneDrive 계정 유형 - 개인, 비즈니스 또는 문서 라이브러리",
+          "label": "드라이브 유형"
+        },
+        "folder": {
+          "helpText": "루트로 사용할 OneDrive 내 폴더 경로",
+          "label": "폴더 경로",
+          "placeholder": "backups"
+        },
+        "token": {
+          "helpText": "Microsoft 인증을 통해 획득한 OAuth2 토큰",
+          "label": "OAuth 토큰"
+        }
+      },
+      "helpText": "Microsoft OneDrive 개인 및 비즈니스 클라우드 스토리지입니다. OAuth 인증을 사용합니다.",
+      "name": "Microsoft 원드라이브",
+      "tips": [
+        "토큰은 90일마다 만료되어 갱신이 필요합니다",
+        "비즈니스 계정에는 다른 API 제한이 있을 수 있습니다",
+        "대용량 파일 업로드는 자동으로 분할됩니다",
+        "파일 이름의 일부 특수 문자는 문제를 일으킬 수 있습니다"
+      ]
+    },
+    "opendrive": {
+      "description": "OpenDrive 클라우드 스토리지",
+      "fields": {
+        "password": {
+          "helpText": "OpenDrive 비밀번호",
+          "label": "비밀번호",
+          "placeholder": "비밀번호를 입력하세요"
+        },
+        "username": {
+          "helpText": "OpenDrive 사용자 이름",
+          "label": "사용자 이름",
+          "placeholder": "사용자 이름을 입력하세요"
+        }
+      },
+      "helpText": "OpenDrive는 클라우드 스토리지, 온라인 백업 및 FTP 대체 서비스를 제공합니다.",
+      "name": "OpenDrive",
+      "tips": [
+        "무제한 스토리지 플랜 제공",
+        "내장 문서 뷰어",
+        "작업 관리 기능",
+        "메모 작성 기능"
+      ]
+    },
+    "oracle": {
+      "description": "Oracle Cloud Infrastructure 오브젝트 스토리지",
+      "fields": {
+        "compartment": {
+          "helpText": "버킷이 있는 구획 OCID",
+          "label": "구획 OCID",
+          "placeholder": "ocid1.compartment.oc1..."
+        },
+        "fingerprint": {
+          "helpText": "API 서명 키의 지문",
+          "label": "키 지문",
+          "placeholder": "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
+        },
+        "key_file": {
+          "helpText": "PEM 형식의 RSA 개인 키 (base64 인코딩)",
+          "label": "API 키 파일",
+          "placeholder": "Base64 인코딩된 PEM 파일"
+        },
+        "namespace": {
+          "helpText": "오브젝트 스토리지 네임스페이스 (OCI 콘솔에서 확인)",
+          "label": "오브젝트 스토리지 네임스페이스",
+          "placeholder": "네임스페이스를 입력하세요"
+        },
+        "region": {
+          "helpText": "OCI 리전 식별자",
+          "label": "리전",
+          "placeholder": "us-ashburn-1"
+        },
+        "tenancy": {
+          "helpText": "테넌시 OCID",
+          "label": "테넌시 OCID",
+          "placeholder": "ocid1.tenancy.oc1..."
+        },
+        "user": {
+          "helpText": "인증을 위한 사용자 OCID",
+          "label": "사용자 OCID",
+          "placeholder": "ocid1.user.oc1..."
+        }
+      },
+      "helpText": "Oracle Cloud Infrastructure (OCI) 오브젝트 스토리지는 대량의 비정형 데이터를 저장하기 위한 리전 서비스입니다.",
+      "name": "Oracle 오브젝트 스토리지",
+      "tips": [
+        "OCI 콘솔 사용자 설정에서 API 키를 생성하세요",
+        "구획을 사용하여 리소스를 구성하세요",
+        "비용 최적화를 위한 스토리지 클래스 제공",
+        "대안으로 S3 호환 API도 지원합니다"
+      ]
+    },
+    "pcloud": {
+      "description": "OAuth 인증을 사용하는 클라우드 스토리지 서비스",
+      "fields": {
+        "client_id": {
+          "helpText": "pCloud용 OAuth 2.0 클라이언트 ID",
+          "label": "OAuth 클라이언트 ID",
+          "placeholder": "클라이언트 ID를 입력하세요"
+        },
+        "client_secret": {
+          "helpText": "OAuth 2.0 클라이언트 시크릿",
+          "label": "OAuth 클라이언트 시크릿",
+          "placeholder": "클라이언트 시크릿을 입력하세요"
+        },
+        "hostname": {
+          "helpText": "API 호스트명 (EU의 경우 eapi.pcloud.com)",
+          "label": "호스트명",
+          "placeholder": "api.pcloud.com"
+        },
+        "root_folder_id": {
+          "helpText": "시작 폴더 ID (선택 사항)",
+          "label": "루트 폴더 ID",
+          "placeholder": "폴더 ID를 입력하세요"
+        },
+        "token": {
+          "helpText": "인증을 통해 획득한 OAuth2 토큰",
+          "label": "OAuth 토큰"
+        }
+      },
+      "helpText": "pCloud는 클라이언트 사이드 암호화 옵션이 있는 안전한 클라우드 스토리지를 제공합니다. EU 및 US 리전이 있습니다.",
+      "name": "pCloud",
+      "tips": [
+        "위치에 따라 EU 또는 US 리전을 선택하세요",
+        "Crypto 폴더는 클라이언트 사이드 암호화를 제공합니다",
+        "평생 플랜 제공",
+        "여러 플랫폼에서 동기화 클라이언트 이용 가능"
+      ]
+    },
+    "pikpak": {
+      "description": "오프라인 다운로드 기능을 갖춘 클라우드 스토리지",
+      "fields": {
+        "pass": {
+          "helpText": "PikPak 계정 비밀번호",
+          "label": "비밀번호",
+          "placeholder": "비밀번호를 입력하세요"
+        },
+        "user": {
+          "helpText": "PikPak 계정 이메일",
+          "label": "사용자 이름",
+          "placeholder": "user@example.com"
+        }
+      },
+      "helpText": "PikPak은 오프라인 다운로드와 미디어 스트리밍을 지원하는 클라우드 스토리지 서비스입니다.",
+      "name": "PikPak",
+      "tips": [
+        "오프라인 다운로드 지원",
+        "내장 미디어 플레이어",
+        "클라우드로 토렌트 다운로드에 적합",
+        "스트리밍 기능이 있는 클라이언트 앱 제공"
+      ]
+    },
+    "pixeldrain": {
+      "description": "Pixeldrain 파일 공유",
+      "fields": {
+        "api_key": {
+          "helpText": "Pixeldrain 계정의 API 키",
+          "label": "API 키",
+          "placeholder": "API 키를 입력하세요"
+        },
+        "root_folder_id": {
+          "helpText": "루트 폴더 ID (선택 사항)",
+          "label": "루트 폴더 ID",
+          "placeholder": "폴더 ID를 입력하세요"
+        }
+      },
+      "helpText": "Pixeldrain은 단순성과 사용 편의성에 중점을 둔 파일 공유 플랫폼입니다.",
+      "name": "Pixeldrain",
+      "tips": [
+        "업로드에 회원가입이 필요하지 않습니다",
+        "브라우저에서 파일 보기 가능",
+        "개발자를 위한 API 제공",
+        "임시 파일 공유에 적합"
+      ]
+    },
+    "premiumizeme": {
+      "description": "클라우드 스토리지 및 다운로드 서비스",
+      "fields": {
+        "api_key": {
+          "helpText": "Premiumize.me 계정 설정의 API 키",
+          "label": "API 키",
+          "placeholder": "API 키를 입력하세요"
+        }
+      },
+      "helpText": "Premiumize.me는 클라우드 스토리지 및 다운로드 기능을 제공하는 멀티 호스터 서비스입니다.",
+      "name": "Premiumize.me",
+      "tips": [
+        "클라우드 스토리지와 다운로드 서비스를 결합",
+        "다양한 파일 호스팅 사이트 지원",
+        "VPN 서비스 포함",
+        "미디어 스트리밍에 적합"
+      ]
+    },
+    "proton": {
+      "description": "프라이버시 중심의 암호화 클라우드 스토리지",
+      "fields": {
+        "password": {
+          "helpText": "Proton 계정 비밀번호",
+          "label": "비밀번호",
+          "placeholder": "비밀번호를 입력하세요"
+        },
+        "tfa": {
+          "helpText": "2단계 인증 코드 (활성화된 경우)",
+          "label": "2단계 인증 코드",
+          "placeholder": "활성화된 경우 TFA 코드를 입력하세요"
+        },
+        "username": {
+          "helpText": "Proton 계정 이메일",
+          "label": "사용자 이름",
+          "placeholder": "user@proton.me"
+        }
+      },
+      "helpText": "Proton Drive는 ProtonMail 제작사가 제공하는 종단 간 암호화 클라우드 스토리지입니다.",
+      "name": "프로톤 드라이브",
+      "tips": [
+        "모든 파일은 종단 간 암호화됩니다",
+        "Proton 프라이버시 생태계의 일부",
+        "무료 플랜에 1GB 스토리지 제공",
+        "암호화된 파일 공유 지원"
+      ]
+    },
+    "putio": {
+      "description": "토렌트 지원 클라우드 스토리지",
+      "fields": {
+        "token": {
+          "helpText": "Put.io 계정 설정의 OAuth 토큰",
+          "label": "OAuth 토큰",
+          "placeholder": "OAuth 토큰을 입력하세요"
+        }
+      },
+      "helpText": "Put.io는 토렌트를 가져와서 스트리밍할 수 있는 클라우드 스토리지 서비스입니다.",
+      "name": "Put.io",
+      "tips": [
+        "토렌트 처리에 특화",
+        "자동 동영상 변환",
+        "내장 미디어 플레이어",
+        "자동화를 위한 우수한 API"
+      ]
+    },
+    "qingstor": {
+      "description": "QingStor 오브젝트 스토리지",
+      "fields": {
+        "access_key_id": {
+          "helpText": "QingCloud 콘솔의 액세스 키 ID",
+          "label": "액세스 키 ID",
+          "placeholder": "액세스 키 ID를 입력하세요"
+        },
+        "endpoint": {
+          "helpText": "QingStor 엔드포인트 URL",
+          "label": "엔드포인트",
+          "placeholder": "https://qingstor.com"
+        },
+        "secret_access_key": {
+          "helpText": "시크릿 액세스 키",
+          "label": "시크릿 액세스 키",
+          "placeholder": "시크릿 액세스 키를 입력하세요"
+        },
+        "zone": {
+          "helpText": "QingStor 존 (예: pek3a, sh1a)",
+          "label": "존",
+          "placeholder": "pek3a"
+        }
+      },
+      "helpText": "QingStor는 중국에서 인기 있는 QingCloud의 오브젝트 스토리지 서비스입니다.",
+      "name": "QingStor",
+      "tips": [
+        "중국 시장에서 인기",
+        "S3 호환 API",
+        "여러 가용 영역",
+        "아시아에서 우수한 성능"
+      ]
+    },
+    "quatrix": {
+      "description": "Quatrix 안전한 파일 전송",
+      "fields": {
+        "api_key": {
+          "helpText": "Quatrix 계정의 API 키",
+          "label": "API 키",
+          "placeholder": "API 키를 입력하세요"
+        },
+        "host": {
+          "helpText": "Quatrix 호스트 URL",
+          "label": "호스트",
+          "placeholder": "https://your-domain.quatrix.com"
+        }
+      },
+      "helpText": "Quatrix는 비즈니스 용도로 설계된 안전한 파일 전송 및 스토리지 플랫폼입니다.",
+      "name": "Quatrix",
+      "tips": [
+        "엔터프라이즈 중심 보안",
+        "대용량 파일 전송 지원",
+        "내장 암호화",
+        "감사 추적 기능"
+      ]
+    },
+    "s3": {
+      "description": "S3 호환 오브젝트 스토리지 (AWS, Linode, DigitalOcean, Vultr 등)",
+      "fields": {
+        "access_key_id": {
+          "helpText": "인증을 위한 액세스 키 ID입니다. 제공업체의 콘솔에서 가져오세요",
+          "label": "액세스 키 ID",
+          "placeholder": "AKIAIOSFODNN7EXAMPLE"
+        },
+        "acl": {
+          "helpText": "업로드된 오브젝트의 기본 ACL입니다. Private 설정을 권장합니다",
+          "label": "액세스 제어 목록"
+        },
+        "bucket": {
+          "helpText": "S3 버킷 이름입니다. 전 세계적으로 고유해야 하며 명명 규칙을 따라야 합니다",
+          "label": "버킷",
+          "placeholder": "my-backup-bucket"
+        },
+        "endpoint": {
+          "helpText": "S3 API 엔드포인트 URL입니다. AWS S3의 경우 비워두세요. 다른 제공업체는 필수입니다",
+          "label": "엔드포인트",
+          "placeholder": "s3.amazonaws.com"
+        },
+        "env_auth": {
+          "helpText": "인증에 AWS 환경 변수 또는 IAM 역할을 사용합니다",
+          "label": "환경 인증 사용"
+        },
+        "folder": {
+          "helpText": "버킷 내 선택적 폴더 경로",
+          "label": "폴더",
+          "placeholder": "rediacc"
+        },
+        "location_constraint": {
+          "helpText": "새 버킷 생성 시 위치 제약",
+          "label": "위치 제약",
+          "placeholder": "EU"
+        },
+        "provider": {
+          "helpText": "S3 호환 스토리지 제공업체를 선택하세요",
+          "label": "제공업체",
+          "placeholder": "S3 제공업체 선택"
+        },
+        "region": {
+          "helpText": "버킷이 위치한 AWS 리전",
+          "label": "리전",
+          "placeholder": "us-east-1"
+        },
+        "secret_access_key": {
+          "helpText": "시크릿 액세스 키입니다. 안전하게 보관하고 절대 공유하지 마세요",
+          "label": "시크릿 액세스 키",
+          "placeholder": "시크릿 액세스 키를 입력하세요"
+        }
+      },
+      "helpText": "Amazon S3 및 호환 오브젝트 스토리지 서비스입니다. AWS S3, Linode Object Storage, DigitalOcean Spaces, Vultr Object Storage, MinIO 등을 지원합니다.",
+      "name": "Amazon S3 호환 스토리지",
+      "tips": [
+        "AWS S3의 경우 프로그래밍 방식 액세스 권한이 있는 IAM 사용자를 생성하세요",
+        "버킷 정책을 사용하여 액세스 권한을 제어하세요",
+        "중요한 데이터 보호를 위해 버전 관리를 활성화하세요",
+        "스토리지 비용 관리를 위해 수명 주기 규칙 사용을 고려하세요"
+      ]
+    },
+    "seafile": {
+      "description": "오픈 소스 클라우드 스토리지",
+      "fields": {
+        "auth_token": {
+          "helpText": "인증 토큰 (선택 사항)",
+          "label": "인증 토큰",
+          "placeholder": "인증 토큰을 입력하세요"
+        },
+        "library": {
+          "helpText": "Seafile 라이브러리 ID",
+          "label": "라이브러리 ID",
+          "placeholder": "라이브러리 ID를 입력하세요"
+        },
+        "pass": {
+          "helpText": "Seafile 비밀번호",
+          "label": "비밀번호",
+          "placeholder": "비밀번호를 입력하세요"
+        },
+        "url": {
+          "helpText": "Seafile 서버 URL",
+          "label": "서버 URL",
+          "placeholder": "https://seafile.example.com"
+        },
+        "user": {
+          "helpText": "Seafile 사용자 이름 또는 이메일",
+          "label": "사용자 이름",
+          "placeholder": "user@example.com"
+        }
+      },
+      "helpText": "Seafile은 파일 암호화 및 그룹 협업 기능을 갖춘 오픈 소스 파일 동기화 및 공유 플랫폼입니다.",
+      "name": "Seafile",
+      "tips": [
+        "자체 호스팅 옵션 제공",
+        "파일 버전 관리 및 스냅샷",
+        "종단 간 암호화 지원",
+        "팀 협업에 적합"
+      ]
+    },
+    "sftp": {
+      "description": "SSH 파일 전송 프로토콜",
+      "fields": {
+        "host": {
+          "helpText": "SFTP 서버 호스트명 또는 IP 주소",
+          "label": "호스트",
+          "placeholder": "example.com"
+        },
+        "key_file": {
+          "helpText": "SSH 개인 키 파일 경로",
+          "label": "개인 키 파일",
+          "placeholder": "/path/to/key"
+        },
+        "key_file_pass": {
+          "helpText": "암호화된 개인 키의 패스프레이즈",
+          "label": "키 패스프레이즈",
+          "placeholder": "패스프레이즈를 입력하세요"
+        },
+        "known_hosts_file": {
+          "helpText": "서버 검증을 위한 known_hosts 파일 경로",
+          "label": "Known Hosts 파일",
+          "placeholder": "~/.ssh/known_hosts"
+        },
+        "pass": {
+          "helpText": "비밀번호 인증을 위한 비밀번호",
+          "label": "비밀번호",
+          "placeholder": "비밀번호를 입력하세요"
+        },
+        "port": {
+          "helpText": "SFTP 포트 (기본값: 22)",
+          "label": "포트",
+          "placeholder": "22"
+        },
+        "pubkey_file": {
+          "helpText": "SSH 공개 키 파일 경로",
+          "label": "공개 키 파일",
+          "placeholder": "/path/to/key.pub"
+        },
+        "user": {
+          "helpText": "SSH/SFTP 사용자 이름",
+          "label": "사용자 이름",
+          "placeholder": "username"
+        }
+      },
+      "helpText": "SSH를 통한 안전한 파일 전송입니다. 비밀번호 및 키 기반 인증을 지원합니다.",
+      "name": "SFTP",
+      "tips": [
+        "보안 강화를 위해 키 기반 인증을 사용하세요",
+        "최초 연결 시 서버 지문을 확인하세요",
+        "개인 키를 안전하게 보관하고 암호화하세요",
+        "키 관리를 위해 SSH 에이전트 사용을 고려하세요"
+      ]
+    },
+    "sharefile": {
+      "description": "엔터프라이즈 파일 공유 및 스토리지",
+      "fields": {
+        "root_folder_id": {
+          "helpText": "루트 폴더의 ID",
+          "label": "루트 폴더 ID",
+          "placeholder": "루트 폴더 ID를 입력하세요"
+        },
+        "token": {
+          "helpText": "ShareFile 액세스를 위한 OAuth2 토큰",
+          "label": "OAuth 토큰"
+        },
+        "upload_endpoint": {
+          "helpText": "ShareFile 업로드 엔드포인트 URL",
+          "label": "업로드 엔드포인트",
+          "placeholder": "https://organization.sf-api.com"
+        }
+      },
+      "helpText": "Citrix ShareFile은 안전한 파일 공유가 가능한 엔터프라이즈 콘텐츠 협업 플랫폼입니다.",
+      "name": "Citrix 파일 공유",
+      "tips": [
+        "엔터프라이즈 용도로 설계",
+        "대용량 파일 전송 지원",
+        "감사 추적 및 규정 준수 기능",
+        "모든 플랫폼용 모바일 앱 제공"
+      ]
+    },
+    "sia": {
+      "description": "Sia 분산 스토리지",
+      "fields": {
+        "api_password": {
+          "helpText": "Sia 데몬 API 비밀번호",
+          "label": "API 비밀번호",
+          "placeholder": "API 비밀번호를 입력하세요"
+        },
+        "api_url": {
+          "helpText": "Sia 데몬 API URL",
+          "label": "API URL",
+          "placeholder": "http://127.0.0.1:9980"
+        }
+      },
+      "helpText": "Sia는 분산 네트워크에서 파일을 암호화하고 분산 저장하는 탈중앙화 클라우드 스토리지 플랫폼입니다.",
+      "name": "Sia",
+      "tips": [
+        "완전한 탈중앙화 스토리지",
+        "기존 클라우드보다 저렴한 비용",
+        "Sia 데몬 실행 필요",
+        "Siacoin 암호화폐로 결제"
+      ]
+    },
+    "smb": {
+      "description": "Windows 네트워크 공유",
+      "fields": {
+        "domain": {
+          "helpText": "SMB 도메인 (기본값: WORKGROUP)",
+          "label": "도메인",
+          "placeholder": "WORKGROUP"
+        },
+        "host": {
+          "helpText": "SMB 서버 호스트명 또는 IP 주소",
+          "label": "호스트",
+          "placeholder": "server.local or 192.168.1.100"
+        },
+        "pass": {
+          "helpText": "SMB 인증 비밀번호",
+          "label": "비밀번호",
+          "placeholder": "비밀번호를 입력하세요"
+        },
+        "port": {
+          "helpText": "SMB 포트 (보통 445)",
+          "label": "포트",
+          "placeholder": "445"
+        },
+        "user": {
+          "helpText": "사용자 이름 (도메인 포함 가능)",
+          "label": "사용자 이름",
+          "placeholder": "DOMAIN\\username or username"
+        }
+      },
+      "helpText": "Windows 공유 및 NAS 기기에 액세스하기 위한 SMB(서버 메시지 블록) 프로토콜입니다.",
+      "name": "SMB / CIFS 네트워크 공유",
+      "tips": [
+        "보안을 위해 SMB3을 권장합니다",
+        "네트워크 검색이 활성화되어 있는지 확인하세요",
+        "방화벽 설정이 필요할 수 있습니다",
+        "호스트명이 실패하면 IP 주소로 테스트하세요"
+      ]
+    },
+    "storj": {
+      "description": "탈중앙화 클라우드 스토리지",
+      "fields": {
+        "access_grant": {
+          "helpText": "Storj에서 직렬화된 액세스 권한",
+          "label": "액세스 권한",
+          "placeholder": "액세스 권한을 입력하세요"
+        },
+        "api_key": {
+          "helpText": "위성 웹 인터페이스의 API 키",
+          "label": "API 키",
+          "placeholder": "API 키를 입력하세요"
+        },
+        "passphrase": {
+          "helpText": "데이터 암호화 패스프레이즈",
+          "label": "암호화 패스프레이즈",
+          "placeholder": "암호화 패스프레이즈를 입력하세요"
+        },
+        "satellite_address": {
+          "helpText": "위성 주소 (선택 사항, 기본값: us1.storj.io:7777)",
+          "label": "위성 주소",
+          "placeholder": "us1.storj.io:7777"
+        }
+      },
+      "helpText": "Storj는 전 세계 네트워크에서 파일을 암호화하고 분산 저장하는 탈중앙화 클라우드 스토리지 네트워크입니다.",
+      "name": "Storj",
+      "tips": [
+        "탈중앙화 스토리지로 높은 내구성 제공",
+        "모든 데이터는 클라이언트 사이드 암호화됩니다",
+        "사용한 만큼만 결제",
+        "아카이빙 및 백업 용도에 적합"
+      ]
+    },
+    "sugarsync": {
+      "description": "SugarSync 클라우드 스토리지",
+      "fields": {
+        "access_key_id": {
+          "helpText": "인증을 위한 액세스 키",
+          "label": "액세스 키",
+          "placeholder": "액세스 키를 입력하세요"
+        },
+        "app_id": {
+          "helpText": "SugarSync의 애플리케이션 ID",
+          "label": "앱 ID",
+          "placeholder": "앱 ID를 입력하세요"
+        },
+        "private_access_key": {
+          "helpText": "개인 액세스 키",
+          "label": "개인 액세스 키",
+          "placeholder": "개인 키를 입력하세요"
+        },
+        "refresh_token": {
+          "helpText": "OAuth 갱신 토큰",
+          "label": "갱신 토큰",
+          "placeholder": "갱신 토큰을 입력하세요"
+        }
+      },
+      "helpText": "SugarSync는 기존 폴더 구조를 동기화할 수 있는 클라우드 스토리지 서비스입니다.",
+      "name": "SugarSync",
+      "tips": [
+        "컴퓨터의 모든 폴더를 동기화",
+        "특별한 폴더로 파일을 이동할 필요 없음",
+        "선택적 동기화 지원",
+        "기존 구조 백업에 적합"
+      ]
+    },
+    "swift": {
+      "description": "OpenStack Swift 오브젝트 스토리지",
+      "fields": {
+        "auth": {
+          "helpText": "인증 엔드포인트 URL",
+          "label": "인증 URL",
+          "placeholder": "https://auth.cloud.com/v3"
+        },
+        "auth_version": {
+          "helpText": "인증 프로토콜 버전",
+          "label": "인증 버전"
+        },
+        "domain": {
+          "helpText": "사용자 도메인 이름",
+          "label": "도메인",
+          "placeholder": "Default"
+        },
+        "key": {
+          "helpText": "인증을 위한 API 키 또는 비밀번호",
+          "label": "API 키/비밀번호",
+          "placeholder": "API 키를 입력하세요"
+        },
+        "region": {
+          "helpText": "리전 이름",
+          "label": "리전",
+          "placeholder": "리전을 입력하세요"
+        },
+        "storage_url": {
+          "helpText": "스토리지 URL (선택 사항)",
+          "label": "스토리지 URL",
+          "placeholder": "스토리지 URL을 입력하세요"
+        },
+        "tenant": {
+          "helpText": "테넌트/프로젝트 이름",
+          "label": "테넌트 이름",
+          "placeholder": "테넌트 이름을 입력하세요"
+        },
+        "tenant_id": {
+          "helpText": "테넌트/프로젝트 ID",
+          "label": "테넌트 ID",
+          "placeholder": "테넌트 ID를 입력하세요"
+        },
+        "user": {
+          "helpText": "OpenStack 사용자 이름",
+          "label": "사용자 이름",
+          "placeholder": "사용자 이름을 입력하세요"
+        }
+      },
+      "helpText": "Rackspace, OVH 등에서 사용하는 OpenStack Swift 오브젝트 스토리지입니다.",
+      "name": "OpenStack 스위프트",
+      "tips": [
+        "올바른 인증 URL은 제공업체에 문의하세요",
+        "새 배포에는 v3 인증을 권장합니다",
+        "일부 제공업체는 특정 테넌트 설정이 필요합니다",
+        "대용량 오브젝트 지원은 제공업체마다 다를 수 있습니다"
+      ]
+    },
+    "ulozto": {
+      "description": "Uloz.to 파일 호스팅",
+      "fields": {
+        "app_token": {
+          "helpText": "Uloz.to의 애플리케이션 토큰",
+          "label": "앱 토큰",
+          "placeholder": "앱 토큰을 입력하세요"
+        },
+        "password": {
+          "helpText": "Uloz.to 비밀번호",
+          "label": "비밀번호",
+          "placeholder": "비밀번호를 입력하세요"
+        },
+        "username": {
+          "helpText": "Uloz.to 사용자 이름",
+          "label": "사용자 이름",
+          "placeholder": "사용자 이름을 입력하세요"
+        }
+      },
+      "helpText": "Uloz.to는 체코 공화국과 슬로바키아에서 인기 있는 파일 호스팅 서비스입니다.",
+      "name": "Uloz.to",
+      "tips": [
+        "체코 및 슬로바키아 시장에서 인기",
+        "대용량 파일 업로드 지원",
+        "무료 및 프리미엄 플랜",
+        "파일 공유 기능"
+      ]
+    },
+    "uptobox": {
+      "description": "Uptobox 파일 호스팅",
+      "fields": {
+        "api_key": {
+          "helpText": "Uptobox 계정의 API 키",
+          "label": "API 키",
+          "placeholder": "API 키를 입력하세요"
+        }
+      },
+      "helpText": "Uptobox는 토렌트 지원 및 스트리밍 기능이 있는 파일 호스팅 서비스입니다.",
+      "name": "Uptobox",
+      "tips": [
+        "프리미엄 계정은 더 빠른 속도 제공",
+        "URL에서 원격 업로드 지원",
+        "내장 동영상 플레이어",
+        "미디어 스토리지에 적합"
+      ]
+    },
+    "wasabi": {
+      "description": "Wasabi 핫 클라우드 스토리지",
+      "fields": {
+        "access_key_id": {
+          "helpText": "Wasabi 액세스 키 ID",
+          "label": "액세스 키 ID",
+          "placeholder": "액세스 키를 입력하세요"
+        },
+        "endpoint": {
+          "helpText": "Wasabi 엔드포인트 URL",
+          "label": "엔드포인트",
+          "placeholder": "s3.wasabisys.com"
+        },
+        "region": {
+          "helpText": "Wasabi 리전",
+          "label": "리전",
+          "placeholder": "us-east-1"
+        },
+        "secret_access_key": {
+          "helpText": "Wasabi 시크릿 액세스 키",
+          "label": "시크릿 액세스 키",
+          "placeholder": "시크릿 키를 입력하세요"
+        }
+      },
+      "helpText": "Wasabi는 송신 비용이 없고 예측 가능한 가격의 빠른 클라우드 오브젝트 스토리지를 제공합니다.",
+      "name": "Wasabi 스토리지",
+      "tips": [
+        "송신 비용 없음",
+        "AWS S3 대비 80% 저렴",
+        "API 요청 비용 없음",
+        "11 나인(eleven nines) 내구성"
+      ]
+    },
+    "webdav": {
+      "description": "WebDAV 프로토콜",
+      "fields": {
+        "pass": {
+          "helpText": "WebDAV 비밀번호",
+          "label": "비밀번호",
+          "placeholder": "비밀번호를 입력하세요"
+        },
+        "url": {
+          "helpText": "WebDAV 엔드포인트 전체 URL",
+          "label": "WebDAV URL",
+          "placeholder": "https://webdav.example.com"
+        },
+        "user": {
+          "helpText": "WebDAV 사용자 이름",
+          "label": "사용자 이름",
+          "placeholder": "사용자 이름을 입력하세요"
+        },
+        "vendor": {
+          "helpText": "특정 호환성을 위한 WebDAV 벤더",
+          "label": "벤더"
+        }
+      },
+      "helpText": "웹 기반 분산 저작 및 버전 관리(WebDAV)입니다. Nextcloud, ownCloud 등에서 사용합니다.",
+      "name": "WebDAV",
+      "tips": [
+        "벤더마다 특정한 동작 차이가 있을 수 있습니다",
+        "Nextcloud/ownCloud는 전용 벤더 지원이 있습니다",
+        "보안 연결을 위해 HTTPS를 사용하세요",
+        "일부 서버에는 파일 크기 제한이 있습니다"
+      ]
+    },
+    "yandex": {
+      "description": "Yandex 클라우드 스토리지 서비스",
+      "fields": {
+        "client_id": {
+          "helpText": "Yandex의 OAuth 2.0 클라이언트 ID",
+          "label": "OAuth 클라이언트 ID",
+          "placeholder": "클라이언트 ID를 입력하세요"
+        },
+        "client_secret": {
+          "helpText": "OAuth 2.0 클라이언트 시크릿",
+          "label": "OAuth 클라이언트 시크릿",
+          "placeholder": "클라이언트 시크릿을 입력하세요"
+        },
+        "token": {
+          "helpText": "Yandex 인증을 통해 획득한 OAuth2 토큰",
+          "label": "OAuth 토큰"
+        }
+      },
+      "helpText": "Yandex Disk는 러시아와 동유럽에서 인기 있는 클라우드 스토리지 서비스입니다. OAuth 인증을 사용합니다.",
+      "name": "Yandex 디스크",
+      "tips": [
+        "무료 플랜에 10GB 스토리지 제공",
+        "기기에서 자동 사진 업로드 지원",
+        "모든 주요 플랫폼용 데스크톱 동기화 클라이언트 제공",
+        "오피스 문서 협업 가능"
+      ]
+    },
+    "zoho": {
+      "description": "Zoho WorkDrive 스토리지",
+      "fields": {
+        "client_id": {
+          "helpText": "Zoho의 OAuth 클라이언트 ID",
+          "label": "OAuth 클라이언트 ID",
+          "placeholder": "클라이언트 ID를 입력하세요"
+        },
+        "client_secret": {
+          "helpText": "OAuth 클라이언트 시크릿",
+          "label": "OAuth 클라이언트 시크릿",
+          "placeholder": "클라이언트 시크릿을 입력하세요"
+        },
+        "region": {
+          "helpText": "Zoho 리전 (com, eu, in, jp, com.cn, com.au)",
+          "label": "리전",
+          "placeholder": "com"
+        },
+        "token": {
+          "helpText": "Zoho 인증의 OAuth2 토큰",
+          "label": "OAuth 토큰"
+        }
+      },
+      "helpText": "Zoho WorkDrive는 고급 관리자 제어 기능이 있는 팀을 위한 콘텐츠 협업 플랫폼입니다.",
+      "name": "Zoho 워크드라이브",
+      "tips": [
+        "Zoho 생산성 제품군의 일부",
+        "팀 폴더 및 워크스페이스",
+        "고급 권한 제어",
+        "Zoho 앱과 통합"
+      ]
+    }
+  }
+}

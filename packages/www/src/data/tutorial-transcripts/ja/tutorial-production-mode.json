@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-production-mode.cast",
+  "language": "ja",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-production-mode-01",
+      "markerIndex": 0,
+      "at": 56.862064,
+      "text": "ラップトップから本番モードでアプリを起動します。rdc repo up は開発中に使った up 関数と同じものを呼び出しますが、切り離された状態で実行されます。ラップトップを閉じてもアプリは動き続けます。"
+    },
+    {
+      "id": "tutorial-production-mode-02",
+      "markerIndex": 1,
+      "at": 97.750961,
+      "text": "オートスタートを有効にして、サーバー再起動後もアプリが自動的に復帰するようにします。これ以降、サーバーが再起動してもこのリポジトリは自動的に起動します。"
+    },
+    {
+      "id": "tutorial-production-mode-03",
+      "markerIndex": 2,
+      "at": 125.443493,
+      "text": "オートスタートが有効なリポジトリを確認します。私たちのアプリが起動リストに追加されていることが確認できます。"
+    },
+    {
+      "id": "tutorial-production-mode-04",
+      "markerIndex": 3,
+      "at": 141.09184,
+      "text": "アプリを停止するには、ラップトップからコマンド1つです。起動は1コマンド、停止も1コマンド。すべてターミナルから行えます。対話型セッションはもう不要です。"
+    }
+  ]
+}

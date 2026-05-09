@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-ssh-keys.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-ssh-keys-01",
+      "markerIndex": 0,
+      "at": 1.50929,
+      "text": "Schritt eins. Wir generieren einen neuen ed25519 SSH-Schlüssel. ed25519 ist der moderne Standard: klein, schnell und gut unterstützt. Das muss nur einmal für alle Server gemacht werden, die Sie je hinzufügen werden."
+    },
+    {
+      "id": "tutorial-ssh-keys-02",
+      "markerIndex": 1,
+      "at": 8.723209,
+      "text": "Schritt zwei. Wir kopieren den öffentlichen Schlüssel mit ssh-copy-id auf den Server. Das Serverpasswort wird ein letztes Mal abgefragt. Danach ist für diesen Server keine Passwortauthentifizierung mehr erforderlich."
+    },
+    {
+      "id": "tutorial-ssh-keys-03",
+      "markerIndex": 2,
+      "at": 16.253995,
+      "text": "Schritt drei. Wir registrieren den Schlüssel bei der CLI. Von nun an authentifiziert sich jeder CLI-Befehl mit diesem Schlüssel. Keine Passwörter mehr, keine interaktiven Abfragen mehr."
+    },
+    {
+      "id": "tutorial-ssh-keys-04",
+      "markerIndex": 3,
+      "at": 24.863027,
+      "text": "Wir bestätigen, dass die Konfiguration den Schlüsselpfad korrekt gespeichert hat. Das Setup ist nun für jede Maschine wiederverwendbar, die Sie zu dieser Konfiguration hinzufügen."
+    }
+  ]
+}

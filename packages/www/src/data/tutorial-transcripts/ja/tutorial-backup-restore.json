@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-backup-restore.cast",
+  "language": "ja",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-backup-restore-01",
+      "markerIndex": 0,
+      "at": 65.053708,
+      "text": "ステップ1です。既存の rclone 設定をインポートします。rclone は S3、Backblaze、Google Drive、Dropbox など多くのサービスに対応しています。すでに rclone を使っている場合は、同じ設定ファイルをそのままインポートできます。"
+    },
+    {
+      "id": "tutorial-backup-restore-02",
+      "markerIndex": 1,
+      "at": 73.743501,
+      "text": "CLI が把握しているストレージ一覧を確認します。各ストレージがバックアップのプッシュ先として使えます。"
+    },
+    {
+      "id": "tutorial-backup-restore-03",
+      "markerIndex": 2,
+      "at": 82.843959,
+      "text": "ステップ2です。フルバックアップをプッシュします。リポジトリ全体、つまりアプリ、データベース、ファイル、設定がすべてアップロードされます。リポジトリは静止時に暗号化されているため、バックアップも暗号化されます。追加の鍵管理は不要です。"
+    },
+    {
+      "id": "tutorial-backup-restore-04",
+      "markerIndex": 3,
+      "at": 94.515541,
+      "text": "このストレージで利用可能なバックアップを確認します。これで新しいサーバーへのリストアはコマンド1つで行えます。rdc repo pull を使います。同じデータ、同じコンテナ、別のマシンです。"
+    }
+  ]
+}

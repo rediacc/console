@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-installation-01",
+      "markerIndex": 0,
+      "at": 1.509194,
+      "text": "Commençons par confirmer que rdc est installé. Le flag version affiche la version installée et nous confirme que l'installation s'est bien déroulée."
+    },
+    {
+      "id": "tutorial-installation-02",
+      "markerIndex": 1,
+      "at": 9.435981,
+      "text": "Maintenant, lançons rdc doctor. Il parcourt toutes les dépendances dont rdc a besoin, Node, SSH, Docker, le binaire renet, et signale les éventuels manques. Un rapport propre signifie que vous êtes prêt."
+    }
+  ]
+}

@@ -2579,7 +2579,7 @@
     "opsSkipOrchestration": "Küme orkestrasyonunu atla",
     "opsSSHUser": "VM bağlantısı için SSH kullanıcı adı",
     "organization": "Kuruluş adı",
-    "output": "Çıkış biçimi (table|json|yaml|csv)",
+    "output": "Çıkış biçimi (table|json|yaml|csv). Override default with REDIACC_DEFAULT_OUTPUT.",
     "outputFormat": "Çıkış biçimi (json)",
     "outputPath": "Çıkış dosyasını kaydetmek için yol",
     "param": "İşlev parametreleri",

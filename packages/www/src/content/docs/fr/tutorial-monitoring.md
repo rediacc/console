@@ -1,107 +1,72 @@
 ---
-title: Surveillance et diagnostics
-description: >-
-  Vérifier l'état de la machine, inspecter les conteneurs, examiner les services
-  systemd, scanner les clés d'hôte et exécuter les diagnostics d'environnement.
-category: Tutorials
-order: 4
+title: "Surveillance"
+description: "Vérifiez l'état de santé de vos serveurs et dépôts depuis votre ordinateur avec les commandes rdc machine."
+category: "Tutorials"
+subcategory: advanced
+order: 12
 language: fr
-sourceHash: fa85cf9b00d42a6e
+sourceHash: "e6eaaed180c35e36"
+sourceCommit: "be90e8e7896623c088b86360ec29c1baef2e86b4"
 ---
 
-# Comment surveiller et diagnostiquer l'infrastructure avec Rediacc
+# Surveillance
 
-Maintenir une infrastructure saine nécessite une visibilité sur l'état de la machine, le statut des conteneurs et la santé des services. Dans ce tutoriel, vous exécutez des diagnostics d'environnement, vérifiez l'état de la machine, inspectez les conteneurs et services, examinez l'état du coffre et vérifiez la connectivité. À la fin, vous saurez comment identifier et investiguer les problèmes dans votre infrastructure.
+Votre application est déployée, en production et sauvegardée. Assurez-vous maintenant que tout reste en bonne santé. `rdc` vous donne une vue complète de n'importe quel serveur (état, conteneurs, dépôts) depuis votre ordinateur.
 
-## Prérequis
+## Regarder le tutoriel
 
-- La CLI `rdc` installée avec une configuration initialisée
-- Une machine provisionnée avec au moins un dépôt en cours d'exécution (voir [Tutoriel : Cycle de vie des dépôts](/fr/docs/tutorial-repos))
+![Tutorial: Monitoring](/assets/tutorials/tutorial-monitoring.cast)
 
-## Enregistrement interactif
+## Trois choses à vérifier
 
-![Tutoriel : Surveillance et diagnostics](/assets/tutorials/monitoring-tutorial.cast)
+![État, conteneurs, dépôts](/img/tutorials/tutorial-monitoring/slide-1.svg)
 
-### Étape 1 : Exécuter les diagnostics
+## État : informations système
 
-Commencez par vérifier votre environnement local pour détecter tout problème de configuration.
-
-```bash
-rdc doctor
-```
-
-Vérifie Node.js, la version de la CLI, le binaire renet, la configuration et le support de la virtualisation. Chaque vérification indique **OK**, **Warning** ou **Error**.
-
-### Étape 2 : Vérification de la santé de la machine
+Commencez par la vue système :
 
 ```bash
-rdc machine health --name server-1
+time rdc machine query --name my-server --system
 ```
 
-Récupère un rapport de santé complet de la machine distante : temps de fonctionnement du système, utilisation du disque, utilisation du datastore, nombre de conteneurs, état SMART du stockage et problèmes identifiés.
+Cela affiche le temps de fonctionnement du système, l'utilisation du disque et l'état du stockage. Si quelque chose ne va pas, il vous le dit.
 
-### Étape 3 : Voir les conteneurs en cours d'exécution
+## Conteneurs
+
+Pour voir tous les conteneurs en cours d'exécution sur tous les dépôts de la machine :
 
 ```bash
-rdc machine containers --name server-1
+time rdc machine query --name my-server --containers
 ```
 
-Liste tous les conteneurs en cours d'exécution sur tous les dépôts de la machine, affichant le nom, le statut, l'état, la santé, l'utilisation CPU, l'utilisation mémoire et le dépôt propriétaire de chaque conteneur.
+Vous obtenez le nom, le statut, l'état de santé, le CPU et la mémoire de chaque conteneur, ainsi que le dépôt auquel il appartient.
 
-### Étape 4 : Vérifier les services systemd
+## Dépôts
 
-Pour voir les services sous-jacents qui alimentent le Docker daemon et le réseau de chaque dépôt :
+Pour vérifier vos dépôts :
 
 ```bash
-rdc machine services --name server-1
+time rdc machine query --name my-server --repositories
 ```
 
-Liste les services systemd liés à Rediacc (Docker daemons, alias loopback) avec leur état, sous-état, nombre de redémarrages et utilisation mémoire.
+Cela affiche chaque dépôt avec sa taille, son état de montage, l'état du daemon Docker et l'utilisation du disque.
 
-### Étape 5 : Vue d'ensemble de l'état du coffre
+## Tout en une seule commande
 
 ```bash
-rdc machine vault-status --name server-1
+time rdc machine query --name my-server
 ```
 
-Fournit une vue d'ensemble de haut niveau de la machine : nom d'hôte, temps de fonctionnement, mémoire, disque, datastore et nombre total de dépôts.
+Informations système, dépôts, conteneurs, tout en une seule commande. La même commande `query` sans filtres retourne le tableau complet ; avec `--system`, `--containers`, `--repositories`, `--services`, `--network` ou `--block-devices`, elle se limite à cette seule section.
 
-### Étape 6 : Scanner les clés d'hôte
+## Vérification locale
 
-Si une machine a été reconstruite ou si son IP a changé, actualisez la clé SSH d'hôte stockée.
+`rdc doctor` vérifie votre configuration locale (Node, clé SSH, `renet`, Docker), indépendamment de tout serveur spécifique :
 
 ```bash
-rdc config machine scan-keys -m server-1
+time rdc doctor
 ```
 
-Récupère les clés d'hôte actuelles du serveur et met à jour votre configuration. Cela évite les erreurs "host key verification failed".
+## Vous avez terminé
 
-### Étape 7 : Vérifier la connectivité
-
-Une vérification rapide de la connectivité SSH pour confirmer que la machine est accessible et répond.
-
-```bash
-rdc term connect -m server-1 -c "hostname"
-rdc term connect -m server-1 -c "uptime"
-```
-
-Le nom d'hôte confirme que vous êtes connecté au bon serveur. Le temps de fonctionnement confirme que le système fonctionne normalement.
-
-## Dépannage
-
-**La vérification de santé expire ou affiche "SSH connection failed"**
-Vérifiez que la machine est en ligne et accessible : `ping <ip>`. Vérifiez que votre clé SSH est correctement configurée avec `rdc term connect -m <machine> -c "echo ok"`.
-
-**"Service not found" dans la liste des services**
-Les services Rediacc n'apparaissent qu'après le déploiement d'au moins un dépôt. Si aucun dépôt n'existe, la liste des services est vide.
-
-**La liste des conteneurs affiche des conteneurs obsolètes ou arrêtés**
-Les conteneurs de déploiements précédents peuvent persister si `repo down` n'a pas été exécuté proprement. Arrêtez-les avec `rdc repo down --name <repo> -m <machine>` ou inspectez directement via `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
-
-## Étapes suivantes
-
-Vous avez exécuté les diagnostics, vérifié l'état de la machine, inspecté les conteneurs et services, et vérifié la connectivité. Pour travailler avec vos déploiements :
-
-- [Surveillance](/fr/docs/monitoring), référence complète pour toutes les commandes de surveillance
-- [Dépannage](/fr/docs/troubleshooting), problèmes courants et solutions
-- [Tutoriel : Outils](/fr/docs/tutorial-tools), terminal, synchronisation de fichiers et intégration VS Code
+C'est la série complète. Vous pouvez maintenant installer, configurer, déployer, forker, mettre en production, activer le démarrage automatique, sauvegarder et surveiller. Tout depuis votre terminal, tout sur vos propres serveurs.

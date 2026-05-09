@@ -1,0 +1,18 @@
+# Path-level allowlist for scripts/check-directive-quotes.ts.
+#
+# Adding a path here suppresses the NIS2-quote audit for that file. Use
+# sparingly: this is a structural escape hatch (e.g., a doc that quotes
+# extensively from a different EU instrument that we don't yet have a
+# vendored snapshot for). Per-quote skips should use an inline
+# `<!-- nis2-quote-skip: <reason> -->` marker in the source file instead.
+#
+# Format: one path per line, relative to the monorepo root. Each entry MUST
+# be preceded by a `# BLOCKER: <reason>` line explaining why the gate is
+# being bypassed and when to revisit. The reason is validated against the
+# shared blocker-validator (30-char minimum, no low-effort phrases).
+#
+# Example (do not uncomment without a real reason):
+# # BLOCKER: legacy doc quotes the GDPR text directly; revisit when we vendor a GDPR snapshot
+# packages/www/src/content/docs/en/legal-gdpr-direct-quotes.md
+
+# BLOCKER: structural stubs for the 6 EU languages where Directive (EU) 2022/2555 has an official translation we vendor a snapshot for (de/es/fr/et/it/pt). Body content is currently the English original (passes validate-translation-freshness via matching sourceHash) and contains directive quotes in English; the gate expects per-language native directive text, so a verbatim check would fail. Once a real translation is authored for any of these files (substituting directive quotes with the language's own official text from scripts/data/nis2-directive-2022-2555-<lang>.txt), the corresponding allowlist line MUST be removed. Track follow-up at: tier-1 EU-language NIS2 translation pass (post-infrastructure milestone).

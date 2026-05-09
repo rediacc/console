@@ -2,8 +2,12 @@ import arTranslations from './translations/ar.json';
 import deTranslations from './translations/de.json';
 import enTranslations from './translations/en.json';
 import esTranslations from './translations/es.json';
+import etTranslations from './translations/et.json';
 import frTranslations from './translations/fr.json';
+import itTranslations from './translations/it.json';
 import jaTranslations from './translations/ja.json';
+import koTranslations from './translations/ko.json';
+import ptTranslations from './translations/pt.json';
 import ruTranslations from './translations/ru.json';
 import trTranslations from './translations/tr.json';
 import zhTranslations from './translations/zh.json';
@@ -19,6 +23,10 @@ const translations = {
   ru: ruTranslations,
   tr: trTranslations,
   zh: zhTranslations,
+  et: etTranslations,
+  it: itTranslations,
+  ko: koTranslations,
+  pt: ptTranslations,
 };
 
 /**

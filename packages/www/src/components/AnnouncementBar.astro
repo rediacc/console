@@ -1,22 +1,65 @@
 ---
 import { createTranslator } from '../i18n/utils';
 import type { Language } from '../i18n/types';
+import { isDesignPartnerProgramActive } from '../utils/design-partner-program';
 
 interface Props {
   lang?: Language;
 }
 
 const { lang = 'en' } = Astro.props;
-const { t, to } = createTranslator(lang);
-const enabled = to('announcement.enabled');
+const { t } = createTranslator(lang);
+const enabled = isDesignPartnerProgramActive();
 const text = t('announcement.text');
 const link = t('announcement.link');
 ---
 
+{/*
+  Site-wide Design Partner Program announcement bar.
+
+  To DISABLE the bar AND the pricing-card overlay (badge / strike-through /
+  unified "Claim Design Partner" CTA) in one shot:
+    set "announcement.enabled": false in src/i18n/translations/en.json.
+  Both consumers (this component and CfPricingCard.astro) read the same
+  canonical EN value via utils/design-partner-program.ts.
+
+  Note: this is independent from the account-side auto-grant. To stop
+  granting lifetime BUSINESS to new signups, also set
+  DESIGN_PARTNER_PROGRAM_ENABLED=false in workers/account/wrangler.*.toml
+  [vars] (or unset it — defaults to false).
+
+  When enabled, the bar is fixed at the top of the viewport and pushes the
+  nav down via the --announcement-bar-height CSS variable set below.
+*/}
 {enabled && (
-  <div class="announcement-bar">
-    <a href={link}>
-      {text} <span class="announcement-bar-arrow">&rarr;</span>
-    </a>
-  </div>
+  <>
+    <style is:global>
+      /* Initial guess; the inline script below updates it to the actual
+         rendered bar height (which grows when the text wraps on mobile). */
+      :root { --announcement-bar-height: 2.625rem; }
+    </style>
+    <div class="announcement-bar" data-announcement-bar>
+      <a href={link}>
+        {text} <span class="announcement-bar-arrow">&rarr;</span>
+      </a>
+    </div>
+    <script is:inline>
+      (function () {
+        const bar = document.querySelector('[data-announcement-bar]');
+        if (!bar) return;
+        const update = () => {
+          const h = bar.getBoundingClientRect().height;
+          if (h > 0) {
+            document.documentElement.style.setProperty('--announcement-bar-height', h + 'px');
+          }
+        };
+        update();
+        if ('ResizeObserver' in window) {
+          new ResizeObserver(update).observe(bar);
+        } else {
+          window.addEventListener('resize', update, { passive: true });
+        }
+      })();
+    </script>
+  </>
 )}

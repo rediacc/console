@@ -1,0 +1,58 @@
+{
+  "cast": "/assets/tutorials/tutorial-monitoring.cast",
+  "language": "en",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "aa5b5cc673b4eb95ebf1c64f2a9ea20a2d87ab2c088e175087df7d8fa9d2fe2f",
+  "steps": [
+    {
+      "id": "tutorial-monitoring-01",
+      "markerIndex": 0,
+      "replayStartSec": 102.949897,
+      "replayEndSec": 114.069314,
+      "narrationText": "Let us start with the system view. rdc machine query with the system filter shows uptime, disk usage, and storage status.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-01.1d6f8ee4.mp3",
+      "audioDurationSec": 7.967347
+    },
+    {
+      "id": "tutorial-monitoring-02",
+      "markerIndex": 1,
+      "replayStartSec": 114.069314,
+      "replayEndSec": 126.082986,
+      "narrationText": "Now containers. This view lists every running container across every repository on the machine: name, status, health, CPU, memory, plus which repo owns each one.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-02.77c9a908.mp3",
+      "audioDurationSec": 14.367347
+    },
+    {
+      "id": "tutorial-monitoring-03",
+      "markerIndex": 2,
+      "replayStartSec": 126.082986,
+      "replayEndSec": 138.182721,
+      "narrationText": "And the repos themselves. Size, mount status, Docker daemon status, disk usage. Everything you need to know about each isolated environment.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-03.94b53d49.mp3",
+      "audioDurationSec": 11.154286
+    },
+    {
+      "id": "tutorial-monitoring-04",
+      "markerIndex": 3,
+      "replayStartSec": 138.182721,
+      "replayEndSec": 149.8205,
+      "narrationText": "rdc machine query with no filters gives you everything in one shot. System info, containers, repositories, all together.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-04.59968665.mp3",
+      "audioDurationSec": 8.202449
+    },
+    {
+      "id": "tutorial-monitoring-05",
+      "markerIndex": 4,
+      "replayStartSec": 149.8205,
+      "replayEndSec": 198.111981,
+      "narrationText": "And finally rdc doctor for a local sanity check on your laptop. Node, SSH key, renet, Docker. All the things rdc itself depends on. That is the full series. From install to monitoring, all from your terminal.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-05.cbe5850c.mp3",
+      "audioDurationSec": 17.475918
+    }
+  ]
+}

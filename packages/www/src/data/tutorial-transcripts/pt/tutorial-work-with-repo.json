@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-work-with-repo.cast",
+  "language": "pt",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-work-with-repo-01",
+      "markerIndex": 0,
+      "at": 93.14728,
+      "text": "Primeiro, o comando tunnel. A aplicação corre no servidor, não no portátil. O rdc repo tunnel reencaminha uma porta de um contentor por SSH para que possa aceder a partir do localhost no browser."
+    },
+    {
+      "id": "tutorial-work-with-repo-02",
+      "markerIndex": 1,
+      "at": 103.393386,
+      "text": "Segundo, o comando term. O rdc term connect coloca-nos dentro da sandbox do repositório, a mesma vista isolada que o VS Code oferece. Podemos executar qualquer comando contra o daemon Docker deste repositório sem sair do terminal."
+    },
+    {
+      "id": "tutorial-work-with-repo-03",
+      "markerIndex": 2,
+      "at": 120.858492,
+      "text": "Agora vamos mover ficheiros. Primeiro uma pré-visualização com --dry-run. Mostra exatamente o que seria alterado sem copiar nada. Convém sempre pré-visualizar quando não temos a certeza."
+    },
+    {
+      "id": "tutorial-work-with-repo-04",
+      "markerIndex": 3,
+      "at": 137.357072,
+      "text": "E agora o envio real. O rdc repo sync upload transfere ficheiros do portátil para o repositório por SSH, com compressão delta rsync. Tunnel, term, sync -- três comandos que cobrem o ciclo diário."
+    }
+  ]
+}

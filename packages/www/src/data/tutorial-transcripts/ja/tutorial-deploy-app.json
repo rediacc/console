@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-deploy-app.cast",
+  "language": "ja",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-deploy-app-01",
+      "markerIndex": 0,
+      "at": 52.700593,
+      "text": "ステップ1です。利用可能なテンプレートを確認します。Rediacc には Postgres、Redis、Webサーバーなど、よく使われるアプリの既成セットアップが用意されているので、docker-compose をゼロから書く必要はありません。"
+    },
+    {
+      "id": "tutorial-deploy-app-02",
+      "markerIndex": 1,
+      "at": 61.85842,
+      "text": "ステップ2です。app-postgres テンプレートをリポジトリに適用します。コンテナを記述する docker-compose.yml と、起動・停止のライフサイクルフックを定義する Rediaccfile の2つのファイルが追加されます。"
+    },
+    {
+      "id": "tutorial-deploy-app-03",
+      "markerIndex": 2,
+      "at": 79.070004,
+      "text": "ステップ3です。リポジトリを起動します。CLI がコンテナを起動し、暗号化ボリュームをマウントし、分離された Docker デーモンを接続します。アプリが動いています。"
+    },
+    {
+      "id": "tutorial-deploy-app-04",
+      "markerIndex": 3,
+      "at": 123.719014,
+      "text": "docker ps で確認します。このビューには私たちのリポジトリのコンテナだけが表示されることに注目してください。同じサーバー上の他のリポジトリは専用の Docker デーモンを持っており、ここからは完全に見えません。"
+    }
+  ]
+}

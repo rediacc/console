@@ -1,0 +1,49 @@
+{
+  "cast": "/assets/tutorials/tutorial-ssh-keys.cast",
+  "language": "en",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "99376cbb809ec518b3f03b2104f8075dde36f92021c24483bb706b097cc9d109",
+  "steps": [
+    {
+      "id": "tutorial-ssh-keys-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.50929,
+      "replayEndSec": 8.723209,
+      "narrationText": "Step one. We'll generate a new ed25519 SSH key. ed25519 is the modern default: small, fast, well-supported. You only need to do this once across every server you'll ever add.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-01.5021eff1.mp3",
+      "audioDurationSec": 16.195918
+    },
+    {
+      "id": "tutorial-ssh-keys-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.723209,
+      "replayEndSec": 16.253995,
+      "narrationText": "Step two. Copy the public key to your server with ssh-copy-id. Your server password is asked one last time. After this, password authentication is no longer required.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-02.16d462fd.mp3",
+      "audioDurationSec": 10.762449
+    },
+    {
+      "id": "tutorial-ssh-keys-03",
+      "markerIndex": 2,
+      "replayStartSec": 16.253995,
+      "replayEndSec": 24.863027,
+      "narrationText": "Step three. Now we register the key with rdc. From here on, every rdc command authenticates with this key.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-03.eeb02363.mp3",
+      "audioDurationSec": 7.47102
+    },
+    {
+      "id": "tutorial-ssh-keys-04",
+      "markerIndex": 3,
+      "replayStartSec": 24.863027,
+      "replayEndSec": 32.617101,
+      "narrationText": "Let's confirm the configuration shows the key path was stored correctly.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-04.510bb710.mp3",
+      "audioDurationSec": 4.205714
+    }
+  ]
+}

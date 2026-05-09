@@ -2,6 +2,7 @@
 import { EXTERNAL_LINKS } from '../config/constants';
 import { createTranslator } from '../i18n/utils';
 import type { Language } from '../i18n/types';
+import { DESIGN_PARTNER_GRANTED_PLAN, isDesignPartnerProgramActive } from '../utils/design-partner-program';
 
 interface Props {
   plan: {
@@ -17,9 +18,18 @@ interface Props {
   lang: Language;
   ctaNamespace?: string;
   useCheckout?: boolean;
+  /**
+   * Promote this card's design-partner CTA to the page's "joker" red bolt.
+   * Only one button per page may carry this — enforced by
+   * scripts/check-cta-bolt-uniqueness.js. Pass true ONLY for the focal
+   * BUSINESS card on a dedicated pricing surface (pricing.astro,
+   * disaster-recovery.astro). Leave false on PricingPreview (home) where
+   * SPHero is the joker.
+   */
+  boltCta?: boolean;
 }
 
-const { plan, metrics, lang, ctaNamespace = 'pages.pricing', useCheckout = false } = Astro.props;
+const { plan, metrics, lang, ctaNamespace = 'pages.pricing', useCheckout = false, boltCta = false } = Astro.props;
 const { t } = createTranslator(lang);
 
 const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
@@ -31,6 +41,14 @@ const formatPrice = (amount: number) => priceFormatter.format(amount);
 
 const checkoutPlans = useCheckout ? new Set(['professional']) : new Set<string>();
 const usesCheckout = checkoutPlans.has(plan.id);
+
+// Design Partner Program: only the granted tier (BUSINESS) gets the
+// "FREE for Design Partners" overlay. Other tiers shown alongside it
+// (Enterprise) render with their normal price + CTA so visitors aren't
+// misled into thinking Enterprise is also free.
+// Toggled via announcement.enabled in src/i18n/translations/en.json.
+const designPartner =
+  isDesignPartnerProgramActive() && plan.id === DESIGN_PARTNER_GRANTED_PLAN;
 ---
 
 <div
@@ -42,15 +60,35 @@ const usesCheckout = checkoutPlans.has(plan.id);
   data-monthly-price={plan.monthly}
   data-annual-price={plan.annual}
 >
-  {plan.badgeLabel && (
+  {designPartner ? (
+    <div class="cf-badge cf-badge-design-partner">
+      {t('pages.pricing.ui.designPartner.badge')}
+    </div>
+  ) : plan.badgeLabel ? (
     <div class="cf-badge">{plan.badgeLabel}</div>
-  )}
+  ) : null}
   <h3 class="cf-plan-name">{t(`${ctaNamespace}.plans.${plan.id}.name`)}</h3>
   <div class="cf-price-block">
     {plan.monthly === 0 ? (
+      designPartner ? (
+        <>
+          <div class="cf-price cf-dp-free">{t('pages.pricing.ui.designPartner.price')}</div>
+          <div class="cf-price-subtitle">{t('pages.pricing.ui.designPartner.period')}</div>
+        </>
+      ) : (
+        <>
+          <span class="cf-price">{formatPrice(0)}</span>
+          <div class="cf-price-subtitle">{t(`${ctaNamespace}.ui.foreverFree`)}</div>
+        </>
+      )
+    ) : designPartner ? (
       <>
-        <span class="cf-price">{formatPrice(0)}</span>
-        <div class="cf-price-subtitle">{t(`${ctaNamespace}.ui.foreverFree`)}</div>
+        <div class="cf-price-line cf-dp-original">
+          <span class="cf-price" data-monthly={formatPrice(plan.monthly)} data-annual={formatPrice(plan.annual)}>{formatPrice(plan.monthly)}</span>
+          <span class="cf-price-period" data-monthly="/mo" data-annual="/yr">/mo</span>
+        </div>
+        <div class="cf-price cf-dp-free">{t('pages.pricing.ui.designPartner.price')}</div>
+        <div class="cf-price-subtitle">{t('pages.pricing.ui.designPartner.period')}</div>
       </>
     ) : (
       <>
@@ -85,7 +123,18 @@ const usesCheckout = checkoutPlans.has(plan.id);
   {plan.monthly === 0 && (
     <p class="cf-edge-note">{t('pages.pricing.ui.edgeLimitsNote', 'Limits shown for edge channel. Half on stable.')}</p>
   )}
-  {plan.monthly === 0 ? (
+  {designPartner ? (
+    <a
+      href="/account/"
+      class:list={['cf-cta-btn cf-cta-featured', boltCta && 'cta-bolt']}
+      data-design-partner-claim
+      data-track="cta_click"
+      data-track-label="pricing-design-partner"
+      data-track-dest={plan.id}
+    >
+      {t('pages.pricing.ui.designPartner.cta')} &rarr;
+    </a>
+  ) : plan.monthly === 0 ? (
     <a
       href={`/${lang}/install`}
       class="cf-cta-btn cf-cta-featured"
@@ -122,17 +171,17 @@ const usesCheckout = checkoutPlans.has(plan.id);
 </div>
 
 <script>
-  // Self-contained checkout handler for data-checkout buttons.
-  // Astro deduplicates this script — it runs once regardless of how many cards are rendered.
+  // Self-contained handlers for the card's CTAs. Astro deduplicates this
+  // script — it runs once regardless of how many cards are rendered.
   document.addEventListener('DOMContentLoaded', () => {
-    const buttons = document.querySelectorAll<HTMLButtonElement>('[data-checkout]');
-    if (!buttons.length) return;
-
-    // On regional domains, navigate directly. On www, open region picker.
+    // On regional domains (eu.rediacc.com, us.rediacc.com, etc.) /account/
+    // resolves to the actual portal. On www / localhost it does not, so we
+    // open the region picker instead so the user can choose where to land.
     const isRegional = /\b(eu|us)\.(rediacc\.com|localhost)/.test(window.location.origin) ||
       window.location.hostname === 'localhost';
 
-    buttons.forEach((btn) => {
+    // 1. Stripe checkout buttons (Professional plan when not in design-partner mode).
+    document.querySelectorAll<HTMLButtonElement>('[data-checkout]').forEach((btn) => {
       if (btn.dataset.checkoutBound) return;
       btn.dataset.checkoutBound = 'true';
 
@@ -153,10 +202,15 @@ const usesCheckout = checkoutPlans.has(plan.id);
         if (isRegional) {
           window.location.href = targetPath;
         } else {
-          // Open region picker -- user selects where their data goes before checkout
           window.openRegionPicker?.(targetPath);
         }
       });
     });
+
+    // 2. Design Partner Program "Claim" CTAs are bound globally in
+    // BaseLayout.astro so the picker handler works on every page that has
+    // a [data-design-partner-claim] anchor (persona pages, 404,
+    // design-partners landing, etc.) — not just pages that include this
+    // component. See the inline script at the bottom of BaseLayout.astro.
   });
 </script>

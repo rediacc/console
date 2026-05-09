@@ -1,0 +1,2726 @@
+{
+  "cli": {
+    "description": "Halda masinaid, hoidlaid ja käitusi üle SSH"
+  },
+  "commands": {
+    "agent": {
+      "capabilities": {
+        "description": "Loetleb kõik saadaolevad komandod koos argumentide ja valikutega"
+      },
+      "description": "Introspektsioonikomandod AI agentidele. Peamised alamkomandod: capabilities (loetleb kõik komandod koos argumentide/valikutega JSON-ina), schema (üksikasjalik skeem ühe komando jaoks), exec (käivitab komando JSON-sisendiga stdin-ist, tagastab alati JSON-i).",
+      "descriptionShort": "Agendisõbralikud utiliidid AI kodeerimisassistentidele",
+      "exec": {
+        "description": "Käivitab komando JSON-sisendiga stdin-ist"
+      },
+      "generateReference": {
+        "description": "Genereerib komandoviite markdown-i Claude oskuste jaoks"
+      },
+      "schema": {
+        "description": "Näitab konkreetse komando üksikasjalikku skeemi"
+      }
+    },
+    "audit": {
+      "description": "Auditilogi komandod",
+      "history": {
+        "description": "Vaatab olemi ajalugu",
+        "fetching": "Olemi ajalugu laaditakse...",
+        "success": "Ajalugu laaditud"
+      },
+      "list": {
+        "description": "Loetleb auditilogi kirjeid",
+        "fetching": "Auditiloge laaditakse..."
+      },
+      "log": {
+        "description": "Vaatab audititlogisid",
+        "fetching": "Auditiloge laaditakse...",
+        "success": "Auditiloge laaditud"
+      },
+      "trace": {
+        "description": "Jälitab olemi auditi ajalugu",
+        "fetching": "Olemi auditi jälitust laaditakse...",
+        "success": "Auditi jälitus laaditud"
+      }
+    },
+    "auth": {
+      "activate": {
+        "activated": "Konto on aktiveeritud",
+        "activating": "Kontot aktiveeritakse...",
+        "description": "Aktiveerib konto kinnituskoodiga",
+        "success": "Konto on aktiveeritud! Nüüd saad sisse logida: rdc auth login"
+      },
+      "description": "Autentimiskomandod",
+      "login": {
+        "authenticating": "Autentimine...",
+        "description": "Autentimine Rediacciga",
+        "success": "Sisselogimine õnnestus! Salvestatud konfiguratsiooni \"{{context}}\"",
+        "tfaPrompt": "Sisesta kahefaktorilise autentimise kood:",
+        "tfaRequired": "Kahefaktoriline autentimine on nõutud",
+        "tfaVerified": "2FA kinnitamine õnnestus",
+        "verifyingTfa": "2FA kontrollitakse..."
+      },
+      "logout": {
+        "description": "Kustutab salvestatud volikirjad",
+        "loggingOut": "Väljalogimine...",
+        "success": "Väljalogimine õnnestus"
+      },
+      "register": {
+        "description": "Registreerib uue organisatsiooni ja kasutajakonto",
+        "nextStep": "Seejärel käivita: rdc auth activate -e <email> -p <password> --code <code>",
+        "registering": "Konto registreerimine...",
+        "submitted": "Registreerimistaotlus esitatud",
+        "success": "Registreerimine õnnestus! Kontrolli oma e-posti aktiveerimiskoodi saamiseks."
+      },
+      "status": {
+        "authenticated": "Autenditud kasutajana: {{email}}",
+        "description": "Kontrollib praegust autentimise olekut",
+        "notAuthenticated": "Pole autenditud. Käivita: rdc auth login"
+      },
+      "tfa": {
+        "description": "Kahefaktorilise autentimise haldamine",
+        "disable": {
+          "confirm": "Kas oled kindel, et soovid 2FA keelata?",
+          "description": "Keelab kahefaktorilise autentimise",
+          "disabling": "2FA keelamine...",
+          "success": "2FA keelamine õnnestus"
+        },
+        "enable": {
+          "addToApp": "Lisa see oma autentimisrakendusse",
+          "description": "Lubab kahefaktorilise autentimise",
+          "enabling": "2FA lubamine...",
+          "initiated": "2FA seadistamine algatatud",
+          "setupKey": "Seadistusvõti: {{key}}",
+          "success": "2FA lubamine õnnestus"
+        },
+        "status": {
+          "description": "Kontrollib 2FA olekut",
+          "disabled": "2FA ei ole lubatud",
+          "enabled": "2FA on lubatud"
+        }
+      },
+      "token": {
+        "description": "Tokenite haldamine",
+        "fork": {
+          "creating": "Hargnemise tokenit luuakse...",
+          "description": "Loob hargnenud tokeni teise rakenduse jaoks",
+          "success": "Token loodud edukalt",
+          "tokenValue": "Token: {{token}}"
+        },
+        "list": {
+          "description": "Loetleb aktiivseid tokeneid/seansse",
+          "fetching": "Tokeneid laaditakse...",
+          "noTokens": "Aktiivseid tokeneid pole"
+        },
+        "revoke": {
+          "description": "Tühistab konkreetse tokeni",
+          "revoking": "Tokenit tühistatakse...",
+          "success": "Tokeni tühistamine õnnestus"
+        }
+      }
+    },
+    "backup": {
+      "description": "Lüka, tõmba ja sünkroniseeri repositooriumi varukoopiaid üle salvestuste ja masinate",
+      "schedule": {
+        "description": "Juuruta varukoopia ajakavad kaugmasinatesse"
+      },
+      "sync": {
+        "description": "Repositooriumi varukoopiaid kahesuunaline sünkroniseerimine masinate vahel"
+      }
+    },
+    "bridge": {
+      "description": "Silla haldamine",
+      "list": {
+        "description": "Loetleb sildu",
+        "fetching": "Sildu laaditakse..."
+      },
+      "resetAuth": {
+        "description": "Lähtestab silla autoriseerimistokeni",
+        "newToken": "Uus token: {{token}}",
+        "resetting": "Silla \"{{name}}\" autoriseerimine lähtestatakse...",
+        "success": "Autoriseerimine lähtestatud"
+      }
+    },
+    "ceph": {
+      "clone": {
+        "assign": {
+          "assigning": "Masinaid kloonile \"{{name}}\" määratakse...",
+          "description": "Määrab masinaid kloonile",
+          "success": "Masinad määratud kloonile \"{{name}}\""
+        },
+        "create": {
+          "creating": "RBD-klooni \"{{name}}\" luuakse...",
+          "description": "Loob uue RBD-klooni hetktõmmisest",
+          "success": "RBD-kloon \"{{name}}\" loodud"
+        },
+        "delete": {
+          "confirm": "Kustuta RBD-kloon \"{{name}}\"?",
+          "deleting": "RBD-klooni \"{{name}}\" kustutatakse...",
+          "description": "Kustutab RBD-klooni",
+          "success": "RBD-kloon \"{{name}}\" kustutatud"
+        },
+        "description": "Ceph RBD-klooni haldamine",
+        "list": {
+          "description": "Loetleb RBD-kloone",
+          "fetching": "RBD-kloone laaditakse...",
+          "success": "Kloonid laaditud"
+        },
+        "machines": {
+          "description": "Loetleb kloonile määratud masinaid",
+          "fetching": "Klooni masinaid laaditakse...",
+          "success": "Klooni masinad laaditud"
+        },
+        "unassign": {
+          "description": "Eemaldab masinaid kloonilt",
+          "success": "Masinad eemaldatud kloonilt \"{{name}}\"",
+          "unassigning": "Masinaid kloonilt \"{{name}}\" eemaldatakse..."
+        }
+      },
+      "cluster": {
+        "create": {
+          "creating": "Ceph klastrit \"{{name}}\" luuakse...",
+          "description": "Loob uue Ceph klastri",
+          "success": "Ceph klaster \"{{name}}\" loodud"
+        },
+        "delete": {
+          "confirm": "Kustuta Ceph klaster \"{{name}}\"?",
+          "deleting": "Ceph klastrit \"{{name}}\" kustutatakse...",
+          "description": "Kustutab Ceph klastri",
+          "success": "Ceph klaster \"{{name}}\" kustutatud"
+        },
+        "description": "Ceph klastri haldamine",
+        "list": {
+          "description": "Loetleb Ceph klastreid",
+          "fetching": "Ceph klastreid laaditakse...",
+          "success": "Klastrid laaditud"
+        },
+        "machines": {
+          "description": "Loetleb Ceph klastri masinaid",
+          "fetching": "Klastri masinaid laaditakse...",
+          "success": "Klastri masinad laaditud"
+        },
+        "vault": {
+          "description": "Ceph klastri vault-i haldamine",
+          "get": {
+            "description": "Hangib klastri vault-i andmed",
+            "fetching": "Klastri vault-i laaditakse...",
+            "success": "Klastri vault laaditud"
+          },
+          "update": {
+            "description": "Uuendab klastri vault-i andmed",
+            "success": "Klastri \"{{name}}\" vault uuendatud",
+            "updating": "Klastri \"{{name}}\" vault-i uuendatakse..."
+          }
+        }
+      },
+      "description": "Ceph hajutatud salvestuse haldamine",
+      "image": {
+        "create": {
+          "creating": "RBD-pilti \"{{name}}\" luuakse...",
+          "description": "Loob uue RBD-pildi",
+          "success": "RBD-pilt \"{{name}}\" loodud"
+        },
+        "delete": {
+          "confirm": "Kustuta RBD-pilt \"{{name}}\"?",
+          "deleting": "RBD-pilti \"{{name}}\" kustutatakse...",
+          "description": "Kustutab RBD-pildi",
+          "success": "RBD-pilt \"{{name}}\" kustutatud"
+        },
+        "description": "Ceph RBD-pildi haldamine",
+        "list": {
+          "description": "Loetleb RBD-pilte",
+          "fetching": "RBD-pilte laaditakse...",
+          "success": "Pildid laaditud"
+        }
+      },
+      "pool": {
+        "create": {
+          "creating": "Ceph pooli \"{{name}}\" luuakse...",
+          "description": "Loob uue Ceph pooli",
+          "success": "Ceph pool \"{{name}}\" loodud"
+        },
+        "delete": {
+          "confirm": "Kustuta Ceph pool \"{{name}}\"?",
+          "deleting": "Ceph pooli \"{{name}}\" kustutatakse...",
+          "description": "Kustutab Ceph pooli",
+          "success": "Ceph pool \"{{name}}\" kustutatud"
+        },
+        "description": "Ceph poolide haldamine",
+        "list": {
+          "description": "Loetleb Ceph poole",
+          "fetching": "Ceph poole laaditakse...",
+          "success": "Poolid laaditud"
+        },
+        "vault": {
+          "description": "Ceph pooli vault-i haldamine",
+          "get": {
+            "description": "Hangib pooli vault-i andmed",
+            "fetching": "Pooli vault-i laaditakse...",
+            "success": "Pooli vault laaditud"
+          },
+          "update": {
+            "description": "Uuendab pooli vault-i andmed",
+            "success": "Pooli \"{{name}}\" vault uuendatud",
+            "updating": "Pooli \"{{name}}\" vault-i uuendatakse..."
+          }
+        }
+      },
+      "snapshot": {
+        "create": {
+          "creating": "RBD-hetktõmmist \"{{name}}\" luuakse...",
+          "description": "Loob uue RBD-hetktõmmise",
+          "success": "RBD-hetktõmmis \"{{name}}\" loodud"
+        },
+        "delete": {
+          "confirm": "Kustuta RBD-hetktõmmis \"{{name}}\"?",
+          "deleting": "RBD-hetktõmmist \"{{name}}\" kustutatakse...",
+          "description": "Kustutab RBD-hetktõmmise",
+          "success": "RBD-hetktõmmis \"{{name}}\" kustutatud"
+        },
+        "description": "Ceph RBD-hetktõmmise haldamine",
+        "list": {
+          "description": "Loetleb RBD-hetktõmmiseid",
+          "fetching": "RBD-hetktõmmiseid laaditakse...",
+          "success": "Hetktõmmised laaditud"
+        }
+      }
+    },
+    "config": {
+      "audit": {
+        "description": "Vaata konfiguratsiooni auditilogi (räsiaheldatud JSONL asukohas ~/.config/rediacc/audit.log.jsonl)",
+        "log": {
+          "description": "Trüki hiljutised auditikirjed JSON-ina",
+          "optionActor": "Filtreeri osaleja liigi järgi (human|agent)",
+          "optionPath": "Filtreeri JSON-osuti globi järgi (nt /credentials/*)",
+          "optionSince": "Kuva ainult kirjed, mis on uuemad (nt '24h', '7d', ISO ajatempel)"
+        },
+        "tail": {
+          "description": "Voogedasta uued auditikirjed kirjutamisel (Ctrl+C peatamiseks)"
+        },
+        "verify": {
+          "chainBroken": "Ahel katkeb real {{line}} -- fail on rikutud või võltsitud.",
+          "chainOk": "Ahela terviklikkus kinnitatud {{count}} kirje üleselt.",
+          "description": "Kinnita SHA-256 räsiahela terviklikkus kõigi auditikirjete üleselt"
+        }
+      },
+      "backupStrategy": {
+        "description": "Halda nimelist varundusstrateegiat (hot/cold režiimid, sihtkohad, ajakava)",
+        "list": {
+          "description": "Loetle kõik varundusstrateegiad"
+        },
+        "remove": {
+          "description": "Eemalda varundusStrateegia või sihtkoht",
+          "optionDestination": "Eemalda ainult see sihtkoht (säilitab teised sihtkohad)",
+          "optionName": "Strateegia nimi (nõutav)",
+          "removed": "VarundusStrateegia eemaldatud"
+        },
+        "set": {
+          "description": "Loo või uuenda varundusstrateegiat",
+          "optionBwlimit": "Rclone ribalaiuse piirang (nt \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")",
+          "optionCron": "Cron-ajakava (nt \"0 * * * *\" tunni kaupa)",
+          "optionDestination": "Sihtkoha nimi strateegia sees",
+          "optionDisable": "Keela strateegia või sihtkoht",
+          "optionEnable": "Luba strateegia või sihtkoht",
+          "optionExclude": "Jäta need hoidlad varundusest välja (komaga eraldatud nimed)",
+          "optionFolder": "Alamkaust salvestusämbris selle sihtkoha jaoks (nt hot, cold)",
+          "optionInclude": "Varunda ainult need hoidlad (komaga eraldatud nimed)",
+          "optionMode": "Varundusrežiim: \"hot\" (nullkatkestusaeg) või \"cold\" (peata, hetktõmmis, taaskäivita)",
+          "optionName": "Strateegia nimi (nõutav)",
+          "optionStorage": "Salvestuse konfiguratsiooni nimi (rclone mandaadid)",
+          "saved": "Varundussettrateegia konfiguratsioon salvestatud",
+          "storageRequired": "--storage on nõutav uue sihtkoha loomisel. Kasuta: --storage <salvestuse-nimi>"
+        },
+        "show": {
+          "description": "Kuva varundussettrateegia üksikasjad",
+          "destinationsHeader": "  Sihtkohad:",
+          "noDestinations": "  Sihtkohad: (puuduvad)",
+          "notConfigured": "Varundusstrateegiad ei ole seadistatud",
+          "notFound": "Varundusstrateegiat \"{{name}}\" ei leitud",
+          "optionName": "Strateegia nimi (kuvab kõiki, kui jäetakse välja)"
+        }
+      },
+      "certCache": {
+        "clear": {
+          "cleared": "Sertifikaadi vahemälu tühjendatud",
+          "description": "Eemalda sertifikaadi vahemälu",
+          "noCache": "Puhastamiseks ei ole sertifikaadi vahemälu"
+        },
+        "description": "Halda vahemällu salvestatud TLS-sertifikaate",
+        "noBaseDomain": "Masinal ei ole baseDomain seadistatud",
+        "noCacheForDomain": "Domeeni {{domain}} sertifikaadi vahemälu ei leitud",
+        "pull": {
+          "cached": "Vahemällu salvestati {{count}} sertifikaat(i) ({{size}})",
+          "description": "Laadi TLS-sertifikaadid masinalt alla ja vahemällu",
+          "downloading": "Sertifikaatide allalaadimine masinalt {{machine}}...",
+          "merged": "Säilitati {{count}} sertifikaat(i) kohalikust vahemälust pikema kehtivusajaga",
+          "noAcmeJson": "Masinal {{machine}} ei leitud acme.json",
+          "optionNoPrune": "Jäta vanade võrgu-ID sertifikaatide puhastamine vahele",
+          "pruned": "Puhastati {{count}} vananenud sertifikaat(i)",
+          "prunedExpired": "Puhastati {{count}} aegunud sertifikaat(i)"
+        },
+        "push": {
+          "description": "Laadi vahemällu salvestatud TLS-sertifikaadid masinale üles",
+          "merged": "Ühendati {{count}} pikema kehtivusajaga sertifikaat(i) masinaga {{machine}}",
+          "noCache": "Sertifikaadi vahemälu ei leitud. Käivita kõigepealt 'rdc config cert-cache pull -m <masin>'",
+          "uploaded": "Üles laaditud {{count}} sertifikaat(i) masinale {{machine}}",
+          "uploading": "Vahemällu salvestatud sertifikaatide üleslaadimine masinale {{machine}}...",
+          "upToDate": "Masina {{machine}} sertifikaadid on ajakohased"
+        },
+        "status": {
+          "certCount": "{{count}} sertifikaat(i), {{size}} pakitult",
+          "description": "Kuva vahemällu salvestatud sertifikaatide inventuur",
+          "header": "Domeeni {{baseDomain}} sertifikaadi vahemälu",
+          "noCache": "Sertifikaadi vahemälu ei ole salvestatud",
+          "updatedAt": "Viimati uuendatud: {{date}} (masinalt {{machine}})"
+        }
+      },
+      "clear": {
+        "allCleared": "Kõik vaikeväärtused tühjendatud",
+        "description": "Tühjenda vaikeväärtused (kõik või konkreetne võti)",
+        "keyCleared": "\"{{key}}\" tühjendatud"
+      },
+      "delete": {
+        "description": "Kustuta konfiguratsioonifail",
+        "success": "Konfiguratsioon \"{{name}}\" kustutatud"
+      },
+      "description": "Halda CLI konfiguratsioonifaile, mis on salvestatud asukohta ~/.config/rediacc/. CRUD-toimingud masinatele, hoidlatele, salvestusbaasidele ja SSH-võtmetele konfiguratsiooni sees. Põhialakomandod: init (loo nimeline konfiguratsioon), show, list, ssh (halda võtmeid), recover (varukoopiataastamimine), prune (koristab vanad jäägid). Pesastatud grupid: config machine, config repository, config storage, config infra.",
+      "descriptionShort": "Halda konfiguratsioonifaile, masinaid ja SSH-ühendusi",
+      "edit": {
+        "abortAfterRetries": "Katkestamine pärast {{count}} ebaõnnestunud katset. Mustand säilitatud asukohas: {{path}}",
+        "applied": "Rakendati {{path}}",
+        "bannerRedacted": "Tundlikud väljad kuvatakse <redacted:KIND>:DIGEST asendajatena, mis ringreisivad turvaliselt.",
+        "bannerReveal": "--reveal aktiivne: TUNDLIKUD VÄÄRTUSED NÄHTAVAD. Auditeeritakse.",
+        "bannerRotateLine1": "Saladuse pööramiseks: asenda selle asendaja uue lihttekstilise väärtusega -- sind",
+        "bannerRotateLine2": "palutakse pärast redaktori sulgemist iga rotatsiooni kinnitada.",
+        "bannerStrip": "Read, mis algavad //-ga, eemaldatakse salvestamisel.",
+        "bannerTitle": "Konfiguratsiooni \"{{name}}\" redigeerimine (v{{version}})",
+        "description": "Ava aktiivne konfiguratsioon $EDITOR-is maskeeritud JSONC-projektsioonina. Ainult inimestele; agentidel keelatud.",
+        "noChanges": "Muudatusi ei salvestatud; katkestamine.",
+        "optionApply": "Rakenda redigeeritud JSONC-fail (jätab $EDITOR käivitamise vahele)",
+        "optionCurrentSecrets": "JSON-fail, mis vastendab osuti→vana lihtteksti teadmisvärava jaoks --apply puhul",
+        "optionDump": "Trüki praegune konfiguratsioon JSONC-na stdout-i (ainult lugemiseks; ohutu agentidele maskeerimisel)",
+        "optionEditor": "Redaktori käsu tühistamine (järgib git-prioriteeti: lipp > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+        "optionReveal": "Kuva tundlike väärtuste lihttekst (ainult interaktiivne TTY; auditeeritakse)",
+        "rotateDeclined": "Katkestatud; mustand säilitati redaktori ajutises failis.",
+        "rotatePromptBullet": "  * {{pointer}}",
+        "rotatePromptFooter": "Kinnitamiseks kirjuta 'rotate' (midagi muud katkestab): ",
+        "rotatePromptHeader": "Oled pööramas {{count}} tundlikku välja(e):",
+        "saved": "Konfiguratsioon \"{{name}}\" salvestatud"
+      },
+      "field": {
+        "description": "Osutiga adresseeritud konfiguratsioonivälja toimingud (get/set/unset/rotate/list). JSON-osutid (RFC 6901) nagu /credentials/cfDnsApiToken.",
+        "descriptionShort": "Osutiga adresseeritud konfiguratsioonivälja toimingud",
+        "get": {
+          "description": "Loe üks konfiguratsiooni väärtus JSON-osuti kaudu. Tundlikud väljad on peidetud, välja arvatud --reveal (ainult inimestele).",
+          "optionDigest": "Trüki SHA-256 räsi väärtuse asemel (ohutu agentidega jagamiseks)",
+          "optionPointer": "JSON-osuti väljale (nt /credentials/cfDnsApiToken)",
+          "optionReveal": "Kuva tundlike väärtuste lihttekst (ainult interaktiivne TTY; auditeeritakse)"
+        },
+        "list": {
+          "description": "Loetle kõik registreeritud tundlikkusosuti mallid koos liigi ja kinnitamis/krüpteerimispoliitikaga.",
+          "optionOutput": "Väljundvorming (json|table)",
+          "optionSensitive": "Kuva ainult tundlikud (mitte-avalikud) mallid"
+        },
+        "rotate": {
+          "description": "Pööra tundlik väärtus ilma --current-ita. Ainult interaktiivne TTY; auditeeritakse häälekalt.",
+          "optionNew": "Uus väärtus",
+          "optionPointer": "JSON-osuti tundlikule väljale (nt /credentials/cfDnsApiToken)",
+          "success": "Pööratud {{pointer}}"
+        },
+        "set": {
+          "description": "Kirjuta konfiguratsiooni väärtus JSON-osutil. Tundlikud teed nõuavad --current (teadmisvärav).",
+          "optionCurrent": "Praegune lihttekstiline väärtus -- nõutav tundlike teede mutatsioonide jaoks (teadmisvärava tõend)",
+          "optionNew": "Uus väärtus (parsitakse JSON-ina, kui näeb välja nagu JSON: {, [, \", true/false/null/number)",
+          "optionPointer": "JSON-osuti väljale (nt /credentials/cfDnsApiToken)",
+          "success": "Seati {{pointer}}"
+        },
+        "unset": {
+          "description": "Kustuta konfiguratsiooni väärtus JSON-osutil. Tundlikud teed nõuavad --current.",
+          "optionCurrent": "Praegune lihttekstiline väärtus -- nõutav tundlike teede kustutamiseks",
+          "optionPointer": "JSON-osuti väljale (nt /credentials/cfDnsApiToken)",
+          "success": "Eemaldati {{pointer}}"
+        }
+      },
+      "infra": {
+        "description": "Halda infrastruktuuri konfiguratsiooni (puhverserver, DNS, sertifikaadid)",
+        "push": {
+          "certCacheUploaded": "Vahemällu salvestatud sertifikaadid laaditi kaugele üles",
+          "description": "Lükka infrastruktuuri konfiguratsioon masinale (Traefik-puhverserver, marsruuter, Cloudflare DNS). Käivita kõigepealt 'config infra set <masin>'",
+          "descriptionShort": "Lükka infrastruktuuri konfiguratsioon masinale",
+          "dnsCreated": "DNS: loodud {{type}} {{name}} → {{content}}",
+          "dnsError": "DNS-hoiatus: {{message}} (kirjed vajavad võib-olla käsitsi seadistamist)",
+          "dnsResolvingZone": "Cloudflare tsooni lahendamine domeenile {{domain}}...",
+          "dnsSkipLocal": "DNS-i jäetakse vahele: .local domeen ei kasuta Cloudflare'i",
+          "dnsSkipNoToken": "DNS-i jäetakse vahele: Cloudflare API tõend puudub. Määra käsuga: rdc config infra set -m <masin> --cf-dns-token <tõend>",
+          "dnsUnchanged": "DNS: {{type}} {{name}} on juba korrektne",
+          "dnsUpdated": "DNS: uuendatud {{type}} {{name}} → {{content}}",
+          "installingProxy": "Puhverserveri installimine ja käivitamine...",
+          "proxyInstallWarning": "Puhverserveri installimine ebaõnnestus (kood {{code}}). Käivita käsitsi: sudo renet proxy install",
+          "success": "Infrastruktuuri konfiguratsioon lükati masinale \"{{name}}\""
+        },
+        "set": {
+          "description": "Määra masina infrastruktuuri konfiguratsioon (masina-spetsiifilised: IP-d, domeen, pordid; ühised: sertifikaadi e-post, CF DNS-tõend)",
+          "descriptionShort": "Määra masina infrastruktuuri konfiguratsioon",
+          "invalidIPv4": "Vigane IPv4-aadress: {{ip}}",
+          "invalidIPv6": "Vigane IPv6-aadress: {{ip}}",
+          "noOptions": "Valikuid ei ole määratud. Kasuta --public-ipv4, --base-domain jne.",
+          "optionBaseDomain": "Rakenduste baasdomeen (masina-spetsiifiline)",
+          "optionCertEmail": "E-posti aadress TLS-sertifikaadi teadete jaoks (ühine kõigile masinatele)",
+          "optionCfDnsToken": "Cloudflare DNS API tõend ACME DNS-01 väljakutse jaoks (ühine kõigile masinatele)",
+          "optionPublicIPv4": "Avalik IPv4-aadress (masina-spetsiifiline)",
+          "optionPublicIPv6": "Avalik IPv6-aadress (masina-spetsiifiline)",
+          "optionTcpPorts": "Edastatavad TCP-pordid (komaga eraldatud, nt 25,143,465)",
+          "optionUdpPorts": "Edastatavad UDP-pordid (komaga eraldatud, nt 53)",
+          "success": "Masina \"{{name}}\" infrastruktuuri konfiguratsioon uuendatud"
+        },
+        "show": {
+          "description": "Kuva masina infrastruktuuri konfiguratsioon",
+          "noInfra": "Masinal \"{{name}}\" ei ole infrastruktuuri konfiguratsiooni seadistatud"
+        }
+      },
+      "init": {
+        "alreadyExists": "Konfiguratsioon \"{{name}}\" on juba olemas",
+        "description": "Loo uus nimeline konfiguratsioonifail",
+        "optionMasterPassword": "Krüpteeri ressursid peaparooliga",
+        "success": "Konfiguratsioon \"{{name}}\" lähtestatud"
+      },
+      "list": {
+        "description": "Loetle kõik konfiguratsioonifailid",
+        "noConfigs": "Konfiguratsioonifaile ei leitud. Loo üks käsuga: rdc config init"
+      },
+      "machine": {
+        "add": {
+          "description": "Lisa masin praegusesse konfiguratsiooni. Skannib automaatselt SSH-hostivõtmeid. Pärast lisamist käivita: config machine setup <nimi>",
+          "descriptionShort": "Lisa masin praegusesse konfiguratsiooni",
+          "success": "Masin \"{{name}}\" lisatud ({{user}}@{{ip}})"
+        },
+        "description": "Halda masinaid praeguses konfiguratsioonis",
+        "list": {
+          "description": "Loetle praeguse konfiguratsiooni masinad",
+          "noMachines": "Masinaid ei ole seadistatud. Lisa üks käsuga: rdc config machine add --name <nimi> --ip <ip> --user <kasutaja>"
+        },
+        "remove": {
+          "description": "Eemalda masin praegusest konfiguratsioonist",
+          "success": "Masin \"{{name}}\" eemaldatud"
+        },
+        "scanKeys": {
+          "completed": "Skannitud {{count}}/{{total}} masinat",
+          "description": "Skanni SSH-hostivõtmeid praeguse konfiguratsiooni masinatele",
+          "keysScanned": "Hostivõtmed skannitud masina \"{{name}}\" jaoks",
+          "noKeys": "Masina \"{{name}}\" hostivõtmeid ei suudetud skannida"
+        },
+        "setCeph": {
+          "description": "Määra masina Ceph RBD konfiguratsioon",
+          "optionCluster": "Ceph-i klastri nimi",
+          "optionImage": "RBD-kujutise nimi (nt datastore-prod1)",
+          "optionPool": "Ceph-i kausta nimi (nt rbd)",
+          "success": "Masina \"{{name}}\" Ceph-i konfiguratsioon seati: pool={{pool}}, image={{image}}"
+        },
+        "setup": {
+          "completed": "Masina '{{machine}}' seadistamine lõpetatud edukalt",
+          "datastoreOption": "Andmehoidla tee kaugmasinal",
+          "datastoreSizeOption": "Andmehoidla suurus (nt 95%, 100G)",
+          "description": "Provisioni kaugmasin hoidlate jaoks (installib reneti, seadistab Dockeri, BTRFS andmehoidla). Idempotentne. Nõutav pärast käsku 'config machine add' ja enne käsku 'repo create'",
+          "descriptionShort": "Provisioni kaugmasin hoidlate jaoks",
+          "failed": "Masina '{{machine}}' seadistamine ebaõnnestus: {{error}}",
+          "starting": "Masina '{{machine}}' seadistamine..."
+        }
+      },
+      "provider": {
+        "add": {
+          "description": "Lisa pilveteenusepakkuja",
+          "optionImage": "Vaikimisi OS-kujutis",
+          "optionImageAttr": "Kohandatud: OS-kujutise atribuudi nimi",
+          "optionInstanceType": "Vaikimisi instantsi tüüp/suurus",
+          "optionIpv4Output": "Kohandatud: IPv4-aadressi väljundatribuut",
+          "optionIpv6Output": "Kohandatud: IPv6-aadressi väljundatribuut",
+          "optionLabelAttr": "Kohandatud: virtuaalmasina sildi atribuudi nimi",
+          "optionProvider": "Teadaolev pakkujaallikas (nt linode/linode, hetznercloud/hcloud)",
+          "optionRegion": "Vaikimisi piirkond uutele masinatele",
+          "optionRegionAttr": "Kohandatud: piirkonna atribuudi nimi",
+          "optionResource": "Kohandatud: OpenTofu ressursitüüp virtuaalmasinale",
+          "optionSizeAttr": "Kohandatud: instantsi tüübi atribuudi nimi",
+          "optionSource": "Kohandatud OpenTofu pakkujaallikas (nt vultr/vultr)",
+          "optionSshKeyAttr": "Kohandatud: SSH-võtmete atribuudi nimi",
+          "optionSshKeyFormat": "Kohandatud: SSH-võtme vorming (inline_list või resource_id)",
+          "optionSshKeyResource": "Kohandatud: OpenTofu ressursitüüp SSH-võtmetele",
+          "optionSshUser": "SSH-kasutajanimi uutele virtuaalmasinatele (vaikimisi: root)",
+          "optionToken": "API-tõend pilveteenusepakkujale",
+          "success": "Pilveteenusepakkuja \"{{name}}\" lisatud ({{provider}})"
+        },
+        "description": "Halda pilveteenusepakkujaid masinate automaatprovisionimiseks",
+        "list": {
+          "description": "Loetle seadistatud pilveteenusepakkujad",
+          "noProviders": "Pilveteenusepakkujaid ei ole seadistatud. Lisa käsuga: rdc config provider add"
+        },
+        "remove": {
+          "description": "Eemalda pilveteenusepakkuja konfiguratsioon",
+          "success": "Pilveteenusepakkuja \"{{name}}\" eemaldatud"
+        }
+      },
+      "prune": {
+        "archivesOnlyOption": "Piirdu ainult aegunud arhiivide puhastamisega. Jäta vahele sertifikaadi vahemälu ja ristviidete koristamine. Vastastikku välistav lipuga --certs-only ja --refs-only.",
+        "certsOnlyOption": "Piirdu ainult ACME sertifikaadi vahemälu ämbrisse. Jäta vahele arhiivi puhastamine ja ristviidete koristamine. Vastastikku välistav lipuga --archives-only ja --refs-only.",
+        "completed": "Eemaldati {{count}} vananenud kirje(t) kohalikust konfiguratsioonist.",
+        "description": "Eemalda vananenud kirjed kohalikust konfiguratsioonifailist asukohast ~/.config/rediacc/<config>.json. Puhastatakse kolm ämbrit, kõik puhtalt kohalikud (SSH/renet-kõnesid ei tehta): (1) ACME sertifikaadi vahemälu kirjed, mille ankur GUID/repo/masin ei ole enam aktiivses konfiguratsioonis; (2) arhiveeritud hoidlad, mille kaitsevali on aegunud (vaikimisi 7 päeva, vt defaults.pruneGraceDays); (3) ripuvad ristviited (machine→strategy, strategy→repo). Kasutusel olevaid ressursse, mandaate, salvestustõeneid ja teadaolevaid hoste ei puudutata kunagi. Vaikimisi käitumine on muudatuste rakendamine; kasuta --dry-run ainult eelvaateks.",
+        "descriptionShort": "Koristab vananenud jäägid kohalikust konfiguratsioonifailist",
+        "droppedRefs": "{{count}} ripuv(at) ristviide(t) {{verb}} eemaldatud:",
+        "dryRun": "Kuivkäivitus: rakendataks {{count}} muudatus(t). Käivita uuesti ilma --dry-run-ita, et kinnitada.",
+        "dryRunOption": "Kuva, mida eemaldataks, ilma konfiguratsioonifaili muutmata. Peegeldab teiste prune-käskude vaikimisi-väljas semantikat.",
+        "graceDaysOption": "Tühista arhiivi kaitsevali aken (päevades) selle käivituse jaoks. Langeb tagasi väärtusele defaults.pruneGraceDays konfiguratsioonis, seejärel 7-le, kui kumbagi ei ole seatud.",
+        "keptArchivesInGrace": "Säilitati kaitsevalis olevad arhiveeritud hoidlad (taastatavad käsuga 'rdc config repository restore-archived'):",
+        "nothingToPrune": "Midagi ei ole vaja puhastada -- konfiguratsioon on juba puhas.",
+        "purgeArchivedOption": "Eemalda KÕIK arhiveeritud hoidlad sõltumata vanusest, mitte ainult kaitsevalist üle läinud. Samaväärne käsuga 'rdc config repository purge-archived'. Kasuta ainult siis, kui oled kindel, et ei vaja ühtegi salvestatud mandaati taastamiseks.",
+        "purgedArchives": "{{count}} aegunud arhiveeritud hoidla {{verb}} eemaldatud:",
+        "refsOnlyOption": "Piirdu ainult ripuvate ristviidete puhastamisega (machine→strategy, strategy→repo excludes/includes). Jäta vahele sertifikaadi vahemälu ja arhiivid. Vastastikku välistav lipuga --certs-only ja --archives-only.",
+        "removedCerts": "{{count}} sertifikaadi vahemälu kirje {{verb}} eemaldatud:",
+        "scanning": "Vananenud jääkide otsimine kohalikust konfiguratsioonist...",
+        "tooManyOnlyFlags": "Anna korraga maksimaalselt üks lipp: --certs-only / --archives-only / --refs-only."
+      },
+      "recover": {
+        "confirm": "Taasta konfiguratsioon \"{{name}}\" varukoopiast?",
+        "description": "Taasta konfiguratsioon varukoopifailist (.bak)",
+        "failed": "Konfiguratsiooni \"{{name}}\" taastamine varukoopiast ebaõnnestus",
+        "noBackup": "Konfiguratsiooni \"{{name}}\" varukoopiat ei leitud",
+        "success": "Konfiguratsioon \"{{name}}\" taastati varukoopiast (versioon {{version}})"
+      },
+      "remote": {
+        "description": "Halda kaugsalvestuse konfiguratsiooniühendust",
+        "disable": {
+          "description": "Katkesta ühendus kaugsalvestusega ja salvesta konfiguratsioon kohalikult",
+          "notEnabled": "Kaugkonfiguratsioon ei ole lubatud.",
+          "success": "Kaugkonfiguratsioon keelatud. Konfiguratsioon \"{{name}}\" salvestatud kohalikult."
+        },
+        "enable": {
+          "alreadyEnabled": "Konfiguratsioon \"{{name}}\" on juba seotud kaugsalvestusega. Keela kõigepealt käsuga: rdc config remote disable",
+          "description": "Seo see konfiguratsioon kaugega krüpteeritud salvestusega",
+          "expired": "Seadmekood aegus. Proovi uuesti.",
+          "openBrowser": "Seadistuse lõpetamiseks ava see URL:",
+          "optionApiUrl": "Kontosserveri URL",
+          "optionHeadless": "Kasuta seadmekoodi voogu (päiseta serveritele)",
+          "polling": "Brauseri kinnituse küsimine...",
+          "received": "Käepigistus saadud",
+          "success": "Kaugkonfiguratsioon lubatud. Konfiguratsioon \"{{name}}\" on nüüd sünkroonitud kohaga {{apiUrl}}.",
+          "waiting": "Brauseri kinnituse ootamine..."
+        },
+        "passkeySecretMissing": "Pääsuvõtme saladust ei leitud OS-i võtmehoidlast. Autentimine uuesti: rdc config remote enable",
+        "refresh": {
+          "description": "Sunni konfiguratsiooni uuesti toomist kaugsalvestusest",
+          "notEnabled": "Kaugkonfiguratsioon ei ole lubatud.",
+          "pulled": "Konfiguratsioon toodud",
+          "pulling": "Konfiguratsiooni toomine kaugelt...",
+          "success": "Konfiguratsioon värskendati kaugelt (versioon {{version}})."
+        },
+        "status": {
+          "description": "Kuva kaugühenduse olek"
+        },
+        "tokenExpired": "Kaugsalvestuse konfiguratsioonitõend on aegunud. Autentimine uuesti: rdc config remote enable"
+      },
+      "repository": {
+        "add": {
+          "description": "Lisa hoidla GUID-vastandus praegusesse konfiguratsiooni",
+          "networkIdAssigned": "Võrgu ID: {{networkId}}",
+          "optionCredential": "Hoidla mandaat (krüpteerimise paroolifraas)",
+          "optionGuid": "Hoidla GUID (UUID salvestuse varukoopiate failinimedest)",
+          "optionNetworkId": "Võrgu ID Dockeri isolatsiooniks (2816, 2880, ...). Määratakse automaatselt, kui jäetakse välja",
+          "optionTag": "Hoidla märgend",
+          "success": "Hoidla \"{{name}}\" lisatud ({{guid}}, märgend: {{tag}})"
+        },
+        "description": "Halda hoidla vastendusteid praeguses konfiguratsioonis",
+        "list": {
+          "description": "Loetle hoidla GUID-vastandused praeguses konfiguratsioonis",
+          "noRepositories": "Hoidlaid ei ole seadistatud. Lisa üks käsuga: rdc config repository add --name <nimi> --guid <guid>"
+        },
+        "listArchived": {
+          "description": "Loetle arhiveeritud hoidla mandaadid",
+          "noArchived": "Arhiveeritud hoidlad puuduvad"
+        },
+        "purgeArchived": {
+          "description": "Kustuta kõik arhiveeritud mandaadid jäädavalt",
+          "noArchived": "Puhastamiseks ei ole arhiveeritud hoidlaid",
+          "success": "Puhastati {{count}} arhiveeritud mandaat(i)"
+        },
+        "remove": {
+          "description": "Eemalda hoidla vastandus praegusest konfiguratsioonist",
+          "success": "Hoidla \"{{name}}\" eemaldatud"
+        },
+        "restoreArchived": {
+          "description": "Taasta arhiveeritud hoidla mandaat",
+          "optionName": "Taasta erineva nimega",
+          "success": "Taastati \"{{name}}\" ({{guid}})"
+        }
+      },
+      "set": {
+        "description": "Määra vaikeväärtus (meeskond, piirkond, sild)",
+        "success": "\"{{key}}\" seati väärtusele \"{{value}}\""
+      },
+      "setRenet": {
+        "description": "Määra renet-binaarfaili tee",
+        "success": "Reneti tee seati: {{path}}"
+      },
+      "setSsh": {
+        "description": "Uuenda praeguse konfiguratsiooni SSH-seadeid",
+        "success": "SSH-konfiguratsioon uuendatud"
+      },
+      "show": {
+        "description": "Kuva praeguse konfiguratsiooni üksikasjad",
+        "noConfig": "Aktiivne konfiguratsioon puudub. Loo üks käsuga: rdc config init",
+        "optionReveal": "Kuva tundlike väärtuste lihttekst (ainult interaktiivselt)"
+      },
+      "ssh": {
+        "description": "Halda SSH-võtme konfiguratsiooni",
+        "remove": {
+          "description": "Eemalda SSH-võti praegusest konfiguratsioonist",
+          "noKey": "SSH-võtit ei ole seadistatud",
+          "success": "SSH-võti eemaldatud"
+        },
+        "set": {
+          "description": "Määra SSH-võti praeguse konfiguratsiooni jaoks",
+          "embedWarning": "Võtme sisu salvestatakse konfiguratsioonifaili",
+          "invalidKey": "Fail ei sisalda kehtivat SSH-privaatvõtit",
+          "keyNotFound": "SSH-võtmefaili ei leitud: {{path}}",
+          "optionEmbed": "Manusta võtme sisu konfiguratsiooni tee asemel",
+          "optionKey": "Tee SSH-privaatvõtme failini",
+          "success": "SSH-võti seadistatud"
+        },
+        "show": {
+          "description": "Kuva praegune SSH-võtme konfiguratsioon",
+          "noKey": "SSH-võtit ei ole seadistatud"
+        }
+      },
+      "storage": {
+        "description": "Halda salvestusbaase praeguses konfiguratsioonis",
+        "import": {
+          "description": "Impordi salvestused rclone konfiguratsioonifailist",
+          "imported": "Imporditi salvestus \"{{name}}\" ({{type}})",
+          "noConfigs": "Failist ei leitud kehtivaid salvestuse konfiguratsioone",
+          "notFound": "Salvestust \"{{name}}\" ei leitud konfiguratsioonifailist",
+          "optionName": "Impordi ainult see nimeline sektsioon",
+          "summary": "Imporditi {{count}} salvestus(t)",
+          "unsupported": "Jäetakse vahele \"{{name}}\": toetamata pakkuja tüüp \"{{type}}\""
+        },
+        "list": {
+          "description": "Loetle praeguse konfiguratsiooni salvestused",
+          "noStorages": "Salvestused ei ole seadistatud. Impordi käsuga: rdc config storage import --file <tee>"
+        },
+        "remove": {
+          "description": "Eemalda salvestus praegusest konfiguratsioonist",
+          "success": "Salvestus \"{{name}}\" eemaldatud"
+        }
+      }
+    },
+    "datastore": {
+      "description": "Madala taseme plokksalvestuse haldamine masina andmesalvede jaoks (Ceph RBD või kohalik BTRFS). Tavaliselt vajalik ainult esmase masina seadistamise või masinate vahelise migratsiooni ajal. Peamised alamkomandod: init (loob andmesalve), status (seisund/kasutus), fork (kloonib andmesalve teisele masinale), unfork (taastab hetktõmmisest).",
+      "descriptionShort": "Haldab Ceph RBD andmesalve elutsüklit (init, fork, unfork, status)",
+      "fork": {
+        "completed": "Andmesalv hargnenud edukalt (hetktõmmis: {{snapshot}})",
+        "cowSizeOption": "CoW toetava faili suurus (vaikimisi: auto, kasvab nõudmisel)",
+        "description": "Loob kohaliku CoW-koopia Ceph andmesalvest RBD hetktõmmise + klooni kaudu (< 2s). Salvesta väljundi hetktõmmise/klooni nimed unfork-i jaoks. Ainult üks fork sihtnime kohta; unfork enne uuesti hargnemist",
+        "descriptionShort": "Loob kohaliku CoW-koopia Ceph andmesalvest",
+        "failed": "Andmesalve hargnemine ebaõnnestus",
+        "starting": "Andmesalve hargnemine masinal \"{{source}}\" (kloon nimega \"{{target}}\")...",
+        "toOption": "Klooni sufiks (loob klooni nimega <image>-fork-<name>). Fork jääb lähtemasinale"
+      },
+      "init": {
+        "backendOption": "Taustaprogrammi tüüp: local (vaikimisi) või ceph",
+        "clusterOption": "Ceph klastri nimi (vaikimisi: ceph)",
+        "completed": "Andmesalv initsialiseeritud",
+        "description": "Initsialiseerib andmesalve masinal (kohalik tsükliga toetatud või Ceph RBD)",
+        "failed": "Andmesalve initsialiseerimine ebaõnnestus",
+        "forceOption": "Sunnib initsialiseerimist ka siis, kui andmesalv juba eksisteerib (HOIATUS: vormindab salvestuse uuesti)",
+        "imageOption": "Ceph RBD-pildi nimi (vaikimisi: masina konfiguratsioonist set-ceph kaudu)",
+        "imageRequired": "--image on vajalik ceph taustaprogrammi jaoks (või sea via: rdc config set-ceph -m <machine> --image <name>)",
+        "poolOption": "Ceph pooli nimi (vaikimisi: masina konfiguratsioonist või rbd)",
+        "sizeOption": "Andmesalve suurus (nt 5G, 50G, 100G)",
+        "starting": "Andmesalve initsialiseerimine masinal \"{{machine}}\"..."
+      },
+      "machineOption": "Masina nimi (kus Ceph andmesalv asub)",
+      "status": {
+        "description": "Näitab andmesalve taustaprogrammi, suurust, kasutust, ühenduse olekut ja cow_mode-i (kui on hargnenud)",
+        "starting": "Andmesalve oleku kontrollimine masinal \"{{machine}}\"..."
+      },
+      "unfork": {
+        "completed": "Hargnemine koristatud edukalt",
+        "description": "Koristab hargnemi: lahutab CoW, eemaldab klooni, eemaldab hetktõmmise",
+        "destOption": "Eemaldatav kloonipilt (hargnemi väljundi väärtus \"Clone:\", nt ds-prod-fork-<machine>)",
+        "failed": "Hargnemise koristamine ebaõnnestus",
+        "forceOption": "Jätkab koristamist ka siis, kui üksikud sammud ebaõnnestuvad (nt lahutamine, hetktõmmise eemaldamine)",
+        "mountPointOption": "Hargnemise ühenduspunkt lahutamiseks (vaikimisi: /mnt/rediacc)",
+        "poolOption": "Ceph pooli nimi (vaikimisi: masina konfiguratsioonist)",
+        "snapshotOption": "Eemaldatav hetktõmmis (hargnemi väljundi väärtus \"Snapshot:\", nt fork-<timestamp>)",
+        "sourceOption": "Algne RBD-pilt, mis hargnes (masina konfiguratsioonist set-ceph --image, nt ds-prod)",
+        "starting": "Hargnenud andmesalve koristamine masinal \"{{machine}}\"..."
+      }
+    },
+    "doctor": {
+      "allPassed": "Kõik kontrollid läbitud",
+      "checks": {
+        "activeConfig": "Aktiivne konfiguratsioon",
+        "authStatus": "Olek",
+        "cliVersion": "CLI versioon",
+        "contextMode": "Adapteri režiim",
+        "dockerAvailable": "Docker",
+        "goInstalled": "Go",
+        "machines": "Masinad",
+        "nodeVersion": "Node.js",
+        "opsPrereqs": "OPS eeltingimused",
+        "renetBinary": "Binaarfail",
+        "renetCriu": "Manustatud CRIU",
+        "renetRsync": "Manustatud rsync",
+        "renetVersion": "Versioon",
+        "seaMode": "SEA režiim",
+        "sshKey": "SSH-võti",
+        "subscriptionMachineSlots": "Masinapaigad",
+        "subscriptionRepoLicenses": "Repositooriumi litsentsid",
+        "subscriptionStatus": "Olek",
+        "subscriptionToken": "Token"
+      },
+      "description": "Käivitab diagnostikakontrollid CLI keskkonnas: Node.js versioon, renet-i binaarfaili kättesaadavus, konfiguratsioonifaili kehtivus, SSH-võtme olek ja võrguühenduvus. Väljastab struktureeritud tervisearuande läbitud/ebaõnnestunud näitajatega.",
+      "descriptionShort": "Diagnoosib CLI keskkonda ja renet-i integratsiooni",
+      "devMode": "ei (arendusrežiim)",
+      "hasErrors": "{{count}} viga/vigu",
+      "hasWarnings": "{{count}} hoiatus(t)",
+      "notAuthenticated": "pole autenditud",
+      "notConfigured": "pole konfigureeritud",
+      "notInstalled": "pole installitud",
+      "notLoggedIn": "pole sisse logitud",
+      "opsNotSupported": "platvormil {{platform}} ei toetata",
+      "opsSkipped": "renet pole saadaval (vahele jäetud)",
+      "seaActive": "jah (üksik täitmisfail)",
+      "sections": {
+        "authentication": "Autentimine",
+        "configuration": "Konfiguratsioon",
+        "environment": "Keskkond",
+        "renet": "Renet",
+        "subscription": "Tellimus",
+        "virtualization": "Virtualiseerimine"
+      },
+      "serverMismatch": "serveri mittevastavus",
+      "status": {
+        "fail": "EBAÕNNESTUS",
+        "ok": "OK",
+        "warn": "HOIATUS"
+      },
+      "subscriptionUnreachable": "ei saa ühendust tellimusserveriga",
+      "title": "Rediacc CLI Doctor"
+    },
+    "machine": {
+      "backup": {
+        "cancel": {
+          "cancelled": "{{name}} katkestatud",
+          "cancelling": "{{name}} peatamine...",
+          "description": "Katkestab käimasoleva varukoopia kaugmasinal",
+          "notRunning": "Strateegia \"{{name}}\" varukoopia pole käimas",
+          "optionStrategy": "Strateegia nimi (katkestab kõik, kui väljajäetud)"
+        },
+        "description": "Masina varukoopiahaldus (ajakava, käivitamine, olek)",
+        "list": {
+          "description": "Loetleb kõigile masinatele seotud varukoopiastrateegiaid",
+          "noMachines": "Ühtegi masinat pole konfigureeritud"
+        },
+        "now": {
+          "description": "Käivitab varukoopia kohe kaugmasinal",
+          "optionStrategy": "Strateegia nimi (käivitab kõik, kui väljajäetud)"
+        },
+        "schedule": {
+          "description": "Juurutab varukoopia ajakava kaugmasinasse (systemd taimerid)",
+          "optionDryRun": "Näitab genereeritud üksusi ilma neid juurutamata",
+          "optionForce": "Jätkab ka siis, kui varukoopia on parasjagu käimas (uus üksus rakendub järgmisel käivitumisel; käiv käivitus kasutab vana üksust)",
+          "optionResetFailed": "Tühjendab puudutatud teenustel ebaõnnestunud oleku pärast edukat juurutamist (vaikimisi väljas, säilitab ebaõnnestumise signaali)",
+          "success": "Varukoopia ajakava juurutatud masinasse {{machine}}"
+        },
+        "status": {
+          "description": "Näitab varukoopia olekut ja taimeri olekut kaugmasinal",
+          "optionStrategy": "Näitab konkreetse strateegia üksikasju"
+        }
+      },
+      "containers": {
+        "allHealthy": "Kõik konteinerid on terved",
+        "description": "Loetleb masina konteinereid oleku, seisundi ja domeenisuunamisega. JSON sisaldab täielikke konteineriandmeid koos repositooriumiga (lahendatud nimeks, originaal repository_guid-is), domeeni ja autoRoute-iga",
+        "descriptionShort": "Loetleb masina konteinereid",
+        "fetched": "Konteinerid laaditud",
+        "fetching": "Konteinereid laaditakse...",
+        "healthCheck": "Seisundikontrolli režiim - väljub koodiga 2, kui mõni on ebaterve",
+        "noContainers": "Sellel masinal ei leitud ühtegi konteinerit",
+        "unhealthyFound": "Leitud {{count}} ebatervet konteinerit"
+      },
+      "create": {
+        "creating": "Masinat luuakse...",
+        "description": "Loob uue masina",
+        "success": "Masin \"{{name}}\" loodud"
+      },
+      "delete": {
+        "confirm": "Kas oled kindel, et soovid masina \"{{name}}\" kustutada?",
+        "deleting": "Masinat kustutatakse...",
+        "description": "Kustutab masina",
+        "success": "Masin \"{{name}}\" kustutatud"
+      },
+      "deprovision": {
+        "completed": "Masin {{name}} hävitatud ja konfiguratsioonist eemaldatud",
+        "confirm": "See hävitab masina \"{{name}}\" ja kõik selle andmed jäädavalt. Jätkad?",
+        "description": "Hävitab pilves ettevalmistatud masina ja eemaldab konfiguratsioonist",
+        "destroyFailed": "Infrastruktuuri hävitamine ebaõnnestus masina {{name}} jaoks: {{error}}. Jätkatakse konfiguratsiooni eemaldamisega (--force).",
+        "destroying": "{{name}} hävitatakse...",
+        "dnsCleanedUp": "Eemaldatud {{count}} DNS-kirjet",
+        "dnsDeleted": "DNS-kirje kustutatud: {{type}} {{name}}",
+        "noState": "Masina \"{{name}}\" jaoks pole OpenTofu olekut leitud. Kasuta käsitsi lisatud masinate jaoks 'config remove-machine'.",
+        "optionForce": "Jätab kinnitusviipa vahele"
+      },
+      "description": "Vaatab kaugmasina olekut: süsteemi ressursid, töötavad konteinerid, systemd teenused, juurutatud repositooriumid ja terviklikud diagnostikad. Ainult lugemiseks -- repositooriumide muutmiseks kasuta `repo`. Peamised alamkomandod: query (täisstaatus koos --system, --containers, --repositories, --services filtritega), list, create, rename, delete, prune.",
+      "descriptionShort": "Haldab kaugmasinaid (päringu olek, loetlemine, loomine, kustutamine)",
+      "health": {
+        "containersSection": "\nKonteinerid:",
+        "containersSummary": "  {{running}}/{{total}} töötab ({{healthy}} terved, {{unhealthy}} ebaterved)",
+        "description": "Kontrollib masina seisundit CI/CD torujuhtmete jaoks",
+        "exitCode": "\nVäljumiskood: {{code}}",
+        "fetched": "Seisundiandmed laaditud",
+        "fetching": "Masina seisundit laaditakse...",
+        "header": "\nSeisundi kontroll masina {{name}} jaoks:",
+        "issuesSection": "\nProbleemid:",
+        "licensesSection": "\nLitsentsid:",
+        "licensesSummary": "  {{valid}}/{{total}} kehtivad, {{expired}} aegunud, {{mismatch}} masina mittevastavus, {{missing}} puuduvad",
+        "noData": "Masina kohta pole olekuandmeid saadaval",
+        "repositoriesSection": "\nRepositooriumid:",
+        "repositoriesSummary": "  {{mounted}}/{{total}} ühendatud ({{docker}} koos Dockeriga)",
+        "servicesSection": "\nTeenused:",
+        "servicesSummary": "  {{active}}/{{total}} aktiivsed ({{failed}} ebaõnnestunud)",
+        "statusCritical": "✗ Olek: KRIITILINE",
+        "statusError": "✗ Olek: VIGA",
+        "statusHealthy": "✓ Olek: TERVE",
+        "statusWarning": "⚠ Olek: HOIATUS",
+        "storageSection": "\nSalvestus:",
+        "storageSmart": "  SMART: {{healthy}} terved, {{failing}} rikked",
+        "storageTemp": "  Maksimaalne temperatuur: {{temp}}°C",
+        "systemDatastore": "  Andmesalv: {{percent}}",
+        "systemDisk": "  Ketas: {{percent}}",
+        "systemMemory": "  Mälu: {{percent}}",
+        "systemSection": "\nSüsteem:",
+        "systemUptime": "  Tööaeg: {{uptime}}"
+      },
+      "list": {
+        "description": "Loetleb masinaid",
+        "fetching": "Masinaid laaditakse..."
+      },
+      "provision": {
+        "completed": "Masin {{name}} ettevalmistatud ja valmis ({{ip}})",
+        "configuringInfra": "Infrastruktuuri konfigureerimine (puhverserver + DNS) masina {{name}} jaoks...",
+        "description": "Juurutab uue masina pilveseadmel OpenTofu abil",
+        "failed": "Masina ettevalmistamine ebaõnnestus: {{error}}",
+        "infraInherited": "Baasdomeen automaatselt tuvastatud naabermashina \"{{source}}\" põhjal",
+        "noInfraHint": "Baasdomeen pole konfigureeritud. Käivita 'rdc config infra set -m <machine> --base-domain <domain>' ja seejärel 'rdc config infra push -m <machine>', et lubada DNS ja puhverserver.",
+        "optionBaseDomain": "Infrastruktuuri baasdomeen (nt example.com). Eeldab --infra",
+        "optionImage": "Tühistab vaikimisi OS-pildi",
+        "optionInfra": "Konfigureerib ka infrastruktuuri (infra set + infra push)",
+        "optionNoInfra": "Jätab infrastruktuuri konfiguratsiooni vahele (puhverserver + DNS)",
+        "optionProvider": "Pilveseadme nimi (konfiguratsiooni pakkujast add)",
+        "optionRegion": "Tühistab vaikimisi piirkonna",
+        "optionSshUser": "SSH-kasutajanimi uuele VM-ile (vaikimisi: root)",
+        "optionType": "Tühistab vaikimisi eksemplari tüübi",
+        "providerRequired": "Pilvepakkujat \"{{name}}\" ei leitud. Lisa käsuga: rdc config provider add",
+        "provisioning": "{{name}} ettevalmistamine asupakkujal {{provider}} ({{region}})...",
+        "settingUp": "Masina seadistamine...",
+        "sshReady": "SSH-ühendus loodud",
+        "tofuNotInstalled": "OpenTofu (tofu) pole installitud. Installi: https://opentofu.org/docs/intro/install/",
+        "waitingSSH": "SSH-ühenduvust oodatakse..."
+      },
+      "prune": {
+        "checkingActivity": "Hetktõmmise aktiivsust kontrollitakse...",
+        "completed": "Koristamine lõpetatud",
+        "datastoreCompleted": "Andmesalve koristamine lõpetatud",
+        "datastoreFailed": "Andmesalve koristamine ebaõnnestus",
+        "datastoreOnlyOption": "Koristab ainult orvu andmesalve ressursid",
+        "description": "Eemaldab orvu jäänud andmesalve ressursid ja aegunud hetktõmmised masinalt. Põhikäivitus koristab renet-i sisemised andmesalve artefaktid (BTRFS-i alamköited, lukufailid, tmpfailid). Allpool olevad valikulised lipud võimaldavad progressiivselt kitsamaid repositooriumide koristusi: --orphaned-repos kasutab kohalikku CLI konfiguratsiooni ainsa signaalina, samas kui --prune-unknown konsulteerib lisaks renet-i .interim/state peeglit, nii et teiste tööriistade loodud seaduslikud forkid säilivad isegi siis, kui need puuduvad kohalikust konfiguratsioonist. Mõlemad kustutamisteed käivitavad ühendusohutuse eelkontrolli; edastage --force-delete-mounted selle tühistamiseks.",
+        "descriptionShort": "Koristab orvu ressursid ja aegunud hetktõmmised",
+        "dryRunOption": "Näitab, mida eemaldataks, ilma muudatusi tegemata",
+        "forceDeleteMountedOption": "Tühistab ühendusohutuse eelkontrolli ja kustutab repositooriumid isegi siis, kui need on praegu ühendatud või neil on töötavad Dockeri konteinerid. Erinev --force-ist (mis tühistab ainult arhiivi ooteperioodi). Kehtib nii --orphaned-repos kui ka --prune-unknown puhul.",
+        "noReposFound": "Masinal pole repositooriumeid leitud",
+        "noStaleSnapshots": "Aegunud hetktõmmiseid ei leitud",
+        "noUnknownRepos": "Tundmatuid repositooriumeid ei leitud -- iga masina repositoorium on kas kohalikus konfiguratsioonis või omab renet-i peegelust",
+        "orphanedReposCompleted": "{{count}} orvu repositooriumi koristatud",
+        "orphanedReposOption": "Kustutab kõik masina repositooriumipildid, mis pole kohalikus CLI konfiguratsioonis. Jäme -- eemaldab ka teiste tööriistade loodud forkid, millel pole kohaliku konfiguratsiooni kirjet, isegi kui nende renet peegel tuvastab neid õigesti forkidena. Kasuta --prune-unknown kitsama käitumise jaoks, mis arvestab peeglisse.",
+        "orphanedReposStarting": "Orvu repositooriumide skaneerimine masinal {{machine}}...",
+        "pruneUnknownOption": "Kustutab ainult repositooriumeid, mida renet-i .interim/state peegel ei suuda klassifitseerida (pole kohalikus konfiguratsioonis JA puudub fork-märgistusega peegel). Rangelt kitsam kui --orphaned-repos: forkid ilma konfiguratsioonita säilitatakse, kui peegel neid tuvastab. Nii eelpeegelalised pärandorpad kui ka käsitsi kustutatud grand-repositooriumid kuuluvad sellesse kategooriasse.",
+        "snapshotDeleted": "{{name}} kustutatud",
+        "snapshotDeleting": "{{name}} kustutatakse...",
+        "snapshotInUse": "{{name}} vahele jäetud (aktiivses kasutuses)",
+        "snapshotsCompleted": "Hetktõmmiste koristamine: {{deleted}} kustutatud, {{skipped}} vahele jäetud",
+        "snapshotsOnlyOption": "Koristab ainult aegunud hetktõmmised",
+        "snapshotStale": "Aegunud: {{name}} ({{size}})",
+        "startingDatastore": "Orvu andmesalve ressursside skaneerimine masinal {{machine}}...",
+        "startingSnapshots": "Aegunud hetktõmmiste skaneerimine masinal {{machine}}...",
+        "unknownCompleted": "{{count}} tundmatut repositooriumi koristatud",
+        "unknownFound": "Leitud {{count}} tundmat repositooriumi ({{deletable}} kustutatavad pärast ühendusohutuse kontrolli)",
+        "unknownStarting": "Tundmatute repositooriumide skaneerimine masinal {{machine}} (pole kohalikus konfiguratsioonis + puudub fork-märgistusega peegel)..."
+      },
+      "query": {
+        "connection": "Ühendus",
+        "description": "Näitab masina täisstaatust (infra, süsteem, repositooriumid nime/guid-iga, konteinerid repository/repository_guid/domain/autoRoute-iga, teenused repository/repository_guid-iga)",
+        "descriptionShort": "Näitab masina täisstaatust",
+        "fetched": "Staatus laaditud",
+        "fetching": "Staatust laaditakse masinast {{machine}}...",
+        "infrastructure": "Infrastruktuur",
+        "noData": "Olekuandmed pole saadaval",
+        "storageHealthHint": "Näpunäide: Käivita koos --storage-health, et näha BTRFS-i killustatust ja reflink-i sääste repositooriumi kohta",
+        "strictDriftDetected": "--strict: {{count}} konteiner(it) on kaldumisläve ületanud; väljub mittenullilise koodiga",
+        "syncCertsFailed": "Sertide vahemälu sünkroonimine ebaõnnestus: {{error}}"
+      },
+      "rename": {
+        "description": "Nimetab masina ümber"
+      },
+      "repos": {
+        "description": "Loetleb masinal juurutatud repositooriumeid (nimi, GUID, suurus, ühenduse olek, Dockeri olek, konteinerite arv, ketta kasutus, muutmise kuupäev, Rediaccfile-i olemasolu). JSON pesastab konteinerid ja teenused iga repositooriumi alla. Kasuta --search, et filtreerida nime või GUID-i järgi",
+        "descriptionShort": "Loetleb masinal juurutatud repositooriumeid",
+        "fetched": "Masin laaditud",
+        "fetching": "Masinat laaditakse...",
+        "noRepos": "Sellel masinal pole repositooriumeid juurutatud"
+      },
+      "services": {
+        "allStable": "Kõik teenused on stabiilsed",
+        "description": "Loetleb rediacci hallatud systemd teenuseid masinal (nimi, olek, alamolek, taaskäivituste arv, mälu, repositoorium lahendatuna nimeks, originaal repository_guid-is). Kasuta --stability-check, et väljuda koodiga 2, kui mõni teenus on ebaõnnestunud või taaskäivitab (CI/CD jaoks)",
+        "descriptionShort": "Loetleb rediacci hallatud systemd teenuseid masinal",
+        "fetched": "Teenused laaditud",
+        "fetching": "Teenuseid laaditakse...",
+        "noServices": "Sellel masinal ei leitud rediacc teenuseid",
+        "stabilityCheck": "Stabiilsuse kontrolli režiim - väljub koodiga 2, kui mõni on ebaõnnestunud/taaskäivitav",
+        "unstableFound": "Leitud {{count}} ebastabiilset teenust"
+      },
+      "testConnection": {
+        "authMethod": "  Autentimismeetod: {{method}}",
+        "created": "Ülesanne loodud",
+        "creating": "SSH-testi ülesannet luuakse...",
+        "description": "Testib SSH-ühendust masinaga ja jäädvustab hostivõtme",
+        "error": "Viga: {{error}}",
+        "knownHosts": "  Tuntud hostid: {{entry}}",
+        "message": "  Sõnum: {{message}}",
+        "publicKeyDeployed": "  Avalik võti juurutatud: {{status}}",
+        "rawOutput": "Toores väljund:",
+        "results": "SSH-testi tulemused:",
+        "saved": "Tuntud hostid salvestatud masina vault-i",
+        "saving": "Tuntud hostid salvestatakse masina \"{{machine}}\" vault-i...",
+        "sshKeyConfigured": "  SSH-võti konfigureeritud: {{status}}",
+        "statusResult": "  Olek: {{status}}",
+        "taskId": "Ülesande ID: {{taskId}}",
+        "testing": "SSH-ühendust testitakse {{user}}@{{ip}}:{{port}}...",
+        "testResult": "SSH-test {{result}}",
+        "timeout": "Tulemuse ootamine aegus",
+        "timeoutMessage": "Ühenduse testimine aegus. Kontrolli järjekorra jälitust üksikasjade saamiseks.",
+        "waiting": "SSH-testi tulemust oodatakse...",
+        "waitingTime": "SSH-testi tulemust oodatakse... ({{seconds}}s)"
+      },
+      "update": {
+        "description": "Uuendab masina konfiguratsiooni",
+        "success": "Masin \"{{name}}\" uuendatud",
+        "updating": "Masinat uuendatakse..."
+      },
+      "vault": {
+        "description": "Masina vault-i haldamine (ainult pilveadapteri jaoks)"
+      },
+      "vault-status": {
+        "description": "Näitab masina parsitud vault-i olekut (ainult pilveadapteri jaoks)"
+      },
+      "vaultStatus": {
+        "deployedRepos": "\nJuurutatud repositooriumid:",
+        "description": "Näitab masina parsitud vault-i olekut",
+        "dockerRunning": "  Docker töötab: {{count}}",
+        "fetched": "Masin laaditud",
+        "fetching": "Masinat laaditakse...",
+        "header": "\nVault-i olek masina {{name}} jaoks:",
+        "mounted": "  Ühendatud: {{count}}",
+        "repoDocker": "    Docker: {{status}}",
+        "repoMounted": "    Ühendatud: {{mounted}}",
+        "status": "  Olek: {{status}}",
+        "systemDatastore": "  Andmesalv: {{used}} / {{total}} ({{percent}})",
+        "systemDisk": "  Ketas: {{used}} / {{total}} ({{percent}})",
+        "systemHostname": "  Hostinimi: {{hostname}}",
+        "systemMemory": "  Mälu: {{used}} / {{total}} ({{percent}})",
+        "systemSection": "\nSüsteem:",
+        "systemUptime": "  Tööaeg: {{uptime}}",
+        "totalRepos": "  Repositooriumid kokku: {{count}}"
+      }
+    },
+    "mcp": {
+      "description": "Paljastab CLI-i mudeli kontekstiprotokollina (MCP) AI agentidega integreerimiseks. Server pakib CLI komandod MCP tööriistadeks struktureeritud JSON-sisendi/väljundiga. Peamine alamkomando: serve (käivitab stdio-põhise MCP serveri).",
+      "descriptionShort": "Mudeli kontekstiprotokolli server AI agentidele",
+      "serve": {
+        "allowGrandOption": "Lubab hävitavad toimingud grand (mitte-fork) repositooriumides. Vaikimisi: ainult fork-režiim",
+        "configOption": "Konfiguratsioonifaili nimi kõigi komandode jaoks",
+        "description": "Käivitab MCP serveri (stdio transport)",
+        "timeoutOption": "Vaikimisi komando aegumine millisekundites"
+      },
+      "tools": {
+        "repo_fork": {
+          "parentDescription": "Vanem repositooriumi nimi (või name:tag), millest hargnetakse",
+          "tagDescription": "Fork-i silt (loob name:tag, nt \"staging\")"
+        }
+      }
+    },
+    "ops": {
+      "check": {
+        "allPassed": "Kõik eeltingimused täidetud",
+        "description": "Kontrollib virtualiseerimise eeltingimusi",
+        "hasMissing": "{{count}} eeltingimust puudub",
+        "localFallback": "(kasutatakse kohalikke kontrolle -- renet pole saadaval)",
+        "title": "OPS eeltingimuste kontroll"
+      },
+      "description": "Kohalik VM-i ettevalmistamine ja haldamine KVM/QEMU/Hyper-V abil (platvorm tuvastatakse automaatselt). Mitte kaugmasinate jaoks -- kasuta nende jaoks `machine`. Peamised alamkomandod: up (käivitab VM-id), down (peatab), status (loetleb töötavad VM-id), ssh (ühendab VM-iga), setup (installib eeltingimused), check (kontrollib hosti valmisolekut).",
+      "descriptionShort": "Eksperimentaalsed VM-toimingud (ettevalmistamine, haldamine, hävitamine)",
+      "down": {
+        "completed": "VM-klaster hävitatud edukalt",
+        "description": "Hävitab VM-klastri",
+        "failed": "VM-klastri hävitamine ebaõnnestus",
+        "starting": "VM-klastrit hävitatakse..."
+      },
+      "setup": {
+        "brewFailed": "Homebrew installimine ebaõnnestus",
+        "completed": "Eeltingimused installitud edukalt",
+        "description": "Installib virtualiseerimise eeltingimused",
+        "detecting": "Platvormi tuvastamine...",
+        "failed": "Installimine ebaõnnestus",
+        "linux": "KVM-i eeltingimuste installimine renet-i kaudu...",
+        "macos": "QEMU installimine Homebrew kaudu...",
+        "unsupported": "Toetamata platvorm: {{platform}}",
+        "windows": "Hyper-V eeltingimuste seadistamine..."
+      },
+      "ssh": {
+        "connecting": "Ühendamine VM-iga {{id}}...",
+        "description": "SSH-ühendus VM-iga",
+        "vmNotFound": "VM ID-ga {{id}} ei leitud või pole töötav"
+      },
+      "status": {
+        "description": "Näitab VM-klastri olekut",
+        "fetching": "VM-klastri olekut laaditakse...",
+        "noVMs": "VM-e ei leitud"
+      },
+      "up": {
+        "completed": "VM-klaster ettevalmistatud edukalt",
+        "description": "Ettevalmistab VM-klastri kohalikult",
+        "failed": "VM-klastri ettevalmistamine ebaõnnestus",
+        "starting": "VM-klastri ettevalmistamine..."
+      }
+    },
+    "organization": {
+      "dashboard": {
+        "description": "Hangib organisatsiooni armatuurlaua andmed",
+        "fetching": "Armatuurlauda laaditakse...",
+        "success": "Armatuurlaud laaditud"
+      },
+      "description": "Organisatsiooni haldamise komandod",
+      "export": {
+        "description": "Ekspordib organisatsiooni andmed",
+        "exported": "Eksporditud faili {{path}}",
+        "exporting": "Organisatsiooni andmeid eksporditakse...",
+        "success": "Eksport lõpetatud"
+      },
+      "import": {
+        "description": "Impordib organisatsiooni andmed",
+        "importing": "Organisatsiooni andmeid imporditakse...",
+        "success": "Import lõpetatud"
+      },
+      "info": {
+        "description": "Hangib organisatsiooni teabe",
+        "fetching": "Organisatsiooni teavet laaditakse...",
+        "notFound": "Organisatsiooni teavet ei leitud",
+        "success": "Organisatsiooni teave laaditud"
+      },
+      "list": {
+        "description": "Loetleb organisatsioone",
+        "fetching": "Organisatsioone laaditakse..."
+      },
+      "maintenance": {
+        "description": "Lubab või keelab hoolduserežiimi (blokeerib mitteadministraatori sisselogimised)",
+        "disabled": "Hoolduserežiim keelatud",
+        "disabling": "Hoolduserežiimi keelamine...",
+        "enabled": "Hoolduserežiim lubatud",
+        "enabling": "Hoolduserežiimi lubamine..."
+      },
+      "vault": {
+        "description": "Organisatsiooni vault-i haldamine",
+        "get": {
+          "description": "Hangib organisatsiooni vault-i andmed",
+          "fetching": "Organisatsiooni vault-i laaditakse...",
+          "notFound": "Organisatsiooni vault-i ei leitud",
+          "success": "Vault laaditud"
+        },
+        "list": {
+          "description": "Loetleb kõik vault-i tüübid",
+          "fetching": "Vault-e laaditakse...",
+          "success": "Vault-id laaditud"
+        },
+        "update": {
+          "description": "Uuendab organisatsiooni vault-i andmeid",
+          "success": "Organisatsiooni vault uuendatud",
+          "updating": "Organisatsiooni vault-i uuendatakse..."
+        }
+      }
+    },
+    "permission": {
+      "add": {
+        "adding": "Õigust \"{{permission}}\" grupile \"{{group}}\" lisatakse...",
+        "description": "Lisab õiguse grupile",
+        "success": "Õigus lisatud"
+      },
+      "description": "Õiguste haldamise komandod",
+      "group": {
+        "create": {
+          "creating": "Õiguste gruppi \"{{name}}\" luuakse...",
+          "description": "Loob uue õiguste grupi",
+          "success": "Õiguste grupp \"{{name}}\" loodud"
+        },
+        "delete": {
+          "confirm": "Kustuta õiguste grupp \"{{name}}\"?",
+          "deleting": "Õiguste gruppi \"{{name}}\" kustutatakse...",
+          "description": "Kustutab õiguste grupi",
+          "success": "Õiguste grupp \"{{name}}\" kustutatud"
+        },
+        "description": "Õiguste grupi haldamine",
+        "list": {
+          "description": "Loetleb kõik õiguste grupid",
+          "fetching": "Õiguste gruppe laaditakse...",
+          "success": "Õiguste grupid laaditud"
+        },
+        "show": {
+          "description": "Näitab õiguste grupi üksikasju",
+          "fetching": "Õiguste grupi üksikasju laaditakse...",
+          "success": "Üksikasjad laaditud"
+        }
+      },
+      "list": {
+        "description": "Loetleb õigusi",
+        "fetching": "Õigusi laaditakse..."
+      },
+      "remove": {
+        "description": "Eemaldab õiguse grupist",
+        "removing": "Õigust \"{{permission}}\" grupist \"{{group}}\" eemaldatakse...",
+        "success": "Õigus eemaldatud"
+      }
+    },
+    "protocol": {
+      "build": {
+        "description": "Ehitab {{scheme}}:// URL-i komponentidest"
+      },
+      "description": "Registreerib ja käitleb {{scheme}}:// protokolli URL-e",
+      "open": {
+        "action": "Toiming:",
+        "cliCommand": "\nSamaväärne CLI komando:",
+        "description": "Avab {{scheme}}:// URL-i ja täidab toimingu",
+        "executing": "\nToimingut täidetakse...\n",
+        "machine": "Masin:",
+        "params": "Parameetrid:",
+        "parsedUrl": "\nParsitud protokolli URL:",
+        "repository": "Repositoorium:",
+        "team": "Tiim:",
+        "token": "Token:"
+      },
+      "parse": {
+        "cliCommand": "\nCLI komando:",
+        "description": "Parsib {{scheme}}:// URL-i ja näitab komponente",
+        "parsedUrl": "\nParsitud protokolli URL:"
+      },
+      "register": {
+        "adminRequired": "Märkus: See võib vajada administraatori/root-i õigusi.",
+        "currentUser": "Protokollitöötleja registreerimine praeguse kasutaja jaoks...",
+        "description": "Registreerib protokollitöötleja süsteemis",
+        "exampleUrls": "\nNüüd saad avada URL-e nagu:",
+        "registering": "Protokollitöötleja registreerimine...",
+        "success": "\n{{scheme}}:// protokollitöötleja edukalt registreeritud.",
+        "systemWide": "Protokollitöötleja registreerimine kogu süsteemis..."
+      },
+      "status": {
+        "description": "Näitab protokollitöötleja registreerimise olekut",
+        "error": "\nViga: {{error}}",
+        "handlerCommand": "Töötleja komando:",
+        "platform": "Platvorm:",
+        "registered": "Registreeritud:",
+        "registerHint": "\nProtokollitöötleja registreerimiseks käivita:",
+        "supported": "Toetatud:",
+        "systemRegistration": "Süsteemi registreerimine:",
+        "title": "\nProtokollitöötleja olek",
+        "userRegistration": "Kasutaja registreerimine:"
+      },
+      "unregister": {
+        "description": "Tühistab protokollitöötleja registreerimise süsteemis",
+        "success": "\n{{scheme}}:// protokollitöötleja registreerimine edukalt tühistatud.",
+        "unregistering": "Protokollitöötleja registreerimise tühistamine..."
+      }
+    },
+    "queue": {
+      "cancel": {
+        "cancelling": "Ülesannet {{taskId}} katkestamine...",
+        "description": "Katkestab järjekorraelemendu",
+        "success": "Ülesanne katkestatud"
+      },
+      "create": {
+        "buildingVault": "Järjekorra vault-i ehitamine...",
+        "creating": "Järjekorraelementu funktsioonile '{{function}}' luuakse...",
+        "description": "Loob järjekorraelemendu",
+        "success": "Järjekorraelemendu loodud",
+        "taskId": "Ülesande ID: {{taskId}}",
+        "vaultBuilt": "Järjekorra vault ehitatud"
+      },
+      "delete": {
+        "confirm": "Kas oled kindel, et soovid ülesande {{taskId}} kustutada?",
+        "deleting": "Ülesannet {{taskId}} kustutatakse...",
+        "description": "Kustutab järjekorraelemendu",
+        "success": "Ülesanne kustutatud"
+      },
+      "description": "Järjekorra haldamine",
+      "list": {
+        "description": "Loetleb järjekorraelemente",
+        "fetching": "Järjekorraelemendid laaditakse...",
+        "success": "Järjekorraelemendid laaditud"
+      },
+      "retry": {
+        "description": "Proovib ebaõnnestunud järjekorraelemendu uuesti",
+        "retrying": "Ülesannet {{taskId}} korratakse...",
+        "success": "Ülesanne lisatud kordamiseks järjekorda"
+      },
+      "trace": {
+        "age": "Vanus",
+        "description": "Jälitab järjekorraelemendu täitmist",
+        "errorDetails": "Vea üksikasjad:",
+        "fetched": "Järjekorra jälitus laaditud",
+        "fetching": "Järjekorra jälitust laaditakse...",
+        "finalStatus": "Lõplik olek: {{status}}",
+        "noTrace": "Jälitusteave pole saadaval",
+        "watching": "Ülesande edenemist jälgitakse..."
+      }
+    },
+    "region": {
+      "description": "Piirkondade haldamine",
+      "list": {
+        "description": "Loetleb piirkondi",
+        "fetching": "Piirkondi laaditakse..."
+      }
+    },
+    "repo": {
+      "autostart": {
+        "description": "Halda hoidla automaatset käivitamist buutimisel",
+        "disable": {
+          "completed": "Autostart keelatud",
+          "completedAll": "Autostart keelatud kõigile hoidlatele",
+          "description": "Keela hoidla autostart (jäta nimi välja, et keelata kõigile)",
+          "failed": "Autostarti keelamine ebaõnnestus",
+          "failedAll": "Autostarti keelamine ebaõnnestus kõigile hoidlatele",
+          "starting": "Autostarti keelamine hoidlale \"{{repository}}\" masinal \"{{machine}}\"...",
+          "startingAll": "Autostarti keelamine kõigile hoidlatele masinal \"{{machine}}\"..."
+        },
+        "enable": {
+          "completed": "Autostart lubatud",
+          "completedAll": "Autostart lubatud kõigile hoidlatele",
+          "description": "Luba hoidla autostart (jäta nimi välja, et lubada kõigile)",
+          "failed": "Autostarti lubamine ebaõnnestus",
+          "failedAll": "Autostarti lubamine ebaõnnestus kõigile hoidlatele",
+          "starting": "Autostarti lubamine hoidlale \"{{repository}}\" masinal \"{{machine}}\"...",
+          "startingAll": "Autostarti lubamine kõigile hoidlatele masinal \"{{machine}}\"..."
+        },
+        "list": {
+          "completed": "Autostarti loend hangitud",
+          "description": "Loetle hoidlad, millel on autostart lubatud",
+          "failed": "Autostarti hoidlate loetlemine ebaõnnestus",
+          "starting": "Autostarti hoidlate loetlemine masinal \"{{machine}}\"..."
+        }
+      },
+      "backup": {
+        "description": "Halda hoidlate varukoopiaid",
+        "list": {
+          "description": "Loetle saadaolevad varukoopiad kaugkohas (masin või salvestus). Ilma --path-ita liidetakse alamkaustad hot/ ja cold/ üheks tabeliks veeruga Mode.",
+          "descriptionShort": "Loetle saadaolevad varukoopiad kaugkohas",
+          "listing": "Varukoopiate loetlemine...",
+          "localOnly": "repo backup list on toetatud ainult kohaliku adapteri režiimis",
+          "optionFrom": "Allika masina või salvestuse nimi (tuvastatakse automaatselt konfiguratsioonist)",
+          "optionPath": "Alamkataloog salvestusjuure all. Kui jäetakse välja, loetletakse ja liidetakse nii hot/ kui cold/.",
+          "sourceRequired": "Määra --from <kaugkoht> (masina või salvestuse nimi konfiguratsioonist)"
+        }
+      },
+      "batchConfirm": "{{action}} kõik {{count}} hoidlat masinal \"{{machine}}\"? [j/N]",
+      "batchFailed": "{{action}} ebaõnnestus hoidla \"{{repo}}\" puhul: {{error}}",
+      "batchIterating": "{{action}} {{current}}/{{total}}: „{{repo}}\"...",
+      "batchResult": "{{action}} lõpetatud: {{succeeded}}/{{total}} õnnestus",
+      "batchStarting": "{{action}}: „{{repo}}\"...",
+      "certSync": {
+        "updated": "ACME sertifikaadi vahemälu uuendati masinalt {{machine}} ({{count}} sertifikaati)"
+      },
+      "create": {
+        "alreadyExists": "Hoidla \"{{name}}\" on konfiguratsioonis juba olemas",
+        "completed": "Hoidla loodud",
+        "description": "Loo uus krüpteeritud hoidla",
+        "failed": "Hoidla loomine ebaõnnestus",
+        "noDockerOption": "Jäta Docker-daemoni käivitamine pärast loomist vahele",
+        "registered": "Registreeritud \"{{repository}}\" ({{guid}}, võrk {{networkId}})",
+        "rollback": "Konfiguratsiooni muudatused tühistati hoidla \"{{repository}}\" jaoks",
+        "sizeOption": "Hoidla suurus (nt 10G, 100G, 1T)",
+        "starting": "Hoidla \"{{repository}}\" ({{size}}) loomine masinal \"{{machine}}\"..."
+      },
+      "delete": {
+        "archived": "Hoidla \"{{repository}}\" mandaat arhiveeritud",
+        "archiveHint": "Mandaatide arhiveerimiseks taastamise tarbeks: käivita uuesti lipuga --archive-config",
+        "archiveOption": "Teisalda konfiguratsioonikirje deletedRepositories-i hilisemaks taastamiseks",
+        "completed": "Hoidla kustutatud",
+        "configRetained": "Hoidla \"{{repository}}\" konfiguratsioonikirje säilitati (hoidla võib eksisteerida teistel masinatel). Eemaldamiseks käivita: rdc config repository remove --name {{repository}}",
+        "description": "Kustuta hoidla (hävitab konteinerid, mahud ja krüpteeritud kujutise). Konfiguratsioonikirje säilitatakse. Kasuta --archive-config, et teisaldada mandaadid deletedRepositories-i taastamiseks käsuga 'config restore-archived'",
+        "descriptionShort": "Kustuta hoidla masinalt",
+        "failed": "Hoidla kustutamine ebaõnnestus",
+        "restoreHint": "Taasta käsuga: rdc config restore-archived {{guid}}",
+        "starting": "Hoidla \"{{repository}}\" kustutamine masinal \"{{machine}}\"..."
+      },
+      "description": "Juuruta ja halda krüpteeritud hoidlaid masinatel. Põhialakomandod: create, up (juuruta), down (peata), fork (hetkeline CoW-kloon), delete, push/pull (varukoopia), sync (failide ülekanne). Elutsükkel: repo create → repo up --mount → repo down. Vaata arhitektuuri, marsruutimise ja keskkonna muutujate üksikasju käsuga rdc --help.",
+      "descriptionShort": "Juuruta ja halda krüpteeritud hoidlaid masinatel",
+      "down": {
+        "allCompleted": "Kõik hoidlad peatatud",
+        "allFailed": "Kõigi hoidlate peatamine ebaõnnestus",
+        "allStarting": "Kõigi hoidlate peatamine masinal \"{{machine}}\"...",
+        "checkpointOption": "Loo CRIU kontrollpunkt enne peatamist (salvesta protsessi mäluseisund hilisemaks taastamiseks käsuga 'repo up')",
+        "completed": "Teenused peatatud",
+        "description": "Peata hoidla Docker-konteinerid (käivitab Rediaccfile down läbi renet compose). EI haagi lahti krüpteeritud mahtu -- hoidla jääb haagituks ja seda saab taaskäivitada käsuga 'repo up'. Kasuta --unmount, et sulgeda pärast peatamist ka LUKS-konteiner. Kasuta --checkpoint, et salvestada CRIU protsessiseisund enne peatamist (järgmine 'repo up' taastab automaatselt). Jäta nimi välja, et peatada kõik masina hoidlad",
+        "descriptionShort": "Peata hoidla Docker-konteinerid",
+        "failed": "Teenuste peatamine ebaõnnestus",
+        "grandOption": "Vanema mandaadihoidla (lahendab nime automaatselt GUID-iks). Ainult hoidlatele, mis jagavad saladusi vanemaga",
+        "starting": "Teenuste peatamine hoidlale \"{{repository}}\" masinal \"{{machine}}\"...",
+        "unmountOption": "Haagi ka pärast peatamist lahti (sulge LUKS-konteiner). Samaväärne käskudega 'repo down' ja seejärel 'repo unmount'. Nõutav enne käsku 'repo resize' või mahu täielikuks turvamiseks"
+      },
+      "expand": {
+        "completed": "Laiendamine lõpetatud",
+        "description": "Laienda haagitud hoidlat onlainis (nullkatkestusaeg, ainult kasvatamine). Kasvatab LUKS-konteineri ja failisüsteemi, samal ajal jätkavad konteinerid tööd. Ei saa vähendada -- kasuta selleks käsku 'repo resize' (nõuab lahtihaakimist)",
+        "descriptionShort": "Laienda haagitud hoidlat onlainis (nullkatkestusaeg, ainult kasvatamine)",
+        "failed": "Laiendamine ebaõnnestus",
+        "sizeOption": "Hoidla uus suurus (nt 10G, 100G, 1T)",
+        "starting": "Hoidla \"{{repository}}\" laiendamine suuruseni {{size}} masinal \"{{machine}}\"..."
+      },
+      "fork": {
+        "alreadyExists": "Hoidla \"{{name}}\" on konfiguratsioonis juba olemas",
+        "checkpointOption": "Loo CRIU kontrollpunkt allikal enne forkimist (jäädvusta protsessi mäluseisund forgi taastamiseks)",
+        "completed": "Fork loodud. Juuruta kohalikult: repo up {{repository}} -m {{machine}} --mount. Forgi teisaldamiseks teisele masinale: repo push {{repository}} -m {{machine}} --to <siht> --up",
+        "description": "Loo hoidla CoW (Copy-on-Write) fork. FORK ON PEAAEGU HETKELINE JA KONSTANTSE AJAGA sõltumata hoidla suurusest -- BTRFS reflink kloonib alusel oleva kujutise nii, et 100 GB hoidla ja 1 GB hoidla forkitakse sama ~mõne sekundiga. Fork saab uue GUID-i, networkId, IP-vahemiku ja automaatse marsruudi domeeni ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) ning on täiesti iseseisev koopia. Onlainforkimine on toetatud, vanem võib jääda töötavaks. Fork pärib vanema krüpteerimismandaadid automaatselt. Kasuta --checkpoint, et jäädvustada CRIU protsessiseisund enne forkimist -- fork taastab selle automaatselt esimesel käsul 'repo up' (mäluseisund säilitatakse). RISTMASINA FORK: Teise masinasse forkimiseks forki kõigepealt kohalikult, seejärel kanna üle: (1) repo fork --parent <vanem> -m <allikas> --tag <nimi>, (2) backup push <nimi> -m <allikas> --to-machine <siht>, (3) repo up <nimi> -m <siht> --mount. HOIATUS: Ära kasuta forkimiseks ainult käsku 'backup push' -- see loob sama GUID-iga toorkoopiata iseseisva fork. Forki alati kõigepealt uue identiteedi saamiseks. Automarsruudid kasutavad hoidla nime, nii et iga fork saab automaatselt kordumatu domeeni.",
+        "descriptionShort": "Peaaegu hetkeline CoW-fork hoidlast (uus GUID, networkId, IP-vahemik)",
+        "failed": "Forgi loomine ebaõnnestus",
+        "registered": "Fork \"{{repository}}\" registreeritud ({{guid}}, võrk {{networkId}})",
+        "rollback": "Konfiguratsiooni muudatused tühistati hoidla \"{{repository}}\" jaoks",
+        "starting": "Forkimine: \"{{parent}}\" nimega \"{{repository}}\" masinal \"{{machine}}\"...",
+        "tagOption": "Forki silt (loob nime:silt)",
+        "tagRequired": "Silt on forki jaoks kohustuslik. Kasutus: rdc repo fork --parent <vanem> --tag <silt> -m <masin>",
+        "upOption": "Haagi külge ja käivita teenused pärast forkimist (fork + mount + up ühes käsus)"
+      },
+      "list": {
+        "completed": "Loetlemine lõpetatud",
+        "description": "Loetle masina hoidlad",
+        "failed": "Loetlemine ebaõnnestus: {{error}}",
+        "starting": "Hoidlate loetlemine masinal \"{{machine}}\"..."
+      },
+      "machineOption": "Sihtmasina nimi",
+      "migrate": {
+        "checkpointing": "CRIU kontrollpunkti loomine...",
+        "complete": "Migratsioon lõpetatud: {{name}} teisaldati {{from}} asukohast {{to}} asukohta",
+        "deltaDone": "Delta sünkroonimine lõpetatud",
+        "deltaFailed": "Delta sünkroonimine ebaõnnestus",
+        "deltaSync": "Delta sünkroonimine...",
+        "description": "Migreerige hoidla ühelt masinalt teisele minimaalse katkestusajaga. Kahefaasiline rsync: mahtude ülekanne töötamise ajal, seejärel lühike peatamine delta-sünkroonimiseks. Toetab CRIU kontrollpunkti protsessimälu migratsiooniks ja sihtmasinate autoprovisionimist",
+        "descriptionShort": "Migreerige hoidla masinate vahel otse",
+        "dnsSkipped": "DNS-i vahetamine vahele jäetud (puudub baseDomain või Cloudflare-konfiguratsioon)",
+        "downtime": "Katkestusaeg: {{duration}}",
+        "optionBwlimit": "Ribalaiuse piirang rsync-ülekandele (nt 10M)",
+        "optionCheckpoint": "CRIU otsemigratsion: jäädvusta ja taasta protsessi mäluseisund",
+        "optionFrom": "Allika masina nimi",
+        "optionProvision": "Provisioni siht automaatselt pilveteenusepakkuja kaudu (nt hetzner, linode)",
+        "optionSkipDns": "Jäta DNS-kirjete vahetamine pärast migratsiooni vahele",
+        "optionTo": "Sihtmasina nimi",
+        "phase1": "1. faas: mahukate andmete ülekandmine (allikas jääb töötama)...",
+        "phase1Done": "Mahukas ülekanne lõpetatud",
+        "phase1Failed": "Mahukas ülekanne ebaõnnestus",
+        "phase2": "2. faas: üleminek (lühike katkestus)...",
+        "phase3": "3. faas: sihtmäel käivitamine...",
+        "provisioning": "Sihtmasina {{machine}} provisionimine läbi {{provider}}...",
+        "sourceStopped": "Allika teenused peatatud",
+        "sourceUnmounted": "Allikas lahti haagitud",
+        "startFailed": "Sihtmäel käivitamine ebaõnnestus",
+        "startingTarget": "Teenuste käivitamine sihtmäel...",
+        "stopFailed": "Allika teenuste peatamine ebaõnnestus",
+        "stoppingSource": "Allika teenuste peatamine...",
+        "switchingDns": "DNS-kirjete vahetamine...",
+        "targetStarted": "Sihtmasina teenused käivitatud",
+        "unmountFailed": "Allika lahtihaakimine ebaõnnestus",
+        "unmountingSource": "Allika lahtihaakimine..."
+      },
+      "mount": {
+        "checkpointOption": "Taasta CRIU konteineri kontrollpunkt pärast haakimist (jätka protsesse salvestatud mäluseisundist). Kasutatakse pärast käsku 'repo push --checkpoint' otseülekandeks",
+        "completed": "Haakimine lõpetatud",
+        "description": "Haagi hoidla külge (dekrüpteeri ja ava LUKS-konteiner, muutes failisüsteemi ligipääsetavaks). Vajalik esmakordsel juurutamisel, pärast käsku 'repo push' uuele masinale või pärast käsku 'repo unmount'. Saab teha ka käsuga 'repo up --mount'. Maht jääb haagituks kuni selle sõnaselge lahtihaakimiseni. Jäta nimi välja, et haakida kõik masina hoidlad",
+        "descriptionShort": "Haagi hoidla külge (dekrüpteeri ja ava LUKS-konteiner)",
+        "failed": "Haakimine ebaõnnestus",
+        "noDockerOption": "Jäta Docker-daemoni käivitamine pärast haakimist vahele",
+        "starting": "Haakimine: \"{{repository}}\" masinal \"{{machine}}\"..."
+      },
+      "noCredential": "Hoiatus: hoidlal \"{{name}}\" puudub mandaat. Toimingud krüpteeritud hoidlatega võivad ebaõnnestuda.",
+      "ownership": {
+        "completed": "Omandiõigus uuendatud",
+        "description": "Muuda hoidla kataloogi omaniku UID-i haagitud mahul (vaikimisi: 7111). Kasuta siis, kui konteinerid vajavad hoidla failidele juurdepääsuks kindlat UID-i",
+        "descriptionShort": "Muuda hoidla kataloogi omaniku UID-i",
+        "failed": "Omandiõiguse uuendamine ebaõnnestus",
+        "starting": "Hoidla \"{{repository}}\" omandiõiguse seadistamine masinal \"{{machine}}\"...",
+        "uidOption": "Omaniku UID (vaikimisi: 7111)"
+      },
+      "pull": {
+        "deployed": "Hoidla \"{{repo}}\" juurutatud masinal {{machine}}",
+        "deployFailed": "Hoidla \"{{repo}}\" juurutamine pärast tõmbamist ebaõnnestus",
+        "deploying": "Hoidla \"{{repo}}\" juurutamine masinal {{machine}}...",
+        "description": "Tõmba hoidla kaugelt (masin või salvestus). Jäta nimi välja, et tõmmata kõik hoidlad. Allika tüüp tuvastatakse automaatselt konfiguratsioonist. Kasuta --up, et juurutada pärast tõmbamist",
+        "descriptionShort": "Tõmba hoidla kaugelt (masin või salvestus)",
+        "optionBwlimit": "Ribalaiuse piirang rsync-ülekandele (nt \"6M\", \"10M\")",
+        "optionForce": "Sundi olemasoleva hoidla ülekirjutamine",
+        "optionFrom": "Allika masina või salvestuse nimi (tuvastatakse automaatselt konfiguratsioonist)",
+        "optionUp": "Pärast tõmbamist haagi külge ja juuruta hoidla sellel masinal",
+        "pulling": "Hoidla \"{{repo}}\" varukoopia tõmbamine...",
+        "sourceRequired": "Määra --from <kaugkoht> (masina või salvestuse nimi konfiguratsioonist)"
+      },
+      "push": {
+        "deployed": "Hoidla \"{{repo}}\" juurutatud masinal {{machine}}",
+        "deployFailed": "Hoidla \"{{repo}}\" juurutamine pärast pushumist ebaõnnestus",
+        "deploying": "Hoidla \"{{repo}}\" juurutamine masinal {{machine}}...",
+        "description": "Lükka hoidla kaugele (masin või salvestus). Jäta nimi välja, et lükata kõik hoidlad. Sihtkoha tüüp tuvastatakse automaatselt konfiguratsioonist. Masinate vahelisel ülekandel kopeeritakse krüpteeritud hoidlakujutis SAMA GUID-iga -- see on varukoopia/migratsioon, mitte fork. Iseseisva forgi loomiseks kasuta kõigepealt 'repo fork' ja seejärel push. Kasuta --up, et juurutada pärast pushumist",
+        "descriptionShort": "Lükka hoidla kaugele (masin või salvestus)",
+        "destRequired": "Määra --to <kaugkoht> (masina või salvestuse nimi konfiguratsioonist)",
+        "optionBwlimit": "Ribalaiuse piirang rsync-ülekandele (nt \"6M\", \"10M\")",
+        "optionCheckpoint": "Loo CRIU kontrollpunkt enne varukoopiat (jäädvustab protsessi mäluseisundi otseülekandeks)",
+        "optionForce": "Sundi olemasoleva varukoopia ülekirjutamine",
+        "optionProvision": "Provisioni sihtmasina automaatselt pilveteenusepakkuja kaudu, kui seda ei eksisteeri",
+        "optionTag": "Versioonimise juurutusmärgend",
+        "optionTo": "Sihtkoha masina või salvestuse nimi (tuvastatakse automaatselt konfiguratsioonist)",
+        "optionUp": "Pärast pushumist haagi külge ja juuruta hoidla sihtmasinal",
+        "pushing": "Hoidla \"{{repo}}\" varukoopia lükkamine kohta {{dest}}..."
+      },
+      "resize": {
+        "completed": "Suuruse muutmine lõpetatud",
+        "description": "Muuda hoidla suurust võrguühenduseta (toetab nii kasvatamist kui vähendamist). Hoidla peab olema eelnevalt lahti haagitud (käsk 'repo down --unmount'). Nullkatkestusajaga kasvamiseks ilma peatamiseta kasuta hoopis käsku 'repo expand'",
+        "descriptionShort": "Muuda hoidla suurust võrguühenduseta (kasvatamine või vähendamine)",
+        "failed": "Suuruse muutmine ebaõnnestus",
+        "sizeOption": "Hoidla uus suurus (nt 10G, 100G, 1T)",
+        "starting": "Hoidla \"{{repository}}\" suuruse muutmine suuruseni {{size}} masinal \"{{machine}}\"..."
+      },
+      "secret": {
+        "currentOption": "Eelmine lihttekstiline väärtus (parool-stiilis eeltingimus). Nõutav ülekirjutamisel/unset puhul; vastastikku välistav lipuga --rotate-secret.",
+        "description": "Halda hoidlapõhiseid saladusi, mis süstitakse juurutamisel. Ainult kirjutamine: get tagastab ainult räsi (mitte lihtteksti), set/unset nõuavad --current räsi vastavust või --rotate-secret. Kaks edastusrežiimi: env (REDIACC_SECRET_<KEY>) ja file (tmpfs asukohas /var/run/rediacc/secrets/<networkId>/<KEY> läbi compose `secrets:`). Saladused ei satu kunagi krüpteeritud LUKS-kujutisesse; forkid ei päri neid.",
+        "descriptionShort": "Halda hoidlapõhiseid juurutusajasaladusi (env / file)",
+        "get": {
+          "description": "Näita saladuse SHA-256 räsi. Lihttekstilist väärtust ei tagastata kunagi disaini järgi (ainult kirjutamine). Kasuta --current järgneval set/unset puhul, et kontrollida väärtust, mida juba tead, või roteerige käsuga `set --rotate-secret`.",
+          "descriptionShort": "Näita saladuse räsi (väärtust ei tagastata kunagi)",
+          "notFound": "Saladust \"{{key}}\" ei leitud hoidlas \"{{repository}}\"",
+          "repoNotFound": "Hoidlat \"{{repository}}\" ei leitud"
+        },
+        "keyOption": "Saladuse võti UPPER_SNAKE_CASE kujul (max 64 tähemärki). Eksponeeritakse env-režiimis REDIACC_SECRET_<KEY> või failirežiimis /run/secrets/<key> kujul konteinerites.",
+        "list": {
+          "description": "Loetle saladuste võtmed ja režiimid (mitte kunagi väärtuseid, mitte kunagi räse).",
+          "descriptionShort": "Loetle hoidlapõhiste saladuste võtmed ja režiimid",
+          "empty": "Hoidlas \"{{repository}}\" ei ole saladusi määratud"
+        },
+        "modeOption": "Edastusrežiim: 'env' (nähtav konteineri env-is, docker inspect) või 'file' (tmpfs-fail, mitte kunagi env-is). Vaikimisi: file.",
+        "nameOption": "Hoidla nimi (nt mail, mail:staging). Ilma märgendita on vaikimisi :latest.",
+        "rotateOption": "Kinnita rotatsioon; jäta --current eeltingimus vahele (auditeeritakse rotatsioonina). Kasuta siis, kui roteerid tahtlikult ilma eelnevat väärtust kontrollimata.",
+        "set": {
+          "description": "Määra või kirjuta saladus üle. Forkid ei päri; määra forgi jaoks sõnaselgelt. Agendi kontekstis nõuab --current räsi vastavust (paroolistiilis).",
+          "descriptionShort": "Määra või kirjuta üle hoidlapõhine saladus",
+          "success": "Saladus \"{{key}}\" ({{mode}}) seatud hoidlale \"{{repository}}\""
+        },
+        "unset": {
+          "description": "Kustuta saladus. Agendi kontekstis nõuab --current räsi vastavust.",
+          "descriptionShort": "Kustuta hoidlapõhine saladus",
+          "success": "Saladus \"{{key}}\" eemaldatud hoidlast \"{{repository}}\""
+        },
+        "valueOption": "Saladuse väärtus. Anna `-`, et lugeda stdin-ist (väldib kesta ajaloo paljastamist)."
+      },
+      "snapshot": {
+        "create": {
+          "creating": "Hetktõmmise loomine hoidlast \"{{repo}}\" masinal {{machine}}...",
+          "description": "Loo hoidlast ajas fikseeritud BTRFS-hetktõmmis (hetkeline, nullkatkestusaeg). Kasuta --snapshot-name kohandatud nime jaoks",
+          "descriptionShort": "Loo hoidlast BTRFS-hetktõmmis",
+          "optionSnapshotName": "Sõnaselge hetktõmmise nimi (genereeritakse automaatselt, kui tühi)",
+          "success": "Hetktõmmis loodud: {{name}} ({{path}})"
+        },
+        "delete": {
+          "description": "Kustuta hetktõmmis kaugmasinalt",
+          "success": "Hetktõmmis kustutatud: {{name}}"
+        },
+        "description": "Halda kaugmasinatel BTRFS-hetktõmmiseid",
+        "list": {
+          "description": "Loetle kaugmasinal BTRFS-hetktõmmised koos nime, loomiskuupäeva ja suurusega",
+          "header": "{{count}} hetktõmmis(t) asukohas {{path}}:",
+          "noSnapshots": "Hetktõmmiseid ei leitud."
+        }
+      },
+      "status": {
+        "completed": "Olek hangitud",
+        "description": "Hangi hoidla olek (haakimisseisund, Docker-daemoni töötamine, konteinerite arv, kettakasutus)",
+        "failed": "Oleku kontrollimine ebaõnnestus",
+        "starting": "Hoidla \"{{repository}}\" oleku pärimine masinal \"{{machine}}\"..."
+      },
+      "sync": {
+        "description": "Sünkrooni hoidlaid ja faile (pakkpush/pull, failide ülekanne)",
+        "download": {
+          "description": "Laadi failid hoidlast alla rsync-i kaudu SSH üle (delta-ülekanne). Kasuta --mirror, et kustutada lisafailid kohalikult, --dry-run eelvaateks, --exclude mustrite vahelejätmiseks",
+          "descriptionShort": "Laadi failid hoidlast rsync-i kaudu alla"
+        },
+        "pull": {
+          "description": "Tõmba hoidlad pilvesalvestusest (jäta nimi välja, et tõmmata kõik)",
+          "optionFrom": "Allika salvestuse nimi",
+          "optionOverride": "Kirjuta tõmbamisel üle olemasolevad lahtihaakimata hoidlad",
+          "optionRepo": "Filtreeri konkreetse hoidla järgi (korratav)",
+          "success": "Sünkrooni pull lõpetatud"
+        },
+        "push": {
+          "description": "Lükka hoidlad pilvesalvestusse (jäta nimi välja, et lükata kõik)",
+          "optionRepo": "Filtreeri konkreetse hoidla järgi (korratav)",
+          "optionTo": "Sihtkoha salvestuse nimi",
+          "success": "Sünkrooni push lõpetatud"
+        },
+        "status": {
+          "description": "Kohalike ja kaugfailide kuivkäivituse võrdlus (näitab, mida kannataks üle kanda, ilma tegelikult kandmata)",
+          "descriptionShort": "Võrdle kohalikke ja kaugfaile (kuivkäivitus)"
+        },
+        "upload": {
+          "description": "Laadi failid hoidlasse üles rsync-i kaudu SSH üle (delta-ülekanne). Kasuta --mirror, et kustutada lisafailid kaugel, --dry-run eelvaateks, --exclude mustrite vahelejätmiseks",
+          "descriptionShort": "Laadi failid hoidlasse rsync-i kaudu üles"
+        }
+      },
+      "takeover": {
+        "backupInfo": "Vanad tootmisandmed säilitati nimega: {{backup}}",
+        "completed": "Ülevõtmine lõpetatud. Põhihoidlal on nüüd forgi andmed.",
+        "description": "Asenda põhihoidla (grand) andmed forgi andmetega. Põhihoidla säilitab oma identiteedi (GUID, networkId, domeenid, autostart, varukoopiaahel), kuid saab forgi täiendatud andmed. Vanad tootmisandmed säilitatakse varukoopiaforgi kujul. Kasutus: testi uuendust forgil, kontrolli, seejärel tee takeover tootmisele.",
+        "descriptionShort": "Asenda tootmisandmed forgi andmetega",
+        "failed": "Ülevõtmine ebaõnnestus",
+        "forceOption": "Jäta muutmishoiatused vahele",
+        "grandNotFound": "Forgi \"{{name}}\" põhihoidlat ei leitud",
+        "notAFork": "\"{{name}}\" ei ole fork-hoidla (puudub parentGuid)",
+        "revertHint": "Tagasipööramiseks: rdc repo takeover --name {{backup}} -m {{machine}}",
+        "rollback": "Konfiguratsiooni muudatused tühistati hoidla \"{{name}}\" jaoks",
+        "starting": "Põhihoidla \"{{grand}}\" ülevõtmine forgi \"{{fork}}\" andmetega masinal \"{{machine}}\"..."
+      },
+      "template": {
+        "apply": {
+          "description": "Rakenda mall hoidlale. Kasuta sisseehitatud malli nime (nt app-postgres) või --file kohandatud JSON-malli jaoks. Rediaccfile elutsükkel: up() käivitab konteinerid (tõmba kujutised, genereeri konfiguratsioonid), down() peatab. Minimaalne Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. TÄHTIS: Rediaccfile PEAB kasutama 'renet compose' -- 'docker compose' lükatakse tagasi. KESKKONNA MUUTUJAD -- kaks tasandit: (a) Rediaccfile shell: ${SVCNAME_IP} (nt APP_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Konteinerites: renet süstib automaatselt SERVICE_IP ja REDIACC_NETWORK_ID keskkonna muutujad. eBPF-sidumisümberkirjutus käsitleb IP-isolatsiooni läbipaistvalt -- rakendused saavad siduda 0.0.0.0 ja kernel kirjutab selle ümber õigele loopback-IP-le. Tervisekontrollid saavad kasutada localhost. network_mode:host süstitakse ja ports: eiratakse. SALVESTUS: Nii ${REDIACC_WORKING_DIR}/... bind-mount'id kui ka Docker-nimelised mahud on turvalised -- Dockeri andmejuur asub krüpteeritud LUKS-mahus. TAASKÄIVITUSPOLIITIKA: Taaskäivituspoliitikad on turvalised -- renet eemaldab need automaatselt CRIU ühilduvuse tagamiseks ja watchdog haldab taastamist. Compose: ÄRGE lisage network_mode ega rediacc.*-silte (renet süstib need). Mitme projekti puhul: paigutage iga alamprojekt oma alamkataloogi koos oma Rediaccfile'iga -- renet tuvastab ja käivitab need automaatselt järjekorras. HTTPS-marsruutimine: (A) Automarsruut (fork-sõbralik, soovitatav): ÄRGE lisage traefik.enable. Renet genereerib automaatselt https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Lisage silt rediacc.service_port=<port> mitte-80 portide jaoks. Iga fork saab kordumatu domeeni. (B) Traefik-sildid (kohandatud domeen, EI sobi forkidele): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domeen`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. TCP/UDP jaoks: rediacc.tcp_ports=3306 / rediacc.udp_ports=53",
+          "descriptionShort": "Rakenda mall hoidlale",
+          "notFound": "Malli \"{{name}}\" ei leitud. Saadaolevad: {{available}}"
+        },
+        "completed": "Mall rakendatud. Juuruta käsuga: rdc repo up --name {{repository}} -m {{machine}}",
+        "description": "Halda ja rakenda juurutusmalide (kirjutab docker-compose.yml, Rediaccfile ja lisafailid). Rediaccfile peab kasutama 'renet compose' (mitte 'docker compose'). Taaskäivitamispoliitikad on turvalised (renet watchdog haldab automaatselt). Renet süstib automaatselt network_mode:host, CRIU võimalused ja rediacc-sildid. Ohtlikud seaded (privileged, pid:host) blokeeritakse, välja arvatud lipuga --unsafe. Kasuta 'list', et näha saadaolevaid sisseehitatud malle, ja 'apply', et rakendada mall hoidlale",
+        "descriptionShort": "Halda ja rakenda juurutusmalide",
+        "failed": "Malli rakendamine ebaõnnestus",
+        "fileNotFound": "Mallifaili ei leitud: {{path}}",
+        "fileOption": "Tee kohandatud malli JSON-faili ({\"version\":\"2\",\"files\":{\"Rediaccfile\":\"...\",\"docker-compose.yml\":\"...\"}}) -- tühistab sisseehitatud malli nime",
+        "grandOption": "Vanema mandaadihoidla (lahendab nime automaatselt GUID-iks). Ainult hoidlatele, mis jagavad saladusi vanemaga",
+        "list": {
+          "description": "Loetle kõik CLI-ga kaasasolevad sisseehitatud juurutusmallid",
+          "descriptionShort": "Loetle saadaolevad mallid",
+          "empty": "Malid puuduvad"
+        },
+        "starting": "Malli rakendamine hoidlale \"{{repository}}\" masinal \"{{machine}}\"..."
+      },
+      "tunnel": {
+        "active": "Tunnel aktiivne: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
+        "closed": "Tunnel suletud",
+        "containerNotFound": "Konteinerit \"{{name}}\" ei leitud hoidlas \"{{repository}}\"",
+        "containerOption": "Konteineri nimi (tuvastatakse automaatselt, kui töötab ainult üks)",
+        "description": "Loo SSH-pordiedastustunnel konteineri pordile kaugmasinal. Tuvastab konteineri ja pordi automaatselt, kui pole mitmetähenduslikkust. Tunnel jääb avatuks kuni Ctrl+C vajutamiseni",
+        "descriptionShort": "SSH-tunnel konteineri pordile",
+        "fetching": "Konteineri teabe toomine masinalt \"{{machine}}\"...",
+        "hint": "Tunneli sulgemiseks vajuta Ctrl+C",
+        "localOption": "Kohalik port (vaikimisi sama mis kaugport)",
+        "multipleContainers": "Leiti mitu töötavat konteinerit. Täpsusta ühte lipuga --container (-c):\n{{list}}",
+        "multiplePorts": "Konteineril \"{{container}}\" on mitu avatud porti. Määra --port:\n{{list}}",
+        "noContainers": "Hoidla \"{{repository}}\" jaoks ei leitud töötavaid konteinereid",
+        "noPorts": "Konteineril \"{{container}}\" ei ole avatud porte. Määra --port",
+        "noServiceIP": "Konteinerile \"{{container}}\" ei ole määratud teenuseIP-d",
+        "portOption": "Edastatav kaugkonteineri port"
+      },
+      "unmount": {
+        "checkpointOption": "Loo CRIU konteineri kontrollpunkt enne lahtihaakimist (jäädvusta töötavate protsesside mäluseisund hilisemaks taastamiseks)",
+        "completed": "Lahtihaakimine lõpetatud",
+        "description": "Haagi hoidla lahti (sulge LUKS-konteiner, eemaldades krüpteeritud failisüsteem). Teenused peavad olema enne peatatud (käsk 'repo down'). Pärast lahtihaakimist on hoidla andmed kättesaamatud kuni uue haakimiseni. Nõutav enne käsku 'repo resize'. Jäta nimi välja, et haakida lahti kõik masina hoidlad",
+        "descriptionShort": "Haagi hoidla lahti (sulge LUKS-konteiner)",
+        "failed": "Lahtihaakimine ebaõnnestus",
+        "starting": "Lahtihaakimine: \"{{repository}}\" masinal \"{{machine}}\"..."
+      },
+      "up": {
+        "checkpointOption": "Taasta CRIU kontrollpunkt käivitamisel (jätka protsesse salvestatud mäluseisundist)",
+        "completed": "Teenused käivitatud",
+        "description": "Juuruta või uuenda hoidlat (haagi külge, käivita Rediaccfile up, mis kutsub välja renet compose). Puhverserveri marsruudid muutuvad pärast juurutamist aktiivseks umbes 3 sekundiga. Lõppedes kuvab HTTP-teenuste URL-mustri (silt rediacc.service_port). Kasuta --mount esmakordsel juurutamisel või forkitud hoidlate puhul. CRIU kontrollpunkti taastamine tuvastatakse automaatselt -- kasuta --skip-checkpoint, et sundida värsket käivitust. Jäta nimi välja, et juurutada kõik masina hoidlad",
+        "descriptionShort": "Juuruta või uuenda hoidlat masinal",
+        "failed": "Teenuste käivitamine ebaõnnestus",
+        "grandOption": "Vanema mandaadihoidla (lahendab nime automaatselt GUID-iks). Ainult hoidlatele, mis jagavad saladusi vanemaga",
+        "mountOption": "Haagi hoidla kõigepealt külge (nõutav forkitud hoidlate esmakordsel juurutamisel)",
+        "skipCheckpointOption": "Jäta CRIU kontrollpunkti taastamine vahele isegi kui kontrollpunkti andmed on olemas (sundi värske käivitus)",
+        "starting": "Teenuste käivitamine hoidlale \"{{repository}}\" masinal \"{{machine}}\"...",
+        "tlsOption": "Taotle sellele hoidlale eraldi TLS-sertifikaati (forkid kasutavad vaikimisi masina ühist sertifikaati)"
+      },
+      "upAll": {
+        "completed": "Kõik hoidlad käivitatud",
+        "concurrencyOption": "Maksimaalne samaaegsete hoidlate arv (vaikimisi: 3)",
+        "description": "Juuruta kõik masina hoidlad",
+        "dryRunOption": "Näita, mida tehtaks, ilma tegelikult käivitamata",
+        "failed": "Kõigi hoidlate käivitamine ebaõnnestus",
+        "includeForksOption": "Haagi külge ja käivita ka forkitud hoidlad",
+        "mountOnlyOption": "Haagi ainult külge, ära käivita teenuseid",
+        "parallelOption": "Käivita hoidlad samaaegselt",
+        "starting": "Kõigi hoidlate käivitamine masinal \"{{machine}}\"..."
+      },
+      "validate": {
+        "completed": "Valideerimine lõpetatud",
+        "description": "Kinnita hoidla terviklikkus (LUKS-konteiner, failisüsteemi järjepidevus, konfiguratsioon). Kasuta pärast ootamatuid sulgemisi või varukoopia tervise kontrollimiseks",
+        "descriptionShort": "Kinnita hoidla terviklikkus",
+        "failed": "Valideerimine ebaõnnestus",
+        "starting": "Hoidla \"{{repository}}\" valideerimine masinal \"{{machine}}\"..."
+      },
+      "yesOption": "Jäta pakkoperatsioonide kinnitamine vahele"
+    },
+    "repository": {
+      "create": {
+        "creating": "Repositooriumi \"{{name}}\" loomine...",
+        "description": "Loob uue repositooriumi",
+        "success": "Repositoorium \"{{name}}\" loodud"
+      },
+      "delete": {
+        "checkingRelationships": "Repositooriumi seoseid kontrollitakse...",
+        "confirm": "Kustuta repositoorium \"{{name}}\"? Seda ei saa tagasi võtta.",
+        "deleting": "Repositooriumi \"{{name}}\" kustutamine...",
+        "description": "Kustutab repositooriumi",
+        "grandRepoWarning": "See on grand-repositoorium (volikiri). Kustutamine on pöördumatu.",
+        "relationshipsChecked": "Repositooriumi seosed kontrollitud",
+        "success": "Repositoorium \"{{name}}\" kustutatud"
+      },
+      "description": "Repositooriumi haldamise komandod",
+      "list": {
+        "description": "Loetleb repositooriumeid",
+        "fetching": "Repositooriumeid laaditakse...",
+        "success": "Repositooriumid laaditud"
+      },
+      "promote": {
+        "checkingRelationships": "Repositooriumi seoseid kontrollitakse...",
+        "confirmPromote": "\nJätkad edutamisega?",
+        "description": "Edutab fork-i grand-staatusesse",
+        "promoting": "Repositooriumi \"{{name}}\" edutamine...",
+        "relationshipsChecked": "Repositooriumi seosed kontrollitud",
+        "separateInfo": "\nSee eraldab \"{{name}}\" grand-repositooriumist \"{{grandName}}\"",
+        "siblingsInfo": "\n{{count}} sõsarkloon(i) jäävad seotuks algse grand-iga:",
+        "success": "Repositoorium \"{{name}}\" edutatud grand-staatusesse"
+      },
+      "rename": {
+        "description": "Nimetab repositooriumi ümber",
+        "renaming": "Repositooriumi \"{{oldName}}\" ümbernimetamine nimeks \"{{newName}}\"...",
+        "success": "Repositoorium nimetatud ümber nimeks \"{{name}}\""
+      },
+      "vault": {
+        "description": "Repositooriumi vault-i haldamine",
+        "get": {
+          "description": "Hangib repositooriumi vault-i andmed",
+          "fetching": "Repositooriumi vault-i laaditakse...",
+          "notFound": "Repositooriumi vault-i ei leitud",
+          "success": "Vault laaditud"
+        },
+        "update": {
+          "description": "Uuendab repositooriumi vault-i andmeid",
+          "success": "Repositooriumi vault uuendatud",
+          "updating": "Repositooriumi vault-i uuendatakse..."
+        }
+      }
+    },
+    "shortcuts": {
+      "cancel": {
+        "description": "Katkestab ülesande (otsetee: queue cancel)"
+      },
+      "retry": {
+        "description": "Kordab ebaõnnestunud ülesannet (otsetee: queue retry)"
+      },
+      "run": {
+        "completedLocal": "Lõpetatud {{duration}}ms-ga",
+        "description": "HOIATUS: Madala taseme komando ainult silumiseks ja katsetamiseks. Mitte tootmises kasutamiseks. Kasuta selle asemel kõrgemataseme komandosid (repo up, repo down jne). Käivitab toore sillfunktsiooni masinal.",
+        "descriptionShort": "Käivitab toore sillfunktsiooni masinal (ainult silumiseks)",
+        "executingLocal": "Funktsiooni '{{function}}' täitmine masinal {{machine}}...",
+        "failedLocal": "Ebaõnnestus: {{error}}",
+        "watching": "Lõpetamist oodatakse..."
+      },
+      "trace": {
+        "description": "Jälitab ülesannet (otsetee: queue trace)"
+      }
+    },
+    "snapshot": {
+      "description": "Haldab BTRFS-i hetktõmmiseid kaugmasinatel"
+    },
+    "storage": {
+      "browse": {
+        "description": "Sirvib faile salvestussüsteemis",
+        "failed": "Failide laadimine ebaõnnestus: {{error}}",
+        "listing": "Faile laaditakse \"{{name}}\"...",
+        "noFiles": "Faile ei leitud",
+        "pathOption": "Loetlev alamkataloogi tee"
+      },
+      "create": {
+        "description": "Loob uue salvestusteenuse"
+      },
+      "delete": {
+        "description": "Kustutab salvestusteenuse"
+      },
+      "description": "Haldab kaugvarunduse salvestusteenuseid (S3, rclone-ühilduv). CRUD-toimingud (loetlemine, loomine, ümbernimetamine, kustutamine), vault-i konfiguratsioon, kaugfailide sirvimine ja orvu varukoopiaid koristamine.",
+      "descriptionShort": "Haldab salvestusteenuseid ja sirvib kaugfaile",
+      "list": {
+        "description": "Loetleb salvestusteenuseid",
+        "fetching": "Salvestusteenuseid laaditakse..."
+      },
+      "prune": {
+        "completed": "{{count}} orvu varukoopiat koristatud",
+        "description": "Kustutab orvu varukoopiaid salvestusest, mis pole enam üheski konfiguratsioonis. Mitme konfiguratsiooni turvaline koos ooteperioodi kaitsega. Rclone käivitused töötavad --machine peal (täitja), mitte sinu sülearvutil, seega klientidel pole vaja rclone-i kohalikult installida; --machine on täitja, mitte tõeteallikas.",
+        "descriptionShort": "Kustutab orvu varukoopiaid salvestusest",
+        "forceDeleteMountedOption": "Tühistab ühendusohutuse kontrolli ja kustutab pilvest varukoopiaid isegi siis, kui allika GUID on praegu ühendatud või sellel on töötav konteiner täitja masinal. Erineb --force-ist (mis tühistab ainult arhiveeritud repositooriumite ooteperioodi).",
+        "found": "Leitud {{count}} varukoopiat salvestuses",
+        "listFailed": "Salvestuse varukoopiaid ei õnnestunud laadida",
+        "listing": "Varukoopiaid laaditakse \"{{storage}}\"...",
+        "machineOption": "Täitja masin -- käivitab rclone loetlemise/kustutamise kõnesid salvestuse vastu. Nõutav, kuna klientidel ei eeldata rclone-i kohalikku installimist; salvestuse volikirjad tulevad endiselt kohalikust konfiguratsioonist.",
+        "noBackups": "Salvestuses varukoopiad puuduvad"
+      },
+      "pull": {
+        "completed": "Tõmbamine lõpetatud {{duration}}ms-ga",
+        "description": "Tõmbab varukoopia pilvesalvestusest masinasse",
+        "failed": "Tõmbamine ebaõnnestus: {{error}}",
+        "machineOption": "Sihmasina nimi",
+        "noCredential": "Hoiatus: Repositooriumil \"{{name}}\" pole volikirja seadistatud. Tõmbamine võib ebaõnnestuda, kui varukoopia on krüptitud.",
+        "repositoryOption": "Tõmmatava repositooriumi nimi",
+        "starting": "\"{{repository}}\" tõmbamine \"{{storage}}\"-st \"{{machine}}\"-sse..."
+      },
+      "rename": {
+        "description": "Nimetab salvestusteenuse ümber"
+      },
+      "vault": {
+        "description": "Salvestuse vault-i haldamine (ainult pilveadapteri jaoks)"
+      }
+    },
+    "subscription": {
+      "activation": {
+        "description": "Masina paiga haldamine",
+        "status": {
+          "activations": "  Aktiveerimised: {{active}}/{{max}}",
+          "active": "  Aktiveerimine: aktiivne (viimati nähtud {{lastSeenAt}})",
+          "description": "Näitab ühe masina paiga olekut",
+          "header": "\nMasina paik ({{machineName}})",
+          "inactive": "  Aktiveerimine: masin pole praegu konto olekus aktiivne",
+          "machineId": "  Masina ID: {{machineId}}",
+          "unavailable": "  Aktiveerimine: konto olekut ei õnnestunud pärida"
+        }
+      },
+      "description": "Haldab litsentse ja tellimuse tokeneid. Peamised alamkomandod: login (autentimine tellimusportaaliga), status (praeguse litsentsi oleku näitamine), activation (masina paiga olek), repo (repositooriumi litsentsid).",
+      "descriptionShort": "Haldab masina litsentsimist ja tellimust",
+      "login": {
+        "browserFailed": "Brauser ei avanenud automaatselt. Külasta palun ülaltoodud URL-i.",
+        "channelSynced": "Uuenduskanal seatud väärtusele {{channel}}.",
+        "description": "Autentimine brauseri või API tokeni kaudu",
+        "discoveringRegions": "Saadaolevaid piirkondi tuvastatakse...",
+        "expired": "Autoriseerimine aegus. Palun proovi uuesti.",
+        "initFailed": "Sisselogimise algatamine ebaõnnestus. Kas server töötab?",
+        "machines": "Masinad: {{active}}/{{max}}",
+        "openBrowser": "Autoriseerimiseks külasta seda URL-i:",
+        "plan": "Plaan: {{plan}}",
+        "polling": "Kinnitust oodatakse (katkestamiseks vajuta Ctrl+C)...",
+        "regionPrompt": "Kus peaks sinu andmeid hoitama?",
+        "regionsDiscovered": "Piirkonnad laaditud",
+        "regionSelected": "Andmepiirkond: {{region}} ({{domain}})",
+        "serverChanged": "Server muutus. Eelmine seanss kustutatud.",
+        "success": "Sisselogimine õnnestus",
+        "tokenInvalid": "Token peab algama rdt_-ga",
+        "tokenPrompt": "Sisesta oma API token (veebiportaalist):",
+        "validated": "Token valideeritud",
+        "validating": "Tokenit valideeritakse...",
+        "waitingApproval": "Brauseri autoriseerimist oodatakse..."
+      },
+      "logout": {
+        "description": "Kustutab salvestatud tellimuse tokeni",
+        "success": "Tellimuse token eemaldatud"
+      },
+      "refresh": {
+        "activation": {
+          "description": "Uuendab repositooriumi litsentsid kaugmasinal"
+        },
+        "description": "Uuendab repositooriumi litsentsid kaugmasinal",
+        "failed": "Repositooriumi litsentside uuendamine ebaõnnestus",
+        "refreshed": "Repositooriumi litsentsid uuendatud",
+        "refreshing": "Repositooriumi litsentse uuendatakse...",
+        "repo": {
+          "description": "Uuendab konkreetse repositooriumi litsentsi",
+          "failed": "Repositooriumi litsentsi uuendamine ebaõnnestus",
+          "notFound": "Repositooriumi ei leitud: {{repoName}}",
+          "refreshed": "Repositooriumi litsents uuendatud",
+          "refreshing": "Repositooriumi litsentsi uuendatakse...",
+          "repoArgument": "Repositooriumi nimi",
+          "success": "Repositooriumi litsents uuendatud repositooriumile \"{{repoName}}\""
+        },
+        "repos": {
+          "description": "Pakettviisi uuendab repositooriumi litsentsid kaugmasinal",
+          "refreshed": "Repositooriumi litsentsid uuendatud",
+          "refreshing": "Repositooriumi litsentse uuendatakse...",
+          "success": "Repositooriumi litsentside pakett-uuendamine lõpetatud"
+        },
+        "success": "Repositooriumi litsentsid töödeldud"
+      },
+      "repo": {
+        "description": "Repositooriumi litsentside haldamine",
+        "status": {
+          "description": "Näitab masinal installitud repositooriumi litsentsid",
+          "empty": "  Repositooriumi litsentsid puuduvad",
+          "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+          "freshness": {
+            "hardExpired": "lõplikult aegunud",
+            "refreshRecommended": "soovitav uuendada",
+            "unknown": "teadmata",
+            "valid": "kehtiv"
+          },
+          "hardExpirySuffix": " (lõplik aegumine: {{effectiveHardExpiry}})",
+          "header": "\nRepositooriumi litsentsid: ({{machineName}})"
+        }
+      },
+      "status": {
+        "description": "Näitab tellimuse, masina paiga ja repositooriumi litsentsi olekut",
+        "expired": "  Aktiveerimine vajab uuendamist -- käivita `rdc subscription refresh -m <machine>`",
+        "expires": "  Aegub:    {{expiresAt}}",
+        "issuanceLimitReached": "Praeguse UTC kalendrikuu repositooriumi litsentside igakuine väljastamise limiit saavutatud.",
+        "issuanceUsageHigh80": "Igakuised repositooriumi litsentside väljastamised ületavad 80% praegusest UTC limiidist.",
+        "issuanceUsageHigh95": "Igakuised repositooriumi litsentside väljastamised ületavad 95% praegusest UTC limiidist.",
+        "issued": "  Väljastatud: {{issuedAt}}",
+        "localLicense": "Kohalik aktiveerimine:",
+        "machine": "  Masin:    {{machineId}}",
+        "noLicense": "Kohalik aktiveerimine puudub.",
+        "parseFailed": "  Kaugmasina olekut ei õnnestunud lugeda",
+        "plan": "  Plaan:    {{plan}}",
+        "remote": "\nTellimus:",
+        "remoteMachine": "    - {{id}}... (viimati nähtud: {{lastSeen}})",
+        "remoteMachineActivations": "  Masina paigad: {{active}}/{{max}}",
+        "remoteMachines": "  Masinad: {{active}}/{{max}}",
+        "remotePlan": "  Plaan:    {{plan}}",
+        "remoteRepoLicenseIssuances": "  Igakuised repositooriumi litsentside väljastamised: {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  Repositooriumi litsentsid: {{totalTrackedRepos}} jälgitavad, {{validCount}} kehtivad, {{refreshRecommendedCount}} soovitav uuendada, {{hardExpiredCount}} lõplikult aegunud",
+        "remoteStatus": "  Olek:     {{status}}",
+        "sequence": "  Jada:     {{sequenceNumber}}",
+        "serverMismatch": "Arendustoken kuulub aadressile {{actualServerUrl}}, kuid see tööpuu kasutab aadressi {{expectedServerUrl}}. Käivita `rdc subscription login` uuesti.",
+        "statusLabel": "  Olek:     {{status}}",
+        "valid": "  Aktiveerimine on ajakohane"
+      }
+    },
+    "sync": {
+      "cancelled": "Sünkroonimine katkestatud.",
+      "description": "Failide ülekandmine kohaliku ja kaugrepositooriumi vahel rsync-i kaudu",
+      "download": {
+        "completed": "Allalaadimine lõpetatud: {{count}} faili üle kantud",
+        "description": "Laadib faile repositooriumist alla rsync-i kaudu SSH üle (delta ülekanne). Kasuta --mirror täiendavate kohalike failide kustutamiseks, --dry-run eelvaate jaoks, --exclude mustrite vahelejätmiseks",
+        "descriptionShort": "Laadib faile repositooriumist rsync-i kaudu",
+        "failed": "Allalaadimine ebaõnnestus",
+        "progress": "Allalaadimine: {{percentage}}% - {{file}} ({{speed}})",
+        "starting": "Allalaadimine alustatakse..."
+      },
+      "dryRunHeader": "\nProovijooks -- näitab, mida üle kantaks:\n",
+      "duration": "Kestus: {{seconds}}s",
+      "errors": "Vead:",
+      "fetchingDetails": "Ühendusteavet laaditakse...",
+      "noChanges": "Muudatusi sünkroonimiseks pole.",
+      "previewingChanges": "\nMuudatuste eelvaade...\n",
+      "status": {
+        "description": "Kohalike ja kaugfailide proovijooks (näitab, mida kantaks üle, ilma tegelikult üle kandmata)",
+        "descriptionShort": "Võrdleb kohalikke ja kaugfaile (proovijooks)"
+      },
+      "totalSize": "Kogumaht: {{size}}",
+      "upload": {
+        "completed": "Üleslaadimine lõpetatud: {{count}} faili üle kantud",
+        "description": "Laadib faile repositooriumi üles rsync-i kaudu SSH üle (delta ülekanne). Kasuta --mirror täiendavate kaugfailide kustutamiseks, --dry-run eelvaate jaoks, --exclude mustrite vahelejätmiseks",
+        "descriptionShort": "Laadib faile repositooriumi rsync-i kaudu",
+        "failed": "Üleslaadimine ebaõnnestus",
+        "progress": "Üleslaadimine: {{percentage}}% - {{file}} ({{speed}})",
+        "starting": "Üleslaadimine alustatakse..."
+      }
+    },
+    "team": {
+      "create": {
+        "creating": "Tiimi luuakse...",
+        "description": "Loob tiimi",
+        "success": "Tiim \"{{name}}\" loodud"
+      },
+      "description": "Tiimide haldamine",
+      "list": {
+        "description": "Loetleb tiime",
+        "fetching": "Tiime laaditakse..."
+      },
+      "member": {
+        "add": {
+          "adding": "{{email}} tiimi \"{{team}}\" lisamine...",
+          "description": "Lisab kasutaja tiimi",
+          "success": "Kasutaja lisatud tiimi \"{{team}}\""
+        },
+        "description": "Tiimi liikmesuse haldamine",
+        "list": {
+          "description": "Loetleb tiimi liikmeid",
+          "fetching": "Tiimi liikmeid laaditakse...",
+          "success": "Liikmed laaditud"
+        },
+        "remove": {
+          "description": "Eemaldab kasutaja tiimist",
+          "removing": "{{email}} tiimist \"{{team}}\" eemaldamine...",
+          "success": "Kasutaja eemaldatud tiimist \"{{team}}\""
+        }
+      }
+    },
+    "term": {
+      "connect": {
+        "description": "Ühendumine masina või repositooriumiga SSH kaudu"
+      },
+      "connecting": "Masinaga {{machine}} ühendumine...",
+      "connectingTo": "{{title}}-ga ühendumine...",
+      "description": "Avab SSH-terminali masinasse või repositooriumi konteksti. Seadistab DOCKER_HOST-i, töökataloogi ja keskkonna automaatselt. Toetab konteineri toiminguid --container kaudu: logid, exec, stats, terminal. Kasuta `-c` ühe komando mitteinteaktiivse käivitamiseks. VS Code jaoks kasuta `vscode`.",
+      "descriptionShort": "SSH-terminali juurdepääs masinatele ja repositooriumidele",
+      "fetchingDetails": "Ühendusteavet laaditakse...",
+      "launchingTerminal": "{{type}} terminali käivitamine...",
+      "launchSuccess": "Terminal käivitati edukalt.",
+      "testingConnectivity": "Ühenduvuse testimine {{host}}:{{port}}..."
+    },
+    "update": {
+      "applyFailed": "Lavastatud uuenduse rakendamine ebaõnnestus: {{error}}",
+      "autoApplied": "Uuendatud versioonile v{{version}} (oli v{{from}}). Muudatused jõustuvad järgmisel käivitusel.",
+      "available": "Uuendus saadaval: v{{version}} (praegune: v{{current}})",
+      "channelDescription": "Seab väljalaskekanali (stable või edge)",
+      "channelSet": "Väljalaskekanal seatud väärtusele {{channel}}",
+      "checking": "Uuendusi kontrollitakse...",
+      "checkOnly": "Kontrollib ainult uuendusi ilma allalaadimiseta",
+      "description": "Kontrollib uusi CLI versioone ja rakendab uuendusi. Toetab --check-only kontrolli ilma installimiseta ja --force uuendamist isegi siis, kui on juba uusim versioon.",
+      "descriptionShort": "Kontrollib ja rakendab CLI uuendusi",
+      "downloading": "v{{version}} allalaadimine...",
+      "errors": {
+        "binaryBusy": "Praegune binaarfail on kasutuses; uuendus on järgmise käivituse jaoks lavastatud.",
+        "checksumMismatch": "Allalaaditud binaarfail ei läbinud kontrollsumma kontrolli.",
+        "lockFailed": "Teine uuendamine on juba käimas. Proovi mõne sekundi pärast uuesti.",
+        "noBinary": "Uusimas väljalaskes puudub binaarfail selle platvormi jaoks.",
+        "noChecksum": "Väljalande manifesti SHA256 kontrollsumma puudub.",
+        "notSEA": "Uuendamine võimatu: ei tööta pakendatud binaarfailina. Ehita esmalt SEA-ga.",
+        "unknown": "Uuendamise ajal tekkis tundmatu viga.",
+        "unsupportedPlatform": "See platvorm ei toeta iseuuendamist."
+      },
+      "failed": "Uuendamine ebaõnnestus: {{error}}",
+      "force": "Sunnib uuendamist isegi siis, kui on juba ajakohane",
+      "invalidChannel": "Kehtetu kanal: {{channel}}. Kasuta stable või edge.",
+      "npmUpdateHint": "Uuendamiseks käivita:\n  {{command}}",
+      "progress": "Allalaadimine... {{percent}}%",
+      "releaseNotes": "Väljalaskemärkused: {{url}}",
+      "rollback": "Tagasi pöördumine eelmisele versioonile",
+      "rollbackFailed": "Tagasipöördumine ebaõnnestus: {{error}}",
+      "rollbackNoBackup": "Eelmist versiooni ei leitud. Tagasipöördumine on saadaval ainult pärast uuendust.",
+      "rollbackRequiresSEA": "Tagasipöördumine on saadaval ainult SEA binaarinstallide jaoks.",
+      "rollbackSuccess": "Tagasipöördumine õnnestus. Taaskäivita rdc eelmise versiooni kasutamiseks.",
+      "staged": "Uuendus v{{version}} lavastatud (rakendatakse järgmisel käivitusel)",
+      "stagedFallback": "Uuendus v{{version}} alla laaditud ja lavastatud. See rakendatakse järgmisel käivitusel.",
+      "statusDescription": "Näitab automaatse uuenduse olekut ja diagnostikat",
+      "success": "Uuendatud v{{from}}-lt v{{to}}-le",
+      "unknownError": "Tundmatu viga",
+      "upToDate": "Juba ajakohane (v{{version}})"
+    },
+    "user": {
+      "activate": {
+        "activating": "Kasutajat \"{{email}}\" aktiveeritakse...",
+        "description": "Aktiveerib kasutajakonto",
+        "success": "Kasutaja aktiveeritud"
+      },
+      "create": {
+        "activationCode": "Aktiveerimiskood: {{code}}",
+        "creating": "Kasutajat \"{{email}}\" luuakse...",
+        "description": "Loob uue kasutaja",
+        "success": "Kasutaja loodud"
+      },
+      "deactivate": {
+        "confirm": "Deaktiveeri kasutaja \"{{email}}\"?",
+        "deactivating": "Kasutajat \"{{email}}\" deaktiveeritakse...",
+        "description": "Deaktiveerib kasutajakonto",
+        "success": "Kasutaja deaktiveeritud"
+      },
+      "description": "Kasutajate haldamise komandod",
+      "exists": {
+        "description": "Kontrollib, kas kasutaja eksisteerib",
+        "exists": "Kasutaja \"{{email}}\" eksisteerib",
+        "notExists": "Kasutaja \"{{email}}\" ei eksisteeri"
+      },
+      "list": {
+        "description": "Loetleb kõik kasutajad",
+        "fetching": "Kasutajaid laaditakse...",
+        "success": "Kasutajad laaditud"
+      },
+      "permission": {
+        "assign": {
+          "assigning": "\"{{group}}\" määramine kasutajale \"{{email}}\"...",
+          "description": "Määrab õiguste grupi kasutajale",
+          "success": "Õigus määratud"
+        },
+        "description": "Kasutaja õiguste haldamine"
+      },
+      "reactivate": {
+        "description": "Aktiveerib deaktiveeritud kasutajakonto uuesti",
+        "reactivating": "Kasutajat \"{{email}}\" aktiveeritakse uuesti...",
+        "success": "Kasutaja uuesti aktiveeritud"
+      },
+      "updateEmail": {
+        "description": "Muudab kasutaja e-posti aadressi",
+        "success": "E-post uuendatud aadressile \"{{email}}\"",
+        "updating": "E-posti uuendamine kasutajale \"{{email}}\"..."
+      },
+      "updateLanguage": {
+        "description": "Seab praeguse kasutaja eelistatud keele",
+        "success": "Keel uuendatud väärtusele \"{{language}}\"",
+        "updating": "Keele-eelistust uuendatakse..."
+      },
+      "updatePassword": {
+        "description": "Muudab sinu parooli",
+        "success": "Parool uuendatud",
+        "updating": "Parooli uuendatakse..."
+      },
+      "vault": {
+        "description": "Kasutaja vault-i haldamine",
+        "get": {
+          "description": "Hangib praeguse kasutaja vault-i andmed",
+          "fetching": "Kasutaja vault-i laaditakse...",
+          "success": "Vault laaditud"
+        },
+        "update": {
+          "description": "Uuendab praeguse kasutaja vault-i andmeid",
+          "success": "Kasutaja vault uuendatud",
+          "updating": "Kasutaja vault-i uuendatakse..."
+        }
+      }
+    },
+    "vscode": {
+      "check": {
+        "activeConnections": "Aktiivsed ühendused: {{count}}",
+        "configuration": "\nKonfiguratsioon:",
+        "configured": "  Konfigureeritud: {{status}}",
+        "description": "Kontrollib VS Code installimist ja konfiguratsiooni",
+        "installation": "Installimine:",
+        "installed": "Installitud",
+        "missingSettings": "  Puuduvad seaded:",
+        "no": "Ei",
+        "notDetected": "Ei tuvastatud",
+        "remoteSSH": "  Remote SSH-laiend: {{status}}",
+        "settingsPath": "  Seadete tee: {{path}}",
+        "sshConfig": "\nSSH-konfiguratsioon: {{path}}",
+        "title": "VS Code seadistuse kontroll\n",
+        "variant": "  Variant: Insiders väljalase",
+        "version": "  Versioon: {{version}}",
+        "vscodeFound": "  VS Code: {{path}}",
+        "vscodeNotFound": "  VS Code: ei leitud",
+        "yes": "Jah"
+      },
+      "cleanup": {
+        "cleaned": "Koristatud: {{connection}}",
+        "cleanedAll": "{{count}} VS Code SSH-ühendust koristatud.",
+        "description": "Eemaldab VS Code SSH-konfiguratsioonid",
+        "removedKeys": "Kõik salvestatud SSH-võtmed eemaldatud."
+      },
+      "connect": {
+        "configuringSSH": "SSH konfigureerimine...",
+        "configuringVSCode": "VS Code seadete konfigureerimine...",
+        "description": "Ühendumine masina või repositooriumiga VS Code-s",
+        "detecting": "VS Code-i tuvastatakse...",
+        "extensionWarning": "Hoiatus: Remote SSH-laiend ei pruugi olla installitud.\nInstalli: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
+        "fetchingDetails": "Ühendusteavet laaditakse...",
+        "opening": "VS Code avamine: {{connection}} -- {{path}}",
+        "persistingKey": "SSH-võtit säilitatakse...",
+        "provisioningRenet": "Renet-i ettevalmistamine kaugmasinasse...",
+        "settingsWarning": "Hoiatus: VS Code seadete konfigureerimine ebaõnnestus: {{error}}",
+        "settingUpEnv": "Kaugkeskkonna seadistamine...",
+        "success": "VS Code käivitati edukalt.",
+        "testingConnectivity": "Ühenduvuse testimine {{host}}:{{port}}..."
+      },
+      "description": "Avab VS Code koos Remote SSH-ga masina või repositooriumiga, koos iga repositooriumi isoleeritud keskkonnaga. Sama SSH-ühendus nagu `term`, kuid käivitab VS Code. Peamised alamkomandod: connect (või positsiooniline otsetee), list (näitab konfigureeritud ühendusi), cleanup (eemaldab SSH-konfiguratsiooni kirjed), check (kontrollib VS Code installimist).",
+      "descriptionShort": "Avab VS Code Remote SSH masina või repositooriumiga",
+      "list": {
+        "configFile": "\nKonfiguratsioonifail: {{path}}",
+        "description": "Loetleb konfigureeritud VS Code SSH-ühendusi",
+        "header": "Konfigureeritud VS Code SSH-ühendused:\n",
+        "keyPersisted": " (võti salvestatud)",
+        "noConnections": "VS Code SSH-ühendusi pole konfigureeritud.",
+        "total": "\nKokku: {{count}} ühendust"
+      }
+    }
+  },
+  "common": {
+    "completed": "Lõpetatud",
+    "failed": "Ebaõnnestus",
+    "inProgress": "Käimas",
+    "no": "Ei",
+    "running": "Töötab",
+    "stopped": "Peatatud",
+    "success": "✓ Õnnestus",
+    "unknown": "Teadmata",
+    "yes": "Jah"
+  },
+  "docs": {
+    "admonitions": {
+      "note": "Märkus",
+      "tip": "Vihje",
+      "warning": "Hoiatus"
+    },
+    "cloudFrontmatter": {
+      "category": "Viide",
+      "description": "Rediacc CLI pilvepõhised käsud -- autentimine, meeskonnad, organisatsioonid ja mitme-rentniku haldus",
+      "title": "CLI-rakendus (pilv / eksperimentaalne)"
+    },
+    "cloudOverview": {
+      "heading": "Ülevaade",
+      "text": "Need käsud nõuavad **pilveadapterit** (eksperimentaalne) -- aktiveeritakse, kui konfiguratsioon sisaldab `apiUrl` ja `token` välju. Peamise CLI viite jaoks vaata [CLI-rakendus](/en/docs/cli-application)."
+    },
+    "cloudPageTitle": "Rediacc CLI viide (pilv / eksperimentaalne)",
+    "errors": {
+      "heading": "Sagedased veateated",
+      "intro": "Probleemi ilmnemisel kuvab CLI selged veateated:",
+      "meanings": {
+        "authRequired": "Pead esmalt sisse logima",
+        "machineRequired": "Määra masin lipukesega `--machine` või sea konfiguratsiooni vaikeväärtus",
+        "noActiveConfig": "Aktiivne konfiguratsioon puudub -- loo üks käsuga `rdc config init`",
+        "permissionDenied": "Sinu kontol puuduvad vajalikud õigused",
+        "regionRequired": "Määra piirkond lipukesega `--region` või sea konfiguratsiooni vaikeväärtus",
+        "teamRequired": "Määra meeskond lipukesega `--team` või sea konfiguratsiooni vaikeväärtus"
+      }
+    },
+    "frontmatter": {
+      "category": "Viide",
+      "description": "Täielik juhend Rediacc käsurea liidese kasutamiseks platvormihalduses",
+      "title": "CLI-rakendus"
+    },
+    "globalOptions": {
+      "heading": "Globaalsed valikud",
+      "intro": "Iga käsk toetab neid globaalseid lipukesi:"
+    },
+    "installation": {
+      "heading": "Paigaldamine",
+      "text": "Laadi oma platvormile sobiv uusim binaarne fail alla [Rediacc väljaannete lehelt](https://www.rediacc.com) või paigalda pakihalduri kaudu:"
+    },
+    "optionLabels": {
+      "no": "Ei",
+      "yes": "Jah"
+    },
+    "outputFormats": {
+      "closing": "See muudab Rediacc CLI integreerimise skriptidesse, CI/CD torujuhtmetesse ja automaatimistöövoogudesse lihtsaks.",
+      "heading": "Väljundvormingud",
+      "text": "Kõik list/get-käsud toetavad mitmeid väljundvorminguid lipukese `--output` kaudu:"
+    },
+    "overview": {
+      "heading": "Ülevaade",
+      "text": "**Rediacc CLI** (`rdc`) on käsurea liides isemajutatud infrastruktuuri haldamiseks -- masinad, repositooriumid, salvestus, varukoopiad ja palju muud."
+    },
+    "pageTitle": "Rediacc CLI viide",
+    "sectionTitles": {
+      "agent": "Agendi utiliidid",
+      "audit": "Audit ja vastavus",
+      "auth": "Autentimine",
+      "backup": "Varundamine ja taastamine",
+      "bridge": "Silla haldus",
+      "ceph": "Ceph-salvestuse haldus",
+      "config": "Konfiguratsiooni haldus",
+      "datastore": "Andmehoidla haldus",
+      "doctor": "Süsteemi diagnostika",
+      "machine": "Masina haldus",
+      "mcp": "MCP-server",
+      "ops": "Eksperimentaalsed VM-toimingud",
+      "organization": "Organisatsiooni haldus",
+      "permission": "Õiguste haldus",
+      "protocol": "Protokollitöötleja",
+      "queue": "Järjekorra toimingud",
+      "region": "Piirkonna haldus",
+      "repo": "Repositooriumi elutsükkel",
+      "repository": "Repositooriumi haldus",
+      "shortcuts": "Kiirkäsud (otseteed)",
+      "storage": "Salvestuse haldus",
+      "subscription": "Tellimuse haldus",
+      "sync": "Failide sünkroonimine",
+      "team": "Meeskonnajaldus",
+      "term": "SSH-terminali juurdepääs",
+      "update": "CLI uuendused",
+      "user": "Kasutajahaldus",
+      "vscode": "VS Code'i integratsioon"
+    },
+    "supplements": {
+      "auth": {
+        "register": {
+          "afterDescription": "Pärast registreerimist kontrolli e-posti aktiveerimiskoodi saamiseks."
+        },
+        "tip": "Sinu autentimistoken salvestatakse lokaalselt konfiguratsiooni. Kasuta `--save-as`, et salvestada mandaadid nimega konfiguratsiooni mitme keskkonna jaoks."
+      },
+      "config": {
+        "afterDescription": "Konfiguratsioonifailid salvestavad ühenduse andmed (API URL, mandaadid, vaikimisi meeskond/piirkond/sild), et saaksid keskkondade vahel kiiresti vahetada.",
+        "init": {
+          "afterDescription": "Saad masinad otse lisada:"
+        },
+        "set": {
+          "tip": "Vaikeväärtuste seadistamine tähendab, et ei pea iga käsuga andma `--team`, `--region` või `--bridge`."
+        }
+      },
+      "machine": {
+        "health": {
+          "afterDescription": "Tervisekäsk väljastab süsteemi mõõdikud, konteinerite oleku, teenuste stabiilsuse ja salvestusteabe -- kasulik CI/CD torujuhtmete kontrollideks."
+        },
+        "testConnection": {
+          "tip": "Kasuta `--save-known-hosts`, et eduka testi järel hosdi võti automaatselt masina hoidlasse salvestada."
+        }
+      },
+      "organization": {
+        "maintenance": {
+          "warning": "Kui hoolduserežiim on lubatud, ei saa mitte-administraatorist kasutajad sisse logida."
+        }
+      },
+      "queue": {
+        "afterDescription": "Järjekorra süsteem on Rediacc ülesandete täitmise tuum. Iga toiming (juurutamine, varundamine, skripti käivitamine) läbib järjekorra.",
+        "trace": {
+          "tip": "Kasuta `--watch`, et jälgida ülesannet reaalajas kuni selle lõpetamiseni."
+        }
+      },
+      "repository": {
+        "promote": {
+          "note": "Forki ülendamine eraldab selle oma pea-repositooriumist (vanemast) ja muudab selle iseseisvaks."
+        }
+      }
+    },
+    "tableHeaders": {
+      "default": "Vaikimisi",
+      "description": "Kirjeldus",
+      "error": "Viga",
+      "flag": "Lipuke",
+      "meaning": "Tähendus",
+      "required": "Kohustuslik"
+    }
+  },
+  "errors": {
+    "activationFailed": "Aktiveerimine ebaõnnestus",
+    "affectedChildClones": ". Mõjutatud alamkloonid: {{clones}}. Kustuta või tõsta esmalt alamkloonid üles.",
+    "agent": {
+      "commandBlocked": "Käsk \"{{command}}\" ei ole agendi režiimis saadaval.\n\nSee käsk täidab suvalisi madaltaseme funktsioone ilma turvakontrollideta. Kasuta selle asemel tüüpilisi CLI käske või MCP tööriistu.\n\nAlternatiivid:\n  - MCP tööriistad: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI käsud: rdc repo up, rdc repo down, rdc term connect\n  - Käivita \"rdc agent capabilities\", et näha kõiki saadaval olevaid käske\n\nKui vajad tooreset ligipääsu, palu kasutajal käivitada käsk otse.",
+      "configEdit": "Interaktiivne redaktor on agendikeskkondades blokeeritud.\n\nAlternatiivid:\n  • rdc config edit --dump > config.jsonc    (turvaline varjatud ülevaatus)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nÜlekirjutamiseks seadista REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> vanemas shellis\nENNE oma agendi käivitamist (see peab olema nähtav agendi protsessipuus).",
+      "configEditAncestry": "Interaktiivne redaktor on agendikeskkondades blokeeritud (REDIACC_ALLOW_CONFIG_EDIT oli seadistatud, kuid esivanema kontroll ebaõnnestus - ülekiri peab olema seadistatud sinu shelli poolt, mitte agendi poolt).\n\nAlternatiivid:\n  • rdc config edit --dump > config.jsonc    (turvaline varjatud ülevaatus)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nSeadista REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> vanemas shellis ENNE oma agendi käivitamist.",
+      "createGuard": "Uut grand-repositooriumi \"{{name}}\" ei saa agendi režiimis luua.\n\nAgendid töötavad fork-only režiimis. Grand-repositooriumid on tootmiskeskkonnad, millele agendid ei saa pärast loomist ligi.\n\nSelle asemel forki olemasolev repositoorium:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nKasutaja: repositooriumi loomise lubamiseks seadista REDIACC_ALLOW_GRAND_REPO=* (või konkreetne repositooriumi nimi) oma terminalis enne agendi seansi käivitamist.",
+      "createGuardOverride": "Uut grand-repositooriumi \"{{name}}\" ei saa luua. Agendi algatatud ülekirjutamised ei ole aktsepteeritud.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO - ainult kasutaja saab selle enne agendi käivitamist autoriseerida.\n\nSelle asemel forki olemasolev repositoorium:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
+      "createGuardOverrideNonLinux": "Uut grand-repositooriumi \"{{name}}\" ei saa luua. REDIACC_ALLOW_GRAND_REPO ülekiri ei ole platvormil {{platform}} toetatud.\n\nSee ülekiri töötab ainult Linuxis. Windowsil ja macOS-il peavad agendid kasutama fork-first töövoogu.\n\nSelle asemel forki olemasolev repositoorium:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nÜlekirja kasutamiseks käivita oma agent Linuxis (otse, WSL, Docker või VM).",
+      "fieldReveal": "--reveal tundliku välja {{pointer}} jaoks on agendikeskkondades blokeeritud. Agendid peaksid kasutama --digest. Päris kasutaja interaktiivses terminalis saab kasutada --reveal.",
+      "forkBlocked": "Käsk \"{{command}}\" ei ole forgi repositooriumides saadaval.\n\nForgi repositooriumid on ajutised liivakeskkonnad. See toiming kehtib ainult grand (tootmis) repositooriumidele. Palu kasutajal käivitada see käsk otse.",
+      "grandGuard": "\"{{name}}\" on grand (tootmis) repositoorium. Agendid ei saa grand-repositooriume otse muuta.\n\nGrand-repositooriumid sisaldavad tootmisandmeid. Kasuta selle asemel forki - forgid on turvalised, eraldatud liivakastikoopiad.\n\nTöövoog:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Tee forgi peal toiminguid (nt rdc repo up --name {{name}}:<tag-name> -m <machine> --mount)\n  3. Kui oled valmis, saab kasutaja forgi ülendada käsuga rdc repo takeover\n\nKasutaja: otsese ligipääsu lubamiseks seadista REDIACC_ALLOW_GRAND_REPO={{name}} (või * kõigi repositooriumide jaoks) oma terminalis enne agendi seansi käivitamist.",
+      "grandGuardOverride": "\"{{name}}\" on grand (tootmis) repositoorium. Agendi algatatud ülekirjutamised ei ole aktsepteeritud.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO - ainult kasutaja saab selle enne agendi käivitamist autoriseerida.\n\nKasuta selle asemel forki - forgid on turvalised, eraldatud liivakastikoopiad:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Tee forgi peal toiminguid\n  3. Kui oled valmis, saab kasutaja forgi ülendada käsuga rdc repo takeover",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" on grand (tootmis) repositoorium. REDIACC_ALLOW_GRAND_REPO ülekiri ei ole platvormil {{platform}} toetatud.\n\nSee ülekiri töötab ainult Linuxis. Windowsil ja macOS-il peavad agendid kasutama fork-first töövoogu.\n\nTöövoog:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Tee forgi peal toiminguid\n  3. Kui oled valmis, saab kasutaja forgi ülendada käsuga rdc repo takeover\n\nÜlekirja kasutamiseks käivita oma agent Linuxis (otse, WSL, Docker või VM).",
+      "machineGuard": "Otsene ligipääs masinale \"{{machine}}\" ei ole agendi režiimis lubatud.\n\nAgendid peavad ühenduma repositooriumi konteksti kaudu liivakastiga ligipääsuks. Forki esmalt repositoorium, seejärel ühenda forgi külge.\n\nTöövoog:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nKasutaja: otsese masina ligipääsu lubamiseks seadista REDIACC_ALLOW_GRAND_REPO=* (või konkreetne repositooriumi nimi) oma terminalis enne agendi seansi käivitamist.",
+      "machineGuardOverride": "Otsene ligipääs masinale \"{{machine}}\" ei ole lubatud. Agendi algatatud ülekirjutamised ei ole aktsepteeritud.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO - ainult kasutaja saab selle enne agendi käivitamist autoriseerida.\n\nForki esmalt repositoorium, seejärel ühenda forgi külge:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "Otsese masina ligipääsu ülekiri ei ole platvormil {{platform}} toetatud.\n\nSee ülekiri töötab ainult Linuxis. Windowsil ja macOS-il peavad agendid kasutama fork-first töövoogu.\n\nTöövoog:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nÜlekirja kasutamiseks käivita oma agent Linuxis (otse, WSL, Docker või VM).",
+      "mcpGrandGuard": "\"{{name}}\" on grand (tootmis) repositoorium. Agendid ei saa grand-repositooriume otse muuta.\n\nKasuta repo_fork'i turvalise, eraldatud liivakastikoopia loomiseks, seejärel tee forgi peal toiminguid.\nKui vajad otsest ligipääsu, palu kasutajal taaskäivitada MCP-server koos --allow-grand lipuga.",
+      "mcpGrandGuardOverride": "\"{{name}}\" on grand (tootmis) repositoorium. Agendi algatatud ülekirjutamised ei ole aktsepteeritud.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO.\n\nKasuta repo_fork'i turvalise, eraldatud liivakastikoopia loomiseks, seejärel tee forgi peal toiminguid.",
+      "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" on grand (tootmis) repositoorium. REDIACC_ALLOW_GRAND_REPO ülekiri ei ole platvormil {{platform}} toetatud.\n\nSee ülekiri töötab ainult Linuxis. Windowsil ja macOS-il peavad agendid kasutama fork-first töövoogu.\n\nKasuta repo_fork'i turvalise, eraldatud liivakastikoopia loomiseks, seejärel tee forgi peal toiminguid.",
+      "mcpMachineGuard": "Otsene ligipääs masinale ei ole fork-only režiimis lubatud.\n\nAgendid peavad ühenduma repositooriumi konteksti kaudu. Kasuta repo_fork'i forgi loomiseks, seejärel ühenda selle külge.\nKui vajad otsest ligipääsu, palu kasutajal taaskäivitada MCP-server koos --allow-grand lipuga.",
+      "mcpMachineGuardOverride": "Otsene ligipääs masinale ei ole lubatud. Agendi algatatud ülekirjutamised ei ole aktsepteeritud.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO.\n\nKasuta repo_fork'i forgi loomiseks, seejärel ühenda selle külge.",
+      "mcpMachineGuardOverrideNonLinux": "Otsese masina ligipääsu ülekiri ei ole platvormil {{platform}} toetatud.\n\nSee ülekiri töötab ainult Linuxis. Windowsil ja macOS-il peavad agendid kasutama fork-first töövoogu.\n\nKasuta repo_fork'i forgi loomiseks, seejärel ühenda selle külge.",
+      "revealRequiresTty": "--reveal nõuab interaktiivset TTY-d; keeldun printimast tundlikku väärtust torusse.",
+      "rotateNotSensitive": "Osuti \"{{pointer}}\" ei ole tundlik väli; kasuta selle asemel 'config field set'.",
+      "rotateRequiresTty": "config field rotate nõuab interaktiivset TTY kinnitust; keeldun mitteinteraktiivses kontekstis (ülekirja jaoks seadista REDIACC_ALLOW_CONFIG_EDIT).",
+      "showReveal": "--reveal on agendikeskkondades blokeeritud. Kasuta `rdc config show` (varjatud) või `rdc config field get --name <pointer> --digest` turvalise sõrmejälje saamiseks.",
+      "showRevealRequiresTty": "--reveal nõuab interaktiivset TTY-d; keeldun edastamast lihtteksti mitte-TTY sihtpunkti."
+    },
+    "authFailed": "Autentimine ebaõnnestus",
+    "authRequired": "Autentimine on nõutud. Käivita: rdc auth login",
+    "bridgeRequired": "Silla nimi on nõutud. Kasuta --bridge või määra vaikimisi väärtus käsuga: rdc config set --key bridge --value <name>",
+    "cannotDeleteGrandRepo": "Grand-repositooriumi ei saa kustutada: {{reason}}",
+    "cannotPromote": "Ülendamine ei õnnestu: {{reason}}",
+    "clusterNotFound": "Ceph-klastrit \"{{name}}\" ei leitud",
+    "config": {
+      "invalidEmail": "Vigane e-posti aadress: \"{{value}}\".",
+      "machineNotFound": "Masina \"{{name}}\" ei leitud konfiguratsioonist. Saadaval: {{available}}.",
+      "noActiveConfig": "Aktiivset konfiguratsiooni ei ole",
+      "pointerNotFound": "Osutit \"{{pointer}}\" ei leitud",
+      "storageNotFound": "Salvestusruumi \"{{name}}\" ei leitud konfiguratsioonist. Saadaval: {{available}}."
+    },
+    "contextNotFound": "Konfiguratsioon \"{{name}}\" ei leitud",
+    "editor": {
+      "headlessRefused": "Pealispealse redaktori käivitamine jääks igavesti ootama: {{command}}. Anna --editor selgelt koos interaktiivsete lippudega.",
+      "nonzeroExit": "Redaktor {{command}} lõpetas koodiga {{code}}",
+      "notFound": "Redaktorit ei ole seadistatud. Seadista $GIT_EDITOR, git config core.editor, $VISUAL või $EDITOR, või anna --editor.",
+      "spawnFailed": "Redaktori {{command}} käivitamine ebaõnnestus: {{reason}}"
+    },
+    "failedCreateQueueItem": "Järjekorra elemendi loomine ebaõnnestus",
+    "invalidAction": "Vigane toiming \"{{action}}\". Kasuta \"{{valid}}\".",
+    "invalidCredentials": "Vigased mandaadid",
+    "invalidEmail": "Palun sisesta kehtiv e-posti aadress",
+    "invalidExpiration": "Tokeni aegumisaeg peab olema vahemikus 1 kuni 720 tundi",
+    "invalidFunctionParams": "Vigased parameetrid funktsioonile \"{{function}}\": {{errors}}",
+    "invalidHost": "Vigane IP-aadress või hostinimi: \"{{host}}\". Peab olema kehtiv IPv4, IPv6 või hostinimi.",
+    "invalidJsonFile": "Esitatud fail ei sisalda kehtivat JSON-i.",
+    "invalidJsonVault": "Vigased JSON-võlvi andmed.",
+    "invalidKey": "Vigane võti. Kehtivad võtmed: {{keys}}",
+    "invalidMasterPassword": "Vale peaparool võlvi krüptimiseks",
+    "invalidPort": "Vigane pordinumber: \"{{port}}\". Peab olema vahemikus 1 kuni 65535.",
+    "invalidPriorityMax": "Vigane priority-max väärtus. Peab olema vahemikus 1 kuni 5.",
+    "invalidPriorityMin": "Vigane priority-min väärtus. Peab olema vahemikus 1 kuni 5.",
+    "machineNotFound": "Masina \"{{name}}\" ei leitud",
+    "machineRequired": "Masina nimi on nõutud. Kasuta --machine <name>",
+    "machineRequiredLocal": "Masina nimi on nõutud. Kasuta --machine <name>",
+    "networkError": "Võrgu viga: {{message}}",
+    "noActiveConfig": "Aktiivset konfiguratsiooni ei ole. Loo uus käsuga: rdc config init --name <name>",
+    "notAuthenticated": "Autentimata. Käivita: rdc auth login",
+    "passwordsMismatch": "Paroolid ei ühti",
+    "permissionDenied": "Ligipääs keelatud",
+    "poolNotFound": "Ceph-puuli \"{{name}}\" ei leitud",
+    "precondition": {
+      "currentSecretsRequired": "{{pointer}}: tundlik väli muutus ilma --current'ita; lisa --current-secrets <file> mis kujutab osutit vanale väärtusele",
+      "digestMismatch": "--current räsi ei ühti (oodati {{expected}}…, saadi {{got}}…)",
+      "kindMismatch": "väärtuse liik muutus (salvestatud: {{stored}}, väidetud: {{claimed}})",
+      "mismatch": "Eeltingimus ebaõnnestus {{count}} tee(de) jaoks:\n{{details}}",
+      "missing": "tundlik tee nõuab --current (või --rotate-secret)",
+      "next": {
+        "options": {
+          "confirm": {
+            "description": "Loe uuesti praegune räsi, seejärel proovi uuesti koos --current'iga",
+            "run": "rdc repo secret get --name {{repository}} --key {{key}}"
+          },
+          "rotate": {
+            "description": "Jäta eeltingimus vahele (rotatsioon, auditeeritud)",
+            "run": "<algne käsk> --rotate-secret"
+          }
+        },
+        "summary": "Esita praegune väärtus või kinnita rotatsioon."
+      },
+      "rotationRequiresTty": "{{pointer}}: rotatsiooni kinnitus nõuab interaktiivset TTY-d (või kasuta --current-secrets)",
+      "stubStillStub": "{{pointer}}: muudetud väärtus näib endiselt varjamise stub'ina, kuid ei ühti praeguse räsiga"
+    },
+    "protocol": {
+      "commandExitCode": "Käsk lõpetas koodiga {{code}}",
+      "invalidAction": "Vigane toiming '{{action}}'. Peab olema üks järgmistest: {{validActions}}",
+      "invalidUrl": "Vigane protokolli-URL: {{error}}",
+      "machineRequired": "Masina nimi on nõutud. Kasuta --machine <name>",
+      "notSupported": "Protokolli registreerimine ei ole platvormil {{platform}} toetatud",
+      "parseFailed": "URL-i parsimine ebaõnnestus: {{error}}",
+      "regionSelectionRequiresTTY": "Regiooni valik nõuab interaktiivset sisendit. Kasuta --server <url>, et määrata server otse.",
+      "teamRequired": "Meeskonna nimi on nõutud. Kasuta --team <name>",
+      "tokenRequired": "Token on nõutud. Kasuta --token <token>",
+      "unknownRegion": "Tundmatu regioon: {{region}}"
+    },
+    "regionRequired": "Regiooni nimi on nõutud. Kasuta --region või määra vaikimisi väärtus käsuga: rdc config set --key region --value <name>",
+    "registrationFailed": "Registreerimine ebaõnnestus",
+    "remoteNotFound": "\"{{name}}\" ei ole tuntud masin ega salvestusruum. Masinad: {{machines}}. Salvestusruumid: {{storages}}",
+    "repo": {
+      "secret": {
+        "badMode": "Vigane --mode \"{{mode}}\". Lubatud: env, file.",
+        "emptyValue": "Saladuse väärtus ei saa olla tühi (stdin ei andnud baite).",
+        "mutuallyExclusive": "--current ja --rotate-secret ei saa koos kasutada. Vali üks: --current eelmise väärtuse kontrollimiseks või --rotate-secret kontrollimiseta roteerimiseks."
+      }
+    },
+    "repoNotDeployed": "Repositoorium \"{{repository}}\" ei ole masinas {{machine}} kasutusele võetud.\n\nVõta see esmalt kasutusele:\n  rdc repo up --name {{repository}} -m <machine-name>",
+    "repositoryAlreadyMounted": "Repositoorium \"{{name}}\" on juba masinas \"{{machine}}\" ühendatud. Aktiivse repositooriumi üle migreerimine rikuks selle. Käivita esmalt: rdc repo down --name {{name}} -m {{machine}} --unmount",
+    "repositoryNotFound": "Repositoorium \"{{name}}\" ei leitud",
+    "repositoryRequired": "Repositooriumi nimi on nõutud. Kasuta --repository <name>.",
+    "resourceNotFound": "{{resource}} ei leitud",
+    "ssh": {
+      "noHostKey": "Masinal '{{machine}}' ei ole hosti võtit võlvis seadistatud",
+      "noIpAddress": "Masinal '{{machine}}' ei ole IP-aadressi seadistatud",
+      "noPrivateKey": "Meeskonnal '{{team}}' ei ole SSH privaatvõtit seadistatud"
+    },
+    "sshKeyNotFound": "SSH-võtit ei leitud: {{path}}",
+    "subscription": {
+      "activationFailed": "Litsentsi väljastamine ebaõnnestus. Veendu, et su tellimus on aktiivne ja masina slot on saadaval.",
+      "notLoggedIn": "Pole sisse logitud. Inimesed peaksid käivitama `rdc subscription login`. Automatiseerimine peaks käivitama `rdc subscription login --token <token>` või seadistama `REDIACC_SUBSCRIPTION_TOKEN`.",
+      "tokenRequired": "Tellimuse token on nõutud. Kas seadista REDIACC_SUBSCRIPTION_TOKEN keskkonna muutuja või käivita `rdc subscription login` oma terminalis.",
+      "tokenWarning": "Tellimuse tokenit ei leitud. Litsentsi nõudvad käsud (repo create, repo fork) ebaõnnestuvad. Seadista REDIACC_SUBSCRIPTION_TOKEN keskkonna muutuja või käivita `rdc subscription login` oma terminalis."
+    },
+    "sync": {
+      "absolutePathBlocked": "--remote tee peab olema suhteline, mitte absoluutne. Kasuta teed, mis on suhteline repositooriumi juurkaustast.",
+      "localPathNotFound": "Kohalik tee ei eksisteeri: {{path}}",
+      "mirrorWithFile": "--mirror ei saa kasutada, kui allikas on fail: see kustutaks sihtkausta kõrvutised failid.",
+      "noHostKey": "Masinal '{{machine}}' ei ole hosti võtit võlvis seadistatud",
+      "noIpAddress": "Masinal '{{machine}}' ei ole IP-aadressi seadistatud",
+      "noPrivateKey": "Meeskonnal '{{team}}' ei ole SSH privaatvõtit seadistatud",
+      "pathTraversalBlocked": "--remote tee ei tohi sisaldada \"..\" teekäiku. Kasuta teed repositooriumi sees.",
+      "remoteAndRemoteFile": "--remote ja --remote-file ei saa koos kasutada. Vali üks.",
+      "remoteFileLocalNotDir": "Kui --remote-file on seadistatud, peab --local olema olemasolev kaust: {{path}}",
+      "remoteFileRequiresSingleFile": "--remote-file nõuab täpselt ühte --local teed, mis osutab failile."
+    },
+    "teamRequired": "Meeskonna nimi on nõutud. Kasuta --team või määra vaikimisi väärtus käsuga: rdc config set --key team --value <name>",
+    "term": {
+      "connectivityFailed": "Ei saavuta {{host}}:{{port}}. {{error}}\n\nVeaotsing:\n  - Kontrolli, kas masin on sisse lülitatud ja ühendatud võrku\n  - Veendu, et IP-aadress on masina võlvis õigesti seadistatud\n  - Veendu, et port {{port}} ei ole tulemüüriga blokeeritud\n  - Proovi masina pingimine: ping {{host}}",
+      "dockerComposeForbidden": "\"docker compose\" ei ole repositooriumi kontekstis lubatud.\n\nKasuta \"renet compose -- <args>\", et rakendataks repositooriumipõhised loopback-IP-d, hosti võrgu süstimine, CRIU võimalused ja compose valideerimine. \"docker compose\" otse käivitamine mööda hiib kõigist neist kontrollidest ja rikub kasutusele võtmise vaikselt.\n\nOrkestreeritud kasutusele võtmiseks eelista: rdc repo up --name <repository> -m <machine>",
+      "fileWriteDetected": "Tuvastati faili kirjutamine ({{detected}}). Kasuta selle asemel rdc repo sync:\n  rdc repo sync upload -m MACHINE -r REPO --local FILE --remote PATH\n\nrsync kannab failid üle delta kompressiooni, kontrollsummade ja õigete õigustega.",
+      "launchFailed": "Terminali käivitamine ebaõnnestus: {{error}}",
+      "noHostKey": "Masinal '{{machine}}' ei ole hosti võtit võlvis seadistatud",
+      "noIpAddress": "Masinal '{{machine}}' ei ole IP-aadressi seadistatud",
+      "noPrivateKey": "Meeskonnal '{{team}}' ei ole SSH privaatvõtit seadistatud",
+      "repoContextRequired": "Käsk nõuab repositooriumi konteksti.\n\nTuvastati \"{{detected}}\", mis vajab DOCKER_HOST ja repositooriumi keskkonna muutujaid.\nNeed on saadaval ainult siis, kui repositoorium on määratud.\n\nSelle asemel, et:\n  rdc term connect -m {{machine}} -c \"{{command}}\"\n\nKasuta:\n  rdc term connect -m {{machine}} -r <repository> -c \"{{command}}\"",
+      "sshCode1": "Üldine viga - kontrolli käsu süntaksit või kaughosti õigusi",
+      "sshCode126": "Ligipääs keelatud - käsku ei saa kaugmasinas täita",
+      "sshCode127": "Käsku ei leitud kaugmasinas",
+      "sshCode130": "Ühenduse lõpetas kasutaja (Ctrl+C)",
+      "sshCode255": "SSH-ühendus ebaõnnestus - võimalikud põhjused:\n    - Autentimine ebaõnnestus (kontrolli SSH-võtme õigusi)\n    - Hosti võtme kontrollimine ebaõnnestus\n    - Võrguühendus katkes\n    - Kaugmasinas ei tööta SSH-teenus",
+      "sshExitCode": "SSH lõpetas koodiga {{code}}"
+    },
+    "tfaVerificationFailed": "TFA kinnitamine ebaõnnestus",
+    "tokenExpired": "Token on aegunud. Palun logi uuesti sisse.",
+    "unexpectedError": "Ootamatu viga: {{message}}",
+    "unknownCommand": "Tundmatu käsk \"{{command}}\". Saadaval olevad käsud: {{available}}.",
+    "unknownSubcommand": "Tundmatu alamkäsk \"{{command}}\". Saadaval olevad {{parent}} alamkäsud: {{available}}.",
+    "validationError": "Valideerimise viga: {{message}}",
+    "vaultDataRequired": "Võlvi andmed on nõutud. Kasuta --vault <json> või anna JSON stdin kaudu.",
+    "vaultVersionRequired": "Võlvi versioon on nõutud. Kasuta --vault-version <n>.",
+    "vscode": {
+      "cleanupRequired": "Määra --all kõigi ühenduste eemaldamiseks või --connection <name> konkreetse ühenduse jaoks.",
+      "connectivityFailed": "Ei saavuta {{host}}:{{port}}. {{error}}\n\nVeaotsing:\n  - Kontrolli, kas masin on sisse lülitatud ja ühendatud võrku\n  - Veendu, et IP-aadress on masina võlvis õigesti seadistatud\n  - Veendu, et port {{port}} ei ole tulemüüriga blokeeritud\n  - Proovi masina pingimine: ping {{host}}",
+      "noHostKey": "Masinal '{{machine}}' ei ole hosti võtit võlvis seadistatud",
+      "noIpAddress": "Masinal '{{machine}}' ei ole IP-aadressi seadistatud",
+      "noPrivateKey": "Meeskonnal '{{team}}' ei ole SSH privaatvõtit seadistatud",
+      "notFound": "VS Code ei leitud.\n\nPalun installi aadressilt: https://code.visualstudio.com/\nVõi seadista REDIACC_VSCODE_PATH keskkonna muutuja."
+    }
+  },
+  "help": {
+    "agentMode": "\n  Agendirežiim\n    • Ainult forkimine: loo fork enne muudatuste tegemist mis tahes repositooriumis\n    • Pearepos (mitte-forkid) on agentidele kirjutuskaitstud\n    • Töövoog: repo fork --parent <name> -m <machine> -> repo up <fork> -m <machine> --mount -> term <machine> <fork>\n    • JSON-väljund on automaatne -- kõik käsud tagastavad { success, data, errors, metrics }\n    • Parsi alati täielikku JSON-i -- ära kasuta tail/head/grep JSON-väljundil\n    • Kasuta filtrilipukesi (nt --repositories, --containers) vastuse mahu vähendamiseks\n    • Avasta käsuskeeme: rdc agent schema \"<command>\"\n",
+    "cli": {
+      "machineQuery": "Kuva masina olek",
+      "repoUp": "Juuruta repositooriumi teenused",
+      "syncDownload": "Laadi failid repositooriumist alla",
+      "syncUpload": "Laadi failid repositooriumisse üles",
+      "termRepo": "SSH repositooriumisse"
+    },
+    "config": {
+      "addMachine": "Lisa masin konfiguratsiooni",
+      "init": "Loo nimega konfiguratsioon SSH-võtmega",
+      "setMachine": "Määra vaikimisi masin",
+      "setupMachine": "Käivita seadistus kaugmasinal"
+    },
+    "examples": "Näited:",
+    "keyConcepts": "\nPõhimõisted:\n\n  Arhitektuur\n    • Iga repositoorium = isoleeritud Dockeri keskkond (oma deemon, loopback-IP-vahemik, krüpteeritud LUKS-salvestus)\n    • Kasuta renet compose (mitte toorest docker compose) -- inject-ib automaatselt network_mode:host ja rediacc.* sildid\n    • Salvestus: bind-mount asukohta ${REDIACC_WORKING_DIR}/... -- mitte Dockeri nimega mahud (on välja jäetud forkidest/varukoopiatest)\n    • eBPF bind-ümbersoonamistöötlus haldab IP-isolatsiooni: rakendused seovad 0.0.0.0 ja tuum kirjutab ümber õige loopback-IP-ga\n\n  Suunamine\n    • Automaatsuunamine (fork-sõbralik): https://{service}.{repo}.{machine}.{baseDomain}\n    • Kohandatud domeen: Traefiku sildid (traefik.enable=true) -- ei ole fork-sõbralik\n    • rediacc.service_port silt mitte-80 portide jaoks. Marsruudid aktiveeritakse umbes 3 sekundit pärast juurutamist\n    • HTTPS: automaatsed Let's Encrypt metamärgi sertifikaadid Cloudflare DNS-01 kaudu -- vajab --cf-dns-token seadistust käsuga 'rdc config infra set'. Ilma selleta töötab HTTP, kuid HTTPS-sertifikaate ei väljastata\n    • Pearepos saab *.{repo}.{machine}.{baseDomain} -- Traefik seadistab selle automaatselt esimesel repo käivitamisel\n    • Forkid kasutavad emarepo metamärgi sertifikaati (juba väljastatud, nullmõju limiitidele)\n\n  Keskkonnamuutujad\n    • Rediaccfile'i kest: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • Konteinerite sees: SERVICE_IP, REDIACC_NETWORK_ID (renet inject-ib automaatselt)\n\n  Forkimine\n    • rdc repo fork --parent <name> -- kohene CoW-kloon uue GUID-i, networkId-ga, IP-vahemiku ja automaatse marsruudidomeeniga\n    • Vanem jääb tööle (võrguühendusega forkimine). Ristmasin: forki lokaalselt, seejärel tõuka varukoopia\n    • Konfiguratsioonikiirje püsib pärast repo kustutamist (repo võib eksisteerida teistel masinatel)",
+    "machine": {
+      "containers": "Kuva töötavad konteinerid",
+      "health": "Tervisekontroll CI/CD jaoks",
+      "keyConcepts": "\nPõhimõisted:\n\n  Päringufiltrid\n    • rdc machine query --name <name> tagastab vaikimisi kõik jaotised\n    • Kasuta --system, --repositories, --containers, --services, --network, --block-devices filtreerimiseks\n    • JSON-väljund rikastab konteinereid: repository (lahendatud nimi), domain, autoRoute\n\n  Tervis ja monitooring\n    • machine health väljub koodiga: 0=terve, 1=hoiatus, 2=viga -- kasuta CI/CD väravana\n    • containers --health-check väljub koodiga 2, kui mõni konteiner on ebaterve\n    • services --stability-check väljub koodiga 2, kui mõni teenus on ebaõnnestunud, taaskäivitub või on taaskäivitunud üle 3 korra\n    • machine prune eemaldab kustutatud repodest pärinevad orbtud loopback-IP-d ja systemd-üksused\n\n  Andmehoidla struktuur (/mnt/rediacc/)\n    • repositories/ -- krüpteeritud LUKS-pildid (üks repo GUID-i kohta)\n    • mounts/ -- dekrüpteeritud ühenduspunktid (kättesaadavad, kui repo on ühendatud)\n    • immovable/ -- iga-repo Dockeri deemoni andmed\n    • Andmehoidla on BTRFS-koolifail süsteemidraivil. Tegelik vaba ruum = min(ketta vaba ruum, andmehoidla vaba ruum). Laienda käsuga: rdc datastore resize\n",
+      "query": "Kuva masina täielik olek"
+    },
+    "repo": {
+      "create": "Loo krüpteeritud repo",
+      "down": "Peata teenused",
+      "fork": "CoW-fork testimiseks",
+      "keyConcepts": "\nPõhimõisted:\n\n  Compose ja Rediaccfile\n    • renet compose -- up -d (mitte toorest docker compose). -- eraldaja on kohustuslik\n    • Rediaccfile peab defineerima up() ja down() funktsioonid. up() peaks: looma kaustad, genereerima konfiguratsioonid, käivitama konteinerid\n    • compose ports: ignoreeritakse (network_mode:host). Kasuta välisjuurdepääsuks rediacc.service_port silti\n    • restart: always/unless-stopped eemaldatakse automaatselt renet poolt ja salvestatakse .rediacc.json-i -- ruuteri valvekoer taastab peatunud teenused automaatselt\n    • Iga teenus saab loopback-IP. eBPF bind-ümbersoonamistöötlus haldab isolatsiooni läbipaistvalt, nii et rakendused saavad seostuda 0.0.0.0-ga\n    • Naabrite teenustega ühendumiseks kasuta teenuse nime (nt \"db\", \"redis\") -- renet inject-ib kõik teenuste nimed hostinimedena. Ära manusta ${DB_IP}-i andmebaaside sees salvestatud ühendusstringidesse -- see küpsetab IP sisse ja rikub forki isolatsiooni (valideerimisviga)\n    • Tervisekontrollid saavad kasutada localhost-i. Näide: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Salvestus\n    • Bind-mount asukohta ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config jne\n    • Näide: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Dockeri nimega mahud on välja jäetud forkidest ja varukoopiatest\n    • Konteineritesse bind-mountitud konfiguratsioonifailid peavad olema maailma-loetavad (644), kui konteiner töötab mitte-vaikimisi UID-ga\n\n  Suunamine\n    • Pearepo automaatsuunamine: https://{service}.{repo}.{machine}.{baseDomain} (metamärgi sert *.{repo}.{machine}.{baseDomain} seadistatakse Traefiku poolt automaatselt esimesel repo käivitamisel)\n    • Forki automaatsuunamine: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (kasutab emarepo metamärgi serti, nullmõju limiitidele)\n    • Kohandatud domeen: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP edastamine: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Kohandatud domeenid (rediacc.domain silt) ignoreeritakse forkidel -- domeen kuulub pea-repole\n\n  Elutsükkel\n    • repo delete puhastab täielikult: salvestuse, Dockeri deemoni, loopback-IP-d, systemd-üksused\n    • repo down peatab konteinerid, kuid säilitab Dockeri deemoni ja IP-d (kiire taaskäivitus käsuga repo up)\n    • depends_on koos condition: service_healthy haldab käivitusjärjekorda, kuid mitte käitusaegset taastumist\n    • Kui andmebaas peatub puhtalt (exit 0), sõltuvad teenused taaskäivituvad pidevalt. Parandus: rdc repo up -m <machine>\n    • Automaatkäivitus: rdc repo autostart enable --name <name> -m <machine> -- ühendab ja käivitab repo masina butimisel automaatselt\n    • Planeeritud varukoopiad jätavad fork-repod automaatselt vahele. Kasuta käsku rdc repo push --name <name> -m <machine> --to <remote> käsitsi forki varukoopia tegemiseks\n    • rdc repo takeover --name <fork> -m <machine> -- asenda tootmisandmed forki andmetega (säilitab identiteedi). Taasta käsuga: rdc repo takeover --name <backup-fork> -m <machine>\n",
+      "listBackups": "Kuva varukoopiad salvestuses",
+      "pull": "Tõmba repo varukoopia salvestusest",
+      "push": "Tõuka repo varukoopia salvestusse",
+      "sync": {
+        "pullAll": "Tõmba kõik repos salvestusest",
+        "pushAll": "Tõuka kõik repos salvestusse"
+      },
+      "takeover": "Asenda tootmisandmed forki andmetega",
+      "tunnel": "SSH-tunnel konteineri porti",
+      "up": "Juuruta automaatse ühendamisega"
+    },
+    "sync": {
+      "download": "Laadi repositooriumi failid lokaalselt alla",
+      "status": "Kuva sünkroonimise olek",
+      "upload": "Laadi lokaalsed failid repositooriumisse üles"
+    },
+    "term": {
+      "command": "Käivita käsk ilma interaktiivse kestata",
+      "machine": "SSH masinasse",
+      "repo": "SSH repositooriumisse (DOCKER_HOST seadistatakse automaatselt)",
+      "syncHint": "Failiedastuseks kasuta: rdc repo sync upload/download"
+    },
+    "useHelpAll": "Kasuta --help-all laiendatud kirjelduste jaoks",
+    "vscode": {
+      "machine": "Ava masin VS Code'is",
+      "repo": "Ava repositoorium VS Code'is"
+    }
+  },
+  "options": {
+    "activationCode": "Aktiveerimiskood e-postist",
+    "apiToken": "API-token (rdt_...)",
+    "apiUrl": "API aadress",
+    "bridge": "Silla nimi",
+    "cleanupAll": "Eemalda kõik Rediacc SSH-konfiguratsioonid",
+    "cluster": "Ceph-klastri nimi",
+    "command": "Käivita käsk interaktiivse kesta asemel",
+    "config": "Kasuta selle käsu jaoks konkreetset konfiguratsiooni",
+    "configKey": "Konfiguratsioonivõti",
+    "configValue": "Konfiguratsiooniväärtus",
+    "confirmPasswordNonInteractive": "Kinnita parool (mitte-interaktiivne režiim)",
+    "confirmSync": "Kuva muudatuste eelvaade ja küsi kinnitust enne sünkroonimist",
+    "connectionName": "Eemalda konkreetne ühendus",
+    "container": "Ühenda konkreetse Dockeri konteineriga",
+    "containerAction": "Konteineri toiming: terminal, logs, stats, exec",
+    "currentName": "Ressursi praegune nimi",
+    "datastore": "Andmehoidla tee masinal",
+    "debug": "Luba silumisväljund",
+    "dryRun": "Kuva, mida tehaks, ilma muudatusi tegemata",
+    "email": "E-posti aadress",
+    "endpoint": "API-lõpp-punkti URL",
+    "excludePatterns": "Sünkroonimisest väljajätmise mustrid",
+    "expires": "Aegumisaeg tundides (1-720)",
+    "external": "Sundkäivita välises terminaliaknast",
+    "extraMachine": "Lisaarvuti mitmemasina toimingute jaoks (name:ip:user)",
+    "fields": "Komaga eraldatud väljade loend väljundisse lisamiseks",
+    "file": "Faili tee",
+    "filterStatus": "Filtreeri staatuse järgi",
+    "folder": "Avamiseks ettenähtud kaugkausta tee",
+    "follow": "Jälgi logide väljundit",
+    "force": "Jäta kinnitusviibad vahele",
+    "function": "Täidetava funktsiooni nimi",
+    "graceDays": "Hiljuti arhiveeritud repode armuaeg päevades (vaikimisi: 7)",
+    "image": "RBD-pildi nimi",
+    "importMode": "Importimisrežiim (merge või replace)",
+    "insiders": "Kasuta VS Code Insidersi seadeid",
+    "lang": "Keele alistamine ({{languages}})",
+    "limit": "Tulemuste maksimaalne arv",
+    "localPath": "Lokaalne kaustatee (vaikimisi: praegune kaust)",
+    "localPaths": "Üks või mitu lokaalset faili- või kaustateed (vaikimisi: praegune kaust)",
+    "logLines": "Kuvatavate logiread arv (vaikimisi: 50)",
+    "machine": "Masina nimi",
+    "machineForVault": "Masina nimi (hoidla uuendamiseks pärast testi)",
+    "machineIp": "Masina IP-aadress või hostinimi",
+    "machineNames": "Masinate nimed (komaga eraldatud)",
+    "machineShorthand": "Masina nimi (lühend --machine jaoks)",
+    "masterPassword": "Hoidla krüpteerimise peaparool",
+    "mirrorDownload": "Peegeldusrežiim -- kustuta kohalikud failid, mida kaugserveril ei leidu",
+    "mirrorUpload": "Peegeldusrežiim -- kustuta kaugfailid, mida kohalikult ei leidu",
+    "name": "Ressursi nimi",
+    "newName": "Ressursi uus nimi",
+    "newPasswordNonInteractive": "Uus parool (mitte-interaktiivne režiim)",
+    "newWindow": "Ava uues VS Code'i aknas",
+    "opsBackend": "Virtualiseerimise taustarakendus (kvm|qemu, tuvastatakse automaatselt)",
+    "opsBasic": "Minimaalne klaster (sild + 1 töötaja)",
+    "opsForce": "Sundtaaskäivita kõik virtuaalmasinad",
+    "opsLite": "Jäta virtuaalmasinate seadistamine vahele (ainult olek)",
+    "opsOS": "Virtuaalmasina operatsioonisüsteem (nt ubuntu-24.04, debian-13)",
+    "opsParallel": "Loo virtuaalmasinad paralleelselt",
+    "opsSkipOrchestration": "Jäta klastri orkestratsioon vahele",
+    "opsSSHUser": "SSH-kasutajanimi VM-ühenduse jaoks",
+    "organization": "Organisatsiooni nimi",
+    "output": "Väljundvorming (table|json|yaml|csv). Override default with REDIACC_DEFAULT_OUTPUT.",
+    "outputFormat": "Väljundvorming (json)",
+    "outputPath": "Väljundfaili salvestamise tee",
+    "param": "Funktsiooni parameetrid",
+    "parentRepository": "Emarepos (forkide jaoks)",
+    "parentRepositoryTag": "Emarepo silt",
+    "password": "Parool (mitte-interaktiivseks sisselogimiseks)",
+    "pollInterval": "Küsitlusintervall millisekundites",
+    "pool": "Ceph-kausta nimi",
+    "priority": "Prioriteet (1=kõrgeim)",
+    "priorityMax": "Maksimaalne prioriteet (1-5)",
+    "priorityMin": "Minimaalne prioriteet (1-5)",
+    "protocolAction": "Toiming ({{actions}})",
+    "protocolForce": "Sunni uuesti registreerima isegi kui juba registreeritud",
+    "protocolParams": "Täiendavad parameetrid",
+    "protocolSystem": "Registreeri süsteemilaiuselt (vajab administraatoriõigusi)",
+    "protocolSystemUnregister": "Tühista süsteemilaiuse registreerimine (vajab administraatoriõigusi)",
+    "protocolToken": "Autentimistoken",
+    "queryBlockDevices": "Lisa ainult plokkseadmed",
+    "queryContainers": "Lisa ainult konteinerid",
+    "queryLicenses": "Lisa repositooriumi litsentsistaatused",
+    "queryNetwork": "Lisa ainult võrguliidesed",
+    "queryRepositories": "Lisa ainult repositooriumid",
+    "queryServices": "Lisa ainult teenused",
+    "queryStorageHealth": "Kuva BTRFS-fragmentatsioon ja reflink-säästud repositooriumi kohta",
+    "queryStrict": "Välju mitte-nulliga (kood 2), kui mõni konteiner on ületanud tervisdriifti lävendi",
+    "querySyncCerts": "Tõmba pärast pärimist masinalt ka ACME-serdi vahemälu",
+    "querySystem": "Lisa ainult süsteemiteave",
+    "quiet": "Keela informatiivsed väljundid",
+    "rawVault": "Töötlemata hoidla JSON (skriptide/CI jaoks)",
+    "region": "Piirkonna nimi",
+    "remoteFile": "Kaugfaili tee repositooriumi sees (alternatiiv --remote-ile ühe faili edastamisel)",
+    "remoteFileUpload": "Üksik kaugfaili tee (relatiivne repo juurest) üleslaadimiseks. Vastastikku välistav --remote-iga.",
+    "remotePath": "Kaugrepositorioumi alamsektsioon",
+    "renetPath": "Tee renet-binaarini (vaikimisi: renet PATH-is)",
+    "repository": "Repositooriumi nimi (ühendab repositooriumikeskkonnaga)",
+    "repositoryShorthand": "Repositooriumi nimi (lühend --repository jaoks)",
+    "repositoryTag": "Repositooriumi silt",
+    "resetHome": "Lähtesta repo-spetsiifiline koduülekihte värsket algust",
+    "saveAs": "Salvesta mandaadid nimega konfiguratsiooni",
+    "saveKnownHosts": "Salvesta known_hosts masina hoidlasse pärast edukat testi",
+    "searchInField": "Otsi väljalt {{field}}",
+    "searchQueue": "Otsi ülesande ID, meeskonna, masina, silla järgi",
+    "searchRepos": "Filtreeri repositooriumeid nime järgi",
+    "serverUrl": "Kontoserveri URL",
+    "sessionName": "Sessiooni nimi",
+    "skipEnvSetup": "Jäta kaugkeskkonna seadistus vahele",
+    "skipRouterRestart": "Jäta marsruutimisserveri taaskäivitus pärast binaarset uuendust vahele",
+    "snapshot": "RBD-hetktõmmise nimi",
+    "sortByField": "Sorteeri välja järgi",
+    "sortDesc": "Sorteeri kahanevas järjekorras",
+    "sortDescending": "Sorteeri kahanevas järjekorras",
+    "sortField": "Sorteeri välja järgi",
+    "sshKey": "Tee SSH-privaatvõtmeni (nt ~/.ssh/id_rsa)",
+    "sshPassword": "SSH-parool esmase autentimise jaoks",
+    "sshPort": "SSH-port",
+    "sshPrivateKey": "Tee SSH-privaatvõtmeni",
+    "sshPublicKey": "Tee SSH-avalikule võtmele",
+    "sshUser": "SSH-kasutajanimi",
+    "subscriptionPlan": "Tellimisplaan (COMMUNITY, PROFESSIONAL, BUSINESS, ENTERPRISE)",
+    "switch": "Lülitu sellele konfiguratsioonile pärast loomist",
+    "target": "Siht-ressursi nimi",
+    "team": "Meeskonna nimi",
+    "tfaCode": "Praegune TFA-kood kinnitamiseks",
+    "tokenName": "Tokeni nimi",
+    "urlOnly": "Prindi VS Code'i URI käivitamise asemel",
+    "userPassword": "Uue kasutaja parool",
+    "vaultContent": "Hoidla sisu JSON-stringina",
+    "vaultJson": "Hoidla sisu JSON-stringina",
+    "vaultJsonMachine": "Masina hoidla andmed JSON-stringina",
+    "vaultVersion": "Praegune hoidla versioon optimistlikuks lukustamiseks",
+    "verifyChecksum": "Kontrolli faile kontrollsummade abil pärast sünkroonimist",
+    "vmId": "Virtuaalmasina ID",
+    "watch": "Jälgi muudatusi",
+    "watchUpdates": "Jälgi uuendusi",
+    "yes": "Jäta kinnitusviip vahele"
+  },
+  "prompts": {
+    "apiUrl": "API aadress:",
+    "cancelled": "Tühistatud",
+    "confirm": "Oled kindel?",
+    "confirmDelete": "Oled kindel, et soovid seda kustutada?",
+    "confirmNewPassword": "Kinnita uus parool:",
+    "confirmPassword": "Kinnita parool:",
+    "email": "E-post:",
+    "enterValue": "Sisesta {{field}}:",
+    "masterPassword": "Sisesta oma peaparool:",
+    "masterPasswordForVault": "Sisesta võlvi krüptimise peaparool:",
+    "newPassword": "Uus parool:",
+    "password": "Parool:",
+    "passwordForUser": "Uue kasutaja parool:",
+    "selectOption": "Vali suvand:",
+    "setPassword": "Määra kasutajale parool:",
+    "sshPassword": "SSH parool (jäta tühjaks, kui kasutad võtmepõhist autentimist): ",
+    "syncConfirm": "\nJätka sünkroonimisega? [j/E/ü(ksikasjalikult)] ",
+    "syncConfirmHelp": "Palun sisesta j (jah), e (ei) või ü (üksikasjad)"
+  },
+  "services": {
+    "prune": {
+      "noOrphaned": "Üleliigseid kirjeid ei leitud",
+      "refusingPrune": "Puhastamisest keeldutud - need konfiguratsioonid võivad viidata kaitstud GUID-idele. Kasuta ületamiseks --force.",
+      "unreadableConfigs": "{{count}} konfiguratsioonifaili ei õnnestu lugeda: {{names}} (krüptitud või rikutud)"
+    }
+  },
+  "spinners": {
+    "connecting": "Ühendamine...",
+    "creating": "Loomine: {{resource}}...",
+    "deleting": "Kustutamine: {{resource}}...",
+    "fetching": "Laadimine: {{resource}}...",
+    "loading": "Laadimine...",
+    "processing": "Töötlemine...",
+    "saving": "Salvestamine...",
+    "updating": "Uuendamine: {{resource}}..."
+  },
+  "status": {
+    "cancelled": "Tühistatud",
+    "completed": "Lõpetatud",
+    "failed": "Ebaõnnestus",
+    "pending": "Ootel",
+    "processing": "Töötlemisel",
+    "success": "Õnnestus"
+  },
+  "table": {
+    "noData": "Kuvatavaid andmeid pole"
+  },
+  "timing": {
+    "completed": "Lõpetatud toimingus {{operation}} (kokku: {{total}})",
+    "step": {
+      "activating": "Litsentsi aktiveerimine...",
+      "configLoaded": "Konfiguratsioon laaditud ({{duration}})",
+      "connected": "Ühendatud ({{duration}})",
+      "connecting": "Ühendamine...",
+      "licenseActivated": "Litsents aktiveeritud ({{duration}})",
+      "loading": "Konfiguratsiooni laadimine...",
+      "machineVerified": "Masin kontrollitud ({{duration}})",
+      "provisioning": "Reneti ettevalmistamine...",
+      "renetProvisioned": "Renet ettevalmistatud ({{duration}})",
+      "verifying": "Masina kontrollimine..."
+    }
+  },
+  "warnings": {
+    "licenseSignatureRefreshed": "Uuendati {{count}} hoidla litsentsi(de) kehtetud allkirjad pärast reneti uuendamist",
+    "licenseSignatureRefreshFailed": "{{count}} hoidla litsentsil(-itsentsidel) on pärast reneti uuendamist kehtetud allkirjad. Käivita: rdc subscription refresh -m <machine>"
+  }
+}

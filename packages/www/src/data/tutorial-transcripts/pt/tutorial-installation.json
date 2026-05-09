@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation.cast",
+  "language": "pt",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-installation-01",
+      "markerIndex": 0,
+      "at": 1.509194,
+      "text": "Primeiro, vamos confirmar que o rdc está instalado. A opção de versão imprime a versão instalada, para sabermos que a instalação ficou completa."
+    },
+    {
+      "id": "tutorial-installation-02",
+      "markerIndex": 1,
+      "at": 9.435981,
+      "text": "Agora vamos executar o rdc doctor. Este comando verifica todas as dependências de que o rdc necessita -- Node, SSH, Docker, o binário renet -- e reporta o que faltar. Um relatório limpo significa que estamos prontos para avançar."
+    }
+  ]
+}

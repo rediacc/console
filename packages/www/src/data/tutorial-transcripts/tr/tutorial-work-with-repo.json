@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-work-with-repo.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-work-with-repo-01",
+      "markerIndex": 0,
+      "at": 93.14728,
+      "text": "Önce tunnel komutu. Uygulama sunucuda çalışıyor, dizüstü bilgisayarınızda değil. rdc repo tunnel, bir container'ın portunu SSH üzerinden yönlendirir; tarayıcınızda localhost adresinde açabilirsiniz."
+    },
+    {
+      "id": "tutorial-work-with-repo-02",
+      "markerIndex": 1,
+      "at": 103.393386,
+      "text": "İkinci olarak term komutu. rdc term connect sizi doğrudan deponun sandbox'ına bırakır; VS Code'un sağlayacağı izole görünümün aynısı. Terminalden hiç çıkmadan bu depoya ait Docker daemon'a karşı herhangi bir komut çalıştırabilirsiniz."
+    },
+    {
+      "id": "tutorial-work-with-repo-03",
+      "markerIndex": 2,
+      "at": 120.858492,
+      "text": "Dosya göndermeden önce --dry-run ile önizleme yapın. Hiçbir şeyi kopyalamadan tam olarak neyin değişeceğini gösterir. Emin olmadığınızda her zaman önizleme yapın."
+    },
+    {
+      "id": "tutorial-work-with-repo-04",
+      "markerIndex": 3,
+      "at": 137.357072,
+      "text": "Şimdi gerçek yüklemeyi çalıştırıyoruz. rdc repo sync upload, rsync delta sıkıştırmasıyla dizüstü bilgisayarınızdan depoya SSH üzerinden dosya taşır. Tunnel, term, sync; günlük döngüyü üç komut karşılar."
+    }
+  ]
+}

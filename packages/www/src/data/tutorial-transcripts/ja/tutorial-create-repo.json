@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-create-repo.cast",
+  "language": "ja",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-create-repo-01",
+      "markerIndex": 0,
+      "at": 32.02867,
+      "text": "サーバーに 2 ギガバイトの暗号化リポジトリを作成します。リポジトリは静止時には1つの暗号化ファイルです。マウントすると、専用の Docker デーモンと固有のアプリケーションデータを持つフォルダになり、サーバー上の他のものから完全に分離されます。"
+    },
+    {
+      "id": "tutorial-create-repo-02",
+      "markerIndex": 1,
+      "at": 62.567023,
+      "text": "マシン上のリポジトリ一覧を表示して、新しいリポジトリが登録されていることを確認します。この後、リポジトリは VS Code で開いたり、デプロイ、フォーク、バックアップなど、すべてラップトップから操作できます。"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-create-repo.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-create-repo-01",
+      "markerIndex": 0,
+      "at": 32.02867,
+      "text": "让我们在服务器上创建一个 2 GB 的加密仓库。仓库静态时是一个单一加密文件，挂载后变成拥有独立 Docker 守护进程和独立应用数据的文件夹，与服务器上的其他一切完全隔离。"
+    },
+    {
+      "id": "tutorial-create-repo-02",
+      "markerIndex": 1,
+      "at": 62.567023,
+      "text": "让我们列出机器上的仓库，确认新仓库已注册。从这里开始，仓库可以在 VS Code 中打开、部署、fork 或备份，全都从笔记本完成。"
+    }
+  ]
+}

@@ -25,6 +25,10 @@ const languages: Language[] = [
   { code: 'ar', name: 'العربية', flag: '🇸🇦' },
   { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
   { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+  { code: 'et', name: 'Eesti', flag: '🇪🇪' },
+  { code: 'ko', name: '한국어', flag: '🇰🇷' },
+  { code: 'pt', name: 'Português', flag: '🇵🇹' },
+  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
 ];
 
 interface LanguageSelectorProps {

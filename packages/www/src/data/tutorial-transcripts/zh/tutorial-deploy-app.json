@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-deploy-app.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-deploy-app-01",
+      "markerIndex": 0,
+      "at": 52.700593,
+      "text": "第一步。让我们列出可用模板。Rediacc 内置了常见应用的现成配置，比如 Postgres、Redis、Web 服务器，无需从头编写 docker compose 点 yml。"
+    },
+    {
+      "id": "tutorial-deploy-app-02",
+      "markerIndex": 1,
+      "at": 61.85842,
+      "text": "第二步。让我们将 app-postgres 模板应用到仓库中。两个新文件出现了：描述容器的 docker compose 点 yml，以及定义启动和停止生命周期钩子的 Rediaccfile。"
+    },
+    {
+      "id": "tutorial-deploy-app-03",
+      "markerIndex": 2,
+      "at": 79.070004,
+      "text": "第三步。让我们启动仓库。rdc 启动容器、挂载加密卷，并连接独立的 Docker 守护进程。应用现在正在运行了。"
+    },
+    {
+      "id": "tutorial-deploy-app-04",
+      "markerIndex": 3,
+      "at": 123.719014,
+      "text": "让我们用 docker ps 验证一下。注意这里只显示本仓库的容器。同一服务器上的其他仓库拥有各自的 Docker 守护进程，在这里完全不可见。"
+    }
+  ]
+}

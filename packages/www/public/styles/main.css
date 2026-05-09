@@ -114,6 +114,13 @@
   --max-width: 1200px;
   --nav-height: 3.5rem;
 
+  /* Bolt-red accent — drawn from the central bolt in the Rediacc logo
+     (#DC2626 in /assets/images/icon-rediacc.svg + /favicon.svg). Reserved
+     for THE single highest-intent CTA on a page (the "joker"). Enforced
+     at npm run ci time by scripts/check-cta-bolt-uniqueness.js. */
+  --color-brand-bolt: #DC2626;
+  --color-brand-bolt-hover: #B91C1C;
+
   /* Responsive Breakpoints */
   --breakpoint-xs: 36rem; /* 576px */
   --breakpoint-sm: 48rem; /* 768px */
@@ -474,7 +481,7 @@ p {
 }
 
 html {
-  scroll-padding-top: calc(var(--nav-height) + var(--space-4));
+  scroll-padding-top: calc(var(--nav-top-offset) + var(--space-4));
   scrollbar-gutter: stable;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -482,7 +489,7 @@ html {
 
 /* Anchor targets: prevent fixed nav from covering content */
 :target {
-  scroll-margin-top: calc(var(--nav-height) + var(--space-8));
+  scroll-margin-top: calc(var(--nav-top-offset) + var(--space-8));
 }
 
 body {
@@ -675,28 +682,48 @@ a[target='_blank']::after {
 }
 
 /* ===== NAVIGATION ===== */
+:root {
+  --nav-scroll-y: 0px;
+  --nav-scroll-fade: 1;
+}
+
 .nav {
   position: fixed;
-  top: 0;
+  top: var(--announcement-bar-height, 0);
   inset-inline: 0;
   background-color: var(--color-bg-alt);
   z-index: var(--z-fixed); /* Fixed navigation layer */
-  transform: translateY(0);
-  transition:
-    transform var(--transition-duration-slow) ease,
-    opacity var(--transition-duration-slow) ease;
+  /* Clip the upward slide of .nav-translate at the nav's top edge so items
+     visibly cut off instead of vanishing behind the announcement banner.
+     Generous negative insets on the other three sides preserve downward
+     overflow used by the mega-menu panels. */
+  clip-path: inset(0 -100vw -100vh -100vw);
 }
 
-.nav.nav-hidden {
-  transform: translateY(-100%);
-  opacity: 0;
+/* Center nav + utility cluster slide up and fade out 1:1 with the first 80px
+   of scroll (clamped). Once faded, suppress pointer events so invisible items
+   never swallow clicks behind the announcement banner.
+   `top` (not `transform`) so .nav-translate doesn't establish a containing
+   block — mega-menu panels rely on `position: fixed` resolving to viewport. */
+.nav-translate {
+  position: relative;
+  top: var(--nav-scroll-y, 0);
+  opacity: var(--nav-scroll-fade, 1);
+  transition:
+    top 80ms linear,
+    opacity 80ms linear;
+}
+
+body[data-nav-collapsed='true'] .nav-translate {
   pointer-events: none;
 }
 
-.nav.nav-visible {
-  transform: translateY(0);
-  opacity: 1;
-  pointer-events: auto;
+@media (prefers-reduced-motion: reduce) {
+  .nav-translate {
+    top: 0;
+    opacity: 1;
+    transition: none;
+  }
 }
 
 .nav-container {
@@ -733,6 +760,8 @@ a[target='_blank']::after {
   font-weight: var(--font-weight-semibold);
   text-decoration: none;
   white-space: nowrap;
+  padding: 6px 12px;
+  border-radius: 6px;
   transition: color var(--transition-duration-base) ease;
 }
 
@@ -752,6 +781,12 @@ a[target='_blank']::after {
   gap: var(--space-6);
   grid-column: 4 / 6;
   justify-self: end;
+}
+
+.nav-utilities {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
 }
 
 .hamburger-btn {
@@ -976,7 +1011,7 @@ a[target='_blank']::after {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-bold);
   padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
+  border-radius: 9999px;
   white-space: nowrap;
   border: none;
   cursor: pointer;
@@ -995,6 +1030,19 @@ a[target='_blank']::after {
   outline-offset: 2px;
 }
 
+.nav-cta-btn--secondary {
+  background: transparent;
+  color: var(--color-brand-primary);
+  border: 1.5px solid var(--color-brand-primary);
+  padding: calc(var(--space-2) - 1.5px) calc(var(--space-4) - 1.5px);
+}
+
+.nav-cta-btn--secondary:hover {
+  background: var(--color-brand-primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
 /* Show Account button from 30rem (480px) up — covers most modern phones.
    Below 30rem the Sidebar provides the only path to /account/. */
 @media (min-width: 30rem) {
@@ -1009,6 +1057,9 @@ a[target='_blank']::after {
   .nav-cta-btn {
     padding: var(--space-2) var(--space-3);
     font-size: var(--font-size-sm);
+  }
+  .nav-cta-btn--secondary {
+    padding: calc(var(--space-2) - 1.5px) calc(var(--space-3) - 1.5px);
   }
 }
 
@@ -1189,6 +1240,18 @@ a[target='_blank']::after {
 .sidebar-account-cta:focus-visible {
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
+}
+
+.sidebar-account-cta--secondary {
+  background: transparent;
+  color: var(--color-brand-primary);
+  border: 1.5px solid var(--color-brand-primary);
+  margin-top: var(--space-2);
+}
+
+.sidebar-account-cta--secondary:hover {
+  background: var(--color-brand-primary);
+  color: #fff;
 }
 
 .sidebar-link {
@@ -1679,6 +1742,30 @@ a[target='_blank']::after {
   background: linear-gradient(135deg, var(--color-brand-dark) 0%, var(--color-brand-dark) 100%);
   transform: scale(0.98);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, var(--opacity-30));
+}
+
+/* Joker CTA — at most one per rendered page (enforced by
+   scripts/check-cta-bolt-uniqueness.js at npm run ci time). Applied
+   selectively to the single highest-intent button on each page so the
+   eye lands on it. Overrides background regardless of the underlying
+   button class (.cf-cta-btn, .sp-btn-primary, .dp-btn-primary, .btn-primary). */
+.cta-bolt,
+.cta-bolt:visited {
+  background: var(--color-brand-bolt) !important;
+  border-color: var(--color-brand-bolt) !important;
+  color: #ffffff !important;
+}
+
+.cta-bolt:hover,
+.cta-bolt:focus-visible {
+  background: var(--color-brand-bolt-hover) !important;
+  border-color: var(--color-brand-bolt-hover) !important;
+  opacity: 1;
+}
+
+.cta-bolt:focus-visible {
+  outline: 3px solid var(--color-brand-bolt);
+  outline-offset: 2px;
 }
 
 .btn-secondary {
@@ -2511,89 +2598,150 @@ a[target='_blank']::after {
   }
 }
 
-/* ===== BEFORE/AFTER ===== */
-.before-after {
+/* ===== HOME DIFFERENCE ===== */
+.home-difference {
   padding: var(--space-16) 0;
   background: var(--color-bg-alt);
 }
 
-.before-after-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-6);
-  max-width: var(--container-lg);
+.home-difference-container {
+  max-width: var(--container-xl);
   margin: 0 auto;
   padding: 0 var(--space-8);
 }
 
-.before-after-card {
-  padding: var(--space-8);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-subtle);
+.difference-row {
+  display: grid;
+  grid-template-columns: 4fr 5fr;
+  gap: var(--space-12);
+  align-items: center;
+  margin-bottom: var(--space-16);
 }
 
-.before-after-card--before {
-  background: rgba(220, 53, 69, 0.04);
-  border-color: rgba(220, 53, 69, 0.15);
+.difference-row:last-child {
+  margin-bottom: 0;
 }
 
-.before-after-card--after {
-  background: rgba(85, 107, 47, 0.04);
-  border-color: rgba(85, 107, 47, 0.15);
+.difference-row-reverse {
+  direction: rtl;
 }
 
-.before-after-card h3 {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  margin: 0 0 var(--space-6);
+.difference-row-reverse > * {
+  direction: ltr;
 }
 
-.before-after-card--before h3 {
-  color: #dc3545;
-}
-
-.before-after-card--after h3 {
-  color: var(--color-brand-primary);
-}
-
-.before-after-card ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.before-after-card li {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
+.difference-row-problem {
+  color: var(--color-text-tertiary);
   font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-2);
   line-height: var(--leading-relaxed);
 }
 
-.before-after-card li::before {
-  content: '';
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-top: 0.5em;
+.difference-row-solution {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1.25;
 }
 
-.before-after-card--before li::before {
-  background: rgba(220, 53, 69, 0.4);
+.difference-row-visual {
+  display: flex;
+  justify-content: center;
 }
 
-.before-after-card--after li::before {
-  background: rgba(85, 107, 47, 0.6);
+.difference-row-zoom {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  max-width: 720px;
+  cursor: zoom-in;
+  border-radius: var(--radius-md);
+  transition: transform 200ms ease;
+}
+
+.difference-row-zoom:hover,
+.difference-row-zoom:focus-visible {
+  transform: scale(1.02);
+  outline: none;
+}
+
+.difference-row-zoom img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.difference-zoom-dialog {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  max-width: 100vw;
+  max-height: 100vh;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+}
+
+.difference-zoom-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+}
+
+.difference-zoom-dialog[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.difference-zoom-dialog-img {
+  max-width: 92vw;
+  max-height: 92vh;
+  width: auto;
+  height: auto;
+  cursor: zoom-out;
+  filter: drop-shadow(0 20px 60px rgba(0, 0, 0, 0.4));
+}
+
+.difference-zoom-close {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  appearance: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.difference-zoom-close:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 @media (max-width: 48rem) {
-  .before-after-grid {
+  .difference-row {
     grid-template-columns: 1fr;
+    gap: var(--space-6);
+    text-align: center;
+    margin-bottom: var(--space-10);
+  }
+  .difference-row-reverse {
+    direction: ltr;
+  }
+  .difference-row-zoom {
+    max-width: 480px;
   }
 }
 
@@ -2732,11 +2880,20 @@ a.cf-guarantee-link:hover {
   opacity: 0.8;
 }
 
-/* ===== ANNOUNCEMENT BAR ===== */
+/* ===== ANNOUNCEMENT BAR =====
+   Sits as a fixed bar at the very top of the viewport. The nav reads
+   --announcement-bar-height (set on :root by AnnouncementBar.astro when the
+   bar renders) and offsets its own `top` by the same amount, so the two
+   stack cleanly. When the bar is disabled the variable is absent, the nav
+   defaults back to top: 0, and layout is unchanged. */
 .announcement-bar {
+  position: fixed;
+  top: 0;
+  inset-inline: 0;
   background: var(--color-brand-primary);
   padding: var(--space-2) var(--space-4);
   text-align: center;
+  z-index: calc(var(--z-fixed, 1030) + 1);
 }
 
 .announcement-bar a {

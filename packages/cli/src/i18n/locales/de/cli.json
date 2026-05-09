@@ -2579,7 +2579,7 @@
     "opsSkipOrchestration": "Cluster-Orchestrierung überspringen",
     "opsSSHUser": "SSH-Benutzername für VM-Verbindung",
     "organization": "Organisationsname",
-    "output": "Ausgabeformat (table|json|yaml|csv)",
+    "output": "Ausgabeformat (table|json|yaml|csv). Override default with REDIACC_DEFAULT_OUTPUT.",
     "outputFormat": "Ausgabeformat (json)",
     "outputPath": "Pfad zum Speichern der Ausgabedatei",
     "param": "Funktionsparameter",

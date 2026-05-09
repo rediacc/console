@@ -32,7 +32,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCS_DIR = path.join(__dirname, '../packages/www/src/content/docs');
 const WEB_LOCALES = path.join(__dirname, '../packages/web/src/i18n/locales');
 const CLI_LOCALES = path.join(__dirname, '../packages/cli/src/i18n/locales');
-const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'] as const;
+const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'] as const;
 const KEY_PATTERN = /\{\{t:([a-zA-Z]+)\.([a-zA-Z0-9_.]+)\}\}/g;
 
 type Language = (typeof LANGUAGES)[number];

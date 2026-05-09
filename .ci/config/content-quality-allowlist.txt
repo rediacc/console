@@ -21,3 +21,11 @@ packages/www/src/content/docs/tr/cli-application.md
 packages/www/src/content/docs/tr/cli-application-cloud.md
 packages/www/src/content/docs/zh/cli-application.md
 packages/www/src/content/docs/zh/cli-application-cloud.md
+packages/www/src/content/docs/et/cli-application.md
+packages/www/src/content/docs/et/cli-application-cloud.md
+packages/www/src/content/docs/it/cli-application.md
+packages/www/src/content/docs/it/cli-application-cloud.md
+packages/www/src/content/docs/ko/cli-application.md
+packages/www/src/content/docs/ko/cli-application-cloud.md
+packages/www/src/content/docs/pt/cli-application.md
+packages/www/src/content/docs/pt/cli-application-cloud.md

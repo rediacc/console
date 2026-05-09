@@ -1,0 +1,342 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { createTranslator } from '../../i18n/utils';
+import type { Language } from '../../i18n/types';
+
+// EN-only for now — the pages.designPartners block lives in en.json only,
+// and the translator does not fall back across locales (returns the raw
+// key path on miss). When translations land in the other 8 locale JSONs,
+// switch back to `import { getLanguagePaths } from '../../i18n/language-utils'`
+// and `export const getStaticPaths = getLanguagePaths;`.
+export function getStaticPaths() {
+  return [{ params: { lang: 'en' } }];
+}
+
+const { lang } = Astro.params as { lang: Language };
+const { t, ta } = createTranslator(lang);
+
+const ns = 'pages.designPartners';
+const whyItems = ta(`${ns}.why.items`);
+const youGetItems = ta(`${ns}.youGet.items`);
+const askItems = ta(`${ns}.ask.items`);
+const faqItems = ta(`${ns}.faq.items`);
+---
+
+<BaseLayout
+  lang={lang}
+  title={t(`${ns}.meta.title`)}
+  description={t(`${ns}.meta.description`)}
+  ogType="website"
+  structuredDataType="organization"
+>
+  {/* @ci marker — see scripts/check-cta-bolt-uniqueness.js. Unconditional
+      because this page only exists to promote the program. */}
+  <Fragment set:html={'<!--@ci cta-bolt-required-->'} />
+  <article class="dp-page">
+    <!-- Hero -->
+    <section class="dp-hero">
+      <div class="container">
+        <span class="dp-eyebrow">{t(`${ns}.hero.eyebrow`)}</span>
+        <h1>{t(`${ns}.hero.title`)}</h1>
+        <p class="dp-hero-sub">{t(`${ns}.hero.subtitle`)}</p>
+        <div class="dp-cta-row">
+          <a href="/account/" class="dp-btn-primary cta-bolt" data-design-partner-claim>
+            {t(`${ns}.hero.primaryCta`)} &rarr;
+          </a>
+          <a href={`/${lang}/pricing`} class="dp-btn-secondary">
+            {t(`${ns}.hero.secondaryCta`)}
+          </a>
+        </div>
+        <p class="dp-hero-note">{t(`${ns}.hero.note`)}</p>
+      </div>
+    </section>
+
+    <!-- Why we run this -->
+    <section class="dp-section">
+      <div class="container">
+        <h2>{t(`${ns}.why.title`)}</h2>
+        <div class="dp-card-grid">
+          {whyItems.map((item: any) => (
+            <div class="dp-card">
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- What you get -->
+    <section class="dp-section dp-section--alt">
+      <div class="container">
+        <h2>{t(`${ns}.youGet.title`)}</h2>
+        <p class="dp-section-lede">{t(`${ns}.youGet.lede`)}</p>
+        <ul class="dp-checklist">
+          {youGetItems.map((item: string) => (
+            <li>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M5 10l3 3 7-7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- What we want in return -->
+    <section class="dp-section">
+      <div class="container">
+        <h2>{t(`${ns}.ask.title`)}</h2>
+        <p class="dp-section-lede">{t(`${ns}.ask.lede`)}</p>
+        <div class="dp-card-grid">
+          {askItems.map((item: any) => (
+            <div class="dp-card">
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="dp-section dp-section--alt">
+      <div class="container">
+        <h2>{t(`${ns}.faq.title`)}</h2>
+        <dl class="dp-faq">
+          {faqItems.map((item: any) => (
+            <>
+              <dt>{item.q}</dt>
+              <dd>{item.a}</dd>
+            </>
+          ))}
+        </dl>
+      </div>
+    </section>
+
+    <!-- Closing CTA -->
+    <section class="dp-final-cta">
+      <div class="container">
+        <h2>{t(`${ns}.finalCta.title`)}</h2>
+        <p>{t(`${ns}.finalCta.subtitle`)}</p>
+        <a href="/account/" class="dp-btn-primary dp-btn-large" data-design-partner-claim>
+          {t(`${ns}.finalCta.button`)} &rarr;
+        </a>
+        <p class="dp-final-cta-note">{t(`${ns}.finalCta.note`)}</p>
+      </div>
+    </section>
+  </article>
+</BaseLayout>
+
+<style>
+  .dp-page {
+    color: var(--color-text);
+  }
+
+  .dp-hero {
+    padding: calc(var(--nav-top-offset, 3.5rem) + var(--space-12)) 0 var(--space-16);
+    text-align: center;
+    background: linear-gradient(180deg, var(--color-bg-alt) 0%, var(--color-bg) 100%);
+  }
+
+  .dp-eyebrow {
+    display: inline-block;
+    background: var(--color-brand-primary);
+    color: white;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: var(--space-4);
+  }
+
+  .dp-hero h1 {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: var(--font-weight-bold);
+    line-height: 1.1;
+    max-width: 880px;
+    margin: 0 auto var(--space-4);
+  }
+
+  .dp-hero-sub {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-secondary);
+    max-width: 720px;
+    margin: 0 auto var(--space-8);
+  }
+
+  .dp-cta-row {
+    display: flex;
+    gap: var(--space-4);
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: var(--space-4);
+  }
+
+  .dp-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-6);
+    background: var(--color-brand-primary);
+    color: white;
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    font-weight: var(--font-weight-semibold);
+    transition: opacity 0.15s ease;
+  }
+
+  .dp-btn-primary:hover { opacity: 0.92; }
+
+  .dp-btn-large {
+    padding: var(--space-4) var(--space-8);
+    font-size: var(--font-size-lg);
+  }
+
+  .dp-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-3) var(--space-6);
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .dp-btn-secondary:hover { background: var(--color-bg-alt); }
+
+  .dp-hero-note {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  .dp-section {
+    padding: var(--space-16) 0;
+  }
+
+  .dp-section--alt {
+    background: var(--color-bg-alt);
+  }
+
+  .dp-section h2 {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    text-align: center;
+    margin-bottom: var(--space-4);
+  }
+
+  .dp-section-lede {
+    text-align: center;
+    color: var(--color-text-secondary);
+    max-width: 720px;
+    margin: 0 auto var(--space-12);
+  }
+
+  .dp-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--space-6);
+    margin-top: var(--space-8);
+  }
+
+  .dp-card {
+    background: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+  }
+
+  .dp-section--alt .dp-card {
+    background: var(--color-bg);
+  }
+
+  .dp-card h3 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    margin: 0 0 var(--space-3);
+  }
+
+  .dp-card p {
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  .dp-checklist {
+    list-style: none;
+    padding: 0;
+    max-width: 640px;
+    margin: var(--space-8) auto 0;
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .dp-checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    color: var(--color-text);
+  }
+
+  .dp-checklist svg {
+    color: var(--color-brand-primary);
+    flex: 0 0 auto;
+    margin-top: 2px;
+  }
+
+  .dp-faq {
+    max-width: 760px;
+    margin: var(--space-8) auto 0;
+  }
+
+  .dp-faq dt {
+    font-weight: var(--font-weight-semibold);
+    margin-top: var(--space-6);
+    color: var(--color-text);
+  }
+
+  .dp-faq dd {
+    margin: var(--space-2) 0 0;
+    color: var(--color-text-secondary);
+    line-height: var(--leading-relaxed);
+  }
+
+  .dp-final-cta {
+    padding: var(--space-20) 0;
+    text-align: center;
+    background: var(--color-brand-primary);
+    color: white;
+  }
+
+  .dp-final-cta h2 {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: white;
+    margin-bottom: var(--space-4);
+  }
+
+  .dp-final-cta p {
+    color: white;
+    opacity: 0.9;
+    margin-bottom: var(--space-8);
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .dp-final-cta .dp-btn-primary {
+    background: white;
+    color: var(--color-brand-primary);
+  }
+
+  .dp-final-cta-note {
+    margin-top: var(--space-4);
+    font-size: var(--font-size-sm);
+    opacity: 0.85;
+  }
+</style>

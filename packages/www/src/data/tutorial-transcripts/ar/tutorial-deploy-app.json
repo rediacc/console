@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-deploy-app.cast",
+  "language": "ar",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-deploy-app-01",
+      "markerIndex": 0,
+      "at": 52.700593,
+      "text": "الخطوة الأولى. ندرج القوالب المتاحة. تأتي Rediacc بإعدادات جاهزة للتطبيقات الشائعة مثل Postgres وRedis وخوادم الويب، حتى لا نضطر لكتابة docker-compose من الصفر."
+    },
+    {
+      "id": "tutorial-deploy-app-02",
+      "markerIndex": 1,
+      "at": 61.85842,
+      "text": "الخطوة الثانية. نطبّق قالب app-postgres على مستودعنا. يظهر ملفان: docker-compose.yml الذي يصف الحاويات، وRediaccfile الذي يُعرّف خطافات دورة الحياة للبدء والإيقاف."
+    },
+    {
+      "id": "tutorial-deploy-app-03",
+      "markerIndex": 2,
+      "at": 79.070004,
+      "text": "الخطوة الثالثة. نشغّل المستودع. تبدأ الأداة الحاويات وتُحمّل الحجم المشفر وتُهيئ محرك Docker المعزول. التطبيق يعمل الآن."
+    },
+    {
+      "id": "tutorial-deploy-app-04",
+      "markerIndex": 3,
+      "at": 123.719014,
+      "text": "نتحقق باستخدام docker ps. لاحظ أن هذا العرض يُظهر حاويات مستودعنا فقط. تمتلك المستودعات الأخرى على نفس الخادم محركات Docker خاصة بها وهي غير مرئية تمامًا من هنا."
+    }
+  ]
+}

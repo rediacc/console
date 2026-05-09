@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-create-repo.cast",
+  "language": "et",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-create-repo-01",
+      "markerIndex": 0,
+      "at": 32.02867,
+      "text": "Loome serverile 2 gigabaidise krüpteeritud repositooriumi. Repositoorium on puhkeolekus üksik krüpteeritud fail. Ühendamisel muutub see kaustaks, millel on oma Dockeri deemon ja oma rakenduse andmed, täielikult isoleeritud kõigest muust serveris."
+    },
+    {
+      "id": "tutorial-create-repo-02",
+      "markerIndex": 1,
+      "at": 62.567023,
+      "text": "Loetleme masina repositooriumid, et kinnitada uue registreerimist. Edaspidi saab repositooriumi avada VS Code'is, juurutada, teha sellest forki või varundada -- kõik sülearvutist."
+    }
+  ]
+}

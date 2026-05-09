@@ -1,105 +1,72 @@
 ---
-title: 監視と診断
-description: マシンの健全性確認、コンテナの検査、systemdサービスの確認、ホストキーのスキャン、環境診断の実行。
-category: Tutorials
-order: 4
+title: "モニタリング"
+description: "rdc machine コマンドでラップトップからサーバーとリポジトリのヘルスを確認します。"
+category: "Tutorials"
+subcategory: advanced
+order: 12
 language: ja
-sourceHash: fa85cf9b00d42a6e
+sourceHash: "e6eaaed180c35e36"
+sourceCommit: "be90e8e7896623c088b86360ec29c1baef2e86b4"
 ---
 
-# Rediaccでインフラストラクチャを監視・診断する方法
+# モニタリング
 
-インフラストラクチャを健全に保つには、マシンの状態、コンテナのステータス、サービスの健全性を可視化する必要があります。このチュートリアルでは、環境診断の実行、マシンの健全性チェック、コンテナとサービスの検査、Vaultステータスの確認、接続性の検証を行います。完了すると、インフラストラクチャ全体の問題を特定し調査する方法がわかります。
+アプリがデプロイされ、稼働中で、バックアップも取れています。次はすべてが健全に動き続けているか確認しましょう。`rdc` はラップトップから任意のサーバーの全体像（ヘルス、コンテナ、リポジトリ）を把握できます。
 
-## 前提条件
+## チュートリアル動画
 
-- `rdc` CLIがインストールされ、設定が初期化されていること
-- 少なくとも1つのリポジトリが実行中のプロビジョニング済みマシン（[チュートリアル: リポジトリのライフサイクル](/ja/docs/tutorial-repos)を参照）
+![チュートリアル: モニタリング](/assets/tutorials/tutorial-monitoring.cast)
 
-## インタラクティブ録画
+## 確認できる3つのこと
 
-![チュートリアル: 監視と診断](/assets/tutorials/monitoring-tutorial.cast)
+![ヘルス、コンテナ、リポジトリ](/img/tutorials/tutorial-monitoring/slide-1.svg)
 
-### ステップ1: 診断を実行
+## ヘルス: システム情報
 
-まず、ローカル環境に設定の問題がないか確認します。
-
-```bash
-rdc doctor
-```
-
-Node.js、CLIバージョン、renetバイナリ、設定、仮想化サポートを確認します。各チェックは**OK**、**Warning**、または**Error**を報告します。
-
-### ステップ2: マシンヘルスチェック
+まずシステムビューを確認します。
 
 ```bash
-rdc machine health --name server-1
+time rdc machine query --name my-server --system
 ```
 
-リモートマシンから包括的なヘルスレポートを取得します: システム稼働時間、ディスク使用量、データストア使用量、コンテナ数、ストレージSMARTステータス、特定された問題。
+システムの稼働時間、ディスク使用量、ストレージの状態が表示されます。問題があれば教えてくれます。
 
-### ステップ3: 実行中のコンテナを表示
+## コンテナ
+
+マシン上のすべてのリポジトリで動いているすべてのコンテナを確認するには次のコマンドを使います。
 
 ```bash
-rdc machine containers --name server-1
+time rdc machine query --name my-server --containers
 ```
 
-マシン上のすべてのリポジトリにわたるすべての実行中のコンテナを一覧表示し、名前、ステータス、状態、健全性、CPU使用量、メモリ使用量、各コンテナを所有するリポジトリを表示します。
+各コンテナの名前、状態、ヘルス、CPU、メモリ、さらにどのリポジトリが所有しているかが表示されます。
 
-### ステップ4: systemdサービスを確認
+## リポジトリ
 
-各リポジトリのDocker daemonとネットワークを支える基盤サービスを確認するには:
+リポジトリを確認するには次のコマンドを使います。
 
 ```bash
-rdc machine services --name server-1
+time rdc machine query --name my-server --repositories
 ```
 
-Rediacc関連のsystemdサービス（Docker daemon、loopbackエイリアス）を、その状態、サブ状態、再起動回数、メモリ使用量とともに一覧表示します。
+各リポジトリのサイズ、マウント状態、Docker の状態、ディスク使用量が表示されます。
 
-### ステップ5: Vaultステータスの概要
+## すべてを一度に確認する
 
 ```bash
-rdc machine vault-status --name server-1
+time rdc machine query --name my-server
 ```
 
-マシンの概要を提供します: ホスト名、稼働時間、メモリ、ディスク、データストア、リポジトリの合計数。
+システム情報、リポジトリ、コンテナ、すべてを1つのコマンドで確認できます。同じ `query` コマンドにフィルターなしで使うと全体像が表示され、`--system`、`--containers`、`--repositories`、`--services`、`--network`、`--block-devices` で該当セクションに絞り込めます。
 
-### ステップ6: ホストキーをスキャン
+## ローカルの動作確認
 
-マシンが再構築されたりIPが変更された場合、保存されたSSHホストキーを更新します。
+`rdc doctor` は特定のサーバーとは無関係に、ローカルのセットアップ（Node、SSH キー、`renet`、Docker）を確認します。
 
 ```bash
-rdc config machine scan-keys -m server-1
+time rdc doctor
 ```
 
-サーバーの現在のホストキーを取得し、設定を更新します。これにより「host key verification failed」エラーを防止します。
+## 完了です
 
-### ステップ7: 接続性を確認
-
-マシンが到達可能で応答していることを確認する簡易SSH接続チェック。
-
-```bash
-rdc term connect -m server-1 -c "hostname"
-rdc term connect -m server-1 -c "uptime"
-```
-
-ホスト名は正しいサーバーに接続していることを確認します。稼働時間はシステムが正常に動作していることを確認します。
-
-## トラブルシューティング
-
-**ヘルスチェックがタイムアウトするか「SSH connection failed」が表示される**
-マシンがオンラインで到達可能であることを確認してください: `ping <ip>`。SSHキーが正しく設定されていることを`rdc term connect -m <machine> -c "echo ok"`で確認してください。
-
-**サービス一覧に「Service not found」が表示される**
-Rediaccサービスは少なくとも1つのリポジトリがデプロイされた後にのみ表示されます。リポジトリが存在しない場合、サービスリストは空です。
-
-**コンテナ一覧に古いまたは停止したコンテナが表示される**
-以前のデプロイからのコンテナは、`repo down`がクリーンに実行されなかった場合に残ることがあります。`rdc repo down --name <repo> -m <machine>`で停止するか、`rdc term connect -m <machine> -r <repo> -c "docker ps -a"`で直接検査してください。
-
-## 次のステップ
-
-診断を実行し、マシンの健全性を確認し、コンテナとサービスを検査し、接続性を検証しました。デプロイメントを操作するには:
-
-- [監視](/ja/docs/monitoring), すべての監視コマンドの完全なリファレンス
-- [トラブルシューティング](/ja/docs/troubleshooting), 一般的な問題と解決策
-- [チュートリアル: ツール](/ja/docs/tutorial-tools), ターミナル、ファイル同期、VS Code統合
+以上でシリーズ全体が完了です。インストール、設定、デプロイ、フォーク、本番公開、オートスタート、バックアップ、モニタリングをすべてマスターしました。すべてターミナルから、すべて自分のサーバーで行えます。

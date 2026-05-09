@@ -1,0 +1,592 @@
+{
+  "additionalOptions": "Opções adicionais (avançado)",
+  "availableFunctions": "Funções Disponíveis",
+  "categories": {
+    "backup": {
+      "description": "Operações de cópia de segurança e restauro",
+      "name": "Funções de Cópia de Segurança"
+    },
+    "container": {
+      "description": "Operações de gestão de contentores Docker",
+      "name": "Funções de Contentor"
+    },
+    "machine": {
+      "description": "Funções de configuração e manutenção do sistema principal",
+      "name": "Funções de Máquina"
+    },
+    "network": {
+      "description": "Operações de rede e mapeamento de sockets",
+      "name": "Funções de Rede"
+    },
+    "repository": {
+      "description": "Gestão e operações de repositório",
+      "name": "Funções de Repositório"
+    }
+  },
+  "checkboxOptions": {
+    "mountRepoFirst": "Montar repositório primeiro",
+    "overrideExistingFile": "Substituir ficheiro existente",
+    "unmountAfterStopping": "Desmontar após parar"
+  },
+  "configure": "Configurar",
+  "currentPriority": "Atual",
+  "description": "Descrição (opcional)",
+  "descriptionPlaceholder": "Adicionar uma descrição personalizada para este item da fila",
+  "destinationFilename": "Nome do Ficheiro de Destino",
+  "functions": {
+    "backup_create": {
+      "description": "Fazer cópia de segurança do repositório para vários sistemas de armazenamento",
+      "name": "backup (cópia de segurança)",
+      "params": {
+        "checkpoint": {
+          "help": "Ativar modo de cópia de segurança a quente com checkpoint (requer CRIU, sem interrupção para repositórios online)",
+          "label": "Ativar Checkpoint"
+        },
+        "option": {
+          "help": "Opções (ex.: override)",
+          "label": "Opções"
+        },
+        "storages": {
+          "help": "Selecionar um ou mais sistemas de armazenamento de destino para a cópia de segurança",
+          "label": "Sistemas de Armazenamento de Destino"
+        }
+      }
+    },
+    "backup_deploy": {
+      "description": "Implementar repositório em várias máquinas",
+      "name": "deploy (implementar)",
+      "params": {
+        "checkpoint": {
+          "help": "Ativar modo de implementação a quente com checkpoint (requer CRIU, sem interrupção para repositórios online)",
+          "label": "Ativar Checkpoint"
+        },
+        "grand": {
+          "help": "Referência ao repositório raiz",
+          "label": "Repositório Raiz"
+        },
+        "machines": {
+          "help": "Selecionar uma ou mais máquinas de destino para a implementação",
+          "label": "Máquinas de Destino"
+        },
+        "option": {
+          "help": "Opções (ex.: override)",
+          "label": "Opções"
+        },
+        "repository": {
+          "help": "Repositório a implementar",
+          "label": "Repositório"
+        },
+        "state": {
+          "help": "Estado atual do repositório",
+          "label": "Estado"
+        },
+        "tag": {
+          "help": "Etiqueta para o repositório implementado (formato de timestamp recomendado)",
+          "label": "Etiqueta"
+        }
+      }
+    },
+    "backup_pull": {
+      "description": "Puxar repositório do armazenamento remoto",
+      "name": "pull",
+      "params": {
+        "from": {
+          "help": "Selecionar a máquina ou armazenamento de origem",
+          "label": "Origem"
+        },
+        "repository": {
+          "help": "Nome(s) do repositório, separados por vírgula",
+          "label": "Repositório"
+        },
+        "sourceType": {
+          "help": "Selecionar se pretende puxar de uma máquina ou armazenamento",
+          "label": "Tipo de Origem"
+        }
+      }
+    },
+    "backup_push": {
+      "description": "Enviar repositório para armazenamento remoto",
+      "name": "push",
+      "params": {
+        "checkpoint": {
+          "help": "Ativar modo de cópia de segurança a quente com checkpoint (requer CRIU, sem interrupção para repositórios online)",
+          "label": "Ativar Checkpoint"
+        },
+        "dest": {
+          "help": "Nome para o ficheiro de cópia de segurança",
+          "label": "Nome do Ficheiro de Destino"
+        },
+        "destinationType": {
+          "help": "Selecionar se pretende enviar para uma máquina ou armazenamento",
+          "label": "Tipo de Destino"
+        },
+        "option": {
+          "help": "Opções (ex.: override)",
+          "label": "Opções"
+        },
+        "repository": {
+          "help": "Nome(s) do repositório, separados por vírgula",
+          "label": "Repositório"
+        },
+        "state": {
+          "help": "Validar se o repositório está online ou offline antes de enviar",
+          "label": "Estado Necessário"
+        },
+        "to": {
+          "help": "Selecionar a máquina ou armazenamento de destino",
+          "label": "Destino"
+        }
+      }
+    },
+    "container_inspect": {
+      "description": "Inspecionar detalhes do contentor Docker",
+      "name": "container_inspect (inspecionar)",
+      "params": {
+        "container": {
+          "help": "Nome ou ID do contentor",
+          "label": "Contentor"
+        }
+      }
+    },
+    "container_logs": {
+      "description": "Ver registos do contentor Docker",
+      "name": "container_logs (registos)",
+      "params": {
+        "container": {
+          "help": "Nome ou ID do contentor",
+          "label": "Contentor"
+        },
+        "follow": {
+          "help": "Seguir a saída do registo em tempo real",
+          "label": "Seguir Registos"
+        },
+        "lines": {
+          "help": "Número de linhas a mostrar (predefinição: 100)",
+          "label": "Linhas"
+        }
+      }
+    },
+    "container_pause": {
+      "description": "Pausar um contentor Docker em execução",
+      "name": "pause (pausar)",
+      "params": {
+        "container": {
+          "help": "Nome ou ID do contentor",
+          "label": "Contentor"
+        }
+      }
+    },
+    "container_remove": {
+      "description": "Remover um contentor Docker",
+      "name": "remove (remover)",
+      "params": {
+        "container": {
+          "help": "Nome ou ID do contentor",
+          "label": "Contentor"
+        },
+        "force": {
+          "help": "Forçar remoção do contentor em execução",
+          "label": "Forçar Remoção"
+        }
+      }
+    },
+    "container_restart": {
+      "description": "Reiniciar um contentor Docker",
+      "name": "restart (reiniciar)",
+      "params": {
+        "container": {
+          "help": "Nome ou ID do contentor",
+          "label": "Contentor"
+        }
+      }
+    },
+    "container_start": {
+      "description": "Iniciar um contentor Docker",
+      "name": "start (iniciar)",
+      "params": {
+        "container": {
+          "help": "Nome ou ID do contentor",
+          "label": "Contentor"
+        }
+      }
+    },
+    "container_stats": {
+      "description": "Mostrar estatísticas de utilização de recursos do contentor Docker",
+      "name": "container_stats (estatísticas)",
+      "params": {
+        "container": {
+          "help": "Nome ou ID do contentor (opcional - mostra todos se vazio)",
+          "label": "Contentor"
+        }
+      }
+    },
+    "container_stop": {
+      "description": "Parar um contentor Docker em execução",
+      "name": "stop",
+      "params": {
+        "container": {
+          "help": "Nome ou ID do contentor",
+          "label": "Contentor"
+        }
+      }
+    },
+    "container_unpause": {
+      "description": "Retomar um contentor Docker em pausa",
+      "name": "unpause (retomar)",
+      "params": {
+        "container": {
+          "help": "Nome ou ID do contentor",
+          "label": "Contentor"
+        }
+      }
+    },
+    "fork": {
+      "description": "Criar uma cópia local do repositório com uma nova etiqueta",
+      "name": "fork",
+      "params": {
+        "grand": {
+          "help": "Referência ao repositório raiz",
+          "label": "Repositório Raiz"
+        },
+        "repository": {
+          "help": "Repositório a bifurcar",
+          "label": "Repositório"
+        },
+        "state": {
+          "help": "Estado atual do repositório",
+          "label": "Estado"
+        },
+        "tag": {
+          "help": "Etiqueta para o repositório bifurcado (formato de timestamp recomendado)",
+          "label": "Etiqueta"
+        }
+      }
+    },
+    "machine_ping": {
+      "description": "Testar a conetividade de rede para a máquina",
+      "name": "ping"
+    },
+    "machine_uninstall": {
+      "description": "Limpar e desinstalar componentes do sistema",
+      "name": "uninstall (desinstalar)"
+    },
+    "machine_version": {
+      "description": "Função de teste simples que imprime hello a partir do hostname",
+      "name": "hello (olá)"
+    },
+    "plugin": {
+      "description": "Ativar plugins do repositório",
+      "name": "plugin",
+      "params": {
+        "plugin": {
+          "help": "Nome(s) do plugin, separados por vírgula",
+          "label": "Plugin"
+        },
+        "repository": {
+          "help": "Nome(s) do repositório, separados por vírgula",
+          "label": "Repositório"
+        }
+      }
+    },
+    "plugout": {
+      "description": "Desativar plugins do repositório",
+      "name": "plugout (desligar plugin)",
+      "params": {
+        "plugin": {
+          "help": "Nome(s) do plugin, separados por vírgula",
+          "label": "Plugin"
+        },
+        "repository": {
+          "help": "Nome(s) do repositório, separados por vírgula",
+          "label": "Repositório"
+        }
+      }
+    },
+    "pull": {
+      "name": "Pull"
+    },
+    "repository_create": {
+      "description": "Criar um novo repositório",
+      "name": "new",
+      "params": {
+        "repository": {
+          "help": "Nome do repositório",
+          "label": "Repositório"
+        },
+        "size": {
+          "help": "Tamanho do repositório (ex.: 10G)",
+          "label": "Tamanho"
+        }
+      }
+    },
+    "repository_delete": {
+      "description": "Eliminar repositório",
+      "name": "rm",
+      "params": {
+        "repository": {
+          "help": "Nome do repositório",
+          "label": "Repositório"
+        }
+      }
+    },
+    "repository_down": {
+      "description": "Parar os serviços do repositório",
+      "name": "down",
+      "params": {
+        "option": {
+          "help": "Opções adicionais",
+          "label": "Opções"
+        },
+        "repository": {
+          "help": "Nome(s) do repositório, separados por vírgula",
+          "label": "Repositório"
+        }
+      }
+    },
+    "repository_expand": {
+      "description": "Expandir o armazenamento do repositório online sem interrupção",
+      "name": "expand (expandir)",
+      "params": {
+        "grand": {
+          "help": "GUID do repositório raiz",
+          "label": "Repositório Raiz"
+        },
+        "repository": {
+          "help": "Nome do repositório",
+          "label": "Repositório"
+        },
+        "size": {
+          "help": "Novo tamanho (ex.: 20G) - deve ser maior que o tamanho atual",
+          "label": "Novo Tamanho"
+        }
+      }
+    },
+    "repository_list": {
+      "description": "Listar ficheiros em localizações de armazenamento remoto",
+      "name": "list files (listar ficheiros)",
+      "params": {
+        "format": {
+          "help": "Formato para a listagem de ficheiros",
+          "label": "Formato de Saída"
+        },
+        "from": {
+          "help": "Máquina ou sistema de armazenamento a partir do qual listar ficheiros",
+          "label": "Localização de Origem"
+        },
+        "path": {
+          "help": "Caminho opcional dentro do armazenamento",
+          "label": "Caminho"
+        }
+      }
+    },
+    "repository_mount": {
+      "description": "Montar sistemas de ficheiros do repositório",
+      "name": "mount (montar)",
+      "params": {
+        "checkpoint": {
+          "help": "Restaurar contentores a partir de checkpoint se disponível (requer CRIU)",
+          "label": "Ativar Restauro de Checkpoint"
+        },
+        "from": {
+          "help": "Máquina remota a partir da qual montar",
+          "label": "A partir da Máquina"
+        },
+        "repository": {
+          "help": "Nome(s) do repositório, separados por vírgula",
+          "label": "Repositório"
+        }
+      }
+    },
+    "repository_ownership": {
+      "description": "Alterar a propriedade do repositório",
+      "name": "ownership (propriedade)",
+      "params": {
+        "from": {
+          "help": "Proprietário atual",
+          "label": "Proprietário Atual"
+        },
+        "repository": {
+          "help": "Nome do repositório",
+          "label": "Repositório"
+        },
+        "to": {
+          "help": "Novo proprietário (predefinição: utilizador universal)",
+          "label": "Novo Proprietário"
+        }
+      }
+    },
+    "repository_resize": {
+      "description": "Redimensionar o armazenamento do repositório (operação offline - o repositório deve estar desmontado)",
+      "name": "resize (redimensionar)",
+      "params": {
+        "repository": {
+          "help": "Nome do repositório",
+          "label": "Repositório"
+        },
+        "size": {
+          "help": "Novo tamanho (ex.: 20G) - pode ser maior ou menor que o tamanho atual",
+          "label": "Novo Tamanho"
+        }
+      }
+    },
+    "repository_template_apply": {
+      "description": "Aplicar uma configuração de modelo a este repositório",
+      "name": "templates (modelos)",
+      "params": {
+        "grand": {
+          "help": "GUID do repositório raiz",
+          "label": "Repositório Raiz"
+        },
+        "repository": {
+          "help": "Nome do repositório",
+          "label": "Repositório"
+        },
+        "tmpl": {
+          "help": "Selecionar um modelo a aplicar ao repositório",
+          "label": "Modelo"
+        }
+      }
+    },
+    "repository_unmount": {
+      "description": "Desmontar sistemas de ficheiros do repositório",
+      "name": "unmount (desmontar)",
+      "params": {
+        "checkpoint": {
+          "help": "Criar checkpoint antes de desmontar (requer CRIU)",
+          "label": "Criar Checkpoint"
+        },
+        "from": {
+          "help": "Máquina remota a partir da qual desmontar",
+          "label": "A partir da Máquina"
+        },
+        "repository": {
+          "help": "Nome(s) do repositório, separados por vírgula",
+          "label": "Repositório"
+        }
+      }
+    },
+    "repository_up": {
+      "description": "Iniciar serviços do repositório usando o Rediaccfile",
+      "name": "up",
+      "params": {
+        "option": {
+          "help": "Opções (ex.: mount)",
+          "label": "Opções"
+        },
+        "repository": {
+          "help": "Nome(s) do repositório, separados por vírgula",
+          "label": "Repositório"
+        }
+      }
+    },
+    "repository_validate": {
+      "description": "Validar repositório executando prep, up(), verificações de saúde, test e down()",
+      "name": "validate (validar)",
+      "params": {
+        "cleanup": {
+          "help": "Desmontar o repositório após a conclusão da validação",
+          "label": "Limpeza"
+        },
+        "grand": {
+          "help": "Nome do repositório pai",
+          "label": "Repositório Raiz"
+        },
+        "repository": {
+          "help": "Nome do repositório a validar",
+          "label": "Repositório"
+        },
+        "skip_down": {
+          "help": "Deixar os serviços em execução após a validação",
+          "label": "Ignorar down()"
+        },
+        "skip_prep": {
+          "help": "Ignorar a fase de preparação se já foi executada recentemente",
+          "label": "Ignorar Preparação"
+        },
+        "timeout": {
+          "help": "Tempo máximo por função em segundos (predefinição: 300)",
+          "label": "Tempo Limite (segundos)"
+        }
+      }
+    },
+    "setup": {
+      "description": "Configurar o sistema operativo com as ferramentas e configurações necessárias",
+      "name": "setup (configurar sistema)",
+      "params": {
+        "datastore_size": {
+          "help": "Tamanho do datastore (ex.: 95%, 100G)",
+          "label": "Tamanho do Datastore"
+        },
+        "docker_source": {
+          "help": "Como instalar o Docker (docker-repo = repositório oficial, package-manager = pacotes do SO, snap = snap store, manual = ignorar)",
+          "label": "Fonte de Instalação do Docker"
+        },
+        "install_amd_driver": {
+          "help": "Instalar controladores de GPU AMD (auto = detetar GPU primeiro, true = instalar sempre, false = ignorar)",
+          "label": "Instalar Controlador de GPU AMD"
+        },
+        "install_criu": {
+          "help": "Instalar CRIU para suporte de checkpoint/restauro (auto = instalar se kernel >= 3.11, true = forçar instalação, false = ignorar, manual = o utilizador instala)",
+          "label": "Instalar CRIU"
+        },
+        "install_nvidia_driver": {
+          "help": "Instalar controladores de GPU NVIDIA (auto = detetar GPU primeiro, true = instalar sempre, false = ignorar)",
+          "label": "Instalar Controlador de GPU NVIDIA"
+        },
+        "rclone_source": {
+          "help": "Como instalar o rclone (install-script = script oficial, package-manager = apt/dnf, manual = ignorar)",
+          "label": "Fonte de Instalação do Rclone"
+        },
+        "source": {
+          "help": "Fonte de pacote",
+          "label": "Fonte"
+        }
+      }
+    }
+  },
+  "imagePlaceholder": "ex.: registry/image:tag",
+  "missingRequiredParams": "Por favor preencha todos os parâmetros obrigatórios: {{params}}",
+  "onlinePushLearnMore": "Saber mais sobre envios online vs offline →",
+  "onlinePushWarningMessage": "Enviar um repositório montado enquanto os serviços estão em execução pode causar inconsistências de dados.",
+  "onlinePushWarningTitle": "Aviso de Envio Online",
+  "original": " (Original — fonte)",
+  "priority": "Prioridade",
+  "priorityAboveNormal": "Acima do Normal",
+  "priorityBelowNormal": "Abaixo do Normal",
+  "priorityHelp": "As tarefas são processadas primeiro por prioridade e depois por antiguidade",
+  "priorityHigh": "Alta",
+  "priorityHighDescription": "Permite várias tarefas de alta prioridade em simultâneo. Use para tarefas importantes que precisam de processamento mais rápido.",
+  "priorityHighest": "Mais Alta",
+  "priorityHighestDescription": "Submeter uma tarefa de prioridade mais alta cancelará automaticamente quaisquer tarefas de prioridade mais alta existentes. Use apenas para tarefas críticas urgentes que necessitam de atenção imediata.",
+  "priorityHighestTimeout": "As tarefas P1 têm um tempo limite de 33 segundos",
+  "priorityHighestTimeoutWarning": "Melhor para operações rápidas como testes SSH, verificações de saúde e consultas de estado. Para tarefas críticas mais longas, use P2 (tempo limite por nível: 2-96 horas).",
+  "priorityHighestWarning": "Prioridade Mais Alta (1)",
+  "priorityHighWarning": "Alta Prioridade (2)",
+  "priorityLevelFormat": "P{{level}} ({{label}})",
+  "priorityLow": "Baixa",
+  "priorityLowDescription": "Velocidade de processamento padrão. Recomendado para a maioria das operações e tarefas do dia a dia.",
+  "priorityLowestDescription": "Velocidade de processamento mais lenta. Use para operações em lote ou tarefas sem restrições de tempo.",
+  "priorityLowestWarning": "Prioridade Mais Baixa (5)",
+  "priorityLowWarning": "Prioridade Normal (4)",
+  "priorityNormal": "Acima do Normal",
+  "priorityNormalDescription": "Velocidade de processamento mais rápida que o padrão. Use para tarefas que precisam de processamento mais rápido que o normal.",
+  "priorityNormalWarning": "Prioridade Acima do Normal (3)",
+  "priorityPopoverLevels": "Níveis de Prioridade:",
+  "priorityPopoverP1": "Tempo limite de 33 segundos. Para operações rápidas como testes SSH, verificações de saúde e consultas de estado. Slots reservados para execução imediata.",
+  "priorityPopoverP2": "Tempo limite por nível (2-96h). Slots reservados. Para tarefas críticas importantes.",
+  "priorityPopoverP3": "Tempo limite por nível (2-96h). Slots normais. Para tarefas que precisam de processamento mais rápido.",
+  "priorityPopoverP4": "Tempo limite por nível (2-96h). Processamento padrão para a maioria das operações.",
+  "priorityPopoverP5": "Tempo limite por nível (2-96h). Para operações em lote sem restrições de tempo.",
+  "priorityPopoverTitle": "Sistema de Prioridades",
+  "pushOperationDetails": "Detalhes da Operação de Envio",
+  "quickTaskBadge": "Tarefa Rápida",
+  "quickTaskDescription": "Conclui em menos de 30 segundos",
+  "repositoryLineage": "Linhagem do Repositório",
+  "repositoryWillBePushedOffline": "O repositório será enviado no estado offline (desmontado).",
+  "repositoryWillBePushedOnline": "O repositório será enviado no estado online (montado).",
+  "searchFunctions": "Pesquisar funções...",
+  "selectFunction": "Selecionar Função",
+  "selectFunctionToConfigure": "Selecionar uma função para configurar",
+  "sourceRepository": "Repositório de Origem",
+  "validationError": "Erro de Validação"
+}

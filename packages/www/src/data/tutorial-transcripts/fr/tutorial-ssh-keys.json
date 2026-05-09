@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-ssh-keys.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-ssh-keys-01",
+      "markerIndex": 0,
+      "at": 1.50929,
+      "text": "Première étape. Nous allons générer une nouvelle clé SSH ed25519. ed25519 est le standard moderne : compact, rapide et bien supporté. Vous n'avez besoin de faire cela qu'une seule fois pour tous les serveurs que vous ajouterez."
+    },
+    {
+      "id": "tutorial-ssh-keys-02",
+      "markerIndex": 1,
+      "at": 8.723209,
+      "text": "Deuxième étape. Nous copions la clé publique sur le serveur avec ssh-copy-id. Le mot de passe du serveur est demandé une dernière fois. Après cela, l'authentification par mot de passe n'est plus nécessaire pour ce serveur."
+    },
+    {
+      "id": "tutorial-ssh-keys-03",
+      "markerIndex": 2,
+      "at": 16.253995,
+      "text": "Troisième étape. Nous enregistrons maintenant la clé auprès de rdc. Désormais, chaque commande rdc s'authentifie avec cette clé. Plus de mots de passe, plus d'invites interactives."
+    },
+    {
+      "id": "tutorial-ssh-keys-04",
+      "markerIndex": 3,
+      "at": 24.863027,
+      "text": "Vérifions que la configuration affiche correctement le chemin de la clé stockée. La configuration est maintenant réutilisable pour chaque machine que vous ajouterez."
+    }
+  ]
+}

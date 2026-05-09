@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-production-mode.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-production-mode-01",
+      "markerIndex": 0,
+      "at": 56.862064,
+      "text": "让我们从笔记本以生产模式启动应用。rdc repo up 调用了我们开发时使用的同一个 up 函数，但以脱离方式运行。你可以关上笔记本，应用依然持续运行。"
+    },
+    {
+      "id": "tutorial-production-mode-02",
+      "markerIndex": 1,
+      "at": 97.750961,
+      "text": "让我们启用自动启动，确保应用在服务器重启后能自动恢复。从现在起，只要服务器重启，这个仓库就会自动启动。"
+    },
+    {
+      "id": "tutorial-production-mode-03",
+      "markerIndex": 2,
+      "at": 125.443493,
+      "text": "让我们列出哪些仓库已启用自动启动，确认我们的应用已加入启动列表。"
+    },
+    {
+      "id": "tutorial-production-mode-04",
+      "markerIndex": 3,
+      "at": 141.09184,
+      "text": "停止应用时，从笔记本发出一条命令即可。一条命令启动，一条命令停止，全从终端完成，不再需要交互式连接。"
+    }
+  ]
+}

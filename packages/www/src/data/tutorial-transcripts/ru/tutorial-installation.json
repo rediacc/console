@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation.cast",
+  "language": "ru",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-installation-01",
+      "markerIndex": 0,
+      "at": 1.509194,
+      "text": "Сначала убедимся, что CLI доступен в системе. Запустим CLI с флагом версии: он выведет установленную версию и подтвердит, что установка прошла успешно."
+    },
+    {
+      "id": "tutorial-installation-02",
+      "markerIndex": 1,
+      "at": 9.435981,
+      "text": "Теперь запустим rdc doctor. Он проверяет все зависимости, которые нужны CLI: Node, SSH и остальное, и сообщает о пробелах. Чистый отчёт означает, что можно добавлять сервер."
+    }
+  ]
+}

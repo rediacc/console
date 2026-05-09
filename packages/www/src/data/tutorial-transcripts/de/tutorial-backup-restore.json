@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-backup-restore.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-backup-restore-01",
+      "markerIndex": 0,
+      "at": 65.053708,
+      "text": "Schritt eins. Wir importieren eine bestehende rclone-Konfiguration. rclone unterstützt S3, Backblaze, Google Drive, Dropbox und viele mehr. Wenn Sie es bereits verwenden, können Sie dieselbe Konfiguration direkt importieren."
+    },
+    {
+      "id": "tutorial-backup-restore-02",
+      "markerIndex": 1,
+      "at": 73.743501,
+      "text": "Wir listen die Speicher auf, die die CLI jetzt kennt. Jeder Speicher ist ein Ziel, auf das wir Backups übertragen können."
+    },
+    {
+      "id": "tutorial-backup-restore-03",
+      "markerIndex": 2,
+      "at": 82.843959,
+      "text": "Schritt zwei. Wir übertragen ein vollständiges Backup. Das gesamte Repository, App, Datenbank, Dateien, Konfiguration, wird hochgeladen. Da das Repository im Ruhezustand verschlüsselt ist, ist auch das Backup verschlüsselt. Kein zusätzliches Schlüsselmanagement."
+    },
+    {
+      "id": "tutorial-backup-restore-04",
+      "markerIndex": 3,
+      "at": 94.515541,
+      "text": "Wir listen die auf diesem Speicher verfügbaren Backups auf. Von hier aus ist die Wiederherstellung auf einem neuen Server ein einziger Befehl: rdc repo pull. Gleiche Daten, gleiche Container, andere Maschine."
+    }
+  ]
+}

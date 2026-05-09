@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/tutorial-networking.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-networking-01",
+      "markerIndex": 0,
+      "at": 27.859436,
+      "text": "Deuxième étape. Nous indiquons à rdc l'IP publique, le domaine de base, l'adresse email pour le certificat et le token API Cloudflare. L'email de certificat et le token sont partagés entre toutes vos machines, donc vous ne les définissez qu'une seule fois."
+    },
+    {
+      "id": "tutorial-networking-02",
+      "markerIndex": 1,
+      "at": 41.958746,
+      "text": "Confirmons que les paramètres d'infrastructure ont bien été enregistrés. IP publique, domaine de base, adresse email pour le certificat, tout est visible dans la configuration."
+    },
+    {
+      "id": "tutorial-networking-03",
+      "markerIndex": 2,
+      "at": 51.564603,
+      "text": "Troisième étape. Nous poussons la configuration vers le serveur. Cela crée automatiquement les enregistrements DNS sur Cloudflare et prépare la configuration du proxy sur la machine."
+    },
+    {
+      "id": "tutorial-networking-04",
+      "markerIndex": 3,
+      "at": 70.626849,
+      "text": "La quatrième étape commence. Nous créons un petit dépôt nommé infra. C'est là que le proxy va résider, isolé des dépôts d'application."
+    },
+    {
+      "id": "tutorial-networking-05",
+      "markerIndex": 4,
+      "at": 97.243945,
+      "text": "Nous appliquons le modèle proxy intégré. Il contient Traefik ainsi que la configuration pour Let's Encrypt et les challenges DNS-01 de Cloudflare, prêt à l'emploi."
+    },
+    {
+      "id": "tutorial-networking-06",
+      "markerIndex": 5,
+      "at": 112.494613,
+      "text": "Et nous démarrons le proxy. Traefik découvre vos conteneurs toutes les cinq secondes. Les certificats TLS proviennent de Let's Encrypt automatiquement. Votre application est maintenant accessible sur internet via HTTPS."
+    }
+  ]
+}

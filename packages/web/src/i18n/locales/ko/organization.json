@@ -1,0 +1,116 @@
+{
+  "access": {
+    "errors": {
+      "addPermissionFailed": "그룹에 권한 추가에 실패했습니다",
+      "assignUserFailed": "권한 그룹에 사용자 할당에 실패했습니다",
+      "createGroupFailed": "권한 그룹 생성에 실패했습니다",
+      "deleteGroupFailed": "권한 그룹 삭제에 실패했습니다",
+      "removePermissionFailed": "그룹에서 권한 제거에 실패했습니다"
+    },
+    "heading": "접근 제어",
+    "modals": {
+      "addPermissionButton": "권한 추가",
+      "addPermissionsTab": "권한 추가",
+      "assignUserTitle": "사용자 할당",
+      "assignUserTo": "{{group}}에",
+      "createGroupTitle": "권한 그룹 생성",
+      "currentPermissionsTab": "현재 권한",
+      "deleteGroupDescription": "그룹 \"{{group}}\"을(를) 삭제하시겠습니까?",
+      "deleteGroupTitle": "권한 그룹 삭제",
+      "groupNameRequired": "그룹 이름을 입력해 주세요",
+      "groupPlaceholder": "그룹 이름 입력",
+      "managePermissionsTitle": "권한 관리",
+      "noPermissions": "할당된 권한이 없습니다",
+      "permissionPlaceholder": "추가할 권한 선택",
+      "userPlaceholder": "사용자 선택"
+    },
+    "permissions": {
+      "searchPlaceholder": "권한 그룹 검색...",
+      "subtitle": "권한 그룹 및 할당 관리",
+      "title": "권한 그룹"
+    },
+    "success": {
+      "groupCreated": "권한 그룹 \"{{group}}\"이(가) 성공적으로 생성되었습니다",
+      "groupDeleted": "권한 그룹 \"{{group}}\"이(가) 성공적으로 삭제되었습니다",
+      "permissionAdded": "권한 \"{{permission}}\"이(가) 그룹에 추가되었습니다",
+      "permissionRemoved": "권한 \"{{permission}}\"이(가) 그룹에서 제거되었습니다",
+      "userAssigned": "사용자가 권한 그룹 \"{{group}}\"에 할당되었습니다"
+    },
+    "tabs": {
+      "permissions": "권한",
+      "sessions": "세션"
+    }
+  },
+  "teams": {
+    "heading": "팀",
+    "manageMembers": {
+      "accessStatus": "접근 가능",
+      "addTab": "구성원 추가",
+      "currentTab": "현재 구성원",
+      "empty": "이 팀에 구성원이 없습니다",
+      "memberStatus": "구성원",
+      "pendingStatus": "대기 중",
+      "removeButton": "제거",
+      "removeDescription": "\"{{email}}\"을(를) 이 팀에서 제거하시겠습니까?",
+      "removeTitle": "팀 구성원 제거",
+      "selectUser": "사용자 선택",
+      "title": "팀 구성원 관리"
+    },
+    "searchPlaceholder": "팀 검색...",
+    "subtitle": "팀 및 구성원 관리",
+    "title": "팀"
+  },
+  "users": {
+    "errors": {
+      "activateFailed": "사용자 활성화에 실패했습니다",
+      "assignPermissionsFailed": "권한 할당에 실패했습니다",
+      "createFailed": "사용자 생성에 실패했습니다",
+      "deactivateFailed": "사용자 비활성화에 실패했습니다",
+      "emailUpdateFailed": "이메일 업데이트에 실패했습니다",
+      "languageUpdateFailed": "언어 설정 저장에 실패했습니다",
+      "passwordUpdateFailed": "비밀번호 업데이트에 실패했습니다",
+      "permissionGroupCreateFailed": "권한 그룹 생성에 실패했습니다",
+      "sessionTerminateFailed": "세션 종료에 실패했습니다",
+      "userVaultUpdateFailed": "사용자 Vault 업데이트에 실패했습니다"
+    },
+    "form": {
+      "emailLabel": "이메일",
+      "passwordLabel": "비밀번호",
+      "passwordPlaceholder": "비밀번호 입력"
+    },
+    "heading": "사용자",
+    "lastActive": {
+      "never": "없음"
+    },
+    "modals": {
+      "assignTitle": "권한 할당",
+      "createTitle": "사용자 생성",
+      "permissionGroupLabel": "권한 그룹",
+      "permissionGroupPlaceholder": "권한 그룹 선택",
+      "permissionsLabel": "권한",
+      "usersLabel": "사용자"
+    },
+    "permissionGroups": {
+      "none": "그룹 없음"
+    },
+    "searchPlaceholder": "사용자 검색...",
+    "status": {
+      "active": "활성",
+      "inactive": "비활성"
+    },
+    "subtitle": "사용자 및 권한 관리",
+    "success": {
+      "activated": "사용자 \"{{email}}\"이(가) 활성화되었습니다",
+      "created": "사용자 \"{{email}}\"이(가) 성공적으로 생성되었습니다",
+      "deactivated": "사용자 \"{{email}}\"이(가) 비활성화되었습니다",
+      "emailUpdated": "이메일이 \"{{email}}\"로 업데이트되었습니다",
+      "languageSaved": "언어 설정이 저장되었습니다",
+      "passwordUpdated": "비밀번호가 성공적으로 업데이트되었습니다. 새 비밀번호로 로그인해 주세요.",
+      "permissionGroupCreated": "권한 그룹 \"{{groupName}}\"이(가) 생성되었습니다",
+      "permissionsAssigned": "사용자 \"{{email}}\"이(가) 그룹 \"{{group}}\"에 할당되었습니다",
+      "sessionTerminated": "세션이 성공적으로 종료되었습니다",
+      "userVaultUpdated": "사용자 Vault가 성공적으로 업데이트되었습니다"
+    },
+    "title": "사용자"
+  }
+}

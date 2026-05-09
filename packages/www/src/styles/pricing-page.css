@@ -1613,9 +1613,22 @@
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
+/* Two-card layout (e.g., during the Design Partner Program when Community
+   and Professional are filtered out). Centered with a max-width so the
+   pair sits in the middle instead of stretching across the full row. */
+.cf-pricing-grid.two-up {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  max-width: 760px;
+  margin-inline: auto;
+}
+
 @media (min-width: 64rem) {
   .cf-pricing-grid.three-up {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .cf-pricing-grid.two-up {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1681,6 +1694,35 @@
   background: var(--color-brand-primary);
   border-color: var(--color-brand-primary);
   color: white;
+}
+
+/* ===== Design Partner Program overlay =====
+   Active when announcement.enabled is true in src/i18n/translations/en.json.
+   Replaces the per-plan badge with a unified promo pill, displays the
+   original price as struck-through above a big "FREE" headline, and
+   funnels every CTA to /account/. See utils/design-partner-program.ts.
+*/
+.cf-badge-design-partner {
+  background: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
+  color: white;
+  letter-spacing: 0.02em;
+}
+
+.cf-dp-original .cf-price,
+.cf-dp-original .cf-price-period {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  opacity: 0.55;
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.cf-price.cf-dp-free {
+  color: var(--color-brand-primary);
+  letter-spacing: -0.01em;
+  margin-top: var(--space-1);
 }
 
 .cf-annual-note {

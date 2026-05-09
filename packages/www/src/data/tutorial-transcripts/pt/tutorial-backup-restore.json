@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-backup-restore.cast",
+  "language": "pt",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-backup-restore-01",
+      "markerIndex": 0,
+      "at": 65.053708,
+      "text": "Passo um. Vamos importar uma configuração rclone existente. O rclone suporta S3, Backblaze, Google Drive, Dropbox e muitos outros. Se já o utiliza, a mesma configuração pode ser importada diretamente."
+    },
+    {
+      "id": "tutorial-backup-restore-02",
+      "markerIndex": 1,
+      "at": 73.743501,
+      "text": "Vamos listar os armazenamentos que o rdc conhece agora. Cada um é um destino para onde podemos enviar cópias de segurança."
+    },
+    {
+      "id": "tutorial-backup-restore-03",
+      "markerIndex": 2,
+      "at": 82.843959,
+      "text": "Passo dois. Vamos enviar uma cópia de segurança completa. O repositório inteiro -- aplicação, base de dados, ficheiros, configuração -- é carregado. Como o repositório está encriptado em repouso, a cópia de segurança também fica encriptada. Sem gestão adicional de chaves."
+    },
+    {
+      "id": "tutorial-backup-restore-04",
+      "markerIndex": 3,
+      "at": 94.515541,
+      "text": "E aqui estão as cópias de segurança disponíveis neste armazenamento. A partir daqui, restaurar num servidor novo é um único comando: rdc repo pull."
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-add-server.cast",
+  "language": "pt",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-add-server-01",
+      "markerIndex": 0,
+      "at": 1.508633,
+      "text": "Começamos por criar um perfil de configuração que vai guardar a chave SSH, a lista de máquinas e as definições de infraestrutura."
+    },
+    {
+      "id": "tutorial-add-server-02",
+      "markerIndex": 1,
+      "at": 11.160728,
+      "text": "Agora vamos registar o servidor no rdc, fornecendo o nome, o endereço IP e o utilizador SSH. As chaves de anfitrião são verificadas automaticamente para acesso seguro."
+    },
+    {
+      "id": "tutorial-add-server-03",
+      "markerIndex": 2,
+      "at": 23.457976,
+      "text": "De seguida, vamos provisionar o servidor. Este passo instala o renet e cria o repositório de dados encriptado."
+    },
+    {
+      "id": "tutorial-add-server-04",
+      "markerIndex": 3,
+      "at": 39.717449,
+      "text": "O servidor está pronto. Vamos verificar o que o rdc sabe sobre a configuração. Máquinas, chave SSH, infraestrutura -- tudo o que acabámos de configurar aparece aqui."
+    },
+    {
+      "id": "tutorial-add-server-05",
+      "markerIndex": 4,
+      "at": 48.157549,
+      "text": "E aqui está o ficheiro JSON que contém tudo. Copie este único ficheiro para outro portátil e poderá gerir os mesmos servidores a partir daí."
+    }
+  ]
+}

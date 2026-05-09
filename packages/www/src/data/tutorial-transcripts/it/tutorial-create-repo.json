@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-create-repo.cast",
+  "language": "it",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-create-repo-01",
+      "markerIndex": 0,
+      "at": 32.02867,
+      "text": "Creiamo un repository cifrato da 2 gigabyte sul server. Un repository e' un singolo file cifrato a riposo. Una volta montato, diventa una cartella con il proprio Docker daemon e i propri dati applicativi, completamente isolata da tutto il resto sul server."
+    },
+    {
+      "id": "tutorial-create-repo-02",
+      "markerIndex": 1,
+      "at": 62.567023,
+      "text": "Elenchiamo i repository sulla macchina per confermare che il nuovo sia registrato. Da qui, il repo puo' essere aperto in VS Code, distribuito, clonato tramite fork o salvato in backup -- tutto dal tuo laptop."
+    }
+  ]
+}

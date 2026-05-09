@@ -95,7 +95,7 @@
       "status": 410,
       "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
     },
-    "/blog/tags/configuraci\u00f3n": {
+    "/blog/tags/configuración": {
       "to": null,
       "status": 410,
       "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
@@ -110,7 +110,7 @@
       "status": 410,
       "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
     },
-    "/blog/tags/gesti\u00f3n-tareas": {
+    "/blog/tags/gestión-tareas": {
       "to": null,
       "status": 410,
       "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
@@ -120,7 +120,7 @@
       "status": 410,
       "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
     },
-    "/blog/tags/mejores-pr\u00e1cticas": {
+    "/blog/tags/mejores-prácticas": {
       "to": null,
       "status": 410,
       "rationale": "Tag pages were never implemented as routes. Google crawled broken links from the blog index."
@@ -471,9 +471,9 @@
       "rationale": "Console tutorials index redirects to Quick Start as the primary entry point for new users."
     },
     "/docs/console-guide/tutorials/backup-strategies": {
-      "to": "/docs/tutorial-backup",
+      "to": "/docs/tutorial-backup-restore",
       "status": 301,
-      "rationale": "Backup strategies tutorial maps to the live Backup & Networking tutorial page."
+      "rationale": "Backup strategies tutorial maps to the live Backup & Restore tutorial page."
     },
     "/docs/console-guide/tutorials/monitoring-setup": {
       "to": "/docs/tutorial-monitoring",
@@ -753,7 +753,7 @@
     "/security": {
       "to": null,
       "status": 410,
-      "rationale": "No /security page in the manifest; the old standalone security page was removed. Security content is now distributed across /solutions/continuous-security-testing, /solutions/encryption, and /docs/account-security \u2014 no single page is a strong enough heir for a 301."
+      "rationale": "No /security page in the manifest; the old standalone security page was removed. Security content is now distributed across /solutions/continuous-security-testing, /solutions/encryption, and /docs/account-security — no single page is a strong enough heir for a 301."
     },
     "/solutions/ai-safety": {
       "to": "/solutions/ai-pentesting",
@@ -864,6 +864,36 @@
       "to": null,
       "status": 410,
       "rationale": "Unknown legacy path with no discoverable heir."
+    },
+    "/docs/tutorial-setup": {
+      "to": "/docs/tutorial-add-server",
+      "status": 301,
+      "rationale": "Old \"Machine Setup\" tutorial covered config init + machine add + machine setup; tutorial-add-server in the new Essentials series is the direct topical successor."
+    },
+    "/docs/tutorial-repos": {
+      "to": "/docs/tutorial-create-repo",
+      "status": 301,
+      "rationale": "Old \"Repository Lifecycle\" tutorial split into create + deploy + work-with-repo + forking. tutorial-create-repo is the entry point successor that most inbound traffic targeted."
+    },
+    "/docs/tutorial-secrets": {
+      "to": "/docs/tutorial-managing-secrets",
+      "status": 301,
+      "rationale": "Renamed during the 12-tutorial overhaul to fit the tutorial-<topic> naming convention. Same content, same depth."
+    },
+    "/docs/tutorial-tools": {
+      "to": "/docs/tutorial-work-with-repo",
+      "status": 301,
+      "rationale": "Old \"Tools\" tutorial covered VS Code Remote + sync; tutorial-work-with-repo is the daily-workflow successor (tunnel, term, sync) in the new Essentials series."
+    },
+    "/docs/tutorial-backup": {
+      "to": "/docs/tutorial-backup-restore",
+      "status": 301,
+      "rationale": "Old \"Backup & Networking\" tutorial split during the 12-tutorial overhaul; backup-restore is the canonical successor for the backup half (networking content moved to /docs/tutorial-networking)."
+    },
+    "/docs/tutorial-ops": {
+      "to": "/docs/experimental-vms",
+      "status": 301,
+      "rationale": "Old \"Local VM Provisioning\" tutorial covered rdc ops up/down/status. The dedicated reference doc /docs/experimental-vms is the canonical home for the same commands at greater depth."
     }
   },
   "patterns": [
@@ -871,7 +901,7 @@
       "from": "^/(terms-of-service|privacy-policy|cookie-policy|telemetry-policy|refund-policy|acceptable-use-policy)/(terms-of-service|privacy-policy|cookie-policy|telemetry-policy|refund-policy|acceptable-use-policy)$",
       "to": "/$2",
       "status": 301,
-      "rationale": "Concatenated legal paths caused by old relative-href bug in legal pages. Second segment is the link target the user intended to reach (they were on the first-segment page and clicked a relative link expecting to land on the second-segment page). Pattern covers all 30 theoretical combinations; 11 observed in GSC. NOTE: /acceptable-use-policy is absent from route-manifest.json \u2014 any concat path whose second segment is acceptable-use-policy (e.g. /terms-of-service/acceptable-use-policy, observed in GSC) will redirect to a potentially missing page. Verify that /acceptable-use-policy is live before deploying, or add it to the manifest."
+      "rationale": "Concatenated legal paths caused by old relative-href bug in legal pages. Second segment is the link target the user intended to reach (they were on the first-segment page and clicked a relative link expecting to land on the second-segment page). Pattern covers all 30 theoretical combinations; 11 observed in GSC. NOTE: /acceptable-use-policy is absent from route-manifest.json — any concat path whose second segment is acceptable-use-policy (e.g. /terms-of-service/acceptable-use-policy, observed in GSC) will redirect to a potentially missing page. Verify that /acceptable-use-policy is live before deploying, or add it to the manifest."
     },
     {
       "from": "^/[a-z]+ntact$",

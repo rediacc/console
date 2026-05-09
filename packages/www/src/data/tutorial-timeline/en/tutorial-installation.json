@@ -1,0 +1,317 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation.cast",
+  "language": "en",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "a2dce31df8da3d04bf5e13b6bdd2d731ede88744e4bd98ba8907244f0ee37563",
+  "steps": [
+    {
+      "id": "tutorial-installation-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.509194,
+      "replayEndSec": 9.435981,
+      "narrationText": "First, let's confirm rdc is installed. The version flag prints the installed version, so we know the install completed.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-01.fd18c79b.mp3",
+      "audioDurationSec": 7.549388,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.88,
+          "startChar": 7,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.28,
+          "startChar": 13,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.84,
+          "startChar": 21,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.0,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.64,
+          "startChar": 28,
+          "endChar": 37
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.2,
+          "startChar": 39,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.6,
+          "startChar": 43,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.0,
+          "startChar": 51,
+          "endChar": 55
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.32,
+          "startChar": 56,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 63,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.96,
+          "startChar": 67,
+          "endChar": 76
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.44,
+          "startChar": 77,
+          "endChar": 84
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 5.92,
+          "startChar": 86,
+          "endChar": 88
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.08,
+          "startChar": 89,
+          "endChar": 91
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.32,
+          "startChar": 92,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.48,
+          "startChar": 97,
+          "endChar": 100
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.88,
+          "startChar": 101,
+          "endChar": 108
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.44,
+          "startChar": 109,
+          "endChar": 118
+        }
+      ]
+    },
+    {
+      "id": "tutorial-installation-02",
+      "markerIndex": 1,
+      "replayStartSec": 9.435981,
+      "replayEndSec": 18.745045,
+      "narrationText": "Now let's run rdc doctor. It walks through every dependency rdc needs (Node, SSH, Docker, the renet binary) and reports any gaps. A clean report means we're ready.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-02.5ed0f6ac.mp3",
+      "audioDurationSec": 13.165714,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.48,
+          "startChar": 4,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.8,
+          "startChar": 10,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.36,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.84,
+          "startChar": 18,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.32,
+          "startChar": 26,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 29,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 35,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.36,
+          "startChar": 43,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.16,
+          "startChar": 49,
+          "endChar": 59
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.64,
+          "startChar": 60,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.12,
+          "startChar": 64,
+          "endChar": 69
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.92,
+          "startChar": 71,
+          "endChar": 75
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.88,
+          "startChar": 77,
+          "endChar": 80
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.52,
+          "startChar": 82,
+          "endChar": 88
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.0,
+          "startChar": 90,
+          "endChar": 93
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.4,
+          "startChar": 94,
+          "endChar": 99
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.96,
+          "startChar": 100,
+          "endChar": 106
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.6,
+          "startChar": 108,
+          "endChar": 111
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.08,
+          "startChar": 112,
+          "endChar": 119
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.24,
+          "startChar": 120,
+          "endChar": 123
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.72,
+          "startChar": 124,
+          "endChar": 128
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.28,
+          "startChar": 130,
+          "endChar": 131
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.6,
+          "startChar": 132,
+          "endChar": 137
+        },
+        {
+          "startSec": 11.6,
+          "endSec": 12.16,
+          "startChar": 138,
+          "endChar": 144
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.56,
+          "startChar": 145,
+          "endChar": 150
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 12.72,
+          "startChar": 151,
+          "endChar": 156
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.12,
+          "startChar": 157,
+          "endChar": 162
+        }
+      ]
+    }
+  ]
+}

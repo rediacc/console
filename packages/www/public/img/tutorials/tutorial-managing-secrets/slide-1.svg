@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">A .env file inside the repo image gets cloned into every fork — production credentials leak into your sandbox</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .repo { fill: #ffffff; stroke: #cdcdcd; stroke-width: 2; rx: 10; ry: 10; }
+    .danger-fill { fill: #fbe5e3; stroke: #b3372d; stroke-width: 2; rx: 4; ry: 4; }
+    .danger-stroke { stroke: #b3372d; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .label { fill: #1a1a1a; font: 700 18px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .env-text { fill: #b3372d; font: 600 13px JetBrainsMono, "JetBrains Mono", monospace; }
+    .desc { fill: #5e5e5e; font: 400 14px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .arrow { stroke: #b3372d; stroke-width: 2.5; fill: none; }
+    .closer { fill: #b3372d; font: 600 22px Inter, system-ui, sans-serif; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <!-- Parent repo with .env inside -->
+  <rect class="repo" x="80" y="120" width="240" height="200"/>
+  <text class="label" x="200" y="148">my-app</text>
+  <rect class="danger-fill" x="100" y="170" width="200" height="120"/>
+  <text class="env-text" x="118" y="194">.env</text>
+  <text class="env-text" x="118" y="216">STRIPE_KEY=sk_live_xxx</text>
+  <text class="env-text" x="118" y="238">DB_PASS=super-secret</text>
+  <text class="env-text" x="118" y="260">API_TOKEN=tok_real</text>
+  <text class="desc" x="200" y="338">parent · production</text>
+
+  <!-- Fork (clone) -->
+  <rect class="repo" x="640" y="120" width="240" height="200"/>
+  <text class="label" x="760" y="148">my-app:test</text>
+  <rect class="danger-fill" x="660" y="170" width="200" height="120"/>
+  <text class="env-text" x="678" y="194">.env</text>
+  <text class="env-text" x="678" y="216">STRIPE_KEY=sk_live_xxx</text>
+  <text class="env-text" x="678" y="238">DB_PASS=super-secret</text>
+  <text class="env-text" x="678" y="260">API_TOKEN=tok_real</text>
+  <text class="desc" x="760" y="338">fork · same secrets</text>
+
+  <!-- Fork arrow with label -->
+  <path class="arrow" d="M 320 220 L 640 220" marker-end="url(#aErr)"/>
+  <text class="label" x="480" y="208" fill="#b3372d">fork</text>
+
+  <!-- danger glyph -->
+  <g transform="translate(440 380)">
+    <path class="danger-stroke" d="M 40 0 L 80 70 L 0 70 Z"/>
+    <line class="danger-stroke" x1="40" y1="22" x2="40" y2="50"/>
+    <circle fill="#b3372d" cx="40" cy="60" r="3"/>
+  </g>
+  <text class="closer" x="480" y="488">production credentials, in your sandbox</text>
+
+  <defs>
+    <marker id="aErr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b3372d"/>
+    </marker>
+  </defs>
+</svg>

@@ -1,0 +1,228 @@
+---
+title: "Jälgimine"
+description: "Jälgige masina tervist, konteinereid, teenuseid, hoidlaid ning käivitage diagnostikat."
+category: "Guides"
+order: 9
+language: et
+---
+
+# Jälgimine
+
+Rediacc pakub sisseehitatud jälgimiskäske masina tervise, töötavate konteinerite, teenuste, hoidlate oleku ja süsteemi diagnostika kontrollimiseks.
+
+## Masina tervis
+
+Hankige masina kohta põhjalik terviseraport:
+
+```bash
+rdc machine health --name server-1
+```
+
+See raporteerib:
+- **Süsteem**: tööaeg, ketta kasutus, andmehoidla kasutus
+- **Konteinerid**: töötavate, tervete, ebatervete arv
+- **Salvestus**: SMART tervise olek
+- **Probleemid**: tuvastatud probleemid
+
+Kasutage `--output json` masinloetava väljundi jaoks.
+
+## Konteinerite loetlemine
+
+Vaadake kõiki töötavaid konteinereid kõikides hoidlates masinal:
+
+```bash
+rdc machine containers --name server-1
+```
+
+| Veerg | Kirjeldus |
+|--------|-------------|
+| Name | Konteineri nimi |
+| Status | Tööaeg või väljumispõhjus |
+| State | Töötab, väljunud jne |
+| Health | Terve, ebaterve, puudub |
+| CPU | CPU kasutuse protsent |
+| Memory | Mälukasutus / piirang |
+| Repository | Milline hoidla omab konteinerit |
+
+Valikud:
+- `--health-check`, Teosta aktiivseid tervisekontrolle konteineritele
+- `--output json`, Masinloetav JSON-väljund
+
+JSON-väljund sisaldab täielikke konteineri üksikasju (`labels`, `port_mappings`, `image`, `id`) koos `repository` (lahendatud nimi), `repository_guid` (algne GUID), `domain` ja `autoRoute` väljadega.
+
+## Teenuste loetlemine
+
+Vaadake Rediacciga seotud systemd teenuseid masinal:
+
+```bash
+rdc machine services --name server-1
+```
+
+| Veerg | Kirjeldus |
+|--------|-------------|
+| Name | Teenuse nimi |
+| State | Aktiivne, mitteaktiivne, nurjunud |
+| Sub-state | Töötab, surnud jne |
+| Restarts | Taaskäivituste arv |
+| Memory | Teenuse mälukasutus |
+| Repository | Seotud hoidla |
+
+Valikud:
+- `--stability-check`, Märgi ebastabiilsed teenused (nurjunud, >3 taaskäivitust, automaatne taaskäivitus)
+- `--output json`, Masinloetav JSON-väljund
+
+JSON-väljund sisaldab täielikke teenuse üksikasju koos `repository` (lahendatud nimi) ja `repository_guid` (algne GUID) väljadega.
+
+## Hoidlate loetlemine
+
+Vaadake hoidlaid masinal koos üksikasjalike statistikatega:
+
+```bash
+rdc machine repos --name server-1
+```
+
+| Veerg | Kirjeldus |
+|--------|-------------|
+| Name | Hoidla nimi |
+| Size | Kettapildi suurus |
+| Mount | Ühendatud või lahti ühendatud |
+| Docker | Dockeri deemon töötab või peatunud |
+| Containers | Konteinerite arv |
+| Disk Usage | Tegelik ketta kasutus hoidlas |
+| Modified | Viimane muutmisaeg |
+
+Valikud:
+- `--search <text>`, Filtreeri nime või ühendamistee järgi
+- `--output json`, Masinloetav JSON-väljund
+
+JSON-väljund sisaldab `name` (lahendatud) ja `guid` (algne GUID) ning pesastab iga hoidla `containers` (koos `domain`, `autoRoute`, `repository`/`repository_guid` väljadega) ja `services` massiivid.
+
+## Salvestuse tervis
+
+Kontrollige BTRFS-i fragmentatsiooni ja reflink'i jagamist kõikides hoidlates masinal:
+
+```bash
+rdc machine query --name server-1 --storage-health
+```
+
+| Veerg | Kirjeldus |
+|--------|-------------|
+| Size | LUKS-pildifaili suurus (kuidas hoidla välja näeb) |
+| Unique | Tegelik unikaalne andmemaht, mis kuulub ainult sellele hoidlale |
+| Shared | Andmeplokid, mida taaskasutatakse hoidlate vahel BTRFS-i reflink'ide kaudu (tasuta koopiad) |
+| Extents | Faililaiendite arv (kõrgem = rohkem fragmenteeritud) |
+| Frag | Fragmentatsioonitase: madal, mõõdukas või kõrge |
+
+Kokkuvõte näitab BTRFS-i reflink'idest saadud säästu kokku:
+
+```
+14 repos, 224.3 GB virtual size
+Unique data: 323.7 MB | Shared: 224.0 GB | Efficiency: 99.9%
+```
+
+- **Virtuaalne suurus** on kõikide hoidla pildisuuruste summa. See on see, kuidas hoidlad välja näevad, kuid see loeb topelt reflink'ide kaudu jagatud plokke.
+- **Unikaalsed andmed** on tegelik salvestusruum, mida tarbivad hoidla andmed, mis eksisteerivad ainult ühes hoidlas. See on see, mida vabastaksite hoidla kustutamisel.
+- **Jagatud** on andmed, mida taaskasutatakse hoidlate vahel BTRFS-i reflink'ide kaudu. Hoidla hargnemine loob reflink'i koopiad, mis jagavad plokke, kuni kumbki pool kirjutab uusi andmeid, mille tulemusel plokid lahknevad.
+- **Efektiivsus** on reflink'ide kaudu taaskasutatud andmete protsent. Kõrgem on parem. Masin, millel on palju hargnemisi samalt vanemalt, näitab lähedal-100% efektiivsust.
+
+Hoidlad, millel on kõrge fragmentatsioon ja null jagatud plokke, saab turvaliselt defragmenteerida `btrfs filesystem defragment` abil. Hoidlaid, millel on jagatud plokid, ei tohiks defragmenteerida, kuna defrag asendab jagatud plokid unikaalsete koopiatega, suurendades ketta kasutust.
+
+Skaneerimine töötab paralleelselt ja võtab 5--15 sekundit sõltuvalt hoidlate arvust ja suurusest. Kui `--storage-health` ei ole täpsustatud, ilmub päringuväljundi järel üherealise vihje meeldetuletusena.
+
+## BTRFS-i skrubb
+
+Rediacc planeerib automaatselt iganädalase BTRFS-i skrubimise igal masinal. Skrubb loeb iga andmeploki andmehoidlas, kontrollib kontrollsummasid ja raporteerib igasuguse riknemise. See tabab vaikse andmete riknemise (bitrot) enne, kui see levib varukoopiatesse ja hargnemistesse.
+
+Skrubb töötab igal pühapäeval kell 02:00 kohalikus ajas (masina ajavöönd) koos juhusliku viivitusega kuni 1 tund. See töötab madalaimal I/O prioriteedil (`ionice idle`, `nice 19`), nii et see ei häiri töötavaid teenuseid. SSD-toega masinatel oodake ligikaudu 8 minutit 100 GB andmehoidla kohta.
+
+Skrubimise taimer installitakse automaatselt esimesel deemoni käivitusel pärast reneti uuendust. Kui skrubimispoliitika muutub tulevases reneti versioonis, uuendab see end järgmisel deemoni käivitusel ilma kasutaja sekkumiseta.
+
+### Skrubimise olek
+
+Viimase skrubimise tulemus salvestatakse väljaspool BTRFS-i mahtu (aadressil `/var/lib/rediacc/scrub-last-result.json`), nii et see jääb loetavaks isegi kui mahul on probleeme. `rdc machine query --system` väljund sisaldab välja `scrub_status`:
+
+```json
+"scrub_status": {
+  "last_run_human": "3 days ago",
+  "status": "ok",
+  "total_errors": 0,
+  "uncorrectable": 0,
+  "duration_seconds": 312
+}
+```
+
+| Olek | Tähendus |
+|--------|---------|
+| `ok` | Viimane skrubb lõpetati vigadeta |
+| `never_run` | Skrubimist pole veel toimunud (taimer installiti just) |
+| `overdue` | Viimane skrubb oli rohkem kui 14 päeva tagasi |
+| `errors_found` | Skrubb leidis kontrollsumma mittevastavusi (kontrollige `total_errors` ja `uncorrectable` arve) |
+| `failed` | Skrubimise protsess väljus nullist erineva koodiga |
+
+Kui `uncorrectable` on suurem kui null, ei saa mõjutatud plokke automaatselt parandada (ühe kettaga BTRFS-il pole redundantset koopiat). Taastage mõjutatud hoidla viimasest varukoopia versioonist.
+
+### Käsitsi skrubb
+
+Skrubimise koheseks käivitamiseks (nt pärast toitekatkestust või ketta migreerimist):
+
+```bash
+rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
+```
+
+Tulemus salvestatakse samasse JSON-faili ja on koheselt nähtav järgmises `rdc machine query --system` väljundis.
+
+## Vault'i olek
+
+Hankige masina täielik ülevaade koos juurutusteabega:
+
+```bash
+rdc machine vault-status --name server-1
+```
+
+See annab:
+- Hostinimi ja tööaeg
+- Mälu-, ketta- ja andmehoidla kasutus
+- Hoidlate koguarv, ühendatud arv, Dockeri töötav arv
+- Üksikasjalik teave hoidla kaupa
+
+Kasutage `--output json` masinloetava väljundi jaoks.
+
+## Ühenduse testimine
+
+> **Ainult pilveadapter.** Lokaalse adapteri korral kasutage `rdc term connect -m server-1 -c "hostname"` ühenduvuse kontrollimiseks.
+
+Kontrollige SSH-ühenduvust masinaga:
+
+```bash
+rdc machine test-connection --ip 203.0.113.50 --user deploy
+```
+
+Raporteerib:
+- Ühenduse olek (edukas/ebaõnnestunud)
+- Kasutatud autentimismeetod
+- SSH-võtme konfiguratsioon
+- Avaliku võtme juurutuse olek
+- Teadaolevate hostide kirje
+
+Valikud:
+- `--port <number>`, SSH-port (vaikimisi: 22)
+- `--save -m server-1`, Salvesta kontrollitud hosti võti masina konfiguratsiooni
+
+## Diagnostika (doctor)
+
+Käivitage põhjalik diagnostikakontroll oma Rediacc keskkonnale:
+
+```bash
+rdc doctor
+```
+
+| Kategooria | Kontrollid |
+|----------|--------|
+| **Keskkond** | Node.js versioon, CLI versioon, SEA režiim, Go installatsioon, Dockeri kättesaadavus |
+| **Renet** | Binaarifail asukoht, versioon, CRIU, rsync, SEA manustatud varad |
+| **Konfiguratsioon** | Aktiivne konfiguratsioon, adapter, masinad, SSH-võti |
+| **Virtualiseerimine** | Kontrollib, kas teie süsteem saab käitada kohalikke virtuaalmasinaid (`rdc ops`) |
+
+Iga kontroll raporteerib **OK**, **Hoiatus** või **Tõrge**. Kasutage seda esimese sammuna igasuguse probleemi tõrkeotsinguks.
+
+Väljumiskoodid: `0` = kõik läbisid, `1` = hoiatused, `2` = tõrked.

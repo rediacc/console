@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-monitoring.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-monitoring-01",
+      "markerIndex": 0,
+      "at": 102.949897,
+      "text": "让我们从系统视图开始。rdc machine query 加上 system 过滤器会显示运行时间、磁盘使用情况和存储状态。如果有异常，报告会告诉我们。"
+    },
+    {
+      "id": "tutorial-monitoring-02",
+      "markerIndex": 1,
+      "at": 114.069314,
+      "text": "现在查看容器。这个视图列出机器上每个仓库中所有运行中的容器，包括名称、状态、健康检查、CPU、内存，以及所属仓库。"
+    },
+    {
+      "id": "tutorial-monitoring-03",
+      "markerIndex": 2,
+      "at": 126.082986,
+      "text": "然后是仓库本身。大小、挂载状态、Docker 守护进程状态、磁盘使用情况，机器上每个隔离环境的所有必要信息一览无余。"
+    },
+    {
+      "id": "tutorial-monitoring-04",
+      "markerIndex": 3,
+      "at": 138.182721,
+      "text": "rdc machine query 一次性给你所有信息：系统信息、容器、仓库，全部汇聚在一起。运行一次即可得到完整全貌。"
+    },
+    {
+      "id": "tutorial-monitoring-05",
+      "markerIndex": 4,
+      "at": 149.8205,
+      "text": "最后是 rdc doctor，对笔记本进行本地健康检查。Node、SSH 密钥、renet、Docker，rdc 自身所依赖的一切。这就是完整的系列教程，从安装到监控，全从终端完成。"
+    }
+  ]
+}

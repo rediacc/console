@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-monitoring.cast",
+  "language": "it",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-monitoring-01",
+      "markerIndex": 0,
+      "at": 102.949897,
+      "text": "Iniziamo con la vista di sistema. rdc machine query con il filtro system mostra uptime, utilizzo del disco e stato dello storage. Se qualcosa non va, il rapporto ce lo dice."
+    },
+    {
+      "id": "tutorial-monitoring-02",
+      "markerIndex": 1,
+      "at": 114.069314,
+      "text": "Ora i container. Questa vista elenca ogni container in esecuzione su tutti i repository della macchina -- nome, stato, salute, CPU, memoria e quale repo li gestisce."
+    },
+    {
+      "id": "tutorial-monitoring-03",
+      "markerIndex": 2,
+      "at": 126.082986,
+      "text": "E i repo stessi. Dimensione, stato di montaggio, stato del Docker daemon, utilizzo del disco. Tutto quello che devi sapere su ogni ambiente isolato sulla macchina."
+    },
+    {
+      "id": "tutorial-monitoring-04",
+      "markerIndex": 3,
+      "at": 138.182721,
+      "text": "rdc machine query ti da' tutto in un colpo solo. Informazioni di sistema, container, repository -- tutto insieme. Eseguilo una volta e hai il quadro completo."
+    },
+    {
+      "id": "tutorial-monitoring-05",
+      "markerIndex": 4,
+      "at": 149.8205,
+      "text": "E infine rdc doctor per un controllo rapido sul tuo laptop. Node, chiave SSH, renet, Docker -- tutto cio' da cui dipende rdc. Questa e' la serie completa. Dall'installazione al monitoraggio, tutto dal tuo terminale."
+    }
+  ]
+}

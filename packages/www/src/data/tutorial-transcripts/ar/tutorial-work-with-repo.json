@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-work-with-repo.cast",
+  "language": "ar",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-work-with-repo-01",
+      "markerIndex": 0,
+      "at": 93.14728,
+      "text": "أولًا، أمر الإحالة. التطبيق يعمل على الخادم وليس على حاسوبك. يُحيل rdc repo tunnel منفذ الحاوية عبر SSH حتى تتمكن من فتحه على localhost في متصفحك."
+    },
+    {
+      "id": "tutorial-work-with-repo-02",
+      "markerIndex": 1,
+      "at": 103.393386,
+      "text": "ثانيًا، أمر الطرفية. يُدخلك rdc term connect داخل صندوق رمل المستودع، نفس العرض المعزول الذي يوفره VS Code. نفّذ أي أمر على محرك Docker الخاص بهذا المستودع دون مغادرة طرفيتك."
+    },
+    {
+      "id": "tutorial-work-with-repo-03",
+      "markerIndex": 2,
+      "at": 120.858492,
+      "text": "قبل رفع الملفات، استعرض باستخدام --dry-run. يُظهر بالضبط ما سيتغير دون نسخ أي شيء. استعرض دائمًا عندما لا تكون متأكدًا."
+    },
+    {
+      "id": "tutorial-work-with-repo-04",
+      "markerIndex": 3,
+      "at": 137.357072,
+      "text": "الآن نُشغّل الرفع الفعلي. ينقل rdc repo sync upload الملفات من حاسوبك إلى المستودع عبر SSH مع ضغط الفرق بـrsync. الإحالة والطرفية والمزامنة، ثلاثة أوامر تغطي الحلقة اليومية."
+    }
+  ]
+}

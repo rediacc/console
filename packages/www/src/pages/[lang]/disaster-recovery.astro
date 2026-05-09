@@ -6,6 +6,7 @@ import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
 import { EXTERNAL_LINKS } from '../../config/constants';
+import { DESIGN_PARTNER_GRANTED_PLAN, filterPlansForProgram, isDesignPartnerProgramActive } from '../../utils/design-partner-program';
 import '../../styles/disaster-recovery-page.css';
 import '../../styles/pricing-page.css';
 
@@ -15,8 +16,10 @@ const { lang } = Astro.params as { lang: Language };
 const { t, ta, to } = createTranslator(lang);
 
 const ns = 'pages.disasterRecovery';
+const dpActive = isDesignPartnerProgramActive();
+const dpClaimLabel = t('pages.pricing.ui.designPartner.cta');
 
-const allPlans = [
+const allPlans = filterPlansForProgram([
   {
     id: 'professional',
     monthly: 1299,
@@ -37,7 +40,7 @@ const allPlans = [
     badgeLabel: t(`${ns}.ui.anchor`),
     badgeVariant: 'anchor',
   },
-];
+]);
 
 const technicalMetrics = ta(`${ns}.technicalSummary.metrics`);
 const technicalValues = to(`${ns}.technicalSummary.values`);
@@ -108,9 +111,12 @@ const buildMetrics = (planId: string) =>
           <span class="billing-toggle-savings">{t('pages.pricing.ui.billingToggle.annualSavings')}</span>
         </div>
 
-        <div class="cf-pricing-grid three-up">
+        {/* @ci marker — see scripts/check-cta-bolt-uniqueness.js. */}
+        {dpActive && <Fragment set:html={'<!--@ci cta-bolt-required-->'} />}
+
+        <div class:list={['cf-pricing-grid', allPlans.length === 2 ? 'two-up' : 'three-up']}>
           {allPlans.map(plan => (
-            <CfPricingCard plan={plan} metrics={buildMetrics(plan.id)} lang={lang} ctaNamespace={ns} />
+            <CfPricingCard plan={plan} metrics={buildMetrics(plan.id)} lang={lang} ctaNamespace={ns} boltCta={plan.id === DESIGN_PARTNER_GRANTED_PLAN} />
           ))}
         </div>
 
@@ -175,9 +181,15 @@ const buildMetrics = (planId: string) =>
             <h2>{t(`${ns}.enterpriseCta.heading`)}</h2>
             <p>{t(`${ns}.enterpriseCta.description`)}</p>
           </div>
-          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large" aria-label={`${t(`${ns}.enterpriseCta.button`)} (${t('common.aria.opensInNewTab')})`}>
-            {t(`${ns}.enterpriseCta.button`)}
-          </a>
+          {dpActive ? (
+            <a href="/account/" class="btn btn-primary btn-large" data-design-partner-claim>
+              {dpClaimLabel} &rarr;
+            </a>
+          ) : (
+            <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large" aria-label={`${t(`${ns}.enterpriseCta.button`)} (${t('common.aria.opensInNewTab')})`}>
+              {t(`${ns}.enterpriseCta.button`)}
+            </a>
+          )}
         </div>
       </div>
     </section>
@@ -220,12 +232,20 @@ const buildMetrics = (planId: string) =>
         <h2>{t(`${ns}.finalCta.heading`)}</h2>
         <p>{t(`${ns}.finalCta.description`)}</p>
         <div class="cta-actions">
-          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large" aria-label={`${t(`${ns}.finalCta.buttons.startFree`)} (${t('common.aria.opensInNewTab')})`}>
-            {t(`${ns}.finalCta.buttons.startFree`)}
-          </a>
-          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-large" aria-label={`${t(`${ns}.finalCta.buttons.talkToSales`)} (${t('common.aria.opensInNewTab')})`}>
-            {t(`${ns}.finalCta.buttons.talkToSales`)}
-          </a>
+          {dpActive ? (
+            <a href="/account/" class="btn btn-primary btn-large" data-design-partner-claim>
+              {dpClaimLabel} &rarr;
+            </a>
+          ) : (
+            <>
+              <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large" aria-label={`${t(`${ns}.finalCta.buttons.startFree`)} (${t('common.aria.opensInNewTab')})`}>
+                {t(`${ns}.finalCta.buttons.startFree`)}
+              </a>
+              <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-large" aria-label={`${t(`${ns}.finalCta.buttons.talkToSales`)} (${t('common.aria.opensInNewTab')})`}>
+                {t(`${ns}.finalCta.buttons.talkToSales`)}
+              </a>
+            </>
+          )}
         </div>
       </div>
     </section>

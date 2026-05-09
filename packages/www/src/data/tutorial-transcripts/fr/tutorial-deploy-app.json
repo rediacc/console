@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-deploy-app.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-deploy-app-01",
+      "markerIndex": 0,
+      "at": 52.700593,
+      "text": "Première étape. Nous allons lister les modèles disponibles. Rediacc fournit des configurations prêtes à l'emploi pour les applications courantes, Postgres, Redis, serveurs web, pour ne pas avoir à écrire un docker compose point yml from scratch."
+    },
+    {
+      "id": "tutorial-deploy-app-02",
+      "markerIndex": 1,
+      "at": 61.85842,
+      "text": "Deuxième étape. Nous appliquons le modèle app-postgres dans notre dépôt. Deux fichiers apparaissent : le docker compose point yml qui décrit les conteneurs, et le Rediaccfile qui définit les hooks de démarrage et d'arrêt."
+    },
+    {
+      "id": "tutorial-deploy-app-03",
+      "markerIndex": 2,
+      "at": 79.070004,
+      "text": "Troisième étape. Nous démarrons le dépôt. rdc lance les conteneurs, monte le volume chiffré et configure le daemon Docker isolé. L'application est maintenant en cours d'exécution."
+    },
+    {
+      "id": "tutorial-deploy-app-04",
+      "markerIndex": 3,
+      "at": 123.719014,
+      "text": "Vérifions avec docker ps. Notez que cette vue n'affiche que les conteneurs de notre dépôt. Les autres dépôts sur le même serveur ont leurs propres daemons Docker et sont complètement invisibles depuis ici."
+    }
+  ]
+}

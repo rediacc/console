@@ -280,19 +280,22 @@ www_tutorials_record() {
     # Determine candidate scripts
     local candidates=()
     if [[ -n "$name" ]]; then
-        local script="$tutorials_dir/${name}-tutorial.sh"
+        # Accept either fully-qualified slug (tutorial-installation) or short name (installation)
+        local script="$tutorials_dir/${name}.sh"
+        if [[ ! -f "$script" ]]; then
+            script="$tutorials_dir/tutorial-${name}.sh"
+        fi
         [[ -f "$script" ]] || {
-            log_error "Tutorial not found: $script"
+            log_error "Tutorial not found: $tutorials_dir/${name}.sh or tutorial-${name}.sh"
             exit 1
         }
         candidates+=("$script")
     else
-        # ops-tutorial must run last -- it tears down VMs with 'rdc ops down'
-        for script in "$tutorials_dir"/*-tutorial.sh; do
-            [[ "$(basename "$script")" == "ops-tutorial.sh" ]] && continue
+        # All tutorial scripts share the tutorial-<slug>.sh prefix; record alphabetically.
+        for script in "$tutorials_dir"/tutorial-*.sh; do
+            [[ -f "$script" ]] || continue
             candidates+=("$script")
         done
-        [[ -f "$tutorials_dir/ops-tutorial.sh" ]] && candidates+=("$tutorials_dir/ops-tutorial.sh")
     fi
 
     # Filter by change detection (unless --force)
@@ -322,7 +325,7 @@ www_tutorials_record() {
     log_step "Provisioning VMs for tutorial recording..."
     provision_start
 
-    # Stage tutorial app files needed by repos-tutorial
+    # Stage shared app files; some tutorial scripts may consume /tmp/tutorial-app
     mkdir -p /tmp/tutorial-app
     cat >/tmp/tutorial-app/Rediaccfile <<'TEOF'
 #!/bin/bash

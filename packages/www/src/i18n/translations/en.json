@@ -334,7 +334,8 @@
       },
       "guarantee": "If Rediacc doesn't work for you, email me and I'll help you migrate back.",
       "contact": "Questions? Email me directly",
-      "quote": "I built Rediacc because infrastructure shouldn't be this fragile."
+      "quote": "I built Rediacc because infrastructure shouldn't be this fragile.",
+      "designPartner": "I personally onboard every Design Partner. Sign up free, then book a 30-min call so we can talk about your stack."
     },
     "video": {
       "playLabel": "Watch video",
@@ -344,8 +345,8 @@
   },
   "announcement": {
     "enabled": true,
-    "text": "v0.6 released — Alpine musl support, subscription system, and more",
-    "link": "/en/blog"
+    "text": "Limited time: Design Partner Program — BUSINESS plan free for life",
+    "link": "/account/"
   },
   "testimonials": {
     "title": "What Teams Say",
@@ -658,6 +659,98 @@
           "contact": "Get in Touch",
           "learnMore": "Learn More"
         }
+      }
+    },
+    "designPartners": {
+      "meta": {
+        "title": "Design Partner Program | Get BUSINESS Free for Life",
+        "description": "Sign up free as a Design Partner and get our BUSINESS plan for life. We are looking for pioneers willing to share feedback while we build."
+      },
+      "hero": {
+        "eyebrow": "Limited Time",
+        "title": "Become a Design Partner. Get BUSINESS for life. Free.",
+        "subtitle": "We are pre-customer. We want pioneers willing to use the product and tell us when it breaks. In exchange, you get our BUSINESS plan free for as long as Rediacc exists.",
+        "primaryCta": "Claim my BUSINESS plan",
+        "secondaryCta": "See pricing",
+        "note": "No credit card. No application. We close the program without notice — sign up today."
+      },
+      "why": {
+        "title": "Why we run this",
+        "items": [
+          {
+            "title": "Real teams, real workloads",
+            "body": "We learn 100x more from one team running production than from a hundred trial signups. Design Partners are how we sharpen the product before the masses arrive."
+          },
+          {
+            "title": "Trade money for feedback",
+            "body": "We do not need your dollars yet. We need your scars, your edge cases, and your questions. Free in exchange for honesty is fair."
+          },
+          {
+            "title": "Permanent thanks",
+            "body": "Your lifetime BUSINESS plan never expires, never gets downgraded, and never asks for a credit card. That is the deal."
+          }
+        ]
+      },
+      "youGet": {
+        "title": "What you get",
+        "lede": "Everything in the BUSINESS tier, free for the lifetime of your account.",
+        "items": [
+          "BUSINESS plan: 500 GB per repository, 20 floating licenses, 20,000 license requests per month",
+          "On the edge channel: 2x limits (1 TB per repo, 40 licenses, 40,000 requests)",
+          "Unlimited repositories, users, and teams",
+          "Snapshot restores, dark mode, all 9 languages",
+          "Direct line to the founder for onboarding and support",
+          "Locked in for life. No expiry, no downgrade, no card on file."
+        ]
+      },
+      "ask": {
+        "title": "What we ask in return",
+        "lede": "Light-touch. The point is not to extract free labor; it is to keep us honest.",
+        "items": [
+          {
+            "title": "Tell us when it breaks",
+            "body": "Send a one-line email when something surprises you. Stack trace optional. Frustration encouraged."
+          },
+          {
+            "title": "Hop on a call now and then",
+            "body": "30 minutes every quarter or so. We listen, you talk. No demos, no upsells."
+          },
+          {
+            "title": "Be reachable",
+            "body": "If we ship something that affects you, we want to be able to ping you before it lands. Standard email is fine."
+          }
+        ]
+      },
+      "faq": {
+        "title": "Honest answers",
+        "items": [
+          {
+            "q": "Is it really lifetime?",
+            "a": "Yes. The grant lives in your subscription record with no expiry and no auto-downgrade. If we ever need to change that, we will email every Design Partner first. We have not done it. We have no plans to."
+          },
+          {
+            "q": "What if Rediacc shuts down?",
+            "a": "Then your account stops working — same as anyone else. The lifetime promise is the lifetime of the company. We are pre-customer; this is the honest risk you are taking."
+          },
+          {
+            "q": "Are there strings attached?",
+            "a": "No paywalls, no contracts, no auto-billing. The only ask is the light-touch feedback above. You can ignore us. We will not revoke your plan."
+          },
+          {
+            "q": "Can I switch plans later?",
+            "a": "Yes. You can stay on BUSINESS forever, or move to Enterprise if you outgrow the limits. Going up is normal billing; the lifetime perk applies only to BUSINESS."
+          },
+          {
+            "q": "How long is the program open?",
+            "a": "Until we close it. We will not announce the close ahead of time, so today is a fine day to sign up. Existing Design Partners keep their plan whatever happens."
+          }
+        ]
+      },
+      "finalCta": {
+        "title": "Ready to be a pioneer?",
+        "subtitle": "One signup. No credit card. Lifetime BUSINESS plan, locked in.",
+        "button": "Claim my BUSINESS plan",
+        "note": "We will email you to set up an onboarding call within a day or two."
       }
     },
     "professionalServices": {
@@ -1125,6 +1218,12 @@
         "monthOrYear": "per month or {{price}} per year",
         "foreverFree": "Forever free",
         "edgeLimitsNote": "Limits shown for edge channel. Half on stable.",
+        "designPartner": {
+          "badge": "FREE for Design Partners",
+          "price": "FREE",
+          "period": "Lifetime · No card required",
+          "cta": "Claim Design Partner"
+        },
         "taxDisclaimer": "All prices are in USD and exclude applicable taxes, levies, and duties.",
         "cta": {
           "community": {
@@ -1595,6 +1694,11 @@
       "actions": {
         "homepage": "Go to Homepage",
         "contactSupport": "Contact Support"
+      },
+      "designPartner": {
+        "title": "Design Partner Program",
+        "body": "Get our BUSINESS plan free for life. No credit card.",
+        "cta": "Claim Design Partner"
       },
       "help": {
         "title": "Need Help?",
@@ -13391,6 +13495,103 @@
       "subtitle": "Follow the latest updates, improvements, and fixes.",
       "subscribeTitle": "Get notified of new releases",
       "subscribeDescription": "Receive a short update whenever we ship something new."
+    },
+    "resourcesNis2Directive": {
+      "meta": {
+        "title": "NIS2 Directive Summary for CISOs (Free PDF)",
+        "description": "Free 24-page summary of EU NIS2 (Directive 2022/2555). Covers Article 21 measures, Article 23 reporting, Annex sectors, fines, and a 10-step roadmap.",
+        "keywords": "NIS2, NIS2 directive, NIS2 summary, NIS2 compliance, EU cybersecurity directive, Directive 2022/2555, Article 21, Article 23, NIS2 PDF"
+      },
+      "hero": {
+        "eyebrow": "Free download · 24 pages · A4 PDF",
+        "title": "NIS2 Directive: English Summary for CISOs and Compliance Leads",
+        "subtitle": "A 24-page English-language summary of Directive (EU) 2022/2555. Covers scope, the ten Article 21 measures, the 24h/72h/1-month Article 23 reporting timeline, Annex I and II sectors, administrative fines, and a 10-step practical compliance roadmap. Authored by Rediacc; not an authoritative translation.",
+        "downloadButton": "Download the PDF",
+        "openInBrowser": "Open in browser",
+        "disclaimer": "This document is an unofficial summary. For binding interpretation, consult the official text at OJ L 333/80, 27.12.2022."
+      },
+      "toc": {
+        "heading": "What is in the PDF",
+        "intro": "Nineteen sections, structured for the working CISO or compliance lead who wants the directive's substance without wading through 73 pages of recitals and articles.",
+        "items": [
+          "Executive Summary",
+          "Purpose and Legal Basis",
+          "From NIS1 to NIS2: Why a New Regulation?",
+          "Scope and Excluded Areas",
+          "Key Definitions",
+          "Entity Categories: Essential and Important Entities",
+          "Sectors in Scope (Annex I and Annex II)",
+          "Member State Obligations",
+          "Cybersecurity Risk Management Measures (Article 21)",
+          "Incident Reporting Obligations (Article 23)",
+          "Supply Chain Security",
+          "Management Body Responsibility",
+          "EU-level Cooperation Structures",
+          "Supervision and Enforcement",
+          "Administrative Fines",
+          "Implementation Timeline and Transition",
+          "Implications for Non-EU Businesses",
+          "Practical Compliance Roadmap (10 Steps)",
+          "Conclusion and Assessment"
+        ]
+      },
+      "companions": {
+        "heading": "Three companion guides",
+        "intro": "The PDF maps the directive. The companion guides turn the obligations into procurement and operational decisions, one audience at a time.",
+        "readMore": "Read the guide →",
+        "items": [
+          {
+            "title": "Article 21(2)(d) is a vendor question",
+            "slug": "nis2-supply-chain-self-hosted",
+            "blurb": "Why the third-party-ICT register shrinks when the data plane never leaves your tenancy. For CISOs and procurement leads renegotiating DPAs in 2026."
+          },
+          {
+            "title": "Continuous effectiveness without theatre",
+            "slug": "nis2-effectiveness-without-theatre",
+            "blurb": "Article 21(2)(e), (f), and 23 read together. The constant-time fork that makes weekly drills realistic, and the Article 23 reporting timeline you cannot meet without forensic-grade artefacts. For SRE and ops leads."
+          },
+          {
+            "title": "What buyers told us in the first NIS2 audit cycle",
+            "slug": "nis2-the-real-bill",
+            "blurb": "The five-tool compliance stack mid-market essential entities are quietly assembling, what a self-hosted control plane collapses, and the line items that stay yours either way. For CFOs and buyers heading into a renewal cycle."
+          }
+        ]
+      },
+      "faq": {
+        "heading": "Frequently asked",
+        "items": [
+          {
+            "q": "Is this an authoritative translation of the directive?",
+            "a": "No. It is an unofficial English-language summary intended to make the directive's structure and obligations accessible. For binding interpretation, consult the official text at OJ L 333/80 (27 December 2022) or via EUR-Lex (CELEX 32022L2555). National transposition acts in your Member State may impose stricter or differently-scoped obligations than the directive itself."
+          },
+          {
+            "q": "Who is in scope under NIS2?",
+            "a": "Entities operating in Annex I (high-criticality) or Annex II (other critical) sectors that meet the medium-sized enterprise threshold (50+ employees or EUR 10 million+ turnover, per Recommendation 2003/361/EC). Some entities are in scope regardless of size, including TLD registries, DNS providers, trust service providers, and central public administration. Sections 4, 6, and 7 of the PDF cover scope in detail."
+          },
+          {
+            "q": "When did NIS2 enter into force, and what is the transposition deadline?",
+            "a": "The directive entered into force on 16 January 2023. Member States had until 17 October 2024 to transpose it into national law; application began on 18 October 2024 (the same date NIS1 was repealed). The full timeline including the entity-list-to-Commission deadline (17 April 2025) and the periodic-review schedule is in Section 16."
+          },
+          {
+            "q": "What are the maximum fines?",
+            "a": "For essential entities: EUR 10,000,000 or 2% of global annual turnover, whichever is higher. For important entities: EUR 7,000,000 or 1.4% of global annual turnover, whichever is higher. The directive also permits non-monetary sanctions including temporary management bans for senior management of essential entities (last-resort measure). Section 15 covers fine determination factors."
+          },
+          {
+            "q": "Does NIS2 apply to non-EU companies?",
+            "a": "Yes, in two ways. Directly: non-EU DNS, cloud, data centre, CDN, MSP/MSSP, online marketplace, search, and social-networking providers offering services in the EU must appoint an EU representative and comply. Indirectly: any non-EU supplier providing products or services to EU essential or important entities will be subject to supply-chain security contractual requirements imposed by their EU customers under Article 21(2)(d). Section 17 covers both."
+          },
+          {
+            "q": "How does Article 23 incident reporting work?",
+            "a": "Three deadlines, all triggered by \"becoming aware\" of a significant incident: 24 hours for an early warning, 72 hours for a full incident notification, and one month for the final report. Service recipients must also be notified without undue delay if a significant cyber threat is likely. Section 10 has the full reporting matrix."
+          }
+        ]
+      },
+      "about": {
+        "heading": "About this summary",
+        "body": "Rediacc is a self-hosted infrastructure platform registered in Estonia (OÜ 17363830, VAT EE102920091). This summary was authored as part of our NIS2 content programme. The companion guides above describe how Rediacc addresses specific articles of the directive, including the gaps where Rediacc is not the answer (no certifications yet; no GRC layer; no managed Article 23 reporting; portal-only MFA). For the public capability mapping, see {nis2DoraLink} in the documentation.",
+        "cta": "Send us your vendor questionnaire or your three biggest security line items from last year's budget. We will respond against a deployed instance, in writing, including the gaps. Or download the PDF and forward it to a colleague.",
+        "downloadButton": "Download the PDF"
+      }
     }
   },
   "documentation": {
@@ -13416,6 +13617,10 @@
       "reference": "Reference",
       "useCases": "Use Cases",
       "legal": "Legal"
+    },
+    "subcategories": {
+      "essentials": "Essentials",
+      "advanced": "Advanced"
     }
   },
   "video": {
@@ -13443,6 +13648,10 @@
       "twitter": {
         "site": "@rediacc",
         "creator": "@rediacc"
+      },
+      "designPartner": {
+        "ogPrefix": "Design Partner Program",
+        "ogDescPrefix": "Get BUSINESS free for life."
       }
     }
   }

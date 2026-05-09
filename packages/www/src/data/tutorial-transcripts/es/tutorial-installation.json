@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation.cast",
+  "language": "es",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-installation-01",
+      "markerIndex": 0,
+      "at": 1.509194,
+      "text": "Primero, confirmamos que el CLI está disponible. Ejecutar el CLI con el flag de versión imprime la versión instalada y nos indica que la instalación se completó correctamente."
+    },
+    {
+      "id": "tutorial-installation-02",
+      "markerIndex": 1,
+      "at": 9.435981,
+      "text": "Ahora vamos a ejecutar el doctor del CLI. Revisa las dependencias que necesita el CLI, como Node, SSH y el resto, e informa sobre cualquier problema. Un reporte limpio significa que estás listo para agregar un servidor."
+    }
+  ]
+}

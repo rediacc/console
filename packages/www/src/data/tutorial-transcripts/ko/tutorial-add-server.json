@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-add-server.cast",
+  "language": "ko",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-add-server-01",
+      "markerIndex": 0,
+      "at": 1.508633,
+      "text": "먼저 SSH 키, 머신 목록, 인프라 설정을 보관할 구성 프로파일을 생성합니다."
+    },
+    {
+      "id": "tutorial-add-server-02",
+      "markerIndex": 1,
+      "at": 11.160728,
+      "text": "이제 서버 이름, IP 주소, SSH 사용자를 입력하여 rdc에 서버를 등록합니다. 호스트 키는 신뢰할 수 있는 접근을 위해 자동으로 스캔됩니다."
+    },
+    {
+      "id": "tutorial-add-server-03",
+      "markerIndex": 2,
+      "at": 23.457976,
+      "text": "다음으로 서버를 프로비저닝합니다. renet을 설치하고 암호화된 데이터 저장소를 생성합니다."
+    },
+    {
+      "id": "tutorial-add-server-04",
+      "markerIndex": 3,
+      "at": 39.717449,
+      "text": "서버가 준비되었습니다. rdc가 구성에 대해 알고 있는 정보를 확인합니다. 머신, SSH 키, 인프라 등 방금 설정한 모든 항목이 여기에 표시됩니다."
+    },
+    {
+      "id": "tutorial-add-server-05",
+      "markerIndex": 4,
+      "at": 48.157549,
+      "text": "그리고 이것이 모든 내용을 담고 있는 JSON 파일입니다. 이 파일 하나를 다른 노트북에 복사하면 그곳에서도 동일한 서버를 관리할 수 있습니다."
+    }
+  ]
+}

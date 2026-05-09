@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-backup-restore.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-backup-restore-01",
+      "markerIndex": 0,
+      "at": 65.053708,
+      "text": "第一步。让我们导入现有的 rclone 配置。rclone 支持 S3、Backblaze、Google Drive、Dropbox 等众多服务，如果你已经在使用，可以直接导入同一份配置。"
+    },
+    {
+      "id": "tutorial-backup-restore-02",
+      "markerIndex": 1,
+      "at": 73.743501,
+      "text": "让我们列出 rdc 现在已知的存储。每个存储都是我们可以推送备份的目标。"
+    },
+    {
+      "id": "tutorial-backup-restore-03",
+      "markerIndex": 2,
+      "at": 82.843959,
+      "text": "第二步。让我们推送一个完整备份。整个仓库，包括应用、数据库、文件和配置，全部上传。由于仓库本身是静态加密的，备份也是加密的，无需额外的密钥管理。"
+    },
+    {
+      "id": "tutorial-backup-restore-04",
+      "markerIndex": 3,
+      "at": 94.515541,
+      "text": "让我们列出该存储上的可用备份。从这里开始，在全新服务器上恢复只需一条命令，rdc repo pull。相同的数据，相同的容器，不同的机器。"
+    }
+  ]
+}

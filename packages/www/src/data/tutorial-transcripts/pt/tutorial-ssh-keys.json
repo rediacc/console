@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-ssh-keys.cast",
+  "language": "pt",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-ssh-keys-01",
+      "markerIndex": 0,
+      "at": 1.50929,
+      "text": "Passo um. Vamos gerar uma nova chave SSH ed25519. O ed25519 é o padrão moderno: compacto, rápido e bem suportado. Só é necessário fazer isto uma vez para todos os servidores que venha a adicionar."
+    },
+    {
+      "id": "tutorial-ssh-keys-02",
+      "markerIndex": 1,
+      "at": 8.723209,
+      "text": "Passo dois. Vamos copiar a chave pública para o servidor com ssh-copy-id. A palavra-passe do servidor é pedida pela última vez. A partir daqui, a autenticação por palavra-passe já não é necessária."
+    },
+    {
+      "id": "tutorial-ssh-keys-03",
+      "markerIndex": 2,
+      "at": 16.253995,
+      "text": "Passo três. Agora vamos registar a chave no rdc. A partir deste momento, todos os comandos rdc autenticam com esta chave."
+    },
+    {
+      "id": "tutorial-ssh-keys-04",
+      "markerIndex": 3,
+      "at": 24.863027,
+      "text": "Vamos confirmar que a configuração mostra o caminho da chave guardado corretamente."
+    }
+  ]
+}
