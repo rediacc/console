@@ -2579,7 +2579,7 @@
     "opsSkipOrchestration": "跳过集群编排",
     "opsSSHUser": "VM 连接的 SSH 用户名",
     "organization": "组织名称",
-    "output": "输出格式（table|json|yaml|csv）. Override default with REDIACC_DEFAULT_OUTPUT.",
+    "output": "输出格式（table|json|yaml|csv）。使用 REDIACC_DEFAULT_OUTPUT 覆盖默认值。",
     "outputFormat": "输出格式（json）",
     "outputPath": "保存输出文件的路径",
     "param": "函数参数",

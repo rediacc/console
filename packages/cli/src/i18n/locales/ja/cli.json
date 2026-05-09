@@ -2579,7 +2579,7 @@
     "opsSkipOrchestration": "クラスターオーケストレーションをスキップ",
     "opsSSHUser": "VM 接続用の SSH ユーザー名",
     "organization": "組織名",
-    "output": "出力形式 (table|json|yaml|csv). Override default with REDIACC_DEFAULT_OUTPUT.",
+    "output": "出力形式 (table|json|yaml|csv)。REDIACC_DEFAULT_OUTPUT でデフォルトを上書きします。",
     "outputFormat": "出力形式 (json)",
     "outputPath": "出力ファイルを保存するパス",
     "param": "関数パラメータ",

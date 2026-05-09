@@ -2579,7 +2579,7 @@
     "opsSkipOrchestration": "Пропустить оркестрацию кластера",
     "opsSSHUser": "Имя пользователя SSH для подключения к VM",
     "organization": "Имя организации",
-    "output": "Формат вывода (table|json|yaml|csv). Override default with REDIACC_DEFAULT_OUTPUT.",
+    "output": "Формат вывода (table|json|yaml|csv). Переопределить по умолчанию через REDIACC_DEFAULT_OUTPUT.",
     "outputFormat": "Формат вывода (json)",
     "outputPath": "Путь для сохранения выходного файла",
     "param": "Параметры функции",

@@ -2579,7 +2579,7 @@
     "opsSkipOrchestration": "Jäta klastri orkestratsioon vahele",
     "opsSSHUser": "SSH-kasutajanimi VM-ühenduse jaoks",
     "organization": "Organisatsiooni nimi",
-    "output": "Väljundvorming (table|json|yaml|csv). Override default with REDIACC_DEFAULT_OUTPUT.",
+    "output": "Väljundvorming (table|json|yaml|csv). Vaikeväärtuse alistamiseks kasuta REDIACC_DEFAULT_OUTPUT.",
     "outputFormat": "Väljundvorming (json)",
     "outputPath": "Väljundfaili salvestamise tee",
     "param": "Funktsiooni parameetrid",
