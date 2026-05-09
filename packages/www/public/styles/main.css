@@ -118,8 +118,8 @@
      (#DC2626 in /assets/images/icon-rediacc.svg + /favicon.svg). Reserved
      for THE single highest-intent CTA on a page (the "joker"). Enforced
      at npm run ci time by scripts/check-cta-bolt-uniqueness.js. */
-  --color-brand-bolt: #DC2626;
-  --color-brand-bolt-hover: #B91C1C;
+  --color-brand-bolt: #dc2626;
+  --color-brand-bolt-hover: #b91c1c;
 
   /* Responsive Breakpoints */
   --breakpoint-xs: 36rem; /* 576px */

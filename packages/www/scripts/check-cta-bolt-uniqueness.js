@@ -56,14 +56,7 @@ function hasMarker(html) {
 }
 
 async function isProgramActive() {
-  const enPath = path.resolve(
-    import.meta.dirname,
-    '..',
-    'src',
-    'i18n',
-    'translations',
-    'en.json'
-  );
+  const enPath = path.resolve(import.meta.dirname, '..', 'src', 'i18n', 'translations', 'en.json');
   const en = JSON.parse(await readFile(enPath, 'utf8'));
   return en?.announcement?.enabled === true;
 }
@@ -107,12 +100,8 @@ async function main() {
     console.error(
       `[check-cta-bolt] FAIL — ${tooMany.length} page(s) have more than one .cta-bolt button.`
     );
-    console.error(
-      'Each page must have at most ONE bolt-red CTA (the "joker"). Move surplus bolts'
-    );
-    console.error(
-      'to .sp-btn-primary / .cf-cta-featured / etc. without the `cta-bolt` class.'
-    );
+    console.error('Each page must have at most ONE bolt-red CTA (the "joker"). Move surplus bolts');
+    console.error('to .sp-btn-primary / .cf-cta-featured / etc. without the `cta-bolt` class.');
     console.error('');
     for (const v of tooMany) {
       console.error(`  ${v.file}  —  ${v.count} occurrences`);
