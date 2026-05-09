@@ -1,0 +1,591 @@
+{
+  "cast": "/assets/tutorials/tutorial-ssh-keys.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "a07c372c1fbad9b678319fe02be5f12013d95c234ee2a7cd15e911a6f5fde70c",
+  "steps": [
+    {
+      "id": "tutorial-ssh-keys-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.50929,
+      "replayEndSec": 8.723209,
+      "narrationText": "Шаг первый. Сейчас мы генерируем новый SSH-ключ ed25519. Это современный стандарт: компактный, быстрый и хорошо поддерживаемый. Делается один раз для всех серверов, которые вы когда-либо добавите.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/tutorial-ssh-keys-01.04a3afc7.mp3",
+      "audioDurationSec": 16.352653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.84,
+          "startChar": 12,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.0,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.64,
+          "startChar": 22,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.96,
+          "startChar": 33,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 4.0,
+          "startChar": 39,
+          "endChar": 42
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.88,
+          "startChar": 48,
+          "endChar": 55
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.12,
+          "startChar": 57,
+          "endChar": 60
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.6,
+          "startChar": 61,
+          "endChar": 72
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.24,
+          "startChar": 73,
+          "endChar": 81
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 9.44,
+          "startChar": 83,
+          "endChar": 93
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 10.08,
+          "startChar": 95,
+          "endChar": 102
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.4,
+          "startChar": 103,
+          "endChar": 104
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.8,
+          "startChar": 105,
+          "endChar": 111
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.68,
+          "startChar": 112,
+          "endChar": 126
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.8,
+          "startChar": 128,
+          "endChar": 136
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.12,
+          "startChar": 137,
+          "endChar": 141
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.36,
+          "startChar": 142,
+          "endChar": 145
+        },
+        {
+          "startSec": 13.36,
+          "endSec": 13.6,
+          "startChar": 146,
+          "endChar": 149
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 13.92,
+          "startChar": 150,
+          "endChar": 154
+        },
+        {
+          "startSec": 13.92,
+          "endSec": 14.4,
+          "startChar": 155,
+          "endChar": 163
+        },
+        {
+          "startSec": 14.4,
+          "endSec": 14.88,
+          "startChar": 165,
+          "endChar": 172
+        },
+        {
+          "startSec": 14.88,
+          "endSec": 15.12,
+          "startChar": 173,
+          "endChar": 175
+        },
+        {
+          "startSec": 15.68,
+          "endSec": 16.32,
+          "startChar": 187,
+          "endChar": 195
+        }
+      ]
+    },
+    {
+      "id": "tutorial-ssh-keys-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.723209,
+      "replayEndSec": 16.253995,
+      "narrationText": "Шаг второй. Копируем публичный ключ на сервер с помощью ssh-copy-id. Пароль сервера запросится в последний раз. После этого аутентификация по паролю для этого сервера больше не нужна.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/tutorial-ssh-keys-02.9d91af8a.mp3",
+      "audioDurationSec": 13.244082,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.84,
+          "startChar": 12,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.32,
+          "startChar": 21,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.64,
+          "startChar": 31,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.72,
+          "startChar": 36,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.12,
+          "startChar": 39,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.2,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.6,
+          "startChar": 48,
+          "endChar": 55
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.92,
+          "startChar": 69,
+          "endChar": 75
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.32,
+          "startChar": 76,
+          "endChar": 83
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.88,
+          "startChar": 84,
+          "endChar": 94
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 6.96,
+          "startChar": 95,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.44,
+          "startChar": 97,
+          "endChar": 106
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.68,
+          "startChar": 107,
+          "endChar": 110
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.72,
+          "startChar": 112,
+          "endChar": 117
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 9.04,
+          "startChar": 118,
+          "endChar": 123
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 10.0,
+          "startChar": 124,
+          "endChar": 138
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.16,
+          "startChar": 139,
+          "endChar": 141
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.72,
+          "startChar": 142,
+          "endChar": 148
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.04,
+          "startChar": 149,
+          "endChar": 152
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.36,
+          "startChar": 153,
+          "endChar": 158
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 12.0,
+          "startChar": 159,
+          "endChar": 166
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.64,
+          "startChar": 167,
+          "endChar": 173
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 12.72,
+          "startChar": 174,
+          "endChar": 176
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.12,
+          "startChar": 177,
+          "endChar": 182
+        }
+      ]
+    },
+    {
+      "id": "tutorial-ssh-keys-03",
+      "markerIndex": 2,
+      "replayStartSec": 16.253995,
+      "replayEndSec": 24.863027,
+      "narrationText": "Шаг третий. Регистрируем ключ в CLI. Теперь каждая команда будет аутентифицироваться с этим ключом. Никаких паролей, никаких интерактивных запросов.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/tutorial-ssh-keys-03.48612067.mp3",
+      "audioDurationSec": 12.199184,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.4,
+          "startChar": 12,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.72,
+          "startChar": 25,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.8,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.48,
+          "startChar": 37,
+          "endChar": 43
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.8,
+          "startChar": 44,
+          "endChar": 50
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.28,
+          "startChar": 51,
+          "endChar": 58
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.52,
+          "startChar": 59,
+          "endChar": 64
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.72,
+          "startChar": 65,
+          "endChar": 84
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.8,
+          "startChar": 85,
+          "endChar": 86
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.04,
+          "startChar": 87,
+          "endChar": 91
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 9.12,
+          "startChar": 100,
+          "endChar": 107
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.68,
+          "startChar": 108,
+          "endChar": 115
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.8,
+          "startChar": 117,
+          "endChar": 124
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.52,
+          "startChar": 125,
+          "endChar": 138
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 12.08,
+          "startChar": 139,
+          "endChar": 147
+        }
+      ]
+    },
+    {
+      "id": "tutorial-ssh-keys-04",
+      "markerIndex": 3,
+      "replayStartSec": 24.863027,
+      "replayEndSec": 32.617101,
+      "narrationText": "Давайте убедимся, что конфигурация показывает правильный путь к ключу. Теперь эта настройка работает для каждой машины, которую вы добавите в конфигурацию.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/tutorial-ssh-keys-04.a3aaea41.mp3",
+      "audioDurationSec": 10.03102,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.12,
+          "startChar": 8,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.52,
+          "startChar": 18,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.32,
+          "startChar": 22,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.88,
+          "startChar": 35,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.36,
+          "startChar": 46,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.68,
+          "startChar": 57,
+          "endChar": 61
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.76,
+          "startChar": 62,
+          "endChar": 63
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.16,
+          "startChar": 64,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.8,
+          "startChar": 71,
+          "endChar": 77
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.96,
+          "startChar": 78,
+          "endChar": 81
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.6,
+          "startChar": 82,
+          "endChar": 91
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.48,
+          "startChar": 92,
+          "endChar": 100
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.64,
+          "startChar": 101,
+          "endChar": 104
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 7.12,
+          "startChar": 105,
+          "endChar": 111
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.6,
+          "startChar": 112,
+          "endChar": 118
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.16,
+          "startChar": 120,
+          "endChar": 127
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.24,
+          "startChar": 128,
+          "endChar": 130
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.88,
+          "startChar": 131,
+          "endChar": 139
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.12,
+          "startChar": 140,
+          "endChar": 141
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 10.0,
+          "startChar": 142,
+          "endChar": 154
+        }
+      ]
+    }
+  ]
+}

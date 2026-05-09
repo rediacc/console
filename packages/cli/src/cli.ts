@@ -112,6 +112,34 @@ async function setUserAndSubscriptionContext(): Promise<void> {
   }
 }
 
+// Output-format precedence when --output not explicitly set:
+//   1. REDIACC_DEFAULT_OUTPUT env var (whitelist: table|json|yaml|csv)
+//   2. Auto-JSON for non-TTY or agent environments
+//   3. Default 'table' from .option()
+// Used by tutorial recording to keep human-readable output even though
+// CLAUDECODE=1 in the parent shell triggers agent detection.
+function resolveOutputFormat(
+  optsValue: OutputFormat,
+  source: string | undefined
+): OutputFormat {
+  if (source !== 'default') {
+    return optsValue;
+  }
+  const envOverride = process.env.REDIACC_DEFAULT_OUTPUT;
+  if (
+    envOverride === 'table' ||
+    envOverride === 'json' ||
+    envOverride === 'yaml' ||
+    envOverride === 'csv'
+  ) {
+    return envOverride;
+  }
+  if (process.stdout.isTTY !== true || isAgentEnvironment()) {
+    return 'json';
+  }
+  return optsValue;
+}
+
 export const cli = new Command();
 
 cli
@@ -126,27 +154,10 @@ cli
   .option('--fields <fields>', t('options.fields'))
   .hook('preAction', async (thisCommand, actionCommand) => {
     const opts = thisCommand.opts();
-    // Output-format precedence when --output not explicitly set:
-    //   1. REDIACC_DEFAULT_OUTPUT env var (whitelist: table|json|yaml|csv)
-    //   2. Auto-JSON for non-TTY or agent environments
-    //   3. Default 'table' from .option()
-    // Used by tutorial recording to keep human-readable output even though
-    // CLAUDECODE=1 in the parent shell triggers agent detection.
-    const outputSource = thisCommand.getOptionValueSource('output');
-    let effectiveFormat = opts.output as OutputFormat;
-    if (outputSource === 'default') {
-      const envOverride = process.env.REDIACC_DEFAULT_OUTPUT;
-      if (
-        envOverride === 'table' ||
-        envOverride === 'json' ||
-        envOverride === 'yaml' ||
-        envOverride === 'csv'
-      ) {
-        effectiveFormat = envOverride;
-      } else if (process.stdout.isTTY !== true || isAgentEnvironment()) {
-        effectiveFormat = 'json';
-      }
-    }
+    const effectiveFormat = resolveOutputFormat(
+      opts.output as OutputFormat,
+      thisCommand.getOptionValueSource('output')
+    );
     setOutputFormat(effectiveFormat);
     thisCommand.setOptionValue('output', effectiveFormat);
     // Set --yes flag globally for prompt bypass
