@@ -19,7 +19,7 @@
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
       "at": 79.070004,
-      "text": "Passo tre. Avviamo il repo. rdc avvia i container, monta il volume cifrato e collega il Docker daemon isolato. L'app e' ora in esecuzione."
+      "text": "Passo tre. Avviamo il repo. Lo strumento avvia i container, monta il volume cifrato e collega il Docker daemon isolato. L'app e' ora in esecuzione."
     },
     {
       "id": "tutorial-deploy-app-04",

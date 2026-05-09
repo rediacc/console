@@ -13,7 +13,7 @@
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
       "at": 73.743501,
-      "text": "Vamos listar os armazenamentos que o rdc conhece agora. Cada um é um destino para onde podemos enviar cópias de segurança."
+      "text": "Vamos listar os armazenamentos que a ferramenta conhece agora. Cada um é um destino para onde podemos enviar cópias de segurança."
     },
     {
       "id": "tutorial-backup-restore-03",
@@ -25,7 +25,7 @@
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
       "at": 94.515541,
-      "text": "E aqui estão as cópias de segurança disponíveis neste armazenamento. A partir daqui, restaurar num servidor novo é um único comando: rdc repo pull."
+      "text": "E aqui estão as cópias de segurança disponíveis neste armazenamento. A partir daqui, restaurar num servidor novo é um único comando: o comando de restauração do repositório."
     }
   ]
 }

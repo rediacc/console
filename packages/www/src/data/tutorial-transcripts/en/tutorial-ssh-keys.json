@@ -19,7 +19,7 @@
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
       "at": 16.253995,
-      "text": "Step three. Now we register the key with rdc. From here on, every rdc command authenticates with this key."
+      "text": "Step three. Now we register the key with the CLI. From here on, every command authenticates with this key."
     },
     {
       "id": "tutorial-ssh-keys-04",

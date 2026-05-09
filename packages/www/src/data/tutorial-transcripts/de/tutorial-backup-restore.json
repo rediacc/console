@@ -25,7 +25,7 @@
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
       "at": 94.515541,
-      "text": "Wir listen die auf diesem Speicher verfügbaren Backups auf. Von hier aus ist die Wiederherstellung auf einem neuen Server ein einziger Befehl: rdc repo pull. Gleiche Daten, gleiche Container, andere Maschine."
+      "text": "Wir listen die auf diesem Speicher verfügbaren Backups auf. Von hier aus ist die Wiederherstellung auf einem neuen Server ein einziger Befehl: der Repo-Pull-Befehl. Gleiche Daten, gleiche Container, andere Maschine."
     }
   ]
 }

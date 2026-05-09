@@ -7,7 +7,7 @@
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
       "at": 56.862064,
-      "text": "Wir starten die App im Produktionsmodus vom Laptop aus. rdc repo up ruft dieselbe up-Funktion auf, die wir während der Entwicklung verwendet haben, läuft aber getrennt. Sie können Ihren Laptop zuklappen und die App läuft weiter."
+      "text": "Wir starten die App im Produktionsmodus vom Laptop aus. Der Deployment-Befehl ruft dieselbe up-Funktion auf, die wir während der Entwicklung verwendet haben, läuft aber getrennt. Sie können Ihren Laptop zuklappen und die App läuft weiter."
     },
     {
       "id": "tutorial-production-mode-02",

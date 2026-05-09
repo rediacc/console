@@ -19,7 +19,7 @@
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
       "at": 79.070004,
-      "text": "Üçüncü adım. Depoyu ayağa kaldırıyoruz. rdc container'ları başlatır, şifreli birimi bağlar ve izole Docker daemon'ını yapılandırır. Uygulama artık çalışıyor."
+      "text": "Üçüncü adım. Depoyu ayağa kaldırıyoruz. Araç container'ları başlatır, şifreli birimi bağlar ve izole Docker daemon'ını yapılandırır. Uygulama artık çalışıyor."
     },
     {
       "id": "tutorial-deploy-app-04",

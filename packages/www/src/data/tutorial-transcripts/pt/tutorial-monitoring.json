@@ -7,7 +7,7 @@
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
       "at": 102.949897,
-      "text": "Vamos começar com a vista do sistema. O rdc machine query com o filtro --system mostra o tempo de funcionamento, o uso do disco e o estado do armazenamento."
+      "text": "Vamos começar com a vista do sistema. O comando de consulta de máquina com o filtro --system mostra o tempo de funcionamento, o uso do disco e o estado do armazenamento."
     },
     {
       "id": "tutorial-monitoring-02",
@@ -25,13 +25,13 @@
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
       "at": 138.182721,
-      "text": "O rdc machine query sem filtros dá-nos tudo de uma vez. Informação do sistema, contentores, repositórios -- tudo junto."
+      "text": "O comando de consulta de máquina sem filtros dá-nos tudo de uma vez. Informação do sistema, contentores, repositórios -- tudo junto."
     },
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
       "at": 149.8205,
-      "text": "E por fim o rdc doctor para uma verificação local no portátil. Node, chave SSH, renet, Docker -- tudo aquilo de que o rdc depende. Esta é a série completa. Da instalação à monitorização, tudo a partir do terminal."
+      "text": "E por fim a verificação de diagnóstico para uma verificação local no portátil. Node, chave SSH, renet, Docker -- tudo aquilo de que a linha de comandos depende. Esta é a série completa. Da instalação à monitorização, tudo a partir do terminal."
     }
   ]
 }

@@ -19,7 +19,7 @@
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
       "at": 16.253995,
-      "text": "3단계입니다. rdc에 키를 등록합니다. 이제부터 모든 rdc 명령은 이 키로 인증됩니다."
+      "text": "3단계입니다. CLI에 키를 등록합니다. 이제부터 모든 명령은 이 키로 인증됩니다."
     },
     {
       "id": "tutorial-ssh-keys-04",

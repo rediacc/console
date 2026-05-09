@@ -7,7 +7,7 @@
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
       "at": 102.949897,
-      "text": "Commençons par la vue système. rdc machine query avec le filtre system affiche le temps de fonctionnement, l'utilisation du disque et l'état du stockage. Si quelque chose ne va pas, le rapport nous le dit."
+      "text": "Commençons par la vue système. La commande de requête machine avec le filtre system affiche le temps de fonctionnement, l'utilisation du disque et l'état du stockage. Si quelque chose ne va pas, le rapport nous le dit."
     },
     {
       "id": "tutorial-monitoring-02",
@@ -25,13 +25,13 @@
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
       "at": 138.182721,
-      "text": "rdc machine query vous donne tout en une seule commande. Informations système, conteneurs, dépôts, tout ensemble. Lancez-la une fois et vous avez le tableau complet."
+      "text": "La commande de requête machine vous donne tout en une seule fois. Informations système, conteneurs, dépôts, tout ensemble. Lancez-la une fois et vous avez le tableau complet."
     },
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
       "at": 149.8205,
-      "text": "Et enfin rdc doctor pour une vérification locale sur votre ordinateur. Node, clé SSH, renet, Docker, tout ce dont rdc lui-même dépend. C'est la série complète. De l'installation à la surveillance, tout depuis votre terminal."
+      "text": "Et enfin le contrôle de diagnostic pour une vérification locale sur votre ordinateur. Node, clé SSH, renet, Docker, tout ce dont la ligne de commande elle-même dépend. C'est la série complète. De l'installation à la surveillance, tout depuis votre terminal."
     }
   ]
 }

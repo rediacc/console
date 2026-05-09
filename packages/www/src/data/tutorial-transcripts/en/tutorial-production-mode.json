@@ -7,7 +7,7 @@
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
       "at": 56.862064,
-      "text": "Time to start the app in production mode from the laptop. rdc repo up calls the same up function we used during development, but it runs detached. Close your laptop and the app keeps going."
+      "text": "Time to start the app in production mode from the laptop. The deploy command calls the same up function we used during development, but it runs detached. Close your laptop and the app keeps going."
     },
     {
       "id": "tutorial-production-mode-02",

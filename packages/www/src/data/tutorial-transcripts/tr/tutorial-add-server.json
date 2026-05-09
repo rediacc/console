@@ -13,7 +13,7 @@
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
       "at": 11.160728,
-      "text": "Şimdi sunucuyu rdc'ye kaydediyoruz: adını, IP adresini ve SSH kullanıcısını belirtiyoruz. Host anahtarları güvenilir erişim için otomatik olarak taranıyor."
+      "text": "Şimdi sunucuyu komut satırına kaydediyoruz: adını, IP adresini ve SSH kullanıcısını belirtiyoruz. Host anahtarları güvenilir erişim için otomatik olarak taranıyor."
     },
     {
       "id": "tutorial-add-server-03",
@@ -25,7 +25,7 @@
       "id": "tutorial-add-server-04",
       "markerIndex": 3,
       "at": 39.717449,
-      "text": "rdc'nin yapılandırma hakkında bildiklerini doğruluyoruz. Makineler, SSH anahtarı, altyapı bilgileri; az önce kurduğumuz her şey burada görünüyor."
+      "text": "Aracın yapılandırma hakkında bildiklerini doğruluyoruz. Makineler, SSH anahtarı, altyapı bilgileri; az önce kurduğumuz her şey burada görünüyor."
     },
     {
       "id": "tutorial-add-server-05",

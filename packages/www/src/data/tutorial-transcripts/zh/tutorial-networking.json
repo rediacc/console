@@ -7,7 +7,7 @@
       "id": "tutorial-networking-01",
       "markerIndex": 0,
       "at": 27.859436,
-      "text": "第二步。让我们告诉 rdc 公网 IP、根域名、证书邮箱和 Cloudflare API 令牌。证书邮箱和令牌在你所有机器间共享，因此只需设置一次。"
+      "text": "第二步。让我们从命令行输入公网 IP、根域名、证书邮箱和 Cloudflare API 令牌。证书邮箱和令牌在你所有机器间共享，因此只需设置一次。"
     },
     {
       "id": "tutorial-networking-02",

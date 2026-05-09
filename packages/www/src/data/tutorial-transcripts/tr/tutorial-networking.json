@@ -7,7 +7,7 @@
       "id": "tutorial-networking-01",
       "markerIndex": 0,
       "at": 27.859436,
-      "text": "İkinci adım. rdc'ye genel IP'yi, temel alan adını, sertifika e-postasını ve Cloudflare API token'ını bildiriyoruz. Sertifika e-postası ve token tüm makinelerinizde paylaşılır; yalnızca bir kez ayarlarsınız."
+      "text": "İkinci adım. Komut satırından genel IP'yi, temel alan adını, sertifika e-postasını ve Cloudflare API token'ını giriyoruz. Sertifika e-postası ve token tüm makinelerinizde paylaşılır; yalnızca bir kez ayarlarsınız."
     },
     {
       "id": "tutorial-networking-02",

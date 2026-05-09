@@ -19,7 +19,7 @@
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
       "at": 16.253995,
-      "text": "Passo tre. Registriamo la chiave con la CLI. Da questo momento, ogni comando rdc si autentica con questa chiave. Niente piu' password, niente piu' prompt interattivi."
+      "text": "Passo tre. Registriamo la chiave con la CLI. Da questo momento, ogni comando si autentica con questa chiave. Niente piu' password, niente piu' prompt interattivi."
     },
     {
       "id": "tutorial-ssh-keys-04",

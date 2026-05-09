@@ -13,7 +13,7 @@
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
       "at": 73.743501,
-      "text": "rdc'nin artık tanıdığı depolama alanlarını listeliyoruz. Her depolama alanı, yedek gönderebileceğimiz bir hedef."
+      "text": "Aracın artık tanıdığı depolama alanlarını listeliyoruz. Her depolama alanı, yedek gönderebileceğimiz bir hedef."
     },
     {
       "id": "tutorial-backup-restore-03",
@@ -25,7 +25,7 @@
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
       "at": 94.515541,
-      "text": "Bu depolama alanında bulunan yedekleri listeliyoruz. Buradan itibaren, yeni bir sunucuda geri yükleme tek komutla yapılır: rdc repo pull. Aynı veri, aynı container'lar, farklı makine."
+      "text": "Bu depolama alanında bulunan yedekleri listeliyoruz. Buradan itibaren, yeni bir sunucuda geri yükleme tek komutla yapılır: depo geri yükleme komutu. Aynı veri, aynı container'lar, farklı makine."
     }
   ]
 }

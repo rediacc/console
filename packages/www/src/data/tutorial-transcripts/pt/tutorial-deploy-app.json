@@ -19,7 +19,7 @@
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
       "at": 79.070004,
-      "text": "Passo três. Vamos iniciar o repositório. O rdc arranca os contentores, monta o volume encriptado e liga o daemon Docker isolado."
+      "text": "Passo três. Vamos iniciar o repositório. A ferramenta arranca os contentores, monta o volume encriptado e liga o daemon Docker isolado."
     },
     {
       "id": "tutorial-deploy-app-04",

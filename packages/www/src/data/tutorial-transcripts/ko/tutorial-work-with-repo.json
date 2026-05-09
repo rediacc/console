@@ -7,13 +7,13 @@
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
       "at": 93.14728,
-      "text": "첫 번째는 tunnel 명령입니다. 앱은 노트북이 아닌 서버에서 실행됩니다. rdc repo tunnel은 컨테이너 포트를 SSH를 통해 포워딩하여 브라우저에서 localhost로 접근할 수 있게 합니다."
+      "text": "첫 번째는 tunnel 명령입니다. 앱은 노트북이 아닌 서버에서 실행됩니다. 터널 명령은 컨테이너 포트를 SSH를 통해 포워딩하여 브라우저에서 localhost로 접근할 수 있게 합니다."
     },
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
       "at": 103.393386,
-      "text": "두 번째는 term 명령입니다. rdc term connect는 저장소 샌드박스 안으로 진입시켜 주는데, VS Code와 동일한 격리된 환경입니다. 터미널을 벗어나지 않고 이 저장소의 Docker 데몬에 명령을 실행할 수 있습니다."
+      "text": "두 번째는 term 명령입니다. 터미널 연결 명령은 저장소 샌드박스 안으로 진입시켜 주는데, VS Code와 동일한 격리된 환경입니다. 터미널을 벗어나지 않고 이 저장소의 Docker 데몬에 명령을 실행할 수 있습니다."
     },
     {
       "id": "tutorial-work-with-repo-03",
@@ -25,7 +25,7 @@
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
       "at": 137.357072,
-      "text": "이제 실제 업로드를 실행합니다. rdc repo sync upload는 rsync 델타 압축을 사용하여 SSH를 통해 노트북에서 저장소로 파일을 이동합니다. tunnel, term, sync. 이 세 가지 명령이 일상적인 작업을 모두 커버합니다."
+      "text": "이제 실제 업로드를 실행합니다. 동기화 업로드 명령은 rsync 델타 압축을 사용하여 SSH를 통해 노트북에서 저장소로 파일을 이동합니다. tunnel, term, sync. 이 세 가지 명령이 일상적인 작업을 모두 커버합니다."
     }
   ]
 }

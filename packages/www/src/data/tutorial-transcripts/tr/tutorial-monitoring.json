@@ -7,7 +7,7 @@
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
       "at": 102.949897,
-      "text": "Sistem görünümüyle başlıyoruz. --system filtresiyle rdc machine query, sistem çalışma süresi, disk kullanımı ve depolama durumunu gösterir. Bir sorun varsa rapor bizi bilgilendirir."
+      "text": "Sistem görünümüyle başlıyoruz. --system filtresiyle makine sorgu komutu, sistem çalışma süresi, disk kullanımı ve depolama durumunu gösterir. Bir sorun varsa rapor bizi bilgilendirir."
     },
     {
       "id": "tutorial-monitoring-02",
@@ -25,13 +25,13 @@
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
       "at": 138.182721,
-      "text": "rdc machine query her şeyi tek seferde verir. Sistem bilgisi, container'lar, depolar; hepsi bir arada. Bir kez çalıştırın; tam görünümü elde edin."
+      "text": "Makine sorgu komutu her şeyi tek seferde verir. Sistem bilgisi, container'lar, depolar; hepsi bir arada. Bir kez çalıştırın; tam görünümü elde edin."
     },
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
       "at": 149.8205,
-      "text": "Son olarak dizüstü bilgisayarınızda yerel doğruluk kontrolü için rdc doctor. Node, SSH anahtarı, renet, Docker; rdc'nin bağımlı olduğu her şey. Seri tamamlandı. Kurulumdan izlemeye kadar, hepsi terminalinizden."
+      "text": "Son olarak dizüstü bilgisayarınızda yerel doğruluk kontrolü için tanı denetimi. Node, SSH anahtarı, renet, Docker; CLI'nin bağımlı olduğu her şey. Seri tamamlandı. Kurulumdan izlemeye kadar, hepsi terminalinizden."
     }
   ]
 }

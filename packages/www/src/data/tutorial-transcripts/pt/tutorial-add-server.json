@@ -13,7 +13,7 @@
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
       "at": 11.160728,
-      "text": "Agora vamos registar o servidor no rdc, fornecendo o nome, o endereço IP e o utilizador SSH. As chaves de anfitrião são verificadas automaticamente para acesso seguro."
+      "text": "Agora vamos registar o servidor a partir da linha de comandos, fornecendo o nome, o endereço IP e o utilizador SSH. As chaves de anfitrião são verificadas automaticamente para acesso seguro."
     },
     {
       "id": "tutorial-add-server-03",
@@ -25,7 +25,7 @@
       "id": "tutorial-add-server-04",
       "markerIndex": 3,
       "at": 39.717449,
-      "text": "O servidor está pronto. Vamos verificar o que o rdc sabe sobre a configuração. Máquinas, chave SSH, infraestrutura -- tudo o que acabámos de configurar aparece aqui."
+      "text": "O servidor está pronto. Vamos verificar o que a ferramenta sabe sobre a configuração. Máquinas, chave SSH, infraestrutura -- tudo o que acabámos de configurar aparece aqui."
     },
     {
       "id": "tutorial-add-server-05",

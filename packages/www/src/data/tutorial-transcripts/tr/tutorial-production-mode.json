@@ -7,7 +7,7 @@
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
       "at": 56.862064,
-      "text": "Uygulamayı dizüstü bilgisayardan üretim modunda başlatıyoruz. rdc repo up, geliştirme sırasında kullandığımız aynı up fonksiyonunu çağırır; ancak bağımsız çalışır. Dizüstü bilgisayarınızı kapatabilirsiniz; uygulama çalışmaya devam eder."
+      "text": "Uygulamayı dizüstü bilgisayardan üretim modunda başlatıyoruz. Deploy komutu, geliştirme sırasında kullandığımız aynı up fonksiyonunu çağırır; ancak bağımsız çalışır. Dizüstü bilgisayarınızı kapatabilirsiniz; uygulama çalışmaya devam eder."
     },
     {
       "id": "tutorial-production-mode-02",

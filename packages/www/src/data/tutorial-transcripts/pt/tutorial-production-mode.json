@@ -7,7 +7,7 @@
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
       "at": 56.862064,
-      "text": "Vamos iniciar a aplicação em modo de produção a partir do portátil. O rdc repo up chama a mesma função up que usámos durante o desenvolvimento, mas corre em segundo plano. Pode fechar o portátil e a aplicação continua a funcionar."
+      "text": "Vamos iniciar a aplicação em modo de produção a partir do portátil. O comando de deploy chama a mesma função up que usámos durante o desenvolvimento, mas corre em segundo plano. Pode fechar o portátil e a aplicação continua a funcionar."
     },
     {
       "id": "tutorial-production-mode-02",

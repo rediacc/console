@@ -7,7 +7,7 @@
       "id": "tutorial-networking-01",
       "markerIndex": 0,
       "at": 27.859436,
-      "text": "Step two. We tell rdc the public IP, the base domain, the certificate email, and the Cloudflare API token. The cert email and the token are shared across all your machines, so you only set them once."
+      "text": "Step two. We set the public IP, the base domain, the certificate email, and the Cloudflare API token from the command line. The cert email and the token are shared across all your machines, so you only set them once."
     },
     {
       "id": "tutorial-networking-02",

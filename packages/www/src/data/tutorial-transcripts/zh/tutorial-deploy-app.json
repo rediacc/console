@@ -19,7 +19,7 @@
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
       "at": 79.070004,
-      "text": "第三步。让我们启动仓库。rdc 启动容器、挂载加密卷，并连接独立的 Docker 守护进程。应用现在正在运行了。"
+      "text": "第三步。让我们启动仓库。命令行工具启动容器、挂载加密卷，并连接独立的 Docker 守护进程。应用现在正在运行了。"
     },
     {
       "id": "tutorial-deploy-app-04",

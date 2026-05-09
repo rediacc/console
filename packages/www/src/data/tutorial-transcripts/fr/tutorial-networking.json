@@ -7,7 +7,7 @@
       "id": "tutorial-networking-01",
       "markerIndex": 0,
       "at": 27.859436,
-      "text": "Deuxième étape. Nous indiquons à rdc l'IP publique, le domaine de base, l'adresse email pour le certificat et le token API Cloudflare. L'email de certificat et le token sont partagés entre toutes vos machines, donc vous ne les définissez qu'une seule fois."
+      "text": "Deuxième étape. Nous saisissons l'IP publique, le domaine de base, l'adresse email pour le certificat et le token API Cloudflare depuis la ligne de commande. L'email de certificat et le token sont partagés entre toutes vos machines, donc vous ne les définissez qu'une seule fois."
     },
     {
       "id": "tutorial-networking-02",

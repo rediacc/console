@@ -1,0 +1,597 @@
+{
+  "cast": "/assets/tutorials/tutorial-deploy-app.cast",
+  "language": "fr",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "9197ed250cff8c67aac3b1c53b9fabe09af92313b666ff5922da31da8e7315ae",
+  "steps": [
+    {
+      "id": "tutorial-deploy-app-01",
+      "markerIndex": 0,
+      "replayStartSec": 52.700593,
+      "replayEndSec": 61.85842,
+      "narrationText": "Première étape. Nous allons lister les modèles disponibles. Rediacc fournit des configurations prêtes à l'emploi pour les applications courantes, Postgres, Redis, serveurs web, pour ne pas avoir à écrire un docker compose point yml from scratch.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-deploy-app/tutorial-deploy-app-01.facfddd0.mp3",
+      "audioDurationSec": 14.210612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.64,
+          "startChar": 9,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.04,
+          "startChar": 16,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.28,
+          "startChar": 21,
+          "endChar": 27
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.6,
+          "startChar": 28,
+          "endChar": 34
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.68,
+          "startChar": 35,
+          "endChar": 38
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.0,
+          "startChar": 39,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.64,
+          "startChar": 47,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.16,
+          "startChar": 68,
+          "endChar": 75
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 76,
+          "endChar": 79
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 5.12,
+          "startChar": 80,
+          "endChar": 94
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.36,
+          "startChar": 95,
+          "endChar": 101
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.44,
+          "startChar": 102,
+          "endChar": 103
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.92,
+          "startChar": 104,
+          "endChar": 112
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.24,
+          "startChar": 113,
+          "endChar": 117
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.4,
+          "startChar": 118,
+          "endChar": 121
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.96,
+          "startChar": 122,
+          "endChar": 134
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.44,
+          "startChar": 135,
+          "endChar": 144
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 9.2,
+          "startChar": 156,
+          "endChar": 161
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.92,
+          "startChar": 163,
+          "endChar": 170
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.16,
+          "startChar": 172,
+          "endChar": 175
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.64,
+          "startChar": 177,
+          "endChar": 181
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 10.72,
+          "startChar": 182,
+          "endChar": 184
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.96,
+          "startChar": 185,
+          "endChar": 188
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.28,
+          "startChar": 189,
+          "endChar": 194
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.36,
+          "startChar": 195,
+          "endChar": 196
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.76,
+          "startChar": 197,
+          "endChar": 203
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 11.84,
+          "startChar": 204,
+          "endChar": 206
+        },
+        {
+          "startSec": 13.28,
+          "endSec": 13.52,
+          "startChar": 232,
+          "endChar": 236
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 14.08,
+          "startChar": 237,
+          "endChar": 244
+        }
+      ]
+    },
+    {
+      "id": "tutorial-deploy-app-02",
+      "markerIndex": 1,
+      "replayStartSec": 61.85842,
+      "replayEndSec": 79.070004,
+      "narrationText": "Deuxième étape. Nous appliquons le modèle app-postgres dans notre dépôt. Deux fichiers apparaissent : le docker compose point yml qui décrit les conteneurs, et le Rediaccfile qui définit les hooks de démarrage et d'arrêt.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-deploy-app/tutorial-deploy-app-02.302acb95.mp3",
+      "audioDurationSec": 14.524082,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 9,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.52,
+          "startChar": 16,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.0,
+          "startChar": 21,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.08,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.48,
+          "startChar": 35,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 42,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.52,
+          "startChar": 46,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.76,
+          "startChar": 55,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.08,
+          "startChar": 60,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.48,
+          "startChar": 66,
+          "endChar": 71
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.28,
+          "startChar": 73,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.6,
+          "startChar": 78,
+          "endChar": 86
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.24,
+          "startChar": 87,
+          "endChar": 99
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.72,
+          "startChar": 102,
+          "endChar": 104
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.2,
+          "startChar": 105,
+          "endChar": 111
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.8,
+          "startChar": 130,
+          "endChar": 133
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.2,
+          "startChar": 134,
+          "endChar": 140
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.28,
+          "startChar": 141,
+          "endChar": 144
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 10.0,
+          "startChar": 145,
+          "endChar": 155
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.56,
+          "startChar": 157,
+          "endChar": 159
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.8,
+          "startChar": 160,
+          "endChar": 162
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 11.84,
+          "startChar": 175,
+          "endChar": 178
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.4,
+          "startChar": 179,
+          "endChar": 186
+        },
+        {
+          "startSec": 12.4,
+          "endSec": 12.56,
+          "startChar": 187,
+          "endChar": 190
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 12.96,
+          "startChar": 191,
+          "endChar": 196
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.2,
+          "startChar": 197,
+          "endChar": 199
+        },
+        {
+          "startSec": 13.2,
+          "endSec": 13.92,
+          "startChar": 200,
+          "endChar": 209
+        },
+        {
+          "startSec": 14.0,
+          "endSec": 14.08,
+          "startChar": 210,
+          "endChar": 212
+        },
+        {
+          "startSec": 14.08,
+          "endSec": 14.4,
+          "startChar": 213,
+          "endChar": 220
+        }
+      ]
+    },
+    {
+      "id": "tutorial-deploy-app-03",
+      "markerIndex": 2,
+      "replayStartSec": 79.070004,
+      "replayEndSec": 123.719014,
+      "narrationText": "Troisième étape. Nous démarrons le dépôt. L'outil lance les conteneurs, monte le volume chiffré et configure le daemon Docker isolé. L'application est maintenant en cours d'exécution.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-deploy-app/tutorial-deploy-app-03.b4f0e2e3.mp3",
+      "audioDurationSec": 12.930612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.8,
+          "startChar": 10,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.36,
+          "startChar": 17,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.76,
+          "startChar": 22,
+          "endChar": 31
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.32,
+          "startChar": 35,
+          "endChar": 40
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.6,
+          "startChar": 42,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.92,
+          "startChar": 50,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.0,
+          "startChar": 56,
+          "endChar": 59
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.64,
+          "startChar": 60,
+          "endChar": 70
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.44,
+          "startChar": 72,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.52,
+          "startChar": 78,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.84,
+          "startChar": 81,
+          "endChar": 87
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.4,
+          "startChar": 88,
+          "endChar": 95
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.8,
+          "startChar": 96,
+          "endChar": 98
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.52,
+          "startChar": 99,
+          "endChar": 108
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.68,
+          "startChar": 109,
+          "endChar": 111
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.56,
+          "startChar": 119,
+          "endChar": 125
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.96,
+          "startChar": 126,
+          "endChar": 131
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.72,
+          "startChar": 133,
+          "endChar": 146
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.8,
+          "startChar": 147,
+          "endChar": 150
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.36,
+          "startChar": 151,
+          "endChar": 161
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.6,
+          "startChar": 162,
+          "endChar": 164
+        },
+        {
+          "startSec": 11.6,
+          "endSec": 11.92,
+          "startChar": 165,
+          "endChar": 170
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.8,
+          "startChar": 171,
+          "endChar": 182
+        }
+      ]
+    },
+    {
+      "id": "tutorial-deploy-app-04",
+      "markerIndex": 3,
+      "replayStartSec": 123.719014,
+      "replayEndSec": 179.687714,
+      "narrationText": "Vérifions avec docker ps. Notez que cette vue n'affiche que les conteneurs de notre dépôt. Les autres dépôts sur le même serveur ont leurs propres daemons Docker et sont complètement invisibles depuis ici.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-deploy-app/tutorial-deploy-app-04.b46cf73c.mp3",
+      "audioDurationSec": 16.84898,
+      "wordTimings": [
+        {
+          "startSec": 0.96,
+          "endSec": 1.36,
+          "startChar": 10,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.68,
+          "startChar": 155,
+          "endChar": 161
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.84,
+          "startChar": 190,
+          "endChar": 193
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.72,
+          "startChar": 194,
+          "endChar": 196
+        },
+        {
+          "startSec": 16.32,
+          "endSec": 16.72,
+          "startChar": 201,
+          "endChar": 204
+        }
+      ]
+    }
+  ]
+}

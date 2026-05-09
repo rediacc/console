@@ -19,7 +19,7 @@
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
       "at": 79.070004,
-      "text": "3단계입니다. 저장소를 시작합니다. rdc가 컨테이너를 기동하고 암호화된 볼륨을 마운트하며 격리된 Docker 데몬을 연결합니다."
+      "text": "3단계입니다. 저장소를 시작합니다. CLI가 컨테이너를 기동하고 암호화된 볼륨을 마운트하며 격리된 Docker 데몬을 연결합니다."
     },
     {
       "id": "tutorial-deploy-app-04",

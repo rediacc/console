@@ -7,13 +7,13 @@
       "id": "tutorial-installation-01",
       "markerIndex": 0,
       "at": 1.509194,
-      "text": "首先，让我们确认 rdc 已安装。使用版本标志可以打印已安装的版本号，确认安装已顺利完成。"
+      "text": "首先，让我们确认命令行工具已安装。使用版本标志可以打印已安装的版本号，确认安装已顺利完成。"
     },
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
       "at": 9.435981,
-      "text": "现在让我们运行 rdc doctor。它会逐一检查 rdc 所需的每项依赖（Node、SSH、Docker 以及 renet 二进制文件），并报告任何缺失项。报告无误，就说明我们已准备就绪。"
+      "text": "现在让我们运行诊断检查。它会逐一检查命令行工具所需的每项依赖（Node、SSH、Docker 以及 renet 二进制文件），并报告任何缺失项。报告无误，就说明我们已准备就绪。"
     }
   ]
 }

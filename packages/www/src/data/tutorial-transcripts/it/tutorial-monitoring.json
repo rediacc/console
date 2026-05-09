@@ -7,7 +7,7 @@
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
       "at": 102.949897,
-      "text": "Iniziamo con la vista di sistema. rdc machine query con il filtro system mostra uptime, utilizzo del disco e stato dello storage. Se qualcosa non va, il rapporto ce lo dice."
+      "text": "Iniziamo con la vista di sistema. Il comando di query macchina con il filtro system mostra uptime, utilizzo del disco e stato dello storage. Se qualcosa non va, il rapporto ce lo dice."
     },
     {
       "id": "tutorial-monitoring-02",
@@ -25,13 +25,13 @@
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
       "at": 138.182721,
-      "text": "rdc machine query ti da' tutto in un colpo solo. Informazioni di sistema, container, repository -- tutto insieme. Eseguilo una volta e hai il quadro completo."
+      "text": "Il comando di query macchina ti da' tutto in un colpo solo. Informazioni di sistema, container, repository -- tutto insieme. Eseguilo una volta e hai il quadro completo."
     },
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
       "at": 149.8205,
-      "text": "E infine rdc doctor per un controllo rapido sul tuo laptop. Node, chiave SSH, renet, Docker -- tutto cio' da cui dipende rdc. Questa e' la serie completa. Dall'installazione al monitoraggio, tutto dal tuo terminale."
+      "text": "E infine il controllo diagnostico per un controllo rapido sul tuo laptop. Node, chiave SSH, renet, Docker -- tutto cio' da cui dipende la CLI. Questa e' la serie completa. Dall'installazione al monitoraggio, tutto dal tuo terminale."
     }
   ]
 }

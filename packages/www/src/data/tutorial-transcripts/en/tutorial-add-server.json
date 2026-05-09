@@ -13,7 +13,7 @@
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
       "at": 11.160728,
-      "text": "Now we register the server with rdc, providing its name, IP address, and SSH user. Host keys are scanned automatically for trusted access."
+      "text": "Now we register the server from the command line, providing its name, IP address, and SSH user. Host keys are scanned automatically for trusted access."
     },
     {
       "id": "tutorial-add-server-03",
@@ -25,7 +25,7 @@
       "id": "tutorial-add-server-04",
       "markerIndex": 3,
       "at": 39.717449,
-      "text": "Server is ready. Let's verify what rdc knows about the configuration. Machines, SSH key, infrastructure, everything we just set up appears here."
+      "text": "Server is ready. Let's verify what the CLI knows about the configuration. Machines, SSH key, infrastructure, everything we just set up appears here."
     },
     {
       "id": "tutorial-add-server-05",

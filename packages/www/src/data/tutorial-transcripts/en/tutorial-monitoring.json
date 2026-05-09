@@ -7,7 +7,7 @@
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
       "at": 102.949897,
-      "text": "Let us start with the system view. rdc machine query with the system filter shows uptime, disk usage, and storage status."
+      "text": "Let us start with the system view. The machine query command with the system filter shows uptime, disk usage, and storage status."
     },
     {
       "id": "tutorial-monitoring-02",
@@ -25,13 +25,13 @@
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
       "at": 138.182721,
-      "text": "rdc machine query with no filters gives you everything in one shot. System info, containers, repositories, all together."
+      "text": "The machine query command with no filters gives you everything in one shot. System info, containers, repositories, all together."
     },
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
       "at": 149.8205,
-      "text": "And finally rdc doctor for a local sanity check on your laptop. Node, SSH key, renet, Docker. All the things rdc itself depends on. That is the full series. From install to monitoring, all from your terminal."
+      "text": "And finally the diagnostic check for a local sanity check on your laptop. Node, SSH key, renet, Docker. All the things the CLI itself depends on. That is the full series. From install to monitoring, all from your terminal."
     }
   ]
 }

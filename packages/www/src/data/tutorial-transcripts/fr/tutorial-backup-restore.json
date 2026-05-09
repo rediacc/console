@@ -13,7 +13,7 @@
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
       "at": 73.743501,
-      "text": "Listons les stockages que rdc connaît maintenant. Chaque stockage est une destination vers laquelle nous pouvons pousser des sauvegardes."
+      "text": "Listons les stockages que l'outil connaît maintenant. Chaque stockage est une destination vers laquelle nous pouvons pousser des sauvegardes."
     },
     {
       "id": "tutorial-backup-restore-03",
@@ -25,7 +25,7 @@
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
       "at": 94.515541,
-      "text": "Listons les sauvegardes disponibles sur ce stockage. À partir de là, la restauration sur un tout nouveau serveur se fait en une seule commande : rdc repo pull. Mêmes données, mêmes conteneurs, machine différente."
+      "text": "Listons les sauvegardes disponibles sur ce stockage. À partir de là, la restauration sur un tout nouveau serveur se fait en une seule commande : la commande de restauration de dépôt. Mêmes données, mêmes conteneurs, machine différente."
     }
   ]
 }

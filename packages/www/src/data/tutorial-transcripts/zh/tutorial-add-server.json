@@ -13,7 +13,7 @@
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
       "at": 11.160728,
-      "text": "现在让我们向 rdc 注册服务器，提供其名称、IP 地址和 SSH 用户名。主机密钥会自动扫描以建立信任连接。"
+      "text": "现在让我们从命令行注册服务器，提供其名称、IP 地址和 SSH 用户名。主机密钥会自动扫描以建立信任连接。"
     },
     {
       "id": "tutorial-add-server-03",
@@ -25,7 +25,7 @@
       "id": "tutorial-add-server-04",
       "markerIndex": 3,
       "at": 39.717449,
-      "text": "让我们验证 rdc 对配置的了解情况。机器列表、SSH 密钥、基础设施，刚才设置的一切都显示在这里。"
+      "text": "让我们验证命令行工具对配置的了解情况。机器列表、SSH 密钥、基础设施，刚才设置的一切都显示在这里。"
     },
     {
       "id": "tutorial-add-server-05",

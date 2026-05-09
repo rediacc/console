@@ -19,7 +19,7 @@
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
       "at": 79.070004,
-      "text": "Troisième étape. Nous démarrons le dépôt. rdc lance les conteneurs, monte le volume chiffré et configure le daemon Docker isolé. L'application est maintenant en cours d'exécution."
+      "text": "Troisième étape. Nous démarrons le dépôt. L'outil lance les conteneurs, monte le volume chiffré et configure le daemon Docker isolé. L'application est maintenant en cours d'exécution."
     },
     {
       "id": "tutorial-deploy-app-04",

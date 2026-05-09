@@ -13,7 +13,7 @@
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
       "at": 11.160728,
-      "text": "Ora registriamo il server con rdc, fornendo il nome, l'indirizzo IP e l'utente SSH. Le host key vengono scansionate automaticamente per un accesso sicuro."
+      "text": "Ora registriamo il server dalla riga di comando, fornendo il nome, l'indirizzo IP e l'utente SSH. Le host key vengono scansionate automaticamente per un accesso sicuro."
     },
     {
       "id": "tutorial-add-server-03",
@@ -25,7 +25,7 @@
       "id": "tutorial-add-server-04",
       "markerIndex": 3,
       "at": 39.717449,
-      "text": "Verifichiamo cio' che rdc conosce della configurazione. Macchine, chiave SSH, infrastruttura -- tutto quello che abbiamo appena configurato compare qui."
+      "text": "Verifichiamo cio' che lo strumento conosce della configurazione. Macchine, chiave SSH, infrastruttura -- tutto quello che abbiamo appena configurato compare qui."
     },
     {
       "id": "tutorial-add-server-05",

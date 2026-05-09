@@ -19,7 +19,7 @@
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
       "at": 79.070004,
-      "text": "Step three. Bring the repo up. rdc starts the containers, mounts the encrypted volume, and wires up the isolated Docker daemon."
+      "text": "Step three. Bring the repo up. The CLI starts the containers, mounts the encrypted volume, and wires up the isolated Docker daemon."
     },
     {
       "id": "tutorial-deploy-app-04",

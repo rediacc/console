@@ -13,7 +13,7 @@
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
       "at": 73.743501,
-      "text": "Elenchiamo gli storage che rdc conosce ora. Ogni storage e' una destinazione verso cui possiamo inviare i backup."
+      "text": "Elenchiamo gli storage che lo strumento conosce ora. Ogni storage e' una destinazione verso cui possiamo inviare i backup."
     },
     {
       "id": "tutorial-backup-restore-03",
@@ -25,7 +25,7 @@
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
       "at": 94.515541,
-      "text": "Elenchiamo i backup disponibili su questo storage. Da qui, il ripristino su un nuovo server richiede un solo comando -- rdc repo pull. Stessi dati, stessi container, macchina diversa."
+      "text": "Elenchiamo i backup disponibili su questo storage. Da qui, il ripristino su un nuovo server richiede un solo comando -- il comando pull del repository. Stessi dati, stessi container, macchina diversa."
     }
   ]
 }
