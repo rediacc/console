@@ -1,0 +1,915 @@
+{
+  "cast": "/assets/tutorials/tutorial-production-mode.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "8ca6f3db8225cdfd81f6a702f80ea8d5bca6d7805a2ca942e212c8ac5e668aa0",
+  "steps": [
+    {
+      "id": "tutorial-production-mode-01",
+      "markerIndex": 0,
+      "replayStartSec": 56.862064,
+      "replayEndSec": 97.750961,
+      "narrationText": "ラップトップから本番モードでアプリを起動します。デプロイコマンドは開発中に使った up 関数と同じものを呼び出しますが、切り離された状態で実行されます。ラップトップを閉じてもアプリは動き続けます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-production-mode/tutorial-production-mode-01.63a7ab54.mp3",
+      "audioDurationSec": 15.072653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.64,
+          "startChar": 3,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 6,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.44,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.68,
+          "startChar": 10,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.92,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.32,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.8,
+          "startChar": 18,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 2.88,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.56,
+          "startChar": 24,
+          "endChar": 32
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.88,
+          "startChar": 32,
+          "endChar": 33
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 33,
+          "endChar": 35
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.6,
+          "startChar": 35,
+          "endChar": 36
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.76,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.0,
+          "startChar": 37,
+          "endChar": 39
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.32,
+          "startChar": 39,
+          "endChar": 40
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.36,
+          "startChar": 44,
+          "endChar": 46
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.52,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.84,
+          "startChar": 47,
+          "endChar": 49
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.08,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.16,
+          "startChar": 51,
+          "endChar": 52
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.64,
+          "startChar": 52,
+          "endChar": 56
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.8,
+          "startChar": 56,
+          "endChar": 58
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 8.96,
+          "startChar": 58,
+          "endChar": 59
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 10.08,
+          "startChar": 60,
+          "endChar": 64
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.16,
+          "startChar": 64,
+          "endChar": 65
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.32,
+          "startChar": 65,
+          "endChar": 66
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.72,
+          "startChar": 66,
+          "endChar": 68
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.88,
+          "startChar": 68,
+          "endChar": 69
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.28,
+          "startChar": 69,
+          "endChar": 71
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.36,
+          "startChar": 71,
+          "endChar": 72
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.44,
+          "startChar": 72,
+          "endChar": 73
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.76,
+          "startChar": 73,
+          "endChar": 75
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.8,
+          "startChar": 76,
+          "endChar": 79
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 12.88,
+          "startChar": 82,
+          "endChar": 83
+        },
+        {
+          "startSec": 12.88,
+          "endSec": 13.12,
+          "startChar": 83,
+          "endChar": 85
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.28,
+          "startChar": 85,
+          "endChar": 86
+        },
+        {
+          "startSec": 13.28,
+          "endSec": 13.44,
+          "startChar": 86,
+          "endChar": 87
+        },
+        {
+          "startSec": 13.52,
+          "endSec": 13.84,
+          "startChar": 87,
+          "endChar": 90
+        },
+        {
+          "startSec": 13.84,
+          "endSec": 14.0,
+          "startChar": 90,
+          "endChar": 91
+        },
+        {
+          "startSec": 14.0,
+          "endSec": 14.32,
+          "startChar": 91,
+          "endChar": 93
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.72,
+          "startChar": 93,
+          "endChar": 95
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 15.04,
+          "startChar": 95,
+          "endChar": 97
+        }
+      ]
+    },
+    {
+      "id": "tutorial-production-mode-02",
+      "markerIndex": 1,
+      "replayStartSec": 97.750961,
+      "replayEndSec": 125.443493,
+      "narrationText": "オートスタートを有効にして、サーバー再起動後もアプリが自動的に復帰するようにします。これ以降、サーバーが再起動してもこのリポジトリは自動的に起動します。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-production-mode/tutorial-production-mode-02.4de0003c.mp3",
+      "audioDurationSec": 11.807347,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 3,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.88,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.2,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.36,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.44,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.68,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.32,
+          "startChar": 14,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.56,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.8,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 2.88,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.12,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.76,
+          "startChar": 23,
+          "endChar": 26
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.0,
+          "startChar": 26,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.48,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.64,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.72,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.04,
+          "startChar": 31,
+          "endChar": 33
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.28,
+          "startChar": 33,
+          "endChar": 35
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.44,
+          "startChar": 35,
+          "endChar": 37
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.52,
+          "startChar": 37,
+          "endChar": 38
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.68,
+          "startChar": 38,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.92,
+          "startChar": 39,
+          "endChar": 41
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.72,
+          "startChar": 42,
+          "endChar": 44
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.12,
+          "startChar": 44,
+          "endChar": 46
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.92,
+          "startChar": 47,
+          "endChar": 51
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.08,
+          "startChar": 51,
+          "endChar": 52
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.4,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.64,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.72,
+          "startChar": 55,
+          "endChar": 56
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 8.8,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.04,
+          "startChar": 57,
+          "endChar": 58
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.36,
+          "startChar": 58,
+          "endChar": 60
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 10.0,
+          "startChar": 60,
+          "endChar": 65
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.16,
+          "startChar": 65,
+          "endChar": 66
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.72,
+          "startChar": 66,
+          "endChar": 68
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.88,
+          "startChar": 68,
+          "endChar": 69
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.04,
+          "startChar": 69,
+          "endChar": 70
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.36,
+          "startChar": 70,
+          "endChar": 72
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.52,
+          "startChar": 72,
+          "endChar": 73
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.76,
+          "startChar": 73,
+          "endChar": 75
+        }
+      ]
+    },
+    {
+      "id": "tutorial-production-mode-03",
+      "markerIndex": 2,
+      "replayStartSec": 125.443493,
+      "replayEndSec": 141.09184,
+      "narrationText": "オートスタートが有効なリポジトリを確認します。私たちのアプリが起動リストに追加されていることが確認できます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-production-mode/tutorial-production-mode-03.94604cf8.mp3",
+      "audioDurationSec": 8.437551,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.72,
+          "startChar": 3,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.96,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.36,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.52,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.16,
+          "startChar": 11,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.32,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 17,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.8,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.12,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.08,
+          "startChar": 23,
+          "endChar": 24
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.32,
+          "startChar": 24,
+          "endChar": 26
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 26,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.72,
+          "startChar": 27,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 4.96,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.52,
+          "startChar": 31,
+          "endChar": 33
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.84,
+          "startChar": 33,
+          "endChar": 36
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.0,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.32,
+          "startChar": 37,
+          "endChar": 39
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.4,
+          "startChar": 39,
+          "endChar": 40
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.56,
+          "startChar": 40,
+          "endChar": 41
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.72,
+          "startChar": 41,
+          "endChar": 42
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.88,
+          "startChar": 42,
+          "endChar": 44
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.12,
+          "startChar": 44,
+          "endChar": 46
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.36,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.84,
+          "startChar": 47,
+          "endChar": 49
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.08,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.24,
+          "startChar": 51,
+          "endChar": 53
+        }
+      ]
+    },
+    {
+      "id": "tutorial-production-mode-04",
+      "markerIndex": 3,
+      "replayStartSec": 141.09184,
+      "replayEndSec": 196.903183,
+      "narrationText": "アプリを停止するには、ラップトップからコマンド1つです。起動は1コマンド、停止も1コマンド。すべてターミナルから行えます。対話型セッションはもう不要です。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-production-mode/tutorial-production-mode-04.12d12284.mp3",
+      "audioDurationSec": 10.997551,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.48,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.04,
+          "startChar": 6,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.12,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.92,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.24,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.48,
+          "startChar": 17,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.88,
+          "startChar": 19,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.2,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.44,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.16,
+          "startChar": 28,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.96,
+          "startChar": 32,
+          "endChar": 36
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 37,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.6,
+          "startChar": 39,
+          "endChar": 40
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.2,
+          "startChar": 46,
+          "endChar": 49
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.68,
+          "startChar": 49,
+          "endChar": 54
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.84,
+          "startChar": 54,
+          "endChar": 56
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.24,
+          "startChar": 56,
+          "endChar": 58
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.48,
+          "startChar": 58,
+          "endChar": 60
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.36,
+          "startChar": 61,
+          "endChar": 63
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.52,
+          "startChar": 63,
+          "endChar": 64
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.92,
+          "startChar": 64,
+          "endChar": 69
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.08,
+          "startChar": 69,
+          "endChar": 70
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.32,
+          "startChar": 70,
+          "endChar": 72
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.64,
+          "startChar": 72,
+          "endChar": 74
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 10.88,
+          "startChar": 74,
+          "endChar": 76
+        }
+      ]
+    }
+  ]
+}
