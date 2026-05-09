@@ -118,10 +118,7 @@ async function setUserAndSubscriptionContext(): Promise<void> {
 //   3. Default 'table' from .option()
 // Used by tutorial recording to keep human-readable output even though
 // CLAUDECODE=1 in the parent shell triggers agent detection.
-function resolveOutputFormat(
-  optsValue: OutputFormat,
-  source: string | undefined
-): OutputFormat {
+function resolveOutputFormat(optsValue: OutputFormat, source: string | undefined): OutputFormat {
   if (source !== 'default') {
     return optsValue;
   }
