@@ -1,6 +1,6 @@
 ---
 title: "Kurulum"
-description: "rdc CLI'ı dizüstü bilgisayarınıza tek komutla yükleyin ve rdc doctor ile doğrulayın."
+description: "rdc CLI'ı dizüstü bilgisayarınıza tek komutla yükleyin ve `rdc doctor` ile doğrulayın."
 category: "Tutorials"
 subcategory: essentials
 order: 1
