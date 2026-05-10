@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-add-server.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-add-server-01",
+      "markerIndex": 0,
+      "at": 1.508633,
+      "text": "SSH anahtarını, makine listesini ve altyapı ayarlarını barındıracak bir yapılandırma profili oluşturarak başlıyoruz. Bu profil, buradan itibaren yapacağımız her işlem için temel oluşturuyor."
+    },
+    {
+      "id": "tutorial-add-server-02",
+      "markerIndex": 1,
+      "at": 11.160728,
+      "text": "Şimdi sunucuyu komut satırına kaydediyoruz: adını, IP adresini ve SSH kullanıcısını belirtiyoruz. Host anahtarları güvenilir erişim için otomatik olarak taranıyor."
+    },
+    {
+      "id": "tutorial-add-server-03",
+      "markerIndex": 2,
+      "at": 23.457976,
+      "text": "Sırada sunucunun yapılandırılması var. Bu adım renet'i yüklüyor ve şifreli veri deposunu oluşturuyor. Tamamlandığında sunucu depo barındırmaya hazır."
+    },
+    {
+      "id": "tutorial-add-server-04",
+      "markerIndex": 3,
+      "at": 39.717449,
+      "text": "Aracın yapılandırma hakkında bildiklerini doğruluyoruz. Makineler, SSH anahtarı, altyapı bilgileri; az önce kurduğumuz her şey burada görünüyor."
+    },
+    {
+      "id": "tutorial-add-server-05",
+      "markerIndex": 4,
+      "at": 48.157549,
+      "text": "Tüm yapılandırma, dizüstü bilgisayarınızdaki tek bir JSON dosyasında yaşıyor. Başka bir makineye kopyalayın; aynı sunucuları oradan da yönetebilirsiniz."
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-deploy-app.cast",
+  "language": "et",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-deploy-app-01",
+      "markerIndex": 0,
+      "at": 52.700593,
+      "text": "Esimene samm. Loetleme saadaolevad mallid. Rediacc sisaldab valmis seadistusi levinud rakendustele -- Postgres, Redis, veebiserverid -- nii et docker-compose'i pole vaja nullist kirjutada."
+    },
+    {
+      "id": "tutorial-deploy-app-02",
+      "markerIndex": 1,
+      "at": 61.85842,
+      "text": "Teine samm. Rakendame app-postgres malli oma repositooriumisse. Ilmub kaks faili: docker-compose.yml, mis kirjeldab konteinereid, ja Rediaccfile, mis määrab käivitamise ja peatamise elutsükli konksud."
+    },
+    {
+      "id": "tutorial-deploy-app-03",
+      "markerIndex": 2,
+      "at": 79.070004,
+      "text": "Kolmas samm. Käivitame repositooriumi. CLI käivitab konteinerid, ühendab krüpteeritud mahu ja seadistab isoleeritud Dockeri deemoni. Rakendus töötab nüüd."
+    },
+    {
+      "id": "tutorial-deploy-app-04",
+      "markerIndex": 3,
+      "at": 123.719014,
+      "text": "Kontrollime docker ps abil. Pane tähele, et see vaade näitab ainult meie repositooriumi konteinereid. Teistel repositooriumidel samal serveril on oma Dockeri deemonid ja need on siit täielikult nähtamatud."
+    }
+  ]
+}

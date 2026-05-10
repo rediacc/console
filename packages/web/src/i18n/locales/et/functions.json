@@ -1,0 +1,592 @@
+{
+  "additionalOptions": "Lisavalikud (täpsemad)",
+  "availableFunctions": "Saadaval olevad funktsioonid",
+  "categories": {
+    "backup": {
+      "description": "Varundamise ja taastamise toimingud",
+      "name": "Varundamise funktsioonid"
+    },
+    "container": {
+      "description": "Dockeri konteineri haldamise toimingud",
+      "name": "Konteineri funktsioonid"
+    },
+    "machine": {
+      "description": "Süsteemi põhilise seadistamise ja hoolduse funktsioonid",
+      "name": "Masina funktsioonid"
+    },
+    "network": {
+      "description": "Võrgu ja pistikupesa kaardistamise toimingud",
+      "name": "Võrgu funktsioonid"
+    },
+    "repository": {
+      "description": "Repositooriumi haldamise toimingud",
+      "name": "Repositooriumi funktsioonid"
+    }
+  },
+  "checkboxOptions": {
+    "mountRepoFirst": "Ühenda repositoorium esmalt",
+    "overrideExistingFile": "Kirjuta olemasolev fail üle",
+    "unmountAfterStopping": "Lahuta pärast peatamist"
+  },
+  "configure": "Konfigureeri",
+  "currentPriority": "Praegune",
+  "description": "Kirjeldus (valikuline)",
+  "descriptionPlaceholder": "Lisa sellele järjekorra elemendile kohandatud kirjeldus",
+  "destinationFilename": "Sihtkoha failinimi",
+  "functions": {
+    "backup_create": {
+      "description": "Varunda repositoorium mitmesse salvestussüsteemi",
+      "name": "backup (varukoopia)",
+      "params": {
+        "checkpoint": {
+          "help": "Luba kuum varundusrežiim kontrollpunktiga (nõuab CRIU-d, null seisakut veebis olevatele repositooriumitele)",
+          "label": "Luba kontrollpunkt"
+        },
+        "option": {
+          "help": "Valikud (nt override)",
+          "label": "Valikud"
+        },
+        "storages": {
+          "help": "Vali üks või mitu sihtmärk-salvestussüsteemi varundamiseks",
+          "label": "Sihtmärk-salvestussüsteemid"
+        }
+      }
+    },
+    "backup_deploy": {
+      "description": "Juuruta repositoorium mitmesse masinasse",
+      "name": "deploy (juuruta)",
+      "params": {
+        "checkpoint": {
+          "help": "Luba kuum juurutusrežiim kontrollpunktiga (nõuab CRIU-d, null seisakut veebis olevatele repositooriumitele)",
+          "label": "Luba kontrollpunkt"
+        },
+        "grand": {
+          "help": "Peamise repositooriumi viide",
+          "label": "Peamine repositoorium"
+        },
+        "machines": {
+          "help": "Vali üks või mitu sihtmasinat juurutamiseks",
+          "label": "Sihtmasinad"
+        },
+        "option": {
+          "help": "Valikud (nt override)",
+          "label": "Valikud"
+        },
+        "repository": {
+          "help": "Juurutatav repositoorium",
+          "label": "Repositoorium"
+        },
+        "state": {
+          "help": "Repositooriumi praegune olek",
+          "label": "Olek"
+        },
+        "tag": {
+          "help": "Juurutatud repositooriumi silt (ajatempli formaat on soovitatav)",
+          "label": "Silt"
+        }
+      }
+    },
+    "backup_pull": {
+      "description": "Tõmba repositoorium kaugmälust",
+      "name": "pull",
+      "params": {
+        "from": {
+          "help": "Vali lähtemasin või -mälu",
+          "label": "Allikas"
+        },
+        "repository": {
+          "help": "Repositooriumi nimi (või nimed komaga eraldatult)",
+          "label": "Repositoorium"
+        },
+        "sourceType": {
+          "help": "Vali, kas tõmmata masinast või mälust",
+          "label": "Allika tüüp"
+        }
+      }
+    },
+    "backup_push": {
+      "description": "Lükka repositoorium kaugmällu",
+      "name": "push",
+      "params": {
+        "checkpoint": {
+          "help": "Luba kuum varundusrežiim kontrollpunktiga (nõuab CRIU-d, null seisakut veebis olevatele repositooriumitele)",
+          "label": "Luba kontrollpunkt"
+        },
+        "dest": {
+          "help": "Varundusfaili nimi",
+          "label": "Sihtkoha failinimi"
+        },
+        "destinationType": {
+          "help": "Vali, kas lükata masinasse või mällu",
+          "label": "Sihtkoha tüüp"
+        },
+        "option": {
+          "help": "Valikud (nt override)",
+          "label": "Valikud"
+        },
+        "repository": {
+          "help": "Repositooriumi nimi (või nimed komaga eraldatult)",
+          "label": "Repositoorium"
+        },
+        "state": {
+          "help": "Kontrolli, et repositoorium on enne lükkamist veebis või võrguühenduseta",
+          "label": "Nõutav olek"
+        },
+        "to": {
+          "help": "Vali sihtmasin või -mälu",
+          "label": "Sihtkoht"
+        }
+      }
+    },
+    "container_inspect": {
+      "description": "Vaata Dockeri konteineri üksikasju",
+      "name": "container_inspect (konteiner)",
+      "params": {
+        "container": {
+          "help": "Konteineri nimi või ID",
+          "label": "Konteiner"
+        }
+      }
+    },
+    "container_logs": {
+      "description": "Vaata Dockeri konteineri logisid",
+      "name": "container_logs (logid)",
+      "params": {
+        "container": {
+          "help": "Konteineri nimi või ID",
+          "label": "Konteiner"
+        },
+        "follow": {
+          "help": "Jälgi logiväljundit reaalajas",
+          "label": "Jälgi logisid"
+        },
+        "lines": {
+          "help": "Kuvatavate ridade arv (vaikimisi: 100)",
+          "label": "Read"
+        }
+      }
+    },
+    "container_pause": {
+      "description": "Peata töötav Dockeri konteiner",
+      "name": "pause (peata)",
+      "params": {
+        "container": {
+          "help": "Konteineri nimi või ID",
+          "label": "Konteiner"
+        }
+      }
+    },
+    "container_remove": {
+      "description": "Eemalda Dockeri konteiner",
+      "name": "remove (eemalda)",
+      "params": {
+        "container": {
+          "help": "Konteineri nimi või ID",
+          "label": "Konteiner"
+        },
+        "force": {
+          "help": "Sundeemalda töötav konteiner",
+          "label": "Sundeemaldamine"
+        }
+      }
+    },
+    "container_restart": {
+      "description": "Taaskäivita Dockeri konteiner",
+      "name": "restart (taaskäivita)",
+      "params": {
+        "container": {
+          "help": "Konteineri nimi või ID",
+          "label": "Konteiner"
+        }
+      }
+    },
+    "container_start": {
+      "description": "Käivita Dockeri konteiner",
+      "name": "start (käivita)",
+      "params": {
+        "container": {
+          "help": "Konteineri nimi või ID",
+          "label": "Konteiner"
+        }
+      }
+    },
+    "container_stats": {
+      "description": "Kuva Dockeri konteineri ressursikasutuse statistika",
+      "name": "container_stats (statistika)",
+      "params": {
+        "container": {
+          "help": "Konteineri nimi või ID (valikuline - kuvab kõik, kui tühi)",
+          "label": "Konteiner"
+        }
+      }
+    },
+    "container_stop": {
+      "description": "Peata töötav Dockeri konteiner",
+      "name": "stop",
+      "params": {
+        "container": {
+          "help": "Konteineri nimi või ID",
+          "label": "Konteiner"
+        }
+      }
+    },
+    "container_unpause": {
+      "description": "Jätka peatatud Dockeri konteinerit",
+      "name": "unpause (jätka)",
+      "params": {
+        "container": {
+          "help": "Konteineri nimi või ID",
+          "label": "Konteiner"
+        }
+      }
+    },
+    "fork": {
+      "description": "Loo repositooriumist kohalik koopia uue sildiga",
+      "name": "fork",
+      "params": {
+        "grand": {
+          "help": "Peamise repositooriumi viide",
+          "label": "Peamine repositoorium"
+        },
+        "repository": {
+          "help": "Forkitav repositoorium",
+          "label": "Repositoorium"
+        },
+        "state": {
+          "help": "Repositooriumi praegune olek",
+          "label": "Olek"
+        },
+        "tag": {
+          "help": "Forkitud repositooriumi silt (ajatempli formaat on soovitatav)",
+          "label": "Silt"
+        }
+      }
+    },
+    "machine_ping": {
+      "description": "Testi võrguühendust masinaga",
+      "name": "ping"
+    },
+    "machine_uninstall": {
+      "description": "Puhasta ja desinstalli süsteemi komponendid",
+      "name": "uninstall (desinstallimine)"
+    },
+    "machine_version": {
+      "description": "Lihtne testfunktsioon, mis prindib tervituse hostinime järgi",
+      "name": "hello (versioon)"
+    },
+    "plugin": {
+      "description": "Aktiveeri repositooriumi pistikprogrammid",
+      "name": "plugin",
+      "params": {
+        "plugin": {
+          "help": "Pistikprogrammi nimi (või nimed komaga eraldatult)",
+          "label": "Pistikprogramm"
+        },
+        "repository": {
+          "help": "Repositooriumi nimi (või nimed komaga eraldatult)",
+          "label": "Repositoorium"
+        }
+      }
+    },
+    "plugout": {
+      "description": "Deaktiveeri repositooriumi pistikprogrammid",
+      "name": "plugout (eemaldab plugina)",
+      "params": {
+        "plugin": {
+          "help": "Pistikprogrammi nimi (või nimed komaga eraldatult)",
+          "label": "Pistikprogramm"
+        },
+        "repository": {
+          "help": "Repositooriumi nimi (või nimed komaga eraldatult)",
+          "label": "Repositoorium"
+        }
+      }
+    },
+    "pull": {
+      "name": "Tõmba"
+    },
+    "repository_create": {
+      "description": "Loo uus repositoorium",
+      "name": "new",
+      "params": {
+        "repository": {
+          "help": "Repositooriumi nimi",
+          "label": "Repositoorium"
+        },
+        "size": {
+          "help": "Repositooriumi suurus (nt 10G)",
+          "label": "Suurus"
+        }
+      }
+    },
+    "repository_delete": {
+      "description": "Kustuta repositoorium",
+      "name": "rm",
+      "params": {
+        "repository": {
+          "help": "Repositooriumi nimi",
+          "label": "Repositoorium"
+        }
+      }
+    },
+    "repository_down": {
+      "description": "Peata repositooriumi teenused",
+      "name": "down",
+      "params": {
+        "option": {
+          "help": "Lisavalikud",
+          "label": "Valikud"
+        },
+        "repository": {
+          "help": "Repositooriumi nimi (või nimed komaga eraldatult)",
+          "label": "Repositoorium"
+        }
+      }
+    },
+    "repository_expand": {
+      "description": "Laienda repositooriumi mälu veebis ilma seisakuta",
+      "name": "expand (laienda)",
+      "params": {
+        "grand": {
+          "help": "Peamise repositooriumi GUID",
+          "label": "Peamine repositoorium"
+        },
+        "repository": {
+          "help": "Repositooriumi nimi",
+          "label": "Repositoorium"
+        },
+        "size": {
+          "help": "Uus suurus (nt 20G) - peab olema suurem kui praegune suurus",
+          "label": "Uus suurus"
+        }
+      }
+    },
+    "repository_list": {
+      "description": "Loetle faile kaugmälu asukohtades",
+      "name": "list files (failide loend)",
+      "params": {
+        "format": {
+          "help": "Failide loetelu formaat",
+          "label": "Väljundiformaat"
+        },
+        "from": {
+          "help": "Masin või salvestussüsteem, millest faile loetleda",
+          "label": "Asukoha allikas"
+        },
+        "path": {
+          "help": "Valikuline tee salvestussüsteemis",
+          "label": "Tee"
+        }
+      }
+    },
+    "repository_mount": {
+      "description": "Ühenda repositooriumi failisüsteemid",
+      "name": "mount (ühenda)",
+      "params": {
+        "checkpoint": {
+          "help": "Taasta konteinerid kontrollpunktist, kui see on saadaval (nõuab CRIU-d)",
+          "label": "Luba kontrollpunkti taastamine"
+        },
+        "from": {
+          "help": "Kaugmasin, millest ühendada",
+          "label": "Lähtemasin"
+        },
+        "repository": {
+          "help": "Repositooriumi nimi (või nimed komaga eraldatult)",
+          "label": "Repositoorium"
+        }
+      }
+    },
+    "repository_ownership": {
+      "description": "Muuda repositooriumi omanikku",
+      "name": "ownership (omandiõigus)",
+      "params": {
+        "from": {
+          "help": "Praegune omanik",
+          "label": "Praegune omanik"
+        },
+        "repository": {
+          "help": "Repositooriumi nimi",
+          "label": "Repositoorium"
+        },
+        "to": {
+          "help": "Uus omanik (vaikimisi: universaalne kasutaja)",
+          "label": "Uus omanik"
+        }
+      }
+    },
+    "repository_resize": {
+      "description": "Muuda repositooriumi mälu suurust (võrguühenduseta toiming - repositoorium peab olema lahutatud)",
+      "name": "resize (muuda suurust)",
+      "params": {
+        "repository": {
+          "help": "Repositooriumi nimi",
+          "label": "Repositoorium"
+        },
+        "size": {
+          "help": "Uus suurus (nt 20G) - võib olla suurem või väiksem kui praegune suurus",
+          "label": "Uus suurus"
+        }
+      }
+    },
+    "repository_template_apply": {
+      "description": "Rakenda sellele repositooriumile malli konfiguratsioon",
+      "name": "templates (mallid)",
+      "params": {
+        "grand": {
+          "help": "Peamise repositooriumi GUID",
+          "label": "Peamine repositoorium"
+        },
+        "repository": {
+          "help": "Repositooriumi nimi",
+          "label": "Repositoorium"
+        },
+        "tmpl": {
+          "help": "Vali mall, mida repositooriumile rakendada",
+          "label": "Mall"
+        }
+      }
+    },
+    "repository_unmount": {
+      "description": "Lahuta repositooriumi failisüsteemid",
+      "name": "unmount (lahutamine)",
+      "params": {
+        "checkpoint": {
+          "help": "Loo kontrollpunkt enne lahutamist (nõuab CRIU-d)",
+          "label": "Loo kontrollpunkt"
+        },
+        "from": {
+          "help": "Kaugmasin, millest lahutada",
+          "label": "Lähtemasin"
+        },
+        "repository": {
+          "help": "Repositooriumi nimi (või nimed komaga eraldatult)",
+          "label": "Repositoorium"
+        }
+      }
+    },
+    "repository_up": {
+      "description": "Käivita repositooriumi teenused Rediaccfile abil",
+      "name": "up",
+      "params": {
+        "option": {
+          "help": "Valikud (nt mount)",
+          "label": "Valikud"
+        },
+        "repository": {
+          "help": "Repositooriumi nimi (või nimed komaga eraldatult)",
+          "label": "Repositoorium"
+        }
+      }
+    },
+    "repository_validate": {
+      "description": "Valideeri repositoorium, käivitades prep, up, tervisekontrollid, test ja down",
+      "name": "validate (valideeri)",
+      "params": {
+        "cleanup": {
+          "help": "Lahuta repositoorium pärast valideerimise lõppu",
+          "label": "Puhastamine"
+        },
+        "grand": {
+          "help": "Peamise repositooriumi nimi",
+          "label": "Peamine repositoorium"
+        },
+        "repository": {
+          "help": "Valideeritava repositooriumi nimi",
+          "label": "Repositoorium"
+        },
+        "skip_down": {
+          "help": "Jäta teenused pärast valideerimist käima",
+          "label": "Jäta down vahele"
+        },
+        "skip_prep": {
+          "help": "Jäta prep-etapp vahele, kui see on hiljuti juba tehtud",
+          "label": "Jäta prep vahele"
+        },
+        "timeout": {
+          "help": "Maksimaalne aeg funktsiooni kohta sekundites (vaikimisi: 300)",
+          "label": "Aegumine (sekundites)"
+        }
+      }
+    },
+    "setup": {
+      "description": "Seadista operatsioonisüsteem vajalike tööriistade ja konfiguratsioonidega",
+      "name": "setup (seadistamine)",
+      "params": {
+        "datastore_size": {
+          "help": "Andmehoidla suurus (nt 95%, 100G)",
+          "label": "Andmehoidla suurus"
+        },
+        "docker_source": {
+          "help": "Kuidas installida Docker (docker-repo = ametlik repositoorium, package-manager = OS-i paketid, snap = snap store, manual = jäta vahele)",
+          "label": "Dockeri installimise allikas"
+        },
+        "install_amd_driver": {
+          "help": "Installi AMD GPU draiverid (auto = tuvasta GPU esmalt, true = installi alati, false = jäta vahele)",
+          "label": "Installi AMD GPU draiver"
+        },
+        "install_criu": {
+          "help": "Installi CRIU kontrollpunkti/taastamise toe jaoks (auto = installi, kui kernel >= 3.11, true = installi sunniviisil, false = jäta vahele, manual = kasutaja installib ise)",
+          "label": "Installi CRIU"
+        },
+        "install_nvidia_driver": {
+          "help": "Installi NVIDIA GPU draiverid (auto = tuvasta GPU esmalt, true = installi alati, false = jäta vahele)",
+          "label": "Installi NVIDIA GPU draiver"
+        },
+        "rclone_source": {
+          "help": "Kuidas installida rclone (install-script = ametlik skript, package-manager = apt/dnf, manual = jäta vahele)",
+          "label": "Rclone'i installimise allikas"
+        },
+        "source": {
+          "help": "Paketi allikas",
+          "label": "Allikas"
+        }
+      }
+    }
+  },
+  "imagePlaceholder": "nt registry/image:tag",
+  "missingRequiredParams": "Palun täitke kõik kohustuslikud parameetrid: {{params}}",
+  "onlinePushLearnMore": "Loe rohkem veebis vs. võrguühenduseta lükkamise kohta →",
+  "onlinePushWarningMessage": "Ühendatud repositooriumi lükkamine, kui teenused töötavad, võib põhjustada andmete ebakõlasid.",
+  "onlinePushWarningTitle": "Veebis lükkamise hoiatus",
+  "original": " (Algne)",
+  "priority": "Prioriteet",
+  "priorityAboveNormal": "Üle normi",
+  "priorityBelowNormal": "Normaalne",
+  "priorityHelp": "Ülesandeid töödeldakse esmalt prioriteedi, seejärel vanuse järgi",
+  "priorityHigh": "Kõrge",
+  "priorityHighDescription": "Lubab mitu samaaegset kõrge prioriteediga ülesannet. Kasuta oluliste ülesannete jaoks, mis vajavad kiiremat töötlemist.",
+  "priorityHighest": "Kõrgeim",
+  "priorityHighestDescription": "Kõrgeima prioriteediga ülesande esitamine tühistab automaatselt kõik olemasolevad kõrgeima prioriteediga ülesanded. Kasuta ainult kiireloomuliste kriitiliste ülesannete jaoks, mis vajavad viivitamatut tähelepanu.",
+  "priorityHighestTimeout": "P1 ülesanded aeguvad 33 sekundi pärast",
+  "priorityHighestTimeoutWarning": "Sobib kiireteks toiminguteks nagu SSH-testid, tervisekontrollid ja olekupäringud. Pikemate kriitiliste ülesannete jaoks kasuta P2-d (tasemepõhine aegumine: 2-96 tundi).",
+  "priorityHighestWarning": "Kõrgeim prioriteet (1)",
+  "priorityHighWarning": "Kõrge prioriteet (2)",
+  "priorityLevelFormat": "P{{level}}: {{label}}",
+  "priorityLow": "Madal",
+  "priorityLowDescription": "Standardne töötlemiskiirus. Soovitatav enamiku toimingute ja igapäevaste ülesannete jaoks.",
+  "priorityLowestDescription": "Aeglaseim töötlemiskiirus. Kasuta partiitoimingute või ajapiiranguta ülesannete jaoks.",
+  "priorityLowestWarning": "Madalaim prioriteet (5)",
+  "priorityLowWarning": "Normaalne prioriteet (4)",
+  "priorityNormal": "Üle normi",
+  "priorityNormalDescription": "Kiirem kui standardne töötlemiskiirus. Kasuta ülesannete jaoks, mis vajavad tavapärasest kiiremat töötlemist.",
+  "priorityNormalWarning": "Üle normaalse prioriteet (3)",
+  "priorityPopoverLevels": "Prioriteeditasemed:",
+  "priorityPopoverP1": "33-sekundiline aegumine. Kiireteks toiminguteks nagu SSH-testid, tervisekontrollid ja olekupäringud. Reserveeritud kohad koheseks täitmiseks.",
+  "priorityPopoverP2": "Tasemepõhine aegumine (2-96h). Reserveeritud kohad. Oluliste kriitiliste ülesannete jaoks.",
+  "priorityPopoverP3": "Tasemepõhine aegumine (2-96h). Tavalised kohad. Kiiremat töötlemist vajavate ülesannete jaoks.",
+  "priorityPopoverP4": "Tasemepõhine aegumine (2-96h). Standardne töötlemine enamiku toimingute jaoks.",
+  "priorityPopoverP5": "Tasemepõhine aegumine (2-96h). Partiitoimingute jaoks ilma ajapiiranguteta.",
+  "priorityPopoverTitle": "Prioriteedisüsteem",
+  "pushOperationDetails": "Lükkamise toimingu üksikasjad",
+  "quickTaskBadge": "Kiire ülesanne",
+  "quickTaskDescription": "Valmib alla 30 sekundi",
+  "repositoryLineage": "Repositooriumi päritolu",
+  "repositoryWillBePushedOffline": "Repositoorium lükatakse võrguühenduseta olekus (lahutatud).",
+  "repositoryWillBePushedOnline": "Repositoorium lükatakse veebis olekus (ühendatud).",
+  "searchFunctions": "Otsi funktsioone...",
+  "selectFunction": "Vali funktsioon",
+  "selectFunctionToConfigure": "Vali konfigureeritav funktsioon",
+  "sourceRepository": "Lähte-repositoorium",
+  "validationError": "Valideerimistõrge"
+}

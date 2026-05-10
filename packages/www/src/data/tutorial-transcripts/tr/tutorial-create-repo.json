@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-create-repo.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-create-repo-01",
+      "markerIndex": 0,
+      "at": 32.02867,
+      "text": "Sunucuda 2 gigabaytlık şifreli bir depo oluşturuyoruz. Depo, depolandığında tek bir şifreli dosyadır. Bağlandığında kendi Docker daemon'ı ve kendi uygulama verisiyle birlikte bir klasöre dönüşür; sunucudaki her şeyden tamamen izole edilmiş."
+    },
+    {
+      "id": "tutorial-create-repo-02",
+      "markerIndex": 1,
+      "at": 62.567023,
+      "text": "Yeni deponun kayıtlı olduğunu doğrulamak için makinedeki depoları listeliyoruz. Buradan itibaren depo, VS Code'da açılabilir, dağıtılabilir, fork'lanabilir veya yedeklenebilir; hepsi dizüstü bilgisayarınızdan."
+    }
+  ]
+}

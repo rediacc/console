@@ -53,7 +53,19 @@ const loadLanguageResources = async (lng: string) => {
     const resources: LanguageResources = {};
 
     // Load shared translations synchronously (already bundled)
-    const sharedLng = lng as 'de' | 'es' | 'fr' | 'ja' | 'ar' | 'ru' | 'tr' | 'zh';
+    const sharedLng = lng as
+      | 'de'
+      | 'es'
+      | 'fr'
+      | 'ja'
+      | 'ar'
+      | 'ru'
+      | 'tr'
+      | 'zh'
+      | 'et'
+      | 'ko'
+      | 'pt'
+      | 'it';
     resources[SHARED_NAMESPACE] = getSharedTranslations(sharedLng) as unknown as Record<
       string,
       unknown
@@ -163,6 +175,58 @@ const loadLanguageResources = async (lng: string) => {
         resources.functions = (await import('./locales/ru/functions.json')).default;
         resources.ceph = (await import('./locales/ru/ceph.json')).default;
         resources.organization = (await import('./locales/ru/organization.json')).default;
+        break;
+      case 'et':
+        resources.auth = (await import('./locales/et/auth.json')).default;
+        resources.common = (await import('./locales/et/common.json')).default;
+        resources.resources = (await import('./locales/et/resources.json')).default;
+        resources.machines = (await import('./locales/et/machines.json')).default;
+        resources.system = (await import('./locales/et/system.json')).default;
+        resources.queue = (await import('./locales/et/queue.json')).default;
+        resources.settings = (await import('./locales/et/settings.json')).default;
+        resources.storageProviders = (await import('./locales/et/storageProviders.json')).default;
+        resources.functions = (await import('./locales/et/functions.json')).default;
+        resources.ceph = (await import('./locales/et/ceph.json')).default;
+        resources.organization = (await import('./locales/et/organization.json')).default;
+        break;
+      case 'ko':
+        resources.auth = (await import('./locales/ko/auth.json')).default;
+        resources.common = (await import('./locales/ko/common.json')).default;
+        resources.resources = (await import('./locales/ko/resources.json')).default;
+        resources.machines = (await import('./locales/ko/machines.json')).default;
+        resources.system = (await import('./locales/ko/system.json')).default;
+        resources.queue = (await import('./locales/ko/queue.json')).default;
+        resources.settings = (await import('./locales/ko/settings.json')).default;
+        resources.storageProviders = (await import('./locales/ko/storageProviders.json')).default;
+        resources.functions = (await import('./locales/ko/functions.json')).default;
+        resources.ceph = (await import('./locales/ko/ceph.json')).default;
+        resources.organization = (await import('./locales/ko/organization.json')).default;
+        break;
+      case 'pt':
+        resources.auth = (await import('./locales/pt/auth.json')).default;
+        resources.common = (await import('./locales/pt/common.json')).default;
+        resources.resources = (await import('./locales/pt/resources.json')).default;
+        resources.machines = (await import('./locales/pt/machines.json')).default;
+        resources.system = (await import('./locales/pt/system.json')).default;
+        resources.queue = (await import('./locales/pt/queue.json')).default;
+        resources.settings = (await import('./locales/pt/settings.json')).default;
+        resources.storageProviders = (await import('./locales/pt/storageProviders.json')).default;
+        resources.functions = (await import('./locales/pt/functions.json')).default;
+        resources.ceph = (await import('./locales/pt/ceph.json')).default;
+        resources.organization = (await import('./locales/pt/organization.json')).default;
+        break;
+      case 'it':
+        resources.auth = (await import('./locales/it/auth.json')).default;
+        resources.common = (await import('./locales/it/common.json')).default;
+        resources.resources = (await import('./locales/it/resources.json')).default;
+        resources.machines = (await import('./locales/it/machines.json')).default;
+        resources.system = (await import('./locales/it/system.json')).default;
+        resources.queue = (await import('./locales/it/queue.json')).default;
+        resources.settings = (await import('./locales/it/settings.json')).default;
+        resources.storageProviders = (await import('./locales/it/storageProviders.json')).default;
+        resources.functions = (await import('./locales/it/functions.json')).default;
+        resources.ceph = (await import('./locales/it/ceph.json')).default;
+        resources.organization = (await import('./locales/it/organization.json')).default;
         break;
     }
 

@@ -1,105 +1,72 @@
 ---
-title: 监控与诊断
-description: 检查机器健康状况、检查容器、查看 systemd 服务、扫描主机密钥和运行环境诊断。
-category: Tutorials
-order: 4
+title: "监控"
+description: "使用 rdc machine 命令从笔记本检查服务器和仓库的健康状态。"
+category: "Tutorials"
+subcategory: advanced
+order: 12
 language: zh
-sourceHash: fa85cf9b00d42a6e
+sourceHash: "e6eaaed180c35e36"
+sourceCommit: "be90e8e7896623c088b86360ec29c1baef2e86b4"
 ---
 
-# 如何使用 Rediacc 监控和诊断基础设施
+# 监控
 
-保持基础设施健康需要对机器状态、容器状态和服务健康状况有清晰的了解。在本教程中，您将运行环境诊断、检查机器健康状况、检查容器和服务、查看保险库状态并验证连接。完成后，您将知道如何在整个基础设施中识别和调查问题。
+你的应用已部署、上线并完成备份。现在确保一切保持健康。`rdc` 让你从笔记本就能全面了解任意服务器（健康状态、容器、仓库）的情况。
 
-## 前提条件
+## 观看教程
 
-- 已安装 `rdc` CLI 并初始化配置
-- 一台已配置的机器，至少有一个正在运行的仓库（参见[教程: 仓库生命周期](/zh/docs/tutorial-repos)）
+![Tutorial: Monitoring](/assets/tutorials/tutorial-monitoring.cast)
 
-## 交互式录像
+## 三类可检查内容
 
-![教程: 监控与诊断](/assets/tutorials/monitoring-tutorial.cast)
+![健康状态、容器、仓库](/img/tutorials/tutorial-monitoring/slide-1.svg)
 
-### 步骤1: 运行诊断
+## 健康状态：系统信息
 
-首先检查您的本地环境是否存在配置问题。
-
-```bash
-rdc doctor
-```
-
-检查 Node.js、CLI 版本、renet 二进制文件、配置和虚拟化支持。每项检查报告 **OK**、**Warning** 或 **Error**。
-
-### 步骤2: 机器健康检查
+从系统视图开始：
 
 ```bash
-rdc machine health --name server-1
+time rdc machine query --name my-server --system
 ```
 
-从远程机器获取全面的健康报告：系统运行时间、磁盘使用量、数据存储使用量、容器数量、存储 SMART 状态和已识别的问题。
+这会显示系统运行时间、磁盘使用情况和存储状态。如果有异常，它会告诉你。
 
-### 步骤3: 查看运行中的容器
+## 容器
+
+查看机器上每个仓库中所有运行中的容器：
 
 ```bash
-rdc machine containers --name server-1
+time rdc machine query --name my-server --containers
 ```
 
-列出机器上所有仓库中所有运行中的容器，显示名称、状态、运行状态、健康状况、CPU 使用量、内存使用量以及每个容器所属的仓库。
+你会得到每个容器的名称、状态、健康检查、CPU 和内存使用情况，以及所属仓库。
 
-### 步骤4: 检查 systemd 服务
+## 仓库
 
-要查看支撑每个仓库的 Docker daemon 和网络的底层服务：
+检查你的仓库：
 
 ```bash
-rdc machine services --name server-1
+time rdc machine query --name my-server --repositories
 ```
 
-列出与 Rediacc 相关的 systemd 服务（Docker daemon、loopback 别名）及其状态、子状态、重启次数和内存使用量。
+这会显示每个仓库的大小、挂载状态、Docker 状态和磁盘使用情况。
 
-### 步骤5: 保险库状态概览
+## 一次性获取所有信息
 
 ```bash
-rdc machine vault-status --name server-1
+time rdc machine query --name my-server
 ```
 
-提供机器的高级概览：主机名、运行时间、内存、磁盘、数据存储和仓库总数。
+系统信息、仓库、容器，一条命令全部获取。不带过滤器的 `query` 命令返回完整信息；带 `--system`、`--containers`、`--repositories`、`--services`、`--network` 或 `--block-devices` 时只返回对应部分。
 
-### 步骤6: 扫描主机密钥
+## 本地健康检查
 
-如果机器被重建或其 IP 发生变化，请刷新存储的 SSH 主机密钥。
+`rdc doctor` 独立于任何特定服务器，检查你的本地设置（Node、SSH 密钥、`renet`、Docker）：
 
 ```bash
-rdc config machine scan-keys -m server-1
+time rdc doctor
 ```
 
-获取服务器当前的主机密钥并更新您的配置。这可以防止"host key verification failed"错误。
+## 大功告成
 
-### 步骤7: 验证连接
-
-快速 SSH 连接检查，确认机器可达并正在响应。
-
-```bash
-rdc term connect -m server-1 -c "hostname"
-rdc term connect -m server-1 -c "uptime"
-```
-
-主机名确认您连接到了正确的服务器。运行时间确认系统正常运行。
-
-## 故障排除
-
-**健康检查超时或显示"SSH connection failed"**
-验证机器在线且可达：`ping <ip>`。使用 `rdc term connect -m <machine> -c "echo ok"` 检查您的 SSH 密钥是否配置正确。
-
-**服务列表中显示"Service not found"**
-Rediacc 服务仅在部署至少一个仓库后才会出现。如果没有仓库，服务列表为空。
-
-**容器列表显示过时或已停止的容器**
-如果 `repo down` 未干净执行，之前部署的容器可能会残留。使用 `rdc repo down --name <repo> -m <machine>` 停止它们，或通过 `rdc term connect -m <machine> -r <repo> -c "docker ps -a"` 直接检查。
-
-## 后续步骤
-
-您已运行诊断、检查了机器健康状况、检查了容器和服务并验证了连接。要使用您的部署：
-
-- [监控](/zh/docs/monitoring), 所有监控命令的完整参考
-- [故障排除](/zh/docs/troubleshooting), 常见问题和解决方案
-- [教程: 工具](/zh/docs/tutorial-tools), 终端、文件同步和 VS Code 集成
+这就是完整的系列教程。你现在可以安装、配置、部署、fork、上线、自动启动、备份和监控。全从终端完成，全在你自己的服务器上。

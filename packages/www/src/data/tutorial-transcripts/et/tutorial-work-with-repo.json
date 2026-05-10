@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-work-with-repo.cast",
+  "language": "et",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-work-with-repo-01",
+      "markerIndex": 0,
+      "at": 93.14728,
+      "text": "Esiteks tunnel käsk. Rakendus töötab serveris, mitte sinu sülearvutis. CLI repo tunnel suunab konteineri pordi üle SSH, nii et saad selle brauseris localhost aadressil avada."
+    },
+    {
+      "id": "tutorial-work-with-repo-02",
+      "markerIndex": 1,
+      "at": 103.393386,
+      "text": "Teiseks term käsk. CLI term connect viib sind repositooriumi liivakasti -- sama isoleeritud vaate, mida VS Code annaks. Käivita suvaline käsk selle repositooriumi Dockeri deemoni vastu ilma terminalist lahkumata."
+    },
+    {
+      "id": "tutorial-work-with-repo-03",
+      "markerIndex": 2,
+      "at": 120.858492,
+      "text": "Enne failide tõugramist vaata eelvaadet --dry-run abil. See näitab täpselt, mis muutuks, ilma midagi kopeerimata. Kasuta alati eelvaadet, kui oled ebakindel."
+    },
+    {
+      "id": "tutorial-work-with-repo-04",
+      "markerIndex": 3,
+      "at": 137.357072,
+      "text": "Nüüd teeme päris üleslaadimise. CLI repo sync upload liigutab failid sinu sülearvutist repositooriumisse üle SSH rsync delta tihendusega. Tunnel, term, sync -- kolm käsku katavad igapäevase tsükli."
+    }
+  ]
+}

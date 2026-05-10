@@ -1,0 +1,203 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { createTranslator } from '../../../i18n/utils';
+import { getLanguagePaths } from '../../../i18n/language-utils';
+import type { Language } from '../../../i18n/types';
+
+// All 13 languages emit. Translation strings live under
+// pages.resourcesNis2Directive.* in packages/www/src/i18n/translations/<lang>.json.
+// Until non-English values are translated, the runtime falls back to the English
+// value via the i18n utils' default-fallback behaviour.
+export const getStaticPaths = getLanguagePaths;
+
+const { lang } = Astro.params as { lang: Language };
+const { t, ta } = createTranslator(lang);
+
+const ns = 'pages.resourcesNis2Directive';
+
+// Per-language PDF asset. build-pdfs.sh produces nis2-directive-summary-<lang>.pdf
+// for every locale and copies them into packages/www/public/assets/. The legacy
+// unsuffixed filename is kept for backward compatibility with any existing inbound
+// link.
+const pdfHref = `/assets/nis2-directive-summary-${lang}.pdf`;
+const pdfFilename = `nis2-directive-summary-${lang}.pdf`;
+
+const toc = ta(`${ns}.toc.items`) as string[];
+const companionGuides = (ta(`${ns}.companions.items`) as Array<{
+  title: string;
+  slug: string;
+  blurb: string;
+}>).map((g) => ({ ...g, href: `/${lang}/blog/${g.slug}` }));
+const faqs = ta(`${ns}.faq.items`) as Array<{ q: string; a: string }>;
+---
+
+<BaseLayout
+  lang={lang}
+  title={t(`${ns}.meta.title`)}
+  description={t(`${ns}.meta.description`)}
+  keywords={t(`${ns}.meta.keywords`)}
+  ogType="article"
+  structuredDataType="techarticle"
+>
+  <article class="resource-page">
+    <section class="resource-hero section-dark">
+      <div class="container">
+        <p class="resource-eyebrow">{t(`${ns}.hero.eyebrow`)}</p>
+        <h1>{t(`${ns}.hero.title`)}</h1>
+        <p class="resource-subtitle">{t(`${ns}.hero.subtitle`)}</p>
+        <div class="resource-cta-row">
+          <a class="resource-download-button" href={pdfHref} download={pdfFilename}>
+            {t(`${ns}.hero.downloadButton`)}
+          </a>
+          <a class="resource-secondary-link" href={pdfHref} target="_blank" rel="noopener">
+            {t(`${ns}.hero.openInBrowser`)}
+          </a>
+        </div>
+        <p class="resource-disclaimer">{t(`${ns}.hero.disclaimer`)}</p>
+      </div>
+    </section>
+
+    <section class="resource-toc section-light">
+      <div class="container">
+        <h2>{t(`${ns}.toc.heading`)}</h2>
+        <p class="resource-toc-intro">{t(`${ns}.toc.intro`)}</p>
+        <ol class="resource-toc-list">
+          {toc.map((item) => <li>{item}</li>)}
+        </ol>
+      </div>
+    </section>
+
+    <section class="resource-companions section-dark">
+      <div class="container">
+        <h2>{t(`${ns}.companions.heading`)}</h2>
+        <p class="resource-companions-intro">{t(`${ns}.companions.intro`)}</p>
+        <div class="resource-companion-grid">
+          {companionGuides.map((g) => (
+            <a class="resource-companion-card" href={g.href}>
+              <h3>{g.title}</h3>
+              <p>{g.blurb}</p>
+              <span class="resource-companion-link">{t(`${ns}.companions.readMore`)}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="resource-faq section-light">
+      <div class="container">
+        <h2>{t(`${ns}.faq.heading`)}</h2>
+        <div class="resource-faq-list">
+          {faqs.map((f) => (
+            <details class="resource-faq-item">
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="resource-about section-dark">
+      <div class="container">
+        <h2>{t(`${ns}.about.heading`)}</h2>
+        <p set:html={t(`${ns}.about.body`).replace('{nis2DoraLink}', `<a href="/${lang}/docs/legal-nis2-dora">NIS2 and DORA</a>`)} />
+        <p class="resource-about-cta">{t(`${ns}.about.cta`)}</p>
+        <a class="resource-download-button" href={pdfHref} download={pdfFilename}>
+          {t(`${ns}.about.downloadButton`)}
+        </a>
+      </div>
+    </section>
+  </article>
+</BaseLayout>
+
+<style>
+  .resource-page { --resource-accent: #38BDF8; }
+  .resource-hero { padding: 80px 0 64px; text-align: center; }
+  .resource-hero .container { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+  .resource-eyebrow {
+    display: inline-block;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--resource-accent);
+    margin-bottom: 16px;
+  }
+  .resource-hero h1 { font-size: clamp(28px, 4vw, 40px); margin: 0 0 18px; line-height: 1.2; }
+  .resource-subtitle { font-size: 17px; line-height: 1.6; opacity: 0.85; margin: 0 auto 28px; max-width: 640px; }
+  .resource-cta-row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .resource-download-button {
+    display: inline-block;
+    background: var(--resource-accent);
+    color: #0F172A;
+    font-weight: 600;
+    padding: 14px 28px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: opacity 0.15s;
+  }
+  .resource-download-button:hover { opacity: 0.85; }
+  .resource-secondary-link {
+    display: inline-block;
+    color: var(--resource-accent);
+    padding: 14px 0;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+  .resource-secondary-link:hover { border-bottom-color: var(--resource-accent); }
+  .resource-disclaimer { font-size: 13px; opacity: 0.55; margin-top: 6px; }
+
+  .resource-toc { padding: 64px 0; }
+  .resource-toc .container { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+  .resource-toc h2 { font-size: 26px; margin: 0 0 12px; }
+  .resource-toc-intro { font-size: 15px; opacity: 0.75; margin: 0 0 24px; }
+  .resource-toc-list {
+    columns: 2;
+    column-gap: 32px;
+    padding-left: 24px;
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+  @media (max-width: 600px) { .resource-toc-list { columns: 1; } }
+
+  .resource-companions { padding: 64px 0; }
+  .resource-companions .container { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  .resource-companions h2 { font-size: 26px; margin: 0 0 12px; text-align: center; }
+  .resource-companions-intro { text-align: center; font-size: 15px; opacity: 0.75; max-width: 600px; margin: 0 auto 36px; }
+  .resource-companion-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .resource-companion-card {
+    display: block;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .resource-companion-card:hover { border-color: var(--resource-accent); transform: translateY(-2px); }
+  .resource-companion-card h3 { font-size: 17px; margin: 0 0 10px; color: var(--resource-accent); }
+  .resource-companion-card p { font-size: 14px; line-height: 1.55; opacity: 0.85; margin: 0 0 14px; }
+  .resource-companion-link { font-size: 13px; color: var(--resource-accent); }
+
+  .resource-faq { padding: 64px 0; }
+  .resource-faq .container { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+  .resource-faq h2 { font-size: 26px; margin: 0 0 24px; }
+  .resource-faq-list { display: flex; flex-direction: column; gap: 10px; }
+  .resource-faq-item {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 6px;
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .resource-faq-item summary { cursor: pointer; font-weight: 600; font-size: 15px; }
+  .resource-faq-item[open] summary { margin-bottom: 10px; }
+  .resource-faq-item p { font-size: 14px; line-height: 1.65; margin: 0; opacity: 0.85; }
+
+  .resource-about { padding: 64px 0; text-align: center; }
+  .resource-about .container { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+  .resource-about h2 { font-size: 24px; margin: 0 0 18px; }
+  .resource-about p { font-size: 15px; line-height: 1.7; margin: 0 0 18px; opacity: 0.85; }
+  .resource-about p a { color: var(--resource-accent); }
+  .resource-about-cta { font-style: italic; }
+</style>

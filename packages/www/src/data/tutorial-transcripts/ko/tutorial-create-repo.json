@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-create-repo.cast",
+  "language": "ko",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-create-repo-01",
+      "markerIndex": 0,
+      "at": 32.02867,
+      "text": "서버에 2기가바이트 크기의 암호화된 저장소를 생성합니다. 저장소는 저장 시 단일 암호화 파일로 존재합니다. 마운트되면 전용 Docker 데몬과 애플리케이션 데이터를 갖춘 폴더가 되며, 서버의 다른 환경과 완전히 격리됩니다."
+    },
+    {
+      "id": "tutorial-create-repo-02",
+      "markerIndex": 1,
+      "at": 62.567023,
+      "text": "새 저장소가 등록되었는지 확인합니다. 이제 이 저장소는 노트북에서 VS Code로 열거나, 배포하거나, 포크하거나, 백업할 수 있습니다."
+    }
+  ]
+}

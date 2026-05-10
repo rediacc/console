@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-production-mode.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-production-mode-01",
+      "markerIndex": 0,
+      "at": 56.862064,
+      "text": "Wir starten die App im Produktionsmodus vom Laptop aus. Der Deployment-Befehl ruft dieselbe up-Funktion auf, die wir während der Entwicklung verwendet haben, läuft aber getrennt. Sie können Ihren Laptop zuklappen und die App läuft weiter."
+    },
+    {
+      "id": "tutorial-production-mode-02",
+      "markerIndex": 1,
+      "at": 97.750961,
+      "text": "Wir aktivieren Autostart, damit die App einen Server-Neustart überlebt. Von nun an, wenn der Server neu startet, kommt dieses Repo automatisch zurück."
+    },
+    {
+      "id": "tutorial-production-mode-03",
+      "markerIndex": 2,
+      "at": 125.443493,
+      "text": "Wir listen auf, welche Repositories Autostart aktiviert haben. Das bestätigt, dass unsere App nun in der Startliste ist."
+    },
+    {
+      "id": "tutorial-production-mode-04",
+      "markerIndex": 3,
+      "at": 141.09184,
+      "text": "Und um die App zu stoppen, ein Befehl vom Laptop. Ein Befehl hoch, ein Befehl runter. Alles aus Ihrem Terminal, keine interaktiven Sitzungen mehr."
+    }
+  ]
+}

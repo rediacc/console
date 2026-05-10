@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/tutorial-networking.cast",
+  "language": "ja",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-networking-01",
+      "markerIndex": 0,
+      "at": 27.859436,
+      "text": "ステップ2です。CLI にパブリック IP、ベースドメイン、証明書のメールアドレス、Cloudflare API トークンを設定します。証明書のメールアドレスとトークンはすべてのマシンで共有されるため、一度だけ設定すれば十分です。"
+    },
+    {
+      "id": "tutorial-networking-02",
+      "markerIndex": 1,
+      "at": 41.958746,
+      "text": "インフラ設定が保存されているか確認します。パブリック IP、ベースドメイン、証明書のメールアドレスが設定内容に表示されています。"
+    },
+    {
+      "id": "tutorial-networking-03",
+      "markerIndex": 2,
+      "at": 51.564603,
+      "text": "ステップ3です。設定をサーバーにプッシュします。これにより Cloudflare に DNS レコードが自動的に作成され、マシン上のプロキシ設定が準備されます。"
+    },
+    {
+      "id": "tutorial-networking-04",
+      "markerIndex": 3,
+      "at": 70.626849,
+      "text": "ステップ4が始まります。infra という名前の小さなリポジトリを作成します。プロキシはここに配置され、アプリケーションリポジトリから分離されます。"
+    },
+    {
+      "id": "tutorial-networking-05",
+      "markerIndex": 4,
+      "at": 97.243945,
+      "text": "組み込みの proxy テンプレートを適用します。Traefik に加えて、Let's Encrypt と Cloudflare の DNS-01 チャレンジの設定がすぐに使える状態で含まれています。"
+    },
+    {
+      "id": "tutorial-networking-06",
+      "markerIndex": 5,
+      "at": 112.494613,
+      "text": "プロキシを起動します。Traefik は5秒ごとにコンテナを自動検出します。TLS 証明書は Let's Encrypt から自動的に取得されます。アプリが HTTPS でインターネットからアクセスできるようになりました。"
+    }
+  ]
+}

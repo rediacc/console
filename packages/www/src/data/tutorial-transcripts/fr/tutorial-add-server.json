@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-add-server.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-add-server-01",
+      "markerIndex": 0,
+      "at": 1.508633,
+      "text": "Nous commençons par créer un profil de configuration. Ce profil contient la clé SSH, la liste des machines et les paramètres d'infrastructure pour tout ce que nous allons faire."
+    },
+    {
+      "id": "tutorial-add-server-02",
+      "markerIndex": 1,
+      "at": 11.160728,
+      "text": "Maintenant, nous enregistrons le serveur depuis la ligne de commande en fournissant son nom, son adresse IP et l'utilisateur SSH. Les clés hôtes sont scannées automatiquement pour un accès sécurisé."
+    },
+    {
+      "id": "tutorial-add-server-03",
+      "markerIndex": 2,
+      "at": 23.457976,
+      "text": "Voyons ensuite le provisionnement du serveur. Cette étape installe renet et crée le datastore chiffré. Après cela, le serveur est prêt à héberger des dépôts."
+    },
+    {
+      "id": "tutorial-add-server-04",
+      "markerIndex": 3,
+      "at": 39.717449,
+      "text": "Vérifions ce que l'outil connaît de la configuration. Machines, clé SSH, infrastructure, tout ce que nous venons de configurer apparaît ici."
+    },
+    {
+      "id": "tutorial-add-server-05",
+      "markerIndex": 4,
+      "at": 48.157549,
+      "text": "Toute la configuration réside dans un seul fichier JSON sur votre ordinateur. Copiez-le sur une autre machine et vous pouvez piloter les mêmes serveurs depuis là-bas."
+    }
+  ]
+}

@@ -1,0 +1,477 @@
+{
+  "cast": "/assets/tutorials/tutorial-backup-restore.cast",
+  "language": "ko",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "d491df82d57986c5a2738dec87d2d82d23fb66f5c1484181e8f90f73b25e0351",
+  "steps": [
+    {
+      "id": "tutorial-backup-restore-01",
+      "markerIndex": 0,
+      "replayStartSec": 65.053708,
+      "replayEndSec": 73.743501,
+      "narrationText": "1단계입니다. 기존 rclone 구성을 가져옵니다. rclone은 S3, Backblaze, Google Drive, Dropbox 등 다양한 서비스를 지원합니다. 이미 rclone을 사용하고 있다면 동일한 구성을 바로 가져올 수 있습니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-01.b4a5f062.mp3",
+      "audioDurationSec": 17.867755,
+      "wordTimings": [
+        {
+          "startSec": 1.52,
+          "endSec": 1.92,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.88,
+          "startChar": 18,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.68,
+          "startChar": 22,
+          "endChar": 27
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.44,
+          "startChar": 52,
+          "endChar": 58
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.92,
+          "startChar": 59,
+          "endChar": 64
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.36,
+          "startChar": 66,
+          "endChar": 73
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.76,
+          "startChar": 74,
+          "endChar": 75
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.64,
+          "startChar": 76,
+          "endChar": 79
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 11.44,
+          "startChar": 80,
+          "endChar": 84
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 12.16,
+          "startChar": 85,
+          "endChar": 90
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 13.04,
+          "startChar": 92,
+          "endChar": 94
+        },
+        {
+          "startSec": 13.76,
+          "endSec": 14.32,
+          "startChar": 103,
+          "endChar": 107
+        },
+        {
+          "startSec": 14.4,
+          "endSec": 14.8,
+          "startChar": 108,
+          "endChar": 111
+        },
+        {
+          "startSec": 15.12,
+          "endSec": 15.6,
+          "startChar": 112,
+          "endChar": 115
+        },
+        {
+          "startSec": 15.6,
+          "endSec": 16.0,
+          "startChar": 116,
+          "endChar": 119
+        },
+        {
+          "startSec": 16.32,
+          "endSec": 16.64,
+          "startChar": 120,
+          "endChar": 122
+        },
+        {
+          "startSec": 16.64,
+          "endSec": 17.04,
+          "startChar": 123,
+          "endChar": 126
+        },
+        {
+          "startSec": 17.04,
+          "endSec": 17.2,
+          "startChar": 127,
+          "endChar": 128
+        },
+        {
+          "startSec": 17.2,
+          "endSec": 17.84,
+          "startChar": 129,
+          "endChar": 133
+        }
+      ]
+    },
+    {
+      "id": "tutorial-backup-restore-02",
+      "markerIndex": 1,
+      "replayStartSec": 73.743501,
+      "replayEndSec": 82.843959,
+      "narrationText": "CLI가 인식하는 스토리지 목록을 확인합니다. 각각은 백업을 푸시할 수 있는 대상입니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-02.f4926c1a.mp3",
+      "audioDurationSec": 7.157551,
+      "wordTimings": [
+        {
+          "startSec": 1.2,
+          "endSec": 1.84,
+          "startChar": 5,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.4,
+          "startChar": 10,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 15,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.6,
+          "startChar": 19,
+          "endChar": 24
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.72,
+          "startChar": 26,
+          "endChar": 29
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.68,
+          "startChar": 34,
+          "endChar": 37
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.92,
+          "startChar": 38,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.32,
+          "startChar": 40,
+          "endChar": 42
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 7.12,
+          "startChar": 43,
+          "endChar": 48
+        }
+      ]
+    },
+    {
+      "id": "tutorial-backup-restore-03",
+      "markerIndex": 2,
+      "replayStartSec": 82.843959,
+      "replayEndSec": 94.515541,
+      "narrationText": "2단계입니다. 전체 백업을 푸시합니다. 저장소 전체, 앱, 데이터베이스, 파일, 구성이 업로드됩니다. 저장소가 저장 시 암호화되어 있으므로 백업도 암호화됩니다. 별도의 키 관리가 필요하지 않습니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-03.b4813e75.mp3",
+      "audioDurationSec": 18.207347,
+      "wordTimings": [
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 1,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.76,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.32,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.04,
+          "startChar": 15,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.0,
+          "startChar": 22,
+          "endChar": 25
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.88,
+          "startChar": 26,
+          "endChar": 28
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.44,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.48,
+          "startChar": 33,
+          "endChar": 39
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.36,
+          "startChar": 41,
+          "endChar": 43
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.24,
+          "startChar": 45,
+          "endChar": 48
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 9.36,
+          "startChar": 49,
+          "endChar": 55
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.56,
+          "startChar": 57,
+          "endChar": 61
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.44,
+          "startChar": 62,
+          "endChar": 64
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.68,
+          "startChar": 65,
+          "endChar": 66
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 12.32,
+          "startChar": 67,
+          "endChar": 72
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 12.96,
+          "startChar": 73,
+          "endChar": 77
+        },
+        {
+          "startSec": 13.2,
+          "endSec": 13.92,
+          "startChar": 78,
+          "endChar": 81
+        },
+        {
+          "startSec": 13.92,
+          "endSec": 14.88,
+          "startChar": 82,
+          "endChar": 88
+        },
+        {
+          "startSec": 15.44,
+          "endSec": 16.0,
+          "startChar": 90,
+          "endChar": 93
+        },
+        {
+          "startSec": 16.0,
+          "endSec": 16.32,
+          "startChar": 94,
+          "endChar": 95
+        },
+        {
+          "startSec": 16.32,
+          "endSec": 16.88,
+          "startChar": 96,
+          "endChar": 99
+        },
+        {
+          "startSec": 16.88,
+          "endSec": 17.44,
+          "startChar": 100,
+          "endChar": 104
+        },
+        {
+          "startSec": 17.52,
+          "endSec": 18.08,
+          "startChar": 105,
+          "endChar": 109
+        }
+      ]
+    },
+    {
+      "id": "tutorial-backup-restore-04",
+      "markerIndex": 3,
+      "replayStartSec": 94.515541,
+      "replayEndSec": 131.818198,
+      "narrationText": "이 스토리지에서 사용 가능한 백업 목록을 확인합니다. 이제 새 서버에서 복원하려면 명령 하나면 됩니다. 저장소 풀 명령을 실행하면 됩니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-04.5ba13ad6.mp3",
+      "audioDurationSec": 10.266122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 1.12,
+          "startChar": 2,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.44,
+          "startChar": 9,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.08,
+          "startChar": 12,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.4,
+          "startChar": 16,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 19,
+          "endChar": 22
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.52,
+          "startChar": 23,
+          "endChar": 28
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.32,
+          "startChar": 30,
+          "endChar": 32
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 33,
+          "endChar": 34
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 5.04,
+          "startChar": 35,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.84,
+          "startChar": 40,
+          "endChar": 45
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.64,
+          "startChar": 46,
+          "endChar": 48
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 7.04,
+          "startChar": 49,
+          "endChar": 52
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.52,
+          "startChar": 53,
+          "endChar": 56
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.48,
+          "startChar": 58,
+          "endChar": 61
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.72,
+          "startChar": 62,
+          "endChar": 63
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 9.2,
+          "startChar": 64,
+          "endChar": 67
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.76,
+          "startChar": 68,
+          "endChar": 72
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.24,
+          "startChar": 73,
+          "endChar": 76
+        }
+      ]
+    }
+  ]
+}

@@ -27,7 +27,7 @@ import { computeSourceHash } from './validate-translation-freshness.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // All supported languages
-const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'];
+const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'];
 
 // Path helpers
 function getCliJsonPath(lang) {

@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/tutorial-networking.cast",
+  "language": "ko",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-networking-01",
+      "markerIndex": 0,
+      "at": 27.859436,
+      "text": "2단계입니다. 명령줄에서 공개 IP, 기본 도메인, 인증서 이메일, Cloudflare API 토큰을 입력합니다. 인증서 이메일과 토큰은 모든 머신에서 공유되므로 한 번만 설정하면 됩니다."
+    },
+    {
+      "id": "tutorial-networking-02",
+      "markerIndex": 1,
+      "at": 41.958746,
+      "text": "인프라 설정이 저장되었는지 확인합니다. 공개 IP, 기본 도메인, 인증서 이메일이 모두 표시됩니다."
+    },
+    {
+      "id": "tutorial-networking-03",
+      "markerIndex": 2,
+      "at": 51.564603,
+      "text": "3단계입니다. 서버에 구성을 푸시합니다. Cloudflare에 DNS 레코드를 자동으로 생성하고 프록시 구성을 준비합니다."
+    },
+    {
+      "id": "tutorial-networking-04",
+      "markerIndex": 3,
+      "at": 70.626849,
+      "text": "4단계를 시작합니다. infra라는 작은 저장소를 생성합니다. 프록시는 애플리케이션 저장소와 격리된 이곳에 위치하게 됩니다."
+    },
+    {
+      "id": "tutorial-networking-05",
+      "markerIndex": 4,
+      "at": 97.243945,
+      "text": "프록시 템플릿을 적용합니다. Traefik과 Let's Encrypt, Cloudflare DNS-01 챌린지를 위한 구성이 바로 사용할 수 있는 상태로 포함되어 있습니다."
+    },
+    {
+      "id": "tutorial-networking-06",
+      "markerIndex": 5,
+      "at": 112.494613,
+      "text": "프록시를 시작합니다. Traefik은 5초마다 컨테이너를 탐지합니다. TLS 인증서는 Let's Encrypt에서 자동으로 발급됩니다. 이제 앱이 HTTPS로 인터넷에 접근 가능합니다."
+    }
+  ]
+}

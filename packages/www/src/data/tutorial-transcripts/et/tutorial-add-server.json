@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-add-server.cast",
+  "language": "et",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-add-server-01",
+      "markerIndex": 0,
+      "at": 1.508633,
+      "text": "Alustame konfiguratsiooniprofiiliga. Profiil sisaldab SSH võtit, masinate loendit ja infrastruktuuri seadeid kõige jaoks, mida edaspidi teeme."
+    },
+    {
+      "id": "tutorial-add-server-02",
+      "markerIndex": 1,
+      "at": 11.160728,
+      "text": "Nüüd registreerime serveri CLI-s -- esitades selle nime, IP-aadressi ja SSH kasutajanime. Hosti võtmeid skanneeritakse automaatselt usaldusväärse juurdepääsu jaoks."
+    },
+    {
+      "id": "tutorial-add-server-03",
+      "markerIndex": 2,
+      "at": 23.457976,
+      "text": "Järgmisena valmistame serveri ette. See paigaldab renet-i ja loob krüpteeritud andmehoidla. Pärast seda on server repositooriumite majutamiseks valmis."
+    },
+    {
+      "id": "tutorial-add-server-04",
+      "markerIndex": 3,
+      "at": 39.717449,
+      "text": "Kontrollime, mida CLI konfiguratsiooni kohta teab. Masinad, SSH võti, infrastruktuur -- kõik äsja seadistatu on siin nähtav."
+    },
+    {
+      "id": "tutorial-add-server-05",
+      "markerIndex": 4,
+      "at": 48.157549,
+      "text": "Kogu konfiguratsioon asub ühes JSON-failis sinu sülearvutis. Kopeeri see teisele masinale ja saad sealt samu servereid juhtida."
+    }
+  ]
+}

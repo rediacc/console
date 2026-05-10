@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-ssh-keys.cast",
+  "language": "ko",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-ssh-keys-01",
+      "markerIndex": 0,
+      "at": 1.50929,
+      "text": "1단계입니다. 새로운 ed25519 SSH 키를 생성합니다. ed25519는 현대적인 기본값으로 작고 빠르며 널리 지원됩니다. 앞으로 추가하는 모든 서버에 대해 한 번만 생성하면 됩니다."
+    },
+    {
+      "id": "tutorial-ssh-keys-02",
+      "markerIndex": 1,
+      "at": 8.723209,
+      "text": "2단계입니다. ssh-copy-id로 공개 키를 서버에 복사합니다. 서버 비밀번호를 마지막으로 한 번 입력해야 합니다. 이후에는 비밀번호 인증이 더 이상 필요하지 않습니다."
+    },
+    {
+      "id": "tutorial-ssh-keys-03",
+      "markerIndex": 2,
+      "at": 16.253995,
+      "text": "3단계입니다. CLI에 키를 등록합니다. 이제부터 모든 명령은 이 키로 인증됩니다."
+    },
+    {
+      "id": "tutorial-ssh-keys-04",
+      "markerIndex": 3,
+      "at": 24.863027,
+      "text": "설정에 키 경로가 올바르게 저장되었는지 확인합니다."
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+---
+import { Image } from 'astro:assets';
+import { createTranslator } from '../i18n/utils';
+import type { Language } from '../i18n/types';
+import illustrationInstantRecovery from '../assets/images/illustrations/instant-recovery.svg';
+import illustrationProductionParity from '../assets/images/illustrations/production-parity.svg';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props;
+const { t, ta } = createTranslator(lang);
+
+const before = (ta('beforeAfter.before.points') as string[]) ?? [];
+const after = (ta('beforeAfter.after.points') as string[]) ?? [];
+
+const visuals = [
+  { kind: 'url' as const, src: '/img/dev-environments.svg' },
+  { kind: 'url' as const, src: '/img/backup-optimization.svg' },
+  { kind: 'asset' as const, src: illustrationInstantRecovery },
+  { kind: 'asset' as const, src: illustrationProductionParity },
+];
+---
+
+<section class="home-difference">
+  <div class="home-difference-container">
+    <header class="section-header">
+      <h2 class="section-title">{t('beforeAfter.title')}</h2>
+    </header>
+    {after.map((solution, i) => {
+      const visual = visuals[i];
+      return (
+        <div class:list={['difference-row', { 'difference-row-reverse': i % 2 === 1 }]}>
+          <div class="difference-row-text">
+            <p class="difference-row-problem">{before[i]}</p>
+            <h3 class="difference-row-solution">{solution}</h3>
+          </div>
+          <div class="difference-row-visual">
+            <button type="button" class="difference-row-zoom" aria-label={solution}>
+              {visual.kind === 'asset' ? (
+                <Image src={visual.src} alt="" loading="lazy" />
+              ) : (
+                <img src={visual.src} alt="" loading="lazy" />
+              )}
+            </button>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</section>
+
+<dialog class="difference-zoom-dialog" id="difference-zoom-dialog">
+  <button type="button" class="difference-zoom-close" aria-label="Close">×</button>
+  <img class="difference-zoom-dialog-img" alt="" />
+</dialog>
+
+<script>
+  const dialog = document.getElementById('difference-zoom-dialog') as HTMLDialogElement | null;
+  if (dialog) {
+    const dialogImg = dialog.querySelector<HTMLImageElement>('.difference-zoom-dialog-img');
+    const closeBtn = dialog.querySelector<HTMLButtonElement>('.difference-zoom-close');
+
+    document.querySelectorAll<HTMLButtonElement>('.difference-row-zoom').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const img = btn.querySelector('img');
+        if (img && dialogImg) {
+          dialogImg.src = img.currentSrc || img.src;
+          dialog.showModal();
+        }
+      });
+    });
+
+    const close = () => dialog.close();
+    closeBtn?.addEventListener('click', close);
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog || e.target === dialogImg) close();
+    });
+  }
+</script>

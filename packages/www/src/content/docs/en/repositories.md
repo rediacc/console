@@ -101,7 +101,7 @@ At fork creation, `repo fork` writes the [state mirror sidecar](#type-column-and
 
 Per-repo secrets are deploy-time credentials injected into containers without being written to the encrypted repository image. They are kept on a separate plane from the repository's data, so `rdc repo fork` does not propagate them. A fork starts with an empty secrets map and its containers boot identifying themselves as a different external principal than the parent.
 
-> Want a step-by-step walkthrough? See the [Managing Secrets tutorial](/en/docs/tutorial-secrets) for the full set/list/deploy/verify/rotate cycle.
+> Want a step-by-step walkthrough? See the [Managing Secrets tutorial](/en/docs/tutorial-managing-secrets) for the full set/list/deploy/verify/rotate cycle.
 
 **Write-only model (GitHub-style):** `get` returns the SHA-256 digest only. The plaintext value is never returned to anyone, human or agent. If you forget what a value is, look it up in your password manager and rotate; you cannot read it back from Rediacc by design. This eliminates an entire class of leak: terminal recordings, shell history, accidental redirection, shoulder-surfing.
 

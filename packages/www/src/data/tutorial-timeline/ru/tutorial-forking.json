@@ -1,0 +1,763 @@
+{
+  "cast": "/assets/tutorials/tutorial-forking.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "1d398a3666201093d7e621e148878563b5ede7532bee001d1f7d99962a87ee08",
+  "steps": [
+    {
+      "id": "tutorial-forking-01",
+      "markerIndex": 0,
+      "replayStartSec": 108.099445,
+      "replayEndSec": 142.355671,
+      "narrationText": "Давайте сделаем форк одной командой. Клонируется всё: приложение, база данных, конфигурационные файлы. И происходит это за секунды, независимо от размера репозитория. Один гигабайт, сто гигабайт, один терабайт — одно время, каждый раз.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-forking/tutorial-forking-01.640e274e.mp3",
+      "audioDurationSec": 17.005714,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.96,
+          "startChar": 8,
+          "endChar": 15
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.28,
+          "startChar": 16,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.84,
+          "startChar": 21,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.4,
+          "startChar": 27,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.44,
+          "startChar": 37,
+          "endChar": 48
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.8,
+          "startChar": 54,
+          "endChar": 64
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.76,
+          "startChar": 71,
+          "endChar": 77
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.88,
+          "startChar": 79,
+          "endChar": 95
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.36,
+          "startChar": 96,
+          "endChar": 101
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 7.92,
+          "startChar": 108,
+          "endChar": 109
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.64,
+          "startChar": 116,
+          "endChar": 119
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.8,
+          "startChar": 120,
+          "endChar": 122
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.28,
+          "startChar": 123,
+          "endChar": 130
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 10.32,
+          "startChar": 132,
+          "endChar": 142
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.4,
+          "startChar": 143,
+          "endChar": 145
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.8,
+          "startChar": 146,
+          "endChar": 153
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.6,
+          "startChar": 154,
+          "endChar": 165
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.32,
+          "startChar": 196,
+          "endChar": 200
+        },
+        {
+          "startSec": 14.4,
+          "endSec": 14.96,
+          "startChar": 201,
+          "endChar": 209
+        },
+        {
+          "startSec": 15.28,
+          "endSec": 15.6,
+          "startChar": 212,
+          "endChar": 216
+        },
+        {
+          "startSec": 15.6,
+          "endSec": 16.0,
+          "startChar": 217,
+          "endChar": 222
+        },
+        {
+          "startSec": 16.32,
+          "endSec": 16.64,
+          "startChar": 224,
+          "endChar": 230
+        },
+        {
+          "startSec": 16.64,
+          "endSec": 16.88,
+          "startChar": 231,
+          "endChar": 234
+        }
+      ]
+    },
+    {
+      "id": "tutorial-forking-02",
+      "markerIndex": 1,
+      "replayStartSec": 142.355671,
+      "replayEndSec": 158.262452,
+      "narrationText": "Теперь оба репозитория существуют рядом. Одна машина, один диск, две полностью независимые среды. У форка собственные контейнеры, собственная файловая система и собственный Docker-демон.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-forking/tutorial-forking-02.7a9ac625.mp3",
+      "audioDurationSec": 13.557551,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.8,
+          "startChar": 7,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.52,
+          "startChar": 11,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.16,
+          "startChar": 23,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.64,
+          "startChar": 34,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.12,
+          "startChar": 41,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.76,
+          "startChar": 46,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.24,
+          "startChar": 54,
+          "endChar": 58
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.64,
+          "startChar": 59,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.12,
+          "startChar": 65,
+          "endChar": 68
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.76,
+          "startChar": 69,
+          "endChar": 78
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.4,
+          "startChar": 79,
+          "endChar": 90
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.88,
+          "startChar": 91,
+          "endChar": 96
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.44,
+          "startChar": 98,
+          "endChar": 99
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.84,
+          "startChar": 100,
+          "endChar": 105
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.48,
+          "startChar": 106,
+          "endChar": 117
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 9.36,
+          "startChar": 118,
+          "endChar": 128
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 10.4,
+          "startChar": 130,
+          "endChar": 141
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.96,
+          "startChar": 142,
+          "endChar": 150
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.6,
+          "startChar": 151,
+          "endChar": 158
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.0,
+          "startChar": 159,
+          "endChar": 160
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.56,
+          "startChar": 161,
+          "endChar": 172
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 13.04,
+          "startChar": 173,
+          "endChar": 179
+        },
+        {
+          "startSec": 13.04,
+          "endSec": 13.52,
+          "startChar": 180,
+          "endChar": 185
+        }
+      ]
+    },
+    {
+      "id": "tutorial-forking-03",
+      "markerIndex": 2,
+      "replayStartSec": 158.262452,
+      "replayEndSec": 176.185047,
+      "narrationText": "Докажем изоляцию. В оригинале наш файл-маркер на месте. Существование форка ничего не изменило в родителе.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-forking/tutorial-forking-03.125dc662.mp3",
+      "audioDurationSec": 7.079184,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.2,
+          "startChar": 8,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.08,
+          "startChar": 20,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 30,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.04,
+          "startChar": 46,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.44,
+          "startChar": 49,
+          "endChar": 54
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.8,
+          "startChar": 56,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.28,
+          "startChar": 70,
+          "endChar": 75
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.76,
+          "startChar": 76,
+          "endChar": 82
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 5.92,
+          "startChar": 83,
+          "endChar": 85
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.4,
+          "startChar": 86,
+          "endChar": 94
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 7.04,
+          "startChar": 97,
+          "endChar": 105
+        }
+      ]
+    },
+    {
+      "id": "tutorial-forking-04",
+      "markerIndex": 3,
+      "replayStartSec": 176.185047,
+      "replayEndSec": 195.030667,
+      "narrationText": "Теперь удалим этот файл — но только внутри форка. Внутри форка его больше нет. Мы сделали деструктивное изменение, и оно осталось внутри форка.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-forking/tutorial-forking-04.4cffd943.mp3",
+      "audioDurationSec": 9.874286,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.64,
+          "startChar": 7,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.88,
+          "startChar": 14,
+          "endChar": 18
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.28,
+          "startChar": 19,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.84,
+          "startChar": 26,
+          "endChar": 28
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 29,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 36,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.04,
+          "startChar": 43,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.92,
+          "startChar": 50,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.32,
+          "startChar": 57,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.8,
+          "startChar": 63,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.28,
+          "startChar": 67,
+          "endChar": 73
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.52,
+          "startChar": 74,
+          "endChar": 77
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.16,
+          "startChar": 79,
+          "endChar": 81
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.56,
+          "startChar": 82,
+          "endChar": 89
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.24,
+          "startChar": 98,
+          "endChar": 99
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.48,
+          "startChar": 117,
+          "endChar": 120
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.96,
+          "startChar": 121,
+          "endChar": 129
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.36,
+          "startChar": 130,
+          "endChar": 136
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.84,
+          "startChar": 137,
+          "endChar": 142
+        }
+      ]
+    },
+    {
+      "id": "tutorial-forking-05",
+      "markerIndex": 4,
+      "replayStartSec": 195.030667,
+      "replayEndSec": 212.971596,
+      "narrationText": "Возвращаемся в оригинал. Файл-маркер здесь, нетронутый. Оригинал ничего не знал о происходившем. Один образ, отдельные Docker-демоны, отдельные файловые системы.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-forking/tutorial-forking-05.7479caf2.mp3",
+      "audioDurationSec": 13.949388,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 1.36,
+          "startChar": 0,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.4,
+          "startChar": 15,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.08,
+          "startChar": 37,
+          "endChar": 42
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 5.36,
+          "startChar": 44,
+          "endChar": 54
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.4,
+          "startChar": 56,
+          "endChar": 64
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.96,
+          "startChar": 65,
+          "endChar": 71
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.12,
+          "startChar": 72,
+          "endChar": 74
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.52,
+          "startChar": 75,
+          "endChar": 79
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.68,
+          "startChar": 80,
+          "endChar": 81
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.56,
+          "startChar": 82,
+          "endChar": 95
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.6,
+          "startChar": 97,
+          "endChar": 101
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.0,
+          "startChar": 102,
+          "endChar": 107
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.72,
+          "startChar": 109,
+          "endChar": 118
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.64,
+          "startChar": 134,
+          "endChar": 143
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 13.2,
+          "startChar": 144,
+          "endChar": 152
+        },
+        {
+          "startSec": 13.2,
+          "endSec": 13.84,
+          "startChar": 153,
+          "endChar": 160
+        }
+      ]
+    },
+    {
+      "id": "tutorial-forking-06",
+      "markerIndex": 5,
+      "replayStartSec": 212.971596,
+      "replayEndSec": 271.523047,
+      "narrationText": "Когда закончите, просто удалите форк. Оригинал остаётся в точности таким, каким был. Форк, эксперимент, сломал, удалил — никакого риска.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-forking/tutorial-forking-06.c975ec49.mp3",
+      "audioDurationSec": 9.874286,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 1.12,
+          "startChar": 6,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.76,
+          "startChar": 17,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.24,
+          "startChar": 24,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.64,
+          "startChar": 32,
+          "endChar": 36
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.52,
+          "startChar": 38,
+          "endChar": 46
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.56,
+          "startChar": 58,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.96,
+          "startChar": 67,
+          "endChar": 72
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 74,
+          "endChar": 79
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.6,
+          "startChar": 80,
+          "endChar": 83
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.4,
+          "startChar": 85,
+          "endChar": 89
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.52,
+          "startChar": 91,
+          "endChar": 102
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.0,
+          "startChar": 104,
+          "endChar": 110
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.72,
+          "startChar": 112,
+          "endChar": 118
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 9.36,
+          "startChar": 121,
+          "endChar": 129
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.76,
+          "startChar": 130,
+          "endChar": 135
+        }
+      ]
+    }
+  ]
+}

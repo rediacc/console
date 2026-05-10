@@ -26,6 +26,17 @@ export TUTORIAL_SSH_KEY="${TUTORIAL_SSH_KEY:-$HOME/.renet/staging/.ssh/id_rsa}"
 # Skip machine activation -- tutorial VMs don't have a valid subscription license.
 export REDIACC_SKIP_MACHINE_ACTIVATION=1
 
+# Allow `term connect -c` shell redirects during pre-recording setup. The guard
+# blocks writes by default to nudge users toward `rdc repo sync upload`, but
+# tutorial scripts need to seed marker files inside the repo sandbox to drive
+# the cast narrative.
+export REDIACC_SKIP_FILE_WRITE_GUARD=1
+
+# Force human-readable table output. Without this, `rdc` auto-defaults to JSON
+# whenever an AI agent is detected in the ancestor process chain (e.g.
+# CLAUDECODE=1 in the recording shell). Casts are for human viewers.
+export REDIACC_DEFAULT_OUTPUT=table
+
 TUTORIAL_PROMPT="\033[1;32muser@rediacc\033[0m:\033[1;34m~\033[0m\$ "
 TUTORIAL_CHAR_DELAY="${TUTORIAL_CHAR_DELAY:-0.04}"
 

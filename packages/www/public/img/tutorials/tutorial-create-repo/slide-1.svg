@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">An encrypted file at rest mounts as an isolated folder with its own Docker daemon</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .box { fill: #ffffff; stroke: #cdcdcd; stroke-width: 2; rx: 12; ry: 12; }
+    .accent-box { fill: #eef2e6; stroke: #556b2f; stroke-width: 2; rx: 12; ry: 12; }
+    .icon-stroke { fill: none; stroke: #1a1a1a; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .role { fill: #5e5e5e; font: 400 14px Inter, system-ui, sans-serif; text-anchor: middle; letter-spacing: 0.08em; text-transform: uppercase; }
+    .title { fill: #1a1a1a; font: 700 24px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .sub { fill: #5e5e5e; font: 400 16px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .item { fill: #1a1a1a; font: 400 14px JetBrainsMono, "JetBrains Mono", monospace; }
+    .edge { stroke: #556b2f; stroke-width: 2.5; fill: none; }
+    .edge-label { fill: #556b2f; font: 600 14px Inter, system-ui, sans-serif; text-anchor: middle; letter-spacing: 0.08em; text-transform: uppercase; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <!-- File at rest -->
+  <text class="role" x="180" y="120">file at rest</text>
+  <rect class="box" x="80" y="140" width="200" height="280"/>
+  <!-- file icon (encrypted) -->
+  <g transform="translate(150 180)">
+    <path class="icon-stroke" d="M 0 0 L 70 0 L 90 20 L 90 100 L 0 100 Z"/>
+    <path class="icon-stroke" d="M 70 0 L 70 20 L 90 20"/>
+    <!-- lock -->
+    <rect class="icon-stroke" x="34" y="55" width="22" height="20" rx="2"/>
+    <path class="icon-stroke" d="M 38 55 L 38 48 a 7 7 0 0 1 14 0 L 52 55"/>
+  </g>
+  <text class="title" x="180" y="320">my-app</text>
+  <text class="sub" x="180" y="346">encrypted image</text>
+  <text class="sub" x="180" y="368">portable</text>
+
+  <!-- Mount edge -->
+  <path class="edge" d="M 280 280 L 480 280" marker-end="url(#arrM)"/>
+  <text class="edge-label" x="380" y="266">mount</text>
+
+  <!-- Folder with Docker -->
+  <text class="role" x="720" y="120">server at run</text>
+  <rect class="accent-box" x="540" y="140" width="360" height="280"/>
+  <!-- folder icon -->
+  <g transform="translate(580 180)">
+    <path class="icon-stroke" d="M 0 12 L 0 80 L 100 80 L 100 24 L 50 24 L 40 12 Z"/>
+  </g>
+  <!-- contents inside folder -->
+  <g transform="translate(700 200)">
+    <rect class="icon-stroke" x="0" y="0" width="160" height="22" rx="3"/>
+    <circle class="icon-stroke" cx="14" cy="11" r="3"/>
+    <text class="item" x="34" y="16">docker daemon</text>
+  </g>
+  <g transform="translate(700 232)">
+    <rect class="icon-stroke" x="0" y="0" width="160" height="22" rx="3"/>
+    <circle class="icon-stroke" cx="14" cy="11" r="3"/>
+    <text class="item" x="34" y="16">app data</text>
+  </g>
+  <g transform="translate(700 264)">
+    <rect class="icon-stroke" x="0" y="0" width="160" height="22" rx="3"/>
+    <circle class="icon-stroke" cx="14" cy="11" r="3"/>
+    <text class="item" x="34" y="16">isolated network</text>
+  </g>
+  <text class="title" x="720" y="362">isolated workspace</text>
+  <text class="sub" x="720" y="388">its own Docker, its own network</text>
+
+  <defs>
+    <marker id="arrM" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#556b2f"/>
+    </marker>
+  </defs>
+</svg>

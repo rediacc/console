@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-production-mode.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-production-mode-01",
+      "markerIndex": 0,
+      "at": 56.862064,
+      "text": "Uygulamayı dizüstü bilgisayardan üretim modunda başlatıyoruz. Deploy komutu, geliştirme sırasında kullandığımız aynı up fonksiyonunu çağırır; ancak bağımsız çalışır. Dizüstü bilgisayarınızı kapatabilirsiniz; uygulama çalışmaya devam eder."
+    },
+    {
+      "id": "tutorial-production-mode-02",
+      "markerIndex": 1,
+      "at": 97.750961,
+      "text": "Uygulamanın sunucu yeniden başlamalarından kurtulması için otomatik başlatmayı etkinleştiriyoruz. Artık sunucu yeniden başlarsa bu depo otomatik olarak geri gelir."
+    },
+    {
+      "id": "tutorial-production-mode-03",
+      "markerIndex": 2,
+      "at": 125.443493,
+      "text": "Hangi depolarda otomatik başlatmanın etkin olduğunu listeliyoruz. Uygulamamızın artık başlatma listesinde olduğunu doğruluyor."
+    },
+    {
+      "id": "tutorial-production-mode-04",
+      "markerIndex": 3,
+      "at": 141.09184,
+      "text": "Uygulamayı durdurmak için dizüstü bilgisayardan tek komut. Bir komutla açın, bir komutla kapatın. Hepsi terminalinizden; artık etkileşimli oturum gerekmez."
+    }
+  ]
+}

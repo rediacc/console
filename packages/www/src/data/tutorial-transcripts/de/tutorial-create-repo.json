@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-create-repo.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-create-repo-01",
+      "markerIndex": 0,
+      "at": 32.02867,
+      "text": "Wir erstellen ein 2 Gigabyte großes verschlüsseltes Repository auf dem Server. Ein Repository ist im Ruhezustand eine einzelne verschlüsselte Datei. Wenn es eingehängt wird, wird es zu einem Ordner mit einem eigenen Docker-Daemon und eigenen Anwendungsdaten, vollständig isoliert von allem anderen auf dem Server."
+    },
+    {
+      "id": "tutorial-create-repo-02",
+      "markerIndex": 1,
+      "at": 62.567023,
+      "text": "Wir listen die Repositories auf der Maschine auf, um zu bestätigen, dass das neue registriert ist. Von hier aus kann das Repo in VS Code geöffnet, deployed, geforkt oder gesichert werden, alles von Ihrem Laptop aus."
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-deploy-app.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-deploy-app-01",
+      "markerIndex": 0,
+      "at": 52.700593,
+      "text": "Birinci adım. Mevcut şablonları listeliyoruz. Rediacc, yaygın uygulamalar için hazır kurulumlar sunar: Postgres, Redis, web sunucuları ve daha fazlası. Sıfırdan docker-compose yazmak zorunda kalmıyorsunuz."
+    },
+    {
+      "id": "tutorial-deploy-app-02",
+      "markerIndex": 1,
+      "at": 61.85842,
+      "text": "İkinci adım. app-postgres şablonunu depoya uyguluyoruz. İki dosya oluşuyor: container'ları tanımlayan docker-compose.yml ve başlatma ile durdurma yaşam döngüsü kancalarını tanımlayan Rediaccfile."
+    },
+    {
+      "id": "tutorial-deploy-app-03",
+      "markerIndex": 2,
+      "at": 79.070004,
+      "text": "Üçüncü adım. Depoyu ayağa kaldırıyoruz. Araç container'ları başlatır, şifreli birimi bağlar ve izole Docker daemon'ını yapılandırır. Uygulama artık çalışıyor."
+    },
+    {
+      "id": "tutorial-deploy-app-04",
+      "markerIndex": 3,
+      "at": 123.719014,
+      "text": "docker ps ile doğruluyoruz. Bu görünümün yalnızca kendi depomuzun container'larını gösterdiğine dikkat edin. Aynı sunucudaki diğer depolar kendi Docker daemon'larına sahip ve buradan tamamen görünmez."
+    }
+  ]
+}

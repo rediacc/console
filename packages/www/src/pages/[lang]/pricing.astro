@@ -11,6 +11,7 @@ import { EXTERNAL_LINKS } from '../../config/constants';
 import LlmsInlineScript from '../../components/LlmsInlineScript.astro';
 import StructuredData from '../../components/StructuredData.astro';
 import PricingTrustSection from '../../components/PricingTrustSection.astro';
+import { DESIGN_PARTNER_GRANTED_PLAN, filterPlansForProgram, isDesignPartnerProgramActive } from '../../utils/design-partner-program';
 import '../../styles/pricing-page.css';
 
 export const getStaticPaths = getLanguagePaths;
@@ -34,20 +35,28 @@ const badgeConfig: Record<string, { isPopular?: boolean; badgeLabel?: string; ba
 
 const startingAtPlans = new Set(['enterprise']);
 
-const allPlans = PLAN_ORDER.map((code) => {
-  const id = code.toLowerCase();
-  const monthly = PLAN_PRICING[code].monthlyPriceCents / 100;
-  const badge = badgeConfig[id];
-  return {
-    id,
-    monthly,
-    annual: monthly * 10,
-    isPopular: badge?.isPopular ?? false,
-    badgeLabel: badge?.badgeLabel,
-    badgeVariant: badge?.badgeVariant,
-    startingAt: startingAtPlans.has(id),
-  };
-});
+const dpActive = isDesignPartnerProgramActive();
+
+// During the Design Partner Program, hide Community + Professional so the
+// page focuses on the granted BUSINESS tier (with overlay) and Enterprise
+// (as the upgrade reference). filterPlansForProgram is a no-op when the
+// program is disabled.
+const allPlans = filterPlansForProgram(
+  PLAN_ORDER.map((code) => {
+    const id = code.toLowerCase();
+    const monthly = PLAN_PRICING[code].monthlyPriceCents / 100;
+    const badge = badgeConfig[id];
+    return {
+      id,
+      monthly,
+      annual: monthly * 10,
+      isPopular: badge?.isPopular ?? false,
+      badgeLabel: badge?.badgeLabel,
+      badgeVariant: badge?.badgeVariant,
+      startingAt: startingAtPlans.has(id),
+    };
+  })
+);
 
 const technicalMetrics = ta(`${ns}.technicalSummary.metrics`);
 const technicalValues = to(`${ns}.technicalSummary.values`);
@@ -137,10 +146,14 @@ const faqSchema = faqItems ? {
           <span class="billing-toggle-savings">{t(`${ns}.ui.billingToggle.annualSavings`)}</span>
         </div>
 
+        {/* @ci marker — see scripts/check-cta-bolt-uniqueness.js. Emitted
+            only when the program is on so the check skips when off. */}
+        {dpActive && <Fragment set:html={'<!--@ci cta-bolt-required-->'} />}
+
         <!-- Pricing Cards -->
-        <div class="cf-pricing-grid">
+        <div class:list={['cf-pricing-grid', allPlans.length === 2 && 'two-up', allPlans.length === 3 && 'three-up']}>
           {allPlans.map((plan) => (
-            <CfPricingCard plan={plan} metrics={buildMetrics(plan.id)} lang={lang} useCheckout={true} />
+            <CfPricingCard plan={plan} metrics={buildMetrics(plan.id)} lang={lang} useCheckout={true} boltCta={plan.id === DESIGN_PARTNER_GRANTED_PLAN} />
           ))}
         </div>
 

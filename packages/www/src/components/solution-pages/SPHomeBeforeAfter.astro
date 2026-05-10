@@ -1,5 +1,5 @@
 ---
-import BeforeAfter from '../BeforeAfter';
+import HomeDifference from '../HomeDifference.astro';
 import type { Language } from '../../i18n/types';
 
 interface Props {
@@ -9,4 +9,4 @@ interface Props {
 const { lang } = Astro.props as Props;
 ---
 
-<BeforeAfter client:visible lang={lang} />
+<HomeDifference lang={lang} />

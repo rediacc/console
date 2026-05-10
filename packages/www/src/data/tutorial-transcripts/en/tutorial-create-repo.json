@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-create-repo.cast",
+  "language": "en",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-create-repo-01",
+      "markerIndex": 0,
+      "at": 32.02867,
+      "text": "Time to create a 2 gigabyte encrypted repository on the server. A repository is a single encrypted file at rest. When mounted, it becomes a folder with its own Docker daemon and its own application data, completely isolated."
+    },
+    {
+      "id": "tutorial-create-repo-02",
+      "markerIndex": 1,
+      "at": 62.567023,
+      "text": "Let's confirm the new repo is registered. From here, the repo can be opened in VS Code, deployed, forked, or backed up, all from your laptop."
+    }
+  ]
+}

@@ -16,8 +16,12 @@ import ar from './locales/ar/common.json';
 import de from './locales/de/common.json';
 import en from './locales/en/common.json';
 import es from './locales/es/common.json';
+import et from './locales/et/common.json';
 import fr from './locales/fr/common.json';
+import it from './locales/it/common.json';
 import ja from './locales/ja/common.json';
+import ko from './locales/ko/common.json';
+import pt from './locales/pt/common.json';
 import ru from './locales/ru/common.json';
 import tr from './locales/tr/common.json';
 import zh from './locales/zh/common.json';
@@ -39,6 +43,10 @@ const translationsMap: Record<SupportedLanguage, SharedCommonTranslations> = {
   ru,
   tr,
   zh,
+  et,
+  ko,
+  pt,
+  it,
 };
 
 /**

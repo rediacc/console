@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/tutorial-networking.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-networking-01",
+      "markerIndex": 0,
+      "at": 27.859436,
+      "text": "第二步。让我们从命令行输入公网 IP、根域名、证书邮箱和 Cloudflare API 令牌。证书邮箱和令牌在你所有机器间共享，因此只需设置一次。"
+    },
+    {
+      "id": "tutorial-networking-02",
+      "markerIndex": 1,
+      "at": 41.958746,
+      "text": "让我们确认基础设施配置已正确存储。公网 IP、根域名、证书邮箱，全都显示在配置中。"
+    },
+    {
+      "id": "tutorial-networking-03",
+      "markerIndex": 2,
+      "at": 51.564603,
+      "text": "第三步。让我们将配置推送到服务器。这会自动在 Cloudflare 上创建 DNS 记录，并在机器上准备代理配置。"
+    },
+    {
+      "id": "tutorial-networking-04",
+      "markerIndex": 3,
+      "at": 70.626849,
+      "text": "第四步开始。让我们创建一个名为 infra 的小仓库，代理将在这里运行，与应用仓库隔离。"
+    },
+    {
+      "id": "tutorial-networking-05",
+      "markerIndex": 4,
+      "at": 97.243945,
+      "text": "让我们应用内置的 proxy 模板。它包含 Traefik 以及 Let's Encrypt 和 Cloudflare DNS-01 验证的完整配置，开箱即用。"
+    },
+    {
+      "id": "tutorial-networking-06",
+      "markerIndex": 5,
+      "at": 112.494613,
+      "text": "现在启动代理。Traefik 每五秒自动发现你的容器，TLS 证书由 Let's Encrypt 自动颁发。你的应用现在已经可以通过 HTTPS 在互联网上访问了。"
+    }
+  ]
+}

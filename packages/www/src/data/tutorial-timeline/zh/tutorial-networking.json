@@ -1,0 +1,1483 @@
+{
+  "cast": "/assets/tutorials/tutorial-networking.cast",
+  "language": "zh",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "d5ac9f4c21cb454891b043a982ba5bf7f41a5863d06b9440ebaaa622fc9faa17",
+  "steps": [
+    {
+      "id": "tutorial-networking-01",
+      "markerIndex": 0,
+      "replayStartSec": 27.859436,
+      "replayEndSec": 41.958746,
+      "narrationText": "第二步。让我们从命令行输入公网 IP、根域名、证书邮箱和 Cloudflare API 令牌。证书邮箱和令牌在你所有机器间共享，因此只需设置一次。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-01.5c155c5e.mp3",
+      "audioDurationSec": 15.804082,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.32,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.52,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.84,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.08,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.8,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 2.96,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.28,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.44,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.68,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.16,
+          "startChar": 16,
+          "endChar": 18
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.8,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.96,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.28,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.68,
+          "startChar": 23,
+          "endChar": 24
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.84,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.0,
+          "startChar": 25,
+          "endChar": 26
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.32,
+          "startChar": 26,
+          "endChar": 27
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.88,
+          "startChar": 27,
+          "endChar": 28
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.76,
+          "startChar": 29,
+          "endChar": 39
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.48,
+          "startChar": 40,
+          "endChar": 43
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.64,
+          "startChar": 44,
+          "endChar": 45
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.04,
+          "startChar": 45,
+          "endChar": 46
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.0,
+          "startChar": 47,
+          "endChar": 48
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.08,
+          "startChar": 48,
+          "endChar": 49
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.24,
+          "startChar": 49,
+          "endChar": 50
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.48,
+          "startChar": 50,
+          "endChar": 51
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.64,
+          "startChar": 51,
+          "endChar": 52
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 10.8,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.12,
+          "startChar": 53,
+          "endChar": 54
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.52,
+          "startChar": 54,
+          "endChar": 55
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.76,
+          "startChar": 55,
+          "endChar": 56
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 12.0,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.16,
+          "startChar": 57,
+          "endChar": 58
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.24,
+          "startChar": 58,
+          "endChar": 59
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.4,
+          "startChar": 59,
+          "endChar": 60
+        },
+        {
+          "startSec": 12.4,
+          "endSec": 12.72,
+          "startChar": 60,
+          "endChar": 61
+        },
+        {
+          "startSec": 12.88,
+          "endSec": 13.04,
+          "startChar": 61,
+          "endChar": 62
+        },
+        {
+          "startSec": 13.04,
+          "endSec": 13.28,
+          "startChar": 62,
+          "endChar": 63
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 13.84,
+          "startChar": 64,
+          "endChar": 65
+        },
+        {
+          "startSec": 13.84,
+          "endSec": 14.16,
+          "startChar": 65,
+          "endChar": 66
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.4,
+          "startChar": 66,
+          "endChar": 67
+        },
+        {
+          "startSec": 14.4,
+          "endSec": 14.88,
+          "startChar": 67,
+          "endChar": 68
+        },
+        {
+          "startSec": 14.88,
+          "endSec": 15.12,
+          "startChar": 68,
+          "endChar": 69
+        },
+        {
+          "startSec": 15.12,
+          "endSec": 15.28,
+          "startChar": 69,
+          "endChar": 70
+        },
+        {
+          "startSec": 15.28,
+          "endSec": 15.52,
+          "startChar": 70,
+          "endChar": 71
+        },
+        {
+          "startSec": 15.52,
+          "endSec": 15.76,
+          "startChar": 71,
+          "endChar": 72
+        }
+      ]
+    },
+    {
+      "id": "tutorial-networking-02",
+      "markerIndex": 1,
+      "replayStartSec": 41.958746,
+      "replayEndSec": 51.564603,
+      "narrationText": "让我们确认基础设施配置已正确存储。公网 IP、根域名、证书邮箱，全都显示在配置中。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-02.0ea2ba20.mp3",
+      "audioDurationSec": 8.202449,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.32,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.48,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.72,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.04,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.44,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.0,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.24,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.64,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.88,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.04,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.28,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.52,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.08,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.24,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.64,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.04,
+          "startChar": 23,
+          "endChar": 24
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.12,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 25,
+          "endChar": 26
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.76,
+          "startChar": 27,
+          "endChar": 28
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 5.92,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.16,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.4,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.88,
+          "startChar": 32,
+          "endChar": 33
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.04,
+          "startChar": 33,
+          "endChar": 34
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.36,
+          "startChar": 34,
+          "endChar": 35
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.44,
+          "startChar": 35,
+          "endChar": 36
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.6,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 7.84,
+          "startChar": 37,
+          "endChar": 38
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 7.92,
+          "startChar": 38,
+          "endChar": 39
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.08,
+          "startChar": 39,
+          "endChar": 40
+        }
+      ]
+    },
+    {
+      "id": "tutorial-networking-03",
+      "markerIndex": 2,
+      "replayStartSec": 51.564603,
+      "replayEndSec": 70.626849,
+      "narrationText": "第三步。让我们将配置推送到服务器。这会自动在 Cloudflare 上创建 DNS 记录，并在机器上准备代理配置。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-03.9121425e.mp3",
+      "audioDurationSec": 10.527347,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.48,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.28,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.68,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.92,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.24,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.4,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.64,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.88,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.04,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.12,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.36,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.92,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.24,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.48,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.64,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.96,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.68,
+          "startChar": 23,
+          "endChar": 33
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.08,
+          "startChar": 34,
+          "endChar": 35
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.32,
+          "startChar": 35,
+          "endChar": 36
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.56,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 7.04,
+          "startChar": 38,
+          "endChar": 41
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.36,
+          "startChar": 42,
+          "endChar": 43
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.6,
+          "startChar": 43,
+          "endChar": 44
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.16,
+          "startChar": 45,
+          "endChar": 46
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.48,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.64,
+          "startChar": 47,
+          "endChar": 48
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.8,
+          "startChar": 48,
+          "endChar": 49
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.12,
+          "startChar": 49,
+          "endChar": 50
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.44,
+          "startChar": 50,
+          "endChar": 51
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.76,
+          "startChar": 51,
+          "endChar": 52
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 9.92,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.08,
+          "startChar": 53,
+          "endChar": 54
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.32,
+          "startChar": 54,
+          "endChar": 55
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.4,
+          "startChar": 55,
+          "endChar": 56
+        }
+      ]
+    },
+    {
+      "id": "tutorial-networking-04",
+      "markerIndex": 3,
+      "replayStartSec": 70.626849,
+      "replayEndSec": 97.243945,
+      "narrationText": "第四步开始。让我们创建一个名为 infra 的小仓库，代理将在这里运行，与应用仓库隔离。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-04.8189cfe3.mp3",
+      "audioDurationSec": 8.280816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.64,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.88,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.04,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.36,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.68,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.76,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.08,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.4,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.64,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.12,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.16,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.4,
+          "startChar": 23,
+          "endChar": 24
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.56,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.8,
+          "startChar": 25,
+          "endChar": 26
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.36,
+          "startChar": 27,
+          "endChar": 28
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.52,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.68,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.92,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.08,
+          "startChar": 31,
+          "endChar": 32
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.24,
+          "startChar": 32,
+          "endChar": 33
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.4,
+          "startChar": 33,
+          "endChar": 34
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.72,
+          "startChar": 34,
+          "endChar": 35
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.04,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.2,
+          "startChar": 37,
+          "endChar": 38
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.36,
+          "startChar": 38,
+          "endChar": 39
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.6,
+          "startChar": 39,
+          "endChar": 40
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 7.76,
+          "startChar": 40,
+          "endChar": 41
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.0,
+          "startChar": 41,
+          "endChar": 42
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.16,
+          "startChar": 42,
+          "endChar": 43
+        }
+      ]
+    },
+    {
+      "id": "tutorial-networking-05",
+      "markerIndex": 4,
+      "replayStartSec": 97.243945,
+      "replayEndSec": 112.494613,
+      "narrationText": "让我们应用内置的 proxy 模板。它包含 Traefik 以及 Let's Encrypt 和 Cloudflare DNS-01 验证的完整配置，开箱即用。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-05.c93d1406.mp3",
+      "audioDurationSec": 12.199184,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.32,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.72,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.04,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.44,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.68,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.0,
+          "startChar": 9,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.48,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.2,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.44,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.76,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.72,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.12,
+          "startChar": 31,
+          "endChar": 32
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.68,
+          "startChar": 33,
+          "endChar": 38
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.4,
+          "startChar": 39,
+          "endChar": 46
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.8,
+          "startChar": 47,
+          "endChar": 48
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.68,
+          "startChar": 49,
+          "endChar": 59
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.6,
+          "startChar": 67,
+          "endChar": 68
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 9.84,
+          "startChar": 68,
+          "endChar": 69
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 9.92,
+          "startChar": 69,
+          "endChar": 70
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.16,
+          "startChar": 70,
+          "endChar": 71
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.4,
+          "startChar": 71,
+          "endChar": 72
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.56,
+          "startChar": 72,
+          "endChar": 73
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.8,
+          "startChar": 73,
+          "endChar": 74
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.36,
+          "startChar": 75,
+          "endChar": 76
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.68,
+          "startChar": 76,
+          "endChar": 77
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 11.92,
+          "startChar": 77,
+          "endChar": 78
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.16,
+          "startChar": 78,
+          "endChar": 79
+        }
+      ]
+    },
+    {
+      "id": "tutorial-networking-06",
+      "markerIndex": 5,
+      "replayStartSec": 112.494613,
+      "replayEndSec": 150.444961,
+      "narrationText": "现在启动代理。Traefik 每五秒自动发现你的容器，TLS 证书由 Let's Encrypt 自动颁发。你的应用现在已经可以通过 HTTPS 在互联网上访问了。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-06.35361463.mp3",
+      "audioDurationSec": 10.997551,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.32,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.4,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.56,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.72,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.96,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.08,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.4,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.56,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.64,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.72,
+          "startChar": 23,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 25,
+          "endChar": 26
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.16,
+          "startChar": 27,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.4,
+          "startChar": 31,
+          "endChar": 32
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.72,
+          "startChar": 32,
+          "endChar": 33
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 4.96,
+          "startChar": 33,
+          "endChar": 34
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.6,
+          "startChar": 41,
+          "endChar": 48
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 5.92,
+          "startChar": 49,
+          "endChar": 50
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.08,
+          "startChar": 50,
+          "endChar": 51
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.24,
+          "startChar": 51,
+          "endChar": 52
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.48,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.8,
+          "startChar": 54,
+          "endChar": 55
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 6.88,
+          "startChar": 55,
+          "endChar": 56
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.04,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.28,
+          "startChar": 57,
+          "endChar": 58
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.44,
+          "startChar": 58,
+          "endChar": 59
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.52,
+          "startChar": 59,
+          "endChar": 60
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.6,
+          "startChar": 60,
+          "endChar": 61
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 7.76,
+          "startChar": 61,
+          "endChar": 62
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 7.84,
+          "startChar": 62,
+          "endChar": 63
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 7.92,
+          "startChar": 63,
+          "endChar": 64
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.16,
+          "startChar": 64,
+          "endChar": 65
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.32,
+          "startChar": 65,
+          "endChar": 66
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 9.44,
+          "startChar": 67,
+          "endChar": 72
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.68,
+          "startChar": 73,
+          "endChar": 74
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 9.84,
+          "startChar": 74,
+          "endChar": 75
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.0,
+          "startChar": 75,
+          "endChar": 76
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.16,
+          "startChar": 76,
+          "endChar": 77
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.4,
+          "startChar": 77,
+          "endChar": 78
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.72,
+          "startChar": 78,
+          "endChar": 79
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.8,
+          "startChar": 79,
+          "endChar": 80
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 10.88,
+          "startChar": 80,
+          "endChar": 81
+        }
+      ]
+    }
+  ]
+}

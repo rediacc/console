@@ -1,8 +1,8 @@
 {
   "announcement": {
     "enabled": true,
-    "link": "/zh/blog",
-    "text": "v0.6 已发布——Alpine musl 支持、订阅系统等"
+    "link": "/account/",
+    "text": "限时：设计合作伙伴计划 — 永久享有 BUSINESS 套餐"
   },
   "beforeAfter": {
     "after": {
@@ -81,7 +81,7 @@
       "unavailable": "搜索不可用",
       "unavailableMessage": "无法加载搜索索引。请尝试刷新页面，如果问题仍然存在，请联系支持团队。"
     },
-    "section": "section",
+    "section": "部分",
     "siteName": "Rediacc",
     "skipNavigation": {
       "skipToFooter": "跳至页脚",
@@ -139,6 +139,10 @@
     "openInNewTab": "在新标签页中打开",
     "searchDocs": "搜索文档",
     "shareSection": "分享章节",
+    "subcategories": {
+      "advanced": "进阶",
+      "essentials": "基础"
+    },
     "viewAsMarkdown": "以Markdown查看页面",
     "viewAsMarkdownDesc": "在新标签页中打开Markdown文件"
   },
@@ -302,6 +306,10 @@
       "author": "Rediacc",
       "defaultDescription": "基础设施自动化平台专为加速开发运营而设计。即时开发环境和下一代灾难恢复。",
       "defaultKeywords": "基础设施自动化、AI 运营、灾难恢复、开发环境、模型上下文协议、DevOps、CI/CD",
+      "designPartner": {
+        "ogDescPrefix": "终身免费获得 BUSINESS 版。",
+        "ogPrefix": "设计合作伙伴计划"
+      },
       "locale": "zh_CN",
       "siteName": "Rediacc",
       "twitter": {
@@ -639,6 +647,98 @@
       },
       "toc": {
         "title": "目录"
+      }
+    },
+    "designPartners": {
+      "ask": {
+        "items": [
+          {
+            "body": "有什么让你意外的，发一封简短的邮件就行。堆栈跟踪可选，吧槽欢迎。",
+            "title": "出问题时告诉我们"
+          },
+          {
+            "body": "大概每季度 30 分钓。我们听，你说。没有演示，没有追加销售。",
+            "title": "偶尔接受一次通话"
+          },
+          {
+            "body": "如果我们发布了影响你的内容，希望在上线前能联系到你。普通邮件即可。",
+            "title": "保持可联系"
+          }
+        ],
+        "lede": "要求很轻。重点不是占用你的时间，而是让我们保持诚实。",
+        "title": "我们的请求"
+      },
+      "faq": {
+        "items": [
+          {
+            "a": "是的。授权保存在你的订阅记录中，无过期时间，不会自动降级。如果我们将来需要更改，会优先向每位设计合作伙伴发送邮件通知。我们从未这样做过，也没有此类计划。",
+            "q": "真的是终身的吗？"
+          },
+          {
+            "a": "那么你的账号将停止工作，和其他所有用户一样。终身承诺基于公司存续期间。我们目前处于早期阶段，这是你需要了解的真实风险。",
+            "q": "如果 Rediacc 停止运营怎么办？"
+          },
+          {
+            "a": "没有付费墙、没有合同、不会自动扣费。唯一的要求就是上面提到的轻量反馈。你可以不理我们，我们不会撤销你的套餐。",
+            "q": "有附加条件吗？"
+          },
+          {
+            "a": "可以。你可以永久保留 BUSINESS 套餐，也可以在超出限制时升级到 Enterprise。向上升级按正常计费；终身优惠仅适用于 BUSINESS 套餐。",
+            "q": "我以后可以切换套餐吗？"
+          },
+          {
+            "a": "直到我们关闭为止。我们不会提前宣布关闭时间，所以今天就是注册的好时机。现有设计合作伙伴无论如何都保留其套餐。",
+            "q": "计划开放多久？"
+          }
+        ],
+        "title": "诚实的回答"
+      },
+      "finalCta": {
+        "button": "领取我的 BUSINESS 套餐",
+        "note": "我们将在一两天内发邮件安排入驻通话。",
+        "subtitle": "一次注册，无需信用卡，终身锁定 BUSINESS 套餐。",
+        "title": "准备好成为先行者了吗？"
+      },
+      "hero": {
+        "eyebrow": "名额有限",
+        "note": "无需信用卡，无需申请。注册即加入。",
+        "primaryCta": "领取我的 BUSINESS 套餐",
+        "secondaryCta": "查看定价",
+        "subtitle": "我们尚未正式商业化。我们需要愿意使用产品并在出现问题时告知我们的先行者。作为回报，只要 Rediacc 存在，你就能永久免费使用我们的 BUSINESS 套餐。",
+        "title": "成为设计合作伙伴，终身免费获得 BUSINESS 版。"
+      },
+      "meta": {
+        "description": "作为设计合作伙伴免费注册，即可终身获得我们的 BUSINESS 套餐。我们正在寻找愿意在产品构建过程中提供反馈的先行者。",
+        "title": "设计合作伙伴计划 | 永久免费获得 BUSINESS 商业版"
+      },
+      "why": {
+        "items": [
+          {
+            "body": "一个运行生产环境的团队给我们带来的收获，是一百个试用注册的 100 倍。设计合作伙伴是我们在大规模推广前打磨产品的方式。",
+            "title": "真实团队，真实工作负载"
+          },
+          {
+            "body": "我们暂时不需要你的錢。我们需要的是你踩过的坑、遇到的边界情况和提出的问题。用真实反馈换免费使用，公平合理。",
+            "title": "用反馈换费用"
+          },
+          {
+            "body": "你的终身 BUSINESS 套餐永不过期、永不降级、永不要求信用卡。这就是我们的承诺。",
+            "title": "永久致谢"
+          }
+        ],
+        "title": "为什么我们这样做"
+      },
+      "youGet": {
+        "items": [
+          "BUSINESS 套餐：每个仓库 500 GB、20 个浮动授权、每月 20,000 次授权请求",
+          "Edge 通道：双倍配额（每仓库 1 TB、40 个授权、每月 40,000 次请求）",
+          "无限仓库、用户和团队",
+          "快照还原、深色模式、全部 9 种语言",
+          "与创始人直连，获得入驻和支持服务",
+          "终身锁定，无过期、无降级、无需绑卡。"
+        ],
+        "lede": "BUSINESS 套餐的全部权益，终身免费。",
+        "title": "你将获得什么"
       }
     },
     "disasterRecovery": {
@@ -1334,6 +1434,11 @@
         "notFound": "404 - 找不到页面"
       },
       "description": "抱歉，您要查找的页面不存在或已被移动。 如果您点击过时的链接或输入了错误的 URL，则可能会发生这种情况。",
+      "designPartner": {
+        "body": "终身免费获得我们的 BUSINESS 套餐，无需信用卡。",
+        "cta": "领取设计合作伙伴资格",
+        "title": "设计合作伙伴计划"
+      },
       "help": {
         "description": "如果您认为这是一个错误或者您希望在此处找到内容，请联系我们的支持团队。 我们随时帮助您找到您想要的东西。",
         "link": "联系我们的支持团队",
@@ -3101,6 +3206,12 @@
             "secondary": "联系销售人员"
           }
         },
+        "designPartner": {
+          "badge": "设计合作伙伴免费",
+          "cta": "领取设计合作伙伴资格",
+          "period": "终身 · 无需绑卡",
+          "price": "FREE"
+        },
         "edgeLimitsNote": "显示的是 edge 频道的限制。stable 上减半。",
         "foreverFree": "永远免费",
         "getStarted": "开始使用",
@@ -3388,6 +3499,103 @@
         "title": "目录"
       }
     },
+    "resourcesNis2Directive": {
+      "about": {
+        "body": "Rediacc 是一家在爱沙尼亚注册的自托管基础设施平台（OÜ 17363830，增値税号 EE102920091）。本摘要是我们 NIS2 内容计划的一部分。上方的配套指南介绍了 Rediacc 如何应对指令的具体条款，包括 Rediacc 尚无法覆盖的方面（尚无认证、无 GRC 层、无托管式第 23 条报告、仅限门户的 MFA）。如需查看公开能力映射，请参阅文档中的 {nis2DoraLink}。",
+        "cta": "发送你的供应商问卷或去年预算中最重要的三项安全支出给我们。我们将基于已部署的实例以书面形式回复，包括不足之处。或者下载 PDF 转发给同事。",
+        "downloadButton": "下载 PDF",
+        "heading": "关于本摘要"
+      },
+      "companions": {
+        "heading": "三份配套指南",
+        "intro": "PDF 梳理了指令框架，配套指南则将合规义务转化为采购和运营决策，针对不同受众逐一呈现。",
+        "items": [
+          {
+            "blurb": "当数据面永远不离开你的租户时，第三方 ICT 登记册的范围如何缩小。面向 2026 年重新谈判数据处理协议的 CISO 和采购负责人。",
+            "slug": "nis2-supply-chain-self-hosted",
+            "title": "第 21(2)(d) 条是一个供应商问题"
+          },
+          {
+            "blurb": "综合解读第 21(2)(e)、(f) 条与第 23 条。恒定时间分叉使每周演练切实可行，以及没有取证级别证据就无法满足的第 23 条报告时间线。面向 SRE 和运维负责人。",
+            "slug": "nis2-effectiveness-without-theatre",
+            "title": "无形式主义的持续有效性"
+          },
+          {
+            "blurb": "中型市场基本实体正在悄然搭建的五工具合规技术栈、自托管控制平面所能整合的内容，以及无论如何都由你承担的费用项目。面向进入续约周期的 CFO 和采购人员。",
+            "slug": "nis2-the-real-bill",
+            "title": "买家在第一轮 NIS2 审计中告诉我们的"
+          }
+        ],
+        "readMore": "阅读指南 →"
+      },
+      "faq": {
+        "heading": "常见问题",
+        "items": [
+          {
+            "a": "不是。这是一份非官方英文摘要，旨在使指令的结构和义务更易于理解。如需具有约束力的解释，请查阅 OJ L 333/80（2022 年 12 月 27 日）的官方文本，或通过 EUR-Lex（CELEX 32022L2555）获取。你所在成员国的国内转化法律可能规定了比指令本身更严格或适用范围不同的义务。",
+            "q": "这是指令的官方译文吗？"
+          },
+          {
+            "a": "在附件 I（高度关键性）或附件 II（其他关键性）行业运营且达到中型企业门槛（按建议 2003/361/EC，员工 50 人以上或年营业额超过 1000 万欧元）的实体。部分实体不受规模限制，包括顶级域名注册机构、DNS 提供商、信任服务提供商和中央公共行政机构。PDF 第 4、6、7 节详细介绍了适用范围。",
+            "q": "哪些主体适用 NIS2？"
+          },
+          {
+            "a": "该指令于 2023 年 1 月 16 日生效。成员国须在 2024 年 10 月 17 日前将其转化为国内法；自 2024 年 10 月 18 日起开始适用（同日 NIS1 废止）。完整时间表（包括向委员会提交实体名单的截止日期 2025 年 4 月 17 日和定期审查计划）见第 16 节。",
+            "q": "NIS2 何时生效？转化期限是何时？"
+          },
+          {
+            "a": "对于基本实体：1000 万欧元或全球年营业额的 2%，以较高者为准。对于重要实体：700 万欧元或全球年营业额的 1.4%，以较高者为准。该指令还允许采取非金钱制裁措施，包括对基本实体高级管理层的临时管理禁令（最后手段）。第 15 节介绍了罚款确定因素。",
+            "q": "最高罚款是多少？"
+          },
+          {
+            "a": "适用，有两种方式。直接适用：在欧盟提供服务的非欧盟 DNS、云服务、数据中心、CDN、MSP/MSSP、在线市场、搜索和社交网络提供商，须指定欧盟代表并遵守相关规定。间接适用：向欧盟基本实体或重要实体提供产品或服务的非欧盟供应商，将受到其欧盟客户依据第 21(2)(d) 条施加的供应链安全合同要求约束。第 17 节对两种情况均有介绍。",
+            "q": "NIS2 适用于非欧盟企业吗？"
+          },
+          {
+            "a": "三个截止期限，均从“知悉”重大事件起算：24 小时内提交早期预警，72 小时内提交完整事件通知，1 个月内提交最终报告。如存在重大网络威胁可能，还须及时通知服务接受方。第 10 节列有完整的报告矩阵。",
+            "q": "第 23 条的事件报告如何运作？"
+          }
+        ]
+      },
+      "hero": {
+        "disclaimer": "本文件为非官方摘要。如需具有约束力的解释，请查阅 OJ L 333/80（2022 年 12 月 27 日）的官方文本。",
+        "downloadButton": "下载 PDF",
+        "eyebrow": "免费下载 · 24 页 · A4 PDF",
+        "openInBrowser": "在浏览器中打开",
+        "subtitle": "指令（欧盟）2022/2555 的 24 页英文摘要。涵盖适用范围、第 21 条十项措施、第 23 条 24 小时/72 小时/1 个月报告时间线、附件 I 和 II 行业、行政罚款以及 10 步实用合规路线图。由 Rediacc 撰写，非官方译文。",
+        "title": "NIS2 指令：面向 CISO 和合规负责人的英文摘要"
+      },
+      "meta": {
+        "description": "免费 24 页欧盟 NIS2 摘要（指令 2022/2555）。涵盖第 21 条措施、第 23 条报告要求、附件行业、罚款及 10 步合规路线图。",
+        "keywords": "NIS2, NIS2 指令, NIS2 摘要, NIS2 合规, 欧盟网络安全指令, 指令 2022/2555, 第 21 条, 第 23 条, NIS2 PDF",
+        "title": "NIS2 指令 (2022/2555) CISO 摘要指南与合规检查清单（免费 PDF 下载）"
+      },
+      "toc": {
+        "heading": "PDF 内容概览",
+        "intro": "共十九个章节，专为需要了解指令核心内容但不想逐页阅读 73 页序言和条款的 CISO 或合规负责人而设计。",
+        "items": [
+          "执行摘要",
+          "目的与法律依据",
+          "从 NIS1 到 NIS2：为何需要新法规？",
+          "适用范围与排除领域",
+          "关键定义",
+          "实体类别：基本实体与重要实体",
+          "适用范围内的行业（附件 I 和附件 II）",
+          "成员国义务",
+          "网络安全风险管理措施（第 21 条）",
+          "事件报告义务（第 23 条）",
+          "供应链安全",
+          "管理层职责",
+          "欧盟层面的合作机制",
+          "监督与执法",
+          "行政罚款",
+          "实施时间表与过渡安排",
+          "对非欧盟企业的影响",
+          "实用合规路线图（10 步）",
+          "结论与评估"
+        ]
+      }
+    },
     "roiCalculator": {
       "advancedLabel": "高级假设条件",
       "advancedSliders": {
@@ -3478,12 +3686,12 @@
         "label": "来源与参考文献"
       },
       "sizeSelect": {
-        "enterprise": "Enterprise",
+        "enterprise": "企业级",
         "enterpriseDesc": "200–1,000 名员工",
         "label": "企业规模",
-        "large": "Large Enterprise",
+        "large": "大型企业",
         "largeDesc": "1,000+ 名员工",
-        "mid": "Mid-Market",
+        "mid": "中型市场",
         "midDesc": "25–200 名员工",
         "smb": "SMB",
         "smbDesc": "< 25 名员工"
@@ -3681,7 +3889,7 @@
             {
               "description": "47 秒创建生产基础设施的精确 btrfs 快照。零拷贝，完全保真。",
               "icon": "copy",
-              "title": "Clone"
+              "title": "克隆"
             },
             {
               "description": "在克隆上运行 AI 驱动的渗透测试——端口扫描、SQLi、XSS、CVE 检查、认证探测。真实攻击，真实数据。",
@@ -4517,7 +4725,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "多云",
               "description": "AWS 宕机时，您不受影响",
               "slug": "cloud-outage-protection",
               "title": "云故障保护"
@@ -5000,7 +5208,7 @@
           "solutions": [
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "多云",
               "current": true,
               "description": "AWS 宕机时，您不受影响",
               "slug": "cloud-outage-protection",
@@ -5008,14 +5216,14 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "多云",
               "description": "您的基础设施，您的选择，始终如此。",
               "slug": "vendor-lock-in",
               "title": "供应商锁定自由"
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "多云",
               "description": "在需要之前测试您的故障转移",
               "slug": "failover-testing",
               "title": "故障转移测试"
@@ -6539,7 +6747,7 @@
             {
               "description": "生产环境的精确副本在 60 秒内启动。相同的操作系统、配置和数据。",
               "icon": "copy",
-              "title": "Clone"
+              "title": "克隆"
             },
             {
               "description": "立即开始开发。无需安装，无需配置。直接编码。",
@@ -6905,21 +7113,21 @@
           "solutions": [
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "多云",
               "description": "AWS 宕机时，您不受影响",
               "slug": "cloud-outage-protection",
               "title": "云故障保护"
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "多云",
               "description": "您的基础设施，您的选择，始终如此。",
               "slug": "vendor-lock-in",
               "title": "供应商锁定自由"
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "多云",
               "current": true,
               "description": "在需要之前测试您的故障转移",
               "slug": "failover-testing",
@@ -7419,7 +7627,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "多云",
               "description": "AWS 宕机时，您不受影响",
               "slug": "cloud-outage-protection",
               "title": "云故障保护"
@@ -8418,7 +8626,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "多云",
               "description": "AWS 宕机时，您不受影响",
               "slug": "cloud-outage-protection",
               "title": "云故障保护"
@@ -9381,7 +9589,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "多云",
               "description": "AWS 宕机时，您不受影响",
               "slug": "cloud-outage-protection",
               "title": "云故障保护"
@@ -9975,7 +10183,7 @@
             {
               "description": "从 btrfs 写时复制的精确生产快照开始。相同的操作系统、配置和数据。",
               "icon": "copy",
-              "title": "Clone"
+              "title": "克隆"
             },
             {
               "description": "在真实生产条件下编写和测试。每个库、每项配置、每行数据——完全一致。",
@@ -10843,7 +11051,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "多云",
               "description": "AWS 宕机时，您不受影响",
               "slug": "cloud-outage-protection",
               "title": "云故障保护"
@@ -11379,7 +11587,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "多云",
               "description": "AWS 宕机时，您不受影响",
               "slug": "cloud-outage-protection",
               "title": "云故障保护"
@@ -11485,7 +11693,7 @@
             {
               "description": "运行 rdc ceph snapshot create production。精确副本在 60 秒内启动。",
               "icon": "terminal",
-              "title": "Clone"
+              "title": "克隆"
             },
             {
               "description": "应用补丁、升级、内核更新。尽情折腾。生产环境不受影响。",
@@ -12315,7 +12523,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "多云",
               "description": "AWS 宕机时，您不受影响",
               "slug": "cloud-outage-protection",
               "title": "云故障保护"
@@ -13298,6 +13506,7 @@
   "team": {
     "founder": {
       "contact": "有疑问？直接给我发邮件",
+      "designPartner": "我亲自为每位设计合作伙伴提供入驻支持。免费注册后，预约一次 30 分钓通话，我们聊聊你的技术栈。",
       "guarantee": "如果 Rediacc 不适合你，给我发邮件，我会帮你迁移回去。",
       "quote": "我创建了 Rediacc，因为基础设施不应该如此脆弱。",
       "story": {

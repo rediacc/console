@@ -3,8 +3,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import { createTranslator } from '../i18n/utils';
 import { SITE_URL } from '../config/constants';
+import { isDesignPartnerProgramActive } from '../utils/design-partner-program';
 
 const { t } = createTranslator();
+const dpActive = isDesignPartnerProgramActive();
 
 const breadcrumbItems = [
   { name: t('pages.notFound.breadcrumb.home'), url: '/' },
@@ -75,6 +77,18 @@ const structuredData = {
           </div>
         </div>
       </div>
+
+      {dpActive && (
+        <div class="error-dp-card">
+          <div class="error-dp-card-body">
+            <h3 class="error-dp-card-title">{t('pages.notFound.designPartner.title')}</h3>
+            <p class="error-dp-card-body-text">{t('pages.notFound.designPartner.body')}</p>
+          </div>
+          <a href="/account/" class="btn btn-primary error-dp-card-cta" data-design-partner-claim>
+            {t('pages.notFound.designPartner.cta')} &rarr;
+          </a>
+        </div>
+      )}
 
       <div class="error-help">
         <h3>{t('pages.notFound.help.title')}</h3>
@@ -191,6 +205,47 @@ const structuredData = {
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   text-align: center;
+}
+
+.error-dp-card {
+  background: var(--color-brand-primary);
+  color: white;
+  padding: var(--space-6) var(--space-8);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.error-dp-card-body {
+  flex: 1 1 auto;
+}
+
+.error-dp-card-title {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: white;
+}
+
+.error-dp-card-body-text {
+  margin: 0;
+  color: white;
+  opacity: 0.92;
+}
+
+.error-dp-card-cta {
+  flex: 0 0 auto;
+  background: white;
+  color: var(--color-brand-primary);
+  border: 0;
+}
+
+.error-dp-card-cta:hover {
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .error-help h3 {

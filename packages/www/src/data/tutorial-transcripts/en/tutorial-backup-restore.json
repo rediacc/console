@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-backup-restore.cast",
+  "language": "en",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-backup-restore-01",
+      "markerIndex": 0,
+      "at": 65.053708,
+      "text": "Step one. We will import an existing rclone configuration. rclone supports S3, Backblaze, Google Drive, Dropbox, and many more. If you already use it, the same config imports directly."
+    },
+    {
+      "id": "tutorial-backup-restore-02",
+      "markerIndex": 1,
+      "at": 73.743501,
+      "text": "Let us list the storages the CLI now knows about. Each one is a destination we can push backups to."
+    },
+    {
+      "id": "tutorial-backup-restore-03",
+      "markerIndex": 2,
+      "at": 82.843959,
+      "text": "Step two. Push a full backup. The entire repository, app, database, files, configuration, is uploaded. Because the repository is encrypted at rest, the backup is encrypted too. No extra key management."
+    },
+    {
+      "id": "tutorial-backup-restore-04",
+      "markerIndex": 3,
+      "at": 94.515541,
+      "text": "And the backups available on this storage. From here, restore on a brand new server is one command: the repo pull command."
+    }
+  ]
+}

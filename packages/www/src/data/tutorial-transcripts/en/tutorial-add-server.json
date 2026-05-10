@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-add-server.cast",
+  "language": "en",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-add-server-01",
+      "markerIndex": 0,
+      "at": 1.508633,
+      "text": "First, we create a configuration profile that will hold the SSH key, machine list, and infrastructure settings."
+    },
+    {
+      "id": "tutorial-add-server-02",
+      "markerIndex": 1,
+      "at": 11.160728,
+      "text": "Now we register the server from the command line, providing its name, IP address, and SSH user. Host keys are scanned automatically for trusted access."
+    },
+    {
+      "id": "tutorial-add-server-03",
+      "markerIndex": 2,
+      "at": 23.457976,
+      "text": "Next we provision the server. This installs renet and creates the encrypted datastore."
+    },
+    {
+      "id": "tutorial-add-server-04",
+      "markerIndex": 3,
+      "at": 39.717449,
+      "text": "Server is ready. Let's verify what the CLI knows about the configuration. Machines, SSH key, infrastructure, everything we just set up appears here."
+    },
+    {
+      "id": "tutorial-add-server-05",
+      "markerIndex": 4,
+      "at": 48.157549,
+      "text": "And here is the JSON file that holds it all. Copy this single file to another laptop and you can drive the same servers from there."
+    }
+  ]
+}

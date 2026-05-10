@@ -1,0 +1,471 @@
+{
+  "cast": "/assets/tutorials/tutorial-production-mode.cast",
+  "language": "ko",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "92cd8f79b5cc8c1b8cf44ce687dab8227be5dbe0b304470c5ca5809e2ea1024a",
+  "steps": [
+    {
+      "id": "tutorial-production-mode-01",
+      "markerIndex": 0,
+      "replayStartSec": 56.862064,
+      "replayEndSec": 97.750961,
+      "narrationText": "노트북에서 프로덕션 모드로 앱을 시작합니다. 배포 명령은 개발 중에 사용한 것과 동일한 up 함수를 호출하지만 분리된 상태로 실행됩니다. 노트북을 닫아도 앱은 계속 실행됩니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-01.478ecab8.mp3",
+      "audioDurationSec": 15.229388,
+      "wordTimings": [
+        {
+          "startSec": 0.48,
+          "endSec": 0.96,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.68,
+          "startChar": 6,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.24,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 15,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.28,
+          "startChar": 18,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.16,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.8,
+          "startChar": 28,
+          "endChar": 31
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.76,
+          "startChar": 35,
+          "endChar": 37
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.16,
+          "startChar": 38,
+          "endChar": 41
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.72,
+          "startChar": 42,
+          "endChar": 44
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.44,
+          "startChar": 45,
+          "endChar": 48
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.08,
+          "startChar": 52,
+          "endChar": 55
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.88,
+          "startChar": 56,
+          "endChar": 61
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.76,
+          "startChar": 62,
+          "endChar": 65
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.32,
+          "startChar": 66,
+          "endChar": 69
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 11.2,
+          "startChar": 70,
+          "endChar": 75
+        },
+        {
+          "startSec": 12.08,
+          "endSec": 12.72,
+          "startChar": 77,
+          "endChar": 81
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.36,
+          "startChar": 82,
+          "endChar": 85
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.92,
+          "startChar": 86,
+          "endChar": 88
+        },
+        {
+          "startSec": 13.92,
+          "endSec": 14.4,
+          "startChar": 89,
+          "endChar": 91
+        },
+        {
+          "startSec": 14.4,
+          "endSec": 15.2,
+          "startChar": 92,
+          "endChar": 97
+        }
+      ]
+    },
+    {
+      "id": "tutorial-production-mode-02",
+      "markerIndex": 1,
+      "replayStartSec": 97.750961,
+      "replayEndSec": 125.443493,
+      "narrationText": "이제 자동 시작을 활성화하여 서버 재부팅 후에도 앱이 유지되도록 합니다. 이제부터 서버가 재시작되면 이 저장소가 자동으로 복구됩니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-02.c216572b.mp3",
+      "audioDurationSec": 11.075918,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 3,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 6,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 2.08,
+          "startChar": 10,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 16,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.2,
+          "startChar": 19,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.76,
+          "startChar": 23,
+          "endChar": 26
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.16,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.88,
+          "startChar": 30,
+          "endChar": 35
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.28,
+          "startChar": 36,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.56,
+          "startChar": 41,
+          "endChar": 45
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 7.12,
+          "startChar": 46,
+          "endChar": 49
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 8.08,
+          "startChar": 50,
+          "endChar": 55
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.64,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.44,
+          "startChar": 58,
+          "endChar": 62
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.16,
+          "startChar": 63,
+          "endChar": 67
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.96,
+          "startChar": 68,
+          "endChar": 73
+        }
+      ]
+    },
+    {
+      "id": "tutorial-production-mode-03",
+      "markerIndex": 2,
+      "replayStartSec": 125.443493,
+      "replayEndSec": 141.09184,
+      "narrationText": "자동 시작이 활성화된 저장소 목록을 확인합니다. 앱이 부팅 목록에 포함되어 있음을 확인할 수 있습니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-03.443ea77e.mp3",
+      "audioDurationSec": 6.687347,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 3,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.52,
+          "startChar": 7,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.0,
+          "startChar": 12,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 16,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.12,
+          "startChar": 20,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.92,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.24,
+          "startChar": 30,
+          "endChar": 32
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.64,
+          "startChar": 33,
+          "endChar": 36
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.12,
+          "startChar": 37,
+          "endChar": 41
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.6,
+          "startChar": 42,
+          "endChar": 45
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.92,
+          "startChar": 46,
+          "endChar": 49
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.08,
+          "startChar": 50,
+          "endChar": 51
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.4,
+          "startChar": 52,
+          "endChar": 56
+        }
+      ]
+    },
+    {
+      "id": "tutorial-production-mode-04",
+      "markerIndex": 3,
+      "replayStartSec": 141.09184,
+      "replayEndSec": 196.903183,
+      "narrationText": "앱을 중지할 때도 노트북에서 명령 하나면 됩니다. 시작도 명령 하나, 중지도 명령 하나입니다. 모두 터미널에서 실행됩니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-04.f2e96d8b.mp3",
+      "audioDurationSec": 10.370612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.96,
+          "startChar": 3,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.52,
+          "startChar": 7,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.24,
+          "startChar": 10,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.64,
+          "startChar": 16,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.12,
+          "startChar": 19,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.6,
+          "startChar": 23,
+          "endChar": 26
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.88,
+          "startChar": 28,
+          "endChar": 31
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.28,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.6,
+          "startChar": 35,
+          "endChar": 37
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.56,
+          "startChar": 39,
+          "endChar": 42
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.96,
+          "startChar": 43,
+          "endChar": 45
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.68,
+          "startChar": 46,
+          "endChar": 51
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.64,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.52,
+          "startChar": 56,
+          "endChar": 61
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.32,
+          "startChar": 62,
+          "endChar": 67
+        }
+      ]
+    }
+  ]
+}

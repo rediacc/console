@@ -50,6 +50,10 @@ export function getLanguageName(lang: Language): string {
     ru: 'Русский',
     tr: 'Türkçe',
     zh: '中文',
+    et: 'Eesti',
+    ko: '한국어',
+    pt: 'Português',
+    it: 'Italiano',
   };
   return names[lang];
 }
@@ -68,6 +72,10 @@ export function getLanguageFlag(lang: Language): string {
     ru: '🇷🇺',
     tr: '🇹🇷',
     zh: '🇨🇳',
+    et: '🇪🇪',
+    ko: '🇰🇷',
+    pt: '🇵🇹',
+    it: '🇮🇹',
   };
   return flags[lang];
 }
@@ -96,6 +104,10 @@ export function getLocale(lang: Language): string {
     ru: 'ru_RU',
     tr: 'tr_TR',
     zh: 'zh_CN',
+    et: 'et_EE',
+    ko: 'ko_KR',
+    pt: 'pt_PT',
+    it: 'it_IT',
   };
   return locales[lang];
 }
@@ -115,6 +127,10 @@ export function getHreflang(lang: Language): string {
     ru: 'ru-RU',
     tr: 'tr-TR',
     zh: 'zh-CN',
+    et: 'et-EE',
+    ko: 'ko-KR',
+    pt: 'pt-PT',
+    it: 'it-IT',
   };
   return hreflangs[lang];
 }

@@ -1,8 +1,8 @@
 {
   "announcement": {
     "enabled": true,
-    "link": "/de/blog",
-    "text": "v0.6 veröffentlicht — Alpine-musl-Unterstützung, Abonnementsystem und mehr"
+    "link": "/account/",
+    "text": "Begrenzte Zeit: Design Partner Programm — BUSINESS Plan auf Lebenszeit"
   },
   "beforeAfter": {
     "after": {
@@ -139,6 +139,10 @@
     "openInNewTab": "In neuem Tab öffnen",
     "searchDocs": "Dokumentation durchsuchen",
     "shareSection": "Abschnitt teilen",
+    "subcategories": {
+      "advanced": "Erweitert",
+      "essentials": "Grundlagen"
+    },
     "viewAsMarkdown": "Seite als Markdown anzeigen",
     "viewAsMarkdownDesc": "Markdown-Datei in neuem Tab öffnen"
   },
@@ -307,6 +311,10 @@
       "author": "Rediacc",
       "defaultDescription": "Infrastrukturautomatisierungsplattform für beschleunigte Entwicklungsvorgänge. Sofortige Entwicklungsumgebungen und Disaster Recovery der nächsten Generation.",
       "defaultKeywords": "Infrastrukturautomatisierung, KI-Betrieb, Disaster Recovery, Entwicklungsumgebungen, Model Context Protocol, DevOps, CI/CD",
+      "designPartner": {
+        "ogDescPrefix": "BUSINESS lebenslang kostenlos erhalten.",
+        "ogPrefix": "Design-Partner-Programm"
+      },
       "locale": "de_DE",
       "siteName": "Rediacc",
       "twitter": {
@@ -372,7 +380,7 @@
       }
     },
     "pricing": "Preise",
-    "roiCalculator": "ROI Calculator",
+    "roiCalculator": "ROI-Rechner",
     "search": "Suchen",
     "selectLanguage": "Sprache auswählen",
     "solutions": "Lösungen",
@@ -648,6 +656,98 @@
       },
       "toc": {
         "title": "Inhaltsverzeichnis"
+      }
+    },
+    "designPartners": {
+      "ask": {
+        "items": [
+          {
+            "body": "Schick eine kurze E-Mail, wenn dich etwas überrascht. Stack-Trace optional. Frust willkommen.",
+            "title": "Sag uns, wenn etwas kaputt ist"
+          },
+          {
+            "body": "30 Minuten einmal pro Quartal oder so. Wir hören zu, du redest. Keine Demos, kein Upselling.",
+            "title": "Gelegentlich auf einen Anruf kommen"
+          },
+          {
+            "body": "Wenn wir etwas ausliefern, das dich betrifft, möchten wir dich kurz informieren, bevor es live geht. Eine normale E-Mail reicht.",
+            "title": "Erreichbar sein"
+          }
+        ],
+        "lede": "Unkompliziert. Es geht nicht darum, kostenlose Arbeit zu gewinnen, sondern darum, uns ehrlich zu halten.",
+        "title": "Was wir im Gegenzug bitten"
+      },
+      "faq": {
+        "items": [
+          {
+            "a": "Ja. Die Gewährung ist in deinem Abonnementdatensatz ohne Ablaufdatum und ohne automatisches Downgrade gespeichert. Sollten wir das jemals ändern müssen, werden wir zuerst jeden Design Partner per E-Mail informieren. Wir haben es nie getan und haben keine entsprechenden Pläne.",
+            "q": "Ist es wirklich lebenslang?"
+          },
+          {
+            "a": "Dann funktioniert dein Konto nicht mehr, genau wie bei allen anderen. Das lebenslange Versprechen gilt für die Lebensdauer des Unternehmens. Wir sind vor dem ersten Kunden; das ist das ehrliche Risiko, das du eingehst.",
+            "q": "Was, wenn Rediacc einstellt?"
+          },
+          {
+            "a": "Keine Paywalls, keine Verträge, keine automatische Abrechnung. Die einzige Bitte ist das unkomplizierte Feedback oben. Du kannst uns ignorieren. Wir werden deinen Plan nicht widerrufen.",
+            "q": "Gibt es versteckte Bedingungen?"
+          },
+          {
+            "a": "Ja. Du kannst dauerhaft auf BUSINESS bleiben oder zu Enterprise wechseln, wenn du die Limits überschreitest. Ein Upgrade wird normal abgerechnet; das lebenslange Angebot gilt nur für BUSINESS.",
+            "q": "Kann ich später den Plan wechseln?"
+          },
+          {
+            "a": "Bis wir es schließen. Wir kündigen das Schließen nicht im Voraus an, also ist heute ein guter Tag zum Anmelden. Bestehende Design Partner behalten ihren Plan, was auch immer passiert.",
+            "q": "Wie lange ist das Programm offen?"
+          }
+        ],
+        "title": "Ehrliche Antworten"
+      },
+      "finalCta": {
+        "button": "Meinen BUSINESS-Plan sichern",
+        "note": "Wir melden uns innerhalb eines oder zwei Tage per E-Mail, um einen Onboarding-Anruf zu vereinbaren.",
+        "subtitle": "Eine Anmeldung. Keine Kreditkarte. Lebenslanger BUSINESS-Plan, gesichert.",
+        "title": "Bereit, Pionier zu sein?"
+      },
+      "hero": {
+        "eyebrow": "Limitiertes Programm",
+        "note": "Keine Kreditkarte. Keine Bewerbung. Anmelden und du bist dabei.",
+        "primaryCta": "Meinen BUSINESS-Plan sichern",
+        "secondaryCta": "Preise ansehen",
+        "subtitle": "Wir sind vor dem ersten Kunden. Wir suchen Pioniere, die das Produkt nutzen und uns sagen, wenn etwas kaputt ist. Im Gegenzug erhältst du unseren BUSINESS-Plan kostenlos, solange Rediacc existiert.",
+        "title": "Werde Design Partner. Erhalte BUSINESS lebenslang. Kostenlos."
+      },
+      "meta": {
+        "description": "Melde dich kostenlos als Design Partner an und erhalte unseren BUSINESS-Plan lebenslang. Wir suchen Pioniere, die Feedback teilen, während wir bauen.",
+        "title": "Design-Partner-Programm | BUSINESS lebenslang kostenlos"
+      },
+      "why": {
+        "items": [
+          {
+            "body": "Wir lernen 100x mehr von einem Team im Produktionsbetrieb als von hundert Testanmeldungen. Design Partner sind der Weg, wie wir das Produkt schärfen, bevor die Masse kommt.",
+            "title": "Echte Teams, echte Workloads"
+          },
+          {
+            "body": "Wir brauchen dein Geld noch nicht. Wir brauchen deine Erfahrungen, deine Grenzfälle und deine Fragen. Kostenlos im Tausch gegen Ehrlichkeit ist fair.",
+            "title": "Geld gegen Feedback tauschen"
+          },
+          {
+            "body": "Dein lebenslanger BUSINESS-Plan läuft nie ab, wird nie herabgestuft und verlangt nie eine Kreditkarte. Das ist das Angebot.",
+            "title": "Dauerhafter Dank"
+          }
+        ],
+        "title": "Warum wir das tun"
+      },
+      "youGet": {
+        "items": [
+          "BUSINESS-Plan: 500 GB pro Repository, 20 Floating-Lizenzen, 20.000 Lizenzanfragen pro Monat",
+          "Auf dem Edge-Kanal: doppelte Limits (1 TB pro Repo, 40 Lizenzen, 40.000 Anfragen)",
+          "Unbegrenzte Repositories, Benutzer und Teams",
+          "Snapshot-Wiederherstellungen, Dark Mode, alle 9 Sprachen",
+          "Direkter Draht zum Gründer für Onboarding und Support",
+          "Lebenslang gesichert. Kein Ablauf, kein Downgrade, keine Karte hinterlegt."
+        ],
+        "lede": "Alles im BUSINESS-Tarif, kostenlos für die Laufzeit deines Kontos.",
+        "title": "Was du bekommst"
       }
     },
     "disasterRecovery": {
@@ -1171,7 +1271,7 @@
         "title": "Informationen zur automatischen Aktualisierung"
       },
       "cli": {
-        "binary": "Binary",
+        "binary": "Binärdatei",
         "description": "Leichtgewichtiges Kommandozeilen-Tool für Automatisierung und Scripting."
       },
       "hero": {
@@ -1354,6 +1454,11 @@
         "notFound": "404 – Seite nicht gefunden"
       },
       "description": "Leider existiert die gesuchte Seite nicht oder wurde verschoben. Dies kann passieren, wenn Sie einem veralteten Link gefolgt sind oder die URL falsch eingegeben haben.",
+      "designPartner": {
+        "body": "Erhalte unseren BUSINESS-Plan lebenslang kostenlos. Keine Kreditkarte.",
+        "cta": "Design Partner werden",
+        "title": "Design-Partner-Programm"
+      },
       "help": {
         "description": "Wenn Sie glauben, dass es sich hierbei um einen Fehler handelt oder Sie erwartet haben, hier Inhalte zu finden, wenden Sie sich bitte an unser Support-Team. Wir sind hier, um Ihnen zu helfen, das zu finden, was Sie suchen.",
         "link": "Kontaktieren Sie unser Support-Team",
@@ -3132,6 +3237,12 @@
             "secondary": "Kontaktieren Sie den Vertrieb"
           }
         },
+        "designPartner": {
+          "badge": "KOSTENLOS für Design Partner",
+          "cta": "Design Partner werden",
+          "period": "Lebenslang · Keine Karte erforderlich",
+          "price": "FREE"
+        },
         "edgeLimitsNote": "Angezeigte Limits gelten für den Edge-Kanal. Hälfte bei Stable.",
         "foreverFree": "Für immer frei",
         "getStarted": "Legen Sie los",
@@ -3442,6 +3553,103 @@
         "title": "Inhaltsverzeichnis"
       }
     },
+    "resourcesNis2Directive": {
+      "about": {
+        "body": "Rediacc ist eine selbst gehostete Infrastrukturplattform, registriert in Estland (OÜ 17363830, USt-IdNr. EE102920091). Diese Zusammenfassung wurde im Rahmen unseres NIS2-Inhaltsprogramms verfasst. Die Begleitleitfäden beschreiben, wie Rediacc spezifische Artikel der Richtlinie adressiert, einschließlich der Bereiche, in denen Rediacc keine Antwort ist (noch keine Zertifizierungen; keine GRC-Ebene; kein verwaltetes Artikel-23-Reporting; nur Portal-MFA). Für das öffentliche Fähigkeits-Mapping siehe {nis2DoraLink} in der Dokumentation.",
+        "cta": "Schick uns deinen Anbieter-Fragebogen oder deine drei größten Sicherheitsposten aus dem letztjährigen Budget. Wir antworten auf Basis einer eingesetzten Instanz, schriftlich, einschließlich der Lücken. Oder lade das PDF herunter und leite es an einen Kollegen weiter.",
+        "downloadButton": "PDF herunterladen",
+        "heading": "Über diese Zusammenfassung"
+      },
+      "companions": {
+        "heading": "Drei Begleitleitfäden",
+        "intro": "Das PDF bildet die Richtlinie ab. Die Begleitleitfäden übersetzen die Pflichten in Beschaffungs- und Betriebsentscheidungen, jeweils zugeschnitten auf eine Zielgruppe.",
+        "items": [
+          {
+            "blurb": "Warum das Drittanbieter-IKT-Register kleiner wird, wenn die Datenebene nie deine Mandantenumgebung verlässt. Für CISOs und Beschaffungsverantwortliche, die 2026 DPAs neu verhandeln.",
+            "slug": "nis2-supply-chain-self-hosted",
+            "title": "Artikel 21(2)(d) ist eine Anbieterfrage"
+          },
+          {
+            "blurb": "Artikel 21(2)(e), (f) und 23 gemeinsam gelesen. Der Fork mit konstanter Laufzeit, der wöchentliche Übungen realistisch macht, und der Artikel-23-Meldefristen, die ohne forensisch verwertbare Artefakte nicht einzuhalten sind. Für SRE- und Ops-Verantwortliche.",
+            "slug": "nis2-effectiveness-without-theatre",
+            "title": "Kontinuierliche Wirksamkeit ohne Theater"
+          },
+          {
+            "blurb": "Der Fünf-Tool-Compliance-Stack, den mittelständische wesentliche Einrichtungen still zusammenstellen, was eine selbst gehostete Steuerungsebene zusammenfasst und welche Posten so oder so bei euch verbleiben. Für CFOs und Käufer, die in einen Erneuerungszyklus eintreten.",
+            "slug": "nis2-the-real-bill",
+            "title": "Was uns Käufer im ersten NIS2-Prüfzyklus berichtet haben"
+          }
+        ],
+        "readMore": "Leitfaden lesen →"
+      },
+      "faq": {
+        "heading": "Häufig gestellte Fragen",
+        "items": [
+          {
+            "a": "Nein. Es handelt sich um eine inoffizielle englischsprachige Zusammenfassung, die die Struktur und Pflichten der Richtlinie zugänglich machen soll. Für eine verbindliche Auslegung ist der offizielle Text unter ABl. L 333/80 (27. Dezember 2022) oder über EUR-Lex (CELEX 32022L2555) maßgeblich. Die nationalen Umsetzungsgesetze in deinem Mitgliedstaat können strengere oder abweichend gefasste Pflichten vorsehen als die Richtlinie selbst.",
+            "q": "Ist dies eine autoritative Übersetzung der Richtlinie?"
+          },
+          {
+            "a": "Einrichtungen, die in Sektoren von Anhang I (hohe Kritikalität) oder Anhang II (sonstige kritische) tätig sind und die Schwellenwerte für mittlere Unternehmen erfüllen (50+ Mitarbeiter oder Jahresumsatz ab 10 Mio. EUR gemäß Empfehlung 2003/361/EG). Einige Einrichtungen fallen unabhängig von ihrer Größe in den Anwendungsbereich, darunter TLD-Registrare, DNS-Anbieter, Vertrauensdienstanbieter und zentrale öffentliche Verwaltung. Die Abschnitte 4, 6 und 7 des PDFs behandeln den Anwendungsbereich im Detail.",
+            "q": "Wer fällt unter NIS2?"
+          },
+          {
+            "a": "Die Richtlinie ist am 16. Januar 2023 in Kraft getreten. Die Mitgliedstaaten hatten bis zum 17. Oktober 2024 Zeit, sie in nationales Recht umzusetzen; die Anwendung begann am 18. Oktober 2024 (gleichzeitig wurde NIS1 aufgehoben). Den vollständigen Zeitplan einschließlich der Frist für die Entitätenliste an die Kommission (17. April 2025) und den regelmäßigen Überprüfungsplan enthält Abschnitt 16.",
+            "q": "Wann ist NIS2 in Kraft getreten und was ist die Umsetzungsfrist?"
+          },
+          {
+            "a": "Für wesentliche Einrichtungen: 10.000.000 EUR oder 2 % des weltweiten Jahresumsatzes, je nachdem, welcher Betrag höher ist. Für wichtige Einrichtungen: 7.000.000 EUR oder 1,4 % des weltweiten Jahresumsatzes, je nachdem, welcher Betrag höher ist. Die Richtlinie erlaubt zudem nichtmonetäre Sanktionen, einschließlich vorübergehender Verbote für leitende Manager wesentlicher Einrichtungen (als letztes Mittel). Abschnitt 15 behandelt die Faktoren zur Bußgeldbemessung.",
+            "q": "Wie hoch sind die Höchstbußgelder?"
+          },
+          {
+            "a": "Ja, auf zwei Wegen. Direkt: Nicht-EU-Anbieter von DNS, Cloud, Rechenzentren, CDN, MSP/MSSP, Online-Marktplätzen, Suchmaschinen und sozialen Netzwerken, die Dienste in der EU anbieten, müssen einen EU-Vertreter benennen und die Anforderungen erfüllen. Indirekt: Jeder Nicht-EU-Lieferant, der Produkte oder Dienstleistungen an wesentliche oder wichtige Einrichtungen in der EU liefert, unterliegt den vertraglichen Anforderungen an die Lieferkettensicherheit, die seine EU-Kunden nach Artikel 21(2)(d) auferlegen. Abschnitt 17 behandelt beide Fälle.",
+            "q": "Gilt NIS2 für Unternehmen außerhalb der EU?"
+          },
+          {
+            "a": "Drei Fristen, alle ausgelöst durch das \"Bekanntwerden\" eines erheblichen Vorfalls: 24 Stunden für eine Frühwarnung, 72 Stunden für eine vollständige Vorfallsmeldung und ein Monat für den abschließenden Bericht. Dienstleistungsempfänger müssen ebenfalls unverzüglich informiert werden, wenn eine erhebliche Cyberbedrohung wahrscheinlich ist. Abschnitt 10 enthält die vollständige Meldematrix.",
+            "q": "Wie funktioniert die Meldepflicht nach Artikel 23?"
+          }
+        ]
+      },
+      "hero": {
+        "disclaimer": "Dieses Dokument ist eine inoffizielle Zusammenfassung. Für eine verbindliche Auslegung ist der offizielle Text unter ABl. L 333/80 vom 27.12.2022 maßgeblich.",
+        "downloadButton": "PDF herunterladen",
+        "eyebrow": "Kostenloser Download · 24 Seiten · A4-PDF",
+        "openInBrowser": "Im Browser öffnen",
+        "subtitle": "Eine 24-seitige englischsprachige Zusammenfassung der Richtlinie (EU) 2022/2555. Behandelt Anwendungsbereich, die zehn Maßnahmen nach Artikel 21, den 24h/72h/1-Monat-Meldefristen nach Artikel 23, Anhang-I- und -II-Sektoren, Bußgelder und einen 10-Schritte-Compliance-Fahrplan. Erstellt von Rediacc; keine autoritative Übersetzung.",
+        "title": "NIS2-Richtlinie: Englische Zusammenfassung für CISOs und Compliance-Verantwortliche"
+      },
+      "meta": {
+        "description": "Kostenlose 24-seitige Zusammenfassung der EU NIS2-Richtlinie 2022/2555: Maßnahmen Art. 21, Meldung Art. 23, Anhang-Sektoren, Bußgelder, 10-Stufen-Plan.",
+        "keywords": "NIS2, NIS2-Richtlinie, NIS2-Zusammenfassung, NIS2-Compliance, EU-Cybersicherheitsrichtlinie, Richtlinie 2022/2555, Artikel 21, Artikel 23, NIS2 PDF",
+        "title": "NIS2-Richtlinie Zusammenfassung für CISOs (PDF kostenlos)"
+      },
+      "toc": {
+        "heading": "Was im PDF enthalten ist",
+        "intro": "Neunzehn Abschnitte, strukturiert für den tätigen CISO oder Compliance-Verantwortlichen, der den Inhalt der Richtlinie verstehen möchte, ohne sich durch 73 Seiten Erwägungsgründe zu arbeiten.",
+        "items": [
+          "Zusammenfassung",
+          "Zweck und Rechtsgrundlage",
+          "Von NIS1 zu NIS2: Warum eine neue Regelung?",
+          "Anwendungsbereich und ausgeschlossene Bereiche",
+          "Wesentliche Definitionen",
+          "Entitätskategorien: Wesentliche und wichtige Einrichtungen",
+          "Erfasste Sektoren (Anhang I und Anhang II)",
+          "Pflichten der Mitgliedstaaten",
+          "Maßnahmen zum Risikomanagement der Cybersicherheit (Artikel 21)",
+          "Meldepflichten bei Vorfällen (Artikel 23)",
+          "Sicherheit der Lieferkette",
+          "Verantwortung des Leitungsorgans",
+          "Kooperationsstrukturen auf EU-Ebene",
+          "Aufsicht und Durchsetzung",
+          "Bußgelder",
+          "Umsetzungszeitplan und Übergangsregelungen",
+          "Auswirkungen für Unternehmen außerhalb der EU",
+          "Praktischer Compliance-Fahrplan (10 Schritte)",
+          "Schlussfolgerung und Bewertung"
+        ]
+      }
+    },
     "roiCalculator": {
       "advancedLabel": "Erweiterte Annahmen",
       "advancedSliders": {
@@ -3535,9 +3743,9 @@
         "enterprise": "Enterprise",
         "enterpriseDesc": "200–1.000 Mitarbeiter",
         "label": "Unternehmensgröße",
-        "large": "Large Enterprise",
+        "large": "Großunternehmen",
         "largeDesc": "1.000+ Mitarbeiter",
-        "mid": "Mid-Market",
+        "mid": "Mittelstand",
         "midDesc": "25–200 Mitarbeiter",
         "smb": "SMB",
         "smbDesc": "< 25 Mitarbeiter"
@@ -3735,7 +3943,7 @@
             {
               "description": "Einen exakten btrfs-Snapshot Ihrer Produktionsinfrastruktur in 47 Sekunden erstellen. Zero-Copy, volle Wiedergabetreue.",
               "icon": "copy",
-              "title": "Clone"
+              "title": "Klonen"
             },
             {
               "description": "KI-gestuetzte Pentests gegen den Klon ausfuehren — Port-Scans, SQLi, XSS, CVE-Pruefungen, Authentifizierungstests. Echte Angriffe, echte Daten.",
@@ -6593,7 +6801,7 @@
             {
               "description": "Eine exakte Kopie der Produktion ist in 60 Sekunden verfuegbar. Gleiches Betriebssystem, gleiche Konfigurationen, gleiche Daten.",
               "icon": "copy",
-              "title": "Clone"
+              "title": "Klonen"
             },
             {
               "description": "Sofort mit der Entwicklung beginnen. Kein Setup. Keine Konfiguration. Einfach programmieren.",
@@ -10029,7 +10237,7 @@
             {
               "description": "Starten Sie mit einem exakten Produktions-Snapshot via btrfs Copy-on-Write. Gleiches Betriebssystem, gleiche Konfigurationen, gleiche Daten.",
               "icon": "copy",
-              "title": "Clone"
+              "title": "Klonen"
             },
             {
               "description": "Gegen echte Produktionsbedingungen schreiben und testen. Jede Bibliothek, jede Konfiguration, jede Datenzeile — identisch.",
@@ -11539,7 +11747,7 @@
             {
               "description": "rdc ceph snapshot create production ausfuehren. Eine exakte Kopie ist in 60 Sekunden verfuegbar.",
               "icon": "terminal",
-              "title": "Clone"
+              "title": "Klonen"
             },
             {
               "description": "Patches, Upgrades, Kernel-Updates anwenden. Frei experimentieren. Produktion bleibt unberuehrt.",
@@ -13362,6 +13570,7 @@
   "team": {
     "founder": {
       "contact": "Fragen? Schreiben Sie mir direkt",
+      "designPartner": "Ich begleite jeden Design Partner persönlich beim Einstieg. Melde dich kostenlos an und buche einen 30-minütigen Anruf, damit wir über deinen Stack sprechen können.",
       "guarantee": "Wenn Rediacc für Sie nicht funktioniert, schreiben Sie mir eine E-Mail und ich helfe Ihnen bei der Rückmigration.",
       "quote": "Ich habe Rediacc gebaut, weil Infrastruktur nicht so fragil sein sollte.",
       "story": {

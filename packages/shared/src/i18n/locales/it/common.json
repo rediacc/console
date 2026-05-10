@@ -1,0 +1,86 @@
+{
+  "errors": {
+    "anErrorOccurred": "Si è verificato un errore",
+    "cliCommandFailed": "Il comando CLI ha fallito",
+    "criticalSystemError": "Il sistema presenta problemi critici",
+    "failedToCreateTask": "Impossibile creare il task di test",
+    "failedToFork": "Impossibile eseguire il fork del repository",
+    "helloFunctionError": "La funzione hello ha segnalato un errore",
+    "machinesValidationError": "Errore di validazione della macchina",
+    "noErrorMessage": "(nessun messaggio di errore)",
+    "operationFailed": "Operazione fallita",
+    "passwordValidation": "La password deve contenere lettere maiuscole, minuscole, un numero e un carattere speciale",
+    "tfaVerificationFailed": "Verifica TFA fallita",
+    "unknownError": "Errore sconosciuto",
+    "vaultTestFailed": "Test di connessione al Vault fallito",
+    "vsCodeConnectionFailed": "Connessione VS Code fallita"
+  },
+  "success": {
+    "helloFunctionSuccess": "La funzione hello è stata completata con successo"
+  },
+  "status": {
+    "cancelled": "Annullato",
+    "completed": "Completato",
+    "failed": "Fallito",
+    "pending": "In attesa",
+    "processing": "In elaborazione",
+    "running": "In esecuzione",
+    "success": "Riuscito",
+    "unknown": "Sconosciuto",
+    "inProgress": "In corso",
+    "initializing": "Inizializzazione..."
+  },
+  "actions": {
+    "save": "Salva",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "create": "Crea",
+    "edit": "Modifica",
+    "copy": "Copia",
+    "retry": "Riprova",
+    "refresh": "Aggiorna",
+    "close": "Chiudi",
+    "download": "Scarica",
+    "upload": "Carica",
+    "remove": "Rimuovi",
+    "confirm": "Conferma",
+    "reset": "Reimposta",
+    "back": "Indietro",
+    "search": "Cerca",
+    "export": "Esporta"
+  },
+  "common": {
+    "yes": "Sì",
+    "no": "No",
+    "loading": "Caricamento...",
+    "error": "Errore",
+    "warning": "Avviso",
+    "success": "Riuscito",
+    "unknown": "Sconosciuto",
+    "total": "Totale",
+    "none": "Nessuno"
+  },
+  "validation": {
+    "required": "Questo campo è obbligatorio",
+    "invalidEmail": "Inserisci un indirizzo email valido",
+    "invalidFormat": "Formato non valido"
+  },
+  "time": {
+    "today": "Oggi",
+    "yesterday": "Ieri",
+    "last7Days": "Ultimi 7 giorni",
+    "last30Days": "Ultimi 30 giorni",
+    "thisMonth": "Questo mese",
+    "lastMonth": "Mese scorso"
+  },
+  "confirm": {
+    "areYouSure": "Sei sicuro?",
+    "confirmDelete": "Sei sicuro di voler eliminare questo elemento?"
+  },
+  "notifications": {
+    "error": "Errore",
+    "warning": "Avviso",
+    "success": "Riuscito",
+    "info": "Informazione"
+  }
+}

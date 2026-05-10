@@ -20,7 +20,8 @@
   font-weight: var(--font-weight-semibold);
   white-space: nowrap;
   transition: color 0.2s ease;
-  padding: 0;
+  padding: 6px 12px;
+  border-radius: 6px;
 }
 
 .persona-menu-trigger:hover {
@@ -45,7 +46,7 @@
 /* Panel */
 .persona-menu-panel {
   position: fixed;
-  top: var(--nav-height);
+  top: var(--nav-top-offset);
   left: 50%;
   transform: translateX(-50%);
   width: min(calc(100vw - var(--space-8) * 2), 1020px);

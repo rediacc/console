@@ -1,14 +1,12 @@
 /* Install Page Styles */
 @import './platform-tabs.css';
 
-/* Hero Section */
+/* Hero Section — flat dark surface (no gradient). .section-dark provides bg+color. */
 .install-hero {
   min-height: 40vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--gradient-dark);
-  color: white;
   padding: var(--section-padding);
   text-align: center;
 }
@@ -92,7 +90,7 @@
 
 /* Method Card */
 .method-card {
-  background: white;
+  background: var(--color-bg-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   padding: var(--space-8);
@@ -103,14 +101,10 @@
   border-color: var(--color-brand-primary);
 }
 
-/* Featured method card (Quick Install) */
+/* Featured method card (Quick Install) — flat surface + brand top accent. */
 .method-card-featured {
   border: 2px solid var(--color-brand-primary);
-  background: linear-gradient(
-    135deg,
-    rgba(var(--color-brand-primary-rgb, 59, 130, 246), 0.03) 0%,
-    white 100%
-  );
+  background: var(--color-bg-alt);
   position: relative;
 }
 
@@ -271,7 +265,7 @@
 .arch-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: var(--color-bg-alt);
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--color-border);

@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-add-server.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-add-server-01",
+      "markerIndex": 0,
+      "at": 1.508633,
+      "text": "首先，让我们创建一个配置文件。该文件将保存 SSH 密钥、机器列表以及后续所有操作的基础设施配置。"
+    },
+    {
+      "id": "tutorial-add-server-02",
+      "markerIndex": 1,
+      "at": 11.160728,
+      "text": "现在让我们从命令行注册服务器，提供其名称、IP 地址和 SSH 用户名。主机密钥会自动扫描以建立信任连接。"
+    },
+    {
+      "id": "tutorial-add-server-03",
+      "markerIndex": 2,
+      "at": 23.457976,
+      "text": "接下来让我们配置服务器。这一步会安装 renet 并创建加密数据存储。完成后，服务器就可以托管仓库了。"
+    },
+    {
+      "id": "tutorial-add-server-04",
+      "markerIndex": 3,
+      "at": 39.717449,
+      "text": "让我们验证命令行工具对配置的了解情况。机器列表、SSH 密钥、基础设施，刚才设置的一切都显示在这里。"
+    },
+    {
+      "id": "tutorial-add-server-05",
+      "markerIndex": 4,
+      "at": 48.157549,
+      "text": "所有配置都保存在笔记本上的一个 JSON 文件里。把这个文件复制到另一台机器，就能从那里操作相同的服务器。"
+    }
+  ]
+}

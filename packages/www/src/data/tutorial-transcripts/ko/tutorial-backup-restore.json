@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-backup-restore.cast",
+  "language": "ko",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-backup-restore-01",
+      "markerIndex": 0,
+      "at": 65.053708,
+      "text": "1단계입니다. 기존 rclone 구성을 가져옵니다. rclone은 S3, Backblaze, Google Drive, Dropbox 등 다양한 서비스를 지원합니다. 이미 rclone을 사용하고 있다면 동일한 구성을 바로 가져올 수 있습니다."
+    },
+    {
+      "id": "tutorial-backup-restore-02",
+      "markerIndex": 1,
+      "at": 73.743501,
+      "text": "CLI가 인식하는 스토리지 목록을 확인합니다. 각각은 백업을 푸시할 수 있는 대상입니다."
+    },
+    {
+      "id": "tutorial-backup-restore-03",
+      "markerIndex": 2,
+      "at": 82.843959,
+      "text": "2단계입니다. 전체 백업을 푸시합니다. 저장소 전체, 앱, 데이터베이스, 파일, 구성이 업로드됩니다. 저장소가 저장 시 암호화되어 있으므로 백업도 암호화됩니다. 별도의 키 관리가 필요하지 않습니다."
+    },
+    {
+      "id": "tutorial-backup-restore-04",
+      "markerIndex": 3,
+      "at": 94.515541,
+      "text": "이 스토리지에서 사용 가능한 백업 목록을 확인합니다. 이제 새 서버에서 복원하려면 명령 하나면 됩니다. 저장소 풀 명령을 실행하면 됩니다."
+    }
+  ]
+}
