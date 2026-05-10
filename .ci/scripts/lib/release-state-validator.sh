@@ -34,9 +34,12 @@ RSV_SENTINEL_KEY=".released"
 # Grandfather: tags <= this baseline predate the sentinel contract and are
 # excluded from the bijection check. The contract was introduced after v1.0.4
 # (PR #459); every prior release was sealed by the older prefix-based guard
-# and has no `.released` marker. Override via RSV_GRANDFATHER_BEFORE if a
+# and has no `.released` marker. v1.0.5 has a desktop sentinel + git tag but
+# never wrote its cli sentinel (incomplete release artefact, not recoverable
+# without rebuilding artifacts that no longer exist), so we bump the cutoff
+# past it to keep the gate clean. Override via RSV_GRANDFATHER_BEFORE if a
 # follow-up backfill seeds sentinels for old tags.
-RSV_GRANDFATHER_BEFORE="${RSV_GRANDFATHER_BEFORE-v1.0.4}"
+RSV_GRANDFATHER_BEFORE="${RSV_GRANDFATHER_BEFORE-v1.0.5}"
 
 # =============================================================================
 # Live probes (AWS + git)
