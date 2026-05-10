@@ -136,11 +136,23 @@ retag_image() {
 
     log_step "Re-tagging $label: $FROM_TAG -> $TO_TAG"
 
-    # Skip if destination exists (for idempotent retries in Phase 2)
+    # Skip if destination exists AND already points at the source's digest
+    # (idempotent retries in Phase 2). The digest compare matters because a
+    # stale destination tag from a previous failed release at the same
+    # version would otherwise silently lock the new image out of promotion
+    # — the symptom is post-publish Docker pull tests reading the old
+    # version. If the source can't be inspected (e.g., transient registry
+    # error), fall through to the retag path so we don't silently skip.
     if [[ "$SKIP_IF_EXISTS" == "true" ]]; then
-        if docker buildx imagetools inspect "$dst" &>/dev/null; then
-            log_info "Destination exists, skipping: $dst"
-            return 0
+        local dst_digest src_digest
+        dst_digest=$(docker buildx imagetools inspect "$dst" --format '{{.Manifest.Digest}}' 2>/dev/null || true)
+        if [[ -n "$dst_digest" ]]; then
+            src_digest=$(docker buildx imagetools inspect "$src" --format '{{.Manifest.Digest}}' 2>/dev/null || true)
+            if [[ -n "$src_digest" && "$dst_digest" == "$src_digest" ]]; then
+                log_info "Destination matches source digest, skipping: $dst ($dst_digest)"
+                return 0
+            fi
+            log_info "Destination exists but digest differs (dst=$dst_digest src=${src_digest:-unknown}), retagging: $dst"
         fi
     fi
 
