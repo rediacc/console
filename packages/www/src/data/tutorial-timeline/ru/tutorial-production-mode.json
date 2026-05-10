@@ -16,7 +16,7 @@
       "replayEndSec": 97.750961,
       "narrationText": "Запускаем приложение в продакшен-режиме с ноутбука. Команда деплоя вызывает ту же функцию up, что использовалась при разработке, но запускает её в фоне. Можно закрыть ноутбук — приложение продолжит работать.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-01.bfc74c5c.mp3",
-      "audioDurationSec": 16.352653,
+      "audioDurationSec": 14.915918,
       "wordTimings": [
         {
           "startSec": 0.08,
@@ -26,139 +26,139 @@
         },
         {
           "startSec": 0.72,
-          "endSec": 1.36,
+          "endSec": 1.6,
           "startChar": 10,
           "endChar": 20
         },
         {
-          "startSec": 1.36,
-          "endSec": 1.44,
+          "startSec": 1.68,
+          "endSec": 1.84,
           "startChar": 21,
           "endChar": 22
         },
         {
-          "startSec": 2.08,
-          "endSec": 2.48,
+          "startSec": 2.48,
+          "endSec": 2.96,
           "startChar": 33,
           "endChar": 39
         },
         {
-          "startSec": 2.48,
-          "endSec": 2.56,
+          "startSec": 2.96,
+          "endSec": 3.04,
           "startChar": 40,
           "endChar": 41
         },
         {
-          "startSec": 2.56,
-          "endSec": 3.2,
+          "startSec": 3.04,
+          "endSec": 3.68,
           "startChar": 42,
           "endChar": 50
         },
         {
-          "startSec": 3.84,
-          "endSec": 4.32,
+          "startSec": 4.48,
+          "endSec": 4.96,
           "startChar": 52,
           "endChar": 59
         },
         {
-          "startSec": 5.04,
-          "endSec": 5.6,
+          "startSec": 5.36,
+          "endSec": 5.92,
           "startChar": 67,
           "endChar": 75
         },
         {
-          "startSec": 5.6,
-          "endSec": 5.76,
+          "startSec": 5.92,
+          "endSec": 6.08,
           "startChar": 76,
           "endChar": 78
         },
         {
-          "startSec": 5.76,
-          "endSec": 5.92,
+          "startSec": 6.08,
+          "endSec": 6.16,
           "startChar": 79,
           "endChar": 81
         },
         {
-          "startSec": 5.92,
-          "endSec": 6.4,
+          "startSec": 6.16,
+          "endSec": 6.72,
           "startChar": 82,
           "endChar": 89
         },
         {
-          "startSec": 6.88,
-          "endSec": 7.12,
+          "startSec": 7.52,
+          "endSec": 7.68,
           "startChar": 94,
           "endChar": 97
         },
         {
-          "startSec": 7.12,
-          "endSec": 7.84,
+          "startSec": 7.68,
+          "endSec": 8.32,
           "startChar": 98,
           "endChar": 112
         },
         {
-          "startSec": 7.84,
-          "endSec": 8.16,
+          "startSec": 8.32,
+          "endSec": 8.56,
           "startChar": 113,
           "endChar": 116
         },
         {
-          "startSec": 8.16,
-          "endSec": 8.96,
+          "startSec": 8.56,
+          "endSec": 9.36,
           "startChar": 117,
           "endChar": 127
         },
         {
           "startSec": 9.52,
-          "endSec": 9.92,
+          "endSec": 9.68,
           "startChar": 129,
           "endChar": 131
         },
         {
-          "startSec": 10.0,
-          "endSec": 10.8,
+          "startSec": 9.76,
+          "endSec": 10.32,
           "startChar": 132,
           "endChar": 141
         },
         {
-          "startSec": 11.36,
-          "endSec": 11.68,
+          "startSec": 10.56,
+          "endSec": 11.04,
           "startChar": 147,
           "endChar": 151
         },
         {
-          "startSec": 12.32,
-          "endSec": 12.8,
+          "startSec": 11.44,
+          "endSec": 11.84,
           "startChar": 153,
           "endChar": 158
         },
         {
-          "startSec": 12.8,
-          "endSec": 13.28,
+          "startSec": 11.84,
+          "endSec": 12.16,
           "startChar": 159,
           "endChar": 166
         },
         {
-          "startSec": 13.28,
-          "endSec": 13.92,
+          "startSec": 12.16,
+          "endSec": 12.72,
           "startChar": 167,
           "endChar": 174
         },
         {
-          "startSec": 14.48,
-          "endSec": 15.12,
+          "startSec": 13.2,
+          "endSec": 13.76,
           "startChar": 177,
           "endChar": 187
         },
         {
-          "startSec": 15.12,
-          "endSec": 15.76,
+          "startSec": 13.76,
+          "endSec": 14.4,
           "startChar": 188,
           "endChar": 197
         },
         {
-          "startSec": 15.76,
-          "endSec": 16.24,
+          "startSec": 14.4,
+          "endSec": 14.8,
           "startChar": 198,
           "endChar": 206
         }
@@ -171,95 +171,95 @@
       "replayEndSec": 125.443493,
       "narrationText": "Включаем автозапуск, чтобы приложение пережило перезагрузку сервера. Теперь, если сервер перезапустится, этот репозиторий поднимется автоматически.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-02.d5b050ab.mp3",
-      "audioDurationSec": 10.109388,
+      "audioDurationSec": 8.594286,
       "wordTimings": [
         {
           "startSec": 0.08,
-          "endSec": 0.64,
+          "endSec": 0.56,
           "startChar": 0,
           "endChar": 8
         },
         {
-          "startSec": 0.72,
-          "endSec": 1.6,
+          "startSec": 0.56,
+          "endSec": 1.28,
           "startChar": 9,
           "endChar": 19
         },
         {
-          "startSec": 1.68,
-          "endSec": 2.0,
+          "startSec": 1.44,
+          "endSec": 1.76,
           "startChar": 21,
           "endChar": 26
         },
         {
-          "startSec": 2.0,
-          "endSec": 2.64,
+          "startSec": 1.76,
+          "endSec": 2.4,
           "startChar": 27,
           "endChar": 37
         },
         {
-          "startSec": 2.64,
-          "endSec": 3.2,
+          "startSec": 2.4,
+          "endSec": 2.88,
           "startChar": 38,
           "endChar": 46
         },
         {
-          "startSec": 3.2,
-          "endSec": 4.0,
+          "startSec": 2.88,
+          "endSec": 3.6,
           "startChar": 47,
           "endChar": 59
         },
         {
-          "startSec": 4.0,
-          "endSec": 4.64,
+          "startSec": 3.6,
+          "endSec": 4.08,
           "startChar": 60,
           "endChar": 67
         },
         {
-          "startSec": 5.12,
-          "endSec": 5.36,
+          "startSec": 4.24,
+          "endSec": 4.56,
           "startChar": 69,
           "endChar": 75
         },
         {
-          "startSec": 5.36,
-          "endSec": 5.76,
+          "startSec": 4.56,
+          "endSec": 4.72,
           "startChar": 77,
           "endChar": 81
         },
         {
-          "startSec": 5.76,
-          "endSec": 6.24,
+          "startSec": 4.72,
+          "endSec": 5.12,
           "startChar": 82,
           "endChar": 88
         },
         {
-          "startSec": 6.24,
-          "endSec": 7.2,
+          "startSec": 5.12,
+          "endSec": 6.0,
           "startChar": 89,
           "endChar": 103
         },
         {
-          "startSec": 7.68,
-          "endSec": 7.84,
+          "startSec": 6.4,
+          "endSec": 6.64,
           "startChar": 105,
           "endChar": 109
         },
         {
-          "startSec": 7.92,
-          "endSec": 8.56,
+          "startSec": 6.64,
+          "endSec": 7.2,
           "startChar": 110,
           "endChar": 121
         },
         {
-          "startSec": 8.56,
-          "endSec": 9.2,
+          "startSec": 7.2,
+          "endSec": 7.76,
           "startChar": 122,
           "endChar": 132
         },
         {
-          "startSec": 9.2,
-          "endSec": 10.0,
+          "startSec": 7.76,
+          "endSec": 8.48,
           "startChar": 133,
           "endChar": 146
         }
@@ -276,7 +276,7 @@
       "wordTimings": [
         {
           "startSec": 0.08,
-          "endSec": 0.64,
+          "endSec": 0.56,
           "startChar": 0,
           "endChar": 7
         },
@@ -288,24 +288,24 @@
         },
         {
           "startSec": 1.2,
-          "endSec": 1.52,
+          "endSec": 1.6,
           "startChar": 11,
           "endChar": 16
         },
         {
-          "startSec": 1.52,
+          "startSec": 1.6,
           "endSec": 2.4,
           "startChar": 17,
           "endChar": 29
         },
         {
-          "startSec": 3.2,
-          "endSec": 4.0,
+          "startSec": 3.04,
+          "endSec": 3.84,
           "startChar": 38,
           "endChar": 48
         },
         {
-          "startSec": 4.48,
+          "startSec": 4.4,
           "endSec": 5.28,
           "startChar": 50,
           "endChar": 64
@@ -324,31 +324,31 @@
         },
         {
           "startSec": 5.76,
-          "endSec": 6.32,
+          "endSec": 6.4,
           "startChar": 75,
           "endChar": 85
         },
         {
-          "startSec": 6.32,
-          "endSec": 6.64,
+          "startSec": 6.4,
+          "endSec": 6.72,
           "startChar": 86,
           "endChar": 92
         },
         {
-          "startSec": 6.64,
-          "endSec": 6.72,
+          "startSec": 6.72,
+          "endSec": 6.8,
           "startChar": 93,
           "endChar": 94
         },
         {
-          "startSec": 6.72,
-          "endSec": 7.12,
+          "startSec": 6.8,
+          "endSec": 7.2,
           "startChar": 95,
           "endChar": 101
         },
         {
-          "startSec": 7.12,
-          "endSec": 7.68,
+          "startSec": 7.2,
+          "endSec": 7.76,
           "startChar": 102,
           "endChar": 110
         }
@@ -361,7 +361,7 @@
       "replayEndSec": 196.903183,
       "narrationText": "Для остановки приложения — одна команда с ноутбука. Одна команда вверх, одна вниз. Всё из терминала, без интерактивных сессий.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-04.04b2bcf2.mp3",
-      "audioDurationSec": 9.639184,
+      "audioDurationSec": 9.325714,
       "wordTimings": [
         {
           "startSec": 0.08,
@@ -371,30 +371,30 @@
         },
         {
           "startSec": 0.32,
-          "endSec": 0.88,
+          "endSec": 0.8,
           "startChar": 4,
           "endChar": 13
         },
         {
-          "startSec": 0.88,
-          "endSec": 1.68,
+          "startSec": 0.8,
+          "endSec": 1.6,
           "startChar": 14,
           "endChar": 24
         },
         {
-          "startSec": 1.68,
-          "endSec": 2.0,
+          "startSec": 1.76,
+          "endSec": 2.08,
           "startChar": 27,
           "endChar": 31
         },
         {
-          "startSec": 2.0,
-          "endSec": 2.4,
+          "startSec": 2.08,
+          "endSec": 2.48,
           "startChar": 32,
           "endChar": 39
         },
         {
-          "startSec": 2.4,
+          "startSec": 2.48,
           "endSec": 2.56,
           "startChar": 40,
           "endChar": 41
@@ -406,44 +406,44 @@
           "endChar": 50
         },
         {
-          "startSec": 3.68,
+          "startSec": 3.76,
           "endSec": 4.08,
           "startChar": 72,
           "endChar": 76
         },
         {
           "startSec": 5.6,
-          "endSec": 6.08,
+          "endSec": 6.0,
           "startChar": 77,
           "endChar": 81
         },
         {
-          "startSec": 6.8,
+          "startSec": 6.72,
           "endSec": 6.88,
           "startChar": 87,
           "endChar": 89
         },
         {
           "startSec": 6.88,
-          "endSec": 7.6,
+          "endSec": 7.52,
           "startChar": 90,
           "endChar": 99
         },
         {
-          "startSec": 7.76,
+          "startSec": 7.84,
           "endSec": 8.08,
           "startChar": 101,
           "endChar": 104
         },
         {
           "startSec": 8.08,
-          "endSec": 8.96,
+          "endSec": 8.8,
           "startChar": 105,
           "endChar": 118
         },
         {
-          "startSec": 8.96,
-          "endSec": 9.52,
+          "startSec": 8.8,
+          "endSec": 9.28,
           "startChar": 119,
           "endChar": 125
         }

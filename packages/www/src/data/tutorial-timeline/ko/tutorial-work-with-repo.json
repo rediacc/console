@@ -1,0 +1,561 @@
+{
+  "cast": "/assets/tutorials/tutorial-work-with-repo.cast",
+  "language": "ko",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "9e7cb6c21c33bb699f4efff55ab91cd2a97dbcc95dd5fb21e32b6ee6249d066b",
+  "steps": [
+    {
+      "id": "tutorial-work-with-repo-01",
+      "markerIndex": 0,
+      "replayStartSec": 93.14728,
+      "replayEndSec": 103.393386,
+      "narrationText": "첫 번째는 tunnel 명령입니다. 앱은 노트북이 아닌 서버에서 실행됩니다. 터널 명령은 컨테이너 포트를 SSH를 통해 포워딩하여 브라우저에서 localhost로 접근할 수 있게 합니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-work-with-repo/tutorial-work-with-repo-01.00b22c39.mp3",
+      "audioDurationSec": 15.072653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.8,
+          "startChar": 2,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.44,
+          "startChar": 43,
+          "endChar": 45
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 7.2,
+          "startChar": 46,
+          "endChar": 49
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.0,
+          "startChar": 50,
+          "endChar": 54
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.64,
+          "startChar": 55,
+          "endChar": 58
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.0,
+          "startChar": 59,
+          "endChar": 63
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.4,
+          "startChar": 64,
+          "endChar": 66
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.52,
+          "startChar": 67,
+          "endChar": 72
+        },
+        {
+          "startSec": 12.4,
+          "endSec": 12.8,
+          "startChar": 73,
+          "endChar": 79
+        },
+        {
+          "startSec": 13.92,
+          "endSec": 14.32,
+          "startChar": 91,
+          "endChar": 94
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.48,
+          "startChar": 95,
+          "endChar": 96
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 14.72,
+          "startChar": 97,
+          "endChar": 99
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 15.04,
+          "startChar": 100,
+          "endChar": 103
+        }
+      ]
+    },
+    {
+      "id": "tutorial-work-with-repo-02",
+      "markerIndex": 1,
+      "replayStartSec": 103.393386,
+      "replayEndSec": 120.858492,
+      "narrationText": "두 번째는 term 명령입니다. 터미널 연결 명령은 저장소 샌드박스 안으로 진입시켜 주는데, VS Code와 동일한 격리된 환경입니다. 터미널을 벗어나지 않고 이 저장소의 Docker 데몬에 명령을 실행할 수 있습니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-work-with-repo/tutorial-work-with-repo-02.abe32127.mp3",
+      "audioDurationSec": 15.307755,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.8,
+          "startChar": 2,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.44,
+          "startChar": 6,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 11,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.04,
+          "startChar": 18,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.36,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.0,
+          "startChar": 25,
+          "endChar": 28
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.56,
+          "startChar": 29,
+          "endChar": 32
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.12,
+          "startChar": 33,
+          "endChar": 37
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.52,
+          "startChar": 38,
+          "endChar": 41
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 6.08,
+          "startChar": 42,
+          "endChar": 46
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.56,
+          "startChar": 47,
+          "endChar": 50
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.2,
+          "startChar": 52,
+          "endChar": 54
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.76,
+          "startChar": 55,
+          "endChar": 60
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.4,
+          "startChar": 61,
+          "endChar": 64
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.96,
+          "startChar": 65,
+          "endChar": 68
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.76,
+          "startChar": 69,
+          "endChar": 74
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.56,
+          "startChar": 76,
+          "endChar": 80
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 11.12,
+          "startChar": 81,
+          "endChar": 85
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 11.6,
+          "startChar": 86,
+          "endChar": 88
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 12.0,
+          "startChar": 89,
+          "endChar": 90
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.72,
+          "startChar": 91,
+          "endChar": 95
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.12,
+          "startChar": 96,
+          "endChar": 102
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.6,
+          "startChar": 103,
+          "endChar": 106
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 14.24,
+          "startChar": 107,
+          "endChar": 110
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.64,
+          "startChar": 111,
+          "endChar": 114
+        },
+        {
+          "startSec": 14.64,
+          "endSec": 14.72,
+          "startChar": 115,
+          "endChar": 116
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 15.28,
+          "startChar": 117,
+          "endChar": 121
+        }
+      ]
+    },
+    {
+      "id": "tutorial-work-with-repo-03",
+      "markerIndex": 2,
+      "replayStartSec": 120.858492,
+      "replayEndSec": 137.357072,
+      "narrationText": "파일을 이동하기 전에 미리보기를 실행합니다. 실제로 복사하지 않고 변경될 내용만 정확히 보여줍니다. 확실하지 않을 때는 항상 미리보기를 먼저 실행하세요.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-work-with-repo/tutorial-work-with-repo-03.899cde50.mp3",
+      "audioDurationSec": 12.120816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.36,
+          "startChar": 9,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.16,
+          "startChar": 12,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.8,
+          "startChar": 18,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.0,
+          "startChar": 25,
+          "endChar": 28
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.56,
+          "startChar": 29,
+          "endChar": 33
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.04,
+          "startChar": 34,
+          "endChar": 36
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.76,
+          "startChar": 37,
+          "endChar": 40
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.32,
+          "startChar": 41,
+          "endChar": 44
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.8,
+          "startChar": 45,
+          "endChar": 48
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.52,
+          "startChar": 49,
+          "endChar": 54
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.64,
+          "startChar": 56,
+          "endChar": 60
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.8,
+          "startChar": 61,
+          "endChar": 63
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.2,
+          "startChar": 64,
+          "endChar": 66
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 10.0,
+          "startChar": 67,
+          "endChar": 69
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 11.04,
+          "startChar": 70,
+          "endChar": 75
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.36,
+          "startChar": 76,
+          "endChar": 78
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 12.0,
+          "startChar": 79,
+          "endChar": 84
+        }
+      ]
+    },
+    {
+      "id": "tutorial-work-with-repo-04",
+      "markerIndex": 3,
+      "replayStartSec": 137.357072,
+      "replayEndSec": 192.201374,
+      "narrationText": "이제 실제 업로드를 실행합니다. 동기화 업로드 명령은 rsync 델타 압축을 사용하여 SSH를 통해 노트북에서 저장소로 파일을 이동합니다. tunnel, term, sync. 이 세 가지 명령이 일상적인 작업을 모두 커버합니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-work-with-repo/tutorial-work-with-repo-04.1307c094.mp3",
+      "audioDurationSec": 16.927347,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.88,
+          "startChar": 3,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.44,
+          "startChar": 6,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.08,
+          "startChar": 11,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.72,
+          "startChar": 18,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 22,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.68,
+          "startChar": 26,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.8,
+          "startChar": 30,
+          "endChar": 35
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.36,
+          "startChar": 48,
+          "endChar": 52
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.76,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.72,
+          "startChar": 56,
+          "endChar": 61
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 9.36,
+          "startChar": 62,
+          "endChar": 66
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.84,
+          "startChar": 67,
+          "endChar": 70
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.48,
+          "startChar": 71,
+          "endChar": 76
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.28,
+          "startChar": 78,
+          "endChar": 84
+        },
+        {
+          "startSec": 13.04,
+          "endSec": 13.28,
+          "startChar": 98,
+          "endChar": 99
+        },
+        {
+          "startSec": 13.28,
+          "endSec": 13.44,
+          "startChar": 100,
+          "endChar": 101
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.68,
+          "startChar": 102,
+          "endChar": 104
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 14.4,
+          "startChar": 105,
+          "endChar": 108
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 15.28,
+          "startChar": 109,
+          "endChar": 113
+        },
+        {
+          "startSec": 15.28,
+          "endSec": 15.68,
+          "startChar": 114,
+          "endChar": 117
+        },
+        {
+          "startSec": 15.68,
+          "endSec": 16.16,
+          "startChar": 118,
+          "endChar": 120
+        },
+        {
+          "startSec": 16.16,
+          "endSec": 16.8,
+          "startChar": 121,
+          "endChar": 126
+        }
+      ]
+    }
+  ]
+}

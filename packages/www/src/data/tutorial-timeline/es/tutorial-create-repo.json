@@ -16,7 +16,7 @@
       "replayEndSec": 62.567023,
       "narrationText": "Vamos a crear un repositorio cifrado de 2 gigabytes en el servidor. Un repositorio es un único archivo cifrado en reposo. Al montarse, se convierte en una carpeta con su propio Docker daemon y sus propios datos de aplicación, completamente aislado de todo lo demás en el servidor.",
       "audioSrc": "/assets/tutorials/audio/es/tutorial-create-repo/tutorial-create-repo-01.14f8b938.mp3",
-      "audioDurationSec": 20.506122,
+      "audioDurationSec": 19.487347,
       "wordTimings": [
         {
           "startSec": 0.08,
@@ -26,24 +26,24 @@
         },
         {
           "startSec": 0.32,
-          "endSec": 0.4,
+          "endSec": 0.48,
           "startChar": 6,
           "endChar": 7
         },
         {
-          "startSec": 0.4,
+          "startSec": 0.48,
           "endSec": 0.8,
           "startChar": 8,
           "endChar": 13
         },
         {
           "startSec": 0.8,
-          "endSec": 0.96,
+          "endSec": 1.04,
           "startChar": 14,
           "endChar": 16
         },
         {
-          "startSec": 0.96,
+          "startSec": 1.04,
           "endSec": 1.76,
           "startChar": 17,
           "endChar": 28
@@ -56,253 +56,253 @@
         },
         {
           "startSec": 2.32,
-          "endSec": 2.56,
+          "endSec": 2.48,
           "startChar": 37,
           "endChar": 39
         },
         {
-          "startSec": 2.56,
-          "endSec": 3.2,
+          "startSec": 2.48,
+          "endSec": 3.04,
           "startChar": 40,
           "endChar": 41
         },
         {
-          "startSec": 3.2,
-          "endSec": 3.52,
+          "startSec": 3.04,
+          "endSec": 3.44,
           "startChar": 42,
           "endChar": 51
         },
         {
-          "startSec": 3.52,
-          "endSec": 3.68,
+          "startSec": 3.44,
+          "endSec": 3.52,
           "startChar": 52,
           "endChar": 54
         },
         {
-          "startSec": 3.68,
-          "endSec": 3.84,
+          "startSec": 3.52,
+          "endSec": 3.68,
           "startChar": 55,
           "endChar": 57
         },
         {
-          "startSec": 3.84,
-          "endSec": 4.48,
+          "startSec": 3.68,
+          "endSec": 4.32,
           "startChar": 58,
           "endChar": 66
         },
         {
-          "startSec": 5.04,
-          "endSec": 5.2,
+          "startSec": 4.8,
+          "endSec": 4.96,
           "startChar": 68,
           "endChar": 70
         },
         {
-          "startSec": 5.2,
-          "endSec": 6.08,
+          "startSec": 4.96,
+          "endSec": 5.76,
           "startChar": 71,
           "endChar": 82
         },
         {
-          "startSec": 6.4,
-          "endSec": 6.56,
+          "startSec": 5.76,
+          "endSec": 5.92,
           "startChar": 83,
           "endChar": 85
         },
         {
-          "startSec": 6.56,
-          "endSec": 6.64,
+          "startSec": 5.92,
+          "endSec": 6.16,
           "startChar": 86,
           "endChar": 88
         },
         {
-          "startSec": 6.64,
-          "endSec": 6.96,
+          "startSec": 6.24,
+          "endSec": 6.64,
           "startChar": 89,
           "endChar": 94
         },
         {
-          "startSec": 6.96,
-          "endSec": 7.44,
+          "startSec": 6.72,
+          "endSec": 7.12,
           "startChar": 95,
           "endChar": 102
         },
         {
-          "startSec": 7.44,
-          "endSec": 8.08,
+          "startSec": 7.12,
+          "endSec": 7.68,
           "startChar": 103,
           "endChar": 110
         },
         {
-          "startSec": 8.08,
-          "endSec": 8.24,
+          "startSec": 7.68,
+          "endSec": 7.76,
           "startChar": 111,
           "endChar": 113
         },
         {
-          "startSec": 8.24,
-          "endSec": 8.88,
+          "startSec": 7.76,
+          "endSec": 8.32,
           "startChar": 114,
           "endChar": 120
         },
         {
-          "startSec": 9.52,
-          "endSec": 9.68,
+          "startSec": 8.8,
+          "endSec": 8.96,
           "startChar": 122,
           "endChar": 124
         },
         {
-          "startSec": 9.68,
-          "endSec": 10.4,
+          "startSec": 8.96,
+          "endSec": 9.6,
           "startChar": 125,
           "endChar": 133
         },
         {
-          "startSec": 10.72,
-          "endSec": 10.88,
+          "startSec": 9.92,
+          "endSec": 10.08,
           "startChar": 135,
           "endChar": 137
         },
         {
-          "startSec": 10.88,
-          "endSec": 11.36,
+          "startSec": 10.08,
+          "endSec": 10.64,
           "startChar": 138,
           "endChar": 147
         },
         {
-          "startSec": 11.44,
-          "endSec": 11.52,
+          "startSec": 10.64,
+          "endSec": 10.72,
           "startChar": 148,
           "endChar": 150
         },
         {
-          "startSec": 11.52,
-          "endSec": 11.68,
+          "startSec": 10.72,
+          "endSec": 10.88,
           "startChar": 151,
           "endChar": 154
         },
         {
-          "startSec": 11.68,
-          "endSec": 12.32,
+          "startSec": 10.88,
+          "endSec": 11.36,
           "startChar": 155,
           "endChar": 162
         },
         {
-          "startSec": 12.32,
-          "endSec": 12.56,
+          "startSec": 11.36,
+          "endSec": 11.68,
           "startChar": 163,
           "endChar": 166
         },
         {
-          "startSec": 12.56,
-          "endSec": 12.88,
+          "startSec": 11.68,
+          "endSec": 11.84,
           "startChar": 167,
           "endChar": 169
         },
         {
-          "startSec": 12.88,
-          "endSec": 13.28,
+          "startSec": 11.84,
+          "endSec": 12.4,
           "startChar": 170,
           "endChar": 176
         },
         {
-          "startSec": 13.28,
-          "endSec": 13.68,
+          "startSec": 12.4,
+          "endSec": 12.88,
           "startChar": 177,
           "endChar": 183
         },
         {
-          "startSec": 13.68,
-          "endSec": 14.16,
+          "startSec": 12.88,
+          "endSec": 13.44,
           "startChar": 184,
           "endChar": 190
         },
         {
-          "startSec": 14.56,
-          "endSec": 14.8,
+          "startSec": 13.44,
+          "endSec": 13.68,
           "startChar": 191,
           "endChar": 192
         },
         {
-          "startSec": 14.8,
-          "endSec": 15.04,
+          "startSec": 13.68,
+          "endSec": 13.92,
           "startChar": 193,
           "endChar": 196
         },
         {
-          "startSec": 15.04,
-          "endSec": 15.36,
+          "startSec": 13.92,
+          "endSec": 14.4,
           "startChar": 197,
           "endChar": 204
         },
         {
-          "startSec": 15.36,
-          "endSec": 15.76,
+          "startSec": 14.4,
+          "endSec": 14.72,
           "startChar": 205,
           "endChar": 210
         },
         {
-          "startSec": 15.76,
-          "endSec": 15.84,
+          "startSec": 14.72,
+          "endSec": 14.88,
           "startChar": 211,
           "endChar": 213
         },
         {
-          "startSec": 15.84,
-          "endSec": 16.56,
+          "startSec": 14.88,
+          "endSec": 15.6,
           "startChar": 214,
           "endChar": 224
         },
         {
-          "startSec": 16.88,
-          "endSec": 17.76,
+          "startSec": 16.24,
+          "endSec": 16.96,
           "startChar": 226,
           "endChar": 239
         },
         {
-          "startSec": 17.76,
-          "endSec": 18.32,
+          "startSec": 16.96,
+          "endSec": 17.52,
           "startChar": 240,
           "endChar": 247
         },
         {
-          "startSec": 18.32,
-          "endSec": 18.56,
+          "startSec": 17.52,
+          "endSec": 17.76,
           "startChar": 248,
           "endChar": 250
         },
         {
-          "startSec": 18.56,
-          "endSec": 18.88,
+          "startSec": 17.76,
+          "endSec": 18.08,
           "startChar": 251,
           "endChar": 255
         },
         {
-          "startSec": 18.88,
-          "endSec": 18.96,
+          "startSec": 18.08,
+          "endSec": 18.16,
           "startChar": 256,
           "endChar": 258
         },
         {
-          "startSec": 18.96,
-          "endSec": 19.52,
+          "startSec": 18.16,
+          "endSec": 18.64,
           "startChar": 259,
           "endChar": 264
         },
         {
-          "startSec": 19.6,
-          "endSec": 19.76,
+          "startSec": 18.64,
+          "endSec": 18.72,
           "startChar": 265,
           "endChar": 267
         },
         {
-          "startSec": 19.76,
-          "endSec": 19.84,
+          "startSec": 18.72,
+          "endSec": 18.88,
           "startChar": 268,
           "endChar": 270
         },
         {
-          "startSec": 19.84,
-          "endSec": 20.48,
+          "startSec": 18.88,
+          "endSec": 19.36,
           "startChar": 271,
           "endChar": 279
         }
@@ -315,7 +315,7 @@
       "replayEndSec": 86.833369,
       "narrationText": "Listamos los repositorios de la máquina para confirmar que el nuevo está registrado. Desde aquí, el repo puede abrirse en VS Code, desplegarse, recibir un fork o tener un backup, todo desde tu laptop.",
       "audioSrc": "/assets/tutorials/audio/es/tutorial-create-repo/tutorial-create-repo-02.43585ef3.mp3",
-      "audioDurationSec": 16.84898,
+      "audioDurationSec": 16.039184,
       "wordTimings": [
         {
           "startSec": 0.08,
@@ -325,199 +325,199 @@
         },
         {
           "startSec": 0.64,
-          "endSec": 0.88,
+          "endSec": 0.96,
           "startChar": 9,
           "endChar": 12
         },
         {
-          "startSec": 0.88,
-          "endSec": 2.08,
+          "startSec": 0.96,
+          "endSec": 1.92,
           "startChar": 13,
           "endChar": 25
         },
         {
-          "startSec": 2.08,
-          "endSec": 2.16,
+          "startSec": 1.92,
+          "endSec": 2.0,
           "startChar": 26,
           "endChar": 28
         },
         {
-          "startSec": 2.16,
-          "endSec": 2.48,
+          "startSec": 2.0,
+          "endSec": 2.16,
           "startChar": 29,
           "endChar": 31
         },
         {
-          "startSec": 2.48,
-          "endSec": 3.12,
+          "startSec": 2.16,
+          "endSec": 2.72,
           "startChar": 32,
           "endChar": 39
         },
         {
-          "startSec": 3.12,
-          "endSec": 3.52,
+          "startSec": 3.04,
+          "endSec": 3.2,
           "startChar": 40,
           "endChar": 44
         },
         {
-          "startSec": 3.52,
-          "endSec": 4.24,
+          "startSec": 3.2,
+          "endSec": 3.92,
           "startChar": 45,
           "endChar": 54
         },
         {
-          "startSec": 4.24,
-          "endSec": 4.56,
+          "startSec": 3.92,
+          "endSec": 4.0,
           "startChar": 55,
           "endChar": 58
         },
         {
-          "startSec": 4.56,
-          "endSec": 4.64,
+          "startSec": 4.0,
+          "endSec": 4.16,
           "startChar": 59,
           "endChar": 61
         },
         {
-          "startSec": 4.64,
-          "endSec": 5.04,
+          "startSec": 4.16,
+          "endSec": 4.48,
           "startChar": 62,
           "endChar": 67
         },
         {
-          "startSec": 5.04,
-          "endSec": 5.36,
+          "startSec": 4.48,
+          "endSec": 4.8,
           "startChar": 68,
           "endChar": 72
         },
         {
-          "startSec": 5.36,
-          "endSec": 6.24,
+          "startSec": 4.8,
+          "endSec": 5.68,
           "startChar": 73,
           "endChar": 83
         },
         {
-          "startSec": 6.88,
-          "endSec": 7.2,
+          "startSec": 6.32,
+          "endSec": 6.8,
           "startChar": 85,
           "endChar": 90
         },
         {
-          "startSec": 7.2,
-          "endSec": 7.68,
+          "startSec": 6.8,
+          "endSec": 7.28,
           "startChar": 91,
           "endChar": 95
         },
         {
-          "startSec": 8.08,
-          "endSec": 8.24,
+          "startSec": 7.68,
+          "endSec": 7.92,
           "startChar": 97,
           "endChar": 99
         },
         {
-          "startSec": 8.24,
-          "endSec": 8.72,
+          "startSec": 7.92,
+          "endSec": 8.32,
           "startChar": 100,
           "endChar": 104
         },
         {
-          "startSec": 8.72,
-          "endSec": 9.04,
+          "startSec": 8.32,
+          "endSec": 8.64,
           "startChar": 105,
           "endChar": 110
         },
         {
-          "startSec": 9.04,
-          "endSec": 9.76,
+          "startSec": 8.64,
+          "endSec": 9.2,
           "startChar": 111,
           "endChar": 118
         },
         {
-          "startSec": 9.76,
-          "endSec": 10.08,
+          "startSec": 9.2,
+          "endSec": 9.36,
           "startChar": 119,
           "endChar": 121
         },
         {
-          "startSec": 10.08,
-          "endSec": 10.4,
+          "startSec": 9.36,
+          "endSec": 9.68,
           "startChar": 122,
           "endChar": 124
         },
         {
-          "startSec": 10.4,
-          "endSec": 10.8,
+          "startSec": 9.68,
+          "endSec": 10.08,
           "startChar": 125,
           "endChar": 129
         },
         {
-          "startSec": 11.36,
-          "endSec": 12.24,
+          "startSec": 10.56,
+          "endSec": 11.36,
           "startChar": 131,
           "endChar": 142
         },
         {
-          "startSec": 12.24,
-          "endSec": 12.72,
+          "startSec": 11.6,
+          "endSec": 12.16,
           "startChar": 144,
           "endChar": 151
         },
         {
-          "startSec": 12.72,
-          "endSec": 12.88,
+          "startSec": 12.16,
+          "endSec": 12.32,
           "startChar": 152,
           "endChar": 154
         },
         {
-          "startSec": 12.88,
-          "endSec": 13.36,
+          "startSec": 12.32,
+          "endSec": 12.8,
           "startChar": 155,
           "endChar": 159
         },
         {
-          "startSec": 13.68,
-          "endSec": 13.76,
+          "startSec": 13.12,
+          "endSec": 13.2,
           "startChar": 160,
           "endChar": 161
         },
         {
-          "startSec": 13.76,
-          "endSec": 14.16,
+          "startSec": 13.2,
+          "endSec": 13.52,
           "startChar": 162,
           "endChar": 167
         },
         {
-          "startSec": 14.16,
-          "endSec": 14.32,
+          "startSec": 13.52,
+          "endSec": 13.68,
           "startChar": 168,
           "endChar": 170
         },
         {
-          "startSec": 14.32,
-          "endSec": 14.8,
+          "startSec": 13.68,
+          "endSec": 14.16,
           "startChar": 171,
           "endChar": 177
         },
         {
-          "startSec": 15.28,
-          "endSec": 15.6,
+          "startSec": 14.64,
+          "endSec": 14.96,
           "startChar": 179,
           "endChar": 183
         },
         {
-          "startSec": 15.6,
-          "endSec": 16.0,
+          "startSec": 14.96,
+          "endSec": 15.36,
           "startChar": 184,
           "endChar": 189
         },
         {
-          "startSec": 16.0,
-          "endSec": 16.16,
+          "startSec": 15.36,
+          "endSec": 15.52,
           "startChar": 190,
           "endChar": 192
         },
         {
-          "startSec": 16.16,
-          "endSec": 16.8,
+          "startSec": 15.52,
+          "endSec": 15.92,
           "startChar": 193,
           "endChar": 199
         }

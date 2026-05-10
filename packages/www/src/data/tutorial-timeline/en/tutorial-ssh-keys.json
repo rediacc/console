@@ -16,7 +16,7 @@
       "replayEndSec": 8.723209,
       "narrationText": "Step one. We'll generate a new ed25519 SSH key. ed25519 is the modern default: small, fast, well-supported. You only need to do this once across every server you'll ever add.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-01.5021eff1.mp3",
-      "audioDurationSec": 15.725714,
+      "audioDurationSec": 13.00898,
       "wordTimings": [
         {
           "startSec": 0.08,
@@ -31,152 +31,152 @@
           "endChar": 8
         },
         {
-          "startSec": 1.04,
-          "endSec": 1.2,
+          "startSec": 0.96,
+          "endSec": 1.12,
           "startChar": 10,
           "endChar": 15
         },
         {
-          "startSec": 1.2,
-          "endSec": 1.68,
+          "startSec": 1.12,
+          "endSec": 1.52,
           "startChar": 16,
           "endChar": 24
         },
         {
-          "startSec": 1.68,
-          "endSec": 2,
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 25,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.84,
           "startChar": 27,
           "endChar": 30
         },
         {
-          "startSec": 2,
-          "endSec": 4.08,
+          "startSec": 1.84,
+          "endSec": 2.32,
           "startChar": 31,
           "endChar": 38
         },
         {
-          "startSec": 4.08,
-          "endSec": 5.28,
+          "startSec": 2.32,
+          "endSec": 4.16,
           "startChar": 39,
           "endChar": 42
         },
         {
-          "startSec": 5.76,
-          "endSec": 7.12,
+          "startSec": 4.64,
+          "endSec": 5.2,
           "startChar": 48,
           "endChar": 55
         },
         {
-          "startSec": 7.6,
-          "endSec": 7.76,
+          "startSec": 6.16,
+          "endSec": 6.24,
           "startChar": 56,
           "endChar": 58
         },
         {
-          "startSec": 7.76,
-          "endSec": 7.84,
+          "startSec": 6.24,
+          "endSec": 6.32,
           "startChar": 59,
           "endChar": 62
         },
         {
-          "startSec": 7.84,
-          "endSec": 8.24,
+          "startSec": 6.32,
+          "endSec": 6.72,
           "startChar": 63,
           "endChar": 69
         },
         {
-          "startSec": 8.24,
-          "endSec": 8.72,
+          "startSec": 6.72,
+          "endSec": 7.12,
           "startChar": 70,
           "endChar": 77
         },
         {
-          "startSec": 9.2,
-          "endSec": 9.68,
+          "startSec": 7.52,
+          "endSec": 8.0,
           "startChar": 79,
           "endChar": 84
         },
         {
-          "startSec": 10.08,
-          "endSec": 10.48,
+          "startSec": 8.08,
+          "endSec": 8.56,
           "startChar": 86,
           "endChar": 90
         },
         {
-          "startSec": 12,
-          "endSec": 12.16,
+          "startSec": 9.6,
+          "endSec": 9.76,
           "startChar": 108,
           "endChar": 111
         },
         {
-          "startSec": 12.16,
-          "endSec": 12.4,
+          "startSec": 9.76,
+          "endSec": 9.92,
           "startChar": 112,
           "endChar": 116
         },
         {
-          "startSec": 12.4,
-          "endSec": 12.64,
+          "startSec": 9.92,
+          "endSec": 10.24,
           "startChar": 117,
           "endChar": 121
         },
         {
-          "startSec": 12.64,
-          "endSec": 12.72,
-          "startChar": 122,
-          "endChar": 124
-        },
-        {
-          "startSec": 12.72,
-          "endSec": 12.88,
+          "startSec": 10.24,
+          "endSec": 10.48,
           "startChar": 125,
           "endChar": 127
         },
         {
-          "startSec": 12.88,
-          "endSec": 13.12,
+          "startSec": 10.48,
+          "endSec": 10.72,
           "startChar": 128,
           "endChar": 132
         },
         {
-          "startSec": 13.12,
-          "endSec": 13.52,
+          "startSec": 10.72,
+          "endSec": 11.04,
           "startChar": 133,
           "endChar": 137
         },
         {
-          "startSec": 13.52,
-          "endSec": 13.92,
+          "startSec": 11.04,
+          "endSec": 11.44,
           "startChar": 138,
           "endChar": 144
         },
         {
-          "startSec": 14,
-          "endSec": 14.32,
+          "startSec": 11.6,
+          "endSec": 11.84,
           "startChar": 145,
           "endChar": 150
         },
         {
-          "startSec": 14.32,
-          "endSec": 14.72,
+          "startSec": 11.84,
+          "endSec": 12.24,
           "startChar": 151,
           "endChar": 157
         },
         {
-          "startSec": 14.72,
-          "endSec": 15.04,
+          "startSec": 12.24,
+          "endSec": 12.48,
           "startChar": 158,
           "endChar": 164
         },
         {
-          "startSec": 15.04,
-          "endSec": 15.28,
+          "startSec": 12.48,
+          "endSec": 12.64,
           "startChar": 165,
           "endChar": 169
         },
         {
-          "startSec": 15.28,
-          "endSec": 15.6,
+          "startSec": 12.64,
+          "endSec": 12.88,
           "startChar": 170,
           "endChar": 173
         }
@@ -189,7 +189,7 @@
       "replayEndSec": 16.253995,
       "narrationText": "Step two. Copy the public key to your server with ssh-copy-id. Your server password is asked one last time. After this, password authentication is no longer required.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-02.16d462fd.mp3",
-      "audioDurationSec": 11.31102,
+      "audioDurationSec": 11.650612,
       "wordTimings": [
         {
           "startSec": 0.08,
@@ -198,64 +198,58 @@
           "endChar": 4
         },
         {
-          "startSec": 0.32,
-          "endSec": 0.72,
-          "startChar": 5,
-          "endChar": 8
-        },
-        {
-          "startSec": 1.2,
-          "endSec": 1.44,
+          "startSec": 1.04,
+          "endSec": 1.28,
           "startChar": 10,
           "endChar": 14
         },
         {
-          "startSec": 1.44,
-          "endSec": 1.52,
+          "startSec": 1.28,
+          "endSec": 1.44,
           "startChar": 15,
           "endChar": 18
         },
         {
-          "startSec": 1.52,
-          "endSec": 1.84,
+          "startSec": 1.44,
+          "endSec": 1.76,
           "startChar": 19,
           "endChar": 25
         },
         {
-          "startSec": 1.84,
-          "endSec": 2.08,
+          "startSec": 1.76,
+          "endSec": 2.0,
           "startChar": 26,
           "endChar": 29
         },
         {
-          "startSec": 2.08,
-          "endSec": 2.24,
+          "startSec": 2.0,
+          "endSec": 2.08,
           "startChar": 30,
           "endChar": 32
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.4,
+          "startSec": 2.08,
+          "endSec": 2.24,
           "startChar": 33,
           "endChar": 37
         },
         {
-          "startSec": 2.4,
-          "endSec": 2.88,
+          "startSec": 2.24,
+          "endSec": 2.72,
           "startChar": 38,
           "endChar": 44
         },
         {
-          "startSec": 2.88,
-          "endSec": 3.2,
+          "startSec": 2.72,
+          "endSec": 2.96,
           "startChar": 45,
           "endChar": 49
         },
         {
-          "startSec": 5.04,
-          "endSec": 5.44,
-          "startChar": 68,
-          "endChar": 74
+          "startSec": 4.0,
+          "endSec": 4.32,
+          "startChar": 63,
+          "endChar": 67
         },
         {
           "startSec": 5.44,
@@ -271,73 +265,73 @@
         },
         {
           "startSec": 6.08,
-          "endSec": 6.32,
+          "endSec": 6.4,
           "startChar": 87,
           "endChar": 92
         },
         {
           "startSec": 6.4,
-          "endSec": 6.64,
+          "endSec": 6.72,
           "startChar": 93,
           "endChar": 96
         },
         {
-          "startSec": 6.64,
-          "endSec": 6.88,
+          "startSec": 6.72,
+          "endSec": 6.96,
           "startChar": 97,
           "endChar": 101
         },
         {
-          "startSec": 6.88,
-          "endSec": 7.28,
+          "startSec": 7.04,
+          "endSec": 7.36,
           "startChar": 102,
           "endChar": 106
         },
         {
-          "startSec": 7.68,
-          "endSec": 8,
+          "startSec": 7.76,
+          "endSec": 8.0,
           "startChar": 108,
           "endChar": 113
         },
         {
-          "startSec": 8,
+          "startSec": 8.0,
           "endSec": 8.32,
           "startChar": 114,
           "endChar": 118
         },
         {
-          "startSec": 8.72,
-          "endSec": 9.2,
+          "startSec": 8.64,
+          "endSec": 9.12,
           "startChar": 120,
           "endChar": 128
         },
         {
-          "startSec": 9.2,
-          "endSec": 9.92,
+          "startSec": 9.12,
+          "endSec": 10.08,
           "startChar": 129,
           "endChar": 143
         },
         {
-          "startSec": 9.92,
-          "endSec": 10.08,
+          "startSec": 10.08,
+          "endSec": 10.32,
           "startChar": 144,
           "endChar": 146
         },
         {
-          "startSec": 10.08,
-          "endSec": 10.32,
+          "startSec": 10.32,
+          "endSec": 10.56,
           "startChar": 147,
           "endChar": 149
         },
         {
-          "startSec": 10.32,
-          "endSec": 10.64,
+          "startSec": 10.64,
+          "endSec": 10.96,
           "startChar": 150,
           "endChar": 156
         },
         {
-          "startSec": 10.64,
-          "endSec": 11.28,
+          "startSec": 10.96,
+          "endSec": 11.52,
           "startChar": 157,
           "endChar": 165
         }
@@ -349,8 +343,8 @@
       "replayStartSec": 16.253995,
       "replayEndSec": 24.863027,
       "narrationText": "Step three. Now we register the key with the CLI. From here on, every command authenticates with this key.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-03.eeb02363.mp3",
-      "audioDurationSec": 7.392653,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-03.b826ab17.mp3",
+      "audioDurationSec": 6.922449,
       "wordTimings": [
         {
           "startSec": 0.08,
@@ -359,7 +353,7 @@
           "endChar": 4
         },
         {
-          "startSec": 0.4,
+          "startSec": 0.32,
           "endSec": 0.72,
           "startChar": 5,
           "endChar": 10
@@ -378,91 +372,91 @@
         },
         {
           "startSec": 1.6,
-          "endSec": 2,
+          "endSec": 2.08,
           "startChar": 19,
           "endChar": 27
         },
         {
-          "startSec": 2,
-          "endSec": 2.08,
+          "startSec": 2.08,
+          "endSec": 2.16,
           "startChar": 28,
           "endChar": 31
         },
         {
-          "startSec": 2.08,
-          "endSec": 2.4,
+          "startSec": 2.16,
+          "endSec": 2.56,
           "startChar": 32,
           "endChar": 35
         },
         {
-          "startSec": 2.4,
-          "endSec": 2.56,
+          "startSec": 2.56,
+          "endSec": 2.72,
           "startChar": 36,
           "endChar": 40
         },
         {
           "startSec": 2.72,
-          "endSec": 3.44,
+          "endSec": 2.8,
           "startChar": 41,
           "endChar": 44
         },
         {
-          "startSec": 3.68,
+          "startSec": 2.8,
+          "endSec": 3.44,
+          "startChar": 45,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.76,
           "endSec": 3.92,
-          "startChar": 46,
-          "endChar": 50
+          "startChar": 50,
+          "endChar": 54
         },
         {
           "startSec": 3.92,
           "endSec": 4.08,
-          "startChar": 51,
-          "endChar": 55
+          "startChar": 55,
+          "endChar": 59
         },
         {
           "startSec": 4.08,
           "endSec": 4.4,
-          "startChar": 56,
-          "endChar": 58
-        },
-        {
-          "startSec": 4.64,
-          "endSec": 4.96,
           "startChar": 60,
-          "endChar": 65
+          "endChar": 62
         },
         {
-          "startSec": 4.96,
-          "endSec": 5.44,
-          "startChar": 66,
+          "startSec": 4.8,
+          "endSec": 5.04,
+          "startChar": 64,
           "endChar": 69
         },
         {
-          "startSec": 5.44,
-          "endSec": 5.84,
+          "startSec": 5.04,
+          "endSec": 5.44,
           "startChar": 70,
           "endChar": 77
         },
         {
-          "startSec": 5.84,
-          "endSec": 6.56,
+          "startSec": 5.44,
+          "endSec": 6.16,
           "startChar": 78,
           "endChar": 91
         },
         {
-          "startSec": 6.56,
-          "endSec": 6.8,
+          "startSec": 6.16,
+          "endSec": 6.32,
           "startChar": 92,
           "endChar": 96
         },
         {
-          "startSec": 6.8,
-          "endSec": 6.96,
+          "startSec": 6.32,
+          "endSec": 6.56,
           "startChar": 97,
           "endChar": 101
         },
         {
-          "startSec": 6.96,
-          "endSec": 7.28,
+          "startSec": 6.56,
+          "endSec": 6.88,
           "startChar": 102,
           "endChar": 105
         }
@@ -475,71 +469,71 @@
       "replayEndSec": 32.617101,
       "narrationText": "Let's confirm the configuration shows the key path was stored correctly.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-04.510bb710.mp3",
-      "audioDurationSec": 4.04898,
+      "audioDurationSec": 3.970612,
       "wordTimings": [
         {
           "startSec": 0.08,
-          "endSec": 0.32,
+          "endSec": 0.24,
           "startChar": 0,
           "endChar": 5
         },
         {
-          "startSec": 0.32,
-          "endSec": 0.8,
+          "startSec": 0.24,
+          "endSec": 0.72,
           "startChar": 6,
           "endChar": 13
         },
         {
-          "startSec": 0.8,
-          "endSec": 0.88,
+          "startSec": 0.72,
+          "endSec": 0.8,
           "startChar": 14,
           "endChar": 17
         },
         {
-          "startSec": 0.88,
-          "endSec": 1.76,
+          "startSec": 0.8,
+          "endSec": 1.68,
           "startChar": 18,
           "endChar": 31
         },
         {
-          "startSec": 1.76,
-          "endSec": 2.24,
+          "startSec": 1.68,
+          "endSec": 2.08,
           "startChar": 32,
           "endChar": 37
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.32,
+          "startSec": 2.08,
+          "endSec": 2.16,
           "startChar": 38,
           "endChar": 41
         },
         {
-          "startSec": 2.32,
-          "endSec": 2.56,
+          "startSec": 2.16,
+          "endSec": 2.32,
           "startChar": 42,
           "endChar": 45
         },
         {
-          "startSec": 2.56,
-          "endSec": 2.88,
+          "startSec": 2.32,
+          "endSec": 2.72,
           "startChar": 46,
           "endChar": 50
         },
         {
-          "startSec": 2.88,
-          "endSec": 3.04,
+          "startSec": 2.72,
+          "endSec": 2.88,
           "startChar": 51,
           "endChar": 54
         },
         {
-          "startSec": 3.04,
-          "endSec": 3.44,
+          "startSec": 2.88,
+          "endSec": 3.28,
           "startChar": 55,
           "endChar": 61
         },
         {
-          "startSec": 3.44,
-          "endSec": 4,
+          "startSec": 3.28,
+          "endSec": 3.84,
           "startChar": 62,
           "endChar": 71
         }
