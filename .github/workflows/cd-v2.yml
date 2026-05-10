@@ -542,8 +542,17 @@ jobs:
   deploy-marketing-stable:
     name: Deploy stable Marketing (hotfix)
     needs: [init, publish, smoke-test, tag-and-release]
+    # tag-and-release is correctly skipped in retry/workers-only mode (the
+    # tag already exists), so we cannot use bare success() here -- a skipped
+    # need makes success() false, which silently skips the stable deploy.
+    # Allow tag-and-release to be either success or skipped; gate the rest
+    # explicitly so a real upstream failure still blocks the deploy.
     if: >-
-      success() &&
+      always() &&
+      needs.init.result == 'success' &&
+      needs.publish.result == 'success' &&
+      needs.smoke-test.result == 'success' &&
+      (needs.tag-and-release.result == 'success' || needs.tag-and-release.result == 'skipped') &&
       needs.init.outputs.skip_release != 'true' &&
       inputs.publish_stable == true
     uses: ./.github/workflows/cd-deploy-worker.yml
@@ -571,8 +580,13 @@ jobs:
   deploy-account-stable:
     name: Deploy stable Account (hotfix, all regions)
     needs: [init, publish, smoke-test, tag-and-release]
+    # See deploy-marketing-stable above for why we don't use bare success().
     if: >-
-      success() &&
+      always() &&
+      needs.init.result == 'success' &&
+      needs.publish.result == 'success' &&
+      needs.smoke-test.result == 'success' &&
+      (needs.tag-and-release.result == 'success' || needs.tag-and-release.result == 'skipped') &&
       needs.init.outputs.skip_release != 'true' &&
       inputs.publish_stable == true
     uses: ./.github/workflows/cd-deploy-account.yml
