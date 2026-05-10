@@ -1068,6 +1068,20 @@ cleanup_r2() {
     while IFS= read -r t; do
         [[ -n "$t" ]] && tag_set["$t"]=1
     done <<<"$git_tags"
+    # Pre-contract floor: tags strictly older than the oldest cli sentinel
+    # predate the contract (or had their sentinel scrubbed before lifecycle
+    # could re-seal them) — drift on those is not actionable. We derive the
+    # floor once from cli sentinels and apply it to both cli and desktop
+    # passes below; the validator's rsv_pre_contract_floor is the single
+    # source of truth.
+    local cli_sentinels_list pre_contract_floor
+    cli_sentinels_list="$(rsv_list_sentinels cli)"
+    pre_contract_floor="$(rsv_pre_contract_floor "$cli_sentinels_list")"
+    if [[ -n "$pre_contract_floor" ]]; then
+        log_info "  8d: pre-contract floor = ${pre_contract_floor} (versions below this are grandfathered)"
+    else
+        log_info "  8d: no cli sentinels yet; bijection contract not in effect, all versions in scope"
+    fi
     for dir in "cli" "desktop"; do
         declare -A sentinel_set=()
         while IFS= read -r s; do
@@ -1108,15 +1122,15 @@ cleanup_r2() {
                 orphan_ver_deleted=$((orphan_ver_deleted + 1))
                 continue
             fi
-            # Grandfather: pre-rollout tags (<= RSV_GRANDFATHER_BEFORE) lack a
-            # `.released` sentinel because the contract was introduced after
-            # them. Drift on those is expected and not actionable. Same logic
-            # as the drift gate (rsv_assert_bijection).
-            if [[ -n "${RSV_GRANDFATHER_BEFORE:-}" ]]; then
-                local newer
-                newer="$(printf '%s\n%s\n' "$RSV_GRANDFATHER_BEFORE" "$ver" | sort -V | tail -1)"
-                if [[ "$ver" == "$RSV_GRANDFATHER_BEFORE" || "$newer" != "$ver" ]]; then
-                    continue # grandfathered; not drift
+            # Pre-contract floor: drift on versions strictly older than the
+            # oldest cli sentinel is not actionable (contract didn't exist or
+            # the sentinel was scrubbed and artifacts are gone). Same logic as
+            # the drift gate (rsv_assert_bijection).
+            if [[ -n "$pre_contract_floor" && "$ver" != "$pre_contract_floor" ]]; then
+                local oldest
+                oldest="$(printf '%s\n%s\n' "$pre_contract_floor" "$ver" | sort -V | head -1)"
+                if [[ "$oldest" != "$pre_contract_floor" ]]; then
+                    continue # below the floor; grandfathered
                 fi
             fi
             # Drift: exactly one of sentinel/tag is present. Do not auto-heal.
