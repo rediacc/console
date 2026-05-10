@@ -10,10 +10,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # shellcheck source=../lib/test-helpers.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
-# Clear the grandfather baseline before sourcing so the production default
-# does not silently exclude versions we use in test fixtures. Individual
-# grandfather cases set the env var explicitly.
-export RSV_GRANDFATHER_BEFORE=""
+# The floor is now data-derived from the cli sentinel list passed to each
+# call (no module-level default), so tests no longer need to clear an env
+# var here. The override-only escape hatch (RSV_GRANDFATHER_BEFORE) is
+# unset by default and individual cases set it explicitly when exercising
+# override semantics.
+unset RSV_GRANDFATHER_BEFORE
 # shellcheck source=../../lib/release-state-validator.sh
 source "$REPO_ROOT/.ci/scripts/lib/release-state-validator.sh"
 
@@ -154,36 +156,70 @@ test_prerelease_tags_ignored() {
     log_pass "prerelease-filtered"
 }
 
-test_grandfather_excludes_old_tags() {
-    log_test "tags <= RSV_GRANDFATHER_BEFORE are excluded (rollout grace)"
-    # Under live config, every pre-rollout tag (v0.9.x, v1.0.0-1.0.4) lacks
-    # the new sentinel. With grandfather=v1.0.4, those drifts must NOT fire,
-    # but a fresh tag (v1.0.5+) without a sentinel still must.
+test_floor_excludes_pre_contract_tags() {
+    log_test "tags older than the oldest cli sentinel are excluded (data-derived floor)"
+    # Mirrors the live shape: pre-contract tags exist (v0.9.5..v1.0.4) but
+    # have no sentinel; the contract first wrote a sentinel at v1.0.5, and
+    # later releases (v1.0.6+) carry both. The floor is auto-derived from
+    # the cli list, so no override is set here.
     local out rc=0
-    out="$(RSV_GRANDFATHER_BEFORE="v1.0.4" rsv_assert_bijection \
-        "" \
-        "" \
-        "$(printf 'v0.9.5\nv1.0.0\nv1.0.4\n')" \
-        "" 2>&1)" || rc=$?
-    assert_exit_code 0 "$rc" "grandfathered tags must not trigger drift"
-    assert_not_contains "$out" "DRIFT v0.9.5" "v0.9.5 is grandfathered"
-    assert_not_contains "$out" "DRIFT v1.0.0" "v1.0.0 is grandfathered"
-    assert_not_contains "$out" "DRIFT v1.0.4" "v1.0.4 (== baseline) is grandfathered"
-    log_pass "grandfather-excludes-old-tags"
+    out="$(run_assert \
+        "$(printf 'v1.0.5\nv1.0.6\n')" \
+        "$(printf 'v1.0.5\nv1.0.6\n')" \
+        "$(printf 'v0.9.5\nv1.0.0\nv1.0.4\nv1.0.5\nv1.0.6\n')")" || rc=$?
+    assert_exit_code 0 "$rc" "pre-contract tags must not trigger drift"
+    assert_not_contains "$out" "DRIFT v0.9.5" "v0.9.5 is below floor"
+    assert_not_contains "$out" "DRIFT v1.0.0" "v1.0.0 is below floor"
+    assert_not_contains "$out" "DRIFT v1.0.4" "v1.0.4 is below floor"
+    assert_contains "$out" "floor: v1.0.5" "OK line surfaces derived floor"
+    log_pass "floor-excludes-pre-contract"
 }
 
-test_grandfather_does_not_mask_post_rollout_drift() {
-    log_test "tags > RSV_GRANDFATHER_BEFORE still subject to bijection"
+test_floor_does_not_mask_post_contract_drift() {
+    log_test "tags at-or-above the derived floor still subject to bijection"
+    # cli sentinels exist for v1.0.5 and v1.0.6; tag v1.0.7 has no
+    # sentinel, so the floor (v1.0.5) does not hide it.
     local out rc=0
-    out="$(RSV_GRANDFATHER_BEFORE="v1.0.4" rsv_assert_bijection \
+    out="$(run_assert \
+        "$(printf 'v1.0.5\nv1.0.6\n')" \
+        "" \
+        "$(printf 'v1.0.5\nv1.0.6\nv1.0.7\n')")" || rc=$?
+    assert_exit_code 1 "$rc" "post-contract drift must still fire"
+    assert_contains "$out" "DRIFT v1.0.7" "v1.0.7 is at-or-above floor; drift fires"
+    assert_not_contains "$out" "DRIFT v1.0.5" "v1.0.5 (== floor) is committed, no drift"
+    log_pass "floor-does-not-mask"
+}
+
+test_no_sentinels_short_circuits() {
+    log_test "no cli sentinels (and no override) → bijection short-circuits to OK"
+    # Fresh dev bucket / pre-rollout state: contract not in effect for any
+    # tag we have. Asserting drift on every tag would be useless noise.
+    local out rc=0
+    out="$(run_assert \
         "" \
         "" \
-        "$(printf 'v1.0.0\nv1.0.5\n')" \
+        "$(printf 'v0.9.5\nv1.0.0\nv1.0.4\n')")" || rc=$?
+    assert_exit_code 0 "$rc" "no-sentinels state is a no-op"
+    assert_contains "$out" "contract not in effect" "diagnostic message present"
+    log_pass "no-sentinels-short-circuits"
+}
+
+test_explicit_override_still_works() {
+    log_test "RSV_GRANDFATHER_BEFORE overrides the data-derived floor"
+    # Operators can pin a synthetic floor for emergency dry-runs or tests.
+    # Here we feed a cli sentinel at v1.0.5 (which would normally derive
+    # floor=v1.0.5) but override the floor up to v1.5.0 — every drift
+    # below v1.5.0 must then be silenced.
+    local out rc=0
+    out="$(RSV_GRANDFATHER_BEFORE="v1.5.0" rsv_assert_bijection \
+        "$(printf 'v1.0.5\n')" \
+        "" \
+        "$(printf 'v1.0.5\nv1.0.6\n')" \
         "" 2>&1)" || rc=$?
-    assert_exit_code 1 "$rc" "post-rollout drift must still fire"
-    assert_contains "$out" "DRIFT v1.0.5" "v1.0.5 is past baseline; drift fires"
-    assert_not_contains "$out" "DRIFT v1.0.0" "v1.0.0 is grandfathered"
-    log_pass "grandfather-does-not-mask"
+    assert_exit_code 0 "$rc" "override pushes floor up; drift below it suppressed"
+    assert_not_contains "$out" "DRIFT v1.0.6" "v1.0.6 < override; not flagged"
+    assert_contains "$out" "floor: v1.5.0" "OK line reflects overridden floor"
+    log_pass "explicit-override"
 }
 
 test_all_committed_passes
@@ -196,7 +232,9 @@ test_desktop_missing_is_fine
 test_in_flight_excluded
 test_in_flight_does_not_mask_other_drift
 test_prerelease_tags_ignored
-test_grandfather_excludes_old_tags
-test_grandfather_does_not_mask_post_rollout_drift
+test_floor_excludes_pre_contract_tags
+test_floor_does_not_mask_post_contract_drift
+test_no_sentinels_short_circuits
+test_explicit_override_still_works
 
 log_pass "all release-state-consistency cases"

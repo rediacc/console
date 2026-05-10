@@ -31,15 +31,18 @@ readonly __RELEASE_STATE_VALIDATOR_SH_SOURCED=1
 RSV_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"
 RSV_SENTINEL_KEY=".released"
 
-# Grandfather: tags <= this baseline predate the sentinel contract and are
-# excluded from the bijection check. The contract was introduced after v1.0.4
-# (PR #459); every prior release was sealed by the older prefix-based guard
-# and has no `.released` marker. v1.0.5 has a desktop sentinel + git tag but
-# never wrote its cli sentinel (incomplete release artefact, not recoverable
-# without rebuilding artifacts that no longer exist), so we bump the cutoff
-# past it to keep the gate clean. Override via RSV_GRANDFATHER_BEFORE if a
-# follow-up backfill seeds sentinels for old tags.
-RSV_GRANDFATHER_BEFORE="${RSV_GRANDFATHER_BEFORE-v1.0.5}"
+# Pre-contract floor: tags strictly older than the oldest CLI sentinel on R2
+# are excluded from the bijection check. The sentinel contract was introduced
+# in PR #459; everything before the first cli sentinel was sealed by the older
+# prefix-based guard and has no `.released` marker.
+#
+# The floor is data-derived at runtime (see rsv_pre_contract_floor /
+# rsv_assert_bijection) so we never need to hand-edit a baseline as releases
+# advance. RSV_GRANDFATHER_BEFORE remains as an OVERRIDE-ONLY escape hatch:
+# tests pin a synthetic floor with it; in production no one should set it.
+# If you find yourself reaching for this knob, the right move is almost
+# always to backfill the missing sentinel via
+# .github/workflows/backfill-release-sentinel.yml instead.
 
 # =============================================================================
 # Live probes (AWS + git)
@@ -120,6 +123,34 @@ rsv_get_sentinel_payload() {
 }
 
 # =============================================================================
+# Pre-contract floor (where the sentinel contract starts)
+# =============================================================================
+
+# Return the oldest CLI sentinel from a newline-separated list, or empty if
+# the list contains no strict-semver entries. Versions strictly older than
+# this floor predate the sentinel contract (or had their sentinels scrubbed
+# before R2 lifecycle could re-seal them) and are excluded from bijection.
+#
+# Why CLI-only: every post-contract release writes the cli sentinel last
+# (see write-release-sentinel.sh). Desktop is optional; git tags include
+# pre-contract history. The cli sentinel is the only signal that
+# unambiguously dates the contract's start.
+#
+# Override via RSV_GRANDFATHER_BEFORE (env). Production should never set it;
+# the override exists for tests and one-off operator dry-runs.
+rsv_pre_contract_floor() {
+    local cli_versions="${1:-}"
+    if [[ -n "${RSV_GRANDFATHER_BEFORE:-}" ]]; then
+        printf '%s\n' "$RSV_GRANDFATHER_BEFORE"
+        return 0
+    fi
+    printf '%s\n' "$cli_versions" |
+        grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+        sort -uV |
+        head -1
+}
+
+# =============================================================================
 # Assertion (pure; no I/O — feed strings)
 # =============================================================================
 
@@ -145,28 +176,39 @@ rsv_assert_bijection() {
     local tag_versions="$3"
     local in_flight="${4:-}"
 
-    # Filter out grandfathered versions (<= RSV_GRANDFATHER_BEFORE).
-    # `sort -V` orders strict-semver tags correctly so we can drop everything
-    # at or below the baseline by comparing each candidate to the sorted list.
-    local grandfather="${RSV_GRANDFATHER_BEFORE:-}"
-    rsv_drop_grandfathered() {
+    # Pre-contract floor: drop every version strictly older than the oldest
+    # CLI sentinel (the canonical first-write of the contract). The floor
+    # itself stays in scope so its own bijection is checked.
+    #
+    # If the override env var is set we honour it (tests pin a synthetic
+    # floor with it). Otherwise the floor is derived from the actual cli
+    # sentinel set we were handed.
+    #
+    # Empty floor means we have neither sentinels nor an override: the
+    # contract isn't in effect for this state at all (e.g. a fresh dev
+    # bucket). Short-circuit to OK so we don't false-positive on every old
+    # tag in repo history.
+    local floor
+    floor="$(rsv_pre_contract_floor "$cli_versions")"
+    if [[ -z "$floor" ]]; then
+        echo "OK: release-state bijection holds — no cli sentinels yet (contract not in effect)"
+        return 0
+    fi
+
+    rsv_drop_pre_contract() {
         local input="$1"
-        local v newer
+        local v oldest
         while IFS= read -r v; do
             [[ -z "$v" ]] && continue
-            if [[ -z "$grandfather" ]]; then
-                printf '%s\n' "$v"
-                continue
-            fi
-            # Keep v iff (v != grandfather) AND (v sorts AFTER grandfather).
-            [[ "$v" == "$grandfather" ]] && continue
-            newer="$(printf '%s\n%s\n' "$grandfather" "$v" | sort -V | tail -1)"
-            [[ "$newer" == "$v" ]] && printf '%s\n' "$v"
+            # Keep v iff v sorts equal-or-after floor.
+            [[ "$v" == "$floor" ]] && { printf '%s\n' "$v"; continue; }
+            oldest="$(printf '%s\n%s\n' "$floor" "$v" | sort -V | head -1)"
+            [[ "$oldest" == "$floor" ]] && printf '%s\n' "$v"
         done <<<"$input"
     }
-    cli_versions="$(rsv_drop_grandfathered "$cli_versions")"
-    desktop_versions="$(rsv_drop_grandfathered "$desktop_versions")"
-    tag_versions="$(rsv_drop_grandfathered "$tag_versions")"
+    cli_versions="$(rsv_drop_pre_contract "$cli_versions")"
+    desktop_versions="$(rsv_drop_pre_contract "$desktop_versions")"
+    tag_versions="$(rsv_drop_pre_contract "$tag_versions")"
 
     local all drift=0
     all="$(printf '%s\n%s\n%s\n' "$cli_versions" "$desktop_versions" "$tag_versions" |
@@ -218,7 +260,7 @@ rsv_assert_bijection() {
     done <<<"$all"
 
     if ((drift == 0)); then
-        echo "OK: release-state bijection holds (excluding in-flight ${in_flight:-<none>})"
+        echo "OK: release-state bijection holds (floor: ${floor}, in-flight: ${in_flight:-<none>})"
         return 0
     fi
     return 1
