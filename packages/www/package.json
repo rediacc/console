@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "astro build",
+    "check:cta-bolt": "node scripts/check-cta-bolt-uniqueness.js",
     "dev": "astro dev",
     "generate:cli-docs": "npm run export:command-tree -w @rediacc/cli && node scripts/generate-cli-docs.js",
     "lint:all": "npm run lint:css && npm run lint:css-files",

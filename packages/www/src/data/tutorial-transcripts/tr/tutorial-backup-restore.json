@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-backup-restore.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-backup-restore-01",
+      "markerIndex": 0,
+      "at": 65.053708,
+      "text": "Birinci adım. Mevcut bir rclone yapılandırmasını içe aktarıyoruz. rclone; S3, Backblaze, Google Drive, Dropbox ve çok daha fazlasını destekler. Halihazırda kullanıyorsanız aynı yapılandırmayı doğrudan içe aktarabilirsiniz."
+    },
+    {
+      "id": "tutorial-backup-restore-02",
+      "markerIndex": 1,
+      "at": 73.743501,
+      "text": "Aracın artık tanıdığı depolama alanlarını listeliyoruz. Her depolama alanı, yedek gönderebileceğimiz bir hedef."
+    },
+    {
+      "id": "tutorial-backup-restore-03",
+      "markerIndex": 2,
+      "at": 82.843959,
+      "text": "İkinci adım. Tam yedek gönderiyoruz. Tüm depo yükleniyor: uygulama, veritabanı, dosyalar, yapılandırma. Depo depolandığında şifreli olduğundan yedek de şifreli olur. Ek anahtar yönetimi gerekmez."
+    },
+    {
+      "id": "tutorial-backup-restore-04",
+      "markerIndex": 3,
+      "at": 94.515541,
+      "text": "Bu depolama alanında bulunan yedekleri listeliyoruz. Buradan itibaren, yeni bir sunucuda geri yükleme tek komutla yapılır: depo geri yükleme komutu. Aynı veri, aynı container'lar, farklı makine."
+    }
+  ]
+}

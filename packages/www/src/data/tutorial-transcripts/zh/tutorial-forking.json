@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/tutorial-forking.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-forking-01",
+      "markerIndex": 0,
+      "at": 108.099445,
+      "text": "让我们 fork 这个仓库。一条命令克隆了一切，应用、数据库、配置文件，只用了几秒，无论仓库有多大都一样。1 GB、100 GB、1 TB，每次时间相同。"
+    },
+    {
+      "id": "tutorial-forking-02",
+      "markerIndex": 1,
+      "at": 142.355671,
+      "text": "现在两个仓库并排运行。相同的机器，相同的磁盘，两个完全独立的环境。fork 有自己的容器、自己的文件系统和自己的 Docker 守护进程。"
+    },
+    {
+      "id": "tutorial-forking-03",
+      "markerIndex": 2,
+      "at": 158.262452,
+      "text": "让我们来证明隔离性。在原始仓库中，我们的标记文件还在原来的位置。fork 的存在没有对父仓库造成任何影响。"
+    },
+    {
+      "id": "tutorial-forking-04",
+      "markerIndex": 3,
+      "at": 176.185047,
+      "text": "现在让我们删除那个文件，但只在 fork 内部删除。在 fork 里它已经消失了，我们做了一个破坏性的操作，它留在了 fork 之内。"
+    },
+    {
+      "id": "tutorial-forking-05",
+      "markerIndex": 4,
+      "at": 195.030667,
+      "text": "回到原始仓库。标记文件还在这里，完好无损。原始仓库从不知道发生了什么。相同的镜像，独立的 Docker 守护进程，独立的文件系统。"
+    },
+    {
+      "id": "tutorial-forking-06",
+      "markerIndex": 5,
+      "at": 212.971596,
+      "text": "完成后，直接删除 fork。原始仓库保持原样。Fork、实验、破坏、删除，零风险。"
+    }
+  ]
+}

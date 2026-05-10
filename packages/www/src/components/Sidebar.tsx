@@ -109,7 +109,7 @@ const SidebarAccountCta: React.FC<SidebarAccountCtaProps> = ({
     return (
       <a
         href={accountUrl}
-        className="sidebar-account-cta"
+        className="sidebar-account-cta sidebar-account-cta--secondary"
         onClick={onClose}
         tabIndex={tabbable ? 0 : -1}
         aria-label={ariaLabel}
@@ -124,7 +124,7 @@ const SidebarAccountCta: React.FC<SidebarAccountCtaProps> = ({
   return (
     <button
       type="button"
-      className="sidebar-account-cta"
+      className="sidebar-account-cta sidebar-account-cta--secondary"
       onClick={() => {
         onClose();
         window.openRegionPicker?.('/account/');
@@ -139,6 +139,33 @@ const SidebarAccountCta: React.FC<SidebarAccountCtaProps> = ({
     </button>
   );
 };
+
+interface SidebarInstallCtaProps {
+  href: string;
+  label: string;
+  tabbable: boolean;
+  onClose: () => void;
+}
+
+const SidebarInstallCta: React.FC<SidebarInstallCtaProps> = ({
+  href,
+  label,
+  tabbable,
+  onClose,
+}) => (
+  <a
+    href={href}
+    className="sidebar-account-cta"
+    onClick={onClose}
+    tabIndex={tabbable ? 0 : -1}
+    aria-label={label}
+    data-track="cta_click"
+    data-track-label="sidebar-install"
+    data-track-dest="install"
+  >
+    {label}
+  </a>
+);
 
 interface SidebarNavLinkProps {
   href: string;
@@ -216,7 +243,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, accountUrl }) => {
     { href: `/${currentLang}/pricing`, label: t('navigation.pricing') },
     { href: `/${currentLang}/roi-calculator`, label: t('navigation.roiCalculator') },
     { href: `/${currentLang}/disaster-recovery`, label: t('navigation.disasterRecovery') },
-    { href: `/${currentLang}/install`, label: t('navigation.install') },
     { href: `/${currentLang}/blog`, label: t('navigation.blog') },
     { href: `/${currentLang}/docs/quick-start`, label: t('navigation.docs') },
     { href: `/${currentLang}/contact`, label: t('navigation.contact') },
@@ -289,7 +315,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, accountUrl }) => {
           </button>
         </div>
         <nav className="sidebar-nav">
-          {/* Account CTA — always visible on mobile so users have a path to /account/ */}
+          {/* Install (primary) above Account (secondary) — install is top-of-funnel for new visitors. */}
+          <SidebarInstallCta
+            href={`/${currentLang}/install`}
+            label={t('navigation.install')}
+            tabbable={isOpen}
+            onClose={onClose}
+          />
           <SidebarAccountCta
             accountUrl={accountUrl}
             label={t('navigation.account')}

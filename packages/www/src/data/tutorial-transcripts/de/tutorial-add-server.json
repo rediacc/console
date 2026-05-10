@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-add-server.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-add-server-01",
+      "markerIndex": 0,
+      "at": 1.508633,
+      "text": "Wir beginnen damit, ein Konfigurationsprofil zu erstellen. Das Profil enthält den SSH-Schlüssel, die Maschinenliste und die Infrastruktureinstellungen für alles, was wir von hier an tun."
+    },
+    {
+      "id": "tutorial-add-server-02",
+      "markerIndex": 1,
+      "at": 11.160728,
+      "text": "Jetzt registrieren wir den Server bei der CLI, indem wir Namen, IP-Adresse und SSH-Benutzer angeben. Host-Schlüssel werden automatisch für vertrauenswürdigen Zugang gescannt."
+    },
+    {
+      "id": "tutorial-add-server-03",
+      "markerIndex": 2,
+      "at": 23.457976,
+      "text": "Als Nächstes stellen wir den Server bereit. Dabei wird renet installiert und der verschlüsselte Datenspeicher erstellt. Danach ist der Server bereit, Repositories zu hosten."
+    },
+    {
+      "id": "tutorial-add-server-04",
+      "markerIndex": 3,
+      "at": 39.717449,
+      "text": "Wir prüfen, was die CLI über die Konfiguration weiß. Maschinen, SSH-Schlüssel, Infrastruktur, alles, was gerade eingerichtet wurde, erscheint hier."
+    },
+    {
+      "id": "tutorial-add-server-05",
+      "markerIndex": 4,
+      "at": 48.157549,
+      "text": "Die gesamte Konfiguration liegt in einer einzigen JSON-Datei auf Ihrem Laptop. Kopieren Sie sie auf eine andere Maschine und Sie können dieselben Server von dort aus steuern."
+    }
+  ]
+}

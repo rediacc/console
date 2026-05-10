@@ -2579,7 +2579,7 @@
     "opsSkipOrchestration": "Omitir orquestación del clúster",
     "opsSSHUser": "Nombre de usuario SSH para conexión a VM",
     "organization": "Nombre de organización",
-    "output": "Formato de salida (table|json|yaml|csv)",
+    "output": "Formato de salida (table|json|yaml|csv). Anular el valor por defecto con REDIACC_DEFAULT_OUTPUT.",
     "outputFormat": "Formato de salida (json)",
     "outputPath": "Ruta para guardar archivo de salida",
     "param": "Parámetros de función",

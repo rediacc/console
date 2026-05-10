@@ -1,104 +1,70 @@
 ---
-title: "Monitoring & Diagnostics"
-description: "Check machine health, inspect containers, review systemd services, scan host keys, and run environment diagnostics."
+title: "Monitoring"
+description: "Check the health of your servers and repos from your laptop with rdc machine commands."
 category: "Tutorials"
-order: 4
+subcategory: advanced
+order: 12
 language: en
 ---
 
-# How To Monitor and Diagnose Infrastructure with Rediacc
+# Monitoring
 
-Keeping infrastructure healthy requires visibility into machine state, container status, and service health. In this tutorial, you run environment diagnostics, check machine health, inspect containers and services, review vault status, and verify connectivity. When you finish, you know how to identify and investigate issues across your infrastructure.
+Your app is deployed, live, and backed up. Now make sure everything stays healthy. `rdc` gives you a full picture of any server (health, containers, repos) from your laptop.
 
-## Prerequisites
+## Watch the tutorial
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine with at least one running repository (see [Tutorial: Repository Lifecycle](/en/docs/tutorial-repos))
+![Tutorial: Monitoring](/assets/tutorials/tutorial-monitoring.cast)
 
-## Interactive Recording
+## Three things you can check
 
-![Tutorial: Monitoring & Diagnostics](/assets/tutorials/monitoring-tutorial.cast)
+![Health, containers, repos](/img/tutorials/tutorial-monitoring/slide-1.svg)
 
-### Step 1: Run diagnostics
+## Health: system info
 
-Start by checking your local environment for any configuration issues.
-
-```bash
-rdc doctor
-```
-
-Checks Node.js, CLI version, renet binary, configuration, and virtualization support. Each check reports **OK**, **Warning**, or **Error**.
-
-### Step 2: Machine health check
+Start with the system view:
 
 ```bash
-rdc machine health --name server-1
+time rdc machine query --name my-server --system
 ```
 
-Fetches a comprehensive health report from the remote machine: system uptime, disk usage, datastore usage, container counts, storage SMART status, and any identified issues.
+This shows system uptime, disk usage, and storage status. If something is wrong, it tells you.
 
-### Step 3: View running containers
+## Containers
+
+To see all running containers across every repo on the machine:
 
 ```bash
-rdc machine containers --name server-1
+time rdc machine query --name my-server --containers
 ```
 
-Lists all running containers across all repositories on the machine, showing name, status, state, health, CPU usage, memory usage, and which repository owns each container.
+You get name, status, health, CPU, and memory for each container, plus which repo owns it.
 
-### Step 4: Check systemd services
+## Repos
 
-To see the underlying services that power each repository's Docker daemon and networking:
+To check your repositories:
 
 ```bash
-rdc machine services --name server-1
+time rdc machine query --name my-server --repositories
 ```
 
-Lists Rediacc-related systemd services (Docker daemons, loopback aliases) with their state, sub-state, restart count, and memory usage.
+This shows every repo with its size, mount status, Docker status, and disk usage.
 
-### Step 5: Vault status overview
+## Everything in one shot
 
 ```bash
-rdc machine vault-status --name server-1
+time rdc machine query --name my-server
 ```
 
-Provides a high-level overview of the machine: hostname, uptime, memory, disk, datastore, and total repository counts.
+System info, repos, containers, all in one command. The same `query` command with no filters returns the full picture; with `--system`, `--containers`, `--repositories`, `--services`, `--network`, or `--block-devices` it narrows to just that section.
 
-### Step 6: Scan host keys
+## Local sanity check
 
-If a machine was rebuilt or its IP changed, refresh the stored SSH host key.
+`rdc doctor` checks your local setup (Node, SSH key, `renet`, Docker), independent of any specific server:
 
 ```bash
-rdc config machine scan-keys -m server-1
+time rdc doctor
 ```
 
-Fetches the server's current host keys and updates your config. This prevents "host key verification failed" errors.
+## You're done
 
-### Step 7: Verify connectivity
-
-A quick SSH connectivity check to confirm the machine is reachable and responding.
-
-```bash
-rdc term connect -m server-1 -c "hostname"
-rdc term connect -m server-1 -c "uptime"
-```
-
-The hostname confirms you're connected to the right server. The uptime confirms the system is running normally.
-
-## Troubleshooting
-
-**Health check times out or shows "SSH connection failed"**
-Verify the machine is online and reachable: `ping <ip>`. Check that your SSH key is configured correctly with `rdc term connect -m <machine> -c "echo ok"`.
-
-**"Service not found" in service listing**
-Rediacc services only appear after at least one repository has been deployed. If no repositories exist, the service list is empty.
-
-**Container listing shows stale or stopped containers**
-Containers from previous deployments may linger if `repo down` was not run cleanly. Stop them with `rdc repo down --name <repo> -m <machine>` or inspect directly via `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
-
-## Next Steps
-
-You ran diagnostics, checked machine health, inspected containers and services, and verified connectivity. To work with your deployments:
-
-- [Monitoring](/en/docs/monitoring), full reference for all monitoring commands
-- [Troubleshooting](/en/docs/troubleshooting), common issues and solutions
-- [Tutorial: Tools](/en/docs/tutorial-tools), terminal, file sync, and VS Code integration
+That's the full series. You can now install, configure, deploy, fork, go live, autostart, back up, and monitor. All from your terminal, all on your own servers.

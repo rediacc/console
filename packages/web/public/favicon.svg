@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
   <!-- Rediacc favicon: bolt-only for small sizes -->
-  <polygon points="9,1 4,8 7,8 6,15 12,8 9,8" fill="#06B6D4"/>
+  <polygon points="9,1 4,8 7,8 6,15 12,8 9,8" fill="#DC2626"/>
   <style>
     @media (prefers-color-scheme: dark) {
-      polygon { fill: #22D3EE; }
+      polygon { fill: #F87171; }
     }
   </style>
 </svg>

@@ -1,0 +1,495 @@
+{
+  "cast": "/assets/tutorials/tutorial-production-mode.cast",
+  "language": "it",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "984ddd1808c1e2bf48f39a0b08d4b584aac9e06a26fa4e873698407afe8b7ec5",
+  "steps": [
+    {
+      "id": "tutorial-production-mode-01",
+      "markerIndex": 0,
+      "replayStartSec": 56.862064,
+      "replayEndSec": 97.750961,
+      "narrationText": "Avviamo l'app in modalita' produzione dal laptop. Il comando di deploy chiama la stessa funzione up usata durante lo sviluppo, ma viene eseguita in modalita' distaccata. Puoi chiudere il laptop e l'app continua a girare.",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-production-mode/tutorial-production-mode-01.90d54454.mp3",
+      "audioDurationSec": 13.87102,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.88,
+          "startChar": 8,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 14,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.4,
+          "startChar": 27,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.56,
+          "startChar": 38,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.04,
+          "startChar": 42,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.68,
+          "startChar": 50,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.08,
+          "startChar": 53,
+          "endChar": 60
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.16,
+          "startChar": 61,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.72,
+          "startChar": 64,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.04,
+          "startChar": 71,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.12,
+          "startChar": 78,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 81,
+          "endChar": 87
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 6.08,
+          "startChar": 88,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.48,
+          "startChar": 198,
+          "endChar": 201
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.44,
+          "startChar": 206,
+          "endChar": 208
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.48,
+          "startChar": 218,
+          "endChar": 219
+        }
+      ]
+    },
+    {
+      "id": "tutorial-production-mode-02",
+      "markerIndex": 1,
+      "replayStartSec": 97.750961,
+      "replayEndSec": 125.443493,
+      "narrationText": "Abilitiamo l'avvio automatico cosi' l'app sopravvive al riavvio del server. Da questo momento, se il server si riavvia, questo repo torna su automaticamente.",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-production-mode/tutorial-production-mode-02.09e3b0ab.mp3",
+      "audioDurationSec": 12.199184,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 2.0,
+          "startChar": 19,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.96,
+          "startChar": 36,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.08,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.64,
+          "startChar": 56,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.88,
+          "startChar": 64,
+          "endChar": 67
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 6.0,
+          "startChar": 68,
+          "endChar": 74
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.24,
+          "startChar": 76,
+          "endChar": 78
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.48,
+          "startChar": 79,
+          "endChar": 85
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 7.52,
+          "startChar": 86,
+          "endChar": 93
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.76,
+          "startChar": 95,
+          "endChar": 97
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 7.84,
+          "startChar": 98,
+          "endChar": 100
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.24,
+          "startChar": 101,
+          "endChar": 107
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.4,
+          "startChar": 108,
+          "endChar": 110
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.96,
+          "startChar": 111,
+          "endChar": 118
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.76,
+          "startChar": 120,
+          "endChar": 126
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.4,
+          "startChar": 127,
+          "endChar": 131
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.88,
+          "startChar": 132,
+          "endChar": 137
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.04,
+          "startChar": 138,
+          "endChar": 140
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 12.16,
+          "startChar": 141,
+          "endChar": 156
+        }
+      ]
+    },
+    {
+      "id": "tutorial-production-mode-03",
+      "markerIndex": 2,
+      "replayStartSec": 125.443493,
+      "replayEndSec": 141.09184,
+      "narrationText": "Elenchiamo i repository con l'avvio automatico abilitato. Conferma che la nostra app e' ora nella lista di avvio.",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-production-mode/tutorial-production-mode-03.c32fea4d.mp3",
+      "audioDurationSec": 8.045714,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.76,
+          "startChar": 13,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 24,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.64,
+          "startChar": 28,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.28,
+          "startChar": 36,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 4.4,
+          "startChar": 47,
+          "endChar": 56
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 5.04,
+          "startChar": 58,
+          "endChar": 66
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.2,
+          "startChar": 67,
+          "endChar": 70
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.36,
+          "startChar": 71,
+          "endChar": 73
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.76,
+          "startChar": 74,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.24,
+          "startChar": 81,
+          "endChar": 84
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.88,
+          "startChar": 88,
+          "endChar": 91
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.12,
+          "startChar": 92,
+          "endChar": 97
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.44,
+          "startChar": 98,
+          "endChar": 103
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.52,
+          "startChar": 104,
+          "endChar": 106
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.92,
+          "startChar": 107,
+          "endChar": 112
+        }
+      ]
+    },
+    {
+      "id": "tutorial-production-mode-04",
+      "markerIndex": 3,
+      "replayStartSec": 141.09184,
+      "replayEndSec": 196.903183,
+      "narrationText": "E per fermare l'app, un solo comando dal laptop. Un comando per avviare, uno per fermare. Tutto dal tuo terminale, senza piu' sessioni interattive.",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-production-mode/tutorial-production-mode-04.8f249999.mp3",
+      "audioDurationSec": 9.874286,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.48,
+          "startChar": 2,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.04,
+          "startChar": 6,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.68,
+          "startChar": 14,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.84,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.16,
+          "startChar": 24,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.64,
+          "startChar": 29,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.8,
+          "startChar": 37,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.68,
+          "startChar": 41,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.84,
+          "startChar": 73,
+          "endChar": 75
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.48,
+          "startChar": 77,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.88,
+          "startChar": 81,
+          "endChar": 88
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.2,
+          "startChar": 90,
+          "endChar": 95
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.36,
+          "startChar": 96,
+          "endChar": 99
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.52,
+          "startChar": 100,
+          "endChar": 103
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.16,
+          "startChar": 104,
+          "endChar": 113
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.48,
+          "startChar": 115,
+          "endChar": 120
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.04,
+          "startChar": 126,
+          "endChar": 134
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.76,
+          "startChar": 135,
+          "endChar": 146
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,495 @@
+{
+  "cast": "/assets/tutorials/tutorial-deploy-app.cast",
+  "language": "pt",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "3515f7ab87a48486a4378d04d893ca15c0924d6d7c2f986dad78b93696934bca",
+  "steps": [
+    {
+      "id": "tutorial-deploy-app-01",
+      "markerIndex": 0,
+      "replayStartSec": 52.700593,
+      "replayEndSec": 61.85842,
+      "narrationText": "Passo um. Vamos listar os templates disponíveis. O Rediacc inclui configurações prontas para as aplicações mais comuns, para não termos de escrever um docker-compose de raiz.",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-01.5cf9341d.mp3",
+      "audioDurationSec": 11.154286,
+      "wordTimings": [
+        {
+          "startSec": 0.48,
+          "endSec": 1.04,
+          "startChar": 10,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.36,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.48,
+          "startChar": 26,
+          "endChar": 35
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.84,
+          "startChar": 80,
+          "endChar": 87
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.08,
+          "startChar": 88,
+          "endChar": 92
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.08,
+          "startChar": 120,
+          "endChar": 124
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.08,
+          "startChar": 151,
+          "endChar": 157
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.48,
+          "startChar": 158,
+          "endChar": 165
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 11.04,
+          "startChar": 166,
+          "endChar": 168
+        }
+      ]
+    },
+    {
+      "id": "tutorial-deploy-app-02",
+      "markerIndex": 1,
+      "replayStartSec": 61.85842,
+      "replayEndSec": 79.070004,
+      "narrationText": "Passo dois. Vamos aplicar o template app-postgres ao repositório. Surgem dois ficheiros: o docker-compose.yml que descreve os contentores, e o Rediaccfile que define os hooks de arranque e paragem.",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-02.e92d6d50.mp3",
+      "audioDurationSec": 14.367347,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 6,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.44,
+          "startChar": 12,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.84,
+          "startChar": 18,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.08,
+          "startChar": 26,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.48,
+          "startChar": 28,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.56,
+          "startChar": 114,
+          "endChar": 116
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.44,
+          "startChar": 123,
+          "endChar": 124
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.56,
+          "startChar": 127,
+          "endChar": 128
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.04,
+          "startChar": 155,
+          "endChar": 158
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.76,
+          "startChar": 166,
+          "endChar": 168
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.04,
+          "startChar": 176,
+          "endChar": 177
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.68,
+          "startChar": 178,
+          "endChar": 186
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 14.24,
+          "startChar": 189,
+          "endChar": 196
+        }
+      ]
+    },
+    {
+      "id": "tutorial-deploy-app-03",
+      "markerIndex": 2,
+      "replayStartSec": 79.070004,
+      "replayEndSec": 123.719014,
+      "narrationText": "Passo três. Vamos iniciar o repositório. A ferramenta arranca os contentores, monta o volume encriptado e liga o daemon Docker isolado.",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-03.98fda6e1.mp3",
+      "audioDurationSec": 9.717551,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.88,
+          "startChar": 6,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.36,
+          "startChar": 12,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.92,
+          "startChar": 18,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.0,
+          "startChar": 26,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.88,
+          "startChar": 28,
+          "endChar": 39
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.28,
+          "startChar": 41,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.0,
+          "startChar": 43,
+          "endChar": 53
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.4,
+          "startChar": 54,
+          "endChar": 61
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.64,
+          "startChar": 62,
+          "endChar": 64
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.92,
+          "startChar": 78,
+          "endChar": 83
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.0,
+          "startChar": 84,
+          "endChar": 85
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.4,
+          "startChar": 86,
+          "endChar": 92
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 7.12,
+          "startChar": 95,
+          "endChar": 103
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.6,
+          "startChar": 104,
+          "endChar": 105
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 7.92,
+          "startChar": 106,
+          "endChar": 110
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.08,
+          "startChar": 111,
+          "endChar": 112
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.56,
+          "startChar": 113,
+          "endChar": 119
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.96,
+          "startChar": 120,
+          "endChar": 126
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.6,
+          "startChar": 127,
+          "endChar": 134
+        }
+      ]
+    },
+    {
+      "id": "tutorial-deploy-app-04",
+      "markerIndex": 3,
+      "replayStartSec": 123.719014,
+      "replayEndSec": 179.687714,
+      "narrationText": "Vamos verificar o que está a correr. O docker ps mostra apenas os contentores deste repositório. Os outros repositórios no mesmo servidor têm os seus próprios daemons e são completamente invisíveis a partir desta vista.",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-04.8cfc39b5.mp3",
+      "audioDurationSec": 15.725714,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.56,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.68,
+          "startChar": 18,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.0,
+          "startChar": 22,
+          "endChar": 26
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.4,
+          "startChar": 29,
+          "endChar": 35
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.12,
+          "startChar": 37,
+          "endChar": 38
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.56,
+          "startChar": 49,
+          "endChar": 55
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.96,
+          "startChar": 56,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.28,
+          "startChar": 63,
+          "endChar": 65
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 6.08,
+          "startChar": 66,
+          "endChar": 77
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.48,
+          "startChar": 78,
+          "endChar": 83
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 7.44,
+          "startChar": 84,
+          "endChar": 95
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.16,
+          "startChar": 97,
+          "endChar": 99
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.48,
+          "startChar": 100,
+          "endChar": 106
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 9.44,
+          "startChar": 107,
+          "endChar": 119
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.52,
+          "startChar": 120,
+          "endChar": 122
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.92,
+          "startChar": 123,
+          "endChar": 128
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.56,
+          "startChar": 129,
+          "endChar": 137
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.88,
+          "startChar": 138,
+          "endChar": 141
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.04,
+          "startChar": 142,
+          "endChar": 144
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.28,
+          "startChar": 145,
+          "endChar": 149
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.68,
+          "startChar": 150,
+          "endChar": 158
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 12.88,
+          "startChar": 161,
+          "endChar": 162
+        },
+        {
+          "startSec": 12.88,
+          "endSec": 13.04,
+          "startChar": 169,
+          "endChar": 172
+        },
+        {
+          "startSec": 13.04,
+          "endSec": 13.76,
+          "startChar": 173,
+          "endChar": 186
+        },
+        {
+          "startSec": 13.76,
+          "endSec": 14.4,
+          "startChar": 187,
+          "endChar": 197
+        },
+        {
+          "startSec": 14.4,
+          "endSec": 14.56,
+          "startChar": 198,
+          "endChar": 199
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 14.88,
+          "startChar": 200,
+          "endChar": 206
+        },
+        {
+          "startSec": 14.88,
+          "endSec": 15.2,
+          "startChar": 207,
+          "endChar": 212
+        },
+        {
+          "startSec": 15.2,
+          "endSec": 15.6,
+          "startChar": 213,
+          "endChar": 218
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">Many mirrors face one sun; each mirror's drawing is its own, the sun stays the same</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .sun { fill: #f4c850; stroke: #c79a1d; stroke-width: 2; }
+    .ray { stroke: #f4c850; stroke-width: 4; stroke-linecap: round; }
+    .mirror { fill: #ffffff; stroke: #556b2f; stroke-width: 2.5; rx: 6; ry: 6; }
+    .mirror-mark { stroke: #556b2f; stroke-width: 2; stroke-linecap: round; fill: none; }
+    .label { fill: #1a1a1a; font: 600 18px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .closer { fill: #556b2f; font: 600 22px Inter, system-ui, sans-serif; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <!-- Sun -->
+  <g transform="translate(480 180)">
+    <g stroke="#f4c850" stroke-width="4" stroke-linecap="round">
+      <line x1="0" y1="-78" x2="0" y2="-110"/>
+      <line x1="55" y1="-55" x2="78" y2="-78"/>
+      <line x1="78" y1="0" x2="110" y2="0"/>
+      <line x1="55" y1="55" x2="78" y2="78"/>
+      <line x1="0" y1="78" x2="0" y2="110"/>
+      <line x1="-55" y1="55" x2="-78" y2="78"/>
+      <line x1="-78" y1="0" x2="-110" y2="0"/>
+      <line x1="-55" y1="-55" x2="-78" y2="-78"/>
+    </g>
+    <circle class="sun" r="60"/>
+  </g>
+  <text class="label" x="480" y="324">my-app (parent)</text>
+
+  <!-- Mirrors -->
+  <g transform="translate(180 380)">
+    <rect class="mirror" x="0" y="0" width="120" height="80"/>
+    <path class="mirror-mark" d="M 20 60 Q 40 30 60 50 T 100 30"/>
+  </g>
+  <g transform="translate(420 380)">
+    <rect class="mirror" x="0" y="0" width="120" height="80"/>
+    <path class="mirror-mark" d="M 20 30 L 50 60 L 80 30 L 100 50"/>
+  </g>
+  <g transform="translate(660 380)">
+    <rect class="mirror" x="0" y="0" width="120" height="80"/>
+    <path class="mirror-mark" d="M 25 50 L 50 25 L 75 50"/>
+    <circle class="mirror-mark" cx="92" cy="58" r="6"/>
+  </g>
+
+  <text class="closer" x="480" y="496">your fork, your drawings · the sun stays the same</text>
+</svg>

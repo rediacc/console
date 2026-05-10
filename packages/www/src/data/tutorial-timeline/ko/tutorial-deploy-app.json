@@ -1,0 +1,447 @@
+{
+  "cast": "/assets/tutorials/tutorial-deploy-app.cast",
+  "language": "ko",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "89b23497d0aa37865d92603565924ddd9581827cf9a208b9f0443d7d4fafa18f",
+  "steps": [
+    {
+      "id": "tutorial-deploy-app-01",
+      "markerIndex": 0,
+      "replayStartSec": 52.700593,
+      "replayEndSec": 61.85842,
+      "narrationText": "1단계입니다. 사용 가능한 템플릿을 확인합니다. Rediacc는 일반 앱을 위한 미리 만들어진 설정을 제공하므로 docker-compose를 처음부터 작성할 필요가 없습니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-01.41c2bb07.mp3",
+      "audioDurationSec": 11.964082,
+      "wordTimings": [
+        {
+          "startSec": 1.28,
+          "endSec": 1.6,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.08,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.6,
+          "startChar": 20,
+          "endChar": 25
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 36,
+          "endChar": 38
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.76,
+          "startChar": 39,
+          "endChar": 41
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.08,
+          "startChar": 42,
+          "endChar": 44
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.32,
+          "startChar": 45,
+          "endChar": 47
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.96,
+          "startChar": 48,
+          "endChar": 52
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.6,
+          "startChar": 53,
+          "endChar": 56
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.4,
+          "startChar": 57,
+          "endChar": 62
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.4,
+          "startChar": 79,
+          "endChar": 83
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 11.04,
+          "startChar": 84,
+          "endChar": 87
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.36,
+          "startChar": 88,
+          "endChar": 91
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.92,
+          "startChar": 92,
+          "endChar": 96
+        }
+      ]
+    },
+    {
+      "id": "tutorial-deploy-app-02",
+      "markerIndex": 1,
+      "replayStartSec": 61.85842,
+      "replayEndSec": 79.070004,
+      "narrationText": "2단계입니다. app-postgres 템플릿을 저장소에 적용합니다. 두 개의 파일이 생성됩니다. 컨테이너를 정의하는 docker-compose.yml과 시작 및 종료 훅을 정의하는 Rediaccfile입니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-02.336951c4.mp3",
+      "audioDurationSec": 18.050612,
+      "wordTimings": [
+        {
+          "startSec": 0.72,
+          "endSec": 1.2,
+          "startChar": 1,
+          "endChar": 6
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.68,
+          "startChar": 21,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.32,
+          "startChar": 26,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.04,
+          "startChar": 31,
+          "endChar": 36
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.6,
+          "startChar": 38,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.84,
+          "startChar": 40,
+          "endChar": 42
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.32,
+          "startChar": 43,
+          "endChar": 46
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 7.04,
+          "startChar": 47,
+          "endChar": 52
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.32,
+          "startChar": 54,
+          "endChar": 59
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.96,
+          "startChar": 60,
+          "endChar": 64
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.68,
+          "startChar": 65,
+          "endChar": 71
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 10.32,
+          "startChar": 72,
+          "endChar": 79
+        },
+        {
+          "startSec": 12.96,
+          "endSec": 13.44,
+          "startChar": 85,
+          "endChar": 87
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.68,
+          "startChar": 88,
+          "endChar": 89
+        },
+        {
+          "startSec": 14.0,
+          "endSec": 14.4,
+          "startChar": 90,
+          "endChar": 92
+        },
+        {
+          "startSec": 14.8,
+          "endSec": 15.52,
+          "startChar": 96,
+          "endChar": 100
+        }
+      ]
+    },
+    {
+      "id": "tutorial-deploy-app-03",
+      "markerIndex": 2,
+      "replayStartSec": 79.070004,
+      "replayEndSec": 123.719014,
+      "narrationText": "3단계입니다. 저장소를 시작합니다. CLI가 컨테이너를 기동하고 암호화된 볼륨을 마운트하며 격리된 Docker 데몬을 연결합니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-03.0bccc32d.mp3",
+      "audioDurationSec": 12.59102,
+      "wordTimings": [
+        {
+          "startSec": 1.12,
+          "endSec": 1.76,
+          "startChar": 1,
+          "endChar": 6
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 3.04,
+          "startChar": 8,
+          "endChar": 12
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.76,
+          "startChar": 13,
+          "endChar": 18
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 6.08,
+          "startChar": 25,
+          "endChar": 30
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.8,
+          "startChar": 31,
+          "endChar": 35
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 8.16,
+          "startChar": 36,
+          "endChar": 40
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.64,
+          "startChar": 41,
+          "endChar": 44
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.52,
+          "startChar": 45,
+          "endChar": 50
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.56,
+          "startChar": 51,
+          "endChar": 54
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.68,
+          "startChar": 62,
+          "endChar": 65
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 12.48,
+          "startChar": 66,
+          "endChar": 71
+        }
+      ]
+    },
+    {
+      "id": "tutorial-deploy-app-04",
+      "markerIndex": 3,
+      "replayStartSec": 123.719014,
+      "replayEndSec": 179.687714,
+      "narrationText": "실행 중인 컨테이너를 확인합니다. 이 뷰에는 이 저장소의 컨테이너만 표시됩니다. 같은 서버의 다른 저장소는 각자의 Docker 데몬을 가지고 있어 이 뷰에서 전혀 보이지 않습니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-04.3634e542.mp3",
+      "audioDurationSec": 13.087347,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.72,
+          "startChar": 3,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.36,
+          "startChar": 6,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 2.08,
+          "startChar": 12,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.12,
+          "startChar": 21,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.36,
+          "startChar": 25,
+          "endChar": 26
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.16,
+          "startChar": 27,
+          "endChar": 31
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.96,
+          "startChar": 32,
+          "endChar": 37
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.6,
+          "startChar": 38,
+          "endChar": 43
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.56,
+          "startChar": 45,
+          "endChar": 47
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.96,
+          "startChar": 48,
+          "endChar": 51
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.28,
+          "startChar": 52,
+          "endChar": 54
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 8.08,
+          "startChar": 55,
+          "endChar": 59
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.96,
+          "startChar": 60,
+          "endChar": 63
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.44,
+          "startChar": 64,
+          "endChar": 70
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.76,
+          "startChar": 71,
+          "endChar": 74
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.08,
+          "startChar": 75,
+          "endChar": 78
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.56,
+          "startChar": 79,
+          "endChar": 81
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.04,
+          "startChar": 82,
+          "endChar": 83
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.6,
+          "startChar": 84,
+          "endChar": 87
+        },
+        {
+          "startSec": 11.6,
+          "endSec": 12.0,
+          "startChar": 88,
+          "endChar": 90
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.4,
+          "startChar": 91,
+          "endChar": 94
+        },
+        {
+          "startSec": 12.4,
+          "endSec": 12.96,
+          "startChar": 95,
+          "endChar": 99
+        }
+      ]
+    }
+  ]
+}

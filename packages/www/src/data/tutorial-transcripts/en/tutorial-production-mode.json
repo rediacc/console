@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-production-mode.cast",
+  "language": "en",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-production-mode-01",
+      "markerIndex": 0,
+      "at": 56.862064,
+      "text": "Time to start the app in production mode from the laptop. The deploy command calls the same up function we used during development, but it runs detached. Close your laptop and the app keeps going."
+    },
+    {
+      "id": "tutorial-production-mode-02",
+      "markerIndex": 1,
+      "at": 97.750961,
+      "text": "Now enable autostart so the app survives a server reboot. From here on, if the server restarts, this repo comes back automatically."
+    },
+    {
+      "id": "tutorial-production-mode-03",
+      "markerIndex": 2,
+      "at": 125.443493,
+      "text": "Let us list which repositories have autostart enabled. Confirms our app is in the boot list."
+    },
+    {
+      "id": "tutorial-production-mode-04",
+      "markerIndex": 3,
+      "at": 141.09184,
+      "text": "And to stop the app, one command from the laptop. One command up, one command down. All from your terminal."
+    }
+  ]
+}

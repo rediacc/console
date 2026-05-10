@@ -69,6 +69,31 @@ function categoryLabel(cat: string): string {
   return k ? t(k) : cat;
 }
 
+const SUBCATEGORY_KEYS: Record<string, string> = {
+  essentials: 'documentation.subcategories.essentials',
+  advanced: 'documentation.subcategories.advanced',
+};
+const SUBCATEGORY_ORDER: Record<string, number> = {
+  essentials: 0,
+  advanced: 1,
+};
+function subcategoryLabel(sub: string): string {
+  const k = SUBCATEGORY_KEYS[sub];
+  return k ? t(k) : sub;
+}
+
+type DocEntry = (typeof docs)[number];
+function groupBySubcategory(entries: DocEntry[]): Array<{ key: string; entries: DocEntry[] }> {
+  const buckets: Record<string, DocEntry[]> = {};
+  for (const doc of entries) {
+    const key = doc.data.subcategory ?? 'essentials';
+    (buckets[key] ??= []).push(doc);
+  }
+  return Object.keys(buckets)
+    .sort((a, b) => (SUBCATEGORY_ORDER[a] ?? 99) - (SUBCATEGORY_ORDER[b] ?? 99))
+    .map((key) => ({ key, entries: buckets[key] }));
+}
+
 // Pre-calculate category states to avoid JSX parsing issues
 const categoryStates = visibleCategories.map(category => {
   const itemCount = docsByCategory[category].length;
@@ -81,12 +106,27 @@ const categoryStates = visibleCategories.map(category => {
   const alwaysExpanded = category === 'Guides';
   const initialExpanded = hasActiveDoc || isSmall || alwaysExpanded;
 
+  const subgroups = category === 'Tutorials'
+    ? groupBySubcategory(docsByCategory[category]).map((group) => {
+        const groupId = `${categoryId}-${group.key}`;
+        const groupHasActive = group.entries.some((doc) => getBaseSlug(doc.slug) === currentSlug);
+        return {
+          key: group.key,
+          groupId,
+          label: subcategoryLabel(group.key),
+          entries: group.entries,
+          expandedAttr: (groupHasActive || group.key === 'essentials' ? 'true' : 'false') as 'true' | 'false',
+        };
+      })
+    : null;
+
   return {
     category,
     itemCount,
     categoryId,
     hasActiveDoc,
-    expandedAttr: initialExpanded ? 'true' as const : 'false' as const
+    expandedAttr: initialExpanded ? 'true' as const : 'false' as const,
+    subgroups,
   };
 });
 ---
@@ -105,7 +145,7 @@ const categoryStates = visibleCategories.map(category => {
     </div>
 
     <ul class="sidebar-list category-list">
-      {categoryStates.map(({ category, itemCount, categoryId, hasActiveDoc, expandedAttr }) => {
+      {categoryStates.map(({ category, itemCount, categoryId, hasActiveDoc, expandedAttr, subgroups }) => {
 
         return (
           <li
@@ -125,21 +165,61 @@ const categoryStates = visibleCategories.map(category => {
               <span class="category-chevron" aria-hidden="true">▶</span>
             </button>
             <ul class="sidebar-list collapsible-list doc-list" id={categoryId}>
-              {docsByCategory[category].map(doc => {
-                const docSlug = getBaseSlug(doc.slug);
-                const isActive = docSlug === currentSlug;
-                return (
-                  <li class="sidebar-item">
-                    <a
-                      href={`/${currentLang}/docs/${docSlug}`}
-                      class={`sidebar-link doc-link ${isActive ? 'active' : ''}`}
-                      aria-current={isActive ? 'page' : undefined}
+              {subgroups ? (
+                subgroups.map((group) => (
+                  <li
+                    class="sidebar-item subcategory-item"
+                    data-subcategory={group.key}
+                    aria-expanded={group.expandedAttr}
+                  >
+                    <button
+                      class="subcategory-header"
+                      aria-expanded={group.expandedAttr}
+                      aria-controls={group.groupId}
                     >
-                      {doc.data.title}
-                    </a>
+                      {group.label}
+                      <span class="subcategory-chevron" aria-hidden="true">▶</span>
+                    </button>
+                    <ul class="sidebar-list collapsible-list doc-list" id={group.groupId}>
+                      {group.entries.map((doc) => {
+                        const docSlug = getBaseSlug(doc.slug);
+                        const isActive = docSlug === currentSlug;
+                        const num = doc.data.order;
+                        return (
+                          <li class="sidebar-item">
+                            <a
+                              href={`/${currentLang}/docs/${docSlug}`}
+                              class={`sidebar-link doc-link ${isActive ? 'active' : ''}`}
+                              aria-current={isActive ? 'page' : undefined}
+                            >
+                              {num !== undefined && (
+                                <span class="doc-link-num" aria-hidden="true">{num}.</span>
+                              )}
+                              <span class="doc-link-text">{doc.data.title}</span>
+                            </a>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </li>
-                );
-              })}
+                ))
+              ) : (
+                docsByCategory[category].map(doc => {
+                  const docSlug = getBaseSlug(doc.slug);
+                  const isActive = docSlug === currentSlug;
+                  return (
+                    <li class="sidebar-item">
+                      <a
+                        href={`/${currentLang}/docs/${docSlug}`}
+                        class={`sidebar-link doc-link ${isActive ? 'active' : ''}`}
+                        aria-current={isActive ? 'page' : undefined}
+                      >
+                        {doc.data.title}
+                      </a>
+                    </li>
+                  );
+                })
+              )}
             </ul>
           </li>
         );
@@ -188,6 +268,59 @@ const categoryStates = visibleCategories.map(category => {
   /* Add extra margin to category items for spacing */
   .category-item {
     margin-bottom: var(--space-6);
+  }
+
+  /* Subcategory groups inside Tutorials */
+  .subcategory-item {
+    margin: var(--space-2) 0 var(--space-3) 0;
+  }
+
+  .subcategory-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: var(--space-1) var(--space-2);
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+  }
+
+  .subcategory-header:hover {
+    color: var(--color-text);
+  }
+
+  .subcategory-chevron {
+    font-size: 0.6em;
+    transition: transform var(--transition-speed);
+  }
+
+  .subcategory-item[aria-expanded="true"] .subcategory-chevron {
+    transform: rotate(90deg);
+  }
+
+  .subcategory-item[aria-expanded="false"] > .collapsible-list {
+    display: none;
+  }
+
+  /* Order-number prefix on tutorial doc links */
+  .doc-link-num {
+    display: inline-block;
+    color: var(--color-text-secondary);
+    font-variant-numeric: tabular-nums;
+    margin-right: var(--space-1);
+    min-width: 1.6em;
+  }
+
+  .doc-link.active .doc-link-num {
+    color: inherit;
   }
 
   /* Highlight search matches */
@@ -282,6 +415,45 @@ const categoryStates = visibleCategories.map(category => {
     }
 
     /**
+     * Initialize collapsible subcategory sub-headings (Tutorials → Essentials/Advanced).
+     */
+    function initCollapsibleSubcategories() {
+      const subItems = document.querySelectorAll('[data-subcategory]');
+      subItems.forEach((item) => {
+        if (item.dataset.initialized === 'true') return;
+        item.dataset.initialized = 'true';
+
+        const button = item.querySelector('.subcategory-header');
+        const sub = item.dataset.subcategory;
+        if (!button || !sub) return;
+
+        const storageKey = `rediacc_docs_sub_${sub}`;
+        const savedState = sessionStorage.getItem(storageKey);
+        if (savedState !== null) {
+          const isExpanded = savedState === 'true';
+          item.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+          button.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+        }
+
+        button.addEventListener('click', (e) => {
+          e.preventDefault();
+          const isExpanded = item.getAttribute('aria-expanded') === 'true';
+          const next = !isExpanded;
+          item.setAttribute('aria-expanded', next ? 'true' : 'false');
+          button.setAttribute('aria-expanded', next ? 'true' : 'false');
+          sessionStorage.setItem(storageKey, next ? 'true' : 'false');
+        });
+
+        button.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            button.click();
+          }
+        });
+      });
+    }
+
+    /**
      * Initialize search/filter functionality for sidebar navigation
      */
     function initSidebarSearch() {
@@ -337,6 +509,7 @@ const categoryStates = visibleCategories.map(category => {
     // Initialize on various events
     function init() {
       initCollapsibleCategories();
+      initCollapsibleSubcategories();
       initSidebarSearch();
     }
 

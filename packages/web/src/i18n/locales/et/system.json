@@ -1,0 +1,328 @@
+{
+  "accessControl": {
+    "expertOnlyMessage": "Selle lehe vaatamiseks lülitu ekspertrežiimile.",
+    "expertOnlyTitle": "Nõutav ekspertrežiim"
+  },
+  "actions": {
+    "activate": "Aktiveeri",
+    "addMember": "Lisa liige",
+    "addPermission": "Lisa õigus",
+    "assignUser": "Määra kasutaja",
+    "changePassword": "Muuda parooli",
+    "configureVault": "Seadista vault",
+    "createGroup": "Loo grupp",
+    "createTeam": "Loo tiim",
+    "createUser": "Loo kasutaja",
+    "deactivate": "Deaktiveeri",
+    "edit": "Muuda",
+    "members": "Liikmed",
+    "permissions": "Õigused",
+    "resetAuth": "Lähtesta auth",
+    "token": "Token",
+    "trace": "Jälg",
+    "twoFactorAuth": "Kahefaktoriline autentimine"
+  },
+  "audit": {
+    "columns": {
+      "action": "Toiming",
+      "details": "Üksikasjad",
+      "entityName": "Olemi nimi",
+      "entityType": "Olemi tüüp",
+      "timestamp": "Ajatempel",
+      "user": "Kasutaja"
+    },
+    "empty": {
+      "clearFilters": "Puhasta filtrid ja laienda kuupäevavahemikku",
+      "noLogsInRange": "Valitud kuupäevavahemikus auditiloge ei leitud",
+      "noMatchingFilters": "Ükski logi ei vasta praegustele filtritele"
+    },
+    "errors": {
+      "loadDescription": "Auditi logide laadimisel tekkis viga. Proovi lehte värskendada või muuda kuupäevavahemikku.",
+      "loadTitle": "Auditi logide laadimine ebaõnnestus",
+      "tryAgain": "Proovi uuesti",
+      "unableToLoad": "Auditi logide laadimine ebaõnnestus"
+    },
+    "export": {
+      "noData": "Eksportimiseks pole andmeid saadaval",
+      "successCSV": "Eksporditi {{count}} auditi logi CSV-formaati",
+      "successJSON": "Eksporditi {{count}} auditi logi JSON-formaati",
+      "tooltip": "Ekspordi auditi logid CSV- või JSON-formaadis"
+    },
+    "filters": {
+      "actions": "Toimingud",
+      "allEntities": "Kõik olemid",
+      "dateRange": "Kuupäevavahemik",
+      "entityType": "Olemi tüüp",
+      "export": "Ekspordi",
+      "search": "Otsi",
+      "searchPlaceholder": "Otsi logidest..."
+    },
+    "pagination": {
+      "showing": "Kuvatakse {{start}}-{{end}} / {{total}} logist"
+    },
+    "subtitle": "Jälgi kõiki tegevusi ja muutusi oma organisatsioonis",
+    "title": "Auditi logid"
+  },
+  "dangerZone": {
+    "blockUserRequests": {
+      "blockButton": "Blokeeri kasutajate päringud",
+      "confirmBlock": {
+        "confirm": "Kas oled kindel, et soovid jätkata?",
+        "description": "See toiming teeb järgmist:",
+        "effect1": "Blokeerib kõik mitte-administraator kasutajad süsteemist",
+        "effect2": "Lõpetab kõik aktiivsed kasutajasessioonid (v.a administraatorid)",
+        "effect3": "Nõuab juurdepääsu taastamiseks käsitsi deblokeerimist",
+        "okText": "Jah, blokeeri kasutajad",
+        "title": "Blokeeri kasutajate päringud"
+      },
+      "confirmUnblock": {
+        "description": "See lubab kõigil kasutajatel süsteemile uuesti päringuid teha. Kas oled kindel?",
+        "okText": "Jah, deblokeeri",
+        "title": "Deblokeeri kasutajate päringud"
+      },
+      "description": "Blokeeri kõik mitte-administraator kasutajad süsteemile päringuid tegemast. See lõpetab viivitamatult kõik aktiivsed kasutajasessioonid, välja arvatud administraatorid. Kasutajad vajavad juurdepääsu taastamiseks käsitsi deblokeerimist.",
+      "title": "Blokeeri kasutajate päringud",
+      "unblockButton": "Deblokeeri kasutajate päringud"
+    },
+    "exportData": {
+      "button": "Ekspordi organisatsiooni andmed",
+      "description": "Ekspordi kõik organisatsiooni andmed, sealhulgas kasutajad, tiimid, õigused, piirkonnad, sillad, masinad, repositooriumid, salvestuskonfiguratsioonid ja ajakavad. Eksporti saab kasutada varundamiseks või migreerimiseks.",
+      "downloading": "Ekspordi ettevalmistamine...",
+      "error": "Organisatsiooni andmete eksportimine ebaõnnestus",
+      "success": "Organisatsiooni andmed eksporditi edukalt",
+      "title": "Ekspordi organisatsiooni andmed"
+    },
+    "exportVaults": {
+      "button": "Ekspordi kõik vaultid",
+      "description": "Laadi alla kõik organisatsiooni vaultide konfiguratsioonid, sealhulgas tiimid, piirkonnad, sillad, masinad, repositooriumid, salvestus ja ajakavad. See eksport sisaldab tundlikku mandaaditeavet ja seda tuleks käsitleda turvaliselt.",
+      "error": "Vaultide eksportimine ebaõnnestus",
+      "success": "Vaultid eksporditi edukalt",
+      "title": "Ekspordi kõik vaultid"
+    },
+    "importData": {
+      "button": "Impordi organisatsiooni andmed",
+      "description": "Impordi organisatsiooni andmed eelnevalt eksporditud failist. Saad valida, kas jätta olemasolevad kirjed vahele või asendada need imporditud andmetega.",
+      "error": "Organisatsiooni andmete importimine ebaõnnestus",
+      "modal": {
+        "cancel": "Tühista",
+        "fileRequired": "Palun vali impordifail",
+        "import": "Impordi",
+        "importing": "Importimine...",
+        "importMode": "Impordi režiim",
+        "invalidFile": "Vigane failivorming. Palun vali kehtiv organisatsiooni andmete ekspordifail.",
+        "modeOverride": "Kirjuta olemasolevad kirjed üle",
+        "modeOverrideDesc": "Asenda olemasolevad kirjed imporditud andmetega",
+        "modeSkip": "Jäta olemasolevad kirjed vahele",
+        "modeSkipDesc": "Impordi ainult kirjed, mida veel ei eksisteeri",
+        "selectFile": "Vali fail",
+        "title": "Impordi organisatsiooni andmed",
+        "warning": "Hoiatus",
+        "warningText": "Andmete importimine muudab organisatsiooni konfiguratsiooni. Enne jätkamist veendu, et sul on varukoopia."
+      },
+      "success": "Organisatsiooni andmed imporditi edukalt",
+      "title": "Impordi organisatsiooni andmed"
+    },
+    "title": "Ohutsoon",
+    "updateMasterPassword": {
+      "button": "Krüpteerimise seaded",
+      "description": "Seadista kliendipoolne krüpteerimisparool, mis kaitseb kõiki tundlikke vaultide andmeid teie organisatsioonis. See parool on jagatud kõigi kasutajate vahel ja pole Rediaccile kunagi kättesaadav - täiustatud turvalisuse tagamiseks.",
+      "effect1": "Krüpteerib kõik vaultid uue parooliga uuesti",
+      "effect2": "Logib välja kõik kasutajad (v.a sina)",
+      "effect3": "Nõuab pärast lõpetamist kõigilt kasutajatelt uuesti sisselogimist",
+      "error": {
+        "fetchVaults": "Praeguste vaultide toomine ebaõnnestus",
+        "noVaults": "Uuendamiseks pole vaule leitud",
+        "partialSuccess": "Uuendati edukalt {{updated}} vaulti, kuid {{failed}} ebaõnnestus. Vaata üksikasju logidest.",
+        "updateFailed": "Vaultide uuendamine uue krüpteerimisparooliga ebaõnnestus"
+      },
+      "modal": {
+        "cancel": "Tühista",
+        "confirmPasswordLabel": "Kinnita peaparool",
+        "confirmPasswordMatch": "Paroolid ei ühti",
+        "confirmPasswordPlaceholder": "Kinnita uus peaparool",
+        "confirmPasswordRequired": "Palun kinnita peaparool",
+        "importantNote": "Pärast krüpteerimisparooli uuendamist peavad kõik kasutajad kasutama vault konfiguratsioonidele juurdepääsuks uut jagatud parooli. See parool tuleks turvaliselt edastada kõigile volitatud kasutajatele. Märkus: RequestToken-iga globaalsed sillad tuleb käsitsi deblokeerida.",
+        "importantNoteCreate": "Pärast krüpteerimisparooli loomist vajavad kõik kasutajad vault konfiguratsioonidele juurdepääsuks seda jagatud parooli. Levita seda turvaliselt kõigile volitatud organisatsiooniliikmetele - Rediaccil pole sellele paroolile juurdepääsu.",
+        "importantNoteRemove": "Pärast krüpteerimisparooli eemaldamist on vault konfiguratsioonid kättesaadavad ilma kliendipoolse krüpteerimiseta. Kaaluge oma tundlike andmete turvamõjusid.",
+        "newPasswordLabel": "Uus peaparool",
+        "newPasswordMinLength": "Parool peab olema vähemalt 12 tähemärki pikk",
+        "newPasswordPattern": "Parool peab sisaldama suurtähte, väiketähte, numbrit ja erimärki",
+        "newPasswordPlaceholder": "Sisesta uus peaparool",
+        "newPasswordRequired": "Palun sisesta uus peaparool",
+        "operationCreate": "Loo peaparool",
+        "operationRemove": "Eemalda peaparool",
+        "operationType": "Vali toiming",
+        "operationUpdate": "Uuenda peaparooli",
+        "submit": "Käivita toiming",
+        "submitCreate": "Loo krüpteerimisparool",
+        "submitRemove": "Eemalda krüpteerimisparool",
+        "submitUpdate": "Uuenda krüpteerimisparooli",
+        "title": "Krüpteerimisparooli seadistamine",
+        "warningDescription": "Oled muutmas kogu organisatsiooni peaparooli. See toiming teeb järgmist:",
+        "warningDescriptionCreate": "Oled loomas kogu organisatsiooni jaoks peaparooli. See toiming teeb järgmist:",
+        "warningDescriptionRemove": "Oled eemaldamas kogu organisatsiooni peaparooli. See toiming teeb järgmist:",
+        "warningDescriptionUpdate": "Oled uuendamas kogu organisatsiooni peaparooli. See toiming teeb järgmist:",
+        "warningEffect1": "Lukustab süsteemi toimingu ajaks ajutiselt",
+        "warningEffect2": "Logib välja kõik aktiivsed kasutajad, välja arvatud sina",
+        "warningEffect3": "Krüpteerib kõik vaultide andmed uue parooliga uuesti",
+        "warningEffect3Create": "Krüpteerib kõik vaultide andmed peaparooliga",
+        "warningEffect3Remove": "Dekrüpteerib kõik vaultide andmed (vaultid salvestatakse krüpteerimata)",
+        "warningEffect3Update": "Krüpteerib kõik vaultide andmed uue parooliga uuesti",
+        "warningEffect4": "Nõuab kõigi sildade käsitsi ümberkonfigureerimist",
+        "warningPermanent": "See toiming on püsiv ja seda ei saa tagasi võtta.",
+        "warningSecure": "Kas uus parool on turvaliselt salvestatud?",
+        "warningSecureRemove": "Kas oled kindel, et soovid kõigilt vaultidelt krüpteerimise eemaldada?",
+        "warningTitle": "⚠️ Kriitiline turvalisuse toiming"
+      },
+      "success": {
+        "loginNow": "Mine sisselogimisele",
+        "nextSteps": "Järgmised sammud:",
+        "redirecting": "Suunamine sisselogimislehele",
+        "seconds": "sekundi pärast",
+        "step1": "Kõik kasutajad peavad uuesti sisse logima oma olemasolevate mandaatidega",
+        "step2": "Jaga uut krüpteerimisparooli turvaliselt kõigi organisatsiooni volitatud kasutajatega",
+        "step2Remove": "Teavita administraatoreid, et vaultid on nüüd krüpteerimata",
+        "step3": "Sinu enda sillad tuleb käsitsi ümber konfigureerida uue krüpteerimisparooliga",
+        "step3Remove": "Sinu enda sillad tuleb käsitsi ümber konfigureerida ilma kliendipoolse krüpteerimiseta",
+        "step4": "Uuenda organisatsiooni paroolihaldussüsteemi uue jagatud krüpteerimisparooliga",
+        "step4Remove": "Eemalda krüpteerimisparool organisatsiooni paroolihaldussüsteemist",
+        "systemReady": "Süsteem on nüüd lukust lahti ja kasutusvalmis.",
+        "title": "Toiming lõpetatud edukalt",
+        "titleCreate": "Krüpteerimisparool loodud edukalt",
+        "titleRemove": "Krüpteerimisparool eemaldatud edukalt",
+        "titleUpdate": "Krüpteerimisparool uuendatud edukalt"
+      },
+      "title": "Krüpteerimisparooli seaded",
+      "warning": "Salvesta uus parool turvalisse kohta - kaotsimineku korral ei ole seda võimalik taastada."
+    }
+  },
+  "dashboard": {
+    "activeSubscriptions": "Aktiivsed tellimused",
+    "completed": "Lõpetatud",
+    "daysRemaining": "Päevi jäänud",
+    "failed": "Ebaõnnestunud",
+    "jobTimeout": "Töö aegumine",
+    "maxRepoSize": "Repositooriumi maksimaalne suurus",
+    "maxReservedJobs": "Maksimaalselt reserveeritud töid",
+    "noPlanData": "Plaani limiidi andmed puuduvad",
+    "noSubscription": "Aktiivne tellimus puudub",
+    "pending": "Ootel",
+    "processing": "Töötlemisel"
+  },
+  "organization": {
+    "errors": {
+      "blockRequestsFailed": "Kasutajate päringute blokeerimise oleku uuendamine ebaõnnestus",
+      "importFailed": "Organisatsiooni andmete importimine ebaõnnestus",
+      "noExportData": "Ekspordiandmeid ei tagastatud",
+      "vaultsUpdateFailed": "Vault konfiguratsioonide uuendamine ebaõnnestus",
+      "vaultUpdateFailed": "Vault konfiguratsiooni uuendamine ebaõnnestus"
+    },
+    "success": {
+      "errorCount": "{{count}} viga",
+      "importComplete": "Import lõpetatud: {{summary}}",
+      "imported": "Organisatsiooni andmed imporditi edukalt",
+      "importedCount": "{{count}} kirjet imporditud",
+      "requestsBlocked": "Kasutajate päringud blokeeriti edukalt",
+      "requestsBlockedWithTerminations": "Kasutajate päringud blokeeritud. {{count}} aktiivset sessiooni lõpetati.",
+      "requestsUnblocked": "Kasutajate päringud deblokeeriti edukalt",
+      "skippedCount": "{{count}} kirjet vahele jäetud",
+      "vaultsUpdated": "Kõik vault konfiguratsioonid uuendati edukalt",
+      "vaultUpdated": "Vault konfiguratsioon uuendati edukalt"
+    }
+  },
+  "personal": {
+    "changePassword": {
+      "successContent": "Sinu parool on muudetud. Sind logitakse välja {{seconds}} sekundi pärast...",
+      "successTitle": "Parool edukalt muudetud"
+    }
+  },
+  "regionsInfrastructure": {
+    "title": "Piirkonnad ja infrastruktuur"
+  },
+  "tables": {
+    "permissionGroups": {
+      "actions": "Toimingud",
+      "groupName": "Grupi nimi",
+      "permissions": "Õigused",
+      "users": "Kasutajad"
+    },
+    "teams": {
+      "actions": "Toimingud",
+      "machines": "Masinad",
+      "members": "Liikmed",
+      "repositories": "Repositooriumid",
+      "stats": "Statistika",
+      "storage": "Salvestus",
+      "teamName": "Tiimi nimi",
+      "vaultVersion": "Vaulti versioon"
+    },
+    "users": {
+      "actions": "Toimingud",
+      "email": "E-post",
+      "lastActive": "Viimati aktiivne",
+      "permissionGroup": "Õiguste grupp",
+      "status": "Olek"
+    }
+  },
+  "teams": {
+    "delete": {
+      "confirmDescription": "Kas oled kindel, et soovid tiimi \"{{teamName}}\" kustutada?",
+      "confirmTitle": "Kustuta tiim"
+    }
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "Kas oled kindel, et soovid kasutaja \"{{email}}\" aktiveerida?",
+      "confirmTitle": "Aktiveeri kasutaja"
+    },
+    "deactivate": {
+      "confirmDescription": "Kas oled kindel, et soovid kasutaja \"{{email}}\" deaktiveerida?",
+      "confirmTitle": "Deaktiveeri kasutaja"
+    }
+  },
+  "userSessions": {
+    "active": "Aktiivne",
+    "activeSessions": "Aktiivsed sessioonid",
+    "averageDuration": "Keskmine kestus",
+    "columns": {
+      "actions": "Toimingud",
+      "createdAt": "Sisselogimise aeg",
+      "duration": "Kestus",
+      "ipAddress": "IP-aadress",
+      "lastActivity": "Viimane tegevus",
+      "sessionName": "Sessioon",
+      "status": "Olek",
+      "user": "Kasutaja",
+      "userAgent": "Kasutajaagent"
+    },
+    "confirmTerminate": "Lõpeta sessioon",
+    "confirmTerminateOther": "Kas oled kindel, et soovid kasutaja {{email}} sessiooni lõpetada?",
+    "confirmTerminateSelf": "See on sinu praegune sessioon. Selle lõpetamine logib sind välja. Kas oled kindel?",
+    "currentSession": "Sina",
+    "fork": "Fork",
+    "forkToken": "See on fork-token (lapse sessioon)",
+    "hasChildren": "{{count}} lapse sessiooni",
+    "inactive": "Mitteaktiivne",
+    "ipLabel": "IP",
+    "minutes": "minutit",
+    "notAvailable": "N/A",
+    "searchPlaceholder": "Otsi e-posti, IP või sessiooni nime järgi...",
+    "selfTerminateWarning": "Sinu sessioon lõpetatakse. Pead uuesti sisse logima.",
+    "terminate": "Lõpeta",
+    "title": "Kasutajate sessioonid",
+    "totalCount": "Kokku: {{count}} sessiooni",
+    "totalSessions": "Sessioonid kokku",
+    "uniqueUsers": "Unikaalsed kasutajad"
+  },
+  "vaultProtocol": {
+    "errors": {
+      "disableFailed": "Vaulti krüpteerimise keelamine ebaõnnestus",
+      "enableFailed": "Vaulti krüpteerimise lubamine ebaõnnestus",
+      "noOrganizationSelected": "Ühtegi organisatsiooni pole valitud. Enne krüpteerimise uuendamist vali organisatsioon."
+    },
+    "success": {
+      "disabled": "Vaulti krüpteerimine keelatud. Peaparoolid pole enam nõutavad.",
+      "enabled": "Vaulti krüpteerimine lubatud edukalt. Kõik kasutajad peavad nüüd kasutama seda peaparooli."
+    }
+  }
+}

@@ -7,7 +7,7 @@ const WWW_ROOT = path.resolve(__dirname, '../..');
 const TRANSLATIONS_DIR = path.join(WWW_ROOT, 'src', 'i18n', 'translations');
 const INDEX_PAGE_PATH = path.join(WWW_ROOT, 'src', 'pages', '[lang]', 'index.astro');
 
-const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'];
+const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'];
 
 function normalizeCommandText(text) {
   return String(text || '')

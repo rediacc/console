@@ -8,7 +8,21 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const CAST_DIR = path.join(ROOT, 'public', 'assets', 'tutorials');
 const TRANSCRIPT_DIR = path.join(ROOT, 'src', 'data', 'tutorial-transcripts');
-const TRANSCRIPT_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'];
+const TRANSCRIPT_LANGUAGES = [
+  'en',
+  'de',
+  'es',
+  'fr',
+  'ja',
+  'ar',
+  'ru',
+  'tr',
+  'zh',
+  'et',
+  'ko',
+  'pt',
+  'it',
+];
 
 const colors = {
   red: (s) => `\x1b[31m${s}\x1b[0m`,

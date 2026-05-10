@@ -2579,7 +2579,7 @@
     "opsSkipOrchestration": "تخطي تنسيق المجموعة",
     "opsSSHUser": "اسم مستخدم SSH للاتصال بالآلة الافتراضية",
     "organization": "اسم المؤسسة",
-    "output": "صيغة المخرجات (table|json|yaml|csv)",
+    "output": "صيغة المخرجات (table|json|yaml|csv). Override default with REDIACC_DEFAULT_OUTPUT.",
     "outputFormat": "صيغة المخرجات (json)",
     "outputPath": "المسار لحفظ ملف الإخراج",
     "param": "معاملات الدالة",

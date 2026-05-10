@@ -1,0 +1,592 @@
+{
+  "additionalOptions": "Opzioni aggiuntive (avanzato)",
+  "availableFunctions": "Funzioni disponibili",
+  "categories": {
+    "backup": {
+      "description": "Operazioni di backup e ripristino",
+      "name": "Funzioni di backup"
+    },
+    "container": {
+      "description": "Operazioni di gestione container Docker",
+      "name": "Funzioni container"
+    },
+    "machine": {
+      "description": "Funzioni di configurazione e manutenzione del sistema",
+      "name": "Funzioni macchina"
+    },
+    "network": {
+      "description": "Operazioni di rete e mappatura socket",
+      "name": "Funzioni di rete"
+    },
+    "repository": {
+      "description": "Gestione e operazioni sui repository",
+      "name": "Funzioni repository"
+    }
+  },
+  "checkboxOptions": {
+    "mountRepoFirst": "Monta prima il repository",
+    "overrideExistingFile": "Sovrascrivi il file esistente",
+    "unmountAfterStopping": "Smonta dopo l'arresto"
+  },
+  "configure": "Configura",
+  "currentPriority": "Corrente",
+  "description": "Descrizione (facoltativa)",
+  "descriptionPlaceholder": "Aggiungi una descrizione personalizzata per questo elemento in coda",
+  "destinationFilename": "Nome file di destinazione",
+  "functions": {
+    "backup_create": {
+      "description": "Esegui il backup del repository su più sistemi di archiviazione",
+      "name": "backup (crea copia)",
+      "params": {
+        "checkpoint": {
+          "help": "Abilita la modalità hot backup con checkpoint (richiede CRIU, zero downtime per i repository online)",
+          "label": "Abilita checkpoint"
+        },
+        "option": {
+          "help": "Opzioni (es. override)",
+          "label": "Opzioni"
+        },
+        "storages": {
+          "help": "Seleziona uno o più sistemi di archiviazione di destinazione per il backup",
+          "label": "Sistemi di archiviazione di destinazione"
+        }
+      }
+    },
+    "backup_deploy": {
+      "description": "Distribuisci il repository su più macchine",
+      "name": "deploy (distribuisci)",
+      "params": {
+        "checkpoint": {
+          "help": "Abilita la modalità hot deploy con checkpoint (richiede CRIU, zero downtime per i repository online)",
+          "label": "Abilita checkpoint"
+        },
+        "grand": {
+          "help": "Riferimento al repository grand",
+          "label": "Repository grand"
+        },
+        "machines": {
+          "help": "Seleziona una o più macchine di destinazione per la distribuzione",
+          "label": "Macchine di destinazione"
+        },
+        "option": {
+          "help": "Opzioni (es. override)",
+          "label": "Opzioni"
+        },
+        "repository": {
+          "help": "Repository da distribuire",
+          "label": "Repository"
+        },
+        "state": {
+          "help": "Stato corrente del repository",
+          "label": "Stato"
+        },
+        "tag": {
+          "help": "Tag per il repository distribuito (formato timestamp consigliato)",
+          "label": "Tag"
+        }
+      }
+    },
+    "backup_pull": {
+      "description": "Recupera il repository dall'archiviazione remota",
+      "name": "pull",
+      "params": {
+        "from": {
+          "help": "Seleziona la macchina o l'archiviazione sorgente",
+          "label": "Sorgente"
+        },
+        "repository": {
+          "help": "Nome/i repository, separati da virgola",
+          "label": "Repository"
+        },
+        "sourceType": {
+          "help": "Seleziona se recuperare da una macchina o da un'archiviazione",
+          "label": "Tipo sorgente"
+        }
+      }
+    },
+    "backup_push": {
+      "description": "Invia il repository all'archiviazione remota",
+      "name": "push",
+      "params": {
+        "checkpoint": {
+          "help": "Abilita la modalità hot backup con checkpoint (richiede CRIU, zero downtime per i repository online)",
+          "label": "Abilita checkpoint"
+        },
+        "dest": {
+          "help": "Nome per il file di backup",
+          "label": "Nome file di destinazione"
+        },
+        "destinationType": {
+          "help": "Seleziona se inviare a una macchina o a un'archiviazione",
+          "label": "Tipo destinazione"
+        },
+        "option": {
+          "help": "Opzioni (es. override)",
+          "label": "Opzioni"
+        },
+        "repository": {
+          "help": "Nome/i repository, separati da virgola",
+          "label": "Repository"
+        },
+        "state": {
+          "help": "Verifica che il repository sia online o offline prima dell'invio",
+          "label": "Stato richiesto"
+        },
+        "to": {
+          "help": "Seleziona la macchina o l'archiviazione di destinazione",
+          "label": "Destinazione"
+        }
+      }
+    },
+    "container_inspect": {
+      "description": "Ispeziona i dettagli del container Docker",
+      "name": "container_inspect (ispezione)",
+      "params": {
+        "container": {
+          "help": "Nome o ID del container",
+          "label": "Container"
+        }
+      }
+    },
+    "container_logs": {
+      "description": "Visualizza i log del container Docker",
+      "name": "container_logs (registro)",
+      "params": {
+        "container": {
+          "help": "Nome o ID del container",
+          "label": "Container"
+        },
+        "follow": {
+          "help": "Segui l'output del log in tempo reale",
+          "label": "Segui log"
+        },
+        "lines": {
+          "help": "Numero di righe da mostrare (predefinito: 100)",
+          "label": "Righe"
+        }
+      }
+    },
+    "container_pause": {
+      "description": "Metti in pausa un container Docker in esecuzione",
+      "name": "pause (sospendi)",
+      "params": {
+        "container": {
+          "help": "Nome o ID del container",
+          "label": "Container"
+        }
+      }
+    },
+    "container_remove": {
+      "description": "Rimuovi un container Docker",
+      "name": "remove (elimina)",
+      "params": {
+        "container": {
+          "help": "Nome o ID del container",
+          "label": "Container"
+        },
+        "force": {
+          "help": "Forza la rimozione del container in esecuzione",
+          "label": "Forza rimozione"
+        }
+      }
+    },
+    "container_restart": {
+      "description": "Riavvia un container Docker",
+      "name": "restart (riavvia)",
+      "params": {
+        "container": {
+          "help": "Nome o ID del container",
+          "label": "Container"
+        }
+      }
+    },
+    "container_start": {
+      "description": "Avvia un container Docker",
+      "name": "start (avvia)",
+      "params": {
+        "container": {
+          "help": "Nome o ID del container",
+          "label": "Container"
+        }
+      }
+    },
+    "container_stats": {
+      "description": "Visualizza le statistiche di utilizzo delle risorse del container Docker",
+      "name": "container_stats (statistiche)",
+      "params": {
+        "container": {
+          "help": "Nome o ID del container (facoltativo - mostra tutti se vuoto)",
+          "label": "Container"
+        }
+      }
+    },
+    "container_stop": {
+      "description": "Arresta un container Docker in esecuzione",
+      "name": "stop",
+      "params": {
+        "container": {
+          "help": "Nome o ID del container",
+          "label": "Container"
+        }
+      }
+    },
+    "container_unpause": {
+      "description": "Riprendi un container Docker in pausa",
+      "name": "unpause (riprendi)",
+      "params": {
+        "container": {
+          "help": "Nome o ID del container",
+          "label": "Container"
+        }
+      }
+    },
+    "fork": {
+      "description": "Crea una copia locale del repository con un nuovo tag",
+      "name": "fork",
+      "params": {
+        "grand": {
+          "help": "Riferimento al repository grand",
+          "label": "Repository grand"
+        },
+        "repository": {
+          "help": "Repository da duplicare",
+          "label": "Repository"
+        },
+        "state": {
+          "help": "Stato corrente del repository",
+          "label": "Stato"
+        },
+        "tag": {
+          "help": "Tag per il repository duplicato (formato timestamp consigliato)",
+          "label": "Tag"
+        }
+      }
+    },
+    "machine_ping": {
+      "description": "Testa la connettività di rete alla macchina",
+      "name": "ping"
+    },
+    "machine_uninstall": {
+      "description": "Pulizia e disinstallazione dei componenti di sistema",
+      "name": "uninstall (disinstalla)"
+    },
+    "machine_version": {
+      "description": "Funzione di test semplice che stampa hello dall'hostname",
+      "name": "hello (saluto)"
+    },
+    "plugin": {
+      "description": "Attiva i plugin del repository",
+      "name": "plugin",
+      "params": {
+        "plugin": {
+          "help": "Nome/i plugin, separati da virgola",
+          "label": "Plugin"
+        },
+        "repository": {
+          "help": "Nome/i repository, separati da virgola",
+          "label": "Repository"
+        }
+      }
+    },
+    "plugout": {
+      "description": "Disattiva i plugin del repository",
+      "name": "plugout (disconnetti plugin)",
+      "params": {
+        "plugin": {
+          "help": "Nome/i plugin, separati da virgola",
+          "label": "Plugin"
+        },
+        "repository": {
+          "help": "Nome/i repository, separati da virgola",
+          "label": "Repository"
+        }
+      }
+    },
+    "pull": {
+      "name": "Pull"
+    },
+    "repository_create": {
+      "description": "Crea un nuovo repository",
+      "name": "new",
+      "params": {
+        "repository": {
+          "help": "Nome del repository",
+          "label": "Repository"
+        },
+        "size": {
+          "help": "Dimensione del repository (es. 10G)",
+          "label": "Dimensione"
+        }
+      }
+    },
+    "repository_delete": {
+      "description": "Elimina il repository",
+      "name": "rm",
+      "params": {
+        "repository": {
+          "help": "Nome del repository",
+          "label": "Repository"
+        }
+      }
+    },
+    "repository_down": {
+      "description": "Arresta i servizi del repository",
+      "name": "down",
+      "params": {
+        "option": {
+          "help": "Opzioni aggiuntive",
+          "label": "Opzioni"
+        },
+        "repository": {
+          "help": "Nome/i repository, separati da virgola",
+          "label": "Repository"
+        }
+      }
+    },
+    "repository_expand": {
+      "description": "Espandi l'archiviazione del repository online con zero downtime",
+      "name": "expand (espandi)",
+      "params": {
+        "grand": {
+          "help": "GUID del repository grand",
+          "label": "Repository grand"
+        },
+        "repository": {
+          "help": "Nome del repository",
+          "label": "Repository"
+        },
+        "size": {
+          "help": "Nuova dimensione (es. 20G) - deve essere maggiore della dimensione corrente",
+          "label": "Nuova dimensione"
+        }
+      }
+    },
+    "repository_list": {
+      "description": "Elenca i file nelle posizioni di archiviazione remota",
+      "name": "list files (elenca file)",
+      "params": {
+        "format": {
+          "help": "Formato per l'elenco dei file",
+          "label": "Formato output"
+        },
+        "from": {
+          "help": "Macchina o sistema di archiviazione da cui elencare i file",
+          "label": "Posizione sorgente"
+        },
+        "path": {
+          "help": "Percorso facoltativo all'interno dell'archiviazione",
+          "label": "Percorso"
+        }
+      }
+    },
+    "repository_mount": {
+      "description": "Monta i filesystem del repository",
+      "name": "mount (monta)",
+      "params": {
+        "checkpoint": {
+          "help": "Ripristina i container dal checkpoint se disponibile (richiede CRIU)",
+          "label": "Abilita ripristino checkpoint"
+        },
+        "from": {
+          "help": "Macchina remota da cui montare",
+          "label": "Da macchina"
+        },
+        "repository": {
+          "help": "Nome/i repository, separati da virgola",
+          "label": "Repository"
+        }
+      }
+    },
+    "repository_ownership": {
+      "description": "Cambia la proprietà del repository",
+      "name": "ownership (proprietà)",
+      "params": {
+        "from": {
+          "help": "Proprietario corrente",
+          "label": "Proprietario corrente"
+        },
+        "repository": {
+          "help": "Nome del repository",
+          "label": "Repository"
+        },
+        "to": {
+          "help": "Nuovo proprietario (predefinito: utente universale)",
+          "label": "Nuovo proprietario"
+        }
+      }
+    },
+    "repository_resize": {
+      "description": "Ridimensiona l'archiviazione del repository (operazione offline - il repository deve essere smontato)",
+      "name": "resize (ridimensiona)",
+      "params": {
+        "repository": {
+          "help": "Nome del repository",
+          "label": "Repository"
+        },
+        "size": {
+          "help": "Nuova dimensione (es. 20G) - può essere maggiore o minore della dimensione corrente",
+          "label": "Nuova dimensione"
+        }
+      }
+    },
+    "repository_template_apply": {
+      "description": "Applica una configurazione template a questo repository",
+      "name": "templates (modelli)",
+      "params": {
+        "grand": {
+          "help": "GUID del repository grand",
+          "label": "Repository grand"
+        },
+        "repository": {
+          "help": "Nome del repository",
+          "label": "Repository"
+        },
+        "tmpl": {
+          "help": "Seleziona un template da applicare al repository",
+          "label": "Template"
+        }
+      }
+    },
+    "repository_unmount": {
+      "description": "Smonta i filesystem del repository",
+      "name": "unmount (smonta)",
+      "params": {
+        "checkpoint": {
+          "help": "Crea un checkpoint prima dello smontaggio (richiede CRIU)",
+          "label": "Crea checkpoint"
+        },
+        "from": {
+          "help": "Macchina remota da cui smontare",
+          "label": "Da macchina"
+        },
+        "repository": {
+          "help": "Nome/i repository, separati da virgola",
+          "label": "Repository"
+        }
+      }
+    },
+    "repository_up": {
+      "description": "Avvia i servizi del repository tramite Rediaccfile",
+      "name": "up",
+      "params": {
+        "option": {
+          "help": "Opzioni (es. mount)",
+          "label": "Opzioni"
+        },
+        "repository": {
+          "help": "Nome/i repository, separati da virgola",
+          "label": "Repository"
+        }
+      }
+    },
+    "repository_validate": {
+      "description": "Valida il repository eseguendo prep, up(), controlli salute, test e down()",
+      "name": "validate (valida)",
+      "params": {
+        "cleanup": {
+          "help": "Smonta il repository al termine della validazione",
+          "label": "Pulizia"
+        },
+        "grand": {
+          "help": "Nome del repository padre",
+          "label": "Repository grand"
+        },
+        "repository": {
+          "help": "Nome del repository da validare",
+          "label": "Repository"
+        },
+        "skip_down": {
+          "help": "Lascia i servizi in esecuzione dopo la validazione",
+          "label": "Salta down"
+        },
+        "skip_prep": {
+          "help": "Salta la fase di prep se già eseguita di recente",
+          "label": "Salta prep"
+        },
+        "timeout": {
+          "help": "Tempo massimo per funzione in secondi (predefinito: 300)",
+          "label": "Timeout (secondi)"
+        }
+      }
+    },
+    "setup": {
+      "description": "Configura il sistema operativo con gli strumenti e le configurazioni necessarie",
+      "name": "setup (configura sistema)",
+      "params": {
+        "datastore_size": {
+          "help": "Dimensione del datastore (es. 95%, 100G)",
+          "label": "Dimensione datastore"
+        },
+        "docker_source": {
+          "help": "Come installare Docker (docker-repo = repository ufficiale, package-manager = pacchetti OS, snap = snap store, manual = salta)",
+          "label": "Sorgente installazione Docker"
+        },
+        "install_amd_driver": {
+          "help": "Installa i driver GPU AMD (auto = rileva la GPU prima, true = installa sempre, false = salta)",
+          "label": "Installa driver GPU AMD"
+        },
+        "install_criu": {
+          "help": "Installa CRIU per il supporto checkpoint/ripristino (auto = installa se kernel >= 3.11, true = forza installazione, false = salta, manual = l'utente installa)",
+          "label": "Installa CRIU"
+        },
+        "install_nvidia_driver": {
+          "help": "Installa i driver GPU NVIDIA (auto = rileva la GPU prima, true = installa sempre, false = salta)",
+          "label": "Installa driver GPU NVIDIA"
+        },
+        "rclone_source": {
+          "help": "Come installare rclone (install-script = script ufficiale, package-manager = apt/dnf, manual = salta)",
+          "label": "Sorgente installazione rclone"
+        },
+        "source": {
+          "help": "Sorgente del pacchetto",
+          "label": "Sorgente"
+        }
+      }
+    }
+  },
+  "imagePlaceholder": "es. registry/immagine:tag",
+  "missingRequiredParams": "Compila tutti i parametri obbligatori: {{params}}",
+  "onlinePushLearnMore": "Scopri di più sugli invii online e offline →",
+  "onlinePushWarningMessage": "L'invio di un repository montato mentre i servizi sono in esecuzione può causare inconsistenze nei dati.",
+  "onlinePushWarningTitle": "Avviso invio online",
+  "original": " (Originale)",
+  "priority": "Priorità",
+  "priorityAboveNormal": "Sopra la norma",
+  "priorityBelowNormal": "Normale",
+  "priorityHelp": "I task vengono elaborati prima per priorità, poi per età",
+  "priorityHigh": "Alta",
+  "priorityHighDescription": "Consente più task ad alta priorità in parallelo. Usa per task importanti che richiedono elaborazione più rapida.",
+  "priorityHighest": "Massima",
+  "priorityHighestDescription": "L'invio di un task a priorità massima annullerà automaticamente eventuali task a priorità massima già esistenti. Usa solo per task urgenti e critici che richiedono attenzione immediata.",
+  "priorityHighestTimeout": "I task P1 scadono dopo 33 secondi",
+  "priorityHighestTimeoutWarning": "Adatto a operazioni rapide come test SSH, controlli salute e query di stato. Per task critici più lunghi, usa P2 (timeout per livello: 2-96 ore).",
+  "priorityHighestWarning": "Priorità massima (1)",
+  "priorityHighWarning": "Alta priorità (2)",
+  "priorityLevelFormat": "P{{level}} ({{label}})",
+  "priorityLow": "Bassa",
+  "priorityLowDescription": "Velocità di elaborazione standard. Consigliata per la maggior parte delle operazioni e i task quotidiani.",
+  "priorityLowestDescription": "Velocità di elaborazione più bassa. Usa per operazioni batch o task senza vincoli di tempo.",
+  "priorityLowestWarning": "Priorità minima (5)",
+  "priorityLowWarning": "Priorità normale (4)",
+  "priorityNormal": "Sopra la norma",
+  "priorityNormalDescription": "Più veloce dell'elaborazione standard. Usa per task che richiedono elaborazione più rapida del normale.",
+  "priorityNormalWarning": "Priorità sopra la norma (3)",
+  "priorityPopoverLevels": "Livelli di priorità:",
+  "priorityPopoverP1": "Timeout 33 secondi. Per operazioni rapide come test SSH, controlli salute e query di stato. Slot riservati per esecuzione immediata.",
+  "priorityPopoverP2": "Timeout per livello (2-96h). Slot riservati. Per task importanti e critici.",
+  "priorityPopoverP3": "Timeout per livello (2-96h). Slot normali. Per task che richiedono elaborazione più rapida.",
+  "priorityPopoverP4": "Timeout per livello (2-96h). Elaborazione standard per la maggior parte delle operazioni.",
+  "priorityPopoverP5": "Timeout per livello (2-96h). Per operazioni batch senza vincoli di tempo.",
+  "priorityPopoverTitle": "Sistema di priorità",
+  "pushOperationDetails": "Dettagli operazione di invio",
+  "quickTaskBadge": "Task rapido",
+  "quickTaskDescription": "Completa in meno di 30 secondi",
+  "repositoryLineage": "Discendenza repository",
+  "repositoryWillBePushedOffline": "Il repository verrà inviato in stato offline (smontato).",
+  "repositoryWillBePushedOnline": "Il repository verrà inviato in stato online (montato).",
+  "searchFunctions": "Cerca funzioni...",
+  "selectFunction": "Seleziona funzione",
+  "selectFunctionToConfigure": "Seleziona una funzione da configurare",
+  "sourceRepository": "Repository sorgente",
+  "validationError": "Errore di validazione"
+}

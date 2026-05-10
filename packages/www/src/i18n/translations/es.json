@@ -1,8 +1,8 @@
 {
   "announcement": {
     "enabled": true,
-    "link": "/es/blog",
-    "text": "v0.6 lanzado — soporte Alpine musl, sistema de suscripciones y más"
+    "link": "/account/",
+    "text": "Tiempo limitado: Programa Design Partner — plan BUSINESS de por vida"
   },
   "beforeAfter": {
     "after": {
@@ -139,6 +139,10 @@
     "openInNewTab": "Abrir en nueva pestaña",
     "searchDocs": "Buscar documentación",
     "shareSection": "Compartir sección",
+    "subcategories": {
+      "advanced": "Avanzado",
+      "essentials": "Fundamentos"
+    },
     "viewAsMarkdown": "Ver página como Markdown",
     "viewAsMarkdownDesc": "Abrir el archivo Markdown en una nueva pestaña"
   },
@@ -307,6 +311,10 @@
       "author": "rediacc",
       "defaultDescription": "Plataforma de automatización de infraestructura diseñada para operaciones de desarrollo aceleradas. Entornos de desarrollo instantáneo y recuperación ante desastres de próxima generación.",
       "defaultKeywords": "automatización de infraestructura, operaciones de IA, recuperación ante desastres, entornos de desarrollo, protocolo de contexto modelo, DevOps, CI/CD",
+      "designPartner": {
+        "ogDescPrefix": "Obtén BUSINESS gratis de por vida.",
+        "ogPrefix": "Programa Design Partner"
+      },
       "locale": "es_ES",
       "siteName": "rediacc",
       "twitter": {
@@ -372,7 +380,7 @@
       }
     },
     "pricing": "Precios",
-    "roiCalculator": "ROI Calculator",
+    "roiCalculator": "Calculadora de ROI",
     "search": "Buscar",
     "selectLanguage": "Seleccionar idioma",
     "solutions": "Soluciones",
@@ -648,6 +656,98 @@
       },
       "toc": {
         "title": "Tabla de contenidos"
+      }
+    },
+    "designPartners": {
+      "ask": {
+        "items": [
+          {
+            "body": "Envía un email de una línea cuando algo te sorprenda. El stack trace es opcional. La frustración, bienvenida.",
+            "title": "Dinos cuándo falla"
+          },
+          {
+            "body": "30 minutos cada trimestre, más o menos. Nosotros escuchamos, tú hablas. Sin demos, sin ventas.",
+            "title": "Únete a una llamada de vez en cuando"
+          },
+          {
+            "body": "Si enviamos algo que te afecte, queremos poder avisarte antes de que llegue. Un email estándar está bien.",
+            "title": "Mantente localizable"
+          }
+        ],
+        "lede": "Sin complicaciones. El objetivo no es extraer trabajo gratuito; es mantenernos honestos.",
+        "title": "Lo que pedimos a cambio"
+      },
+      "faq": {
+        "items": [
+          {
+            "a": "Sí. La concesión vive en tu registro de suscripción sin fecha de caducidad ni degradación automática. Si alguna vez necesitamos cambiar eso, enviaremos un email a todos los Design Partners primero. No lo hemos hecho. No tenemos planes de hacerlo.",
+            "q": "¿Es realmente de por vida?"
+          },
+          {
+            "a": "Tu cuenta dejará de funcionar, igual que la de cualquier otro. La promesa de por vida es la vida de la empresa. Somos pre-cliente; este es el riesgo honesto que asumes.",
+            "q": "¿Qué pasa si Rediacc cierra?"
+          },
+          {
+            "a": "Sin muros de pago, sin contratos, sin facturación automática. Lo único que pedimos es el feedback ligero que mencionamos arriba. Puedes ignorarnos. No revocaremos tu plan.",
+            "q": "¿Hay condiciones ocultas?"
+          },
+          {
+            "a": "Sí. Puedes quedarte en BUSINESS para siempre, o pasar a Enterprise si superas los límites. Subir de nivel tiene facturación normal; el beneficio de por vida aplica solo a BUSINESS.",
+            "q": "¿Puedo cambiar de plan más adelante?"
+          },
+          {
+            "a": "Hasta que lo cerremos. No anunciaremos el cierre con antelación, así que hoy es un buen día para registrarse. Los Design Partners existentes conservan su plan pase lo que pase.",
+            "q": "¿Cuánto tiempo estará abierto el programa?"
+          }
+        ],
+        "title": "Respuestas honestas"
+      },
+      "finalCta": {
+        "button": "Reclamar mi plan BUSINESS",
+        "note": "Te enviaremos un email para configurar una llamada de onboarding en uno o dos días.",
+        "subtitle": "Un registro. Sin tarjeta de crédito. Plan BUSINESS de por vida, bloqueado.",
+        "title": "¿Listo para ser un pionero?"
+      },
+      "hero": {
+        "eyebrow": "Programa limitado",
+        "note": "Sin tarjeta de crédito. Sin solicitud. Regístrate y ya estás dentro.",
+        "primaryCta": "Reclamar mi plan BUSINESS",
+        "secondaryCta": "Ver precios",
+        "subtitle": "Somos pre-cliente. Queremos pioneros dispuestos a usar el producto y a decirnos cuándo falla. A cambio, obtienes nuestro plan BUSINESS gratis mientras Rediacc exista.",
+        "title": "Conviértete en Design Partner. Obtén BUSINESS de por vida. Gratis."
+      },
+      "meta": {
+        "description": "Regístrate gratis como Design Partner y obtén nuestro plan BUSINESS de por vida. Buscamos pioneros dispuestos a compartir feedback mientras construimos.",
+        "title": "Programa Design Partner | BUSINESS gratis de por vida"
+      },
+      "why": {
+        "items": [
+          {
+            "body": "Aprendemos 100 veces más de un equipo en producción que de cien registros de prueba. Los Design Partners son como afinamos el producto antes de que lleguen las masas.",
+            "title": "Equipos reales, cargas de trabajo reales"
+          },
+          {
+            "body": "Todavía no necesitamos tu dinero. Necesitamos tus cicatrices, tus casos límite y tus preguntas. Gratis a cambio de honestidad es un trato justo.",
+            "title": "Dinero a cambio de feedback"
+          },
+          {
+            "body": "Tu plan BUSINESS de por vida nunca caduca, nunca se degrada y nunca pedirá una tarjeta de crédito. Ese es el trato.",
+            "title": "Agradecimiento permanente"
+          }
+        ],
+        "title": "Por qué lo hacemos"
+      },
+      "youGet": {
+        "items": [
+          "Plan BUSINESS: 500 GB por repositorio, 20 licencias flotantes, 20.000 solicitudes de licencia al mes",
+          "En el canal edge: límites 2x (1 TB por repositorio, 40 licencias, 40.000 solicitudes)",
+          "Repositorios, usuarios y equipos ilimitados",
+          "Restauraciones de snapshots, modo oscuro, los 9 idiomas",
+          "Línea directa con el fundador para onboarding y soporte",
+          "Bloqueado de por vida. Sin caducidad, sin degradación, sin tarjeta registrada."
+        ],
+        "lede": "Todo lo incluido en el nivel BUSINESS, gratis durante toda la vida de tu cuenta.",
+        "title": "Qué obtienes"
       }
     },
     "disasterRecovery": {
@@ -1354,6 +1454,11 @@
         "notFound": "404 - Página no encontrada"
       },
       "description": "Lo sentimos, la página que estás buscando no existe o ha sido movida. Esto puede suceder si siguió un enlace desactualizado o escribió la URL incorrectamente.",
+      "designPartner": {
+        "body": "Obtén nuestro plan BUSINESS gratis de por vida. Sin tarjeta de crédito.",
+        "cta": "Reclamar Design Partner",
+        "title": "Programa Design Partner"
+      },
       "help": {
         "description": "Si cree que se trata de un error o esperaba encontrar contenido aquí, comuníquese con nuestro equipo de soporte. Estamos aquí para ayudarte a encontrar lo que estás buscando.",
         "link": "contacta con nuestro equipo de soporte",
@@ -3132,6 +3237,12 @@
             "secondary": "Contacto Ventas"
           }
         },
+        "designPartner": {
+          "badge": "GRATIS para Design Partners",
+          "cta": "Reclamar Design Partner",
+          "period": "De por vida · Sin tarjeta requerida",
+          "price": "FREE"
+        },
         "edgeLimitsNote": "Límites mostrados para el canal edge. La mitad en stable.",
         "foreverFree": "libre para siempre",
         "getStarted": "Empezar",
@@ -3438,6 +3549,103 @@
         "title": "Tabla de contenidos"
       }
     },
+    "resourcesNis2Directive": {
+      "about": {
+        "body": "Rediacc es una plataforma de infraestructura autohospedada registrada en Estonia (OÜ 17363830, VAT EE102920091). Este resumen fue redactado como parte de nuestro programa de contenidos sobre NIS2. Las guías complementarias anteriores describen cómo Rediacc aborda artículos específicos de la directiva, incluidas las áreas en las que Rediacc no es la respuesta (sin certificaciones todavía; sin capa GRC; sin gestión de notificaciones del Artículo 23; MFA solo en el portal). Para el mapeo público de capacidades, consulta {nis2DoraLink} en la documentación.",
+        "cta": "Envíanos tu cuestionario de proveedor o tus tres partidas de seguridad más importantes del presupuesto del año pasado. Responderemos frente a una instancia desplegada, por escrito, incluyendo las carencias. O descarga el PDF y reenvíalo a un colega.",
+        "downloadButton": "Descargar el PDF",
+        "heading": "Sobre este resumen"
+      },
+      "companions": {
+        "heading": "Tres guías complementarias",
+        "intro": "El PDF mapea la directiva. Las guías complementarias convierten las obligaciones en decisiones de adquisición y operativas, una audiencia a la vez.",
+        "items": [
+          {
+            "blurb": "Por qué el registro de terceros TIC se reduce cuando el plano de datos nunca abandona tu tenencia. Para CISOs y responsables de adquisición que renegocian DPAs en 2026.",
+            "slug": "nis2-supply-chain-self-hosted",
+            "title": "El Artículo 21(2)(d) es una pregunta para el proveedor"
+          },
+          {
+            "blurb": "Los Artículos 21(2)(e), (f) y 23 leídos juntos. El fork de tiempo constante que hace realistas los simulacros semanales, y el calendario de notificación del Artículo 23 que no puedes cumplir sin artefactos de calidad forense. Para SRE y responsables de operaciones.",
+            "slug": "nis2-effectiveness-without-theatre",
+            "title": "Efectividad continua sin teatro"
+          },
+          {
+            "blurb": "El stack de cumplimiento de cinco herramientas que las entidades esenciales de mediana empresa están ensamblando en silencio, lo que un plano de control autohospedado colapsa, y las partidas que de todos modos siguen siendo tuyas. Para CFOs y compradores que se adentran en un ciclo de renovación.",
+            "slug": "nis2-the-real-bill",
+            "title": "Lo que nos dijeron los compradores en el primer ciclo de auditoría NIS2"
+          }
+        ],
+        "readMore": "Leer la guía →"
+      },
+      "faq": {
+        "heading": "Preguntas frecuentes",
+        "items": [
+          {
+            "a": "No. Es un resumen no oficial en inglés destinado a hacer accesibles la estructura y las obligaciones de la directiva. Para una interpretación vinculante, consulta el texto oficial en OJ L 333/80 (27 de diciembre de 2022) o a través de EUR-Lex (CELEX 32022L2555). Los actos nacionales de transposición en tu Estado miembro pueden imponer obligaciones más estrictas o con un alcance diferente al de la propia directiva.",
+            "q": "¿Es esta una traducción oficial de la directiva?"
+          },
+          {
+            "a": "Las entidades que operan en sectores del Anexo I (alta criticidad) o del Anexo II (otra criticidad) que superan el umbral de mediana empresa (más de 50 empleados o más de 10 millones de euros de facturación, según la Recomendación 2003/361/CE). Algunas entidades están en el ámbito independientemente de su tamaño, incluidos los registros de TLD, proveedores de DNS, prestadores de servicios de confianza y la administración pública central. Las secciones 4, 6 y 7 del PDF cubren el ámbito en detalle.",
+            "q": "¿Quién está dentro del ámbito de aplicación de NIS2?"
+          },
+          {
+            "a": "La directiva entró en vigor el 16 de enero de 2023. Los Estados miembros disponían hasta el 17 de octubre de 2024 para transponerla al derecho nacional; la aplicación comenzó el 18 de octubre de 2024 (la misma fecha en que se derogó NIS1). El calendario completo, incluido el plazo de envío de la lista de entidades a la Comisión (17 de abril de 2025) y el calendario de revisión periódica, está en la Sección 16.",
+            "q": "¿Cuándo entró en vigor NIS2 y cuál es el plazo de transposición?"
+          },
+          {
+            "a": "Para entidades esenciales: 10.000.000 EUR o el 2 % del volumen de negocios anual mundial, el que sea mayor. Para entidades importantes: 7.000.000 EUR o el 1,4 % del volumen de negocios anual mundial, el que sea mayor. La directiva también permite sanciones no monetarias, incluidas prohibiciones temporales de gestión para la alta dirección de entidades esenciales (medida de último recurso). La Sección 15 aborda los factores de determinación de las multas.",
+            "q": "¿Cuáles son las multas máximas?"
+          },
+          {
+            "a": "Sí, de dos maneras. Directamente: los proveedores no pertenecientes a la UE de DNS, nube, centros de datos, CDN, MSP/MSSP, mercados en línea, buscadores y redes sociales que ofrezcan servicios en la UE deben designar un representante en la UE y cumplir con la directiva. Indirectamente: cualquier proveedor no perteneciente a la UE que suministre productos o servicios a entidades esenciales o importantes de la UE estará sujeto a los requisitos contractuales de seguridad de la cadena de suministro que sus clientes de la UE impongan en virtud del Artículo 21(2)(d). La Sección 17 cubre ambos casos.",
+            "q": "¿Se aplica NIS2 a empresas de fuera de la UE?"
+          },
+          {
+            "a": "Tres plazos, todos activados al «tomar conocimiento» de un incidente significativo: 24 horas para un aviso temprano, 72 horas para una notificación completa del incidente y un mes para el informe final. Los destinatarios del servicio también deben ser notificados sin demora indebida si es probable que una amenaza cibernética significativa les afecte. La Sección 10 incluye la matriz completa de notificación.",
+            "q": "¿Cómo funciona la notificación de incidentes del Artículo 23?"
+          }
+        ]
+      },
+      "hero": {
+        "disclaimer": "Este documento es un resumen no oficial. Para una interpretación vinculante, consulta el texto oficial en OJ L 333/80, 27.12.2022.",
+        "downloadButton": "Descargar el PDF",
+        "eyebrow": "Descarga gratuita · 24 páginas · PDF A4",
+        "openInBrowser": "Abrir en el navegador",
+        "subtitle": "Un resumen de 24 páginas de la Directiva (UE) 2022/2555. Abarca el ámbito de aplicación, las diez medidas del Artículo 21, el calendario de notificación del Artículo 23 (24h/72h/1 mes), los sectores del Anexo I y II, las multas administrativas y una hoja de ruta práctica de cumplimiento en 10 pasos. Redactado por Rediacc; no es una traducción oficial.",
+        "title": "Directiva NIS2: Resumen en español para CISOs y responsables de cumplimiento"
+      },
+      "meta": {
+        "description": "Resumen gratuito de 24 páginas de la Directiva UE NIS2 (2022/2555). Medidas del Art. 21, notificación Art. 23, sectores, multas, hoja de ruta.",
+        "keywords": "NIS2, directiva NIS2, resumen NIS2, cumplimiento NIS2, directiva de ciberseguridad UE, Directiva 2022/2555, Artículo 21, Artículo 23, PDF NIS2",
+        "title": "Resumen de la Directiva NIS2 para CISOs (PDF gratuito)"
+      },
+      "toc": {
+        "heading": "Qué contiene el PDF",
+        "intro": "Diecinueve secciones, estructuradas para el CISO o responsable de cumplimiento que necesita el contenido de la directiva sin tener que leer 73 páginas de considerandos y artículos.",
+        "items": [
+          "Resumen ejecutivo",
+          "Propósito y base jurídica",
+          "De NIS1 a NIS2: ¿Por qué una nueva regulación?",
+          "Ámbito de aplicación y áreas excluidas",
+          "Definiciones clave",
+          "Categorías de entidades: Entidades esenciales e importantes",
+          "Sectores en el ámbito (Anexo I y Anexo II)",
+          "Obligaciones de los Estados miembros",
+          "Medidas de gestión de riesgos de ciberseguridad (Artículo 21)",
+          "Obligaciones de notificación de incidentes (Artículo 23)",
+          "Seguridad de la cadena de suministro",
+          "Responsabilidad del órgano de dirección",
+          "Estructuras de cooperación a nivel de la UE",
+          "Supervisión y aplicación",
+          "Multas administrativas",
+          "Calendario de implementación y transición",
+          "Implicaciones para empresas no pertenecientes a la UE",
+          "Hoja de ruta práctica de cumplimiento (10 pasos)",
+          "Conclusión y evaluación"
+        ]
+      }
+    },
     "roiCalculator": {
       "advancedLabel": "Supuestos avanzados",
       "advancedSliders": {
@@ -3528,12 +3736,12 @@
         "label": "Fuentes y referencias"
       },
       "sizeSelect": {
-        "enterprise": "Enterprise",
+        "enterprise": "Empresa",
         "enterpriseDesc": "200–1.000 empleados",
         "label": "Tamaño de la empresa",
-        "large": "Large Enterprise",
+        "large": "Gran empresa",
         "largeDesc": "1.000+ empleados",
-        "mid": "Mid-Market",
+        "mid": "Mediana empresa",
         "midDesc": "25–200 empleados",
         "smb": "SMB",
         "smbDesc": "< 25 empleados"
@@ -3731,7 +3939,7 @@
             {
               "description": "Cree un snapshot exacto de btrfs de su infraestructura de producción en 47 segundos. Copia cero, fidelidad total.",
               "icon": "copy",
-              "title": "Clone"
+              "title": "Clonar"
             },
             {
               "description": "Ejecute pentests impulsados por IA contra el clon — escaneos de puertos, SQLi, XSS, verificaciones de CVE, sondeo de autenticación. Ataques reales, datos reales.",
@@ -4567,7 +4775,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Multi-Nube",
               "description": "Cuando AWS cae, usted no",
               "slug": "cloud-outage-protection",
               "title": "Protección contra caídas de la nube"
@@ -5050,7 +5258,7 @@
           "solutions": [
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Multi-Nube",
               "current": true,
               "description": "Cuando AWS cae, usted no",
               "slug": "cloud-outage-protection",
@@ -5058,14 +5266,14 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Multi-Nube",
               "description": "Su infraestructura. Su elección. Siempre.",
               "slug": "vendor-lock-in",
               "title": "Libertad de proveedor"
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Multi-Nube",
               "description": "Pruebe su failover antes de necesitarlo",
               "slug": "failover-testing",
               "title": "Pruebas de failover"
@@ -6589,7 +6797,7 @@
             {
               "description": "Una copia exacta de producción se levanta en 60 segundos. Mismo SO, configuraciones, datos.",
               "icon": "copy",
-              "title": "Clone"
+              "title": "Clonar"
             },
             {
               "description": "Comience a desarrollar de inmediato. Sin configuración. Sin preparación. Solo código.",
@@ -6955,21 +7163,21 @@
           "solutions": [
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Multi-Nube",
               "description": "Cuando AWS cae, usted no",
               "slug": "cloud-outage-protection",
               "title": "Protección contra caídas de la nube"
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Multi-Nube",
               "description": "Su infraestructura. Su elección. Siempre.",
               "slug": "vendor-lock-in",
               "title": "Libertad de proveedor"
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Multi-Nube",
               "current": true,
               "description": "Pruebe su failover antes de necesitarlo",
               "slug": "failover-testing",
@@ -7469,7 +7677,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Multi-Nube",
               "description": "Cuando AWS cae, usted no",
               "slug": "cloud-outage-protection",
               "title": "Protección contra caídas de la nube"
@@ -8468,7 +8676,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Multi-Nube",
               "description": "Cuando AWS cae, usted no",
               "slug": "cloud-outage-protection",
               "title": "Protección contra caídas de la nube"
@@ -9431,7 +9639,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Multi-Nube",
               "description": "Cuando AWS cae, usted no",
               "slug": "cloud-outage-protection",
               "title": "Protección contra caídas de la nube"
@@ -10025,7 +10233,7 @@
             {
               "description": "Comience desde un snapshot exacto de producción vía copy-on-write de btrfs. Mismo SO, mismas configuraciones, mismos datos.",
               "icon": "copy",
-              "title": "Clone"
+              "title": "Clonar"
             },
             {
               "description": "Escriba y pruebe contra condiciones reales de producción. Cada biblioteca, cada configuración, cada fila de datos — idénticas.",
@@ -10893,7 +11101,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Multi-Nube",
               "description": "Cuando AWS cae, usted no",
               "slug": "cloud-outage-protection",
               "title": "Protección contra caídas de la nube"
@@ -11429,7 +11637,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Multi-Nube",
               "description": "Cuando AWS cae, usted no",
               "slug": "cloud-outage-protection",
               "title": "Protección contra caídas de la nube"
@@ -11535,7 +11743,7 @@
             {
               "description": "Ejecute rdc ceph snapshot create production. Una copia exacta se levanta en 60 segundos.",
               "icon": "terminal",
-              "title": "Clone"
+              "title": "Clonar"
             },
             {
               "description": "Aplique parches, actualizaciones, cambios de kernel. Rompa lo que quiera. Producción permanece intacto.",
@@ -12365,7 +12573,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Multi-Nube",
               "description": "Cuando AWS cae, usted no",
               "slug": "cloud-outage-protection",
               "title": "Protección contra caídas de la nube"
@@ -13351,7 +13559,7 @@
       "defense": "Defensa preventiva",
       "dev-env": "Entornos de desarrollo",
       "encryption": "Control de cifrado",
-      "multi-cloud": "Multi-Cloud",
+      "multi-cloud": "Multi-Nube",
       "ransomware": "Supervivencia al ransomware"
     },
     "subtitle": "19 soluciones en seis áreas clave — desde supervivencia al ransomware hasta defensa preventiva.",
@@ -13360,6 +13568,7 @@
   "team": {
     "founder": {
       "contact": "¿Preguntas? Escríbeme directamente",
+      "designPartner": "Hago el onboarding personalmente de cada Design Partner. Regístrate gratis y reserva una llamada de 30 min para hablar de tu stack.",
       "guarantee": "Si Rediacc no funciona para ti, envíame un correo electrónico y te ayudaré a migrar de vuelta.",
       "quote": "Construí Rediacc porque la infraestructura no debería ser tan frágil.",
       "story": {

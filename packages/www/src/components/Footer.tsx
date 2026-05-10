@@ -31,7 +31,7 @@ const Footer: React.FC = () => {
               data-track-label="footer-logo"
             >
               <img
-                src="/assets/icon-rediacc.svg"
+                src="/assets/images/icon-rediacc.svg"
                 alt="Rediacc"
                 className="footer-logo-icon"
                 width="48"

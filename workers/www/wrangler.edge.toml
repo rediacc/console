@@ -32,3 +32,10 @@ run_worker_first = ["/*"]
 # No D1 or R2 bindings. Account API + config storage on edge.rediacc.com
 # are served by the regional edge workers (edge-{eu,us,asia}.rediacc.com ->
 # edge-rediacc-account-*); this worker serves marketing + static assets only.
+
+# Service binding to the EU edge regional account worker. Routes
+# /account/api/v1/{contact,newsletter} submissions from the marketing
+# forms to a worker that has a DB. See wrangler.toml for the rationale.
+[[services]]
+binding = "ACCOUNT"
+service = "edge-rediacc-account-eu"

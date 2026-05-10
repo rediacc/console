@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-monitoring.cast",
+  "language": "pt",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-monitoring-01",
+      "markerIndex": 0,
+      "at": 102.949897,
+      "text": "Vamos começar com a vista do sistema. O comando de consulta de máquina com o filtro --system mostra o tempo de funcionamento, o uso do disco e o estado do armazenamento."
+    },
+    {
+      "id": "tutorial-monitoring-02",
+      "markerIndex": 1,
+      "at": 114.069314,
+      "text": "Agora os contentores. Esta vista lista todos os contentores em execução em todos os repositórios da máquina: nome, estado, saúde, CPU, memória e qual o repositório a que cada um pertence."
+    },
+    {
+      "id": "tutorial-monitoring-03",
+      "markerIndex": 2,
+      "at": 126.082986,
+      "text": "E os próprios repositórios. Tamanho, estado de montagem, estado do daemon Docker, uso do disco. Tudo o que precisamos saber sobre cada ambiente isolado."
+    },
+    {
+      "id": "tutorial-monitoring-04",
+      "markerIndex": 3,
+      "at": 138.182721,
+      "text": "O comando de consulta de máquina sem filtros dá-nos tudo de uma vez. Informação do sistema, contentores, repositórios -- tudo junto."
+    },
+    {
+      "id": "tutorial-monitoring-05",
+      "markerIndex": 4,
+      "at": 149.8205,
+      "text": "E por fim a verificação de diagnóstico para uma verificação local no portátil. Node, chave SSH, renet, Docker -- tudo aquilo de que a linha de comandos depende. Esta é a série completa. Da instalação à monitorização, tudo a partir do terminal."
+    }
+  ]
+}

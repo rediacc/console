@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">Fork time is constant: 1 GB, 100 GB, and 1 TB all clone in the same time</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .axis { stroke: #cdcdcd; stroke-width: 1.5; }
+    .bar { fill: #556b2f; }
+    .bar-label { fill: #1a1a1a; font: 700 18px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: end; }
+    .row-label { fill: #1a1a1a; font: 600 18px Inter, system-ui, sans-serif; text-anchor: end; }
+    .x-label { fill: #5e5e5e; font: 400 14px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .closer { fill: #556b2f; font: 600 22px Inter, system-ui, sans-serif; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <text class="row-label" x="240" y="146">1 GB</text>
+  <text class="row-label" x="240" y="226">100 GB</text>
+  <text class="row-label" x="240" y="306">1 TB</text>
+
+  <!-- Equal-length bars -->
+  <rect class="bar" x="270" y="124" width="320" height="32" rx="4"/>
+  <rect class="bar" x="270" y="204" width="320" height="32" rx="4"/>
+  <rect class="bar" x="270" y="284" width="320" height="32" rx="4"/>
+
+  <text class="bar-label" x="700" y="146">~5 s</text>
+  <text class="bar-label" x="700" y="226">~5 s</text>
+  <text class="bar-label" x="700" y="306">~5 s</text>
+
+  <!-- axis -->
+  <line class="axis" x1="270" y1="356" x2="700" y2="356"/>
+  <text class="x-label" x="270" y="386">0</text>
+  <text class="x-label" x="700" y="386">time</text>
+
+  <text class="closer" x="480" y="464">same time, every time</text>
+</svg>

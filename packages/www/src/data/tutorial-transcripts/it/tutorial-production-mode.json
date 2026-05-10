@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-production-mode.cast",
+  "language": "it",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-production-mode-01",
+      "markerIndex": 0,
+      "at": 56.862064,
+      "text": "Avviamo l'app in modalita' produzione dal laptop. Il comando di deploy chiama la stessa funzione up usata durante lo sviluppo, ma viene eseguita in modalita' distaccata. Puoi chiudere il laptop e l'app continua a girare."
+    },
+    {
+      "id": "tutorial-production-mode-02",
+      "markerIndex": 1,
+      "at": 97.750961,
+      "text": "Abilitiamo l'avvio automatico cosi' l'app sopravvive al riavvio del server. Da questo momento, se il server si riavvia, questo repo torna su automaticamente."
+    },
+    {
+      "id": "tutorial-production-mode-03",
+      "markerIndex": 2,
+      "at": 125.443493,
+      "text": "Elenchiamo i repository con l'avvio automatico abilitato. Conferma che la nostra app e' ora nella lista di avvio."
+    },
+    {
+      "id": "tutorial-production-mode-04",
+      "markerIndex": 3,
+      "at": 141.09184,
+      "text": "E per fermare l'app, un solo comando dal laptop. Un comando per avviare, uno per fermare. Tutto dal tuo terminale, senza piu' sessioni interattive."
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 {
   "announcement": {
     "enabled": true,
-    "link": "/tr/blog",
-    "text": "v0.6 yayınlandı — Alpine musl desteği, abonelik sistemi ve daha fazlası"
+    "link": "/account/",
+    "text": "Sınırlı süre: Design Partner Programı — BUSINESS planı ömür boyu"
   },
   "beforeAfter": {
     "after": {
@@ -81,7 +81,7 @@
       "unavailable": "Arama Kullanılamıyor",
       "unavailableMessage": "Arama dizini yüklenemedi. Lütfen sayfayı yenilemeyi deneyin veya sorun devam ederse destek ile iletişime geçin."
     },
-    "section": "section",
+    "section": "bölüm",
     "siteName": "Rediacc",
     "skipNavigation": {
       "skipToFooter": "Alt bilgiye atla",
@@ -139,6 +139,10 @@
     "openInNewTab": "Yeni sekmede aç",
     "searchDocs": "Belgelerde ara",
     "shareSection": "Bölümü paylaş",
+    "subcategories": {
+      "advanced": "Gelişmiş",
+      "essentials": "Temel Bilgiler"
+    },
     "viewAsMarkdown": "Sayfayı Markdown olarak görüntüle",
     "viewAsMarkdownDesc": "Markdown dosyasını yeni sekmede aç"
   },
@@ -307,6 +311,10 @@
       "author": "Rediacc",
       "defaultDescription": "Hızlandırılmış geliştirme operasyonları için tasarlanmış Altyapı Otomasyon Platformu. Anında geliştirme ortamları ve yeni nesil olağanüstü durum kurtarma.",
       "defaultKeywords": "altyapı otomasyonu, yapay zeka işlemleri, felaket kurtarma, geliştirme ortamları, Model Bağlam Protokolü, DevOps, CI/CD",
+      "designPartner": {
+        "ogDescPrefix": "BUSINESS planını ömür boyu ücretsiz edinin.",
+        "ogPrefix": "Tasarım Ortağı Programı"
+      },
       "locale": "tr_TR",
       "siteName": "Rediacc",
       "twitter": {
@@ -646,6 +654,98 @@
       },
       "toc": {
         "title": "İçindekiler"
+      }
+    },
+    "designPartners": {
+      "ask": {
+        "items": [
+          {
+            "body": "Bir şey sizi şaşırtığında tek satırlık bir e-posta gönderin. Yığın izi isteğe bağlı. Hayal kırıklığı teşvik edilir.",
+            "title": "Bir şey bozulduğunda söyleyin"
+          },
+          {
+            "body": "Her çeyrekte ya da daha seyrek 30 dakika. Biz dinleriz, siz konuşursunuz. Demo yok, satış baskısı yok.",
+            "title": "Ara sıra bir görüşmeye katılın"
+          },
+          {
+            "body": "Sizi etkileyen bir şey yayına almadan önce size ulaşabilmek istiyoruz. Standart e-posta yeterli.",
+            "title": "Ulaşılabilir olun"
+          }
+        ],
+        "lede": "Hafif dokunuş. Amaç bedavaya emek almak değil; bizi dürüst tutmak.",
+        "title": "Karşılığında istediğimiz"
+      },
+      "faq": {
+        "items": [
+          {
+            "a": "Evet. Hibe, abonelik kaydınızda süresi dolmaksızın ve otomatik düşürme olmaksızın tutulur. Bunu değiştirmek zorunda kalırsak, önce her Tasarım Ortağına e-posta göndeririz. Şimdiye kadar yapmadık. Planımız da yok.",
+            "q": "Gerçekten ömür boyu mu?"
+          },
+          {
+            "a": "O zaman hesabınız çalışmayı durdurur; tıpkı diğer herkes gibi. Ömür boyu vaadi şirketin ömrü kadardır. Henüz müşteri aşamasında değiliz; bu, üstlendiğiniz dürüst risktir.",
+            "q": "Rediacc kapanırsa ne olur?"
+          },
+          {
+            "a": "Ödeme duvarı yok, sözleşme yok, otomatik fatura yok. İstenen tek şey yukarıda belirtilen hafif geri bildirimdir. Bizi görmezden gelebilirsiniz. Planınızı iptal etmeyiz.",
+            "q": "Herhangi bir koşul var mı?"
+          },
+          {
+            "a": "Evet. BUSINESS planında sonsuza kadar kalabilir veya limitleri aşarsanız Enterprise'a geçebilirsiniz. Yükseltme normal faturalandırmaya tabidir; ömür boyu avantaj yalnızca BUSINESS için geçerlidir.",
+            "q": "Daha sonra plan değiştirebilir miyim?"
+          },
+          {
+            "a": "Kapatana kadar. Kapanmadan önce duyuru yapmayacağız; bu yüzden bugün kaydolmak için iyi bir gün. Mevcut Tasarım Ortakları ne olursa olsun planlarını korur.",
+            "q": "Program ne kadar süre açık?"
+          }
+        ],
+        "title": "Dürüst cevaplar"
+      },
+      "finalCta": {
+        "button": "BUSINESS planımı talep et",
+        "note": "Bir iki gün içinde kurulum görüşmesi ayarlamak için size e-posta göndereceğiz.",
+        "subtitle": "Tek kayıt. Kredi kartı yok. Ömür boyu BUSINESS planı, kilitli.",
+        "title": "Öncü olmaya hazır mısınız?"
+      },
+      "hero": {
+        "eyebrow": "Sınırlı Program",
+        "note": "Kredi kartı yok. Başvuru yok. Kaydolun ve içeri girin.",
+        "primaryCta": "BUSINESS planımı talep et",
+        "secondaryCta": "Fiyatları gör",
+        "subtitle": "Henüz müşterimiz yok. Ürünü kullanan ve bir şeyler bozulduğunda bize haber veren öncüler istiyoruz. Karşılığında, Rediacc var olduğu sürece BUSINESS planını ücretsiz alıyorsunuz.",
+        "title": "Tasarım Ortağı Olun. BUSINESS planını ömür boyu ücretsiz edinin."
+      },
+      "meta": {
+        "description": "Tasarım Ortağı olarak ücretsiz kaydolun ve BUSINESS planına ömür boyu sahip olun. Biz inşa ederken geri bildirim paylaşmaya istekli öncüleri arıyoruz.",
+        "title": "Tasarım Ortağı | BUSINESS Ömür Boyu Ücretsiz"
+      },
+      "why": {
+        "items": [
+          {
+            "body": "Prodüksiyon ortamında çalışan bir ekipten, yüzlerce deneme kaydından 100 kat daha fazla şey öğreniyoruz. Tasarım Ortakları, kitleler gelmeden önce ürünü keskinleştirme şeklimiz.",
+            "title": "Gerçek ekipler, gerçek iş yükleri"
+          },
+          {
+            "body": "Paranıza henüz ihtiyacımız yok. Deneyimlerinize, uç durumlarınıza ve sorularınıza ihtiyacımız var. Dürüstlük karşılığında ücretsizlik adil bir takas.",
+            "title": "Para yerine geri bildirim"
+          },
+          {
+            "body": "Ömür boyu BUSINESS planınızın süresi dolmaz, düşürülmez ve asla kredi kartı istemez. Bu bizim anlaşmamız.",
+            "title": "Kalıcı teşekkür"
+          }
+        ],
+        "title": "Neden bunu yapıyoruz"
+      },
+      "youGet": {
+        "items": [
+          "BUSINESS planı: depo başına 500 GB, 20 kayan lisans, ayda 20.000 lisans isteği",
+          "Edge kanalında: 2x limitler (depo başına 1 TB, 40 lisans, 40.000 istek)",
+          "Sınırsız depo, kullanıcı ve ekip",
+          "Anlık yedek geri yükleme, karanlık mod, tüm 9 dil",
+          "Kurulum ve destek için kurucuyla doğrudan iletişim hattı",
+          "Ömür boyu kilitli. Süre dolumu yok, düşürme yok, kayıtlı kart yok."
+        ],
+        "lede": "BUSINESS katmanındaki her şey, hesabınızın ömrü boyunca ücretsiz.",
+        "title": "Ne elde edersiniz"
       }
     },
     "disasterRecovery": {
@@ -1169,7 +1269,7 @@
         "title": "Otomatik Güncelleme Bilgileri"
       },
       "cli": {
-        "binary": "Binary",
+        "binary": "İkili Dosya",
         "description": "Otomasyon ve betikleme için hafif komut satırı aracı."
       },
       "hero": {
@@ -1352,6 +1452,11 @@
         "notFound": "404 - Sayfa Bulunamadı"
       },
       "description": "Üzgünüz, aradığınız sayfa mevcut değil veya taşınmış. Güncel olmayan bir bağlantıyı izlediyseniz veya URL'yi yanlış yazdıysanız bu durum meydana gelebilir.",
+      "designPartner": {
+        "body": "BUSINESS planını ömür boyu ücretsiz edinin. Kredi kartı yok.",
+        "cta": "Tasarım Ortağı Ol",
+        "title": "Tasarım Ortağı Programı"
+      },
       "help": {
         "description": "Bunun bir hata olduğunu düşünüyorsanız veya burada içerik bulmayı bekliyorsanız lütfen destek ekibimizle iletişime geçin. Aradığınızı bulmanıza yardımcı olmak için buradayız.",
         "link": "destek ekibimizle iletişime geçin",
@@ -3130,6 +3235,12 @@
             "secondary": "Satış Ekibiyle İletişime Geçin"
           }
         },
+        "designPartner": {
+          "badge": "Tasarım Ortakları için ÜCRETSİZ",
+          "cta": "Tasarım Ortağı Ol",
+          "period": "Ömür Boyu · Kart gerekmez",
+          "price": "FREE"
+        },
         "edgeLimitsNote": "Edge kanalı için gösterilen limitler. Stable'da yarısı.",
         "foreverFree": "Sonsuza kadar ücretsiz",
         "getStarted": "Başlayın",
@@ -3434,6 +3545,103 @@
         "title": "İçindekiler"
       }
     },
+    "resourcesNis2Directive": {
+      "about": {
+        "body": "Rediacc, Estonya'da kayıtlı öz barındırmalı bir altyapı platformudur (OÜ 17363830, KDV EE102920091). Bu özet, NIS2 içerik programımızın bir parçası olarak hazırlanmıştır. Yukarıdaki tamamlayıcı rehberler, Rediacc'ın direktifin belirli maddelerini nasıl ele aldığını açıklamakta; Rediacc'ın yanıt olmadığı boşluklar dahil (henüz sertifika yok; GRC katmanı yok; yönetilen Madde 23 bildirimi yok; yalnızca portal MFA). Kamuya açık yetenek haritası için belgelerdeki {nis2DoraLink} sayfasına bakın.",
+        "cta": "Tedarikçi anketinizi veya geçen yılın bütçesinden en büyük üç güvenlik kaleninizi bize gönderin. Eksiklikler dahil, canlı bir örnek üzerinde yazılı olarak yanıt vereceğiz. Ya da PDF'i indirip bir meslektaşınıza iletin.",
+        "downloadButton": "PDF'i indir",
+        "heading": "Bu özet hakkında"
+      },
+      "companions": {
+        "heading": "Üç tamamlayıcı rehber",
+        "intro": "PDF direktifi haritalandırır. Tamamlayıcı rehberler, yükümlülükleri her kitleye göre tedarik ve operasyonel kararlara dönüştürür.",
+        "items": [
+          {
+            "blurb": "Veri düzlemi hiçbir zaman kiracınızın dışına çıkmadığında üçüncü taraf BİT kaydı neden küçülür? 2026'da DPA yeniden müzakereleri yapan CISO'lar ve tedarik sorumluları için.",
+            "slug": "nis2-supply-chain-self-hosted",
+            "title": "Madde 21(2)(d) bir tedarikçi sorusudur"
+          },
+          {
+            "blurb": "Madde 21(2)(e), (f) ve 23 birlikte okunduğunda: haftalık tatbikatları gerçekçi kılan sabit zamanlı fork ve adli kalitede eserlerin olmadan karşılanamayacak Madde 23 bildirim zaman çizelgesi. SRE ve operasyon sorumluları için.",
+            "slug": "nis2-effectiveness-without-theatre",
+            "title": "Göstermelik olmadan sürekli etkinlik"
+          },
+          {
+            "blurb": "Orta ölçekli temel varlıkların sessizce oluşturduğu beş araçlık uyum yığını, öz barındırmalı kontrol düzleminin çöktürdükleri ve her iki durumda da size ait kalan kalemler. Yenileme döngüsüne giren CFO'lar ve alıcılar için.",
+            "slug": "nis2-the-real-bill",
+            "title": "İlk NIS2 denetim döngüsünde alıcıların bize söyledikleri"
+          }
+        ],
+        "readMore": "Rehberi oku →"
+      },
+      "faq": {
+        "heading": "Sık sorulan sorular",
+        "items": [
+          {
+            "a": "Hayır. Direktifin yapısını ve yükümlülüklerini erişilebilir kılmak amacıyla hazırlanmış resmi olmayan İngilizce bir özetidir. Bağlayıcı yorum için OJ L 333/80 (27 Aralık 2022) adresindeki resmi metne veya EUR-Lex üzerinden (CELEX 32022L2555) başvurun. Üye Devletinizdeki ulusal uygulama yasaları, direktifin kendisinden daha katı veya farklı kapsamlı yükümlülükler getirebilir.",
+            "q": "Bu direktifin yetkili bir çevirisi mi?"
+          },
+          {
+            "a": "Ek I (yüksek kritiklik) veya Ek II (diğer kritik) sektörlerinde faaliyet gösteren ve orta ölçekli işletme eşiğini karşılayan varlıklar (50+ çalışan veya 10 milyon EUR+ ciro, 2003/361/EC Tavsiye Kararına göre). TLD kayıt kuruluşları, DNS sağlayıcıları, güven hizmeti sağlayıcıları ve merkezi kamu yönetimi gibi bazı varlıklar boyuttan bağımsız olarak kapsam dahilindedir. PDF'in 4., 6. ve 7. bölümleri kapsamı ayrıntılı olarak ele almaktadır.",
+            "q": "NIS2 kapsamında kim yer alıyor?"
+          },
+          {
+            "a": "Direktif 16 Ocak 2023'te yürürlüğe girdi. Üye Devletlerin ulusal hukuka aktarması için son tarih 17 Ekim 2024'tü; uygulama 18 Ekim 2024'te başladı (aynı tarihte NIS1 yürürlükten kaldırıldı). Varlık listesinin Komisyon'a iletilmesi son tarihi (17 Nisan 2025) ve periyodik inceleme takvimi dahil tam zaman çizelgesi 16. bölümdedir.",
+            "q": "NIS2 ne zaman yürürlüğe girdi ve aktarım son tarihi nedir?"
+          },
+          {
+            "a": "Temel varlıklar için: hangisi daha yüksekse 10.000.000 EUR veya küresel yıllık cirosunun %2'si. Önemli varlıklar için: hangisi daha yüksekse 7.000.000 EUR veya küresel yıllık cirosunun %1,4'ü. Direktif ayrıca temel varlıkların üst yönetimine geçici yönetim yasağı gibi parasal olmayan yaptırımlara da olanak tanır (son çare tedbiri). 15. bölüm ceza belirleme faktörlerini kapsar.",
+            "q": "Azami para cezaları nelerdir?"
+          },
+          {
+            "a": "Evet, iki şekilde. Doğrudan: AB'de hizmet sunan AB dışı DNS, bulut, veri merkezi, CDN, MSP/MSSP, çevrimiçi pazar yeri, arama ve sosyal ağ sağlayıcıları AB temsilcisi atamak ve uyum sağlamak zorundadır. Dolaylı olarak: AB'deki temel veya önemli varlıklara ürün ya da hizmet sağlayan AB dışı tedarikçiler, Madde 21(2)(d) kapsamında müşterileri tarafından dayatılan tedarik zinciri güvenlik sözleşme gerekliliklerine tabi olacaktır. 17. bölüm her ikisini de kapsar.",
+            "q": "NIS2 AB dışı şirketlere uygulanıyor mu?"
+          },
+          {
+            "a": "Tamamı 'önemli bir olaydan haberdar olmak' ile tetiklenen üç son tarih: erken uyarı için 24 saat, tam olay bildirimi için 72 saat ve nihai rapor için bir ay. Önemli bir siber tehdidin muhtemel olması durumunda hizmet alıcılarına da gereksiz gecikme olmaksızın bildirim yapılması gerekir. 10. bölümde tam bildirim matrisi yer almaktadır.",
+            "q": "Madde 23 olay bildirimi nasıl işler?"
+          }
+        ]
+      },
+      "hero": {
+        "disclaimer": "Bu belge resmi olmayan bir özettir. Bağlayıcı yorum için OJ L 333/80, 27.12.2022 adresindeki resmi metne başvurun.",
+        "downloadButton": "PDF'i indir",
+        "eyebrow": "Ücretsiz indirme · 24 sayfa · A4 PDF",
+        "openInBrowser": "Tarayıcıda aç",
+        "subtitle": "Direktif (AB) 2022/2555'in 24 sayfalık İngilizce özeti. Kapsam, on Madde 21 tedbiri, 24s/72s/1 aylık Madde 23 bildirim zaman çizelgesi, Ek I ve II sektörleri, idari para cezaları ve 10 adımlı pratik uyum yol haritasını kapsar. Rediacc tarafından hazırlanmıştır; yetkili bir çeviri değildir.",
+        "title": "NIS2 Direktifi: CISO'lar ve Uyum Sorumluları için İngilizce Özet"
+      },
+      "meta": {
+        "description": "AB NIS2 Direktifi'nin (2022/2555) ücretsiz 24 sayfalık özeti. Madde 21 tedbirleri, Madde 23 bildirimleri, Ek sektörleri, cezalar ve 10 adımlı yol haritası.",
+        "keywords": "NIS2, NIS2 direktifi, NIS2 özeti, NIS2 uyumu, AB siber güvenlik direktifi, 2022/2555 direktifi, Madde 21, Madde 23, NIS2 PDF",
+        "title": "NIS2 Direktifi CISO Özeti (Ücretsiz PDF)"
+      },
+      "toc": {
+        "heading": "PDF'in içeriği",
+        "intro": "Direktifin özünü 73 sayfalık gerekçe ve maddeler içinde boğulmadan öğrenmek isteyen çalışan CISO veya uyum sorumlusu için yapılandırılmış on dokuz bölüm.",
+        "items": [
+          "Yönetici Özeti",
+          "Amaç ve Hukuki Dayanak",
+          "NIS1'den NIS2'ye: Neden Yeni Bir Düzenleme?",
+          "Kapsam ve Dışarıda Bırakılan Alanlar",
+          "Temel Tanımlar",
+          "Varlık Kategorileri: Temel ve Önemli Varlıklar",
+          "Kapsam Dahilindeki Sektörler (Ek I ve Ek II)",
+          "Üye Devlet Yükümlülükleri",
+          "Siber Güvenlik Risk Yönetimi Tedbirleri (Madde 21)",
+          "Olay Bildirimi Yükümlülükleri (Madde 23)",
+          "Tedarik Zinciri Güvenliği",
+          "Yönetim Organı Sorumluluğu",
+          "AB Düzeyinde İşbirliği Yapıları",
+          "Denetim ve Yaptırım",
+          "İdari Para Cezaları",
+          "Uygulama Zaman Çizelgesi ve Geçiş",
+          "AB Dışı İşletmeler için Çıkarımlar",
+          "Pratik Uyum Yol Haritası (10 Adım)",
+          "Sonuç ve Değerlendirme"
+        ]
+      }
+    },
     "roiCalculator": {
       "advancedLabel": "Gelişmiş varsayımlar",
       "advancedSliders": {
@@ -3524,12 +3732,12 @@
         "label": "Kaynaklar ve Referanslar"
       },
       "sizeSelect": {
-        "enterprise": "Enterprise",
+        "enterprise": "Kurumsal",
         "enterpriseDesc": "200–1.000 çalışan",
         "label": "Şirket büyüklüğü",
-        "large": "Large Enterprise",
+        "large": "Büyük Kurumsal",
         "largeDesc": "1.000+ çalışan",
-        "mid": "Mid-Market",
+        "mid": "Orta Ölçekli",
         "midDesc": "25–200 çalışan",
         "smb": "SMB",
         "smbDesc": "< 25 çalışan"
@@ -3727,7 +3935,7 @@
             {
               "description": "47 saniyede üretim altyapınızın birebir btrfs anlık görüntüsünü oluşturun. Sıfır kopyalama, tam sadakat.",
               "icon": "copy",
-              "title": "Clone"
+              "title": "Klonla"
             },
             {
               "description": "Klona karşı yapay zeka destekli sızma testleri çalıştırın — port taramaları, SQLi, XSS, CVE kontrolleri, kimlik doğrulama araştırması. Gerçek saldırılar, gerçek veriler.",
@@ -4563,7 +4771,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Çok Bulutlu",
               "description": "AWS çökünce siz çökmezsiniz",
               "slug": "cloud-outage-protection",
               "title": "Bulut Kesinti Koruması"
@@ -5046,7 +5254,7 @@
           "solutions": [
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Çok Bulutlu",
               "current": true,
               "description": "AWS çökünce siz çökmezsiniz",
               "slug": "cloud-outage-protection",
@@ -5054,14 +5262,14 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Çok Bulutlu",
               "description": "Sizin altyapınız. Sizin seçiminiz. Her zaman.",
               "slug": "vendor-lock-in",
               "title": "Tedarikçi Bağımlılığından Kurtulma"
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Çok Bulutlu",
               "description": "Yük devretmenizi ihtiyaç duymadan önce test edin",
               "slug": "failover-testing",
               "title": "Yük Devretme Testi"
@@ -6585,7 +6793,7 @@
             {
               "description": "Üretimin birebir kopyası 60 saniyede ayağa kalkar. Aynı işletim sistemi, yapılandırmalar, veriler.",
               "icon": "copy",
-              "title": "Clone"
+              "title": "Klonla"
             },
             {
               "description": "Hemen geliştirmeye başlayın. Kurulum yok. Yapılandırma yok. Sadece kod.",
@@ -6951,21 +7159,21 @@
           "solutions": [
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Çok Bulutlu",
               "description": "AWS çökünce siz çökmezsiniz",
               "slug": "cloud-outage-protection",
               "title": "Bulut Kesinti Koruması"
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Çok Bulutlu",
               "description": "Sizin altyapınız. Sizin seçiminiz. Her zaman.",
               "slug": "vendor-lock-in",
               "title": "Tedarikçi Bağımlılığından Kurtulma"
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Çok Bulutlu",
               "current": true,
               "description": "Yük devretmenizi ihtiyaç duymadan önce test edin",
               "slug": "failover-testing",
@@ -7465,7 +7673,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Çok Bulutlu",
               "description": "AWS çökünce siz çökmezsiniz",
               "slug": "cloud-outage-protection",
               "title": "Bulut Kesinti Koruması"
@@ -8464,7 +8672,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Çok Bulutlu",
               "description": "AWS çökünce siz çökmezsiniz",
               "slug": "cloud-outage-protection",
               "title": "Bulut Kesinti Koruması"
@@ -9427,7 +9635,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Çok Bulutlu",
               "description": "AWS çökünce siz çökmezsiniz",
               "slug": "cloud-outage-protection",
               "title": "Bulut Kesinti Koruması"
@@ -10021,7 +10229,7 @@
             {
               "description": "btrfs copy-on-write ile birebir üretim anlık görüntüsünden başlayın. Aynı işletim sistemi, aynı yapılandırmalar, aynı veriler.",
               "icon": "copy",
-              "title": "Clone"
+              "title": "Klonla"
             },
             {
               "description": "Gerçek üretim koşullarında yazın ve test edin. Her kütüphane, her yapılandırma, her veri satırı — birebir aynı.",
@@ -10889,7 +11097,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Çok Bulutlu",
               "description": "AWS çökünce siz çökmezsiniz",
               "slug": "cloud-outage-protection",
               "title": "Bulut Kesinti Koruması"
@@ -11425,7 +11633,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Çok Bulutlu",
               "description": "AWS çökünce siz çökmezsiniz",
               "slug": "cloud-outage-protection",
               "title": "Bulut Kesinti Koruması"
@@ -11531,7 +11739,7 @@
             {
               "description": "rdc ceph snapshot create production komutunu çalıştırın. Birebir kopya 60 saniyede ayağa kalkar.",
               "icon": "terminal",
-              "title": "Clone"
+              "title": "Klonla"
             },
             {
               "description": "Yamalar, güncellemeler, çekirdek güncellemeleri uygulayın. Özgürce bozun. Üretim dokunulmaz kalır.",
@@ -12361,7 +12569,7 @@
             },
             {
               "category": "multi-cloud",
-              "categoryLabel": "Multi-Cloud",
+              "categoryLabel": "Çok Bulutlu",
               "description": "AWS çökünce siz çökmezsiniz",
               "slug": "cloud-outage-protection",
               "title": "Bulut Kesinti Koruması"
@@ -13354,6 +13562,7 @@
   "team": {
     "founder": {
       "contact": "Sorularınız mı var? Bana doğrudan yazın",
+      "designPartner": "Her Tasarım Ortağını bizzat karşılıyorum. Ücretsiz kayıt olun, ardından altyapınızı konuşmak için 30 dakikalık bir görüşme ayarlayalım.",
       "guarantee": "Rediacc sizin için çalışmazsa, bana e-posta gönderin ve geri geçişinize yardımcı olayım.",
       "quote": "Rediacc'ı kurdum çünkü altyapı bu kadar kırılgan olmamalı.",
       "story": {

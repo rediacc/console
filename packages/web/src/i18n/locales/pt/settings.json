@@ -1,0 +1,124 @@
+{
+  "organization": {
+    "configureVault": "Configurar Cofre",
+    "description": "Configure as definições do cofre da sua organização para gerir configurações a nível da organização.",
+    "modalTitle": "Configurar Cofre da Organização",
+    "title": "Definições da Organização"
+  },
+  "personal": {
+    "changePassword": {
+      "confirmPasswordLabel": "Confirmar Nova Palavra-passe",
+      "confirmPasswordMismatch": "As palavras-passe não coincidem",
+      "confirmPasswordPlaceholder": "Confirme a nova palavra-passe",
+      "confirmPasswordRequired": "Confirme a sua nova palavra-passe",
+      "newPasswordLabel": "Nova Palavra-passe",
+      "newPasswordMin": "A palavra-passe deve ter pelo menos 8 caracteres",
+      "newPasswordPattern": "A palavra-passe deve conter maiúsculas, minúsculas, número e carácter especial",
+      "newPasswordPlaceholder": "Introduza a nova palavra-passe",
+      "newPasswordRequired": "Introduza a sua nova palavra-passe",
+      "requirement1": "Pelo menos 8 caracteres",
+      "requirement2": "Contém letras maiúsculas e minúsculas",
+      "requirement3": "Contém pelo menos um número",
+      "requirement4": "Contém pelo menos um carácter especial",
+      "requirementsTitle": "Requisitos da Palavra-passe",
+      "submit": "Alterar Palavra-passe",
+      "successContent": "A sua palavra-passe foi alterada. Será desligado em {{seconds}} segundos...",
+      "successTitle": "Palavra-passe Alterada com Sucesso",
+      "title": "Alterar Palavra-passe"
+    },
+    "configureVault": "Configurar Cofre",
+    "description": "Configure as definições do seu cofre pessoal para personalizar a sua experiência.",
+    "modalTitle": "Configurar Cofre do Utilizador",
+    "title": "Definições Pessoais"
+  },
+  "title": "Definições",
+  "twoFactorAuth": {
+    "disable": "Desativar Autenticação de Dois Fatores",
+    "disableModal": {
+      "codeFormat": "O código deve conter apenas números",
+      "codeLabel": "Código TFA",
+      "codeLength": "O código deve ter exatamente 6 dígitos",
+      "codePlaceholder": "000000",
+      "codeRequired": "O código TFA é obrigatório",
+      "passwordLabel": "Palavra-passe Atual",
+      "passwordPlaceholder": "Introduza a sua palavra-passe atual",
+      "passwordRequired": "A palavra-passe é obrigatória",
+      "submit": "Desativar TFA",
+      "title": "Desativar Autenticação de Dois Fatores",
+      "warning": "Aviso de Segurança",
+      "warningDescription": "Desativar o TFA tornará a sua conta menos segura. Terá de introduzir a sua palavra-passe atual e um código TFA válido para continuar."
+    },
+    "done": "Concluído",
+    "enable": "Ativar Autenticação de Dois Fatores",
+    "enableModal": {
+      "passwordLabel": "Palavra-passe Atual",
+      "passwordPlaceholder": "Introduza a sua palavra-passe atual",
+      "passwordRequired": "A palavra-passe é obrigatória",
+      "submit": "Ativar TFA",
+      "title": "Ativar Autenticação de Dois Fatores",
+      "warning": "Verificação de Segurança Necessária",
+      "warningDescription": "Introduza a palavra-passe da sua conta para ativar a autenticação de dois fatores."
+    },
+    "enableSuccess": {
+      "subtitle": "A sua conta está agora protegida com TFA.",
+      "title": "Autenticação de Dois Fatores Ativada!",
+      "verified": "TFA Verificado com Sucesso",
+      "verifiedDescription": "A sua aplicação de autenticação foi configurada com sucesso e a autenticação de dois fatores está agora ativa na sua conta."
+    },
+    "errors": {
+      "disableFailed": "Falha ao desativar a autenticação de dois fatores.",
+      "enableFailed": "Falha ao ativar a autenticação de dois fatores.",
+      "invalidParameters": "Parâmetros inválidos para a operação TFA.",
+      "missingData": "Formato de resposta inesperado: tabela de dados TFA em falta.",
+      "missingSecret": "O segredo da autenticação de dois fatores não foi devolvido pelo servidor.",
+      "verificationFailed": "Código TFA inválido."
+    },
+    "important": "Importante",
+    "manualSetup": {
+      "instructions": "Introduza esta chave secreta na sua aplicação de autenticação:",
+      "title": "Configuração Manual"
+    },
+    "saveSecretWarning": "Guarde esta chave secreta num local seguro. Vai precisar dela para recuperar o acesso à sua conta caso perca o dispositivo de autenticação.",
+    "scanQRCode": "Leia este código QR com a sua aplicação de autenticação",
+    "secretCopied": "Chave secreta copiada para a área de transferência",
+    "setupMethods": {
+      "manual": "Entrada Manual",
+      "qrCode": "Código QR"
+    },
+    "status": {
+      "disabled": "A Autenticação de Dois Fatores está Desativada",
+      "disabledDescription": "Adicione uma camada extra de segurança à sua conta.",
+      "enabled": "A Autenticação de Dois Fatores está Ativada",
+      "enabledDescription": "A sua conta está protegida com uma camada adicional de segurança."
+    },
+    "statusMessages": {
+      "authorized": "Autorização TFA bem-sucedida",
+      "enabled": "TFA ativado",
+      "none": "Nenhum TFA configurado",
+      "unknown": "Não é possível determinar o estado do TFA"
+    },
+    "success": {
+      "disabled": "A autenticação de dois fatores foi desativada.",
+      "enabled": "Autenticação de dois fatores ativada e verificada com sucesso.",
+      "verified": "Verificação TFA bem-sucedida."
+    },
+    "title": "Autenticação de Dois Fatores",
+    "verification": {
+      "codeFormat": "O código deve conter apenas números",
+      "codeLabel": "Código de Verificação",
+      "codeLength": "O código deve ter exatamente 6 dígitos",
+      "codePlaceholder": "000000",
+      "codeRequired": "O código de verificação é obrigatório",
+      "submit": "Verificar e Ativar TFA",
+      "subtitle": "Leia o código QR ou introduza a chave secreta na sua aplicação de autenticação, depois introduza o código de 6 dígitos para verificar.",
+      "title": "Verificar a Sua Aplicação de Autenticação"
+    },
+    "whatIs": {
+      "benefit1": "Protege a sua conta mesmo que a sua palavra-passe seja comprometida",
+      "benefit2": "Utiliza o algoritmo TOTP (Time-based One-Time Password) standard da indústria",
+      "benefit3": "Funciona com aplicações de autenticação populares como Google Authenticator, Authy ou Microsoft Authenticator",
+      "description": "A Autenticação de Dois Fatores (TFA) adiciona uma camada extra de segurança à sua conta ao exigir um código baseado no tempo do seu telemóvel, para além da sua palavra-passe.",
+      "title": "O que é a Autenticação de Dois Fatores?"
+    }
+  }
+}

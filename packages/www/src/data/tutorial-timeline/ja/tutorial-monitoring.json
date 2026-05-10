@@ -1,0 +1,1196 @@
+{
+  "cast": "/assets/tutorials/tutorial-monitoring.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "07ca568861b3efe3f7cfc9b3c0fa0a015b7eba3621a3bf8f5a05205b99361d4e",
+  "steps": [
+    {
+      "id": "tutorial-monitoring-01",
+      "markerIndex": 0,
+      "replayStartSec": 102.949897,
+      "replayEndSec": 114.069314,
+      "narrationText": "まずシステムビューから始めます。system フィルターを付けたマシンクエリコマンドは、稼働時間、ディスク使用量、ストレージの状態を表示します。問題があればレポートで教えてくれます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-monitoring/tutorial-monitoring-01.5662dcc8.mp3",
+      "audioDurationSec": 13.400816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.04,
+          "startChar": 2,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.28,
+          "startChar": 6,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 9,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.76,
+          "startChar": 11,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.08,
+          "startChar": 13,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.84,
+          "startChar": 23,
+          "endChar": 28
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 3.92,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.24,
+          "startChar": 31,
+          "endChar": 32
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.8,
+          "startChar": 32,
+          "endChar": 36
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.36,
+          "startChar": 36,
+          "endChar": 42
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.6,
+          "startChar": 42,
+          "endChar": 43
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.24,
+          "startChar": 44,
+          "endChar": 46
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.72,
+          "startChar": 46,
+          "endChar": 48
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.28,
+          "startChar": 49,
+          "endChar": 53
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.68,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.0,
+          "startChar": 55,
+          "endChar": 56
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.8,
+          "startChar": 57,
+          "endChar": 62
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 8.96,
+          "startChar": 62,
+          "endChar": 63
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.44,
+          "startChar": 63,
+          "endChar": 65
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.84,
+          "startChar": 66,
+          "endChar": 68
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 9.92,
+          "startChar": 68,
+          "endChar": 69
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.24,
+          "startChar": 69,
+          "endChar": 71
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.28,
+          "startChar": 72,
+          "endChar": 74
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.44,
+          "startChar": 74,
+          "endChar": 75
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.52,
+          "startChar": 75,
+          "endChar": 77
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.84,
+          "startChar": 77,
+          "endChar": 78
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.24,
+          "startChar": 78,
+          "endChar": 82
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.4,
+          "startChar": 82,
+          "endChar": 83
+        },
+        {
+          "startSec": 12.4,
+          "endSec": 12.72,
+          "startChar": 83,
+          "endChar": 85
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 12.8,
+          "startChar": 85,
+          "endChar": 86
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.04,
+          "startChar": 86,
+          "endChar": 88
+        },
+        {
+          "startSec": 13.04,
+          "endSec": 13.28,
+          "startChar": 88,
+          "endChar": 90
+        }
+      ]
+    },
+    {
+      "id": "tutorial-monitoring-02",
+      "markerIndex": 1,
+      "replayStartSec": 114.069314,
+      "replayEndSec": 126.082986,
+      "narrationText": "次にコンテナです。このビューにはマシン上のすべてのリポジトリで動いているすべてのコンテナが表示されます。名前、状態、ヘルス、CPU、メモリ、そしてどのリポジトリが所有しているかが確認できます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-monitoring/tutorial-monitoring-02.bca7d4b0.mp3",
+      "audioDurationSec": 17.554286,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.48,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.96,
+          "startChar": 2,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.28,
+          "startChar": 6,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.08,
+          "startChar": 9,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.64,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.28,
+          "startChar": 16,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.52,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.6,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.0,
+          "startChar": 21,
+          "endChar": 24
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.16,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.72,
+          "startChar": 25,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 4.88,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.12,
+          "startChar": 31,
+          "endChar": 33
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.28,
+          "startChar": 33,
+          "endChar": 34
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.6,
+          "startChar": 34,
+          "endChar": 36
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.4,
+          "startChar": 36,
+          "endChar": 39
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.56,
+          "startChar": 39,
+          "endChar": 40
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 7.12,
+          "startChar": 40,
+          "endChar": 44
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.2,
+          "startChar": 44,
+          "endChar": 45
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.52,
+          "startChar": 45,
+          "endChar": 47
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.68,
+          "startChar": 47,
+          "endChar": 48
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.76,
+          "startChar": 48,
+          "endChar": 49
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.08,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.28,
+          "startChar": 52,
+          "endChar": 54
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.24,
+          "startChar": 55,
+          "endChar": 57
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.96,
+          "startChar": 58,
+          "endChar": 61
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 12.32,
+          "startChar": 62,
+          "endChar": 65
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 13.2,
+          "startChar": 66,
+          "endChar": 69
+        },
+        {
+          "startSec": 13.52,
+          "endSec": 14.0,
+          "startChar": 70,
+          "endChar": 73
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.64,
+          "startChar": 73,
+          "endChar": 75
+        },
+        {
+          "startSec": 14.64,
+          "endSec": 15.28,
+          "startChar": 75,
+          "endChar": 80
+        },
+        {
+          "startSec": 15.28,
+          "endSec": 15.44,
+          "startChar": 80,
+          "endChar": 81
+        },
+        {
+          "startSec": 15.44,
+          "endSec": 15.84,
+          "startChar": 81,
+          "endChar": 83
+        },
+        {
+          "startSec": 15.84,
+          "endSec": 16.0,
+          "startChar": 83,
+          "endChar": 84
+        },
+        {
+          "startSec": 16.0,
+          "endSec": 16.16,
+          "startChar": 84,
+          "endChar": 85
+        },
+        {
+          "startSec": 16.16,
+          "endSec": 16.32,
+          "startChar": 85,
+          "endChar": 87
+        },
+        {
+          "startSec": 16.32,
+          "endSec": 16.4,
+          "startChar": 87,
+          "endChar": 88
+        },
+        {
+          "startSec": 16.4,
+          "endSec": 16.56,
+          "startChar": 88,
+          "endChar": 89
+        },
+        {
+          "startSec": 16.56,
+          "endSec": 17.04,
+          "startChar": 89,
+          "endChar": 91
+        },
+        {
+          "startSec": 17.04,
+          "endSec": 17.2,
+          "startChar": 91,
+          "endChar": 93
+        },
+        {
+          "startSec": 17.2,
+          "endSec": 17.52,
+          "startChar": 93,
+          "endChar": 95
+        }
+      ]
+    },
+    {
+      "id": "tutorial-monitoring-03",
+      "markerIndex": 2,
+      "replayStartSec": 126.082986,
+      "replayEndSec": 138.182721,
+      "narrationText": "そしてリポジトリ自体です。サイズ、マウント状態、Docker デーモンの状態、ディスク使用量。マシン上の各分離環境について知りたいことがすべてわかります。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-monitoring/tutorial-monitoring-03.2893448d.mp3",
+      "audioDurationSec": 12.434286,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 1.04,
+          "startChar": 3,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.36,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.76,
+          "startChar": 10,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.8,
+          "startChar": 13,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.36,
+          "startChar": 17,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.92,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.88,
+          "startChar": 31,
+          "endChar": 35
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.04,
+          "startChar": 35,
+          "endChar": 36
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.6,
+          "startChar": 36,
+          "endChar": 38
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.32,
+          "startChar": 39,
+          "endChar": 43
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.64,
+          "startChar": 43,
+          "endChar": 45
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.96,
+          "startChar": 45,
+          "endChar": 46
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.84,
+          "startChar": 47,
+          "endChar": 50
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.08,
+          "startChar": 50,
+          "endChar": 51
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.24,
+          "startChar": 51,
+          "endChar": 52
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.48,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.8,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.2,
+          "startChar": 55,
+          "endChar": 57
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.36,
+          "startChar": 57,
+          "endChar": 58
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.6,
+          "startChar": 58,
+          "endChar": 60
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 9.84,
+          "startChar": 60,
+          "endChar": 61
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.72,
+          "startChar": 61,
+          "endChar": 63
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.88,
+          "startChar": 63,
+          "endChar": 65
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.12,
+          "startChar": 65,
+          "endChar": 67
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 11.28,
+          "startChar": 67,
+          "endChar": 68
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.76,
+          "startChar": 68,
+          "endChar": 71
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 12.08,
+          "startChar": 71,
+          "endChar": 74
+        },
+        {
+          "startSec": 12.08,
+          "endSec": 12.32,
+          "startChar": 74,
+          "endChar": 76
+        }
+      ]
+    },
+    {
+      "id": "tutorial-monitoring-04",
+      "markerIndex": 3,
+      "replayStartSec": 138.182721,
+      "replayEndSec": 149.8205,
+      "narrationText": "マシンクエリコマンドはすべてを一度に表示します。システム情報、コンテナ、リポジトリがすべてまとめて確認できます。一度実行するだけで全体像を把握できます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-monitoring/tutorial-monitoring-04.2b08e8e2.mp3",
+      "audioDurationSec": 12.042449,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.04,
+          "startChar": 4,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.76,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.08,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.16,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.32,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.64,
+          "startChar": 18,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.72,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.92,
+          "startChar": 24,
+          "endChar": 28
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.32,
+          "startChar": 28,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.28,
+          "startChar": 31,
+          "endChar": 35
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 6.08,
+          "startChar": 36,
+          "endChar": 41
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.32,
+          "startChar": 41,
+          "endChar": 42
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.72,
+          "startChar": 42,
+          "endChar": 45
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.04,
+          "startChar": 45,
+          "endChar": 48
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.2,
+          "startChar": 48,
+          "endChar": 49
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.68,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.84,
+          "startChar": 51,
+          "endChar": 53
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.16,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.12,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.28,
+          "startChar": 57,
+          "endChar": 58
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.68,
+          "startChar": 58,
+          "endChar": 60
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 9.92,
+          "startChar": 60,
+          "endChar": 62
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.16,
+          "startChar": 62,
+          "endChar": 64
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.32,
+          "startChar": 64,
+          "endChar": 65
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.8,
+          "startChar": 65,
+          "endChar": 67
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.12,
+          "startChar": 67,
+          "endChar": 68
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 11.2,
+          "startChar": 68,
+          "endChar": 69
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.52,
+          "startChar": 69,
+          "endChar": 71
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.76,
+          "startChar": 71,
+          "endChar": 73
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 12.0,
+          "startChar": 73,
+          "endChar": 75
+        }
+      ]
+    },
+    {
+      "id": "tutorial-monitoring-05",
+      "markerIndex": 4,
+      "replayStartSec": 149.8205,
+      "replayEndSec": 198.111981,
+      "narrationText": "最後に、ラップトップのローカル動作確認として診断チェックを実行します。Node、SSH キー、renet、Docker など、CLI 自体が依存するすべてを確認します。これでシリーズ全体が完了です。インストールからモニタリングまで、すべてターミナルから行えます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-monitoring/tutorial-monitoring-05.3df86454.mp3",
+      "audioDurationSec": 19.226122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.56,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.44,
+          "startChar": 7,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.08,
+          "startChar": 11,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 15,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 17,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 2.96,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.12,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.84,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.24,
+          "startChar": 24,
+          "endChar": 28
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.32,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.64,
+          "startChar": 29,
+          "endChar": 31
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.8,
+          "startChar": 31,
+          "endChar": 32
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.12,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.56,
+          "startChar": 40,
+          "endChar": 41
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.72,
+          "startChar": 41,
+          "endChar": 42
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.88,
+          "startChar": 42,
+          "endChar": 43
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.2,
+          "startChar": 44,
+          "endChar": 46
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.8,
+          "startChar": 60,
+          "endChar": 62
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.6,
+          "startChar": 63,
+          "endChar": 66
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.16,
+          "startChar": 67,
+          "endChar": 69
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.32,
+          "startChar": 69,
+          "endChar": 70
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.64,
+          "startChar": 70,
+          "endChar": 72
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 10.88,
+          "startChar": 72,
+          "endChar": 74
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.28,
+          "startChar": 74,
+          "endChar": 77
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.36,
+          "startChar": 77,
+          "endChar": 78
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.84,
+          "startChar": 78,
+          "endChar": 80
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.0,
+          "startChar": 80,
+          "endChar": 81
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.24,
+          "startChar": 81,
+          "endChar": 83
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.04,
+          "startChar": 84,
+          "endChar": 86
+        },
+        {
+          "startSec": 13.04,
+          "endSec": 13.2,
+          "startChar": 86,
+          "endChar": 87
+        },
+        {
+          "startSec": 13.2,
+          "endSec": 13.68,
+          "startChar": 87,
+          "endChar": 91
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 14.08,
+          "startChar": 91,
+          "endChar": 93
+        },
+        {
+          "startSec": 14.08,
+          "endSec": 14.24,
+          "startChar": 93,
+          "endChar": 94
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.64,
+          "startChar": 94,
+          "endChar": 96
+        },
+        {
+          "startSec": 14.64,
+          "endSec": 14.96,
+          "startChar": 96,
+          "endChar": 98
+        },
+        {
+          "startSec": 15.36,
+          "endSec": 15.92,
+          "startChar": 99,
+          "endChar": 105
+        },
+        {
+          "startSec": 15.92,
+          "endSec": 16.16,
+          "startChar": 105,
+          "endChar": 107
+        },
+        {
+          "startSec": 16.16,
+          "endSec": 16.72,
+          "startChar": 107,
+          "endChar": 113
+        },
+        {
+          "startSec": 16.72,
+          "endSec": 17.04,
+          "startChar": 113,
+          "endChar": 115
+        },
+        {
+          "startSec": 17.44,
+          "endSec": 17.76,
+          "startChar": 116,
+          "endChar": 119
+        },
+        {
+          "startSec": 17.76,
+          "endSec": 18.32,
+          "startChar": 119,
+          "endChar": 124
+        },
+        {
+          "startSec": 18.32,
+          "endSec": 18.56,
+          "startChar": 124,
+          "endChar": 126
+        },
+        {
+          "startSec": 18.56,
+          "endSec": 18.88,
+          "startChar": 126,
+          "endChar": 128
+        },
+        {
+          "startSec": 18.88,
+          "endSec": 19.12,
+          "startChar": 128,
+          "endChar": 130
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">Three steps to back up and restore: configure storage, push the backup, restore when needed</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .num { fill: #556b2f; }
+    .num-text { fill: #ffffff; font: 700 28px Inter, system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; }
+    .label { fill: #1a1a1a; font: 600 22px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .sub { fill: #5e5e5e; font: 400 14px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .desc { fill: #5e5e5e; font: 400 14px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .connector { stroke: #cdcdcd; stroke-width: 2; fill: none; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+  <line class="connector" x1="200" y1="270" x2="760" y2="270"/>
+
+  <g transform="translate(160 270)"><circle class="num" r="46"/><text class="num-text">1</text></g>
+  <text class="label" x="160" y="370">Configure</text>
+  <text class="desc" x="160" y="394">a storage provider</text>
+  <text class="sub" x="160" y="422">rdc config storage import</text>
+
+  <g transform="translate(480 270)"><circle class="num" r="46"/><text class="num-text">2</text></g>
+  <text class="label" x="480" y="370">Push</text>
+  <text class="desc" x="480" y="394">a full backup</text>
+  <text class="sub" x="480" y="422">rdc repo push</text>
+
+  <g transform="translate(800 270)"><circle class="num" r="46"/><text class="num-text">3</text></g>
+  <text class="label" x="800" y="370">Restore</text>
+  <text class="desc" x="800" y="394">on any new machine</text>
+  <text class="sub" x="800" y="422">rdc repo pull</text>
+</svg>

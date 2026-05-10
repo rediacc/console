@@ -1,107 +1,72 @@
 ---
-title: İzleme ve Tanılama
-description: >-
-  Makine sağlığını kontrol edin, konteynerleri inceleyin, systemd servislerini
-  gözden geçirin, host anahtarlarını tarayın ve ortam tanılamalarını çalıştırın.
-category: Tutorials
-order: 4
+title: "İzleme"
+description: "rdc machine komutlarıyla dizüstü bilgisayarınızdan sunucularınızın ve depolarınızın durumunu kontrol edin."
+category: "Tutorials"
+subcategory: advanced
+order: 12
 language: tr
-sourceHash: fa85cf9b00d42a6e
+sourceHash: "e6eaaed180c35e36"
+sourceCommit: "be90e8e7896623c088b86360ec29c1baef2e86b4"
 ---
 
-# Rediacc ile Altyapıyı İzleme ve Tanılama
+# İzleme
 
-Altyapıyı sağlıklı tutmak, makine durumu, konteyner durumu ve servis sağlığı hakkında görünürlük gerektirir. Bu öğreticide, ortam tanılamalarını çalıştırır, makine sağlığını kontrol eder, konteynerleri ve servisleri inceler, kasa durumunu gözden geçirir ve bağlantıyı doğrularsınız. Bitirdiğinizde, altyapınızdaki sorunları nasıl belirleyip araştıracağınızı bileceksiniz.
+Uygulamanız dağıtıldı, canlı ve yedeklendi. Şimdi her şeyin sağlıklı kaldığından emin olun. `rdc`, dizüstü bilgisayarınızdan herhangi bir sunucunun tam görünümünü (sağlık durumu, container'lar, depolar) almanızı sağlar.
 
-## Ön Koşullar
+## Öğreticiyi izleyin
 
-- Yapılandırması başlatılmış olarak `rdc` CLI kurulu
-- En az bir çalışan deposu olan hazırlanmış bir makine (bkz. [Öğretici: Depo Yaşam Döngüsü](/tr/docs/tutorial-repos))
+![Tutorial: Monitoring](/assets/tutorials/tutorial-monitoring.cast)
 
-## Etkileşimli Kayıt
+## Kontrol edebileceğiniz üç şey
 
-![Öğretici: İzleme ve Tanılama](/assets/tutorials/monitoring-tutorial.cast)
+![Health, containers, repos](/img/tutorials/tutorial-monitoring/slide-1.svg)
 
-### Adım 1: Tanılama çalıştırın
+## Sağlık durumu: sistem bilgisi
 
-Yerel ortamınızı yapılandırma sorunları açısından kontrol ederek başlayın.
-
-```bash
-rdc doctor
-```
-
-Node.js, CLI sürümü, renet ikili dosyası, yapılandırma ve sanallaştırma desteğini kontrol eder. Her kontrol **OK**, **Warning** veya **Error** olarak raporlar.
-
-### Adım 2: Makine sağlık kontrolü
+Sistem görünümüyle başlayın:
 
 ```bash
-rdc machine health --name server-1
+time rdc machine query --name my-server --system
 ```
 
-Uzak makineden kapsamlı bir sağlık raporu alır: sistem çalışma süresi, disk kullanımı, veri deposu kullanımı, konteyner sayıları, depolama SMART durumu ve tespit edilen sorunlar.
+Bu komut sistem çalışma süresini, disk kullanımını ve depolama durumunu gösterir. Bir sorun varsa bildirir.
 
-### Adım 3: Çalışan konteynerleri görüntüleyin
+## Container'lar
+
+Makinedeki her depodaki tüm çalışan container'ları görmek için:
 
 ```bash
-rdc machine containers --name server-1
+time rdc machine query --name my-server --containers
 ```
 
-Makinedeki tüm depolardaki tüm çalışan konteynerleri listeler; ad, durum, hal, sağlık, CPU kullanımı, bellek kullanımı ve her konteynerin hangi depoya ait olduğunu gösterir.
+Her container için ad, durum, sağlık, CPU ve bellek bilgileri ile hangi depoya ait olduğu görüntülenir.
 
-### Adım 4: systemd servislerini kontrol edin
+## Depolar
 
-Her deponun Docker daemon ve ağını çalıştıran temel servisleri görmek için:
+Depolarınızı kontrol etmek için:
 
 ```bash
-rdc machine services --name server-1
+time rdc machine query --name my-server --repositories
 ```
 
-Rediacc ile ilgili systemd servislerini (Docker daemon'ları, loopback takma adları) durumları, alt durumları, yeniden başlatma sayıları ve bellek kullanımları ile listeler.
+Her depo; boyutu, bağlama durumu, Docker durumu ve disk kullanımıyla birlikte gösterilir.
 
-### Adım 5: Kasa durum özeti
+## Tek seferde her şey
 
 ```bash
-rdc machine vault-status --name server-1
+time rdc machine query --name my-server
 ```
 
-Makinenin üst düzey bir genel görünümünü sağlar: ana bilgisayar adı, çalışma süresi, bellek, disk, veri deposu ve toplam depo sayıları.
+Sistem bilgisi, depolar, container'lar hepsi tek komutta. Filtre olmadan kullanılan `query` komutu tam görünümü döndürür; `--system`, `--containers`, `--repositories`, `--services`, `--network` veya `--block-devices` ile yalnızca ilgili bölüme odaklanılır.
 
-### Adım 6: Host anahtarlarını tarayın
+## Yerel doğruluk kontrolü
 
-Bir makine yeniden oluşturulduysa veya IP'si değiştiyse, saklanan SSH host anahtarını yenileyin.
+`rdc doctor`, belirli bir sunucudan bağımsız olarak yerel kurulumunuzu (Node, SSH anahtarı, `renet`, Docker) kontrol eder:
 
 ```bash
-rdc config machine scan-keys -m server-1
+time rdc doctor
 ```
 
-Sunucunun mevcut host anahtarlarını alır ve yapılandırmanızı günceller. Bu, "host key verification failed" hatalarını önler.
+## Tamamlandınız
 
-### Adım 7: Bağlantıyı doğrulayın
-
-Makinenin erişilebilir olduğunu ve yanıt verdiğini doğrulamak için hızlı bir SSH bağlantı kontrolü.
-
-```bash
-rdc term connect -m server-1 -c "hostname"
-rdc term connect -m server-1 -c "uptime"
-```
-
-Ana bilgisayar adı doğru sunucuya bağlandığınızı onaylar. Çalışma süresi sistemin normal çalıştığını onaylar.
-
-## Sorun Giderme
-
-**Sağlık kontrolü zaman aşımına uğruyor veya "SSH connection failed" gösteriyor**
-Makinenin çevrimiçi ve erişilebilir olduğunu doğrulayın: `ping <ip>`. SSH anahtarınızın doğru yapılandırıldığını `rdc term connect -m <machine> -c "echo ok"` ile kontrol edin.
-
-**Servis listesinde "Service not found"**
-Rediacc servisleri yalnızca en az bir depo dağıtıldıktan sonra görünür. Depo yoksa servis listesi boştur.
-
-**Konteyner listesi eski veya durmuş konteynerleri gösteriyor**
-Önceki dağıtımlardan kalan konteynerler, `repo down` temiz çalıştırılmadıysa kalabilir. Bunları `rdc repo down --name <repo> -m <machine>` ile durdurun veya `rdc term connect -m <machine> -r <repo> -c "docker ps -a"` ile doğrudan inceleyin.
-
-## Sonraki Adımlar
-
-Tanılama çalıştırdınız, makine sağlığını kontrol ettiniz, konteynerleri ve servisleri inceleydiniz ve bağlantıyı doğruladınız. Dağıtımlarınızla çalışmak için:
-
-- [İzleme](/tr/docs/monitoring), tüm izleme komutları için tam referans
-- [Sorun Giderme](/tr/docs/troubleshooting), yaygın sorunlar ve çözümler
-- [Öğretici: Araçlar](/tr/docs/tutorial-tools), terminal, dosya senkronizasyonu ve VS Code entegrasyonu
+Seri tamamlandı. Artık kurulum, yapılandırma, dağıtım, fork alma, yayına alma, otomatik başlatma, yedekleme ve izleme yapabilirsiniz. Hepsi terminalinizden, hepsi kendi sunucularınızda.

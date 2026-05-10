@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">Sharing a folder link is the same speed regardless of the folder size; the link is light, the folder is heavy</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .icon-stroke { fill: none; stroke: #556b2f; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-fill { fill: #eef2e6; stroke: #556b2f; stroke-width: 2.5; stroke-linejoin: round; }
+    .label { fill: #1a1a1a; font: 600 18px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .heavy { fill: #1a1a1a; font: 700 24px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .light { fill: #556b2f; font: 700 24px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .arrow { stroke: #556b2f; stroke-width: 3; fill: none; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <!-- Big folder (heavy) -->
+  <g transform="translate(110 200)">
+    <path class="icon-fill" d="M 0 12 L 0 130 L 220 130 L 220 30 L 110 30 L 100 12 Z"/>
+  </g>
+  <text class="label" x="220" y="380">your data</text>
+  <text class="heavy" x="220" y="412">heavy</text>
+
+  <!-- Arrow / link -->
+  <g transform="translate(420 270)">
+    <!-- chain link -->
+    <ellipse class="icon-stroke" cx="32" cy="0" rx="22" ry="14" transform="rotate(-30 32 0)"/>
+    <ellipse class="icon-stroke" cx="88" cy="0" rx="22" ry="14" transform="rotate(-30 88 0)"/>
+  </g>
+  <text class="label" x="480" y="380">a link</text>
+  <text class="light" x="480" y="412">light</text>
+
+  <!-- Recipient folder appearing -->
+  <g transform="translate(700 200)">
+    <path class="icon-fill" d="M 0 12 L 0 130 L 220 130 L 220 30 L 110 30 L 100 12 Z"/>
+  </g>
+  <text class="label" x="810" y="380">same data</text>
+  <text class="heavy" x="810" y="412">heavy</text>
+
+  <path class="arrow" d="M 340 270 L 410 270" marker-end="url(#a2)"/>
+  <path class="arrow" d="M 555 270 L 690 270" marker-end="url(#a2)"/>
+
+  <defs>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#556b2f"/>
+    </marker>
+  </defs>
+</svg>

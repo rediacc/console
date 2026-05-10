@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/tutorial-forking.cast",
+  "language": "es",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-forking-01",
+      "markerIndex": 0,
+      "at": 108.099445,
+      "text": "Vamos a hacer un fork del repositorio con un único comando. Clonó todo: la app, la base de datos, los archivos de configuración. Y ocurrió en segundos, sin importar el tamaño del repo. Un gigabyte, cien gigabytes, un terabyte: el mismo tiempo, siempre."
+    },
+    {
+      "id": "tutorial-forking-02",
+      "markerIndex": 1,
+      "at": 142.355671,
+      "text": "Ambos repos existen en paralelo ahora. La misma máquina, el mismo disco, dos entornos completamente independientes. El fork tiene sus propios contenedores, su propio sistema de archivos y su propio Docker daemon."
+    },
+    {
+      "id": "tutorial-forking-03",
+      "markerIndex": 2,
+      "at": 158.262452,
+      "text": "Vamos a probar el aislamiento. En el original, nuestro archivo marcador está justo donde lo dejamos. La existencia del fork no cambió nada en el padre."
+    },
+    {
+      "id": "tutorial-forking-04",
+      "markerIndex": 3,
+      "at": 176.185047,
+      "text": "Ahora eliminamos ese archivo, pero solo dentro del fork. Dentro del fork, desapareció. Hicimos un cambio destructivo y se quedó dentro del fork."
+    },
+    {
+      "id": "tutorial-forking-05",
+      "markerIndex": 4,
+      "at": 195.030667,
+      "text": "De vuelta al original. El archivo marcador sigue aquí, intacto. El original nunca supo que pasó algo. La misma imagen, Docker daemons separados, sistemas de archivos separados."
+    },
+    {
+      "id": "tutorial-forking-06",
+      "markerIndex": 5,
+      "at": 212.971596,
+      "text": "Cuando termines, simplemente elimina el fork. El original queda exactamente como estaba. Fork, experimenta, rompe cosas, elimina: sin riesgo."
+    }
+  ]
+}

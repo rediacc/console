@@ -1,0 +1,86 @@
+{
+  "errors": {
+    "anErrorOccurred": "Ilmnes viga",
+    "cliCommandFailed": "CLI käsk ebaõnnestus",
+    "criticalSystemError": "Süsteemil on kriitilised probleemid",
+    "failedToCreateTask": "Testtoimingu loomine ebaõnnestus",
+    "failedToFork": "Hoidla kahveldamine ebaõnnestus",
+    "helloFunctionError": "Hello funktsioon teatas veast",
+    "machinesValidationError": "Masina valideerimise viga",
+    "noErrorMessage": "(veateadet pole)",
+    "operationFailed": "Toiming ebaõnnestus",
+    "passwordValidation": "Parool peab sisaldama suurtähte, väiketähte, numbrit ja erimärki",
+    "tfaVerificationFailed": "TFA kontrollimine ebaõnnestus",
+    "unknownError": "Tundmatu viga",
+    "vaultTestFailed": "Vault-ühenduse test ebaõnnestus",
+    "vsCodeConnectionFailed": "VS Code ühendus ebaõnnestus"
+  },
+  "success": {
+    "helloFunctionSuccess": "Hello funktsioon lõpetati edukalt"
+  },
+  "status": {
+    "cancelled": "Tühistatud",
+    "completed": "Lõpetatud",
+    "failed": "Ebaõnnestus",
+    "pending": "Ootel",
+    "processing": "Töötlemisel",
+    "running": "Töötab",
+    "success": "Edukas",
+    "unknown": "Tundmatu",
+    "inProgress": "Käimas",
+    "initializing": "Käivitamine..."
+  },
+  "actions": {
+    "save": "Salvesta",
+    "cancel": "Tühista",
+    "delete": "Kustuta",
+    "create": "Loo",
+    "edit": "Muuda",
+    "copy": "Kopeeri",
+    "retry": "Proovi uuesti",
+    "refresh": "Värskenda",
+    "close": "Sulge",
+    "download": "Laadi alla",
+    "upload": "Laadi üles",
+    "remove": "Eemalda",
+    "confirm": "Kinnita",
+    "reset": "Lähtesta",
+    "back": "Tagasi",
+    "search": "Otsi",
+    "export": "Ekspordi"
+  },
+  "common": {
+    "yes": "Jah",
+    "no": "Ei",
+    "loading": "Laadimine...",
+    "error": "Viga",
+    "warning": "Hoiatus",
+    "success": "Edukas",
+    "unknown": "Tundmatu",
+    "total": "Kokku",
+    "none": "Puudub"
+  },
+  "validation": {
+    "required": "See väli on kohustuslik",
+    "invalidEmail": "Sisestage kehtiv e-posti aadress",
+    "invalidFormat": "Vigane vorming"
+  },
+  "time": {
+    "today": "Täna",
+    "yesterday": "Eile",
+    "last7Days": "Viimased 7 päeva",
+    "last30Days": "Viimased 30 päeva",
+    "thisMonth": "See kuu",
+    "lastMonth": "Eelmine kuu"
+  },
+  "confirm": {
+    "areYouSure": "Olete kindel?",
+    "confirmDelete": "Olete kindel, et soovite selle kustutada?"
+  },
+  "notifications": {
+    "error": "Viga",
+    "warning": "Hoiatus",
+    "success": "Edukas",
+    "info": "Teave"
+  }
+}

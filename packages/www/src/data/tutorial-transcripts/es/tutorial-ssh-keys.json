@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-ssh-keys.cast",
+  "language": "es",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-ssh-keys-01",
+      "markerIndex": 0,
+      "at": 1.50929,
+      "text": "Paso uno. Vamos a generar una nueva clave SSH de tipo ed25519. El algoritmo ed25519 es el estándar moderno: pequeño, rápido y ampliamente compatible. Solo necesitas hacerlo una vez para todos los servidores que vayas a agregar."
+    },
+    {
+      "id": "tutorial-ssh-keys-02",
+      "markerIndex": 1,
+      "at": 8.723209,
+      "text": "Paso dos. Copiamos la clave pública al servidor con ssh guion copy guion id. Se pide la contraseña del servidor por última vez. Después de esto, la autenticación por contraseña ya no es necesaria para ese servidor."
+    },
+    {
+      "id": "tutorial-ssh-keys-03",
+      "markerIndex": 2,
+      "at": 16.253995,
+      "text": "Paso tres. Registramos la clave en el CLI. A partir de ahora, cada comando del CLI se autentica con esta clave. Sin contraseñas, sin prompts interactivos."
+    },
+    {
+      "id": "tutorial-ssh-keys-04",
+      "markerIndex": 3,
+      "at": 24.863027,
+      "text": "Confirmamos que la configuración muestra la ruta de la clave guardada correctamente. Esta configuración es reutilizable en cada máquina que agregues a este perfil."
+    }
+  ]
+}

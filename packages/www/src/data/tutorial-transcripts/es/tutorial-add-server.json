@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-add-server.cast",
+  "language": "es",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-add-server-01",
+      "markerIndex": 0,
+      "at": 1.508633,
+      "text": "Empezamos creando un perfil de configuración. El perfil contiene la clave SSH, la lista de máquinas y los ajustes de infraestructura para todo lo que haremos a partir de aquí."
+    },
+    {
+      "id": "tutorial-add-server-02",
+      "markerIndex": 1,
+      "at": 11.160728,
+      "text": "Ahora registramos el servidor en el CLI, indicando su nombre, dirección IP y usuario SSH. Las claves de host se escanean automáticamente para un acceso de confianza."
+    },
+    {
+      "id": "tutorial-add-server-03",
+      "markerIndex": 2,
+      "at": 23.457976,
+      "text": "Vamos a aprovisionar el servidor. Esto instala renet y crea el almacén cifrado. Después de esto, el servidor está listo para alojar repositorios."
+    },
+    {
+      "id": "tutorial-add-server-04",
+      "markerIndex": 3,
+      "at": 39.717449,
+      "text": "Verificamos lo que el CLI sabe sobre la configuración. Máquinas, clave SSH, infraestructura, todo lo que acabamos de configurar aparece aquí."
+    },
+    {
+      "id": "tutorial-add-server-05",
+      "markerIndex": 4,
+      "at": 48.157549,
+      "text": "Toda la configuración vive en un único archivo JSON en tu laptop. Cópialo a otra máquina y podrás operar los mismos servidores desde allí."
+    }
+  ]
+}

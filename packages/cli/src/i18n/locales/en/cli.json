@@ -2425,7 +2425,7 @@
     "machineIp": "Machine IP address or hostname",
     "machineShorthand": "Machine name (shorthand for --machine)",
     "organization": "Organization name",
-    "output": "Output format (table|json|yaml|csv)",
+    "output": "Output format (table|json|yaml|csv). Override default with REDIACC_DEFAULT_OUTPUT.",
     "password": "Password (for non-interactive login)",
     "masterPassword": "Master password for vault encryption",
     "region": "Region name",

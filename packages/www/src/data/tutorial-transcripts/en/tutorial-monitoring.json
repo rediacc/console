@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-monitoring.cast",
+  "language": "en",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-monitoring-01",
+      "markerIndex": 0,
+      "at": 102.949897,
+      "text": "Let us start with the system view. The machine query command with the system filter shows uptime, disk usage, and storage status."
+    },
+    {
+      "id": "tutorial-monitoring-02",
+      "markerIndex": 1,
+      "at": 114.069314,
+      "text": "Now containers. This view lists every running container across every repository on the machine: name, status, health, CPU, memory, plus which repo owns each one."
+    },
+    {
+      "id": "tutorial-monitoring-03",
+      "markerIndex": 2,
+      "at": 126.082986,
+      "text": "And the repos themselves. Size, mount status, Docker daemon status, disk usage. Everything you need to know about each isolated environment."
+    },
+    {
+      "id": "tutorial-monitoring-04",
+      "markerIndex": 3,
+      "at": 138.182721,
+      "text": "The machine query command with no filters gives you everything in one shot. System info, containers, repositories, all together."
+    },
+    {
+      "id": "tutorial-monitoring-05",
+      "markerIndex": 4,
+      "at": 149.8205,
+      "text": "And finally the diagnostic check for a local sanity check on your laptop. Node, SSH key, renet, Docker. All the things the CLI itself depends on. That is the full series. From install to monitoring, all from your terminal."
+    }
+  ]
+}

@@ -55,9 +55,29 @@ const ALLOWED_IDENTICAL = new Set([
   'Kubernetes',
   'VS Code',
   'Visual Studio Code',
+  'Stripe',
+  'rediacc',
   'Intel',
   'Oracle',
   'Azure',
+  // OS / platform names — kept identical across all locales (proper nouns)
+  'Linux',
+  'macOS',
+  'Windows',
+  'docker',
+  'Enterprise',
+  // IT anglicisms commonly retained across locales (especially in DE/FR/IT/PT IT industry)
+  'Multi-Cloud',
+  'MULTI-CLOUD',
+  'Failover',
+  'Backup',
+  'Standard',
+  'Priority',
+  'General',
+  'Legal',
+  'Brew',
+  'brew',
+  'apt',
   'Backblaze',
   'Cloudflare',
   'Ceph',
@@ -220,6 +240,8 @@ const ALLOWED_IDENTICAL = new Set([
   'AES-256',
   'Live',
   'Down',
+  // Release channel names (kept in English globally — "Stable" is a loanword in many languages)
+  'Stable',
   // ROI calculator
   'SMB',
   'ROI Calculator',
@@ -246,11 +268,36 @@ const ALLOWED_IDENTICAL = new Set([
   'Binary',
   'Enterprise',
   'docker',
+  // Pricing plan names (used as tier identifiers across all locales)
+  'Community',
+  'Business',
+  'Emergency',
+  // Brand tagline and sign-off (must remain identical across all locales)
+  'Rediacc — Clone Production. Break Nothing⚡',
+  '— Rediacc',
+  // Security email format strings (technical label + placeholder, language-neutral)
+  'IP: {{value}}',
+  // AI security product name (brand, not translated)
+  'AI Pentesting',
+  // Container/repo count labels in visual diagrams (technical measurement)
+  '4 repos',
+  '380 GB total',
+  // Always-on labels (technical availability term)
+  'ALWAYS-ON',
+  'Always-On',
+  // Self-hosted deployment label (technical term used globally)
+  'Self-hosted / on-premises',
+  // Website label (identical in European Portuguese)
+  'Website',
 ]);
 
 // Patterns for strings that should not be translated (placeholders, format strings)
 const PLACEHOLDER_PATTERNS: RegExp[] = [
   /placeholder$/i, // Keys ending in "placeholder"
+  /\.slug$/, // URL slugs — must remain identical across locales
+  /\.slugs?\.\d+$/, // Slug arrays (e.g. companion guide slugs)
+  /\.planId$/, // Plan identifier keys (slugs, not translated)
+  /\.autoComplete$/, // HTML autocomplete attribute values (browser-standard strings)
   /^https?:\/\//, // URLs
   /^[a-z0-9._-]+@[a-z0-9.-]+\.[a-z]+$/i, // Emails
   /^[a-z0-9.-]+\.(com|net|org|io|me|ru|cn)$/i, // Domains
@@ -279,6 +326,7 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /\bRediacc\b.*\b(btrfs|CoW|Copy-on-Write|send\/receive)\b/, // Rediacc + technical term combos
   /^\{\{[^}]+\}\}$/, // Template-only strings
   /^[A-Z]\{\{/, // Format strings starting with letter + template
+  /^(\{\{[^}]+\}\}[^{a-zA-Z]*)+$/, // Strings composed entirely of template placeholders and punctuation (e.g. "{{a}} / {{b}}", "{{x}}{{y}}")
   /^v\{\{version\}\}$/, // Version format
   /^P\{\{level\}\}/, // Priority format
   /^\s*(Token|Docker|Disk|Memory|Datastore|System):\s*\{\{/, // Status lines with template
@@ -308,6 +356,8 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /^\d+\s*(GB|TB|MB|KB)\+?$/, // Storage sizes like 10 GB, 1 TB+
   /\.\w+\.(price|jobsPerMonth|repoSize)$/, // Pricing technical values (key pattern)
   /\.label$/, // Form labels (often identical: "Name *", "Email *")
+  /\.autoComplete$/, // HTML autocomplete attribute values (technical standard: "name", "email", "organization", "organization-title")
+  /^50\+$/, // Numeric values with plus suffix (plan tier limits)
   /\| Rediacc$/, // Page titles with brand suffix (e.g., "Downloads | Rediacc")
   /^\d+\.\d+\s/, // Numbered sections like "2.4 Cookies"
   /\(portable\)$/, // Technical descriptions like "AppImage (portable)"
@@ -339,6 +389,7 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /^Live$/, // Status labels kept short
   /^Down$/, // Status labels kept short
   /^brew$/, // Package manager command
+  /^apt$/, // Package manager command (same across languages)
   /^\d+\/\d+\s+healthy$/, // Health status like 8/8 healthy
   /^dev-sarah$/i, // Example dev environment name
   /^Dev-Sarah$/i, // Example dev environment name
@@ -388,8 +439,10 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /\.terminal\.lines\.\d+\.value$/, // "feature/auth-v2", "apt upgrade -y"
   /\.terminal\.lines\.\d+\.result$/, // "12/12 passed", "47/47"
   /\.terminal\.lines\.\d+\.pairs\.\d+\.value$/, // "$0.003/hr", "142ms"
-  // Pricing comparison numeric values
-  /\.comparison\.categories\.\w+\.rows\.\d+\.enterprise$/, // "100,000+"
+  // Pricing comparison symbols and values (✓, —, numeric values — language-neutral)
+  /\.comparison\.categories\.\w+\.rows\.\d+\.(community|professional|business|enterprise)$/, // "✓", "—", "100,000+"
+  // Social proof impact metric values (numeric/percentage — not translated)
+  /\.socialProof\.impact\.(before|after)\.value$/, // "22s", "58%", "0%"
   // Terminal log entries with timestamps (audit trail output)
   /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/, // "2026-02-27 02:00:14    system    backup.create..."
   /^── .+ ──$/, // "── Scan #147 (2026-02-27 02:00 UTC) ──"

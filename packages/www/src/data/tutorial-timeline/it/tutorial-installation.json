@@ -1,0 +1,383 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation.cast",
+  "language": "it",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "9da7e64430dff44a947d2a5b5f11ecec72f92b0bb6c82fd6823b259c003f79ea",
+  "steps": [
+    {
+      "id": "tutorial-installation-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.509194,
+      "replayEndSec": 9.435981,
+      "narrationText": "Prima di tutto, confermiamo che la CLI sia nel path. Eseguendo la CLI con il flag version si ottiene la versione installata e si verifica che l'installazione sia andata a buon fine.",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-installation/tutorial-installation-01.4eb98111.mp3",
+      "audioDurationSec": 11.232653,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.4,
+          "startChar": 6,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 9,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.44,
+          "startChar": 16,
+          "endChar": 27
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 28,
+          "endChar": 31
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.68,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 39,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.72,
+          "startChar": 43,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 47,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.08,
+          "startChar": 53,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.16,
+          "startChar": 63,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.88,
+          "startChar": 70,
+          "endChar": 73
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.04,
+          "startChar": 74,
+          "endChar": 76
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.28,
+          "startChar": 77,
+          "endChar": 81
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.76,
+          "startChar": 82,
+          "endChar": 89
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.64,
+          "startChar": 90,
+          "endChar": 92
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.88,
+          "startChar": 93,
+          "endChar": 100
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.04,
+          "startChar": 101,
+          "endChar": 103
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.44,
+          "startChar": 104,
+          "endChar": 112
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 8.08,
+          "startChar": 113,
+          "endChar": 123
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.24,
+          "startChar": 124,
+          "endChar": 125
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.64,
+          "startChar": 126,
+          "endChar": 128
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.12,
+          "startChar": 129,
+          "endChar": 137
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.2,
+          "startChar": 138,
+          "endChar": 141
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 10.08,
+          "startChar": 142,
+          "endChar": 157
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.24,
+          "startChar": 158,
+          "endChar": 161
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.56,
+          "startChar": 162,
+          "endChar": 168
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.64,
+          "startChar": 169,
+          "endChar": 170
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 10.88,
+          "startChar": 171,
+          "endChar": 175
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.2,
+          "startChar": 176,
+          "endChar": 180
+        }
+      ]
+    },
+    {
+      "id": "tutorial-installation-02",
+      "markerIndex": 1,
+      "replayStartSec": 9.435981,
+      "replayEndSec": 18.745045,
+      "narrationText": "Ora eseguiamo il controllo diagnostico. Controlla tutte le dipendenze necessarie alla CLI -- Node, SSH e le restanti -- e segnala eventuali mancanze. Un rapporto pulito significa che sei pronto ad aggiungere un server.",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-installation/tutorial-installation-02.ba67fb81.mp3",
+      "audioDurationSec": 15.490612,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.2,
+          "startChar": 14,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.76,
+          "startChar": 17,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.8,
+          "startChar": 27,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.52,
+          "startChar": 40,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.84,
+          "startChar": 50,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 56,
+          "endChar": 58
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.56,
+          "startChar": 59,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 5.12,
+          "startChar": 70,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.28,
+          "startChar": 81,
+          "endChar": 85
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 7.2,
+          "startChar": 93,
+          "endChar": 97
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.48,
+          "startChar": 105,
+          "endChar": 107
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.96,
+          "startChar": 108,
+          "endChar": 116
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.36,
+          "startChar": 120,
+          "endChar": 121
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.0,
+          "startChar": 122,
+          "endChar": 129
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.48,
+          "startChar": 130,
+          "endChar": 139
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 11.76,
+          "startChar": 140,
+          "endChar": 148
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 11.92,
+          "startChar": 150,
+          "endChar": 152
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.32,
+          "startChar": 153,
+          "endChar": 161
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.72,
+          "startChar": 162,
+          "endChar": 168
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.28,
+          "startChar": 169,
+          "endChar": 178
+        },
+        {
+          "startSec": 13.28,
+          "endSec": 13.44,
+          "startChar": 179,
+          "endChar": 182
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.68,
+          "startChar": 183,
+          "endChar": 186
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 14.16,
+          "startChar": 187,
+          "endChar": 193
+        },
+        {
+          "startSec": 14.16,
+          "endSec": 14.32,
+          "startChar": 194,
+          "endChar": 196
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.8,
+          "startChar": 197,
+          "endChar": 207
+        },
+        {
+          "startSec": 14.8,
+          "endSec": 14.96,
+          "startChar": 208,
+          "endChar": 210
+        },
+        {
+          "startSec": 14.96,
+          "endSec": 15.36,
+          "startChar": 211,
+          "endChar": 217
+        }
+      ]
+    }
+  ]
+}

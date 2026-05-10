@@ -48,41 +48,11 @@ export const TEAM_MEMBERS: Record<string, TeamMemberMedia> = {
       working: '/media/founder/photos/working.jpg',
     },
     videos: {
-      'hero-intro': {
-        src: '/media/founder/videos/hero-intro.mp4',
-        poster: '/media/founder/posters/hero-intro.jpg',
-        duration: 30,
-        durationLabel: '0:30',
-      },
       'our-story': {
         src: '/media/founder/videos/our-story.mp4',
         poster: '/media/founder/posters/our-story.jpg',
         duration: 150,
         durationLabel: '2:30',
-      },
-      'persona-devops': {
-        src: '/media/founder/videos/persona-devops.mp4',
-        poster: '/media/founder/posters/persona-devops.jpg',
-        duration: 15,
-        durationLabel: '0:15',
-      },
-      'persona-ctos': {
-        src: '/media/founder/videos/persona-ctos.mp4',
-        poster: '/media/founder/posters/persona-ctos.jpg',
-        duration: 15,
-        durationLabel: '0:15',
-      },
-      'persona-ceos': {
-        src: '/media/founder/videos/persona-ceos.mp4',
-        poster: '/media/founder/posters/persona-ceos.jpg',
-        duration: 15,
-        durationLabel: '0:15',
-      },
-      'persona-ai-agents': {
-        src: '/media/founder/videos/persona-ai-agents.mp4',
-        poster: '/media/founder/posters/persona-ai-agents.jpg',
-        duration: 15,
-        durationLabel: '0:15',
       },
     },
   },

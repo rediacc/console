@@ -24,6 +24,7 @@ const docsCollection = defineCollection({
     title: z.string(),
     description: z.string(),
     category: z.string(),
+    subcategory: z.enum(['essentials', 'advanced']).optional(),
     order: z.number().optional(),
     toc: z.boolean().default(true),
     language: z.enum(LANGUAGES).default('en'),

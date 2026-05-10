@@ -57,7 +57,6 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'stats',
       'problem',
       'howItWorks',
-      'teamVideo',
       'techDiff',
       'benefits',
       'socialProof',
@@ -71,7 +70,6 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'infrastructure-costs',
       'integrations',
     ],
-    teamVideo: { member: 'founder', videoKey: 'persona-devops' },
   },
   'for-ctos': {
     contentKey: 'forCtos',
@@ -81,7 +79,6 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'stats',
       'problem',
       'costCalculator',
-      'teamVideo',
       'techDiff',
       'benefits',
       'competitorComparison',
@@ -101,7 +98,6 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'vendor-lock-in',
       'cloud-outage-protection',
     ],
-    teamVideo: { member: 'founder', videoKey: 'persona-ctos' },
   },
   'for-ceos': {
     contentKey: 'forCeos',
@@ -111,7 +107,6 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'stats',
       'problem',
       'costCalculator',
-      'teamVideo',
       'benefits',
       'socialProof',
       'shareWithTeam',
@@ -120,7 +115,6 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
     calculatorPreset: 'rapid-recovery',
     illustration: illustrationRapidRecovery,
     relatedSolutions: ['rapid-recovery', 'vendor-lock-in', 'cloud-outage-protection'],
-    teamVideo: { member: 'founder', videoKey: 'persona-ceos' },
   },
   'for-ai-agents': {
     contentKey: 'forAiAgents',
@@ -130,7 +124,6 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'stats',
       'problem',
       'howItWorks',
-      'teamVideo',
       'techDiff',
       'benefits',
       'relatedSolutions',
@@ -138,7 +131,6 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
     ],
     illustration: illustrationEnvironmentCloning,
     relatedSolutions: ['environment-cloning', 'production-parity', 'integrations'],
-    teamVideo: { member: 'founder', videoKey: 'persona-ai-agents' },
   },
 };
 

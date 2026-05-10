@@ -1,0 +1,207 @@
+---
+title: "Ho Testato Rediacc Contro l'Incidente PocketOS"
+description: "PocketOS ha perso il suo database di produzione per colpa di un agente Cursor in 9 secondi. Ho eseguito lo stesso tipo di test sulla mia piattaforma cronometrando ogni passo. Ecco cosa ha retto e cosa rimane responsabilita' dello sviluppatore."
+author: Muhammed Fatih Bayraktar
+publishedDate: 2026-04-28
+category: case-study
+tags:
+  - sicurezza
+  - agenti-ia
+  - postmortem
+  - caso-studio
+featured: true
+language: it
+---
+
+import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
+
+> **TL;DR.** Un agente IA ha eliminato il database di produzione di PocketOS in 9 secondi la settimana scorsa. Ho cercato di far fallire la mia infrastruttura nello stesso modo. Sei protezioni hanno retto; rimane un gap onesto.
+>
+> - Fork di produzione da 128 GB, dall'inizio alla fine: **7,2 secondi.** Il reflink CoW in se': 2,3 secondi.
+> - L'agente e' stato bloccato dai repository grand (produzione), bloccato dall'impostare il proprio override, e inserito in una sandbox kernel (utente non privilegiato, namespace di mount separato, socket Docker circoscritto) quando l'accesso e' stato autorizzato.
+> - **Cosa Rediacc non isola**: credenziali SaaS esterne nei dati del repository. Un fork le eredita. *(Aggiornamento. Maggio 2026: `rdc repo secret` ora permette di tenere le credenziali fuori dall'immagine del repo completamente. Vedi la nuova sezione conclusiva "Aggiornamento: il gap e' ora risolvibile" per la storia completa.)* Quella parte e' responsabilita' dello sviluppatore, tramite gli hook del ciclo di vita del Rediaccfile.
+
+<YouTubeEmbed videoId="o-Bst9rO9Fk" title="Ho Testato Rediacc Contro l'Incidente PocketOS" />
+
+> **Aggiornamento. Maggio 2026.** Da quando questo post e' stato pubblicato, Rediacc ha rilasciato **segreti per repository** di prima classe (`rdc repo secret`). Il "gap onesto" descritto di seguito. Le credenziali SaaS esterne incorporate nel tuo repository. Ora ha una risposta integrata che mantiene i segreti fuori dall'immagine LUKS completamente, quindi i fork non ne ereditano nessuno per impostazione predefinita. Vai alla nuova sezione conclusiva [Aggiornamento: il gap e' ora risolvibile](#aggiornamento-il-gap-e-ora-risolvibile) per cosa e' stato rilasciato, cosa e' cambiato e quale rischio residuo rimane.
+
+Lo scorso fine settimana, Jer Crane ha pubblicato un postmortem da 30 ore. Un agente Cursor che eseguiva Claude Opus 4.6 di Anthropic ha eliminato il suo database di produzione su Railway. L'eliminazione era una singola chiamata GraphQL. Ha impiegato 9 secondi. I backup del volume di Railway ci sono andati insieme perche' Railway li archivia all'interno dello stesso volume.
+
+La sua azienda, PocketOS, sviluppa software che le imprese di noleggio auto usano per gestire le loro operazioni quotidiane. Alcune di queste imprese sono su PocketOS da cinque anni. Sabato mattina, i clienti sono venuti a ritirare i veicoli e le imprese di noleggio non avevano alcun record di chi fossero. Tre mesi di prenotazioni, spariti. Jer ha trascorso la giornata a ricostruire quello che poteva dagli storici dei pagamenti Stripe e dalle conferme email.
+
+Ho letto il suo post due volte. The Register, Tom's Hardware e Business Standard lo hanno ripreso. Il thread su Hacker News ha raggiunto 874 commenti.
+
+Costruisco un tipo diverso di piattaforma di infrastruttura. La chiamiamo Rediacc. L'intero punto di come e' costruita e' rendere questo esatto scenario piu' difficile. Cosi' mi sono seduto e ho eseguito il test.
+
+Questo post e' cio' che ho trovato. I numeri sono reali. I messaggi di errore sono citati dalla CLI. E il posto in cui Rediacc non protegge affatto e' qui dentro. Fingere il contrario e' cio' che mette le persone nei guai.
+
+## Cosa mancava effettivamente
+
+Leggi attentamente la timeline di Jer e quattro fallimenti si accumulano l'uno sull'altro.
+
+1. Il token API Railway che Cursor usava era stato creato per gestire domini personalizzati. Aveva anche l'autorita' `volumeDelete`. Non esiste una definizione di ambito per operazione sui token CLI di Railway.
+2. L'API GraphQL di Railway accetta `volumeDelete` come singolo POST. Nessun passaggio di conferma.
+3. I "backup del volume" di Railway vivono all'interno dello stesso volume. Quando il volume va, i backup vanno con lui.
+4. L'agente Cursor ha deciso, da solo, che il modo giusto per risolvere una mancata corrispondenza delle credenziali in staging era eliminare un volume.
+
+Estrai il fallimento 4 per un momento. Le regole di sistema di Cursor dicevano all'agente di non eseguire mai comandi git distruttivi senza una richiesta esplicita dell'utente. Dopo l'eliminazione, invitato a spiegarsi, l'agente ha prodotto una confessione scritta. Ha ammesso che eliminare un volume del database e' "l'azione piu' distruttiva e irreversibile possibile: molto peggio di un force push" e ha elencato ogni regola di sicurezza che ha violato.
+
+Una regola comportamentale in un prompt e' un consiglio. Non e' un'applicazione. I fallimenti 1, 2 e 3 sono scelte di design dell'infrastruttura. Sono cio' che trasforma il fallimento 4 da un errore in un'azienda perduta.
+
+## La configurazione del test
+
+Rediacc ha una macchina di produzione reale che gestisco, chiamata `hostinger`. Tredici repository ci vivono: un server mail, un GitLab self-hosted, uno stack di osservabilita' e una demo da 128 GB di StackOverflow che usiamo per i benchmark. Il disco e' pieno all'87%. Lo spazio libero e' a zero. Il tipo di macchina dove gli errori fanno male.
+
+Ho scelto la demo di StackOverflow appositamente. E' il repository piu' grande sulla macchina. E' configurato come un'applicazione reale, con container e dati persistenti. Se farne il fork e' veloce e isolato, e' veloce e isolato per tutto cio' che e' piu' piccolo.
+
+Il mio agente per il test era Claude Code, che eseguiva Claude Opus. Stessa famiglia di modelli di Cursor. Stesso tipo di pattern di accesso che aveva l'agente di Jer. La CLI che ho usato e' `rdc`, la nostra.
+
+## Tentativo uno: fare semplicemente SSH nel repo di produzione
+
+La prima cosa che l'agente (io, in questo caso) ha provato era la cosa piu' naturale. Aprire una shell nel repo di produzione e guardarsi intorno.
+
+```bash
+$ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
+```
+
+La CLI ha rifiutato. Testuale:
+
+> "demo-stackoverflow" e' un repository grand (produzione). Gli agenti non possono modificare i repository grand direttamente.
+>
+> I repository grand contengono dati di produzione. Usa invece un fork. I fork sono copie sandbox sicure e isolate.
+
+Non e' un prompt di sistema. E' la CLI stessa che rifiuta la chiamata prima che lasci mai il mio laptop. La CLI ha visto che ero un agente. Claude Code imposta la variabile d'ambiente `CLAUDECODE`. La CLI percorre anche l'albero dei processi tramite `/proc` per catturare gli agenti che cercano di nascondere quella variabile. Poi ha confrontato l'operazione con la sua tabella delle policy. Poi ha rifiutato.
+
+Quindi l'agente fa cio' che un agente potrebbe fare. Cerca di impostare l'override da solo.
+
+```bash
+$ REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow rdc term connect ...
+```
+
+Ancora rifiutato:
+
+> "demo-stackoverflow" e' un repository grand (produzione). Gli override avviati dall'agente non sono accettati.
+>
+> Non tentare di impostare REDIACC_ALLOW_GRAND_REPO. Solo l'utente puo' autorizzarlo prima che l'agente si avvii.
+
+La stessa passeggiata `/proc` fa due lavori. Prima individua l'agente. Poi controlla se l'override e' stato impostato all'interno dell'agente o sopra di esso. Sotto il confine: rifiutato. Sopra: consentito.
+
+Ho testato questo. Sono uscito dall'agente. Ho eseguito `export REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow` nella mia shell. Ho riavviato Claude Code. La connessione ha funzionato. Sono entrato nel repo come utente di sistema `rediacc` non privilegiato (UID 7111). `DOCKER_HOST` puntava al socket daemon Docker circoscritto del repo parent.
+
+Ho anche provato a connettermi a un diverso repo di produzione, `nextcloud`, mentre l'override per `demo-stackoverflow` era attivo. Rifiutato. L'override e' per repo, non un interruttore master.
+
+## Tentativo due: fare il fork del repo e operare sul fork
+
+Questo e' il flusso di lavoro su cui Rediacc vuole effettivamente che tu sia.
+
+```bash
+$ time rdc repo fork --parent demo-stackoverflow -m hostinger --tag agent-test
+```
+
+Output, copiato dal mio terminale:
+
+```
+Config loaded     (9ms)
+Connected         (1.1s)
+Renet provisioned (1.2s)
+Machine verified  (464ms)
+License activated (2.1s)
+✔ CoW clone complete (2.3s)
+
+Total: 7.2s
+```
+
+Un fork da 128 GB in 2,3 secondi. Il motivo e' un reflink BTRFS. Il fork e' metadata che punta ai blocchi del parent finche' un lato non scrive. Nessun dato viene copiato.
+
+Per verificare la scalabilita', ho eseguito lo stesso fork su un repository da 2 GB:
+
+```
+✔ CoW clone complete (573ms)
+Total: 6.3s
+```
+
+Il passo di clone del fork da 2 GB ha impiegato 573 millisecondi. Il passo di clone del fork da 128 GB ha impiegato 2,3 secondi. Quindi il clone dei dati e' sub-lineare, non strettamente costante. Ma il tempo totale del fork e' quasi identico (6,3 s vs 7,2 s) perche' la maggior parte dell'attesa riguarda la danza SSH e delle licenze, non i dati. Dal punto di vista dell'utente, un fork e' una pausa da 6 a 7 secondi indipendentemente dalla dimensione del repo.
+
+Ora sto operando sul fork. Ha il suo GUID (`22c57178-...`). Il suo networkId (`21760`). Il suo percorso di mount. Il suo socket daemon Docker (`/var/run/rediacc/docker-21760.sock`). I dati del parent sono condivisi tramite reflink. Il parent stesso rimane in esecuzione per tutto il tempo.
+
+Quando faccio `term connect` nel fork, questo e' cio' che vedo:
+
+```
+$ rdc term connect -m hostinger -r demo-stackoverflow:agent-test -c "id"
+uid=7111(rediacc) gid=7111(rediacc) groups=7111(rediacc),988(docker)
+```
+
+Non il mio utente SSH. L'utente di sistema `rediacc` dedicato, UID 7111, senza una shell propria. La sessione gira nel proprio namespace di mount. Ho controllato `/proc/self/ns/mnt`. Quando ho cercato di elencare il percorso di mount del parent dall'interno della sessione del fork, `ls` ha restituito `Permission denied`. L'agente letteralmente non puo' raggiungere i dati di produzione, nemmeno indovinando il percorso.
+
+Questa e' la parte del design che conta di piu'. L'agente ottiene una sandbox a livello kernel. Non un'istruzione "per favore non farlo". Se l'agente decide di eseguire `rm -rf /` all'interno del fork, nel peggiore dei casi basta un re-fork di 2,3 secondi dal parent.
+
+## Una nota sul supporto alle piattaforme
+
+L'override funziona solo su Linux. Il controllo di legittimita' ha bisogno di `/proc/<pid>/environ`. Quel file e' il registro del kernel su come ogni processo e' stato avviato. macOS e Windows non hanno un equivalente. Senza modo di verificare che l'override sia stato impostato da te e non dall'agente, la CLI fallisce in modo chiuso. Anche un override impostato correttamente viene rifiutato su quelle piattaforme.
+
+Il messaggio di errore ti dice cosa fare:
+
+> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. ... To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+
+In pratica, gli agenti su macOS o Windows non hanno via di uscita dal flusso di lavoro fork-first. E' intenzionale.
+
+## Le protezioni che hanno retto in questo test
+
+Sono entrato aspettandomi di verificare una o due proprieta' di sicurezza. Sono uscito con sei. Ognuna ha del codice a cui posso puntare e un messaggio di errore che posso citare.
+
+1. **Blocco del grand-repo.** Gli agenti non possono operare direttamente sui repository grand (produzione). Devono fare il fork.
+2. **Rifiuto dell'override impostato dall'agente.** La variabile d'ambiente di override che l'utente puo' impostare viene rifiutata se appare nell'ambiente dell'agente stesso.
+3. **Definizione dell'ambito dell'override per repo.** Un permesso per `demo-stackoverflow` non fa nulla per `nextcloud`. L'ambito e' una lista, non un flag.
+4. **Sandbox kernel.** Anche con un override valido, la sessione gira come UID `rediacc`, nel proprio namespace di mount, con `DOCKER_HOST` circoscritto al daemon di un repo. Nessun modo di vedere altri repo.
+5. **Fork online.** Il parent ha continuato a girare durante il fork. Nessun downtime, nessun cutover.
+6. **Tempistica del fork sub-lineare.** 2,3 secondi per 128 GB. 573 ms per 2 GB. La maggior parte dell'attesa riguarda la danza SSH, non i dati.
+
+## La cosa che Rediacc non isola
+
+Ora la parte piu' difficile del post.
+
+Rediacc isola l'infrastruttura: il file su disco, il daemon Docker, il namespace di mount, la rete. Non isola le API SaaS esterne per cui il tuo repository detiene le credenziali.
+
+Un fork e' un reflink BTRFS byte per byte del parent. Qualunque cosa viva in `data/`, `.env` o `secrets/` del parent e' nel fork anche. Se il tuo repository contiene un `STRIPE_LIVE_KEY`, un `AWS_ACCESS_KEY_ID` o un token API Railway, l'agente nel fork puo' leggerli. Puo' chiamare `api.stripe.com` o `s3.amazonaws.com` o `backboard.railway.app` con quei token. Dall'esterno, la chiamata sembra provenire dalla produzione. Stripe o AWS non possono distinguere il fork.
+
+Questa e' la linea di responsabilita' condivisa. Rediacc gestisce la meta' dell'infrastruttura. La meta' del servizio esterno vive nel tuo codice applicativo.
+
+Tre pattern colmano il gap dal lato dello sviluppatore:
+
+- Non archiviare credenziali esterne di produzione nel repository. Recuperale da un gestore di segreti all'avvio del container. I container del fork recuperano credenziali con ambito sandbox per design.
+- Rimuovi o sostituisci le credenziali al momento del fork tramite l'hook `up()` del Rediaccfile. L'`up()` di un fork gira contro un GUID di repository diverso dal parent. Rilevalo. Poi riscrivi `.env` con valori sandbox.
+- Provisiona risorse esterne per fork: un account sandbox Stripe per fork, un database di test per fork, un bucket S3 per fork.
+
+Se PocketOS fosse stata su Rediacc, il token API Railway non sarebbe stato il paragone giusto. La loro infrastruttura sarebbe stato il fork Rediacc stesso. Non ci sarebbe stato alcun token Railway da trovare, perche' Rediacc non espone nessun equivalente di `volumeDelete` a un agente autenticato. L'agente avrebbe vissuto all'interno di un socket Docker per fork senza percorso per eliminare il parent.
+
+Ma se il loro agente avesse trovato una chiave Stripe di produzione in un file di credenziali, Rediacc non avrebbe impedito all'agente di emettere rimborsi contro carte di clienti reali. Questa e' una perdita reale. Entrambe le cose sono vere.
+
+## Aggiornamento: il gap e' ora risolvibile
+
+Ho lasciato la sezione precedente cosi' come l'avevo scritta originariamente. L'onesta' aveva il suo peso all'epoca. Da quando l'ho pubblicata, abbiamo rilasciato il pezzo mancante, e il gap e' ora risolvibile. Non cambiando il comportamento dei fork, ma aggiungendo un posto dove mettere le credenziali che vive fuori dall'immagine cifrata del repo.
+
+Il meccanismo e' `rdc repo secret`. E' modellato sui segreti di GitHub Actions. Due cose contano su come e' costruito.
+
+**I segreti non vivono all'interno dell'immagine LUKS.** Vivono in un piano separato su disco: i segreti in modalita' env raggiungono i container come interpolazione `${REDIACC_SECRET_<KEY>}` nel tuo file compose, i segreti in modalita' file raggiungono i container come file tmpfs in `/run/secrets/<key>` tramite il blocco `secrets:` di Docker compose. In entrambi i casi, il valore non viene mai scritto nell'immagine cifrata del repository. Il reflink BTRFS del fork copia l'immagine. Non copia cio' che non era mai nell'immagine. La lista dei segreti di un fork fresco e' vuota. I suoi container si avviano senza credenziali di produzione, quindi non e' possibile effettuare chiamate di produzione.
+
+**Il modello e' solo scrittura.** `rdc repo secret get` restituisce un digest SHA-256, non il valore. Non c'e' modo di rileggere un segreto tramite la CLI, per design. Questo chiude la superficie di perdita delle registrazioni del terminale, della cronologia della shell e dei redirect accidentali. La rotazione avviene con `--current <previous-value>` per verificare il valore precedente, o `--rotate-secret` per saltare la precondizione quando non si ha il valore precedente (registrato come rotazione). Simmetrico per umani e agenti. Entrambi i gate si applicano ugualmente.
+
+Cosa significa questo per lo scenario PocketOS: se fossero stati su Rediacc con i segreti adottati, l'agente all'interno del fork non avrebbe trovato `STRIPE_LIVE_KEY` in un file di credenziali. La mappa dei segreti del fork sarebbe stata vuota. Non ci sarebbe stato nulla con cui chiamare Stripe dall'interno della sandbox. Il qualificatore "perdita reale" della sezione originale si riduce a "perdita reale per i repo che incorporano credenziali nell'immagine". E la correzione per quei repo e' una migrazione una tantum nel nuovo meccanismo.
+
+Il gap residuo onesto. I segreti che hai scritto nell'immagine del repo prima di adottare `rdc repo secret`. Un `.env` committato in un volume, una credenziale persistita in un database, un file YAML con un token. Fanno ancora parte dei dati dell'immagine. Il reflink CoW li propaga come prima. Il meccanismo ti da' un posto sicuro dove metterli; non rimuove retroattivamente cio' che e' gia' su disco all'interno del volume cifrato. La correzione e' un lift manuale oggi (leggi il valore, impostalo tramite `rdc repo secret`, eliminalo dalla sorgente dell'immagine). Un `rdc repo secret lift --from .env` di prima classe e' nella roadmap.
+
+Per il modello di minaccia degli agenti specificamente, due effetti collaterali di questo design meritano di essere menzionati. Primo, `repo secret list` e `repo secret get` sono esposti come strumenti MCP (sicuri in lettura. Nomi e digest, mai valori), quindi un agente che ti aiuta a configurare un'app puo' scoprire cosa e' configurato senza vedere cosa e'. Secondo, quando una scrittura fallisce la precondizione, l'envelope di errore JSON include un campo strutturato `next.options[].run` con comandi concreti che l'agente dovrebbe trasmettere testualmente all'umano. Inclusa la via di uscita per la rotazione per "ho dimenticato il valore precedente." Consulta [AI Agent Safety](/en/docs/ai-agents-safety) per il modello completo.
+
+Il how-to completo si trova in [Repositories - Secrets](/en/docs/repositories#secrets). La ricetta e' breve: `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""` per inizializzare, `${REDIACC_SECRET_<KEY>}` in compose per consumare, `rdc repo fork` e verificare che la lista dei segreti del fork sia vuota.
+
+## Cosa cambia per chi fa questo tipo di lavoro
+
+Se dai a un agente IA l'accesso alla shell del tuo ambiente di produzione con una credenziale che puo' eliminarlo, la domanda non e' se alla fine fara' qualcosa di distruttivo. E' quando. E quanto e' recuperabile.
+
+Cosa cambia su Rediacc: il raggio d'azione distruttivo e' limitato da un fork. Il costo di un errore "elimina la cosa sbagliata" e' un re-fork di 2,3 secondi. Il costo di una mancata corrispondenza delle credenziali che l'agente decide di "correggere" e' lo stesso re-fork di 2,3 secondi. La sandbox kernel fa si' che la maggior parte degli errori non raggiunga mai i dati di produzione.
+
+Cosa non cambia: se il tuo repository ha credenziali esterne live al suo interno, l'agente puo' usarle. Tocca a te risolverlo al livello dell'applicazione, non al livello dell'infrastruttura.
+
+Non pretendero' che Rediacc avrebbe impedito ogni parte dell'incidente PocketOS. La parte peggiore della storia di PocketOS era l'eliminazione dei dati Railway senza un vero backup. Questo non sarebbe successo su Rediacc, perche' non diamo ad alcun agente una API `volumeDelete` da usare. La superficie di rischio rimanente, le API SaaS che un agente puo' chiamare con le credenziali nel tuo codebase, e' la parte della storia della sicurezza che vive nel tuo hook `up()`. Non nel nostro modello di isolamento.
+
+I numeri completi, i messaggi di errore letterali e i percorsi di codice che ho verificato sono documentati in [AI Agent Safety & Guardrails](/en/docs/ai-agents-safety). Se vuoi eseguire un test simile sulla tua infrastruttura, il flusso di lavoro del fork e' in [Repositories](/en/docs/repositories#fork). Richiede circa 7 secondi.

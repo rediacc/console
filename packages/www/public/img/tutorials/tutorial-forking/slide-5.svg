@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">A fork is a frozen photograph; the parent keeps flowing like a river</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .river { fill: none; stroke: #6794c4; stroke-width: 3.5; stroke-linecap: round; }
+    .photo-frame { fill: #ffffff; stroke: #556b2f; stroke-width: 3; }
+    .photo-mat { fill: #eef2e6; }
+    .photo-river { fill: none; stroke: #6794c4; stroke-width: 2; stroke-linecap: round; }
+    .clip { fill: #1a1a1a; }
+    .label { fill: #1a1a1a; font: 600 20px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .closer { fill: #556b2f; font: 600 22px Inter, system-ui, sans-serif; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <!-- River (top, flowing) -->
+  <g transform="translate(0 130)">
+    <path class="river" d="M 60 30 Q 130 10 200 30 T 340 30 T 480 30 T 620 30 T 760 30 T 900 30"/>
+    <path class="river" d="M 60 60 Q 130 40 200 60 T 340 60 T 480 60 T 620 60 T 760 60 T 900 60"/>
+    <path class="river" d="M 60 90 Q 130 70 200 90 T 340 90 T 480 90 T 620 90 T 760 90 T 900 90"/>
+  </g>
+  <text class="label" x="480" y="106">the parent · keeps flowing</text>
+
+  <!-- Photograph (bottom, frozen) -->
+  <g transform="translate(360 320)">
+    <rect class="photo-frame" x="0" y="0" width="240" height="160" rx="6"/>
+    <rect class="photo-mat" x="14" y="14" width="212" height="132" rx="3"/>
+    <!-- frozen river inside -->
+    <path class="photo-river" d="M 30 60 Q 70 40 110 60 T 200 60"/>
+    <path class="photo-river" d="M 30 80 Q 70 60 110 80 T 200 80"/>
+    <path class="photo-river" d="M 30 100 Q 70 80 110 100 T 200 100"/>
+    <!-- clip at top -->
+    <rect class="clip" x="110" y="-12" width="20" height="20" rx="3"/>
+  </g>
+  <text class="label" x="480" y="510">your fork · a moment, frozen</text>
+
+  <text class="closer" x="160" y="296">flowing</text>
+  <text class="closer" x="800" y="296">frozen</text>
+</svg>

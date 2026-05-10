@@ -1,0 +1,1604 @@
+{
+  "common": {
+    "additionalProviders": "Saadaval on lisapakkujaid: iCloud Drive, Amazon Cloud Drive (aegunud), Citrix Files ja teised spetsialiseeritud pakkujad.",
+    "authentication": {
+      "apiKey": "See pakkuja kasutab API-võtme autentimist. Genereeri võti pakkuja konsoolis.",
+      "oauth": "See pakkuja kasutab OAuth-autentimist. Pead andma juurdepääsu loa.",
+      "password": "See pakkuja kasutab parooliga autentimist. Kaaluge rakendusepõhiste paroolide kasutamist.",
+      "serviceAccount": "See pakkuja toetab teenusekonto autentimist serverirakenduste jaoks."
+    },
+    "errors": {
+      "connectionFailed": "Ühenduse loomine ebaõnnestus. Kontrolli võrku ja pakkuja seadeid.",
+      "invalidCredentials": "Vigased mandaadid. Kontrolli oma autentimisandmeid.",
+      "permissionDenied": "Juurdepääs keelatud. Kontrolli oma õigusi ja autentimist.",
+      "quotaExceeded": "Salvestusruumi limiit täis. Vabasta ruumi või uuenda oma plaani."
+    },
+    "noVersioning": {
+      "helpText": "Keela selle salvestusruumi failide versioonimine ruumi säästmiseks",
+      "label": "Keela versioonimine"
+    },
+    "parameters": {
+      "helpText": "Täiendavad rclone parameetrid täpsema seadistuse jaoks",
+      "label": "Lisaparameetrid",
+      "placeholder": "--transfers 4 --checkers 8"
+    },
+    "tips": "Näpunäited"
+  },
+  "storageProviders": {
+    "azureblob": {
+      "description": "Microsoft Azure plokisalvestus",
+      "fields": {
+        "account": {
+          "helpText": "Sinu Azure salvestuskonto nimi",
+          "label": "Salvestuskonto nimi",
+          "placeholder": "myaccount"
+        },
+        "endpoint": {
+          "helpText": "Azure salvestuse kohandatud lõpp-punkt",
+          "label": "Lõpp-punkt",
+          "placeholder": "https://myaccount.blob.core.windows.net"
+        },
+        "key": {
+          "helpText": "Esmane või teisene võti Azure portaalist",
+          "label": "Salvestuskonto võti",
+          "placeholder": "Sisesta oma konto võti"
+        },
+        "sas_url": {
+          "helpText": "Jagatud juurdepääsu allkirja URL piiratud juurdepääsuks",
+          "label": "SAS-aadress",
+          "placeholder": "Sisesta SAS URL, kui kasutad"
+        }
+      },
+      "helpText": "Azure Blob Storage struktureerimata andmete jaoks. Toetab mitut autentimismeetodit.",
+      "name": "Azure plokisalvestus",
+      "tips": [
+        "Kasuta SAS-märke ajutiseks juurdepääsuks",
+        "Vali sobiv salvestustase kulude optimeerimiseks",
+        "Luba pehme kustutamine andmekaitseks",
+        "Kaaluge hallatud identiteetide kasutamist Azure ressursside jaoks"
+      ]
+    },
+    "b2": {
+      "description": "Backblaze B2 pilvsalvestus",
+      "fields": {
+        "account": {
+          "helpText": "Sinu B2 konto ID või rakenduse võtme ID",
+          "label": "Konto ID või rakenduse võtme ID",
+          "placeholder": "000000000000000000000000"
+        },
+        "endpoint": {
+          "helpText": "Kohandatud S3-ühilduv lõpp-punkt B2 jaoks",
+          "label": "Kohandatud lõpp-punkt",
+          "placeholder": "s3.us-west-000.backblazeb2.com"
+        },
+        "hard_delete": {
+          "helpText": "Kustuta failid jäädavalt peitmise asemel. Kasuta ettevaatusega",
+          "label": "Kõva kustutamine"
+        },
+        "key": {
+          "helpText": "Rakenduse võti B2 konsoolis. Kasuta rakenduse võtmeid peamise võtme asemel",
+          "label": "Rakenduse võti",
+          "placeholder": "Sisesta oma rakenduse võti"
+        }
+      },
+      "helpText": "Backblaze B2 on taskukohane pilvevaru teenus. Autentimiseks kasutatakse rakenduse võtmeid.",
+      "name": "Backblaze B2 pilvsalvestus",
+      "tips": [
+        "Loo piiratud õigustega rakenduse võtmed turvalisuse tagamiseks",
+        "B2 pakub 10 GB tasuta salvestusruumi ja 1 GB päevast allalaadimist",
+        "Peidetud failid arvestatakse salvestuskvoodis",
+        "Kaaluge elutsüklireeglite kasutamist vanade versioonide automaatseks kustutamiseks"
+      ]
+    },
+    "box": {
+      "description": "Box pilvesalvestus",
+      "fields": {
+        "client_id": {
+          "helpText": "OAuth 2.0 kliendi ID Box rakenduse seadetest",
+          "label": "OAuth kliendi ID",
+          "placeholder": "Sisesta oma kliendi ID"
+        },
+        "client_secret": {
+          "helpText": "OAuth 2.0 kliendi saladus. Hoia seda turvaliselt",
+          "label": "OAuth kliendi saladus",
+          "placeholder": "Sisesta oma kliendi saladus"
+        },
+        "root_folder_id": {
+          "helpText": "Juurkausta ID. '0' tähendab sinu Box'i juurt",
+          "label": "Juurkausta ID",
+          "placeholder": "0"
+        },
+        "token": {
+          "helpText": "OAuth2 märk, mis on saadud Box'i autentimise kaudu",
+          "label": "OAuth märk"
+        }
+      },
+      "helpText": "Box ettevõtte pilvesalvestus ja koostööplatvorm. Kasutab OAuth 2.0 autentimist.",
+      "name": "Box",
+      "tips": [
+        "Box'il on 15 GB faili suuruse piirang üleslaadimiseks",
+        "Ettevõtte kontodel võib olla lisafunktsioone",
+        "Kasuta rakenduse märke serveripoolsete rakenduste jaoks",
+        "Box'il on ranged API kiiruspiirangud"
+      ]
+    },
+    "cloudflare-r2": {
+      "description": "Cloudflare R2 objektisalvestus",
+      "fields": {
+        "access_key_id": {
+          "helpText": "R2 juurdepääsuvõtme ID",
+          "label": "Juurdepääsuvõtme ID",
+          "placeholder": "Sisesta juurdepääsuvõti"
+        },
+        "account_id": {
+          "helpText": "Cloudflare konto ID",
+          "label": "Konto ID",
+          "placeholder": "Sisesta konto ID"
+        },
+        "endpoint": {
+          "helpText": "R2 lõpp-punkti URL",
+          "label": "Lõpp-punkt",
+          "placeholder": "https://ACCOUNT_ID.r2.cloudflarestorage.com"
+        },
+        "secret_access_key": {
+          "helpText": "R2 salajane juurdepääsuvõti",
+          "label": "Salajane juurdepääsuvõti",
+          "placeholder": "Sisesta salajane võti"
+        }
+      },
+      "helpText": "Cloudflare R2 on S3-ühilduv objektisalvestus ilma väljuvate andmete tasudeta.",
+      "name": "Cloudflare R2 salvestus",
+      "tips": [
+        "Puuduvad väljuvate andmete tasud",
+        "S3-ühilduv API",
+        "Automaatne replikatsioon",
+        "Integreeritud Cloudflare CDN-iga"
+      ]
+    },
+    "drive": {
+      "description": "Google Drive pilvesalvestus",
+      "fields": {
+        "client_id": {
+          "helpText": "OAuth 2.0 kliendi ID Google Cloud Console'ist",
+          "label": "OAuth kliendi ID",
+          "placeholder": "123456789012-abcdef.apps.googleusercontent.com"
+        },
+        "client_secret": {
+          "helpText": "OAuth 2.0 kliendi saladus. Hoia seda turvaliselt",
+          "label": "OAuth kliendi saladus",
+          "placeholder": "Sisesta oma kliendi saladus"
+        },
+        "impersonate": {
+          "helpText": "Teenusekontot kasutades jäljendatava kasutaja e-post",
+          "label": "Jäljenda kasutajat",
+          "placeholder": "user@domain.com"
+        },
+        "root_folder_id": {
+          "helpText": "Kasutatava juurkausta ID. Jäta tühjaks draivi juure kasutamiseks",
+          "label": "Juurkausta ID",
+          "placeholder": "0AOa0a0a0a0a0Uk9PVA"
+        },
+        "scope": {
+          "helpText": "Google Drive juurdepääsu õiguste ulatus. 'drive' annab täieliku juurdepääsu",
+          "label": "Juurdepääsu ulatus"
+        },
+        "service_account_file": {
+          "helpText": "Teenusekonto JSON-faili sisu (base64 kodeeritud) serveripoolse autentimise jaoks",
+          "label": "Teenusekonto fail",
+          "placeholder": "Base64 kodeeritud JSON fail"
+        },
+        "team_drive": {
+          "helpText": "Kasutatava meeskonna draivi (jagatud draivi) ID",
+          "label": "Meeskonna draivi ID",
+          "placeholder": "Sisesta meeskonna draivi ID"
+        },
+        "token": {
+          "helpText": "OAuth2 märk, mis on saadud autentimisvoo kaudu",
+          "label": "OAuth märk"
+        }
+      },
+      "helpText": "Google Drive isiklik pilvesalvestus. Nõuab OAuth autentimist või teenusekontot.",
+      "name": "Google Drive kettamälu",
+      "tips": [
+        "Kasuta teenusekontosid serveripoolsete rakenduste jaoks",
+        "Meeskonna draividel on isiklikest draividest erinevad õigused",
+        "Google'il on päevased üles- ja allalaadimise kvoodid",
+        "Suured failid võivad pärast üleslaadimist ilmumiseks aega võtta"
+      ]
+    },
+    "dropbox": {
+      "description": "Dropbox pilvesalvestus",
+      "fields": {
+        "client_id": {
+          "helpText": "Rakenduse võti Dropbox App Console'ist",
+          "label": "OAuth kliendi ID",
+          "placeholder": "Sisesta oma rakenduse võti"
+        },
+        "client_secret": {
+          "helpText": "Rakenduse saladus Dropbox App Console'ist",
+          "label": "OAuth kliendi saladus",
+          "placeholder": "Sisesta oma rakenduse saladus"
+        },
+        "token": {
+          "helpText": "OAuth2 märk, mis on saadud Dropbox'i autentimise kaudu",
+          "label": "OAuth märk"
+        }
+      },
+      "helpText": "Dropbox isiklik ja äriline pilvesalvestus. Failid ei ole tõstutundlikud.",
+      "name": "Dropbox",
+      "tips": [
+        "Dropbox ei ole tõstutundlik - väldi sarnaseid failinimesid",
+        "Üleslaadimise maksimaalne faili suurus on 150 GB",
+        "Pakettoperatsioonid on tõhusamad",
+        "Meeskonnafunktsioonide jaoks kaaluge Dropbox Business'i"
+      ]
+    },
+    "fichier": {
+      "description": "1Fichier failimajutus",
+      "fields": {
+        "api_key": {
+          "helpText": "API-võti 1Fichier kontolt",
+          "label": "API-võti",
+          "placeholder": "Sisesta API-võti"
+        },
+        "shared_folder": {
+          "helpText": "Jagatud kausta ID (valikuline)",
+          "label": "Jagatud kausta ID",
+          "placeholder": "Sisesta kausta ID"
+        }
+      },
+      "helpText": "1Fichier on Prantsuse failimajutusteenus, mis pakub tasuta ja tasulist salvestusruumi.",
+      "name": "1Fichier",
+      "tips": [
+        "Premium kasutajatele pole faili suuruse piiranguid",
+        "FTP-juurdepääs saadaval",
+        "CDN-tugi kiireteks allalaadimisteks",
+        "Privaatkausta valikud"
+      ]
+    },
+    "filefabric": {
+      "description": "Ettevõtte failimajandus",
+      "fields": {
+        "permanent_token": {
+          "helpText": "Püsiv autentimismärk",
+          "label": "Püsimärk",
+          "placeholder": "Sisesta püsimärk"
+        },
+        "root_folder_id": {
+          "helpText": "Juurkausta ID (valikuline)",
+          "label": "Juurkausta ID",
+          "placeholder": "Sisesta kausta ID"
+        },
+        "url": {
+          "helpText": "FileFabric'i eksemplari URL",
+          "label": "URL",
+          "placeholder": "https://yourorganization.filefabric.com"
+        }
+      },
+      "helpText": "FileFabric pakub ettevõtetele mitmepilve andmehalduse platvormi.",
+      "name": "FileFabric",
+      "tips": [
+        "Mitmepilve lüüsilahendus",
+        "Kohapealne paigaldamine saadaval",
+        "Ettevõtte turvaomadused",
+        "Vastavuse ja halduse tööriistad"
+      ]
+    },
+    "filescom": {
+      "description": "Files.com pilve-FTP",
+      "fields": {
+        "api_key": {
+          "helpText": "API-võti (alternatiiv paroolile)",
+          "label": "API-võti",
+          "placeholder": "Sisesta API-võti"
+        },
+        "password": {
+          "helpText": "Files.com parool",
+          "label": "Parool",
+          "placeholder": "Sisesta parool"
+        },
+        "site": {
+          "helpText": "Sinu Files.com alamdomeen",
+          "label": "Saidi alamdomeen",
+          "placeholder": "myorganization"
+        },
+        "username": {
+          "helpText": "Files.com kasutajanimi",
+          "label": "Kasutajanimi",
+          "placeholder": "Sisesta kasutajanimi"
+        }
+      },
+      "helpText": "Files.com on pilve-FTP/SFTP teenus täiustatud automatiseerimise ja turvafunktsioonidega.",
+      "name": "Files.com",
+      "tips": [
+        "Ettevõtteklass turvalisus",
+        "Automatiseerimistöövood",
+        "Üksikasjalikud auditilogi",
+        "HIPAA ja SOC2 nõuetele vastav"
+      ]
+    },
+    "ftp": {
+      "description": "Failiedastusprotokoll",
+      "fields": {
+        "explicit_tls": {
+          "helpText": "Kasuta eksplitsiitset FTPS-i (soovitatav implitsiitse asemel)",
+          "label": "Eksplitsiitne TLS"
+        },
+        "host": {
+          "helpText": "FTP-serveri hostinimi või IP-aadress",
+          "label": "Host",
+          "placeholder": "ftp.example.com"
+        },
+        "pass": {
+          "helpText": "FTP parool",
+          "label": "Parool",
+          "placeholder": "Sisesta parool"
+        },
+        "port": {
+          "helpText": "FTP-port (vaikimisi 21)",
+          "label": "Port",
+          "placeholder": "21"
+        },
+        "tls": {
+          "helpText": "Kasuta FTP-d üle TLS/SSL krüptimise jaoks",
+          "label": "Kasuta FTPS-i"
+        },
+        "user": {
+          "helpText": "FTP kasutajanimi",
+          "label": "Kasutajanimi",
+          "placeholder": "username"
+        }
+      },
+      "helpText": "Traditsiooniline failiedastusprotokoll. Turvalisuse tagamiseks kaaluge FTPS-i kasutamist.",
+      "name": "FTP",
+      "tips": [
+        "FTP ei ole turvaline - võimaluse korral kasuta FTPS-i või SFTP-d",
+        "Mõned tulemüürid võivad blokeerida FTP passiivse režiimi",
+        "Kontrolli, kas sinu server toetab FTPS-i",
+        "Kaaluge SFTP-d turvalisema alternatiivina"
+      ]
+    },
+    "gcs": {
+      "description": "Google pilvsalvestus",
+      "fields": {
+        "bucket_policy_only": {
+          "helpText": "Kasuta ühtset ämbri tasemel juurdepääsukontrolli",
+          "label": "Ainult ämbripoliitika"
+        },
+        "location": {
+          "helpText": "Uute ämbrite vaikeasukoht",
+          "label": "Vaikeasukoht",
+          "placeholder": "US"
+        },
+        "project_number": {
+          "helpText": "GCP projekti number (mitte projekti ID)",
+          "label": "Projekti number",
+          "placeholder": "123456789012"
+        },
+        "service_account_file": {
+          "helpText": "Teenusekonto JSON-võtmefail (base64 kodeeritud)",
+          "label": "Teenusekonto fail",
+          "placeholder": "Base64 kodeeritud JSON fail"
+        },
+        "storage_class": {
+          "helpText": "Objektide vaikimisi salvestusklass",
+          "label": "Salvestusklass"
+        }
+      },
+      "helpText": "Google Cloud Storage objektide ja blobide jaoks. Erinev Google Drive'ist.",
+      "name": "Google pilvsalvestus",
+      "tips": [
+        "Autentimiseks kasuta teenusekontosid",
+        "Vali salvestusklass juurdepääsu sageduse põhjal",
+        "Luba versioonimine oluliste andmete jaoks",
+        "Seadista elutsüklipoliitikad kulude haldamiseks"
+      ]
+    },
+    "gofile": {
+      "description": "GoFile anonüümne failijagamine",
+      "fields": {
+        "account_id": {
+          "helpText": "GoFile konto ID (valikuline)",
+          "label": "Konto ID",
+          "placeholder": "Sisesta konto ID"
+        },
+        "root_folder_id": {
+          "helpText": "Juurkausta ID üleslaadimisteks",
+          "label": "Juurkausta ID",
+          "placeholder": "Sisesta juurkausta ID"
+        }
+      },
+      "helpText": "GoFile on tasuta failijagamis- ja salvestusplatvorm anonüümse üleslaadimise toega.",
+      "name": "GoFile",
+      "tips": [
+        "Põhikasutuseks ei nõuta registreerimist",
+        "Piiramatu ribalaius",
+        "Tasuta kasutajate failid säilivad piiratud aja",
+        "Premium kontod saavad püsiva salvestusruumi"
+      ]
+    },
+    "googlephotos": {
+      "description": "Google Photos salvestusteenus",
+      "fields": {
+        "client_id": {
+          "helpText": "OAuth 2.0 kliendi ID Google Cloud Console'ist",
+          "label": "OAuth kliendi ID",
+          "placeholder": "123456789012-abcdef.apps.googleusercontent.com"
+        },
+        "client_secret": {
+          "helpText": "OAuth 2.0 kliendi saladus",
+          "label": "OAuth kliendi saladus",
+          "placeholder": "Sisesta oma kliendi saladus"
+        },
+        "read_only": {
+          "helpText": "Google Photos API on enamiku toimingute jaoks kirjutuskaitstud",
+          "label": "Ainult lugemine"
+        },
+        "token": {
+          "helpText": "OAuth2 märk koos photos.readonly ulatusega",
+          "label": "OAuth märk"
+        }
+      },
+      "helpText": "Google Photos varundus- ja sünkroonimisteenus. Märkus: piiratud ainult foto- ja videooperatsioonidega.",
+      "name": "Google Fotod",
+      "tips": [
+        "Google Photos API-l on piiratud kirjutamisvõimalused",
+        "Parim kasutus fotode varundamiseks Google Photos'ist",
+        "Originaalkvaliteet arvestatakse Google Drive'i salvestusruumis",
+        "Albumeid ja metaandmeid saab säilitada"
+      ]
+    },
+    "hdfs": {
+      "description": "Hadoopi hajutatud failisüsteem",
+      "fields": {
+        "data_transfer_protection": {
+          "helpText": "Andmeedastuse kaitsetase",
+          "label": "Andmeedastuse kaitse"
+        },
+        "namenode": {
+          "helpText": "HDFS namenodei URL",
+          "label": "Namenodei URL",
+          "placeholder": "http://namenode:9870"
+        },
+        "service_principal_name": {
+          "helpText": "Kerberose teenuse põhinimi",
+          "label": "Teenuse põhinimi",
+          "placeholder": "hdfs/namenode.example.com@EXAMPLE.COM"
+        },
+        "username": {
+          "helpText": "HDFS kasutajanimi",
+          "label": "Kasutajanimi",
+          "placeholder": "hadoop"
+        }
+      },
+      "helpText": "HDFS on hajutatud failisüsteem, mis on loodud töötama tavalisel riistvaral, Apache Hadoopi osa.",
+      "name": "HDFS",
+      "tips": [
+        "Loodud suurandmete töökoormuseks",
+        "Suur läbilaskevõime",
+        "Rikekindel replikatsiooniga",
+        "Parim suurte failide jaoks"
+      ]
+    },
+    "hidrive": {
+      "description": "STRATO HiDrive pilvesalvestus",
+      "fields": {
+        "pass": {
+          "helpText": "HiDrive parool",
+          "label": "Parool",
+          "placeholder": "Sisesta parool"
+        },
+        "protocol": {
+          "helpText": "Kasutatav protokoll (webdav või smb)",
+          "label": "Protokoll"
+        },
+        "root": {
+          "helpText": "Kasutatav juurrada",
+          "label": "Juurrada",
+          "placeholder": "/"
+        },
+        "user": {
+          "helpText": "HiDrive kasutajanimi",
+          "label": "Kasutajanimi",
+          "placeholder": "username"
+        }
+      },
+      "helpText": "HiDrive on STRATO pilvesalvestusteenus, mis on Saksamaal populaarne.",
+      "name": "HiDrive",
+      "tips": [
+        "Populaarne Saksamaal ja Euroopas",
+        "Toetab WebDAV ja SMB protokolle",
+        "GDPR-nõuetele vastav andmesalvestus",
+        "Sisaldab koostöö funktsioone"
+      ]
+    },
+    "http": {
+      "description": "HTTP/HTTPS kaugühendus",
+      "fields": {
+        "headers": {
+          "helpText": "Täiendavad HTTP-päised (üks real)",
+          "label": "HTTP päised",
+          "placeholder": "Header: value"
+        },
+        "no_head": {
+          "helpText": "Ära kasuta HEAD päringuid",
+          "label": "Ilma HEAD-ita"
+        },
+        "no_slash": {
+          "helpText": "Ära lisa URL-ile lõpu kaldkriipsu",
+          "label": "Ilma kaldkriipsuta"
+        },
+        "url": {
+          "helpText": "HTTP-serveri alusURL",
+          "label": "URL",
+          "placeholder": "https://example.com/path/"
+        }
+      },
+      "helpText": "Juurdepääs failidele HTTP/HTTPS protokolli kaudu. Kirjutuskaitstud juurdepääs veebiserveritele.",
+      "name": "HTTP",
+      "tips": [
+        "Ainult lugemine",
+        "Sobib avalike failide käsitlemiseks",
+        "Saab sõeluda kataloogiloendit",
+        "Toetab põhilist autentimist"
+      ]
+    },
+    "internetarchive": {
+      "description": "Internet Archive salvestus",
+      "fields": {
+        "access_key_id": {
+          "helpText": "S3-sarnane juurdepääsuvõti Internet Archive'ist",
+          "label": "Juurdepääsuvõti",
+          "placeholder": "Sisesta juurdepääsuvõti"
+        },
+        "endpoint": {
+          "helpText": "Internet Archive S3 lõpp-punkt",
+          "label": "Lõpp-punkt",
+          "placeholder": "https://s3.us.archive.org"
+        },
+        "front_endpoint": {
+          "helpText": "Avaliku juurdepääsu esilahenduse URL",
+          "label": "Esilahenduse lõpp-punkt",
+          "placeholder": "https://archive.org"
+        },
+        "secret_access_key": {
+          "helpText": "S3-sarnane salajane võti",
+          "label": "Salajane võti",
+          "placeholder": "Sisesta salajane võti"
+        }
+      },
+      "helpText": "Internet Archive on mittetulunduslik digitaalraamatukogu, mis pakub tasuta juurdepääsu digiteeritud materjalide kogudele.",
+      "name": "Internetiarhiiv",
+      "tips": [
+        "Tasuta salvestusruum avaliku domeeni sisule",
+        "Privaatsete kirjete jaoks on vaja erilist juurdepääsu",
+        "Parim arhiveerimiseks ja säilitamiseks",
+        "Toetab metaandmeid ja kogusid"
+      ]
+    },
+    "jottacloud": {
+      "description": "Norra pilvesalvestusteenus",
+      "fields": {
+        "device": {
+          "helpText": "Seadme nimi (tavaliselt Jotta)",
+          "label": "Seadme nimi",
+          "placeholder": "Jotta"
+        },
+        "mountpoint": {
+          "helpText": "Kasutatav ühenduspunkt (Archive, Sync või Backup)",
+          "label": "Ühenduspunkt",
+          "placeholder": "Archive"
+        },
+        "pass": {
+          "helpText": "Jottacloud parool",
+          "label": "Parool",
+          "placeholder": "Sisesta parool"
+        },
+        "user": {
+          "helpText": "Jottacloud kasutajanimi",
+          "label": "Kasutajanimi",
+          "placeholder": "username"
+        }
+      },
+      "helpText": "Jottacloud on Põhjamaades populaarne pilvesalvestusteenus, mis keskendub privaatsusele.",
+      "name": "Jottacloud",
+      "tips": [
+        "Isiklikel plaanidel piiramatu salvestusruum",
+        "Andmed salvestatakse Norras (EL privaatsusseadused)",
+        "Toetab failide versioonimist",
+        "Sobib fotode ja videote varundamiseks"
+      ]
+    },
+    "koofr": {
+      "description": "Euroopa pilvesalvestusteenus",
+      "fields": {
+        "pass": {
+          "helpText": "Sinu Koofr parool",
+          "label": "Parool",
+          "placeholder": "Sisesta parool"
+        },
+        "provider": {
+          "helpText": "Koofr pakkuja (koofr, digistorage või muu)",
+          "label": "Pakkuja"
+        },
+        "user": {
+          "helpText": "Sinu Koofr konto e-post",
+          "label": "E-post",
+          "placeholder": "user@example.com"
+        }
+      },
+      "helpText": "Koofr on Euroopa pilvesalvestusteenus, mis saab samuti ühenduda teiste pilvesalvestuse kontodega.",
+      "name": "Koofr",
+      "tips": [
+        "Saab ühendada mitu pilvekontot",
+        "Andmed salvestatakse EL-is (GDPR-nõuetele vastav)",
+        "Toetab WebDAV juurdepääsu",
+        "On lauaarvuti rakendused ja kaasklientid"
+      ]
+    },
+    "linkbox": {
+      "description": "Linkbox pilvesalvestus",
+      "fields": {
+        "token": {
+          "helpText": "API märk Linkbox seadetest",
+          "label": "API märk",
+          "placeholder": "Sisesta API märk"
+        }
+      },
+      "helpText": "Linkbox pakub pilvesalvestust, mis keskendub kasutusmugavusele ja jagamisvõimalustele.",
+      "name": "Linkbox",
+      "tips": [
+        "Lihtsad jagamisvalikud",
+        "Otsesed allalaadimislingid",
+        "Kaasrakendused saadaval",
+        "Taskukohased hinnaplaanid"
+      ]
+    },
+    "local": {
+      "description": "Kohalik failisüsteemi salvestus",
+      "fields": {
+        "nounc": {
+          "helpText": "Keela UNC (\\\\server\\share) rajad Windowsis",
+          "label": "Keela UNC"
+        },
+        "path": {
+          "helpText": "Absoluutrada kohalikku kataloogi",
+          "label": "Rada",
+          "placeholder": "/mnt/backup"
+        }
+      },
+      "helpText": "Otsejuurdepääs kohalikele või ühendatud failisüsteemidele.",
+      "name": "Kohalik failisüsteem",
+      "tips": [
+        "Veendu, et rada on olemas ja sellel on õiged õigused",
+        "Kasuta absoluutradasid, mitte suhtelisi radasid",
+        "Võrguühiskasutused tuleks eelnevalt ühendada",
+        "Suurte failide puhul arvesta failisüsteemi piirangutega"
+      ]
+    },
+    "mailru": {
+      "description": "Mail.ru pilvesalvestusteenus",
+      "fields": {
+        "pass": {
+          "helpText": "Sinu Mail.ru parool",
+          "label": "Parool",
+          "placeholder": "Sisesta parool"
+        },
+        "speedup_enable": {
+          "helpText": "Luba kiirenduse (paralleelne üleslaadimine) funktsioon",
+          "label": "Luba kiirendus"
+        },
+        "user": {
+          "helpText": "Sinu Mail.ru e-posti aadress",
+          "label": "Kasutajanimi",
+          "placeholder": "user@mail.ru"
+        }
+      },
+      "helpText": "Mail.ru Cloud (nüüd VK Cloud'i osa) on Venemaal populaarne pilvesalvestusteenus.",
+      "name": "Mail.ru Cloud",
+      "tips": [
+        "Tasuta tase sisaldab 8 GB salvestusruumi",
+        "Populaarne venekeelsetes riikides",
+        "Toetab suurte failide üleslaadimist",
+        "On sünkroonimisrakendused mitmele platvormile"
+      ]
+    },
+    "mega": {
+      "description": "Mega pilvesalvestus",
+      "fields": {
+        "hard_delete": {
+          "helpText": "Kustuta failid jäädavalt prügikasti teisaldamise asemel",
+          "label": "Kõva kustutamine"
+        },
+        "pass": {
+          "helpText": "Sinu MEGA konto parool (krüpteeritakse)",
+          "label": "Parool",
+          "placeholder": "Sisesta oma parool"
+        },
+        "use_https": {
+          "helpText": "Kasuta HTTPS-i edastusteks (soovitatav)",
+          "label": "Kasuta HTTPS-i"
+        },
+        "user": {
+          "helpText": "Sinu MEGA konto e-posti aadress",
+          "label": "E-post",
+          "placeholder": "user@example.com"
+        }
+      },
+      "helpText": "MEGA pakub kliendipoolselt krüpteeritud pilvesalvestust. Ranged sisselogimiskiiruse piirangud.",
+      "name": "Mega",
+      "tips": [
+        "MEGA-l on ranged kiiruspiirangud - väldi sagedast sisselogimist",
+        "Kõik failid on kliendipoolselt krüpteeritud",
+        "Tasuta kontodel on 20 GB salvestusruumi",
+        "Parema turvalisuse tagamiseks kaaluge rakendusparoolide kasutamist"
+      ]
+    },
+    "netstorage": {
+      "description": "Akamai NetStorage sisuedastus",
+      "fields": {
+        "account": {
+          "helpText": "NetStorage konto nimi",
+          "label": "Konto",
+          "placeholder": "Sisesta konto"
+        },
+        "host": {
+          "helpText": "NetStorage hostinimi",
+          "label": "Host",
+          "placeholder": "xxxxx.akamaihd.net"
+        },
+        "secret": {
+          "helpText": "NetStorage saladus/võti",
+          "label": "Saladus",
+          "placeholder": "Sisesta saladus"
+        }
+      },
+      "helpText": "Akamai NetStorage on ülemaailmselt hajutatud pilvesalvestuslahendus, mis on optimeeritud meediasisu edastamiseks.",
+      "name": "Akamai NetStorage (CDN)",
+      "tips": [
+        "Optimeeritud CDN-edastuseks",
+        "Globaalsed servaasukohad",
+        "Meediavoo tugi",
+        "Ettevõtteklassi jõudlus"
+      ]
+    },
+    "onedrive": {
+      "description": "Microsoft OneDrive pilvesalvestus",
+      "fields": {
+        "drive_id": {
+          "helpText": "Konkreetse draivi ID. Jäta tühjaks vaikimisi draivi kasutamiseks",
+          "label": "Draivi ID",
+          "placeholder": "b!Ei1XXXXXXXXXX"
+        },
+        "drive_type": {
+          "helpText": "OneDrive konto tüüp - isiklik, äriline või dokumenditeek",
+          "label": "Draivi tüüp"
+        },
+        "folder": {
+          "helpText": "Kausarada OneDrive'is, mida kasutatakse juurena",
+          "label": "Kausarada",
+          "placeholder": "backups"
+        },
+        "token": {
+          "helpText": "OAuth2 märk, mis on saadud Microsofti autentimise kaudu",
+          "label": "OAuth märk"
+        }
+      },
+      "helpText": "Microsoft OneDrive isiklik ja äriline pilvesalvestus. Kasutab OAuth autentimist.",
+      "name": "Microsoft OneDrive kettamälu",
+      "tips": [
+        "Märgid aeguvad iga 90 päeva järel ja vajavad uuendamist",
+        "Ärilistel kontodel võivad olla erinevad API piirangud",
+        "Suurte failide üleslaadimine tükeldatakse automaatselt",
+        "Mõned erimärgid failinimedes võivad probleeme põhjustada"
+      ]
+    },
+    "opendrive": {
+      "description": "OpenDrive pilvesalvestus",
+      "fields": {
+        "password": {
+          "helpText": "OpenDrive parool",
+          "label": "Parool",
+          "placeholder": "Sisesta parool"
+        },
+        "username": {
+          "helpText": "OpenDrive kasutajanimi",
+          "label": "Kasutajanimi",
+          "placeholder": "Sisesta kasutajanimi"
+        }
+      },
+      "helpText": "OpenDrive pakub pilvesalvestust, veebipõhist varukoopiat ja FTP asendamise teenuseid.",
+      "name": "OpenDrive",
+      "tips": [
+        "Piiramatu salvestusruumiga plaanid saadaval",
+        "Sisseehitatud dokumendivaatur",
+        "Ülesandehalduse funktsioonid",
+        "Märkmete tegemise võimalused"
+      ]
+    },
+    "oracle": {
+      "description": "Oracle Cloud Infrastructure objektivarundus",
+      "fields": {
+        "compartment": {
+          "helpText": "Sektsiooni OCID, kus ämbrik asub",
+          "label": "Sektsiooni OCID",
+          "placeholder": "ocid1.compartment.oc1..."
+        },
+        "fingerprint": {
+          "helpText": "API allkirjamisvõtme sõrmejälg",
+          "label": "Võtme sõrmejälg",
+          "placeholder": "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
+        },
+        "key_file": {
+          "helpText": "RSA privaatvõti PEM formaadis (base64 kodeeritud)",
+          "label": "API võtmefail",
+          "placeholder": "Base64 kodeeritud PEM fail"
+        },
+        "namespace": {
+          "helpText": "Objektisalvestuse nimeruum (leitav OCI konsoolis)",
+          "label": "Objektisalvestuse nimeruum",
+          "placeholder": "Sisesta nimeruum"
+        },
+        "region": {
+          "helpText": "OCI piirkonna identifikaator",
+          "label": "Piirkond",
+          "placeholder": "us-ashburn-1"
+        },
+        "tenancy": {
+          "helpText": "Üürniku OCID",
+          "label": "Üürniku OCID",
+          "placeholder": "ocid1.tenancy.oc1..."
+        },
+        "user": {
+          "helpText": "Kasutaja OCID autentimiseks",
+          "label": "Kasutaja OCID",
+          "placeholder": "ocid1.user.oc1..."
+        }
+      },
+      "helpText": "Oracle Cloud Infrastructure (OCI) objektisalvestus on piirkondlik teenus suurte struktureerimata andmehulkade salvestamiseks.",
+      "name": "Oracle objektisalvestus",
+      "tips": [
+        "Genereeri API võtmed OCI konsooli kasutajaseadetes",
+        "Kasuta sektsioone ressursside korraldamiseks",
+        "Kulude optimeerimiseks on saadaval salvestusklassid",
+        "Toetab S3 ühilduvuse API-d alternatiivina"
+      ]
+    },
+    "pcloud": {
+      "description": "Pilvesalvestusteenus OAuth autentimisega",
+      "fields": {
+        "client_id": {
+          "helpText": "OAuth 2.0 kliendi ID pCloud'i jaoks",
+          "label": "OAuth kliendi ID",
+          "placeholder": "Sisesta kliendi ID"
+        },
+        "client_secret": {
+          "helpText": "OAuth 2.0 kliendi saladus",
+          "label": "OAuth kliendi saladus",
+          "placeholder": "Sisesta kliendi saladus"
+        },
+        "hostname": {
+          "helpText": "API hostinimi (eapi.pcloud.com EL jaoks)",
+          "label": "Hostinimi",
+          "placeholder": "api.pcloud.com"
+        },
+        "root_folder_id": {
+          "helpText": "Algkausta ID (valikuline)",
+          "label": "Juurkausta ID",
+          "placeholder": "Sisesta kausta ID"
+        },
+        "token": {
+          "helpText": "OAuth2 märk, mis on saadud autentimise kaudu",
+          "label": "OAuth märk"
+        }
+      },
+      "helpText": "pCloud pakub turvalist pilvesalvestust kliendipoolse krüptimise võimalusega. On EL ja USA piirkonnad.",
+      "name": "pCloud",
+      "tips": [
+        "Vali EL või USA piirkond oma asukoha põhjal",
+        "Crypto kaust pakub kliendipoolset krüptimist",
+        "Eluaegne pakett saadaval",
+        "Sünkroonimiskliendid saadaval kõigil platvormidel"
+      ]
+    },
+    "pikpak": {
+      "description": "Pilvesalvestus võrguühenduseta allalaadimisega",
+      "fields": {
+        "pass": {
+          "helpText": "PikPak konto parool",
+          "label": "Parool",
+          "placeholder": "Sisesta parool"
+        },
+        "user": {
+          "helpText": "PikPak konto e-post",
+          "label": "Kasutajanimi",
+          "placeholder": "user@example.com"
+        }
+      },
+      "helpText": "PikPak on pilvesalvestusteenus, mis toetab võrguühenduseta allalaadimist ja meedia voogedastust.",
+      "name": "PikPak",
+      "tips": [
+        "Toetab võrguühenduseta allalaadimist",
+        "Sisseehitatud meediumiesitaja",
+        "Sobib torrentide pilve laadimiseks",
+        "Kaasrakendused voogedastuse toega"
+      ]
+    },
+    "pixeldrain": {
+      "description": "Pixeldrain failijagamine",
+      "fields": {
+        "api_key": {
+          "helpText": "API-võti Pixeldrain'i kontolt",
+          "label": "API-võti",
+          "placeholder": "Sisesta API-võti"
+        },
+        "root_folder_id": {
+          "helpText": "Juurkausta ID (valikuline)",
+          "label": "Juurkausta ID",
+          "placeholder": "Sisesta kausta ID"
+        }
+      },
+      "helpText": "Pixeldrain on failijagamisplatvorm, mis keskendub lihtsusele ja kasutusmugavusele.",
+      "name": "Pixeldrain",
+      "tips": [
+        "Üleslaadimiseks ei nõuta registreerimist",
+        "Failid vaadatavad brauseris",
+        "API arendajatele",
+        "Sobib ajutiseks failijagamiseks"
+      ]
+    },
+    "premiumizeme": {
+      "description": "Pilvesalvestus ja allalaadimisteenus",
+      "fields": {
+        "api_key": {
+          "helpText": "API-võti Premiumize.me konto seadetest",
+          "label": "API-võti",
+          "placeholder": "Sisesta oma API-võti"
+        }
+      },
+      "helpText": "Premiumize.me on multihoster teenus, mis pakub pilvesalvestust ja allalaadimise võimalusi.",
+      "name": "Premiumize.me",
+      "tips": [
+        "Ühendab pilvesalvestuse allalaadimisteemusega",
+        "Toetab paljusid failimajutussaite",
+        "Sisaldab VPN teenust",
+        "Sobib meedia voogedastuseks"
+      ]
+    },
+    "proton": {
+      "description": "Privaatsusele keskendunud krüpteeritud pilvesalvestus",
+      "fields": {
+        "password": {
+          "helpText": "Sinu Proton konto parool",
+          "label": "Parool",
+          "placeholder": "Sisesta oma parool"
+        },
+        "tfa": {
+          "helpText": "Kahefaktorilise autentimise kood (kui on lubatud)",
+          "label": "Kahefaktorilise autentimise kood",
+          "placeholder": "Sisesta TFA kood, kui on lubatud"
+        },
+        "username": {
+          "helpText": "Sinu Proton konto e-post",
+          "label": "Kasutajanimi",
+          "placeholder": "user@proton.me"
+        }
+      },
+      "helpText": "Proton Drive pakub otsast otsani krüpteeritud pilvesalvestust ProtonMail'i loojatelt.",
+      "name": "Proton Drive kettamälu",
+      "tips": [
+        "Kõik failid on otsast otsani krüpteeritud",
+        "Osa Proton privaatsuse ökosüsteemist",
+        "Tasuta tase sisaldab 1 GB salvestusruumi",
+        "Toetab failide jagamist krüptimisega"
+      ]
+    },
+    "putio": {
+      "description": "Pilvesalvestus torrenti toega",
+      "fields": {
+        "token": {
+          "helpText": "OAuth märk Put.io konto seadetest",
+          "label": "OAuth märk",
+          "placeholder": "Sisesta OAuth märk"
+        }
+      },
+      "helpText": "Put.io on pilvesalvestusteenus, mis saab torrente laadida ja voogedastada.",
+      "name": "Put.io",
+      "tips": [
+        "Spetsialiseerunud torrenti käsitlemisele",
+        "Automaatne videokonverteerimine",
+        "Sisseehitatud meediumiesitaja",
+        "Hea API automatiseerimiseks"
+      ]
+    },
+    "qingstor": {
+      "description": "QingStor objektisalvestus",
+      "fields": {
+        "access_key_id": {
+          "helpText": "Juurdepääsuvõtme ID QingCloud konsolist",
+          "label": "Juurdepääsuvõtme ID",
+          "placeholder": "Sisesta juurdepääsuvõtme ID"
+        },
+        "endpoint": {
+          "helpText": "QingStor lõpp-punkti URL",
+          "label": "Lõpp-punkt",
+          "placeholder": "https://qingstor.com"
+        },
+        "secret_access_key": {
+          "helpText": "Salajane juurdepääsuvõti",
+          "label": "Salajane juurdepääsuvõti",
+          "placeholder": "Sisesta salajane juurdepääsuvõti"
+        },
+        "zone": {
+          "helpText": "QingStor tsoon (nt pek3a, sh1a)",
+          "label": "Tsoon",
+          "placeholder": "pek3a"
+        }
+      },
+      "helpText": "QingStor on QingCloud'i objektisalvestusteenus, mis on Hiinas populaarne.",
+      "name": "QingStor",
+      "tips": [
+        "Populaarne Hiina turul",
+        "S3-ühilduv API",
+        "Mitu saadavuse tsooni",
+        "Hea jõudlus Aasias"
+      ]
+    },
+    "quatrix": {
+      "description": "Quatrix turvaline failiedastus",
+      "fields": {
+        "api_key": {
+          "helpText": "API-võti Quatrix kontolt",
+          "label": "API-võti",
+          "placeholder": "Sisesta API-võti"
+        },
+        "host": {
+          "helpText": "Sinu Quatrix hosti URL",
+          "label": "Host",
+          "placeholder": "https://your-domain.quatrix.com"
+        }
+      },
+      "helpText": "Quatrix on ärikasutuseks mõeldud turvaline failiedastus- ja salvestusplatvorm.",
+      "name": "Quatrix",
+      "tips": [
+        "Ettevõttele suunatud turvalisus",
+        "Toetab suurte failide edastamist",
+        "Sisseehitatud krüptimine",
+        "Auditilogide funktsioonid"
+      ]
+    },
+    "s3": {
+      "description": "S3-ühilduv objektisalvestus (AWS, Linode, DigitalOcean, Vultr jt)",
+      "fields": {
+        "access_key_id": {
+          "helpText": "Sinu juurdepääsuvõtme ID autentimiseks. Hangi see oma pakkuja konsolist",
+          "label": "Juurdepääsuvõtme ID",
+          "placeholder": "AKIAIOSFODNN7EXAMPLE"
+        },
+        "acl": {
+          "helpText": "Üleslaaditud objektide vaikimisi ACL. Soovitatav on privaatne",
+          "label": "Juurdepääsu kontrollnimekiri"
+        },
+        "bucket": {
+          "helpText": "S3 ämbri nimi. Peab olema globaalselt unikaalne ja järgima nimereegleid",
+          "label": "Ämbrik",
+          "placeholder": "my-backup-bucket"
+        },
+        "endpoint": {
+          "helpText": "S3 API lõpp-punkti URL. Jäta tühjaks AWS S3 jaoks. Nõutav teiste pakkujate puhul",
+          "label": "Lõpp-punkt",
+          "placeholder": "s3.amazonaws.com"
+        },
+        "env_auth": {
+          "helpText": "Kasuta AWS keskkonna muutujaid või IAM rolli autentimiseks",
+          "label": "Kasuta keskkonna autentimist"
+        },
+        "folder": {
+          "helpText": "Valikuline kausarada ämbri sees",
+          "label": "Kaust",
+          "placeholder": "rediacc"
+        },
+        "location_constraint": {
+          "helpText": "Asukoha piirang uute ämbrite loomisel",
+          "label": "Asukoha piirang",
+          "placeholder": "EU"
+        },
+        "provider": {
+          "helpText": "Vali oma S3-ühilduv salvestuspakkuja",
+          "label": "Pakkuja",
+          "placeholder": "Vali S3 pakkuja"
+        },
+        "region": {
+          "helpText": "AWS piirkond, kus sinu ämbrik asub",
+          "label": "Piirkond",
+          "placeholder": "us-east-1"
+        },
+        "secret_access_key": {
+          "helpText": "Sinu salajane juurdepääsuvõti. Hoia seda turvaliselt ja ära jaga kellegagi",
+          "label": "Salajane juurdepääsuvõti",
+          "placeholder": "Sisesta oma salajane juurdepääsuvõti"
+        }
+      },
+      "helpText": "Amazon S3 ja ühilduvad objektisalvestusteenused. Toetab AWS S3, Linode Object Storage, DigitalOcean Spaces, Vultr Object Storage, MinIO ja paljusid teisi.",
+      "name": "Amazon S3 ühilduv",
+      "tips": [
+        "AWS S3 jaoks loo programmilise juurdepääsuga IAM kasutaja",
+        "Kasuta ämbripoliitikaid juurdepääsuõiguste kontrollimiseks",
+        "Luba versioonimine oluliste andmete kaitseks",
+        "Kaaluge elutsüklireeglite kasutamist salvestuskulude haldamiseks"
+      ]
+    },
+    "seafile": {
+      "description": "Avatud lähtekoodiga pilvesalvestus",
+      "fields": {
+        "auth_token": {
+          "helpText": "Autentimismärk (valikuline)",
+          "label": "Autentimismärk",
+          "placeholder": "Sisesta autentimismärk"
+        },
+        "library": {
+          "helpText": "Seafile raamatukogu ID",
+          "label": "Raamatukogu ID",
+          "placeholder": "Sisesta raamatukogu ID"
+        },
+        "pass": {
+          "helpText": "Seafile parool",
+          "label": "Parool",
+          "placeholder": "Sisesta parool"
+        },
+        "url": {
+          "helpText": "Seafile serveri URL",
+          "label": "Serveri URL",
+          "placeholder": "https://seafile.example.com"
+        },
+        "user": {
+          "helpText": "Seafile kasutajanimi või e-post",
+          "label": "Kasutajanimi",
+          "placeholder": "user@example.com"
+        }
+      },
+      "helpText": "Seafile on avatud lähtekoodiga failide sünkroonimise ja jagamise platvorm failide krüptimise ja grupiteostuse funktsioonidega.",
+      "name": "Seafile",
+      "tips": [
+        "Ise hostimise võimalus saadaval",
+        "Failide versioonimine ja hetktõmmised",
+        "Otsast otsani krüptimise tugi",
+        "Sobib meeskonna koostöö jaoks"
+      ]
+    },
+    "sftp": {
+      "description": "SSH failiedastusprotokoll",
+      "fields": {
+        "host": {
+          "helpText": "SFTP serveri hostinimi või IP-aadress",
+          "label": "Host",
+          "placeholder": "example.com"
+        },
+        "key_file": {
+          "helpText": "Rada SSH privaatvõtme failini",
+          "label": "Privaatvõtme fail",
+          "placeholder": "/path/to/key"
+        },
+        "key_file_pass": {
+          "helpText": "Krüpteeritud privaatvõtme paroolilause",
+          "label": "Võtme paroolilause",
+          "placeholder": "Sisesta paroolilause"
+        },
+        "known_hosts_file": {
+          "helpText": "Rada tuntud hostide failini serveri kontrollimiseks",
+          "label": "Tuntud hostide fail",
+          "placeholder": "~/.ssh/known_hosts"
+        },
+        "pass": {
+          "helpText": "Parool parooliga autentimiseks",
+          "label": "Parool",
+          "placeholder": "Sisesta parool"
+        },
+        "port": {
+          "helpText": "SFTP port (vaikimisi 22)",
+          "label": "Port",
+          "placeholder": "22"
+        },
+        "pubkey_file": {
+          "helpText": "Rada SSH avaliku võtme failini",
+          "label": "Avaliku võtme fail",
+          "placeholder": "/path/to/key.pub"
+        },
+        "user": {
+          "helpText": "SSH/SFTP kasutajanimi",
+          "label": "Kasutajanimi",
+          "placeholder": "username"
+        }
+      },
+      "helpText": "Turvaline failiedastus üle SSH. Toetab parooliga ja võtmepõhist autentimist.",
+      "name": "SFTP",
+      "tips": [
+        "Kasuta võtmepõhist autentimist parema turvalisuse tagamiseks",
+        "Kontrolli serveri sõrmejälge esimesel ühenduses",
+        "Hoia oma privaatvõtmeid turvaliselt ja krüpteeritult",
+        "Kaaluge SSH agendi kasutamist võtmehalduseks"
+      ]
+    },
+    "sharefile": {
+      "description": "Ettevõtte failijagamine ja salvestus",
+      "fields": {
+        "root_folder_id": {
+          "helpText": "Juurkausta ID",
+          "label": "Juurkausta ID",
+          "placeholder": "Sisesta juurkausta ID"
+        },
+        "token": {
+          "helpText": "OAuth2 märk ShareFile juurdepääsuks",
+          "label": "OAuth märk"
+        },
+        "upload_endpoint": {
+          "helpText": "ShareFile üleslaadimise lõpp-punkti URL",
+          "label": "Üleslaadimise lõpp-punkt",
+          "placeholder": "https://organization.sf-api.com"
+        }
+      },
+      "helpText": "Citrix ShareFile on ettevõtte sisuhalduse koostööplatvorm turvalise failijagamisega.",
+      "name": "Citrix ShareFile jagamine",
+      "tips": [
+        "Mõeldud ettevõttekasutuseks",
+        "Toetab suurte failide edastamist",
+        "On auditijäljed ja vastavuse funktsioonid",
+        "Mobiilirakendused kõigile platvormidele"
+      ]
+    },
+    "sia": {
+      "description": "Sia hajutatud salvestus",
+      "fields": {
+        "api_password": {
+          "helpText": "Sia deemoni API parool",
+          "label": "API parool",
+          "placeholder": "Sisesta API parool"
+        },
+        "api_url": {
+          "helpText": "Sia deemoni API URL",
+          "label": "API aadress",
+          "placeholder": "http://127.0.0.1:9980"
+        }
+      },
+      "helpText": "Sia on hajutatud pilvesalvestusplatvorm, mis krüpteerib ja jagab faile üle hajutatud võrgu.",
+      "name": "Sia",
+      "tips": [
+        "Täielikult hajutatud salvestus",
+        "Madalam hind kui traditsiooniline pilv",
+        "Nõuab Sia deemoni käivitamist",
+        "Makse Siacoini krüptovaluutas"
+      ]
+    },
+    "smb": {
+      "description": "Windowsi võrguühiskasutused",
+      "fields": {
+        "domain": {
+          "helpText": "SMB domeen (vaikimisi WORKGROUP)",
+          "label": "Domeen",
+          "placeholder": "WORKGROUP"
+        },
+        "host": {
+          "helpText": "SMB serveri hostinimi või IP-aadress",
+          "label": "Host",
+          "placeholder": "server.local or 192.168.1.100"
+        },
+        "pass": {
+          "helpText": "SMB autentimise parool",
+          "label": "Parool",
+          "placeholder": "Sisesta parool"
+        },
+        "port": {
+          "helpText": "SMB port (tavaliselt 445)",
+          "label": "Port",
+          "placeholder": "445"
+        },
+        "user": {
+          "helpText": "Kasutajanimi (võib sisaldada domeeni)",
+          "label": "Kasutajanimi",
+          "placeholder": "DOMAIN\\username or username"
+        }
+      },
+      "helpText": "Serverisõnumi bloki (SMB) protokoll Windowsi ühiskasutuste ja NAS-seadmete kasutamiseks.",
+      "name": "SMB / CIFS (failijagamine)",
+      "tips": [
+        "Turvalisuse tagamiseks on soovitatav SMB3",
+        "Veendu, et võrgu avastamine on lubatud",
+        "Võib nõuda tulemüüri seadistamist",
+        "Kui hostinimi ei tööta, proovi IP-aadressiga"
+      ]
+    },
+    "storj": {
+      "description": "Hajutatud pilvesalvestus",
+      "fields": {
+        "access_grant": {
+          "helpText": "Serialiseeritud juurdepääsuload Storj'ist",
+          "label": "Juurdepääsuload",
+          "placeholder": "Sisesta oma juurdepääsuload"
+        },
+        "api_key": {
+          "helpText": "API-võti satelliidi veebiliidesest",
+          "label": "API-võti",
+          "placeholder": "Sisesta API-võti"
+        },
+        "passphrase": {
+          "helpText": "Krüptimise paroolilause sinu andmete jaoks",
+          "label": "Krüptimise paroolilause",
+          "placeholder": "Sisesta krüptimise paroolilause"
+        },
+        "satellite_address": {
+          "helpText": "Satelliidi aadress (valikuline, vaikimisi us1.storj.io:7777)",
+          "label": "Satelliidi aadress",
+          "placeholder": "us1.storj.io:7777"
+        }
+      },
+      "helpText": "Storj on hajutatud pilvesalvestusvõrk, mis krüpteerib ja jagab faile üle globaalse võrgu.",
+      "name": "Storj",
+      "tips": [
+        "Hajutatud salvestus tagab kõrge vastupidavuse",
+        "Kõik andmed on kliendipoolselt krüpteeritud",
+        "Maksa ainult selle eest, mida kasutad",
+        "Sobib arhiveerimiseks ja varundamiseks"
+      ]
+    },
+    "sugarsync": {
+      "description": "SugarSync pilvesalvestus",
+      "fields": {
+        "access_key_id": {
+          "helpText": "Juurdepääsuvõti autentimiseks",
+          "label": "Juurdepääsuvõti",
+          "placeholder": "Sisesta juurdepääsuvõti"
+        },
+        "app_id": {
+          "helpText": "Rakenduse ID SugarSync'ist",
+          "label": "Rakenduse ID",
+          "placeholder": "Sisesta rakenduse ID"
+        },
+        "private_access_key": {
+          "helpText": "Privaatne juurdepääsuvõti",
+          "label": "Privaatne juurdepääsuvõti",
+          "placeholder": "Sisesta privaatvõti"
+        },
+        "refresh_token": {
+          "helpText": "OAuth uuendusmärk",
+          "label": "Uuendusmärk",
+          "placeholder": "Sisesta uuendusmärk"
+        }
+      },
+      "helpText": "SugarSync on pilvesalvestusteenus, mis võimaldab olemasolevate kaustade struktuuri sünkroonimist.",
+      "name": "SugarSync",
+      "tips": [
+        "Sünkroonib iga kausta sinu arvutil",
+        "Faile ei pea spetsiaalsesse kausta teisaldama",
+        "Toetab valikulist sünkroonimist",
+        "Sobib olemasolevate struktuuride varundamiseks"
+      ]
+    },
+    "swift": {
+      "description": "OpenStack Swift objektisalvestus",
+      "fields": {
+        "auth": {
+          "helpText": "Autentimise lõpp-punkti URL",
+          "label": "Autentimise URL",
+          "placeholder": "https://auth.cloud.com/v3"
+        },
+        "auth_version": {
+          "helpText": "Autentimise protokolli versioon",
+          "label": "Autentimise versioon"
+        },
+        "domain": {
+          "helpText": "Kasutaja domeeninimi",
+          "label": "Domeen",
+          "placeholder": "Default"
+        },
+        "key": {
+          "helpText": "API-võti või parool autentimiseks",
+          "label": "API-võti/parool",
+          "placeholder": "Sisesta oma API-võti"
+        },
+        "region": {
+          "helpText": "Piirkonna nimi",
+          "label": "Piirkond",
+          "placeholder": "Sisesta piirkond"
+        },
+        "storage_url": {
+          "helpText": "Salvestuse URL (valikuline)",
+          "label": "Salvestuse URL",
+          "placeholder": "Sisesta salvestuse URL"
+        },
+        "tenant": {
+          "helpText": "Üürniku/projekti nimi",
+          "label": "Üürniku nimi",
+          "placeholder": "Sisesta üürniku nimi"
+        },
+        "tenant_id": {
+          "helpText": "Üürniku/projekti ID",
+          "label": "Üürniku ID",
+          "placeholder": "Sisesta üürniku ID"
+        },
+        "user": {
+          "helpText": "OpenStack kasutajanimi",
+          "label": "Kasutajanimi",
+          "placeholder": "Sisesta oma kasutajanimi"
+        }
+      },
+      "helpText": "OpenStack Swift objektisalvestust kasutavad Rackspace, OVH ja teised.",
+      "name": "OpenStack Swift objektisalvestus",
+      "tips": [
+        "Küsi oma pakkujalt õiget autentimise URL-i",
+        "v3 autentimine on soovitatav uute paigalduste jaoks",
+        "Mõned pakkujad nõuavad konkreetseid üürniku seadeid",
+        "Suurte objektide tugi võib pakkujati erineda"
+      ]
+    },
+    "ulozto": {
+      "description": "Uloz.to failimajutus",
+      "fields": {
+        "app_token": {
+          "helpText": "Rakenduse märk Uloz.to'st",
+          "label": "Rakenduse märk",
+          "placeholder": "Sisesta rakenduse märk"
+        },
+        "password": {
+          "helpText": "Uloz.to parool",
+          "label": "Parool",
+          "placeholder": "Sisesta parool"
+        },
+        "username": {
+          "helpText": "Uloz.to kasutajanimi",
+          "label": "Kasutajanimi",
+          "placeholder": "Sisesta kasutajanimi"
+        }
+      },
+      "helpText": "Uloz.to on failimajutusteenus, mis on populaarne Tšehhi Vabariigis ja Slovakkias.",
+      "name": "Uloz.to",
+      "tips": [
+        "Populaarne Tšehhi ja Slovaki turgudel",
+        "Toetab suurte failide üleslaadimist",
+        "Tasuta ja premium tasemed",
+        "Failijagamise võimalused"
+      ]
+    },
+    "uptobox": {
+      "description": "Uptobox failimajutus",
+      "fields": {
+        "api_key": {
+          "helpText": "API-võti Uptobox kontolt",
+          "label": "API-võti",
+          "placeholder": "Sisesta API-võti"
+        }
+      },
+      "helpText": "Uptobox on failimajutusteenus torrenti toe ja voogedastuse võimalustega.",
+      "name": "Uptobox",
+      "tips": [
+        "Premium kontodel on paremad kiirused",
+        "Toetab kaugüleslaadimist URL-idest",
+        "Sisseehitatud videomängija",
+        "Sobib meedia salvestamiseks"
+      ]
+    },
+    "wasabi": {
+      "description": "Wasabi kuum pilvsalvestus",
+      "fields": {
+        "access_key_id": {
+          "helpText": "Wasabi juurdepääsuvõtme ID",
+          "label": "Juurdepääsuvõtme ID",
+          "placeholder": "Sisesta juurdepääsuvõti"
+        },
+        "endpoint": {
+          "helpText": "Wasabi lõpp-punkti URL",
+          "label": "Lõpp-punkt",
+          "placeholder": "s3.wasabisys.com"
+        },
+        "region": {
+          "helpText": "Wasabi piirkond",
+          "label": "Piirkond",
+          "placeholder": "us-east-1"
+        },
+        "secret_access_key": {
+          "helpText": "Wasabi salajane juurdepääsuvõti",
+          "label": "Salajane juurdepääsuvõti",
+          "placeholder": "Sisesta salajane võti"
+        }
+      },
+      "helpText": "Wasabi pakub kiiret pilve objektisalvestust ilma väljuvate andmete tasude ja ettearvatatava hinnakujundusega.",
+      "name": "Wasabi",
+      "tips": [
+        "Puuduvad väljuvate andmete tasud",
+        "80% odavam kui AWS S3",
+        "Puuduvad API päringute tasud",
+        "11 üheksa vastupidavus"
+      ]
+    },
+    "webdav": {
+      "description": "WebDAV protokoll",
+      "fields": {
+        "pass": {
+          "helpText": "WebDAV parool",
+          "label": "Parool",
+          "placeholder": "Sisesta parool"
+        },
+        "url": {
+          "helpText": "Täielik WebDAV lõpp-punkti URL",
+          "label": "WebDAV aadress",
+          "placeholder": "https://webdav.example.com"
+        },
+        "user": {
+          "helpText": "WebDAV kasutajanimi",
+          "label": "Kasutajanimi",
+          "placeholder": "Sisesta kasutajanimi"
+        },
+        "vendor": {
+          "helpText": "WebDAV müüja konkreetse ühilduvuse jaoks",
+          "label": "Müüja"
+        }
+      },
+      "helpText": "Veebipõhine hajutatud autoriõigus ja versioonimine. Kasutatakse Nextcloud, ownCloud ja teiste poolt.",
+      "name": "WebDAV",
+      "tips": [
+        "Eri müüjatel võivad olla konkreetsed eripärad",
+        "Nextcloud/ownCloud'il on pühendatud müüja tugi",
+        "Kasuta HTTPS-i turvalisteks ühendusteks",
+        "Mõnel serveril on faili suuruse piirangud"
+      ]
+    },
+    "yandex": {
+      "description": "Yandexi pilvesalvestusteenus",
+      "fields": {
+        "client_id": {
+          "helpText": "OAuth 2.0 kliendi ID Yandexist",
+          "label": "OAuth kliendi ID",
+          "placeholder": "Sisesta kliendi ID"
+        },
+        "client_secret": {
+          "helpText": "OAuth 2.0 kliendi saladus",
+          "label": "OAuth kliendi saladus",
+          "placeholder": "Sisesta kliendi saladus"
+        },
+        "token": {
+          "helpText": "OAuth2 märk, mis on saadud Yandexi autentimise kaudu",
+          "label": "OAuth märk"
+        }
+      },
+      "helpText": "Yandex Disk on Venemaal ja Ida-Euroopas populaarne pilvesalvestusteenus. Kasutab OAuth autentimist.",
+      "name": "Yandex Disk kettamälu",
+      "tips": [
+        "Tasuta tase sisaldab 10 GB salvestusruumi",
+        "Toetab automaatset fotode üleslaadimist seadmetest",
+        "On lauaarvuti sünkroonimiskliendid kõigile peamistele platvormidele",
+        "Kontori dokumentide koostöö saadaval"
+      ]
+    },
+    "zoho": {
+      "description": "Zoho WorkDrive salvestus",
+      "fields": {
+        "client_id": {
+          "helpText": "OAuth kliendi ID Zoholt",
+          "label": "OAuth kliendi ID",
+          "placeholder": "Sisesta kliendi ID"
+        },
+        "client_secret": {
+          "helpText": "OAuth kliendi saladus",
+          "label": "OAuth kliendi saladus",
+          "placeholder": "Sisesta kliendi saladus"
+        },
+        "region": {
+          "helpText": "Zoho piirkond (com, eu, in, jp, com.cn, com.au)",
+          "label": "Piirkond",
+          "placeholder": "com"
+        },
+        "token": {
+          "helpText": "OAuth2 märk Zoho autentimisest",
+          "label": "OAuth märk"
+        }
+      },
+      "helpText": "Zoho WorkDrive on meeskondade sisuhalduse koostööplatvorm täiustatud administraatori juhtelementidega.",
+      "name": "Zoho WorkDrive töökettamälu",
+      "tips": [
+        "Osa Zoho tootlikkuse paketist",
+        "Meeskondade kaustad ja tööruumid",
+        "Täiustatud õiguste kontroll",
+        "Integratsioon Zoho rakendustega"
+      ]
+    }
+  }
+}

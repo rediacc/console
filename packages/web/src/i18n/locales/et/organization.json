@@ -1,0 +1,116 @@
+{
+  "access": {
+    "errors": {
+      "addPermissionFailed": "Õiguse lisamine gruppi ebaõnnestus",
+      "assignUserFailed": "Kasutaja määramine õigustegruppi ebaõnnestus",
+      "createGroupFailed": "Õiguste grupi loomine ebaõnnestus",
+      "deleteGroupFailed": "Õiguste grupi kustutamine ebaõnnestus",
+      "removePermissionFailed": "Õiguse eemaldamine grupist ebaõnnestus"
+    },
+    "heading": "Juurdepääsu haldus",
+    "modals": {
+      "addPermissionButton": "Lisa õigus",
+      "addPermissionsTab": "Lisa õigusi",
+      "assignUserTitle": "Määra kasutaja",
+      "assignUserTo": "gruppi {{group}}",
+      "createGroupTitle": "Loo õiguste grupp",
+      "currentPermissionsTab": "Praegused õigused",
+      "deleteGroupDescription": "Kas oled kindel, et soovid kustutada grupi \"{{group}}\"?",
+      "deleteGroupTitle": "Kustuta õiguste grupp",
+      "groupNameRequired": "Palun sisesta grupi nimi",
+      "groupPlaceholder": "Sisesta grupi nimi",
+      "managePermissionsTitle": "Halda õigusi",
+      "noPermissions": "Ühtegi õigust pole määratud",
+      "permissionPlaceholder": "Vali lisatav õigus",
+      "userPlaceholder": "Vali kasutaja"
+    },
+    "permissions": {
+      "searchPlaceholder": "Otsi õiguste gruppe...",
+      "subtitle": "Halda õiguste gruppe ja nende määranguid",
+      "title": "Õiguste grupid"
+    },
+    "success": {
+      "groupCreated": "Õiguste grupp \"{{group}}\" edukalt loodud",
+      "groupDeleted": "Õiguste grupp \"{{group}}\" edukalt kustutatud",
+      "permissionAdded": "Õigus \"{{permission}}\" lisatud gruppi",
+      "permissionRemoved": "Õigus \"{{permission}}\" eemaldatud grupist",
+      "userAssigned": "Kasutaja määratud õiguste gruppi \"{{group}}\""
+    },
+    "tabs": {
+      "permissions": "Õigused",
+      "sessions": "Seansid"
+    }
+  },
+  "teams": {
+    "heading": "Meeskonnad",
+    "manageMembers": {
+      "accessStatus": "Omab juurdepääsu",
+      "addTab": "Lisa liige",
+      "currentTab": "Praegused liikmed",
+      "empty": "Selles meeskonnas pole liikmeid",
+      "memberStatus": "Liige",
+      "pendingStatus": "Ootel",
+      "removeButton": "Eemalda",
+      "removeDescription": "Kas oled kindel, et soovid eemaldada \"{{email}}\" sellest meeskonnast?",
+      "removeTitle": "Eemalda meeskonnaliige",
+      "selectUser": "Vali kasutaja",
+      "title": "Halda meeskonnaliikmeid"
+    },
+    "searchPlaceholder": "Otsi meeskondi...",
+    "subtitle": "Halda meeskondi ja nende liikmeid",
+    "title": "Meeskonnad"
+  },
+  "users": {
+    "errors": {
+      "activateFailed": "Kasutaja aktiveerimine ebaõnnestus",
+      "assignPermissionsFailed": "Õiguste määramine ebaõnnestus",
+      "createFailed": "Kasutaja loomine ebaõnnestus",
+      "deactivateFailed": "Kasutaja deaktiveerimine ebaõnnestus",
+      "emailUpdateFailed": "E-posti aadressi uuendamine ebaõnnestus",
+      "languageUpdateFailed": "Keeleeelistuse salvestamine ebaõnnestus",
+      "passwordUpdateFailed": "Parooli uuendamine ebaõnnestus",
+      "permissionGroupCreateFailed": "Õiguste grupi loomine ebaõnnestus",
+      "sessionTerminateFailed": "Seansi lõpetamine ebaõnnestus",
+      "userVaultUpdateFailed": "Kasutaja võlvi uuendamine ebaõnnestus"
+    },
+    "form": {
+      "emailLabel": "E-post",
+      "passwordLabel": "Parool",
+      "passwordPlaceholder": "Sisesta parool"
+    },
+    "heading": "Kasutajad",
+    "lastActive": {
+      "never": "Mitte kunagi"
+    },
+    "modals": {
+      "assignTitle": "Määra õigused",
+      "createTitle": "Loo kasutaja",
+      "permissionGroupLabel": "Õiguste grupp",
+      "permissionGroupPlaceholder": "Vali õiguste grupp",
+      "permissionsLabel": "õigused",
+      "usersLabel": "kasutajad"
+    },
+    "permissionGroups": {
+      "none": "Grupp puudub"
+    },
+    "searchPlaceholder": "Otsi kasutajaid...",
+    "status": {
+      "active": "Aktiivne",
+      "inactive": "Mitteaktiivne"
+    },
+    "subtitle": "Halda kasutajaid ja nende õigusi",
+    "success": {
+      "activated": "Kasutaja \"{{email}}\" aktiveeritud",
+      "created": "Kasutaja \"{{email}}\" edukalt loodud",
+      "deactivated": "Kasutaja \"{{email}}\" deaktiveeritud",
+      "emailUpdated": "E-posti aadress uuendatud: \"{{email}}\"",
+      "languageSaved": "Keeleeelistus salvestatud",
+      "passwordUpdated": "Parool edukalt uuendatud. Palun logi sisse uue parooliga.",
+      "permissionGroupCreated": "Õiguste grupp \"{{groupName}}\" loodud",
+      "permissionsAssigned": "Kasutaja \"{{email}}\" määratud gruppi \"{{group}}\"",
+      "sessionTerminated": "Seanss edukalt lõpetatud",
+      "userVaultUpdated": "Kasutaja võlv edukalt uuendatud"
+    },
+    "title": "Kasutajad"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-ssh-keys.cast",
+  "language": "en",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-ssh-keys-01",
+      "markerIndex": 0,
+      "at": 1.50929,
+      "text": "Step one. We'll generate a new ed25519 SSH key. ed25519 is the modern default: small, fast, well-supported. You only need to do this once across every server you'll ever add."
+    },
+    {
+      "id": "tutorial-ssh-keys-02",
+      "markerIndex": 1,
+      "at": 8.723209,
+      "text": "Step two. Copy the public key to your server with ssh-copy-id. Your server password is asked one last time. After this, password authentication is no longer required."
+    },
+    {
+      "id": "tutorial-ssh-keys-03",
+      "markerIndex": 2,
+      "at": 16.253995,
+      "text": "Step three. Now we register the key with the CLI. From here on, every command authenticates with this key."
+    },
+    {
+      "id": "tutorial-ssh-keys-04",
+      "markerIndex": 3,
+      "at": 24.863027,
+      "text": "Let's confirm the configuration shows the key path was stored correctly."
+    }
+  ]
+}

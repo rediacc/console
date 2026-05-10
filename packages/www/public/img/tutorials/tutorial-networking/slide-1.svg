@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">Four steps to make your app public: get a Cloudflare token, configure infra, push it, deploy the proxy</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .num { fill: #556b2f; }
+    .num-text { fill: #ffffff; font: 700 26px Inter, system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; }
+    .label { fill: #1a1a1a; font: 600 20px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .sub { fill: #5e5e5e; font: 400 13px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .connector { stroke: #cdcdcd; stroke-width: 2; fill: none; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+  <line class="connector" x1="160" y1="270" x2="800" y2="270"/>
+
+  <g transform="translate(140 270)"><circle class="num" r="40"/><text class="num-text">1</text></g>
+  <text class="label" x="140" y="356">Token</text>
+  <text class="sub" x="140" y="384">Cloudflare</text>
+  <text class="sub" x="140" y="406">Zone DNS Edit</text>
+
+  <g transform="translate(360 270)"><circle class="num" r="40"/><text class="num-text">2</text></g>
+  <text class="label" x="360" y="356">Configure</text>
+  <text class="sub" x="360" y="384">rdc config</text>
+  <text class="sub" x="360" y="406">infra set</text>
+
+  <g transform="translate(580 270)"><circle class="num" r="40"/><text class="num-text">3</text></g>
+  <text class="label" x="580" y="356">Push</text>
+  <text class="sub" x="580" y="384">rdc config</text>
+  <text class="sub" x="580" y="406">infra push</text>
+
+  <g transform="translate(800 270)"><circle class="num" r="40"/><text class="num-text">4</text></g>
+  <text class="label" x="800" y="356">Deploy</text>
+  <text class="sub" x="800" y="384">proxy template</text>
+  <text class="sub" x="800" y="406">+ rdc repo up</text>
+</svg>

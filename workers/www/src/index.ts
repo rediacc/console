@@ -13,6 +13,12 @@ interface Env {
   // /account/api/* is served by the regional workers, so DB is absent
   // here and the branch below 410s.
   DB?: D1Database;
+  // Service binding to the EU regional account worker. Used to forward the
+  // public marketing endpoints (contact submit, newsletter subscribe) so
+  // the forms on www.rediacc.com / edge.rediacc.com can reach a DB-bound
+  // backend without cross-origin CORS. Bound on stable + edge wrangler
+  // configs, absent on PR previews (which serve via env.DB instead).
+  ACCOUNT?: Fetcher;
   [key: string]: unknown;
 }
 
@@ -123,7 +129,7 @@ const accountApp = createApp(
 // and lang-prefixed paths. Normalize first, then look up in the curated
 // ./redirects.json table. See redirect-aliases.ts.
 
-const SUPPORTED_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'] as const;
+const SUPPORTED_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'] as const;
 const DEFAULT_LANG = 'en';
 
 /**
@@ -207,19 +213,28 @@ export default {
     }
 
     // Account API: served here only on PR previews (env.DB bound by
-    // deploy-www.sh). On stable / edge the regional workers serve it;
-    // 410 JSON here so callers route through the SPA region picker.
+    // deploy-www.sh). On stable / edge the regional workers serve it.
+    // Public marketing endpoints (contact submit, newsletter subscribe)
+    // are forwarded via the ACCOUNT service binding so the forms on
+    // www.rediacc.com keep working; everything else 410s so the SPA
+    // region picker routes authenticated traffic to the right region.
     if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
-      if (!env.DB) {
-        return new Response(
-          JSON.stringify({
-            error: 'gone',
-            message: 'Account API is served by regional workers (eu/us/asia.rediacc.com).',
-          }),
-          { status: 410, headers: { 'content-type': 'application/json; charset=utf-8' } }
-        );
+      if (env.DB) {
+        return accountApp.fetch(request, env);
       }
-      return accountApp.fetch(request, env);
+      const isPublicMarketingEndpoint =
+        url.pathname.startsWith('/account/api/v1/contact/') ||
+        url.pathname.startsWith('/account/api/v1/newsletter/');
+      if (isPublicMarketingEndpoint && env.ACCOUNT) {
+        return env.ACCOUNT.fetch(request);
+      }
+      return new Response(
+        JSON.stringify({
+          error: 'gone',
+          message: 'Account API is served by regional workers (eu/us/asia.rediacc.com).',
+        }),
+        { status: 410, headers: { 'content-type': 'application/json; charset=utf-8' } }
+      );
     }
 
     // Serve account SPA for /account/* routes

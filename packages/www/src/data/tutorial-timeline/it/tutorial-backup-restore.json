@@ -1,0 +1,621 @@
+{
+  "cast": "/assets/tutorials/tutorial-backup-restore.cast",
+  "language": "it",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "dad7ae5ec35d54fec63420066fc8b0e71a4ad293e79b0d6fda19e8a18a9c63cc",
+  "steps": [
+    {
+      "id": "tutorial-backup-restore-01",
+      "markerIndex": 0,
+      "replayStartSec": 65.053708,
+      "replayEndSec": 73.743501,
+      "narrationText": "Passo uno. Importiamo una configurazione rclone esistente. rclone supporta S3, Backblaze, Google Drive, Dropbox e molti altri -- se lo usi gia', puoi importare la stessa configurazione direttamente.",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-backup-restore/tutorial-backup-restore-01.e3bb2eec.mp3",
+      "audioDurationSec": 15.647347,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.68,
+          "startChar": 11,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.84,
+          "startChar": 22,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.8,
+          "startChar": 26,
+          "endChar": 40
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 4.24,
+          "startChar": 48,
+          "endChar": 57
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.68,
+          "startChar": 66,
+          "endChar": 74
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.64,
+          "startChar": 75,
+          "endChar": 77
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 7.84,
+          "startChar": 79,
+          "endChar": 88
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.24,
+          "startChar": 90,
+          "endChar": 96
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.96,
+          "startChar": 97,
+          "endChar": 102
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 10.16,
+          "startChar": 104,
+          "endChar": 111
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.24,
+          "startChar": 112,
+          "endChar": 113
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.72,
+          "startChar": 114,
+          "endChar": 119
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.2,
+          "startChar": 120,
+          "endChar": 125
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.36,
+          "startChar": 129,
+          "endChar": 131
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.44,
+          "startChar": 132,
+          "endChar": 134
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.68,
+          "startChar": 135,
+          "endChar": 138
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.96,
+          "startChar": 145,
+          "endChar": 149
+        },
+        {
+          "startSec": 12.96,
+          "endSec": 13.44,
+          "startChar": 150,
+          "endChar": 159
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.6,
+          "startChar": 160,
+          "endChar": 162
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 13.92,
+          "startChar": 163,
+          "endChar": 169
+        },
+        {
+          "startSec": 13.92,
+          "endSec": 14.8,
+          "startChar": 170,
+          "endChar": 184
+        },
+        {
+          "startSec": 14.8,
+          "endSec": 15.52,
+          "startChar": 185,
+          "endChar": 197
+        }
+      ]
+    },
+    {
+      "id": "tutorial-backup-restore-02",
+      "markerIndex": 1,
+      "replayStartSec": 73.743501,
+      "replayEndSec": 82.843959,
+      "narrationText": "Elenchiamo gli storage che lo strumento conosce ora. Ogni storage e' una destinazione verso cui possiamo inviare i backup.",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-backup-restore/tutorial-backup-restore-02.53f2a0c7.mp3",
+      "audioDurationSec": 6.922449,
+      "wordTimings": [
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.44,
+          "startChar": 15,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 23,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.68,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.24,
+          "startChar": 30,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.72,
+          "startChar": 40,
+          "endChar": 47
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.96,
+          "startChar": 48,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.68,
+          "startChar": 53,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.24,
+          "startChar": 58,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.64,
+          "startChar": 69,
+          "endChar": 72
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.28,
+          "startChar": 73,
+          "endChar": 85
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.6,
+          "startChar": 86,
+          "endChar": 91
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.76,
+          "startChar": 92,
+          "endChar": 95
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.08,
+          "startChar": 96,
+          "endChar": 104
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.48,
+          "startChar": 105,
+          "endChar": 112
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.8,
+          "startChar": 115,
+          "endChar": 121
+        }
+      ]
+    },
+    {
+      "id": "tutorial-backup-restore-03",
+      "markerIndex": 2,
+      "replayStartSec": 82.843959,
+      "replayEndSec": 94.515541,
+      "narrationText": "Passo due. Eseguiamo un backup completo. L'intero repository -- app, database, file, configurazione -- viene caricato. Poiche' il repository e' cifrato a riposo, anche il backup e' cifrato. Nessuna gestione aggiuntiva delle chiavi.",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-backup-restore/tutorial-backup-restore-03.d03b62bb.mp3",
+      "audioDurationSec": 15.725714,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.68,
+          "startChar": 11,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.84,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 24,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.88,
+          "startChar": 31,
+          "endChar": 39
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.68,
+          "startChar": 41,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.4,
+          "startChar": 50,
+          "endChar": 60
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.04,
+          "startChar": 64,
+          "endChar": 67
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.6,
+          "startChar": 69,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.08,
+          "startChar": 79,
+          "endChar": 83
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 7.28,
+          "startChar": 85,
+          "endChar": 99
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.84,
+          "startChar": 103,
+          "endChar": 108
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.8,
+          "startChar": 109,
+          "endChar": 117
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.36,
+          "startChar": 127,
+          "endChar": 129
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 10.08,
+          "startChar": 130,
+          "endChar": 140
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.8,
+          "startChar": 144,
+          "endChar": 151
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.68,
+          "startChar": 154,
+          "endChar": 160
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.16,
+          "startChar": 162,
+          "endChar": 167
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.32,
+          "startChar": 168,
+          "endChar": 170
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.72,
+          "startChar": 171,
+          "endChar": 177
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.44,
+          "startChar": 181,
+          "endChar": 188
+        },
+        {
+          "startSec": 13.76,
+          "endSec": 14.08,
+          "startChar": 190,
+          "endChar": 197
+        },
+        {
+          "startSec": 14.08,
+          "endSec": 14.56,
+          "startChar": 198,
+          "endChar": 206
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 15.04,
+          "startChar": 207,
+          "endChar": 217
+        },
+        {
+          "startSec": 15.04,
+          "endSec": 15.28,
+          "startChar": 218,
+          "endChar": 223
+        },
+        {
+          "startSec": 15.28,
+          "endSec": 15.6,
+          "startChar": 224,
+          "endChar": 230
+        }
+      ]
+    },
+    {
+      "id": "tutorial-backup-restore-04",
+      "markerIndex": 3,
+      "replayStartSec": 94.515541,
+      "replayEndSec": 131.818198,
+      "narrationText": "Elenchiamo i backup disponibili su questo storage. Da qui, il ripristino su un nuovo server richiede un solo comando -- il comando pull del repository. Stessi dati, stessi container, macchina diversa.",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-backup-restore/tutorial-backup-restore-04.b044f32f.mp3",
+      "audioDurationSec": 14.445714,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.8,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.28,
+          "startChar": 13,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.92,
+          "startChar": 20,
+          "endChar": 31
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.16,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.48,
+          "startChar": 35,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.44,
+          "startChar": 42,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.68,
+          "startChar": 51,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.92,
+          "startChar": 54,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 5.04,
+          "startChar": 62,
+          "endChar": 72
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.2,
+          "startChar": 73,
+          "endChar": 75
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.36,
+          "startChar": 76,
+          "endChar": 78
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.6,
+          "startChar": 79,
+          "endChar": 84
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.32,
+          "startChar": 85,
+          "endChar": 91
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.88,
+          "startChar": 92,
+          "endChar": 100
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.12,
+          "startChar": 101,
+          "endChar": 103
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.52,
+          "startChar": 104,
+          "endChar": 108
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.48,
+          "startChar": 109,
+          "endChar": 116
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.8,
+          "startChar": 120,
+          "endChar": 122
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.28,
+          "startChar": 123,
+          "endChar": 130
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.52,
+          "startChar": 131,
+          "endChar": 135
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.68,
+          "startChar": 136,
+          "endChar": 139
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 10.48,
+          "startChar": 140,
+          "endChar": 150
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.36,
+          "startChar": 152,
+          "endChar": 158
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.76,
+          "startChar": 159,
+          "endChar": 163
+        },
+        {
+          "startSec": 12.08,
+          "endSec": 12.48,
+          "startChar": 165,
+          "endChar": 171
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 13.04,
+          "startChar": 172,
+          "endChar": 181
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.84,
+          "startChar": 183,
+          "endChar": 191
+        },
+        {
+          "startSec": 13.84,
+          "endSec": 14.32,
+          "startChar": 192,
+          "endChar": 199
+        }
+      ]
+    }
+  ]
+}

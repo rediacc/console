@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation.cast",
+  "language": "ar",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-installation-01",
+      "markerIndex": 0,
+      "at": 1.509194,
+      "text": "أولًا، نتأكد من وجود أداة CLI في المسار. تشغيل الأداة مع علامة الإصدار يطبع الإصدار المثبت ويؤكد اكتمال التثبيت بنجاح."
+    },
+    {
+      "id": "tutorial-installation-02",
+      "markerIndex": 1,
+      "at": 9.435981,
+      "text": "بعد ذلك نشغّل الفحص الصحي للأداة. يمر على المتطلبات التي تحتاجها الأداة، وهي Node وSSH وما سواها، ويُبلّغ عن أي ثغرات. تقرير نظيف يعني أنك مستعد لإضافة خادم."
+    }
+  ]
+}

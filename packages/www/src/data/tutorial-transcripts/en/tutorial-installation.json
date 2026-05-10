@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation.cast",
+  "language": "en",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-installation-01",
+      "markerIndex": 0,
+      "at": 1.509194,
+      "text": "First, let's confirm the CLI is installed. The version flag prints the installed version, so we know the install completed."
+    },
+    {
+      "id": "tutorial-installation-02",
+      "markerIndex": 1,
+      "at": 9.435981,
+      "text": "Now let's run the diagnostic check. It walks through every dependency the CLI needs (Node, SSH, Docker, the renet binary) and reports any gaps. A clean report means we're ready."
+    }
+  ]
+}

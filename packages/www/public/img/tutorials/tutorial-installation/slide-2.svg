@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">rdc runs on your laptop, renet runs on the server, connected over SSH</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .box { fill: #ffffff; stroke: #cdcdcd; stroke-width: 2; rx: 12; ry: 12; }
+    .icon-stroke { fill: none; stroke: #1a1a1a; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .accent-box { fill: #eef2e6; stroke: #556b2f; stroke-width: 2; rx: 12; ry: 12; }
+    .title { fill: #1a1a1a; font: 700 28px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .sub { fill: #5e5e5e; font: 400 18px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .edge { stroke: #556b2f; stroke-width: 2.5; fill: none; stroke-dasharray: 6 5; }
+    .edge-label { fill: #556b2f; font: 600 16px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <!-- Laptop side -->
+  <g>
+    <rect class="box" x="100" y="180" width="280" height="200"/>
+    <!-- laptop icon -->
+    <g transform="translate(180 230)">
+      <rect class="icon-stroke" x="0" y="0" width="120" height="76" rx="6"/>
+      <line class="icon-stroke" x1="-15" y1="86" x2="135" y2="86"/>
+    </g>
+    <text class="title" x="240" y="346">rdc</text>
+    <text class="sub" x="240" y="372">your laptop</text>
+  </g>
+
+  <!-- Server side -->
+  <g>
+    <rect class="accent-box" x="580" y="180" width="280" height="200"/>
+    <!-- server icon -->
+    <g transform="translate(660 224)">
+      <rect class="icon-stroke" x="0" y="0" width="120" height="28" rx="4"/>
+      <circle class="icon-stroke" cx="14" cy="14" r="3"/>
+      <rect class="icon-stroke" x="0" y="40" width="120" height="28" rx="4"/>
+      <circle class="icon-stroke" cx="14" cy="54" r="3"/>
+      <rect class="icon-stroke" x="0" y="80" width="120" height="28" rx="4"/>
+      <circle class="icon-stroke" cx="14" cy="94" r="3"/>
+    </g>
+    <text class="title" x="720" y="370">renet</text>
+    <text class="sub" x="720" y="398">your server</text>
+  </g>
+
+  <!-- SSH connection -->
+  <path class="edge" d="M 380 280 L 580 280" marker-end="url(#arrow)"/>
+  <path class="edge" d="M 580 290 L 380 290" marker-end="url(#arrow)"/>
+  <text class="edge-label" x="480" y="270">ssh</text>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#556b2f"/>
+    </marker>
+  </defs>
+</svg>

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">Three commands for the daily workflow: tunnel a port, open a terminal, sync files</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .card { fill: #ffffff; stroke: #cdcdcd; stroke-width: 2; rx: 14; ry: 14; }
+    .icon-stroke { fill: none; stroke: #556b2f; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .title { fill: #1a1a1a; font: 700 22px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .cmd { fill: #5e5e5e; font: 400 14px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .desc { fill: #5e5e5e; font: 400 14px Inter, system-ui, sans-serif; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <!-- Tunnel -->
+  <rect class="card" x="60" y="120" width="260" height="300"/>
+  <g transform="translate(155 160)" stroke-width="2.5" stroke="#556b2f" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- arrows entering tunnel -->
+    <path d="M 0 35 H 30"/>
+    <polyline points="20,28 28,35 20,42"/>
+    <!-- tunnel arch -->
+    <path d="M 35 60 V 35 a 17 17 0 0 1 34 0 V 60 Z"/>
+    <!-- arrows exiting tunnel -->
+    <path d="M 75 35 H 105"/>
+    <polyline points="98,28 105,35 98,42"/>
+  </g>
+  <text class="title" x="190" y="312">Tunnel</text>
+  <text class="desc" x="190" y="340">app in your browser</text>
+  <text class="cmd" x="190" y="380">rdc repo tunnel</text>
+
+  <!-- Term -->
+  <rect class="card" x="350" y="120" width="260" height="300"/>
+  <g transform="translate(440 160)">
+    <rect class="icon-stroke" x="0" y="0" width="100" height="76" rx="6"/>
+    <polyline class="icon-stroke" points="14,30 28,40 14,50"/>
+    <line class="icon-stroke" x1="40" y1="52" x2="80" y2="52"/>
+  </g>
+  <text class="title" x="480" y="312">Term</text>
+  <text class="desc" x="480" y="340">shell inside the repo</text>
+  <text class="cmd" x="480" y="380">rdc term connect</text>
+
+  <!-- Sync -->
+  <rect class="card" x="640" y="120" width="260" height="300"/>
+  <g transform="translate(720 160)" stroke-width="2.5" stroke="#556b2f" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="0" y="6" width="48" height="60" rx="4"/>
+    <rect x="92" y="6" width="48" height="60" rx="4"/>
+    <path d="M 50 22 H 90"/>
+    <polyline points="84,16 90,22 84,28"/>
+    <path d="M 90 50 H 50"/>
+    <polyline points="56,44 50,50 56,56"/>
+  </g>
+  <text class="title" x="770" y="312">Sync</text>
+  <text class="desc" x="770" y="340">move files in and out</text>
+  <text class="cmd" x="770" y="380">rdc repo sync</text>
+</svg>

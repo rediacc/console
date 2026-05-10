@@ -1,0 +1,328 @@
+{
+  "accessControl": {
+    "expertOnlyMessage": "Passa alla modalità esperto per visualizzare questa pagina.",
+    "expertOnlyTitle": "Modalità Esperto Richiesta"
+  },
+  "actions": {
+    "activate": "Attiva",
+    "addMember": "Aggiungi Membro",
+    "addPermission": "Aggiungi Permesso",
+    "assignUser": "Assegna Utente",
+    "changePassword": "Cambia Password",
+    "configureVault": "Configura Vault",
+    "createGroup": "Crea Gruppo",
+    "createTeam": "Crea Team",
+    "createUser": "Crea Utente",
+    "deactivate": "Disattiva",
+    "edit": "Modifica",
+    "members": "Membri",
+    "permissions": "Permessi",
+    "resetAuth": "Reimposta Autenticazione",
+    "token": "Token",
+    "trace": "Traccia",
+    "twoFactorAuth": "Autenticazione a Due Fattori"
+  },
+  "audit": {
+    "columns": {
+      "action": "Azione",
+      "details": "Dettagli",
+      "entityName": "Nome Entità",
+      "entityType": "Tipo Entità",
+      "timestamp": "Data e ora",
+      "user": "Utente"
+    },
+    "empty": {
+      "clearFilters": "Cancella i filtri e amplia l'intervallo di date",
+      "noLogsInRange": "Nessun log di audit trovato per l'intervallo di date selezionato",
+      "noMatchingFilters": "Nessun log corrisponde ai filtri attuali"
+    },
+    "errors": {
+      "loadDescription": "Si è verificato un errore nel caricamento dei log di audit. Prova ad aggiornare o a modificare l'intervallo di date.",
+      "loadTitle": "Impossibile Caricare i Log di Audit",
+      "tryAgain": "Riprova",
+      "unableToLoad": "Impossibile caricare i log di audit"
+    },
+    "export": {
+      "noData": "Nessun dato disponibile per l'esportazione",
+      "successCSV": "{{count}} log di audit esportati in CSV",
+      "successJSON": "{{count}} log di audit esportati in JSON",
+      "tooltip": "Esporta i log di audit in CSV o JSON"
+    },
+    "filters": {
+      "actions": "Azioni",
+      "allEntities": "Tutte le Entità",
+      "dateRange": "Intervallo di Date",
+      "entityType": "Tipo Entità",
+      "export": "Esporta",
+      "search": "Cerca",
+      "searchPlaceholder": "Cerca nei log..."
+    },
+    "pagination": {
+      "showing": "Visualizzazione {{start}}-{{end}} di {{total}} log"
+    },
+    "subtitle": "Monitora tutte le attività e le modifiche nella tua organizzazione",
+    "title": "Log di Audit"
+  },
+  "dangerZone": {
+    "blockUserRequests": {
+      "blockButton": "Blocca Richieste Utenti",
+      "confirmBlock": {
+        "confirm": "Sei sicuro di voler procedere?",
+        "description": "Questa azione:",
+        "effect1": "Bloccherà tutti gli utenti non amministratori dal sistema",
+        "effect2": "Terminerà tutte le sessioni utente attive (eccetto gli amministratori)",
+        "effect3": "Richiederà lo sblocco manuale per consentire agli utenti di riottenere l'accesso",
+        "okText": "Sì, Blocca Utenti",
+        "title": "Blocca Richieste Utenti"
+      },
+      "confirmUnblock": {
+        "description": "Questo permetterà a tutti gli utenti di effettuare nuovamente richieste al sistema. Sei sicuro?",
+        "okText": "Sì, Sblocca",
+        "title": "Sblocca Richieste Utenti"
+      },
+      "description": "Blocca tutti gli utenti non amministratori dal fare richieste al sistema. Questo terminerà immediatamente tutte le sessioni utente attive eccetto quelle degli amministratori. Gli utenti dovranno essere sbloccati manualmente per riottenere l'accesso.",
+      "title": "Blocca Richieste Utenti",
+      "unblockButton": "Sblocca Richieste Utenti"
+    },
+    "exportData": {
+      "button": "Esporta Dati Organizzazione",
+      "description": "Esporta tutti i dati dell'organizzazione inclusi utenti, team, permessi, regioni, bridge, macchine, repository, configurazioni di archiviazione e pianificazioni. Questa esportazione può essere utilizzata per backup o migrazione.",
+      "downloading": "Preparazione esportazione...",
+      "error": "Impossibile esportare i dati dell'organizzazione",
+      "success": "Dati dell'organizzazione esportati con successo",
+      "title": "Esporta Dati Organizzazione"
+    },
+    "exportVaults": {
+      "button": "Esporta Tutti i Vault",
+      "description": "Scarica tutte le configurazioni dei vault dell'organizzazione inclusi team, regioni, bridge, macchine, repository, archiviazione e pianificazioni. Questa esportazione contiene informazioni sensibili sulle credenziali e deve essere gestita in modo sicuro.",
+      "error": "Impossibile esportare i vault",
+      "success": "Vault esportati con successo",
+      "title": "Esporta Tutti i Vault"
+    },
+    "importData": {
+      "button": "Importa Dati Organizzazione",
+      "description": "Importa i dati dell'organizzazione da un file precedentemente esportato. Puoi scegliere di saltare gli elementi esistenti o sovrascriverli con i dati importati.",
+      "error": "Impossibile importare i dati dell'organizzazione",
+      "modal": {
+        "cancel": "Annulla",
+        "fileRequired": "Seleziona un file da importare",
+        "import": "Importa",
+        "importing": "Importazione in corso...",
+        "importMode": "Modalità Importazione",
+        "invalidFile": "Formato file non valido. Seleziona un file di esportazione dati organizzazione valido.",
+        "modeOverride": "Sovrascrivi gli elementi esistenti",
+        "modeOverrideDesc": "Sostituisci gli elementi esistenti con i dati importati",
+        "modeSkip": "Salta gli elementi esistenti",
+        "modeSkipDesc": "Importa solo gli elementi che non esistono ancora",
+        "selectFile": "Seleziona File",
+        "title": "Importa Dati Organizzazione",
+        "warning": "Attenzione",
+        "warningText": "L'importazione dei dati modificherà la configurazione della tua organizzazione. Assicurati di avere un backup prima di procedere."
+      },
+      "success": "Dati dell'organizzazione importati con successo",
+      "title": "Importa Dati Organizzazione"
+    },
+    "title": "Zona Pericolosa",
+    "updateMasterPassword": {
+      "button": "Impostazioni di Cifratura",
+      "description": "Configura la password di cifratura lato client che protegge tutti i dati sensibili del vault nella tua organizzazione. Questa password è condivisa tra tutti gli utenti e non è mai accessibile a Rediacc per una maggiore sicurezza.",
+      "effect1": "Ricifrare tutti i vault con la nuova password",
+      "effect2": "Disconnettere tutti gli utenti (eccetto te)",
+      "effect3": "Richiedere a tutti gli utenti di accedere nuovamente al completamento",
+      "error": {
+        "fetchVaults": "Impossibile recuperare i vault correnti",
+        "noVaults": "Nessun vault trovato da aggiornare",
+        "partialSuccess": "{{updated}} vault aggiornati con successo, ma {{failed}} falliti. Controlla i log per i dettagli.",
+        "updateFailed": "Impossibile aggiornare i vault con la nuova password di cifratura"
+      },
+      "modal": {
+        "cancel": "Annulla",
+        "confirmPasswordLabel": "Conferma Password Principale",
+        "confirmPasswordMatch": "Le password non corrispondono",
+        "confirmPasswordPlaceholder": "Conferma la nuova password principale",
+        "confirmPasswordRequired": "Conferma la password principale",
+        "importantNote": "Dopo l'aggiornamento della password di cifratura, tutti gli utenti dovranno utilizzare la nuova password condivisa per accedere alle configurazioni del vault. Questa password deve essere distribuita in modo sicuro a tutti gli utenti autorizzati. Nota: i Bridge Globali con RequestToken dovranno essere sbloccati manualmente.",
+        "importantNoteCreate": "Dopo la creazione della password di cifratura, tutti gli utenti avranno bisogno di questa password condivisa per accedere alle configurazioni del vault. Distribuiscila in modo sicuro a tutti i membri autorizzati dell'organizzazione - Rediacc non ha accesso a questa password.",
+        "importantNoteRemove": "Dopo la rimozione della password di cifratura, le configurazioni del vault saranno accessibili senza cifratura lato client. Considera le implicazioni di sicurezza per i tuoi dati sensibili.",
+        "newPasswordLabel": "Nuova Password Principale",
+        "newPasswordMinLength": "La password deve contenere almeno 12 caratteri",
+        "newPasswordPattern": "La password deve contenere maiuscole, minuscole, un numero e un carattere speciale",
+        "newPasswordPlaceholder": "Inserisci la nuova password principale",
+        "newPasswordRequired": "Inserisci la nuova password principale",
+        "operationCreate": "Crea Password Principale",
+        "operationRemove": "Rimuovi Password Principale",
+        "operationType": "Seleziona Operazione",
+        "operationUpdate": "Aggiorna Password Principale",
+        "submit": "Esegui Operazione",
+        "submitCreate": "Crea Password di Cifratura",
+        "submitRemove": "Rimuovi Password di Cifratura",
+        "submitUpdate": "Aggiorna Password di Cifratura",
+        "title": "Configurazione Password di Cifratura",
+        "warningDescription": "Stai per modificare la password principale per l'intera organizzazione. Questo:",
+        "warningDescriptionCreate": "Stai per creare una password principale per l'intera organizzazione. Questo:",
+        "warningDescriptionRemove": "Stai per rimuovere la password principale per l'intera organizzazione. Questo:",
+        "warningDescriptionUpdate": "Stai per aggiornare la password principale per l'intera organizzazione. Questo:",
+        "warningEffect1": "Bloccherà temporaneamente il sistema durante l'operazione",
+        "warningEffect2": "Disconnetterà tutti gli utenti attivi eccetto te",
+        "warningEffect3": "Riciclerà tutti i dati del vault con la nuova password",
+        "warningEffect3Create": "Cifrerà tutti i dati del vault con la password principale",
+        "warningEffect3Remove": "Decifrerà tutti i dati del vault (i vault verranno archiviati senza cifratura)",
+        "warningEffect3Update": "Riciclerà tutti i dati del vault con la nuova password",
+        "warningEffect4": "Richiederà la riconfigurazione manuale di tutti i bridge",
+        "warningPermanent": "Questa azione è permanente e non può essere annullata.",
+        "warningSecure": "Hai salvato la tua nuova password in modo sicuro?",
+        "warningSecureRemove": "Sei sicuro di voler rimuovere la cifratura da tutti i vault?",
+        "warningTitle": "Operazione di Sicurezza Critica"
+      },
+      "success": {
+        "loginNow": "Vai al Login Ora",
+        "nextSteps": "Prossimi passi:",
+        "redirecting": "Reindirizzamento alla pagina di login tra",
+        "seconds": "secondi",
+        "step1": "Tutti gli utenti devono accedere nuovamente utilizzando le loro credenziali esistenti",
+        "step2": "Condividi la nuova password di cifratura in modo sicuro con tutti gli utenti autorizzati nella tua organizzazione",
+        "step2Remove": "Informa gli amministratori che i vault non sono più cifrati",
+        "step3": "I tuoi bridge devono essere riconfigurati manualmente con la nuova password di cifratura",
+        "step3Remove": "I tuoi bridge devono essere riconfigurati manualmente senza cifratura lato client",
+        "step4": "Aggiorna il sistema di gestione delle password della tua organizzazione con la nuova password di cifratura condivisa",
+        "step4Remove": "Rimuovi la password di cifratura dal sistema di gestione delle password della tua organizzazione",
+        "systemReady": "Il sistema è ora sbloccato e pronto per l'uso.",
+        "title": "Operazione Completata con Successo",
+        "titleCreate": "Password di Cifratura Creata con Successo",
+        "titleRemove": "Password di Cifratura Rimossa con Successo",
+        "titleUpdate": "Password di Cifratura Aggiornata con Successo"
+      },
+      "title": "Impostazioni Password di Cifratura",
+      "warning": "Salva la nuova password in un luogo sicuro - non può essere recuperata se persa."
+    }
+  },
+  "dashboard": {
+    "activeSubscriptions": "Abbonamenti Attivi",
+    "completed": "Completato",
+    "daysRemaining": "Giorni Rimanenti",
+    "failed": "Fallito",
+    "jobTimeout": "Timeout Job",
+    "maxRepoSize": "Dimensione Massima Repository",
+    "maxReservedJobs": "Job Riservati Massimi",
+    "noPlanData": "Nessun dato sui limiti del piano disponibile",
+    "noSubscription": "Nessun abbonamento attivo",
+    "pending": "In Attesa",
+    "processing": "In Elaborazione"
+  },
+  "organization": {
+    "errors": {
+      "blockRequestsFailed": "Impossibile aggiornare lo stato di blocco delle richieste utenti",
+      "importFailed": "Impossibile importare i dati dell'organizzazione",
+      "noExportData": "Nessun dato di esportazione restituito",
+      "vaultsUpdateFailed": "Impossibile aggiornare le configurazioni vault",
+      "vaultUpdateFailed": "Impossibile aggiornare la configurazione vault"
+    },
+    "success": {
+      "errorCount": "{{count}} errori",
+      "importComplete": "Importazione completata: {{summary}}",
+      "imported": "Dati dell'organizzazione importati con successo",
+      "importedCount": "{{count}} elementi importati",
+      "requestsBlocked": "Richieste utenti bloccate con successo",
+      "requestsBlockedWithTerminations": "Richieste utenti bloccate. {{count}} sessioni attive sono state terminate.",
+      "requestsUnblocked": "Richieste utenti sbloccate con successo",
+      "skippedCount": "{{count}} elementi saltati",
+      "vaultsUpdated": "Tutte le configurazioni vault aggiornate con successo",
+      "vaultUpdated": "Configurazione vault aggiornata con successo"
+    }
+  },
+  "personal": {
+    "changePassword": {
+      "successContent": "La tua password è stata cambiata. Verrai disconnesso tra {{seconds}} secondi...",
+      "successTitle": "Password Cambiata con Successo"
+    }
+  },
+  "regionsInfrastructure": {
+    "title": "Regioni e Infrastruttura"
+  },
+  "tables": {
+    "permissionGroups": {
+      "actions": "Azioni",
+      "groupName": "Nome Gruppo",
+      "permissions": "Permessi",
+      "users": "Utenti"
+    },
+    "teams": {
+      "actions": "Azioni",
+      "machines": "Macchine",
+      "members": "Membri",
+      "repositories": "Repository",
+      "stats": "Statistiche",
+      "storage": "Archiviazione",
+      "teamName": "Nome Team",
+      "vaultVersion": "Versione Vault"
+    },
+    "users": {
+      "actions": "Azioni",
+      "email": "Indirizzo e-mail",
+      "lastActive": "Ultimo Accesso",
+      "permissionGroup": "Gruppo di Permessi",
+      "status": "Stato"
+    }
+  },
+  "teams": {
+    "delete": {
+      "confirmDescription": "Sei sicuro di voler eliminare il team \"{{teamName}}\"?",
+      "confirmTitle": "Elimina Team"
+    }
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "Sei sicuro di voler attivare \"{{email}}\"?",
+      "confirmTitle": "Attiva Utente"
+    },
+    "deactivate": {
+      "confirmDescription": "Sei sicuro di voler disattivare \"{{email}}\"?",
+      "confirmTitle": "Disattiva Utente"
+    }
+  },
+  "userSessions": {
+    "active": "Attiva",
+    "activeSessions": "Sessioni Attive",
+    "averageDuration": "Durata Media",
+    "columns": {
+      "actions": "Azioni",
+      "createdAt": "Orario di Accesso",
+      "duration": "Durata",
+      "ipAddress": "Indirizzo IP",
+      "lastActivity": "Ultima Attività",
+      "sessionName": "Sessione",
+      "status": "Stato",
+      "user": "Utente",
+      "userAgent": "Agente browser"
+    },
+    "confirmTerminate": "Termina Sessione",
+    "confirmTerminateOther": "Sei sicuro di voler terminare la sessione di {{email}}?",
+    "confirmTerminateSelf": "Questa è la tua sessione corrente. Terminarla ti disconnetterà. Sei sicuro?",
+    "currentSession": "Tu",
+    "fork": "Fork",
+    "forkToken": "Questo è un token fork (sessione figlio)",
+    "hasChildren": "{{count}} sessioni figlio",
+    "inactive": "Inattiva",
+    "ipLabel": "IP",
+    "minutes": "minuti",
+    "notAvailable": "N/D",
+    "searchPlaceholder": "Cerca per email, IP o nome sessione...",
+    "selfTerminateWarning": "La tua sessione verrà terminata. Dovrai effettuare nuovamente l'accesso.",
+    "terminate": "Termina",
+    "title": "Sessioni Utente",
+    "totalCount": "Totale: {{count}} sessioni",
+    "totalSessions": "Sessioni Totali",
+    "uniqueUsers": "Utenti Unici"
+  },
+  "vaultProtocol": {
+    "errors": {
+      "disableFailed": "Impossibile disabilitare la cifratura vault",
+      "enableFailed": "Impossibile abilitare la cifratura vault",
+      "noOrganizationSelected": "Nessuna organizzazione selezionata. Scegli un'organizzazione prima di aggiornare la cifratura."
+    },
+    "success": {
+      "disabled": "Cifratura vault disabilitata. Le password principali non sono più richieste.",
+      "enabled": "Cifratura vault abilitata con successo. Tutti gli utenti devono ora utilizzare questa password principale."
+    }
+  }
+}

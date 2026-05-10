@@ -1,0 +1,86 @@
+{
+  "errors": {
+    "anErrorOccurred": "Ocorreu um erro",
+    "cliCommandFailed": "O comando CLI falhou",
+    "criticalSystemError": "O sistema tem problemas críticos",
+    "failedToCreateTask": "Falha ao criar tarefa de teste",
+    "failedToFork": "Falha ao bifurcar o repositório",
+    "helloFunctionError": "A função hello reportou um erro",
+    "machinesValidationError": "Erro de validação da máquina",
+    "noErrorMessage": "(sem mensagem de erro)",
+    "operationFailed": "A operação falhou",
+    "passwordValidation": "A palavra-passe deve conter letras maiúsculas, minúsculas, um número e um carácter especial",
+    "tfaVerificationFailed": "A verificação TFA falhou",
+    "unknownError": "Erro desconhecido",
+    "vaultTestFailed": "O teste de ligação ao cofre falhou",
+    "vsCodeConnectionFailed": "A ligação ao VS Code falhou"
+  },
+  "success": {
+    "helloFunctionSuccess": "A função hello foi concluída com êxito"
+  },
+  "status": {
+    "cancelled": "Cancelado",
+    "completed": "Concluído",
+    "failed": "Falhado",
+    "pending": "Pendente",
+    "processing": "A processar",
+    "running": "A executar",
+    "success": "Sucesso",
+    "unknown": "Desconhecido",
+    "inProgress": "Em curso",
+    "initializing": "A inicializar..."
+  },
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "create": "Criar",
+    "edit": "Editar",
+    "copy": "Copiar",
+    "retry": "Tentar novamente",
+    "refresh": "Atualizar",
+    "close": "Fechar",
+    "download": "Transferir",
+    "upload": "Carregar",
+    "remove": "Remover",
+    "confirm": "Confirmar",
+    "reset": "Repor",
+    "back": "Voltar",
+    "search": "Pesquisar",
+    "export": "Exportar"
+  },
+  "common": {
+    "yes": "Sim",
+    "no": "Não",
+    "loading": "A carregar...",
+    "error": "Erro",
+    "warning": "Aviso",
+    "success": "Sucesso",
+    "unknown": "Desconhecido",
+    "total": "Total",
+    "none": "Nenhum"
+  },
+  "validation": {
+    "required": "Este campo é obrigatório",
+    "invalidEmail": "Introduza um endereço de e-mail válido",
+    "invalidFormat": "Formato inválido"
+  },
+  "time": {
+    "today": "Hoje",
+    "yesterday": "Ontem",
+    "last7Days": "Últimos 7 dias",
+    "last30Days": "Últimos 30 dias",
+    "thisMonth": "Este mês",
+    "lastMonth": "Mês passado"
+  },
+  "confirm": {
+    "areYouSure": "Tem a certeza?",
+    "confirmDelete": "Tem a certeza de que pretende eliminar isto?"
+  },
+  "notifications": {
+    "error": "Erro",
+    "warning": "Aviso",
+    "success": "Sucesso",
+    "info": "Informação"
+  }
+}

@@ -53,7 +53,31 @@
   --breadcrumb-current-color: var(--sp-text-white);
   --breadcrumb-separator-color: var(--sp-text-muted-dark);
   background: var(--sp-bg-hero);
-  padding: calc(var(--nav-height, 3.5rem) + 24px) 48px 0;
+  padding: calc(var(--nav-top-offset, 3.5rem) + 24px) 48px 0;
+}
+
+/* ========== PAGE HEADER ========== */
+/* Continues the breadcrumb's dark band; centers the title within the page max. */
+.sp-page > .sp-page-header {
+  background: var(--sp-bg-hero);
+  color: var(--sp-text-white);
+  padding: 16px 48px 48px;
+  text-align: center;
+}
+
+.sp-page > .sp-page-header > h1 {
+  margin: 0 auto;
+  max-width: var(--sp-page-max);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: inherit;
+}
+
+@media (max-width: 600px) {
+  .sp-page > .sp-page-header {
+    padding: 12px 24px 32px;
+  }
 }
 
 /* ========== HERO ========== */
@@ -1480,6 +1504,24 @@
   font-weight: 700;
 }
 
+/* Dark-theme contrast overrides for comparison table — sp-* tokens are light-only,
+   so the highlighted Rediacc column collapses to a fixed light-green tint that
+   hides the (dark-green) check on the (dark) page. Override the offending cells. */
+:root[data-theme='dark'] .sp-comparison-table th:last-child {
+  background: rgba(74, 124, 63, 0.18);
+  color: #86c87a;
+}
+:root[data-theme='dark'] .sp-comparison-table td:last-child {
+  background: rgba(74, 124, 63, 0.12);
+}
+:root[data-theme='dark'] .sp-comparison-rediacc,
+:root[data-theme='dark'] .sp-comparison-check {
+  color: #86c87a;
+}
+:root[data-theme='dark'] .sp-comparison-cross {
+  color: #6b6b70;
+}
+
 /* ========== SOCIAL PROOF ========== */
 .sp-social-proof {
   background: var(--sp-bg-light);
@@ -1933,7 +1975,7 @@
 
 @media (max-width: 768px) {
   .sp-page > nav.sp-breadcrumb {
-    padding: calc(var(--nav-height, 3.5rem) + 16px) 24px 0;
+    padding: calc(var(--nav-top-offset, 3.5rem) + 16px) 24px 0;
   }
 
   .sp-hero {

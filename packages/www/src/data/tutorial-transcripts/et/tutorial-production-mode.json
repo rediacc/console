@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-production-mode.cast",
+  "language": "et",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-production-mode-01",
+      "markerIndex": 0,
+      "at": 56.862064,
+      "text": "Käivitame rakenduse tootmisrežiimis sülearvutist. CLI repo up kutsub sama up funktsiooni, mida kasutasime arenduse ajal, kuid käivitab selle eraldatult. Saad sülearvuti sulgeda ja rakendus jätkab tööd."
+    },
+    {
+      "id": "tutorial-production-mode-02",
+      "markerIndex": 1,
+      "at": 97.750961,
+      "text": "Lubame autostarti, et rakendus jääks ellu serveri taaskäivituse korral. Edaspidi, kui server taaskäivitub, tuleb see repositoorium automaatselt tagasi."
+    },
+    {
+      "id": "tutorial-production-mode-03",
+      "markerIndex": 2,
+      "at": 125.443493,
+      "text": "Loetleme, millel repositooriumidel on autostart lubatud. Kinnitab, et meie rakendus on nüüd käivitusnimekirjas."
+    },
+    {
+      "id": "tutorial-production-mode-04",
+      "markerIndex": 3,
+      "at": 141.09184,
+      "text": "Rakenduse peatamiseks üks käsk sülearvutist. Üks käsk üles, üks käsk alla. Kõik sinu terminalist, ilma interaktiivsete seanssideta."
+    }
+  ]
+}

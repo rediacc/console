@@ -16,10 +16,10 @@
   <!-- Central bolt with gradient overlay -->
   <defs>
     <linearGradient id="boltGrad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#67E8F9" stop-opacity="0.4"/>
-      <stop offset="100%" stop-color="#0E7490" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#FCA5A5" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#7F1D1D" stop-opacity="0"/>
     </linearGradient>
   </defs>
-  <polygon points="27,5 15,23 21.5,23 20,43 33,25 26.5,25" fill="#06B6D4"/>
+  <polygon points="27,5 15,23 21.5,23 20,43 33,25 26.5,25" fill="#DC2626"/>
   <polygon points="27,5 15,23 21.5,23 20,43 33,25 26.5,25" fill="url(#boltGrad)"/>
 </svg>

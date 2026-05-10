@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">Three things you can check from your laptop: machine health, containers, repositories</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .card { fill: #ffffff; stroke: #cdcdcd; stroke-width: 2; rx: 14; ry: 14; }
+    .icon-stroke { fill: none; stroke: #556b2f; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .title { fill: #1a1a1a; font: 700 22px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .cmd { fill: #5e5e5e; font: 400 14px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .desc { fill: #5e5e5e; font: 400 14px Inter, system-ui, sans-serif; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <!-- Health: heart-pulse -->
+  <rect class="card" x="60" y="120" width="260" height="300"/>
+  <g transform="translate(140 170)">
+    <path class="icon-stroke" d="M 50 80 C 14 56 0 36 12 22 a 18 18 0 0 1 30 -2 a 18 18 0 0 1 30 2 c 12 14 -2 34 -22 58 Z"/>
+    <polyline class="icon-stroke" points="14,46 30,46 38,30 52,62 60,46 76,46"/>
+  </g>
+  <text class="title" x="190" y="312">Health</text>
+  <text class="desc" x="190" y="340">uptime · disk · health</text>
+  <text class="cmd" x="190" y="380">rdc machine health</text>
+
+  <!-- Containers: stacked boxes -->
+  <rect class="card" x="350" y="120" width="260" height="300"/>
+  <g transform="translate(430 168)">
+    <rect class="icon-stroke" x="0" y="0" width="100" height="22" rx="3"/>
+    <rect class="icon-stroke" x="0" y="30" width="100" height="22" rx="3"/>
+    <rect class="icon-stroke" x="0" y="60" width="100" height="22" rx="3"/>
+    <circle fill="#556b2f" cx="14" cy="11" r="3"/>
+    <circle fill="#556b2f" cx="14" cy="41" r="3"/>
+    <circle fill="#556b2f" cx="14" cy="71" r="3"/>
+  </g>
+  <text class="title" x="480" y="312">Containers</text>
+  <text class="desc" x="480" y="340">name · status · CPU · mem</text>
+  <text class="cmd" x="480" y="380">rdc machine containers</text>
+
+  <!-- Repos: folder stack -->
+  <rect class="card" x="640" y="120" width="260" height="300"/>
+  <g transform="translate(720 170)">
+    <path class="icon-stroke" d="M 0 14 L 0 70 L 100 70 L 100 28 L 50 28 L 40 14 Z"/>
+    <path class="icon-stroke" d="M 14 0 L 100 0"/>
+    <line class="icon-stroke" x1="20" y1="42" x2="84" y2="42"/>
+    <line class="icon-stroke" x1="20" y1="56" x2="64" y2="56"/>
+  </g>
+  <text class="title" x="770" y="312">Repos</text>
+  <text class="desc" x="770" y="340">size · mount · disk</text>
+  <text class="cmd" x="770" y="380">rdc machine repos</text>
+</svg>

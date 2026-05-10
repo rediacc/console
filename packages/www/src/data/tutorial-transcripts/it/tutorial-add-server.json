@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-add-server.cast",
+  "language": "it",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-add-server-01",
+      "markerIndex": 0,
+      "at": 1.508633,
+      "text": "Iniziamo creando un profilo di configurazione. Il profilo contiene la chiave SSH, l'elenco delle macchine e le impostazioni dell'infrastruttura per tutto cio' che faremo da qui in avanti."
+    },
+    {
+      "id": "tutorial-add-server-02",
+      "markerIndex": 1,
+      "at": 11.160728,
+      "text": "Ora registriamo il server dalla riga di comando, fornendo il nome, l'indirizzo IP e l'utente SSH. Le host key vengono scansionate automaticamente per un accesso sicuro."
+    },
+    {
+      "id": "tutorial-add-server-03",
+      "markerIndex": 2,
+      "at": 23.457976,
+      "text": "Poi effettuiamo il provisioning del server. Questo installa renet e crea il datastore cifrato. Al termine, il server e' pronto ad ospitare repository."
+    },
+    {
+      "id": "tutorial-add-server-04",
+      "markerIndex": 3,
+      "at": 39.717449,
+      "text": "Verifichiamo cio' che lo strumento conosce della configurazione. Macchine, chiave SSH, infrastruttura -- tutto quello che abbiamo appena configurato compare qui."
+    },
+    {
+      "id": "tutorial-add-server-05",
+      "markerIndex": 4,
+      "at": 48.157549,
+      "text": "L'intera configurazione risiede in un unico file JSON sul tuo laptop. Copialo su un altro computer e potrai gestire gli stessi server da li'."
+    }
+  ]
+}

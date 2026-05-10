@@ -5,6 +5,7 @@ import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
 import { EXTERNAL_LINKS } from '../../config/constants';
+import { isDesignPartnerProgramActive } from '../../utils/design-partner-program';
 import '../../styles/professional-services-page.css';
 
 export const getStaticPaths = getLanguagePaths;
@@ -22,6 +23,9 @@ const planNameMap = {
 const psAccess = to('pages.pricing.professionalServices.access');
 const psAccessLabels = psAccess?.labels ?? {};
 const psAccessTiers = psAccess?.tiers ?? [];
+
+const dpActive = isDesignPartnerProgramActive();
+const dpClaimLabel = t('pages.pricing.ui.designPartner.cta');
 
 const psRetainers = to('pages.pricing.professionalServices.retainers');
 const psRetainerItems = psRetainers?.items ?? [];
@@ -301,13 +305,23 @@ function getIconForService(id: string): string {
         <div class="cta-content">
           <h2>{t('pages.professionalServices.cta.heading')}</h2>
           <p>{t('pages.professionalServices.cta.description')}</p>
-          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
-             target="_blank"
-             rel="noopener noreferrer"
-             class="btn btn-primary btn-large"
-             aria-label={`${t('pages.professionalServices.cta.button')} (${t('common.aria.opensInNewTab')})`}>
-            {t('pages.professionalServices.cta.button')}
-          </a>
+          {dpActive ? (
+            <>
+              {/* @ci marker — see scripts/check-cta-bolt-uniqueness.js. */}
+              <Fragment set:html={'<!--@ci cta-bolt-required-->'} />
+              <a href="/account/" class="btn btn-primary btn-large cta-bolt" data-design-partner-claim>
+                {dpClaimLabel} &rarr;
+              </a>
+            </>
+          ) : (
+            <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
+               target="_blank"
+               rel="noopener noreferrer"
+               class="btn btn-primary btn-large"
+               aria-label={`${t('pages.professionalServices.cta.button')} (${t('common.aria.opensInNewTab')})`}>
+              {t('pages.professionalServices.cta.button')}
+            </a>
+          )}
           <p class="cta-subtext">{t('pages.professionalServices.cta.subtext')}</p>
         </div>
       </div>

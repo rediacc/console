@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-work-with-repo.cast",
+  "language": "it",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-work-with-repo-01",
+      "markerIndex": 0,
+      "at": 93.14728,
+      "text": "Prima di tutto, il comando tunnel. L'app gira sul server, non sul tuo laptop. Il comando tunnel inoltra la porta di un container via SSH cosi' puoi aprirla su localhost nel browser."
+    },
+    {
+      "id": "tutorial-work-with-repo-02",
+      "markerIndex": 1,
+      "at": 103.393386,
+      "text": "Secondo, il comando term. Il comando di connessione al terminale ti porta all'interno della sandbox del repo -- la stessa vista isolata che offre VS Code. Puoi eseguire qualsiasi comando sul Docker daemon di questo repo senza mai uscire dal terminale."
+    },
+    {
+      "id": "tutorial-work-with-repo-03",
+      "markerIndex": 2,
+      "at": 120.858492,
+      "text": "Prima di trasferire i file, anteprima con --dry-run. Mostra esattamente cosa cambierebbe senza copiare nulla. Usa sempre l'anteprima quando non sei sicuro."
+    },
+    {
+      "id": "tutorial-work-with-repo-04",
+      "markerIndex": 3,
+      "at": 137.357072,
+      "text": "Ora eseguiamo l'upload reale. Il comando di sincronizzazione sposta i file dal tuo laptop nel repo via SSH, con compressione delta rsync. Tunnel, term, sync -- tre comandi coprono il ciclo quotidiano."
+    }
+  ]
+}

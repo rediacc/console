@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-production-mode.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-production-mode-01",
+      "markerIndex": 0,
+      "at": 56.862064,
+      "text": "Démarrons maintenant l'application en mode production depuis l'ordinateur. La commande de déploiement appelle la même fonction up que nous avons utilisée en développement, mais elle s'exécute en mode détaché. Vous pouvez fermer votre ordinateur et l'application continue de tourner."
+    },
+    {
+      "id": "tutorial-production-mode-02",
+      "markerIndex": 1,
+      "at": 97.750961,
+      "text": "Activons le démarrage automatique pour que l'application survive à un redémarrage du serveur. Désormais, si le serveur redémarre, ce dépôt revient automatiquement."
+    },
+    {
+      "id": "tutorial-production-mode-03",
+      "markerIndex": 2,
+      "at": 125.443493,
+      "text": "Listons quels dépôts ont le démarrage automatique activé. Cela confirme que notre application est bien dans la liste de démarrage."
+    },
+    {
+      "id": "tutorial-production-mode-04",
+      "markerIndex": 3,
+      "at": 141.09184,
+      "text": "Et pour arrêter l'application, une seule commande depuis l'ordinateur. Une commande pour démarrer, une commande pour arrêter. Tout depuis votre terminal, plus de sessions interactives."
+    }
+  ]
+}

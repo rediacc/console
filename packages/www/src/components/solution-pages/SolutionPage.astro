@@ -107,7 +107,7 @@ const breadcrumbItems = [
     )}
 
     {has('bottomCta') && (
-      <SPBottomCta bottomCta={(content as any).bottomCta} ctaHref={ctaHref} />
+      <SPBottomCta bottomCta={(content as any).bottomCta} ctaHref={ctaHref} lang={lang} />
     )}
 
     {has('techStrip') && config.techStrip && (

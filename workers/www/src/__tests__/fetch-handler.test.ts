@@ -1,21 +1,45 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import worker, { normalizePath, detectLanguage } from '../index';
 
-// Minimal Env stub. DB is only needed when /account/api/* is exercised;
-// tests that don't hit that branch omit it (matches stable/edge shape).
-function mkEnv(assetResponder: (req: Request) => Response): { ASSETS: Fetcher; DB?: unknown } {
-  const ASSETS: Fetcher = {
-    fetch: vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+// Minimal Env stub. DB is only needed when /account/api/* is exercised
+// against the embedded accountApp (PR previews); ACCOUNT is the service
+// binding that proxies marketing-form endpoints on stable/edge. Both are
+// optional — omit to mirror the corresponding deploy target.
+function mkFetcher(responder: (req: Request) => Response): Fetcher {
+  return {
+    fetch: vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const req = input instanceof Request ? input : new Request(input, init);
-      return assetResponder(req);
-    }) as unknown as Fetcher['fetch'],
-    connect: vi.fn() as unknown as Fetcher['connect'],
+      return Promise.resolve(responder(req));
+    }),
+    connect: vi.fn(),
   };
-  return { ASSETS };
+}
+
+function mkEnv(
+  assetResponder: (req: Request) => Response,
+  accountResponder?: (req: Request) => Response
+): { ASSETS: Fetcher; ACCOUNT?: Fetcher; DB?: unknown } {
+  const ASSETS = mkFetcher(assetResponder);
+  if (!accountResponder) return { ASSETS };
+  return { ASSETS, ACCOUNT: mkFetcher(accountResponder) };
 }
 
 function hit(path: string, env: ReturnType<typeof mkEnv>, host = 'www.rediacc.com'): Promise<Response> {
   const req = new Request(`https://${host}${path}`);
+  return worker.fetch(req, env as unknown as Parameters<typeof worker.fetch>[1]);
+}
+
+function post(
+  path: string,
+  body: unknown,
+  env: ReturnType<typeof mkEnv>,
+  host = 'www.rediacc.com'
+): Promise<Response> {
+  const req = new Request(`https://${host}${path}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', origin: `https://${host}` },
+    body: JSON.stringify(body),
+  });
   return worker.fetch(req, env as unknown as Parameters<typeof worker.fetch>[1]);
 }
 
@@ -273,5 +297,60 @@ describe('fetch handler — static asset paths (case-preserving)', () => {
     expect(res.status).toBe(301);
     expect(res.headers.get('Location')).toBe('https://www.rediacc.com/foo');
     expect(res.headers.get('X-Redirect-Reason')).toBe('canonicalize');
+  });
+});
+
+describe('fetch handler — /account/api/* routing', () => {
+  // On stable / edge, env.DB is unbound. Public marketing endpoints
+  // (contact submit, newsletter subscribe) must forward via the ACCOUNT
+  // service binding so the forms keep working; everything else 410s so
+  // the SPA region picker can route authenticated traffic.
+
+  test('contact submit forwards to ACCOUNT binding when present', async () => {
+    const env = mkEnv(
+      () => new Response('not found', { status: 404 }),
+      (req) => {
+        expect(new URL(req.url).pathname).toBe('/account/api/v1/contact/submit');
+        expect(req.method).toBe('POST');
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+    );
+    const res = await post('/account/api/v1/contact/submit', { name: 'x' }, env);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+  });
+
+  test('newsletter subscribe forwards to ACCOUNT binding when present', async () => {
+    const env = mkEnv(
+      () => new Response('not found', { status: 404 }),
+      (req) => {
+        expect(new URL(req.url).pathname).toBe('/account/api/v1/newsletter/subscribe');
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+    );
+    const res = await post('/account/api/v1/newsletter/subscribe', { email: 'a@b.c' }, env);
+    expect(res.status).toBe(200);
+  });
+
+  test('non-marketing /account/api endpoints still 410 even with ACCOUNT bound', async () => {
+    // /auth/login etc. is the SPA's responsibility — region picker decides which
+    // regional worker to hit. Forwarding it from www would skip that selection.
+    const env = mkEnv(
+      () => new Response('not found', { status: 404 }),
+      () => new Response('should not be called', { status: 500 })
+    );
+    const res = await post('/account/api/v1/auth/login', { email: 'a@b.c' }, env);
+    expect(res.status).toBe(410);
+    expect(env.ACCOUNT?.fetch).not.toHaveBeenCalled();
+  });
+
+  test('marketing endpoint 410s when ACCOUNT binding is absent (PR previews without DB)', async () => {
+    // Defense-in-depth: if the binding is missing on a deploy target, fall back
+    // to the existing 410 instead of throwing.
+    const env = mkEnv(() => new Response('not found', { status: 404 }));
+    const res = await post('/account/api/v1/contact/submit', { name: 'x' }, env);
+    expect(res.status).toBe(410);
+    const body: { error: string } = await res.json();
+    expect(body.error).toBe('gone');
   });
 });

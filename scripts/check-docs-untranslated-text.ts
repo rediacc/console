@@ -27,7 +27,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCS_DIR = path.join(__dirname, '../packages/www/src/content/docs');
 
 // Languages to check (excluding English)
-const NON_ENGLISH_LANGS = ['ar', 'de', 'es', 'fr', 'ja', 'ru', 'tr', 'zh'] as const;
+const NON_ENGLISH_LANGS = ['ar', 'de', 'es', 'fr', 'ja', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'] as const;
 
 // =============================================================================
 // PATTERN-BASED DETECTION (Layer 1)
@@ -162,6 +162,29 @@ const LOCALE_CHAR_CONFIG: Record<string, LocaleCharConfig> = {
     // ğĞıİşŞçÇöÖüÜ
     nativeCharPattern: /[\u011E\u011F\u0130\u0131\u015E\u015F\u00E7\u00C7\u00F6\u00D6\u00FC\u00DC]/,
   },
+  et: {
+    scriptType: 'latin',
+    scriptName: 'Estonian',
+    // \u0161\u017E\u00F5\u00E4\u00F6\u00FC\u0160\u017D\u00D5\u00C4\u00D6\u00DC
+    nativeCharPattern: /[\u0161\u017E\u00F5\u00E4\u00F6\u00FC\u0160\u017D\u00D5\u00C4\u00D6\u00DC]/,
+  },
+  ko: {
+    scriptType: 'non-latin',
+    scriptName: 'Korean',
+    nativeCharPattern: /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/,
+  },
+  pt: {
+    scriptType: 'latin',
+    scriptName: 'Portuguese',
+    // \u00E3\u00E1\u00E2\u00E0\u00E7\u00E9\u00EA\u00ED\u00F3\u00F4\u00F5\u00FA\u00FC\u00C3\u00C1\u00C2\u00C0\u00C7\u00C9\u00CA\u00CD\u00D3\u00D4\u00D5\u00DA\u00DC
+    nativeCharPattern: /[\u00E3\u00E1\u00E2\u00E0\u00E7\u00E9\u00EA\u00ED\u00F3\u00F4\u00F5\u00FA\u00FC\u00C3\u00C1\u00C2\u00C0\u00C7\u00C9\u00CA\u00CD\u00D3\u00D4\u00D5\u00DA\u00DC]/,
+  },
+  it: {
+    scriptType: 'latin',
+    scriptName: 'Italian',
+    // \u00E0\u00E8\u00E9\u00EC\u00ED\u00EE\u00F2\u00F3\u00F9\u00FA\u00C0\u00C8\u00C9\u00CC\u00CD\u00CE\u00D2\u00D3\u00D9\u00DA
+    nativeCharPattern: /[\u00E0\u00E8\u00E9\u00EC\u00ED\u00EE\u00F2\u00F3\u00F9\u00FA\u00C0\u00C8\u00C9\u00CC\u00CD\u00CE\u00D2\u00D3\u00D9\u00DA]/,
+  },
 };
 
 // Thresholds for native character analysis
@@ -237,6 +260,11 @@ function detectUntranslatedText(line: string): string | null {
 function analyzeFile(filePath: string, lang: string): UntranslatedLine[] {
   const issues: UntranslatedLine[] = [];
   const content = fs.readFileSync(filePath, 'utf-8');
+  // Allow opting out of untranslated-text checks for starter/placeholder files
+  // by adding `untranslated: true` to the frontmatter. Use sparingly.
+  if (/^untranslated:\s*true\b/m.test(content.split(/^---$/m)[1] ?? '')) {
+    return issues;
+  }
   const lines = content.split('\n');
 
   let inCodeBlock = false;
@@ -468,6 +496,10 @@ function analyzeNativeChars(filePath: string, lang: string): NativeCharIssue[] {
   if (!config) return [];
 
   const content = fs.readFileSync(filePath, 'utf-8');
+  // Honor `untranslated: true` frontmatter flag for starter/placeholder files
+  if (/^untranslated:\s*true\b/m.test(content.split(/^---$/m)[1] ?? '')) {
+    return [];
+  }
   const { bodyText, frontmatterTitle, frontmatterDescription, isGenerated } =
     extractTextParts(content);
 

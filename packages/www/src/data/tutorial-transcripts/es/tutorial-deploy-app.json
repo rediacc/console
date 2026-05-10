@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-deploy-app.cast",
+  "language": "es",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-deploy-app-01",
+      "markerIndex": 0,
+      "at": 52.700593,
+      "text": "Paso uno. Listamos las plantillas disponibles. Rediacc incluye configuraciones listas para apps comunes como Postgres, Redis y servidores web, para que no tengas que escribir un docker guion compose desde cero."
+    },
+    {
+      "id": "tutorial-deploy-app-02",
+      "markerIndex": 1,
+      "at": 61.85842,
+      "text": "Paso dos. Aplicamos la plantilla app guion postgres a nuestro repo. Aparecen dos archivos: el docker compose punto yml que describe los contenedores, y el Rediaccfile que define los hooks de ciclo de vida de arranque y parada."
+    },
+    {
+      "id": "tutorial-deploy-app-03",
+      "markerIndex": 2,
+      "at": 79.070004,
+      "text": "Paso tres. Levantamos el repo. El CLI arranca los contenedores, monta el volumen cifrado y conecta el Docker daemon aislado. La app está en ejecución ahora."
+    },
+    {
+      "id": "tutorial-deploy-app-04",
+      "markerIndex": 3,
+      "at": 123.719014,
+      "text": "Verificamos con docker ps. Observa que esta vista solo muestra los contenedores de nuestro repositorio. Los demás repos en el mismo servidor tienen sus propios Docker daemons y son completamente invisibles desde aquí."
+    }
+  ]
+}

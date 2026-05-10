@@ -211,7 +211,7 @@ function sampledStates(durationMs, tickMs) {
 
 function scenarioBasicPlayPauseResume() {
   log('→ scenario: basic play/pause/resume');
-  open(`${baseUrl}/en/docs/tutorial-ops`);
+  open(`${baseUrl}/en/docs/tutorial-production-mode`);
   wait(1200);
   clearConsole();
 
@@ -243,7 +243,7 @@ function scenarioBasicPlayPauseResume() {
 
 function scenarioBurstToggle() {
   log('→ scenario: burst toggle resilience');
-  open(`${baseUrl}/en/docs/tutorial-ops`);
+  open(`${baseUrl}/en/docs/tutorial-production-mode`);
   wait(1000);
   clearConsole();
 
@@ -267,7 +267,7 @@ function scenarioBurstToggle() {
 
 function scenarioSeekNoSnapback() {
   log('→ scenario: seek no snapback');
-  open(`${baseUrl}/en/docs/tutorial-setup`);
+  open(`${baseUrl}/en/docs/tutorial-add-server`);
   wait(1200);
 
   const hasDebug = evalInPage(
@@ -298,7 +298,7 @@ function scenarioSeekNoSnapback() {
 
 function scenarioFullscreenAndLayering() {
   log('→ scenario: fullscreen and layering');
-  open(`${baseUrl}/en/docs/tutorial-ops`);
+  open(`${baseUrl}/en/docs/tutorial-production-mode`);
   wait(1000);
   assertCondition(clickPlaybackButton()?.ok, 'play click failed before fullscreen');
   wait(900);
@@ -345,7 +345,7 @@ function scenarioFullscreenAndLayering() {
 
 function scenarioHomeConsistency() {
   log('→ scenario: home/docs consistency');
-  open(`${baseUrl}/en/docs/tutorial-ops`);
+  open(`${baseUrl}/en/docs/tutorial-production-mode`);
   wait(800);
   const docs = evalInPage(`(() => {
     const s = (el, prop) => el ? getComputedStyle(el)[prop] : null;

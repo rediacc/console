@@ -1,0 +1,728 @@
+{
+  "cast": "/assets/tutorials/tutorial-add-server.cast",
+  "language": "de",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "e720b556fb7ca9306ba13324888e199beedcf56d649dc69f50c20e3e4dbf30d7",
+  "steps": [
+    {
+      "id": "tutorial-add-server-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508633,
+      "replayEndSec": 11.160728,
+      "narrationText": "Wir beginnen damit, ein Konfigurationsprofil zu erstellen. Das Profil enthält den SSH-Schlüssel, die Maschinenliste und die Infrastruktureinstellungen für alles, was wir von hier an tun.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-add-server/tutorial-add-server-01.c73496b2.mp3",
+      "audioDurationSec": 12.434286,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 13,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.44,
+          "startChar": 20,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.96,
+          "startChar": 24,
+          "endChar": 44
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.2,
+          "startChar": 45,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.84,
+          "startChar": 48,
+          "endChar": 57
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 59,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.8,
+          "startChar": 63,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.28,
+          "startChar": 70,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.6,
+          "startChar": 78,
+          "endChar": 81
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.4,
+          "startChar": 82,
+          "endChar": 85
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.8,
+          "startChar": 86,
+          "endChar": 95
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.2,
+          "startChar": 97,
+          "endChar": 100
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 8.16,
+          "startChar": 101,
+          "endChar": 115
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.4,
+          "startChar": 116,
+          "endChar": 119
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.56,
+          "startChar": 120,
+          "endChar": 123
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 10.16,
+          "startChar": 124,
+          "endChar": 150
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.4,
+          "startChar": 151,
+          "endChar": 154
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.88,
+          "startChar": 155,
+          "endChar": 160
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.04,
+          "startChar": 162,
+          "endChar": 165
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 11.28,
+          "startChar": 166,
+          "endChar": 169
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.44,
+          "startChar": 170,
+          "endChar": 173
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.68,
+          "startChar": 174,
+          "endChar": 178
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 12.0,
+          "startChar": 179,
+          "endChar": 181
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.32,
+          "startChar": 182,
+          "endChar": 185
+        }
+      ]
+    },
+    {
+      "id": "tutorial-add-server-02",
+      "markerIndex": 1,
+      "replayStartSec": 11.160728,
+      "replayEndSec": 23.457976,
+      "narrationText": "Jetzt registrieren wir den Server bei der CLI, indem wir Namen, IP-Adresse und SSH-Benutzer angeben. Host-Schlüssel werden automatisch für vertrauenswürdigen Zugang gescannt.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-add-server/tutorial-add-server-02.4a730b05.mp3",
+      "audioDurationSec": 12.355918,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.04,
+          "startChar": 6,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 19,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.44,
+          "startChar": 23,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.92,
+          "startChar": 27,
+          "endChar": 33
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.16,
+          "startChar": 34,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.32,
+          "startChar": 38,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 3.04,
+          "startChar": 42,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.76,
+          "startChar": 53,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.32,
+          "startChar": 57,
+          "endChar": 62
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.76,
+          "startChar": 75,
+          "endChar": 78
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.44,
+          "startChar": 92,
+          "endChar": 99
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.28,
+          "startChar": 116,
+          "endChar": 122
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.92,
+          "startChar": 123,
+          "endChar": 134
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.16,
+          "startChar": 135,
+          "endChar": 138
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 11.36,
+          "startChar": 139,
+          "endChar": 157
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.84,
+          "startChar": 158,
+          "endChar": 164
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.24,
+          "startChar": 165,
+          "endChar": 173
+        }
+      ]
+    },
+    {
+      "id": "tutorial-add-server-03",
+      "markerIndex": 2,
+      "replayStartSec": 23.457976,
+      "replayEndSec": 39.717449,
+      "narrationText": "Als Nächstes stellen wir den Server bereit. Dabei wird renet installiert und der verschlüsselte Datenspeicher erstellt. Danach ist der Server bereit, Repositories zu hosten.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-add-server/tutorial-add-server-03.25554657.mp3",
+      "audioDurationSec": 11.546122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.2,
+          "startChar": 4,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.76,
+          "startChar": 13,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 21,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.16,
+          "startChar": 25,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.48,
+          "startChar": 29,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.96,
+          "startChar": 36,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.84,
+          "startChar": 44,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.16,
+          "startChar": 50,
+          "endChar": 54
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 5.28,
+          "startChar": 61,
+          "endChar": 72
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.6,
+          "startChar": 73,
+          "endChar": 76
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.76,
+          "startChar": 77,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.48,
+          "startChar": 81,
+          "endChar": 95
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 7.36,
+          "startChar": 96,
+          "endChar": 109
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.84,
+          "startChar": 110,
+          "endChar": 118
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.72,
+          "startChar": 120,
+          "endChar": 126
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 8.96,
+          "startChar": 127,
+          "endChar": 130
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.12,
+          "startChar": 131,
+          "endChar": 134
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.44,
+          "startChar": 135,
+          "endChar": 141
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.92,
+          "startChar": 142,
+          "endChar": 148
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.88,
+          "startChar": 150,
+          "endChar": 162
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 10.96,
+          "startChar": 163,
+          "endChar": 165
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.52,
+          "startChar": 166,
+          "endChar": 172
+        }
+      ]
+    },
+    {
+      "id": "tutorial-add-server-04",
+      "markerIndex": 3,
+      "replayStartSec": 39.717449,
+      "replayEndSec": 48.157549,
+      "narrationText": "Wir prüfen, was die CLI über die Konfiguration weiß. Maschinen, SSH-Schlüssel, Infrastruktur, alles, was gerade eingerichtet wurde, erscheint hier.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-add-server/tutorial-add-server-04.287817fe.mp3",
+      "audioDurationSec": 10.997551,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.12,
+          "startChar": 12,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 16,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.32,
+          "startChar": 24,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 29,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 3.2,
+          "startChar": 33,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.68,
+          "startChar": 47,
+          "endChar": 51
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.4,
+          "startChar": 53,
+          "endChar": 62
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 7.28,
+          "startChar": 79,
+          "endChar": 92
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.48,
+          "startChar": 94,
+          "endChar": 99
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.72,
+          "startChar": 101,
+          "endChar": 104
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 9.04,
+          "startChar": 105,
+          "endChar": 111
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.68,
+          "startChar": 112,
+          "endChar": 124
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 10.08,
+          "startChar": 125,
+          "endChar": 130
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.72,
+          "startChar": 132,
+          "endChar": 141
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.88,
+          "startChar": 142,
+          "endChar": 146
+        }
+      ]
+    },
+    {
+      "id": "tutorial-add-server-05",
+      "markerIndex": 4,
+      "replayStartSec": 48.157549,
+      "replayEndSec": 53.550112,
+      "narrationText": "Die gesamte Konfiguration liegt in einer einzigen JSON-Datei auf Ihrem Laptop. Kopieren Sie sie auf eine andere Maschine und Sie können dieselben Server von dort aus steuern.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-add-server/tutorial-add-server-05.9e03206e.mp3",
+      "audioDurationSec": 10.187755,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.56,
+          "startChar": 4,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.6,
+          "startChar": 12,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 26,
+          "endChar": 31
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.84,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.08,
+          "startChar": 35,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.72,
+          "startChar": 41,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.76,
+          "startChar": 61,
+          "endChar": 64
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.0,
+          "startChar": 65,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.56,
+          "startChar": 71,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.52,
+          "startChar": 79,
+          "endChar": 87
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.68,
+          "startChar": 88,
+          "endChar": 91
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.84,
+          "startChar": 92,
+          "endChar": 95
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.0,
+          "startChar": 96,
+          "endChar": 99
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.16,
+          "startChar": 100,
+          "endChar": 104
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.4,
+          "startChar": 105,
+          "endChar": 111
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.96,
+          "startChar": 112,
+          "endChar": 120
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.44,
+          "startChar": 121,
+          "endChar": 124
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.52,
+          "startChar": 125,
+          "endChar": 128
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.84,
+          "startChar": 129,
+          "endChar": 135
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.4,
+          "startChar": 136,
+          "endChar": 145
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.88,
+          "startChar": 146,
+          "endChar": 152
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.12,
+          "startChar": 153,
+          "endChar": 156
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.36,
+          "startChar": 157,
+          "endChar": 161
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.52,
+          "startChar": 162,
+          "endChar": 165
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 10.08,
+          "startChar": 166,
+          "endChar": 173
+        }
+      ]
+    }
+  ]
+}

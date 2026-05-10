@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-ssh-keys.cast",
+  "language": "et",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-ssh-keys-01",
+      "markerIndex": 0,
+      "at": 1.50929,
+      "text": "Esimene samm. Genereerime uue ed25519 SSH võtme. ed25519 on kaasaegne vaikimisi valik -- väike, kiire ja laialt toetatud. Seda tuleb teha ainult üks kord kõigi serverite jaoks, mida kunagi lisad."
+    },
+    {
+      "id": "tutorial-ssh-keys-02",
+      "markerIndex": 1,
+      "at": 8.723209,
+      "text": "Teine samm. Kopeerime avaliku võtme serverisse ssh-copy-id abil. Serveri parooli küsitakse viimast korda. Pärast seda ei ole selle serveri jaoks parooliga autentimine enam vajalik."
+    },
+    {
+      "id": "tutorial-ssh-keys-03",
+      "markerIndex": 2,
+      "at": 16.253995,
+      "text": "Kolmas samm. Registreerime võtme CLI-s. Edaspidi autentib iga CLI käsk selle võtmega. Rohkem paroole ega interaktiivseid päringuid."
+    },
+    {
+      "id": "tutorial-ssh-keys-04",
+      "markerIndex": 3,
+      "at": 24.863027,
+      "text": "Kinnitame, et konfiguratsioon näitab võtme tee õigesti salvestatuna. Seadistus on nüüd korduvkasutatav kõigi masinate jaoks, mida sellesse konfiguratsiooni lisad."
+    }
+  ]
+}

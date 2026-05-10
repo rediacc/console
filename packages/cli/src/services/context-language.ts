@@ -3,7 +3,21 @@
  * Extracted from ContextServiceBase to keep file under max-lines.
  */
 
-const SUPPORTED_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'] as const;
+const SUPPORTED_LANGUAGES = [
+  'en',
+  'de',
+  'es',
+  'fr',
+  'ja',
+  'ar',
+  'ru',
+  'tr',
+  'zh',
+  'et',
+  'ko',
+  'pt',
+  'it',
+] as const;
 
 export function normalizeLanguage(lang: string): string {
   const base = lang.split('-')[0].split('_')[0].toLowerCase();

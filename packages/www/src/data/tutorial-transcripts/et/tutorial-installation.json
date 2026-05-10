@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation.cast",
+  "language": "et",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-installation-01",
+      "markerIndex": 0,
+      "at": 1.509194,
+      "text": "Esmalt kinnitame, et CLI on teel. CLI käivitamine versioonilipuga prindib paigaldatud versiooni ja näitab, et paigaldamine lõpetati edukalt."
+    },
+    {
+      "id": "tutorial-installation-02",
+      "markerIndex": 1,
+      "at": 9.435981,
+      "text": "Järgmisena käivitame CLI doctor. See kontrollib sõltuvusi, mida CLI vajab -- Node, SSH ja ülejäänud -- ning teatab puuduvatest komponentidest. Puhas aruanne tähendab, et oled valmis serverit lisama."
+    }
+  ]
+}

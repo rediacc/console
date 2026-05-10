@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-create-repo.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-create-repo-01",
+      "markerIndex": 0,
+      "at": 32.02867,
+      "text": "Nous allons créer un dépôt chiffré de 2 gigaoctets sur le serveur. Un dépôt est un fichier chiffré unique au repos. Une fois monté, il devient un dossier avec son propre daemon Docker et ses propres données d'application, complètement isolé de tout le reste sur le serveur."
+    },
+    {
+      "id": "tutorial-create-repo-02",
+      "markerIndex": 1,
+      "at": 62.567023,
+      "text": "Listons les dépôts sur la machine pour confirmer que le nouveau est bien enregistré. À partir de là, le dépôt peut être ouvert dans VS Code, déployé, forké ou sauvegardé, tout depuis votre ordinateur."
+    }
+  ]
+}

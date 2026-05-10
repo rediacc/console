@@ -35,7 +35,7 @@ interface ParsedRequest {
 // Constants
 // ---------------------------------------------------------------------------
 
-const SUPPORTED_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'];
+const SUPPORTED_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'];
 const REDIRECT_THRESHOLD = 50;
 const FILE_EXT_RE = /\.\w{2,5}$/;
 const SKIP_PREFIXES = ['/account', '/assets', '/fonts', '/_astro', '/api', '/json'];

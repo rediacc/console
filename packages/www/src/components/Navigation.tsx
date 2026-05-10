@@ -25,40 +25,49 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
   const currentLang = useLanguage();
-  const [isVisible, setIsVisible] = useState(true);
   const { t } = useTranslation(currentLang);
 
   const isRegional = isRegionalDomain(origin);
   const accountUrl = isRegional ? '/account/' : undefined;
 
-  // Handle scroll to show/hide navigation on solutions pages:
-  // Hide when scrolling down past threshold, show when scrolling up
+  // Drives `.nav-translate` groups: center nav + utility cluster slide up and
+  // fade out 1:1 with the first 80px of scroll, then clamp. Brand and CTA stay.
+  // Opacity is paired with translate because the items would otherwise hide
+  // behind the higher-z announcement banner mid-slide and look abrupt.
+  // body[data-nav-collapsed] suppresses pointer events on faded items so they
+  // don't intercept clicks meant for the page below.
   useEffect(() => {
-    const isOnSolutionsPage = window.location.pathname.includes('/solutions');
-    if (!isOnSolutionsPage) return;
-
-    let lastScrollTop = window.scrollY;
-    const scrollThreshold = 80;
-
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      if (scrollTop < scrollThreshold) {
-        setIsVisible(true);
-        document.documentElement.style.setProperty('--nav-offset', 'var(--nav-height)');
-      } else if (scrollTop > lastScrollTop) {
-        setIsVisible(false);
+    const root = document.documentElement;
+    const body = document.body;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const y = Math.min(Math.max(window.scrollY, 0), 80);
+      // Translate range is half the scroll range so items progressively clip
+      // against the nav top edge instead of jumping out of view in the first
+      // few pixels (item center is ~16px from the nav's top edge).
+      root.style.setProperty('--nav-scroll-y', `${-y * 0.5}px`);
+      root.style.setProperty('--nav-scroll-fade', `${1 - y / 80}`);
+      const collapsed = y >= 80;
+      if (collapsed) {
+        body.setAttribute('data-nav-collapsed', 'true');
         setIsMegaMenuOpen(false);
         setIsPersonaMenuOpen(false);
-        document.documentElement.style.setProperty('--nav-offset', '0px');
       } else {
-        setIsVisible(true);
-        document.documentElement.style.setProperty('--nav-offset', 'var(--nav-height)');
+        body.removeAttribute('data-nav-collapsed');
       }
-      lastScrollTop = scrollTop;
     };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (frame) cancelAnimationFrame(frame);
+      body.removeAttribute('data-nav-collapsed');
+    };
   }, []);
 
   const toggleSidebar = () => {
@@ -120,7 +129,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
     <>
       <nav
         id="navigation"
-        className={`nav ${isVisible ? 'nav-visible' : 'nav-hidden'}`}
+        className="nav"
         role="navigation"
         aria-label={t('common.aria.mainNavigation')}
       >
@@ -165,7 +174,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               rediacc
             </span>
           </a>
-          <div className="nav-links">
+          <div className="nav-links nav-translate">
             <MegaMenu isOpen={isMegaMenuOpen} onToggle={toggleMegaMenu} onClose={closeMegaMenu} />
             <PersonaMegaMenu
               isOpen={isPersonaMenuOpen}
@@ -201,45 +210,57 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
             </a>
           </div>
           <div className="nav-right">
-            <button
-              type="button"
-              className="search-btn"
-              onClick={openSearch}
-              aria-label={t('navigation.search')}
-              aria-expanded={isSearchOpen}
-              aria-controls="search-modal"
-              data-track="cta_click"
-              data-track-label="nav-search"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 20 20"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+            <div className="nav-utilities nav-translate">
+              <button
+                type="button"
+                className="search-btn"
+                onClick={openSearch}
+                aria-label={t('navigation.search')}
+                aria-expanded={isSearchOpen}
+                aria-controls="search-modal"
+                data-track="cta_click"
+                data-track-label="nav-search"
               >
-                <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" />
-                <path
-                  d="M12.5 12.5L17 17"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-            <ThemeToggle label={t('navigation.toggleTheme')} />
-            <LanguageMenu
-              variant="icon-only"
-              currentLang={currentLang}
-              languages={SUPPORTED_LANGUAGES}
-              position="top"
-              navigationMode="button"
-              ariaLabel={t('navigation.selectLanguage')}
-            />
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" />
+                  <path
+                    d="M12.5 12.5L17 17"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+              <ThemeToggle label={t('navigation.toggleTheme')} />
+              <LanguageMenu
+                variant="icon-only"
+                currentLang={currentLang}
+                languages={SUPPORTED_LANGUAGES}
+                position="top"
+                navigationMode="button"
+                ariaLabel={t('navigation.selectLanguage')}
+              />
+            </div>
+            <a
+              href={`/${currentLang}/install`}
+              className="nav-cta-btn nav-install-btn"
+              aria-label={t('navigation.install')}
+              data-track="cta_click"
+              data-track-label="nav-install"
+              data-track-dest="install"
+            >
+              {t('navigation.install')}
+            </a>
             {accountUrl ? (
               <a
                 href={accountUrl}
-                className="nav-cta-btn nav-account-btn"
+                className="nav-cta-btn nav-cta-btn--secondary nav-account-btn"
                 aria-label={t('navigation.login')}
                 data-track="cta_click"
                 data-track-label="nav-login"
@@ -250,7 +271,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
             ) : (
               <button
                 type="button"
-                className="nav-cta-btn nav-account-btn"
+                className="nav-cta-btn nav-cta-btn--secondary nav-account-btn"
                 onClick={() => window.openRegionPicker?.('/account/')}
                 aria-label={t('navigation.login')}
                 data-track="cta_click"

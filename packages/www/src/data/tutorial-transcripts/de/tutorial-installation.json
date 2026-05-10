@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-installation-01",
+      "markerIndex": 0,
+      "at": 1.509194,
+      "text": "Zuerst bestätigen wir, dass die CLI im Pfad verfügbar ist. Das Ausführen der CLI mit dem Versions-Flag gibt die installierte Version aus und zeigt, dass die Installation erfolgreich abgeschlossen wurde."
+    },
+    {
+      "id": "tutorial-installation-02",
+      "markerIndex": 1,
+      "at": 9.435981,
+      "text": "Jetzt führen wir die CLI doctor aus. Sie prüft alle Abhängigkeiten, die die CLI benötigt, also Node, SSH und den Rest, und meldet eventuelle Lücken. Ein sauberer Bericht bedeutet, dass wir bereit sind, einen Server hinzuzufügen."
+    }
+  ]
+}

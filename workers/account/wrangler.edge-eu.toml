@@ -13,6 +13,9 @@ REGION = "eu"
 ENVIRONMENT = "edge"
 WEBAUTHN_RP_ID = "edge-eu.rediacc.com"
 WEBAUTHN_ORIGIN = "https://edge-eu.rediacc.com"
+# Auto-grant lifetime BUSINESS to every new signup. Flip to "false" (or remove
+# this line) and redeploy to close intake. See src/types/env.ts for details.
+DESIGN_PARTNER_PROGRAM_ENABLED = "true"
 
 [observability]
 enabled = true

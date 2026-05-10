@@ -1,107 +1,72 @@
 ---
-title: Überwachung & Diagnose
-description: >-
-  Maschinengesundheit prüfen, Container inspizieren, systemd-Dienste überprüfen,
-  Host-Schlüssel scannen und Umgebungsdiagnosen ausführen.
-category: Tutorials
-order: 4
+title: "Monitoring"
+description: "Prüfen Sie den Zustand Ihrer Server und Repos von Ihrem Laptop aus mit rdc machine-Befehlen."
+category: "Tutorials"
+subcategory: advanced
+order: 12
 language: de
-sourceHash: fa85cf9b00d42a6e
+sourceHash: "e6eaaed180c35e36"
+sourceCommit: "be90e8e7896623c088b86360ec29c1baef2e86b4"
 ---
 
-# Infrastruktur mit Rediacc überwachen und diagnostizieren
+# Monitoring
 
-Um die Infrastruktur gesund zu halten, benötigen Sie Einblick in den Maschinenzustand, den Container-Status und die Dienst-Gesundheit. In diesem Tutorial führen Sie Umgebungsdiagnosen aus, prüfen die Maschinengesundheit, inspizieren Container und Dienste, überprüfen den Vault-Status und verifizieren die Konnektivität. Am Ende wissen Sie, wie Sie Probleme in Ihrer gesamten Infrastruktur identifizieren und untersuchen können.
+Ihre App ist deployed, live und gesichert. Stellen Sie jetzt sicher, dass alles gesund bleibt. `rdc` gibt Ihnen ein vollständiges Bild jedes Servers (Zustand, Container, Repos) von Ihrem Laptop aus.
 
-## Voraussetzungen
+## Tutorial ansehen
 
-- Die `rdc` CLI installiert mit einer initialisierten Konfiguration
-- Eine bereitgestellte Maschine mit mindestens einem laufenden Repository (siehe [Tutorial: Repository-Lebenszyklus](/de/docs/tutorial-repos))
+![Tutorial: Monitoring](/assets/tutorials/tutorial-monitoring.cast)
 
-## Interaktive Aufzeichnung
+## Drei Dinge, die Sie prüfen können
 
-![Tutorial: Überwachung & Diagnose](/assets/tutorials/monitoring-tutorial.cast)
+![Zustand, Container, Repos](/img/tutorials/tutorial-monitoring/slide-1.svg)
 
-### Schritt 1: Diagnose ausführen
+## Zustand: Systeminformationen
 
-Beginnen Sie damit, Ihre lokale Umgebung auf Konfigurationsprobleme zu prüfen.
-
-```bash
-rdc doctor
-```
-
-Prüft Node.js, CLI-Version, renet-Binary, Konfiguration und Virtualisierungsunterstützung. Jede Prüfung meldet **OK**, **Warning** oder **Error**.
-
-### Schritt 2: Maschinengesundheitsprüfung
+Beginnen Sie mit der Systemansicht:
 
 ```bash
-rdc machine health --name server-1
+time rdc machine query --name my-server --system
 ```
 
-Ruft einen umfassenden Gesundheitsbericht von der Remote-Maschine ab: Systembetriebszeit, Festplattennutzung, Datastore-Nutzung, Container-Anzahl, Speicher-SMART-Status und erkannte Probleme.
+Das zeigt System-Uptime, Festplattennutzung und Speicherstatus. Wenn etwas nicht stimmt, meldet es sich.
 
-### Schritt 3: Laufende Container anzeigen
+## Container
+
+Alle laufenden Container über jedes Repo auf der Maschine anzeigen:
 
 ```bash
-rdc machine containers --name server-1
+time rdc machine query --name my-server --containers
 ```
 
-Listet alle laufenden Container über alle Repositories auf der Maschine auf und zeigt Name, Status, Zustand, Gesundheit, CPU-Nutzung, Speichernutzung und welchem Repository jeder Container gehört.
+Sie erhalten Name, Status, Zustand, CPU und Speicher für jeden Container, plus welches Repo ihn besitzt.
 
-### Schritt 4: systemd-Dienste prüfen
+## Repos
 
-Um die zugrunde liegenden Dienste zu sehen, die den Docker-Daemon und die Netzwerke jedes Repositorys betreiben:
+Ihre Repositories prüfen:
 
 ```bash
-rdc machine services --name server-1
+time rdc machine query --name my-server --repositories
 ```
 
-Listet Rediacc-bezogene systemd-Dienste (Docker-Daemons, Loopback-Aliase) mit ihrem Zustand, Unterzustand, Neustart-Anzahl und Speichernutzung auf.
+Das zeigt jedes Repo mit seiner Größe, Einhängestatus, Docker-Status und Festplattennutzung.
 
-### Schritt 5: Vault-Statusübersicht
+## Alles auf einmal
 
 ```bash
-rdc machine vault-status --name server-1
+time rdc machine query --name my-server
 ```
 
-Bietet einen Überblick über die Maschine: Hostname, Betriebszeit, Speicher, Festplatte, Datastore und Gesamtzahl der Repositories.
+Systeminformationen, Repos, Container, alles in einem Befehl. Derselbe `query`-Befehl ohne Filter gibt das vollständige Bild zurück. Mit `--system`, `--containers`, `--repositories`, `--services`, `--network` oder `--block-devices` wird er auf genau diesen Bereich eingeschränkt.
 
-### Schritt 6: Host-Schlüssel scannen
+## Lokale Plausibilitätsprüfung
 
-Wenn eine Maschine neu aufgebaut wurde oder sich ihre IP geändert hat, aktualisieren Sie den gespeicherten SSH-Host-Schlüssel.
+`rdc doctor` prüft Ihr lokales Setup (Node, SSH-Schlüssel, `renet`, Docker), unabhängig von einem bestimmten Server:
 
 ```bash
-rdc config machine scan-keys -m server-1
+time rdc doctor
 ```
 
-Ruft die aktuellen Host-Schlüssel des Servers ab und aktualisiert Ihre Konfiguration. Dies verhindert Fehler wie "host key verification failed".
+## Sie sind fertig
 
-### Schritt 7: Konnektivität überprüfen
-
-Eine schnelle SSH-Konnektivitätsprüfung, um zu bestätigen, dass die Maschine erreichbar ist und antwortet.
-
-```bash
-rdc term connect -m server-1 -c "hostname"
-rdc term connect -m server-1 -c "uptime"
-```
-
-Der Hostname bestätigt, dass Sie mit dem richtigen Server verbunden sind. Die Betriebszeit bestätigt, dass das System normal läuft.
-
-## Fehlerbehebung
-
-**Gesundheitsprüfung läuft ab oder zeigt "SSH connection failed"**
-Überprüfen Sie, ob die Maschine online und erreichbar ist: `ping <ip>`. Stellen Sie sicher, dass Ihr SSH-Schlüssel korrekt konfiguriert ist mit `rdc term connect -m <machine> -c "echo ok"`.
-
-**"Service not found" in der Dienstliste**
-Rediacc-Dienste erscheinen erst, nachdem mindestens ein Repository bereitgestellt wurde. Wenn keine Repositories existieren, ist die Dienstliste leer.
-
-**Container-Liste zeigt veraltete oder gestoppte Container**
-Container aus früheren Bereitstellungen können bestehen bleiben, wenn `repo down` nicht sauber ausgeführt wurde. Stoppen Sie sie mit `rdc repo down --name <repo> -m <machine>` oder inspizieren Sie direkt über `rdc term connect -m <machine> -r <repo> -c "docker ps -a"`.
-
-## Nächste Schritte
-
-Sie haben Diagnosen ausgeführt, die Maschinengesundheit geprüft, Container und Dienste inspiziert und die Konnektivität verifiziert. Um mit Ihren Bereitstellungen zu arbeiten:
-
-- [Monitoring](/de/docs/monitoring), vollständige Referenz für alle Überwachungsbefehle
-- [Troubleshooting](/de/docs/troubleshooting), häufige Probleme und Lösungen
-- [Tutorial: Tools](/de/docs/tutorial-tools), Terminal, Dateisynchronisierung und VS Code-Integration
+Das ist die vollständige Serie. Sie können jetzt installieren, konfigurieren, deployen, forken, live gehen, Autostart einrichten, sichern und überwachen. Alles aus Ihrem Terminal, alles auf Ihren eigenen Servern.

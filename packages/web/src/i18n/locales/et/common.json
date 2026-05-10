@@ -1,0 +1,810 @@
+{
+  "actions": {
+    "actions": "Toimingud",
+    "addToQueue": "Lisa järjekorda",
+    "advanced": "Täpsemalt",
+    "assign": "Määra",
+    "back": "Tagasi",
+    "cancel": "Tühista",
+    "clearSelection": "Tühjenda valik",
+    "close": "Sulge",
+    "confirm": "Kinnita",
+    "copied": "Kopeeritud",
+    "copy": "Kopeeri",
+    "create": "Loo",
+    "createNew": "Loo uus",
+    "createResource": "Loo {{resource}}",
+    "delete": "Kustuta",
+    "deleteSelected": "Kustuta valitud",
+    "download": "Laadi alla",
+    "downloadSelected": "Laadi valitud alla",
+    "edit": "Muuda",
+    "editResource": "Muuda: {{resource}}",
+    "editVault": "Muuda Vault'i",
+    "exitFullscreen": "Välju täisekraanilt",
+    "export": "Ekspordi",
+    "exportSuccess": "Eksport õnnestus",
+    "format": "Vorminda",
+    "fullscreen": "Täisekraan",
+    "logoutNow": "Logi kohe välja",
+    "manage": "Halda",
+    "newFolder": "Uus kaust",
+    "refresh": "Värskenda",
+    "remote": "Kaugserver",
+    "remove": "Eemalda",
+    "rename": "Nimeta ümber",
+    "reset": "Lähtesta",
+    "retry": "Proovi uuesti",
+    "runFunction": "Käivita funktsioon",
+    "save": "Salvesta",
+    "search": "Otsi",
+    "trace": "Jälitus",
+    "upload": "Laadi üles",
+    "uploadFile": "Laadi fail üles",
+    "viewTrace": "Vaata jälitust"
+  },
+  "actionsColumn": "Toimingud",
+  "allCommandsCopied": "Kõik käsud kopeeriti lõikelauale!",
+  "alt": {
+    "logo": "Rediacc"
+  },
+  "aria": {
+    "cancel": "Tühista",
+    "close": "Sulge",
+    "closeNotification": "Sulge teavitus",
+    "collapsePanel": "Ahenda paneel",
+    "expandPanel": "Laienda paneel",
+    "notifications": "Teavitused",
+    "refresh": "Värskenda",
+    "refreshMachines": "Värskenda masinaid",
+    "trace": "Jälitus"
+  },
+  "cancel": "Tühista",
+  "close": "Sulge",
+  "commandCopied": "Käsk kopeeriti lõikelauale!",
+  "commandCopyFailed": "Käsu kopeerimine ebaõnnestus",
+  "copiedToClipboard": "Kopeeritud lõikelauale",
+  "copiedWithoutToken": "Kopeeritud ilma turvatõendita - palun logige käsitsi sisse",
+  "copyFailed": "Lõikelauale kopeerimine ebaõnnestus",
+  "current": "Praegune",
+  "dashboard": {
+    "availablePlans": "Saadaval olevad paketid",
+    "comparePlansDescription": "Võrdle funktsioone ja hindu erinevate tellimustasemete lõikes",
+    "currentPlan": "Praegune pakett",
+    "enterprisePlanDescription": "Kasutate kõrgeimat paketti, kus kõik funktsioonid on avatud",
+    "errors": {
+      "loadFailed": "Armatuurlaua andmete laadimine ebaõnnestus. Proovige hiljem uuesti.",
+      "noData": "Armatuurlaua andmed puuduvad",
+      "title": "Viga"
+    },
+    "title": "Armatuurlaud",
+    "upgradeOptions": "Uuendamise valikud",
+    "widgets": {
+      "accountHealth": {
+        "noData": "Konto tervise andmed puuduvad",
+        "overallStatus": "Üldine olek",
+        "resourcesAtLimit": "ressurssi on piiril",
+        "resourcesNearLimit": "ressurssi on piiri lähedal",
+        "title": "Konto tervis"
+      },
+      "ceph": {
+        "available": "saadaval",
+        "clone": "kloon",
+        "cluster": "klaster",
+        "image": "kujutis",
+        "machines": "masinad"
+      },
+      "queueDetails": {
+        "active": "aktiivne",
+        "cancelled": "Tühistatud",
+        "completed": "Lõpetatud",
+        "created": "Loodud",
+        "failedTotal": "Ebaõnnestunud (kokku)",
+        "highestPriority": "Kõrgeim prioriteet",
+        "highPriority": "Kõrge prioriteet",
+        "lowPriority": "Madal prioriteet",
+        "machine": "Masin",
+        "machineQueueStatus": "Masina järjekorra olek",
+        "normalPriority": "Tavaline prioriteet",
+        "pending": "ootel",
+        "priorityBreakdown": "Prioriteetide jaotus",
+        "stale": "aegunud",
+        "staleItems": "{{count}} aegunud kirjet",
+        "status": "Olek",
+        "team": "Meeskond",
+        "teamQueueStatus": "Meeskonna järjekorra olek",
+        "title": "Järjekorra üksikasjad",
+        "todayActivity": "Tänane tegevus"
+      },
+      "queueOverview": {
+        "manage": "Halda",
+        "noData": "Järjekorra andmed puuduvad",
+        "title": "Järjekorra ülevaade"
+      },
+      "recentActivity": {
+        "noActivity": "Hiljutine tegevus puudub",
+        "title": "Hiljutine tegevus",
+        "viewAll": "Vaata kõiki"
+      },
+      "resourceUsage": {
+        "limitReached": "Piirang saavutatud",
+        "machines": "Masinad",
+        "repositories": "Hoidlad",
+        "subtitle": "Jälgige ressursikasutust paketi piirangute suhtes",
+        "title": "Ressursikasutus"
+      },
+      "subscriptionPlan": {
+        "allActiveSubscriptions": "KÕIK AKTIIVSED TELLIMUSED",
+        "currentSubscription": "PRAEGUNE TELLIMUS",
+        "day": "päev",
+        "days": "päeva",
+        "hours": "tundi",
+        "remaining": "järel",
+        "title": "Tellimuse ja paketi üksikasjad",
+        "total": "Kokku",
+        "trial": "Prooviversioon"
+      },
+      "systemVersion": {
+        "api": "API",
+        "apiUptime": "API tööaeg",
+        "console": "Konsool"
+      }
+    }
+  },
+  "dateColumn": "Kuupäev",
+  "defaults": {
+    "defaultRegion": "Vaikimisi piirkond",
+    "globalBridges": "Globaalsed sillad",
+    "jsonError": "JSON-i viga",
+    "privateTeam": "Privaatne meeskond"
+  },
+  "delete": "Kustuta",
+  "desktopConnectionFailed": "Töölauarakenduse turvaühenduse loomine ebaõnnestus",
+  "desktopPrompt": {
+    "downloadDesktop": "Laadi töölauarakendus alla",
+    "machine": "Masin",
+    "openDesktop": "Ava töölauarakenduses",
+    "repository": "Hoidla",
+    "securityExplanation": "Otsesed failiooperatsioonid nõuavad turvalist SSH-ühendust teie arvutist kaugmasinaga. Seda ühendust ei saa turvakaalutlustel brauseri kaudu luua.",
+    "subtitle": "{{feature}} kasutab turvalisi SSH-ühendusi, mis nõuavad Rediacc töölauarakendust.",
+    "title": "{{feature}} nõuab töölauarakendust",
+    "whyDesktopOnly": "Miks ainult töölauarakendus?"
+  },
+  "errorBoundary": {
+    "componentStack": "Komponentide virn",
+    "description": "Ilmnes ootamatu viga. See on automaatselt edastatud.",
+    "error": "Viga",
+    "errorDetails": "Vea üksikasjad (arendusrežiim)",
+    "reloadPage": "Laadi leht uuesti",
+    "stack": "Virn",
+    "title": "Midagi läks valesti",
+    "tryAgain": "Proovi uuesti"
+  },
+  "errors": {
+    "schemaValidationFailed": "Tuvastati andmete sünkroniseerimise probleem. Värskendage lehte või võtke ühendust toega, kui probleem püsib.",
+    "somethingWentWrong": "Midagi läks valesti"
+  },
+  "export": {
+    "label": "Ekspordi",
+    "success": "Eksport õnnestus"
+  },
+  "exportCSV": "Ekspordi CSV-na",
+  "exportJSON": "Ekspordi JSON-ina",
+  "fieldGenerator": {
+    "applied": "Väärtused rakendati edukalt",
+    "apply": "Rakenda",
+    "cancel": "Tühista",
+    "comingSoon": "tulemas",
+    "copied": "Kopeeritud!",
+    "copy": "Kopeeri",
+    "copyError": "Lõikelauale kopeerimine ebaõnnestus",
+    "generate": "Genereeri",
+    "generationError": "Genereerimine ebaõnnestus. Palun proovige uuesti.",
+    "generationSuccess": "Genereeritud edukalt",
+    "keySize": "Võtme suurus",
+    "keyType": "Võtme tüüp",
+    "moreSecure": "turvalisem",
+    "regenerate": "Regenereeri",
+    "title": {
+      "repo_credential": "Genereeri hoidla mandaat",
+      "ssh_keys": "Genereeri SSH-võtmepaar"
+    },
+    "tooltip": "Genereeri väärtus"
+  },
+  "fields": {
+    "vault": "Vault'i seadistus"
+  },
+  "fileBrowser": {
+    "connecting": "Ühendumine...",
+    "created": "Kaust loodud: {{name}}",
+    "createNewFolder": "Loo uus kaust",
+    "deleteConfirmMessage": "Olete kindel, et soovite kustutada \"{{name}}\"?",
+    "deleteFileConfirm": "Kustuta fail?",
+    "deleteFolderConfirm": "Kustuta kaust?",
+    "deleteFolderWarning": " See kustutab kõik sisu.",
+    "downloaded": "Allalaaditud: {{name}}",
+    "error": "Viga",
+    "establishingConnection": "SFTP-ühenduse loomine serveriga {{host}}...",
+    "fileBrowser": "Failisirvija",
+    "folder": "Kaust",
+    "folderName": "Kausta nimi",
+    "items": "{{count}} üksust",
+    "modified": "Muudetud",
+    "name": "Nimi",
+    "newName": "Uus nimi",
+    "originalFile": "Algne fail",
+    "permissions": "Õigused",
+    "renamedSuccessfully": "Ümbernimetamine õnnestus",
+    "root": "juur",
+    "size": "Suurus",
+    "uploaded": "Üles laaditud: {{name}}"
+  },
+  "general": {
+    "cancel": "Tühista",
+    "defaultsApplied": "Vaikeväärtused rakendatud",
+    "important": "Oluline",
+    "loading": "Laadimine...",
+    "no": "Ei",
+    "path": "Tee",
+    "refreshing": "Värskendamine...",
+    "showingRecords": "Kuvatakse kirjed {{start}}-{{end}} (kokku {{total}})",
+    "team": "Meeskond",
+    "unknown": "Tundmatu",
+    "vaultVersion": "Vault'i versioon",
+    "versionFormat": "ver.{{version}}",
+    "warning": "Hoiatus",
+    "yes": "Jah"
+  },
+  "important": "Oluline",
+  "language": {
+    "ar": "Araabia",
+    "de": "Saksa",
+    "en": "Inglise",
+    "es": "Hispaania",
+    "fr": "Prantsuse",
+    "ja": "Jaapani",
+    "label": "Keel",
+    "select": "Vali keel",
+    "switch": "Vaheta keelt",
+    "tr": "Türgi",
+    "zh": "Hiina"
+  },
+  "last7Days": "Viimased 7 päeva",
+  "last30Days": "Viimased 30 päeva",
+  "lastMonth": "Eelmine kuu",
+  "messages": {
+    "error": "Viga",
+    "invalidEmail": "Vigane e-posti aadress",
+    "loading": "Laadimine...",
+    "required": "See väli on kohustuslik",
+    "success": "Õnnestus"
+  },
+  "navigation": {
+    "audit": "Auditeerimine",
+    "ceph": "Ceph",
+    "cephClusters": "Klastrid",
+    "cephMachines": "Masinad",
+    "cephPools": "Poolid",
+    "collapseSidebar": "Ahenda külgriba",
+    "credentials": "Mandaadid",
+    "dashboard": "Armatuurlaud",
+    "expandSidebar": "Laienda külgriba",
+    "logout": "Logi välja",
+    "machines": "Masinad",
+    "mainNavigation": "Peamine navigeerimine",
+    "organization": "Organisatsioon",
+    "organizationAccess": "Ligipääs",
+    "organizationTeams": "Meeskonnad",
+    "organizationUsers": "Kasutajad",
+    "queue": "Järjekord",
+    "settings": "Seaded",
+    "settingsInfrastructure": "Infrastruktuur",
+    "settingsOrganization": "Organisatsioon",
+    "settingsProfile": "Profiil",
+    "storage": "Salvestus",
+    "storageCloud": "Pilv",
+    "storageDistributed": "Hajutatud",
+    "userMenu": "Ava kasutajamenüü"
+  },
+  "nestedObjectEditor": {
+    "Active": "Aktiivne",
+    "Add": "Lisa",
+    "Add New Entry": "Lisa uus kirje",
+    "Array": "Massiiv",
+    "Container Images Detected": "Tuvastati konteinerkujutised",
+    "Delete this entry?": "Kustuta see kirje?",
+    "Enter key name": "Sisesta võtme nimi",
+    "False": "Vale",
+    "Fields": "Väljad",
+    "Hide JSON": "Peida JSON",
+    "Image": "Kujutis",
+    "JSON Error": "JSON-i viga",
+    "No": "Ei",
+    "No entries": "Kirjed puuduvad",
+    "Object": "Objekt",
+    "Plugin Configuration Detected": "Tuvastati plugina seadistus",
+    "Raw JSON Editor": "JSON-i otsetoimetaja",
+    "Show JSON": "Näita JSON-i",
+    "True": "Tõene",
+    "Uniform Structure": "Ühtne struktuur",
+    "Uniform Structure Detected": "Tuvastati ühtne struktuur",
+    "Yes": "Jah"
+  },
+  "no": "Ei",
+  "noMatchingResults": "Sobivaid tulemusi ei leitud",
+  "none": "Puudub",
+  "notifications": {
+    "clearAll": "Tühjenda kõik",
+    "empty": "Teavitused puuduvad",
+    "markAllRead": "Märgi kõik loetuks",
+    "title": "Teavitused",
+    "types": {
+      "error": "Viga",
+      "info": "Teave",
+      "success": "Õnnestus",
+      "warning": "Hoiatus"
+    }
+  },
+  "powerMode": {
+    "advancedDisabled": "Täpsemad valikud keelatud",
+    "advancedEnabled": "Täpsemad valikud lubatud",
+    "localhostAllDisabled": "Localhosti režiim - kõik funktsioonid keelatud",
+    "localhostAllEnabled": "Localhosti režiim - kõik funktsioonid lubatud"
+  },
+  "refresh": "Värskenda",
+  "remote": "Kaugserver",
+  "resourceList": {
+    "createNew": "Loo uus",
+    "getStartedMessage": "Alustamiseks looge oma esimene {{resource}}",
+    "noDataAvailable": "Andmed puuduvad",
+    "noResourcesFound": "Ühtegi {{resources}} ei leitud. Proovige otsingukriteeriume muuta.",
+    "searchPlaceholder": "Otsi...",
+    "showingRecords": "Kuvatakse kirjed {{start}}-{{end}} (kokku {{total}})"
+  },
+  "save": "Salvesta",
+  "status": {
+    "initializing": "Käivitumine...",
+    "label": "Olek",
+    "processing": "Töötlemine",
+    "running": "Töötab",
+    "waitingForExecution": "Ootab täitmist"
+  },
+  "statusColumn": "Olek",
+  "table": {
+    "actions": "Toimingud",
+    "moreItems": "+{{count}} veel",
+    "showingRecords": "Kuvatakse kirjed {{start}}-{{end}} (kokku {{total}})"
+  },
+  "teamSelector": {
+    "moreTeams": "+{{count}} veel",
+    "selectTeam": "Vali meeskond...",
+    "selectTeams": "Vali meeskonnad..."
+  },
+  "terminal": {
+    "connectedTo": "Ühendatud: {{host}}",
+    "connecting": "Ühendumine",
+    "connectionFailed": "Ühendus ebaõnnestus",
+    "establishingConnection": "SSH-ühenduse loomine serveriga {{host}}...",
+    "popout": "Ava eraldi aknas",
+    "reconnect": "Ühenda uuesti",
+    "terminal": "Terminal",
+    "waitingForConnection": "Ühenduse ootamine..."
+  },
+  "theme": {
+    "dark": "Tume",
+    "label": "Teema",
+    "light": "Hele"
+  },
+  "thisMonth": "See kuu",
+  "today": "Täna",
+  "tokenGenerationFailed": "Tõendi genereerimine ebaõnnestus: {{error}}",
+  "tooltips": {
+    "cancel": "Tühista",
+    "close": "Sulge",
+    "expandPanel": "Laienda paneel",
+    "refresh": "Värskenda",
+    "taskCancellable": "Seda ülesannet saab tühistada",
+    "trace": "Jälitus"
+  },
+  "total": "Kokku",
+  "uiMode": {
+    "expert": "Ekspert",
+    "label": "Liidese režiim",
+    "simple": "Lihtne",
+    "switching": "Lülitumine režiimi {{mode}}..."
+  },
+  "unknown": "Tundmatu",
+  "utilized": "Kasutuses",
+  "vaultEditor": {
+    "advanced": "Täpsemalt",
+    "enterJsonArray": "Sisesta JSON-massiiv",
+    "enterJsonObject": "Sisesta JSON-objekt",
+    "example": "Näide:",
+    "expertModeDescription": "JSON-i otsetoimetamine võib süsteemi funktsionaalsust rikkuda, kui seda ei tehta õigesti. Muutke ainult siis, kui mõistate vault'i skeemi ja tagajärgi.",
+    "expertModeOnly": "Ainult ekspertrežiimis",
+    "exportJson": "Ekspordi JSON",
+    "extraFields": "Lisaväljad (pole skeemis)",
+    "extraFieldsTooltip": "Need väljad imporditi, kuid pole skeemis määratletud",
+    "extraFieldsWarning": "Hoiatus",
+    "extraFieldsWarningDescription": "Need väljad pole skeemis määratletud ja salvestatakse JSON-struktuuri all 'extraFields'.",
+    "failedToParseJson": "JSON-i parsimine ebaõnnestus:",
+    "failedToSerialize": "Andmete serialiseerimine JSON-iks ebaõnnestus",
+    "fields": {
+      "BRIDGE": {
+        "description": "Silla seadistus võrguühenduse jaoks",
+        "ip": {
+          "description": "Sillaserveri IP-aadress",
+          "label": "IP-aadress"
+        }
+      },
+      "CLONE": {
+        "description": "RBD klooni seadistuse konfigureerimine",
+        "features": {
+          "description": "RBD funktsioonid klooni jaoks",
+          "label": "Funktsioonid"
+        },
+        "parent_image": {
+          "description": "Ülemkujutise nimi",
+          "label": "Ülemkujutis"
+        },
+        "parent_pool": {
+          "description": "Pool, mis sisaldab ülemkujutist",
+          "label": "Ülempool"
+        },
+        "parent_snapshot": {
+          "description": "Ülemhetktõmmise nimi",
+          "label": "Ülemhetktõmmis"
+        },
+        "size": {
+          "description": "Kloonikujutise suurus",
+          "label": "Klooni suurus"
+        }
+      },
+      "CLUSTER": {
+        "config": {
+          "description": "Täiendavad klastri seadistusvalikud",
+          "label": "Seadistus"
+        },
+        "description": "Ceph klastri seadistuse konfigureerimine",
+        "fsid": {
+          "description": "Ceph klastri kordumatu identifikaator (UUID-vorming)",
+          "label": "Failisüsteemi ID"
+        },
+        "mds": {
+          "description": "MDS (metaandmeserveri) sõlmede loend",
+          "label": "MDS-sõlmed"
+        },
+        "mgrs": {
+          "description": "Klastri haldussõlmede loend",
+          "label": "Haldussõlmed"
+        },
+        "monitors": {
+          "description": "Klastri monitorsõlmede loend",
+          "label": "Monitorsõlmed"
+        },
+        "osds": {
+          "description": "OSD (objektisalvestusdaemon) sõlmede loend",
+          "label": "OSD-sõlmed"
+        }
+      },
+      "IMAGE": {
+        "data_pool": {
+          "description": "Eraldi pool kujutiseandmete salvestamiseks",
+          "label": "Andmepool"
+        },
+        "description": "RBD kujutise seadistuse konfigureerimine",
+        "features": {
+          "description": "RBD funktsioonid, mida kujutise jaoks lubada",
+          "label": "Funktsioonid"
+        },
+        "object_size": {
+          "description": "Kujutisesiseste objektide suurus",
+          "label": "Objekti suurus"
+        },
+        "size": {
+          "description": "RBD kujutise suurus (nt 10G, 1T)",
+          "label": "Kujutise suurus"
+        },
+        "stripe_count": {
+          "description": "Kujutise ribade arv",
+          "label": "Ribade arv"
+        },
+        "stripe_unit": {
+          "description": "Kujutise riba ühiku suurus",
+          "label": "Riba ühik"
+        }
+      },
+      "MACHINE": {
+        "datastore": {
+          "description": "Kataloogitee andmete salvestamiseks. Kui see asub BTRFS-failisüsteemis, kasutatakse natiivseid funktsioone. Vastasel juhul luuakse BTRFS-salvestuspooli fail ja paigaldatakse siia hetktõmmiste ja tihenduse lubamiseks",
+          "label": "Andmesalve tee"
+        },
+        "description": "Masina seadistus SSH-juurdepääsu ja salvestuse jaoks",
+        "ip": {
+          "description": "Masina IP-aadress",
+          "label": "IP-aadress"
+        },
+        "known_hosts": {
+          "description": "SSH teadaoleva hosti kirje turvakontrolliks",
+          "label": "Teadaolevad hostid"
+        },
+        "port": {
+          "description": "SSH pordinumber",
+          "label": "SSH-port"
+        },
+        "ssh_key_configured": {
+          "description": "Märkige see, kui SSH avalik võti on juba sihtmasinas installitud",
+          "label": "SSH-võti on juba seadistatud"
+        },
+        "ssh_password": {
+          "description": "Ajutine parool ainult SSH-võtme esialgseks seadistuseks. Jätke tühjaks, kui SSH-võti on juba seadistatud. Seda parooli kasutatakse üks kord avaliku võtme kopeerimiseks ja see tuleks turvalisuse huvides seejärel eemaldada.",
+          "label": "SSH-parool"
+        },
+        "user": {
+          "description": "SSH-kasutajanimi ühenduse jaoks",
+          "label": "Kasutajanimi"
+        }
+      },
+      "ORGANIZATION": {
+        "description": "Organisatsiooni seadistus kogu organisatsiooni hõlmavate sätete jaoks",
+        "DOCKER_JSON_CONF": {
+          "description": "Docker registri autentimise seadistus",
+          "label": "Docker seadistus"
+        },
+        "LOG_FILE": {
+          "description": "Süsteemi logifaili tee",
+          "label": "Logifaili tee"
+        },
+        "PLUGINS": {
+          "description": "Plugina seadistused konteinerikujutiste ja aktiveerimisstaatusega",
+          "label": "Pluginad"
+        },
+        "SSH_PRIVATE_KEY": {
+          "description": "Base64-kodeeritud SSH privaatvõti organisatsiooni toimingute jaoks",
+          "label": "SSH privaatvõti"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "SSH avalik võti organisatsiooni toimingute jaoks",
+          "label": "SSH avalik võti"
+        },
+        "UNIVERSAL_USER_ID": {
+          "description": "Universaalne kasutaja ID süsteemitoimingute jaoks",
+          "label": "Universaalne kasutaja ID"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "description": "Universaalne kasutajanimi süsteemitoimingute jaoks",
+          "label": "Universaalne kasutajanimi"
+        }
+      },
+      "POOL": {
+        "application": {
+          "description": "Pooli rakenduse tüüp (nt rbd, cephfs)",
+          "label": "Rakendus"
+        },
+        "crush_rule": {
+          "description": "CRUSH-reegli nimi andmete paigutamiseks",
+          "label": "CRUSH-reegel"
+        },
+        "description": "Ceph salvestuspooli seadistuse konfigureerimine",
+        "min_size": {
+          "description": "I/O jaoks nõutav minimaalne replikate arv",
+          "label": "Minimaalne suurus"
+        },
+        "pg_num": {
+          "description": "Paigutusrühmade arv poolis",
+          "label": "Paigutusrühmad"
+        },
+        "pgp_num": {
+          "description": "Paigutusrühmade arv paigutuse eesmärkidel",
+          "label": "PGP-number"
+        },
+        "size": {
+          "description": "Poolis olevate objektide replikate arv",
+          "label": "Replikatsiooni suurus"
+        }
+      },
+      "REGION": {
+        "code": {
+          "description": "Piirkonna lühikood",
+          "label": "Piirkonna kood"
+        },
+        "description": "Piirkonna seadistus geograafilise jaotuse jaoks",
+        "location": {
+          "description": "Piirkonna asukoha üksikasjad",
+          "label": "Asukoht"
+        },
+        "name": {
+          "description": "Geograafilise piirkonna nimi",
+          "label": "Piirkonna nimi"
+        }
+      },
+      "REPOSITORY": {
+        "credential": {
+          "description": "Hoidla juurdepääsu parool (32 märki, tähed, numbrid ja erimärgid)",
+          "label": "Mandaat"
+        },
+        "description": "Hoidla seadistus varundussalvestuse jaoks",
+        "encryption": {
+          "description": "Luba hoidla krüptimine",
+          "label": "Luba krüptimine"
+        },
+        "name": {
+          "description": "Hoidla nime identifikaator",
+          "label": "Hoidla nimi"
+        },
+        "retention": {
+          "description": "Säilituspoliitika seaded",
+          "label": "Säilituspoliitika"
+        },
+        "schedule": {
+          "description": "Cron-avaldis automaatsete varunduste jaoks",
+          "label": "Varunduse ajakava"
+        }
+      },
+      "SNAPSHOT": {
+        "description": "RBD hetktõmmise seadistuse konfigureerimine",
+        "protected": {
+          "description": "Kas hetktõmmis on kaitstud kustutamise eest",
+          "label": "Kaitstud"
+        },
+        "size": {
+          "description": "Hetktõmmise suurus",
+          "label": "Hetktõmmise suurus"
+        },
+        "timestamp": {
+          "description": "Hetktõmmise loomise ajatempel",
+          "label": "Ajatempel"
+        }
+      },
+      "STORAGE": {
+        "description": {
+          "description": "Selle salvestusseadistuse valikuline kirjeldus",
+          "label": "Kirjeldus"
+        },
+        "entityDescription": "Salvestusseadistus varunduse sihtkohtade jaoks",
+        "name": {
+          "description": "Selle salvestusseadistuse kordumatu nimi",
+          "label": "Salvestuse nimi"
+        },
+        "noVersioning": {
+          "description": "Keela selle salvestuse versioonimine",
+          "label": "Keela versioonimine"
+        },
+        "parameters": {
+          "description": "Täpsema konfiguratsiooni jaoks mõeldud lisarclone parameetrid",
+          "label": "Lisaparameetrid"
+        },
+        "provider": {
+          "description": "Valige salvestusteenuse tüüp",
+          "label": "Salvestusteenuse pakkuja"
+        }
+      },
+      "TEAM": {
+        "description": "Meeskonna seadistus organisatsioonistruktuuri jaoks",
+        "name": {
+          "description": "Meeskonna nimi",
+          "label": "Meeskonna nimi"
+        },
+        "SSH_PRIVATE_KEY": {
+          "description": "Base64-kodeeritud SSH privaatvõti meeskonna toimingute jaoks",
+          "label": "SSH privaatvõti"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "SSH avalik võti meeskonna toimingute jaoks",
+          "label": "SSH avalik võti"
+        },
+        "teamDescription": {
+          "description": "Meeskonna eesmärgi ja vastutuse kirjeldus",
+          "label": "Meeskonna kirjeldus"
+        }
+      },
+      "USER": {
+        "description": "Kasutaja seadistus isiklike sätete jaoks",
+        "SSH_PRIVATE_KEY": {
+          "description": "Base64-kodeeritud SSH privaatvõti kasutaja toimingute jaoks",
+          "label": "SSH privaatvõti"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "SSH avalik võti kasutaja toimingute jaoks",
+          "label": "SSH avalik võti"
+        }
+      }
+    },
+    "fields.CLONE.description": "RBD klooni seadistuse konfigureerimine",
+    "fields.CLUSTER.description": "Ceph klastri seadistuse konfigureerimine",
+    "fields.IMAGE.description": "RBD kujutise seadistuse konfigureerimine",
+    "fields.POOL.description": "Ceph salvestuspooli seadistuse konfigureerimine",
+    "fields.SNAPSHOT.description": "RBD hetktõmmise seadistuse konfigureerimine",
+    "fieldsMovedFromExtra": "{{count}} väli(a) taastatud extraFields'ist: {{fields}}",
+    "fieldsMovedToExtra": "{{count}} väli(a) liigutatud extraFields'i: {{fields}}",
+    "formatJson": "Vorminda JSON",
+    "importJson": "Impordi JSON",
+    "invalidFormat": "Vigane vorming. {{description}}",
+    "invalidJsonFormat": "Vigane JSON-vorming",
+    "isRequired": "{{field}} on kohustuslik",
+    "jsonError": "JSON-i viga",
+    "knownHostsHelp": "Valikuline. SSH teadaoleva hosti kirje tuvastatakse automaatselt.",
+    "knownHostsPlaceholder": "Täidetakse automaatselt ühenduse testimisel",
+    "maxLength": "Maksimaalne pikkus on {{length}}",
+    "maxValue": "Maksimaalne väärtus on {{value}}",
+    "minLength": "Minimaalne pikkus on {{length}}",
+    "minValue": "Minimaalne väärtus on {{value}}",
+    "missingSshKeysDescription": "Meeskonna vault'ist puudub SSH_PRIVATE_KEY ja/või SSH_PUBLIC_KEY. Silla SSH-autentimine ebaõnnestub. Palun genereerige või lisage SSH-võtmed sellesse vault'i.",
+    "missingSshKeysWarning": "SSH-võtmed puuduvad",
+    "mustBeArray": "Peab olema massiiv",
+    "mustBeValidJson": "Peab olema kehtiv JSON",
+    "mustBeValidJsonArray": "Peab olema kehtiv JSON-massiiv",
+    "noChangesToSave": "Salvestatavaid muudatusi pole",
+    "optionalFields": "Valikulised väljad",
+    "pleaseFixErrors": "Palun parandage valideerimisveagad enne salvestamist",
+    "portPlaceholder": "Pordinumber (1-65535)",
+    "providerFields": "{{provider}} seadistus",
+    "providerRequiredFields": "{{provider}} jaoks nõutavad väljad",
+    "rawJsonEditor": "JSON-i otsetoimetaja (ekspertrežiim)",
+    "rawJsonTooltip": "JSON-i otsetoimetamine - kasutage ettevaatlikult!",
+    "requiredFields": "Kohustuslikud väljad",
+    "resetToFormValues": "Lähtesta vormi väärtustele",
+    "saveVaultConfiguration": "Salvesta Vault'i seadistus",
+    "sshPasswordPlaceholder": "Valikuline: SSH-võtme esialgseks seadistuseks",
+    "sshPasswordRequiredWhenNoKey": "SSH-parool on esialgse võtme seadistuse jaoks nõutav",
+    "systemCompatibility": {
+      "available": "Saadaval",
+      "btrfsAvailable": "BTRFS on saadaval",
+      "compatibilityStatus": "Ühilduvuse olek",
+      "compatible": "Ühilduv",
+      "incompatible": "Mitteühilduv",
+      "kernelVersion": "Tuuma versioon",
+      "knownIssues": "Teadaolevad probleemid",
+      "no": "Ei",
+      "notInstalled": "Pole installitud",
+      "operatingSystem": "Operatsioonisüsteem",
+      "osSetup": "OS-i seadistus",
+      "passwordRequired": "Parool on nõutav",
+      "recommendations": "Soovitused",
+      "setupCompleted": "Seadistus lõpetatud",
+      "setupRequired": "Seadistus on nõutav",
+      "sudoAvailable": "Sudo on saadaval",
+      "systemInfo": "Süsteemiteave",
+      "title": "Süsteemi ühilduvus",
+      "unknown": "Tundmatu",
+      "warning": "Hoiatus",
+      "yes": "Jah"
+    },
+    "testConnection": {
+      "button": "Testi ühendust",
+      "description": "Testige SSH-ühendust ja konfigureerige SSH-võtme autentimine automaatselt",
+      "failed": "SSH-ühendus ebaõnnestus",
+      "initiated": "SSH-ühenduse test on algatatud. Palun kontrollige tulemuste jaoks järjekorda.",
+      "label": "Testi ühendust",
+      "missingFields": "Palun täitke enne testimist IP-aadress, kasutajanimi ja parool",
+      "required": "Ühenduse test on nõutav enne masina loomist.",
+      "success": "SSH-ühendus õnnestus",
+      "testing": "Testimine..."
+    },
+    "unknownEntityDescription": "Olem tüüp \"{{type}}\" pole vault'i definitsioonides määratletud.",
+    "unknownEntityType": "Tundmatu olemi tüüp",
+    "unsavedChanges": "Salvestamata muudatused",
+    "validationErrors": "Valideerimisveagad:",
+    "vaultConfiguration": "Vault'i seadistus",
+    "vaultVersion": "Vault'i versioon:",
+    "versionAutoIncrement": "Versioon suureneb automaatselt salvestamisel",
+    "versionWillIncrement": "Versioon suureneb väärtuseni {{version}}"
+  },
+  "viewDetails": "Vaata üksikasju",
+  "vscodeSelection": {
+    "description": "Tuvastati mitu VS Code installatsiooni. Valige, millist kasutada:",
+    "open": "Ava",
+    "rememberChoice": "Mäleta minu valikut",
+    "title": "Vali VS Code installatsioon",
+    "windowsVSCode": "Windowsi VS Code",
+    "wslVSCode": "WSL VS Code (Linux keskkond)"
+  },
+  "warnings": {
+    "previewEnvironment": "Eelvaade",
+    "previewMessage": "See veebikonsooli on eelvaates ja ei pruugi ootuspäraselt töötada. Tootmiskasutuseks palun kasutage CLI-d S3 või kohalikus režiimis. Pilverežiim jagab seda taustaprogrammi ja pole samuti saadaval enne ametlikku väljaannet.",
+    "sandboxEnvironment": "Liivakastikeskkond",
+    "sandboxMessage": "Andmed võidakse uuenduste ajal lähtestada. Ainult testimiseks."
+  },
+  "yes": "Jah",
+  "yesterday": "Eile"
+}

@@ -1,4 +1,8 @@
 ---
+import type { Language } from '../../i18n/types';
+import { createTranslator } from '../../i18n/utils';
+import { isDesignPartnerProgramActive } from '../../utils/design-partner-program';
+
 interface Props {
   bottomCta: {
     title: string;
@@ -8,17 +12,25 @@ interface Props {
     command?: string;
   };
   ctaHref: string;
+  lang?: Language;
 }
 
-const { bottomCta, ctaHref } = Astro.props;
+const { bottomCta, ctaHref, lang = 'en' } = Astro.props;
+const { t } = createTranslator(lang);
+
+// Design Partner Program: same override pattern as SPHero — funnel every
+// solution-page bottom CTA to /account/ during the program.
+const dpActive = isDesignPartnerProgramActive();
+const dpCtaHref = dpActive ? '/account/' : ctaHref;
+const dpCtaLabel = dpActive ? t('pages.pricing.ui.designPartner.cta') : bottomCta.primaryCta;
 ---
 
 <section class="sp-bottom-cta">
   <div class="sp-bottom-cta-inner">
     <h2>{bottomCta.title}</h2>
     <p>{bottomCta.description}</p>
-    <a href={ctaHref} class="sp-btn-primary">
-      {bottomCta.primaryCta}
+    <a href={dpCtaHref} class="sp-btn-primary" {...(dpActive ? { 'data-design-partner-claim': true } : {})}>
+      {dpCtaLabel}
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
     {bottomCta.tierBadge && (

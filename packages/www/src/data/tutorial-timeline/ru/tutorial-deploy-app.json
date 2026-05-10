@@ -1,0 +1,411 @@
+{
+  "cast": "/assets/tutorials/tutorial-deploy-app.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "a66f59c056538beec0be7ec71ad643f6bb574a0433b8c4828331a4eb94e06122",
+  "steps": [
+    {
+      "id": "tutorial-deploy-app-01",
+      "markerIndex": 0,
+      "replayStartSec": 52.700593,
+      "replayEndSec": 61.85842,
+      "narrationText": "Шаг первый. Выводим список доступных шаблонов. Rediacc поставляется с готовыми конфигурациями для популярных приложений: Postgres, Redis, веб-серверы — чтобы не писать docker compose точка yml с нуля.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-01.5c241ac7.mp3",
+      "audioDurationSec": 14.210612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.0,
+          "startChar": 20,
+          "endChar": 26
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.56,
+          "startChar": 27,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.12,
+          "startChar": 37,
+          "endChar": 45
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.64,
+          "startChar": 55,
+          "endChar": 67
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.72,
+          "startChar": 68,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.2,
+          "startChar": 70,
+          "endChar": 78
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 6.0,
+          "startChar": 79,
+          "endChar": 93
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.24,
+          "startChar": 94,
+          "endChar": 97
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.8,
+          "startChar": 98,
+          "endChar": 108
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.44,
+          "startChar": 109,
+          "endChar": 119
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.8,
+          "startChar": 152,
+          "endChar": 157
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 10.96,
+          "startChar": 158,
+          "endChar": 160
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.36,
+          "startChar": 161,
+          "endChar": 167
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.68,
+          "startChar": 168,
+          "endChar": 174
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 12.32,
+          "startChar": 175,
+          "endChar": 182
+        },
+        {
+          "startSec": 13.76,
+          "endSec": 14.16,
+          "startChar": 195,
+          "endChar": 199
+        }
+      ]
+    },
+    {
+      "id": "tutorial-deploy-app-02",
+      "markerIndex": 1,
+      "replayStartSec": 61.85842,
+      "replayEndSec": 79.070004,
+      "narrationText": "Шаг второй. Применяем шаблон app-postgres к репозиторию. Появляются два файла: docker compose точка yml с описанием контейнеров и Rediaccfile с хуками запуска и остановки.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-02.a902129b.mp3",
+      "audioDurationSec": 14.027755,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.36,
+          "startChar": 4,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.4,
+          "startChar": 12,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.88,
+          "startChar": 22,
+          "endChar": 28
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.72,
+          "startChar": 44,
+          "endChar": 55
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.76,
+          "startChar": 57,
+          "endChar": 67
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.0,
+          "startChar": 68,
+          "endChar": 71
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.48,
+          "startChar": 72,
+          "endChar": 77
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.36,
+          "startChar": 79,
+          "endChar": 85
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 8.4,
+          "startChar": 86,
+          "endChar": 93
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 9.92,
+          "startChar": 104,
+          "endChar": 105
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.4,
+          "startChar": 106,
+          "endChar": 115
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 11.12,
+          "startChar": 116,
+          "endChar": 127
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.6,
+          "startChar": 128,
+          "endChar": 129
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.32,
+          "startChar": 142,
+          "endChar": 143
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.64,
+          "startChar": 144,
+          "endChar": 150
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 13.12,
+          "startChar": 151,
+          "endChar": 158
+        },
+        {
+          "startSec": 13.28,
+          "endSec": 13.36,
+          "startChar": 159,
+          "endChar": 160
+        },
+        {
+          "startSec": 13.36,
+          "endSec": 13.92,
+          "startChar": 161,
+          "endChar": 170
+        }
+      ]
+    },
+    {
+      "id": "tutorial-deploy-app-03",
+      "markerIndex": 2,
+      "replayStartSec": 79.070004,
+      "replayEndSec": 123.719014,
+      "narrationText": "Шаг третий. Запускаем репозиторий. CLI стартует контейнеры, монтирует зашифрованный том и подключает изолированный Docker-демон. Приложение уже работает.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-03.b2f71640.mp3",
+      "audioDurationSec": 12.120816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.12,
+          "startChar": 4,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.56,
+          "startChar": 12,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.36,
+          "startChar": 22,
+          "endChar": 33
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 5.12,
+          "startChar": 39,
+          "endChar": 47
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.76,
+          "startChar": 48,
+          "endChar": 58
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.8,
+          "startChar": 60,
+          "endChar": 69
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.36,
+          "startChar": 70,
+          "endChar": 83
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.76,
+          "startChar": 84,
+          "endChar": 87
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.16,
+          "startChar": 88,
+          "endChar": 89
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.8,
+          "startChar": 90,
+          "endChar": 100
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.44,
+          "startChar": 101,
+          "endChar": 114
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.84,
+          "startChar": 115,
+          "endChar": 121
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.24,
+          "startChar": 122,
+          "endChar": 127
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.28,
+          "startChar": 129,
+          "endChar": 139
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.52,
+          "startChar": 140,
+          "endChar": 143
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 12.0,
+          "startChar": 144,
+          "endChar": 152
+        }
+      ]
+    },
+    {
+      "id": "tutorial-deploy-app-04",
+      "markerIndex": 3,
+      "replayStartSec": 123.719014,
+      "replayEndSec": 179.687714,
+      "narrationText": "Проверяем с помощью docker ps. Обратите внимание: этот вид показывает только контейнеры нашего репозитория. У других репозиториев на том же сервере собственные Docker-демоны, отсюда они полностью невидимы.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-04.adeed2d0.mp3",
+      "audioDurationSec": 14.445714,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 12,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 160,
+          "endChar": 166
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.8,
+          "startChar": 198,
+          "endChar": 201
+        }
+      ]
+    }
+  ]
+}

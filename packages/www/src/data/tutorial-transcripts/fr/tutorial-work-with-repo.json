@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-work-with-repo.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-work-with-repo-01",
+      "markerIndex": 0,
+      "at": 93.14728,
+      "text": "D'abord, la commande tunnel. L'application tourne sur le serveur, pas sur votre ordinateur. La commande tunnel transfère le port d'un conteneur via SSH pour que vous puissiez l'ouvrir à localhost dans votre navigateur."
+    },
+    {
+      "id": "tutorial-work-with-repo-02",
+      "markerIndex": 1,
+      "at": 103.393386,
+      "text": "Ensuite, la commande term. La commande de connexion terminal vous plonge dans le sandbox du dépôt, la même vue isolée que VS Code. Exécutez n'importe quelle commande contre le daemon Docker de ce dépôt sans quitter votre terminal."
+    },
+    {
+      "id": "tutorial-work-with-repo-03",
+      "markerIndex": 2,
+      "at": 120.858492,
+      "text": "Avant de pousser des fichiers, voyons d'abord la prévisualisation avec le flag dry-run. Elle montre exactement ce qui changerait sans rien copier. Prévisualisez toujours quand vous n'êtes pas sûr."
+    },
+    {
+      "id": "tutorial-work-with-repo-04",
+      "markerIndex": 3,
+      "at": 137.357072,
+      "text": "Maintenant nous lançons le vrai téléversement. La commande de synchronisation déplace les fichiers de votre ordinateur vers le dépôt via SSH, avec la compression delta de rsync. Tunnel, term, sync, trois commandes couvrent la boucle quotidienne."
+    }
+  ]
+}

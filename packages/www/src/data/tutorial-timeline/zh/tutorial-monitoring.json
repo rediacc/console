@@ -1,0 +1,1520 @@
+{
+  "cast": "/assets/tutorials/tutorial-monitoring.cast",
+  "language": "zh",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "d1addede39f5647984659f2df4e009de46802c6cd4109906b8bf0d235ddde1bc",
+  "steps": [
+    {
+      "id": "tutorial-monitoring-01",
+      "markerIndex": 0,
+      "replayStartSec": 102.949897,
+      "replayEndSec": 114.069314,
+      "narrationText": "让我们从系统视图开始。机器查询命令加上 system 过滤器会显示运行时间、磁盘使用情况和存储状态。如果有异常，报告会告诉我们。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-monitoring/tutorial-monitoring-01.dd143188.mp3",
+      "audioDurationSec": 12.512653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.32,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.4,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.72,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.36,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.6,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.08,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.96,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.2,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.52,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.84,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.24,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.88,
+          "startChar": 20,
+          "endChar": 26
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 4.96,
+          "startChar": 27,
+          "endChar": 28
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.12,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.68,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.92,
+          "startChar": 31,
+          "endChar": 32
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.16,
+          "startChar": 32,
+          "endChar": 33
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.32,
+          "startChar": 33,
+          "endChar": 34
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.56,
+          "startChar": 34,
+          "endChar": 35
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.72,
+          "startChar": 35,
+          "endChar": 36
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.04,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.6,
+          "startChar": 38,
+          "endChar": 39
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 7.84,
+          "startChar": 39,
+          "endChar": 40
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.0,
+          "startChar": 40,
+          "endChar": 41
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.16,
+          "startChar": 41,
+          "endChar": 42
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.4,
+          "startChar": 42,
+          "endChar": 43
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.64,
+          "startChar": 43,
+          "endChar": 44
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.96,
+          "startChar": 44,
+          "endChar": 45
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.2,
+          "startChar": 45,
+          "endChar": 46
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.44,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.6,
+          "startChar": 47,
+          "endChar": 48
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 9.84,
+          "startChar": 48,
+          "endChar": 49
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.4,
+          "startChar": 50,
+          "endChar": 51
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.56,
+          "startChar": 51,
+          "endChar": 52
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.72,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.88,
+          "startChar": 53,
+          "endChar": 54
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.2,
+          "startChar": 54,
+          "endChar": 55
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.44,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.6,
+          "startChar": 57,
+          "endChar": 58
+        },
+        {
+          "startSec": 11.6,
+          "endSec": 11.84,
+          "startChar": 58,
+          "endChar": 59
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.08,
+          "startChar": 59,
+          "endChar": 60
+        },
+        {
+          "startSec": 12.08,
+          "endSec": 12.24,
+          "startChar": 60,
+          "endChar": 61
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.32,
+          "startChar": 61,
+          "endChar": 62
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.4,
+          "startChar": 62,
+          "endChar": 63
+        }
+      ]
+    },
+    {
+      "id": "tutorial-monitoring-02",
+      "markerIndex": 1,
+      "replayStartSec": 114.069314,
+      "replayEndSec": 126.082986,
+      "narrationText": "现在查看容器。这个视图列出机器上每个仓库中所有运行中的容器，包括名称、状态、健康检查、CPU、内存，以及所属仓库。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-monitoring/tutorial-monitoring-02.b5f792d7.mp3",
+      "audioDurationSec": 12.930612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.48,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.28,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.0,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.08,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.56,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.72,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.96,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.12,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.28,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.6,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.84,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 3.92,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.16,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.64,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.96,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.12,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.28,
+          "startChar": 23,
+          "endChar": 24
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.44,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.6,
+          "startChar": 25,
+          "endChar": 26
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.68,
+          "startChar": 26,
+          "endChar": 27
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.92,
+          "startChar": 27,
+          "endChar": 28
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.24,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.64,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.96,
+          "startChar": 31,
+          "endChar": 32
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.12,
+          "startChar": 32,
+          "endChar": 33
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.44,
+          "startChar": 33,
+          "endChar": 34
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.92,
+          "startChar": 35,
+          "endChar": 36
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.16,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.8,
+          "startChar": 38,
+          "endChar": 39
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 8.96,
+          "startChar": 39,
+          "endChar": 40
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.2,
+          "startChar": 40,
+          "endChar": 41
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.52,
+          "startChar": 41,
+          "endChar": 42
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.4,
+          "startChar": 43,
+          "endChar": 46
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.88,
+          "startChar": 47,
+          "endChar": 48
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.28,
+          "startChar": 48,
+          "endChar": 49
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.68,
+          "startChar": 50,
+          "endChar": 51
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 12.0,
+          "startChar": 51,
+          "endChar": 52
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.24,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.4,
+          "startChar": 53,
+          "endChar": 54
+        },
+        {
+          "startSec": 12.4,
+          "endSec": 12.64,
+          "startChar": 54,
+          "endChar": 55
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 12.8,
+          "startChar": 55,
+          "endChar": 56
+        }
+      ]
+    },
+    {
+      "id": "tutorial-monitoring-03",
+      "markerIndex": 2,
+      "replayStartSec": 126.082986,
+      "replayEndSec": 138.182721,
+      "narrationText": "然后是仓库本身。大小、挂载状态、Docker 守护进程状态、磁盘使用情况，机器上每个隔离环境的所有必要信息一览无余。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-monitoring/tutorial-monitoring-03.89a53d7f.mp3",
+      "audioDurationSec": 11.72898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.4,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.72,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.88,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.44,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.08,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.48,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.64,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.8,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.04,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.28,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.24,
+          "startChar": 16,
+          "endChar": 22
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.48,
+          "startChar": 23,
+          "endChar": 24
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.64,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.8,
+          "startChar": 25,
+          "endChar": 26
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.96,
+          "startChar": 26,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.2,
+          "startChar": 27,
+          "endChar": 28
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.44,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.08,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.32,
+          "startChar": 31,
+          "endChar": 32
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.4,
+          "startChar": 32,
+          "endChar": 33
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.56,
+          "startChar": 33,
+          "endChar": 34
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.8,
+          "startChar": 34,
+          "endChar": 35
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.04,
+          "startChar": 35,
+          "endChar": 36
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.68,
+          "startChar": 37,
+          "endChar": 38
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.76,
+          "startChar": 38,
+          "endChar": 39
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.08,
+          "startChar": 39,
+          "endChar": 40
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.32,
+          "startChar": 40,
+          "endChar": 41
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.48,
+          "startChar": 41,
+          "endChar": 42
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.64,
+          "startChar": 42,
+          "endChar": 43
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.8,
+          "startChar": 43,
+          "endChar": 44
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.04,
+          "startChar": 44,
+          "endChar": 45
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.28,
+          "startChar": 45,
+          "endChar": 46
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.36,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.68,
+          "startChar": 47,
+          "endChar": 48
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 9.92,
+          "startChar": 48,
+          "endChar": 49
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.08,
+          "startChar": 49,
+          "endChar": 50
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.24,
+          "startChar": 50,
+          "endChar": 51
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.48,
+          "startChar": 51,
+          "endChar": 52
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.88,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.04,
+          "startChar": 53,
+          "endChar": 54
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.28,
+          "startChar": 54,
+          "endChar": 55
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.44,
+          "startChar": 55,
+          "endChar": 56
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.68,
+          "startChar": 56,
+          "endChar": 57
+        }
+      ]
+    },
+    {
+      "id": "tutorial-monitoring-04",
+      "markerIndex": 3,
+      "replayStartSec": 138.182721,
+      "replayEndSec": 149.8205,
+      "narrationText": "机器查询命令一次性给你所有信息：系统信息、容器、仓库，全部汇聚在一起。运行一次即可得到完整全貌。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-monitoring/tutorial-monitoring-04.c4bdc94c.mp3",
+      "audioDurationSec": 9.639184,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.4,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.72,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.28,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.08,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.64,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.96,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.28,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.44,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.6,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.92,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.32,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.56,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.88,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.12,
+          "startChar": 25,
+          "endChar": 26
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.6,
+          "startChar": 27,
+          "endChar": 28
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.76,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.0,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.08,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.24,
+          "startChar": 31,
+          "endChar": 32
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.4,
+          "startChar": 32,
+          "endChar": 33
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.64,
+          "startChar": 33,
+          "endChar": 34
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.2,
+          "startChar": 35,
+          "endChar": 36
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.36,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.52,
+          "startChar": 37,
+          "endChar": 38
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.84,
+          "startChar": 38,
+          "endChar": 39
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.0,
+          "startChar": 39,
+          "endChar": 40
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.16,
+          "startChar": 40,
+          "endChar": 41
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.32,
+          "startChar": 41,
+          "endChar": 42
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.56,
+          "startChar": 42,
+          "endChar": 43
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.88,
+          "startChar": 43,
+          "endChar": 44
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.12,
+          "startChar": 44,
+          "endChar": 45
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.28,
+          "startChar": 45,
+          "endChar": 46
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.52,
+          "startChar": 46,
+          "endChar": 47
+        }
+      ]
+    },
+    {
+      "id": "tutorial-monitoring-05",
+      "markerIndex": 4,
+      "replayStartSec": 149.8205,
+      "replayEndSec": 198.111981,
+      "narrationText": "最后是诊断检查，对笔记本进行本地健康检查。Node、SSH 密钥、renet、Docker，命令行工具自身所依赖的一切。这就是完整的系列教程，从安装到监控，全从终端完成。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-monitoring/tutorial-monitoring-05.4041af3e.mp3",
+      "audioDurationSec": 17.867755,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.48,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.8,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.36,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.68,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.08,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.4,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.64,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.88,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.12,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.44,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.6,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.84,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.08,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.24,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.56,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.56,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.88,
+          "startChar": 31,
+          "endChar": 32
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.64,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.8,
+          "startChar": 47,
+          "endChar": 48
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.28,
+          "startChar": 49,
+          "endChar": 50
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.52,
+          "startChar": 50,
+          "endChar": 51
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.76,
+          "startChar": 51,
+          "endChar": 52
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.0,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.32,
+          "startChar": 53,
+          "endChar": 54
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.48,
+          "startChar": 54,
+          "endChar": 55
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.64,
+          "startChar": 55,
+          "endChar": 56
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 10.72,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.88,
+          "startChar": 57,
+          "endChar": 58
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.2,
+          "startChar": 58,
+          "endChar": 59
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.76,
+          "startChar": 60,
+          "endChar": 61
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 11.84,
+          "startChar": 61,
+          "endChar": 62
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.0,
+          "startChar": 62,
+          "endChar": 63
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.32,
+          "startChar": 63,
+          "endChar": 64
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.56,
+          "startChar": 64,
+          "endChar": 65
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 12.64,
+          "startChar": 65,
+          "endChar": 66
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 12.8,
+          "startChar": 66,
+          "endChar": 67
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 12.96,
+          "startChar": 67,
+          "endChar": 68
+        },
+        {
+          "startSec": 12.96,
+          "endSec": 13.2,
+          "startChar": 68,
+          "endChar": 69
+        },
+        {
+          "startSec": 13.2,
+          "endSec": 13.6,
+          "startChar": 69,
+          "endChar": 70
+        },
+        {
+          "startSec": 13.84,
+          "endSec": 14.24,
+          "startChar": 71,
+          "endChar": 72
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.48,
+          "startChar": 72,
+          "endChar": 73
+        },
+        {
+          "startSec": 14.48,
+          "endSec": 14.8,
+          "startChar": 73,
+          "endChar": 74
+        },
+        {
+          "startSec": 15.04,
+          "endSec": 15.28,
+          "startChar": 74,
+          "endChar": 75
+        },
+        {
+          "startSec": 15.28,
+          "endSec": 15.52,
+          "startChar": 75,
+          "endChar": 76
+        },
+        {
+          "startSec": 15.52,
+          "endSec": 15.84,
+          "startChar": 76,
+          "endChar": 77
+        },
+        {
+          "startSec": 16.32,
+          "endSec": 16.56,
+          "startChar": 78,
+          "endChar": 79
+        },
+        {
+          "startSec": 16.56,
+          "endSec": 16.88,
+          "startChar": 79,
+          "endChar": 80
+        },
+        {
+          "startSec": 16.88,
+          "endSec": 17.12,
+          "startChar": 80,
+          "endChar": 81
+        },
+        {
+          "startSec": 17.12,
+          "endSec": 17.28,
+          "startChar": 81,
+          "endChar": 82
+        },
+        {
+          "startSec": 17.28,
+          "endSec": 17.52,
+          "startChar": 82,
+          "endChar": 83
+        },
+        {
+          "startSec": 17.52,
+          "endSec": 17.76,
+          "startChar": 83,
+          "endChar": 84
+        }
+      ]
+    }
+  ]
+}

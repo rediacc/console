@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">Three steps to install: open the install page, pick your OS, paste the install command</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .num { fill: #556b2f; }
+    .num-text { fill: #ffffff; font: 700 28px Inter, system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; }
+    .label { fill: #1a1a1a; font: 600 22px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .sub { fill: #5e5e5e; font: 400 16px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .connector { stroke: #cdcdcd; stroke-width: 2; fill: none; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+  <line class="connector" x1="200" y1="270" x2="760" y2="270"/>
+  <g transform="translate(160 270)">
+    <circle class="num" r="46"/>
+    <text class="num-text">1</text>
+  </g>
+  <text class="label" x="160" y="370">Open the install page</text>
+  <text class="sub" x="160" y="400">/install</text>
+  <g transform="translate(480 270)">
+    <circle class="num" r="46"/>
+    <text class="num-text">2</text>
+  </g>
+  <text class="label" x="480" y="370">Pick your OS</text>
+  <text class="sub" x="480" y="400">Linux · macOS · Windows</text>
+  <g transform="translate(800 270)">
+    <circle class="num" r="46"/>
+    <text class="num-text">3</text>
+  </g>
+  <text class="label" x="800" y="370">Paste the command</text>
+  <text class="sub" x="800" y="400">in your terminal</text>
+</svg>

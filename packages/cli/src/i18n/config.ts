@@ -6,15 +6,33 @@ import arCli from './locales/ar/cli.json' with { type: 'json' };
 import deCli from './locales/de/cli.json' with { type: 'json' };
 import enCli from './locales/en/cli.json' with { type: 'json' };
 import esCli from './locales/es/cli.json' with { type: 'json' };
+import etCli from './locales/et/cli.json' with { type: 'json' };
 import frCli from './locales/fr/cli.json' with { type: 'json' };
+import itCli from './locales/it/cli.json' with { type: 'json' };
 import jaCli from './locales/ja/cli.json' with { type: 'json' };
+import koCli from './locales/ko/cli.json' with { type: 'json' };
+import ptCli from './locales/pt/cli.json' with { type: 'json' };
 import ruCli from './locales/ru/cli.json' with { type: 'json' };
 import trCli from './locales/tr/cli.json' with { type: 'json' };
 import zhCli from './locales/zh/cli.json' with { type: 'json' };
 
 // Import shared translations from @rediacc/shared
 
-export const SUPPORTED_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'] as const;
+export const SUPPORTED_LANGUAGES = [
+  'en',
+  'de',
+  'es',
+  'fr',
+  'ja',
+  'ar',
+  'ru',
+  'tr',
+  'zh',
+  'et',
+  'ko',
+  'pt',
+  'it',
+] as const;
 type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 // Get all shared translations
@@ -30,6 +48,10 @@ const resources = {
   ru: { cli: ruCli, [SHARED_NAMESPACE]: sharedTranslations.ru },
   tr: { cli: trCli, [SHARED_NAMESPACE]: sharedTranslations.tr },
   zh: { cli: zhCli, [SHARED_NAMESPACE]: sharedTranslations.zh },
+  et: { cli: etCli, [SHARED_NAMESPACE]: sharedTranslations.et },
+  ko: { cli: koCli, [SHARED_NAMESPACE]: sharedTranslations.ko },
+  pt: { cli: ptCli, [SHARED_NAMESPACE]: sharedTranslations.pt },
+  it: { cli: itCli, [SHARED_NAMESPACE]: sharedTranslations.it },
 };
 
 // Initialize i18n synchronously with English at module load time.

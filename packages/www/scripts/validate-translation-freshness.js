@@ -10,7 +10,20 @@ import matter from 'gray-matter';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 
-export const SUPPORTED_LANGUAGES = ['de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'];
+export const SUPPORTED_LANGUAGES = [
+  'de',
+  'es',
+  'fr',
+  'ja',
+  'ar',
+  'ru',
+  'tr',
+  'zh',
+  'et',
+  'ko',
+  'pt',
+  'it',
+];
 const COLLECTIONS = ['docs', 'blog'];
 const SOURCE_PREFIX_RE = /^packages\/www\/src\/content\/(docs|blog)\/en\/.+\.mdx?$/;
 // The cli/ directory is auto-generated from CLI --help output and cannot be

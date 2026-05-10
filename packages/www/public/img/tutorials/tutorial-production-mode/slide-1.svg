@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">Three actions take an app from dev to production: stop the dev session, start with rdc, enable autostart</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .card { fill: #ffffff; stroke: #cdcdcd; stroke-width: 2; rx: 14; ry: 14; }
+    .icon-stroke { fill: none; stroke: #556b2f; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-fill { fill: #eef2e6; stroke: #556b2f; stroke-width: 2.5; }
+    .title { fill: #1a1a1a; font: 700 22px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .cmd { fill: #5e5e5e; font: 400 14px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .desc { fill: #5e5e5e; font: 400 14px Inter, system-ui, sans-serif; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <!-- Stop -->
+  <rect class="card" x="60" y="120" width="260" height="300"/>
+  <g transform="translate(150 170)">
+    <rect class="icon-stroke" x="0" y="0" width="84" height="84" rx="12"/>
+    <rect class="icon-fill" x="22" y="22" width="40" height="40"/>
+  </g>
+  <text class="title" x="190" y="312">Stop</text>
+  <text class="desc" x="190" y="340">end the dev session</text>
+  <text class="cmd" x="190" y="380">renet dev down</text>
+
+  <!-- Start -->
+  <rect class="card" x="350" y="120" width="260" height="300"/>
+  <g transform="translate(440 170)">
+    <circle class="icon-stroke" cx="42" cy="42" r="42"/>
+    <polygon class="icon-fill" points="32,22 32,62 64,42"/>
+  </g>
+  <text class="title" x="480" y="312">Start</text>
+  <text class="desc" x="480" y="340">production, detached</text>
+  <text class="cmd" x="480" y="380">rdc repo up</text>
+
+  <!-- Autostart -->
+  <rect class="card" x="640" y="120" width="260" height="300"/>
+  <g transform="translate(728 170)">
+    <!-- circular arrow -->
+    <path class="icon-stroke" d="M 70 42 a 28 28 0 1 0 -8 20"/>
+    <polyline class="icon-stroke" points="62,52 62,68 78,68"/>
+  </g>
+  <text class="title" x="770" y="312">Autostart</text>
+  <text class="desc" x="770" y="340">survive reboots</text>
+  <text class="cmd" x="770" y="380">rdc repo autostart enable</text>
+</svg>

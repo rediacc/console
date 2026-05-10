@@ -1,0 +1,89 @@
+---
+title: "Backup e Restauro"
+description: "Envie o seu repositório para armazenamento externo e restaure-o num novo servidor quando precisar."
+category: "Tutorials"
+subcategory: advanced
+order: 11
+language: pt
+sourceHash: "8b48f3b19352aebe"
+---
+
+# Backup e Restauro
+
+A sua aplicação está em produção. Agora certifique-se de que nunca a perde. O `rdc` pode enviar o seu repositório inteiro -- aplicação, base de dados, ficheiros, configurações -- para armazenamento externo e recuperá-lo a qualquer momento. Sobreviva a ransomware, falhas de hardware, qualquer coisa.
+
+## Ver o tutorial
+
+![Tutorial: Backup and restore](/assets/tutorials/tutorial-backup-restore.cast)
+
+## Três passos
+
+![Configure, push, restore](/img/tutorials/tutorial-backup-restore/slide-1.svg)
+
+1. **Configure** um fornecedor de armazenamento.
+2. **Envie** um backup.
+3. **Restaure** quando precisar.
+
+## Passo 1: Configurar o armazenamento
+
+Precisa de um ficheiro de configuração `rclone`. Se já usa rclone, importe-o diretamente:
+
+```bash
+time rdc config storage import --file rclone.conf
+```
+
+Suporta S3, B2, Google Drive, Dropbox e muitos mais. Verifique o que está configurado:
+
+```bash
+time rdc config storage list
+```
+
+## Passo 2: Enviar um backup
+
+```bash
+time rdc repo push --name my-app -m my-server --to my-storage
+```
+
+O seu repositório inteiro -- aplicação, base de dados, ficheiros, tudo -- está agora em backup. Como o próprio repositório é encriptado, o backup também é encriptado. Sem gestão de chaves adicional.
+
+Liste os seus backups a qualquer momento:
+
+```bash
+time rdc repo backup list --from my-storage -m my-server
+```
+
+## Porquê sem interrupção?
+
+A aplicação continua a funcionar enquanto o backup é enviado. Como é que isso é consistente?
+
+A mesma lógica de um [fork](/pt/docs/tutorial-forking). O `rdc` faz primeiro um fork e depois envia esse fork. O fork captura o momento; a sua aplicação em produção continua. Sem interrupção, sem inconsistência.
+
+## Passo 3: Restaurar num novo servidor
+
+Imaginemos que o seu servidor falha. Configure um novo servidor, adicione-o ao `rdc` e faça o pull:
+
+```bash
+time rdc repo pull --name my-app -m new-server --from my-storage
+```
+
+Depois inicie-o:
+
+```bash
+time rdc repo up --name my-app -m new-server
+```
+
+A sua aplicação está de volta. Os mesmos dados, os mesmos contentores, uma máquina diferente.
+
+## Backups mais rápidos: máquina para máquina
+
+Também pode enviar diretamente entre máquinas, sem armazenamento na nuvem pelo meio:
+
+```bash
+time rdc repo push --name my-app -m my-server --to-machine backup-server
+```
+
+> **Dica profissional.** Os uploads para armazenamento enviam sempre tudo. De máquina para máquina envia-se apenas a diferença. O primeiro envio máquina-a-máquina demora o tempo habitual, mas todos os seguintes são muito mais rápidos -- ótimo para backups frequentes.
+
+---
+
+Próximo: [Monitorização](/pt/docs/tutorial-monitoring).

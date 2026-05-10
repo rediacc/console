@@ -923,6 +923,12 @@
               "descriptionKey": "options.querySyncCerts",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--strict",
+              "descriptionKey": "options.queryStrict",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [],

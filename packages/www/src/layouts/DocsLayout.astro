@@ -697,7 +697,7 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
     .docs-shell {
       max-width: 1400px;
       margin: 0 auto;
-      padding: calc(var(--nav-height) + var(--space-4)) var(--space-4) var(--space-8) var(--space-4);
+      padding: calc(var(--nav-top-offset) + var(--space-4)) var(--space-4) var(--space-8) var(--space-4);
       font-family: 'Inter', var(--font-family);
       --sidebar-top-offset: calc(3rem + var(--space-4) + var(--space-4));
     }
@@ -733,7 +733,7 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       display: block;
       margin-bottom: var(--space-4);
       position: sticky;
-      top: var(--nav-height);
+      top: var(--nav-top-offset);
       z-index: 10;
       background: var(--color-bg-alt);
     }
@@ -1129,7 +1129,7 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
 
     @media (max-width: 48rem) {
       .docs-shell {
-        padding: calc(var(--nav-height) + var(--space-3)) var(--space-2) var(--space-4) var(--space-2);
+        padding: calc(var(--nav-top-offset) + var(--space-3)) var(--space-2) var(--space-4) var(--space-2);
       }
 
       .docs-header-row {

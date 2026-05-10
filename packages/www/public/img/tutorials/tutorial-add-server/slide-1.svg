@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">rdc on your laptop drives renet on your server over SSH</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .box { fill: #ffffff; stroke: #cdcdcd; stroke-width: 2; rx: 12; ry: 12; }
+    .accent-box { fill: #eef2e6; stroke: #556b2f; stroke-width: 2; rx: 12; ry: 12; }
+    .icon-stroke { fill: none; stroke: #1a1a1a; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .role { fill: #5e5e5e; font: 400 14px Inter, system-ui, sans-serif; text-anchor: middle; letter-spacing: 0.08em; text-transform: uppercase; }
+    .title { fill: #1a1a1a; font: 700 26px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .sub { fill: #5e5e5e; font: 400 16px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .desc { fill: #1a1a1a; font: 400 14px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .edge { stroke: #556b2f; stroke-width: 2.5; fill: none; stroke-dasharray: 6 5; }
+    .edge-label { fill: #556b2f; font: 600 16px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <!-- Laptop -->
+  <text class="role" x="240" y="120">CLI</text>
+  <rect class="box" x="100" y="140" width="280" height="240"/>
+  <g transform="translate(180 184)">
+    <rect class="icon-stroke" x="0" y="0" width="120" height="76" rx="6"/>
+    <line class="icon-stroke" x1="-15" y1="86" x2="135" y2="86"/>
+  </g>
+  <text class="title" x="240" y="320">rdc</text>
+  <text class="sub" x="240" y="346">your laptop</text>
+  <text class="desc" x="240" y="412">type commands here</text>
+
+  <!-- Server -->
+  <text class="role" x="720" y="120">orchestrator</text>
+  <rect class="accent-box" x="580" y="140" width="280" height="240"/>
+  <g transform="translate(660 178)">
+    <rect class="icon-stroke" x="0" y="0" width="120" height="28" rx="4"/>
+    <circle class="icon-stroke" cx="14" cy="14" r="3"/>
+    <rect class="icon-stroke" x="0" y="40" width="120" height="28" rx="4"/>
+    <circle class="icon-stroke" cx="14" cy="54" r="3"/>
+    <rect class="icon-stroke" x="0" y="80" width="120" height="28" rx="4"/>
+    <circle class="icon-stroke" cx="14" cy="94" r="3"/>
+  </g>
+  <text class="title" x="720" y="328">renet</text>
+  <text class="sub" x="720" y="354">your server</text>
+  <text class="desc" x="720" y="412">encryption · Docker · isolation</text>
+
+  <!-- SSH connection -->
+  <path class="edge" d="M 380 250 L 580 250" marker-end="url(#arr)"/>
+  <path class="edge" d="M 580 280 L 380 280" marker-end="url(#arr)"/>
+  <rect x="450" y="222" width="60" height="36" fill="#f7f7f6"/>
+  <text class="edge-label" x="480" y="246">ssh</text>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#556b2f"/>
+    </marker>
+  </defs>
+</svg>

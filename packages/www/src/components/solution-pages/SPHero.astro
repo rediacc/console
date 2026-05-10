@@ -1,6 +1,7 @@
 ---
 import type { Language } from '../../i18n/types';
 import { createTranslator } from '../../i18n/utils';
+import { isDesignPartnerProgramActive } from '../../utils/design-partner-program';
 import SPTerminalMockup from './SPTerminalMockup.astro';
 import TeamVideoPlayer from '../TeamVideoPlayer';
 import YouTubeEmbed from '../YouTubeEmbed.astro';
@@ -31,6 +32,13 @@ interface Props {
 const { lang, hero, ctaHref, secondaryCtaHref, terminal, teamVideo, youtubeVideoId } = Astro.props;
 const { t } = createTranslator(lang);
 const hasSplit = !!teamVideo || !!youtubeVideoId;
+
+// Design Partner Program: override the primary hero CTA to point at /account/
+// with the unified "Claim Design Partner" copy. Picks up the same picker
+// click handler via [data-design-partner-claim] (bound in CfPricingCard.astro).
+const dpActive = isDesignPartnerProgramActive();
+const dpCtaHref = dpActive ? '/account/' : ctaHref;
+const dpCtaLabel = dpActive ? t('pages.pricing.ui.designPartner.cta') : hero.primaryCta;
 ---
 
 <section class:list={['sp-hero', { 'sp-hero--split': hasSplit }]}>
@@ -46,8 +54,12 @@ const hasSplit = !!teamVideo || !!youtubeVideoId;
         <p class="sp-hero-differentiator">{hero.differentiator}</p>
       )}
       <div class="sp-hero-ctas">
-        <a href={ctaHref} class="sp-btn-primary">
-          {hero.primaryCta}
+        {/* @ci marker: scripts/check-cta-bolt-uniqueness.js asserts every page
+            containing this comment has exactly one .cta-bolt button. Emitted
+            only when the program is on so the check skips itself when off. */}
+        {dpActive && <Fragment set:html={'<!--@ci cta-bolt-required-->'} />}
+        <a href={dpCtaHref} class:list={['sp-btn-primary', dpActive && 'cta-bolt']} {...(dpActive ? { 'data-design-partner-claim': true } : {})}>
+          {dpCtaLabel}
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
         {hero.secondaryCta && (

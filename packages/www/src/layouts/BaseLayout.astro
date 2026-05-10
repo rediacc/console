@@ -1,5 +1,6 @@
 ---
 import Navigation from '../components/Navigation';
+import AnnouncementBar from '../components/AnnouncementBar.astro';
 import ContactModal from '../components/ContactModal';
 import RegionPickerModal from '../components/RegionPickerModal';
 import Footer from '../components/Footer';
@@ -9,6 +10,7 @@ import StructuredData from '../components/StructuredData.astro';
 import { createTranslator } from '../i18n/utils';
 import { getLanguageFromPath, getPathWithoutLanguage, SUPPORTED_LANGUAGES, getLocale, getHreflang } from '../i18n/language-utils';
 import type { Language } from '../i18n/types';
+import { isDesignPartnerProgramActive } from '../utils/design-partner-program';
 // ViewTransitions is now built-in in Astro 5+ via meta tag
 
 export interface Props {
@@ -50,6 +52,13 @@ const finalDescription = description || t('layout.meta.defaultDescription');
 const finalKeywords = keywords || t('layout.meta.defaultKeywords');
 const finalOgDescription = ogDescription || finalDescription;
 
+// Design Partner Program: prepend a per-locale promo prefix to og/twitter
+// title + description so social shares always carry the offer. No-op when
+// the program is disabled. Toggled via announcement.enabled in en.json.
+const dpActive = isDesignPartnerProgramActive();
+const dpOgTitle = dpActive ? `${t('layout.meta.designPartner.ogPrefix')} — ${ogTitle}` : ogTitle;
+const dpOgDescription = dpActive ? `${t('layout.meta.designPartner.ogDescPrefix')} ${finalOgDescription}` : finalOgDescription;
+
 // Use current origin in development, production site in build
 const baseURL = import.meta.env.DEV ? Astro.url.origin : Astro.site;
 const canonicalURL = canonical ? canonical : new URL(Astro.url.pathname, baseURL);
@@ -82,8 +91,8 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content={ogType}>
-    <meta property="og:title" content={ogTitle}>
-    <meta property="og:description" content={finalOgDescription}>
+    <meta property="og:title" content={dpOgTitle}>
+    <meta property="og:description" content={dpOgDescription}>
     <meta property="og:image" content={ogImage}>
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -93,8 +102,8 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content={ogTitle}>
-    <meta name="twitter:description" content={ogDescription}>
+    <meta name="twitter:title" content={dpOgTitle}>
+    <meta name="twitter:description" content={dpOgDescription}>
     <meta name="twitter:image" content={ogImage}>
     <meta name="twitter:site" content={t('layout.meta.twitter.site')}>
     <meta name="twitter:creator" content={t('layout.meta.twitter.creator')}>
@@ -290,6 +299,9 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
         --space-24: 6rem;
         --max-width: 1200px;
         --nav-height: 3.5rem;
+        --nav-top-offset: calc(var(--nav-height) + var(--announcement-bar-height, 0px));
+        --color-brand-bolt: #DC2626;
+        --color-brand-bolt-hover: #B91C1C;
       }
 
       /* Critical dark theme overrides */
@@ -415,6 +427,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
       <a href="#footer" class="skip-nav-link">{t('common.skipNavigation.skipToFooter')}</a>
     </div>
 
+    <AnnouncementBar lang={currentLang} />
     <Navigation origin={Astro.url.origin} client:idle />
     <main id="main-content">
         <slot />
@@ -430,6 +443,44 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <script src="/scripts/search-hotkey.js" is:inline></script>
     <script src="/scripts/scroll-reveal.js" is:inline></script>
     <script src="/scripts/tracker.js" is:inline></script>
+    <script is:inline>
+      // Design Partner Program: every [data-design-partner-claim] anchor
+      // points to /account/. On regional subdomains the anchor navigates
+      // directly. On www.rediacc.com (or dev / any non-regional host) we
+      // intercept the click and open the region picker so the user picks
+      // their data region before signing up. Lives in BaseLayout so the
+      // binding runs on every page (persona pages, 404, design-partners,
+      // etc.) — not just pages that include CfPricingCard.
+      (function () {
+        function bindDpClaim() {
+          var isRegionalForClaim = /\b(eu|us|asia)\.rediacc\.com\b/.test(window.location.hostname);
+          var links = document.querySelectorAll('a[data-design-partner-claim]');
+          for (var i = 0; i < links.length; i++) {
+            var link = links[i];
+            if (link.dataset.dpClaimBound) continue;
+            link.dataset.dpClaimBound = 'true';
+            link.addEventListener('click', function (e) {
+              if (isRegionalForClaim) return;
+              e.preventDefault();
+              if (window.plausible) {
+                window.plausible('design_partner_claim', { props: { plan: this.dataset.trackDest || '' } });
+              }
+              if (window.openRegionPicker) {
+                window.openRegionPicker('/account/');
+              }
+            });
+          }
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', bindDpClaim);
+        } else {
+          bindDpClaim();
+        }
+        // Re-bind after Astro view-transition page loads (the new page may
+        // contain fresh CTAs that weren't in the document at first load).
+        document.addEventListener('astro:page-load', bindDpClaim);
+      })();
+    </script>
     <script is:inline>
       (function() {
         function hideEmbedChrome() {

@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-monitoring.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-monitoring-01",
+      "markerIndex": 0,
+      "at": 102.949897,
+      "text": "Sistem görünümüyle başlıyoruz. --system filtresiyle makine sorgu komutu, sistem çalışma süresi, disk kullanımı ve depolama durumunu gösterir. Bir sorun varsa rapor bizi bilgilendirir."
+    },
+    {
+      "id": "tutorial-monitoring-02",
+      "markerIndex": 1,
+      "at": 114.069314,
+      "text": "Şimdi container'lar. Bu görünüm, makinedeki her depodaki tüm çalışan container'ları listeler: ad, durum, sağlık, CPU, bellek ve her birinin hangi depoya ait olduğu."
+    },
+    {
+      "id": "tutorial-monitoring-03",
+      "markerIndex": 2,
+      "at": 126.082986,
+      "text": "Şimdi depoların kendisi. Boyut, bağlama durumu, Docker daemon durumu, disk kullanımı. Makinedeki her izole ortam hakkında bilmeniz gereken her şey."
+    },
+    {
+      "id": "tutorial-monitoring-04",
+      "markerIndex": 3,
+      "at": 138.182721,
+      "text": "Makine sorgu komutu her şeyi tek seferde verir. Sistem bilgisi, container'lar, depolar; hepsi bir arada. Bir kez çalıştırın; tam görünümü elde edin."
+    },
+    {
+      "id": "tutorial-monitoring-05",
+      "markerIndex": 4,
+      "at": 149.8205,
+      "text": "Son olarak dizüstü bilgisayarınızda yerel doğruluk kontrolü için tanı denetimi. Node, SSH anahtarı, renet, Docker; CLI'nin bağımlı olduğu her şey. Seri tamamlandı. Kurulumdan izlemeye kadar, hepsi terminalinizden."
+    }
+  ]
+}

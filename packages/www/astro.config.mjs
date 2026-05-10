@@ -58,7 +58,11 @@ export default defineConfig({
           ar: 'ar',
           ru: 'ru-RU',
           tr: 'tr-TR',
-          zh: 'zh-CN'
+          zh: 'zh-CN',
+          et: 'et-EE',
+          ko: 'ko-KR',
+          pt: 'pt-PT',
+          it: 'it-IT'
         }
       },
 
@@ -75,7 +79,7 @@ export default defineConfig({
         const url = item.url;
 
         // Homepage - highest priority
-        if (url.match(/\/(en|de|es|fr|ja|ar|ru|tr|zh)\/?$/)) {
+        if (url.match(/\/(en|de|es|fr|ja|ar|ru|tr|zh|et|ko|pt|it)\/?$/)) {
           item.priority = 1.0;
           item.changefreq = ChangeFreqEnum.WEEKLY;
         }

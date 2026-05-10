@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-work-with-repo.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-work-with-repo-01",
+      "markerIndex": 0,
+      "at": 93.14728,
+      "text": "第一个是 tunnel 命令。应用运行在服务器上，而不是你的笔记本上。隧道命令通过 SSH 转发容器端口，让你可以在浏览器中通过 localhost 访问它。"
+    },
+    {
+      "id": "tutorial-work-with-repo-02",
+      "markerIndex": 1,
+      "at": 103.393386,
+      "text": "第二个是 term 命令。终端连接命令让你进入仓库的沙盒内，视图与 VS Code 中看到的完全一样。无需离开终端，就能针对这个仓库的 Docker 守护进程运行任意命令。"
+    },
+    {
+      "id": "tutorial-work-with-repo-03",
+      "markerIndex": 2,
+      "at": 120.858492,
+      "text": "推送文件之前，先用 --dry-run 预览。它会显示将要变更的内容，而不实际复制任何东西。不确定时总是先预览。"
+    },
+    {
+      "id": "tutorial-work-with-repo-04",
+      "markerIndex": 3,
+      "at": 137.357072,
+      "text": "现在让我们正式执行上传。同步上传命令通过 SSH 将文件从笔记本移入仓库，使用 rsync 差量压缩。Tunnel、term、sync，三条命令覆盖日常循环。"
+    }
+  ]
+}

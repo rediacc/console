@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-installation-01",
+      "markerIndex": 0,
+      "at": 1.509194,
+      "text": "Önce CLI'nin kurulu olduğunu doğrulayalım. Versiyon bayrağı kurulu versiyonu yazdırır; böylece kurulumun tamamlandığını anlayabiliriz."
+    },
+    {
+      "id": "tutorial-installation-02",
+      "markerIndex": 1,
+      "at": 9.435981,
+      "text": "Şimdi tanı denetimini çalıştıralım. CLI'nin ihtiyaç duyduğu her bağımlılığı (Node, SSH, Docker, renet ikili dosyası) tek tek kontrol eder ve eksikleri bildirir. Temiz bir rapor, hazır olduğumuz anlamına gelir."
+    }
+  ]
+}

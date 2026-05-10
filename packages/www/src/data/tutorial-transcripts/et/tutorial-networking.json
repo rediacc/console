@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/tutorial-networking.cast",
+  "language": "et",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-networking-01",
+      "markerIndex": 0,
+      "at": 27.859436,
+      "text": "Teine samm. Ütleme CLI-le avaliku IP, baasdomäni, sertifikaadi e-posti ja Cloudflare API tokeni. Sertifikaadi e-post ja token on jagatud kõigi sinu masinate vahel, seega seadistad need ainult üks kord."
+    },
+    {
+      "id": "tutorial-networking-02",
+      "markerIndex": 1,
+      "at": 41.958746,
+      "text": "Kinnitame, et infrastruktuuri seaded on salvestatud. Avalik IP, baasdomeen, sertifikaadi e-post -- kõik on konfiguratsioonis nähtav."
+    },
+    {
+      "id": "tutorial-networking-03",
+      "markerIndex": 2,
+      "at": 51.564603,
+      "text": "Kolmas samm. Tõukame konfiguratsiooni serverisse. See loob DNS-kirjed Cloudflare'is automaatselt ja valmistab proksi konfiguratsiooni masinas ette."
+    },
+    {
+      "id": "tutorial-networking-04",
+      "markerIndex": 3,
+      "at": 70.626849,
+      "text": "Algab neljas samm. Loome väikese repositooriumi nimega infra. Siin hakkab proksi elama -- isoleeritud rakenduse repositooriumidest."
+    },
+    {
+      "id": "tutorial-networking-05",
+      "markerIndex": 4,
+      "at": 97.243945,
+      "text": "Rakendame sisseehitatud proksi malli. See sisaldab Traefikut koos Let's Encrypt ja Cloudflare DNS-01 väljakutsete konfiguratsiooniga, töövalmis."
+    },
+    {
+      "id": "tutorial-networking-06",
+      "markerIndex": 5,
+      "at": 112.494613,
+      "text": "Ja käivitame proksi. Traefik avastab sinu konteinerid iga viie sekundi järel. TLS sertifikaadid tulevad Let's Encryptist automaatselt. Sinu rakendus on nüüd internetis HTTPS kaudu kättesaadav."
+    }
+  ]
+}

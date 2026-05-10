@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-work-with-repo.cast",
+  "language": "es",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-work-with-repo-01",
+      "markerIndex": 0,
+      "at": 93.14728,
+      "text": "Primero, el comando tunnel. La app se ejecuta en el servidor, no en tu laptop. El comando repo tunnel del CLI reenvía el puerto de un contenedor por SSH para que puedas abrirlo en localhost en tu navegador."
+    },
+    {
+      "id": "tutorial-work-with-repo-02",
+      "markerIndex": 1,
+      "at": 103.393386,
+      "text": "Segundo, el comando term. El comando term connect del CLI te lleva dentro del sandbox del repo, la misma vista aislada que te daría VS Code. Ejecuta cualquier comando contra el Docker daemon de este repo sin salir de tu terminal."
+    },
+    {
+      "id": "tutorial-work-with-repo-03",
+      "markerIndex": 2,
+      "at": 120.858492,
+      "text": "Antes de subir archivos, usamos la previsualización con guion guion dry guion run. Muestra exactamente qué cambiaría sin copiar nada. Siempre previsualiza cuando no estés seguro."
+    },
+    {
+      "id": "tutorial-work-with-repo-04",
+      "markerIndex": 3,
+      "at": 137.357072,
+      "text": "Ahora ejecutamos la subida real. El comando repo sync upload del CLI mueve archivos desde tu laptop al repo por SSH con compresión delta de rsync. Tunnel, term, sync: tres comandos cubren el ciclo diario."
+    }
+  ]
+}

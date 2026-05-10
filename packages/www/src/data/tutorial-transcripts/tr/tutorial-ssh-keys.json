@@ -1,0 +1,31 @@
+{
+  "cast": "/assets/tutorials/tutorial-ssh-keys.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-ssh-keys-01",
+      "markerIndex": 0,
+      "at": 1.50929,
+      "text": "Birinci adım. Yeni bir ed25519 SSH anahtarı oluşturacağız. ed25519 modern standarttır: küçük, hızlı ve geniş destekli. Bunu ekleyeceğiniz her sunucu için yalnızca bir kez yapmanız yeterlidir."
+    },
+    {
+      "id": "tutorial-ssh-keys-02",
+      "markerIndex": 1,
+      "at": 8.723209,
+      "text": "İkinci adım. Genel anahtarı ssh-copy-id ile sunucuya kopyalıyoruz. Sunucu parolası son kez isteniyor. Bundan sonra o sunucu için parola ile kimlik doğrulama gerekmez."
+    },
+    {
+      "id": "tutorial-ssh-keys-03",
+      "markerIndex": 2,
+      "at": 16.253995,
+      "text": "Üçüncü adım. Anahtarı CLI'ye kaydediyoruz. Bundan itibaren her komut bu anahtarla kimlik doğrulaması yapar. Artık parola gerekmez, etkileşimli istemler de olmaz."
+    },
+    {
+      "id": "tutorial-ssh-keys-04",
+      "markerIndex": 3,
+      "at": 24.863027,
+      "text": "Yapılandırmanın anahtar yolunu doğru biçimde kaydettiğini doğruluyoruz. Bu kurulum artık bu yapılandırmaya eklediğiniz her makine için yeniden kullanılabilir."
+    }
+  ]
+}

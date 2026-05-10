@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/tutorial-networking.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-networking-01",
+      "markerIndex": 0,
+      "at": 27.859436,
+      "text": "İkinci adım. Komut satırından genel IP'yi, temel alan adını, sertifika e-postasını ve Cloudflare API token'ını giriyoruz. Sertifika e-postası ve token tüm makinelerinizde paylaşılır; yalnızca bir kez ayarlarsınız."
+    },
+    {
+      "id": "tutorial-networking-02",
+      "markerIndex": 1,
+      "at": 41.958746,
+      "text": "Altyapı ayarlarının kaydedildiğini doğruluyoruz. Genel IP, temel alan adı, sertifika e-postası; hepsi yapılandırmada görünüyor."
+    },
+    {
+      "id": "tutorial-networking-03",
+      "markerIndex": 2,
+      "at": 51.564603,
+      "text": "Üçüncü adım. Yapılandırmayı sunucuya gönderiyoruz. Bu komut, Cloudflare'de DNS kayıtlarını otomatik olarak oluşturur ve makinede proxy yapılandırmasını hazırlar."
+    },
+    {
+      "id": "tutorial-networking-04",
+      "markerIndex": 3,
+      "at": 70.626849,
+      "text": "Dördüncü adım başlıyor. infra adlı küçük bir depo oluşturuyoruz. Proxy burada yaşayacak; uygulama depolarından izole."
+    },
+    {
+      "id": "tutorial-networking-05",
+      "markerIndex": 4,
+      "at": 97.243945,
+      "text": "Yerleşik proxy şablonunu uyguluyoruz. Traefik ile birlikte Let's Encrypt ve Cloudflare DNS-01 doğrulaması için yapılandırma hazır olarak geliyor."
+    },
+    {
+      "id": "tutorial-networking-06",
+      "markerIndex": 5,
+      "at": 112.494613,
+      "text": "Proxy'yi ayağa kaldırıyoruz. Traefik, container'larınızı her beş saniyede bir keşfeder. TLS sertifikaları Let's Encrypt'ten otomatik olarak gelir. Uygulamanız artık HTTPS üzerinden internetten erişilebilir."
+    }
+  ]
+}

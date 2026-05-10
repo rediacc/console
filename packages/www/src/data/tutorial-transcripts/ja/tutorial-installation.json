@@ -1,0 +1,19 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation.cast",
+  "language": "ja",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-installation-01",
+      "markerIndex": 0,
+      "at": 1.509194,
+      "text": "まず、CLI がパスに追加されているか確認します。バージョンフラグを付けて CLI を実行すると、インストールされているバージョンが表示され、インストールが正常に完了したことを確認できます。"
+    },
+    {
+      "id": "tutorial-installation-02",
+      "markerIndex": 1,
+      "at": 9.435981,
+      "text": "次に、CLI の doctor コマンドを実行します。Node、SSH など、CLI が必要とする依存関係を順番にチェックし、不足しているものを報告します。問題なければサーバーを追加する準備が整っています。"
+    }
+  ]
+}

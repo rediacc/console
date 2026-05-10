@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/tutorial-networking.cast",
+  "language": "ar",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-networking-01",
+      "markerIndex": 0,
+      "at": 27.859436,
+      "text": "الخطوة الثانية. نُخبر الأداة بعنوان IP العام والنطاق الأساسي وبريد الشهادة ورمز Cloudflare API. يُشارَك بريد الشهادة والرمز عبر جميع أجهزتك، لذا تضبطهما مرة واحدة فقط."
+    },
+    {
+      "id": "tutorial-networking-02",
+      "markerIndex": 1,
+      "at": 41.958746,
+      "text": "نتأكد من حفظ إعدادات البنية التحتية. عنوان IP العام والنطاق الأساسي وبريد الشهادة، كلها ظاهرة في الإعداد."
+    },
+    {
+      "id": "tutorial-networking-03",
+      "markerIndex": 2,
+      "at": 51.564603,
+      "text": "الخطوة الثالثة. ندفع الإعداد إلى الخادم. هذا يُنشئ سجلات DNS على Cloudflare تلقائيًا ويُحضّر إعداد الوكيل على الجهاز."
+    },
+    {
+      "id": "tutorial-networking-04",
+      "markerIndex": 3,
+      "at": 70.626849,
+      "text": "تبدأ الخطوة الرابعة. ننشئ مستودعًا صغيرًا باسم infra. هنا سيعيش الوكيل، معزولًا عن مستودعات التطبيقات."
+    },
+    {
+      "id": "tutorial-networking-05",
+      "markerIndex": 4,
+      "at": 97.243945,
+      "text": "نطبّق قالب الوكيل المدمج. يحمل Traefik مع إعداد تحديات Let's Encrypt وCloudflare DNS-01، جاهز للاستخدام."
+    },
+    {
+      "id": "tutorial-networking-06",
+      "markerIndex": 5,
+      "at": 112.494613,
+      "text": "ونشغّل الوكيل. يكتشف Traefik حاوياتك كل خمس ثوانٍ. تأتي شهادات TLS من Let's Encrypt تلقائيًا. تطبيقك متاح الآن على الإنترنت عبر HTTPS."
+    }
+  ]
+}

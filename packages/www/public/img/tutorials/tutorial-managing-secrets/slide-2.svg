@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">Secrets are write-only: set returns OK, get returns a digest, never the plaintext value</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .vault { fill: #ffffff; stroke: #556b2f; stroke-width: 3; rx: 12; ry: 12; }
+    .vault-shade { fill: #eef2e6; }
+    .lock-stroke { fill: none; stroke: #556b2f; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .arrow-ok { stroke: #556b2f; stroke-width: 3; fill: none; }
+    .arrow-no { stroke: #b3372d; stroke-width: 3; fill: none; }
+    .strike { stroke: #b3372d; stroke-width: 3; fill: none; stroke-linecap: round; }
+    .label-ok { fill: #556b2f; font: 700 18px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .label-no { fill: #b3372d; font: 700 18px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .desc { fill: #5e5e5e; font: 400 15px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .closer { fill: #556b2f; font: 600 22px Inter, system-ui, sans-serif; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <!-- Vault -->
+  <g transform="translate(380 170)">
+    <rect class="vault-shade" x="6" y="6" width="200" height="200" rx="12"/>
+    <rect class="vault" x="0" y="0" width="200" height="200"/>
+    <!-- lock icon -->
+    <g transform="translate(80 60)">
+      <rect class="lock-stroke" x="0" y="40" width="40" height="36" rx="4"/>
+      <path class="lock-stroke" d="M 6 40 L 6 28 a 14 14 0 0 1 28 0 L 34 40"/>
+      <circle class="lock-stroke" cx="20" cy="58" r="4"/>
+    </g>
+    <text class="label-ok" x="100" y="186">vault</text>
+  </g>
+
+  <!-- Set arrow (in) -->
+  <path class="arrow-ok" d="M 130 230 L 370 230" marker-end="url(#ok)"/>
+  <text class="label-ok" x="250" y="218">set</text>
+  <text class="desc" x="250" y="262">writes the value</text>
+
+  <!-- Get arrow (out, blocked) -->
+  <path class="arrow-no" d="M 590 230 L 820 230" marker-end="url(#no)"/>
+  <line class="strike" x1="690" y1="210" x2="720" y2="250"/>
+  <text class="label-no" x="710" y="218">get → value</text>
+  <text class="desc" x="710" y="262">value never leaves</text>
+
+  <!-- Get → digest (allowed below) -->
+  <path class="arrow-ok" d="M 590 360 L 820 360" marker-end="url(#ok)"/>
+  <text class="label-ok" x="710" y="348">get → digest</text>
+  <text class="desc" x="710" y="392">prove it, don't read it</text>
+
+  <text class="closer" x="480" y="468">write-only by design</text>
+
+  <defs>
+    <marker id="ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#556b2f"/>
+    </marker>
+    <marker id="no" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b3372d"/>
+    </marker>
+  </defs>
+</svg>

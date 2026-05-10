@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-monitoring.cast",
+  "language": "et",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-monitoring-01",
+      "markerIndex": 0,
+      "at": 102.949897,
+      "text": "Alustame süsteemivaatega. CLI machine query süsteemifiltriga näitab tööaega, kettakasutust ja salvestuse olekut. Kui midagi on valesti, ütleb aruanne meile seda."
+    },
+    {
+      "id": "tutorial-monitoring-02",
+      "markerIndex": 1,
+      "at": 114.069314,
+      "text": "Nüüd konteinerid. See vaade loetleb kõik töötavad konteinerid kõigis masina repositooriumides -- nimi, olek, tervis, CPU, mälu, lisaks sellele, millisele repositooriumile igaüks kuulub."
+    },
+    {
+      "id": "tutorial-monitoring-03",
+      "markerIndex": 2,
+      "at": 126.082986,
+      "text": "Ja repositooriumid ise. Suurus, ühendamise olek, Dockeri deemoni olek, kettakasutus. Kõik, mida pead teadma iga isoleeritud keskkonna kohta masinas."
+    },
+    {
+      "id": "tutorial-monitoring-04",
+      "markerIndex": 3,
+      "at": 138.182721,
+      "text": "CLI machine query annab sulle kõik korraga. Süsteemiteave, konteinerid, repositooriumid, kõik koos. Käivita korra ja sul on täielik pilt."
+    },
+    {
+      "id": "tutorial-monitoring-05",
+      "markerIndex": 4,
+      "at": 149.8205,
+      "text": "Ja lõpuks CLI doctor kohaliku tervise kontrolliks sülearvutis. Node, SSH võti, renet, Docker -- kõik asjad, millest CLI ise sõltub. See on terve sari. Paigaldamisest monitoorimiseni, kõik sinu terminalist."
+    }
+  ]
+}

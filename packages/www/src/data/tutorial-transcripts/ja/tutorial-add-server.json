@@ -1,0 +1,37 @@
+{
+  "cast": "/assets/tutorials/tutorial-add-server.cast",
+  "language": "ja",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-add-server-01",
+      "markerIndex": 0,
+      "at": 1.508633,
+      "text": "まず、設定プロファイルを作成します。このプロファイルには、SSH キー、マシンリスト、およびこれ以降のすべての操作に使うインフラ設定が格納されます。"
+    },
+    {
+      "id": "tutorial-add-server-02",
+      "markerIndex": 1,
+      "at": 11.160728,
+      "text": "次に、名前、IP アドレス、SSH ユーザーを指定してサーバーを CLI に登録します。信頼されたアクセスのためにホストキーが自動的にスキャンされます。"
+    },
+    {
+      "id": "tutorial-add-server-03",
+      "markerIndex": 2,
+      "at": 23.457976,
+      "text": "続いてサーバーをプロビジョニングします。renet がインストールされ、暗号化データストアが作成されます。この後、サーバーはリポジトリをホストする準備が整います。"
+    },
+    {
+      "id": "tutorial-add-server-04",
+      "markerIndex": 3,
+      "at": 39.717449,
+      "text": "CLI が設定内容を正しく把握しているか確認します。マシン、SSH キー、インフラなど、今セットアップしたすべてがここに表示されます。"
+    },
+    {
+      "id": "tutorial-add-server-05",
+      "markerIndex": 4,
+      "at": 48.157549,
+      "text": "設定全体はラップトップ上の1つの JSON ファイルに格納されています。別のマシンにコピーすれば、そこから同じサーバーを操作できます。"
+    }
+  ]
+}

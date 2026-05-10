@@ -1,0 +1,311 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "e1e34e2b40bcd293a352f637943caa355dc0a7f679d8d8991dc9fa0b453dcc8d",
+  "steps": [
+    {
+      "id": "tutorial-installation-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.509194,
+      "replayEndSec": 9.435981,
+      "narrationText": "Сначала убедимся, что CLI доступен в системе. Запустим CLI с флагом версии: он выведет установленную версию и подтвердит, что установка прошла успешно.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-installation/tutorial-installation-01.68d9e42f.mp3",
+      "audioDurationSec": 11.232653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.12,
+          "startChar": 8,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.44,
+          "startChar": 18,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.92,
+          "startChar": 22,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.48,
+          "startChar": 26,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.56,
+          "startChar": 35,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.2,
+          "startChar": 37,
+          "endChar": 44
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.16,
+          "startChar": 46,
+          "endChar": 54
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.64,
+          "startChar": 55,
+          "endChar": 58
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.72,
+          "startChar": 59,
+          "endChar": 60
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.12,
+          "startChar": 61,
+          "endChar": 67
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.68,
+          "startChar": 68,
+          "endChar": 74
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.4,
+          "startChar": 76,
+          "endChar": 78
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.8,
+          "startChar": 79,
+          "endChar": 86
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.6,
+          "startChar": 87,
+          "endChar": 100
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.08,
+          "startChar": 101,
+          "endChar": 107
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.24,
+          "startChar": 108,
+          "endChar": 109
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.96,
+          "startChar": 110,
+          "endChar": 120
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.44,
+          "startChar": 122,
+          "endChar": 125
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 10.0,
+          "startChar": 126,
+          "endChar": 135
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.48,
+          "startChar": 136,
+          "endChar": 142
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 11.2,
+          "startChar": 143,
+          "endChar": 150
+        }
+      ]
+    },
+    {
+      "id": "tutorial-installation-02",
+      "markerIndex": 1,
+      "replayStartSec": 9.435981,
+      "replayEndSec": 18.745045,
+      "narrationText": "Теперь запустим диагностическую проверку. Она проверяет все зависимости, которые нужны CLI: Node, SSH и остальное, и сообщает о пробелах. Чистый отчёт означает, что можно добавлять сервер.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-installation/tutorial-installation-02.63536644.mp3",
+      "audioDurationSec": 12.747755,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.88,
+          "startChar": 7,
+          "endChar": 15
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.76,
+          "startChar": 16,
+          "endChar": 31
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.4,
+          "startChar": 32,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.88,
+          "startChar": 42,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.36,
+          "startChar": 46,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.6,
+          "startChar": 56,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.24,
+          "startChar": 60,
+          "endChar": 71
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.72,
+          "startChar": 73,
+          "endChar": 80
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.04,
+          "startChar": 81,
+          "endChar": 86
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.24,
+          "startChar": 92,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.8,
+          "startChar": 98,
+          "endChar": 101
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.2,
+          "startChar": 102,
+          "endChar": 103
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.92,
+          "startChar": 104,
+          "endChar": 113
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.24,
+          "startChar": 115,
+          "endChar": 116
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.8,
+          "startChar": 117,
+          "endChar": 125
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 8.88,
+          "startChar": 126,
+          "endChar": 127
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.36,
+          "startChar": 128,
+          "endChar": 136
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.4,
+          "startChar": 138,
+          "endChar": 144
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 11.28,
+          "startChar": 151,
+          "endChar": 159
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.44,
+          "startChar": 161,
+          "endChar": 164
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.84,
+          "startChar": 165,
+          "endChar": 170
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.24,
+          "startChar": 171,
+          "endChar": 180
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.64,
+          "startChar": 181,
+          "endChar": 187
+        }
+      ]
+    }
+  ]
+}

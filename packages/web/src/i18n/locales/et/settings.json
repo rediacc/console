@@ -1,0 +1,124 @@
+{
+  "organization": {
+    "configureVault": "Seadista seif",
+    "description": "Seadistage oma organisatsiooni seifi sätted, et hallata kogu organisatsiooni hõlmavaid konfiguratsioone.",
+    "modalTitle": "Seadista organisatsiooni seif",
+    "title": "Organisatsiooni sätted"
+  },
+  "personal": {
+    "changePassword": {
+      "confirmPasswordLabel": "Kinnita uus parool",
+      "confirmPasswordMismatch": "Paroolid ei kattu",
+      "confirmPasswordPlaceholder": "Kinnita uus parool",
+      "confirmPasswordRequired": "Palun kinnitage oma uus parool",
+      "newPasswordLabel": "Uus parool",
+      "newPasswordMin": "Parool peab olema vähemalt 8 tähemärki pikk",
+      "newPasswordPattern": "Parool peab sisaldama suuri ja väiketähti, numbrit ning erimärki",
+      "newPasswordPlaceholder": "Sisesta uus parool",
+      "newPasswordRequired": "Palun sisestage oma uus parool",
+      "requirement1": "Vähemalt 8 tähemärki pikk",
+      "requirement2": "Sisaldab suuri ja väiketähti",
+      "requirement3": "Sisaldab vähemalt ühte numbrit",
+      "requirement4": "Sisaldab vähemalt ühte erimärki",
+      "requirementsTitle": "Parooli nõuded",
+      "submit": "Muuda parooli",
+      "successContent": "Teie parool on muudetud. Teid logitakse välja {{seconds}} sekundi pärast...",
+      "successTitle": "Parool edukalt muudetud",
+      "title": "Muuda parooli"
+    },
+    "configureVault": "Seadista seif",
+    "description": "Seadistage oma isikliku seifi sätted, et kohandada oma kasutuskogemust.",
+    "modalTitle": "Seadista kasutaja seif",
+    "title": "Isiklikud sätted"
+  },
+  "title": "Sätted",
+  "twoFactorAuth": {
+    "disable": "Keela kahefaktoriline autentimine",
+    "disableModal": {
+      "codeFormat": "Kood võib sisaldada ainult numbreid",
+      "codeLabel": "TFA kood",
+      "codeLength": "Kood peab olema täpselt 6 numbrit",
+      "codePlaceholder": "000000",
+      "codeRequired": "TFA kood on kohustuslik",
+      "passwordLabel": "Praegune parool",
+      "passwordPlaceholder": "Sisesta oma praegune parool",
+      "passwordRequired": "Parool on kohustuslik",
+      "submit": "Keela TFA",
+      "title": "Keela kahefaktoriline autentimine",
+      "warning": "Turvahoiatus",
+      "warningDescription": "TFA keelamine muudab teie konto vähem turvaliseks. Jätkamiseks peate sisestama oma praeguse parooli ja kehtiva TFA koodi."
+    },
+    "done": "Valmis",
+    "enable": "Luba kahefaktoriline autentimine",
+    "enableModal": {
+      "passwordLabel": "Praegune parool",
+      "passwordPlaceholder": "Sisesta oma praegune parool",
+      "passwordRequired": "Parool on kohustuslik",
+      "submit": "Luba TFA",
+      "title": "Luba kahefaktoriline autentimine",
+      "warning": "Turbekontroll on nõutav",
+      "warningDescription": "Palun sisestage kahefaktorilise autentimise lubamiseks oma konto parool."
+    },
+    "enableSuccess": {
+      "subtitle": "Teie konto on nüüd TFA-ga kaitstud.",
+      "title": "Kahefaktoriline autentimine lubatud!",
+      "verified": "TFA edukalt kontrollitud",
+      "verifiedDescription": "Teie autentimisrakendus on edukalt seadistatud ja kahefaktoriline autentimine on nüüd teie kontol aktiivne."
+    },
+    "errors": {
+      "disableFailed": "Kahefaktorilise autentimise keelamine ebaõnnestus.",
+      "enableFailed": "Kahefaktorilise autentimise lubamine ebaõnnestus.",
+      "invalidParameters": "Vigased parameetrid TFA toimingu jaoks.",
+      "missingData": "Ootamatu vastuse vorming: puudub TFA andmetabel.",
+      "missingSecret": "Server ei tagastanud kahefaktorilise autentimise saladust.",
+      "verificationFailed": "Vigane TFA kood."
+    },
+    "important": "Tähtis",
+    "manualSetup": {
+      "instructions": "Sisestage see saladuskood oma autentimisrakendusse:",
+      "title": "Käsitsi seadistamine"
+    },
+    "saveSecretWarning": "Salvestage see saladuskood turvalisse kohta. Vajate seda oma kontole juurdepääsu taastamiseks, kui kaotate oma autentimisseadme.",
+    "scanQRCode": "Skannige see QR-kood oma autentimisrakendusega",
+    "secretCopied": "Saladuskood kopeeritud lõikelauale",
+    "setupMethods": {
+      "manual": "Käsitsi sisestamine",
+      "qrCode": "QR-kood"
+    },
+    "status": {
+      "disabled": "Kahefaktoriline autentimine on keelatud",
+      "disabledDescription": "Lisage oma kontole täiendav turvakiht.",
+      "enabled": "Kahefaktoriline autentimine on lubatud",
+      "enabledDescription": "Teie konto on kaitstud täiendava turvakihiga."
+    },
+    "statusMessages": {
+      "authorized": "TFA autoriseerimine õnnestus",
+      "enabled": "TFA lubatud",
+      "none": "TFA pole seadistatud",
+      "unknown": "TFA olekut ei õnnestunud tuvastada"
+    },
+    "success": {
+      "disabled": "Kahefaktoriline autentimine on keelatud.",
+      "enabled": "Kahefaktoriline autentimine lubatud ja edukalt kontrollitud.",
+      "verified": "TFA kontroll õnnestus."
+    },
+    "title": "Kahefaktoriline autentimine",
+    "verification": {
+      "codeFormat": "Kood võib sisaldada ainult numbreid",
+      "codeLabel": "Kinnituskood",
+      "codeLength": "Kood peab olema täpselt 6 numbrit",
+      "codePlaceholder": "000000",
+      "codeRequired": "Kinnituskood on kohustuslik",
+      "submit": "Kontrolli ja luba TFA",
+      "subtitle": "Skannige QR-kood või sisestage saladuskood oma autentimisrakendusse, seejärel sisestage kontrollimiseks 6-kohaline kood.",
+      "title": "Kinnitage oma autentimisrakendus"
+    },
+    "whatIs": {
+      "benefit1": "Kaitseb teie kontot isegi siis, kui teie parool on rikutud",
+      "benefit2": "Kasutab tööstusstandardi TOTP (ajapõhine ühekordne parool) algoritmi",
+      "benefit3": "Töötab populaarsete autentimisrakendustega nagu Google Authenticator, Authy või Microsoft Authenticator",
+      "description": "Kahefaktoriline autentimine (TFA) lisab teie kontole täiendava turvakihi, nõudes lisaks paroolile telefonist ajapõhist koodi.",
+      "title": "Mis on kahefaktoriline autentimine?"
+    }
+  }
+}
