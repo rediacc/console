@@ -93,7 +93,7 @@ const LeadMagnetModal: React.FC = () => {
     window.openLeadMagnetModal = open;
     const onCustomEvent = (e: Event) => {
       const detail = (e as CustomEvent<LeadMagnetOpenOpts>).detail;
-      if (detail && typeof detail.magnetName === 'string') open(detail);
+      if (typeof detail.magnetName === 'string') open(detail);
     };
     window.addEventListener('lead-magnet:open', onCustomEvent);
     return () => {
@@ -212,6 +212,9 @@ const LeadMagnetModal: React.FC = () => {
           className="lead-magnet-modal__close"
           aria-label={t('pages.solutionPages.leadMagnetModal.closeLabel') || 'Close'}
           onClick={close}
+          data-track="cta_click"
+          data-track-label="lead-magnet-modal-close"
+          data-track-dest="modal-close"
         >
           <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <path d="M4.646 4.646a.5.5 0 01.708 0L8 7.293l2.646-2.647a.5.5 0 01.708.708L8.707 8l2.647 2.646a.5.5 0 01-.708.708L8 8.707l-2.646 2.647a.5.5 0 01-.708-.708L7.293 8 4.646 5.354a.5.5 0 010-.708z" />

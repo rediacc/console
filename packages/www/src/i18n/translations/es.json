@@ -10501,8 +10501,8 @@
       },
       "dataSovereignty": {
         "meta": {
-          "title": "Soberanía de datos - Soberanía por arquitectura | Rediacc",
-          "description": "Usted lo aloja. Usted tiene las claves. Inmunidad al CLOUD Act por arquitectura, no por certificado. Backup auto-alojado con claves gestionadas por el cliente, cumplimiento RGPD Schrems II y preparación para la Ley de Datos de la UE.",
+          "title": "Soberanía de Datos: Backup Soberano por Arquitectura",
+          "description": "Tú lo alojas. Tú controlas las claves. Inmunidad al CLOUD Act por arquitectura, no por certificado. Backup autoalojado con claves gestionadas por el cliente.",
           "keywords": "soberanía de datos, inmunidad CLOUD Act, claves gestionadas por el cliente, RGPD Schrems II, Ley de Datos UE, auto-alojado, backup soberano, SecNumCloud, DORA"
         },
         "hero": {
@@ -14030,8 +14030,8 @@
     "resourcesBrief": {
       "ransomwareSurvival": {
         "meta": {
-          "title": "Supervivencia al Ransomware: PDF técnico gratuito",
-          "description": "Copia de seguridad inmutable nativa del sistema de archivos que los atacantes no pueden cifrar, eliminar ni comprometer. Un informe gratuito de nivel CISO/CTO de Rediacc, más una versión ejecutiva de cinco minutos.",
+          "title": "Supervivencia al Ransomware: Informe PDF Gratuito",
+          "description": "Backup inmutable nativo del sistema de ficheros, imposible de cifrar o eliminar por atacantes. Informe gratuito para CISO/CTO de Rediacc, con versión ejecutiva.",
           "keywords": "supervivencia ransomware, pdf, rediacc, btrfs backup, copia de seguridad inmutable, informe técnico"
         },
         "hero": {
@@ -14095,8 +14095,8 @@
       },
       "multiCloudAlways": {
         "meta": {
-          "title": "Multi-Cloud Siempre Disponible: PDF técnico gratuito",
-          "description": "Cuando su nube cae, su negocio no se detiene: instantáneas portables y conmutación por error entre nubes ya probada. Un informe gratuito de nivel CISO/CTO de Rediacc, más una versión ejecutiva de cinco minutos.",
+          "title": "Multi-Cloud Siempre: Informe PDF Gratuito",
+          "description": "Instantáneas portátiles y conmutación por error entre nubes probada para que tu negocio sobreviva a una interrupción. Informe CISO/CTO con versión ejecutiva.",
           "keywords": "multi-cloud siempre disponible, pdf, rediacc, btrfs backup, copia de seguridad inmutable, informe técnico"
         },
         "hero": {
@@ -14160,8 +14160,8 @@
       },
       "verifiedBackups": {
         "meta": {
-          "title": "Copias de Seguridad Verificadas: PDF técnico gratuito",
-          "description": "Pruebas de arranque y verificación en cada copia de seguridad, en cada ciclo, sin que sea una mera casilla trimestral. Un informe gratuito de nivel CISO/CTO de Rediacc, más una versión ejecutiva de cinco minutos.",
+          "title": "Backups Verificados: Informe PDF Gratuito",
+          "description": "Pruebas de arranque y verificación en cada backup, en cada ciclo: sin revisiones trimestrales. Informe gratuito CISO/CTO de Rediacc, con versión ejecutiva.",
           "keywords": "copias de seguridad verificadas, pdf, rediacc, btrfs backup, copia de seguridad inmutable, informe técnico"
         },
         "hero": {
@@ -14225,8 +14225,8 @@
       },
       "encryptionControl": {
         "meta": {
-          "title": "Control del Cifrado: PDF técnico gratuito",
-          "description": "Claves gestionadas por el cliente y datos cifrados que sobreviven a un cambio de proveedor: conformidad con Schrems II por diseño arquitectónico. Un informe gratuito de nivel CISO/CTO de Rediacc, más una versión ejecutiva de cinco minutos.",
+          "title": "Control de Cifrado: Informe PDF Gratuito",
+          "description": "Claves gestionadas por el cliente y datos cifrados que sobreviven al cambio de proveedor. Cumplimiento Schrems II. Informe CISO/CTO con versión ejecutiva.",
           "keywords": "control del cifrado, pdf, rediacc, btrfs backup, copia de seguridad inmutable, informe técnico"
         },
         "hero": {
@@ -14290,8 +14290,8 @@
       },
       "devEnvironments": {
         "meta": {
-          "title": "Entornos de Desarrollo: PDF técnico gratuito",
-          "description": "Entornos de desarrollo idénticos a producción en 60 segundos mediante clones de copia cero de btrfs. Un informe gratuito de nivel CISO/CTO de Rediacc, más una versión ejecutiva de cinco minutos.",
+          "title": "Entornos de Desarrollo: Informe PDF Gratuito",
+          "description": "Entornos de desarrollo idénticos a producción en 60 segundos con clones de copia cero btrfs. Informe gratuito para CISO/CTO de Rediacc, con versión ejecutiva.",
           "keywords": "entornos de desarrollo, pdf, rediacc, btrfs backup, copia de seguridad inmutable, informe técnico"
         },
         "hero": {
@@ -14355,8 +14355,8 @@
       },
       "preemptiveDefense": {
         "meta": {
-          "title": "Defensa Preventiva: PDF técnico gratuito",
-          "description": "Pruebas de seguridad en clones de producción con riesgo cero para producción: las pruebas de penetración con IA se ejecutan sobre una copia desechable. Un informe gratuito de nivel CISO/CTO de Rediacc, más una versión ejecutiva de cinco minutos.",
+          "title": "Defensa Preventiva: Informe PDF Gratuito",
+          "description": "Pruebas de seguridad en un clon de producción sin ningún riesgo real. Pentests con IA sobre una copia desechable. Informe CISO/CTO con versión ejecutiva.",
           "keywords": "defensa preventiva, pdf, rediacc, btrfs backup, copia de seguridad inmutable, informe técnico"
         },
         "hero": {

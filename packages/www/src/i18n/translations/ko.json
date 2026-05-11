@@ -10501,8 +10501,8 @@
       },
       "dataSovereignty": {
         "meta": {
-          "title": "데이터 주권 - 아키텍처 기반의 주권적 백업 | Rediacc",
-          "description": "귀사가 호스팅합니다. 귀사가 키를 보유합니다. 인증서가 아닌 아키텍처로 CLOUD Act 면제. 고객 관리 키, GDPR Schrems II 준수, EU 데이터법 준비가 완료된 자체 호스팅 백업.",
+          "title": "데이터 주권: 아키텍처로 보장하는 완전한 데이터 통제 | Rediacc",
+          "description": "직접 호스팅하고 키도 직접 보유하세요. 인증서가 아닌 아키텍처로 CLOUD Act를 준수합니다. 고객 관리 키를 사용하는 셀프 호스팅 백업 솔루션입니다.",
           "keywords": "데이터 주권, CLOUD Act 면제, 고객 관리 키, GDPR Schrems II, EU 데이터법, 자체 호스팅, 주권적 백업, SecNumCloud, DORA"
         },
         "hero": {
@@ -14022,8 +14022,8 @@
     "resourcesBrief": {
       "ransomwareSurvival": {
         "meta": {
-          "title": "랜섬웨어 생존 가이드: 무료 기술 브리프 PDF",
-          "description": "공격자가 암호화하거나, 삭제하거나, 손상시킬 수 없는 파일시스템 네이티브 불변 백업. Rediacc이 제공하는 CISO/CTO급 무료 브리프와 5분짜리 경영진 요약본.",
+          "title": "랜섬웨어 생존 가이드: 무료 기술 브리핑 PDF | Rediacc",
+          "description": "공격자가 암호화하거나 삭제할 수 없는 파일시스템 기반 불변 백업입니다. CISO/CTO 수준의 무료 브리핑과 임원용 요약본을 Rediacc에서 제공합니다.",
           "keywords": "랜섬웨어 생존, pdf, rediacc, btrfs 백업, 불변 백업, 기술 브리프"
         },
         "hero": {
@@ -14087,8 +14087,8 @@
       },
       "multiCloudAlways": {
         "meta": {
-          "title": "멀티 클라우드 상시 운영: 무료 기술 브리프 PDF",
-          "description": "클라우드가 다운되어도 비즈니스는 멈추지 않습니다. 이식 가능한 스냅샷과 검증된 클라우드 간 장애 조치. Rediacc이 제공하는 CISO/CTO급 무료 브리프와 5분짜리 경영진 요약본.",
+          "title": "멀티 클라우드 상시 가동: 무료 기술 브리핑 PDF | Rediacc",
+          "description": "이식 가능한 스냅샷과 검증된 크로스 클라우드 장애 복구로 클라우드 중단 시에도 비즈니스를 지속합니다. CISO/CTO 브리핑 및 임원 요약본을 제공합니다.",
           "keywords": "멀티 클라우드 상시 운영, pdf, rediacc, btrfs 백업, 불변 백업, 기술 브리프"
         },
         "hero": {
@@ -14152,8 +14152,8 @@
       },
       "verifiedBackups": {
         "meta": {
-          "title": "검증된 백업: 무료 기술 브리프 PDF",
-          "description": "분기별 체크박스가 아닌, 매 백업 사이클마다 부팅 및 검증 테스트 수행. Rediacc이 제공하는 CISO/CTO급 무료 브리프와 5분짜리 경영진 요약본.",
+          "title": "검증된 백업: 무료 기술 브리핑 PDF | Rediacc 데이터 보호",
+          "description": "매 주기마다 모든 백업을 부팅하여 검증합니다. 분기별 체크박스가 아닙니다. Rediacc의 무료 CISO/CTO 브리핑과 5분 임원 요약본을 제공합니다.",
           "keywords": "검증된 백업, pdf, rediacc, btrfs 백업, 불변 백업, 기술 브리프"
         },
         "hero": {
@@ -14217,8 +14217,8 @@
       },
       "encryptionControl": {
         "meta": {
-          "title": "암호화 제어권: 무료 기술 브리프 PDF",
-          "description": "고객 관리 키와 벤더 전환 후에도 살아남는 암호화된 데이터. 아키텍처 설계 단계부터 Schrems II를 준수합니다. Rediacc이 제공하는 CISO/CTO급 무료 브리프와 5분짜리 경영진 요약본.",
+          "title": "암호화 통제: 무료 기술 브리핑 PDF | Rediacc 데이터 보호",
+          "description": "고객 관리 키와 벤더 전환 후에도 살아남는 암호화 데이터, Schrems II 준수. CISO/CTO 브리핑과 임원 요약본을 제공합니다.",
           "keywords": "암호화 제어권, pdf, rediacc, btrfs 백업, 불변 백업, 기술 브리프"
         },
         "hero": {
@@ -14282,8 +14282,8 @@
       },
       "devEnvironments": {
         "meta": {
-          "title": "개발 환경: 무료 기술 브리프 PDF",
-          "description": "btrfs 제로 카피 클론으로 60초 만에 프로덕션과 동일한 개발 환경 구성. Rediacc이 제공하는 CISO/CTO급 무료 브리프와 5분짜리 경영진 요약본.",
+          "title": "개발 환경: 무료 기술 브리핑 PDF | Rediacc 데이터 보호",
+          "description": "btrfs 제로 복사 클론으로 60초 안에 프로덕션과 동일한 개발 환경을 구성합니다. Rediacc의 무료 CISO/CTO 브리핑과 5분 임원 요약본을 제공합니다.",
           "keywords": "개발 환경, pdf, rediacc, btrfs 백업, 불변 백업, 기술 브리프"
         },
         "hero": {
@@ -14347,8 +14347,8 @@
       },
       "preemptiveDefense": {
         "meta": {
-          "title": "선제적 방어: 무료 기술 브리프 PDF",
-          "description": "프로덕션 위험 제로의 프로덕션 클론 보안 테스트. AI 침투 테스트가 폐기 가능한 복제본에서 실행됩니다. Rediacc이 제공하는 CISO/CTO급 무료 브리프와 5분짜리 경영진 요약본.",
+          "title": "선제적 방어: 무료 기술 브리핑 PDF | Rediacc 데이터 보호",
+          "description": "프로덕션 클론으로 실제 운영 위험 없이 보안 테스트를 수행합니다. 일회용 복사본에서 AI 침투 테스트를 진행합니다. CISO/CTO 브리핑 및 임원 요약본을 제공합니다.",
           "keywords": "선제적 방어, pdf, rediacc, btrfs 백업, 불변 백업, 기술 브리프"
         },
         "hero": {

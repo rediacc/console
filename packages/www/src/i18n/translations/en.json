@@ -11345,8 +11345,8 @@
       },
       "dataSovereignty": {
         "meta": {
-          "title": "Data Sovereignty - Sovereign-by-Architecture Backup | Rediacc",
-          "description": "You host it. You hold the keys. CLOUD Act immunity by architecture, not by certificate. Self-hosted backup with customer-managed keys, GDPR Schrems II compliance, and EU Data Act readiness.",
+          "title": "Data Sovereignty: Sovereign-by-Architecture Backup",
+          "description": "You host it. You hold the keys. CLOUD Act immunity by architecture, not by certificate. Self-hosted backup with customer-managed keys.",
           "keywords": "data sovereignty, CLOUD Act immunity, customer-managed keys, GDPR Schrems II, EU Data Act, self-hosted, sovereign backup, SecNumCloud, DORA"
         },
         "hero": {
@@ -14104,7 +14104,7 @@
       "ransomwareSurvival": {
         "meta": {
           "title": "Ransomware Survival: Free Technical Brief PDF",
-          "description": "Filesystem-native immutable backup that attackers cannot encrypt, delete, or compromise. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "description": "Filesystem-native immutable backup that attackers cannot encrypt or delete. A free CISO/CTO-grade brief from Rediacc, plus exec version.",
           "keywords": "ransomware survival, pdf, rediacc, btrfs backup, immutable backup, technical brief"
         },
         "hero": {
@@ -14169,7 +14169,7 @@
       "multiCloudAlways": {
         "meta": {
           "title": "Multi-Cloud Always: Free Technical Brief PDF",
-          "description": "When your cloud goes down, your business doesn't — portable snapshots and tested cross-cloud failover. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "description": "Portable snapshots and tested cross-cloud failover so your business survives a cloud outage. CISO/CTO brief, plus exec version.",
           "keywords": "multi-cloud always, pdf, rediacc, btrfs backup, immutable backup, technical brief"
         },
         "hero": {
@@ -14299,7 +14299,7 @@
       "encryptionControl": {
         "meta": {
           "title": "Encryption Control: Free Technical Brief PDF",
-          "description": "Customer-managed keys and encrypted data that survives a vendor switch — Schrems II compliant by architecture. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "description": "Customer-managed keys and encrypted data that survives a vendor switch, Schrems II compliant. CISO/CTO brief, plus exec version.",
           "keywords": "encryption control, pdf, rediacc, btrfs backup, immutable backup, technical brief"
         },
         "hero": {
@@ -14429,7 +14429,7 @@
       "preemptiveDefense": {
         "meta": {
           "title": "Preemptive Defense: Free Technical Brief PDF",
-          "description": "Production-clone security testing with zero production risk — AI pentests run on a disposable copy. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "description": "Production-clone security testing with zero production risk. AI pentests on a disposable copy. CISO/CTO brief, plus exec version.",
           "keywords": "preemptive defense, pdf, rediacc, btrfs backup, immutable backup, technical brief"
         },
         "hero": {

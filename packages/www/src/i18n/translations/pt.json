@@ -10530,8 +10530,8 @@
       },
       "dataSovereignty": {
         "meta": {
-          "title": "Soberania de Dados - Backup Soberano por Arquitetura | Rediacc",
-          "description": "Você hospeda. Você guarda as chaves. Imunidade ao CLOUD Act por arquitetura, não por certificado. Backup auto-hospedado com chaves geridas pelo cliente, conformidade com GDPR Schrems II e preparação para o Data Act da UE.",
+          "title": "Soberania de Dados: Backup Soberano por Arquitectura",
+          "description": "Aloja os seus dados. Detém as chaves. Imunidade ao CLOUD Act por arquitectura, não por certificado. Chaves geridas pelo cliente.",
           "keywords": "soberania de dados, imunidade CLOUD Act, chaves geridas pelo cliente, GDPR Schrems II, Data Act UE, auto-hospedado, backup soberano, SecNumCloud, DORA"
         },
         "hero": {
@@ -14056,7 +14056,7 @@
       "ransomwareSurvival": {
         "meta": {
           "title": "Sobreviver ao Ransomware: PDF Técnico Gratuito",
-          "description": "Cópia de segurança imutável nativa do sistema de ficheiros que os atacantes não conseguem encriptar, eliminar nem comprometer. Um briefing gratuito de nível CISO/CTO da Rediacc, mais uma versão executiva de cinco minutos.",
+          "description": "Backup imutável que os atacantes não podem cifrar nem eliminar. Guia técnico gratuito de nível CISO/CTO da Rediacc, com versão executiva.",
           "keywords": "sobreviver ao ransomware, pdf, rediacc, btrfs backup, cópia de segurança imutável, briefing técnico"
         },
         "hero": {
@@ -14120,8 +14120,8 @@
       },
       "multiCloudAlways": {
         "meta": {
-          "title": "Multi-Cloud Always: PDF Técnico Gratuito",
-          "description": "Quando a sua cloud cai, o seu negócio não para — snapshots portáteis e failover entre clouds testado. Um briefing gratuito de nível CISO/CTO da Rediacc, mais uma versão executiva de cinco minutos.",
+          "title": "Multi-Cloud Sempre: PDF Técnico Gratuito",
+          "description": "Snapshots portáteis e failover entre clouds testado para que o seu negócio sobreviva a uma falha de cloud. Guia CISO/CTO gratuito, com versão executiva.",
           "keywords": "multi-cloud always, pdf, rediacc, btrfs backup, cópia de segurança imutável, briefing técnico"
         },
         "hero": {
@@ -14186,7 +14186,7 @@
       "verifiedBackups": {
         "meta": {
           "title": "Backups Verificados: PDF Técnico Gratuito",
-          "description": "Testes de arranque e verificação em cada cópia de segurança, em cada ciclo, sem ser uma mera verificação trimestral. Um briefing gratuito de nível CISO/CTO da Rediacc, mais uma versão executiva de cinco minutos.",
+          "description": "Teste de arranque em cada backup, em cada ciclo — não uma simples checkmark trimestral. Guia CISO/CTO gratuito da Rediacc, com versão executiva.",
           "keywords": "backups verificados, pdf, rediacc, btrfs backup, cópia de segurança imutável, briefing técnico"
         },
         "hero": {
@@ -14250,8 +14250,8 @@
       },
       "encryptionControl": {
         "meta": {
-          "title": "Controlo de Encriptação: PDF Técnico Gratuito",
-          "description": "Chaves geridas pelo cliente e dados encriptados que sobrevivem a uma mudança de fornecedor, conformes com o Schrems II por arquitetura. Um briefing gratuito de nível CISO/CTO da Rediacc, mais uma versão executiva de cinco minutos.",
+          "title": "Controlo de Cifra: PDF Técnico Gratuito",
+          "description": "Chaves geridas pelo cliente e dados cifrados que sobrevivem à mudança de fornecedor, conformes com Schrems II. Guia CISO/CTO gratuito, com versão executiva.",
           "keywords": "controlo de encriptação, pdf, rediacc, btrfs backup, cópia de segurança imutável, briefing técnico"
         },
         "hero": {
@@ -14316,7 +14316,7 @@
       "devEnvironments": {
         "meta": {
           "title": "Ambientes de Desenvolvimento: PDF Técnico Gratuito",
-          "description": "Ambientes de desenvolvimento idênticos à produção em 60 segundos, via clones zero-copy do btrfs. Um briefing gratuito de nível CISO/CTO da Rediacc, mais uma versão executiva de cinco minutos.",
+          "description": "Ambientes idênticos à produção em 60 segundos via clones zero-copy com btrfs. Guia CISO/CTO gratuito da Rediacc, com versão executiva de cinco minutos.",
           "keywords": "ambientes de desenvolvimento, pdf, rediacc, btrfs backup, cópia de segurança imutável, briefing técnico"
         },
         "hero": {
@@ -14380,8 +14380,8 @@
       },
       "preemptiveDefense": {
         "meta": {
-          "title": "Defesa Preemptiva: PDF Técnico Gratuito",
-          "description": "Testes de segurança num clone de produção, sem qualquer risco para a produção real -- pentests com IA executados numa cópia descartável. Um briefing gratuito de nível CISO/CTO da Rediacc, mais uma versão executiva de cinco minutos.",
+          "title": "Defesa Preventiva: PDF Técnico Gratuito",
+          "description": "Testes de segurança em clone de produção sem qualquer risco. Pentests com IA numa cópia descartável. Guia CISO/CTO gratuito, com versão executiva.",
           "keywords": "defesa preemptiva, pdf, rediacc, btrfs backup, cópia de segurança imutável, briefing técnico"
         },
         "hero": {

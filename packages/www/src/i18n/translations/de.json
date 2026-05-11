@@ -10505,8 +10505,8 @@
       },
       "dataSovereignty": {
         "meta": {
-          "title": "Datensouveränität - Souveränität durch Architektur | Rediacc",
-          "description": "Sie hosten es. Sie halten die Schlüssel. CLOUD Act-Immunität durch Architektur, nicht durch Zertifikat. Self-Hosted-Backup mit kundenverwalteten Schlüsseln, DSGVO Schrems II-Konformität und EU-Datengesetz-Bereitschaft.",
+          "title": "Datensouveränität: Souverän durch Architektur",
+          "description": "Sie hosten es. Sie halten die Schlüssel. CLOUD Act-Immunität durch Architektur, nicht durch Zertifikat. Self-hosted Backup mit kundenverwalteten Schlüsseln.",
           "keywords": "Datensouveränität, CLOUD Act-Immunität, kundenverwaltete Schlüssel, DSGVO Schrems II, EU-Datengesetz, self-hosted, souveränes Backup, SecNumCloud, DORA"
         },
         "hero": {
@@ -14032,8 +14032,8 @@
     "resourcesBrief": {
       "ransomwareSurvival": {
         "meta": {
-          "title": "Ransomware-Resilienz: Kostenloses technisches Briefing als PDF",
-          "description": "Dateisystem-natives unveränderliches Backup, das Angreifer weder verschlüsseln, löschen noch kompromittieren können. Ein kostenloses CISO/CTO-Briefing von Rediacc, plus eine fünfminütige Kurzfassung für Führungskräfte.",
+          "title": "Ransomware-Überleben: Kostenloses Technisches Brief PDF",
+          "description": "Unveränderliches Backup, das Angreifer nicht verschlüsseln oder löschen können. Kostenloses CISO/CTO-Briefing von Rediacc, inkl. Kurzversion für Entscheider.",
           "keywords": "ransomware resilienz, pdf, rediacc, btrfs backup, unveränderliches backup, technisches briefing"
         },
         "hero": {
@@ -14097,8 +14097,8 @@
       },
       "multiCloudAlways": {
         "meta": {
-          "title": "Multi-Cloud-Verfügbarkeit: Kostenloses technisches Briefing als PDF",
-          "description": "Wenn Ihre Cloud ausfällt, läuft Ihr Betrieb weiter: portable Snapshots und getestetes Cloud-übergreifendes Failover. Ein kostenloses CISO/CTO-Briefing von Rediacc, plus eine fünfminütige Kurzfassung für Führungskräfte.",
+          "title": "Multi-Cloud Always: Kostenloses Technisches Brief PDF",
+          "description": "Portable Snapshots und getestetes Cloud-Failover, damit Ihr Unternehmen Ausfälle übersteht. CISO/CTO-Briefing von Rediacc, inkl. Kurzversion für Entscheider.",
           "keywords": "multi-cloud verfügbarkeit, pdf, rediacc, btrfs backup, unveränderliches backup, technisches briefing"
         },
         "hero": {
@@ -14162,8 +14162,8 @@
       },
       "verifiedBackups": {
         "meta": {
-          "title": "Verifizierte Backups: Kostenloses technisches Briefing als PDF",
-          "description": "Boot-und-Verifizierungs-Tests bei jedem Backup in jedem Zyklus, kein vierteljährlicher Pflichtcheck. Ein kostenloses CISO/CTO-Briefing von Rediacc, plus eine fünfminütige Kurzfassung für Führungskräfte.",
+          "title": "Verifizierte Backups: Kostenloses Technisches Brief PDF",
+          "description": "Boot-und-Verify-Tests bei jedem Backup, jedem Zyklus – kein quartalsweises Abhaken. Kostenloses CISO/CTO-Briefing von Rediacc, inkl. 5-Minuten-Kurzversion.",
           "keywords": "verifizierte backups, pdf, rediacc, btrfs backup, unveränderliches backup, technisches briefing"
         },
         "hero": {
@@ -14227,8 +14227,8 @@
       },
       "encryptionControl": {
         "meta": {
-          "title": "Verschlüsselungskontrolle: Kostenloses technisches Briefing als PDF",
-          "description": "Kundenseitig verwaltete Schlüssel und verschlüsselte Daten, die einen Anbieterwechsel überstehen: architektonisch Schrems-II-konform. Ein kostenloses CISO/CTO-Briefing von Rediacc, plus eine fünfminütige Kurzfassung für Führungskräfte.",
+          "title": "Verschlüsselungskontrolle: Kostenloses Brief PDF",
+          "description": "Kundenverwaltete Schlüssel und verschlüsselte Daten, die jeden Anbieterwechsel überleben – Schrems II-konform. CISO/CTO-Briefing, inkl. Kurzversion.",
           "keywords": "verschlüsselungskontrolle, pdf, rediacc, btrfs backup, unveränderliches backup, technisches briefing"
         },
         "hero": {
@@ -14292,8 +14292,8 @@
       },
       "devEnvironments": {
         "meta": {
-          "title": "Entwicklungsumgebungen: Kostenloses technisches Briefing als PDF",
-          "description": "Produktionsidentische Entwicklungsumgebungen in 60 Sekunden via btrfs-Zero-Copy-Klone. Ein kostenloses CISO/CTO-Briefing von Rediacc, plus eine fünfminütige Kurzfassung für Führungskräfte.",
+          "title": "Entwicklungsumgebungen: Kostenloses Technisches Brief PDF",
+          "description": "Produktionsidentische Dev-Umgebungen in 60 Sekunden via btrfs-Zero-Copy-Clones. Kostenloses CISO/CTO-Briefing von Rediacc, inkl. 5-Minuten-Kurzversion.",
           "keywords": "entwicklungsumgebungen, pdf, rediacc, btrfs backup, unveränderliches backup, technisches briefing"
         },
         "hero": {
@@ -14357,8 +14357,8 @@
       },
       "preemptiveDefense": {
         "meta": {
-          "title": "Präventive Abwehr: Kostenloses technisches Briefing als PDF",
-          "description": "Sicherheitstests auf Produktionsklon-Basis ohne jedes Produktionsrisiko: KI-Pentests laufen auf einer verwerfbaren Kopie. Ein kostenloses CISO/CTO-Briefing von Rediacc, plus eine fünfminütige Kurzfassung für Führungskräfte.",
+          "title": "Präventive Verteidigung: Kostenloses Brief PDF",
+          "description": "Sicherheitstests auf Produktionsklon-Basis – null Produktionsrisiko. KI-Pentests auf einer Wegwerfkopie. CISO/CTO-Briefing von Rediacc, inkl. Kurzversion.",
           "keywords": "präventive abwehr, pdf, rediacc, btrfs backup, unveränderliches backup, technisches briefing"
         },
         "hero": {

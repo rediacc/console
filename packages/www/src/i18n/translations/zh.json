@@ -10451,8 +10451,8 @@
       },
       "dataSovereignty": {
         "meta": {
-          "title": "数据主权 - 以架构为基础的主权备份 | Rediacc",
-          "description": "由您托管。由您持有密钥。通过架构而非证书实现CLOUD Act豁免。自托管备份，具备客户管理密钥、GDPR Schrems II合规性及EU数据法就绪能力。",
+          "title": "数据主权：架构级主权备份解决方案 | Rediacc 数据保护平台",
+          "description": "您自主托管，您掌握密钥。通过架构设计规避 CLOUD Act 管辖，无需依赖合规证书。Rediacc 自托管备份，客户自管密钥，数据主权由您掌控。",
           "keywords": "数据主权, CLOUD Act豁免, 客户管理密钥, GDPR Schrems II, EU数据法, 自托管, 主权备份, SecNumCloud, DORA"
         },
         "hero": {
@@ -13964,8 +13964,8 @@
     "resourcesBrief": {
       "ransomwareSurvival": {
         "meta": {
-          "title": "勒索软件生存指南：免费技术简报 PDF",
-          "description": "基于文件系统原生的不可变备份，攻击者无法加密、删除或破坏。来自 Rediacc 的免费 CISO/CTO 级技术简报，附赠五分钟高管速览版。",
+          "title": "勒索软件防御指南：免费技术白皮书 PDF | Rediacc 企业备份方案",
+          "description": "文件系统原生不可变备份，攻击者无法加密或删除。Rediacc 面向 CISO/CTO 的免费专业简报，附高管精简版 PDF。",
           "keywords": "勒索软件生存, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报"
         },
         "hero": {
@@ -14029,8 +14029,8 @@
       },
       "multiCloudAlways": {
         "meta": {
-          "title": "多云常态化：免费技术简报 PDF",
-          "description": "云服务中断时，您的业务不会停摆——可移植快照与经过验证的跨云故障转移。来自 Rediacc 的免费 CISO/CTO 级技术简报，附赠五分钟高管速览版。",
+          "title": "多云策略：免费技术白皮书 PDF | Rediacc 跨云容灾备份方案",
+          "description": "可移植快照与经验证的跨云故障切换，确保业务在云服务中断时持续运行。附 CISO/CTO 专业简报及高管精简版 PDF。",
           "keywords": "多云常态化, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报"
         },
         "hero": {
@@ -14094,8 +14094,8 @@
       },
       "verifiedBackups": {
         "meta": {
-          "title": "备份验证：免费技术简报 PDF",
-          "description": "每次备份、每个周期均执行启动验证测试，而非季度性例行打勾。来自 Rediacc 的免费 CISO/CTO 级技术简报，附赠五分钟高管速览版。",
+          "title": "备份验证：每次验证，每周期执行 | Rediacc 免费技术白皮书 PDF",
+          "description": "每次备份、每个周期均执行启动验证测试，而非季度性勾选了事。Rediacc 面向 CISO/CTO 的免费专业简报，附五分钟高管精简版 PDF。",
           "keywords": "备份验证, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报"
         },
         "hero": {
@@ -14159,8 +14159,8 @@
       },
       "encryptionControl": {
         "meta": {
-          "title": "加密控制：免费技术简报 PDF",
-          "description": "客户自主管理密钥，加密数据在供应商切换后依然可用——架构层面符合 Schrems II 要求。来自 Rediacc 的免费 CISO/CTO 级技术简报，附赠五分钟高管速览版。",
+          "title": "加密控制：客户自管密钥 | Rediacc 免费技术白皮书 PDF",
+          "description": "客户自管密钥，加密数据在切换供应商后依然有效，符合 Schrems II 合规要求。附 CISO/CTO 专业简报及高管精简版 PDF。",
           "keywords": "加密控制, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报"
         },
         "hero": {
@@ -14224,8 +14224,8 @@
       },
       "devEnvironments": {
         "meta": {
-          "title": "开发环境：免费技术简报 PDF",
-          "description": "通过 btrfs 零拷贝克隆，60 秒内创建与生产环境完全一致的开发环境。来自 Rediacc 的免费 CISO/CTO 级技术简报，附赠五分钟高管速览版。",
+          "title": "开发环境：60 秒极速克隆生产环境 | Rediacc 免费技术白皮书 PDF",
+          "description": "基于 btrfs 零拷贝克隆，60 秒内还原与生产环境完全一致的开发环境。Rediacc 面向 CISO/CTO 的免费专业简报，附五分钟高管精简版 PDF。",
           "keywords": "开发环境, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报"
         },
         "hero": {
@@ -14289,8 +14289,8 @@
       },
       "preemptiveDefense": {
         "meta": {
-          "title": "主动防御：免费技术简报 PDF",
-          "description": "基于生产克隆的安全测试，零生产风险——AI 渗透测试在一次性副本上运行。来自 Rediacc 的免费 CISO/CTO 级技术简报，附赠五分钟高管速览版。",
+          "title": "主动防御：零生产风险安全测试 | Rediacc 免费技术白皮书 PDF",
+          "description": "在一次性生产克隆环境上进行安全测试，零生产风险，支持 AI 渗透测试。附 CISO/CTO 专业简报及高管精简版 PDF。",
           "keywords": "主动防御, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报"
         },
         "hero": {

@@ -10517,8 +10517,8 @@
       },
       "dataSovereignty": {
         "meta": {
-          "title": "Andmesuveräänsus - Arhitektuuri järgi suveräänne varukoopia | Rediacc",
-          "description": "Teie hostib. Teie hoiab võtmeid. CLOUD Act-i immuunsus arhitektuuri kaudu, mitte sertifikaadi kaudu. Ise hostitud varukoopia kliendi hallatavate võtmetega, GDPR Schrems II vastavus ja EL-i andmemääruse valmidus.",
+          "title": "Andmesuveräänsus: arhitektuurist tulenev kontroll",
+          "description": "Majutad ise, hoiad võtmeid ise. CLOUD Act immuunsus arhitektuuri tasemel, mitte sertifikaadiga. Kliendihaldusega võtmed ja isehostitav varukoopia.",
           "keywords": "andmesuveräänsus, CLOUD Act-i immuunsus, kliendi hallatavad võtmed, GDPR Schrems II, EL-i andmemäärus, ise hostitud, suveräänne varukoopia, SecNumCloud, DORA"
         },
         "hero": {
@@ -14042,8 +14042,8 @@
     "resourcesBrief": {
       "ransomwareSurvival": {
         "meta": {
-          "title": "Lunavarast ellujäämine: tasuta tehniline ülevaade PDF-ina",
-          "description": "Failisüsteemi-natiivne muutumatu varundus, mida ründajad ei suuda krüpteerida, kustutada ega ohustada. Tasuta CISO/CTO taseme ülevaade Rediaccilt koos viie minuti juhtivversiooniga.",
+          "title": "Lunavararünnetele vastupidav varukoopiastrateegia",
+          "description": "Failisüsteemi tasemel muutumatud varukoopiad, mida ründajad ei saa krüpteerida ega kustutada. Tasuta CISO/CTO-tasemel ülevaade Rediaccilt.",
           "keywords": "lunavarast ellujäämine, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade"
         },
         "hero": {
@@ -14107,8 +14107,8 @@
       },
       "multiCloudAlways": {
         "meta": {
-          "title": "Multi-Cloud Always: tasuta tehniline ülevaade PDF-ina",
-          "description": "Kui su pilv läheb maha, sinu äri mitte — porditavad hetktõmmised ja testitud rist-pilve tõrkesiire. Tasuta CISO/CTO taseme ülevaade Rediaccilt koos viie minuti juhtivversiooniga.",
+          "title": "Multi-Cloud alati: tasuta tehniline ülevaade PDF",
+          "description": "Porditavad hetktõmmised ja testitud pilveülene tõrkesiire – teie äri püsib üles ka pilverikke ajal. CISO/CTO ülevaade ja juhtkonna versioon.",
           "keywords": "multi-cloud always, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade"
         },
         "hero": {
@@ -14172,8 +14172,8 @@
       },
       "verifiedBackups": {
         "meta": {
-          "title": "Kinnitatud varukoopiad: tasuta tehniline ülevaade PDF-ina",
-          "description": "Käivitamine ja kontroll igal varukoopial, igal tsüklil — mitte kord kvartalis tehtav linnuke. Tasuta CISO/CTO taseme ülevaade Rediaccilt koos viie minuti juhtivversiooniga.",
+          "title": "Tõendatud varukoopiad: tasuta tehniline ülevaade",
+          "description": "Käivitus- ja kontrolltest igal varukoopial, igal tsüklil – mitte kord kvartalis. Tasuta CISO/CTO ülevaade Rediaccilt ja viie minuti juhtkonnaversioon.",
           "keywords": "kinnitatud varukoopiad, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade"
         },
         "hero": {
@@ -14237,8 +14237,8 @@
       },
       "encryptionControl": {
         "meta": {
-          "title": "Krüpteerimise kontroll: tasuta tehniline ülevaade PDF-ina",
-          "description": "Kliendi hallatavad võtmed ja krüpteeritud andmed, mis elavad üle tarnija vahetuse — Schrems II nõuetele vastav arhitektuuri tasandil. Tasuta CISO/CTO taseme ülevaade Rediaccilt koos viie minuti juhtivversiooniga.",
+          "title": "Krüpteerimisjuhtimine: tasuta tehniline ülevaade",
+          "description": "Kliendihaldusega võtmed ja krüpteeritud andmed, mis ei sõltu teenusepakkujast. Schrems II nõuetele vastav. CISO/CTO ülevaade ja juhtkonna versioon.",
           "keywords": "krüpteerimise kontroll, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade"
         },
         "hero": {
@@ -14302,8 +14302,8 @@
       },
       "devEnvironments": {
         "meta": {
-          "title": "Arenduskeskkonnad: tasuta tehniline ülevaade PDF-ina",
-          "description": "Tootmisidentse arenduskeskkonna loomine 60 sekundiga btrfs null-koopia kloonide abil. Tasuta CISO/CTO taseme ülevaade Rediaccilt koos viie minuti juhtivversiooniga.",
+          "title": "Arenduskeskkonnad: tasuta tehniline ülevaade PDF",
+          "description": "Tootmisega identsed arenduskeskkonnad 60 sekundiga btrfs nullkoopiakloone kasutades. Tasuta CISO/CTO ülevaade Rediaccilt ja viie minuti juhtkonnaversioon.",
           "keywords": "arenduskeskkonnad, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade"
         },
         "hero": {
@@ -14367,8 +14367,8 @@
       },
       "preemptiveDefense": {
         "meta": {
-          "title": "Ennetav kaitse: tasuta tehniline ülevaade PDF-ina",
-          "description": "Tootmiskloonipõhine turvatestamine ilma tootmisriskita — AI-l põhinevad läbistustestid käivitatakse ühekordsel koopial. Tasuta CISO/CTO taseme ülevaade Rediaccilt koos viie minuti juhtivversiooniga.",
+          "title": "Ennetav kaitse: tasuta tehniline ülevaade PDF",
+          "description": "Turvatestid tootmiskloonil ilma tootmisriskita. Tehisaru permestatsioonitestid korduvkasutatamatul koopial. CISO/CTO ülevaade ja juhtkonna versioon.",
           "keywords": "ennetav kaitse, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade"
         },
         "hero": {

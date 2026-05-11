@@ -10497,8 +10497,8 @@
       },
       "dataSovereignty": {
         "meta": {
-          "title": "Veri Egemenliği - Mimarisiyle Egemen Yedekleme | Rediacc",
-          "description": "Siz barındırırsınız. Anahtarlar sizdedir. CLOUD Act bağışıklığı sertifikayla değil, mimariyle sağlanır. Müşteriye ait anahtarlarla kendi barındırdığınız yedekleme, GDPR Schrems II uyumu ve AB Veri Yasası hazırlığı.",
+          "title": "Veri Egemenliği: Mimari Düzeyde Egemen Yedekleme",
+          "description": "Sunucuyu siz barındırır, anahtarları siz tutarsınız. CLOUD Act koruması mimari güvenceyle sağlanır. Müşteri anahtarlı öz barındırmalı yedekleme.",
           "keywords": "veri egemenliği, CLOUD Act bağışıklığı, müşteriye ait anahtarlar, GDPR Schrems II, AB Veri Yasası, kendi barındırma, egemen yedekleme, SecNumCloud, DORA"
         },
         "hero": {
@@ -14024,8 +14024,8 @@
     "resourcesBrief": {
       "ransomwareSurvival": {
         "meta": {
-          "title": "Fidye Yazılımına Karşı Dayanıklılık: Ücretsiz Teknik Özet PDF",
-          "description": "Saldırganların şifreleyemediği, silemediği veya ele geçiremediği, dosya sistemi tabanlı değiştirilemez yedekleme. Rediacc'tan ücretsiz CISO/CTO düzeyi bir özet ve beş dakikalık yönetici versiyonu.",
+          "title": "Fidye Yazılımına Karşı Dayanıklılık: Ücretsiz PDF",
+          "description": "Saldırganların şifreleyemediği veya silemediği, dosya sistemine özgü değişmez yedekleme. Rediacc'tan ücretsiz CISO/CTO raporu ve yönetici özeti.",
           "keywords": "fidye yazılımına karşı dayanıklılık, pdf, rediacc, btrfs yedekleme, değiştirilemez yedekleme, teknik özet"
         },
         "hero": {
@@ -14089,8 +14089,8 @@
       },
       "multiCloudAlways": {
         "meta": {
-          "title": "Her Koşulda Çoklu Bulut: Ücretsiz Teknik Özet PDF",
-          "description": "Bulutunuz çöktüğünde işleriniz durmaz; taşınabilir anlık görüntüler ve test edilmiş bulutlar arası yük devretme. Rediacc'tan ücretsiz CISO/CTO düzeyi bir özet ve beş dakikalık yönetici versiyonu.",
+          "title": "Çoklu Bulut: Ücretsiz Teknik Bülten PDF",
+          "description": "Taşınabilir anlık görüntüler ve test edilmiş çapraz bulut yük devretme ile işletmeniz bulut kesintisine karşı korunur. CISO/CTO raporu ve yönetici özeti.",
           "keywords": "her koşulda çoklu bulut, pdf, rediacc, btrfs yedekleme, değiştirilemez yedekleme, teknik özet"
         },
         "hero": {
@@ -14154,8 +14154,8 @@
       },
       "verifiedBackups": {
         "meta": {
-          "title": "Doğrulanmış Yedeklemeler: Ücretsiz Teknik Özet PDF",
-          "description": "Her döngüde, her yedeklemede önyükleme ve doğrulama testi; üç ayda bir yapılan rutin kontrol değil. Rediacc'tan ücretsiz CISO/CTO düzeyi bir özet ve beş dakikalık yönetici versiyonu.",
+          "title": "Doğrulanmış Yedekler: Ücretsiz Teknik Bülten PDF",
+          "description": "Her yedekleme döngüsünde önyükleme ve doğrulama testi yapılır; yalnızca üç aylık onay değil. Rediacc'tan ücretsiz CISO/CTO raporu ve yönetici özeti.",
           "keywords": "doğrulanmış yedeklemeler, pdf, rediacc, btrfs yedekleme, değiştirilemez yedekleme, teknik özet"
         },
         "hero": {
@@ -14219,8 +14219,8 @@
       },
       "encryptionControl": {
         "meta": {
-          "title": "Şifreleme Kontrolü: Ücretsiz Teknik Özet PDF",
-          "description": "Müşteri tarafından yönetilen anahtarlar ve tedarikçi değişikliğini kaldıran şifrelenmiş veriler; mimarisiyle Schrems II uyumlu. Rediacc'tan ücretsiz CISO/CTO düzeyi bir özet ve beş dakikalık yönetici versiyonu.",
+          "title": "Şifreleme Kontrolü: Ücretsiz Teknik Bülten PDF",
+          "description": "Müşteri yönetimli anahtarlar ve Schrems II uyumlu şifrelenmiş veriler; tedarikçi değişikliğinde bile korunur. CISO/CTO raporu ve yönetici özeti.",
           "keywords": "şifreleme kontrolü, pdf, rediacc, btrfs yedekleme, değiştirilemez yedekleme, teknik özet"
         },
         "hero": {
@@ -14284,8 +14284,8 @@
       },
       "devEnvironments": {
         "meta": {
-          "title": "Geliştirme Ortamları: Ücretsiz Teknik Özet PDF",
-          "description": "btrfs sıfır kopyalama klonları sayesinde 60 saniyede üretime özdeş geliştirme ortamları. Rediacc'tan ücretsiz CISO/CTO düzeyi bir özet ve beş dakikalık yönetici versiyonu.",
+          "title": "Geliştirme Ortamları: Ücretsiz Teknik Bülten PDF",
+          "description": "btrfs sıfır kopya klonlarıyla 60 saniyede üretime özdeş geliştirme ortamı. Rediacc'tan ücretsiz CISO/CTO raporu ve beş dakikalık yönetici özeti.",
           "keywords": "geliştirme ortamları, pdf, rediacc, btrfs yedekleme, değiştirilemez yedekleme, teknik özet"
         },
         "hero": {
@@ -14349,8 +14349,8 @@
       },
       "preemptiveDefense": {
         "meta": {
-          "title": "Önleyici Savunma: Ücretsiz Teknik Özet PDF",
-          "description": "Sıfır üretim riski ile üretime özdeş güvenlik testi; yapay zeka sızma testleri tek kullanımlık bir kopya üzerinde çalışır. Rediacc'tan ücretsiz CISO/CTO düzeyi bir özet ve beş dakikalık yönetici versiyonu.",
+          "title": "Önleyici Savunma: Ücretsiz Teknik Bülten PDF",
+          "description": "Üretim riski olmadan üretim kopyasında güvenlik testi ve yapay zeka sızma testleri. CISO/CTO raporu ve yönetici özeti.",
           "keywords": "önleyici savunma, pdf, rediacc, btrfs yedekleme, değiştirilemez yedekleme, teknik özet"
         },
         "hero": {

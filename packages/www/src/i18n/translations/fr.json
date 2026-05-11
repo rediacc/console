@@ -10509,8 +10509,8 @@
       },
       "dataSovereignty": {
         "meta": {
-          "title": "Souveraineté des données - Souveraineté par architecture | Rediacc",
-          "description": "Vous l'hébergez. Vous détenez les clés. Immunité au CLOUD Act par architecture, pas par certificat. Backup auto-hébergé avec clés gérées par le client, conformité RGPD Schrems II et préparation au Data Act européen.",
+          "title": "Souveraineté des données : sauvegarde souveraine",
+          "description": "Hébergez vos données, détenez vos clés. Immunité CLOUD Act par architecture. Sauvegarde auto-hébergée avec clés gérées par le client.",
           "keywords": "souveraineté des données, immunité CLOUD Act, clés gérées par le client, RGPD Schrems II, Data Act européen, auto-hébergé, backup souverain, SecNumCloud, DORA"
         },
         "hero": {
@@ -14038,8 +14038,8 @@
     "resourcesBrief": {
       "ransomwareSurvival": {
         "meta": {
-          "title": "Ransomware Survival : Note technique gratuite en PDF",
-          "description": "Sauvegarde immuable native du système de fichiers qu'aucun attaquant ne peut chiffrer, supprimer ou compromettre. Une note gratuite de niveau CISO/CTO proposée par Rediacc, avec une version exécutive de cinq minutes.",
+          "title": "Ransomware : guide technique gratuit PDF",
+          "description": "Sauvegarde immuable native, impossible à chiffrer ou supprimer par les attaquants. Guide gratuit RSSI/DSI de Rediacc, avec version dirigeants.",
           "keywords": "ransomware survival, pdf, rediacc, sauvegarde btrfs, sauvegarde immuable, note technique"
         },
         "hero": {
@@ -14103,8 +14103,8 @@
       },
       "multiCloudAlways": {
         "meta": {
-          "title": "Multi-Cloud Always : Note technique gratuite en PDF",
-          "description": "Lorsque votre cloud tombe en panne, votre activité continue — instantanés portables et basculement inter-cloud testé. Une note gratuite de niveau CISO/CTO proposée par Rediacc, avec une version exécutive de cinq minutes.",
+          "title": "Multi-Cloud permanent : guide technique gratuit PDF",
+          "description": "Snapshots portables et bascule multi-cloud éprouvée pour survivre à une panne de fournisseur. Guide RSSI/DSI, avec version dirigeants.",
           "keywords": "multi-cloud always, pdf, rediacc, sauvegarde btrfs, sauvegarde immuable, note technique"
         },
         "hero": {
@@ -14168,8 +14168,8 @@
       },
       "verifiedBackups": {
         "meta": {
-          "title": "Verified Backups : Note technique gratuite en PDF",
-          "description": "Test de démarrage et vérification de chaque sauvegarde à chaque cycle — pas une case cochée trimestriellement. Une note gratuite de niveau CISO/CTO proposée par Rediacc, avec une version exécutive de cinq minutes.",
+          "title": "Sauvegardes vérifiées : guide technique gratuit PDF",
+          "description": "Démarrage et vérification à chaque sauvegarde, chaque cycle — pas une case cochée trimestriellement. Guide gratuit RSSI/DSI de Rediacc, avec version dirigeants.",
           "keywords": "sauvegardes vérifiées, pdf, rediacc, sauvegarde btrfs, sauvegarde immuable, note technique"
         },
         "hero": {
@@ -14233,8 +14233,8 @@
       },
       "encryptionControl": {
         "meta": {
-          "title": "Encryption Control : Note technique gratuite en PDF",
-          "description": "Clés gérées par le client et données chiffrées qui survivent à un changement de fournisseur — conforme à Schrems II par architecture. Une note gratuite de niveau CISO/CTO proposée par Rediacc, avec une version exécutive de cinq minutes.",
+          "title": "Contrôle du chiffrement : guide technique gratuit PDF",
+          "description": "Clés gérées par le client et données chiffrées survivant à un changement de prestataire, conformes Schrems II. Guide RSSI/DSI, avec version dirigeants.",
           "keywords": "contrôle du chiffrement, pdf, rediacc, sauvegarde btrfs, sauvegarde immuable, note technique"
         },
         "hero": {
@@ -14298,8 +14298,8 @@
       },
       "devEnvironments": {
         "meta": {
-          "title": "Development Environments : Note technique gratuite en PDF",
-          "description": "Environnements de développement identiques à la production en 60 secondes via les clones zéro-copie btrfs. Une note gratuite de niveau CISO/CTO proposée par Rediacc, avec une version exécutive de cinq minutes.",
+          "title": "Environnements dev : guide technique gratuit PDF",
+          "description": "Environnements de dev identiques à la production en 60 secondes via clones btrfs zéro copie. Guide gratuit RSSI/DSI de Rediacc, plus version dirigeants.",
           "keywords": "environnements de développement, pdf, rediacc, sauvegarde btrfs, sauvegarde immuable, note technique"
         },
         "hero": {
@@ -14363,8 +14363,8 @@
       },
       "preemptiveDefense": {
         "meta": {
-          "title": "Preemptive Defense : Note technique gratuite en PDF",
-          "description": "Tests de sécurité sur un clone de production sans aucun risque pour la production — pentests IA exécutés sur une copie jetable. Une note gratuite de niveau CISO/CTO proposée par Rediacc, avec une version exécutive de cinq minutes.",
+          "title": "Défense préemptive : guide technique gratuit PDF",
+          "description": "Tests de sécurité sur clone de production, sans risque pour la production. Pentests IA sur copie jetable. Guide RSSI/DSI, avec version dirigeants.",
           "keywords": "défense préemptive, pdf, rediacc, sauvegarde btrfs, sauvegarde immuable, note technique"
         },
         "hero": {
