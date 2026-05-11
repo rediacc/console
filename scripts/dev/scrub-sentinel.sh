@@ -83,8 +83,17 @@ for product in cli desktop; do
     else
         echo "    sentinel: absent"
     fi
-    count="$(aws s3 ls "s3://${RSV_BUCKET}/${local_prefix}" \
-        --endpoint-url "$R2_ENDPOINT" --recursive 2>/dev/null | wc -l)"
+    # `aws s3 ls --recursive` returns exit 1 on a non-existent / empty
+    # prefix; with `set -eo pipefail` that aborts the script right here
+    # — silently — and the operator never sees the desktop plan or the
+    # delete prompt. Use list-objects-v2 instead: it returns 0 even when
+    # the prefix has no contents (Contents is null/missing).
+    count="$(aws s3api list-objects-v2 \
+        --bucket "${RSV_BUCKET}" \
+        --prefix "${local_prefix}" \
+        --endpoint-url "$R2_ENDPOINT" \
+        --query 'length(Contents || `[]`)' \
+        --output text 2>/dev/null || echo 0)"
     echo "    objects: ${count}"
 done
 
