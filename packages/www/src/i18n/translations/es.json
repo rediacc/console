@@ -324,7 +324,14 @@
     }
   },
   "logoWall": {
-    "categories": ["Git", "CI/CD", "Contenedores", "Bases de datos", "Monitoreo", "Almacenamiento"],
+    "categories": [
+      "Git",
+      "CI/CD",
+      "Contenedores",
+      "Bases de datos",
+      "Monitoreo",
+      "Almacenamiento"
+    ],
     "title": "Funciona con tu infraestructura"
   },
   "metrics": {
@@ -591,12 +598,16 @@
           "title": "5. Nuestro enfoque analítico"
         },
         "changes": {
-          "content": ["Si introducimos cookies adicionales, actualizaremos esta política."],
+          "content": [
+            "Si introducimos cookies adicionales, actualizaremos esta política."
+          ],
           "id": "changes",
           "title": "7. Cambios en esta política"
         },
         "cookiesWeUse": {
-          "content": ["Utilizamos solo una cookie:"],
+          "content": [
+            "Utilizamos solo una cookie:"
+          ],
           "id": "cookies-we-use",
           "subsections": {
             "languageCookie": {
@@ -889,7 +900,9 @@
                 "Implementación estándar ($9999) o paquetes escalonados (Pequeño $7499 · Mediano $14999 · Grande $29999 · Empresa personalizada)",
                 "Compromiso de respuesta de emergencia ($29,999 a pedido)"
               ],
-              "included": ["Documentación de autoservicio, tutoriales en vídeo y foro comunitario"],
+              "included": [
+                "Documentación de autoservicio, tutoriales en vídeo y foro comunitario"
+              ],
               "planId": "comunidad"
             },
             {
@@ -1181,7 +1194,10 @@
       },
       "trust": {
         "heading": "Seguridad y confiabilidad de nivel empresarial",
-        "items": ["Cifrado a nivel bancario", "Compromiso de tiempo de actividad del 99,9%"]
+        "items": [
+          "Cifrado a nivel bancario",
+          "Compromiso de tiempo de actividad del 99,9%"
+        ]
       },
       "ui": {
         "anchor": "Ancla estratégica",
@@ -1631,7 +1647,11 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["rdc repo up", "JSON", "Done"],
+            "newSteps": [
+              "rdc repo up",
+              "JSON",
+              "Done"
+            ],
             "oldLabel": "Infraestructura tradicional",
             "oldSteps": [
               {
@@ -1853,7 +1873,11 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["$204/mes", "Fijo", "Tuyo"],
+            "newSteps": [
+              "$204/mes",
+              "Fijo",
+              "Tuyo"
+            ],
             "oldLabel": "Infraestructura cloud",
             "oldSteps": [
               {
@@ -2043,31 +2067,73 @@
           "features": [
             {
               "name": "Autoalojado / en las instalaciones",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Inmutabilidad a nivel de sistema de archivos",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Recuperación instantánea (<5 min)",
-              "values": ["cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Snapshots sin copia (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Precio por máquina (sin cargos por usuario)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Verificación automatizada de restauración",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sin dependencia de proveedor",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "PANORAMA COMPETITIVO",
@@ -2110,7 +2176,11 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["Detectar", "Revertir", "<5 min"],
+            "newSteps": [
+              "Detectar",
+              "Revertir",
+              "<5 min"
+            ],
             "oldLabel": "Recuperación ante desastres tradicional",
             "oldSteps": [
               {
@@ -2404,7 +2474,11 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["rdc ceph snapshot create", "52s", "Listo"],
+            "newSteps": [
+              "rdc ceph snapshot create",
+              "52s",
+              "Listo"
+            ],
             "oldLabel": "La forma antigua",
             "oldSteps": [
               {
@@ -2873,7 +2947,9 @@
                 "Implementación estándar ($9999) o paquetes escalonados (Pequeño $7499 · Mediano $14999 · Grande $29999 · Empresa personalizada)",
                 "Compromiso de respuesta de emergencia ($29,999 a pedido)"
               ],
-              "included": ["Documentación de autoservicio, tutoriales en vídeo y foro comunitario"],
+              "included": [
+                "Documentación de autoservicio, tutoriales en vídeo y foro comunitario"
+              ],
               "planId": "comunidad"
             },
             {
@@ -3160,7 +3236,10 @@
       },
       "trust": {
         "heading": "Seguridad y confiabilidad de nivel empresarial",
-        "items": ["Cifrado a nivel bancario", "Compromiso de tiempo de actividad del 99,9%"]
+        "items": [
+          "Cifrado a nivel bancario",
+          "Compromiso de tiempo de actividad del 99,9%"
+        ]
       },
       "trustSection": {
         "heading": "Tu infraestructura. Tus reglas.",
@@ -3287,7 +3366,9 @@
           "title": "10. Cambios en esta política"
         },
         "childrenPrivacy": {
-          "content": ["Nuestros servicios no están dirigidos a menores de 16 años."],
+          "content": [
+            "Nuestros servicios no están dirigidos a menores de 16 años."
+          ],
           "id": "children-privacy",
           "title": "9. Privacidad de los niños"
         },
@@ -3308,7 +3389,9 @@
           "title": "7. Seguridad de datos"
         },
         "dataSharing": {
-          "content": ["No vendemos ni alquilamos sus datos personales a terceros."],
+          "content": [
+            "No vendemos ni alquilamos sus datos personales a terceros."
+          ],
           "id": "data-sharing",
           "items": [
             "<strong>Proveedores de servicios</strong> que nos ayudan a operar la plataforma",
@@ -3319,7 +3402,9 @@
           "title": "4. Intercambio de datos y terceros"
         },
         "howWeUseInformation": {
-          "content": ["Utilizamos la información recopilada para:"],
+          "content": [
+            "Utilizamos la información recopilada para:"
+          ],
           "id": "how-we-use-information",
           "items": [
             "Responder a sus consultas",
@@ -3388,7 +3473,9 @@
           "title": "1. Introducción"
         },
         "yourRights": {
-          "content": ["Según su jurisdicción, puede tener los siguientes derechos:"],
+          "content": [
+            "Según su jurisdicción, puede tener los siguientes derechos:"
+          ],
           "content2": [
             "Contacte con nosotros en <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> para ejercer sus derechos."
           ],
@@ -3459,7 +3546,9 @@
       },
       "sections": {
         "changes": {
-          "content": ["Podemos actualizar esta Política de Reembolso periódicamente."],
+          "content": [
+            "Podemos actualizar esta Política de Reembolso periódicamente."
+          ],
           "id": "changes",
           "title": "7. Cambios en esta política"
         },
@@ -3467,7 +3556,9 @@
           "content": [
             "Envíe un correo a <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> con:"
           ],
-          "content2": ["Responderemos dentro de 5 días hábiles."],
+          "content2": [
+            "Responderemos dentro de 5 días hábiles."
+          ],
           "id": "how-to-request",
           "items": [
             "Su dirección de correo de la cuenta",
@@ -3478,7 +3569,9 @@
           "title": "4. Cómo solicitar un reembolso"
         },
         "nonRefundable": {
-          "content": ["Lo siguiente no es elegible para reembolso:"],
+          "content": [
+            "Lo siguiente no es elegible para reembolso:"
+          ],
           "id": "non-refundable",
           "items": [
             "Suscripciones canceladas después de la ventana de 14 días",
@@ -3497,7 +3590,9 @@
           "title": "1. Descripción general"
         },
         "platformSubscriptions": {
-          "content": ["Rediacc ofrece múltiples niveles de suscripción:"],
+          "content": [
+            "Rediacc ofrece múltiples niveles de suscripción:"
+          ],
           "id": "platform-subscriptions",
           "subsections": {
             "annualSubscriptions": {
@@ -3507,7 +3602,9 @@
               "title": "2.3 Suscripciones anuales"
             },
             "freeTier": {
-              "content": ["El nivel Community es gratuito para siempre."],
+              "content": [
+                "El nivel Community es gratuito para siempre."
+              ],
               "title": "2.1 Nivel gratuito"
             },
             "paidTiers": {
@@ -3526,7 +3623,9 @@
           "title": "2. Suscripciones de la plataforma"
         },
         "professionalServices": {
-          "content": ["Los servicios profesionales se facturan por hora ($400–$1,200/hr):"],
+          "content": [
+            "Los servicios profesionales se facturan por hora ($400–$1,200/hr):"
+          ],
           "id": "professional-services",
           "items": [
             "<strong>Antes de iniciar el trabajo:</strong> Reembolso completo",
@@ -3764,19 +3863,19 @@
     },
     "solutionPages": {
       "downloadGated": {
-        "title": "Get the technical brief",
-        "description": "A no-fluff PDF written for CISOs, CTOs, and senior engineers. Drop your email and we send you the download link plus a one-page summary by mail.",
+        "title": "Obtenga el informe técnico",
+        "description": "Un PDF sin relleno, redactado para CISOs, CTOs e ingenieros senior. Deje su correo electrónico y le enviamos el enlace de descarga junto con un resumen de una página por correo.",
         "emailPlaceholder": "you@company.com",
-        "submitLabel": "Send me the brief",
-        "successMessage": "Check your inbox to confirm. We've also opened the PDF in a new tab.",
-        "errorMessage": "Something went wrong. Please try again or reach out at support@rediacc.com.",
-        "disclaimer": "One email. No marketing list. Unsubscribe with one click.",
-        "dismissLabel": "Dismiss"
+        "submitLabel": "Enviarme el informe",
+        "successMessage": "Revise su bandeja de entrada para confirmar. También hemos abierto el PDF en una nueva pestaña.",
+        "errorMessage": "Algo ha salido mal. Por favor, inténtelo de nuevo o contacte con nosotros en support@rediacc.com.",
+        "disclaimer": "Un único correo. Sin listas de marketing. Cancele la suscripción con un clic.",
+        "dismissLabel": "Cerrar"
       },
       "downloadShort": {
-        "title": "Short on time?",
-        "description": "Skip the deep-dive. Grab the five-minute version your team can read at a stand-up.",
-        "buttonLabel": "Download short brief (PDF)"
+        "title": "¿Escaso de tiempo?",
+        "description": "Omita el análisis exhaustivo. Descargue la versión de cinco minutos que su equipo puede leer en una reunión de pie.",
+        "buttonLabel": "Descargar informe breve (PDF)"
       },
       "aiPentesting": {
         "benefits": {
@@ -3999,7 +4098,11 @@
           ],
           "timeline": {
             "newLabel": "CON REDIACC",
-            "newSteps": ["Ejecutar pentest", "47s", "7 vulns encontradas"],
+            "newSteps": [
+              "Ejecutar pentest",
+              "47s",
+              "7 vulns encontradas"
+            ],
             "oldLabel": "PENTESTING TRADICIONAL",
             "oldSteps": [
               {
@@ -4249,38 +4352,122 @@
           "features": [
             {
               "name": "Logs de auditoría a prueba de manipulación",
-              "refs": [0, 2, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                2,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Firma criptográfica (SHA-256)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Generación instantánea de informes (CLI)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Registro básico de operaciones",
-              "refs": [3, 4, 5, 6, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Atribución de usuario por acción",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Seguimiento de rotación de claves",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Autoalojado / su infraestructura",
-              "refs": [11, 12, 13, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -4462,7 +4649,11 @@
           ],
           "timeline": {
             "newLabel": "CON REDIACC",
-            "newSteps": ["Ejecutar auditoría", "Instantáneo", "Informe completo"],
+            "newSteps": [
+              "Ejecutar auditoría",
+              "Instantáneo",
+              "Informe completo"
+            ],
             "oldLabel": "LA FORMA ANTIGUA",
             "oldSteps": [
               {
@@ -4720,38 +4911,122 @@
           "features": [
             {
               "name": "Verificación automatizada de restauración",
-              "refs": [4, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Verificación completa de salud de servicios",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Pruebas automatizadas diarias",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Clon sin almacenamiento extra para pruebas",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Checksum / integridad de archivos",
-              "refs": [5, 6, 7, 8, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Integración de alertas",
-              "refs": [9, 10, 11, 12, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Autoalojado / su infraestructura",
-              "refs": [13, 14, 15, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                13,
+                14,
+                15,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -4934,7 +5209,11 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["Respaldo", "47s", "Verificado"],
+            "newSteps": [
+              "Respaldo",
+              "47s",
+              "Verificado"
+            ],
             "oldLabel": "La forma antigua",
             "oldSteps": [
               {
@@ -5232,38 +5511,122 @@
           "features": [
             {
               "name": "Replicación entre nubes",
-              "refs": [0, 4, 5, 6, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Failover en menos de 30 segundos",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Transferencia solo incremental (98% de ahorro)",
-              "refs": [0, 7, 8, 9, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Failover de cualquier proveedor a cualquier proveedor",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Autoalojado, sin agente en la nube",
-              "refs": [0, 10, 11, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                10,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Failover DNS automático",
-              "refs": [0, 0, 12, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                12,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Replicación de stack completo (app + BD)",
-              "refs": [0, 13, 14, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                13,
+                14,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -5447,7 +5810,11 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["Detectar", "<30s", "En línea"],
+            "newSteps": [
+              "Detectar",
+              "<30s",
+              "En línea"
+            ],
             "oldLabel": "La forma antigua",
             "oldSteps": [
               {
@@ -5842,7 +6209,12 @@
               },
               {
                 "footer": "Continuous improvement · automated",
-                "items": ["W1: ████████ 23", "W2: ████ 12", "W3: ██ 7", "W4: █ 3"],
+                "items": [
+                  "W1: ████████ 23",
+                  "W2: ████ 12",
+                  "W3: ██ 7",
+                  "W4: █ 3"
+                ],
                 "status": "-87%",
                 "title": "Tendencia de 4 semanas"
               }
@@ -5897,7 +6269,11 @@
           ],
           "timeline": {
             "newLabel": "CON REDIACC",
-            "newSteps": ["Escaneos diarios", "0 días", "Cero puntos ciegos"],
+            "newSteps": [
+              "Escaneos diarios",
+              "0 días",
+              "Cero puntos ciegos"
+            ],
             "oldLabel": "PENTESTING ANUAL",
             "oldSteps": [
               {
@@ -6130,38 +6506,122 @@
           "features": [
             {
               "name": "Claves de cifrado en manos del cliente",
-              "refs": [3, 4, 5, 6, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Arquitectura de conocimiento cero",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Rotación de claves autoservicio",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Cifrado AES-256 en reposo",
-              "refs": [11, 12, 13, 14, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Aislamiento de claves por repositorio",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Cifrado en tránsito",
-              "refs": [15, 16, 17, 18, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                15,
+                16,
+                17,
+                18,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Autoalojado / su infraestructura",
-              "refs": [19, 20, 21, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                19,
+                20,
+                21,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -6343,7 +6803,11 @@
           ],
           "timeline": {
             "newLabel": "CON REDIACC",
-            "newSteps": ["Su clave", "AES-256", "Zero-knowledge"],
+            "newSteps": [
+              "Su clave",
+              "AES-256",
+              "Zero-knowledge"
+            ],
             "oldLabel": "LA FORMA ANTIGUA",
             "oldSteps": [
               {
@@ -6639,33 +7103,117 @@
           "features": [
             {
               "name": "Clonación de aplicaciones",
-              "refs": [3, 4, 5, 0, 0, 0],
-              "values": ["check", "check", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Clonación de bases de datos",
-              "refs": [0, 0, 0, 6, 7, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Clon combinado de app + BD",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Cualquier motor de base de datos",
-              "refs": [0, 0, 0, 8, 0, 0],
-              "values": ["cross", "cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                8,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Tiempo de aprovisionamiento",
-              "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                13,
+                0
+              ],
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Seconds",
+                "<60s"
+              ]
             },
             {
               "name": "Datos idénticos a producción",
-              "refs": [0, 0, 0, 14, 15, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                14,
+                15,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -6852,7 +7400,11 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["Run", "60s", "Done"],
+            "newSteps": [
+              "Run",
+              "60s",
+              "Done"
+            ],
             "oldLabel": "La forma antigua",
             "oldSteps": [
               {
@@ -7137,38 +7689,122 @@
           "features": [
             {
               "name": "Prueba de failover de stack completo",
-              "refs": [0, 0, 2, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                2,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Cero impacto en producción",
-              "refs": [0, 3, 4, 5, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                3,
+                4,
+                5,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Menos de 5 minutos",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Informe automatizado de aprobado/reprobado",
-              "refs": [0, 6, 7, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                7,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Integración CI/CD",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Pruebas entre nubes",
-              "refs": [0, 8, 9, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                8,
+                9,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Autoalojado / su infraestructura",
-              "refs": [0, 10, 11, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                10,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -7351,7 +7987,11 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["Ejecutar prueba", "4 min", "Informe"],
+            "newSteps": [
+              "Ejecutar prueba",
+              "4 min",
+              "Informe"
+            ],
             "oldLabel": "La forma antigua",
             "oldSteps": [
               {
@@ -7629,38 +8269,136 @@
           "features": [
             {
               "name": "Backups inmutables",
-              "refs": [4, 5, 6, 7, 0, 0],
-              "values": ["check", "check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Aplicación a nivel de sistema de archivos",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Verificación diaria automatizada de restauración",
-              "refs": [8, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                8,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Almacenamiento sin copia (CoW)",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Clon instantáneo para pruebas",
-              "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["cross", "check", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                13,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Tiempo de recuperación",
-              "refs": [14, 15, 16, 17, 18, 0],
-              "values": ["Minutes", "Minutes", "Hours", "Hours", "Seconds", "<5 min"]
+              "refs": [
+                14,
+                15,
+                16,
+                17,
+                18,
+                0
+              ],
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Hours",
+                "Hours",
+                "Seconds",
+                "<5 min"
+              ]
             },
             {
               "name": "Autoalojado / sin dependencia de la nube",
-              "refs": [19, 20, 21, 0, 22, 0],
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                19,
+                20,
+                21,
+                0,
+                22,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -7843,7 +8581,11 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["Respaldo", "Sellado", "Verificado"],
+            "newSteps": [
+              "Respaldo",
+              "Sellado",
+              "Verificado"
+            ],
             "oldLabel": "La forma antigua",
             "oldSteps": [
               {
@@ -8162,33 +8904,105 @@
           "features": [
             {
               "name": "Almacenamiento de clones sin copia (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Autodestrucción con TTL configurable",
-              "refs": [4, 0, 0, 0, 0],
-              "values": ["check", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Datos completos de producción en el clon",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Entornos multi-servicio",
-              "refs": [0, 5, 0, 6, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                5,
+                0,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Autoalojado / sin precio por puesto",
-              "refs": [0, 7, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                7,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Aprovisionamiento en menos de 60 segundos",
-              "refs": [0, 0, 8, 9, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -8361,7 +9175,11 @@
           ],
           "timeline": {
             "newLabel": "CON REDIACC",
-            "newSteps": ["Levantar", "$0 inactivo", "Limpieza automática"],
+            "newSteps": [
+              "Levantar",
+              "$0 inactivo",
+              "Limpieza automática"
+            ],
             "oldLabel": "ENTORNOS SIEMPRE ACTIVOS",
             "oldSteps": [
               {
@@ -8621,38 +9439,122 @@
           "features": [
             {
               "name": "Restauración de entorno completo (no solo archivos)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Tiempo de recuperación menor a 5 minutos",
-              "refs": [4, 5, 6, 7, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Verificaciones de salud automatizadas post-restauración",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Granularidad de snapshot de punto en el tiempo",
-              "refs": [8, 9, 10, 11, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Clon sin sobrecarga (sin almacenamiento extra)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Recuperación con un solo comando",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Autoalojado / su infraestructura",
-              "refs": [12, 13, 14, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                12,
+                13,
+                14,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -8835,7 +9737,11 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["Ejecutar restauración", "3m 47s", "En línea"],
+            "newSteps": [
+              "Ejecutar restauración",
+              "3m 47s",
+              "En línea"
+            ],
             "oldLabel": "La forma antigua",
             "oldSteps": [
               {
@@ -9127,33 +10033,105 @@
           "features": [
             {
               "name": "Datos de producción en clones de CI",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Integración de webhook en una línea",
-              "refs": [3, 0, 4, 5, 0],
-              "values": ["check", "cross", "check", "check", "rediacc"]
+              "refs": [
+                3,
+                0,
+                4,
+                5,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Entorno de CI multi-servicio",
-              "refs": [0, 6, 0, 7, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                6,
+                0,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Autodestrucción después del pipeline",
-              "refs": [8, 0, 9, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                8,
+                0,
+                9,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Cero scripts de aprovisionamiento personalizados",
-              "refs": [0, 0, 10, 11, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Autoalojado / sin dependencia de proveedor",
-              "refs": [0, 12, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                12,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -9237,19 +10215,31 @@
             "cards": [
               {
                 "footer": "webhook → rdc",
-                "items": ["branch: feature/auth-v2", "commit: a3f7b2c", "author: sarah"],
+                "items": [
+                  "branch: feature/auth-v2",
+                  "commit: a3f7b2c",
+                  "author: sarah"
+                ],
                 "status": "Activador",
                 "title": "Git Push"
               },
               {
                 "footer": "ci-auth-v2",
-                "items": ["gitlab · nextcloud", "mariadb · mailcow", "380 GB → 2.1 GB"],
+                "items": [
+                  "gitlab · nextcloud",
+                  "mariadb · mailcow",
+                  "380 GB → 2.1 GB"
+                ],
                 "status": "CoW",
                 "title": "Clone"
               },
               {
                 "footer": "285 passed",
-                "items": ["247 unit tests ✓", "38 integration ✓", "auto-cleanup ✓"],
+                "items": [
+                  "247 unit tests ✓",
+                  "38 integration ✓",
+                  "auto-cleanup ✓"
+                ],
                 "status": "Aprobadas",
                 "title": "Pruebas"
               }
@@ -9304,7 +10294,11 @@
           ],
           "timeline": {
             "newLabel": "CON REDIACC",
-            "newSteps": ["git push", "Auto", "Datos reales"],
+            "newSteps": [
+              "git push",
+              "Auto",
+              "Datos reales"
+            ],
             "oldLabel": "SCRIPTS CI PERSONALIZADOS",
             "oldSteps": [
               {
@@ -9584,38 +10578,122 @@
           "features": [
             {
               "name": "Migración sin descifrado",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Claves en manos del cliente durante la transferencia",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Migración atómica de configuración + datos",
-              "refs": [0, 0, 5, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                5,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Verificación de integridad post-transferencia",
-              "refs": [6, 7, 8, 9, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                6,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Migración con un solo comando",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Destino cualquiera a cualquiera",
-              "refs": [10, 11, 12, 0, 0],
-              "values": ["check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                10,
+                11,
+                12,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Reversión automática en caso de fallo",
-              "refs": [0, 0, 13, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                13,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -9798,7 +10876,11 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["Ejecutar migración", "0 exposición", "Verificado"],
+            "newSteps": [
+              "Ejecutar migración",
+              "0 exposición",
+              "Verificado"
+            ],
             "oldLabel": "Migración tradicional",
             "oldSteps": [
               {
@@ -10089,38 +11171,122 @@
           "features": [
             {
               "name": "Clon completo de datos de producción",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Verificación de paridad de SO + bibliotecas",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Cualquier motor de BD (MariaDB, Postgres, Mongo)",
-              "refs": [0, 4, 0, 5, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                4,
+                0,
+                5,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Clon multi-servicio (app + BD + correo + almacenamiento)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Almacenamiento sin copia (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Autoalojado / sin dependencia de proveedor",
-              "refs": [0, 6, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Aprovisionamiento en menos de 60 segundos",
-              "refs": [0, 0, 7, 8, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -10293,7 +11459,11 @@
           ],
           "timeline": {
             "newLabel": "CON REDIACC",
-            "newSteps": ["Ejecutar clon", "47s", "100% coincidencia"],
+            "newSteps": [
+              "Ejecutar clon",
+              "47s",
+              "100% coincidencia"
+            ],
             "oldLabel": "ENTORNOS DE DESARROLLO TRADICIONALES",
             "oldSteps": [
               {
@@ -10790,38 +11960,136 @@
           "features": [
             {
               "name": "Inmunidad al CLOUD Act (sin empresa matriz en EE.UU.)",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
-              "refs": [4, 4, 4, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                4,
+                4,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "El cliente tiene las claves (inintelligibilidad técnica)",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 5, 5, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                5,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Operador exclusivamente de la UE (sin empresa matriz en EE.UU.)",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
-              "refs": [4, 4, 4, 0, 6, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                4,
+                4,
+                0,
+                6,
+                0
+              ]
             },
             {
               "name": "Ruta de atestación SecNumCloud / C5:2026",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 7, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                7,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Formato de salida abierto (Ley de Datos Art. 30)",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [8, 8, 8, 0, 8, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                8,
+                8,
+                8,
+                0,
+                8,
+                0
+              ]
             },
             {
               "name": "Auto-alojado en infraestructura del cliente",
-              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [9, 0, 0, 0, 0, 0]
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                9,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Residencia de datos en la UE por defecto",
-              "values": ["cross", "cross", "check", "check", "check", "rediacc"],
-              "refs": [0, 0, 10, 0, 13, 0]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                10,
+                0,
+                13,
+                0
+              ]
             }
           ]
         },
@@ -11033,33 +12301,117 @@
           "features": [
             {
               "name": "Recuperación de entorno completo",
-              "refs": [0, 0, 0, 0, 4, 0],
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                4,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Recuperación en menos de 5 minutos",
-              "refs": [5, 6, 7, 8, 9, 0],
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Punto en el tiempo (nivel de minuto)",
-              "refs": [10, 11, 12, 13, 14, 0],
-              "values": ["check", "check", "check", "check", "check", "rediacc"]
+              "refs": [
+                10,
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Verificación automatizada de restauración",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sin transferencia de datos requerida",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Autoalojado / sin dependencia de la nube",
-              "refs": [15, 16, 17, 0, 18, 0],
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                15,
+                16,
+                17,
+                0,
+                18,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -11242,7 +12594,11 @@
           ],
           "timeline": {
             "newLabel": "CON REDIACC",
-            "newSteps": ["Detectar", "<5 min", "En línea"],
+            "newSteps": [
+              "Detectar",
+              "<5 min",
+              "En línea"
+            ],
             "oldLabel": "LA FORMA ANTIGUA",
             "oldSteps": [
               {
@@ -11518,38 +12874,122 @@
           "features": [
             {
               "name": "Políticas de retención configurables",
-              "refs": [4, 5, 6, 7, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Limpieza automatizada del ciclo de vida",
-              "refs": [8, 9, 10, 11, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Verificación de backups retenidos",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Informes instantáneos listos para auditoría",
-              "refs": [12, 13, 14, 15, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                12,
+                13,
+                14,
+                15,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Soporte multi-framework",
-              "refs": [16, 17, 18, 19, 0],
-              "values": ["cross", "check", "check", "check", "rediacc"]
+              "refs": [
+                16,
+                17,
+                18,
+                19,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Autoalojado / su infraestructura",
-              "refs": [20, 21, 22, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                20,
+                21,
+                22,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "CLI / automatización primero",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -11733,7 +13173,11 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["Definir política", "Auto", "Listo para auditoría"],
+            "newSteps": [
+              "Definir política",
+              "Auto",
+              "Listo para auditoría"
+            ],
             "oldLabel": "La forma antigua",
             "oldSteps": [
               {
@@ -12061,38 +13505,122 @@
           "features": [
             {
               "name": "Clon de stack completo para pruebas",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Creación de clon en menos de 60s",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Red aislada por clon",
-              "refs": [4, 0, 5, 6, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Cero almacenamiento adicional (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Verificación de salud automática después del parche",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Autoalojado, sin dependencia de la nube",
-              "refs": [11, 12, 13, 14, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Flujo de trabajo con un solo comando",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -12275,7 +13803,11 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["Clone", "60s", "Parchear y verificar"],
+            "newSteps": [
+              "Clone",
+              "60s",
+              "Parchear y verificar"
+            ],
             "oldLabel": "La forma antigua",
             "oldSteps": [
               {
@@ -12574,38 +14106,122 @@
           "features": [
             {
               "name": "Migración entre proveedores",
-              "refs": [0, 4, 5, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                4,
+                5,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Migración en menos de 1 hora",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Cero formatos propietarios",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Transferencia solo incremental",
-              "refs": [0, 6, 7, 8, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sin agente del proveedor requerido",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Migración de stack completo (app + BD)",
-              "refs": [0, 9, 10, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                9,
+                10,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Migración sin inactividad",
-              "refs": [0, 0, 11, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "LA BRECHA",
@@ -12788,7 +14404,11 @@
           ],
           "timeline": {
             "newLabel": "CON REDIACC",
-            "newSteps": ["Snapshot", "<1hr", "Live"],
+            "newSteps": [
+              "Snapshot",
+              "<1hr",
+              "Live"
+            ],
             "oldLabel": "LA FORMA ANTIGUA",
             "oldSteps": [
               {
@@ -13195,7 +14815,12 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["Clonar + parchear", "<4 min", "Verificado", "Desplegar"],
+            "newSteps": [
+              "Clonar + parchear",
+              "<4 min",
+              "Verificado",
+              "Desplegar"
+            ],
             "oldLabel": "Parcheo tradicional",
             "oldSteps": [
               {
@@ -13392,24 +15017,24 @@
         }
       },
       "leadMagnetModal": {
-        "title": "Get the technical brief",
-        "description": "Enter your work email. We will send you the PDF link and keep a copy in your inbox.",
-        "emailLabel": "Work email",
+        "title": "Obtenga el informe técnico",
+        "description": "Introduzca su correo corporativo. Le enviaremos el enlace al PDF y guardaremos una copia en su bandeja de entrada.",
+        "emailLabel": "Correo corporativo",
         "emailPlaceholder": "you@company.com",
-        "submitLabel": "Send me the PDF",
-        "sendingLabel": "Sending...",
-        "successTitle": "PDF on the way",
-        "successBody": "We've opened it in a new tab and emailed you the link. Closing this in a moment.",
-        "errorGeneric": "Something went wrong. Please try again or reach out at support@rediacc.com.",
-        "captchaRequired": "Please complete the captcha verification.",
-        "disclaimer": "One email. No marketing list. Unsubscribe with one click.",
-        "closeLabel": "Close"
+        "submitLabel": "Enviarme el PDF",
+        "sendingLabel": "Enviando...",
+        "successTitle": "PDF en camino",
+        "successBody": "Lo hemos abierto en una nueva pestaña y le hemos enviado el enlace por correo. Esta ventana se cerrará en un momento.",
+        "errorGeneric": "Algo ha salido mal. Por favor, inténtelo de nuevo o contacte con nosotros en support@rediacc.com.",
+        "captchaRequired": "Por favor, complete la verificación del captcha.",
+        "disclaimer": "Un único correo. Sin listas de marketing. Cancele la suscripción con un clic.",
+        "closeLabel": "Cerrar"
       },
       "leadMagnetButton": {
-        "title": "Get the technical brief",
-        "description": "A no-fluff PDF written for CISOs, CTOs, and senior engineers. We send the link by email so you can find it again.",
-        "buttonLabel": "Download the brief",
-        "dismissLabel": "Dismiss"
+        "title": "Obtenga el informe técnico",
+        "description": "Un PDF sin relleno, redactado para CISOs, CTOs e ingenieros senior. Le enviamos el enlace por correo para que pueda encontrarlo de nuevo.",
+        "buttonLabel": "Descargar el informe",
+        "dismissLabel": "Cerrar"
       }
     },
     "team": {
@@ -13514,7 +15139,9 @@
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": ["El Bridge recopila las siguientes categorías de datos:"],
+              "content": [
+                "El Bridge recopila las siguientes categorías de datos:"
+              ],
               "items": [
                 "<strong>Operaciones de cola:</strong> ID de tarea, nivel de prioridad, tipo de operación, duración de ejecución, estado de éxito o fallo",
                 "<strong>Operaciones SSH:</strong> host de destino, nombre de usuario, número de puerto, código de salida, duración de ejecución (no se recopila contenido de comandos ni salida)",
@@ -13561,7 +15188,9 @@
           "id": "cli",
           "subsections": {
             "cliDataCollected": {
-              "content": ["La CLI recopila las siguientes categorías de datos:"],
+              "content": [
+                "La CLI recopila las siguientes categorías de datos:"
+              ],
               "items": [
                 "<strong>Uso de comandos:</strong> nombre del comando, versión de la CLI, código de salida, estado de éxito o fallo",
                 "<strong>Argumentos anonimizados:</strong> opciones de comando con valores sensibles redactados — contraseñas, tokens, secretos, claves API y credenciales se reemplazan con <code>[REDACTED]</code>",
@@ -13633,7 +15262,9 @@
           "id": "middleware",
           "subsections": {
             "middlewareDataCollected": {
-              "content": ["El Middleware recopila las siguientes categorías de datos:"],
+              "content": [
+                "El Middleware recopila las siguientes categorías de datos:"
+              ],
               "items": [
                 "<strong>Información del sistema:</strong> nombre del host, versión del sistema operativo, versión del entorno de ejecución .NET",
                 "<strong>Llamadas API:</strong> método HTTP, ruta del endpoint, código de estado de respuesta, duración de la solicitud",
@@ -13655,7 +15286,9 @@
           "title": "6. Telemetría del Middleware"
         },
         "principles": {
-          "content": ["Toda la recopilación de telemetría en Rediacc sigue estos principios:"],
+          "content": [
+            "Toda la recopilación de telemetría en Rediacc sigue estos principios:"
+          ],
           "id": "principles",
           "items": [
             "<strong>Privacidad por diseño:</strong> Los identificadores personales se anonimizan antes de la transmisión. Las direcciones de correo electrónico se reducen solo al dominio, los ID de usuario se cifran con hash (SHA-256) y se truncan, las contraseñas y secretos nunca se recopilan.",
@@ -13673,7 +15306,9 @@
           "id": "web-app",
           "subsections": {
             "webDataCollected": {
-              "content": ["La aplicación web recopila las siguientes categorías de datos:"],
+              "content": [
+                "La aplicación web recopila las siguientes categorías de datos:"
+              ],
               "items": [
                 "<strong>Información del navegador:</strong> nombre y versión del navegador, idioma preferido, plataforma (por ejemplo, Windows, macOS, Linux), resolución de pantalla, profundidad de color, cadena de agente de usuario, memoria del dispositivo (si está disponible), tipo de conexión de red",
                 "<strong>Contexto del usuario:</strong> ID de sesión (generado aleatoriamente por sesión), solo dominio de correo electrónico (la parte local se redacta, por ejemplo, <code>***@example.com</code>), nombre de la organización, nombre del equipo",
@@ -13687,7 +15322,9 @@
               "title": "4.1 Datos recopilados"
             },
             "webNotCollected": {
-              "content": ["La aplicación web no recopila:"],
+              "content": [
+                "La aplicación web no recopila:"
+              ],
               "items": [
                 "Direcciones de correo electrónico completas (la parte local siempre se redacta)",
                 "Contraseñas, tokens o credenciales de autenticación",
@@ -13883,7 +15520,9 @@
               "title": "6.1 Installation and Machine Access"
             },
             "restrictions": {
-              "content": ["Usted no deberá:"],
+              "content": [
+                "Usted no deberá:"
+              ],
               "items": [
                 "Realizar ingeniería inversa, descompilar, desensamblar o intentar de otro modo derivar el código fuente del binario del Bridge o de cualquier componente no abierto del Software On-Premise",
                 "Redistribuir, sublicenciar, alquilar, arrendar o prestar el Software On-Premise a terceros",
@@ -14030,392 +15669,392 @@
     "resourcesBrief": {
       "ransomwareSurvival": {
         "meta": {
-          "title": "Ransomware Survival: Free Technical Brief PDF",
-          "description": "Filesystem-native immutable backup that attackers cannot encrypt, delete, or compromise. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
-          "keywords": "ransomware survival, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+          "title": "Supervivencia al Ransomware: PDF técnico gratuito",
+          "description": "Copia de seguridad inmutable nativa del sistema de archivos que los atacantes no pueden cifrar, eliminar ni comprometer. Un informe gratuito de nivel CISO/CTO de Rediacc, más una versión ejecutiva de cinco minutos.",
+          "keywords": "supervivencia ransomware, pdf, rediacc, btrfs backup, copia de seguridad inmutable, informe técnico"
         },
         "hero": {
-          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
-          "title": "Ransomware Survival",
-          "subtitle": "94% of ransomware attacks target the backup. 57% succeed.",
-          "downloadButton": "Download the technical brief",
-          "openInBrowser": "Open in browser",
-          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+          "eyebrow": "Descarga gratuita · PDF A4 · Nivel CISO / CTO",
+          "title": "Supervivencia al Ransomware",
+          "subtitle": "El 94% de los ataques de ransomware tienen como objetivo la copia de seguridad. El 57% lo consiguen.",
+          "downloadButton": "Descargar el informe técnico",
+          "openInBrowser": "Abrir en el navegador",
+          "disclaimer": "Un único correo. Confirmación por correo. Cancele la suscripción con un clic."
         },
         "toc": {
-          "heading": "What's inside",
-          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "heading": "Contenido del informe",
+          "intro": "El informe abarca la arquitectura, los modos de fallo que bloquea, el mapa regulatorio y las evidencias a nivel de operador que solicitará un auditor. Aproximadamente entre 10 y 14 páginas densas.",
           "items": [
-            "The threat model in concrete operator terms",
-            "Architectural mechanism, with adversary-model reasoning",
-            "Failure modes blocked, with named precedents",
-            "Compliance map: specific rules, fines, reporting windows",
-            "ROI math grounded in published numbers",
-            "Vendor comparison on technical approach (not ARR)",
-            "Onboarding shape and known scope limits",
-            "Audit-ready evidence the architecture produces"
+            "El modelo de amenaza en términos concretos de operador",
+            "Mecanismo arquitectónico, con razonamiento de modelo de adversario",
+            "Modos de fallo bloqueados, con precedentes identificados",
+            "Mapa de cumplimiento: normativas específicas, multas y plazos de notificación",
+            "Cálculo del ROI basado en cifras publicadas",
+            "Comparativa de proveedores por enfoque técnico (no por ARR)",
+            "Forma de incorporación y límites de alcance conocidos",
+            "Evidencias listas para auditoría que produce la arquitectura"
           ]
         },
         "companions": {
-          "heading": "Related solution pages",
-          "intro": "The same architecture, applied to specific buyer questions:",
-          "readMore": "Read more"
+          "heading": "Páginas de solución relacionadas",
+          "intro": "La misma arquitectura aplicada a preguntas específicas de compradores:",
+          "readMore": "Leer más"
         },
         "faq": {
-          "heading": "Questions readers asked",
+          "heading": "Preguntas de los lectores",
           "items": [
             {
-              "q": "Who is this brief written for?",
-              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+              "q": "¿A quién va dirigido este informe?",
+              "a": "A un CISO, CTO o ingeniero senior de infraestructura que evalúe la arquitectura. Se asume familiaridad con los flujos de trabajo de copias de seguridad, los fundamentos de sistemas de archivos y el panorama regulatorio que ya afecta a su entorno."
             },
             {
-              "q": "Is there a non-technical version?",
-              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+              "q": "¿Existe una versión no técnica?",
+              "a": "Sí. Tras enviar su correo electrónico, la misma página enlaza con un PDF ejecutivo de cinco minutos que puede reenviar a un CFO, director de TI o miembro del consejo."
             },
             {
-              "q": "What happens to my email?",
-              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+              "q": "¿Qué ocurre con mi correo electrónico?",
+              "a": "Un único correo de confirmación. Se le añade a nuestro boletín (una publicación breve al mes, sobre todos los productos). Cancele la suscripción con un clic. Su correo electrónico reside en la UE por defecto, conforme a la política de residencia de datos de Rediacc."
             },
             {
-              "q": "Why btrfs?",
-              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+              "q": "¿Por qué btrfs?",
+              "a": "El informe lo explica en detalle. La versión breve: btrfs convierte la inmutabilidad, las instantáneas con copia en escritura y el envío/recepción incremental en propiedades de la capa de almacenamiento, en lugar de depender de una aplicación que se ejecuta sobre ella. Esto cambia lo que un atacante con credenciales de root puede comprometer."
             },
             {
-              "q": "Does this apply to managed services like AWS RDS?",
-              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+              "q": "¿Es aplicable a servicios gestionados como AWS RDS?",
+              "a": "No directamente. La arquitectura cubre la computación autogestionada con bases de datos en contenedores sobre volúmenes respaldados por btrfs. Si su entorno crítico de recuperación reside en RDS o Aurora, el informe lo señala de forma explícita e indica dónde aplica y dónde no el modelo."
             }
           ]
         },
         "about": {
-          "heading": "About this brief",
+          "heading": "Acerca de este informe",
           "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
-          "downloadButton": "Download the brief"
+          "cta": "¿Tiene alguna pregunta que deberíamos añadir a esta página? Escríbanos a hello@rediacc.com.",
+          "downloadButton": "Descargar el informe"
         }
       },
       "multiCloudAlways": {
         "meta": {
-          "title": "Multi-Cloud Always: Free Technical Brief PDF",
-          "description": "When your cloud goes down, your business doesn't — portable snapshots and tested cross-cloud failover. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
-          "keywords": "multi-cloud always, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+          "title": "Multi-Cloud Siempre Disponible: PDF técnico gratuito",
+          "description": "Cuando su nube cae, su negocio no se detiene: instantáneas portables y conmutación por error entre nubes ya probada. Un informe gratuito de nivel CISO/CTO de Rediacc, más una versión ejecutiva de cinco minutos.",
+          "keywords": "multi-cloud siempre disponible, pdf, rediacc, btrfs backup, copia de seguridad inmutable, informe técnico"
         },
         "hero": {
-          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
-          "title": "Multi-Cloud Always",
-          "subtitle": "AWS US-EAST-1 went dark for 15 hours on October 20, 2025. Snapchat, Robinhood, Uber, Delta. Could you have switched clouds in time?",
-          "downloadButton": "Download the technical brief",
-          "openInBrowser": "Open in browser",
-          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+          "eyebrow": "Descarga gratuita · PDF A4 · Nivel CISO / CTO",
+          "title": "Multi-Cloud Siempre Disponible",
+          "subtitle": "AWS US-EAST-1 estuvo caído 15 horas el 20 de octubre de 2025. Snapchat, Robinhood, Uber, Delta. ¿Habría podido cambiar de nube a tiempo?",
+          "downloadButton": "Descargar el informe técnico",
+          "openInBrowser": "Abrir en el navegador",
+          "disclaimer": "Un único correo. Confirmación por correo. Cancele la suscripción con un clic."
         },
         "toc": {
-          "heading": "What's inside",
-          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "heading": "Contenido del informe",
+          "intro": "El informe abarca la arquitectura, los modos de fallo que bloquea, el mapa regulatorio y las evidencias a nivel de operador que solicitará un auditor. Aproximadamente entre 10 y 14 páginas densas.",
           "items": [
-            "The threat model in concrete operator terms",
-            "Architectural mechanism, with adversary-model reasoning",
-            "Failure modes blocked, with named precedents",
-            "Compliance map: specific rules, fines, reporting windows",
-            "ROI math grounded in published numbers",
-            "Vendor comparison on technical approach (not ARR)",
-            "Onboarding shape and known scope limits",
-            "Audit-ready evidence the architecture produces"
+            "El modelo de amenaza en términos concretos de operador",
+            "Mecanismo arquitectónico, con razonamiento de modelo de adversario",
+            "Modos de fallo bloqueados, con precedentes identificados",
+            "Mapa de cumplimiento: normativas específicas, multas y plazos de notificación",
+            "Cálculo del ROI basado en cifras publicadas",
+            "Comparativa de proveedores por enfoque técnico (no por ARR)",
+            "Forma de incorporación y límites de alcance conocidos",
+            "Evidencias listas para auditoría que produce la arquitectura"
           ]
         },
         "companions": {
-          "heading": "Related solution pages",
-          "intro": "The same architecture, applied to specific buyer questions:",
-          "readMore": "Read more"
+          "heading": "Páginas de solución relacionadas",
+          "intro": "La misma arquitectura aplicada a preguntas específicas de compradores:",
+          "readMore": "Leer más"
         },
         "faq": {
-          "heading": "Questions readers asked",
+          "heading": "Preguntas de los lectores",
           "items": [
             {
-              "q": "Who is this brief written for?",
-              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+              "q": "¿A quién va dirigido este informe?",
+              "a": "A un CISO, CTO o ingeniero senior de infraestructura que evalúe la arquitectura. Se asume familiaridad con los flujos de trabajo de copias de seguridad, los fundamentos de sistemas de archivos y el panorama regulatorio que ya afecta a su entorno."
             },
             {
-              "q": "Is there a non-technical version?",
-              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+              "q": "¿Existe una versión no técnica?",
+              "a": "Sí. Tras enviar su correo electrónico, la misma página enlaza con un PDF ejecutivo de cinco minutos que puede reenviar a un CFO, director de TI o miembro del consejo."
             },
             {
-              "q": "What happens to my email?",
-              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+              "q": "¿Qué ocurre con mi correo electrónico?",
+              "a": "Un único correo de confirmación. Se le añade a nuestro boletín (una publicación breve al mes, sobre todos los productos). Cancele la suscripción con un clic. Su correo electrónico reside en la UE por defecto, conforme a la política de residencia de datos de Rediacc."
             },
             {
-              "q": "Why btrfs?",
-              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+              "q": "¿Por qué btrfs?",
+              "a": "El informe lo explica en detalle. La versión breve: btrfs convierte la inmutabilidad, las instantáneas con copia en escritura y el envío/recepción incremental en propiedades de la capa de almacenamiento, en lugar de depender de una aplicación que se ejecuta sobre ella. Esto cambia lo que un atacante con credenciales de root puede comprometer."
             },
             {
-              "q": "Does this apply to managed services like AWS RDS?",
-              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+              "q": "¿Es aplicable a servicios gestionados como AWS RDS?",
+              "a": "No directamente. La arquitectura cubre la computación autogestionada con bases de datos en contenedores sobre volúmenes respaldados por btrfs. Si su entorno crítico de recuperación reside en RDS o Aurora, el informe lo señala de forma explícita e indica dónde aplica y dónde no el modelo."
             }
           ]
         },
         "about": {
-          "heading": "About this brief",
+          "heading": "Acerca de este informe",
           "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
-          "downloadButton": "Download the brief"
+          "cta": "¿Tiene alguna pregunta que deberíamos añadir a esta página? Escríbanos a hello@rediacc.com.",
+          "downloadButton": "Descargar el informe"
         }
       },
       "verifiedBackups": {
         "meta": {
-          "title": "Verified Backups: Free Technical Brief PDF",
-          "description": "Boot-and-verify testing on every backup, every cycle — not a quarterly checkbox. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
-          "keywords": "verified backups, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+          "title": "Copias de Seguridad Verificadas: PDF técnico gratuito",
+          "description": "Pruebas de arranque y verificación en cada copia de seguridad, en cada ciclo, sin que sea una mera casilla trimestral. Un informe gratuito de nivel CISO/CTO de Rediacc, más una versión ejecutiva de cinco minutos.",
+          "keywords": "copias de seguridad verificadas, pdf, rediacc, btrfs backup, copia de seguridad inmutable, informe técnico"
         },
         "hero": {
-          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
-          "title": "Verified Backups",
-          "subtitle": "58% of backups fail when you try to restore them. Most companies only find out during the disaster.",
-          "downloadButton": "Download the technical brief",
-          "openInBrowser": "Open in browser",
-          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+          "eyebrow": "Descarga gratuita · PDF A4 · Nivel CISO / CTO",
+          "title": "Copias de Seguridad Verificadas",
+          "subtitle": "El 58% de las copias de seguridad fallan al intentar restaurarlas. La mayoría de las empresas lo descubren durante el desastre.",
+          "downloadButton": "Descargar el informe técnico",
+          "openInBrowser": "Abrir en el navegador",
+          "disclaimer": "Un único correo. Confirmación por correo. Cancele la suscripción con un clic."
         },
         "toc": {
-          "heading": "What's inside",
-          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "heading": "Contenido del informe",
+          "intro": "El informe abarca la arquitectura, los modos de fallo que bloquea, el mapa regulatorio y las evidencias a nivel de operador que solicitará un auditor. Aproximadamente entre 10 y 14 páginas densas.",
           "items": [
-            "The threat model in concrete operator terms",
-            "Architectural mechanism, with adversary-model reasoning",
-            "Failure modes blocked, with named precedents",
-            "Compliance map: specific rules, fines, reporting windows",
-            "ROI math grounded in published numbers",
-            "Vendor comparison on technical approach (not ARR)",
-            "Onboarding shape and known scope limits",
-            "Audit-ready evidence the architecture produces"
+            "El modelo de amenaza en términos concretos de operador",
+            "Mecanismo arquitectónico, con razonamiento de modelo de adversario",
+            "Modos de fallo bloqueados, con precedentes identificados",
+            "Mapa de cumplimiento: normativas específicas, multas y plazos de notificación",
+            "Cálculo del ROI basado en cifras publicadas",
+            "Comparativa de proveedores por enfoque técnico (no por ARR)",
+            "Forma de incorporación y límites de alcance conocidos",
+            "Evidencias listas para auditoría que produce la arquitectura"
           ]
         },
         "companions": {
-          "heading": "Related solution pages",
-          "intro": "The same architecture, applied to specific buyer questions:",
-          "readMore": "Read more"
+          "heading": "Páginas de solución relacionadas",
+          "intro": "La misma arquitectura aplicada a preguntas específicas de compradores:",
+          "readMore": "Leer más"
         },
         "faq": {
-          "heading": "Questions readers asked",
+          "heading": "Preguntas de los lectores",
           "items": [
             {
-              "q": "Who is this brief written for?",
-              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+              "q": "¿A quién va dirigido este informe?",
+              "a": "A un CISO, CTO o ingeniero senior de infraestructura que evalúe la arquitectura. Se asume familiaridad con los flujos de trabajo de copias de seguridad, los fundamentos de sistemas de archivos y el panorama regulatorio que ya afecta a su entorno."
             },
             {
-              "q": "Is there a non-technical version?",
-              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+              "q": "¿Existe una versión no técnica?",
+              "a": "Sí. Tras enviar su correo electrónico, la misma página enlaza con un PDF ejecutivo de cinco minutos que puede reenviar a un CFO, director de TI o miembro del consejo."
             },
             {
-              "q": "What happens to my email?",
-              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+              "q": "¿Qué ocurre con mi correo electrónico?",
+              "a": "Un único correo de confirmación. Se le añade a nuestro boletín (una publicación breve al mes, sobre todos los productos). Cancele la suscripción con un clic. Su correo electrónico reside en la UE por defecto, conforme a la política de residencia de datos de Rediacc."
             },
             {
-              "q": "Why btrfs?",
-              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+              "q": "¿Por qué btrfs?",
+              "a": "El informe lo explica en detalle. La versión breve: btrfs convierte la inmutabilidad, las instantáneas con copia en escritura y el envío/recepción incremental en propiedades de la capa de almacenamiento, en lugar de depender de una aplicación que se ejecuta sobre ella. Esto cambia lo que un atacante con credenciales de root puede comprometer."
             },
             {
-              "q": "Does this apply to managed services like AWS RDS?",
-              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+              "q": "¿Es aplicable a servicios gestionados como AWS RDS?",
+              "a": "No directamente. La arquitectura cubre la computación autogestionada con bases de datos en contenedores sobre volúmenes respaldados por btrfs. Si su entorno crítico de recuperación reside en RDS o Aurora, el informe lo señala de forma explícita e indica dónde aplica y dónde no el modelo."
             }
           ]
         },
         "about": {
-          "heading": "About this brief",
+          "heading": "Acerca de este informe",
           "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
-          "downloadButton": "Download the brief"
+          "cta": "¿Tiene alguna pregunta que deberíamos añadir a esta página? Escríbanos a hello@rediacc.com.",
+          "downloadButton": "Descargar el informe"
         }
       },
       "encryptionControl": {
         "meta": {
-          "title": "Encryption Control: Free Technical Brief PDF",
-          "description": "Customer-managed keys and encrypted data that survives a vendor switch — Schrems II compliant by architecture. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
-          "keywords": "encryption control, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+          "title": "Control del Cifrado: PDF técnico gratuito",
+          "description": "Claves gestionadas por el cliente y datos cifrados que sobreviven a un cambio de proveedor: conformidad con Schrems II por diseño arquitectónico. Un informe gratuito de nivel CISO/CTO de Rediacc, más una versión ejecutiva de cinco minutos.",
+          "keywords": "control del cifrado, pdf, rediacc, btrfs backup, copia de seguridad inmutable, informe técnico"
         },
         "hero": {
-          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
-          "title": "Encryption Control",
-          "subtitle": "Schrems II is not a policy choice. It is an architecture requirement, and most backup vendors fail it.",
-          "downloadButton": "Download the technical brief",
-          "openInBrowser": "Open in browser",
-          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+          "eyebrow": "Descarga gratuita · PDF A4 · Nivel CISO / CTO",
+          "title": "Control del Cifrado",
+          "subtitle": "Schrems II no es una opción de política. Es un requisito arquitectónico, y la mayoría de los proveedores de copias de seguridad no lo cumplen.",
+          "downloadButton": "Descargar el informe técnico",
+          "openInBrowser": "Abrir en el navegador",
+          "disclaimer": "Un único correo. Confirmación por correo. Cancele la suscripción con un clic."
         },
         "toc": {
-          "heading": "What's inside",
-          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "heading": "Contenido del informe",
+          "intro": "El informe abarca la arquitectura, los modos de fallo que bloquea, el mapa regulatorio y las evidencias a nivel de operador que solicitará un auditor. Aproximadamente entre 10 y 14 páginas densas.",
           "items": [
-            "The threat model in concrete operator terms",
-            "Architectural mechanism, with adversary-model reasoning",
-            "Failure modes blocked, with named precedents",
-            "Compliance map: specific rules, fines, reporting windows",
-            "ROI math grounded in published numbers",
-            "Vendor comparison on technical approach (not ARR)",
-            "Onboarding shape and known scope limits",
-            "Audit-ready evidence the architecture produces"
+            "El modelo de amenaza en términos concretos de operador",
+            "Mecanismo arquitectónico, con razonamiento de modelo de adversario",
+            "Modos de fallo bloqueados, con precedentes identificados",
+            "Mapa de cumplimiento: normativas específicas, multas y plazos de notificación",
+            "Cálculo del ROI basado en cifras publicadas",
+            "Comparativa de proveedores por enfoque técnico (no por ARR)",
+            "Forma de incorporación y límites de alcance conocidos",
+            "Evidencias listas para auditoría que produce la arquitectura"
           ]
         },
         "companions": {
-          "heading": "Related solution pages",
-          "intro": "The same architecture, applied to specific buyer questions:",
-          "readMore": "Read more"
+          "heading": "Páginas de solución relacionadas",
+          "intro": "La misma arquitectura aplicada a preguntas específicas de compradores:",
+          "readMore": "Leer más"
         },
         "faq": {
-          "heading": "Questions readers asked",
+          "heading": "Preguntas de los lectores",
           "items": [
             {
-              "q": "Who is this brief written for?",
-              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+              "q": "¿A quién va dirigido este informe?",
+              "a": "A un CISO, CTO o ingeniero senior de infraestructura que evalúe la arquitectura. Se asume familiaridad con los flujos de trabajo de copias de seguridad, los fundamentos de sistemas de archivos y el panorama regulatorio que ya afecta a su entorno."
             },
             {
-              "q": "Is there a non-technical version?",
-              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+              "q": "¿Existe una versión no técnica?",
+              "a": "Sí. Tras enviar su correo electrónico, la misma página enlaza con un PDF ejecutivo de cinco minutos que puede reenviar a un CFO, director de TI o miembro del consejo."
             },
             {
-              "q": "What happens to my email?",
-              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+              "q": "¿Qué ocurre con mi correo electrónico?",
+              "a": "Un único correo de confirmación. Se le añade a nuestro boletín (una publicación breve al mes, sobre todos los productos). Cancele la suscripción con un clic. Su correo electrónico reside en la UE por defecto, conforme a la política de residencia de datos de Rediacc."
             },
             {
-              "q": "Why btrfs?",
-              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+              "q": "¿Por qué btrfs?",
+              "a": "El informe lo explica en detalle. La versión breve: btrfs convierte la inmutabilidad, las instantáneas con copia en escritura y el envío/recepción incremental en propiedades de la capa de almacenamiento, en lugar de depender de una aplicación que se ejecuta sobre ella. Esto cambia lo que un atacante con credenciales de root puede comprometer."
             },
             {
-              "q": "Does this apply to managed services like AWS RDS?",
-              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+              "q": "¿Es aplicable a servicios gestionados como AWS RDS?",
+              "a": "No directamente. La arquitectura cubre la computación autogestionada con bases de datos en contenedores sobre volúmenes respaldados por btrfs. Si su entorno crítico de recuperación reside en RDS o Aurora, el informe lo señala de forma explícita e indica dónde aplica y dónde no el modelo."
             }
           ]
         },
         "about": {
-          "heading": "About this brief",
+          "heading": "Acerca de este informe",
           "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
-          "downloadButton": "Download the brief"
+          "cta": "¿Tiene alguna pregunta que deberíamos añadir a esta página? Escríbanos a hello@rediacc.com.",
+          "downloadButton": "Descargar el informe"
         }
       },
       "devEnvironments": {
         "meta": {
-          "title": "Development Environments: Free Technical Brief PDF",
-          "description": "Production-identical dev environments in 60 seconds via btrfs zero-copy clones. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
-          "keywords": "development environments, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+          "title": "Entornos de Desarrollo: PDF técnico gratuito",
+          "description": "Entornos de desarrollo idénticos a producción en 60 segundos mediante clones de copia cero de btrfs. Un informe gratuito de nivel CISO/CTO de Rediacc, más una versión ejecutiva de cinco minutos.",
+          "keywords": "entornos de desarrollo, pdf, rediacc, btrfs backup, copia de seguridad inmutable, informe técnico"
         },
         "hero": {
-          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
-          "title": "Development Environments",
-          "subtitle": "Your developers write code 4.5 hours a week. The rest is waiting on environments. A 50-engineer team loses $720K-$1.2M a year on setup.",
-          "downloadButton": "Download the technical brief",
-          "openInBrowser": "Open in browser",
-          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+          "eyebrow": "Descarga gratuita · PDF A4 · Nivel CISO / CTO",
+          "title": "Entornos de Desarrollo",
+          "subtitle": "Sus desarrolladores escriben código 4,5 horas a la semana. El resto del tiempo lo pierden esperando a que los entornos estén listos. Un equipo de 50 ingenieros pierde entre $720.000 y $1,2 millones al año en configuraciones.",
+          "downloadButton": "Descargar el informe técnico",
+          "openInBrowser": "Abrir en el navegador",
+          "disclaimer": "Un único correo. Confirmación por correo. Cancele la suscripción con un clic."
         },
         "toc": {
-          "heading": "What's inside",
-          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "heading": "Contenido del informe",
+          "intro": "El informe abarca la arquitectura, los modos de fallo que bloquea, el mapa regulatorio y las evidencias a nivel de operador que solicitará un auditor. Aproximadamente entre 10 y 14 páginas densas.",
           "items": [
-            "The threat model in concrete operator terms",
-            "Architectural mechanism, with adversary-model reasoning",
-            "Failure modes blocked, with named precedents",
-            "Compliance map: specific rules, fines, reporting windows",
-            "ROI math grounded in published numbers",
-            "Vendor comparison on technical approach (not ARR)",
-            "Onboarding shape and known scope limits",
-            "Audit-ready evidence the architecture produces"
+            "El modelo de amenaza en términos concretos de operador",
+            "Mecanismo arquitectónico, con razonamiento de modelo de adversario",
+            "Modos de fallo bloqueados, con precedentes identificados",
+            "Mapa de cumplimiento: normativas específicas, multas y plazos de notificación",
+            "Cálculo del ROI basado en cifras publicadas",
+            "Comparativa de proveedores por enfoque técnico (no por ARR)",
+            "Forma de incorporación y límites de alcance conocidos",
+            "Evidencias listas para auditoría que produce la arquitectura"
           ]
         },
         "companions": {
-          "heading": "Related solution pages",
-          "intro": "The same architecture, applied to specific buyer questions:",
-          "readMore": "Read more"
+          "heading": "Páginas de solución relacionadas",
+          "intro": "La misma arquitectura aplicada a preguntas específicas de compradores:",
+          "readMore": "Leer más"
         },
         "faq": {
-          "heading": "Questions readers asked",
+          "heading": "Preguntas de los lectores",
           "items": [
             {
-              "q": "Who is this brief written for?",
-              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+              "q": "¿A quién va dirigido este informe?",
+              "a": "A un CISO, CTO o ingeniero senior de infraestructura que evalúe la arquitectura. Se asume familiaridad con los flujos de trabajo de copias de seguridad, los fundamentos de sistemas de archivos y el panorama regulatorio que ya afecta a su entorno."
             },
             {
-              "q": "Is there a non-technical version?",
-              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+              "q": "¿Existe una versión no técnica?",
+              "a": "Sí. Tras enviar su correo electrónico, la misma página enlaza con un PDF ejecutivo de cinco minutos que puede reenviar a un CFO, director de TI o miembro del consejo."
             },
             {
-              "q": "What happens to my email?",
-              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+              "q": "¿Qué ocurre con mi correo electrónico?",
+              "a": "Un único correo de confirmación. Se le añade a nuestro boletín (una publicación breve al mes, sobre todos los productos). Cancele la suscripción con un clic. Su correo electrónico reside en la UE por defecto, conforme a la política de residencia de datos de Rediacc."
             },
             {
-              "q": "Why btrfs?",
-              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+              "q": "¿Por qué btrfs?",
+              "a": "El informe lo explica en detalle. La versión breve: btrfs convierte la inmutabilidad, las instantáneas con copia en escritura y el envío/recepción incremental en propiedades de la capa de almacenamiento, en lugar de depender de una aplicación que se ejecuta sobre ella. Esto cambia lo que un atacante con credenciales de root puede comprometer."
             },
             {
-              "q": "Does this apply to managed services like AWS RDS?",
-              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+              "q": "¿Es aplicable a servicios gestionados como AWS RDS?",
+              "a": "No directamente. La arquitectura cubre la computación autogestionada con bases de datos en contenedores sobre volúmenes respaldados por btrfs. Si su entorno crítico de recuperación reside en RDS o Aurora, el informe lo señala de forma explícita e indica dónde aplica y dónde no el modelo."
             }
           ]
         },
         "about": {
-          "heading": "About this brief",
+          "heading": "Acerca de este informe",
           "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
-          "downloadButton": "Download the brief"
+          "cta": "¿Tiene alguna pregunta que deberíamos añadir a esta página? Escríbanos a hello@rediacc.com.",
+          "downloadButton": "Descargar el informe"
         }
       },
       "preemptiveDefense": {
         "meta": {
-          "title": "Preemptive Defense: Free Technical Brief PDF",
-          "description": "Production-clone security testing with zero production risk — AI pentests run on a disposable copy. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
-          "keywords": "preemptive defense, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+          "title": "Defensa Preventiva: PDF técnico gratuito",
+          "description": "Pruebas de seguridad en clones de producción con riesgo cero para producción: las pruebas de penetración con IA se ejecutan sobre una copia desechable. Un informe gratuito de nivel CISO/CTO de Rediacc, más una versión ejecutiva de cinco minutos.",
+          "keywords": "defensa preventiva, pdf, rediacc, btrfs backup, copia de seguridad inmutable, informe técnico"
         },
         "hero": {
-          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
-          "title": "Preemptive Defense",
-          "subtitle": "Test against your real infrastructure. Break nothing. The clone takes the dangerous hits.",
-          "downloadButton": "Download the technical brief",
-          "openInBrowser": "Open in browser",
-          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+          "eyebrow": "Descarga gratuita · PDF A4 · Nivel CISO / CTO",
+          "title": "Defensa Preventiva",
+          "subtitle": "Pruebe contra su infraestructura real. Sin romper nada. El clon absorbe los impactos peligrosos.",
+          "downloadButton": "Descargar el informe técnico",
+          "openInBrowser": "Abrir en el navegador",
+          "disclaimer": "Un único correo. Confirmación por correo. Cancele la suscripción con un clic."
         },
         "toc": {
-          "heading": "What's inside",
-          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "heading": "Contenido del informe",
+          "intro": "El informe abarca la arquitectura, los modos de fallo que bloquea, el mapa regulatorio y las evidencias a nivel de operador que solicitará un auditor. Aproximadamente entre 10 y 14 páginas densas.",
           "items": [
-            "The threat model in concrete operator terms",
-            "Architectural mechanism, with adversary-model reasoning",
-            "Failure modes blocked, with named precedents",
-            "Compliance map: specific rules, fines, reporting windows",
-            "ROI math grounded in published numbers",
-            "Vendor comparison on technical approach (not ARR)",
-            "Onboarding shape and known scope limits",
-            "Audit-ready evidence the architecture produces"
+            "El modelo de amenaza en términos concretos de operador",
+            "Mecanismo arquitectónico, con razonamiento de modelo de adversario",
+            "Modos de fallo bloqueados, con precedentes identificados",
+            "Mapa de cumplimiento: normativas específicas, multas y plazos de notificación",
+            "Cálculo del ROI basado en cifras publicadas",
+            "Comparativa de proveedores por enfoque técnico (no por ARR)",
+            "Forma de incorporación y límites de alcance conocidos",
+            "Evidencias listas para auditoría que produce la arquitectura"
           ]
         },
         "companions": {
-          "heading": "Related solution pages",
-          "intro": "The same architecture, applied to specific buyer questions:",
-          "readMore": "Read more"
+          "heading": "Páginas de solución relacionadas",
+          "intro": "La misma arquitectura aplicada a preguntas específicas de compradores:",
+          "readMore": "Leer más"
         },
         "faq": {
-          "heading": "Questions readers asked",
+          "heading": "Preguntas de los lectores",
           "items": [
             {
-              "q": "Who is this brief written for?",
-              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+              "q": "¿A quién va dirigido este informe?",
+              "a": "A un CISO, CTO o ingeniero senior de infraestructura que evalúe la arquitectura. Se asume familiaridad con los flujos de trabajo de copias de seguridad, los fundamentos de sistemas de archivos y el panorama regulatorio que ya afecta a su entorno."
             },
             {
-              "q": "Is there a non-technical version?",
-              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+              "q": "¿Existe una versión no técnica?",
+              "a": "Sí. Tras enviar su correo electrónico, la misma página enlaza con un PDF ejecutivo de cinco minutos que puede reenviar a un CFO, director de TI o miembro del consejo."
             },
             {
-              "q": "What happens to my email?",
-              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+              "q": "¿Qué ocurre con mi correo electrónico?",
+              "a": "Un único correo de confirmación. Se le añade a nuestro boletín (una publicación breve al mes, sobre todos los productos). Cancele la suscripción con un clic. Su correo electrónico reside en la UE por defecto, conforme a la política de residencia de datos de Rediacc."
             },
             {
-              "q": "Why btrfs?",
-              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+              "q": "¿Por qué btrfs?",
+              "a": "El informe lo explica en detalle. La versión breve: btrfs convierte la inmutabilidad, las instantáneas con copia en escritura y el envío/recepción incremental en propiedades de la capa de almacenamiento, en lugar de depender de una aplicación que se ejecuta sobre ella. Esto cambia lo que un atacante con credenciales de root puede comprometer."
             },
             {
-              "q": "Does this apply to managed services like AWS RDS?",
-              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+              "q": "¿Es aplicable a servicios gestionados como AWS RDS?",
+              "a": "No directamente. La arquitectura cubre la computación autogestionada con bases de datos en contenedores sobre volúmenes respaldados por btrfs. Si su entorno crítico de recuperación reside en RDS o Aurora, el informe lo señala de forma explícita e indica dónde aplica y dónde no el modelo."
             }
           ]
         },
         "about": {
-          "heading": "About this brief",
+          "heading": "Acerca de este informe",
           "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
-          "downloadButton": "Download the brief"
+          "cta": "¿Tiene alguna pregunta que deberíamos añadir a esta página? Escríbanos a hello@rediacc.com.",
+          "downloadButton": "Descargar el informe"
         }
       }
     }
