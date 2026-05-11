@@ -1,0 +1,47 @@
+---
+/**
+ * Direct (non-gated) short-form PDF download. Renders near the bottom
+ * of the solution page as the bail-out CTA for visitors who don't have
+ * time for the long version. Always visible; no scroll trigger needed.
+ */
+import type { Language } from '../../i18n/types';
+import type { SolutionCategory } from '../../config/solution-pages';
+import { categoryToPdfPair } from './category-pdf-map';
+import { createTranslator } from '../../i18n/utils';
+
+interface Props {
+  lang: Language;
+  slug: string;
+  category: SolutionCategory;
+}
+
+const { lang, slug, category } = Astro.props;
+const pair = categoryToPdfPair[category];
+const pdfHref = `/assets/${pair.execPdf}`;
+const { t } = createTranslator(lang);
+---
+
+<section class="sp-download-short" aria-labelledby={`sp-download-short-title-${slug}`}>
+  <div class="sp-download-short__card">
+    <h2 id={`sp-download-short-title-${slug}`} class="sp-download-short__title">
+      {t('pages.solutionPages.downloadShort.title')}
+    </h2>
+    <p class="sp-download-short__description">
+      {t('pages.solutionPages.downloadShort.description')}
+    </p>
+    <a
+      class="sp-download-short__button"
+      href={pdfHref}
+      download={pair.execPdf}
+      data-track="cta_click"
+      data-track-label={`download-short-${slug}`}
+    >
+      {t('pages.solutionPages.downloadShort.buttonLabel')}
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </svg>
+    </a>
+  </div>
+</section>

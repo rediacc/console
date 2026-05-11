@@ -47,9 +47,16 @@ const { problem, illustration, illustrationAlt = '', referenceItems = [] } = Ast
     <p>{problem.description}</p>
 
     {illustration && (
-      <div class="sp-problem-illustration">
-        <Image src={illustration} alt={illustrationAlt || problem.title} width={800} height={450} loading="lazy" />
-      </div>
+      <button
+        type="button"
+        class="sp-problem-illustration sp-illustration-trigger"
+        aria-label="Click to enlarge illustration"
+        data-track="cta_click"
+        data-track-label="sp-problem-illustration"
+        data-track-dest="modal"
+      >
+        <Image src={illustration} alt={illustrationAlt || problem.title} width={1200} height={675} loading="lazy" />
+      </button>
     )}
 
     {problem.statCallouts && problem.statCallouts.length > 0 && (

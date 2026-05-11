@@ -19,7 +19,7 @@ export interface RepositoryEnvironment {
   REDIACC_WORKING_DIR: string;
   REDIACC_NETWORK_ID: string;
   REDIACC_NETWORK_MODE: string;
-  REDIACC_TAG: string;
+  REDIACC_REPO_TAG: string;
   REDIACC_DATASTORE: string;
   REDIACC_DATASTORE_USER: string;
   REDIACC_IMMOVABLE: string;
@@ -108,7 +108,11 @@ export function buildRepositoryEnvironment(
   const networkId = repositoryVault.networkId ?? '';
   const networkMode =
     repositoryVault.networkMode ?? machineVault.networkMode ?? DEFAULTS.REPOSITORY.NETWORK_MODE;
-  const tag = repositoryVault.tag ?? DEFAULTS.REPOSITORY.TAG;
+  // For fork composite names like "gitlab:1", derive the tag from the suffix
+  // so REDIACC_REPO_TAG matches what renet writes into .envrc on the machine.
+  const colonIdx = repositoryName.indexOf(':');
+  const derivedTag = colonIdx >= 0 ? repositoryName.slice(colonIdx + 1) : DEFAULTS.REPOSITORY.TAG;
+  const tag = repositoryVault.tag ?? derivedTag;
   const immovable = repositoryVault.immovable ? 'true' : 'false';
 
   // Docker socket handling - uses networkId directly for Python compatibility
@@ -129,7 +133,7 @@ export function buildRepositoryEnvironment(
     REDIACC_WORKING_DIR: repositoryPath,
     REDIACC_NETWORK_ID: networkId,
     REDIACC_NETWORK_MODE: networkMode,
-    REDIACC_TAG: tag,
+    REDIACC_REPO_TAG: tag,
     REDIACC_DATASTORE: datastore,
     REDIACC_DATASTORE_USER: universalUser,
     REDIACC_IMMOVABLE: immovable,

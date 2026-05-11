@@ -324,7 +324,14 @@
     }
   },
   "logoWall": {
-    "categories": ["Git", "CI/CD", "컨테이너", "데이터베이스", "모니터링", "스토리지"],
+    "categories": [
+      "Git",
+      "CI/CD",
+      "컨테이너",
+      "데이터베이스",
+      "모니터링",
+      "스토리지"
+    ],
     "title": "기존 인프라와 함께 사용하세요"
   },
   "metrics": {
@@ -598,7 +605,9 @@
           "title": "7. 정책 변경"
         },
         "cookiesWeUse": {
-          "content": ["당사는 최소한의 쿠키만 사용합니다. 실제로 단 하나의 쿠키만 사용합니다:"],
+          "content": [
+            "당사는 최소한의 쿠키만 사용합니다. 실제로 단 하나의 쿠키만 사용합니다:"
+          ],
           "id": "cookies-we-use",
           "subsections": {
             "languageCookie": {
@@ -891,7 +900,9 @@
                 "스탠다드 구현($9,999) 또는 단계별 패키지(소규모 $7,499 · 중간 $14,999 · 대규모 $29,999 · 엔터프라이즈 맞춤)",
                 "긴급 대응 참여($29,999 온디맨드)"
               ],
-              "included": ["셀프 서비스 문서, 동영상 튜토리얼, 커뮤니티 포럼"],
+              "included": [
+                "셀프 서비스 문서, 동영상 튜토리얼, 커뮤니티 포럼"
+              ],
               "planId": "커뮤니티"
             },
             {
@@ -900,7 +911,10 @@
                 "긴급 대응 참여($29,999 온디맨드)",
                 "맞춤형 통합 프로젝트(범위 협의)"
               ],
-              "included": ["이메일 지원", "스탠다드 온보딩 세션(설정 통화 및 구성 안내)"],
+              "included": [
+                "이메일 지원",
+                "스탠다드 온보딩 세션(설정 통화 및 구성 안내)"
+              ],
               "planId": "프로페셔널"
             },
             {
@@ -977,7 +991,11 @@
             "turnaround": "당일"
           },
           "priority": {
-            "benefits": ["전담 참여 매니저", "저녁/주말 이용 가능", "프로덕션 전환 지원"],
+            "benefits": [
+              "전담 참여 매니저",
+              "저녁/주말 이용 가능",
+              "프로덕션 전환 지원"
+            ],
             "description": "확장된 가용성과 전환 지원이 포함된 신속한 제공 서비스.",
             "name": "우선",
             "price": "$19,999",
@@ -1176,7 +1194,10 @@
       },
       "trust": {
         "heading": "보안 및 신뢰성",
-        "items": ["AES-256 암호화 표준", "99.99% 가동 시간 SLA"]
+        "items": [
+          "AES-256 암호화 표준",
+          "99.99% 가동 시간 SLA"
+        ]
       },
       "ui": {
         "anchor": "전략적 기준",
@@ -1626,7 +1647,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["rdc repo up", "JSON", "완료"],
+            "newSteps": [
+              "rdc repo up",
+              "JSON",
+              "완료"
+            ],
             "oldLabel": "전통적인 인프라",
             "oldSteps": [
               {
@@ -1848,7 +1873,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["$204/월", "고정", "귀사의 것"],
+            "newSteps": [
+              "$204/월",
+              "고정",
+              "귀사의 것"
+            ],
             "oldLabel": "클라우드 인프라",
             "oldSteps": [
               {
@@ -2038,31 +2067,73 @@
           "features": [
             {
               "name": "셀프호스팅 / 온프레미스",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "파일시스템 수준 불변성",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "즉각적 복구 (5분 미만)",
-              "values": ["cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "제로 카피 스냅샷 (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "머신당 요금 (사용자당 요금 없음)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "자동화된 복원 검증",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "벤더 종속 없음",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "경쟁 환경",
@@ -2105,7 +2176,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["감지", "롤백", "5분 미만"],
+            "newSteps": [
+              "감지",
+              "롤백",
+              "5분 미만"
+            ],
             "oldLabel": "전통적인 재해 복구",
             "oldSteps": [
               {
@@ -2399,7 +2474,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["rdc ceph snapshot create", "52s", "완료"],
+            "newSteps": [
+              "rdc ceph snapshot create",
+              "52s",
+              "완료"
+            ],
             "oldLabel": "기존 방식",
             "oldSteps": [
               {
@@ -2868,7 +2947,9 @@
                 "Standard 구현 ($9,999) 또는 단계별 패키지 (소규모 $7,499 · 중간 $14,999 · 대규모 $29,999 · Enterprise 별도 견적)",
                 "Emergency 대응 참여 ($29,999 온디맨드)"
               ],
-              "included": ["셀프서비스 문서, 동영상 튜토리얼, 커뮤니티 포럼"],
+              "included": [
+                "셀프서비스 문서, 동영상 튜토리얼, 커뮤니티 포럼"
+              ],
               "planId": "커뮤니티"
             },
             {
@@ -2877,7 +2958,10 @@
                 "Emergency 대응 참여 ($29,999 온디맨드)",
                 "커스텀 통합 프로젝트 (범위 기반)"
               ],
-              "included": ["이메일 지원", "Standard 온보딩 세션 (설정 통화 및 설정 안내)"],
+              "included": [
+                "이메일 지원",
+                "Standard 온보딩 세션 (설정 통화 및 설정 안내)"
+              ],
               "planId": "프로페셔널"
             },
             {
@@ -2954,7 +3038,11 @@
             "turnaround": "당일"
           },
           "priority": {
-            "benefits": ["전담 참여 매니저", "저녁/주말 지원 가능", "프로덕션 컷오버 지원"],
+            "benefits": [
+              "전담 참여 매니저",
+              "저녁/주말 지원 가능",
+              "프로덕션 컷오버 지원"
+            ],
             "description": "확장된 가용성과 가이드 컷오버 지원을 갖춘 가속화된 제공.",
             "name": "Priority",
             "price": "$19,999",
@@ -3148,7 +3236,10 @@
       },
       "trust": {
         "heading": "보안 및 신뢰성",
-        "items": ["AES-256 암호화 표준", "가동률 SLA 99.99%"]
+        "items": [
+          "AES-256 암호화 표준",
+          "가동률 SLA 99.99%"
+        ]
       },
       "trustSection": {
         "heading": "귀사의 인프라. 귀사의 규칙.",
@@ -3311,7 +3402,9 @@
           "title": "4. 데이터 공유 및 제3자"
         },
         "howWeUseInformation": {
-          "content": ["당사는 수집한 정보를 다음의 목적으로 사용합니다:"],
+          "content": [
+            "당사는 수집한 정보를 다음의 목적으로 사용합니다:"
+          ],
           "id": "how-we-use-information",
           "items": [
             "문의 양식을 통해 제출된 귀하의 문의에 답변하기 위해",
@@ -3380,7 +3473,9 @@
           "title": "1. 소개"
         },
         "yourRights": {
-          "content": ["귀하의 관할권에 따라 개인 데이터에 관한 다음의 권리를 가질 수 있습니다:"],
+          "content": [
+            "귀하의 관할권에 따라 개인 데이터에 관한 다음의 권리를 가질 수 있습니다:"
+          ],
           "content2": [
             "이러한 권리를 행사하려면 <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>으로 문의해 주십시오. 당사는 30일 이내에 응답할 것입니다."
           ],
@@ -3461,7 +3556,9 @@
           "content": [
             "환불을 요청하시려면 <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>으로 다음 정보를 포함하여 이메일을 보내 주십시오:"
           ],
-          "content2": ["당사는 모든 환불 요청에 대해 영업일 기준 5일 이내에 답변을 드리겠습니다."],
+          "content2": [
+            "당사는 모든 환불 요청에 대해 영업일 기준 5일 이내에 답변을 드리겠습니다."
+          ],
           "id": "how-to-request",
           "items": [
             "계정 이메일 주소",
@@ -3472,7 +3569,9 @@
           "title": "4. 환불 요청 방법"
         },
         "nonRefundable": {
-          "content": ["다음 항목은 환불 대상이 아닙니다:"],
+          "content": [
+            "다음 항목은 환불 대상이 아닙니다:"
+          ],
           "id": "non-refundable",
           "items": [
             "신규 구독자 14일 기간 이후 해지된 구독",
@@ -3763,6 +3862,21 @@
       "title": "Rediacc로 조직이 얼마나 절감할 수 있을까요?"
     },
     "solutionPages": {
+      "downloadGated": {
+        "title": "Get the technical brief",
+        "description": "A no-fluff PDF written for CISOs, CTOs, and senior engineers. Drop your email and we send you the download link plus a one-page summary by mail.",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "Send me the brief",
+        "successMessage": "Check your inbox to confirm. We've also opened the PDF in a new tab.",
+        "errorMessage": "Something went wrong. Please try again or reach out at support@rediacc.com.",
+        "disclaimer": "One email. No marketing list. Unsubscribe with one click.",
+        "dismissLabel": "Dismiss"
+      },
+      "downloadShort": {
+        "title": "Short on time?",
+        "description": "Skip the deep-dive. Grab the five-minute version your team can read at a stand-up.",
+        "buttonLabel": "Download short brief (PDF)"
+      },
       "aiPentesting": {
         "benefits": {
           "items": [
@@ -3984,7 +4098,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["침투 테스트 실행", "47s", "취약점 7개 발견"],
+            "newSteps": [
+              "침투 테스트 실행",
+              "47s",
+              "취약점 7개 발견"
+            ],
             "oldLabel": "기존 침투 테스트",
             "oldSteps": [
               {
@@ -4234,38 +4352,122 @@
           "features": [
             {
               "name": "변조 방지 감사 로그",
-              "refs": [0, 2, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                2,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "암호화 서명 (SHA-256)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "즉시 보고서 생성 (CLI)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "기본 작업 로깅",
-              "refs": [3, 4, 5, 6, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "작업별 사용자 귀속",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "키 교체 추적",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "자체 호스팅 / 귀사 인프라",
-              "refs": [11, 12, 13, 0, 0],
-              "values": ["check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "격차",
@@ -4447,7 +4649,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["감사 실행", "즉시", "완전한 보고서"],
+            "newSteps": [
+              "감사 실행",
+              "즉시",
+              "완전한 보고서"
+            ],
             "oldLabel": "기존 방식",
             "oldSteps": [
               {
@@ -4705,38 +4911,122 @@
           "features": [
             {
               "name": "자동화 복원 검증",
-              "refs": [4, 0, 0, 0, 0],
-              "values": ["check", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "전체 서비스 상태 확인",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "일일 자동화 테스트",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "테스트를 위한 제로 스토리지 클론",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "체크섬 / 파일 무결성",
-              "refs": [5, 6, 7, 8, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "알림 통합",
-              "refs": [9, 10, 11, 12, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "자체 호스팅 / 귀사 인프라",
-              "refs": [13, 14, 15, 0, 0],
-              "values": ["check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                13,
+                14,
+                15,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "격차",
@@ -4919,7 +5209,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["백업", "47s", "검증됨"],
+            "newSteps": [
+              "백업",
+              "47s",
+              "검증됨"
+            ],
             "oldLabel": "기존 방식",
             "oldSteps": [
               {
@@ -5217,38 +5511,122 @@
           "features": [
             {
               "name": "크로스 클라우드 복제",
-              "refs": [0, 4, 5, 6, 0],
-              "values": ["cross", "check", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "30초 미만 페일오버",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "증분 전용 전송 (98% 절감)",
-              "refs": [0, 7, 8, 9, 0],
-              "values": ["cross", "check", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "임의 공급자 간 페일오버",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "자체 호스팅, 클라우드 에이전트 불필요",
-              "refs": [0, 10, 11, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                10,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "자동 DNS 페일오버",
-              "refs": [0, 0, 12, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                12,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "전체 스택 복제 (앱 + DB)",
-              "refs": [0, 13, 14, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                13,
+                14,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "격차",
@@ -5432,7 +5810,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["감지", "<30s", "온라인"],
+            "newSteps": [
+              "감지",
+              "<30s",
+              "온라인"
+            ],
             "oldLabel": "기존 방식",
             "oldSteps": [
               {
@@ -5827,7 +6209,12 @@
               },
               {
                 "footer": "지속적 개선 · 자동화",
-                "items": ["1주: ████████ 23", "2주: ████ 12", "3주: ██ 7", "4주: █ 3"],
+                "items": [
+                  "1주: ████████ 23",
+                  "2주: ████ 12",
+                  "3주: ██ 7",
+                  "4주: █ 3"
+                ],
                 "status": "-87%",
                 "title": "4주 추세"
               }
@@ -5882,7 +6269,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["일일 스캔", "0일", "사각지대 제로"],
+            "newSteps": [
+              "일일 스캔",
+              "0일",
+              "사각지대 제로"
+            ],
             "oldLabel": "연간 침투 테스트",
             "oldSteps": [
               {
@@ -6115,38 +6506,122 @@
           "features": [
             {
               "name": "고객 보유 암호화 키",
-              "refs": [3, 4, 5, 6, 0],
-              "values": ["Via KMS", "Via KMS", "Via KMS", "Via KMS", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "Via KMS",
+                "Via KMS",
+                "Via KMS",
+                "Via KMS",
+                "rediacc"
+              ]
             },
             {
               "name": "제로 지식 아키텍처",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "자체 키 교체",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["Via KMS", "Via KMS", "Via KMS", "Via KMS", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "Via KMS",
+                "Via KMS",
+                "Via KMS",
+                "Via KMS",
+                "rediacc"
+              ]
             },
             {
               "name": "저장 시 AES-256 암호화",
-              "refs": [11, 12, 13, 14, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "저장소별 키 격리",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "전송 시 암호화",
-              "refs": [15, 16, 17, 18, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                15,
+                16,
+                17,
+                18,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "자체 호스팅 / 귀하의 인프라",
-              "refs": [19, 20, 21, 0, 0],
-              "values": ["check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                19,
+                20,
+                21,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "격차",
@@ -6328,7 +6803,11 @@
           ],
           "timeline": {
             "newLabel": "REDIACC 사용 시",
-            "newSteps": ["귀하의 키", "AES-256", "제로 지식"],
+            "newSteps": [
+              "귀하의 키",
+              "AES-256",
+              "제로 지식"
+            ],
             "oldLabel": "기존 방식",
             "oldSteps": [
               {
@@ -6624,33 +7103,117 @@
           "features": [
             {
               "name": "애플리케이션 복제",
-              "refs": [3, 4, 5, 0, 0, 0],
-              "values": ["check", "check", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "데이터베이스 복제",
-              "refs": [0, 0, 0, 6, 7, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "앱 + DB 통합 복제",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "모든 데이터베이스 엔진",
-              "refs": [0, 0, 0, 8, 0, 0],
-              "values": ["cross", "cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                8,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "프로비저닝 시간",
-              "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["분 단위", "분 단위", "분 단위", "분 단위", "초 단위", "<60s"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                13,
+                0
+              ],
+              "values": [
+                "분 단위",
+                "분 단위",
+                "분 단위",
+                "분 단위",
+                "초 단위",
+                "<60s"
+              ]
             },
             {
               "name": "프로덕션과 동일한 데이터",
-              "refs": [0, 0, 0, 14, 15, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                14,
+                15,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "격차",
@@ -6837,7 +7400,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["실행", "60초", "완료"],
+            "newSteps": [
+              "실행",
+              "60초",
+              "완료"
+            ],
             "oldLabel": "기존 방식",
             "oldSteps": [
               {
@@ -7122,38 +7689,122 @@
           "features": [
             {
               "name": "풀 스택 페일오버 테스트",
-              "refs": [0, 0, 2, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                2,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "프로덕션 영향 없음",
-              "refs": [0, 3, 4, 5, 0],
-              "values": ["cross", "check", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                3,
+                4,
+                5,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "5분 이내 완료",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "자동화된 합격/불합격 보고서",
-              "refs": [0, 6, 7, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                7,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "CI/CD 통합",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "크로스 클라우드 테스트",
-              "refs": [0, 8, 9, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                8,
+                9,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "자체 호스팅 / 자체 인프라",
-              "refs": [0, 10, 11, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                10,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "차이",
@@ -7336,7 +7987,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["테스트 실행", "4분", "결과 보고서"],
+            "newSteps": [
+              "테스트 실행",
+              "4분",
+              "결과 보고서"
+            ],
             "oldLabel": "기존 방식",
             "oldSteps": [
               {
@@ -7614,38 +8269,136 @@
           "features": [
             {
               "name": "불변 백업",
-              "refs": [4, 5, 6, 7, 0, 0],
-              "values": ["check", "check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "파일시스템 수준 강제",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "자동화된 일일 복원 검증",
-              "refs": [8, 0, 0, 0, 0, 0],
-              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                8,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "제로 카피 스토리지 (CoW)",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "테스트용 즉각적 클론",
-              "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["check", "check", "check", "check", "check", "rediacc"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                13,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "복구 시간",
-              "refs": [14, 15, 16, 17, 18, 0],
-              "values": ["분 단위", "분 단위", "분 단위", "분 단위", "초 단위", "<5분"]
+              "refs": [
+                14,
+                15,
+                16,
+                17,
+                18,
+                0
+              ],
+              "values": [
+                "분 단위",
+                "분 단위",
+                "분 단위",
+                "분 단위",
+                "초 단위",
+                "<5분"
+              ]
             },
             {
               "name": "자체 호스팅 / 클라우드 의존 없음",
-              "refs": [19, 20, 21, 0, 22, 0],
-              "values": ["check", "check", "check", "cross", "check", "rediacc"]
+              "refs": [
+                19,
+                20,
+                21,
+                0,
+                22,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "차이",
@@ -7828,7 +8581,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["백업", "봉인", "검증"],
+            "newSteps": [
+              "백업",
+              "봉인",
+              "검증"
+            ],
             "oldLabel": "기존 방식",
             "oldSteps": [
               {
@@ -8147,33 +8904,105 @@
           "features": [
             {
               "name": "제로 카피 클론 스토리지 (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "설정 가능한 TTL 자동 삭제",
-              "refs": [4, 0, 0, 0, 0],
-              "values": ["check", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "클론에 전체 프로덕션 데이터",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "멀티 서비스 환경",
-              "refs": [0, 5, 0, 6, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                5,
+                0,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "자체 호스팅 / 좌석당 가격 없음",
-              "refs": [0, 7, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                7,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "60초 미만 프로비저닝",
-              "refs": [0, 0, 8, 9, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "차이",
@@ -8346,7 +9175,11 @@
           ],
           "timeline": {
             "newLabel": "REDIACC 사용 시",
-            "newSteps": ["시작", "$0 유휴", "자동 정리"],
+            "newSteps": [
+              "시작",
+              "$0 유휴",
+              "자동 정리"
+            ],
             "oldLabel": "상시 가동 환경",
             "oldSteps": [
               {
@@ -8606,38 +9439,122 @@
           "features": [
             {
               "name": "전체 환경 복원 (파일만이 아닌)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "5분 미만 복구 시간",
-              "refs": [4, 5, 6, 7, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "복원 후 자동 헬스 체크",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "시점 스냅샷 세분화",
-              "refs": [8, 9, 10, 11, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "제로 오버헤드 클론 (추가 스토리지 불필요)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "단일 명령어 복구",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "자체 호스팅 / 자체 인프라",
-              "refs": [12, 13, 14, 0, 0],
-              "values": ["check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                12,
+                13,
+                14,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "차이점",
@@ -8820,7 +9737,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["복원 실행", "3m 47s", "실행 완료"],
+            "newSteps": [
+              "복원 실행",
+              "3m 47s",
+              "실행 완료"
+            ],
             "oldLabel": "기존 방식",
             "oldSteps": [
               {
@@ -9112,33 +10033,105 @@
           "features": [
             {
               "name": "CI 클론에 프로덕션 데이터 포함",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "한 줄 웹훅 통합",
-              "refs": [3, 0, 4, 5, 0],
-              "values": ["check", "cross", "check", "check", "rediacc"]
+              "refs": [
+                3,
+                0,
+                4,
+                5,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "멀티 서비스 CI 환경",
-              "refs": [0, 6, 0, 7, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                6,
+                0,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "파이프라인 후 자동 삭제",
-              "refs": [8, 0, 9, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                8,
+                0,
+                9,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "커스텀 프로비저닝 스크립트 제로",
-              "refs": [0, 0, 10, 11, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "자체 호스팅 / 벤더 종속 없음",
-              "refs": [0, 12, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                12,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "차이점",
@@ -9222,19 +10215,31 @@
             "cards": [
               {
                 "footer": "webhook → rdc",
-                "items": ["branch: feature/auth-v2", "commit: a3f7b2c", "author: sarah"],
+                "items": [
+                  "branch: feature/auth-v2",
+                  "commit: a3f7b2c",
+                  "author: sarah"
+                ],
                 "status": "트리거",
                 "title": "Git 푸시"
               },
               {
                 "footer": "ci-auth-v2",
-                "items": ["gitlab · nextcloud", "mariadb · mailcow", "380 GB → 2.1 GB"],
+                "items": [
+                  "gitlab · nextcloud",
+                  "mariadb · mailcow",
+                  "380 GB → 2.1 GB"
+                ],
                 "status": "CoW",
                 "title": "클론"
               },
               {
                 "footer": "285개 통과",
-                "items": ["단위 테스트 247개 ✓", "통합 테스트 38개 ✓", "자동 정리 ✓"],
+                "items": [
+                  "단위 테스트 247개 ✓",
+                  "통합 테스트 38개 ✓",
+                  "자동 정리 ✓"
+                ],
                 "status": "통과",
                 "title": "테스트"
               }
@@ -9289,7 +10294,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["git push", "자동", "실제 데이터"],
+            "newSteps": [
+              "git push",
+              "자동",
+              "실제 데이터"
+            ],
             "oldLabel": "커스텀 CI 스크립트",
             "oldSteps": [
               {
@@ -9569,38 +10578,122 @@
           "features": [
             {
               "name": "복호화 없는 마이그레이션",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "전송 중 고객 보유 키 유지",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "설정 + 데이터 원자적 마이그레이션",
-              "refs": [0, 0, 5, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                5,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "전송 후 무결성 검증",
-              "refs": [6, 7, 8, 9, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                6,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "단일 명령어 마이그레이션",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "모든 대상 간 이전 가능",
-              "refs": [10, 11, 12, 0, 0],
-              "values": ["check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                10,
+                11,
+                12,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "장애 시 자동 롤백",
-              "refs": [0, 0, 13, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                13,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "차이점",
@@ -9783,7 +10876,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["마이그레이션 실행", "노출 0", "검증 완료"],
+            "newSteps": [
+              "마이그레이션 실행",
+              "노출 0",
+              "검증 완료"
+            ],
             "oldLabel": "기존 마이그레이션",
             "oldSteps": [
               {
@@ -10074,38 +11171,122 @@
           "features": [
             {
               "name": "전체 프로덕션 데이터 클론",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "OS + 라이브러리 패리티 검증",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "모든 데이터베이스 엔진 지원 (MariaDB, Postgres, Mongo)",
-              "refs": [0, 4, 0, 5, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                4,
+                0,
+                5,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "멀티 서비스 클론 (앱 + DB + 메일 + 스토리지)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "제로 복사 스토리지 (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "자체 호스팅 / 벤더 종속 없음",
-              "refs": [0, 6, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "60초 미만 프로비저닝",
-              "refs": [0, 0, 7, 8, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "차이점",
@@ -10278,7 +11459,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["클론 실행", "47s", "100% 일치"],
+            "newSteps": [
+              "클론 실행",
+              "47s",
+              "100% 일치"
+            ],
             "oldLabel": "기존 개발 환경",
             "oldSteps": [
               {
@@ -10484,6 +11669,576 @@
           ]
         }
       },
+      "dataSovereignty": {
+        "meta": {
+          "title": "데이터 주권 - 아키텍처 기반의 주권적 백업 | Rediacc",
+          "description": "귀사가 호스팅합니다. 귀사가 키를 보유합니다. 인증서가 아닌 아키텍처로 CLOUD Act 면제. 고객 관리 키, GDPR Schrems II 준수, EU 데이터법 준비가 완료된 자체 호스팅 백업.",
+          "keywords": "데이터 주권, CLOUD Act 면제, 고객 관리 키, GDPR Schrems II, EU 데이터법, 자체 호스팅, 주권적 백업, SecNumCloud, DORA"
+        },
+        "hero": {
+          "badge": "암호화 제어",
+          "title": "인증서가 아닌 아키텍처로 주권을 실현합니다.",
+          "subtitle": "귀사가 호스팅합니다. 귀사가 키를 보유합니다. 미국 관할 제공업체는 보유하지 않은 것을 넘길 수 없습니다.",
+          "differentiator": "모든 하이퍼스케일러가 주권을 마케팅합니다. 하지만 귀사의 데이터가 미국 법원 명령에서 벗어난다고 보장할 수 있는 곳은 없습니다. Rediacc는 보장합니다.",
+          "primaryCta": "Community로 무료 시작",
+          "secondaryCta": "주권 기능 보기 →"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "text": "rdc audit log --limit 50"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "comment",
+              "text": "모든 저장소에 대한 키 보관 체인 검사 중..."
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "table-header",
+              "text": "키 ID                   보관          HSM          에스크로    관할"
+            },
+            {
+              "type": "table-row",
+              "text": "prod-main-v3            고객            YubiHSM 2    NO          고객-사내"
+            },
+            {
+              "type": "table-row",
+              "text": "prod-db-v2              고객            YubiHSM 2    NO          고객-사내"
+            },
+            {
+              "type": "table-row",
+              "text": "staging-main-v1         고객            software     NO          고객-사내"
+            },
+            {
+              "type": "table-row",
+              "text": "backup-archive-v4       고객            YubiHSM 2    NO          고객-사내"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "summary",
+              "text": "키: 4   보관: 100% 고객   에스크로: 0   미국-접근: 0   서명됨: 2026-05-11T09:14:33Z"
+            }
+          ]
+        },
+        "stats": [
+          {
+            "number": "0",
+            "label": "제공업체에 위탁된 키",
+            "icon": "key"
+          },
+          {
+            "number": "100%",
+            "label": "고객 키 보관",
+            "icon": "lock"
+          },
+          {
+            "number": "EU-only",
+            "label": "운영자 관할권",
+            "icon": "globe"
+          }
+        ],
+        "problem": {
+          "overline": "문제",
+          "title": "귀사의 클라우드 제공업체는 데이터를 넘길 수 있습니다. 귀사는 통보받지 못합니다.",
+          "description": "미국 관할 클라우드 제공업체는 EU 데이터센터에 저장된 데이터라도 CLOUD Act 명령에 법적으로 따라야 합니다. 계약상 약속은 미국 법령을 무효화할 수 없습니다. 문제는 제공업체가 그렇게 할 의향이 있느냐가 아닙니다. 법적으로 가능한지의 여부입니다.",
+          "statCallouts": [
+            {
+              "number": "\"아니요, 보장할 수 없습니다\" (Non, je ne peux pas le garantir)",
+              "source": "프랑스 상원, 2025년 6월 18일",
+              "ref": 1,
+              "text": "Microsoft France의 공공·법무 담당 이사가 선서 하에, EU Microsoft 데이터센터에 있는 프랑스 시민 데이터가 미국 당국으로부터 보호받을 수 있는지에 대한 답변"
+            },
+            {
+              "number": "€12.6B",
+              "source": "Gartner, 2026년 2월",
+              "ref": 2,
+              "text": "2026년 EU 주권형 클라우드 IaaS 지출 규모이며, 2027년에는 €23.1B로 증가합니다. 시장은 주권이 선택 사항이 아니라고 판단했습니다."
+            },
+            {
+              "number": "0 US primaries",
+              "source": "유럽 위원회, 2026년 4월 17일",
+              "ref": 3,
+              "text": "Cloud III: 유럽 위원회의 €180M 주권형 클라우드 입찰이 4개 EU 컨소시엄에 낙찰되었습니다. 미국 본사 주 계약자는 0건."
+            }
+          ],
+          "timeline": {
+            "oldLabel": "기존 방식",
+            "oldSteps": [
+              {
+                "day": "1일차",
+                "text": "미국 관할 클라우드 제공업체와 계약 체결"
+              },
+              {
+                "day": "1개월차",
+                "text": "DPO가 GDPR 이전 위험 제기, TIA 필요"
+              },
+              {
+                "day": "3개월차",
+                "text": "법무팀이 CLOUD Act 노출 검토, 보장 불가"
+              },
+              {
+                "day": "6개월차",
+                "text": "규제 기관 감사, 데이터 거주지 확인되나 주권은 미확인"
+              },
+              {
+                "day": "결과",
+                "text": "거주지는 있지만 주권은 없습니다. 컴플라이언스 격차 지속."
+              }
+            ],
+            "newLabel": "Rediacc와 함께",
+            "newSteps": [
+              "자체 인프라에 호스팅",
+              "자체 키 보유",
+              "CLOUD Act 적용 불가"
+            ]
+          }
+        },
+        "calculator": {
+          "overline": "실제 비용",
+          "title": "미국 관할 노출이 귀사에 얼마나 비용을 초래하나요?",
+          "description": "슬라이더를 조정하여 귀사의 환경에 맞추세요. 주권 격차의 실제 비용을 확인하세요.",
+          "headerTitle": "주권 노출 계산기",
+          "sliders": {
+            "records": "EU 개인 데이터 레코드 (천 건)",
+            "spend": "연간 하이퍼스케일러 지출 (€ 천)",
+            "recoveryHours": "수동 DORA 복구 테스트 (시간/년)"
+          },
+          "withoutTag": "미국 관할",
+          "withTag": "Rediacc와 함께",
+          "results": {
+            "transferRisk": "GDPR 이전 위험 노출",
+            "exitPenalty": "데이터법 2027 퇴출 위약금 위험",
+            "doraTesting": "DORA 제12조 테스트 비용"
+          },
+          "annualLabel": "연간 주권 노출",
+          "withResults": {
+            "transferRisk": "GDPR 이전 위험 노출",
+            "exitPenalty": "데이터법 2027 퇴출 위약금 위험",
+            "doraTesting": "DORA 제12조 테스트 비용"
+          },
+          "withAnnual": "연간 주권 노출",
+          "footnote": "이전 위험: 레코드 수 x €0.04 x 10% 규제 감시 확률. 퇴출 위약금: 데이터법 제25조에 따른 전환 비용 상한의 10%로 추정 (2027년 1월 12일 무료 전환 기한). DORA 테스트: 시간 x €200/시간 엔지니어 비용. Rediacc의 경우: 자체 호스팅으로 이전 위험 제거, 개방 형식으로 퇴출 위약금 제거, 일정 시간 포크로 저장소 크기에 관계없이 DORA 복구 테스트를 수분 내 완료."
+        },
+        "howItWorks": {
+          "overline": "작동 방식",
+          "title": "세 단계. 하나의 주권적 스택.",
+          "steps": [
+            {
+              "title": "호스팅",
+              "description": "자체 하드웨어, EU IaaS 제공업체 또는 조합 어디서든 배포하세요. Rediacc OE는 에스토니아에 법인이 있으며, 미국 모회사, 미국 제어 플레인, CLOUD Act 노출 지점이 없습니다.",
+              "icon": "server"
+            },
+            {
+              "title": "키 보유",
+              "description": "암호화 키는 절대 귀사의 보관을 벗어나지 않습니다. 키 파생은 클라이언트 측에서 이루어집니다. Rediacc는 평문을 볼 수 없습니다. 보관 체인은 CLI를 통해 키별로 감사 가능합니다.",
+              "icon": "key"
+            },
+            {
+              "title": "증명",
+              "description": "명령 하나로 서명된 키 보관 보고서를 생성하세요. SecNumCloud 3.2, BSI C5:2026, ANSSI-BSI 공동 선언, EDPB 권고안 01/2020 사용 사례 2에 부합합니다.",
+              "icon": "shield"
+            }
+          ],
+          "cloneVisual": {
+            "production": {
+              "title": "미국 하이퍼스케일러",
+              "status": "CLOUD Act 노출",
+              "services": [
+                {
+                  "name": "S3 Bucket",
+                  "port": "미국 관리"
+                },
+                {
+                  "name": "KMS Key",
+                  "port": "벤더 보유"
+                },
+                {
+                  "name": "IAM Policy",
+                  "port": "미국 통제"
+                },
+                {
+                  "name": "Audit Log",
+                  "port": "미국 접근 가능"
+                }
+              ],
+              "containerCount": "계약적 거주지",
+              "size": "주권 아님"
+            },
+            "clone": {
+              "title": "귀사의 주권적 스택",
+              "status": "EU 관할권",
+              "cardClass": "sealed",
+              "services": [
+                {
+                  "name": "귀사의 스토리지",
+                  "port": "고객 소유"
+                },
+                {
+                  "name": "귀사의 키",
+                  "port": "고객 HSM"
+                },
+                {
+                  "name": "귀사의 정책",
+                  "port": "EU 통제"
+                },
+                {
+                  "name": "감사 체인",
+                  "port": "SHA-256 서명"
+                }
+              ],
+              "containerCount": "아키텍처적 주권",
+              "size": "CLOUD Act 면제"
+            },
+            "arrow": {
+              "label": "마이그레이션",
+              "time": "개방 형식",
+              "icon": "shield-arrow"
+            }
+          }
+        },
+        "techDiff": {
+          "overline": "내부 구조",
+          "title": "데이터 거주지가 데이터 주권이 아닌 이유",
+          "description": "미국 관할 제공업체는 데이터를 프랑크푸르트에 저장하더라도 미국 법원에 의해 공개가 강제될 수 있습니다. Rediacc의 아키텍처는 강제 벡터 자체를 제거합니다. 넘길 키가 없고, 차단할 콜홈 채널도 없습니다.",
+          "rows": [
+            {
+              "traditional": "암호문 위치와 무관하게 미국 관할에 종속된 제공업체",
+              "rediacc": "에스토니아에 법인 소재, 미국 모회사 없음, CLOUD Act 강제 지점 없음"
+            },
+            {
+              "traditional": "벤더 관리 KMS: 제공업체가 법적 요구 시 평문 생성 가능",
+              "rediacc": "클라이언트 측 키 파생: 벤더는 키를 보유하지 않아 강제가 기술적으로 무의미"
+            },
+            {
+              "traditional": "국경 간 데이터 요청이 벤더에 기록되나 고객에게는 보이지 않음",
+              "rediacc": "SHA-256 서명 감사 체인: 모든 키 접근 및 요청이 기록되고 고객이 읽을 수 있음"
+            },
+            {
+              "traditional": "독점 백업 형식: 퇴출 시 벤더 도구를 이용한 마이그레이션 필요",
+              "rediacc": "개방 형식 (btrfs send, tar): 퇴출은 작동하는 복제본, 데이터법 준수"
+            },
+            {
+              "traditional": "DORA 복구 테스트는 데이터 볼륨에 비례, 대형 저장소는 수일 소요",
+              "rediacc": "btrfs reflink를 통한 일정 시간 포크: 100 GB와 100 TB 모두 같은 수초 내 포크"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "왜 중요한가",
+          "title": "귀사가 얻는 것",
+          "items": [
+            {
+              "icon": "shield",
+              "title": "구조적으로 보장된 CLOUD Act 면제",
+              "description": "미국 관할 모회사 없음. 벤더 키 에스크로 없음. 아키텍처 자체가 방어 수단입니다. Carniaux 상원 증언 (2025년 6월 18일)은 계약이 관할권 면제를 대체할 수 없다는 남은 논쟁을 종결시켰습니다."
+            },
+            {
+              "icon": "globe",
+              "title": "EU 데이터법 2027 준비 완료",
+              "description": "구조적으로 개방된 데이터 형식과 전환 비용 제로. 모든 백업이 이식 가능한 작동 복제본입니다. 2027년 1월 12일 무료 전환 기한 이전에 데이터법 제23-31조를 완전히 준수합니다."
+            },
+            {
+              "icon": "check-circle",
+              "title": "SecNumCloud 및 C5:2026 정렬",
+              "description": "4대 기둥 체계가 2025년 11월 17일 ANSSI-BSI 공동 선언과 일치합니다: 엄격한 데이터 현지화, EU 법의 단독 적용, 역외 접근 부재, EU 외부 의존성 없는 비즈니스 연속성."
+            }
+          ]
+        },
+        "comparison": {
+          "overline": "격차",
+          "title": "주권 비교",
+          "description": "대부분의 벤더는 데이터 거주지를 제공합니다. Rediacc가 아키텍처로 제공하는 것, 즉 고객 키 보관, EU 전용 운영자, CLOUD Act 면제를 제공할 수 있는 곳은 없습니다.",
+          "capabilityLabel": "기능",
+          "features": [
+            {
+              "name": "CLOUD Act 면제 (미국 관할 모회사 없음)",
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                4,
+                4,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "고객이 키 보유 (기술적 해독 불가)",
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                5,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "EU 전용 운영자 (미국 모회사 없음)",
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                4,
+                4,
+                0,
+                6,
+                0
+              ]
+            },
+            {
+              "name": "SecNumCloud / C5:2026 인증 경로",
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                7,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "개방 퇴출 형식 (데이터법 제30조)",
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                8,
+                8,
+                8,
+                0,
+                8,
+                0
+              ]
+            },
+            {
+              "name": "고객 인프라에 자체 호스팅",
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                9,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "기본 EU 데이터 거주지",
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                10,
+                0,
+                13,
+                0
+              ]
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "2025년 6월 Carniaux 상원 증언 이후, 저희 SecNumCloud 감사 위원회는 한 가지 질문을 했습니다: 백업 제공업체가 미국 당국에 환자 데이터를 공개하도록 강제될 수 없음을 증명할 수 있습니까? Microsoft Azure Backup으로는 답할 수 없었습니다. Rediacc로는 답이 아키텍처적입니다: 키는 HSM을 벗어나지 않고, 운영자는 미국 모회사가 없으며, 30초 내에 서명된 보관 보고서를 생성할 수 있습니다. 이것만이 ANSSI를 만족시키는 유일한 답입니다.",
+          "author": "최고 정보 보안 책임자",
+          "company": "SecNumCloud 의무를 지닌 프랑스 OIV, 직원 1,200명",
+          "impact": {
+            "before": {
+              "label": "이전",
+              "value": "이전 위험"
+            },
+            "after": {
+              "label": "이후",
+              "value": "CLOUD Act 면제"
+            },
+            "improvement": "Microsoft Azure Backup 대체 · 키 보관: 벤더에서 고객으로 · ANSSI 감사: 통과"
+          }
+        },
+        "bottomCta": {
+          "title": "미국 관할 제공업체로부터 귀사의 데이터를 임대해 오는 일을 중단하세요.",
+          "description": "무료 Community 에디션으로 시작하세요. 1분 이내에 첫 키 보관 감사를 실행하세요.",
+          "ctaText": "Community로 무료 시작",
+          "command": "rdc audit log --limit 50"
+        },
+        "techStrip": {
+          "label": "모든 워크로드를 자체 호스팅하고 모든 키를 보유하세요",
+          "note": "데이터베이스, 메일 서버, CI/CD, ERP, CMS, AI 모델 저장소: 모든 워크로드가 주권적이고 모든 키는 귀사의 것입니다."
+        },
+        "explore": {
+          "title": "다른 솔루션 살펴보기",
+          "solutions": [
+            {
+              "category": "암호화 제어",
+              "title": "귀사가 제어하는 암호화",
+              "description": "귀사의 키. 귀사의 암호화. 예외 없습니다.",
+              "slug": "encryption",
+              "dataCategory": "encryption"
+            },
+            {
+              "category": "암호화 제어",
+              "title": "감사 추적",
+              "description": "모든 작업이 기록됩니다. 숨겨진 것은 없습니다.",
+              "slug": "audit-trail",
+              "dataCategory": "encryption"
+            },
+            {
+              "category": "암호화 제어",
+              "title": "마이그레이션 안전성",
+              "description": "데이터 위험 없이 마이그레이션하세요",
+              "slug": "migration-safety",
+              "dataCategory": "encryption"
+            },
+            {
+              "category": "랜섬웨어 생존",
+              "title": "불변 백업",
+              "description": "랜섬웨어가 건드릴 수 없는 백업",
+              "slug": "immutable-backups",
+              "dataCategory": "ransomware"
+            },
+            {
+              "category": "멀티 클라우드",
+              "title": "클라우드 장애 보호",
+              "description": "AWS가 다운되어도 귀사는 계속 운영됩니다",
+              "slug": "cloud-outage-protection",
+              "dataCategory": "multi-cloud"
+            },
+            {
+              "category": "검증된 백업",
+              "title": "벤더 종속 탈피",
+              "description": "모든 벤더에서 벗어나세요. 데이터는 유지하세요.",
+              "slug": "vendor-lock-in",
+              "dataCategory": "backups"
+            },
+            {
+              "category": "검증된 백업",
+              "title": "보존 규정 준수",
+              "description": "모든 보존 요구 사항을 자동으로 충족",
+              "slug": "retention-compliance",
+              "dataCategory": "backups"
+            },
+            {
+              "category": "개발 환경",
+              "title": "환경 복제",
+              "description": "60초 만에 프로덕션 복제",
+              "slug": "environment-cloning",
+              "dataCategory": "dev-env"
+            }
+          ]
+        },
+        "references": {
+          "label": "출처 및 참고문헌",
+          "items": [
+            {
+              "text": "Microsoft France 공공·법무 담당 이사 Anton Carniaux, 공공 조달 및 디지털 주권에 관한 프랑스 상원 청문회, 2025년 6월 18일: \"아니요, 보장할 수 없습니다. 하지만 지금까지 한 번도 발생한 적은 없습니다.\" The Register, 2025년 7월 25일 보도.",
+              "url": "https://www.theregister.com/2025/07/25/microsoft_admits_it_cannot_guarantee/"
+            },
+            {
+              "text": "Gartner, 2026년 2월: 유럽 주권형 클라우드 IaaS 지출 예측, 2026년 $12.6B, 2027년 $23.1B로 2027년 북미 초과.",
+              "url": "https://www.gartner.com/en/newsroom/press-releases/2026-02"
+            },
+            {
+              "text": "유럽 위원회, \"Commission Advances Cloud Sovereignty Through Strategic Procurement,\" 2026년 4월 17일. Cloud III €180M 입찰이 Post Telecom + OVHcloud + CleverCloud, STACKIT, Scaleway, Proximus + S3NS + Clarence + Mistral AI에 낙찰. 미국 본사 주 계약자 0건.",
+              "url": "https://commission.europa.eu/news-and-media/news/commission-advances-cloud-sovereignty-through-strategic-procurement-2026-04-17_en"
+            },
+            {
+              "text": "CLOUD Act (Clarifying Lawful Overseas Use of Data Act), 18 U.S.C. 2713, 2018. 미국 당국이 전 세계 어디에 저장되더라도 미국 관할 제공업체에 고객 데이터 공개를 강제할 수 있도록 허가.",
+              "url": "https://www.justice.gov/dag/cloudact"
+            },
+            {
+              "text": "EDPB 권고안 01/2020, EU 개인 데이터 보호 수준 준수를 보장하기 위해 이전 도구를 보완하는 조치, 버전 2.0, 2021년 6월. 사용 사례 2: 보조 조치로서의 암호화는 고객 독점 키 보관 및 수입자의 기술적 해독 불가를 요구.",
+              "url": "https://www.edpb.europa.eu/system/files/2021-06/edpb_recommendations_202001vo.2.0_supplementarymeasurestransferstools_en.pdf"
+            },
+            {
+              "text": "Keepit A/S, 코펜하겐. Microsoft 365, Salesforce, Google Workspace용 SaaS 전용 백업. EU 법인, 미국 모회사 없음. 자체 호스팅 또는 온프레미스 워크로드는 백업하지 않음.",
+              "url": "https://keepit.com"
+            },
+            {
+              "text": "ANSSI SecNumCloud 3.2 자격 요건. 제공업체는 EU 과반 소유, EU 본사 소재, 역외 법률 면제여야 합니다. 비EU 주주 개인 25%, 집합 39% 상한. AWS Sovereign Cloud 및 Microsoft Bleu는 자격 없음.",
+              "url": "https://www.ssi.gouv.fr/uploads/2022/01/secnumcloud-referentiel-v3.2.pdf"
+            },
+            {
+              "text": "EU 데이터법 (Regulation (EU) 2023/2854), 제23-31조. 2025년 9월 12일 발효. 2027년 1월 12일부터 전환 비용 전면 금지. 제공업체는 전환 후 기능 동등성을 보장해야 합니다.",
+              "url": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj/eng"
+            },
+            {
+              "text": "Veeam Backup and Replication은 온프레미스 자체 호스팅 배포를 지원합니다. Veeam은 직접적인 주권 인증을 보유하지 않으며, EU 주권 스토리는 파트너 IaaS (특히 OVHcloud)에 의존합니다.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "AWS European Sovereign Cloud, 2026년 1월 15일 GA. 4개 독일 GmbH 하에 운영. 미국 본사 모회사 (Amazon.com Inc.)는 계속 CLOUD Act에 종속.",
+              "url": "https://aws.amazon.com/government-education/european-sovereign-cloud/"
+            },
+            {
+              "text": "ANSSI-BSI 클라우드 주권 기준 공동 성명, 2025년 11월 17일. 4개 실격 기준: 엄격한 데이터 및 지원 현지화, EU 법의 단독 적용, 역외 제3자의 무단 접근 부재, EU 외부 기술 없는 비즈니스 연속성 유지 능력.",
+              "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/ANSSI-BSI-joint-releases/Cloud-Sovereignty-Criteria.pdf"
+            },
+            {
+              "text": "유럽 감독 기관, \"DORA에 따른 핵심 ICT 제3자 제공업체 지정,\" 2025년 11월 18일. 최초 지정된 19개 CTPP에는 AWS, Microsoft Azure, Google Cloud, IBM, Oracle, SAP, Salesforce 포함.",
+              "url": "https://www.eiopa.europa.eu/european-supervisory-authorities-designate-critical-ict-third-party-providers-under-digital-2025-11-18_en"
+            },
+            {
+              "text": "Keepit 데이터 거주 정책: 고객 데이터는 EU 데이터센터(프랑크푸르트, 암스테르담, 코펜하겐)에만 저장됩니다. SaaS 전용 모델이며 운영자와 저장소가 모두 EU 내에 있습니다.",
+              "url": "https://www.keepit.com/trust/"
+            }
+          ],
+          "disclaimer": "계산기 추정치는 업계 표준 비용 모델을 사용하며, 실제 노출은 관할권, 계약 구조 및 침해 시나리오에 따라 다를 수 있습니다."
+        }
+      },
       "rapidRecovery": {
         "benefits": {
           "items": [
@@ -10546,33 +12301,117 @@
           "features": [
             {
               "name": "전체 환경 복구",
-              "refs": [0, 0, 0, 0, 4, 0],
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                4,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "5분 이내 복구",
-              "refs": [5, 6, 7, 8, 9, 0],
-              "values": ["check", "check", "check", "check", "check", "rediacc"]
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "시점 복원 (분 단위)",
-              "refs": [10, 11, 12, 13, 14, 0],
-              "values": ["check", "check", "check", "check", "check", "rediacc"]
+              "refs": [
+                10,
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "자동 복원 검증",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "데이터 전송 불필요",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "자체 호스팅 / 클라우드 의존 없음",
-              "refs": [15, 16, 17, 0, 18, 0],
-              "values": ["check", "check", "check", "cross", "check", "rediacc"]
+              "refs": [
+                15,
+                16,
+                17,
+                0,
+                18,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "차이점",
@@ -10755,7 +12594,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["탐지", "<5분", "온라인"],
+            "newSteps": [
+              "탐지",
+              "<5분",
+              "온라인"
+            ],
             "oldLabel": "기존 방식",
             "oldSteps": [
               {
@@ -11031,38 +12874,122 @@
           "features": [
             {
               "name": "구성 가능한 보존 정책",
-              "refs": [4, 5, 6, 7, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "자동화된 수명 주기 정리",
-              "refs": [8, 9, 10, 11, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "보존 백업 검증",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "즉각적인 감사 준비 완료 보고서",
-              "refs": [12, 13, 14, 15, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                12,
+                13,
+                14,
+                15,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "다중 프레임워크 지원",
-              "refs": [16, 17, 18, 19, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                16,
+                17,
+                18,
+                19,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "자체 호스팅 / 자체 인프라",
-              "refs": [20, 21, 22, 0, 0],
-              "values": ["check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                20,
+                21,
+                22,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "CLI / 자동화 우선",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "차이점",
@@ -11246,7 +13173,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["정책 설정", "자동화", "감사 준비 완료"],
+            "newSteps": [
+              "정책 설정",
+              "자동화",
+              "감사 준비 완료"
+            ],
             "oldLabel": "기존 방식",
             "oldSteps": [
               {
@@ -11574,38 +13505,122 @@
           "features": [
             {
               "name": "테스트를 위한 풀스택 복제",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "60초 이내 복제 생성",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "복제본당 격리된 네트워크",
-              "refs": [4, 0, 5, 6, 0],
-              "values": ["check", "cross", "check", "check", "rediacc"]
+              "refs": [
+                4,
+                0,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "추가 스토리지 없음 (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "패치 후 자동 헬스 체크",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "자체 호스팅, 클라우드 의존성 없음",
-              "refs": [11, 12, 13, 14, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "단일 명령어 워크플로",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "차이점",
@@ -11788,7 +13803,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["복제", "60초", "패치 및 검증"],
+            "newSteps": [
+              "복제",
+              "60초",
+              "패치 및 검증"
+            ],
             "oldLabel": "기존 방식",
             "oldSteps": [
               {
@@ -12087,38 +14106,122 @@
           "features": [
             {
               "name": "제공업체 간 마이그레이션",
-              "refs": [0, 4, 5, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                4,
+                5,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "1시간 이내 마이그레이션",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "독점 형식 없음",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "증분 전용 전송",
-              "refs": [0, 6, 7, 8, 0],
-              "values": ["cross", "check", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                6,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "벤더 에이전트 불필요",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "풀스택 마이그레이션 (앱 + DB)",
-              "refs": [0, 9, 10, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                9,
+                10,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "무중단 마이그레이션",
-              "refs": [0, 0, 11, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "차이점",
@@ -12301,7 +14404,11 @@
           ],
           "timeline": {
             "newLabel": "REDIACC 사용 시",
-            "newSteps": ["스냅숏", "1시간 미만", "라이브"],
+            "newSteps": [
+              "스냅숏",
+              "1시간 미만",
+              "라이브"
+            ],
             "oldLabel": "기존 방식",
             "oldSteps": [
               {
@@ -12708,7 +14815,12 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["복제 + 패치", "4분 미만", "검증 완료", "배포"],
+            "newSteps": [
+              "복제 + 패치",
+              "4분 미만",
+              "검증 완료",
+              "배포"
+            ],
             "oldLabel": "기존 패치 방식",
             "oldSteps": [
               {
@@ -12903,6 +15015,26 @@
             }
           ]
         }
+      },
+      "leadMagnetModal": {
+        "title": "Get the technical brief",
+        "description": "Enter your work email. We will send you the PDF link and keep a copy in your inbox.",
+        "emailLabel": "Work email",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "Send me the PDF",
+        "sendingLabel": "Sending...",
+        "successTitle": "PDF on the way",
+        "successBody": "We've opened it in a new tab and emailed you the link. Closing this in a moment.",
+        "errorGeneric": "Something went wrong. Please try again or reach out at support@rediacc.com.",
+        "captchaRequired": "Please complete the captcha verification.",
+        "disclaimer": "One email. No marketing list. Unsubscribe with one click.",
+        "closeLabel": "Close"
+      },
+      "leadMagnetButton": {
+        "title": "Get the technical brief",
+        "description": "A no-fluff PDF written for CISOs, CTOs, and senior engineers. We send the link by email so you can find it again.",
+        "buttonLabel": "Download the brief",
+        "dismissLabel": "Dismiss"
       }
     },
     "team": {
@@ -13007,7 +15139,9 @@
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": ["Bridge가 수집하는 데이터 범주는 다음과 같습니다:"],
+              "content": [
+                "Bridge가 수집하는 데이터 범주는 다음과 같습니다:"
+              ],
               "items": [
                 "<strong>큐 작업:</strong> 태스크 ID, 우선순위 수준, 작업 유형, 실행 시간, 성공 또는 실패 상태",
                 "<strong>SSH 작업:</strong> 대상 호스트, 사용자 이름, 포트 번호, 종료 코드, 실행 시간(명령어 내용 또는 출력은 수집하지 않음)",
@@ -13054,7 +15188,9 @@
           "id": "cli",
           "subsections": {
             "cliDataCollected": {
-              "content": ["CLI가 수집하는 데이터 범주는 다음과 같습니다:"],
+              "content": [
+                "CLI가 수집하는 데이터 범주는 다음과 같습니다:"
+              ],
               "items": [
                 "<strong>명령어 사용 현황:</strong> 명령어 이름, CLI 버전, 종료 코드, 성공 또는 실패 상태",
                 "<strong>익명화된 인수:</strong> 민감한 값이 삭제된 명령어 옵션 - 비밀번호, 토큰, 시크릿, API 키, 자격증명은 <code>[REDACTED]</code>로 대체됨",
@@ -13126,7 +15262,9 @@
           "id": "middleware",
           "subsections": {
             "middlewareDataCollected": {
-              "content": ["미들웨어가 수집하는 데이터 범주는 다음과 같습니다:"],
+              "content": [
+                "미들웨어가 수집하는 데이터 범주는 다음과 같습니다:"
+              ],
               "items": [
                 "<strong>시스템 정보:</strong> 호스트명, 운영 체제 버전, .NET 런타임 버전",
                 "<strong>API 호출:</strong> HTTP 메서드, 엔드포인트 경로, 응답 상태 코드, 요청 시간",
@@ -13148,7 +15286,9 @@
           "title": "6. 미들웨어 원격 측정"
         },
         "principles": {
-          "content": ["Rediacc의 모든 원격 측정 데이터 수집은 다음 원칙을 따릅니다:"],
+          "content": [
+            "Rediacc의 모든 원격 측정 데이터 수집은 다음 원칙을 따릅니다:"
+          ],
           "id": "principles",
           "items": [
             "<strong>설계 단계의 개인정보 보호:</strong> 개인 식별자는 전송 전에 익명화됩니다. 이메일 주소는 도메인만 남기고, 사용자 ID는 해시(SHA-256) 처리 후 잘라냅니다. 비밀번호와 시크릿은 절대 수집하지 않습니다.",
@@ -13166,7 +15306,9 @@
           "id": "web-app",
           "subsections": {
             "webDataCollected": {
-              "content": ["웹 애플리케이션이 수집하는 데이터 범주는 다음과 같습니다:"],
+              "content": [
+                "웹 애플리케이션이 수집하는 데이터 범주는 다음과 같습니다:"
+              ],
               "items": [
                 "<strong>브라우저 정보:</strong> 브라우저 이름 및 버전, 기본 언어, 플랫폼(예: Windows, macOS, Linux), 화면 해상도, 색상 심도, 사용자 에이전트 문자열, 기기 메모리(이용 가능한 경우), 네트워크 연결 유형",
                 "<strong>사용자 컨텍스트:</strong> 세션 ID(세션별 무작위 생성), 이메일 도메인(로컬 부분 삭제, 예: <code>***@example.com</code>), 조직 이름, 팀 이름",
@@ -13180,7 +15322,9 @@
               "title": "4.1 수집 데이터"
             },
             "webNotCollected": {
-              "content": ["웹 애플리케이션이 수집하지 않는 데이터:"],
+              "content": [
+                "웹 애플리케이션이 수집하지 않는 데이터:"
+              ],
               "items": [
                 "전체 이메일 주소(로컬 부분은 항상 삭제됨)",
                 "비밀번호, 토큰, 또는 인증 자격증명",
@@ -13243,7 +15387,7 @@
         "acceptance": {
           "content": [
             "CLI 다운로드, 머신에 브릿지 설치, 계정 생성 또는 플랫폼 사용 등 서비스의 어느 부분이든 접근하거나 사용함으로써 귀하는 본 이용 약관(\"약관\")에 구속되는 데 동의합니다. 조직을 대표하여 서비스를 사용하는 경우, 귀하는 해당 조직을 본 약관에 구속시킬 권한이 있음을 진술하고 보장하며, \"귀하\" 또는 \"고객\"에 대한 언급은 해당 조직을 포함합니다.",
-            "본 약관에 동의하지 않으면 서비스에 접근하거나 사용해서는 안 됩니다. 본 약관은 귀하와 에스토니아에 등록된 회사로, Tartu mnt 67/1-13b, 10115 Tallinn, Estonia에 사무소를 둔 Rediacc OÜ(등록 번호 17363830)(\"Rediacc\", \"당사\", \"우리\" 또는 \"저희\") 사이의 법적 구속력 있는 계약을 구성합니다."
+            "본 약관에 동의하지 않으면 서비스에 접근하거나 사용해서는 안 됩니다. 본 약관은 귀하와 에스토니아에 등록된 회사로, Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonia에 사무소를 둔 Rediacc OÜ(등록 번호 17363830)(\"Rediacc\", \"당사\", \"우리\" 또는 \"저희\") 사이의 법적 구속력 있는 계약을 구성합니다."
           ],
           "id": "acceptance",
           "title": "2. 약관 동의"
@@ -13282,7 +15426,9 @@
           "title": "11. 귀하의 데이터 및 암호화"
         },
         "definitions": {
-          "content": ["다음 정의는 본 이용 약관 전체에 걸쳐 적용됩니다:"],
+          "content": [
+            "다음 정의는 본 이용 약관 전체에 걸쳐 적용됩니다:"
+          ],
           "id": "definitions",
           "items": [
             "<strong>\"계정\"</strong>은 귀하가 플랫폼에 접근하고 구독을 관리하기 위해 생성한 사용자 계정을 의미합니다.",
@@ -13374,7 +15520,9 @@
               "title": "6.1 설치 및 머신 접근"
             },
             "restrictions": {
-              "content": ["귀하는 다음을 해서는 안 됩니다:"],
+              "content": [
+                "귀하는 다음을 해서는 안 됩니다:"
+              ],
               "items": [
                 "브릿지 바이너리 또는 온프레미스 소프트웨어의 비오픈소스 구성 요소의 소스 코드를 역공학, 역컴파일, 역어셈블 또는 다른 방법으로 도출하려는 시도",
                 "온프레미스 소프트웨어를 제3자에게 재배포, 재허가, 임대, 리스 또는 대여",
@@ -13413,7 +15561,9 @@
           "title": "3. 서비스 설명"
         },
         "subscriptions": {
-          "content": ["Rediacc는 여러 구독 티어를 제공합니다:"],
+          "content": [
+            "Rediacc는 여러 구독 티어를 제공합니다:"
+          ],
           "id": "subscriptions",
           "items": [
             "<strong>Community</strong> (무료) — 머신 활성화 2대 한도, 핵심 기능, 커뮤니티 지원",
@@ -13514,6 +15664,398 @@
       },
       "toc": {
         "title": "목차"
+      }
+    },
+    "resourcesBrief": {
+      "ransomwareSurvival": {
+        "meta": {
+          "title": "Ransomware Survival: Free Technical Brief PDF",
+          "description": "Filesystem-native immutable backup that attackers cannot encrypt, delete, or compromise. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "keywords": "ransomware survival, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+        },
+        "hero": {
+          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
+          "title": "Ransomware Survival",
+          "subtitle": "94% of ransomware attacks target the backup. 57% succeed.",
+          "downloadButton": "Download the technical brief",
+          "openInBrowser": "Open in browser",
+          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+        },
+        "toc": {
+          "heading": "What's inside",
+          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "items": [
+            "The threat model in concrete operator terms",
+            "Architectural mechanism, with adversary-model reasoning",
+            "Failure modes blocked, with named precedents",
+            "Compliance map: specific rules, fines, reporting windows",
+            "ROI math grounded in published numbers",
+            "Vendor comparison on technical approach (not ARR)",
+            "Onboarding shape and known scope limits",
+            "Audit-ready evidence the architecture produces"
+          ]
+        },
+        "companions": {
+          "heading": "Related solution pages",
+          "intro": "The same architecture, applied to specific buyer questions:",
+          "readMore": "Read more"
+        },
+        "faq": {
+          "heading": "Questions readers asked",
+          "items": [
+            {
+              "q": "Who is this brief written for?",
+              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+            },
+            {
+              "q": "Is there a non-technical version?",
+              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+            },
+            {
+              "q": "What happens to my email?",
+              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+            },
+            {
+              "q": "Why btrfs?",
+              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+            },
+            {
+              "q": "Does this apply to managed services like AWS RDS?",
+              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+            }
+          ]
+        },
+        "about": {
+          "heading": "About this brief",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
+          "downloadButton": "Download the brief"
+        }
+      },
+      "multiCloudAlways": {
+        "meta": {
+          "title": "Multi-Cloud Always: Free Technical Brief PDF",
+          "description": "When your cloud goes down, your business doesn't — portable snapshots and tested cross-cloud failover. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "keywords": "multi-cloud always, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+        },
+        "hero": {
+          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
+          "title": "Multi-Cloud Always",
+          "subtitle": "AWS US-EAST-1 went dark for 15 hours on October 20, 2025. Snapchat, Robinhood, Uber, Delta. Could you have switched clouds in time?",
+          "downloadButton": "Download the technical brief",
+          "openInBrowser": "Open in browser",
+          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+        },
+        "toc": {
+          "heading": "What's inside",
+          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "items": [
+            "The threat model in concrete operator terms",
+            "Architectural mechanism, with adversary-model reasoning",
+            "Failure modes blocked, with named precedents",
+            "Compliance map: specific rules, fines, reporting windows",
+            "ROI math grounded in published numbers",
+            "Vendor comparison on technical approach (not ARR)",
+            "Onboarding shape and known scope limits",
+            "Audit-ready evidence the architecture produces"
+          ]
+        },
+        "companions": {
+          "heading": "Related solution pages",
+          "intro": "The same architecture, applied to specific buyer questions:",
+          "readMore": "Read more"
+        },
+        "faq": {
+          "heading": "Questions readers asked",
+          "items": [
+            {
+              "q": "Who is this brief written for?",
+              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+            },
+            {
+              "q": "Is there a non-technical version?",
+              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+            },
+            {
+              "q": "What happens to my email?",
+              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+            },
+            {
+              "q": "Why btrfs?",
+              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+            },
+            {
+              "q": "Does this apply to managed services like AWS RDS?",
+              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+            }
+          ]
+        },
+        "about": {
+          "heading": "About this brief",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
+          "downloadButton": "Download the brief"
+        }
+      },
+      "verifiedBackups": {
+        "meta": {
+          "title": "Verified Backups: Free Technical Brief PDF",
+          "description": "Boot-and-verify testing on every backup, every cycle — not a quarterly checkbox. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "keywords": "verified backups, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+        },
+        "hero": {
+          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
+          "title": "Verified Backups",
+          "subtitle": "58% of backups fail when you try to restore them. Most companies only find out during the disaster.",
+          "downloadButton": "Download the technical brief",
+          "openInBrowser": "Open in browser",
+          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+        },
+        "toc": {
+          "heading": "What's inside",
+          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "items": [
+            "The threat model in concrete operator terms",
+            "Architectural mechanism, with adversary-model reasoning",
+            "Failure modes blocked, with named precedents",
+            "Compliance map: specific rules, fines, reporting windows",
+            "ROI math grounded in published numbers",
+            "Vendor comparison on technical approach (not ARR)",
+            "Onboarding shape and known scope limits",
+            "Audit-ready evidence the architecture produces"
+          ]
+        },
+        "companions": {
+          "heading": "Related solution pages",
+          "intro": "The same architecture, applied to specific buyer questions:",
+          "readMore": "Read more"
+        },
+        "faq": {
+          "heading": "Questions readers asked",
+          "items": [
+            {
+              "q": "Who is this brief written for?",
+              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+            },
+            {
+              "q": "Is there a non-technical version?",
+              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+            },
+            {
+              "q": "What happens to my email?",
+              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+            },
+            {
+              "q": "Why btrfs?",
+              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+            },
+            {
+              "q": "Does this apply to managed services like AWS RDS?",
+              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+            }
+          ]
+        },
+        "about": {
+          "heading": "About this brief",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
+          "downloadButton": "Download the brief"
+        }
+      },
+      "encryptionControl": {
+        "meta": {
+          "title": "Encryption Control: Free Technical Brief PDF",
+          "description": "Customer-managed keys and encrypted data that survives a vendor switch — Schrems II compliant by architecture. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "keywords": "encryption control, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+        },
+        "hero": {
+          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
+          "title": "Encryption Control",
+          "subtitle": "Schrems II is not a policy choice. It is an architecture requirement, and most backup vendors fail it.",
+          "downloadButton": "Download the technical brief",
+          "openInBrowser": "Open in browser",
+          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+        },
+        "toc": {
+          "heading": "What's inside",
+          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "items": [
+            "The threat model in concrete operator terms",
+            "Architectural mechanism, with adversary-model reasoning",
+            "Failure modes blocked, with named precedents",
+            "Compliance map: specific rules, fines, reporting windows",
+            "ROI math grounded in published numbers",
+            "Vendor comparison on technical approach (not ARR)",
+            "Onboarding shape and known scope limits",
+            "Audit-ready evidence the architecture produces"
+          ]
+        },
+        "companions": {
+          "heading": "Related solution pages",
+          "intro": "The same architecture, applied to specific buyer questions:",
+          "readMore": "Read more"
+        },
+        "faq": {
+          "heading": "Questions readers asked",
+          "items": [
+            {
+              "q": "Who is this brief written for?",
+              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+            },
+            {
+              "q": "Is there a non-technical version?",
+              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+            },
+            {
+              "q": "What happens to my email?",
+              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+            },
+            {
+              "q": "Why btrfs?",
+              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+            },
+            {
+              "q": "Does this apply to managed services like AWS RDS?",
+              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+            }
+          ]
+        },
+        "about": {
+          "heading": "About this brief",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
+          "downloadButton": "Download the brief"
+        }
+      },
+      "devEnvironments": {
+        "meta": {
+          "title": "Development Environments: Free Technical Brief PDF",
+          "description": "Production-identical dev environments in 60 seconds via btrfs zero-copy clones. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "keywords": "development environments, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+        },
+        "hero": {
+          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
+          "title": "Development Environments",
+          "subtitle": "Your developers write code 4.5 hours a week. The rest is waiting on environments. A 50-engineer team loses $720K-$1.2M a year on setup.",
+          "downloadButton": "Download the technical brief",
+          "openInBrowser": "Open in browser",
+          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+        },
+        "toc": {
+          "heading": "What's inside",
+          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "items": [
+            "The threat model in concrete operator terms",
+            "Architectural mechanism, with adversary-model reasoning",
+            "Failure modes blocked, with named precedents",
+            "Compliance map: specific rules, fines, reporting windows",
+            "ROI math grounded in published numbers",
+            "Vendor comparison on technical approach (not ARR)",
+            "Onboarding shape and known scope limits",
+            "Audit-ready evidence the architecture produces"
+          ]
+        },
+        "companions": {
+          "heading": "Related solution pages",
+          "intro": "The same architecture, applied to specific buyer questions:",
+          "readMore": "Read more"
+        },
+        "faq": {
+          "heading": "Questions readers asked",
+          "items": [
+            {
+              "q": "Who is this brief written for?",
+              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+            },
+            {
+              "q": "Is there a non-technical version?",
+              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+            },
+            {
+              "q": "What happens to my email?",
+              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+            },
+            {
+              "q": "Why btrfs?",
+              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+            },
+            {
+              "q": "Does this apply to managed services like AWS RDS?",
+              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+            }
+          ]
+        },
+        "about": {
+          "heading": "About this brief",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
+          "downloadButton": "Download the brief"
+        }
+      },
+      "preemptiveDefense": {
+        "meta": {
+          "title": "Preemptive Defense: Free Technical Brief PDF",
+          "description": "Production-clone security testing with zero production risk — AI pentests run on a disposable copy. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "keywords": "preemptive defense, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+        },
+        "hero": {
+          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
+          "title": "Preemptive Defense",
+          "subtitle": "Test against your real infrastructure. Break nothing. The clone takes the dangerous hits.",
+          "downloadButton": "Download the technical brief",
+          "openInBrowser": "Open in browser",
+          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+        },
+        "toc": {
+          "heading": "What's inside",
+          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "items": [
+            "The threat model in concrete operator terms",
+            "Architectural mechanism, with adversary-model reasoning",
+            "Failure modes blocked, with named precedents",
+            "Compliance map: specific rules, fines, reporting windows",
+            "ROI math grounded in published numbers",
+            "Vendor comparison on technical approach (not ARR)",
+            "Onboarding shape and known scope limits",
+            "Audit-ready evidence the architecture produces"
+          ]
+        },
+        "companions": {
+          "heading": "Related solution pages",
+          "intro": "The same architecture, applied to specific buyer questions:",
+          "readMore": "Read more"
+        },
+        "faq": {
+          "heading": "Questions readers asked",
+          "items": [
+            {
+              "q": "Who is this brief written for?",
+              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+            },
+            {
+              "q": "Is there a non-technical version?",
+              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+            },
+            {
+              "q": "What happens to my email?",
+              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+            },
+            {
+              "q": "Why btrfs?",
+              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+            },
+            {
+              "q": "Does this apply to managed services like AWS RDS?",
+              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+            }
+          ]
+        },
+        "about": {
+          "heading": "About this brief",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
+          "downloadButton": "Download the brief"
+        }
       }
     }
   },

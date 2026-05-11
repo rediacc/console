@@ -154,7 +154,8 @@ export async function ensureRepoDnsRecords(
 
   try {
     const zoneId = await resolveZoneId(client, infra.baseDomain, config.cfDnsZoneId);
-    const wildcardName = `*.${repoName}.${machineName}.${infra.baseDomain}`;
+    const parentName = repoName.includes(':') ? repoName.split(':')[0] : repoName;
+    const wildcardName = `*.${parentName}.${machineName}.${infra.baseDomain}`;
 
     const action = await client.ensureRecord(zoneId, 'A', wildcardName, infra.publicIPv4);
     logDnsAction(action, 'A', wildcardName, infra.publicIPv4);

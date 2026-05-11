@@ -121,18 +121,37 @@ function initImageModal() {
 
 // Open image modal
 // Note: This function is called from React components and Astro templates via window.openImageModal
-function openImageModal(imageSrc, _imageAlt) {
+// When imageSrc is not in imageGallery, the modal renders the one-off image directly
+// (no prev/next navigation, no image indicator) — keeps the same UI for solution-page illustrations.
+function openImageModal(imageSrc, imageAlt) {
   // Store trigger for focus restoration
   imageModalTrigger = document.activeElement;
 
+  const modal = document.getElementById('image-modal');
+  if (!modal) return;
+
   // Find the index of the clicked image
   currentImageIndex = imageGallery.findIndex((img) => img.src === imageSrc);
-  if (currentImageIndex === -1) currentImageIndex = 0; // Fallback to first image
+  if (currentImageIndex === -1) {
+    // One-off image (not in gallery) — bypass gallery navigation
+    modal.setAttribute('data-single', 'true');
+    const modalImage = document.getElementById('modal-image');
+    const indicator = document.getElementById('image-indicator');
+    if (modalImage) {
+      modalImage.src = imageSrc;
+      modalImage.alt = imageAlt || '';
+    }
+    if (indicator) indicator.textContent = '';
+    resetZoom();
+  } else {
+    modal.setAttribute('data-single', 'false');
+    showCurrentImage();
+  }
 
-  const modal = document.getElementById('image-modal');
-  showCurrentImage();
   modal.setAttribute('aria-hidden', 'false');
-  window.plausible('image_modal_open');
+  if (typeof window.plausible === 'function') {
+    window.plausible('image_modal_open');
+  }
 
   // Prevent body scroll when modal is open
   document.body.style.overflow = 'hidden';
@@ -286,7 +305,22 @@ function touchDrag(e) {
   }
 }
 
+// Delegate clicks on .sp-illustration-trigger buttons (solution-page illustrations).
+// Astro processes the SVG and the rendered <img> ends up with a hashed URL, so we read
+// the resolved src/alt from the inner <img> at click time.
+function bindIllustrationTriggers() {
+  document.addEventListener('click', (e) => {
+    const trigger = e.target.closest?.('.sp-illustration-trigger');
+    if (!trigger) return;
+    const img = trigger.querySelector('img');
+    if (!img || !img.src) return;
+    e.preventDefault();
+    openImageModal(img.src, img.alt || '');
+  });
+}
+
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   initImageModal();
+  bindIllustrationTriggers();
 });

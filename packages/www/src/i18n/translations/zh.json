@@ -201,7 +201,12 @@
     "tagline": "用于人工智能驱动运营的基础设施自动化平台"
   },
   "getStarted": {
-    "benefits": ["直接与我们的团队合作", "全功能平台", "优先支持", "定期功能更新"],
+    "benefits": [
+      "直接与我们的团队合作",
+      "全功能平台",
+      "优先支持",
+      "定期功能更新"
+    ],
     "cta": {
       "primary": "免费安装 Rediacc",
       "secondary": "联系销售"
@@ -319,7 +324,14 @@
     }
   },
   "logoWall": {
-    "categories": ["Git", "CI/CD", "容器", "数据库", "监控", "存储"],
+    "categories": [
+      "Git",
+      "CI/CD",
+      "容器",
+      "数据库",
+      "监控",
+      "存储"
+    ],
     "title": "兼容您的基础设施"
   },
   "metrics": {
@@ -586,12 +598,16 @@
           "title": "5. 我们的分析方法"
         },
         "changes": {
-          "content": ["如果我们引入额外的Cookie，将更新本政策。"],
+          "content": [
+            "如果我们引入额外的Cookie，将更新本政策。"
+          ],
           "id": "changes",
           "title": "7. 本政策的变更"
         },
         "cookiesWeUse": {
-          "content": ["我们只使用一个Cookie："],
+          "content": [
+            "我们只使用一个Cookie："
+          ],
           "id": "cookies-we-use",
           "subsections": {
             "languageCookie": {
@@ -626,12 +642,16 @@
           "title": "6. 管理Cookie"
         },
         "whatAreCookies": {
-          "content": ["Cookie是您访问网站时存储在设备上的小型文本文件。"],
+          "content": [
+            "Cookie是您访问网站时存储在设备上的小型文本文件。"
+          ],
           "id": "what-are-cookies",
           "title": "2. 什么是Cookie？"
         },
         "whatWeDontUse": {
-          "content": ["以下技术在我们的网站上<strong>未</strong>使用："],
+          "content": [
+            "以下技术在我们的网站上<strong>未</strong>使用："
+          ],
           "content2": [
             "注意：本Cookie政策适用于Rediacc营销网站。我们的软件产品（Web 应用程序、CLI、中间件、Bridge）收集不使用Cookie的单独使用遥测数据。有关产品遥测的详情，请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>。"
           ],
@@ -880,7 +900,9 @@
                 "标准实施（9,999 美元）或分层套餐（小型 7,499 美元·中型 14,999 美元·大型 29,999 美元·企业定制）",
                 "紧急响应参与（按需 29,999 美元）"
               ],
-              "included": ["自助文档、视频教程和社区论坛"],
+              "included": [
+                "自助文档、视频教程和社区论坛"
+              ],
               "planId": "社区"
             },
             {
@@ -889,7 +911,10 @@
                 "紧急响应参与（按需 29,999 美元）",
                 "定制集成项目（范围）"
               ],
-              "included": ["电子邮件支持", "标准入门会话（设置调用和配置演练）"],
+              "included": [
+                "电子邮件支持",
+                "标准入门会话（设置调用和配置演练）"
+              ],
               "planId": "亲"
             },
             {
@@ -966,7 +991,11 @@
             "turnaround": "同一天"
           },
           "priority": {
-            "benefits": ["专门的参与经理", "晚上/周末有空位", "生产切换协助"],
+            "benefits": [
+              "专门的参与经理",
+              "晚上/周末有空位",
+              "生产切换协助"
+            ],
             "description": "通过扩展可用性和指导切换支持加速交付。",
             "name": "优先事项",
             "price": "$19,999 美元",
@@ -974,7 +1003,11 @@
             "turnaround": "24-48小时"
           },
           "standard": {
-            "benefits": ["项目发现和成功计划", "环境准备和配置", "验证清单和知识转移"],
+            "benefits": [
+              "项目发现和成功计划",
+              "环境准备和配置",
+              "验证清单和知识转移"
+            ],
             "description": "涵盖架构、部署、验证和启用的结构化实施。",
             "name": "标准",
             "price": "7,499 美元起",
@@ -1161,7 +1194,10 @@
       },
       "trust": {
         "heading": "企业级安全性和可靠性",
-        "items": ["银行级加密", "99.9% 正常运行时间承诺"]
+        "items": [
+          "银行级加密",
+          "99.9% 正常运行时间承诺"
+        ]
       },
       "ui": {
         "anchor": "战略锚",
@@ -1611,7 +1647,11 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["rdc repo up", "JSON", "Done"],
+            "newSteps": [
+              "rdc repo up",
+              "JSON",
+              "Done"
+            ],
             "oldLabel": "传统基础设施",
             "oldSteps": [
               {
@@ -1833,7 +1873,11 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["$204/月", "固定", "您的"],
+            "newSteps": [
+              "$204/月",
+              "固定",
+              "您的"
+            ],
             "oldLabel": "云基础设施",
             "oldSteps": [
               {
@@ -2023,31 +2067,73 @@
           "features": [
             {
               "name": "自托管/本地部署",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "文件系统级不可变性",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "即时恢复（<5分钟）",
-              "values": ["cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "零拷贝快照 (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "按机器定价（无按席位收费）",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "自动化恢复验证",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "无厂商锁定",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "竞争格局",
@@ -2090,7 +2176,11 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["检测", "回滚", "<5 min"],
+            "newSteps": [
+              "检测",
+              "回滚",
+              "<5 min"
+            ],
             "oldLabel": "传统灾难恢复",
             "oldSteps": [
               {
@@ -2384,7 +2474,11 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["rdc ceph snapshot create", "52s", "完成"],
+            "newSteps": [
+              "rdc ceph snapshot create",
+              "52s",
+              "完成"
+            ],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -2853,7 +2947,9 @@
                 "标准实施（9,999 美元）或分层套餐（小型 7,499 美元·中型 14,999 美元·大型 29,999 美元·企业定制）",
                 "紧急响应参与（按需 29,999 美元）"
               ],
-              "included": ["自助文档、视频教程和社区论坛"],
+              "included": [
+                "自助文档、视频教程和社区论坛"
+              ],
               "planId": "社区"
             },
             {
@@ -2862,7 +2958,10 @@
                 "紧急响应参与（按需 29,999 美元）",
                 "定制集成项目（范围）"
               ],
-              "included": ["电子邮件支持", "标准入门会话（设置调用和配置演练）"],
+              "included": [
+                "电子邮件支持",
+                "标准入门会话（设置调用和配置演练）"
+              ],
               "planId": "亲"
             },
             {
@@ -2939,7 +3038,11 @@
             "turnaround": "同一天"
           },
           "priority": {
-            "benefits": ["专门的参与经理", "晚上/周末有空位", "生产切换协助"],
+            "benefits": [
+              "专门的参与经理",
+              "晚上/周末有空位",
+              "生产切换协助"
+            ],
             "description": "通过扩展可用性和指导切换支持加速交付。",
             "name": "优先事项",
             "price": "$19,999 美元",
@@ -2947,7 +3050,11 @@
             "turnaround": "24-48小时"
           },
           "standard": {
-            "benefits": ["项目发现和成功计划", "环境准备和配置", "验证清单和知识转移"],
+            "benefits": [
+              "项目发现和成功计划",
+              "环境准备和配置",
+              "验证清单和知识转移"
+            ],
             "description": "涵盖架构、部署、验证和启用的结构化实施。",
             "name": "标准",
             "price": "7,499 美元起",
@@ -3129,7 +3236,10 @@
       },
       "trust": {
         "heading": "企业级安全性和可靠性",
-        "items": ["银行级加密", "99.9% 正常运行时间承诺"]
+        "items": [
+          "银行级加密",
+          "99.9% 正常运行时间承诺"
+        ]
       },
       "trustSection": {
         "heading": "您的基础设施。您的规则。",
@@ -3249,12 +3359,16 @@
       },
       "sections": {
         "changes": {
-          "content": ["我们可能会不时更新本隐私政策。变更将在此页面上发布。"],
+          "content": [
+            "我们可能会不时更新本隐私政策。变更将在此页面上发布。"
+          ],
           "id": "changes",
           "title": "10. 本政策的变更"
         },
         "childrenPrivacy": {
-          "content": ["我们的服务不面向16岁以下的个人。"],
+          "content": [
+            "我们的服务不面向16岁以下的个人。"
+          ],
           "id": "children-privacy",
           "title": "9. 儿童隐私"
         },
@@ -3268,12 +3382,16 @@
           "title": "5. 数据保留"
         },
         "dataSecurity": {
-          "content": ["我们实施行业标准的安全措施，包括传输和存储加密。"],
+          "content": [
+            "我们实施行业标准的安全措施，包括传输和存储加密。"
+          ],
           "id": "data-security",
           "title": "7. 数据安全"
         },
         "dataSharing": {
-          "content": ["我们不会向第三方出售或出租您的个人数据。"],
+          "content": [
+            "我们不会向第三方出售或出租您的个人数据。"
+          ],
           "id": "data-sharing",
           "items": [
             "协助我们运营平台的<strong>服务提供商</strong>",
@@ -3284,7 +3402,9 @@
           "title": "4. 数据共享与第三方"
         },
         "howWeUseInformation": {
-          "content": ["我们将收集的信息用于以下目的："],
+          "content": [
+            "我们将收集的信息用于以下目的："
+          ],
           "id": "how-we-use-information",
           "items": [
             "回复您的咨询",
@@ -3298,11 +3418,15 @@
           "title": "3. 我们如何使用您的信息"
         },
         "informationWeCollect": {
-          "content": ["我们仅收集提供服务所需的最少信息。"],
+          "content": [
+            "我们仅收集提供服务所需的最少信息。"
+          ],
           "id": "information-we-collect",
           "subsections": {
             "accountData": {
-              "content": ["创建Rediacc账户时，我们会收集您的姓名、电子邮件、组织名称和账单信息。"],
+              "content": [
+                "创建Rediacc账户时，我们会收集您的姓名、电子邮件、组织名称和账单信息。"
+              ],
               "title": "2.2 账户数据"
             },
             "analyticsData": {
@@ -3312,7 +3436,9 @@
               "title": "2.3 分析数据"
             },
             "contactFormData": {
-              "content": ["当您提交联系表单时，我们会收集您的姓名、电子邮件地址、主题和消息内容。"],
+              "content": [
+                "当您提交联系表单时，我们会收集您的姓名、电子邮件地址、主题和消息内容。"
+              ],
               "title": "2.1 联系表单数据"
             },
             "cookies": {
@@ -3332,7 +3458,9 @@
           "title": "2. 我们收集的信息"
         },
         "internationalTransfers": {
-          "content": ["您的信息可能会被传输到其他国家并在那里进行处理。我们确保适当的保障措施。"],
+          "content": [
+            "您的信息可能会被传输到其他国家并在那里进行处理。我们确保适当的保障措施。"
+          ],
           "id": "international-transfers",
           "title": "8. 国际数据传输"
         },
@@ -3345,7 +3473,9 @@
           "title": "1. 简介"
         },
         "yourRights": {
-          "content": ["根据您所在的司法管辖区，您可能拥有以下权利："],
+          "content": [
+            "根据您所在的司法管辖区，您可能拥有以下权利："
+          ],
           "content2": [
             "请通过<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>联系我们以行使您的权利。"
           ],
@@ -3416,7 +3546,9 @@
       },
       "sections": {
         "changes": {
-          "content": ["我们可能会不时更新本退款政策。"],
+          "content": [
+            "我们可能会不时更新本退款政策。"
+          ],
           "id": "changes",
           "title": "7. 本政策的变更"
         },
@@ -3424,7 +3556,9 @@
           "content": [
             "发送电子邮件至<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>，包含："
           ],
-          "content2": ["我们将在5个工作日内回复。"],
+          "content2": [
+            "我们将在5个工作日内回复。"
+          ],
           "id": "how-to-request",
           "items": [
             "您的账户电子邮件地址",
@@ -3435,7 +3569,9 @@
           "title": "4. 如何申请退款"
         },
         "nonRefundable": {
-          "content": ["以下项目不符合退款条件："],
+          "content": [
+            "以下项目不符合退款条件："
+          ],
           "id": "non-refundable",
           "items": [
             "14天期限后取消的订阅",
@@ -3447,24 +3583,35 @@
           "title": "6. 不可退款项目"
         },
         "overview": {
-          "content": ["本退款政策描述了Rediacc订阅和专业服务的退款条件。"],
+          "content": [
+            "本退款政策描述了Rediacc订阅和专业服务的退款条件。"
+          ],
           "id": "overview",
           "title": "1. 概述"
         },
         "platformSubscriptions": {
-          "content": ["Rediacc提供多个订阅层级："],
+          "content": [
+            "Rediacc提供多个订阅层级："
+          ],
           "id": "platform-subscriptions",
           "subsections": {
             "annualSubscriptions": {
-              "content": ["年度订阅可随时取消。除14天期限内外不提供部分退款。"],
+              "content": [
+                "年度订阅可随时取消。除14天期限内外不提供部分退款。"
+              ],
               "title": "2.3 年度订阅"
             },
             "freeTier": {
-              "content": ["Community层级永久免费。"],
+              "content": [
+                "Community层级永久免费。"
+              ],
               "title": "2.1 免费层级"
             },
             "paidTiers": {
-              "content": ["付费订阅通常不可退款。例外情况：", "但是，我们在以下情况下提供退款："],
+              "content": [
+                "付费订阅通常不可退款。例外情况：",
+                "但是，我们在以下情况下提供退款："
+              ],
               "items": [
                 "<strong>前14天：</strong>新订阅者全额退款",
                 "<strong>服务中断：</strong>长时间中断（超过48小时）的按比例退款",
@@ -3476,7 +3623,9 @@
           "title": "2. 平台订阅"
         },
         "professionalServices": {
-          "content": ["专业服务按小时收费（$400–$1,200/小时）："],
+          "content": [
+            "专业服务按小时收费（$400–$1,200/小时）："
+          ],
           "id": "professional-services",
           "items": [
             "<strong>工作开始前：</strong>全额退款",
@@ -3713,6 +3862,21 @@
       "title": "Rediacc 能为您的组织节省多少？"
     },
     "solutionPages": {
+      "downloadGated": {
+        "title": "Get the technical brief",
+        "description": "A no-fluff PDF written for CISOs, CTOs, and senior engineers. Drop your email and we send you the download link plus a one-page summary by mail.",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "Send me the brief",
+        "successMessage": "Check your inbox to confirm. We've also opened the PDF in a new tab.",
+        "errorMessage": "Something went wrong. Please try again or reach out at support@rediacc.com.",
+        "disclaimer": "One email. No marketing list. Unsubscribe with one click.",
+        "dismissLabel": "Dismiss"
+      },
+      "downloadShort": {
+        "title": "Short on time?",
+        "description": "Skip the deep-dive. Grab the five-minute version your team can read at a stand-up.",
+        "buttonLabel": "Download short brief (PDF)"
+      },
       "aiPentesting": {
         "benefits": {
           "items": [
@@ -3934,7 +4098,11 @@
           ],
           "timeline": {
             "newLabel": "使用 REDIACC",
-            "newSteps": ["运行渗透测试", "47s", "发现 7 个漏洞"],
+            "newSteps": [
+              "运行渗透测试",
+              "47s",
+              "发现 7 个漏洞"
+            ],
             "oldLabel": "传统渗透测试",
             "oldSteps": [
               {
@@ -4184,38 +4352,122 @@
           "features": [
             {
               "name": "防篡改审计日志",
-              "refs": [0, 2, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                2,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "加密签名 (SHA-256)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "即时报告生成 (CLI)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "基本操作日志",
-              "refs": [3, 4, 5, 6, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "每项操作的用户归属",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "密钥轮换追踪",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "自托管/您的基础设施",
-              "refs": [11, 12, 13, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -4397,7 +4649,11 @@
           ],
           "timeline": {
             "newLabel": "使用 REDIACC",
-            "newSteps": ["运行审计", "即时", "完整报告"],
+            "newSteps": [
+              "运行审计",
+              "即时",
+              "完整报告"
+            ],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -4655,38 +4911,122 @@
           "features": [
             {
               "name": "自动化恢复验证",
-              "refs": [4, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "完整服务健康检查",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "每日自动化测试",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "零存储克隆用于测试",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "校验和/文件完整性",
-              "refs": [5, 6, 7, 8, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "告警集成",
-              "refs": [9, 10, 11, 12, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "自托管/您的基础设施",
-              "refs": [13, 14, 15, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                13,
+                14,
+                15,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -4869,7 +5209,11 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["备份", "47s", "已验证"],
+            "newSteps": [
+              "备份",
+              "47s",
+              "已验证"
+            ],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -5167,38 +5511,122 @@
           "features": [
             {
               "name": "跨云复制",
-              "refs": [0, 4, 5, 6, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "30 秒内故障转移",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "仅增量传输（节省 98%）",
-              "refs": [0, 7, 8, 9, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "任意到任意提供商故障转移",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "自托管，无云代理",
-              "refs": [0, 10, 11, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                10,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "自动 DNS 故障转移",
-              "refs": [0, 0, 12, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                12,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "全栈复制（应用 + 数据库）",
-              "refs": [0, 13, 14, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                13,
+                14,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -5382,7 +5810,11 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["检测", "<30s", "在线"],
+            "newSteps": [
+              "检测",
+              "<30s",
+              "在线"
+            ],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -5777,7 +6209,12 @@
               },
               {
                 "footer": "Continuous improvement · automated",
-                "items": ["W1: ████████ 23", "W2: ████ 12", "W3: ██ 7", "W4: █ 3"],
+                "items": [
+                  "W1: ████████ 23",
+                  "W2: ████ 12",
+                  "W3: ██ 7",
+                  "W4: █ 3"
+                ],
                 "status": "-87%",
                 "title": "4 周趋势"
               }
@@ -5832,7 +6269,11 @@
           ],
           "timeline": {
             "newLabel": "使用 REDIACC",
-            "newSteps": ["每日扫描", "0 天", "零盲区"],
+            "newSteps": [
+              "每日扫描",
+              "0 天",
+              "零盲区"
+            ],
             "oldLabel": "年度渗透测试",
             "oldSteps": [
               {
@@ -6065,38 +6506,122 @@
           "features": [
             {
               "name": "客户持有加密密钥",
-              "refs": [3, 4, 5, 6, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "零知识架构",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "自助密钥轮换",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "AES-256 静态加密",
-              "refs": [11, 12, 13, 14, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "按仓库密钥隔离",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "传输中加密",
-              "refs": [15, 16, 17, 18, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                15,
+                16,
+                17,
+                18,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "自托管/您的基础设施",
-              "refs": [19, 20, 21, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                19,
+                20,
+                21,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -6278,7 +6803,11 @@
           ],
           "timeline": {
             "newLabel": "使用 REDIACC",
-            "newSteps": ["您的密钥", "AES-256", "Zero-knowledge"],
+            "newSteps": [
+              "您的密钥",
+              "AES-256",
+              "Zero-knowledge"
+            ],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -6574,33 +7103,117 @@
           "features": [
             {
               "name": "应用克隆",
-              "refs": [3, 4, 5, 0, 0, 0],
-              "values": ["check", "check", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "数据库克隆",
-              "refs": [0, 0, 0, 6, 7, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "应用 + 数据库联合克隆",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "任意数据库引擎",
-              "refs": [0, 0, 0, 8, 0, 0],
-              "values": ["cross", "cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                8,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "部署时间",
-              "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                13,
+                0
+              ],
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Seconds",
+                "<60s"
+              ]
             },
             {
               "name": "与生产一致的数据",
-              "refs": [0, 0, 0, 14, 15, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                14,
+                15,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -6787,7 +7400,11 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["Run", "60s", "Done"],
+            "newSteps": [
+              "Run",
+              "60s",
+              "Done"
+            ],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -7072,38 +7689,122 @@
           "features": [
             {
               "name": "全栈故障转移测试",
-              "refs": [0, 0, 2, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                2,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "对生产零影响",
-              "refs": [0, 3, 4, 5, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                3,
+                4,
+                5,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "5 分钟内完成",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "自动化通过/失败报告",
-              "refs": [0, 6, 7, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                7,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "CI/CD 集成",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "跨云测试",
-              "refs": [0, 8, 9, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                8,
+                9,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "自托管/您的基础设施",
-              "refs": [0, 10, 11, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                10,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -7286,7 +7987,11 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["运行测试", "4 min", "报告"],
+            "newSteps": [
+              "运行测试",
+              "4 min",
+              "报告"
+            ],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -7564,38 +8269,136 @@
           "features": [
             {
               "name": "不可变备份",
-              "refs": [4, 5, 6, 7, 0, 0],
-              "values": ["check", "check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "文件系统级强制",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "自动化每日恢复验证",
-              "refs": [8, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                8,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "零拷贝存储 (CoW)",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "即时克隆用于测试",
-              "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["cross", "check", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                13,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "恢复时间",
-              "refs": [14, 15, 16, 17, 18, 0],
-              "values": ["Minutes", "Minutes", "Hours", "Hours", "Seconds", "<5 min"]
+              "refs": [
+                14,
+                15,
+                16,
+                17,
+                18,
+                0
+              ],
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Hours",
+                "Hours",
+                "Seconds",
+                "<5 min"
+              ]
             },
             {
               "name": "自托管/无云依赖",
-              "refs": [19, 20, 21, 0, 22, 0],
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                19,
+                20,
+                21,
+                0,
+                22,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -7778,7 +8581,11 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["备份", "封存", "已验证"],
+            "newSteps": [
+              "备份",
+              "封存",
+              "已验证"
+            ],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -8097,33 +8904,105 @@
           "features": [
             {
               "name": "零拷贝克隆存储 (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "可配置 TTL 自动销毁",
-              "refs": [4, 0, 0, 0, 0],
-              "values": ["check", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "克隆中包含完整生产数据",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "多服务环境",
-              "refs": [0, 5, 0, 6, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                5,
+                0,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "自托管/无按席位定价",
-              "refs": [0, 7, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                7,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "60 秒内部署",
-              "refs": [0, 0, 8, 9, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -8296,7 +9175,11 @@
           ],
           "timeline": {
             "newLabel": "使用 REDIACC",
-            "newSteps": ["启动", "$0 闲置", "自动清理"],
+            "newSteps": [
+              "启动",
+              "$0 闲置",
+              "自动清理"
+            ],
             "oldLabel": "始终在线的环境",
             "oldSteps": [
               {
@@ -8556,38 +9439,122 @@
           "features": [
             {
               "name": "完整环境恢复（不仅是文件）",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "5 分钟内恢复",
-              "refs": [4, 5, 6, 7, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "恢复后自动健康检查",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "时间点快照粒度",
-              "refs": [8, 9, 10, 11, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "零开销克隆（无额外存储）",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "单命令恢复",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "自托管/您的基础设施",
-              "refs": [12, 13, 14, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                12,
+                13,
+                14,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -8770,7 +9737,11 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["运行恢复", "3m 47s", "运行中"],
+            "newSteps": [
+              "运行恢复",
+              "3m 47s",
+              "运行中"
+            ],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -9062,33 +10033,105 @@
           "features": [
             {
               "name": "CI 克隆中包含生产数据",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "一行 webhook 集成",
-              "refs": [3, 0, 4, 5, 0],
-              "values": ["check", "cross", "check", "check", "rediacc"]
+              "refs": [
+                3,
+                0,
+                4,
+                5,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "多服务 CI 环境",
-              "refs": [0, 6, 0, 7, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                6,
+                0,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "流水线完成后自动销毁",
-              "refs": [8, 0, 9, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                8,
+                0,
+                9,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "零自定义部署脚本",
-              "refs": [0, 0, 10, 11, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "自托管/无供应商锁定",
-              "refs": [0, 12, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                12,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -9172,19 +10215,31 @@
             "cards": [
               {
                 "footer": "webhook → rdc",
-                "items": ["branch: feature/auth-v2", "commit: a3f7b2c", "author: sarah"],
+                "items": [
+                  "branch: feature/auth-v2",
+                  "commit: a3f7b2c",
+                  "author: sarah"
+                ],
                 "status": "触发",
                 "title": "Git Push"
               },
               {
                 "footer": "ci-auth-v2",
-                "items": ["gitlab · nextcloud", "mariadb · mailcow", "380 GB → 2.1 GB"],
+                "items": [
+                  "gitlab · nextcloud",
+                  "mariadb · mailcow",
+                  "380 GB → 2.1 GB"
+                ],
                 "status": "CoW",
                 "title": "Clone"
               },
               {
                 "footer": "285 passed",
-                "items": ["247 unit tests ✓", "38 integration ✓", "auto-cleanup ✓"],
+                "items": [
+                  "247 unit tests ✓",
+                  "38 integration ✓",
+                  "auto-cleanup ✓"
+                ],
                 "status": "通过",
                 "title": "测试"
               }
@@ -9239,7 +10294,11 @@
           ],
           "timeline": {
             "newLabel": "使用 REDIACC",
-            "newSteps": ["git push", "Auto", "真实数据"],
+            "newSteps": [
+              "git push",
+              "Auto",
+              "真实数据"
+            ],
             "oldLabel": "自定义 CI 脚本",
             "oldSteps": [
               {
@@ -9519,38 +10578,122 @@
           "features": [
             {
               "name": "零解密迁移",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "传输期间客户持有密钥",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "配置 + 数据原子迁移",
-              "refs": [0, 0, 5, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                5,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "传输后完整性验证",
-              "refs": [6, 7, 8, 9, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                6,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "单命令迁移",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "任意到任意目标",
-              "refs": [10, 11, 12, 0, 0],
-              "values": ["check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                10,
+                11,
+                12,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "失败时自动回滚",
-              "refs": [0, 0, 13, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                13,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -9733,7 +10876,11 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["运行迁移", "零暴露", "已验证"],
+            "newSteps": [
+              "运行迁移",
+              "零暴露",
+              "已验证"
+            ],
             "oldLabel": "传统迁移",
             "oldSteps": [
               {
@@ -10024,38 +11171,122 @@
           "features": [
             {
               "name": "完整生产数据克隆",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "操作系统及库一致性验证",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "任意数据库引擎（MariaDB、Postgres、Mongo）",
-              "refs": [0, 4, 0, 5, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                4,
+                0,
+                5,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "多服务克隆（应用 + 数据库 + 邮件 + 存储）",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "零拷贝存储 (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "自托管/无供应商锁定",
-              "refs": [0, 6, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "60 秒内部署",
-              "refs": [0, 0, 7, 8, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -10228,7 +11459,11 @@
           ],
           "timeline": {
             "newLabel": "使用 REDIACC",
-            "newSteps": ["运行克隆", "47s", "100% 匹配"],
+            "newSteps": [
+              "运行克隆",
+              "47s",
+              "100% 匹配"
+            ],
             "oldLabel": "传统开发环境",
             "oldSteps": [
               {
@@ -10434,6 +11669,576 @@
           ]
         }
       },
+      "dataSovereignty": {
+        "meta": {
+          "title": "数据主权 - 以架构为基础的主权备份 | Rediacc",
+          "description": "由您托管。由您持有密钥。通过架构而非证书实现CLOUD Act豁免。自托管备份，具备客户管理密钥、GDPR Schrems II合规性及EU数据法就绪能力。",
+          "keywords": "数据主权, CLOUD Act豁免, 客户管理密钥, GDPR Schrems II, EU数据法, 自托管, 主权备份, SecNumCloud, DORA"
+        },
+        "hero": {
+          "badge": "加密控制",
+          "title": "以架构实现主权，而非依赖证书。",
+          "subtitle": "由您托管。由您持有密钥。美国司法管辖的提供商无法被强制交出其未持有的内容。",
+          "differentiator": "每家超大规模云商都在营销主权，但没有人能保证您的数据不受美国法院命令约束。Rediacc可以做到。",
+          "primaryCta": "免费开始使用社区版",
+          "secondaryCta": "查看主权功能 →"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "text": "rdc audit log --limit 50"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "comment",
+              "text": "正在检查所有存储库的密钥托管链..."
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "table-header",
+              "text": "密钥 ID                 保管          HSM          托管        管辖"
+            },
+            {
+              "type": "table-row",
+              "text": "prod-main-v3            客户            YubiHSM 2    NO          客户-本地"
+            },
+            {
+              "type": "table-row",
+              "text": "prod-db-v2              客户            YubiHSM 2    NO          客户-本地"
+            },
+            {
+              "type": "table-row",
+              "text": "staging-main-v1         客户            software     NO          客户-本地"
+            },
+            {
+              "type": "table-row",
+              "text": "backup-archive-v4       客户            YubiHSM 2    NO          客户-本地"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "summary",
+              "text": "密钥: 4   保管: 100% 客户   托管: 0   美国-可访问: 0   已签名: 2026-05-11T09:14:33Z"
+            }
+          ]
+        },
+        "stats": [
+          {
+            "number": "0",
+            "label": "托管给任何提供商的密钥",
+            "icon": "key"
+          },
+          {
+            "number": "100%",
+            "label": "客户密钥托管",
+            "icon": "lock"
+          },
+          {
+            "number": "EU-only",
+            "label": "运营商司法管辖",
+            "icon": "globe"
+          }
+        ],
+        "problem": {
+          "overline": "问题所在",
+          "title": "您的云提供商可以交出您的数据，而您不会得到任何通知。",
+          "description": "美国司法管辖的云提供商在法律上必须遵守CLOUD Act命令，即使数据存储在EU数据中心。合同承诺无法凌驾于美国法规之上。问题不在于您的提供商是否愿意这样做，而在于他们是否在法律上可以这样做。",
+          "statCallouts": [
+            {
+              "number": "\"不，我无法保证\" (Non, je ne peux pas le garantir)",
+              "source": "法国参议院，2025年6月18日",
+              "ref": 1,
+              "text": "Microsoft France公共与法律事务总监在宣誓作证时，就EU Microsoft数据中心中的法国公民数据是否能免受美国当局查阅所作的回答"
+            },
+            {
+              "number": "€12.6B",
+              "source": "Gartner，2026年2月",
+              "ref": 2,
+              "text": "2026年EU主权云IaaS支出，2027年将增至€23.1B。市场已判定主权不是可选项。"
+            },
+            {
+              "number": "0 US primaries",
+              "source": "欧盟委员会，2026年4月17日",
+              "ref": 3,
+              "text": "Cloud III: 欧盟委员会€180M主权云招标由四家EU联合体中标。美国总部主承包商数量为零。"
+            }
+          ],
+          "timeline": {
+            "oldLabel": "传统方式",
+            "oldSteps": [
+              {
+                "day": "第1天",
+                "text": "与美国司法管辖的云提供商签约"
+              },
+              {
+                "day": "第1个月",
+                "text": "DPO标记GDPR传输风险，需要TIA"
+              },
+              {
+                "day": "第3个月",
+                "text": "法务审查CLOUD Act风险敞口，无法保证"
+              },
+              {
+                "day": "第6个月",
+                "text": "监管机构审计，数据驻留已确认，主权未确认"
+              },
+              {
+                "day": "结果",
+                "text": "有驻留，无主权。合规差距持续存在。"
+              }
+            ],
+            "newLabel": "使用 Rediacc",
+            "newSteps": [
+              "在您自己的基础设施上托管",
+              "持有您自己的密钥",
+              "CLOUD Act无法触及您"
+            ]
+          }
+        },
+        "calculator": {
+          "overline": "真实成本",
+          "title": "美国司法管辖风险敞口会给您带来多少代价？",
+          "description": "拖动滑块以匹配您的环境。查看主权差距的真实成本。",
+          "headerTitle": "主权风险敞口计算器",
+          "sliders": {
+            "records": "EU个人数据记录（千条）",
+            "spend": "年度超大规模云支出（€ 千）",
+            "recoveryHours": "手动DORA恢复测试（小时/年）"
+          },
+          "withoutTag": "美国司法管辖",
+          "withTag": "使用 Rediacc",
+          "results": {
+            "transferRisk": "GDPR传输风险敞口",
+            "exitPenalty": "数据法2027退出罚款风险",
+            "doraTesting": "DORA第12条测试成本"
+          },
+          "annualLabel": "年度主权风险敞口",
+          "withResults": {
+            "transferRisk": "GDPR传输风险敞口",
+            "exitPenalty": "数据法2027退出罚款风险",
+            "doraTesting": "DORA第12条测试成本"
+          },
+          "withAnnual": "年度主权风险敞口",
+          "footnote": "传输风险：记录数 x €0.04 x 10%监管审查概率。退出罚款：超大规模云支出的10%作为数据法第25条估算转换成本上限（2027年1月12日零费用截止日期）。DORA测试：小时数 x €200/小时工程师成本。使用Rediacc：自托管消除传输风险，开放格式消除退出罚款，恒定时间分叉将DORA恢复测试缩减至几分钟，与存储库大小无关。"
+        },
+        "howItWorks": {
+          "overline": "工作原理",
+          "title": "三个步骤。一套主权栈。",
+          "steps": [
+            {
+              "title": "托管",
+              "description": "在您自己的硬件、EU IaaS提供商或任意组合上部署。Rediacc OE在爱沙尼亚注册成立，无美国母公司，无美国控制平面，无CLOUD Act暴露面。",
+              "icon": "server"
+            },
+            {
+              "title": "持有密钥",
+              "description": "加密密钥永远不会离开您的掌控。密钥派生在客户端完成。Rediacc永远看不到明文。托管链可通过CLI按密钥审计。",
+              "icon": "key"
+            },
+            {
+              "title": "证明它",
+              "description": "一条命令生成签名的密钥托管报告。符合SecNumCloud 3.2、BSI C5:2026、ANSSI-BSI联合声明及EDPB建议01/2020用例2。",
+              "icon": "shield"
+            }
+          ],
+          "cloneVisual": {
+            "production": {
+              "title": "美国超大规模云",
+              "status": "CLOUD Act风险敞口",
+              "services": [
+                {
+                  "name": "S3 Bucket",
+                  "port": "美国管控"
+                },
+                {
+                  "name": "KMS Key",
+                  "port": "供应商持有"
+                },
+                {
+                  "name": "IAM Policy",
+                  "port": "美国治理"
+                },
+                {
+                  "name": "Audit Log",
+                  "port": "美国可访问"
+                }
+              ],
+              "containerCount": "合同驻留",
+              "size": "非主权"
+            },
+            "clone": {
+              "title": "您的主权栈",
+              "status": "EU司法管辖",
+              "cardClass": "sealed",
+              "services": [
+                {
+                  "name": "您的存储",
+                  "port": "客户自有"
+                },
+                {
+                  "name": "您的密钥",
+                  "port": "客户HSM"
+                },
+                {
+                  "name": "您的策略",
+                  "port": "EU治理"
+                },
+                {
+                  "name": "审计链",
+                  "port": "SHA-256签名"
+                }
+              ],
+              "containerCount": "架构主权",
+              "size": "CLOUD Act豁免"
+            },
+            "arrow": {
+              "label": "迁移",
+              "time": "开放格式",
+              "icon": "shield-arrow"
+            }
+          }
+        },
+        "techDiff": {
+          "overline": "底层技术",
+          "title": "为何数据驻留不等于数据主权",
+          "description": "美国司法管辖的提供商可以将您的数据存储在法兰克福，仍然可能被美国法院强制要求披露。Rediacc的架构从根本上消除了强制向量：没有密钥可以交出，没有回传通道可以拦截。",
+          "rows": [
+            {
+              "traditional": "无论密文存放在哪里，提供商均受美国司法管辖",
+              "rediacc": "运营商在爱沙尼亚注册，无美国母公司，无CLOUD Act强制面"
+            },
+            {
+              "traditional": "供应商管理KMS：提供商可在法律要求下还原明文",
+              "rediacc": "客户端密钥派生：供应商从不持有密钥，强制在技术上毫无意义"
+            },
+            {
+              "traditional": "跨境数据请求由供应商记录，客户不可见",
+              "rediacc": "SHA-256签名审计链：每次密钥访问和请求均被记录，客户可读"
+            },
+            {
+              "traditional": "专有备份格式：退出需要供应商工具迁移",
+              "rediacc": "开放格式（btrfs send, tar）：退出即得到可用副本，符合数据法"
+            },
+            {
+              "traditional": "DORA恢复测试随数据量扩展，大型存储库需要数天",
+              "rediacc": "通过btrfs reflink实现恒定时间分叉：100 GB和100 TB在相同秒数内完成分叉"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "重要意义",
+          "title": "您将获得什么",
+          "items": [
+            {
+              "icon": "shield",
+              "title": "架构层面的CLOUD Act豁免",
+              "description": "无美国司法管辖母公司。无供应商密钥托管。架构本身就是防御。Carniaux参议院证词（2025年6月18日）终结了合同可以替代司法管辖豁免的任何残余争议。"
+            },
+            {
+              "icon": "globe",
+              "title": "EU数据法2027就绪",
+              "description": "架构上开放的数据格式，零切换费用。每次备份都是可移植的可用副本。在2027年1月12日零切换费用截止日期前完全符合数据法第23-31条。"
+            },
+            {
+              "icon": "check-circle",
+              "title": "与SecNumCloud及C5:2026对齐",
+              "description": "四大支柱体系与2025年11月17日ANSSI-BSI联合声明一致：严格数据本地化、仅适用欧洲法律、无法外访问、无非EU依赖的业务连续性。"
+            }
+          ]
+        },
+        "comparison": {
+          "overline": "差距对比",
+          "title": "主权对比",
+          "description": "大多数供应商提供数据驻留。没有人能提供Rediacc通过架构实现的内容：客户密钥托管、纯EU运营商和CLOUD Act豁免。",
+          "capabilityLabel": "能力",
+          "features": [
+            {
+              "name": "CLOUD Act豁免（无美国司法管辖母公司）",
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                4,
+                4,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "客户持有密钥（技术不可读性）",
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                5,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "纯EU运营商（无美国母公司）",
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                4,
+                4,
+                0,
+                6,
+                0
+              ]
+            },
+            {
+              "name": "SecNumCloud / C5:2026认证路径",
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                7,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "开放退出格式（数据法第30条）",
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                8,
+                8,
+                8,
+                0,
+                8,
+                0
+              ]
+            },
+            {
+              "name": "在客户基础设施上自托管",
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                9,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "默认EU数据驻留",
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                10,
+                0,
+                13,
+                0
+              ]
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "2025年6月Carniaux参议院证词之后，我们的SecNumCloud审计委员会提出了一个问题：您能否证明您的备份提供商不会被强制向美国当局披露患者数据？使用Microsoft Azure Backup时，我们无法回答这个问题。使用Rediacc，答案是架构层面的：密钥永远不会离开我们的HSM，运营商没有美国母公司，我们可以在三十秒内生成签名的托管报告。这是唯一能令ANSSI满意的答案。",
+          "author": "首席信息安全官",
+          "company": "承担SecNumCloud义务的法国OIV，员工1,200人",
+          "impact": {
+            "before": {
+              "label": "之前",
+              "value": "传输风险"
+            },
+            "after": {
+              "label": "之后",
+              "value": "CLOUD Act豁免"
+            },
+            "improvement": "已替换Microsoft Azure Backup · 密钥托管：从供应商转至客户 · ANSSI审计：通过"
+          }
+        },
+        "bottomCta": {
+          "title": "停止从美国司法管辖的提供商那里租用您自己的数据。",
+          "description": "从免费社区版开始。一分钟内运行您的第一次密钥托管审计。",
+          "ctaText": "免费开始使用社区版",
+          "command": "rdc audit log --limit 50"
+        },
+        "techStrip": {
+          "label": "自托管任何工作负载，持有每一把密钥",
+          "note": "数据库、邮件服务器、CI/CD、ERP、CMS和AI模型存储：每个工作负载都是主权的，每把密钥都是您的。"
+        },
+        "explore": {
+          "title": "探索其他解决方案",
+          "solutions": [
+            {
+              "category": "Encryption Control",
+              "title": "您掌控的加密",
+              "description": "您的密钥，您的加密，没有例外。",
+              "slug": "encryption",
+              "dataCategory": "encryption"
+            },
+            {
+              "category": "Encryption Control",
+              "title": "审计追踪",
+              "description": "每项操作都有记录，无任何隐藏。",
+              "slug": "audit-trail",
+              "dataCategory": "encryption"
+            },
+            {
+              "category": "Encryption Control",
+              "title": "迁移安全",
+              "description": "迁移不冒数据风险",
+              "slug": "migration-safety",
+              "dataCategory": "encryption"
+            },
+            {
+              "category": "Ransomware Survival",
+              "title": "不可变备份",
+              "description": "勒索软件无法触及的备份",
+              "slug": "immutable-backups",
+              "dataCategory": "ransomware"
+            },
+            {
+              "category": "Multi-Cloud",
+              "title": "云故障保护",
+              "description": "AWS 宕机时，您不受影响",
+              "slug": "cloud-outage-protection",
+              "dataCategory": "multi-cloud"
+            },
+            {
+              "category": "Verified Backups",
+              "title": "摆脱供应商锁定",
+              "description": "从任何供应商退出。保留您的数据。",
+              "slug": "vendor-lock-in",
+              "dataCategory": "backups"
+            },
+            {
+              "category": "Verified Backups",
+              "title": "留存合规",
+              "description": "自动满足每项留存要求",
+              "slug": "retention-compliance",
+              "dataCategory": "backups"
+            },
+            {
+              "category": "Development Environments",
+              "title": "环境克隆",
+              "description": "60 秒克隆生产环境",
+              "slug": "environment-cloning",
+              "dataCategory": "dev-env"
+            }
+          ]
+        },
+        "references": {
+          "label": "来源与参考文献",
+          "items": [
+            {
+              "text": "Microsoft France公共与法律事务总监Anton Carniaux，法国参议院关于公共采购和数字主权的调查，2025年6月18日：「不，我无法保证这一点，但同样，这从来没有发生过。」The Register于2025年7月25日报道。",
+              "url": "https://www.theregister.com/2025/07/25/microsoft_admits_it_cannot_guarantee/"
+            },
+            {
+              "text": "Gartner，2026年2月：欧洲主权云IaaS支出预测，2026年为$12.6B，2027年为$23.1B，超越北美。",
+              "url": "https://www.gartner.com/en/newsroom/press-releases/2026-02"
+            },
+            {
+              "text": "欧盟委员会，「Commission Advances Cloud Sovereignty Through Strategic Procurement」，2026年4月17日。Cloud III €180M招标由Post Telecom + OVHcloud + CleverCloud、STACKIT、Scaleway以及Proximus + S3NS + Clarence + Mistral AI中标。美国总部主承包商数量为零。",
+              "url": "https://commission.europa.eu/news-and-media/news/commission-advances-cloud-sovereignty-through-strategic-procurement-2026-04-17_en"
+            },
+            {
+              "text": "CLOUD Act（Clarifying Lawful Overseas Use of Data Act），18 U.S.C. 2713，2018年。授权美国当局强制美国司法管辖的提供商披露存储在世界任何地方的客户数据。",
+              "url": "https://www.justice.gov/dag/cloudact"
+            },
+            {
+              "text": "EDPB建议01/2020，关于补充转移工具以确保符合EU个人数据保护水平的措施，第2.0版，2021年6月。用例2：作为补充措施的加密要求客户独占密钥托管及进口方的技术不可读性。",
+              "url": "https://www.edpb.europa.eu/system/files/2021-06/edpb_recommendations_202001vo.2.0_supplementarymeasurestransferstools_en.pdf"
+            },
+            {
+              "text": "Keepit A/S，哥本哈根。面向Microsoft 365、Salesforce和Google Workspace的纯SaaS备份。EU注册，无美国母公司。不备份自托管或本地工作负载。",
+              "url": "https://keepit.com"
+            },
+            {
+              "text": "ANSSI SecNumCloud 3.2资质要求。提供商必须以EU为多数股东、EU总部所在地，且不受域外法律约束。非EU股东个人上限25%，集体上限39%。AWS Sovereign Cloud和Microsoft Bleu不符合资质。",
+              "url": "https://www.ssi.gouv.fr/uploads/2022/01/secnumcloud-referentiel-v3.2.pdf"
+            },
+            {
+              "text": "EU数据法（Regulation (EU) 2023/2854），第23-31条。自2025年9月12日生效。自2027年1月12日起全面禁止切换费用。提供商必须确保切换后的功能等效性。",
+              "url": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj/eng"
+            },
+            {
+              "text": "Veeam Backup and Replication支持本地自托管部署。Veeam不直接持有主权认证，EU主权叙事依赖合作伙伴IaaS（尤其是OVHcloud）。",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "AWS European Sovereign Cloud，2026年1月15日正式发布。在四个德国GmbH下运营。美国总部母公司（Amazon.com Inc.）仍受CLOUD Act约束。",
+              "url": "https://aws.amazon.com/government-education/european-sovereign-cloud/"
+            },
+            {
+              "text": "ANSSI-BSI云主权标准联合声明，2025年11月17日。四项失格标准：严格的数据和支持本地化、仅适用欧洲法律、无法外第三方未经授权的访问，以及无需非EU技术维持业务连续性的能力。",
+              "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/ANSSI-BSI-joint-releases/Cloud-Sovereignty-Criteria.pdf"
+            },
+            {
+              "text": "欧洲监管当局，「DORA下关键ICT第三方提供商的指定」，2025年11月18日。首批指定的19家CTPP包括AWS、Microsoft Azure、Google Cloud、IBM、Oracle、SAP、Salesforce。",
+              "url": "https://www.eiopa.europa.eu/european-supervisory-authorities-designate-critical-ict-third-party-providers-under-digital-2025-11-18_en"
+            },
+            {
+              "text": "Keepit 数据驻留政策：客户数据仅存储在欧盟数据中心（法兰克福、阿姆斯特丹、哥本哈根）。仅 SaaS 模式，运营商和存储均位于欧盟。",
+              "url": "https://www.keepit.com/trust/"
+            }
+          ],
+          "disclaimer": "计算器估算使用行业标准成本模型，实际风险敞口因司法管辖区、合同结构和违规场景而异。"
+        }
+      },
       "rapidRecovery": {
         "benefits": {
           "items": [
@@ -10496,33 +12301,117 @@
           "features": [
             {
               "name": "完整环境恢复",
-              "refs": [0, 0, 0, 0, 4, 0],
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                4,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "5 分钟内恢复",
-              "refs": [5, 6, 7, 8, 9, 0],
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "时间点（分钟级）",
-              "refs": [10, 11, 12, 13, 14, 0],
-              "values": ["check", "check", "check", "check", "check", "rediacc"]
+              "refs": [
+                10,
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "自动化恢复验证",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "无需数据传输",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "自托管/无云依赖",
-              "refs": [15, 16, 17, 0, 18, 0],
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                15,
+                16,
+                17,
+                0,
+                18,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -10705,7 +12594,11 @@
           ],
           "timeline": {
             "newLabel": "使用 REDIACC",
-            "newSteps": ["检测", "<5 min", "在线"],
+            "newSteps": [
+              "检测",
+              "<5 min",
+              "在线"
+            ],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -10981,38 +12874,122 @@
           "features": [
             {
               "name": "可配置留存策略",
-              "refs": [4, 5, 6, 7, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "自动化生命周期清理",
-              "refs": [8, 9, 10, 11, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "留存备份验证",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "即时审计就绪报告",
-              "refs": [12, 13, 14, 15, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                12,
+                13,
+                14,
+                15,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "多框架支持",
-              "refs": [16, 17, 18, 19, 0],
-              "values": ["cross", "check", "check", "check", "rediacc"]
+              "refs": [
+                16,
+                17,
+                18,
+                19,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "自托管/您的基础设施",
-              "refs": [20, 21, 22, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                20,
+                21,
+                22,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "CLI/自动化优先",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -11196,7 +13173,11 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["设置策略", "Auto", "随时可审计"],
+            "newSteps": [
+              "设置策略",
+              "Auto",
+              "随时可审计"
+            ],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -11524,38 +13505,122 @@
           "features": [
             {
               "name": "全栈克隆用于测试",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "60 秒内创建克隆",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "每个克隆独立网络",
-              "refs": [4, 0, 5, 6, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "零额外存储 (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "补丁后自动健康检查",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "自托管，无云依赖",
-              "refs": [11, 12, 13, 14, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "单命令工作流",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -11738,7 +13803,11 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["Clone", "60s", "打补丁并验证"],
+            "newSteps": [
+              "Clone",
+              "60s",
+              "打补丁并验证"
+            ],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -12037,38 +14106,122 @@
           "features": [
             {
               "name": "跨提供商迁移",
-              "refs": [0, 4, 5, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                4,
+                5,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "1 小时内迁移",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "零专有格式",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "仅增量传输",
-              "refs": [0, 6, 7, 8, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "无需供应商代理",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "全栈迁移（应用 + 数据库）",
-              "refs": [0, 9, 10, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                9,
+                10,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "零宕机迁移",
-              "refs": [0, 0, 11, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差距对比",
@@ -12251,7 +14404,11 @@
           ],
           "timeline": {
             "newLabel": "使用 REDIACC",
-            "newSteps": ["Snapshot", "<1hr", "Live"],
+            "newSteps": [
+              "Snapshot",
+              "<1hr",
+              "Live"
+            ],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -12658,7 +14815,12 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["克隆 + 打补丁", "<4 min", "已验证", "部署"],
+            "newSteps": [
+              "克隆 + 打补丁",
+              "<4 min",
+              "已验证",
+              "部署"
+            ],
             "oldLabel": "传统打补丁",
             "oldSteps": [
               {
@@ -12853,6 +15015,26 @@
             }
           ]
         }
+      },
+      "leadMagnetModal": {
+        "title": "Get the technical brief",
+        "description": "Enter your work email. We will send you the PDF link and keep a copy in your inbox.",
+        "emailLabel": "Work email",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "Send me the PDF",
+        "sendingLabel": "Sending...",
+        "successTitle": "PDF on the way",
+        "successBody": "We've opened it in a new tab and emailed you the link. Closing this in a moment.",
+        "errorGeneric": "Something went wrong. Please try again or reach out at support@rediacc.com.",
+        "captchaRequired": "Please complete the captcha verification.",
+        "disclaimer": "One email. No marketing list. Unsubscribe with one click.",
+        "closeLabel": "Close"
+      },
+      "leadMagnetButton": {
+        "title": "Get the technical brief",
+        "description": "A no-fluff PDF written for CISOs, CTOs, and senior engineers. We send the link by email so you can find it again.",
+        "buttonLabel": "Download the brief",
+        "dismissLabel": "Dismiss"
       }
     },
     "team": {
@@ -12957,7 +15139,9 @@
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": ["Bridge收集以下类别的数据："],
+              "content": [
+                "Bridge收集以下类别的数据："
+              ],
               "items": [
                 "<strong>队列操作：</strong>任务ID、优先级、操作类型、执行持续时间、成功或失败状态",
                 "<strong>SSH操作：</strong>目标主机、用户名、端口号、退出码、执行持续时间（不收集命令内容或输出）",
@@ -13004,7 +15188,9 @@
           "id": "cli",
           "subsections": {
             "cliDataCollected": {
-              "content": ["CLI 收集以下类别的数据："],
+              "content": [
+                "CLI 收集以下类别的数据："
+              ],
               "items": [
                 "<strong>命令使用：</strong>命令名称、CLI版本、退出码、成功或失败状态",
                 "<strong>匿名化参数：</strong>命令选项中敏感值已编辑——密码、令牌、机密信息、API密钥和凭据被替换为<code>[REDACTED]</code>",
@@ -13017,7 +15203,9 @@
               "title": "5.1 收集的数据"
             },
             "cliOptOut": {
-              "content": ["您可以使用以下任一方法禁用CLI遥测（包括性能分析）："],
+              "content": [
+                "您可以使用以下任一方法禁用CLI遥测（包括性能分析）："
+              ],
               "items": [
                 "设置环境变量<code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "在CLI配置文件中设置<code>telemetryEnabled: false</code>",
@@ -13068,11 +15256,15 @@
           "title": "3. 收集的法律依据"
         },
         "middleware": {
-          "content": ["Rediacc中间件收集运营遥测数据。遥测数据传输至<code>rediacc.com</code>。"],
+          "content": [
+            "Rediacc中间件收集运营遥测数据。遥测数据传输至<code>rediacc.com</code>。"
+          ],
           "id": "middleware",
           "subsections": {
             "middlewareDataCollected": {
-              "content": ["中间件收集以下类别的数据："],
+              "content": [
+                "中间件收集以下类别的数据："
+              ],
               "items": [
                 "<strong>系统信息：</strong>主机名、操作系统版本、.NET运行时版本",
                 "<strong>API调用：</strong>HTTP方法、端点路径、响应状态码、请求持续时间",
@@ -13094,7 +15286,9 @@
           "title": "6. 中间件遥测"
         },
         "principles": {
-          "content": ["Rediacc的所有遥测收集均遵循以下原则："],
+          "content": [
+            "Rediacc的所有遥测收集均遵循以下原则："
+          ],
           "id": "principles",
           "items": [
             "<strong>隐私优先设计：</strong>个人标识符在传输前进行匿名处理。电子邮件地址仅保留域名部分，用户ID经过哈希（SHA-256）和截断处理，密码和机密信息绝不收集。",
@@ -13112,7 +15306,9 @@
           "id": "web-app",
           "subsections": {
             "webDataCollected": {
-              "content": ["Web 应用程序收集以下类别的数据："],
+              "content": [
+                "Web 应用程序收集以下类别的数据："
+              ],
               "items": [
                 "<strong>浏览器信息：</strong>浏览器名称和版本、首选语言、平台（例如Windows、macOS、Linux）、屏幕分辨率、色彩深度、用户代理字符串、设备内存（如可用）、网络连接类型",
                 "<strong>用户上下文：</strong>会话ID（每次会话随机生成）、仅电子邮件域名（本地部分已编辑，例如<code>***@example.com</code>）、组织名称、团队名称",
@@ -13126,7 +15322,9 @@
               "title": "4.1 收集的数据"
             },
             "webNotCollected": {
-              "content": ["Web 应用程序不收集："],
+              "content": [
+                "Web 应用程序不收集："
+              ],
               "items": [
                 "完整的电子邮件地址（本地部分始终被编辑）",
                 "密码、令牌或身份验证凭据",
@@ -13189,13 +15387,15 @@
         "acceptance": {
           "content": [
             "访问或使用Rediacc网站（<a href=\"https://www.rediacc.com\">www.rediacc.com</a>）或Rediacc平台，即表示您同意本服务条款。",
-            "如果您不同意本条款，则不得访问或使用本服务。本条款构成您与 Rediacc OÜ（注册号 17363830）之间具有法律约束力的协议，该公司在爱沙尼亚注册，办公地址为 Tartu mnt 67/1-13b, 10115 Tallinn, Estonia（以下称\"Rediacc\"、\"我们\"或\"我方\"）。"
+            "如果您不同意本条款，则不得访问或使用本服务。本条款构成您与 Rediacc OÜ（注册号 17363830）之间具有法律约束力的协议，该公司在爱沙尼亚注册，办公地址为 Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonia（以下称\"Rediacc\"、\"我们\"或\"我方\"）。"
           ],
           "id": "acceptance",
           "title": "1. 接受条款"
         },
         "accounts": {
-          "content": ["注册时您必须提供准确的信息，并对账户下的所有活动负责。"],
+          "content": [
+            "注册时您必须提供准确的信息，并对账户下的所有活动负责。"
+          ],
           "content2": [
             "如果您怀疑账户遭到未经授权的访问，必须立即通过 <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> 通知我们。我们保留暂停或删除不活跃超过十二 (12) 个月的账户或我们有合理理由认为违反本条款的账户的权利。"
           ],
@@ -13226,7 +15426,9 @@
           "title": "8. 您的数据"
         },
         "definitions": {
-          "content": ["以下定义适用于本服务条款全文："],
+          "content": [
+            "以下定义适用于本服务条款全文："
+          ],
           "id": "definitions",
           "items": [
             "<strong>\"账户\"</strong>是指您创建的用于访问平台和管理订阅的用户账户。",
@@ -13318,7 +15520,9 @@
               "title": "6.1 Installation and Machine Access"
             },
             "restrictions": {
-              "content": ["您不得："],
+              "content": [
+                "您不得："
+              ],
               "items": [
                 "对 Bridge 二进制文件或本地部署软件的任何非开源组件进行逆向工程、反编译、反汇编或以其他方式试图获取源代码",
                 "向任何第三方再分发、转授权、出租、租赁或出借本地部署软件",
@@ -13342,7 +15546,9 @@
           "title": "7. 平台许可"
         },
         "serviceDescription": {
-          "content": ["Rediacc提供面向AI驱动运营的基础设施自动化平台。"],
+          "content": [
+            "Rediacc提供面向AI驱动运营的基础设施自动化平台。"
+          ],
           "content2": [
             "您可使用的具体功能、资源限制和能力取决于您的订阅层级。我们网站和文档上的功能描述说明了各层级的预期功能，但不构成具有约束力的性能保证。"
           ],
@@ -13426,7 +15632,9 @@
           "title": "13. 第三方组件"
         },
         "useRestrictions": {
-          "content": ["您同意您和您的授权用户不会使用服务来："],
+          "content": [
+            "您同意您和您的授权用户不会使用服务来："
+          ],
           "content2": [
             "您应对使用服务在机器上部署的内容和应用程序负全部责任。如果我们有合理理由认为违反了上述限制，我们保留暂停或终止平台访问权限的权利。"
           ],
@@ -13456,6 +15664,398 @@
       },
       "toc": {
         "title": "目录"
+      }
+    },
+    "resourcesBrief": {
+      "ransomwareSurvival": {
+        "meta": {
+          "title": "Ransomware Survival: Free Technical Brief PDF",
+          "description": "Filesystem-native immutable backup that attackers cannot encrypt, delete, or compromise. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "keywords": "ransomware survival, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+        },
+        "hero": {
+          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
+          "title": "Ransomware Survival",
+          "subtitle": "94% of ransomware attacks target the backup. 57% succeed.",
+          "downloadButton": "Download the technical brief",
+          "openInBrowser": "Open in browser",
+          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+        },
+        "toc": {
+          "heading": "What's inside",
+          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "items": [
+            "The threat model in concrete operator terms",
+            "Architectural mechanism, with adversary-model reasoning",
+            "Failure modes blocked, with named precedents",
+            "Compliance map: specific rules, fines, reporting windows",
+            "ROI math grounded in published numbers",
+            "Vendor comparison on technical approach (not ARR)",
+            "Onboarding shape and known scope limits",
+            "Audit-ready evidence the architecture produces"
+          ]
+        },
+        "companions": {
+          "heading": "Related solution pages",
+          "intro": "The same architecture, applied to specific buyer questions:",
+          "readMore": "Read more"
+        },
+        "faq": {
+          "heading": "Questions readers asked",
+          "items": [
+            {
+              "q": "Who is this brief written for?",
+              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+            },
+            {
+              "q": "Is there a non-technical version?",
+              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+            },
+            {
+              "q": "What happens to my email?",
+              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+            },
+            {
+              "q": "Why btrfs?",
+              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+            },
+            {
+              "q": "Does this apply to managed services like AWS RDS?",
+              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+            }
+          ]
+        },
+        "about": {
+          "heading": "About this brief",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
+          "downloadButton": "Download the brief"
+        }
+      },
+      "multiCloudAlways": {
+        "meta": {
+          "title": "Multi-Cloud Always: Free Technical Brief PDF",
+          "description": "When your cloud goes down, your business doesn't — portable snapshots and tested cross-cloud failover. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "keywords": "multi-cloud always, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+        },
+        "hero": {
+          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
+          "title": "Multi-Cloud Always",
+          "subtitle": "AWS US-EAST-1 went dark for 15 hours on October 20, 2025. Snapchat, Robinhood, Uber, Delta. Could you have switched clouds in time?",
+          "downloadButton": "Download the technical brief",
+          "openInBrowser": "Open in browser",
+          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+        },
+        "toc": {
+          "heading": "What's inside",
+          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "items": [
+            "The threat model in concrete operator terms",
+            "Architectural mechanism, with adversary-model reasoning",
+            "Failure modes blocked, with named precedents",
+            "Compliance map: specific rules, fines, reporting windows",
+            "ROI math grounded in published numbers",
+            "Vendor comparison on technical approach (not ARR)",
+            "Onboarding shape and known scope limits",
+            "Audit-ready evidence the architecture produces"
+          ]
+        },
+        "companions": {
+          "heading": "Related solution pages",
+          "intro": "The same architecture, applied to specific buyer questions:",
+          "readMore": "Read more"
+        },
+        "faq": {
+          "heading": "Questions readers asked",
+          "items": [
+            {
+              "q": "Who is this brief written for?",
+              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+            },
+            {
+              "q": "Is there a non-technical version?",
+              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+            },
+            {
+              "q": "What happens to my email?",
+              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+            },
+            {
+              "q": "Why btrfs?",
+              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+            },
+            {
+              "q": "Does this apply to managed services like AWS RDS?",
+              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+            }
+          ]
+        },
+        "about": {
+          "heading": "About this brief",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
+          "downloadButton": "Download the brief"
+        }
+      },
+      "verifiedBackups": {
+        "meta": {
+          "title": "Verified Backups: Free Technical Brief PDF",
+          "description": "Boot-and-verify testing on every backup, every cycle — not a quarterly checkbox. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "keywords": "verified backups, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+        },
+        "hero": {
+          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
+          "title": "Verified Backups",
+          "subtitle": "58% of backups fail when you try to restore them. Most companies only find out during the disaster.",
+          "downloadButton": "Download the technical brief",
+          "openInBrowser": "Open in browser",
+          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+        },
+        "toc": {
+          "heading": "What's inside",
+          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "items": [
+            "The threat model in concrete operator terms",
+            "Architectural mechanism, with adversary-model reasoning",
+            "Failure modes blocked, with named precedents",
+            "Compliance map: specific rules, fines, reporting windows",
+            "ROI math grounded in published numbers",
+            "Vendor comparison on technical approach (not ARR)",
+            "Onboarding shape and known scope limits",
+            "Audit-ready evidence the architecture produces"
+          ]
+        },
+        "companions": {
+          "heading": "Related solution pages",
+          "intro": "The same architecture, applied to specific buyer questions:",
+          "readMore": "Read more"
+        },
+        "faq": {
+          "heading": "Questions readers asked",
+          "items": [
+            {
+              "q": "Who is this brief written for?",
+              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+            },
+            {
+              "q": "Is there a non-technical version?",
+              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+            },
+            {
+              "q": "What happens to my email?",
+              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+            },
+            {
+              "q": "Why btrfs?",
+              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+            },
+            {
+              "q": "Does this apply to managed services like AWS RDS?",
+              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+            }
+          ]
+        },
+        "about": {
+          "heading": "About this brief",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
+          "downloadButton": "Download the brief"
+        }
+      },
+      "encryptionControl": {
+        "meta": {
+          "title": "Encryption Control: Free Technical Brief PDF",
+          "description": "Customer-managed keys and encrypted data that survives a vendor switch — Schrems II compliant by architecture. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "keywords": "encryption control, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+        },
+        "hero": {
+          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
+          "title": "Encryption Control",
+          "subtitle": "Schrems II is not a policy choice. It is an architecture requirement, and most backup vendors fail it.",
+          "downloadButton": "Download the technical brief",
+          "openInBrowser": "Open in browser",
+          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+        },
+        "toc": {
+          "heading": "What's inside",
+          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "items": [
+            "The threat model in concrete operator terms",
+            "Architectural mechanism, with adversary-model reasoning",
+            "Failure modes blocked, with named precedents",
+            "Compliance map: specific rules, fines, reporting windows",
+            "ROI math grounded in published numbers",
+            "Vendor comparison on technical approach (not ARR)",
+            "Onboarding shape and known scope limits",
+            "Audit-ready evidence the architecture produces"
+          ]
+        },
+        "companions": {
+          "heading": "Related solution pages",
+          "intro": "The same architecture, applied to specific buyer questions:",
+          "readMore": "Read more"
+        },
+        "faq": {
+          "heading": "Questions readers asked",
+          "items": [
+            {
+              "q": "Who is this brief written for?",
+              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+            },
+            {
+              "q": "Is there a non-technical version?",
+              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+            },
+            {
+              "q": "What happens to my email?",
+              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+            },
+            {
+              "q": "Why btrfs?",
+              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+            },
+            {
+              "q": "Does this apply to managed services like AWS RDS?",
+              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+            }
+          ]
+        },
+        "about": {
+          "heading": "About this brief",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
+          "downloadButton": "Download the brief"
+        }
+      },
+      "devEnvironments": {
+        "meta": {
+          "title": "Development Environments: Free Technical Brief PDF",
+          "description": "Production-identical dev environments in 60 seconds via btrfs zero-copy clones. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "keywords": "development environments, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+        },
+        "hero": {
+          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
+          "title": "Development Environments",
+          "subtitle": "Your developers write code 4.5 hours a week. The rest is waiting on environments. A 50-engineer team loses $720K-$1.2M a year on setup.",
+          "downloadButton": "Download the technical brief",
+          "openInBrowser": "Open in browser",
+          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+        },
+        "toc": {
+          "heading": "What's inside",
+          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "items": [
+            "The threat model in concrete operator terms",
+            "Architectural mechanism, with adversary-model reasoning",
+            "Failure modes blocked, with named precedents",
+            "Compliance map: specific rules, fines, reporting windows",
+            "ROI math grounded in published numbers",
+            "Vendor comparison on technical approach (not ARR)",
+            "Onboarding shape and known scope limits",
+            "Audit-ready evidence the architecture produces"
+          ]
+        },
+        "companions": {
+          "heading": "Related solution pages",
+          "intro": "The same architecture, applied to specific buyer questions:",
+          "readMore": "Read more"
+        },
+        "faq": {
+          "heading": "Questions readers asked",
+          "items": [
+            {
+              "q": "Who is this brief written for?",
+              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+            },
+            {
+              "q": "Is there a non-technical version?",
+              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+            },
+            {
+              "q": "What happens to my email?",
+              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+            },
+            {
+              "q": "Why btrfs?",
+              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+            },
+            {
+              "q": "Does this apply to managed services like AWS RDS?",
+              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+            }
+          ]
+        },
+        "about": {
+          "heading": "About this brief",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
+          "downloadButton": "Download the brief"
+        }
+      },
+      "preemptiveDefense": {
+        "meta": {
+          "title": "Preemptive Defense: Free Technical Brief PDF",
+          "description": "Production-clone security testing with zero production risk — AI pentests run on a disposable copy. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "keywords": "preemptive defense, pdf, rediacc, btrfs backup, immutable backup, technical brief"
+        },
+        "hero": {
+          "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
+          "title": "Preemptive Defense",
+          "subtitle": "Test against your real infrastructure. Break nothing. The clone takes the dangerous hits.",
+          "downloadButton": "Download the technical brief",
+          "openInBrowser": "Open in browser",
+          "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
+        },
+        "toc": {
+          "heading": "What's inside",
+          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "items": [
+            "The threat model in concrete operator terms",
+            "Architectural mechanism, with adversary-model reasoning",
+            "Failure modes blocked, with named precedents",
+            "Compliance map: specific rules, fines, reporting windows",
+            "ROI math grounded in published numbers",
+            "Vendor comparison on technical approach (not ARR)",
+            "Onboarding shape and known scope limits",
+            "Audit-ready evidence the architecture produces"
+          ]
+        },
+        "companions": {
+          "heading": "Related solution pages",
+          "intro": "The same architecture, applied to specific buyer questions:",
+          "readMore": "Read more"
+        },
+        "faq": {
+          "heading": "Questions readers asked",
+          "items": [
+            {
+              "q": "Who is this brief written for?",
+              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+            },
+            {
+              "q": "Is there a non-technical version?",
+              "a": "Yes. After you submit your email, the same page links to a five-minute executive PDF you can forward to a CFO, IT director, or board member."
+            },
+            {
+              "q": "What happens to my email?",
+              "a": "One confirmation email. You're added to our newsletter (one short post per month, all-product). Unsubscribe with one click. Your email lives in the EU by default per Rediacc's data-residency policy."
+            },
+            {
+              "q": "Why btrfs?",
+              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+            },
+            {
+              "q": "Does this apply to managed services like AWS RDS?",
+              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+            }
+          ]
+        },
+        "about": {
+          "heading": "About this brief",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
+          "downloadButton": "Download the brief"
+        }
       }
     }
   },

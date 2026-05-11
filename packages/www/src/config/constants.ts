@@ -23,7 +23,7 @@ export const COMPANY_REGISTRY_CODE = '17363830';
 export const COMPANY_REGISTER_NAME = 'Estonian Commercial Register (Äriregister)';
 export const COMPANY_VAT_NUMBER = 'EE102920091';
 export const COMPANY_REGISTERED_ADDRESS =
-  'Tartu mnt 67/1-13b, 10115 Tallinn, Harju county, Estonia';
+  'Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonia';
 
 /**
  * GitHub repository path for fetching releases
