@@ -95,26 +95,35 @@ jobs:
           ALLOW_STALE: ${{ inputs.allow_stale_ci_run_id }}
         run: |
           set -euo pipefail
-          # Determine the latest green Console CI run on main. This is the
-          # canonical artifact source. Auto-derived when ci_run_id is empty;
-          # otherwise we use it to validate the supplied value.
-          LATEST_GREEN_ID=$(gh api \
-            "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=main&status=success&per_page=1" \
-            --jq '.workflow_runs[0].id // empty')
-
+          # When ci_run_id is empty, auto-derive from the latest Console CI
+          # run on main. Otherwise validate the supplied value -- but ONLY
+          # against branch + workflow + (basic-status) checks, NOT against
+          # "is this the latest green run".
+          #
+          # The previous "must be latest green" rule rejected every
+          # auto-dispatched release: finalize-release-sentinel triggers
+          # cd-v2 mid-CI (after stage-artifacts seals R2, before housekeeping
+          # / pipeline-sentinel finish), so the dispatching run is still
+          # in-progress, conclusion is empty, and it cannot match
+          # "latest GREEN". The artifact-version assertion further down the
+          # init job catches stale-ci_run_id mismatches directly (the actual
+          # foot-gun), which makes the latest-green check redundant.
           if [[ -z "${INPUT_CI_RUN_ID}" ]]; then
-            if [[ -z "${LATEST_GREEN_ID}" ]]; then
+            LATEST_ID=$(gh api \
+              "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=main&status=success&per_page=1" \
+              --jq '.workflow_runs[0].id // empty')
+            if [[ -z "${LATEST_ID}" ]]; then
               echo "::error::No green Console CI run found on main. Cannot auto-derive ci_run_id; dispatch will not proceed."
               exit 1
             fi
-            CI_RUN_ID="${LATEST_GREEN_ID}"
+            CI_RUN_ID="${LATEST_ID}"
             echo "::notice::Auto-derived ci_run_id=${CI_RUN_ID} (latest green Console CI on main)."
           else
             CI_RUN_ID="${INPUT_CI_RUN_ID}"
-            # Fetch the run we were given and validate its branch + conclusion.
             run_json="$(gh api "repos/${{ github.repository }}/actions/runs/${CI_RUN_ID}" 2>/dev/null || echo '{}')"
             run_branch="$(echo "$run_json" | jq -r '.head_branch // ""')"
             run_conclusion="$(echo "$run_json" | jq -r '.conclusion // ""')"
+            run_status="$(echo "$run_json" | jq -r '.status // ""')"
             run_workflow="$(echo "$run_json" | jq -r '.name // ""')"
 
             failed=false
@@ -122,24 +131,22 @@ jobs:
               echo "::error::ci_run_id ${CI_RUN_ID} is on branch '${run_branch}', not 'main'."
               failed=true
             fi
-            if [[ "$run_conclusion" != "success" ]]; then
-              echo "::error::ci_run_id ${CI_RUN_ID} conclusion is '${run_conclusion}', not 'success'."
-              failed=true
-            fi
             if [[ "$run_workflow" != "Console CI" ]]; then
               echo "::error::ci_run_id ${CI_RUN_ID} is workflow '${run_workflow}', not 'Console CI'."
               failed=true
             fi
-            if [[ "$CI_RUN_ID" != "${LATEST_GREEN_ID}" ]]; then
+            # In-progress runs are valid (auto-dispatched from finalize-
+            # release-sentinel mid-CI). Completed runs must be success.
+            if [[ "$run_status" == "completed" && "$run_conclusion" != "success" ]]; then
               if [[ "${ALLOW_STALE}" == "true" ]]; then
-                echo "::warning::ci_run_id ${CI_RUN_ID} is NOT the latest green CI (${LATEST_GREEN_ID}); allow_stale_ci_run_id is set, proceeding anyway. Artifacts may be older than current main."
+                echo "::warning::ci_run_id ${CI_RUN_ID} completed with conclusion '${run_conclusion}'; allow_stale_ci_run_id is set, proceeding anyway."
               else
-                echo "::error::ci_run_id ${CI_RUN_ID} is not the latest green Console CI on main (latest is ${LATEST_GREEN_ID}). Pass allow_stale_ci_run_id=true to override (e.g. cherry-picking a prior artifact)."
+                echo "::error::ci_run_id ${CI_RUN_ID} completed with conclusion '${run_conclusion}', not 'success'."
                 failed=true
               fi
             fi
             if [[ "$failed" == "true" ]]; then
-              echo "::error::ci_run_id validation failed -- refusing to dispatch with stale or invalid artifacts."
+              echo "::error::ci_run_id validation failed -- refusing to dispatch with invalid CI run."
               exit 1
             fi
           fi

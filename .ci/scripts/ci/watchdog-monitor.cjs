@@ -283,6 +283,17 @@ module.exports = async ({ github, context, core }) => {
   console.log(`No-retry patterns: ${noRetryPatterns.join(', ')}`);
   console.log(`Max runtime: ${maxRuntime / 3600000} hours`);
 
+  // Loop-invariant: parse env var once. Cancelled jobs with elapsed runtime
+  // at or above this threshold are treated as "stuck" (likely hit their
+  // declared timeout-minutes) and bypass the AI / retry path -- a hung job
+  // will hang again on retry.
+  const STUCK_THRESHOLD_MIN = parseInt(process.env.STUCK_THRESHOLD_MIN || '60', 10);
+  const jobElapsedMin = (j) => {
+    if (!j.started_at || !j.completed_at) return 0;
+    return Math.round((new Date(j.completed_at) - new Date(j.started_at)) / 60000);
+  };
+  console.log(`Stuck-threshold: ${STUCK_THRESHOLD_MIN}m (cancellations after this are not retried)`);
+
   while (Date.now() - startTime < maxRuntime) {
     const elapsed = Date.now() - startTime;
     const elapsedMin = Math.round(elapsed / 60000);
@@ -335,11 +346,8 @@ module.exports = async ({ github, context, core }) => {
     // potentially transient and auto-retries; that's how we ended up with
     // a 4-hour debian-13 hang retried automatically before any human noticed.
     // Stuck jobs go straight to force-cancel with no retry.
-    const STUCK_THRESHOLD_MIN = parseInt(process.env.STUCK_THRESHOLD_MIN || '60', 10);
-    const jobElapsedMin = (j) => {
-      if (!j.started_at || !j.completed_at) return 0;
-      return Math.round((new Date(j.completed_at) - new Date(j.started_at)) / 60000);
-    };
+    // (STUCK_THRESHOLD_MIN + jobElapsedMin hoisted above the loop as
+    // loop-invariants.)
     const stuckCancellations = cancelled.filter(j => jobElapsedMin(j) >= STUCK_THRESHOLD_MIN);
     const normalCancellations = cancelled.filter(j => jobElapsedMin(j) < STUCK_THRESHOLD_MIN);
 

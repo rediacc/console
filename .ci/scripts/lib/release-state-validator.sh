@@ -136,10 +136,19 @@ rsv_get_sentinel_payload() {
 #      R2's current state.
 #   2. The RATCHET file (.ci/config/release-contract-floor.txt): a monotonic
 #      high-water mark stored in git. Every successful release advances it
-#      after the sentinel is written; nothing decreases it. Prevents the
-#      "operator scrubs the oldest CLI sentinel and the observed floor
-#      silently moves up" regression -- the ratchet still pins the floor
-#      where it was, and drift fires.
+#      to the new oldest CLI sentinel; nothing decreases it. The ratchet
+#      protects the all-sentinels-empty case (mass scrub or misconfigured
+#      probe): when observed is empty but the ratchet remembers a version,
+#      bijection still runs against the ratchet floor instead of silently
+#      short-circuiting to OK.
+#
+#      It does NOT catch the "oldest CLI sentinel was scrubbed in isolation"
+#      case -- when observed advances past the scrubbed version, max(observed,
+#      ratchet) == observed and the scrubbed version falls below the floor
+#      (grandfathered). Catching that regression would require recording
+#      every cli sentinel ever observed and diffing on every check, not just
+#      a single high-water mark; the cost / value trade-off didn't justify
+#      that complexity for a tooling we trust to gate manual scrubs already.
 #   3. The OVERRIDE env var RSV_GRANDFATHER_BEFORE: takes precedence over
 #      both. Tests pin synthetic floors with it; production should never
 #      set it.

@@ -52,7 +52,7 @@ done
 
 # Scopes: every shell script under .ci/scripts/ and scripts/dev/.
 SCAN_DIRS=(".ci/scripts" "scripts/dev")
-PIPE_HEADS_REGEX='(aws s3 ls|aws s3api list-objects-v2 +--query|find [^|]|grep [^|]+ +-r)'
+PIPE_HEADS_REGEX='(aws s3 ls|aws s3api list-objects-v2 +--query|find [^|]|grep [^|]+)'
 # Sinks: pipeline endings that pipefail would propagate from.
 SINK_REGEX='\| *(wc -l|head|tail|awk|jq)'
 # A line is guarded if it contains `|| true`, `|| echo`, `|| return`,
@@ -61,24 +61,26 @@ SINK_REGEX='\| *(wc -l|head|tail|awk|jq)'
 # habit; we treat it as a soft signal and still flag).
 GUARD_REGEX='\|\| *(true|echo|return|exit|continue|:)'
 
+# Single-pass scan: walk every shell script under SCAN_DIRS, awk-extract any
+# risky pipelines, capture them into the `findings` array AND mirror to
+# stdout if we're in human (non-JSON) mode. Plain `while read` instead of
+# `mapfile` to stay bash 3.2-compatible (check-commands.sh forbids mapfile).
 findings=()
-
 while IFS= read -r -d '' file; do
     # Only inspect files that set strict mode.
     if ! grep -qE '^set [+\-]([euo]*pipefail|euo +pipefail|e |eu |eo |euo)' "$file"; then
         continue
     fi
-
-    # awk pass over the file: track whether we're between `set -eo pipefail`
-    # and any subsequent `set +e` / `set +o pipefail` (relaxation), and
-    # flag risky pipelines while strict mode is in effect.
-    awk -v file="$file" \
+    while IFS= read -r finding; do
+        [[ -z "$finding" ]] && continue
+        findings+=("$finding")
+    done < <(awk -v file="$file" \
         -v pipe_head="$PIPE_HEADS_REGEX" \
         -v sink="$SINK_REGEX" \
         -v guard="$GUARD_REGEX" '
-        BEGIN { strict = 0; in_block = "" }
+        BEGIN { strict = 0; skip_next = 0 }
         /^set [+\-]e/ {
-            if ($0 ~ /[+\-]e[uo]*o? *pipefail/) {
+            if ($0 ~ /pipefail/) {
                 if ($0 ~ /set -/) strict = 1
                 else if ($0 ~ /set \+/) strict = 0
             }
@@ -89,56 +91,14 @@ while IFS= read -r -d '' file; do
         {
             if (skip_next) { skip_next = 0; next }
             if (!strict) next
-            # Look for a risky pipeline on this line OR a continuation
-            # (line ending with `|`).
             if ($0 ~ pipe_head && $0 ~ sink) {
                 if ($0 !~ guard) {
                     printf "%s:%d: %s\n", file, NR, $0
                 }
             }
         }
-    ' "$file" || true
+    ' "$file" 2>/dev/null || true)
 done < <(find "${SCAN_DIRS[@]/#/$REPO_ROOT/}" -type f -name '*.sh' -print0 2>/dev/null)
-
-# Capture findings from the awk pass (the loop above streamed to stdout;
-# re-run once into an array so we can format the final report).
-# Use a plain `while read` loop instead of mapfile -- mapfile is bash 4+
-# only and breaks macOS / minimal-CI shells. .ci/scripts/security/check-commands.sh
-# specifically forbids mapfile across the suite.
-findings=()
-while IFS= read -r finding_line; do
-    [[ -z "$finding_line" ]] && continue
-    findings+=("$finding_line")
-done < <(
-    while IFS= read -r -d '' file; do
-        if ! grep -qE '^set [+\-]([euo]*pipefail|euo +pipefail|e |eu |eo |euo)' "$file"; then
-            continue
-        fi
-        awk -v file="$file" \
-            -v pipe_head="$PIPE_HEADS_REGEX" \
-            -v sink="$SINK_REGEX" \
-            -v guard="$GUARD_REGEX" '
-            BEGIN { strict = 0; skip_next = 0 }
-            /^set [+\-]e/ {
-                if ($0 ~ /pipefail/) {
-                    if ($0 ~ /set -/) strict = 1
-                    else if ($0 ~ /set \+/) strict = 0
-                }
-            }
-            /# *silent-failure-ok/ { skip_next = 1; next }
-            /^[[:space:]]*$/ || /^[[:space:]]*#/ { next }
-            {
-                if (skip_next) { skip_next = 0; next }
-                if (!strict) next
-                if ($0 ~ pipe_head && $0 ~ sink) {
-                    if ($0 !~ guard) {
-                        printf "%s:%d: %s\n", file, NR, $0
-                    }
-                }
-            }
-        ' "$file"
-    done < <(find "${SCAN_DIRS[@]/#/$REPO_ROOT/}" -type f -name '*.sh' -print0 2>/dev/null)
-)
 
 if [[ ${#findings[@]} -eq 0 ]]; then
     if [[ "$JSON_OUTPUT" == "true" ]]; then
