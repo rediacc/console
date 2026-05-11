@@ -340,6 +340,7 @@ jobs:
     name: Review Gate
     needs: [initialize, quality]
     runs-on: ubuntu-slim
+    timeout-minutes: 15
     if: needs.initialize.outputs.is_bot != 'true' && github.event_name == 'pull_request' && needs.initialize.outputs.is_fork != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -388,6 +389,7 @@ jobs:
     name: Stripe Sandbox
     needs: [initialize, quality, review-gate]
     runs-on: ubuntu-latest  # Needs Docker for account server
+    timeout-minutes: 30
     if: >-
       always() &&
       needs.initialize.outputs.is_fork != 'true' &&
@@ -837,6 +839,7 @@ jobs:
     name: Deploy Preview
     needs: [initialize, stage-artifacts, tests, standalone-run-test, migration-test]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     if: >-
       always() &&
       needs.initialize.outputs.is_fork != 'true' &&
@@ -1027,6 +1030,7 @@ jobs:
     name: Smoke Test Preview
     needs: [initialize, deploy-preview]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: >-
       always() &&
       needs.initialize.outputs.is_fork != 'true' &&
@@ -1392,24 +1396,13 @@ jobs:
             -f release_mode=patch \
             -f ci_run_id=${{ github.run_id }}
 
-  # Sentinel that fails loudly if the finalize job silently skipped on
-  # push-to-main. Mirrors assert-housekeeping-ran. If the finalize job result
-  # is 'skipped' on a release-channel push-to-main, transitive-skip
-  # propagation is back — fix by adding always() to finalize's if:.
-  assert-finalize-sentinel-ran:
-    name: Assert Finalize Sentinel Ran
-    runs-on: ubuntu-slim
-    needs: [initialize, finalize-release-sentinel]
-    if: >-
-      always() &&
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
-      needs.initialize.result == 'success' &&
-      (needs.initialize.outputs.channel == 'edge' || needs.initialize.outputs.channel == 'stable')
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - name: Check finalize-release-sentinel conclusion
-        run: .ci/scripts/ci/assert-job-succeeded.sh finalize-release-sentinel "${{ needs.finalize-release-sentinel.result }}"
+  # (Removed: assert-finalize-sentinel-ran was a single-purpose sentinel
+  # job whose only step asserted that finalize-release-sentinel did not
+  # silently skip on a release-channel push to main. The same check now
+  # lives in the consolidated `pipeline-sentinel` job below, alongside the
+  # equivalent housekeeping check. See commit history for the original
+  # rationale; merging two single-step jobs into one removes two ceremonial
+  # entries from the post-CI DAG without changing the assertion property.)
 
   # ============================================================================
   # HOUSEKEEPING
@@ -1422,6 +1415,7 @@ jobs:
     name: Housekeeping
     runs-on: ubuntu-slim
     needs: [initialize, ci-complete, finalize-release-sentinel]
+    timeout-minutes: 60
     # always() prefix is load-bearing. ci-complete transitively needs
     # deploy-preview + smoke-test-preview, which are pull_request-only
     # and skip on push-to-main. GHA propagates the skip through the
@@ -1512,22 +1506,31 @@ jobs:
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
 
   # ============================================================================
-  # ASSERT HOUSEKEEPING RAN
-  # Sentinel that fails loudly if the housekeeping job silently SKIPPED on
-  # push-to-main. Guards against the GHA transitive-skip propagation bug:
-  # deploy-preview/smoke-test-preview are pull_request-only, so a missing
-  # always() on housekeeping's if: used to let every push-to-main skip it.
-  # Only 'skipped' trips this sentinel. 'cancelled' (watchdog force-cancel,
-  # concurrent-push supersession, manual cancel) and 'failure' (housekeeping
-  # already surfaced its own failure) are passed through; see
-  # .ci/scripts/ci/assert-job-succeeded.sh for the full state table.
+  # PIPELINE SENTINEL
+  # Consolidates the previous assert-finalize-sentinel-ran and
+  # assert-housekeeping-ran into one job that asserts BOTH critical
+  # post-CI jobs ran (didn't silently skip via GHA's transitive-skip
+  # propagation when a pull_request-only dep is `skipped` on push-to-main).
+  #
+  # Each downstream job has its own `if:` guards; this sentinel is the
+  # belt-and-suspenders that fails loud if those guards regress.
+  #
+  # 'cancelled' (watchdog force-cancel, concurrent-push supersession, manual
+  # cancel) and 'failure' (the downstream job already surfaced its own
+  # failure) are passed through. Only 'skipped' on a release-channel
+  # push-to-main trips this. See .ci/scripts/ci/assert-job-succeeded.sh
+  # for the full state table.
   # ============================================================================
-  assert-housekeeping-ran:
-    name: Assert Housekeeping Ran
+  pipeline-sentinel:
+    name: Pipeline Sentinel
     runs-on: ubuntu-slim
-    needs: [housekeeping]
+    needs: [initialize, finalize-release-sentinel, housekeeping]
+    timeout-minutes: 5
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Check housekeeping conclusion
         run: .ci/scripts/ci/assert-job-succeeded.sh housekeeping "${{ needs.housekeeping.result }}"
+      - name: Check finalize-release-sentinel conclusion (release channels only)
+        if: needs.initialize.result == 'success' && (needs.initialize.outputs.channel == 'edge' || needs.initialize.outputs.channel == 'stable')
+        run: .ci/scripts/ci/assert-job-succeeded.sh finalize-release-sentinel "${{ needs.finalize-release-sentinel.result }}"

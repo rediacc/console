@@ -137,7 +137,13 @@ jobs:
   run-services:
     name: ${{ matrix.vm-os != 'none' && matrix.vm-os || 'Services' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 420  # 7 hours max
+    # 360m = max workflow_dispatch `duration` (300m) + 60m VM-boot/teardown.
+    # Was 420m. The 4-hour debian-13 hang in run 25621628804 surfaced because
+    # the watchdog's transient-classification path retried the cancellation
+    # before the cap fired, doubling our wall-clock loss. 360m is still a
+    # safety net, not a target — CI invocations pass `duration: '5'` and
+    # finish in <5m; if a job hits even an hour, something is wrong.
+    timeout-minutes: 360
     strategy:
       matrix:
         # When vm-os-list is provided (CI), use it as matrix; otherwise wrap single vm-os input
