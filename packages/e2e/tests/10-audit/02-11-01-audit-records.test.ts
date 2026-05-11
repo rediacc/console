@@ -10,7 +10,6 @@ test.describe('Audit Records Tests', () => {
   test.beforeEach(async ({ page }) => {
     loginPage = new LoginPage(page);
     dashboardPage = new DashboardPage(page);
-    // Set expert mode BEFORE page load (localStorage is read on app initialization)
     await page.addInitScript(() => {
       localStorage.setItem('uiMode', 'expert');
     });
@@ -32,10 +31,6 @@ test.describe('Audit Records Tests', () => {
     testReporter.startStep('Navigate to Audit page');
 
     const nav = new NavigationHelper(page);
-
-    // Reveal expert features on localhost (needed because auditLogs requiresExpertMode)
-    // We do this after login to ensure MainLayout is mounted and listening for shortcuts
-    await page.keyboard.press('Control+Shift+E');
 
     // Wait for the audit navigation item to be visible before clicking
     const auditNavItem = page.getByTestId('main-nav-audit');
