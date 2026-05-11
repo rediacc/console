@@ -145,27 +145,24 @@ const LeadMagnetModal: React.FC = () => {
     setErrorMsg('');
 
     try {
-      const res = await fetch(
-        `${window.location.origin}/account/api/v1/newsletter/lead-magnet`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            magnetName: opts.magnetName,
-            source: opts.source,
-            lang: currentLang,
-            turnstileToken: turnstileToken ?? undefined,
-          }),
-        }
-      );
-      const body = (await res.json().catch(() => null)) as
-        | { message?: string; pdfUrl?: string; error?: string }
-        | null;
+      const res = await fetch(`${window.location.origin}/account/api/v1/newsletter/lead-magnet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          magnetName: opts.magnetName,
+          source: opts.source,
+          lang: currentLang,
+          turnstileToken: turnstileToken ?? undefined,
+        }),
+      });
+      const body = (await res.json().catch(() => null)) as {
+        message?: string;
+        pdfUrl?: string;
+        error?: string;
+      } | null;
       if (!res.ok || !body?.pdfUrl) {
-        throw new Error(
-          body?.error ?? t('pages.solutionPages.leadMagnetModal.errorGeneric')
-        );
+        throw new Error(body?.error ?? t('pages.solutionPages.leadMagnetModal.errorGeneric'));
       }
 
       // Open the PDF in a new tab immediately.
@@ -189,9 +186,7 @@ const LeadMagnetModal: React.FC = () => {
     } catch (err) {
       setState('error');
       setErrorMsg(
-        err instanceof Error
-          ? err.message
-          : t('pages.solutionPages.leadMagnetModal.errorGeneric')
+        err instanceof Error ? err.message : t('pages.solutionPages.leadMagnetModal.errorGeneric')
       );
     }
   };

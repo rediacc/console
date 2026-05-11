@@ -28,8 +28,12 @@
 }
 
 @keyframes lead-magnet-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .lead-magnet-modal {
@@ -47,8 +51,14 @@
 }
 
 @keyframes lead-magnet-slide-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Token redefinition for dark mode — scoped to the modal itself so it
@@ -169,7 +179,9 @@
   color: #fca5a5;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) .lead-magnet-modal__error { color: #fca5a5; }
+  :root:not([data-theme]) .lead-magnet-modal__error {
+    color: #fca5a5;
+  }
 }
 
 .lead-magnet-modal__disclaimer {
@@ -193,8 +205,12 @@
 }
 
 @media (max-width: 600px) {
-  .lead-magnet-modal { padding: 24px 20px; }
-  .lead-magnet-modal__title { font-size: 19px; }
+  .lead-magnet-modal {
+    padding: 24px 20px;
+  }
+  .lead-magnet-modal__title {
+    font-size: 19px;
+  }
 }
 
 /* ============================================================================
@@ -217,11 +233,19 @@
   animation: lead-magnet-button-fade-in 0.3s ease-out;
 }
 @keyframes lead-magnet-button-fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sp-lead-magnet-button--gated { animation: none; }
+  .sp-lead-magnet-button--gated {
+    animation: none;
+  }
 }
 
 .sp-lead-magnet-button__close {
@@ -295,6 +319,10 @@
 }
 
 @media (max-width: 600px) {
-  .sp-lead-magnet-button { padding: 24px 20px; }
-  .sp-lead-magnet-button__title { font-size: 19px; }
+  .sp-lead-magnet-button {
+    padding: 24px 20px;
+  }
+  .sp-lead-magnet-button__title {
+    font-size: 19px;
+  }
 }

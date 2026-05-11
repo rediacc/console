@@ -492,7 +492,9 @@ button.sp-illustration-trigger {
   border: 0;
   padding: 0;
   cursor: zoom-in;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 button.sp-illustration-trigger:hover {
   transform: scale(1.01);
@@ -2664,7 +2666,9 @@ button.sp-illustration-trigger:focus-visible {
   opacity: 0.6;
   cursor: wait;
 }
-.sp-download-short__button svg { stroke: currentColor; }
+.sp-download-short__button svg {
+  stroke: currentColor;
+}
 
 .sp-download-gated__error {
   font-size: 13px;
@@ -2677,10 +2681,15 @@ button.sp-illustration-trigger:focus-visible {
   color: #fca5a5;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) .sp-download-gated__error { color: #fca5a5; }
+  :root:not([data-theme]) .sp-download-gated__error {
+    color: #fca5a5;
+  }
 }
 
-.sp-download-gated__turnstile { margin-top: 4px; align-self: center; }
+.sp-download-gated__turnstile {
+  margin-top: 4px;
+  align-self: center;
+}
 
 .sp-download-gated__disclaimer {
   font-size: 12px;
@@ -2698,8 +2707,14 @@ button.sp-illustration-trigger:focus-visible {
   .sp-download-short__card {
     padding: 24px 20px;
   }
-  .sp-download-gated__input-group { flex-direction: column; }
-  .sp-download-gated__submit { width: 100%; }
+  .sp-download-gated__input-group {
+    flex-direction: column;
+  }
+  .sp-download-gated__submit {
+    width: 100%;
+  }
   .sp-download-gated__title,
-  .sp-download-short__title { font-size: 19px; }
+  .sp-download-short__title {
+    font-size: 19px;
+  }
 }

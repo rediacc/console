@@ -65,12 +65,7 @@ describe('ensureRepoDnsRecords wildcard hostname', () => {
   });
 
   it('strips :tag from a fork composite repoName before building the wildcard', async () => {
-    await ensureRepoDnsRecords(
-      'hostinger',
-      'demo-stackoverflow:aldaniz2',
-      baseInfra,
-      dnsConfig
-    );
+    await ensureRepoDnsRecords('hostinger', 'demo-stackoverflow:aldaniz2', baseInfra, dnsConfig);
 
     const calledNames = mockEnsureRecord.mock.calls.map((args) => args[2] as string);
     for (const name of calledNames) {

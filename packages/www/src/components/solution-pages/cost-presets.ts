@@ -438,7 +438,7 @@ function computeDataSovereignty(vals: Record<string, number>): ComputeOutput {
 
   // Data Act 2027 exit penalty: 10% of annual hyperscaler spend until 12 Jan 2027 ceiling drops to 0,
   // amortised as risk premium on next contract renewal.
-  const exitPenalty = Math.round(spend * 1000 * 0.10);
+  const exitPenalty = Math.round(spend * 1000 * 0.1);
 
   // DORA Article 12 manual recovery testing: hours × €200 consultant rate.
   const doraTesting = recoveryHours * 200;
