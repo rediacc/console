@@ -33,6 +33,12 @@ jobs:
       github.event.workflow_run.conclusion == 'failure'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          # Full history + tags. resolve-version.sh reads the latest v* tag,
+          # which the default shallow checkout omits — that previously made
+          # the resolver exit 1, the swallow turned it into "skip", and the
+          # orphan was left on R2. See PR follow-up to #478.
+          fetch-depth: 0
 
       - name: Resolve next_version from triggering CI run
         id: resolve
@@ -47,22 +53,16 @@ jobs:
           # run's commit produces the same number stage-artifacts would have
           # used (latest semver tag + 1).
           #
-          # The earlier implementation tried to grab it from a step's
-          # `.conclusion` field (literally extracting the string "success"
-          # from the API), then surfaced "vsuccess" as the version tag and
-          # quietly scrubbed nothing.
-          next_version="$(.ci/scripts/version/resolve-version.sh --bump-type patch 2>/dev/null || echo '')"
-          if [[ -z "$next_version" ]]; then
-            echo "::warning::could not resolve next_version; skipping scrub"
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          # Earlier the resolver was wrapped in `2>/dev/null || echo ''`,
+          # which silently turned "no tags in shallow clone" into "skip
+          # scrub" — exactly the silent-failure pattern #478 was trying to
+          # eliminate. Let it fail loudly; the fetch-depth above is what
+          # makes it succeed.
+          next_version="$(.ci/scripts/version/resolve-version.sh --bump-type patch)"
           echo "next_version=${next_version}" >> "$GITHUB_OUTPUT"
           echo "version_tag=v${next_version}" >> "$GITHUB_OUTPUT"
-          echo "skip=false" >> "$GITHUB_OUTPUT"
 
       - name: Scrub if orphan
-        if: steps.resolve.outputs.skip != 'true'
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
