@@ -324,14 +324,7 @@
     }
   },
   "logoWall": {
-    "categories": [
-      "Git",
-      "CI/CD",
-      "Konteinerid",
-      "Andmebaasid",
-      "Monitooring",
-      "Salvestus"
-    ],
+    "categories": ["Git", "CI/CD", "Konteinerid", "Andmebaasid", "Monitooring", "Salvestus"],
     "title": "Töötab sinu infrastruktuuriga"
   },
   "metrics": {
@@ -605,9 +598,7 @@
           "title": "7. Muudatused selles poliitikas"
         },
         "cookiesWeUse": {
-          "content": [
-            "Kasutame minimaalset arvu küpsiseid. Tegelikult kasutame vaid ühte:"
-          ],
+          "content": ["Kasutame minimaalset arvu küpsiseid. Tegelikult kasutame vaid ühte:"],
           "id": "cookies-we-use",
           "subsections": {
             "languageCookie": {
@@ -900,9 +891,7 @@
                 "Standard juurutamine (9 999 $) või astmeline pakett (Väike 7 499 $ · Keskmine 14 999 $ · Suur 29 999 $ · Enterprise kohandatud)",
                 "Emergency Response kaasamine (29 999 $ nõudmisel)"
               ],
-              "included": [
-                "Iseabi dokumentatsioon, videoõpetused ja kogukonna foorum"
-              ],
+              "included": ["Iseabi dokumentatsioon, videoõpetused ja kogukonna foorum"],
               "planId": "kogukond"
             },
             {
@@ -1194,10 +1183,7 @@
       },
       "trust": {
         "heading": "Turvalisus ja töökindlus",
-        "items": [
-          "AES-256 krüpteerimisstandard",
-          "99,99% tööaja SLA"
-        ]
+        "items": ["AES-256 krüpteerimisstandard", "99,99% tööaja SLA"]
       },
       "ui": {
         "anchor": "Strateegiline ankur",
@@ -1647,11 +1633,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacciga",
-            "newSteps": [
-              "rdc repo up",
-              "JSON",
-              "Valmis"
-            ],
+            "newSteps": ["rdc repo up", "JSON", "Valmis"],
             "oldLabel": "Traditsiooniline infrastruktuur",
             "oldSteps": [
               {
@@ -1873,11 +1855,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacciga",
-            "newSteps": [
-              "204 $/kuus",
-              "Kindel",
-              "Teie oma"
-            ],
+            "newSteps": ["204 $/kuus", "Kindel", "Teie oma"],
             "oldLabel": "Pilve infrastruktuur",
             "oldSteps": [
               {
@@ -2067,73 +2045,31 @@
           "features": [
             {
               "name": "Omahosting / ettevõttesisene",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Failisüsteemi taseme muutmatus",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Kohene taastamine (<5 min)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "check", "rediacc"]
             },
             {
               "name": "Nullist koopia hetktõmmised (CoW)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Masinapõhine hinnakujundus (ilma isikupõhiseta)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Automatiseeritud taaste kontroll",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Tarnija lukustust ei ole",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "KONKURENTSIPÕLD",
@@ -2176,11 +2112,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacciga",
-            "newSteps": [
-              "Tuvasta",
-              "Pöörake tagasi",
-              "<5 min"
-            ],
+            "newSteps": ["Tuvasta", "Pöörake tagasi", "<5 min"],
             "oldLabel": "Traditsiooniline katastroofitaaste",
             "oldSteps": [
               {
@@ -2474,11 +2406,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacciga",
-            "newSteps": [
-              "rdc ceph snapshot create",
-              "52 s",
-              "Valmis"
-            ],
+            "newSteps": ["rdc ceph snapshot create", "52 s", "Valmis"],
             "oldLabel": "Vana viis",
             "oldSteps": [
               {
@@ -2947,9 +2875,7 @@
                 "Standard juurutamine (9 999 $) või astmeline pakett (Väike 7 499 $ · Keskmine 14 999 $ · Suur 29 999 $ · Enterprise kohandatud)",
                 "Emergency Response kaasamine (29 999 $ nõudmisel)"
               ],
-              "included": [
-                "Iseabi dokumentatsioon, videoõpetused ja kogukonna foorum"
-              ],
+              "included": ["Iseabi dokumentatsioon, videoõpetused ja kogukonna foorum"],
               "planId": "kogukond"
             },
             {
@@ -3236,10 +3162,7 @@
       },
       "trust": {
         "heading": "Turvalisus ja töökindlus",
-        "items": [
-          "AES-256 krüpteerimisstandard",
-          "99,99% tööaja SLA"
-        ]
+        "items": ["AES-256 krüpteerimisstandard", "99,99% tööaja SLA"]
       },
       "trustSection": {
         "heading": "Teie infrastruktuur. Teie reeglid.",
@@ -3402,9 +3325,7 @@
           "title": "4. Andmete jagamine ja kolmandad osapooled"
         },
         "howWeUseInformation": {
-          "content": [
-            "Kasutame kogutud teavet järgmistel eesmärkidel:"
-          ],
+          "content": ["Kasutame kogutud teavet järgmistel eesmärkidel:"],
           "id": "how-we-use-information",
           "items": [
             "Kontaktivormi kaudu esitatud päringutele vastamiseks",
@@ -3556,9 +3477,7 @@
           "content": [
             "Tagastuse taotlemiseks saatke e-kiri aadressile <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> järgmise teabega:"
           ],
-          "content2": [
-            "Püüame vastata kõigile tagastamistaotlustele 5 tööpäeva jooksul."
-          ],
+          "content2": ["Püüame vastata kõigile tagastamistaotlustele 5 tööpäeva jooksul."],
           "id": "how-to-request",
           "items": [
             "Teie konto e-posti aadress",
@@ -3569,9 +3488,7 @@
           "title": "4. Kuidas esitada tagastamistaotlus"
         },
         "nonRefundable": {
-          "content": [
-            "Järgmised ei ole tagastamiskõlblikud:"
-          ],
+          "content": ["Järgmised ei ole tagastamiskõlblikud:"],
           "id": "non-refundable",
           "items": [
             "Tellimused, mis tühistatakse pärast uue tellija 14-päevast tähtaega",
@@ -4098,11 +4015,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCIGA",
-            "newSteps": [
-              "Käivita pentest",
-              "47s",
-              "7 haavatavust leitud"
-            ],
+            "newSteps": ["Käivita pentest", "47s", "7 haavatavust leitud"],
             "oldLabel": "TRADITSIOONILINE PENTESTIMINE",
             "oldSteps": [
               {
@@ -4352,122 +4265,38 @@
           "features": [
             {
               "name": "Rikkumiskindlad auditirajalogid",
-              "refs": [
-                0,
-                2,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 2, 0, 0, 0],
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Krüptograafiline allkirjastamine (SHA-256)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Kohene aruande genereerimine (CLI)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Põhiline operatsioonide logimine",
-              "refs": [
-                3,
-                4,
-                5,
-                6,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [3, 4, 5, 6, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Kasutaja omistamine tegevuse kohta",
-              "refs": [
-                7,
-                8,
-                9,
-                10,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [7, 8, 9, 10, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Võtmevahetuse jälgimine",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Isehostitav / teie infrastruktuur",
-              "refs": [
-                11,
-                12,
-                13,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [11, 12, 13, 0, 0],
+              "values": ["check", "check", "check", "cross", "rediacc"]
             }
           ],
           "overline": "VAHE",
@@ -4649,11 +4478,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCIGA",
-            "newSteps": [
-              "Käivita audit",
-              "Kohene",
-              "Täielik aruanne"
-            ],
+            "newSteps": ["Käivita audit", "Kohene", "Täielik aruanne"],
             "oldLabel": "VANA VIIS",
             "oldSteps": [
               {
@@ -4911,122 +4736,38 @@
           "features": [
             {
               "name": "Automatiseeritud taastamise kontrollimine",
-              "refs": [
-                4,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [4, 0, 0, 0, 0],
+              "values": ["check", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Täielik teenuse tervisekontroll",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Igapäevane automatiseeritud testimine",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Nullmäluga kloon testimiseks",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Kontrollsumma / faili terviklikkus",
-              "refs": [
-                5,
-                6,
-                7,
-                8,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [5, 6, 7, 8, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Hoiatuste integratsioon",
-              "refs": [
-                9,
-                10,
-                11,
-                12,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [9, 10, 11, 12, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Isehostitav / teie infrastruktuur",
-              "refs": [
-                13,
-                14,
-                15,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [13, 14, 15, 0, 0],
+              "values": ["check", "check", "check", "cross", "rediacc"]
             }
           ],
           "overline": "VAHE",
@@ -5209,11 +4950,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacciga",
-            "newSteps": [
-              "Varunda",
-              "47s",
-              "Kontrollitud"
-            ],
+            "newSteps": ["Varunda", "47s", "Kontrollitud"],
             "oldLabel": "Vana viis",
             "oldSteps": [
               {
@@ -5511,122 +5248,38 @@
           "features": [
             {
               "name": "Ristpilve replikatsioon",
-              "refs": [
-                0,
-                4,
-                5,
-                6,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 4, 5, 6, 0],
+              "values": ["cross", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Tõrkesiire alla 30 sekundi",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Ainult inkrementaalne edastus (98% kokkuhoid)",
-              "refs": [
-                0,
-                7,
-                8,
-                9,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 7, 8, 9, 0],
+              "values": ["cross", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Mis tahes pakkujatevaheline tõrkesiire",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Isehostitav, pilveagenti pole",
-              "refs": [
-                0,
-                10,
-                11,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 10, 11, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Automaatne DNS tõrkesiire",
-              "refs": [
-                0,
-                0,
-                12,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 12, 0, 0],
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Täisvirna replikatsioon (rakendus + andmebaas)",
-              "refs": [
-                0,
-                13,
-                14,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 13, 14, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             }
           ],
           "overline": "VAHE",
@@ -5810,11 +5463,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacciga",
-            "newSteps": [
-              "Tuvasta",
-              "<30s",
-              "Võrgus"
-            ],
+            "newSteps": ["Tuvasta", "<30s", "Võrgus"],
             "oldLabel": "Vana viis",
             "oldSteps": [
               {
@@ -6209,12 +5858,7 @@
               },
               {
                 "footer": "Pidev paranemine · automatiseeritud",
-                "items": [
-                  "N1: ████████ 23",
-                  "N2: ████ 12",
-                  "N3: ██ 7",
-                  "N4: █ 3"
-                ],
+                "items": ["N1: ████████ 23", "N2: ████ 12", "N3: ██ 7", "N4: █ 3"],
                 "status": "-87%",
                 "title": "4-nädalane trend"
               }
@@ -6269,11 +5913,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCIGA",
-            "newSteps": [
-              "Igapäevased skaneerimised",
-              "0 päeva",
-              "Null pimedaid alasid"
-            ],
+            "newSteps": ["Igapäevased skaneerimised", "0 päeva", "Null pimedaid alasid"],
             "oldLabel": "AASTANE PENTESTIMINE",
             "oldSteps": [
               {
@@ -6506,122 +6146,38 @@
           "features": [
             {
               "name": "Kliendi omavõtmed",
-              "refs": [
-                3,
-                4,
-                5,
-                6,
-                0
-              ],
-              "values": [
-                "Via KMS",
-                "Via KMS",
-                "Via KMS",
-                "Via KMS",
-                "rediacc"
-              ]
+              "refs": [3, 4, 5, 6, 0],
+              "values": ["Via KMS", "Via KMS", "Via KMS", "Via KMS", "rediacc"]
             },
             {
               "name": "Nullteadlikkuse arhitektuur",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Iseteeninduslik võtme rotatsioon",
-              "refs": [
-                7,
-                8,
-                9,
-                10,
-                0
-              ],
-              "values": [
-                "Via KMS",
-                "Via KMS",
-                "Via KMS",
-                "Via KMS",
-                "rediacc"
-              ]
+              "refs": [7, 8, 9, 10, 0],
+              "values": ["Via KMS", "Via KMS", "Via KMS", "Via KMS", "rediacc"]
             },
             {
               "name": "AES-256 krüpteerimine puhkeolekus",
-              "refs": [
-                11,
-                12,
-                13,
-                14,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [11, 12, 13, 14, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Hoidla kohane võtmete eraldamine",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Krüpteerimine transiidil",
-              "refs": [
-                15,
-                16,
-                17,
-                18,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [15, 16, 17, 18, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Isehostitud / teie infrastruktuur",
-              "refs": [
-                19,
-                20,
-                21,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [19, 20, 21, 0, 0],
+              "values": ["check", "check", "check", "cross", "rediacc"]
             }
           ],
           "overline": "LÕHE",
@@ -6803,11 +6359,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACC-IGA",
-            "newSteps": [
-              "Teie võti",
-              "AES-256",
-              "Nullteadlikkus"
-            ],
+            "newSteps": ["Teie võti", "AES-256", "Nullteadlikkus"],
             "oldLabel": "VANA VIIS",
             "oldSteps": [
               {
@@ -7103,117 +6655,33 @@
           "features": [
             {
               "name": "Rakenduse kloonimine",
-              "refs": [
-                3,
-                4,
-                5,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [3, 4, 5, 0, 0, 0],
+              "values": ["check", "check", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Andmebaasi kloonimine",
-              "refs": [
-                0,
-                0,
-                0,
-                6,
-                7,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 6, 7, 0],
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Rakenduse + andmebaasi kombineeritud kloon",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Iga andmebaasimootor",
-              "refs": [
-                0,
-                0,
-                0,
-                8,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 8, 0, 0],
+              "values": ["cross", "cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Ettevalmistamise aeg",
-              "refs": [
-                9,
-                10,
-                11,
-                12,
-                13,
-                0
-              ],
-              "values": [
-                "Minutid",
-                "Minutid",
-                "Minutid",
-                "Minutid",
-                "Sekundid",
-                "<60s"
-              ]
+              "refs": [9, 10, 11, 12, 13, 0],
+              "values": ["Minutid", "Minutid", "Minutid", "Minutid", "Sekundid", "<60s"]
             },
             {
               "name": "Tootmisidentne andmed",
-              "refs": [
-                0,
-                0,
-                0,
-                14,
-                15,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 14, 15, 0],
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
             }
           ],
           "overline": "LÕHE",
@@ -7400,11 +6868,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacc-iga",
-            "newSteps": [
-              "Käivita",
-              "60s",
-              "Valmis"
-            ],
+            "newSteps": ["Käivita", "60s", "Valmis"],
             "oldLabel": "Vana viis",
             "oldSteps": [
               {
@@ -7689,122 +7153,38 @@
           "features": [
             {
               "name": "Kogu virna tõrkesiire test",
-              "refs": [
-                0,
-                0,
-                2,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 2, 0, 0],
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Null mõju tootmisele",
-              "refs": [
-                0,
-                3,
-                4,
-                5,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 3, 4, 5, 0],
+              "values": ["cross", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Alla 5 minuti",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Automatiseeritud lõpetamis-/mittelõpetamisaruanne",
-              "refs": [
-                0,
-                6,
-                7,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 6, 7, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "CI/CD integratsioon",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Ristpilve testimine",
-              "refs": [
-                0,
-                8,
-                9,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 8, 9, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Isehostitud / teie infrastruktuur",
-              "refs": [
-                0,
-                10,
-                11,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 10, 11, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             }
           ],
           "overline": "LÕHE",
@@ -7987,11 +7367,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacc-iga",
-            "newSteps": [
-              "Käivita test",
-              "4 min",
-              "Aruanne"
-            ],
+            "newSteps": ["Käivita test", "4 min", "Aruanne"],
             "oldLabel": "Vana viis",
             "oldSteps": [
               {
@@ -8269,136 +7645,38 @@
           "features": [
             {
               "name": "Muutumatud varukoopiad",
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [4, 5, 6, 7, 0, 0],
+              "values": ["check", "check", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Failisüsteemi tasandi jõustamine",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Automatiseeritud igapäevane taastamise kontrollimine",
-              "refs": [
-                8,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [8, 0, 0, 0, 0, 0],
+              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Nullkopeerimise salvestus (CoW)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Kohene kloon testimiseks",
-              "refs": [
-                9,
-                10,
-                11,
-                12,
-                13,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [9, 10, 11, 12, 13, 0],
+              "values": ["check", "check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Taastamisaeg",
-              "refs": [
-                14,
-                15,
-                16,
-                17,
-                18,
-                0
-              ],
-              "values": [
-                "Minutid",
-                "Minutid",
-                "Minutid",
-                "Minutid",
-                "Sekundid",
-                "<5 min"
-              ]
+              "refs": [14, 15, 16, 17, 18, 0],
+              "values": ["Minutid", "Minutid", "Minutid", "Minutid", "Sekundid", "<5 min"]
             },
             {
               "name": "Isehostitud / pilvest sõltumatu",
-              "refs": [
-                19,
-                20,
-                21,
-                0,
-                22,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [19, 20, 21, 0, 22, 0],
+              "values": ["check", "check", "check", "cross", "check", "rediacc"]
             }
           ],
           "overline": "LÕHE",
@@ -8581,11 +7859,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacc-iga",
-            "newSteps": [
-              "Varukoopia",
-              "Suletud",
-              "Kontrollitud"
-            ],
+            "newSteps": ["Varukoopia", "Suletud", "Kontrollitud"],
             "oldLabel": "Vana viis",
             "oldSteps": [
               {
@@ -8904,105 +8178,33 @@
           "features": [
             {
               "name": "Nullkopeerimise klooni salvestus (CoW)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Seadistatav TTL automaatne hävitamine",
-              "refs": [
-                4,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [4, 0, 0, 0, 0],
+              "values": ["check", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Täielikud tootmisandmed kloonil",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Mitme teenusega keskkonnad",
-              "refs": [
-                0,
-                5,
-                0,
-                6,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 5, 0, 6, 0],
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Isehostitud / istumistasuta hinnad",
-              "refs": [
-                0,
-                7,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 7, 0, 0, 0],
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Alla 60-sekundine ettevalmistamine",
-              "refs": [
-                0,
-                0,
-                8,
-                9,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 8, 9, 0],
+              "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
           "overline": "LÕHE",
@@ -9175,11 +8377,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACC-IGA",
-            "newSteps": [
-              "Käivita",
-              "$0 jõude",
-              "Autopuhastus"
-            ],
+            "newSteps": ["Käivita", "$0 jõude", "Autopuhastus"],
             "oldLabel": "ALATI-TÖÖTAVAD KESKKONNAD",
             "oldSteps": [
               {
@@ -9439,122 +8637,38 @@
           "features": [
             {
               "name": "Täieliku keskkonna taastamine (mitte ainult failid)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Alla 5 minuti taastamisaeg",
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [4, 5, 6, 7, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Automaatsed taastetaastamise tervisekontrollid",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Ajahetke hetktõmmise täpsus",
-              "refs": [
-                8,
-                9,
-                10,
-                11,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [8, 9, 10, 11, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Nullkuluga kloon (ilma lisamäluta)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Ühe käsuga taastamine",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Ise majutatud / teie infrastruktuur",
-              "refs": [
-                12,
-                13,
-                14,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [12, 13, 14, 0, 0],
+              "values": ["check", "check", "check", "cross", "rediacc"]
             }
           ],
           "overline": "LÕHE",
@@ -9737,11 +8851,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacciga",
-            "newSteps": [
-              "Käivita taastamine",
-              "3m 47s",
-              "Töötab"
-            ],
+            "newSteps": ["Käivita taastamine", "3m 47s", "Töötab"],
             "oldLabel": "Vana viis",
             "oldSteps": [
               {
@@ -10033,105 +9143,33 @@
           "features": [
             {
               "name": "Tootmisandmed CI kloonides",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Ühe rea webhook-integratsioon",
-              "refs": [
-                3,
-                0,
-                4,
-                5,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [3, 0, 4, 5, 0],
+              "values": ["check", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Mitme teenuse CI keskkond",
-              "refs": [
-                0,
-                6,
-                0,
-                7,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 6, 0, 7, 0],
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Automaatkustutus pärast torujuhet",
-              "refs": [
-                8,
-                0,
-                9,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [8, 0, 9, 0, 0],
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Nullkohandatud seadistusskripte",
-              "refs": [
-                0,
-                0,
-                10,
-                11,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 10, 11, 0],
+              "values": ["cross", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Ise majutatud / ilma tarnijasõltuvuseta",
-              "refs": [
-                0,
-                12,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 12, 0, 0, 0],
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "LÕHE",
@@ -10215,31 +9253,19 @@
             "cards": [
               {
                 "footer": "webhook → rdc",
-                "items": [
-                  "haru: feature/auth-v2",
-                  "commit: a3f7b2c",
-                  "autor: sarah"
-                ],
+                "items": ["haru: feature/auth-v2", "commit: a3f7b2c", "autor: sarah"],
                 "status": "Käivitaja",
                 "title": "Git Push"
               },
               {
                 "footer": "ci-auth-v2",
-                "items": [
-                  "gitlab · nextcloud",
-                  "mariadb · mailcow",
-                  "380 GB → 2.1 GB"
-                ],
+                "items": ["gitlab · nextcloud", "mariadb · mailcow", "380 GB → 2.1 GB"],
                 "status": "CoW",
                 "title": "Kloon"
               },
               {
                 "footer": "285 läbitud",
-                "items": [
-                  "247 ühiktesti ✓",
-                  "38 integratsioonitesti ✓",
-                  "automaatpuhastus ✓"
-                ],
+                "items": ["247 ühiktesti ✓", "38 integratsioonitesti ✓", "automaatpuhastus ✓"],
                 "status": "Läbitud",
                 "title": "Testid"
               }
@@ -10294,11 +9320,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCIGA",
-            "newSteps": [
-              "git push",
-              "Automaatne",
-              "Pärisandmed"
-            ],
+            "newSteps": ["git push", "Automaatne", "Pärisandmed"],
             "oldLabel": "KOHANDATUD CI SKRIPTID",
             "oldSteps": [
               {
@@ -10578,122 +9600,38 @@
           "features": [
             {
               "name": "Nulldekrüpteerimisega migreerimine",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Kliendi hoitavad võtmed ülekande ajal",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Konfiguratsiooni + andmete atoomiline migreerimine",
-              "refs": [
-                0,
-                0,
-                5,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 5, 0, 0],
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Terviklikkuse tõendamine pärast ülekannet",
-              "refs": [
-                6,
-                7,
-                8,
-                9,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [6, 7, 8, 9, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Ühe käsuga migreerimine",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Iga-iga sihtkohani",
-              "refs": [
-                10,
-                11,
-                12,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [10, 11, 12, 0, 0],
+              "values": ["check", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Automaatne tagasipööramine ebaõnnestumisel",
-              "refs": [
-                0,
-                0,
-                13,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 13, 0, 0],
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "LÕHE",
@@ -10876,11 +9814,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacciga",
-            "newSteps": [
-              "Käivita migreerimine",
-              "0 kokkupuudet",
-              "Tõendatud"
-            ],
+            "newSteps": ["Käivita migreerimine", "0 kokkupuudet", "Tõendatud"],
             "oldLabel": "Traditsiooniline migreerimine",
             "oldSteps": [
               {
@@ -11171,122 +10105,38 @@
           "features": [
             {
               "name": "Täieliku tootmisandmete kloon",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "OS + teegi pariteetsuse tõendamine",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Iga andmebaasimootor (MariaDB, Postgres, Mongo)",
-              "refs": [
-                0,
-                4,
-                0,
-                5,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 4, 0, 5, 0],
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Mitme teenuse kloon (rakendus + DB + meil + salvestus)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Nullkoopia salvestus (CoW)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Ise majutatud / ilma tarnijasõltuvuseta",
-              "refs": [
-                0,
-                6,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 6, 0, 0, 0],
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Alla 60-sekundiline seadistamine",
-              "refs": [
-                0,
-                0,
-                7,
-                8,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 7, 8, 0],
+              "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
           "overline": "LÕHE",
@@ -11459,11 +10309,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCIGA",
-            "newSteps": [
-              "Käivita kloon",
-              "47s",
-              "100% vastavus"
-            ],
+            "newSteps": ["Käivita kloon", "47s", "100% vastavus"],
             "oldLabel": "TRADITSIOONILISED ARENDUSKESKKONNAD",
             "oldSteps": [
               {
@@ -11960,136 +10806,38 @@
           "features": [
             {
               "name": "CLOUD Act-i immuunsus (puudub USA jurisdiktsiooni all olev emaettevõte)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                4,
-                4,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
+              "refs": [4, 4, 4, 0, 0, 0]
             },
             {
               "name": "Klient hoiab võtmeid (tehniline arusaamatus)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                5,
-                5,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 5, 5, 0, 0, 0]
             },
             {
               "name": "Ainult EL-i operaator (puudub USA emaettevõte)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                4,
-                4,
-                0,
-                6,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
+              "refs": [4, 4, 4, 0, 6, 0]
             },
             {
               "name": "SecNumCloud / C5:2026 atesteerimisrada",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                7,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 7, 0, 0, 0]
             },
             {
               "name": "Avatud väljumisformaat (andmemäärus art. 30)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                8,
-                8,
-                8,
-                0,
-                8,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [8, 8, 8, 0, 8, 0]
             },
             {
               "name": "Ise hostitud kliendi infrastruktuuris",
-              "values": [
-                "check",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                9,
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [9, 0, 0, 0, 0, 0]
             },
             {
               "name": "EL-i andmete asukoht vaikimisi",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                10,
-                0,
-                13,
-                0
-              ]
+              "values": ["cross", "cross", "check", "check", "check", "rediacc"],
+              "refs": [0, 0, 10, 0, 13, 0]
             }
           ]
         },
@@ -12301,117 +11049,33 @@
           "features": [
             {
               "name": "Täieliku keskkonna taastamine",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                4,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 4, 0],
+              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
             },
             {
               "name": "Taastamine alla 5 minuti",
-              "refs": [
-                5,
-                6,
-                7,
-                8,
-                9,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [5, 6, 7, 8, 9, 0],
+              "values": ["check", "check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Ajahetk (minuti täpsusega)",
-              "refs": [
-                10,
-                11,
-                12,
-                13,
-                14,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [10, 11, 12, 13, 14, 0],
+              "values": ["check", "check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Automaatne taastamise tõendamine",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Andmeedastus pole vajalik",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Ise majutatud / pilve sõltuvuseta",
-              "refs": [
-                15,
-                16,
-                17,
-                0,
-                18,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [15, 16, 17, 0, 18, 0],
+              "values": ["check", "check", "check", "cross", "check", "rediacc"]
             }
           ],
           "overline": "LÕHE",
@@ -12594,11 +11258,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCIGA",
-            "newSteps": [
-              "Tuvasta",
-              "<5 min",
-              "Võrgus"
-            ],
+            "newSteps": ["Tuvasta", "<5 min", "Võrgus"],
             "oldLabel": "VANA VIIS",
             "oldSteps": [
               {
@@ -12874,122 +11534,38 @@
           "features": [
             {
               "name": "Seadistatavad säilituspoliitikad",
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [4, 5, 6, 7, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Automatiseeritud elutsüklipuhastus",
-              "refs": [
-                8,
-                9,
-                10,
-                11,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [8, 9, 10, 11, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Säilitatud varukoopiakontroll",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Kohesed auditivalmid aruanded",
-              "refs": [
-                12,
-                13,
-                14,
-                15,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [12, 13, 14, 15, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Mitme raamistiku tugi",
-              "refs": [
-                16,
-                17,
-                18,
-                19,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [16, 17, 18, 19, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Ise hostitud / oma taristu",
-              "refs": [
-                20,
-                21,
-                22,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [20, 21, 22, 0, 0],
+              "values": ["check", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "CLI / automaatika-esmane",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "ERINEVUS",
@@ -13173,11 +11749,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacciga",
-            "newSteps": [
-              "Poliitika seadmine",
-              "Automaatne",
-              "Auditivalmisolekus"
-            ],
+            "newSteps": ["Poliitika seadmine", "Automaatne", "Auditivalmisolekus"],
             "oldLabel": "Vana viis",
             "oldSteps": [
               {
@@ -13505,122 +12077,38 @@
           "features": [
             {
               "name": "Täispinu kloon testimiseks",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Klooni loomine alla 60 sekundi",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Isoleeritud võrk klooni kohta",
-              "refs": [
-                4,
-                0,
-                5,
-                6,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [4, 0, 5, 6, 0],
+              "values": ["check", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Null lisasalvestust (CoW)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Automaatne tervisekontroll pärast paikamist",
-              "refs": [
-                7,
-                8,
-                9,
-                10,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [7, 8, 9, 10, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Ise hostitud, pilve sõltuvuseta",
-              "refs": [
-                11,
-                12,
-                13,
-                14,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [11, 12, 13, 14, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Ühe käsu töövoog",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "ERINEVUS",
@@ -13803,11 +12291,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacciga",
-            "newSteps": [
-              "Klooni",
-              "60 s",
-              "Paigalda ja kontrolli"
-            ],
+            "newSteps": ["Klooni", "60 s", "Paigalda ja kontrolli"],
             "oldLabel": "Vana viis",
             "oldSteps": [
               {
@@ -14106,122 +12590,38 @@
           "features": [
             {
               "name": "Ristplatvormi migratsioon",
-              "refs": [
-                0,
-                4,
-                5,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 4, 5, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Migratsioon alla 1 tunni",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Null esialgseid vorminguid",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Ainult inkrementaalne ülekanne",
-              "refs": [
-                0,
-                6,
-                7,
-                8,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 6, 7, 8, 0],
+              "values": ["cross", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Tarnija agenti ei nõuta",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Täispinu migratsioon (rakendus + andmebaas)",
-              "refs": [
-                0,
-                9,
-                10,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 9, 10, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Nullseisakuga migratsioon",
-              "refs": [
-                0,
-                0,
-                11,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 11, 0, 0],
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "ERINEVUS",
@@ -14404,11 +12804,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCIGA",
-            "newSteps": [
-              "Snapshot",
-              "<1 t",
-              "Elus"
-            ],
+            "newSteps": ["Snapshot", "<1 t", "Elus"],
             "oldLabel": "VANA VIIS",
             "oldSteps": [
               {
@@ -14815,12 +13211,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacciga",
-            "newSteps": [
-              "Klooni + paik",
-              "<4 min",
-              "Kontrollitud",
-              "Paigaldage"
-            ],
+            "newSteps": ["Klooni + paik", "<4 min", "Kontrollitud", "Paigaldage"],
             "oldLabel": "Traditsiooniline paikamine",
             "oldSteps": [
               {
@@ -15139,9 +13530,7 @@
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": [
-                "Sild kogub järgmiseid andmekategooriaid:"
-              ],
+              "content": ["Sild kogub järgmiseid andmekategooriaid:"],
               "items": [
                 "<strong>Järjekorra toimingud:</strong> ülesande ID, prioriteedi tase, toimingu tüüp, täitmise kestus, edukuse või ebaõnnestumise olek",
                 "<strong>SSH toimingud:</strong> sihthost, kasutajanimi, pordinumber, väljumiskood, täitmise kestus (käsu sisu ega väljundit ei koguta)",
@@ -15188,9 +13577,7 @@
           "id": "cli",
           "subsections": {
             "cliDataCollected": {
-              "content": [
-                "CLI kogub järgmiseid andmekategooriaid:"
-              ],
+              "content": ["CLI kogub järgmiseid andmekategooriaid:"],
               "items": [
                 "<strong>Käsu kasutamine:</strong> käsu nimi, CLI versioon, väljumiskood, edukuse või ebaõnnestumise olek",
                 "<strong>Anonümiseeritud argumendid:</strong> käsu valikud tundlike väärtustega muudetud kujul - paroolid, märgised, saladused, API võtmed ja mandaadid asendatakse väärtusega <code>[REDACTED]</code>",
@@ -15262,9 +13649,7 @@
           "id": "middleware",
           "subsections": {
             "middlewareDataCollected": {
-              "content": [
-                "Vahevara kogub järgmiseid andmekategooriaid:"
-              ],
+              "content": ["Vahevara kogub järgmiseid andmekategooriaid:"],
               "items": [
                 "<strong>Süsteemi teave:</strong> hostinimi, operatsioonisüsteemi versioon, .NET käitusversiooni versioon",
                 "<strong>API kutsed:</strong> HTTP meetod, lõpp-punkti tee, vastuse olekukood, päringu kestus",
@@ -15286,9 +13671,7 @@
           "title": "6. Vahevara telemetria"
         },
         "principles": {
-          "content": [
-            "Kogu telemetria kogumine Rediaccis järgib neid põhimõtteid:"
-          ],
+          "content": ["Kogu telemetria kogumine Rediaccis järgib neid põhimõtteid:"],
           "id": "principles",
           "items": [
             "<strong>Privaatsus disainis:</strong> Isikutuvastajad anonümiseeritakse enne edastamist. E-posti aadressid taandatakse ainult domeeniks, kasutajatunnused räsitatakse (SHA-256) ja lühendatakse, paroole ja saladusi ei koguta kunagi.",
@@ -15306,9 +13689,7 @@
           "id": "web-app",
           "subsections": {
             "webDataCollected": {
-              "content": [
-                "Veebirakendus kogub järgmiseid andmekategooriaid:"
-              ],
+              "content": ["Veebirakendus kogub järgmiseid andmekategooriaid:"],
               "items": [
                 "<strong>Brauseri teave:</strong> brauseri nimi ja versioon, eelistatud keel, platvorm (nt Windows, macOS, Linux), ekraani lahutusvõime, värvügavus, kasutajaagendi string, seadme mälu (kui saadaval), võrguühenduse tüüp",
                 "<strong>Kasutaja kontekst:</strong> seansi ID (juhuslikult genereeritud seansi kohta), ainult e-posti domeen (kohalik osa on muudetud, nt <code>***@example.com</code>), organisatsiooni nimi, meeskonna nimi",
@@ -15322,9 +13703,7 @@
               "title": "4.1 Kogutavad andmed"
             },
             "webNotCollected": {
-              "content": [
-                "Veebirakendus ei kogu:"
-              ],
+              "content": ["Veebirakendus ei kogu:"],
               "items": [
                 "Täielikke e-posti aadresse (kohalik osa on alati muudetud)",
                 "Paroole, märgiseid ega autentimisandmeid",
@@ -15426,9 +13805,7 @@
           "title": "11. Teie andmed ja krüpteerimine"
         },
         "definitions": {
-          "content": [
-            "Järgmised mõisted kehtivad käesolevates teenuse kasutustingimustes:"
-          ],
+          "content": ["Järgmised mõisted kehtivad käesolevates teenuse kasutustingimustes:"],
           "id": "definitions",
           "items": [
             "<strong>\"Konto\"</strong> tähendab kasutajakontot, mille loote platvormi kasutamiseks ja tellimuse haldamiseks.",
@@ -15520,9 +13897,7 @@
               "title": "6.1 Paigaldamine ja masina juurdepääs"
             },
             "restrictions": {
-              "content": [
-                "Te ei tohi:"
-              ],
+              "content": ["Te ei tohi:"],
               "items": [
                 "Pöördprojekteerida, dekompileerida, lahtimonteerida ega muul viisil püüda tuletada silla kahendmooduli või mis tahes muu mitte-avatud lähtekoodiga ettevõttesisese tarkvara komponendi lähtekoodi",
                 "Levitada, allliitsentsida, rentida, liisida ega laenata ettevõttesisest tarkvara kolmandale osapoolele",
@@ -15561,9 +13936,7 @@
           "title": "3. Teenuste kirjeldus"
         },
         "subscriptions": {
-          "content": [
-            "Rediacc pakub mitmeid tellimuse pakette:"
-          ],
+          "content": ["Rediacc pakub mitmeid tellimuse pakette:"],
           "id": "subscriptions",
           "items": [
             "<strong>Kogukond</strong> (tasuta) - piiratud 2 masina aktiveerimisega, põhifunktsioonid, kogukonna tugi",
