@@ -174,13 +174,16 @@ const designPartner =
   // Self-contained handlers for the card's CTAs. Astro deduplicates this
   // script — it runs once regardless of how many cards are rendered.
   document.addEventListener('DOMContentLoaded', () => {
-    // On regional domains (eu.rediacc.com, us.rediacc.com, etc.) /account/
-    // resolves to the actual portal. On www / localhost it does not, so we
-    // open the region picker instead so the user can choose where to land.
-    const isRegional = /\b(eu|us)\.(rediacc\.com|localhost)/.test(window.location.origin) ||
-      window.location.hostname === 'localhost';
-
     // 1. Stripe checkout buttons (Professional plan when not in design-partner mode).
+    // Marketing-host detection delegated to window.__rediaccIsMarketingHost
+    // (defined in BaseLayout.astro, mirrors src/utils/marketing-host.ts).
+    // On marketing hosts (www / localhost / *.rediacc.workers.dev) we open
+    // the region picker; on portal hosts (regional / edge / bench / on-prem)
+    // we navigate directly. Fallback to direct nav if the helper is missing.
+    const isMarketing =
+      typeof window.__rediaccIsMarketingHost === 'function' &&
+      window.__rediaccIsMarketingHost(window.location.hostname);
+
     document.querySelectorAll<HTMLButtonElement>('[data-checkout]').forEach((btn) => {
       if (btn.dataset.checkoutBound) return;
       btn.dataset.checkoutBound = 'true';
@@ -199,7 +202,7 @@ const designPartner =
         });
         const targetPath = `/account/?${params}`;
 
-        if (isRegional) {
+        if (!isMarketing) {
           window.location.href = targetPath;
         } else {
           window.openRegionPicker?.(targetPath);

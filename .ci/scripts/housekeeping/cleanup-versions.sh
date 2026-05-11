@@ -920,9 +920,21 @@ r2_ls_prefix() {
 # the prefix is empty or unreadable.
 r2_prefix_last_modified() {
     local prefix="$1"
-    aws s3 ls "s3://${R2_BUCKET}/${prefix}" --recursive \
-        --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
-        awk 'NR==1 {print $1"T"$2"Z"; exit}'
+    # Use list-objects-v2 instead of `aws s3 ls --recursive`: the latter
+    # returns exit 1 on empty prefixes which, under set -eo pipefail at the
+    # top of this script, would abort the entire housekeeping run silently.
+    # list-objects-v2 emits an empty Contents array (formatted as "None")
+    # for missing prefixes, which we treat as empty stdout.
+    local stamp
+    stamp="$(aws s3api list-objects-v2 \
+        --bucket "${R2_BUCKET}" \
+        --prefix "${prefix}" \
+        --max-items 1 \
+        --endpoint-url "$R2_ENDPOINT" \
+        --query 'Contents[0].LastModified' \
+        --output text 2>/dev/null || echo)"
+    [[ "$stamp" == "None" || -z "$stamp" ]] && return 0
+    printf '%s\n' "$stamp"
 }
 
 # Delete a prefix recursively, or log the intent in dry-run.
@@ -1178,6 +1190,12 @@ cleanup_r2() {
             local channel_root="${fmt}/${channel}/"
             [[ -z "$(r2_ls_prefix "$channel_root")" ]] && continue
             local listing
+            # Guard against the `aws s3 ls --recursive` pipefail race: if the
+            # prefix gets emptied between the r2_ls_prefix check above and the
+            # call below, aws exits 1 and (under set -eo pipefail at script top)
+            # the whole housekeeping run aborts silently. Falling back to "" on
+            # any pipeline failure keeps the retention sweep going for the
+            # other (fmt, channel) combinations.
             listing="$(aws s3 ls "s3://${R2_BUCKET}/${channel_root}" --recursive \
                 --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
                 awk '{
@@ -1190,7 +1208,7 @@ cleanup_r2() {
                         is_dev = (semver == "0.0.0" && after ~ /^-dev/) ? 1 : 0;
                         print $1"T"$2"Z""|"semver"|"is_dev"|"$4
                     }
-                }')"
+                }' || echo)"
             [[ -z "$listing" ]] && continue
             # Top-N non-dev semvers (per-semver rank, not per-file).
             local top_versions

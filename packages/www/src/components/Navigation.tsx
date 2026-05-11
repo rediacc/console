@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
+import { isMarketingHost } from '../utils/marketing-host';
 import LanguageMenu from './LanguageMenu';
 import MegaMenu from './MegaMenu';
 import PersonaMegaMenu from './PersonaMegaMenu';
@@ -9,10 +10,14 @@ import SearchModal from './SearchModal';
 import Sidebar from './Sidebar';
 import ThemeToggle from './ThemeToggle';
 
-/** On regional or local domains, navigate directly. On www, open region picker. */
-function isRegionalDomain(origin?: string): boolean {
-  if (!origin) return false;
-  return /\b(eu|us)\.(rediacc\.com|localhost)/.test(origin) || origin.includes('localhost');
+/** Returns the hostname for a given origin string, or '' on parse failure. */
+function hostnameFromOrigin(origin?: string): string {
+  if (!origin) return '';
+  try {
+    return new URL(origin).hostname;
+  } catch {
+    return '';
+  }
 }
 
 interface NavigationProps {
@@ -27,8 +32,11 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
   const currentLang = useLanguage();
   const { t } = useTranslation(currentLang);
 
-  const isRegional = isRegionalDomain(origin);
-  const accountUrl = isRegional ? '/account/' : undefined;
+  // On marketing hosts (www / dev / *.rediacc.workers.dev) we render a
+  // <button> that opens the region picker. On portal hosts (regional cloud,
+  // edge, bench, on-prem) we render a plain <a> so the click navigates
+  // directly to the local /account/ portal. See utils/marketing-host.ts.
+  const accountUrl = isMarketingHost(hostnameFromOrigin(origin)) ? undefined : '/account/';
 
   // Drives `.nav-translate` groups: center nav + utility cluster slide up and
   // fade out 1:1 with the first 80px of scroll, then clamp. Brand and CTA stay.

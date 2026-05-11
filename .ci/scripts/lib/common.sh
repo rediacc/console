@@ -372,6 +372,43 @@ parse_args() {
 }
 
 # =============================================================================
+# R2 / AWS HELPERS
+# =============================================================================
+
+# r2_count_objects <bucket> <prefix> [<endpoint>]
+#
+# Emit the number of objects under s3://<bucket>/<prefix>/ to stdout.
+# Always exits 0 — empty prefix returns "0" rather than erroring out.
+#
+# Rationale: `aws s3 ls --recursive` returns exit code 1 when the prefix
+# is empty, which under `set -eo pipefail` aborts the calling script
+# mid-loop with no diagnostic (this bit scrub-sentinel.sh, assert-r2-sentinel.sh,
+# and cleanup-versions.sh Phase 8). `aws s3api list-objects-v2` with
+# `length(Contents || `[]`)` returns 0 cleanly for empty prefixes, which
+# is what callers actually want.
+#
+# Requires AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY exported, or callers
+# may set them inline from R2_* before invocation.
+r2_count_objects() {
+    local bucket="${1:?bucket required}"
+    local prefix="${2:?prefix required}"
+    local endpoint="${3:-${R2_ENDPOINT:-}}"
+    local count
+    count="$(aws s3api list-objects-v2 \
+        --bucket "$bucket" \
+        --prefix "$prefix" \
+        ${endpoint:+--endpoint-url "$endpoint"} \
+        --query 'length(Contents || `[]`)' \
+        --output text 2>/dev/null || echo 0)"
+    # Defensive: list-objects-v2 emits "None" instead of an integer when
+    # the prefix is missing in some edge cases. Normalise to 0.
+    if ! [[ "$count" =~ ^[0-9]+$ ]]; then
+        count=0
+    fi
+    printf '%s\n' "$count"
+}
+
+# =============================================================================
 # SHARED CONSTANTS
 # =============================================================================
 # Define constants here to avoid duplication across scripts.

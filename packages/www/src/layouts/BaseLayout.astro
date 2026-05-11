@@ -444,41 +444,75 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <script src="/scripts/scroll-reveal.js" is:inline></script>
     <script src="/scripts/tracker.js" is:inline></script>
     <script is:inline>
-      // Design Partner Program: every [data-design-partner-claim] anchor
-      // points to /account/. On regional subdomains the anchor navigates
-      // directly. On www.rediacc.com (or dev / any non-regional host) we
-      // intercept the click and open the region picker so the user picks
-      // their data region before signing up. Lives in BaseLayout so the
-      // binding runs on every page (persona pages, 404, design-partners,
-      // etc.) — not just pages that include CfPricingCard.
+      // Single source of truth for the marketing-host rule. Mirrors
+      // src/utils/marketing-host.ts so React components and inline scripts
+      // (CfPricingCard's checkout, Navigation/Sidebar's Account button)
+      // all agree on which hosts open the region picker vs navigate
+      // directly. See utils/marketing-host.ts header for the full matrix.
+      window.__rediaccIsMarketingHost = function (hostname) {
+        return (
+          hostname === 'www.rediacc.com' ||
+          hostname === 'localhost' ||
+          hostname.endsWith('.rediacc.workers.dev')
+        );
+      };
+
+      // Intercept every same-origin /account/* anchor click. On marketing
+      // hosts (www, dev, PR previews) the marketing site does not serve
+      // the portal, so we open the region picker with the anchor's path
+      // as the target. On portal hosts (regional cloud, edge, bench,
+      // on-prem) we let the anchor navigate normally.
+      //
+      // Covers the announcement bar, the design-partner CTAs, and any
+      // future plain /account/* link without per-anchor decoration.
+      // Cross-origin links to https://eu.rediacc.com/account/... are
+      // pass-through (already explicit destinations).
       (function () {
-        function bindDpClaim() {
-          var isRegionalForClaim = /\b(eu|us|asia)\.rediacc\.com\b/.test(window.location.hostname);
-          var links = document.querySelectorAll('a[data-design-partner-claim]');
+        function bindAccountLinks() {
+          var links = document.querySelectorAll('a[href^="/account"]');
           for (var i = 0; i < links.length; i++) {
             var link = links[i];
-            if (link.dataset.dpClaimBound) continue;
-            link.dataset.dpClaimBound = 'true';
+            if (link.dataset.accountLinkBound) continue;
+            link.dataset.accountLinkBound = 'true';
             link.addEventListener('click', function (e) {
-              if (isRegionalForClaim) return;
+              var href = this.getAttribute('href');
+              if (!href) return;
+              var url;
+              try {
+                url = new URL(href, window.location.origin);
+              } catch (_) {
+                return;
+              }
+              if (url.origin !== window.location.origin) return;
+              // Match /account, /account/, /account/login, /account/?...
+              // Exclude /account-management or /account-foo by requiring
+              // the path to be exactly "/account" or to start with "/account/".
+              if (url.pathname !== '/account' && url.pathname.indexOf('/account/') !== 0) return;
+              if (!window.__rediaccIsMarketingHost(window.location.hostname)) return;
               e.preventDefault();
+              var target = url.pathname + url.search + url.hash;
               if (window.plausible) {
-                window.plausible('design_partner_claim', { props: { plan: this.dataset.trackDest || '' } });
+                window.plausible('account_link_click', {
+                  props: {
+                    source: this.dataset.trackLabel || (this.dataset.designPartnerClaim !== undefined ? 'design_partner_claim' : 'unknown'),
+                    dest: target,
+                  },
+                });
               }
               if (window.openRegionPicker) {
-                window.openRegionPicker('/account/');
+                window.openRegionPicker(target);
               }
             });
           }
         }
         if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', bindDpClaim);
+          document.addEventListener('DOMContentLoaded', bindAccountLinks);
         } else {
-          bindDpClaim();
+          bindAccountLinks();
         }
         // Re-bind after Astro view-transition page loads (the new page may
-        // contain fresh CTAs that weren't in the document at first load).
-        document.addEventListener('astro:page-load', bindDpClaim);
+        // contain fresh anchors that weren't in the document at first load).
+        document.addEventListener('astro:page-load', bindAccountLinks);
       })();
     </script>
     <script is:inline>

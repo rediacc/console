@@ -139,7 +139,7 @@
     "globals": "^17.6.0",
     "jsdom": "^29.0.0",
     "knip": "^6.12.2",
-    "syncpack": "^15.0.0",
+    "syncpack": "^15.1.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.59.2"

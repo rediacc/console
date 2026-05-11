@@ -49,8 +49,11 @@ export AWS_DEFAULT_REGION="auto"
 FAILED=false
 
 for prefix in "cli/v${VERSION}/" "desktop/v${VERSION}/"; do
-    count="$(aws s3 ls "s3://${BUCKET}/${prefix}" \
-        --endpoint-url "$R2_ENDPOINT" 2>/dev/null | wc -l)"
+    # Use the r2_count_objects helper instead of `aws s3 ls | wc -l`:
+    # `aws s3 ls --recursive` returns exit 1 on empty prefixes, which under
+    # `set -eo pipefail` would silently abort this script before the if-check
+    # below ever ran. The helper normalises empty prefixes to "0".
+    count="$(r2_count_objects "$BUCKET" "$prefix" "$R2_ENDPOINT")"
     if [[ "$count" -eq 0 ]]; then
         log_error "R2 versioned prefix s3://${BUCKET}/${prefix} is empty after upload."
         FAILED=true
