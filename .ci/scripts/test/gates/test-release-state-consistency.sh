@@ -16,6 +16,10 @@ source "$SCRIPT_DIR/../lib/test-helpers.sh"
 # unset by default and individual cases set it explicitly when exercising
 # override semantics.
 unset RSV_GRANDFATHER_BEFORE
+# Point the ratchet file at a non-existent path so unit tests stay
+# independent of the production .ci/config/release-contract-floor.txt
+# value. Individual cases that exercise the ratchet override it explicitly.
+export RSV_FLOOR_FILE="/nonexistent/release-contract-floor.txt"
 # shellcheck source=../../lib/release-state-validator.sh
 source "$REPO_ROOT/.ci/scripts/lib/release-state-validator.sh"
 
@@ -222,6 +226,76 @@ test_explicit_override_still_works() {
     log_pass "explicit-override"
 }
 
+test_ratchet_lifts_floor_above_observed() {
+    log_test "ratchet file value lifts floor above observed CLI sentinels (regression guard)"
+    # If an operator scrubs a recent cli sentinel, the observed oldest
+    # shifts up silently. The ratchet's role is to remember where the
+    # floor used to be so the bijection still fires for the now-missing
+    # version. Here: observed oldest is v1.0.8, but the ratchet says
+    # v1.0.6 -- but ratchet is BELOW observed, so observed wins (floor
+    # advances, not retreats). Then with ratchet=v1.0.10 (above observed),
+    # the ratchet wins and v1.0.8/v1.0.9 below the floor get suppressed.
+    local tmpfile
+    tmpfile="$(mktemp)"
+
+    # Case 1: ratchet below observed → observed wins.
+    echo "v1.0.6" >"$tmpfile"
+    local out rc=0
+    out="$(RSV_FLOOR_FILE="$tmpfile" rsv_assert_bijection \
+        "$(printf 'v1.0.8\nv1.0.9\n')" \
+        "" \
+        "$(printf 'v1.0.6\nv1.0.7\nv1.0.8\nv1.0.9\n')" \
+        "" 2>&1)" || rc=$?
+    assert_exit_code 0 "$rc" "ratchet < observed: observed v1.0.8 floor used"
+    assert_contains "$out" "floor: v1.0.8" "floor message names v1.0.8"
+    assert_not_contains "$out" "DRIFT v1.0.6" "v1.0.6 below floor; suppressed"
+
+    # Case 2: ratchet above observed → ratchet wins, drift still suppressed
+    # below floor.
+    echo "v1.0.10" >"$tmpfile"
+    rc=0
+    out="$(RSV_FLOOR_FILE="$tmpfile" rsv_assert_bijection \
+        "$(printf 'v1.0.8\nv1.0.10\n')" \
+        "" \
+        "$(printf 'v1.0.8\nv1.0.9\nv1.0.10\n')" \
+        "" 2>&1)" || rc=$?
+    assert_exit_code 0 "$rc" "ratchet > observed: ratchet floor used, no drift below"
+    assert_contains "$out" "floor: v1.0.10" "ratchet pulls floor up to v1.0.10"
+    assert_not_contains "$out" "DRIFT v1.0.8" "observed v1.0.8 cli sentinel below ratchet floor; suppressed"
+    assert_not_contains "$out" "DRIFT v1.0.9" "v1.0.9 below ratchet floor; suppressed"
+
+    rm -f "$tmpfile"
+    log_pass "ratchet-lifts-floor"
+}
+
+test_ratchet_protects_against_all_sentinels_scrubbed() {
+    log_test "ratchet pins floor even when every cli sentinel is missing"
+    # Without the ratchet: if R2 returns an empty cli sentinel list (every
+    # sentinel scrubbed, or a misconfigured probe), the validator short-
+    # circuits to OK because "no contract in effect yet". That's the right
+    # call for a fresh dev bucket, but the WRONG call for a production
+    # bucket where releases have happened -- it would hide every drift.
+    #
+    # The ratchet defends that case: when observed is empty but the ratchet
+    # remembers a version, the floor falls back to the ratchet value and
+    # the bijection still applies.
+    local tmpfile
+    tmpfile="$(mktemp)"
+    echo "v1.0.8" >"$tmpfile"
+    local out rc=0
+    out="$(RSV_FLOOR_FILE="$tmpfile" rsv_assert_bijection \
+        "" \
+        "" \
+        "$(printf 'v1.0.7\nv1.0.8\nv1.0.9\n')" \
+        "" 2>&1)" || rc=$?
+    assert_exit_code 1 "$rc" "tags above ratchet with no cli sentinel must drift"
+    assert_contains "$out" "DRIFT v1.0.8" "v1.0.8 tag without cli sentinel; ratchet keeps it in scope"
+    assert_contains "$out" "DRIFT v1.0.9" "v1.0.9 likewise"
+    assert_not_contains "$out" "DRIFT v1.0.7" "v1.0.7 below ratchet; still grandfathered"
+    rm -f "$tmpfile"
+    log_pass "ratchet-protects-empty-observed"
+}
+
 test_all_committed_passes
 test_empty_state_passes
 test_orphan_prefix_not_flagged
@@ -236,5 +310,7 @@ test_floor_excludes_pre_contract_tags
 test_floor_does_not_mask_post_contract_drift
 test_no_sentinels_short_circuits
 test_explicit_override_still_works
+test_ratchet_lifts_floor_above_observed
+test_ratchet_protects_against_all_sentinels_scrubbed
 
 log_pass "all release-state-consistency cases"

@@ -167,3 +167,10 @@ else
 fi
 
 log_info "release ${VERSION_TAG} on ${CHANNEL} is sealed"
+
+# Ratchet advance is intentionally NOT done here. The release-contract-floor
+# ratchet file (.ci/config/release-contract-floor.txt) is updated + committed
+# by cd-v2.yml's tag-and-release job ("Advance release-contract-floor
+# ratchet" step). That job already has the app-token + permissions to commit
+# to main; doing the advance there keeps the writer authoritative and avoids
+# split-brain between this script and cd-v2.

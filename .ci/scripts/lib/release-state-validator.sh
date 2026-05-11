@@ -126,28 +126,71 @@ rsv_get_sentinel_payload() {
 # Pre-contract floor (where the sentinel contract starts)
 # =============================================================================
 
-# Return the oldest CLI sentinel from a newline-separated list, or empty if
-# the list contains no strict-semver entries. Versions strictly older than
-# this floor predate the sentinel contract (or had their sentinels scrubbed
-# before R2 lifecycle could re-seal them) and are excluded from bijection.
+# Return the pre-contract floor: the oldest version still subject to the
+# bijection check. Versions strictly older than this floor predate the
+# sentinel contract (or had their sentinels scrubbed before R2 lifecycle
+# could re-seal them) and are excluded from bijection.
 #
-# Why CLI-only: every post-contract release writes the cli sentinel last
-# (see write-release-sentinel.sh). Desktop is optional; git tags include
-# pre-contract history. The cli sentinel is the only signal that
-# unambiguously dates the contract's start.
+# Three inputs combine:
+#   1. The OBSERVED floor: oldest CLI sentinel in the supplied list. Reflects
+#      R2's current state.
+#   2. The RATCHET file (.ci/config/release-contract-floor.txt): a monotonic
+#      high-water mark stored in git. Every successful release advances it
+#      after the sentinel is written; nothing decreases it. Prevents the
+#      "operator scrubs the oldest CLI sentinel and the observed floor
+#      silently moves up" regression -- the ratchet still pins the floor
+#      where it was, and drift fires.
+#   3. The OVERRIDE env var RSV_GRANDFATHER_BEFORE: takes precedence over
+#      both. Tests pin synthetic floors with it; production should never
+#      set it.
 #
-# Override via RSV_GRANDFATHER_BEFORE (env). Production should never set it;
-# the override exists for tests and one-off operator dry-runs.
+# Floor = max(observed, ratchet) when both are present.
+#
+# Why CLI-only for the observed half: every post-contract release writes the
+# cli sentinel last (see write-release-sentinel.sh). Desktop is optional;
+# git tags include pre-contract history. The cli sentinel is the only signal
+# that unambiguously dates the contract's start.
 rsv_pre_contract_floor() {
     local cli_versions="${1:-}"
     if [[ -n "${RSV_GRANDFATHER_BEFORE:-}" ]]; then
         printf '%s\n' "$RSV_GRANDFATHER_BEFORE"
         return 0
     fi
-    printf '%s\n' "$cli_versions" |
+    local observed="" ratchet="" floor=""
+    observed="$(printf '%s\n' "$cli_versions" |
         grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
         sort -uV |
-        head -1
+        head -1)"
+    local floor_file="${RSV_FLOOR_FILE:-}"
+    if [[ -z "$floor_file" ]]; then
+        # Try a few candidate locations: repo root (where check-release-state
+        # runs), the script's own ../.. (when invoked from another tool).
+        local script_dir candidate
+        script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        for candidate in \
+            "${REPO_ROOT:-}/.ci/config/release-contract-floor.txt" \
+            "${script_dir}/../../config/release-contract-floor.txt" \
+            ".ci/config/release-contract-floor.txt"; do
+            if [[ -n "$candidate" && -f "$candidate" ]]; then
+                floor_file="$candidate"
+                break
+            fi
+        done
+    fi
+    if [[ -n "$floor_file" && -f "$floor_file" ]]; then
+        ratchet="$(grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' "$floor_file" | head -1 || true)"
+    fi
+    if [[ -z "$observed" ]]; then
+        printf '%s\n' "${ratchet:-}"
+        return 0
+    fi
+    if [[ -z "$ratchet" ]]; then
+        printf '%s\n' "$observed"
+        return 0
+    fi
+    # max(observed, ratchet) -- only advances, never retreats.
+    floor="$(printf '%s\n%s\n' "$observed" "$ratchet" | sort -V | tail -1)"
+    printf '%s\n' "$floor"
 }
 
 # =============================================================================

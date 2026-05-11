@@ -327,19 +327,52 @@ module.exports = async ({ github, context, core }) => {
       return;
     }
 
+    // Distinguish stuck-job timeouts from normal cancellations. A cancelled
+    // job that ran longer than STUCK_THRESHOLD_MIN almost certainly hit its
+    // declared timeout-minutes (or GitHub's 6h default), not a manual /
+    // supersession / watchdog cancel -- those happen within minutes of the
+    // job starting. The classifier path treats all cancellations as
+    // potentially transient and auto-retries; that's how we ended up with
+    // a 4-hour debian-13 hang retried automatically before any human noticed.
+    // Stuck jobs go straight to force-cancel with no retry.
+    const STUCK_THRESHOLD_MIN = parseInt(process.env.STUCK_THRESHOLD_MIN || '60', 10);
+    const jobElapsedMin = (j) => {
+      if (!j.started_at || !j.completed_at) return 0;
+      return Math.round((new Date(j.completed_at) - new Date(j.started_at)) / 60000);
+    };
+    const stuckCancellations = cancelled.filter(j => jobElapsedMin(j) >= STUCK_THRESHOLD_MIN);
+    const normalCancellations = cancelled.filter(j => jobElapsedMin(j) < STUCK_THRESHOLD_MIN);
+
     // Unified failure + cancellation handling.
     // AI classifies the failure and decides: transient (retry + keep monitoring) or
-    // code-change (force-cancel everything). No independent/critical distinction needed.
-    const failedOrCancelled = [...failed, ...cancelled];
+    // code-change (force-cancel everything). Stuck cancellations bypass AI
+    // (a hung job will hang again on retry).
+    const failedOrCancelled = [...failed, ...normalCancellations, ...stuckCancellations];
 
     // Filter to only NEW failures (not already handled in a previous poll)
     const newFailures = failedOrCancelled.filter(j => !handledJobs.has(j.name));
 
     if (newFailures.length > 0) {
       const job = newFailures[0];
-      const reason = failed.includes(job) ? 'Job failed' : 'Job cancelled (likely timeout)';
+      const jobMin = jobElapsedMin(job);
+      const isStuck = stuckCancellations.includes(job);
+      const reason = failed.includes(job)
+        ? 'Job failed'
+        : isStuck
+          ? `Job stuck (ran ${jobMin}m before cancellation -- likely timeout-minutes expiry)`
+          : 'Job cancelled (likely manual / supersession)';
       const failureMsg = logFailure(job, reason, run.run_attempt);
       handledJobs.add(job.name);
+
+      // 0. Stuck cancellations bypass AI + retry entirely -- the job hung
+      // once, retrying would just hang again. Force-cancel and surface a
+      // loud annotation so the operator investigates the root cause.
+      if (isStuck) {
+        console.log(`"${job.name}" exceeded ${STUCK_THRESHOLD_MIN}m cancellation threshold -- treating as stuck, no retry`);
+        core.error(`Job '${job.name}' ran ${jobMin}m before cancellation, exceeding the ${STUCK_THRESHOLD_MIN}m stuck-threshold. The job's declared timeout-minutes (or GitHub's 6h default) likely expired. Investigate the underlying step before re-running.`);
+        await forceCancel(failureMsg);
+        return;
+      }
 
       // 1. No-retry jobs (Quality, Review Gate) -- fast fail, no AI
       if (noRetryPatterns.some(p => job.name.includes(p))) {

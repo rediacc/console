@@ -14,8 +14,8 @@ on:
   workflow_dispatch:
     inputs:
       ci_run_id:
-        description: 'CI workflow run ID to publish from'
-        required: true
+        description: 'CI workflow run ID to publish from (leave empty to auto-derive the latest green Console CI on main)'
+        required: false
         type: string
       release_mode:
         description: 'Release mode'
@@ -31,6 +31,10 @@ on:
         default: false
       deploy_workers_only:
         description: 'Deploy Workers only (skip version bump, CLI, Docker, Desktop, GitHub Release)'
+        type: boolean
+        default: false
+      allow_stale_ci_run_id:
+        description: 'Bypass the "ci_run_id must be the latest green CI on main" check. Use only for cherry-picking a specific prior CI run.'
         type: boolean
         default: false
 
@@ -87,8 +91,59 @@ jobs:
         id: resolve
         env:
           GH_TOKEN: ${{ github.token }}
+          INPUT_CI_RUN_ID: ${{ inputs.ci_run_id }}
+          ALLOW_STALE: ${{ inputs.allow_stale_ci_run_id }}
         run: |
-          CI_RUN_ID="${{ inputs.ci_run_id || github.run_id }}"
+          set -euo pipefail
+          # Determine the latest green Console CI run on main. This is the
+          # canonical artifact source. Auto-derived when ci_run_id is empty;
+          # otherwise we use it to validate the supplied value.
+          LATEST_GREEN_ID=$(gh api \
+            "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=main&status=success&per_page=1" \
+            --jq '.workflow_runs[0].id // empty')
+
+          if [[ -z "${INPUT_CI_RUN_ID}" ]]; then
+            if [[ -z "${LATEST_GREEN_ID}" ]]; then
+              echo "::error::No green Console CI run found on main. Cannot auto-derive ci_run_id; dispatch will not proceed."
+              exit 1
+            fi
+            CI_RUN_ID="${LATEST_GREEN_ID}"
+            echo "::notice::Auto-derived ci_run_id=${CI_RUN_ID} (latest green Console CI on main)."
+          else
+            CI_RUN_ID="${INPUT_CI_RUN_ID}"
+            # Fetch the run we were given and validate its branch + conclusion.
+            run_json="$(gh api "repos/${{ github.repository }}/actions/runs/${CI_RUN_ID}" 2>/dev/null || echo '{}')"
+            run_branch="$(echo "$run_json" | jq -r '.head_branch // ""')"
+            run_conclusion="$(echo "$run_json" | jq -r '.conclusion // ""')"
+            run_workflow="$(echo "$run_json" | jq -r '.name // ""')"
+
+            failed=false
+            if [[ "$run_branch" != "main" ]]; then
+              echo "::error::ci_run_id ${CI_RUN_ID} is on branch '${run_branch}', not 'main'."
+              failed=true
+            fi
+            if [[ "$run_conclusion" != "success" ]]; then
+              echo "::error::ci_run_id ${CI_RUN_ID} conclusion is '${run_conclusion}', not 'success'."
+              failed=true
+            fi
+            if [[ "$run_workflow" != "Console CI" ]]; then
+              echo "::error::ci_run_id ${CI_RUN_ID} is workflow '${run_workflow}', not 'Console CI'."
+              failed=true
+            fi
+            if [[ "$CI_RUN_ID" != "${LATEST_GREEN_ID}" ]]; then
+              if [[ "${ALLOW_STALE}" == "true" ]]; then
+                echo "::warning::ci_run_id ${CI_RUN_ID} is NOT the latest green CI (${LATEST_GREEN_ID}); allow_stale_ci_run_id is set, proceeding anyway. Artifacts may be older than current main."
+              else
+                echo "::error::ci_run_id ${CI_RUN_ID} is not the latest green Console CI on main (latest is ${LATEST_GREEN_ID}). Pass allow_stale_ci_run_id=true to override (e.g. cherry-picking a prior artifact)."
+                failed=true
+              fi
+            fi
+            if [[ "$failed" == "true" ]]; then
+              echo "::error::ci_run_id validation failed -- refusing to dispatch with stale or invalid artifacts."
+              exit 1
+            fi
+          fi
+
           CI_SHA=$(gh api "repos/${{ github.repository }}/actions/runs/${CI_RUN_ID}" --jq '.head_sha' 2>/dev/null || echo "${{ github.sha }}")
           echo "ci_run_id=${CI_RUN_ID}" >> $GITHUB_OUTPUT
           echo "ci_sha=${CI_SHA}" >> $GITHUB_OUTPUT
@@ -182,6 +237,58 @@ jobs:
             exit 1
           fi
           echo "Version v${VERSION} is available for publishing."
+
+      # Artifact-version assertion: catch the stale-ci_run_id foot-gun.
+      # If someone dispatches with a ci_run_id whose artifacts were built
+      # against a previous tag, our computed next_version (from current
+      # latest tag + bump) would NOT match the version baked into the
+      # artifacts. CD would then happily retag the OLD bytes with the NEW
+      # version label, and only Docker's runtime --version check would
+      # surface the mismatch hours later. This step fails loud + fast in
+      # the init job, before any registry mutation happens.
+      #
+      # Skipped in retry/workers-only modes: retry uses the latest tag's
+      # version (which the artifacts already match by definition); workers-
+      # only doesn't promote artifacts at all.
+      - name: Assert artifact version matches promotion target
+        if: >-
+          steps.skip-check.outputs.skip_release != 'true' &&
+          steps.skip-check.outputs.retry_mode != 'true' &&
+          steps.skip-check.outputs.workers_only != 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.init.outputs.next_version }}"
+          CI_RUN_ID="${{ steps.resolve.outputs.ci_run_id }}"
+          mkdir -p /tmp/cd-artifact-check
+          # The CLI manifest artifact is named "cli-manifest" by cd-stage.yml.
+          # Tolerate a missing artifact (e.g. older CI runs predating this
+          # check) by emitting a warning instead of failing -- once the
+          # check is established for a few cycles, harden to a hard fail.
+          if ! gh run download "$CI_RUN_ID" --repo "${{ github.repository }}" \
+                --name cli-manifest --dir /tmp/cd-artifact-check 2>/dev/null; then
+            echo "::warning::cli-manifest artifact not found on CI run ${CI_RUN_ID}; skipping artifact-version assertion. Re-run CI on the current main HEAD to produce the manifest."
+            exit 0
+          fi
+          if [[ ! -f /tmp/cd-artifact-check/manifest.json ]]; then
+            echo "::warning::cli-manifest artifact present but manifest.json missing; skipping assertion."
+            exit 0
+          fi
+          ARTIFACT_VERSION="$(jq -r '.version // empty' /tmp/cd-artifact-check/manifest.json)"
+          if [[ -z "$ARTIFACT_VERSION" ]]; then
+            echo "::warning::manifest.json has no .version field; skipping assertion."
+            exit 0
+          fi
+          # Normalise: artifact may or may not carry a leading v.
+          ARTIFACT_VERSION="${ARTIFACT_VERSION#v}"
+          if [[ "$ARTIFACT_VERSION" != "$VERSION" ]]; then
+            echo "::error::Artifact-version mismatch: CI run ${CI_RUN_ID} produced v${ARTIFACT_VERSION}, but CD is promoting as v${VERSION}."
+            echo "::error::This means ci_run_id is stale -- the artifacts were built before the latest tag bump."
+            echo "::error::Either dispatch again with no ci_run_id (auto-derive latest green CI on main), or re-run CI on current main to produce fresh artifacts."
+            exit 1
+          fi
+          echo "::notice::Artifact version v${ARTIFACT_VERSION} matches promotion target v${VERSION}."
 
   # ============================================================================
   # PUBLISH
@@ -476,8 +583,16 @@ jobs:
   deploy-marketing-edge:
     name: Deploy edge Marketing
     needs: [init, publish]
+    # Cannot use bare success() here: in workers_only mode `publish` is
+    # correctly skipped (its own `if:` gates on skip_release), and bare
+    # success() treats a skipped need as a failure -> this job silently
+    # skips too, defeating workers_only's whole purpose. Use explicit
+    # per-job result checks. See the deploy-marketing-stable pattern in
+    # commit c608e29a8 for the established shape.
     if: >-
-      success() &&
+      always() &&
+      needs.init.result == 'success' &&
+      (needs.publish.result == 'success' || needs.publish.result == 'skipped') &&
       needs.init.outputs.skip_release != 'true'
     uses: ./.github/workflows/cd-deploy-worker.yml
     with:
@@ -504,8 +619,11 @@ jobs:
   deploy-account-edge:
     name: Deploy edge Account (all regions)
     needs: [init, publish]
+    # See deploy-marketing-edge above for why we don't use bare success().
     if: >-
-      success() &&
+      always() &&
+      needs.init.result == 'success' &&
+      (needs.publish.result == 'success' || needs.publish.result == 'skipped') &&
       needs.init.outputs.skip_release != 'true'
     uses: ./.github/workflows/cd-deploy-account.yml
     with:
@@ -625,8 +743,15 @@ jobs:
     name: Smoke Test
     runs-on: ubuntu-slim
     needs: [init, publish, deploy-marketing-edge, deploy-account-edge]
+    # See deploy-marketing-edge above for why we don't use bare success().
+    # smoke-test must still run when publish is skipped (workers_only),
+    # because the workers themselves were redeployed and need verifying.
     if: >-
-      success() &&
+      always() &&
+      needs.init.result == 'success' &&
+      (needs.publish.result == 'success' || needs.publish.result == 'skipped') &&
+      needs.deploy-marketing-edge.result == 'success' &&
+      needs.deploy-account-edge.result == 'success' &&
       needs.init.outputs.skip_release != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -759,8 +884,16 @@ jobs:
   validate-install-published:
     name: Validate Install (post-publish)
     needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test]
+    # See deploy-marketing-edge above for why we don't use bare success().
+    # Workers-only already excluded by skip_release/workers_only checks; we
+    # still need explicit per-job result checks for the other needs.
     if: >-
-      success() &&
+      always() &&
+      needs.init.result == 'success' &&
+      needs.publish.result == 'success' &&
+      needs.deploy-marketing-edge.result == 'success' &&
+      needs.deploy-account-edge.result == 'success' &&
+      needs.smoke-test.result == 'success' &&
       needs.init.outputs.skip_release != 'true' &&
       needs.init.outputs.workers_only != 'true'
     uses: ./.github/workflows/ct-install-methods.yml
@@ -860,6 +993,49 @@ jobs:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
           GIT_BOT_NAME: ${{ vars.GIT_BOT_NAME }}
           GIT_BOT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
+
+      # Auto-advance the release-contract-floor ratchet to track the oldest
+      # cli sentinel currently on R2. The bijection check uses this as a
+      # high-water mark so an accidental scrub of every cli sentinel can't
+      # silently turn the gate into a no-op. The ratchet is monotonic: it
+      # only writes if the observed oldest is strictly greater than the
+      # value already in the file. Idempotent on retry/no-op runs.
+      - name: Advance release-contract-floor ratchet
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          GIT_BOT_NAME: ${{ vars.GIT_BOT_NAME }}
+          GIT_BOT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
+        run: |
+          set -euo pipefail
+          export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
+          export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+          export AWS_DEFAULT_REGION="auto"
+          source .ci/scripts/lib/release-state-validator.sh
+          FLOOR_FILE=".ci/config/release-contract-floor.txt"
+          if [[ ! -f "$FLOOR_FILE" ]]; then
+            echo "::warning::${FLOOR_FILE} not present; skipping ratchet advance"
+            exit 0
+          fi
+          current="$(grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' "$FLOOR_FILE" | head -1 || echo)"
+          oldest="$(rsv_list_sentinels cli | sort -uV | head -1 || echo)"
+          if [[ -z "$oldest" ]]; then
+            echo "::notice::no cli sentinels on R2; skipping ratchet advance"
+            exit 0
+          fi
+          newer="$(printf '%s\n%s\n' "${current:-v0.0.0}" "$oldest" | sort -V | tail -1)"
+          if [[ "$newer" == "${current:-v0.0.0}" ]]; then
+            echo "::notice::ratchet already at ${current:-<unset>} (>= observed ${oldest}); no change"
+            exit 0
+          fi
+          echo "::notice::advancing ratchet ${current:-<unset>} -> ${oldest}"
+          printf '%s\n' "$oldest" >"$FLOOR_FILE"
+          git config user.name "$GIT_BOT_NAME"
+          git config user.email "$GIT_BOT_EMAIL"
+          git add "$FLOOR_FILE"
+          git commit -m "chore(release-state): advance contract floor to ${oldest} [skip ci]"
+          git push origin HEAD:main
 
       - name: Create GitHub Release
         env:
