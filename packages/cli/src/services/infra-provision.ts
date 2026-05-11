@@ -8,6 +8,7 @@
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
+import { parentRepoName } from '@rediacc/shared-desktop/repository';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { t } from '../i18n/index.js';
 import type { InfraConfig } from '../types/index.js';
@@ -154,8 +155,7 @@ export async function ensureRepoDnsRecords(
 
   try {
     const zoneId = await resolveZoneId(client, infra.baseDomain, config.cfDnsZoneId);
-    const parentName = repoName.includes(':') ? repoName.split(':')[0] : repoName;
-    const wildcardName = `*.${parentName}.${machineName}.${infra.baseDomain}`;
+    const wildcardName = `*.${parentRepoName(repoName)}.${machineName}.${infra.baseDomain}`;
 
     const action = await client.ensureRecord(zoneId, 'A', wildcardName, infra.publicIPv4);
     logDnsAction(action, 'A', wildcardName, infra.publicIPv4);

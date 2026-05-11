@@ -3,6 +3,8 @@
  * Ported from desktop/src/cli/core/env_bootstrap.py and repository_env.py
  */
 
+import { repoTagFromName } from '../repository/repo-name.js';
+
 /**
  * Formats a dictionary of environment variables as bash export statements
  *
@@ -125,9 +127,7 @@ export function buildRepositoryEnvironment(options: {
 
   // For fork composite names like "gitlab:1", derive the tag from the suffix
   // so REDIACC_REPO_TAG matches what renet writes into .envrc on the machine.
-  const colonIdx = repositoryName.indexOf(':');
-  const derivedTag = colonIdx >= 0 ? repositoryName.slice(colonIdx + 1) : 'latest';
-  const resolvedTag = tag ?? derivedTag;
+  const resolvedTag = tag ?? repoTagFromName(repositoryName, 'latest');
 
   return {
     REDIACC_TEAM: teamName,

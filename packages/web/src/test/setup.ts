@@ -16,17 +16,21 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
-// Mock IntersectionObserver
+// Mock IntersectionObserver. Constructor signature matches the real API so
+// callers can pass (callback, options) without Sourcery flagging superfluous
+// args; the parameters are unused inside the mock.
 global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
+  constructor(_callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) {
+    void _callback;
+    void _options;
+  }
   disconnect() {}
   observe() {}
   takeRecords() {
     return [];
   }
   unobserve() {}
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-} as any;
+} as unknown as typeof IntersectionObserver;
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {

@@ -4,6 +4,7 @@
  */
 
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { repoTagFromName } from '@rediacc/shared-desktop/repository';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { debugLog } from '../utils/debug.js';
@@ -84,9 +85,7 @@ function buildRepositoryEnvFromVault(
     DEFAULTS.REPOSITORY.NETWORK_MODE) as string;
   // For fork composite names like "gitlab:1", derive the tag from the suffix
   // so REDIACC_REPO_TAG matches what renet writes into .envrc on the machine.
-  const colonIdx = repositoryName.indexOf(':');
-  const derivedTag = colonIdx >= 0 ? repositoryName.slice(colonIdx + 1) : DEFAULTS.REPOSITORY.TAG;
-  const tag = (repoVault.tag ?? derivedTag) as string;
+  const tag = (repoVault.tag ?? repoTagFromName(repositoryName, DEFAULTS.REPOSITORY.TAG)) as string;
   const immovable = repoVault.immovable ? 'true' : 'false';
   const workingDirectory = (repoVault.workingDirectory ?? repositoryPath) as string;
 

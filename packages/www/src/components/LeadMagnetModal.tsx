@@ -144,6 +144,11 @@ const LeadMagnetModal: React.FC = () => {
     setState('loading');
     setErrorMsg('');
 
+    // Open the tab synchronously inside the click handler so popup blockers
+    // honor the user-activation token. We point it to about:blank and rewrite
+    // the URL after the API responds. If the API errors we close the tab.
+    const pdfWindow = window.open('about:blank', '_blank', 'noopener,noreferrer');
+
     try {
       const res = await fetch(`${window.location.origin}/account/api/v1/newsletter/lead-magnet`, {
         method: 'POST',
@@ -162,11 +167,17 @@ const LeadMagnetModal: React.FC = () => {
         error?: string;
       } | null;
       if (!res.ok || !body?.pdfUrl) {
+        pdfWindow?.close();
         throw new Error(body?.error ?? t('pages.solutionPages.leadMagnetModal.errorGeneric'));
       }
 
-      // Open the PDF in a new tab immediately.
-      window.open(body.pdfUrl, '_blank', 'noopener,noreferrer');
+      // Route the pre-opened tab to the PDF; this keeps the popup-blocker
+      // happy because the open() call was inside the user-activation window.
+      if (pdfWindow) {
+        pdfWindow.location.href = body.pdfUrl;
+      } else {
+        window.open(body.pdfUrl, '_blank', 'noopener,noreferrer');
+      }
 
       const utm =
         (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
@@ -184,6 +195,7 @@ const LeadMagnetModal: React.FC = () => {
       setTurnstileToken(null);
       autoCloseTimer.current = window.setTimeout(close, AUTO_CLOSE_MS);
     } catch (err) {
+      pdfWindow?.close();
       setState('error');
       setErrorMsg(
         err instanceof Error ? err.message : t('pages.solutionPages.leadMagnetModal.errorGeneric')

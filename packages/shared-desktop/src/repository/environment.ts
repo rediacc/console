@@ -7,6 +7,7 @@
  */
 
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { repoTagFromName } from './repo-name.js';
 
 /**
  * Full repository environment matching Python's 18+ variables
@@ -110,9 +111,7 @@ export function buildRepositoryEnvironment(
     repositoryVault.networkMode ?? machineVault.networkMode ?? DEFAULTS.REPOSITORY.NETWORK_MODE;
   // For fork composite names like "gitlab:1", derive the tag from the suffix
   // so REDIACC_REPO_TAG matches what renet writes into .envrc on the machine.
-  const colonIdx = repositoryName.indexOf(':');
-  const derivedTag = colonIdx >= 0 ? repositoryName.slice(colonIdx + 1) : DEFAULTS.REPOSITORY.TAG;
-  const tag = repositoryVault.tag ?? derivedTag;
+  const tag = repositoryVault.tag ?? repoTagFromName(repositoryName, DEFAULTS.REPOSITORY.TAG);
   const immovable = repositoryVault.immovable ? 'true' : 'false';
 
   // Docker socket handling - uses networkId directly for Python compatibility

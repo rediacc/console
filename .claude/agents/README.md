@@ -1,4 +1,4 @@
-# PDF rewrite pipeline — agent team
+# PDF rewrite pipeline: agent team
 
 A four-subagent team that processes Rediacc growth PDF source markdowns:
 
@@ -57,7 +57,7 @@ The Lead will:
 
 1. Spawn `pdf-cut-auditor` with the source path. It reads the playbooks and emits a cut list.
 2. Show you the cut list. You approve, redirect, or ask for changes.
-3. Spawn `pdf-rewriter` twice — once for `cto`, once for `exec` — passing the audience flag in each invocation prompt.
+3. Spawn `pdf-rewriter` twice: once for `cto`, once for `exec`: passing the audience flag in each invocation prompt.
 4. After each variant is written, spawn `pdf-reader` and `pdf-verifier` in parallel against that variant.
 5. Direct-message the Rewriter with consolidated revision asks if either reviewer fails.
 6. Loop until both gates pass and the rubric score is ≥ 8.
@@ -68,7 +68,7 @@ The Lead will:
 Subagents don't take structured arguments. The Lead passes the audience in the natural-language prompt to the Rewriter, Reader, and Verifier:
 
 ```
-@pdf-rewriter audience=exec — rewrite the approved cut list of
+@pdf-rewriter audience=exec: rewrite the approved cut list of
 private/growth/dist/ransomware-survival-a4/ransomware-survival.md into
 private/growth/dist/ransomware-survival-exec/ransomware-survival.md.
 Follow the exec-edition playbook.
@@ -85,9 +85,9 @@ If you want to skip plan approval for a known-good deck (e.g., re-running after 
 ## When a deck fails
 
 - **Cut Auditor produces a bad cut list.** Edit the list manually, tell the Rewriter to use the edited version, or re-run the auditor with a clarification prompt.
-- **Rewriter drifts from voice.** Direct-message it with the specific deviation (e.g., "slide 7 reads salesy — that's what we're trying to remove"). It will revise.
+- **Rewriter drifts from voice.** Direct-message it with the specific deviation (e.g., "slide 7 reads salesy: that's what we're trying to remove"). It will revise.
 - **Verifier fails gate 4 (reading level) on exec.** Rewriter rewrites the failing slides with shorter sentences and the analogy bank. Repeat until grade ≤ 7.5.
-- **Verifier fails gate 7 (rubric) below 8.** Rewriter applies the specific revision asks. Don't ship under 8 — the per-deck checklists set that as the minimum for solution-page-grade content.
+- **Verifier fails gate 7 (rubric) below 8.** Rewriter applies the specific revision asks. Don't ship under 8: the per-deck checklists set that as the minimum for solution-page-grade content.
 - **Reader fails too many slides.** May indicate the cut list was wrong, not the rewrite. Escalate to the Lead for a re-audit.
 
 ## Reusability across the 26+ decks

@@ -54,7 +54,7 @@ const { t } = createTranslator(lang);
       <button
         type="button"
         class="sp-problem-illustration sp-illustration-trigger"
-        aria-label={t('common.aria.clickToEnlarge')}
+        aria-label={`${t('common.aria.clickToEnlarge')}: ${illustrationAlt || problem.title}`}
         data-track="cta_click"
         data-track-label="sp-problem-illustration"
         data-track-dest="modal"

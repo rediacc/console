@@ -2515,8 +2515,7 @@ button.sp-illustration-trigger:focus-visible {
 /* Dark-mode token redefinition, scoped to OUR components so they work both
    inside .sp-page (solution pages) and inside .resource-brief-page. */
 :root[data-theme='dark'] .sp-download-gated-wrapper,
-:root[data-theme='dark'] .sp-download-short,
-:root[data-theme='dark'] .sp-download-gated {
+:root[data-theme='dark'] .sp-download-short {
   --sp-bg-light: #141416;
   --sp-bg-white: #1a1a1b;
   --sp-text-primary: #e4e4e7;
@@ -2525,8 +2524,7 @@ button.sp-illustration-trigger:focus-visible {
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) .sp-download-gated-wrapper,
-  :root:not([data-theme]) .sp-download-short,
-  :root:not([data-theme]) .sp-download-gated {
+  :root:not([data-theme]) .sp-download-short {
     --sp-bg-light: #141416;
     --sp-bg-white: #1a1a1b;
     --sp-text-primary: #e4e4e7;
@@ -2535,15 +2533,16 @@ button.sp-illustration-trigger:focus-visible {
   }
 }
 
-/* Section wrapper: full-width light/dark band. */
+/* Section wrapper: full-width light/dark band. The gated wrapper only renders
+   the LeadMagnetButton trigger; the actual form lives in LeadMagnetModal.tsx
+   and is styled by lead-magnet-modal.css. */
 .sp-download-gated-wrapper,
 .sp-download-short {
   padding: 56px 20px 56px;
   background: var(--sp-bg-light, #fafafa);
 }
 
-/* Card container: solid surface, constrained width, same on both variants. */
-.sp-download-gated,
+/* Card container for the short variant only. */
 .sp-download-short__card {
   position: relative;
   max-width: 560px;
@@ -2556,44 +2555,7 @@ button.sp-illustration-trigger:focus-visible {
   color: var(--sp-text-primary, #1a1a1a);
 }
 
-/* Resource-page hero variant: same card on a dark hero. */
-.sp-download-gated--always {
-  max-width: 560px;
-}
-
-/* Success state for the gated form. */
-.sp-download-gated--success {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-.sp-download-gated__check {
-  width: 40px;
-  height: 40px;
-  color: var(--sp-brand-primary, #4a7c3f);
-}
-
-/* Dismiss (close) — only on scroll-triggered variant. */
-.sp-download-gated__close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: transparent;
-  border: 0;
-  color: var(--sp-text-muted-light, #6b6b70);
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
-  line-height: 0;
-}
-.sp-download-gated__close:hover {
-  color: var(--sp-text-primary, #1a1a1a);
-  background: var(--sp-border-light, rgba(0, 0, 0, 0.04));
-}
-
-/* Titles + descriptions — unified across both variants. */
-.sp-download-gated__title,
+/* Title + description for the short variant. */
 .sp-download-short__title {
   font-size: 22px;
   line-height: 1.3;
@@ -2601,7 +2563,6 @@ button.sp-illustration-trigger:focus-visible {
   color: var(--sp-text-primary, #1a1a1a);
   font-weight: 700;
 }
-.sp-download-gated__description,
 .sp-download-short__description {
   font-size: 15px;
   line-height: 1.6;
@@ -2609,39 +2570,7 @@ button.sp-illustration-trigger:focus-visible {
   color: var(--sp-text-body, #4a4a4f);
 }
 
-/* Gated form. */
-.sp-download-gated__form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: stretch;
-}
-.sp-download-gated__input-group {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.sp-download-gated__input {
-  flex: 1 1 220px;
-  min-width: 0;
-  padding: 12px 14px;
-  border: 1px solid var(--sp-border-light, #e5e5e5);
-  border-radius: 6px;
-  background: var(--sp-bg-white, #ffffff);
-  color: var(--sp-text-primary, #1a1a1a);
-  font-size: 15px;
-}
-.sp-download-gated__input::placeholder {
-  color: var(--sp-text-muted-light, #6b6b70);
-}
-.sp-download-gated__input:focus {
-  outline: 2px solid var(--sp-brand-primary, #4a7c3f);
-  outline-offset: -1px;
-  border-color: var(--sp-brand-primary, #4a7c3f);
-}
-
-/* Submit + short-form button — identical olive green pill. */
-.sp-download-gated__submit,
+/* Short-form button: olive green pill. */
 .sp-download-short__button {
   display: inline-flex;
   align-items: center;
@@ -2649,7 +2578,7 @@ button.sp-illustration-trigger:focus-visible {
   gap: 8px;
   padding: 12px 22px;
   background: var(--sp-brand-primary, #4a7c3f);
-  color: #fff; /* white on brand green stays white in both themes */
+  color: #fff;
   border: 0;
   border-radius: 8px;
   font-size: 15px;
@@ -2658,62 +2587,22 @@ button.sp-illustration-trigger:focus-visible {
   text-decoration: none;
   transition: background-color 0.15s;
 }
-.sp-download-gated__submit:hover:not(:disabled),
 .sp-download-short__button:hover {
   background: var(--sp-brand-secondary, #3d6834);
-}
-.sp-download-gated__submit:disabled {
-  opacity: 0.6;
-  cursor: wait;
 }
 .sp-download-short__button svg {
   stroke: currentColor;
 }
 
-.sp-download-gated__error {
-  font-size: 13px;
-  /* Red works on both themes; tuned slightly lighter for dark mode below. */
-  color: #b91c1c;
-  margin: 0;
-  text-align: left;
-}
-:root[data-theme='dark'] .sp-download-gated__error {
-  color: #fca5a5;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) .sp-download-gated__error {
-    color: #fca5a5;
-  }
-}
-
-.sp-download-gated__turnstile {
-  margin-top: 4px;
-  align-self: center;
-}
-
-.sp-download-gated__disclaimer {
-  font-size: 12px;
-  color: var(--sp-text-muted-light, #6b6b70);
-  margin: 4px 0 0;
-}
-
-/* Mobile breakpoint: stack input + submit. */
+/* Mobile breakpoint. */
 @media (max-width: 600px) {
   .sp-download-gated-wrapper,
   .sp-download-short {
     padding: 40px 16px;
   }
-  .sp-download-gated,
   .sp-download-short__card {
     padding: 24px 20px;
   }
-  .sp-download-gated__input-group {
-    flex-direction: column;
-  }
-  .sp-download-gated__submit {
-    width: 100%;
-  }
-  .sp-download-gated__title,
   .sp-download-short__title {
     font-size: 19px;
   }
