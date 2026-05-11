@@ -102,7 +102,14 @@ done < <(find "${SCAN_DIRS[@]/#/$REPO_ROOT/}" -type f -name '*.sh' -print0 2>/de
 
 # Capture findings from the awk pass (the loop above streamed to stdout;
 # re-run once into an array so we can format the final report).
-mapfile -t findings < <(
+# Use a plain `while read` loop instead of mapfile -- mapfile is bash 4+
+# only and breaks macOS / minimal-CI shells. .ci/scripts/security/check-commands.sh
+# specifically forbids mapfile across the suite.
+findings=()
+while IFS= read -r finding_line; do
+    [[ -z "$finding_line" ]] && continue
+    findings+=("$finding_line")
+done < <(
     while IFS= read -r -d '' file; do
         if ! grep -qE '^set [+\-]([euo]*pipefail|euo +pipefail|e |eu |eo |euo)' "$file"; then
             continue
@@ -130,8 +137,7 @@ mapfile -t findings < <(
                 }
             }
         ' "$file"
-    done < <(find "${SCAN_DIRS[@]/#/$REPO_ROOT/}" -type f -name '*.sh' -print0 2>/dev/null) |
-        tr '\n' '\0'
+    done < <(find "${SCAN_DIRS[@]/#/$REPO_ROOT/}" -type f -name '*.sh' -print0 2>/dev/null)
 )
 
 if [[ ${#findings[@]} -eq 0 ]]; then
