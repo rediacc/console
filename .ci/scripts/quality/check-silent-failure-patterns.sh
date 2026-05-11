@@ -130,8 +130,8 @@ mapfile -t findings < <(
                 }
             }
         ' "$file"
-    done < <(find "${SCAN_DIRS[@]/#/$REPO_ROOT/}" -type f -name '*.sh' -print0 2>/dev/null) \
-    | tr '\n' '\0'
+    done < <(find "${SCAN_DIRS[@]/#/$REPO_ROOT/}" -type f -name '*.sh' -print0 2>/dev/null) |
+        tr '\n' '\0'
 )
 
 if [[ ${#findings[@]} -eq 0 ]]; then

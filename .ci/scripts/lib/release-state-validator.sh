@@ -244,7 +244,10 @@ rsv_assert_bijection() {
         while IFS= read -r v; do
             [[ -z "$v" ]] && continue
             # Keep v iff v sorts equal-or-after floor.
-            [[ "$v" == "$floor" ]] && { printf '%s\n' "$v"; continue; }
+            [[ "$v" == "$floor" ]] && {
+                printf '%s\n' "$v"
+                continue
+            }
             oldest="$(printf '%s\n%s\n' "$floor" "$v" | sort -V | head -1)"
             [[ "$oldest" == "$floor" ]] && printf '%s\n' "$v"
         done <<<"$input"
