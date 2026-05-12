@@ -1,0 +1,232 @@
+---
+/**
+ * Shared template for the six "deck brief" resource pages.
+ *
+ * Pages: /resources/{ransomware-survival-brief, dev-environments-brief,
+ *   encryption-control-brief, multi-cloud-always-brief,
+ *   preemptive-defense-brief, verified-backups-brief}.
+ *
+ * Each page is a thin wrapper around this component with three props:
+ *   - lang (locale)
+ *   - category (SolutionCategory) — drives PDF lookup + companions
+ *   - deckKey (i18n content key under pages.resourcesBrief.<deckKey>)
+ *
+ * The hero offers an email-gated download (-cto variant) via the same
+ * SPDownloadGatedIsland React component used at 30% scroll on solution
+ * pages, configured with `alwaysVisible` so it shows without scrolling.
+ * The footer offers the same short-form direct download (-exec variant)
+ * as the solution-page SPDownloadShort.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { createTranslator } from '../../i18n/utils';
+import type { Language } from '../../i18n/types';
+import { SOLUTION_PAGES, type SolutionCategory } from '../../config/solution-pages';
+import { categoryToPdfPair, magnetNameFor } from '../solution-pages/category-pdf-map';
+import LeadMagnetButton from '../solution-pages/LeadMagnetButton.tsx';
+// PDF-CTA styles live in solution-pages.css (inline card) and
+// lead-magnet-modal.css (button + modal). Both are imported here so the
+// resource page surfaces look identical to the solution-page surfaces.
+import '../../styles/solution-pages.css';
+import '../../styles/lead-magnet-modal.css';
+
+interface Props {
+  lang: Language;
+  category: SolutionCategory;
+  /** Content key under pages.resourcesBrief — e.g. "ransomwareSurvival". */
+  deckKey: string;
+}
+
+const { lang, category, deckKey } = Astro.props;
+const { t, ta } = createTranslator(lang);
+const ns = `pages.resourcesBrief.${deckKey}`;
+
+const pair = categoryToPdfPair[category];
+const shortPdfUrl = `/assets/${pair.execPdf}`;
+const fullMagnetName = magnetNameFor(category, 'cto');
+const source = `resource-${pair.resourceSlug}`;
+
+// Companions: list every solution page that shares this category, excluding
+// the current resource page itself.
+const companions = Object.entries(SOLUTION_PAGES)
+  .filter(([, cfg]) => cfg.category === category)
+  .map(([slug, cfg]) => ({
+    slug,
+    href: `/${lang}/solutions/${slug}`,
+    title: t(`pages.solutionPages.${cfg.contentKey}.hero.title`),
+    subtitle: t(`pages.solutionPages.${cfg.contentKey}.hero.subtitle`),
+  }));
+
+const toc = ta(`${ns}.toc.items`) as string[];
+const faqs = ta(`${ns}.faq.items`) as unknown as Array<{ q: string; a: string }>;
+---
+
+<BaseLayout
+  lang={lang}
+  title={t(`${ns}.meta.title`)}
+  description={t(`${ns}.meta.description`)}
+  keywords={t(`${ns}.meta.keywords`)}
+  ogType="article"
+  structuredDataType="techarticle"
+>
+  <article class="resource-brief-page">
+    <section class="resource-brief-hero section-dark">
+      <div class="container">
+        <p class="resource-brief-eyebrow">{t(`${ns}.hero.eyebrow`)}</p>
+        <h1 class="resource-brief-title">{t(`${ns}.hero.title`)}</h1>
+        <p class="resource-brief-subtitle">{t(`${ns}.hero.subtitle`)}</p>
+        <div class="resource-brief-form-slot">
+          <LeadMagnetButton
+            client:idle
+            magnetName={fullMagnetName}
+            source={source}
+          />
+        </div>
+        <p class="resource-brief-disclaimer">{t(`${ns}.hero.disclaimer`)}</p>
+      </div>
+    </section>
+
+    <section class="resource-brief-toc section-light">
+      <div class="container">
+        <h2>{t(`${ns}.toc.heading`)}</h2>
+        <p class="resource-brief-toc-intro">{t(`${ns}.toc.intro`)}</p>
+        <ol class="resource-brief-toc-list">
+          {toc.map((item) => <li>{item}</li>)}
+        </ol>
+      </div>
+    </section>
+
+    {companions.length > 0 && (
+      <section class="resource-brief-companions section-dark">
+        <div class="container">
+          <h2>{t(`${ns}.companions.heading`)}</h2>
+          <p class="resource-brief-companions-intro">{t(`${ns}.companions.intro`)}</p>
+          <div class="resource-brief-companion-grid">
+            {companions.map((c) => (
+              <a class="resource-brief-companion-card" href={c.href}>
+                <h3>{c.title}</h3>
+                <p>{c.subtitle}</p>
+                <span class="resource-brief-companion-link">
+                  {t(`${ns}.companions.readMore`)}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <section class="resource-brief-faq section-light">
+      <div class="container">
+        <h2>{t(`${ns}.faq.heading`)}</h2>
+        <div class="resource-brief-faq-list">
+          {faqs.map((f) => (
+            <details class="resource-brief-faq-item">
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="resource-brief-about section-dark">
+      <div class="container">
+        <h2>{t(`${ns}.about.heading`)}</h2>
+        <p>{t(`${ns}.about.body`)}</p>
+        <p class="resource-brief-about-cta">{t(`${ns}.about.cta`)}</p>
+        <a
+          class="resource-brief-short-link"
+          href={shortPdfUrl}
+          download={pair.execPdf}
+          data-track="cta_click"
+          data-track-label={`resource-${pair.resourceSlug}-short`}
+        >
+          {t('pages.solutionPages.downloadShort.buttonLabel')}
+        </a>
+      </div>
+    </section>
+  </article>
+</BaseLayout>
+
+<style>
+  .resource-brief-page { --rb-accent: #4a7c3f; }
+
+  .resource-brief-hero { padding: 80px 0 64px; text-align: center; }
+  .resource-brief-hero .container { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+  .resource-brief-eyebrow {
+    display: inline-block;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--rb-accent);
+    margin-bottom: 16px;
+  }
+  .resource-brief-title { font-size: clamp(28px, 4vw, 40px); margin: 0 0 18px; line-height: 1.2; }
+  .resource-brief-subtitle { font-size: 17px; line-height: 1.6; opacity: 0.85; margin: 0 auto 28px; max-width: 640px; }
+  .resource-brief-form-slot { margin: 0 auto 12px; max-width: 480px; }
+  .resource-brief-disclaimer { font-size: 13px; opacity: 0.55; margin-top: 6px; }
+
+  .resource-brief-toc { padding: 64px 0; }
+  .resource-brief-toc .container { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+  .resource-brief-toc h2 { font-size: 26px; margin: 0 0 12px; }
+  .resource-brief-toc-intro { font-size: 15px; opacity: 0.75; margin: 0 0 24px; }
+  .resource-brief-toc-list {
+    columns: 2;
+    column-gap: 32px;
+    padding-left: 24px;
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+  @media (max-width: 600px) { .resource-brief-toc-list { columns: 1; } }
+
+  .resource-brief-companions { padding: 64px 0; }
+  .resource-brief-companions .container { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  .resource-brief-companions h2 { font-size: 26px; margin: 0 0 12px; text-align: center; }
+  .resource-brief-companions-intro { text-align: center; font-size: 15px; opacity: 0.75; max-width: 600px; margin: 0 auto 36px; }
+  .resource-brief-companion-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .resource-brief-companion-card {
+    display: block;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .resource-brief-companion-card:hover { border-color: var(--rb-accent); transform: translateY(-2px); }
+  .resource-brief-companion-card h3 { font-size: 17px; margin: 0 0 10px; color: var(--rb-accent); }
+  .resource-brief-companion-card p { font-size: 14px; line-height: 1.55; opacity: 0.85; margin: 0 0 14px; }
+  .resource-brief-companion-link { font-size: 13px; color: var(--rb-accent); }
+
+  .resource-brief-faq { padding: 64px 0; }
+  .resource-brief-faq .container { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+  .resource-brief-faq h2 { font-size: 26px; margin: 0 0 24px; }
+  .resource-brief-faq-list { display: flex; flex-direction: column; gap: 10px; }
+  .resource-brief-faq-item {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 6px;
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .resource-brief-faq-item summary { cursor: pointer; font-weight: 600; font-size: 15px; }
+  .resource-brief-faq-item[open] summary { margin-bottom: 10px; }
+  .resource-brief-faq-item p { font-size: 14px; line-height: 1.65; margin: 0; opacity: 0.85; }
+
+  .resource-brief-about { padding: 64px 0; text-align: center; }
+  .resource-brief-about .container { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+  .resource-brief-about h2 { font-size: 24px; margin: 0 0 18px; }
+  .resource-brief-about p { font-size: 15px; line-height: 1.7; margin: 0 0 18px; opacity: 0.85; }
+  .resource-brief-about-cta { font-style: italic; }
+  .resource-brief-short-link {
+    display: inline-block;
+    margin-top: 8px;
+    color: var(--rb-accent);
+    text-decoration: none;
+    border-bottom: 1px solid currentColor;
+    padding-bottom: 2px;
+    font-size: 15px;
+  }
+  .resource-brief-short-link:hover { opacity: 0.85; }
+</style>

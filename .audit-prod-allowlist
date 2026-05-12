@@ -169,3 +169,19 @@
 # Two transitive paths: (a) @modelcontextprotocol/sdk -> express-rate-limit -> ip-address, and (b) electron-builder -> @electron/rebuild -> ... -> socks -> ip-address. Both are server-side / build-tool consumers that parse IP strings; neither calls the Address6 HTML-emitting methods (toRFC5952String/toLink/etc) that the advisory targets.
 # BLOCKER: transitive prod dep used only for IP parsing in MCP rate-limit middleware and electron-builder's npm fetch path; the vulnerable HTML-emitting methods are never called and we never render Address6 output to a browser
 1117683
+
+# @opentelemetry/exporter-prometheus + @opentelemetry/sdk-node Prometheus HTTP listener crash
+# (GHSA-q7rr-3cgh-j5r3; affects exporter-prometheus shipped with sdk-node 0.x)
+# Fixed upstream in exporter-prometheus >= 0.220.x, which in turn requires the whole
+# OpenTelemetry stack to move past 0.220. The .syncpackrc.json holds sdk-node and
+# every paired exporter/instrumentation package pinned at ^0.211.0 across all
+# workspaces for compatible runtime semantics; bumping just one package leaves npm
+# with duplicate otel installs that syncpack's sameRange highestSemver group rejects.
+# Importantly, we never start the Prometheus HTTP scrape endpoint: telemetry leaves
+# every workspace via OTLP HTTP exporters to our collector, not via the Prometheus
+# pull endpoint. The malformed-request DoS lives only inside the HTTP listener code
+# path that we do not enable, so the advisory is not reachable from any deployed
+# surface at runtime.
+# BLOCKER: transitive via pinned @opentelemetry/sdk-node ^0.211.0; the vulnerable Prometheus HTTP listener is never started in our config (OTLP-only egress), so the malformed-request DoS is structurally unreachable; revisit when the syncpack OpenTelemetry pin advances past 0.220
+1117942
+1117943

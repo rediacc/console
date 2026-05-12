@@ -85,6 +85,11 @@ export const SLIDER_CONFIGS: Record<string, SliderConfig[]> = {
     { id: 'hours', min: 8, max: 200, defaultValue: 60 },
     { id: 'servers', min: 1, max: 100, defaultValue: 15 },
   ],
+  'data-sovereignty': [
+    { id: 'records', min: 10, max: 10000, step: 10, defaultValue: 500 },
+    { id: 'spend', min: 50, max: 5000, step: 10, defaultValue: 500 },
+    { id: 'recoveryHours', min: 8, max: 200, step: 4, defaultValue: 40 },
+  ],
   'rapid-recovery': [
     { id: 'rev', min: 1000, max: 50000, step: 1000, defaultValue: 5000 },
     { id: 'hours', min: 1, max: 168, defaultValue: 72 },

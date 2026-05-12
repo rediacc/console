@@ -3759,6 +3759,21 @@
       "title": "Rediacc kuruluşunuza ne kadar tasarruf sağlayabilir?"
     },
     "solutionPages": {
+      "downloadGated": {
+        "title": "Teknik özeti edinin",
+        "description": "CISO'lar, CTO'lar ve kıdemli mühendisler için yazılmış, gereksiz ayrıntılardan arındırılmış bir PDF. E-posta adresinizi bırakın, indirme bağlantısını ve tek sayfalık özeti posta kutunuza gönderelim.",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "Özeti bana gönder",
+        "successMessage": "Onaylamak için gelen kutunuzu kontrol edin. PDF'yi ayrıca yeni bir sekmede de açtık.",
+        "errorMessage": "Bir sorun oluştu. Lütfen tekrar deneyin ya da support@rediacc.com adresinden bize ulaşın.",
+        "disclaimer": "Tek e-posta. Pazarlama listesi yok. Tek tıkla abonelik iptali.",
+        "dismissLabel": "Kapat"
+      },
+      "downloadShort": {
+        "title": "Zamanınız mı kısıtlı?",
+        "description": "Derinlemesine okumayı atlayın. Ekibinizin ayakta toplantıda okuyabileceği beş dakikalık versiyonu indirin.",
+        "buttonLabel": "Kısa özeti indir (PDF)"
+      },
       "aiPentesting": {
         "benefits": {
           "items": [
@@ -10480,6 +10495,478 @@
           ]
         }
       },
+      "dataSovereignty": {
+        "meta": {
+          "title": "Veri Egemenliği: Mimari Düzeyde Egemen Yedekleme",
+          "description": "Sunucuyu siz barındırır, anahtarları siz tutarsınız. CLOUD Act koruması mimari güvenceyle sağlanır. Müşteri anahtarlı öz barındırmalı yedekleme.",
+          "keywords": "veri egemenliği, CLOUD Act bağışıklığı, müşteriye ait anahtarlar, GDPR Schrems II, AB Veri Yasası, kendi barındırma, egemen yedekleme, SecNumCloud, DORA"
+        },
+        "hero": {
+          "badge": "ŞİFRELEME KONTROLÜ",
+          "title": "Sertifikayla değil, mimariyle egemen.",
+          "subtitle": "Siz barındırırsınız. Anahtarlar sizdedir. ABD yargı yetkisindeki hiçbir sağlayıcı, elinde olmayan şeyi teslim etmeye zorlanamaz.",
+          "differentiator": "Her büyük bulut sağlayıcısı egemenlik pazarlar. Hiçbiri verilerinizin ABD mahkeme kararlarının dışında kalacağını garanti edemez. Rediacc edebilir.",
+          "primaryCta": "Community ile Ücretsiz Başlayın",
+          "secondaryCta": "Egemenlik özelliklerini görün →"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "text": "rdc audit log --limit 50"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "comment",
+              "text": "Tüm depolar için anahtar saklama zinciri inceleniyor..."
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "table-header",
+              "text": "ANAHTAR ID              MUHAFAZA      HSM          EMANET      YETKİ ALANI"
+            },
+            {
+              "type": "table-row",
+              "text": "prod-main-v3            müşteri       YubiHSM 2    NO          müşteri-sahası"
+            },
+            {
+              "type": "table-row",
+              "text": "prod-db-v2              müşteri       YubiHSM 2    NO          müşteri-sahası"
+            },
+            {
+              "type": "table-row",
+              "text": "staging-main-v1         müşteri       software     NO          müşteri-sahası"
+            },
+            {
+              "type": "table-row",
+              "text": "backup-archive-v4       müşteri       YubiHSM 2    NO          müşteri-sahası"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "summary",
+              "text": "Anahtarlar: 4   Muhafaza: 100% müşteri   Emanet: 0   ABD-erişimi: 0   İmzalandı: 2026-05-11T09:14:33Z"
+            }
+          ]
+        },
+        "stats": [
+          {
+            "number": "0",
+            "label": "Herhangi bir sağlayıcıya emanet edilen anahtar",
+            "icon": "key"
+          },
+          {
+            "number": "%100",
+            "label": "Müşteri anahtar saklaması",
+            "icon": "lock"
+          },
+          {
+            "number": "Yalnızca AB",
+            "label": "Operatör yargı yetkisi",
+            "icon": "globe"
+          }
+        ],
+        "problem": {
+          "overline": "SORUN",
+          "title": "Bulut sağlayıcınız verilerinizi teslim edebilir. Siz haberdar bile olmayacaksınız.",
+          "description": "ABD yargı yetkisindeki bulut sağlayıcıları, veriler AB veri merkezlerinde depolanmış olsa bile CLOUD Act kararlarına uymak zorundadır. Sözleşmeden doğan taahhütler ABD mevzuatının önüne geçemez. Soru, sağlayıcınızın bunu yapıp yapmayacağı değildir. Soru, bunu yasal olarak yapıp yapamayacağıdır.",
+          "statCallouts": [
+            {
+              "number": "\"Hayır, garanti edemem\"",
+              "source": "Fransız Senatosu, 18 Haziran 2025",
+              "ref": 1,
+              "text": "Microsoft Fransa Kamu ve Hukuk İşleri Direktörü (Anton Carniaux, \"Non, je ne peux pas le garantir\"), yemin altında: AB Microsoft veri merkezlerindeki Fransız vatandaşlarının verilerinin ABD makamlarından korunup korunmayacağı sorusu üzerine"
+            },
+            {
+              "number": "€12,6 Milyar",
+              "source": "Gartner, Şubat 2026",
+              "ref": 2,
+              "text": "2026'da AB egemen bulut IaaS harcaması; 2027'de €23,1 Milyar'a yükselecek. Piyasa, egemenliğin isteğe bağlı olmadığına karar verdi."
+            },
+            {
+              "number": "0 ABD birincil yüklenicisi",
+              "source": "Avrupa Komisyonu, 17 Nisan 2026",
+              "ref": 3,
+              "text": "Cloud III: Avrupa Komisyonu'nun €180 Milyon değerindeki egemen bulut ihalesi dört AB konsorsiyumuna verildi. Hiçbir ABD merkezli birincil yüklenici yok."
+            }
+          ],
+          "timeline": {
+            "oldLabel": "ESKİ YOL",
+            "oldSteps": [
+              {
+                "day": "1. Gün",
+                "text": "ABD yargı yetkisindeki bulut sağlayıcısıyla sözleşme imzalama"
+              },
+              {
+                "day": "1. Ay",
+                "text": "VKY, GDPR aktarım riskini işaretler; TİA gerekli"
+              },
+              {
+                "day": "3. Ay",
+                "text": "Hukuk, CLOUD Act maruziyetini inceler; garanti verilemiyor"
+              },
+              {
+                "day": "6. Ay",
+                "text": "Düzenleyici denetimi; veri yerleşimi onaylanıyor, egemenlik değil"
+              },
+              {
+                "day": "Sonuç",
+                "text": "Yerleşim, egemenlik değil. Uyum açığı devam ediyor."
+              }
+            ],
+            "newLabel": "REDİACC İLE",
+            "newSteps": [
+              "Kendi altyapınızda barındırın",
+              "Anahtarlarınızı kendiniz saklayın",
+              "CLOUD Act size ulaşamaz"
+            ]
+          }
+        },
+        "calculator": {
+          "overline": "GERÇEK MALİYET",
+          "title": "ABD yargı yetkisi maruziyeti size ne kadara mal oluyor?",
+          "description": "Ortamınıza uygun değerleri ayarlayın. Egemenlik açıklarının gerçek maliyetini görün.",
+          "headerTitle": "Egemenlik maruziyeti hesaplayıcısı",
+          "sliders": {
+            "records": "AB kişisel veri kayıtları (binlerce)",
+            "spend": "Yıllık büyük bulut harcaması (€ bin)",
+            "recoveryHours": "Manuel DORA kurtarma testi (saat / yıl)"
+          },
+          "withoutTag": "ABD YETKİ ALANINDA",
+          "withTag": "REDİACC İLE",
+          "results": {
+            "transferRisk": "GDPR aktarım riski maruziyeti",
+            "exitPenalty": "Veri Yasası 2027 çıkış cezası riski",
+            "doraTesting": "DORA Madde 12 test maliyeti"
+          },
+          "annualLabel": "Yıllık egemenlik maruziyeti",
+          "withResults": {
+            "transferRisk": "GDPR aktarım riski maruziyeti",
+            "exitPenalty": "Veri Yasası 2027 çıkış cezası riski",
+            "doraTesting": "DORA Madde 12 test maliyeti"
+          },
+          "withAnnual": "Yıllık egemenlik maruziyeti",
+          "footnote": "Aktarım riski: kayıt sayısı x €0,04 x %10 düzenleyici inceleme olasılığı. Çıkış cezası: Veri Yasası Madde 25 uyarınca tahmini geçiş maliyeti tavanı olarak büyük bulut harcamasının %10'u (sıfır ücret son tarihi 12 Ocak 2027). DORA testi: saat x €200/saat mühendis maliyeti. Rediacc ile: kendi barındırma aktarım riskini ortadan kaldırır; açık format çıkış cezasını sıfırlar; sabit zamanlı çatal, DORA kurtarma testini depo boyutundan bağımsız olarak dakikalara indirir."
+        },
+        "howItWorks": {
+          "overline": "NASIL ÇALIŞIR",
+          "title": "Üç adım. Tek egemen yığın.",
+          "steps": [
+            {
+              "title": "Barındırın",
+              "description": "Kendi donanımınızda, AB IaaS sağlayıcınızda veya her ikisinin kombinasyonunda dağıtım yapın. Rediacc OE, Estonya'da kurulmuştur; ABD ana şirketi yok, ABD kontrol düzlemi yok, CLOUD Act yüzeyi yok.",
+              "icon": "server"
+            },
+            {
+              "title": "Anahtarları saklayın",
+              "description": "Şifreleme anahtarları hiçbir zaman sizin kontrolünüzden çıkmaz. Anahtar türetme istemci tarafında gerçekleşir. Rediacc hiçbir zaman düz metni görmez. Saklama zinciri CLI aracılığıyla anahtar bazında denetlenebilir.",
+              "icon": "key"
+            },
+            {
+              "title": "Kanıtlayın",
+              "description": "Tek bir komutla imzalı anahtar saklama raporu oluşturun. SecNumCloud 3.2, BSI C5:2026, ANSSI-BSI ortak bildirisi ve EDPB Tavsiyesi 01/2020 Kullanım Durumu 2 ile uyumludur.",
+              "icon": "shield"
+            }
+          ],
+          "cloneVisual": {
+            "production": {
+              "title": "ABD Büyük Bulut Sağlayıcısı",
+              "status": "CLOUD Act maruziyeti var",
+              "services": [
+                {
+                  "name": "S3 Bucket",
+                  "port": "US-controlled"
+                },
+                {
+                  "name": "KMS Key",
+                  "port": "vendor-held"
+                },
+                {
+                  "name": "IAM Policy",
+                  "port": "US-governed"
+                },
+                {
+                  "name": "Audit Log",
+                  "port": "US-accessible"
+                }
+              ],
+              "containerCount": "Sözleşmeden doğan yerleşim",
+              "size": "Egemenlik değil"
+            },
+            "clone": {
+              "title": "Sizin Egemen Yığınınız",
+              "status": "AB yargı yetkisi",
+              "cardClass": "sealed",
+              "services": [
+                {
+                  "name": "Your Storage",
+                  "port": "Customer-owned"
+                },
+                {
+                  "name": "Your Keys",
+                  "port": "Customer HSM"
+                },
+                {
+                  "name": "Your Policy",
+                  "port": "EU-governed"
+                },
+                {
+                  "name": "Audit Chain",
+                  "port": "SHA-256 signed"
+                }
+              ],
+              "containerCount": "Mimari egemenlik",
+              "size": "CLOUD Act bağışıklığı"
+            },
+            "arrow": {
+              "label": "Migrate",
+              "time": "Open format",
+              "icon": "shield-arrow"
+            }
+          }
+        },
+        "techDiff": {
+          "overline": "ARKA PLANDA",
+          "title": "Veri yerleşimi neden veri egemenliği değildir",
+          "description": "ABD yargı yetkisindeki bir sağlayıcı, verilerinizi Frankfurt'ta depolayabilir ve yine de ABD mahkemeleri tarafından bunları ifşa etmeye zorlanabilir. Rediacc'ın mimarisi, zorlama vektörünü tamamen ortadan kaldırır: teslim edilecek anahtar yoktur ve izlenecek geri arama kanalı yoktur.",
+          "rows": [
+            {
+              "traditional": "Sağlayıcı, şifreli metnin nerede bulunduğundan bağımsız olarak ABD yargı yetkisine tabidir",
+              "rediacc": "Operatör Estonya'da kurulmuştur; ABD ana şirketi yok, CLOUD Act zorlama yüzeyi yok"
+            },
+            {
+              "traditional": "Satıcı yönetimli KMS: sağlayıcı yasal talep üzerine düz metni oluşturabilir",
+              "rediacc": "İstemci tarafı anahtar türetme: satıcı hiçbir zaman anahtarları tutmaz; zorlama teknik olarak işlevsizdir"
+            },
+            {
+              "traditional": "Sınır ötesi veri talepleri satıcı tarafından kaydedilir, müşteriye görünmez",
+              "rediacc": "SHA-256 imzalı denetim zinciri: her anahtar erişimi ve talep kaydedilir, müşteri tarafından okunabilir"
+            },
+            {
+              "traditional": "Tescilli yedekleme formatı: çıkış için satıcı araçlı geçiş gerekir",
+              "rediacc": "Açık format (btrfs send, tar): çıkış, çalışan bir replika anlamına gelir, Veri Yasası uyumlu"
+            },
+            {
+              "traditional": "DORA kurtarma testi veri hacmiyle birlikte büyür; büyük depolar için günler sürer",
+              "rediacc": "Btrfs reflink ile sabit zamanlı çatal: 100 GB ve 100 TB aynı saniyeler içinde çatallanır"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "NEDEN ÖNEMLİ",
+          "title": "Ne elde edersiniz",
+          "items": [
+            {
+              "icon": "shield",
+              "title": "Yapı gereği CLOUD Act bağışıklığı",
+              "description": "ABD yargı yetkisinde ana şirket yok. Satıcı anahtar emaneti yok. Mimari, savunmanın kendisidir. Carniaux Senato ifadesi (18 Haziran 2025), sözleşmelerin yargı yetkisi bağışıklığının yerini tuttuğuna dair kalan her türlü argümanı kapattı."
+            },
+            {
+              "icon": "globe",
+              "title": "AB Veri Yasası 2027'ye hazır",
+              "description": "Yapı gereği açık veri formatı ve sıfır geçiş ücreti. Her yedek, taşınabilir ve çalışan bir replika niteliğindedir. 12 Ocak 2027 sıfır geçiş ücreti son tarihinden önce Veri Yasası Madde 23-31 ile tam uyum."
+            },
+            {
+              "icon": "check-circle",
+              "title": "SecNumCloud ve C5:2026 uyumlu",
+              "description": "Dört sütunlu duruş, 17 Kasım 2025 tarihli ANSSI-BSI ortak bildirisindeki kriterlerle örtüşmektedir: katı veri yerelleştirme, münhasır AB hukuku uygulaması, kıta dışı erişimin yokluğu ve AB dışı bağımlılıklar olmaksızın iş sürekliliği."
+            }
+          ]
+        },
+        "comparison": {
+          "overline": "FARK",
+          "title": "Egemenlik karşılaştırması",
+          "description": "Çoğu satıcı veri yerleşimi sunar. Hiçbiri Rediacc'ın mimari olarak sunduğunu sunamaz: müşteri anahtar saklaması, yalnızca AB'li operatör ve CLOUD Act bağışıklığı.",
+          "capabilityLabel": "Özellik",
+          "features": [
+            {
+              "name": "CLOUD Act bağışıklığı (ABD yargı yetkisinde ana şirket yok)",
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
+              "refs": [4, 4, 4, 0, 0, 0]
+            },
+            {
+              "name": "Müşteri anahtarları tutar (teknik anlaşılmazlık)",
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 5, 5, 0, 0, 0]
+            },
+            {
+              "name": "Yalnızca AB'li operatör (ABD ana şirketi yok)",
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
+              "refs": [4, 4, 4, 0, 6, 0]
+            },
+            {
+              "name": "SecNumCloud / C5:2026 onay yolu",
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 7, 0, 0, 0]
+            },
+            {
+              "name": "Açık çıkış formatı (Veri Yasası Madde 30)",
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [8, 8, 8, 0, 8, 0]
+            },
+            {
+              "name": "Müşteri altyapısında kendi barındırma",
+              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [9, 0, 0, 0, 0, 0]
+            },
+            {
+              "name": "Varsayılan olarak AB veri yerleşimi",
+              "values": ["cross", "cross", "check", "check", "check", "rediacc"],
+              "refs": [0, 0, 10, 0, 13, 0]
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "Haziran 2025'teki Carniaux Senato ifadesinin ardından SecNumCloud denetim komitemiz tek bir soru sordu: yedekleme sağlayıcınızın hasta verilerini ABD makamlarına açıklamaya zorlanamayacağını kanıtlayabilir misiniz? Microsoft Azure Backup ile bu soruyu yanıtlayamıyorduk. Rediacc ile yanıt mimariseldir: anahtarlar hiçbir zaman HSM'imizden çıkmaz, operatörün ABD ana şirketi yoktur ve otuz saniyede imzalı bir saklama raporu oluşturabiliriz. Bu, ANSSI'yi tatmin eden tek yanıttır.",
+          "author": "Baş Bilgi Güvenliği Sorumlusu",
+          "company": "SecNumCloud yükümlülüğü altında Fransız KİT, 1.200 çalışan",
+          "impact": {
+            "before": {
+              "label": "ÖNCE",
+              "value": "Aktarım riski"
+            },
+            "after": {
+              "label": "SONRA",
+              "value": "CLOUD Act bağışıklığı"
+            },
+            "improvement": "Microsoft Azure Backup değiştirildi - Anahtar saklaması: satıcıdan müşteriye - ANSSI denetimi: geçti"
+          }
+        },
+        "bottomCta": {
+          "title": "Verilerinizi ABD yargı yetkisindeki bir sağlayıcıdan geri kiralamayı bırakın.",
+          "description": "Ücretsiz Community sürümüyle başlayın. İlk anahtar saklama denetimini bir dakikadan kısa sürede çalıştırın.",
+          "ctaText": "Community ile Ücretsiz Başlayın",
+          "command": "rdc audit log --limit 50"
+        },
+        "techStrip": {
+          "label": "Her iş yükünü kendi barındırın, her anahtarı elinizde tutun",
+          "note": "Veritabanları, posta sunucuları, CI/CD, ERP, CMS ve yapay zeka model depoları: her iş yükü egemen, her anahtar sizindir."
+        },
+        "explore": {
+          "title": "Diğer Çözümleri Keşfedin",
+          "solutions": [
+            {
+              "category": "Encryption Control",
+              "title": "Sizin Kontrolünüzde Şifreleme",
+              "description": "Sizin anahtarlarınız. Sizin şifrelemeniz. İstisna yok.",
+              "slug": "encryption",
+              "dataCategory": "encryption"
+            },
+            {
+              "category": "Encryption Control",
+              "title": "Denetim İzi",
+              "description": "Her eylem kayıt altında. Gizli bir şey yok.",
+              "slug": "audit-trail",
+              "dataCategory": "encryption"
+            },
+            {
+              "category": "Encryption Control",
+              "title": "Taşıma Güvenliği",
+              "description": "Verilerinizi riske atmadan taşıyın",
+              "slug": "migration-safety",
+              "dataCategory": "encryption"
+            },
+            {
+              "category": "Ransomware Survival",
+              "title": "Değiştirilemez Yedekler",
+              "description": "Fidye yazılımının dokunamayacağı yedekler",
+              "slug": "immutable-backups",
+              "dataCategory": "ransomware"
+            },
+            {
+              "category": "Multi-Cloud",
+              "title": "Bulut Kesinti Koruması",
+              "description": "AWS çökünce siz çökmezsiniz",
+              "slug": "cloud-outage-protection",
+              "dataCategory": "multi-cloud"
+            },
+            {
+              "category": "Verified Backups",
+              "title": "Tedarikçi Bağımlılığından Kurtulma",
+              "description": "Herhangi bir satıcıdan çıkın. Verilerinizi saklayın.",
+              "slug": "vendor-lock-in",
+              "dataCategory": "backups"
+            },
+            {
+              "category": "Verified Backups",
+              "title": "Saklama Uyumluluğu",
+              "description": "Her saklama zorunluluğunu otomatik olarak karşılayın",
+              "slug": "retention-compliance",
+              "dataCategory": "backups"
+            },
+            {
+              "category": "Development Environments",
+              "title": "Ortam Klonlama",
+              "description": "Üretimi 60 saniyede klonlayın",
+              "slug": "environment-cloning",
+              "dataCategory": "dev-env"
+            }
+          ]
+        },
+        "references": {
+          "label": "Kaynaklar ve Referanslar",
+          "items": [
+            {
+              "text": "Microsoft Fransa Kamu ve Hukuk İşleri Direktörü Anton Carniaux, Fransız Senatosu'nun kamu ihaleleri ve dijital egemenlik soruşturması, 18 Haziran 2025: \"Hayır, bunu garanti edemem ama yine de bu hiç olmadı.\" The Register tarafından 25 Temmuz 2025'te raporlandı.",
+              "url": "https://www.theregister.com/2025/07/25/microsoft_admits_it_cannot_guarantee/"
+            },
+            {
+              "text": "Gartner, Şubat 2026: Avrupa egemen bulut IaaS harcamasının 2026'da 12,6 milyar dolar ve 2027'de 23,1 milyar dolara ulaşacağı tahmin ediliyor; 2027'de Kuzey Amerika'yı geçecek.",
+              "url": "https://www.gartner.com/en/newsroom/press-releases/2026-02"
+            },
+            {
+              "text": "Avrupa Komisyonu, \"Komisyon Stratejik Tedarik Yoluyla Bulut Egemenliğini İlerletiyor\", 17 Nisan 2026. Cloud III, €180 milyonluk ihale Post Telecom + OVHcloud + CleverCloud, STACKIT, Scaleway ve Proximus + S3NS + Clarence + Mistral AI'ya verildi. Hiçbir ABD merkezli birincil yüklenici yok.",
+              "url": "https://commission.europa.eu/news-and-media/news/commission-advances-cloud-sovereignty-through-strategic-procurement-2026-04-17_en"
+            },
+            {
+              "text": "CLOUD Act (Yurt Dışında Yasal Veri Kullanımını Açıklama Yasası), 18 U.S.C. 2713, 2018. ABD makamlarına, ABD yargı yetkisindeki sağlayıcıları dünyanın herhangi bir yerinde depolanan müşteri verilerini ifşa etmeye zorlamak için yetki verir.",
+              "url": "https://www.justice.gov/dag/cloudact"
+            },
+            {
+              "text": "EDPB Tavsiyesi 01/2020: Kişisel verilerin AB korumasına uyumu sağlamak amacıyla aktarım araçlarını tamamlayan tedbirler, Sürüm 2.0, Haziran 2021. Kullanım Durumu 2: tamamlayıcı tedbir olarak şifreleme, münhasır müşteri anahtar saklaması ve ithalatçı tarafında teknik anlaşılmazlık gerektirir.",
+              "url": "https://www.edpb.europa.eu/system/files/2021-06/edpb_recommendations_202001vo.2.0_supplementarymeasurestransferstools_en.pdf"
+            },
+            {
+              "text": "Keepit A/S, Kopenhag. Microsoft 365, Salesforce ve Google Workspace için yalnızca SaaS yedekleme. AB'de kurulmuş, ABD ana şirketi yok. Kendi barındırılan veya şirket içi iş yüklerini yedeklemiyor.",
+              "url": "https://keepit.com"
+            },
+            {
+              "text": "ANSSI SecNumCloud 3.2 yeterlilik gereksinimleri. Sağlayıcıların çoğunluğunun AB'li olması, AB'de genel merkezinin bulunması ve toprak dışı hukuktan bağışık olması gerekir. AB dışı hissedarlar bireysel olarak %25 ve topluca %39 ile sınırlandırılmıştır. AWS Sovereign Cloud ve Microsoft Bleu nitelik kazanamaz.",
+              "url": "https://www.ssi.gouv.fr/uploads/2022/01/secnumcloud-referentiel-v3.2.pdf"
+            },
+            {
+              "text": "AB Veri Yasası (Yönetmelik (AB) 2023/2854), Madde 23-31. 12 Eylül 2025'ten itibaren yürürlükte. 12 Ocak 2027'den itibaren geçiş ücretleri tamamen yasaklanıyor. Sağlayıcılar, geçiş sonrasında işlevsel eşdeğerlik sağlamak zorundadır.",
+              "url": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj/eng"
+            },
+            {
+              "text": "Veeam Backup and Replication, şirket içi kendi barındırma dağıtımını destekler. Veeam'in doğrudan egemenlik sertifikaları yoktur; AB egemenlik hikayesi ortak IaaS'a (özellikle OVHcloud) bağlıdır.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "AWS Avrupa Egemen Bulutu, 15 Ocak 2026 genel kullanıma açıldı. Dört Alman GmbH altında faaliyet gösteriyor. ABD merkezli ana şirket (Amazon.com Inc.) CLOUD Act'e tabi olmaya devam ediyor.",
+              "url": "https://aws.amazon.com/government-education/european-sovereign-cloud/"
+            },
+            {
+              "text": "ANSSI-BSI bulut egemenliği kriterleri ortak bildirisi, 17 Kasım 2025. Dört diskalifiye edici kriter: katı veri ve destek yerelleştirme, münhasır Avrupa hukuku uygulaması, kıta dışı üçüncü taraflarca izinsiz erişimin yokluğu ve AB dışı teknolojiler olmaksızın iş sürekliliğini sürdürme kapasitesi.",
+              "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/ANSSI-BSI-joint-releases/Cloud-Sovereignty-Criteria.pdf"
+            },
+            {
+              "text": "Avrupa Denetim Otoriteleri, \"DORA Kapsamında Kritik BİT Üçüncü Taraf Sağlayıcıların Belirlenmesi\", 18 Kasım 2025. İlk 19 belirlenen KBİT-ÜTS arasında AWS, Microsoft Azure, Google Cloud, IBM, Oracle, SAP, Salesforce yer alıyor.",
+              "url": "https://www.eiopa.europa.eu/european-supervisory-authorities-designate-critical-ict-third-party-providers-under-digital-2025-11-18_en"
+            },
+            {
+              "text": "Keepit veri yerleşim politikası: müşteri verileri yalnızca AB veri merkezlerinde depolanır (Frankfurt, Amsterdam, Kopenhag). SaaS-only model; operatör ve depolama yalnızca AB.",
+              "url": "https://www.keepit.com/trust/"
+            }
+          ],
+          "disclaimer": "Hesaplayıcı tahminleri endüstri standardı maliyet modellerini kullanır; gerçek maruziyet yargı yetkisine, sözleşme yapısına ve ihlal senaryosuna göre değişir."
+        }
+      },
       "rapidRecovery": {
         "benefits": {
           "items": [
@@ -12899,6 +13386,26 @@
             }
           ]
         }
+      },
+      "leadMagnetModal": {
+        "title": "Teknik özeti edinin",
+        "description": "Kurumsal e-posta adresinizi girin. PDF bağlantısını size göndereceğiz ve bir kopyasını posta kutunuzda saklayacağız.",
+        "emailLabel": "Kurumsal e-posta",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "PDF'yi bana gönder",
+        "sendingLabel": "Gönderiliyor...",
+        "successTitle": "PDF yolda",
+        "successBody": "PDF'yi yeni bir sekmede açtık ve bağlantıyı size e-posta ile gönderdik. Bu pencere kısa süre içinde kapanacak.",
+        "errorGeneric": "Bir sorun oluştu. Lütfen tekrar deneyin ya da support@rediacc.com adresinden bize ulaşın.",
+        "captchaRequired": "Lütfen captcha doğrulamasını tamamlayın.",
+        "disclaimer": "Tek e-posta. Pazarlama listesi yok. Tek tıkla abonelik iptali.",
+        "closeLabel": "Kapat"
+      },
+      "leadMagnetButton": {
+        "title": "Teknik özeti edinin",
+        "description": "CISO'lar, CTO'lar ve kıdemli mühendisler için yazılmış, gereksiz ayrıntılardan arındırılmış bir PDF. Bağlantıyı e-posta ile gönderiyoruz; böylece daha sonra kolayca bulabilirsiniz.",
+        "buttonLabel": "Özeti indir",
+        "dismissLabel": "Kapat"
       }
     },
     "team": {
@@ -13239,7 +13746,7 @@
         "acceptance": {
           "content": [
             "Rediacc web sitesine (<a href=\"https://www.rediacc.com\">www.rediacc.com</a>) veya Rediacc platformuna erişerek bu Hizmet Koşullarını kabul etmiş olursunuz.",
-            "Bu Şartları kabul etmiyorsanız, Hizmetlere erişmemeli veya kullanmamalısınız. Bu Şartlar, sizinle ofisi Tartu mnt 67/1-13b, 10115 Tallinn, Estonya adresinde bulunan, Estonya'da kayıtlı bir şirket olan Rediacc OÜ (sicil kodu 17363830) (\"Rediacc\", \"biz\" veya \"bizim\") arasında yasal olarak bağlayıcı bir sözleşme oluşturur."
+            "Bu Şartları kabul etmiyorsanız, Hizmetlere erişmemeli veya kullanmamalısınız. Bu Şartlar, sizinle ofisi Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonya adresinde bulunan, Estonya'da kayıtlı bir şirket olan Rediacc OÜ (sicil kodu 17363830) (\"Rediacc\", \"biz\" veya \"bizim\") arasında yasal olarak bağlayıcı bir sözleşme oluşturur."
           ],
           "id": "acceptance",
           "title": "1. Koşulların Kabulü"
@@ -13512,6 +14019,398 @@
       },
       "toc": {
         "title": "İçindekiler"
+      }
+    },
+    "resourcesBrief": {
+      "ransomwareSurvival": {
+        "meta": {
+          "title": "Fidye Yazılımına Karşı Dayanıklılık: Ücretsiz PDF",
+          "description": "Saldırganların şifreleyemediği veya silemediği, dosya sistemine özgü değişmez yedekleme. Rediacc'tan ücretsiz CISO/CTO raporu ve yönetici özeti.",
+          "keywords": "fidye yazılımına karşı dayanıklılık, pdf, rediacc, btrfs yedekleme, değiştirilemez yedekleme, teknik özet"
+        },
+        "hero": {
+          "eyebrow": "Ücretsiz indirme · A4 PDF · CISO / CTO düzeyi",
+          "title": "Fidye Yazılımına Karşı Dayanıklılık",
+          "subtitle": "Fidye yazılımı saldırılarının %94'ü yedeği hedef alır. %57'si başarıya ulaşır.",
+          "downloadButton": "Teknik özeti indir",
+          "openInBrowser": "Tarayıcıda aç",
+          "disclaimer": "Tek e-posta. Posta ile onay. Tek tıkla abonelik iptali."
+        },
+        "toc": {
+          "heading": "İçindekiler",
+          "intro": "Özet, mimariyi, önlenen hata senaryolarını, düzenleyici haritayı ve bir denetçinin talep edeceği operatör düzeyindeki kanıtları kapsar. Yaklaşık 10 ila 14 yoğun sayfa.",
+          "items": [
+            "Somut operatör terimleriyle tehdit modeli",
+            "Saldırgan modeli akıl yürütmesiyle mimari mekanizma",
+            "Adlandırılmış örneklerle önlenen hata senaryoları",
+            "Uyumluluk haritası: belirli kurallar, cezalar, raporlama pencereleri",
+            "Yayımlanmış verilere dayalı yatırım getirisi hesabı",
+            "Teknik yaklaşım bazlı tedarikçi karşılaştırması (ARR bazlı değil)",
+            "Katılım şekli ve bilinen kapsam sınırları",
+            "Mimarinin ürettiği denetim hazır kanıtlar"
+          ]
+        },
+        "companions": {
+          "heading": "İlgili çözüm sayfaları",
+          "intro": "Aynı mimari, belirli alıcı sorularına uygulanmış biçimde:",
+          "readMore": "Daha fazla oku"
+        },
+        "faq": {
+          "heading": "Okuyucuların sorduğu sorular",
+          "items": [
+            {
+              "q": "Bu özet kimin için yazıldı?",
+              "a": "Mimariyi değerlendiren bir CISO, CTO veya kıdemli altyapı mühendisi için. Yedekleme iş akışlarına, dosya sistemi temellerine ve mevcut altyapınızın temas ettiği düzenleyici ortama aşinalık varsayılmaktadır."
+            },
+            {
+              "q": "Teknik olmayan bir versiyonu var mı?",
+              "a": "Evet. E-posta adresinizi gönderdikten sonra, aynı sayfa CFO'nuza, BT direktörünüze veya yönetim kurulu üyenize iletebileceğiniz beş dakikalık yönetici PDF'sine bağlantı sunar."
+            },
+            {
+              "q": "E-posta adresime ne olur?",
+              "a": "Tek bir onay e-postası gönderilir. Bültenimize eklenirsiniz (ayda bir kısa yazı, tüm ürünleri kapsar). Tek tıkla abonelik iptal edilebilir. E-posta adresiniz, Rediacc'ın veri yerleşimi politikası gereği varsayılan olarak AB'de saklanır."
+            },
+            {
+              "q": "Neden btrfs?",
+              "a": "Özet bunu ayrıntılı biçimde açıklar. Kısaca: btrfs, değiştirilemezliği, yazarken kopyalama anlık görüntülerini ve artımlı gönderme/alma özelliklerini, üzerinde çalışan bir uygulamanın değil, depolama katmanının özellikleri haline getirir. Bu, root kimlik bilgilerine sahip bir saldırganın neyi aşabileceğini temelden değiştirir."
+            },
+            {
+              "q": "Bu, AWS RDS gibi yönetilen hizmetler için de geçerli mi?",
+              "a": "Doğrudan değil. Mimari, btrfs destekli birimlerde kapsayıcılı veritabanlarıyla çalışan, kendi kendine yönetilen işlem ortamlarını kapsar. Kurtarma açısından kritik altyapınız RDS veya Aurora'da bulunuyorsa, özet bunu açıkça belirtir ve modelin nerelerde geçerli olup olmadığını gösterir."
+            }
+          ]
+        },
+        "about": {
+          "heading": "Bu özet hakkında",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Bu sayfaya eklememizi istediğiniz bir sorunuz mu var? hello@rediacc.com adresinden bize bildirin.",
+          "downloadButton": "Özeti indir"
+        }
+      },
+      "multiCloudAlways": {
+        "meta": {
+          "title": "Çoklu Bulut: Ücretsiz Teknik Bülten PDF",
+          "description": "Taşınabilir anlık görüntüler ve test edilmiş çapraz bulut yük devretme ile işletmeniz bulut kesintisine karşı korunur. CISO/CTO raporu ve yönetici özeti.",
+          "keywords": "her koşulda çoklu bulut, pdf, rediacc, btrfs yedekleme, değiştirilemez yedekleme, teknik özet"
+        },
+        "hero": {
+          "eyebrow": "Ücretsiz indirme · A4 PDF · CISO / CTO düzeyi",
+          "title": "Her Koşulda Çoklu Bulut",
+          "subtitle": "AWS US-EAST-1, 20 Ekim 2025'te 15 saat boyunca erişilemez oldu. Snapchat, Robinhood, Uber, Delta. Siz zamanında bulut değiştirebilir miydiniz?",
+          "downloadButton": "Teknik özeti indir",
+          "openInBrowser": "Tarayıcıda aç",
+          "disclaimer": "Tek e-posta. Posta ile onay. Tek tıkla abonelik iptali."
+        },
+        "toc": {
+          "heading": "İçindekiler",
+          "intro": "Özet, mimariyi, önlenen hata senaryolarını, düzenleyici haritayı ve bir denetçinin talep edeceği operatör düzeyindeki kanıtları kapsar. Yaklaşık 10 ila 14 yoğun sayfa.",
+          "items": [
+            "Somut operatör terimleriyle tehdit modeli",
+            "Saldırgan modeli akıl yürütmesiyle mimari mekanizma",
+            "Adlandırılmış örneklerle önlenen hata senaryoları",
+            "Uyumluluk haritası: belirli kurallar, cezalar, raporlama pencereleri",
+            "Yayımlanmış verilere dayalı yatırım getirisi hesabı",
+            "Teknik yaklaşım bazlı tedarikçi karşılaştırması (ARR bazlı değil)",
+            "Katılım şekli ve bilinen kapsam sınırları",
+            "Mimarinin ürettiği denetim hazır kanıtlar"
+          ]
+        },
+        "companions": {
+          "heading": "İlgili çözüm sayfaları",
+          "intro": "Aynı mimari, belirli alıcı sorularına uygulanmış biçimde:",
+          "readMore": "Daha fazla oku"
+        },
+        "faq": {
+          "heading": "Okuyucuların sorduğu sorular",
+          "items": [
+            {
+              "q": "Bu özet kimin için yazıldı?",
+              "a": "Mimariyi değerlendiren bir CISO, CTO veya kıdemli altyapı mühendisi için. Yedekleme iş akışlarına, dosya sistemi temellerine ve mevcut altyapınızın temas ettiği düzenleyici ortama aşinalık varsayılmaktadır."
+            },
+            {
+              "q": "Teknik olmayan bir versiyonu var mı?",
+              "a": "Evet. E-posta adresinizi gönderdikten sonra, aynı sayfa CFO'nuza, BT direktörünüze veya yönetim kurulu üyenize iletebileceğiniz beş dakikalık yönetici PDF'sine bağlantı sunar."
+            },
+            {
+              "q": "E-posta adresime ne olur?",
+              "a": "Tek bir onay e-postası gönderilir. Bültenimize eklenirsiniz (ayda bir kısa yazı, tüm ürünleri kapsar). Tek tıkla abonelik iptal edilebilir. E-posta adresiniz, Rediacc'ın veri yerleşimi politikası gereği varsayılan olarak AB'de saklanır."
+            },
+            {
+              "q": "Neden btrfs?",
+              "a": "Özet bunu ayrıntılı biçimde açıklar. Kısaca: btrfs, değiştirilemezliği, yazarken kopyalama anlık görüntülerini ve artımlı gönderme/alma özelliklerini, üzerinde çalışan bir uygulamanın değil, depolama katmanının özellikleri haline getirir. Bu, root kimlik bilgilerine sahip bir saldırganın neyi aşabileceğini temelden değiştirir."
+            },
+            {
+              "q": "Bu, AWS RDS gibi yönetilen hizmetler için de geçerli mi?",
+              "a": "Doğrudan değil. Mimari, btrfs destekli birimlerde kapsayıcılı veritabanlarıyla çalışan, kendi kendine yönetilen işlem ortamlarını kapsar. Kurtarma açısından kritik altyapınız RDS veya Aurora'da bulunuyorsa, özet bunu açıkça belirtir ve modelin nerelerde geçerli olup olmadığını gösterir."
+            }
+          ]
+        },
+        "about": {
+          "heading": "Bu özet hakkında",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Bu sayfaya eklememizi istediğiniz bir sorunuz mu var? hello@rediacc.com adresinden bize bildirin.",
+          "downloadButton": "Özeti indir"
+        }
+      },
+      "verifiedBackups": {
+        "meta": {
+          "title": "Doğrulanmış Yedekler: Ücretsiz Teknik Bülten PDF",
+          "description": "Her yedekleme döngüsünde önyükleme ve doğrulama testi yapılır; yalnızca üç aylık onay değil. Rediacc'tan ücretsiz CISO/CTO raporu ve yönetici özeti.",
+          "keywords": "doğrulanmış yedeklemeler, pdf, rediacc, btrfs yedekleme, değiştirilemez yedekleme, teknik özet"
+        },
+        "hero": {
+          "eyebrow": "Ücretsiz indirme · A4 PDF · CISO / CTO düzeyi",
+          "title": "Doğrulanmış Yedeklemeler",
+          "subtitle": "Yedeklemelerin %58'i geri yüklemeye çalıştığınızda başarısız olur. Çoğu şirket bunu ancak felaket sırasında öğrenir.",
+          "downloadButton": "Teknik özeti indir",
+          "openInBrowser": "Tarayıcıda aç",
+          "disclaimer": "Tek e-posta. Posta ile onay. Tek tıkla abonelik iptali."
+        },
+        "toc": {
+          "heading": "İçindekiler",
+          "intro": "Özet, mimariyi, önlenen hata senaryolarını, düzenleyici haritayı ve bir denetçinin talep edeceği operatör düzeyindeki kanıtları kapsar. Yaklaşık 10 ila 14 yoğun sayfa.",
+          "items": [
+            "Somut operatör terimleriyle tehdit modeli",
+            "Saldırgan modeli akıl yürütmesiyle mimari mekanizma",
+            "Adlandırılmış örneklerle önlenen hata senaryoları",
+            "Uyumluluk haritası: belirli kurallar, cezalar, raporlama pencereleri",
+            "Yayımlanmış verilere dayalı yatırım getirisi hesabı",
+            "Teknik yaklaşım bazlı tedarikçi karşılaştırması (ARR bazlı değil)",
+            "Katılım şekli ve bilinen kapsam sınırları",
+            "Mimarinin ürettiği denetim hazır kanıtlar"
+          ]
+        },
+        "companions": {
+          "heading": "İlgili çözüm sayfaları",
+          "intro": "Aynı mimari, belirli alıcı sorularına uygulanmış biçimde:",
+          "readMore": "Daha fazla oku"
+        },
+        "faq": {
+          "heading": "Okuyucuların sorduğu sorular",
+          "items": [
+            {
+              "q": "Bu özet kimin için yazıldı?",
+              "a": "Mimariyi değerlendiren bir CISO, CTO veya kıdemli altyapı mühendisi için. Yedekleme iş akışlarına, dosya sistemi temellerine ve mevcut altyapınızın temas ettiği düzenleyici ortama aşinalık varsayılmaktadır."
+            },
+            {
+              "q": "Teknik olmayan bir versiyonu var mı?",
+              "a": "Evet. E-posta adresinizi gönderdikten sonra, aynı sayfa CFO'nuza, BT direktörünüze veya yönetim kurulu üyenize iletebileceğiniz beş dakikalık yönetici PDF'sine bağlantı sunar."
+            },
+            {
+              "q": "E-posta adresime ne olur?",
+              "a": "Tek bir onay e-postası gönderilir. Bültenimize eklenirsiniz (ayda bir kısa yazı, tüm ürünleri kapsar). Tek tıkla abonelik iptal edilebilir. E-posta adresiniz, Rediacc'ın veri yerleşimi politikası gereği varsayılan olarak AB'de saklanır."
+            },
+            {
+              "q": "Neden btrfs?",
+              "a": "Özet bunu ayrıntılı biçimde açıklar. Kısaca: btrfs, değiştirilemezliği, yazarken kopyalama anlık görüntülerini ve artımlı gönderme/alma özelliklerini, üzerinde çalışan bir uygulamanın değil, depolama katmanının özellikleri haline getirir. Bu, root kimlik bilgilerine sahip bir saldırganın neyi aşabileceğini temelden değiştirir."
+            },
+            {
+              "q": "Bu, AWS RDS gibi yönetilen hizmetler için de geçerli mi?",
+              "a": "Doğrudan değil. Mimari, btrfs destekli birimlerde kapsayıcılı veritabanlarıyla çalışan, kendi kendine yönetilen işlem ortamlarını kapsar. Kurtarma açısından kritik altyapınız RDS veya Aurora'da bulunuyorsa, özet bunu açıkça belirtir ve modelin nerelerde geçerli olup olmadığını gösterir."
+            }
+          ]
+        },
+        "about": {
+          "heading": "Bu özet hakkında",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Bu sayfaya eklememizi istediğiniz bir sorunuz mu var? hello@rediacc.com adresinden bize bildirin.",
+          "downloadButton": "Özeti indir"
+        }
+      },
+      "encryptionControl": {
+        "meta": {
+          "title": "Şifreleme Kontrolü: Ücretsiz Teknik Bülten PDF",
+          "description": "Müşteri yönetimli anahtarlar ve Schrems II uyumlu şifrelenmiş veriler; tedarikçi değişikliğinde bile korunur. CISO/CTO raporu ve yönetici özeti.",
+          "keywords": "şifreleme kontrolü, pdf, rediacc, btrfs yedekleme, değiştirilemez yedekleme, teknik özet"
+        },
+        "hero": {
+          "eyebrow": "Ücretsiz indirme · A4 PDF · CISO / CTO düzeyi",
+          "title": "Şifreleme Kontrolü",
+          "subtitle": "Schrems II bir politika tercihi değildir. Bir mimari gerekliliktir ve yedekleme tedarikçilerinin büyük çoğunluğu bunu karşılayamamaktadır.",
+          "downloadButton": "Teknik özeti indir",
+          "openInBrowser": "Tarayıcıda aç",
+          "disclaimer": "Tek e-posta. Posta ile onay. Tek tıkla abonelik iptali."
+        },
+        "toc": {
+          "heading": "İçindekiler",
+          "intro": "Özet, mimariyi, önlenen hata senaryolarını, düzenleyici haritayı ve bir denetçinin talep edeceği operatör düzeyindeki kanıtları kapsar. Yaklaşık 10 ila 14 yoğun sayfa.",
+          "items": [
+            "Somut operatör terimleriyle tehdit modeli",
+            "Saldırgan modeli akıl yürütmesiyle mimari mekanizma",
+            "Adlandırılmış örneklerle önlenen hata senaryoları",
+            "Uyumluluk haritası: belirli kurallar, cezalar, raporlama pencereleri",
+            "Yayımlanmış verilere dayalı yatırım getirisi hesabı",
+            "Teknik yaklaşım bazlı tedarikçi karşılaştırması (ARR bazlı değil)",
+            "Katılım şekli ve bilinen kapsam sınırları",
+            "Mimarinin ürettiği denetim hazır kanıtlar"
+          ]
+        },
+        "companions": {
+          "heading": "İlgili çözüm sayfaları",
+          "intro": "Aynı mimari, belirli alıcı sorularına uygulanmış biçimde:",
+          "readMore": "Daha fazla oku"
+        },
+        "faq": {
+          "heading": "Okuyucuların sorduğu sorular",
+          "items": [
+            {
+              "q": "Bu özet kimin için yazıldı?",
+              "a": "Mimariyi değerlendiren bir CISO, CTO veya kıdemli altyapı mühendisi için. Yedekleme iş akışlarına, dosya sistemi temellerine ve mevcut altyapınızın temas ettiği düzenleyici ortama aşinalık varsayılmaktadır."
+            },
+            {
+              "q": "Teknik olmayan bir versiyonu var mı?",
+              "a": "Evet. E-posta adresinizi gönderdikten sonra, aynı sayfa CFO'nuza, BT direktörünüze veya yönetim kurulu üyenize iletebileceğiniz beş dakikalık yönetici PDF'sine bağlantı sunar."
+            },
+            {
+              "q": "E-posta adresime ne olur?",
+              "a": "Tek bir onay e-postası gönderilir. Bültenimize eklenirsiniz (ayda bir kısa yazı, tüm ürünleri kapsar). Tek tıkla abonelik iptal edilebilir. E-posta adresiniz, Rediacc'ın veri yerleşimi politikası gereği varsayılan olarak AB'de saklanır."
+            },
+            {
+              "q": "Neden btrfs?",
+              "a": "Özet bunu ayrıntılı biçimde açıklar. Kısaca: btrfs, değiştirilemezliği, yazarken kopyalama anlık görüntülerini ve artımlı gönderme/alma özelliklerini, üzerinde çalışan bir uygulamanın değil, depolama katmanının özellikleri haline getirir. Bu, root kimlik bilgilerine sahip bir saldırganın neyi aşabileceğini temelden değiştirir."
+            },
+            {
+              "q": "Bu, AWS RDS gibi yönetilen hizmetler için de geçerli mi?",
+              "a": "Doğrudan değil. Mimari, btrfs destekli birimlerde kapsayıcılı veritabanlarıyla çalışan, kendi kendine yönetilen işlem ortamlarını kapsar. Kurtarma açısından kritik altyapınız RDS veya Aurora'da bulunuyorsa, özet bunu açıkça belirtir ve modelin nerelerde geçerli olup olmadığını gösterir."
+            }
+          ]
+        },
+        "about": {
+          "heading": "Bu özet hakkında",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Bu sayfaya eklememizi istediğiniz bir sorunuz mu var? hello@rediacc.com adresinden bize bildirin.",
+          "downloadButton": "Özeti indir"
+        }
+      },
+      "devEnvironments": {
+        "meta": {
+          "title": "Geliştirme Ortamları: Ücretsiz Teknik Bülten PDF",
+          "description": "btrfs sıfır kopya klonlarıyla 60 saniyede üretime özdeş geliştirme ortamı. Rediacc'tan ücretsiz CISO/CTO raporu ve beş dakikalık yönetici özeti.",
+          "keywords": "geliştirme ortamları, pdf, rediacc, btrfs yedekleme, değiştirilemez yedekleme, teknik özet"
+        },
+        "hero": {
+          "eyebrow": "Ücretsiz indirme · A4 PDF · CISO / CTO düzeyi",
+          "title": "Geliştirme Ortamları",
+          "subtitle": "Geliştiricileriniz haftada 4,5 saat kod yazıyor. Geri kalan süre ortam beklemeye gidiyor. 50 kişilik bir ekip, kurulum nedeniyle yılda 720.000 ile 1,2 milyon dolar arasında kaybediyor.",
+          "downloadButton": "Teknik özeti indir",
+          "openInBrowser": "Tarayıcıda aç",
+          "disclaimer": "Tek e-posta. Posta ile onay. Tek tıkla abonelik iptali."
+        },
+        "toc": {
+          "heading": "İçindekiler",
+          "intro": "Özet, mimariyi, önlenen hata senaryolarını, düzenleyici haritayı ve bir denetçinin talep edeceği operatör düzeyindeki kanıtları kapsar. Yaklaşık 10 ila 14 yoğun sayfa.",
+          "items": [
+            "Somut operatör terimleriyle tehdit modeli",
+            "Saldırgan modeli akıl yürütmesiyle mimari mekanizma",
+            "Adlandırılmış örneklerle önlenen hata senaryoları",
+            "Uyumluluk haritası: belirli kurallar, cezalar, raporlama pencereleri",
+            "Yayımlanmış verilere dayalı yatırım getirisi hesabı",
+            "Teknik yaklaşım bazlı tedarikçi karşılaştırması (ARR bazlı değil)",
+            "Katılım şekli ve bilinen kapsam sınırları",
+            "Mimarinin ürettiği denetim hazır kanıtlar"
+          ]
+        },
+        "companions": {
+          "heading": "İlgili çözüm sayfaları",
+          "intro": "Aynı mimari, belirli alıcı sorularına uygulanmış biçimde:",
+          "readMore": "Daha fazla oku"
+        },
+        "faq": {
+          "heading": "Okuyucuların sorduğu sorular",
+          "items": [
+            {
+              "q": "Bu özet kimin için yazıldı?",
+              "a": "Mimariyi değerlendiren bir CISO, CTO veya kıdemli altyapı mühendisi için. Yedekleme iş akışlarına, dosya sistemi temellerine ve mevcut altyapınızın temas ettiği düzenleyici ortama aşinalık varsayılmaktadır."
+            },
+            {
+              "q": "Teknik olmayan bir versiyonu var mı?",
+              "a": "Evet. E-posta adresinizi gönderdikten sonra, aynı sayfa CFO'nuza, BT direktörünüze veya yönetim kurulu üyenize iletebileceğiniz beş dakikalık yönetici PDF'sine bağlantı sunar."
+            },
+            {
+              "q": "E-posta adresime ne olur?",
+              "a": "Tek bir onay e-postası gönderilir. Bültenimize eklenirsiniz (ayda bir kısa yazı, tüm ürünleri kapsar). Tek tıkla abonelik iptal edilebilir. E-posta adresiniz, Rediacc'ın veri yerleşimi politikası gereği varsayılan olarak AB'de saklanır."
+            },
+            {
+              "q": "Neden btrfs?",
+              "a": "Özet bunu ayrıntılı biçimde açıklar. Kısaca: btrfs, değiştirilemezliği, yazarken kopyalama anlık görüntülerini ve artımlı gönderme/alma özelliklerini, üzerinde çalışan bir uygulamanın değil, depolama katmanının özellikleri haline getirir. Bu, root kimlik bilgilerine sahip bir saldırganın neyi aşabileceğini temelden değiştirir."
+            },
+            {
+              "q": "Bu, AWS RDS gibi yönetilen hizmetler için de geçerli mi?",
+              "a": "Doğrudan değil. Mimari, btrfs destekli birimlerde kapsayıcılı veritabanlarıyla çalışan, kendi kendine yönetilen işlem ortamlarını kapsar. Kurtarma açısından kritik altyapınız RDS veya Aurora'da bulunuyorsa, özet bunu açıkça belirtir ve modelin nerelerde geçerli olup olmadığını gösterir."
+            }
+          ]
+        },
+        "about": {
+          "heading": "Bu özet hakkında",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Bu sayfaya eklememizi istediğiniz bir sorunuz mu var? hello@rediacc.com adresinden bize bildirin.",
+          "downloadButton": "Özeti indir"
+        }
+      },
+      "preemptiveDefense": {
+        "meta": {
+          "title": "Önleyici Savunma: Ücretsiz Teknik Bülten PDF",
+          "description": "Üretim riski olmadan üretim kopyasında güvenlik testi ve yapay zeka sızma testleri. CISO/CTO raporu ve yönetici özeti.",
+          "keywords": "önleyici savunma, pdf, rediacc, btrfs yedekleme, değiştirilemez yedekleme, teknik özet"
+        },
+        "hero": {
+          "eyebrow": "Ücretsiz indirme · A4 PDF · CISO / CTO düzeyi",
+          "title": "Önleyici Savunma",
+          "subtitle": "Gerçek altyapınıza karşı test edin. Hiçbir şeyi bozmayın. Tehlikeli darbeleri klon alır.",
+          "downloadButton": "Teknik özeti indir",
+          "openInBrowser": "Tarayıcıda aç",
+          "disclaimer": "Tek e-posta. Posta ile onay. Tek tıkla abonelik iptali."
+        },
+        "toc": {
+          "heading": "İçindekiler",
+          "intro": "Özet, mimariyi, önlenen hata senaryolarını, düzenleyici haritayı ve bir denetçinin talep edeceği operatör düzeyindeki kanıtları kapsar. Yaklaşık 10 ila 14 yoğun sayfa.",
+          "items": [
+            "Somut operatör terimleriyle tehdit modeli",
+            "Saldırgan modeli akıl yürütmesiyle mimari mekanizma",
+            "Adlandırılmış örneklerle önlenen hata senaryoları",
+            "Uyumluluk haritası: belirli kurallar, cezalar, raporlama pencereleri",
+            "Yayımlanmış verilere dayalı yatırım getirisi hesabı",
+            "Teknik yaklaşım bazlı tedarikçi karşılaştırması (ARR bazlı değil)",
+            "Katılım şekli ve bilinen kapsam sınırları",
+            "Mimarinin ürettiği denetim hazır kanıtlar"
+          ]
+        },
+        "companions": {
+          "heading": "İlgili çözüm sayfaları",
+          "intro": "Aynı mimari, belirli alıcı sorularına uygulanmış biçimde:",
+          "readMore": "Daha fazla oku"
+        },
+        "faq": {
+          "heading": "Okuyucuların sorduğu sorular",
+          "items": [
+            {
+              "q": "Bu özet kimin için yazıldı?",
+              "a": "Mimariyi değerlendiren bir CISO, CTO veya kıdemli altyapı mühendisi için. Yedekleme iş akışlarına, dosya sistemi temellerine ve mevcut altyapınızın temas ettiği düzenleyici ortama aşinalık varsayılmaktadır."
+            },
+            {
+              "q": "Teknik olmayan bir versiyonu var mı?",
+              "a": "Evet. E-posta adresinizi gönderdikten sonra, aynı sayfa CFO'nuza, BT direktörünüze veya yönetim kurulu üyenize iletebileceğiniz beş dakikalık yönetici PDF'sine bağlantı sunar."
+            },
+            {
+              "q": "E-posta adresime ne olur?",
+              "a": "Tek bir onay e-postası gönderilir. Bültenimize eklenirsiniz (ayda bir kısa yazı, tüm ürünleri kapsar). Tek tıkla abonelik iptal edilebilir. E-posta adresiniz, Rediacc'ın veri yerleşimi politikası gereği varsayılan olarak AB'de saklanır."
+            },
+            {
+              "q": "Neden btrfs?",
+              "a": "Özet bunu ayrıntılı biçimde açıklar. Kısaca: btrfs, değiştirilemezliği, yazarken kopyalama anlık görüntülerini ve artımlı gönderme/alma özelliklerini, üzerinde çalışan bir uygulamanın değil, depolama katmanının özellikleri haline getirir. Bu, root kimlik bilgilerine sahip bir saldırganın neyi aşabileceğini temelden değiştirir."
+            },
+            {
+              "q": "Bu, AWS RDS gibi yönetilen hizmetler için de geçerli mi?",
+              "a": "Doğrudan değil. Mimari, btrfs destekli birimlerde kapsayıcılı veritabanlarıyla çalışan, kendi kendine yönetilen işlem ortamlarını kapsar. Kurtarma açısından kritik altyapınız RDS veya Aurora'da bulunuyorsa, özet bunu açıkça belirtir ve modelin nerelerde geçerli olup olmadığını gösterir."
+            }
+          ]
+        },
+        "about": {
+          "heading": "Bu özet hakkında",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Bu sayfaya eklememizi istediğiniz bir sorunuz mu var? hello@rediacc.com adresinden bize bildirin.",
+          "downloadButton": "Özeti indir"
+        }
       }
     }
   },
