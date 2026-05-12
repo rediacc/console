@@ -87,7 +87,7 @@ export async function postRepoUpTasks(repoName: string, machineName: string): Pr
   }
 }
 
-function printServiceUrlPattern(repoName: string, machineDomain: string): void {
+export function printServiceUrlPattern(repoName: string, machineDomain: string): void {
   try {
     if (repoName.includes(':')) {
       const [parentName, tag] = repoName.split(':');

@@ -10,6 +10,7 @@ import illustrationAuditTrail from '../assets/images/illustrations/audit-trail.s
 import illustrationBackupVerification from '../assets/images/illustrations/backup-verification.svg';
 import illustrationCloudOutageProtection from '../assets/images/illustrations/cloud-outage-protection.svg';
 import illustrationContinuousSecurityTesting from '../assets/images/illustrations/continuous-security-testing.svg';
+import illustrationDataSovereignty from '../assets/images/illustrations/data-sovereignty.svg';
 import illustrationEncryption from '../assets/images/illustrations/encryption.svg';
 import illustrationEnvironmentCloning from '../assets/images/illustrations/environment-cloning.svg';
 import illustrationFailoverTesting from '../assets/images/illustrations/failover-testing.svg';
@@ -33,9 +34,11 @@ export type SectionType =
   | 'howItWorks'
   | 'techDiff'
   | 'benefits'
+  | 'downloadGated'
   | 'competitorComparison'
   | 'socialProof'
   | 'bottomCta'
+  | 'downloadShort'
   | 'techStrip'
   | 'exploreSolutions'
   | 'references';
@@ -99,9 +102,11 @@ const ALL_SECTIONS = [
   'howItWorks',
   'techDiff',
   'benefits',
+  'downloadGated',
   'competitorComparison',
   'socialProof',
   'bottomCta',
+  'downloadShort',
   'techStrip',
   'exploreSolutions',
   'references',
@@ -428,6 +433,24 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
       { name: 'Mailcow', kind: 'mail' },
       { name: 'Grafana', kind: 'monitor' },
       { name: 'Vaultwarden', kind: 'auth' },
+      { name: 'MinIO', kind: 'storage' },
+    ],
+  },
+  'data-sovereignty': {
+    contentKey: 'dataSovereignty',
+    category: 'encryption',
+    illustration: illustrationDataSovereignty,
+    sections: ALL_SECTIONS,
+    calculatorPreset: 'data-sovereignty',
+    competitors: ['Veeam', 'Rubrik', 'AWS Sovereign', 'Microsoft Bleu', 'Keepit'],
+    techStrip: [
+      { name: 'GitLab', kind: 'devops' },
+      { name: 'Nextcloud', kind: 'collab' },
+      { name: 'MariaDB', kind: 'data' },
+      { name: 'Mailcow', kind: 'mail' },
+      { name: 'Grafana', kind: 'monitor' },
+      { name: 'Keycloak', kind: 'auth' },
+      { name: 'Vaultwarden', kind: 'storage' },
       { name: 'MinIO', kind: 'storage' },
     ],
   },

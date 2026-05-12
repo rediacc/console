@@ -1,0 +1,34 @@
+---
+/**
+ * Solution-page CTA that fades in at ~30% scroll and opens the lead-magnet
+ * modal when clicked. The modal (LeadMagnetModal.tsx) is mounted globally
+ * in BaseLayout. This wrapper just renders the scroll-gated button that
+ * dispatches the `lead-magnet:open` event.
+ *
+ * Previously this slot held an inline email form. That form was lifted into
+ * the modal so the captcha doesn't render on every solution-page load.
+ */
+import type { Language } from '../../i18n/types';
+import type { SolutionCategory } from '../../config/solution-pages';
+import { magnetNameFor } from './category-pdf-map';
+import LeadMagnetButton from './LeadMagnetButton.tsx';
+
+interface Props {
+  lang: Language;
+  slug: string;
+  category: SolutionCategory;
+}
+
+const { lang: _lang, slug, category } = Astro.props;
+const magnetName = magnetNameFor(category, 'cto');
+const source = `solution-${slug}-30scroll`;
+---
+
+<section class="sp-download-gated-wrapper" data-sp-download-gated>
+  <LeadMagnetButton
+    client:idle
+    magnetName={magnetName}
+    source={source}
+    scrollGate
+  />
+</section>

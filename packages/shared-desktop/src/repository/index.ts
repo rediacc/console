@@ -29,3 +29,5 @@ export {
   type RepositoryEnvironment,
   type RepositoryVaultData,
 } from './environment.js';
+// Composite repo-name parsing
+export { parentRepoName, repoTagFromName } from './repo-name.js';

@@ -1,0 +1,167 @@
+---
+import { createTranslator } from '../i18n/utils';
+import type { Language } from '../i18n/types';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props;
+const { t } = createTranslator(lang);
+---
+
+<div
+  class="image-modal"
+  id="image-modal"
+  role="dialog"
+  aria-hidden="true"
+  aria-modal="true"
+  aria-label={t('common.aria.imageViewer')}
+>
+  <div class="image-modal-content" id="image-modal-content">
+    <button class="image-modal-close" id="image-modal-close-btn" aria-label={t('common.aria.closeImageModal')}>×</button>
+    <button class="nav-btn nav-prev" id="image-modal-prev-btn" aria-label={t('common.aria.previousImage')}>‹</button>
+    <button class="nav-btn nav-next" id="image-modal-next-btn" aria-label={t('common.aria.nextImage')}>›</button>
+    <div class="zoom-controls">
+      <button class="zoom-btn zoom-in" id="image-modal-zoom-in-btn" aria-label={t('common.aria.zoomIn')}>+</button>
+      <button class="zoom-btn zoom-out" id="image-modal-zoom-out-btn" aria-label={t('common.aria.zoomOut')}>−</button>
+      <button class="zoom-btn zoom-reset" id="image-modal-zoom-reset-btn" aria-label={t('common.aria.resetZoom')}>⌂</button>
+    </div>
+    <div class="image-container">
+      <img id="modal-image" src="" alt="" class="modal-image" loading="lazy" decoding="async" />
+    </div>
+    <div class="image-indicator">
+      <span class="indicator-text" id="image-indicator"></span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .image-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .image-modal[aria-hidden='false'] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .image-modal-content {
+    position: relative;
+    width: min(92vw, 1400px);
+    height: min(90vh, 900px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .image-container {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-in;
+  }
+  .image-container:active {
+    cursor: grabbing;
+  }
+  .modal-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transform-origin: center center;
+    transition: transform 0.15s ease;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .image-modal-close,
+  .nav-btn,
+  .zoom-btn {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #fff;
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+  }
+  .image-modal-close:hover,
+  .nav-btn:hover:not(:disabled),
+  .zoom-btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.45);
+  }
+  .image-modal-close {
+    top: -42px;
+    right: -8px;
+    width: 36px;
+    height: 36px;
+    font-size: 1.6rem;
+  }
+  .nav-btn {
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 60px;
+    font-size: 1.8rem;
+  }
+  .nav-prev { left: -56px; }
+  .nav-next { right: -56px; }
+  .nav-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .zoom-controls {
+    position: absolute;
+    bottom: -48px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+  }
+  .zoom-btn {
+    position: static;
+    width: 36px;
+    height: 36px;
+  }
+  .image-indicator {
+    position: absolute;
+    bottom: -48px;
+    right: 0;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    font-family: ui-monospace, monospace;
+    display: flex;
+    align-items: center;
+    height: 36px;
+  }
+  .indicator-text:empty {
+    display: none;
+  }
+  /* Hide prev/next when a single-image view is active */
+  .image-modal[data-single='true'] .nav-prev,
+  .image-modal[data-single='true'] .nav-next {
+    display: none;
+  }
+  @media (max-width: 768px) {
+    .image-modal-content { width: 96vw; height: 80vh; }
+    .nav-prev { left: 4px; }
+    .nav-next { right: 4px; }
+    .image-modal-close { top: 4px; right: 4px; }
+    .zoom-controls { bottom: 8px; }
+    .image-indicator { bottom: 8px; right: 8px; }
+  }
+</style>

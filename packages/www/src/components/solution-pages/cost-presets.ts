@@ -423,6 +423,48 @@ function computeContinuousSecurityTesting(vals: Record<string, number>): Compute
   };
 }
 
+function computeDataSovereignty(vals: Record<string, number>): ComputeOutput {
+  // records: thousands of EU personal-data records under management
+  // spend: annual hyperscaler spend in thousands of EUR
+  // recoveryHours: hours per year on DORA Article 12 manual recovery testing
+  const records = vals.records;
+  const spend = vals.spend;
+  const recoveryHours = vals.recoveryHours;
+
+  // GDPR transfer-risk exposure: per-record fine quantum ~€0.04 × 0.1 annual probability,
+  // floored at €5k to reflect supervisory authority minimums.
+  const transferRiskRaw = Math.round(records * 1000 * 0.04 * 0.1);
+  const transferRisk = Math.max(5000, transferRiskRaw);
+
+  // Data Act 2027 exit penalty: 10% of annual hyperscaler spend until 12 Jan 2027 ceiling drops to 0,
+  // amortised as risk premium on next contract renewal.
+  const exitPenalty = Math.round(spend * 1000 * 0.1);
+
+  // DORA Article 12 manual recovery testing: hours × €200 consultant rate.
+  const doraTesting = recoveryHours * 200;
+
+  const totalCost = transferRisk + exitPenalty + doraTesting;
+
+  // With Rediacc: zero transfer risk (no provider plaintext access), zero exit penalty (open btrfs/tar formats),
+  // DORA testing reduced to internal hours only (~10% of original rate via automation).
+  const rDoraTesting = Math.round(doraTesting * 0.1);
+
+  return {
+    results: {
+      transferRisk: `€${transferRisk.toLocaleString()}`,
+      exitPenalty: `€${exitPenalty.toLocaleString()}`,
+      doraTesting: `€${doraTesting.toLocaleString()}`,
+    },
+    annual: `€${totalCost.toLocaleString()}`,
+    withResults: {
+      transferRisk: '€0',
+      exitPenalty: '€0',
+      doraTesting: `€${rDoraTesting.toLocaleString()}`,
+    },
+    withAnnual: `€${rDoraTesting.toLocaleString()}`,
+  };
+}
+
 function computeAuditTrail(vals: Record<string, number>): ComputeOutput {
   const audits = vals.audits;
   const hours = vals.hours;
@@ -531,6 +573,7 @@ export const PRESETS: Record<string, (vals: Record<string, number>) => ComputeOu
   'ai-pentesting': computeAiPentesting,
   encryption: computeEncryption,
   'continuous-security-testing': computeContinuousSecurityTesting,
+  'data-sovereignty': computeDataSovereignty,
   'audit-trail': computeAuditTrail,
   'rapid-recovery': computeRapidRecovery,
   'vendor-lock-in': computeVendorLockIn,

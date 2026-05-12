@@ -470,7 +470,13 @@
 .sp-problem-illustration {
   margin-top: 40px;
   margin-bottom: 8px;
-  max-width: 100%;
+  /* Break out of the 720px text column to let the illustration breathe.
+     Centered horizontally so the illustration stays visually anchored to the
+     section content even though it's wider than the prose column. */
+  width: min(1100px, calc(100vw - 96px));
+  max-width: none;
+  margin-left: calc((var(--sp-content-max) - min(1100px, calc(100vw - 96px))) / 2);
+  margin-right: auto;
   border-radius: 12px;
   overflow: hidden;
 }
@@ -478,6 +484,32 @@
   width: 100%;
   height: auto;
   display: block;
+}
+/* Make the illustration a clickable trigger that opens the image modal */
+button.sp-illustration-trigger {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: zoom-in;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+button.sp-illustration-trigger:hover {
+  transform: scale(1.01);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+button.sp-illustration-trigger:focus-visible {
+  outline: 2px solid var(--accent, #556b2f);
+  outline-offset: 4px;
+}
+@media (max-width: 768px) {
+  .sp-problem-illustration {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 
 /* Stat callouts */
@@ -2463,5 +2495,115 @@
 
   .sp-roi-details {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   PDF download CTAs — inline on solution pages (gated + short-form)
+
+   Theme-aware. Tokens redefined in dark mode for the resource-page surface
+   too, where the parent is .resource-brief-page (not .sp-page) so the
+   solution-pages.css dark-mode block at line ~2096 doesn't reach it.
+
+   Both variants share the same visual language so visitors recognize them
+   as a related pair:
+     - Full-width section background (--sp-bg-light)
+     - Solid card background (--sp-bg-white) with subtle border
+     - Brand olive button (--sp-brand-primary), white text on green
+   ========================================================================== */
+
+/* Dark-mode token redefinition, scoped to OUR components so they work both
+   inside .sp-page (solution pages) and inside .resource-brief-page. */
+:root[data-theme='dark'] .sp-download-gated-wrapper,
+:root[data-theme='dark'] .sp-download-short {
+  --sp-bg-light: #141416;
+  --sp-bg-white: #1a1a1b;
+  --sp-text-primary: #e4e4e7;
+  --sp-text-body: #a1a1aa;
+  --sp-border-light: #2e2e32;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .sp-download-gated-wrapper,
+  :root:not([data-theme]) .sp-download-short {
+    --sp-bg-light: #141416;
+    --sp-bg-white: #1a1a1b;
+    --sp-text-primary: #e4e4e7;
+    --sp-text-body: #a1a1aa;
+    --sp-border-light: #2e2e32;
+  }
+}
+
+/* Section wrapper: full-width light/dark band. The gated wrapper only renders
+   the LeadMagnetButton trigger; the actual form lives in LeadMagnetModal.tsx
+   and is styled by lead-magnet-modal.css. */
+.sp-download-gated-wrapper,
+.sp-download-short {
+  padding: 56px 20px 56px;
+  background: var(--sp-bg-light, #fafafa);
+}
+
+/* Card container for the short variant only. */
+.sp-download-short__card {
+  position: relative;
+  max-width: 560px;
+  margin: 0 auto;
+  background: var(--sp-bg-white, #ffffff);
+  border: 1px solid var(--sp-border-light, #e5e5e5);
+  border-radius: 12px;
+  padding: 32px 28px;
+  text-align: center;
+  color: var(--sp-text-primary, #1a1a1a);
+}
+
+/* Title + description for the short variant. */
+.sp-download-short__title {
+  font-size: 22px;
+  line-height: 1.3;
+  margin: 0 0 10px;
+  color: var(--sp-text-primary, #1a1a1a);
+  font-weight: 700;
+}
+.sp-download-short__description {
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 18px;
+  color: var(--sp-text-body, #4a4a4f);
+}
+
+/* Short-form button: olive green pill. */
+.sp-download-short__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 22px;
+  background: var(--sp-brand-primary, #4a7c3f);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s;
+}
+.sp-download-short__button:hover {
+  background: var(--sp-brand-secondary, #3d6834);
+}
+.sp-download-short__button svg {
+  stroke: currentColor;
+}
+
+/* Mobile breakpoint. */
+@media (max-width: 600px) {
+  .sp-download-gated-wrapper,
+  .sp-download-short {
+    padding: 40px 16px;
+  }
+  .sp-download-short__card {
+    padding: 24px 20px;
+  }
+  .sp-download-short__title {
+    font-size: 19px;
   }
 }

@@ -3783,6 +3783,21 @@
       "title": "Quanto puo' risparmiare Rediacc alla sua organizzazione?"
     },
     "solutionPages": {
+      "downloadGated": {
+        "title": "Scarichi il documento tecnico",
+        "description": "Un PDF senza fronzoli scritto per CISO, CTO e ingegneri senior. Inserisca la sua email e Le invieremo il link per il download insieme a un riepilogo di una pagina per posta.",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "Inviami il documento",
+        "successMessage": "Controlli la sua casella di posta per confermare. Abbiamo anche aperto il PDF in una nuova scheda.",
+        "errorMessage": "Si è verificato un errore. La preghiamo di riprovare o di contattarci all'indirizzo support@rediacc.com.",
+        "disclaimer": "Una sola email. Nessuna lista marketing. Cancellazione con un clic.",
+        "dismissLabel": "Chiudi"
+      },
+      "downloadShort": {
+        "title": "Poco tempo a disposizione?",
+        "description": "Salti l'approfondimento. Scarichi la versione in cinque minuti che il suo team può leggere durante uno stand-up.",
+        "buttonLabel": "Scarica il documento breve (PDF)"
+      },
       "aiPentesting": {
         "benefits": {
           "items": [
@@ -10504,6 +10519,478 @@
           ]
         }
       },
+      "dataSovereignty": {
+        "meta": {
+          "title": "Sovranità dei Dati: Backup Sovrano per Architettura",
+          "description": "Lei gestisce server e chiavi. Immunità al CLOUD Act per architettura, non per certificato. Backup self-hosted con chiavi del cliente.",
+          "keywords": "sovranità dei dati, immunità CLOUD Act, chiavi gestite dal cliente, GDPR Schrems II, Data Act UE, self-hosted, backup sovrano, SecNumCloud, DORA"
+        },
+        "hero": {
+          "badge": "CONTROLLO DELLA CRITTOGRAFIA",
+          "title": "Sovrano per architettura, non per certificato.",
+          "subtitle": "Lo ospiti tu. Le chiavi le tieni tu. Nessun provider soggetto alla giurisdizione statunitense può essere obbligato a consegnare ciò che non possiede.",
+          "differentiator": "Ogni hyperscaler fa marketing sulla sovranità. Nessuno può garantire che i tuoi dati rimangano al di fuori degli ordini giudiziari statunitensi. Rediacc sì.",
+          "primaryCta": "Inizia Gratis con Community",
+          "secondaryCta": "Scopri le funzioni di sovranità →"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "text": "rdc audit log --limit 50"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "comment",
+              "text": "Ispezione della catena di custodia delle chiavi per tutti i repository..."
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "table-header",
+              "text": "ID CHIAVE               CUSTODIA      HSM          DEPOSITATA  GIURISDIZIONE"
+            },
+            {
+              "type": "table-row",
+              "text": "prod-main-v3            cliente       YubiHSM 2    NO          sede-cliente"
+            },
+            {
+              "type": "table-row",
+              "text": "prod-db-v2              cliente       YubiHSM 2    NO          sede-cliente"
+            },
+            {
+              "type": "table-row",
+              "text": "staging-main-v1         cliente       software     NO          sede-cliente"
+            },
+            {
+              "type": "table-row",
+              "text": "backup-archive-v4       cliente       YubiHSM 2    NO          sede-cliente"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "summary",
+              "text": "Chiavi: 4   Custodia: 100% cliente   Depositate: 0   Accessibile-USA: 0   Firmato: 2026-05-11T09:14:33Z"
+            }
+          ]
+        },
+        "stats": [
+          {
+            "number": "0",
+            "label": "Chiavi in escrow presso qualsiasi provider",
+            "icon": "key"
+          },
+          {
+            "number": "100%",
+            "label": "Custodia delle chiavi da parte del cliente",
+            "icon": "lock"
+          },
+          {
+            "number": "Solo UE",
+            "label": "Giurisdizione dell'operatore",
+            "icon": "globe"
+          }
+        ],
+        "problem": {
+          "overline": "IL PROBLEMA",
+          "title": "Il tuo provider cloud può consegnare i tuoi dati. E non te lo dirà.",
+          "description": "I provider cloud soggetti alla giurisdizione statunitense sono legalmente tenuti a conformarsi agli ordini CLOUD Act, anche per i dati archiviati in data center europei. Gli impegni contrattuali non possono prevalere sul diritto statunitense. La questione non è se il tuo provider lo farebbe. È se legalmente potrebbe.",
+          "statCallouts": [
+            {
+              "number": "\"No, non posso garantirlo\"",
+              "source": "Senato francese, 18 giugno 2025",
+              "ref": 1,
+              "text": "Il Direttore per gli Affari Pubblici e Legali di Microsoft Francia, sotto giuramento, sulla protezione dei dati dei cittadini francesi nei data center UE di Microsoft dalle autorità statunitensi (dichiarazione originale in francese: \"Non, je ne peux pas le garantir\")"
+            },
+            {
+              "number": "€12,6 miliardi",
+              "source": "Gartner, febbraio 2026",
+              "ref": 2,
+              "text": "Spesa UE per IaaS cloud sovrano nel 2026, in crescita fino a €23,1 miliardi nel 2027. Il mercato ha deciso che la sovranità non è opzionale."
+            },
+            {
+              "number": "0 prime contractor USA",
+              "source": "Commissione Europea, 17 aprile 2026",
+              "ref": 3,
+              "text": "Cloud III: l'appalto sovrano da €180M della Commissione Europea è stato assegnato a quattro consorzi europei. Zero prime contractor con sede negli USA."
+            }
+          ],
+          "timeline": {
+            "oldLabel": "IL VECCHIO APPROCCIO",
+            "oldSteps": [
+              {
+                "day": "Giorno 1",
+                "text": "Firma del contratto con un provider cloud soggetto alla giurisdizione USA"
+              },
+              {
+                "day": "Mese 1",
+                "text": "Il DPO segnala il rischio di trasferimento GDPR; richiesta TIA"
+              },
+              {
+                "day": "Mese 3",
+                "text": "Il team legale esamina l'esposizione al CLOUD Act; nessuna garanzia possibile"
+              },
+              {
+                "day": "Mese 6",
+                "text": "Audit del regolatore; residenza dei dati confermata, sovranità no"
+              },
+              {
+                "day": "Risultato",
+                "text": "Residenza, non sovranità. Il gap di conformità rimane."
+              }
+            ],
+            "newLabel": "CON REDIACC",
+            "newSteps": [
+              "Ospita sulla tua infrastruttura",
+              "Tieni le tue chiavi",
+              "Il CLOUD Act non può raggiungerti"
+            ]
+          }
+        },
+        "calculator": {
+          "overline": "IL COSTO REALE",
+          "title": "Quanto ti costa l'esposizione alla giurisdizione USA?",
+          "description": "Trascina i cursori per adattarli al tuo ambiente. Scopri il costo reale dei gap di sovranità.",
+          "headerTitle": "Calcolatore di esposizione alla sovranità",
+          "sliders": {
+            "records": "Dati personali UE (migliaia di record)",
+            "spend": "Spesa annuale per hyperscaler (migliaia di €)",
+            "recoveryHours": "Test di recovery manuale DORA (ore / anno)"
+          },
+          "withoutTag": "GIURISDIZIONE USA",
+          "withTag": "CON REDIACC",
+          "results": {
+            "transferRisk": "Esposizione al rischio di trasferimento GDPR",
+            "exitPenalty": "Rischio penale di uscita Data Act 2027",
+            "doraTesting": "Costo test DORA Articolo 12"
+          },
+          "annualLabel": "Esposizione annuale alla sovranità",
+          "withResults": {
+            "transferRisk": "Esposizione al rischio di trasferimento GDPR",
+            "exitPenalty": "Rischio penale di uscita Data Act 2027",
+            "doraTesting": "Costo test DORA Articolo 12"
+          },
+          "withAnnual": "Esposizione annuale alla sovranità",
+          "footnote": "Rischio di trasferimento: record × €0,04 × 10% probabilità di scrutinio regolatorio. Penale di uscita: 10% della spesa per hyperscaler come tetto stimato dei costi di migrazione per l'Articolo 25 del Data Act (scadenza zero-charge 12 gennaio 2027). Test DORA: ore × €200/ora costo ingegnere. Con Rediacc: il self-hosted elimina il rischio di trasferimento; il formato aperto elimina la penale di uscita; il fork a tempo costante riduce i test di recovery DORA a pochi minuti indipendentemente dalla dimensione del repo."
+        },
+        "howItWorks": {
+          "overline": "COME FUNZIONA",
+          "title": "Tre passi. Uno stack sovrano.",
+          "steps": [
+            {
+              "title": "Ospita",
+              "description": "Distribuisci sul tuo hardware, sul tuo provider IaaS europeo, o su qualsiasi combinazione. Rediacc OE è costituita in Estonia; nessuna società madre USA, nessun piano di controllo USA, nessuna superficie CLOUD Act.",
+              "icon": "server"
+            },
+            {
+              "title": "Tieni le chiavi",
+              "description": "Le chiavi di crittografia non lasciano mai la tua custodia. La derivazione delle chiavi avviene lato client. Rediacc non vede mai il testo in chiaro. La catena di custodia è verificabile per chiave tramite CLI.",
+              "icon": "key"
+            },
+            {
+              "title": "Dimostralo",
+              "description": "Genera un report firmato sulla custodia delle chiavi con un solo comando. Allineato con SecNumCloud 3.2, BSI C5:2026, dichiarazione congiunta ANSSI-BSI e EDPB Raccomandazioni 01/2020 Caso d'Uso 2.",
+              "icon": "shield"
+            }
+          ],
+          "cloneVisual": {
+            "production": {
+              "title": "Hyperscaler USA",
+              "status": "Esposto al CLOUD Act",
+              "services": [
+                {
+                  "name": "S3 Bucket",
+                  "port": "US-controlled"
+                },
+                {
+                  "name": "KMS Key",
+                  "port": "vendor-held"
+                },
+                {
+                  "name": "IAM Policy",
+                  "port": "US-governed"
+                },
+                {
+                  "name": "Audit Log",
+                  "port": "US-accessible"
+                }
+              ],
+              "containerCount": "Residenza contrattuale",
+              "size": "Non è sovranità"
+            },
+            "clone": {
+              "title": "Il Tuo Stack Sovrano",
+              "status": "Giurisdizione UE",
+              "cardClass": "sealed",
+              "services": [
+                {
+                  "name": "Your Storage",
+                  "port": "Customer-owned"
+                },
+                {
+                  "name": "Your Keys",
+                  "port": "Customer HSM"
+                },
+                {
+                  "name": "Your Policy",
+                  "port": "EU-governed"
+                },
+                {
+                  "name": "Audit Chain",
+                  "port": "SHA-256 signed"
+                }
+              ],
+              "containerCount": "Sovranità architettonica",
+              "size": "Immune al CLOUD Act"
+            },
+            "arrow": {
+              "label": "Migra",
+              "time": "Formato aperto",
+              "icon": "shield-arrow"
+            }
+          }
+        },
+        "techDiff": {
+          "overline": "SOTTO IL COFANO",
+          "title": "Perché la residenza dei dati non è sovranità dei dati",
+          "description": "Un provider soggetto alla giurisdizione USA può archiviare i tuoi dati a Francoforte ed essere comunque obbligato dai tribunali USA a divulgarli. L'architettura di Rediacc rimuove completamente il vettore di coercizione: non ci sono chiavi da consegnare e nessun canale di call-home da intercettare.",
+          "rows": [
+            {
+              "traditional": "Provider soggetto alla giurisdizione USA indipendentemente da dove si trova il testo cifrato",
+              "rediacc": "Operatore costituito in Estonia; nessuna società madre USA, nessuna superficie di coercizione CLOUD Act"
+            },
+            {
+              "traditional": "KMS gestito dal vendor: il provider può materializzare il testo in chiaro su richiesta legale",
+              "rediacc": "Derivazione delle chiavi lato client: il vendor non detiene mai le chiavi; la coercizione è tecnicamente inutile"
+            },
+            {
+              "traditional": "Le richieste di dati transfrontaliere sono registrate dal vendor, non visibili al cliente",
+              "rediacc": "Catena di audit firmata SHA-256: ogni accesso alle chiavi e ogni richiesta sono registrati, leggibili dal cliente"
+            },
+            {
+              "traditional": "Formato di backup proprietario: l'uscita richiede una migrazione con strumenti del vendor",
+              "rediacc": "Formato aperto (btrfs send, tar): uscire equivale a avere una replica funzionante, conforme al Data Act"
+            },
+            {
+              "traditional": "I test di recovery DORA scalano con il volume dei dati; giorni per i repo di grandi dimensioni",
+              "rediacc": "Fork a tempo costante tramite btrfs reflink: 100 GB e 100 TB si biforcano negli stessi secondi"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "PERCHÉ CONTA",
+          "title": "Cosa ottieni",
+          "items": [
+            {
+              "icon": "shield",
+              "title": "Immunità al CLOUD Act per costruzione",
+              "description": "Nessuna società madre soggetta alla giurisdizione USA. Nessun escrow delle chiavi con il vendor. L'architettura è la difesa. La testimonianza di Carniaux al Senato (18 giugno 2025) ha chiuso qualsiasi argomento residuo secondo cui i contratti sostituiscono l'immunità giurisdizionale."
+            },
+            {
+              "icon": "globe",
+              "title": "Pronto per il Data Act UE 2027",
+              "description": "Formato di dati aperto e zero spese di migrazione per costruzione. Ogni backup è una replica portatile e funzionante. Piena conformità con gli Articoli 23-31 del Data Act prima della scadenza del 12 gennaio 2027."
+            },
+            {
+              "icon": "check-circle",
+              "title": "Allineato con SecNumCloud e C5:2026",
+              "description": "La postura su quattro pilastri corrisponde alla dichiarazione congiunta ANSSI-BSI del 17 novembre 2025: rigorosa localizzazione dei dati, applicazione esclusiva del diritto UE, assenza di accesso extra-europeo e continuità operativa senza dipendenze non-UE."
+            }
+          ]
+        },
+        "comparison": {
+          "overline": "IL DIVARIO",
+          "title": "Sovranità a confronto",
+          "description": "La maggior parte dei vendor offre residenza dei dati. Nessuno può offrire ciò che Rediacc fornisce per architettura: custodia delle chiavi da parte del cliente, operatore solo-UE e immunità al CLOUD Act.",
+          "capabilityLabel": "Capacità",
+          "features": [
+            {
+              "name": "Immunità al CLOUD Act (nessuna società madre soggetta alla giurisdizione USA)",
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
+              "refs": [4, 4, 4, 0, 0, 0]
+            },
+            {
+              "name": "Cliente detiene le chiavi (inintelligibilità tecnica)",
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 5, 5, 0, 0, 0]
+            },
+            {
+              "name": "Operatore solo-UE (nessuna società madre USA)",
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
+              "refs": [4, 4, 4, 0, 6, 0]
+            },
+            {
+              "name": "Percorso di attestazione SecNumCloud / C5:2026",
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 7, 0, 0, 0]
+            },
+            {
+              "name": "Formato di uscita aperto (Data Act Art. 30)",
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [8, 8, 8, 0, 8, 0]
+            },
+            {
+              "name": "Self-hosted sull'infrastruttura del cliente",
+              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [9, 0, 0, 0, 0, 0]
+            },
+            {
+              "name": "Residenza dei dati in UE per impostazione predefinita",
+              "values": ["cross", "cross", "check", "check", "check", "rediacc"],
+              "refs": [0, 0, 10, 0, 13, 0]
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "Dopo la testimonianza di Carniaux al Senato nel giugno 2025, il nostro comitato di audit SecNumCloud ha posto una domanda: riuscite a dimostrare che il vostro provider di backup non può essere obbligato a divulgare dati dei pazienti alle autorità USA? Con Microsoft Azure Backup non riuscivamo a rispondere. Con Rediacc la risposta è architettonica: le chiavi non lasciano mai il nostro HSM, l'operatore non ha una società madre USA e possiamo generare un report di custodia firmato in trenta secondi. Questa è l'unica risposta che soddisfa ANSSI.",
+          "author": "Chief Information Security Officer",
+          "company": "OIV francese soggetto all'obbligo SecNumCloud, 1.200 dipendenti",
+          "impact": {
+            "before": {
+              "label": "PRIMA",
+              "value": "Rischio di trasferimento"
+            },
+            "after": {
+              "label": "DOPO",
+              "value": "Immune al CLOUD Act"
+            },
+            "improvement": "Microsoft Azure Backup sostituito - Custodia delle chiavi: da vendor a cliente - Audit ANSSI: superato"
+          }
+        },
+        "bottomCta": {
+          "title": "Smetti di affittare i tuoi dati da un provider soggetto alla giurisdizione USA.",
+          "description": "Inizia con l'edizione Community gratuita. Esegui il tuo primo audit della custodia delle chiavi in meno di un minuto.",
+          "ctaText": "Inizia Gratis con Community",
+          "command": "rdc audit log --limit 50"
+        },
+        "techStrip": {
+          "label": "Self-host qualsiasi workload, tieni ogni chiave",
+          "note": "Database, server di posta, CI/CD, ERP, CMS e archivi di modelli AI: ogni workload sovrano, ogni chiave tua."
+        },
+        "explore": {
+          "title": "Esplora Altre Soluzioni",
+          "solutions": [
+            {
+              "category": "Controllo della Crittografia",
+              "title": "Crittografia che Controlli Tu",
+              "description": "Le tue chiavi. La tua crittografia. Nessuna eccezione.",
+              "slug": "encryption",
+              "dataCategory": "encryption"
+            },
+            {
+              "category": "Controllo della Crittografia",
+              "title": "Registro di Audit",
+              "description": "Ogni azione registrata. Nulla nascosto.",
+              "slug": "audit-trail",
+              "dataCategory": "encryption"
+            },
+            {
+              "category": "Controllo della Crittografia",
+              "title": "Sicurezza della Migrazione",
+              "description": "Migra senza mettere a rischio i tuoi dati",
+              "slug": "migration-safety",
+              "dataCategory": "encryption"
+            },
+            {
+              "category": "Sopravvivenza al Ransomware",
+              "title": "Backup Immutabili",
+              "description": "Backup che il ransomware non può toccare",
+              "slug": "immutable-backups",
+              "dataCategory": "ransomware"
+            },
+            {
+              "category": "Multi-Cloud",
+              "title": "Protezione dalle Interruzioni Cloud",
+              "description": "Quando AWS è giù, tu no",
+              "slug": "cloud-outage-protection",
+              "dataCategory": "multi-cloud"
+            },
+            {
+              "category": "Backup Verificati",
+              "title": "Fuga dal Vendor Lock-In",
+              "description": "Abbandona qualsiasi vendor. Tieni i tuoi dati.",
+              "slug": "vendor-lock-in",
+              "dataCategory": "backups"
+            },
+            {
+              "category": "Backup Verificati",
+              "title": "Conformità alla Conservazione",
+              "description": "Soddisfa ogni obbligo di conservazione automaticamente",
+              "slug": "retention-compliance",
+              "dataCategory": "backups"
+            },
+            {
+              "category": "Ambienti di Sviluppo",
+              "title": "Clonazione degli Ambienti",
+              "description": "Clona la produzione in 60 secondi",
+              "slug": "environment-cloning",
+              "dataCategory": "dev-env"
+            }
+          ]
+        },
+        "references": {
+          "label": "Fonti e Riferimenti",
+          "items": [
+            {
+              "text": "Anton Carniaux, Direttore per gli Affari Pubblici e Legali di Microsoft Francia, audizione del Senato francese sull'appalto pubblico e la sovranità digitale, 18 giugno 2025: \"No, non posso garantirlo, ma, ancora una volta, non è mai successo prima.\" Riportato da The Register, 25 luglio 2025.",
+              "url": "https://www.theregister.com/2025/07/25/microsoft_admits_it_cannot_guarantee/"
+            },
+            {
+              "text": "Gartner, febbraio 2026: previsione di spesa UE per IaaS cloud sovrano a 12,6 miliardi di dollari nel 2026 e 23,1 miliardi di dollari nel 2027, superando il Nord America entro il 2027.",
+              "url": "https://www.gartner.com/en/newsroom/press-releases/2026-02"
+            },
+            {
+              "text": "Commissione Europea, \"La Commissione promuove la sovranità cloud attraverso gli appalti strategici\", 17 aprile 2026. L'appalto Cloud III da €180M è stato assegnato a Post Telecom + OVHcloud + CleverCloud, STACKIT, Scaleway e Proximus + S3NS + Clarence + Mistral AI. Zero prime contractor con sede negli USA.",
+              "url": "https://commission.europa.eu/news-and-media/news/commission-advances-cloud-sovereignty-through-strategic-procurement-2026-04-17_en"
+            },
+            {
+              "text": "CLOUD Act (Clarifying Lawful Overseas Use of Data Act), 18 U.S.C. 2713, 2018. Autorizza le autorità USA a obbligare i provider soggetti alla giurisdizione statunitense a divulgare i dati dei clienti archiviati ovunque nel mondo.",
+              "url": "https://www.justice.gov/dag/cloudact"
+            },
+            {
+              "text": "Raccomandazioni EDPB 01/2020 sulle misure che integrano gli strumenti di trasferimento per garantire la conformità al livello di protezione UE dei dati personali, Versione 2.0, giugno 2021. Caso d'Uso 2: la crittografia come misura supplementare richiede la custodia esclusiva delle chiavi da parte del cliente e l'inintelligibilità tecnica presso il destinatario.",
+              "url": "https://www.edpb.europa.eu/system/files/2021-06/edpb_recommendations_202001vo.2.0_supplementarymeasurestransferstools_en.pdf"
+            },
+            {
+              "text": "Keepit A/S, Copenaghen. Backup SaaS-only per Microsoft 365, Salesforce e Google Workspace. Società costituita in UE, nessuna società madre USA. Non esegue backup di workload self-hosted o on-premises.",
+              "url": "https://keepit.com"
+            },
+            {
+              "text": "Requisiti di qualificazione ANSSI SecNumCloud 3.2. I provider devono essere a maggioranza di proprietà UE, con sede in UE e immuni al diritto extraterritoriale. Gli azionisti non-UE sono limitati al 25% individualmente e al 39% collettivamente. AWS Sovereign Cloud e Microsoft Bleu non si qualificano.",
+              "url": "https://www.ssi.gouv.fr/uploads/2022/01/secnumcloud-referentiel-v3.2.pdf"
+            },
+            {
+              "text": "Data Act UE (Regolamento (UE) 2023/2854), Articoli 23-31. Operativo dal 12 settembre 2025. Divieto totale di spese di migrazione dal 12 gennaio 2027. I provider devono garantire l'equivalenza funzionale dopo il passaggio.",
+              "url": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj/eng"
+            },
+            {
+              "text": "Veeam Backup and Replication supporta il deployment self-hosted on-premises. Veeam non detiene certificazioni di sovranità dirette; la strategia di sovranità UE dipende dall'IaaS partner (in particolare OVHcloud).",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "AWS European Sovereign Cloud, disponibile dal 15 gennaio 2026. Opera tramite quattro GmbH tedesche. La società madre con sede negli USA (Amazon.com Inc.) rimane soggetta al CLOUD Act.",
+              "url": "https://aws.amazon.com/government-education/european-sovereign-cloud/"
+            },
+            {
+              "text": "Dichiarazione congiunta ANSSI-BSI sui criteri di sovranità cloud, 17 novembre 2025. Quattro criteri di esclusione: rigorosa localizzazione dei dati e del supporto, applicazione esclusiva del diritto europeo, assenza di accesso non autorizzato da parte di terzi extra-europei e capacità di mantenere la continuità operativa senza tecnologie non-UE.",
+              "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/ANSSI-BSI-joint-releases/Cloud-Sovereignty-Criteria.pdf"
+            },
+            {
+              "text": "Autorità di vigilanza europee, \"Designazione dei fornitori ICT di terze parti critici nell'ambito di DORA\", 18 novembre 2025. I primi 19 CTPP designati includono AWS, Microsoft Azure, Google Cloud, IBM, Oracle, SAP, Salesforce.",
+              "url": "https://www.eiopa.europa.eu/european-supervisory-authorities-designate-critical-ict-third-party-providers-under-digital-2025-11-18_en"
+            },
+            {
+              "text": "Politica di residenza dei dati Keepit: dati del cliente archiviati esclusivamente in datacenter UE (Francoforte, Amsterdam, Copenaghen). Modello SaaS con operatore e archiviazione UE.",
+              "url": "https://www.keepit.com/trust/"
+            }
+          ],
+          "disclaimer": "Le stime del calcolatore utilizzano modelli di costo standard del settore; l'esposizione effettiva varia in base alla giurisdizione, alla struttura contrattuale e allo scenario di violazione."
+        }
+      },
       "rapidRecovery": {
         "benefits": {
           "items": [
@@ -12923,6 +13410,26 @@
             }
           ]
         }
+      },
+      "leadMagnetModal": {
+        "title": "Scarichi il documento tecnico",
+        "description": "Inserisca la sua email aziendale. Le invieremo il link al PDF e ne conserveremo una copia nella sua casella di posta.",
+        "emailLabel": "Email aziendale",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "Inviami il PDF",
+        "sendingLabel": "Invio in corso...",
+        "successTitle": "PDF in arrivo",
+        "successBody": "Abbiamo aperto il documento in una nuova scheda e Le abbiamo inviato il link per email. Chiusura a breve.",
+        "errorGeneric": "Si è verificato un errore. La preghiamo di riprovare o di contattarci all'indirizzo support@rediacc.com.",
+        "captchaRequired": "La preghiamo di completare la verifica captcha.",
+        "disclaimer": "Una sola email. Nessuna lista marketing. Cancellazione con un clic.",
+        "closeLabel": "Chiudi"
+      },
+      "leadMagnetButton": {
+        "title": "Scarichi il documento tecnico",
+        "description": "Un PDF senza fronzoli scritto per CISO, CTO e ingegneri senior. Le inviamo il link via email così potrà ritrovarlo facilmente.",
+        "buttonLabel": "Scarica il documento",
+        "dismissLabel": "Chiudi"
       }
     },
     "team": {
@@ -13263,7 +13770,7 @@
         "acceptance": {
           "content": [
             "Accedendo o utilizzando qualsiasi parte dei Servizi, incluso il download della CLI, l'installazione del Bridge su un Dispositivo, la creazione di un Account o l'utilizzo della Piattaforma, accettate di essere vincolati dai presenti Termini di Servizio (\"Termini\"). Se utilizzate i Servizi per conto di un'organizzazione, dichiarate e garantite di avere l'autorita di vincolare tale organizzazione ai presenti Termini; in tal caso, i riferimenti a \"voi\" o \"Cliente\" comprendono tale organizzazione.",
-            "Se non accettate i presenti Termini, non potete accedere ai Servizi ne utilizzarli. I presenti Termini costituiscono un accordo legalmente vincolante tra voi e Rediacc OÜ (codice registro 17363830), societa registrata in Estonia con sede legale in Tartu mnt 67/1-13b, 10115 Tallinn, Estonia (\"Rediacc\", \"noi\", \"ci\" o \"nostro\")."
+            "Se non accettate i presenti Termini, non potete accedere ai Servizi ne utilizzarli. I presenti Termini costituiscono un accordo legalmente vincolante tra voi e Rediacc OÜ (codice registro 17363830), societa registrata in Estonia con sede legale in Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonia (\"Rediacc\", \"noi\", \"ci\" o \"nostro\")."
           ],
           "id": "acceptance",
           "title": "2. Accettazione dei Termini"
@@ -13536,6 +14043,398 @@
       },
       "toc": {
         "title": "Indice"
+      }
+    },
+    "resourcesBrief": {
+      "ransomwareSurvival": {
+        "meta": {
+          "title": "Ransomware: Guida Tecnica Gratuita PDF",
+          "description": "Backup immutabile nativo del filesystem: i ransomware non possono cifrarlo né eliminarlo. Guida gratuita CISO/CTO di Rediacc, con versione executive.",
+          "keywords": "sopravvivenza ransomware, pdf, rediacc, backup btrfs, backup immutabile, documento tecnico"
+        },
+        "hero": {
+          "eyebrow": "Download gratuito · PDF A4 · Livello CISO / CTO",
+          "title": "Sopravvivenza al Ransomware",
+          "subtitle": "Il 94% degli attacchi ransomware prende di mira il backup. Il 57% ha successo.",
+          "downloadButton": "Scarica il documento tecnico",
+          "openInBrowser": "Apri nel browser",
+          "disclaimer": "Una sola email. Conferma per posta. Cancellazione con un clic."
+        },
+        "toc": {
+          "heading": "Cosa contiene",
+          "intro": "Il documento tratta l'architettura, le modalità di guasto che essa blocca, la mappa normativa e le prove a livello operatore che un revisore richiederà. Circa 10-14 pagine dense.",
+          "items": [
+            "Il modello di minaccia in termini operativi concreti",
+            "Il meccanismo architetturale, con ragionamento sul modello avversario",
+            "Le modalità di guasto bloccate, con precedenti nominativi",
+            "Mappa di conformità: norme specifiche, sanzioni, finestre di segnalazione",
+            "Calcolo del ROI fondato su dati pubblicati",
+            "Confronto tra vendor sull'approccio tecnico (non sull'ARR)",
+            "Struttura del progetto pilota e limiti di perimetro noti",
+            "Prove pronte per l'audit prodotte dall'architettura"
+          ]
+        },
+        "companions": {
+          "heading": "Pagine di soluzione correlate",
+          "intro": "La stessa architettura applicata a specifiche domande degli acquirenti:",
+          "readMore": "Leggi di più"
+        },
+        "faq": {
+          "heading": "Domande dei lettori",
+          "items": [
+            {
+              "q": "A chi è destinato questo documento?",
+              "a": "A un CISO, CTO o ingegnere infrastrutturale senior che valuta l'architettura. Presuppone familiarità con i flussi di lavoro di backup, i fondamenti dei filesystem e il contesto normativo che la sua infrastruttura già tocca."
+            },
+            {
+              "q": "Esiste una versione non tecnica?",
+              "a": "Sì. Dopo aver inviato la sua email, la stessa pagina rimanda a un PDF executive in cinque minuti che può inoltrare a un CFO, a un direttore IT o a un membro del consiglio di amministrazione."
+            },
+            {
+              "q": "Cosa succede alla mia email?",
+              "a": "Una sola email di conferma. Sarà iscritto alla nostra newsletter (un breve articolo al mese, su tutti i prodotti). Cancellazione con un clic. La sua email risiede nell'UE per impostazione predefinita, in conformità alla politica di residenza dei dati di Rediacc."
+            },
+            {
+              "q": "Perché btrfs?",
+              "a": "Il documento lo spiega in dettaglio. In sintesi: btrfs rende l'immutabilità, gli snapshot copy-on-write e le proprietà di invio/ricezione incrementale parte del livello di storage, anziché di un'applicazione che vi gira sopra. Questo cambia ciò che un aggressore con credenziali root può aggirare."
+            },
+            {
+              "q": "Si applica a servizi gestiti come AWS RDS?",
+              "a": "Non direttamente. L'architettura riguarda il computing autogestito con database containerizzati su volumi supportati da btrfs. Se il suo patrimonio critico per il ripristino risiede in RDS o Aurora, il documento lo segnala esplicitamente e indica dove il modello si applica e dove no."
+            }
+          ]
+        },
+        "about": {
+          "heading": "Informazioni su questo documento",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Ha una domanda che dovremmo aggiungere a questa pagina? Ce lo comunichi all'indirizzo hello@rediacc.com.",
+          "downloadButton": "Scarica il documento"
+        }
+      },
+      "multiCloudAlways": {
+        "meta": {
+          "title": "Multi-Cloud Sempre: Guida Tecnica Gratuita PDF",
+          "description": "Snapshot portabili e failover cross-cloud testato per garantire la continuità operativa. Guida CISO/CTO gratuita, con versione executive.",
+          "keywords": "multi-cloud always, pdf, rediacc, backup btrfs, backup immutabile, documento tecnico"
+        },
+        "hero": {
+          "eyebrow": "Download gratuito · PDF A4 · Livello CISO / CTO",
+          "title": "Multi-Cloud Always",
+          "subtitle": "AWS US-EAST-1 è rimasto offline per 15 ore il 20 ottobre 2025. Snapchat, Robinhood, Uber, Delta. La sua azienda avrebbe potuto migrare su un altro cloud in tempo?",
+          "downloadButton": "Scarica il documento tecnico",
+          "openInBrowser": "Apri nel browser",
+          "disclaimer": "Una sola email. Conferma per posta. Cancellazione con un clic."
+        },
+        "toc": {
+          "heading": "Cosa contiene",
+          "intro": "Il documento tratta l'architettura, le modalità di guasto che essa blocca, la mappa normativa e le prove a livello operatore che un revisore richiederà. Circa 10-14 pagine dense.",
+          "items": [
+            "Il modello di minaccia in termini operativi concreti",
+            "Il meccanismo architetturale, con ragionamento sul modello avversario",
+            "Le modalità di guasto bloccate, con precedenti nominativi",
+            "Mappa di conformità: norme specifiche, sanzioni, finestre di segnalazione",
+            "Calcolo del ROI fondato su dati pubblicati",
+            "Confronto tra vendor sull'approccio tecnico (non sull'ARR)",
+            "Struttura del progetto pilota e limiti di perimetro noti",
+            "Prove pronte per l'audit prodotte dall'architettura"
+          ]
+        },
+        "companions": {
+          "heading": "Pagine di soluzione correlate",
+          "intro": "La stessa architettura applicata a specifiche domande degli acquirenti:",
+          "readMore": "Leggi di più"
+        },
+        "faq": {
+          "heading": "Domande dei lettori",
+          "items": [
+            {
+              "q": "A chi è destinato questo documento?",
+              "a": "A un CISO, CTO o ingegnere infrastrutturale senior che valuta l'architettura. Presuppone familiarità con i flussi di lavoro di backup, i fondamenti dei filesystem e il contesto normativo che la sua infrastruttura già tocca."
+            },
+            {
+              "q": "Esiste una versione non tecnica?",
+              "a": "Sì. Dopo aver inviato la sua email, la stessa pagina rimanda a un PDF executive in cinque minuti che può inoltrare a un CFO, a un direttore IT o a un membro del consiglio di amministrazione."
+            },
+            {
+              "q": "Cosa succede alla mia email?",
+              "a": "Una sola email di conferma. Sarà iscritto alla nostra newsletter (un breve articolo al mese, su tutti i prodotti). Cancellazione con un clic. La sua email risiede nell'UE per impostazione predefinita, in conformità alla politica di residenza dei dati di Rediacc."
+            },
+            {
+              "q": "Perché btrfs?",
+              "a": "Il documento lo spiega in dettaglio. In sintesi: btrfs rende l'immutabilità, gli snapshot copy-on-write e le proprietà di invio/ricezione incrementale parte del livello di storage, anziché di un'applicazione che vi gira sopra. Questo cambia ciò che un aggressore con credenziali root può aggirare."
+            },
+            {
+              "q": "Si applica a servizi gestiti come AWS RDS?",
+              "a": "Non direttamente. L'architettura riguarda il computing autogestito con database containerizzati su volumi supportati da btrfs. Se il suo patrimonio critico per il ripristino risiede in RDS o Aurora, il documento lo segnala esplicitamente e indica dove il modello si applica e dove no."
+            }
+          ]
+        },
+        "about": {
+          "heading": "Informazioni su questo documento",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Ha una domanda che dovremmo aggiungere a questa pagina? Ce lo comunichi all'indirizzo hello@rediacc.com.",
+          "downloadButton": "Scarica il documento"
+        }
+      },
+      "verifiedBackups": {
+        "meta": {
+          "title": "Backup Verificati: Guida Tecnica Gratuita PDF",
+          "description": "Test di avvio e verifica su ogni backup, ad ogni ciclo, non solo trimestralmente. Guida gratuita CISO/CTO di Rediacc, con versione executive di cinque minuti.",
+          "keywords": "backup verificati, pdf, rediacc, backup btrfs, backup immutabile, documento tecnico"
+        },
+        "hero": {
+          "eyebrow": "Download gratuito · PDF A4 · Livello CISO / CTO",
+          "title": "Backup Verificati",
+          "subtitle": "Il 58% dei backup fallisce al momento del ripristino. La maggior parte delle aziende lo scopre solo durante il disastro.",
+          "downloadButton": "Scarica il documento tecnico",
+          "openInBrowser": "Apri nel browser",
+          "disclaimer": "Una sola email. Conferma per posta. Cancellazione con un clic."
+        },
+        "toc": {
+          "heading": "Cosa contiene",
+          "intro": "Il documento tratta l'architettura, le modalità di guasto che essa blocca, la mappa normativa e le prove a livello operatore che un revisore richiederà. Circa 10-14 pagine dense.",
+          "items": [
+            "Il modello di minaccia in termini operativi concreti",
+            "Il meccanismo architetturale, con ragionamento sul modello avversario",
+            "Le modalità di guasto bloccate, con precedenti nominativi",
+            "Mappa di conformità: norme specifiche, sanzioni, finestre di segnalazione",
+            "Calcolo del ROI fondato su dati pubblicati",
+            "Confronto tra vendor sull'approccio tecnico (non sull'ARR)",
+            "Struttura del progetto pilota e limiti di perimetro noti",
+            "Prove pronte per l'audit prodotte dall'architettura"
+          ]
+        },
+        "companions": {
+          "heading": "Pagine di soluzione correlate",
+          "intro": "La stessa architettura applicata a specifiche domande degli acquirenti:",
+          "readMore": "Leggi di più"
+        },
+        "faq": {
+          "heading": "Domande dei lettori",
+          "items": [
+            {
+              "q": "A chi è destinato questo documento?",
+              "a": "A un CISO, CTO o ingegnere infrastrutturale senior che valuta l'architettura. Presuppone familiarità con i flussi di lavoro di backup, i fondamenti dei filesystem e il contesto normativo che la sua infrastruttura già tocca."
+            },
+            {
+              "q": "Esiste una versione non tecnica?",
+              "a": "Sì. Dopo aver inviato la sua email, la stessa pagina rimanda a un PDF executive in cinque minuti che può inoltrare a un CFO, a un direttore IT o a un membro del consiglio di amministrazione."
+            },
+            {
+              "q": "Cosa succede alla mia email?",
+              "a": "Una sola email di conferma. Sarà iscritto alla nostra newsletter (un breve articolo al mese, su tutti i prodotti). Cancellazione con un clic. La sua email risiede nell'UE per impostazione predefinita, in conformità alla politica di residenza dei dati di Rediacc."
+            },
+            {
+              "q": "Perché btrfs?",
+              "a": "Il documento lo spiega in dettaglio. In sintesi: btrfs rende l'immutabilità, gli snapshot copy-on-write e le proprietà di invio/ricezione incrementale parte del livello di storage, anziché di un'applicazione che vi gira sopra. Questo cambia ciò che un aggressore con credenziali root può aggirare."
+            },
+            {
+              "q": "Si applica a servizi gestiti come AWS RDS?",
+              "a": "Non direttamente. L'architettura riguarda il computing autogestito con database containerizzati su volumi supportati da btrfs. Se il suo patrimonio critico per il ripristino risiede in RDS o Aurora, il documento lo segnala esplicitamente e indica dove il modello si applica e dove no."
+            }
+          ]
+        },
+        "about": {
+          "heading": "Informazioni su questo documento",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Ha una domanda che dovremmo aggiungere a questa pagina? Ce lo comunichi all'indirizzo hello@rediacc.com.",
+          "downloadButton": "Scarica il documento"
+        }
+      },
+      "encryptionControl": {
+        "meta": {
+          "title": "Controllo della Cifratura: Guida Tecnica Gratuita PDF",
+          "description": "Chiavi gestite dal cliente e dati cifrati che sopravvivono a un cambio di fornitore, conformi a Schrems II. Guida CISO/CTO gratuita, con versione executive.",
+          "keywords": "controllo crittografia, pdf, rediacc, backup btrfs, backup immutabile, documento tecnico"
+        },
+        "hero": {
+          "eyebrow": "Download gratuito · PDF A4 · Livello CISO / CTO",
+          "title": "Controllo della Crittografia",
+          "subtitle": "Schrems II non è una scelta di policy. È un requisito architetturale, e la maggior parte dei vendor di backup non lo soddisfa.",
+          "downloadButton": "Scarica il documento tecnico",
+          "openInBrowser": "Apri nel browser",
+          "disclaimer": "Una sola email. Conferma per posta. Cancellazione con un clic."
+        },
+        "toc": {
+          "heading": "Cosa contiene",
+          "intro": "Il documento tratta l'architettura, le modalità di guasto che essa blocca, la mappa normativa e le prove a livello operatore che un revisore richiederà. Circa 10-14 pagine dense.",
+          "items": [
+            "Il modello di minaccia in termini operativi concreti",
+            "Il meccanismo architetturale, con ragionamento sul modello avversario",
+            "Le modalità di guasto bloccate, con precedenti nominativi",
+            "Mappa di conformità: norme specifiche, sanzioni, finestre di segnalazione",
+            "Calcolo del ROI fondato su dati pubblicati",
+            "Confronto tra vendor sull'approccio tecnico (non sull'ARR)",
+            "Struttura del progetto pilota e limiti di perimetro noti",
+            "Prove pronte per l'audit prodotte dall'architettura"
+          ]
+        },
+        "companions": {
+          "heading": "Pagine di soluzione correlate",
+          "intro": "La stessa architettura applicata a specifiche domande degli acquirenti:",
+          "readMore": "Leggi di più"
+        },
+        "faq": {
+          "heading": "Domande dei lettori",
+          "items": [
+            {
+              "q": "A chi è destinato questo documento?",
+              "a": "A un CISO, CTO o ingegnere infrastrutturale senior che valuta l'architettura. Presuppone familiarità con i flussi di lavoro di backup, i fondamenti dei filesystem e il contesto normativo che la sua infrastruttura già tocca."
+            },
+            {
+              "q": "Esiste una versione non tecnica?",
+              "a": "Sì. Dopo aver inviato la sua email, la stessa pagina rimanda a un PDF executive in cinque minuti che può inoltrare a un CFO, a un direttore IT o a un membro del consiglio di amministrazione."
+            },
+            {
+              "q": "Cosa succede alla mia email?",
+              "a": "Una sola email di conferma. Sarà iscritto alla nostra newsletter (un breve articolo al mese, su tutti i prodotti). Cancellazione con un clic. La sua email risiede nell'UE per impostazione predefinita, in conformità alla politica di residenza dei dati di Rediacc."
+            },
+            {
+              "q": "Perché btrfs?",
+              "a": "Il documento lo spiega in dettaglio. In sintesi: btrfs rende l'immutabilità, gli snapshot copy-on-write e le proprietà di invio/ricezione incrementale parte del livello di storage, anziché di un'applicazione che vi gira sopra. Questo cambia ciò che un aggressore con credenziali root può aggirare."
+            },
+            {
+              "q": "Si applica a servizi gestiti come AWS RDS?",
+              "a": "Non direttamente. L'architettura riguarda il computing autogestito con database containerizzati su volumi supportati da btrfs. Se il suo patrimonio critico per il ripristino risiede in RDS o Aurora, il documento lo segnala esplicitamente e indica dove il modello si applica e dove no."
+            }
+          ]
+        },
+        "about": {
+          "heading": "Informazioni su questo documento",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Ha una domanda che dovremmo aggiungere a questa pagina? Ce lo comunichi all'indirizzo hello@rediacc.com.",
+          "downloadButton": "Scarica il documento"
+        }
+      },
+      "devEnvironments": {
+        "meta": {
+          "title": "Ambienti di Sviluppo: Guida Tecnica Gratuita PDF",
+          "description": "Ambienti identici alla produzione in 60 secondi con cloni btrfs zero-copy. Guida gratuita CISO/CTO di Rediacc, con versione executive.",
+          "keywords": "ambienti di sviluppo, pdf, rediacc, backup btrfs, backup immutabile, documento tecnico"
+        },
+        "hero": {
+          "eyebrow": "Download gratuito · PDF A4 · Livello CISO / CTO",
+          "title": "Ambienti di Sviluppo",
+          "subtitle": "I suoi sviluppatori scrivono codice 4,5 ore alla settimana. Il resto è attesa degli ambienti. Un team di 50 ingegneri perde da $720K a $1,2M l'anno in configurazioni.",
+          "downloadButton": "Scarica il documento tecnico",
+          "openInBrowser": "Apri nel browser",
+          "disclaimer": "Una sola email. Conferma per posta. Cancellazione con un clic."
+        },
+        "toc": {
+          "heading": "Cosa contiene",
+          "intro": "Il documento tratta l'architettura, le modalità di guasto che essa blocca, la mappa normativa e le prove a livello operatore che un revisore richiederà. Circa 10-14 pagine dense.",
+          "items": [
+            "Il modello di minaccia in termini operativi concreti",
+            "Il meccanismo architetturale, con ragionamento sul modello avversario",
+            "Le modalità di guasto bloccate, con precedenti nominativi",
+            "Mappa di conformità: norme specifiche, sanzioni, finestre di segnalazione",
+            "Calcolo del ROI fondato su dati pubblicati",
+            "Confronto tra vendor sull'approccio tecnico (non sull'ARR)",
+            "Struttura del progetto pilota e limiti di perimetro noti",
+            "Prove pronte per l'audit prodotte dall'architettura"
+          ]
+        },
+        "companions": {
+          "heading": "Pagine di soluzione correlate",
+          "intro": "La stessa architettura applicata a specifiche domande degli acquirenti:",
+          "readMore": "Leggi di più"
+        },
+        "faq": {
+          "heading": "Domande dei lettori",
+          "items": [
+            {
+              "q": "A chi è destinato questo documento?",
+              "a": "A un CISO, CTO o ingegnere infrastrutturale senior che valuta l'architettura. Presuppone familiarità con i flussi di lavoro di backup, i fondamenti dei filesystem e il contesto normativo che la sua infrastruttura già tocca."
+            },
+            {
+              "q": "Esiste una versione non tecnica?",
+              "a": "Sì. Dopo aver inviato la sua email, la stessa pagina rimanda a un PDF executive in cinque minuti che può inoltrare a un CFO, a un direttore IT o a un membro del consiglio di amministrazione."
+            },
+            {
+              "q": "Cosa succede alla mia email?",
+              "a": "Una sola email di conferma. Sarà iscritto alla nostra newsletter (un breve articolo al mese, su tutti i prodotti). Cancellazione con un clic. La sua email risiede nell'UE per impostazione predefinita, in conformità alla politica di residenza dei dati di Rediacc."
+            },
+            {
+              "q": "Perché btrfs?",
+              "a": "Il documento lo spiega in dettaglio. In sintesi: btrfs rende l'immutabilità, gli snapshot copy-on-write e le proprietà di invio/ricezione incrementale parte del livello di storage, anziché di un'applicazione che vi gira sopra. Questo cambia ciò che un aggressore con credenziali root può aggirare."
+            },
+            {
+              "q": "Si applica a servizi gestiti come AWS RDS?",
+              "a": "Non direttamente. L'architettura riguarda il computing autogestito con database containerizzati su volumi supportati da btrfs. Se il suo patrimonio critico per il ripristino risiede in RDS o Aurora, il documento lo segnala esplicitamente e indica dove il modello si applica e dove no."
+            }
+          ]
+        },
+        "about": {
+          "heading": "Informazioni su questo documento",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Ha una domanda che dovremmo aggiungere a questa pagina? Ce lo comunichi all'indirizzo hello@rediacc.com.",
+          "downloadButton": "Scarica il documento"
+        }
+      },
+      "preemptiveDefense": {
+        "meta": {
+          "title": "Difesa Preventiva: Guida Tecnica Gratuita PDF",
+          "description": "Test di sicurezza su un clone della produzione, zero rischio reale. Pentest con IA su copia usa-e-getta. Guida CISO/CTO gratuita, con versione executive.",
+          "keywords": "difesa preventiva, pdf, rediacc, backup btrfs, backup immutabile, documento tecnico"
+        },
+        "hero": {
+          "eyebrow": "Download gratuito · PDF A4 · Livello CISO / CTO",
+          "title": "Difesa Preventiva",
+          "subtitle": "Testi sulla sua infrastruttura reale. Senza rompere nulla. Il clone assorbe i colpi pericolosi.",
+          "downloadButton": "Scarica il documento tecnico",
+          "openInBrowser": "Apri nel browser",
+          "disclaimer": "Una sola email. Conferma per posta. Cancellazione con un clic."
+        },
+        "toc": {
+          "heading": "Cosa contiene",
+          "intro": "Il documento tratta l'architettura, le modalità di guasto che essa blocca, la mappa normativa e le prove a livello operatore che un revisore richiederà. Circa 10-14 pagine dense.",
+          "items": [
+            "Il modello di minaccia in termini operativi concreti",
+            "Il meccanismo architetturale, con ragionamento sul modello avversario",
+            "Le modalità di guasto bloccate, con precedenti nominativi",
+            "Mappa di conformità: norme specifiche, sanzioni, finestre di segnalazione",
+            "Calcolo del ROI fondato su dati pubblicati",
+            "Confronto tra vendor sull'approccio tecnico (non sull'ARR)",
+            "Struttura del progetto pilota e limiti di perimetro noti",
+            "Prove pronte per l'audit prodotte dall'architettura"
+          ]
+        },
+        "companions": {
+          "heading": "Pagine di soluzione correlate",
+          "intro": "La stessa architettura applicata a specifiche domande degli acquirenti:",
+          "readMore": "Leggi di più"
+        },
+        "faq": {
+          "heading": "Domande dei lettori",
+          "items": [
+            {
+              "q": "A chi è destinato questo documento?",
+              "a": "A un CISO, CTO o ingegnere infrastrutturale senior che valuta l'architettura. Presuppone familiarità con i flussi di lavoro di backup, i fondamenti dei filesystem e il contesto normativo che la sua infrastruttura già tocca."
+            },
+            {
+              "q": "Esiste una versione non tecnica?",
+              "a": "Sì. Dopo aver inviato la sua email, la stessa pagina rimanda a un PDF executive in cinque minuti che può inoltrare a un CFO, a un direttore IT o a un membro del consiglio di amministrazione."
+            },
+            {
+              "q": "Cosa succede alla mia email?",
+              "a": "Una sola email di conferma. Sarà iscritto alla nostra newsletter (un breve articolo al mese, su tutti i prodotti). Cancellazione con un clic. La sua email risiede nell'UE per impostazione predefinita, in conformità alla politica di residenza dei dati di Rediacc."
+            },
+            {
+              "q": "Perché btrfs?",
+              "a": "Il documento lo spiega in dettaglio. In sintesi: btrfs rende l'immutabilità, gli snapshot copy-on-write e le proprietà di invio/ricezione incrementale parte del livello di storage, anziché di un'applicazione che vi gira sopra. Questo cambia ciò che un aggressore con credenziali root può aggirare."
+            },
+            {
+              "q": "Si applica a servizi gestiti come AWS RDS?",
+              "a": "Non direttamente. L'architettura riguarda il computing autogestito con database containerizzati su volumi supportati da btrfs. Se il suo patrimonio critico per il ripristino risiede in RDS o Aurora, il documento lo segnala esplicitamente e indica dove il modello si applica e dove no."
+            }
+          ]
+        },
+        "about": {
+          "heading": "Informazioni su questo documento",
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Ha una domanda che dovremmo aggiungere a questa pagina? Ce lo comunichi all'indirizzo hello@rediacc.com.",
+          "downloadButton": "Scarica il documento"
+        }
       }
     }
   },

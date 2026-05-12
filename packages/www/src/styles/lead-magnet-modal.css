@@ -1,0 +1,328 @@
+/* ============================================================================
+   Lead-magnet download modal (LeadMagnetModal.tsx)
+
+   Modal that opens when a user clicks a "Download the brief" button.
+   Shared visual identity with the inline LeadMagnetButton card:
+     - solid surface (no gradients)
+     - olive-green brand button
+     - theme-aware via --sp-* tokens
+   ============================================================================ */
+
+.lead-magnet-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-toast, 1000);
+  padding: 24px;
+  animation: lead-magnet-fade-in 0.15s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lead-magnet-modal-backdrop,
+  .lead-magnet-modal {
+    animation: none;
+  }
+}
+
+@keyframes lead-magnet-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.lead-magnet-modal {
+  position: relative;
+  max-width: 480px;
+  width: 100%;
+  background: var(--sp-bg-white, #ffffff);
+  border: 1px solid var(--sp-border-light, #e5e5e5);
+  border-radius: 12px;
+  padding: 32px 28px;
+  text-align: center;
+  color: var(--sp-text-primary, #1a1a1a);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.3);
+  animation: lead-magnet-slide-in 0.2s ease-out;
+}
+
+@keyframes lead-magnet-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Token redefinition for dark mode — scoped to the modal itself so it
+   works regardless of which parent scope wraps it. */
+:root[data-theme='dark'] .lead-magnet-modal {
+  --sp-bg-white: #1a1a1b;
+  --sp-text-primary: #e4e4e7;
+  --sp-text-body: #a1a1aa;
+  --sp-border-light: #2e2e32;
+  --sp-text-muted-light: #6b6b70;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .lead-magnet-modal {
+    --sp-bg-white: #1a1a1b;
+    --sp-text-primary: #e4e4e7;
+    --sp-text-body: #a1a1aa;
+    --sp-border-light: #2e2e32;
+    --sp-text-muted-light: #6b6b70;
+  }
+}
+
+.lead-magnet-modal__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: 0;
+  color: var(--sp-text-muted-light, #6b6b70);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  line-height: 0;
+}
+.lead-magnet-modal__close:hover {
+  color: var(--sp-text-primary, #1a1a1a);
+  background: var(--sp-border-light, rgba(0, 0, 0, 0.04));
+}
+
+.lead-magnet-modal__title {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0 0 10px;
+  color: var(--sp-text-primary, #1a1a1a);
+}
+
+.lead-magnet-modal__description {
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 20px;
+  color: var(--sp-text-body, #4a4a4f);
+}
+
+.lead-magnet-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+  text-align: left;
+}
+
+.lead-magnet-modal__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sp-text-primary, #1a1a1a);
+}
+
+.lead-magnet-modal__input {
+  padding: 12px 14px;
+  border: 1px solid var(--sp-border-light, #e5e5e5);
+  border-radius: 6px;
+  background: var(--sp-bg-white, #ffffff);
+  color: var(--sp-text-primary, #1a1a1a);
+  font-size: 15px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.lead-magnet-modal__input::placeholder {
+  color: var(--sp-text-muted-light, #6b6b70);
+}
+.lead-magnet-modal__input:focus {
+  outline: 2px solid var(--sp-brand-primary, #4a7c3f);
+  outline-offset: -1px;
+  border-color: var(--sp-brand-primary, #4a7c3f);
+}
+
+.lead-magnet-modal__turnstile {
+  display: flex;
+  justify-content: center;
+}
+
+.lead-magnet-modal__submit {
+  padding: 12px 22px;
+  background: var(--sp-brand-primary, #4a7c3f);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  margin-top: 4px;
+}
+.lead-magnet-modal__submit:hover:not(:disabled) {
+  background: var(--sp-brand-secondary, #3d6834);
+}
+.lead-magnet-modal__submit:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.lead-magnet-modal__error {
+  font-size: 13px;
+  color: #b91c1c;
+  margin: 0;
+}
+:root[data-theme='dark'] .lead-magnet-modal__error {
+  color: #fca5a5;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .lead-magnet-modal__error {
+    color: #fca5a5;
+  }
+}
+
+.lead-magnet-modal__disclaimer {
+  font-size: 12px;
+  color: var(--sp-text-muted-light, #6b6b70);
+  margin: 4px 0 0;
+  text-align: center;
+}
+
+/* Success state */
+.lead-magnet-modal__success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.lead-magnet-modal__check {
+  width: 40px;
+  height: 40px;
+  color: var(--sp-brand-primary, #4a7c3f);
+}
+
+@media (max-width: 600px) {
+  .lead-magnet-modal {
+    padding: 24px 20px;
+  }
+  .lead-magnet-modal__title {
+    font-size: 19px;
+  }
+}
+
+/* ============================================================================
+   LeadMagnetButton inline card (solution pages + resource pages)
+   ============================================================================ */
+
+.sp-lead-magnet-button {
+  position: relative;
+  max-width: 560px;
+  margin: 0 auto;
+  background: var(--sp-bg-white, #ffffff);
+  border: 1px solid var(--sp-border-light, #e5e5e5);
+  border-radius: 12px;
+  padding: 32px 28px;
+  text-align: center;
+  color: var(--sp-text-primary, #1a1a1a);
+}
+
+.sp-lead-magnet-button--gated {
+  animation: lead-magnet-button-fade-in 0.3s ease-out;
+}
+@keyframes lead-magnet-button-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-lead-magnet-button--gated {
+    animation: none;
+  }
+}
+
+.sp-lead-magnet-button__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: 0;
+  color: var(--sp-text-muted-light, #6b6b70);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  line-height: 0;
+}
+.sp-lead-magnet-button__close:hover {
+  color: var(--sp-text-primary, #1a1a1a);
+  background: var(--sp-border-light, rgba(0, 0, 0, 0.04));
+}
+
+.sp-lead-magnet-button__title {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0 0 10px;
+  color: var(--sp-text-primary, #1a1a1a);
+}
+
+.sp-lead-magnet-button__description {
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 18px;
+  color: var(--sp-text-body, #4a4a4f);
+}
+
+.sp-lead-magnet-button__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 22px;
+  background: var(--sp-brand-primary, #4a7c3f);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s;
+}
+.sp-lead-magnet-button__cta:hover {
+  background: var(--sp-brand-secondary, #3d6834);
+}
+
+/* Dark mode token redefinition for the inline button too. */
+:root[data-theme='dark'] .sp-lead-magnet-button {
+  --sp-bg-white: #1a1a1b;
+  --sp-text-primary: #e4e4e7;
+  --sp-text-body: #a1a1aa;
+  --sp-border-light: #2e2e32;
+  --sp-text-muted-light: #6b6b70;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .sp-lead-magnet-button {
+    --sp-bg-white: #1a1a1b;
+    --sp-text-primary: #e4e4e7;
+    --sp-text-body: #a1a1aa;
+    --sp-border-light: #2e2e32;
+    --sp-text-muted-light: #6b6b70;
+  }
+}
+
+@media (max-width: 600px) {
+  .sp-lead-magnet-button {
+    padding: 24px 20px;
+  }
+  .sp-lead-magnet-button__title {
+    font-size: 19px;
+  }
+}

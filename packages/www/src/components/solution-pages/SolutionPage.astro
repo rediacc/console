@@ -11,6 +11,8 @@ import SPBenefits from './SPBenefits.astro';
 import SPComparisonTable from './SPComparisonTable.astro';
 import SPSocialProof from './SPSocialProof.astro';
 import SPBottomCta from './SPBottomCta.astro';
+import SPDownloadGated from './SPDownloadGated.astro';
+import SPDownloadShort from './SPDownloadShort.astro';
 import SPTechStrip from './SPTechStrip.astro';
 import SPExploreSolutions from './SPExploreSolutions.astro';
 import SPReferences from './SPReferences.astro';
@@ -94,6 +96,10 @@ const breadcrumbItems = [
       <SPBenefits benefits={(content as any).benefits} />
     )}
 
+    {has('downloadGated') && (
+      <SPDownloadGated lang={lang} slug={slug} category={config.category} />
+    )}
+
     {has('competitorComparison') && config.competitors && (
       <SPComparisonTable
         comparison={(content as any).comparison}
@@ -108,6 +114,10 @@ const breadcrumbItems = [
 
     {has('bottomCta') && (
       <SPBottomCta bottomCta={(content as any).bottomCta} ctaHref={ctaHref} lang={lang} />
+    )}
+
+    {has('downloadShort') && (
+      <SPDownloadShort lang={lang} slug={slug} category={config.category} />
     )}
 
     {has('techStrip') && config.techStrip && (
