@@ -68,7 +68,7 @@ export const confirmYes = async (page: Page): Promise<void> => {
   try {
     await confirmButton.scrollIntoViewIfNeeded();
     await confirmButton.click({ timeout: 3000 });
-  } catch (error) {
+  } catch {
     // Fallback: if physical click fails (e.g. because of transitions or viewport restrictions), dispatch DOM click.
     await confirmButton.evaluate((el) => (el as HTMLElement).click()).catch(() => {});
   }
