@@ -39,7 +39,14 @@ test.describe('User Activation Tests', () => {
 
     const userTable = page.getByTestId(UserPageIDs.systemUserTable);
     const listContainer = page.getByTestId('resource-list-container');
-    await expect(userTable.or(listContainer)).toBeVisible({ timeout: 10000 });
+    await expect
+      .poll(
+        async () =>
+          (await userTable.isVisible().catch(() => false)) ||
+          (await listContainer.isVisible().catch(() => false)),
+        { timeout: 10000 }
+      )
+      .toBe(true);
     await filterUsersList(page, newUserEmail);
     testReporter.completeStep('Navigate to Users section', 'passed');
 

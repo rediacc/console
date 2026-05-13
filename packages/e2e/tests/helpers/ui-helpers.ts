@@ -65,6 +65,12 @@ export const clickListAction = async (
 export const confirmYes = async (page: Page): Promise<void> => {
   const confirmButton = page.getByRole('button', { name: /yes/i });
   await expect(confirmButton).toBeVisible();
-  await confirmButton.click({ force: true });
+  try {
+    await confirmButton.scrollIntoViewIfNeeded();
+    await confirmButton.click({ timeout: 3000 });
+  } catch (error) {
+    // Fallback: if physical click fails (e.g. because of transitions or viewport restrictions), dispatch DOM click.
+    await confirmButton.evaluate((el) => (el as HTMLElement).click()).catch(() => {});
+  }
   await waitForNoModal(page);
 };
