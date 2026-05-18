@@ -34,7 +34,7 @@
     "check:ci-e2e-coverage": ".ci/scripts/quality/check-e2e-coverage.sh",
     "check:ci-npmrc": ".ci/scripts/quality/check-npmrc.sh",
     "check:ci-lockfile": ".ci/scripts/quality/check-lockfile.sh",
-    "install:natives": "npm rebuild electron node-pty ssh2 esbuild --foreground-scripts",
+    "install:natives": "npm rebuild electron node-pty ssh2 cpu-features esbuild --foreground-scripts --ignore-scripts=false",
     "check:ci-peer-deps": ".ci/scripts/quality/check-peer-deps.sh",
     "check:ci-overrides-reasons": "tsx scripts/check-overrides-reasons.ts",
     "check:ci-syncpack-reasons": "tsx scripts/check-syncpack-reasons.ts",
