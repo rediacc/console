@@ -131,10 +131,14 @@ export class ConfigFileStorage {
     const config = parseConfig(RdcConfigSchema, migration.config, `config "${name}"`);
 
     // Persist the upgraded shape so future loads skip the migration step.
-    // Best-effort: a read-only filesystem must not break the load.
+    // Acquire the file lock first so concurrent saves can't race against the
+    // migration write (rename is atomic, but version increment is read-then-
+    // write so a parallel save would lose the migration). Best-effort: a
+    // read-only filesystem or a lock-acquisition failure must not break the
+    // load — the caller still gets the in-memory upgraded config.
     if (migration.migrated) {
       try {
-        await this.saveUnlocked(config, name);
+        await this.withLock(name, () => this.saveUnlocked(config, name));
       } catch {
         // Ignore — caller still gets the in-memory upgraded config.
       }

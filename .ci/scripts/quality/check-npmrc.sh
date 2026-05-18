@@ -51,7 +51,13 @@ declare -A required=(
 missing=0
 for key in "${!required[@]}"; do
     expected="${required[$key]}"
-    actual="$(grep -E "^[[:space:]]*${key}[[:space:]]*=" .npmrc | tail -n1 | sed -E "s/^[[:space:]]*${key}[[:space:]]*=[[:space:]]*//" | tr -d '[:space:]' || true)"
+    # Strip optional trailing comments (everything from the first # onward) before
+    # trimming whitespace so a line like 'ignore-scripts=true # hardening' parses
+    # cleanly to 'true' instead of 'true#hardening'.
+    actual="$(grep -E "^[[:space:]]*${key}[[:space:]]*=" .npmrc \
+        | tail -n1 \
+        | sed -E "s/^[[:space:]]*${key}[[:space:]]*=[[:space:]]*//; s/[[:space:]]*#.*//" \
+        | tr -d '[:space:]' || true)"
     if [[ -z "$actual" ]]; then
         log_error ".npmrc is missing required setting: ${key}=${expected}"
         missing=1
