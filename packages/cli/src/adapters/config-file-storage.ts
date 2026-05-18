@@ -2,6 +2,8 @@ import { promises as fs } from 'node:fs';
 import { basename, join } from 'node:path';
 import { getConfigDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
+import { runMigrations } from '../schema/migrations/index.js';
+import { RdcConfigSchema, parseConfig } from '../schema/schemas.js';
 import { createEmptyRdcConfig, type RdcConfig } from '../types/index.js';
 import { stringifyConfig } from '../utils/config-schema.js';
 
@@ -114,15 +116,30 @@ export class ConfigFileStorage {
 
   private async loadUnlocked(name: string): Promise<RdcConfig> {
     const configPath = this.getPath(name);
+    let content: string;
     try {
-      const content = await fs.readFile(configPath, 'utf-8');
-      return JSON.parse(content) as RdcConfig;
+      content = await fs.readFile(configPath, 'utf-8');
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return createEmptyRdcConfig();
       }
       throw error;
     }
+
+    const raw = JSON.parse(content) as unknown;
+    const migration = runMigrations(raw);
+    const config = parseConfig(RdcConfigSchema, migration.config, `config "${name}"`);
+
+    // Persist the upgraded shape so future loads skip the migration step.
+    // Best-effort: a read-only filesystem must not break the load.
+    if (migration.migrated) {
+      try {
+        await this.saveUnlocked(config, name);
+      } catch {
+        // Ignore — caller still gets the in-memory upgraded config.
+      }
+    }
+    return config;
   }
 
   /**

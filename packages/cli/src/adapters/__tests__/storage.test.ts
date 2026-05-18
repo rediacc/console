@@ -224,7 +224,7 @@ describe('ConfigFileStorage', () => {
 
   describe('version auto-increment', () => {
     it('should increment version on save', async () => {
-      const config: RdcConfig = { id: 'test-id', version: 1 };
+      const config: RdcConfig = { id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f', version: 1 };
 
       await storage.save(config, 'test');
 
@@ -233,7 +233,7 @@ describe('ConfigFileStorage', () => {
     });
 
     it('should increment version on each successive save', async () => {
-      const config: RdcConfig = { id: 'test-id', version: 1 };
+      const config: RdcConfig = { id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f', version: 1 };
 
       await storage.save(config, 'test');
       storage.clearCache();
@@ -277,7 +277,7 @@ describe('ConfigFileStorage', () => {
       await storage.load('test');
 
       // Write directly to disk, bypassing the storage instance
-      const external: RdcConfig = { id: 'external-id', version: 99 };
+      const external: RdcConfig = { id: '8d9e2f0a-3b4c-4d5e-9f70-2b3c4d5e6f70', version: 99 };
       await writeRawConfig('test', external);
 
       const config = await storage.load('test');
@@ -289,7 +289,11 @@ describe('ConfigFileStorage', () => {
       await storage.init('test');
       await storage.load('test');
 
-      const external: RdcConfig = { id: 'external-id', version: 99, machine: 'external-machine' };
+      const external: RdcConfig = {
+        id: '8d9e2f0a-3b4c-4d5e-9f70-2b3c4d5e6f70',
+        version: 99,
+        machine: 'external-machine',
+      };
       await writeRawConfig('test', external);
 
       storage.clearCache();
@@ -346,7 +350,7 @@ describe('ConfigFileStorage', () => {
 
       // Write externally to disk
       const external: RdcConfig = {
-        id: 'external-id',
+        id: '8d9e2f0a-3b4c-4d5e-9f70-2b3c4d5e6f70',
         version: 5,
         machine: 'external',
       };
@@ -583,7 +587,7 @@ describe('ConfigFileStorage', () => {
 
       // Write externally
       const external: RdcConfig = {
-        id: 'external-id',
+        id: '8d9e2f0a-3b4c-4d5e-9f70-2b3c4d5e6f70',
         version: 42,
         machine: 'external-machine',
       };
@@ -639,13 +643,17 @@ describe('ConfigFileStorage', () => {
 
     it('should force fresh read from file', async () => {
       await storage.init('test');
-      const config: RdcConfig = { id: 'test-id', version: 1, machine: 'original' };
+      const config: RdcConfig = {
+        id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f',
+        version: 1,
+        machine: 'original',
+      };
       await storage.save(config, 'test');
       await storage.load('test');
 
       // External write
       const external: RdcConfig = {
-        id: 'test-id',
+        id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f',
         version: 5,
         machine: 'updated-by-other-process',
       };

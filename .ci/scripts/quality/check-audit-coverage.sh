@@ -132,6 +132,75 @@ if [[ ${#SFTP_IMPORTERS[@]} -gt 0 ]]; then
     # This is a warning, not an error — new SFTP usage might be internal/utility
 fi
 
+# ── Phase 5: Event-type union completeness ───────────────────────────
+log_step "Checking event-type union covers every functionName emitted..."
+
+EVENT_SCHEMA="$REPO_ROOT/packages/shared/src/audit/event-schema.ts"
+if [[ ! -f "$EVENT_SCHEMA" ]]; then
+    log_error "Shared audit event schema missing: $EVENT_SCHEMA"
+    ERRORS=$((ERRORS + 1))
+else
+    # Extract literal event-type strings from the schema file. The schema
+    # declares them as 'cli.X.Y' inside ALL_EVENT_TYPES via the per-group
+    # const arrays — grep is sufficient because the file is purely declarative.
+    declare -A UNION_TYPES=()
+    while IFS= read -r line; do
+        # Strip quotes and trailing comma
+        type="${line//\'/}"
+        type="${type//\"/}"
+        type="${type//,/}"
+        type="${type// /}"
+        if [[ -n "$type" ]]; then
+            UNION_TYPES["$type"]=1
+        fi
+    done < <(grep -oE "'cli\.[a-z._]+[a-z_]'" "$EVENT_SCHEMA" | sort -u)
+
+    if [[ ${#UNION_TYPES[@]} -eq 0 ]]; then
+        log_error "Could not parse any event types from $EVENT_SCHEMA"
+        log_error "Expected literal strings like 'cli.repo.up'. Has the schema format changed?"
+        ERRORS=$((ERRORS + 1))
+    fi
+
+    # Find every functionName: 'X' literal in CLI source (excluding tests
+    # and the audit service itself, where mappings are *defined*).
+    MISSING_TYPES=()
+    while IFS= read -r fn; do
+        # Map fn name to event type using the same rules as
+        # functionNameToEventType in event-schema.ts. Keep this in sync.
+        case "$fn" in
+            repository_*) type="cli.repo.${fn#repository_}" ;;
+            backup_*)     type="cli.backup.${fn#backup_}" ;;
+            datastore_*)  type="cli.datastore.${fn#datastore_}" ;;
+            machine_*)    type="cli.machine.${fn#machine_}" ;;
+            sync_upload)  type="cli.sync.upload" ;;
+            sync_download) type="cli.sync.download" ;;
+            term_connect) type="cli.term.session" ;;
+            *)            type="cli.$fn" ;;
+        esac
+        if [[ -z "${UNION_TYPES[$type]:-}" ]]; then
+            MISSING_TYPES+=("$fn -> $type")
+        fi
+    done < <(grep -rhE "functionName: '[a-z_]+'" "$CLI_SRC/commands/" "$CLI_SRC/services/" \
+                --include='*.ts' --exclude-dir=__tests__ 2>/dev/null \
+             | grep -v 'audit.ts' \
+             | grep -oE "functionName: '[a-z_]+'" \
+             | sed -E "s/functionName: '([a-z_]+)'/\\1/" \
+             | sort -u)
+
+    if [[ ${#MISSING_TYPES[@]} -gt 0 ]]; then
+        log_error "These functionName values map to event types not in the schema union:"
+        for entry in "${MISSING_TYPES[@]}"; do
+            log_error "  - $entry"
+        done
+        log_error ""
+        log_error "Add the missing literals to ALL_EVENT_TYPES in $EVENT_SCHEMA,"
+        log_error "or remove the recordOperation() call if the event is not auditable."
+        ERRORS=$((ERRORS + 1))
+    else
+        log_info "Event-type union covers all ${#UNION_TYPES[@]} declared types"
+    fi
+fi
+
 # ── Results ───────────────────────────────────────────────────────────
 if [[ $ERRORS -gt 0 ]]; then
     log_error ""

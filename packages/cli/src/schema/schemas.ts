@@ -348,19 +348,30 @@ const RemoteConfigSchema = z.object({
 // Top-level RdcConfig v2
 // =============================================================================
 
-export const RdcConfigSchema = z.object({
-  schemaVersion: z.literal(2),
-  id: uuid,
-  version: z.number().int().min(1),
-  account: AccountSchema.optional(),
-  defaults: DefaultsSchema.optional(),
-  credentials: CredentialsSchema.optional(),
-  resources: ResourcesSchema.optional(),
-  infra: InfraTopSchema.optional(),
-  encryption: EncryptionSchema.optional(),
-  remote: RemoteConfigSchema.optional(),
-  renetPath: z.string().optional(),
-});
+/**
+ * Top-level RdcConfig (v2).
+ *
+ * `.loose()` preserves unknown top-level keys instead of stripping them.
+ * This is forward-compatible — a newer CLI may add fields that this CLI
+ * doesn't understand, and we don't want to silently drop them when an
+ * older CLI loads and re-saves the config. Per-field validation still
+ * applies to every declared key; unknown keys round-trip untouched.
+ */
+export const RdcConfigSchema = z
+  .object({
+    schemaVersion: z.literal(2),
+    id: uuid,
+    version: z.number().int().min(1),
+    account: AccountSchema.optional(),
+    defaults: DefaultsSchema.optional(),
+    credentials: CredentialsSchema.optional(),
+    resources: ResourcesSchema.optional(),
+    infra: InfraTopSchema.optional(),
+    encryption: EncryptionSchema.optional(),
+    remote: RemoteConfigSchema.optional(),
+    renetPath: z.string().optional(),
+  })
+  .loose();
 
 export type RdcConfig = z.infer<typeof RdcConfigSchema>;
 export type MachineConfig = z.infer<typeof MachineConfigSchema>;

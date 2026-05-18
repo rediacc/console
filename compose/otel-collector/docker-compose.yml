@@ -1,0 +1,36 @@
+# OpenTelemetry Collector for Rediacc Audit Events → SIEM
+#
+# Pairs with the Rediacc account server's OTLP-logs emission
+# (private/account/src/services/event-log.service.ts). Point the
+# account server at this collector via OTEL_EXPORTER_OTLP_ENDPOINT,
+# then route the events into your SIEM by swapping the exporter in
+# config.yaml.
+#
+# Quick start:
+#   docker compose up
+#   # then in the account server's environment:
+#   export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+#
+# The default config writes events to stdout (debug exporter) so the
+# pipeline works out-of-the-box. See config.yaml for OpenSearch /
+# Splunk HEC / AWS CloudWatch examples.
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    container_name: rediacc-otel-collector
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "13133:13133" # health check
+    environment:
+      # Optional: set if your collector authenticates clients
+      OTLP_BASIC_AUTH: "${OTLP_BASIC_AUTH:-}"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:13133"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

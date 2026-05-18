@@ -1,0 +1,96 @@
+# OTel Collector pipeline for Rediacc audit events.
+#
+# Input:  OTLP logs from the Rediacc account server (Node entry).
+#         Every audit event in the event_log table is mirrored here
+#         with attributes event.domain=rediacc.audit, event.name=<type>,
+#         enduser.id, organization.id, team.id, cloud.account.id,
+#         subscription.id, and audit.data.* fields.
+#
+# Output: Default `debug` exporter writes to the collector's stdout.
+#         Uncomment exactly one of the SIEM exporters below and adjust
+#         endpoints/credentials for your environment.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 100
+
+  # Defense-in-depth: drop any attribute that looks like a secret if it
+  # somehow leaked into an audit event. The CLI emitter and account
+  # server should never include credentials, but the collector is the
+  # last hop before the SIEM and a good place to enforce this.
+  attributes/strip-secrets:
+    actions:
+      - key: audit.data.password
+        action: delete
+      - key: audit.data.token
+        action: delete
+      - key: audit.data.secret
+        action: delete
+      - key: audit.data.privateKey
+        action: delete
+
+  # Only forward Rediacc audit events; ignore unrelated logs that may
+  # share the collector with other producers in mixed deployments.
+  filter/audit-only:
+    logs:
+      include:
+        match_type: strict
+        record_attributes:
+          - key: event.domain
+            value: rediacc.audit
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+exporters:
+  # Default: stdout, useful for verifying the pipeline works.
+  debug:
+    verbosity: detailed
+
+  # ── OpenSearch / Elasticsearch ───────────────────────────────────
+  # opensearch:
+  #   endpoints: ["https://opensearch.internal:9200"]
+  #   logs_index: rediacc-audit
+  #   tls:
+  #     insecure: false
+  #   auth:
+  #     authenticator: basicauth/opensearch
+
+  # ── Splunk HEC ──────────────────────────────────────────────────
+  # splunk_hec/audit:
+  #   token: "${SPLUNK_HEC_TOKEN}"
+  #   endpoint: "https://splunk.internal:8088/services/collector"
+  #   source: "rediacc.audit"
+  #   sourcetype: "_json"
+  #   index: "rediacc_audit"
+
+  # ── AWS CloudWatch Logs ─────────────────────────────────────────
+  # awscloudwatchlogs:
+  #   region: us-east-1
+  #   log_group_name: /rediacc/audit
+  #   log_stream_name: account-server
+
+  # ── Microsoft Sentinel (via Azure Monitor) ──────────────────────
+  # azuremonitor:
+  #   connection_string: "${APPINSIGHTS_CONNECTION_STRING}"
+
+service:
+  extensions: [health_check]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [filter/audit-only, attributes/strip-secrets, batch]
+      exporters: [debug]
+      # Replace `debug` above with one of: opensearch, splunk_hec/audit,
+      # awscloudwatchlogs, azuremonitor (and uncomment the matching
+      # exporter definition).

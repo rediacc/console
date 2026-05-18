@@ -1,0 +1,11 @@
+{
+  "id": "7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f",
+  "version": 1,
+  "defaults": {
+    "language": "en",
+    "datastoreSize": "95%"
+  },
+  "encryption": {
+    "mode": "plaintext"
+  }
+}
