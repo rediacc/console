@@ -112,13 +112,13 @@ function extractOptions(cmd: Command, excludeSet: Set<string>): OptionDef[] {
 }
 
 /** Derive a Zod type for a single positional argument. */
-function deriveArgType(arg: ArgDef, isRequired: boolean): z.ZodTypeAny {
+function deriveArgType(arg: ArgDef, isRequired: boolean): z.ZodType {
   const base = z.string().describe(arg.description);
   return isRequired ? base : base.optional();
 }
 
 /** Derive a Zod type for a single Commander option. */
-function deriveOptionType(opt: OptionDef): z.ZodTypeAny {
+function deriveOptionType(opt: OptionDef): z.ZodType {
   if (opt.isBoolean) return z.boolean().optional().describe(opt.description);
   const base = z.string().describe(opt.description);
   return opt.required ? base : base.optional();
