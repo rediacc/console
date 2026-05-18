@@ -38,3 +38,6 @@ inquirer  # BLOCKER: v13.3.1 and v13.3.2 shipped without dist folder; stay on la
 
 # @types/node major must match Node engine version (22.x)
 @types/node  # BLOCKER: v25+ targets Node 25 APIs; our engines field and CI runners are on Node 22
+
+# date-fns v4.2.0 changed package.json exports field to drop top-level types/typings; e2e package uses moduleResolution: node and can't see the conditional types — revert until either e2e moves to node16/bundler resolution or date-fns republishes with both
+date-fns  # BLOCKER: 4.2.0 dropped top-level types field; e2e tsconfig.json moduleResolution: node cannot read conditional exports.types; bumping needs a paired tsconfig migration

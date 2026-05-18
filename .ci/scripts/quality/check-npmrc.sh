@@ -43,9 +43,9 @@ fi
 
 # Required settings -- exact value match.
 declare -A required=(
-    [ignore-scripts]=true
-    [allow-git]=none
-    [minimum-release-age]=1440
+    ["ignore-scripts"]=true
+    ["allow-git"]=none
+    ["minimum-release-age"]=1440
 )
 
 missing=0

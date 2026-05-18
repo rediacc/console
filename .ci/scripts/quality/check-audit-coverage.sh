@@ -169,23 +169,23 @@ else
         # functionNameToEventType in event-schema.ts. Keep this in sync.
         case "$fn" in
             repository_*) type="cli.repo.${fn#repository_}" ;;
-            backup_*)     type="cli.backup.${fn#backup_}" ;;
-            datastore_*)  type="cli.datastore.${fn#datastore_}" ;;
-            machine_*)    type="cli.machine.${fn#machine_}" ;;
-            sync_upload)  type="cli.sync.upload" ;;
+            backup_*) type="cli.backup.${fn#backup_}" ;;
+            datastore_*) type="cli.datastore.${fn#datastore_}" ;;
+            machine_*) type="cli.machine.${fn#machine_}" ;;
+            sync_upload) type="cli.sync.upload" ;;
             sync_download) type="cli.sync.download" ;;
             term_connect) type="cli.term.session" ;;
-            *)            type="cli.$fn" ;;
+            *) type="cli.$fn" ;;
         esac
         if [[ -z "${UNION_TYPES[$type]:-}" ]]; then
             MISSING_TYPES+=("$fn -> $type")
         fi
     done < <(grep -rhE "functionName: '[a-z_]+'" "$CLI_SRC/commands/" "$CLI_SRC/services/" \
-                --include='*.ts' --exclude-dir=__tests__ 2>/dev/null \
-             | grep -v 'audit.ts' \
-             | grep -oE "functionName: '[a-z_]+'" \
-             | sed -E "s/functionName: '([a-z_]+)'/\\1/" \
-             | sort -u)
+        --include='*.ts' --exclude-dir=__tests__ 2>/dev/null |
+        grep -v 'audit.ts' |
+        grep -oE "functionName: '[a-z_]+'" |
+        sed -E "s/functionName: '([a-z_]+)'/\\1/" |
+        sort -u)
 
     if [[ ${#MISSING_TYPES[@]} -gt 0 ]]; then
         log_error "These functionName values map to event types not in the schema union:"

@@ -40,7 +40,7 @@ fi
 log_info "CURRENT_SCHEMA_VERSION = $CURRENT"
 
 log_step "Checking migration file coverage..."
-for (( v=1; v<CURRENT; v++ )); do
+for ((v = 1; v < CURRENT; v++)); do
     next=$((v + 1))
     file="$MIGRATIONS_DIR/v${v}-to-v${next}.ts"
     if [[ ! -f "$file" ]]; then
