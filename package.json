@@ -180,6 +180,9 @@
       "protobufjs": "^7.5.6"
     },
     "zod": "^4.4.3",
+    "astro": {
+      "zod": "^3.25.76"
+    },
     "plist": "^3.1.1"
   },
   "_overridesReasons": {
@@ -209,6 +212,7 @@
     "protobufjs": "BLOCKER: force >=7.5.6 to clear the 7.x advisories (GHSA-66ff/2pr8/fx83/75px/jvwf/685m/q6x5/xq3m all affected <= 7.5.5) — npm picks 8.2.0+ for the otlp-transformer chain which also clears the 8.0.0-8.0.1 critical RCE; @opentelemetry/sdk-node is pinned in .syncpackrc.json so we cannot bump the outer tree",
     "@grpc/proto-loader": "BLOCKER: nested override pins protobufjs ^7.5.6 inside the @grpc/proto-loader chain since proto-loader@0.8.x requires the 7.x major and cannot accept 8.x; pairs with the outer protobufjs >=7.5.6 override which handles the 8.x consumers",
     "zod": "BLOCKER: force ^4.4.3 across the whole tree so @modelcontextprotocol/sdk and the cli workspace share the same physical zod copy; without the override the SDK satisfies its 'zod: ^3.25 || ^4.0' range with the older zod@3.25.x that other transitives drag in, creating two zod installs whose v4/core $ZodType interfaces TS treats as distinct nominal types (build breaks at registerTool inputSchema)",
+    "astro": "BLOCKER: astro's config validator (validateConfigRefined) was written against zod v3 and calls config.image.remotePatterns.length on the parsed shape; under the root zod ^4.4.3 override it gets undefined and the build crashes with 'Cannot read properties of undefined (reading length)'. Nest a zod ^3.25.76 override scoped to astro to match astro's own peer dep declaration. @astrojs/sitemap and @astrojs/rss already declare zod ^4 themselves so they stay on the root override.",
     "plist": "BLOCKER: force ^3.1.1 across the whole tree because electron-builder ships an internal app-builder-lib/node_modules/plist@3.1.0 that calls DOMParser.parseFromString(xml) without a mimeType; @xmldom/xmldom >=0.9 requires the mimeType argument and throws 'the provided mimeType undefined is not valid' otherwise — observed on desktop mac-arm64 build. plist 3.1.1 passes 'text/xml' explicitly."
   }
 }
