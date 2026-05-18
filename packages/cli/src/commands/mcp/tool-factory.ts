@@ -7,6 +7,7 @@
  */
 import type { Command } from 'commander';
 import { z } from 'zod';
+import type { ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat.js';
 import {
   COMMAND_METADATA,
   type CommandMeta,
@@ -14,10 +15,17 @@ import {
   WRITE_TIMEOUT,
 } from '../../config/command-metadata.js';
 
+// The MCP SDK pulls zod from the hoisted root copy (zod@3.25.76, both v3 and
+// v4 subpaths are bundled there) while this workspace imports zod from its own
+// packages/cli/node_modules/zod@4.4.3. Even though both v4/core trees export a
+// structurally-identical $ZodType interface, TS treats them as distinct nominal
+// types because they live at different file paths. Using the SDK's own
+// ZodRawShapeCompat alias keeps the registerTool() call site type-clean.
+
 export interface ToolDef {
   name: string;
   description: string;
-  schema: Record<string, z.ZodType>;
+  schema: ZodRawShapeCompat;
   command: (args: Record<string, unknown>) => string[];
   isDestructive: boolean;
   isIdempotent: boolean;
@@ -104,13 +112,13 @@ function extractOptions(cmd: Command, excludeSet: Set<string>): OptionDef[] {
 }
 
 /** Derive a Zod type for a single positional argument. */
-function deriveArgType(arg: ArgDef, isRequired: boolean): z.ZodType {
+function deriveArgType(arg: ArgDef, isRequired: boolean): z.ZodTypeAny {
   const base = z.string().describe(arg.description);
   return isRequired ? base : base.optional();
 }
 
 /** Derive a Zod type for a single Commander option. */
-function deriveOptionType(opt: OptionDef): z.ZodType {
+function deriveOptionType(opt: OptionDef): z.ZodTypeAny {
   if (opt.isBoolean) return z.boolean().optional().describe(opt.description);
   const base = z.string().describe(opt.description);
   return opt.required ? base : base.optional();
@@ -123,8 +131,8 @@ function deriveSchema(
   args: ArgDef[],
   options: OptionDef[],
   requiredArgs?: string[]
-): Record<string, z.ZodType> {
-  const schema: Record<string, z.ZodType> = {};
+): ZodRawShapeCompat {
+  const schema: ZodRawShapeCompat = {};
   const requiredSet = new Set(requiredArgs ?? []);
   const argNames = new Set<string>();
 

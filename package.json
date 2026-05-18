@@ -178,7 +178,9 @@
     "protobufjs": ">=7.5.6",
     "@grpc/proto-loader": {
       "protobufjs": "^7.5.6"
-    }
+    },
+    "zod": "^4.4.3",
+    "plist": "^3.1.1"
   },
   "_overridesReasons": {
     "glob": "BLOCKER: force glob ^11 everywhere to avoid deprecated transitive glob <9 chain pulled in via old eslint/electron paths",
@@ -205,6 +207,8 @@
     "fast-xml-builder": "BLOCKER: force >=1.1.7 to include GHSA-5wm8-gmm8-39j9 attribute-quote injection fix; aws-sdk @aws-sdk/xml-builder transitively pulls older fast-xml-parser/fast-xml-builder",
     "ip-address": "BLOCKER: force ^10.1.1 to include GHSA-v2v4-37r5-5v8g (XSS in Address6 HTML-emitting methods) fix; express-rate-limit@8.3.1 pulls 10.1.0 which is in the affected <= 10.1.0 range",
     "protobufjs": "BLOCKER: force >=7.5.6 to clear the 7.x advisories (GHSA-66ff/2pr8/fx83/75px/jvwf/685m/q6x5/xq3m all affected <= 7.5.5) — npm picks 8.2.0+ for the otlp-transformer chain which also clears the 8.0.0-8.0.1 critical RCE; @opentelemetry/sdk-node is pinned in .syncpackrc.json so we cannot bump the outer tree",
-    "@grpc/proto-loader": "BLOCKER: nested override pins protobufjs ^7.5.6 inside the @grpc/proto-loader chain since proto-loader@0.8.x requires the 7.x major and cannot accept 8.x; pairs with the outer protobufjs >=7.5.6 override which handles the 8.x consumers"
+    "@grpc/proto-loader": "BLOCKER: nested override pins protobufjs ^7.5.6 inside the @grpc/proto-loader chain since proto-loader@0.8.x requires the 7.x major and cannot accept 8.x; pairs with the outer protobufjs >=7.5.6 override which handles the 8.x consumers",
+    "zod": "BLOCKER: force ^4.4.3 across the whole tree so @modelcontextprotocol/sdk and the cli workspace share the same physical zod copy; without the override the SDK satisfies its 'zod: ^3.25 || ^4.0' range with the older zod@3.25.x that other transitives drag in, creating two zod installs whose v4/core $ZodType interfaces TS treats as distinct nominal types (build breaks at registerTool inputSchema)",
+    "plist": "BLOCKER: force ^3.1.1 across the whole tree because electron-builder ships an internal app-builder-lib/node_modules/plist@3.1.0 that calls DOMParser.parseFromString(xml) without a mimeType; @xmldom/xmldom >=0.9 requires the mimeType argument and throws 'the provided mimeType undefined is not valid' otherwise — observed on desktop mac-arm64 build. plist 3.1.1 passes 'text/xml' explicitly."
   }
 }
