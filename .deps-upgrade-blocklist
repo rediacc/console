@@ -41,3 +41,10 @@ inquirer  # BLOCKER: v13.3.1 and v13.3.2 shipped without dist folder; stay on la
 
 # date-fns v4.2.0 changed package.json exports field to drop top-level types/typings; e2e package uses moduleResolution: node and can't see the conditional types — revert until either e2e moves to node16/bundler resolution or date-fns republishes with both
 date-fns  # BLOCKER: 4.2.0 dropped top-level types field; e2e tsconfig.json moduleResolution: node cannot read conditional exports.types; bumping needs a paired tsconfig migration
+
+# OpenTelemetry web instrumentation cluster — held by the .syncpackrc.json pin on @opentelemetry/instrumentation ^0.211.0
+# 0.62+ of auto-instrumentations-web / instrumentation-document-load / instrumentation-user-interaction all require
+# @opentelemetry/instrumentation ^0.218.0+, which would break the cross-workspace pin. Bumping needs the syncpack pin to move first.
+@opentelemetry/auto-instrumentations-web  # BLOCKER: 0.62+ requires @opentelemetry/instrumentation ^0.218.0; syncpack pins instrumentation at ^0.211.0 across all workspaces — bump requires lifting the syncpack pin first
+@opentelemetry/instrumentation-document-load  # BLOCKER: 0.62+ requires @opentelemetry/instrumentation ^0.218.0; same syncpack pin constraint as auto-instrumentations-web
+@opentelemetry/instrumentation-user-interaction  # BLOCKER: 0.61+ requires @opentelemetry/instrumentation ^0.218.0; same syncpack pin constraint as auto-instrumentations-web
